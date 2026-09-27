@@ -44,6 +44,61 @@ print('both domains', sum(1 for j in doms if len(doms[j]) >= 2), 'of', len(doms)
 PY
 ```
 
+### The rest of the document swept for the same shape, 2026-09-26
+
+Item 9 found one instance. **The whole file was then swept for other sentences
+whose universal word might have outlived its scope.** Three results, and one of
+them is the sentence surviving, which is worth as much as the two corrections:
+
+**1. THE PROVENANCE CLAIM IS SOUND ACROSS ALL 437 — measured, not assumed.**
+*"every one of them encoded from primary-source rule text read verbatim, with a
+full audit trail from the date back to the authority that produced it"* is the
+sentence the launch-blocker section below says the entire claim rests on, and it
+was the likeliest candidate to have been true of 119 and not of 437. It holds:
+**all 437 rules carry an `authority` object with BOTH a `citation` and a `url`,
+437 distinct values, zero placeholders** — no `TBD`, no missing field, nothing
+under eight characters. The audit-trail half is verifiably complete.
+
+One honest qualification: **no rule stores the verbatim text itself.** "read
+verbatim" is a claim about how a human encoded it, not about a stored field, so it
+is not falsifiable from the data either way. It is left standing because it is a
+true statement about process, but a reader should know the repo cannot prove it —
+only the citation and URL can be checked.
+
+```
+python - <<'PY'
+import json, io, glob, re
+n = weak = 0
+for p in sorted(glob.glob('sql/sairnlaw_deadline_seed_*.json')):
+    d = json.load(io.open(p, encoding='utf-8'))
+    for r in (d.get('rules') if isinstance(d, dict) else d) or []:
+        n += 1
+        a = (r.get('authority') or {})
+        if not (isinstance(a, dict) and a.get('citation') and a.get('url')): weak += 1
+print('rules', n, '| without a citation+url authority', weak)
+PY
+```
+
+**2. THE FAILURE-MODE TALLY SAID "six gates" AND THERE ARE NOW SEVEN.** Corrected
+below, and the correction is the finding: a numbered list grew and the word
+counting it did not move — which is mode 7 happening to the list that describes
+mode 7. The instruction is now to count the entries rather than read the word.
+
+**3. "The engine encodes the statutory test IN EVERY CASE"** in §3 of the
+demonstrations was the same shape beginning again. True about METHOD — no calendar
+here is built from an attendance record — and readable as coverage in a sales
+document, when roughly half the calendars stop at 2026. Narrowed to "for every
+calendar it carries."
+
+**What the sweep method was, so it can be repeated:** grep the file for `every`,
+`all`, `each`, `no`, `none`, `always`, `never`, then for each hit ask the one
+question that separates this mode from ordinary staleness — *what set was this
+quantifying over when it was written, and has that set grown since?* A sentence
+that was never true is an error; a sentence that stopped being true because the
+product grew is this mode, and it has no author to blame.
+
+---
+
 This is the sentence to use with anyone outside the team — proposals, sales
 conversations, status updates. Do not paraphrase it looser, and do not quote its
 figures without re-running the block above.
@@ -241,7 +296,10 @@ dimensions. This one is about the boundary of what the product is responsible
 for. Naming it changes what a demo has to show: the trigger vocabulary is part
 of the product, not a detail of the input form.
 
-The running tally across six gates, none of these obvious without looking:
+The running tally, none of these obvious without looking. **DO NOT QUOTE THE
+COUNT FROM THIS SENTENCE — count the numbered entries.** It read "across six
+gates" and a seventh was added on 2026-09-26 without the word being touched,
+which is the seventh mode happening to the list that describes the modes:
 
 1. **Phase 4** — a true statement implying more *breadth* than existed.
 2. **Phase 5** — a true statement implying more *parity* than existed.
@@ -253,6 +311,14 @@ The running tally across six gates, none of these obvious without looking:
    implied a *temporary* one.
 6. **Batch 2** — a statement true about the *rules* and silent about the
    *inputs*, in a product where a wrong input produces a confident wrong answer.
+7. **2026-09-26** — a statement that was **correctly scoped when written and
+   became false by GROWTH rather than by editing.** "All eleven carry both
+   domains" was true of the eleven it was written about; 28 jurisdictions were
+   added, the sentence was not touched, and the approved claim above had already
+   generalised it to all of them. **Nobody wrote anything false at any point.**
+   This is the only mode on the list that needs no author — it arrives on its own
+   if a universal word is left standing over a set that grows, which is why the
+   fix was a runnable re-derivation block rather than a corrected number.
 
 ## Which frameworks actually applied, and which did not
 
@@ -343,10 +409,17 @@ Pennsylvania's courts commonly close on days no statute makes a holiday;
 Georgia's statute freezes the federal list as it stood on 1 January 2022 and
 separately tells the Governor to close state offices on thirteen days, which are
 not the same set; Texas makes five days legal holidays on which courthouses are
-routinely open. The engine encodes the statutory test in every case and discloses
-the divergence, because padding a calendar with observed closures produces
-deadlines **later** than the law allows, which is the direction that misses a
-filing.
+routinely open. The engine encodes the statutory test **for every calendar it
+carries** and discloses the divergence, because padding a calendar with observed
+closures produces deadlines **later** than the law allows, which is the direction
+that misses a filing.
+
+> **"in every case" was the wording here until 2026-09-26, and it was the mode-7
+> shape starting again.** It is true about METHOD — no calendar in this repo is
+> built from an attendance record — and a reader of a sales document would take
+> it as coverage, which is a different claim: roughly half the calendars stop at
+> 2026. Narrowed to what is actually universal. The statutory-test method is; the
+> calendars are not.
 
 ## Claims that are NOT approved
 

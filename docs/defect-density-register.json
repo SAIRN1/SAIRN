@@ -14914,7 +14914,7 @@
       "recurrence_open": "FIVE BLOCKERS REMAIN AND THE JOIN IS STILL NOT BUILDABLE, enumerated in docs/2026-09-26-sairncare-compliance-join-scoping.md: the requirement audience is prose while the roster carries a role code; recorded hours carry a category that requirements do not; stacking comes in at least three kinds including prose conditional on a staff member's tenure; an initial-hours-with-deadline requirement is a gate on whether somebody may work at all and needs a hire date the engine never receives; and the annual window is undefined. ONE OF SIX SEEDED STATES CAN CURRENTLY BE ANSWERED AT ALL, which is a disclosed gap rather than coverage -- a WV facility now gets no per-staff answer, which is worse for the user than a correct one and better than a false pass. Separately, opts.staff is CALLER-SUPPLIED, so whenever the wiring is built the aggregation must happen server-side against alf_staff_credentials: a client sending its own annual_hours_recorded while the authoritative append-only record sits unread on the server is the same shape as the attribution defect recorded against f0c0cb7a."
     },
     {
-      "commit": "191d2dce5369",
+      "commit": "c123a9250021",
       "date": "2026-09-26",
       "subject": "fix(sairncare): the family-contact panel never worked -- all three callers read a shape the transport has never returned",
       "files": [
