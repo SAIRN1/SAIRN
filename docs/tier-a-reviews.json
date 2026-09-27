@@ -4033,6 +4033,31 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-27T02:31:54Z",
+      "opened_at_sha": "b9b9525d17d7bfb06a1a9cf4fb0cc9100075daa6",
+      "resources": [
+        "alf_compliance_rules",
+        "alf_staff",
+        "alf_staff_credentials"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/_lib/compliance-rules-staff-join.test.js",
+        "api/_lib/compliance-rules.js",
+        "api/sd-data-alf-training-join.test.js",
+        "api/sd-data.js"
+      ],
+      "what": "queue13 (hank): (1) the SAIRNcare training join. api/_lib/compliance-rules.js gains normalizeRequirements (WV's {audience, hours_per_year} read alongside {who, annual_hours}, with a requirement key derived from rule_id + row index), per-pool determinability arithmetic, and an empty-applicable-set refusal; api/sd-data.js's alf_compliance_rules evaluate action gains a SERVER-SIDE records join behind include_staff, a declared-annual-window requirement, and STAFF_NOT_CALLER_SUPPLIED. (2) docs/CRITICALITY-TIERS.md: mech_insurance_policies reclassified A -> B on confidentiality, reversing my own call from yesterday, and the MONEY_INTERNAL vs FIRM_CONFIDENTIAL line that 37 rows already drew is written into section 2. (3) docs/2026-09-26-cron-collision-verified.md: the cron fix's 12-day-old falsifiable prediction, read at last.\n\nATTACK HARDEST, in this order:\n\n(a) THE DETERMINABILITY RULE IS THE THING THAT COULD BE WRONG AND WOULD BE WRONG QUIETLY. I changed a deliberate refusal of cc's into an answer: recorded >= SUM of every applicable pool is TRUE, recorded < the LARGEST pool is FALSE, between is NULL. I claim both ends quantify over all apportionments rather than picking one. VERIFY THAT CLAIM DIRECTLY, and in particular verify the FALSE end: it says no apportionment succeeds, which is only true if every pool's requirement must be met INDEPENDENTLY. If any two applicable pools can in fact be satisfied by the same hours -- a relationship the rows do not declare and I inferred from distinct subjects -- then the FALSE is wrong and it is wrong in the direction that tells a compliant person they are not.\n\n(b) I DECIDED THAT TWO REQUIREMENTS WITH DIFFERENT SUBJECTS DO NOT POOL, and that decision is mine rather than the data's. WV's 8 hours on \"operation of a residence\" and 2 hours on dementia carry NO stacking flag, and I treated them as separate pools because pooling them would let 8 general hours satisfy the dementia requirement. That is the conservative direction and it is still an inference about West Virginia law from the absence of a field. If §64-14-4.3.3's 8 hours INCLUDE the 4.5.3 dementia hours, my WV verdicts over-require.\n\n(c) THE WV VERDICT IS THE ONE THING THAT NOW ANSWERS, so it carries all the risk. A caregiver with 3 recorded hours of any category reads as meeting the 2-hour dementia requirement -- because with ONE applicable pool I treat unattributed hours as unambiguously that pool's. Decide whether that is sound: 3 hours of orientation is not 2 hours of dementia training, and the only thing stopping that reading is that no other requirement applies to a caregiver. The records carry `category` and WV's row carries `topic`; I deliberately did NOT match them (prose vs token), so category is currently ignored on the one path that produces a boolean.\n\n(d) THE RECLASSIFICATION REVERSES MY OWN 24-HOUR-OLD JUDGEMENT, which means one of the two calls was made badly and you should decide which. I now say the line is transactional record vs deliberative position, derived from 34/34 and 3/3 unanimity. Check that the line I wrote actually separates the 37 rows it claims to -- if any MONEY_INTERNAL row is really a deliberative position, or any FIRM_CONFIDENTIAL row is really a transaction, the definition is a post-hoc fit to the grouping rather than its reason.\n\n(e) THE WINDOW REFUSAL MAY BE THE WRONG SHAPE. I made the annual window a required explicit input rather than choosing one, and refused an undeclared or unknown value. That is honest and it also means NO CALLER CAN GET A VERDICT WITHOUT SOMEBODY DECIDING -- I may have converted a silent wrong answer into a permanently blocked feature. Decide whether a per-rule declared window sourced from each state's cited code would have been the better route, since that is a re-read rather than a judgement.\n\n(f) THE CALLER-SUPPLIED-STAFF HOLE: I am asserting it was reachable BEFORE this change, from the payload pass-through. Verify that independently rather than taking my word -- the whole security claim in this commit rests on it, and if sairncare's session gate or some earlier validation actually stripped unknown payload keys, then I have recorded a defect that did not exist.",
+      "status": "open",
+      "reviewer_owner": "cloud",
+      "owner_assigned_at": "2026-09-27T02:31:54Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
