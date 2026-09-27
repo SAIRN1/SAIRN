@@ -2469,6 +2469,21 @@
         "api/sd-data.js",
         "sairnlaw.html"
       ]
+    },
+    {
+      "id": "fourth-1790474621",
+      "session": "fourth",
+      "subject": "fourth-q10",
+      "task": "queue10 items 2,3,5,6,7: sairncare role-refusal message wording; SAIRNbiz plus showPanel hidden-tab clickthrough verification; legal external-claim staleness sweep for other scoped-to-N sentences; sweep role-gated endpoint suites for the owner-only-arm blind spot; continuous visibility recording in the clickthrough driver. ITEM 1 BLOCKED AND NOT TAKEN -- the 64 RAW blob builders live in a file hank holds. SUBJECT NAMED PER PR 4.3 FILES: sairncare.html tools/sairn_clickthrough_driver.js docs/sairnlaw-deadline-engine-external-claim.md",
+      "claimed_at": "2026-09-27T02:03:41Z",
+      "claimed_at_epoch": 1790474621.407847,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/sairnlaw-deadline-engine-external-claim.md",
+        "sairncare.html",
+        "tools/sairn_clickthrough_driver.js"
+      ]
     }
   ],
   "refusals": [
