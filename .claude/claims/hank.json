@@ -3055,8 +3055,8 @@
       "task": "queue14: SD_AUTH_SECRET rotation destroys legacy ciphertexts and the procedure next to it says nobody is affected -- give legacy decryption the same dual-key path signing has, plus measure live whether SD_ENCRYPTION_KEY is set and ship the unrun legacy-row select; reclaim api/sd-data.js and wire cc's sen-evv-clock module at 5745-5804; author applies_to_positions for OH IN and both PA chapters; replace the annual-window 400 with rolling 12 months anchored to hire date; item 92 write_batch functional core; sweep for branches gated on a payload field name that exists nowhere; scope whether authentication-shaped material needs its own tracked flag; apply the new section 2 transactional-vs-deliberative line to the rest of the registry. sairncare.html is fourth-q10's, sairnsenior.html and sairnbiz.html are cody-q14's and cc's, all untouched. CRITICALITY-TIERS.md is free -- cody's sf_events cell is delivered as replacement TEXT in its own doc, not as an edit. SUBJECT NAMED PER PR 4.3 FILES: api/_lib/auth.js api/_lib/auth.test.js api/sd-data.js api/_lib/compliance-rules.js docs/CRITICALITY-TIERS.md tools/payload_field_ghost_scan.py sql/legacy_ciphertext_census.sql",
       "claimed_at": "2026-09-27T03:03:41Z",
       "claimed_at_epoch": 1790478221.4265916,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-27T12:08:45Z",
       "files": [
         "api/_lib/auth.js",
         "api/_lib/auth.test.js",
@@ -3074,8 +3074,8 @@
       "task": "ghost-field-read sweep (queue14 item 3): branches gated on a field name spelled nowhere. tools/ghost_field_read_scan.py plus control. TWO CONFIRMED and both FIXED here: api/_lib/compliance-rules.js facility_training_year window reads opts.facility_training_year_start which no caller can set, so from=null and the date filter is SKIPPED -- every training record of any age counts, the over-counting direction; and sairnsenior.html rfDeliveredHoursFor reads v.actual_start/v.actual_end where the real fields are clock_in_at/clock_out_at, so the referral-source performance table renders a confident 0.0 h for every linked source. CONFLICT DECLARED PER PR 4.3: cody-q14 named sairnsenior.html and that claim is EXPIRED (9.2h) with its work LANDED at 131b9022; cody's live row is cody-q15 (tier_a probe, sairnfreedom.html, tests/lib/strip_comments.js) which names neither of my files. cc-queue11 named api/_lib/compliance-rules.js and finished 17h ago. SUBJECT NAMED PER PR 4.3 FILES: tools/ghost_field_read_scan.py tests/run_ghost_field_read_probe.py api/_lib/compliance-rules.js sairnsenior.html docs/2026-09-27-ghost-field-read-sweep.md",
       "claimed_at": "2026-09-27T11:48:36Z",
       "claimed_at_epoch": 1790509716.6101305,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-27T12:08:45Z",
       "files": [
         "api/_lib/compliance-rules.js",
         "docs/2026-09-27-ghost-field-read-sweep.md",
