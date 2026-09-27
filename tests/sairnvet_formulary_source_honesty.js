@@ -675,6 +675,135 @@ const DRUGS = m ? JSON.parse(m[1]) : null;
       + ', expected 4 days meat and 36 hours milk.');
   });
 
+  // ── THE CATTLE FIGURE ON THE SWINE ROW ─────────────────────────────────
+  //
+  // FOUR FOOD-ANIMAL DRUGS SOURCED 2026-09-27, eight rows, and the same defect
+  // came back three times: the swine row carried the CATTLE route, the CATTLE
+  // dose, or both. That is the species-copy marker's class -- item 43, Ariane
+  // 5, in clinical form -- but it is invisible to that detector whenever the
+  // two species genuinely share a FIGURE and differ only in ROUTE, which is
+  // exactly what tulathromycin does. The marker keys on the dose string.
+  //
+  // A WRONG ROUTE ON A FOOD ANIMAL IS A RESIDUE PROBLEM BEFORE IT IS A DOSING
+  // ONE, and the withdrawal time printed beside it says everything is fine.
+  // Every arm below is a fact read off an FDA label and quoted in the row's
+  // own `reference` field; none of them asserts that a dose is clinically
+  // correct, which is not a thing a static test can decide.
+
+  test('tulathromycin: cattle is SC and swine is IM, and the row had them swapped', function () {
+    const c = row('Tulathromycin', 'cattle'), s = row('Tulathromycin', 'swine');
+    assert.ok(c && s, 'a tulathromycin food-animal row is gone');
+    assert.ok(/SC ONLY/i.test(String(c.route)),
+      'the cattle route reads ' + JSON.stringify(c.route) + '. DRAXXIN (NADA '
+      + '141-244) says "Inject subcutaneously" in cattle; the row said SC/IM.');
+    assert.ok(/IM ONLY/i.test(String(s.route)),
+      'the swine route reads ' + JSON.stringify(s.route) + '. The same label '
+      + 'says "Inject intramuscularly" in swine.');
+    // THE DOSE IS IDENTICAL IN BOTH SPECIES AND IS CORRECT, which is why the
+    // species-copy marker cannot see this one. Asserting it here is the point:
+    // a shared figure with unshared routes is a shape that detector is blind
+    // to, and this arm is the only thing holding it.
+    assert.strictEqual(c.doseMin, 2.5);
+    assert.strictEqual(s.doseMin, 2.5);
+    assert.ok(/18 days/.test(String(c.withdrawalMeat))
+              && /5 days/.test(String(s.withdrawalMeat)),
+      'the meat withdrawals are ' + JSON.stringify([c.withdrawalMeat, s.withdrawalMeat])
+      + ', expected 18 days cattle and 5 days swine -- they are not the same '
+      + 'number and a row that carried one for both would be wrong by 13 days.');
+  });
+
+  test('florfenicol: the swine row carried the CATTLE dose, 20-40 against a label 15', function () {
+    const c = row('Florfenicol', 'cattle'), s = row('Florfenicol', 'swine');
+    assert.ok(c && s, 'a florfenicol food-animal row is gone');
+    assert.strictEqual(s.doseMin, 15,
+      'the swine dose bound is ' + s.doseMin + '. NUFLOR-S (NADA 141-063) is '
+      + '15 mg/kg IM; the row read 20-40mg/kg, which is the cattle figure and '
+      + 'runs from 33% to 167% above the swine label.');
+    assert.ok(/IM ONLY/i.test(String(s.route)),
+      'the swine route reads ' + JSON.stringify(s.route) + '; SC is not a '
+      + 'labelled swine route for this product.');
+    // THE CATTLE ROW IS THE OPPOSITE FIX and must NOT gain numeric bounds.
+    // 20 mg/kg is the IM dose and 40 mg/kg the single SC dose, with 28- and
+    // 38-day withdrawals respectively. A doseMin/doseMax of 20/40 would let
+    // the calculator rebuild the exact false range this correction removed.
+    assert.strictEqual(c.doseMin, null,
+      'the florfenicol CATTLE row has acquired a numeric lower bound. The two '
+      + 'labelled regimens are 20mg/kg IM repeated at 48h and 40mg/kg SC once; '
+      + 'a min/max spanning them is not a range and the calculator would '
+      + 'multiply it by a body weight.');
+    assert.strictEqual(c.doseMax, null, 'see above -- upper bound restored too');
+    assert.ok(/28 days/.test(String(c.withdrawalMeat))
+              && /38 days/.test(String(c.withdrawalMeat)),
+      'the cattle meat withdrawal is ' + JSON.stringify(c.withdrawalMeat)
+      + '. The label gives BOTH -- 28 days after IM, 38 after SC -- and a row '
+      + 'carrying only one tells half the readers the wrong date.');
+  });
+
+  test('ceftiofur: the swine row carried the CATTLE dose, and this one UNDER-doses', function () {
+    const c = row('Ceftiofur', 'cattle'), s = row('Ceftiofur', 'swine');
+    assert.ok(c && s, 'a ceftiofur food-animal row is gone');
+    assert.strictEqual(s.doseMin, 3,
+      'the swine dose bound is ' + s.doseMin + '. EXCENEL RTU EZ (NADA 141-288) '
+      + 'is 3-5 mg CE/kg IM in swine; the row read 1-2.2mg/kg, which is the '
+      + 'CATTLE dose. The direction matters and is recorded: this one is an '
+      + 'under-dose, a treatment-failure and resistance risk rather than a '
+      + 'residue one, which is the opposite of the florfenicol swine error.');
+    assert.strictEqual(s.doseMax, 5);
+    assert.strictEqual(c.doseMin, 1.1,
+      'the cattle low bound is ' + c.doseMin + '; the label minimum is 1.1 '
+      + 'mg CE/kg and the row read 1.');
+    assert.ok(/IM ONLY/i.test(String(s.route)),
+      'the swine route reads ' + JSON.stringify(s.route) + '; the label is '
+      + 'intramuscular in swine, and IM or SC in cattle.');
+    assert.ok(/volume/i.test(String(s.withdrawalMeat)),
+      'the swine meat withdrawal is ' + JSON.stringify(s.withdrawalMeat)
+      + '. It depends on INJECTION SITE VOLUME -- 4 days at 5mL or less, 6 '
+      + 'days above it -- so a single number here is wrong for one of the two '
+      + 'cases whichever number is chosen.');
+  });
+
+  test('oxytetracycline: a single long-acting dose and a daily dose are not one range', function () {
+    const c = row('Oxytetracycline', 'cattle'), s = row('Oxytetracycline', 'swine');
+    assert.ok(c && s, 'an oxytetracycline food-animal row is gone');
+    // THE STORED ROW SAID "10-20mg/kg SID". LA-200 (NADA 113-232) has TWO
+    // regimens: 9 mg/lb (~20 mg/kg) as a SINGLE long-acting dose, and 3-5
+    // mg/lb (~6.6-11 mg/kg) PER DAY. Flattening them into a once-daily range
+    // invites 20 mg/kg every day, which is neither.
+    assert.strictEqual(c.doseMin, null,
+      'the cattle row has numeric bounds again. The two labelled regimens '
+      + 'differ in FREQUENCY, not just in size, and a min/max cannot carry '
+      + 'that -- the calculator would multiply and print a daily figure.');
+    assert.strictEqual(s.doseMin, null, 'same for the swine row');
+    assert.ok(/SINGLE/i.test(String(c.dose)) && /day/i.test(String(c.dose)),
+      'the cattle dose string is ' + JSON.stringify(c.dose) + ' and no longer '
+      + 'distinguishes the single long-acting dose from the daily one.');
+    assert.ok(/IM ONLY/i.test(String(s.route)),
+      'the swine route reads ' + JSON.stringify(s.route) + '. IV is labelled '
+      + 'in CATTLE only for this product, and the label warns that rapid IV '
+      + 'administration may result in animal collapse.');
+    assert.ok(/96 hours/.test(String(c.withdrawalMilk)),
+      'the cattle milk discard is ' + JSON.stringify(c.withdrawalMilk)
+      + ', expected 96 hours.');
+  });
+
+  test('CONTROL -- every withdrawal time names the PRODUCT it was read from', function () {
+    // A withdrawal period belongs to a PRODUCT, not to a drug name, and these
+    // rows are generic. "28 days" beside "Oxytetracycline" reads as a fact
+    // about oxytetracycline; it is a fact about LIQUAMYCIN LA-200, and a
+    // short-acting injectable of the same drug has a different one. Every
+    // label_sourced row therefore names its product or its NADA IN THE
+    // WITHDRAWAL STRING, where the reader sees it, not only in the citation.
+    const bare = DRUGS.filter(function (d) {
+      if (d.withdrawalStatus !== 'label_sourced') return false;
+      const m = String(d.withdrawalMeat || '');
+      return !/NADA|\(/.test(m);
+    }).map(function (d) { return d.name + '/' + d.species + ': ' + d.withdrawalMeat; });
+    assert.deepStrictEqual(bare, [],
+      'label_sourced row(s) whose meat withdrawal names no product: '
+      + JSON.stringify(bare) + '. A bare number generalises one product\'s '
+      + 'withdrawal to every formulation of the drug.');
+  });
+
   test('a label_sourced row MUST carry a reference -- the badge shows it', function () {
     // The green withdrawal badge puts the reference in its tooltip. A row
     // marked label_sourced with no reference renders a green chip whose hover
