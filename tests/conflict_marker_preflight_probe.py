@@ -119,6 +119,19 @@ def a_checks():
     expect('an empty path list asks the delegate nothing and invents nothing',
            kinds(cp.check_markers([])), [])
 
+    # ── SCALE, WHICH EVERY OTHER ARM HERE MISSED ────────────────────────────
+    # Delegation over the WHOLE working tree raised WinError 206: Windows caps a
+    # command line at 32,768 chars and a clean tree is 2,644 paths. The tool
+    # failed closed and was still unusable for its actual job. Every arm above
+    # passes ONE path, so the first case worked, the real case did not, and
+    # nothing tested the size in between. This arm is the size.
+    tracked, _ = cp.git('ls-files')
+    everything = [l.strip() for l in tracked.splitlines() if l.strip()]
+    expect('the real tree is big enough for this arm to mean something',
+           len(everything) > 500, True)
+    expect('delegating over EVERY tracked file does not blow the argv limit',
+           kinds(cp.check_markers(everything)), [])
+
     saved = cp.MARKER_TOOL
     cp.MARKER_TOOL = os.path.join(REPO, 'tools', '__no_such_marker_tool.py')
     try:

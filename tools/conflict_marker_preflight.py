@@ -174,26 +174,57 @@ def check_markers(paths):
             'positive baseline and the diff3 marker shape. Restore it.')
     if not paths:
         return []
-    try:
-        r = subprocess.run(
-            [sys.executable, MARKER_TOOL, '--json', '--files'] + list(paths),
-            cwd=REPO, capture_output=True, timeout=300)
-    except Exception as exc:
-        raise CouldNotRun('tools/conflict_marker_check.py did not run: %s' % exc)
-    try:
-        got = json.loads(r.stdout.decode('utf-8', 'replace'))
-    except ValueError:
-        raise CouldNotRun(
-            'tools/conflict_marker_check.py --json did not return JSON (exit %d). '
-            'Check A produced no answer and this is NOT a pass: %s'
-            % (r.returncode, r.stderr.decode('utf-8', 'replace')[:200]))
-    if got.get('unreadable'):
-        raise CouldNotRun('the marker check could not read %d file(s): %s'
-                          % (len(got['unreadable']), got['unreadable'][:2]))
-    return [('MARKERS', h['file'],
-             'unresolved %s marker at line %d -- %s'
-             % (h['kind'], h['line'], h['text'].strip()))
-            for h in got.get('findings', [])]
+    # ── THE PATH LIST MUST BE CHUNKED, AND THE PROBE COULD NOT SEE WHY ──────
+    # Passing the whole working tree as argv raised WinError 206, "The filename or
+    # extension is too long": Windows caps a command line at 32,768 characters and
+    # a clean tree here is 2,644 paths. The tool FAILED CLOSED and reported COULD
+    # NOT RUN rather than a pass, which is the right behaviour -- and it was still
+    # unusable for its actual job.
+    #
+    # IT WAS INVISIBLE TO THE PROBE FOR THE SAME REASON THE DELEGATION INTRODUCED
+    # IT: every probe arm passes ONE path. The first case worked, the real case did
+    # not, and nothing in between tested the size. That is the shape
+    # tools/second_pass_coverage_scan.py exists to find, landing in the tool
+    # committed beside it.
+    #
+    # Chunked by MEASURED BUDGET rather than a round number of files, because path
+    # lengths vary and a fixed count is the same guess as a fixed window.
+    findings, chunk, budget = [], [], 0
+    batches = []
+    for p in paths:
+        if chunk and budget + len(p) + 3 > 24000:
+            batches.append(chunk)
+            chunk, budget = [], 0
+        chunk.append(p)
+        budget += len(p) + 3
+    if chunk:
+        batches.append(chunk)
+
+    for batch in batches:
+        try:
+            r = subprocess.run(
+                [sys.executable, MARKER_TOOL, '--json', '--files'] + list(batch),
+                cwd=REPO, capture_output=True, timeout=300)
+        except Exception as exc:
+            raise CouldNotRun('tools/conflict_marker_check.py did not run over a '
+                              'batch of %d path(s): %s' % (len(batch), exc))
+        try:
+            got = json.loads(r.stdout.decode('utf-8', 'replace'))
+        except ValueError:
+            raise CouldNotRun(
+                'tools/conflict_marker_check.py --json did not return JSON (exit '
+                '%d) for a batch of %d path(s). Check A produced no answer for '
+                'that batch and a PARTIAL scan is NOT a pass: %s'
+                % (r.returncode, len(batch),
+                   r.stderr.decode('utf-8', 'replace')[:200]))
+        if got.get('unreadable'):
+            raise CouldNotRun('the marker check could not read %d file(s): %s'
+                              % (len(got['unreadable']), got['unreadable'][:2]))
+        findings += [('MARKERS', h['file'],
+                      'unresolved %s marker at line %d -- %s'
+                      % (h['kind'], h['line'], h['text'].strip()))
+                     for h in got.get('findings', [])]
+    return findings
 
 
 # ── CHECK B: A MECHANISM A DOES NOT SHARE ───────────────────────────────────
