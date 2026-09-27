@@ -225,6 +225,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <div class="nitem" id="nav-sessions" onclick="sfNav('sessions')">Sessions &amp; Calendar</div>
       <div class="nitem" id="nav-accounts" onclick="sfNav('accounts')">Bingo Accounts</div>
       <div class="nitem" id="nav-operators" onclick="sfNav('operators')">Operators</div>
+      <div class="nitem" id="nav-trustees" onclick="sfNav('trustees')">Trustee Audit</div>
       <div class="nsec">Phase 4 &mdash; Disbursement &amp; outreach</div>
       <div class="nitem" id="nav-disbursements" onclick="sfNav('disbursements')">Disbursements</div>
       <div class="nitem" id="nav-donations" onclick="sfNav('donations')">Donations &amp; Donors</div>
@@ -803,10 +804,19 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
           <div style="margin-top:10px"><button class="btn sec" onclick="sfSaveP4Config()">Save threshold</button></div>
           <div id="db-tier"></div>
           <div class="flagbox" style="margin-top:12px"><strong>The threshold is configuration, not a constant.</strong>
-          ORC 2915.101 states it as &ldquo;two hundred fifty thousand dollars <em>or the adjusted
-          amount</em>&rdquo;, and the Attorney General may adjust it for changes in prices as
+          ORC 2915.101 states it as &ldquo;two hundred fifty thousand dollars <em>or a greater
+          amount prescribed by the attorney general</em>&rdquo; to adjust for changes in prices as
           measured by the consumer price index. Hardcoding $250,000 would silently go
-          stale the first time it moved.</div>
+          stale the first time it moved &mdash; <strong>and it had already moved.</strong>
+          <strong>OAC 109:1-4-21, effective 2023-11-01</strong>, replaces the
+          two-hundred-fifty-thousand figure with <strong>three hundred thirty thousand
+          dollars</strong>, which is now the default here. <em>This app defaulted to
+          $250,000 until 2026-09-27.</em> A lower threshold pushes money out of the 25%
+          tier and into the 50% tier, so it computes a requirement that is <strong>too
+          high</strong> &mdash; conservative on the duty, but it can print a shortfall that
+          does not exist, and a treasurer who moves money to close a fabricated gap has
+          been harmed by a number.</div>
+          <div id="db-threshold-flag"></div>
         </div>
 
         <div class="card"><h3>Record a disbursement</h3>
@@ -821,6 +831,10 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
           <div class="grid" style="margin-top:12px">
             <div><label>Ohio charitable purpose (ORC 2915.01(V))</label><select id="db-purpose"></select></div>
             <div><label>National program category</label><select id="db-natcat"></select></div>
+          </div>
+          <div class="grid" style="margin-top:12px">
+            <div><label>Prepared by</label><select id="db-prepared"></select></div>
+            <div><label>Approved by &mdash; a second officer</label><select id="db-approved"></select></div>
           </div>
           <div style="margin-top:12px">
             <button class="btn sec" onclick="sfTestDisbursement()">Test this disbursement</button>
@@ -850,7 +864,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
 
         <div class="card"><h3>Disbursement log</h3>
           <div class="tw"><table>
-            <thead><tr><th>Date</th><th>Recipient</th><th>Amount</th><th>Source</th><th>Game</th><th>Ohio purpose</th><th>National</th><th></th></tr></thead>
+            <thead><tr><th>Date</th><th>Recipient</th><th>Amount</th><th>Source</th><th>Game</th><th>Ohio purpose</th><th>National</th><th>Prepared &rarr; Approved</th><th></th></tr></thead>
             <tbody id="db-tbody"></tbody></table></div>
         </div>
       </div>
@@ -1269,10 +1283,19 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
           uniform statewide price. For beer and wine, <strong>OAC
           4301:1-1-43(J)(2)</strong> prohibits a retail permit holder from purchasing a
           brand from a wholesaler whose exclusive territory does not cover the premises
-          &mdash; so per brand the lodge has exactly one lawful vendor. Retailers may not
-          buy from each other (4301:1-1-46(B)), discounts and rebates are banned both
-          directions (4301:1-1-43(A)(2)), and beer and US-made wine must be sold to a
-          retailer for cash (ORC 4301.24(D)). Buying outside that is a
+          &mdash; so per brand the lodge has exactly one lawful vendor. A lodge cannot buy
+          from another retailer either, though <strong>the rule binds the seller</strong>:
+          OAC 4301:1-1-46(B) says <em>&ldquo;No retail permit holder shall sell any
+          alcoholic beverages to other permit holders or any other persons for the purpose
+          of resale&rdquo;</em> &mdash; so there is no lawful counterparty, rather than a
+          prohibition aimed at the buyer. Discounts and rebates are banned both directions
+          (4301:1-1-43(A)(2)). And beer and US-made wine <strong>may not be bought on
+          CREDIT</strong> &mdash; ORC 4301.24(D) and OAC 4301:1-1-43(H)(2) both say
+          &ldquo;except for cash&rdquo;, and <strong>&ldquo;cash&rdquo; there is a term of
+          art meaning not-on-credit, NOT currency</strong>: OAC 4301-9-01(B) says these
+          purchases <em>&ldquo;may be paid for by cash, check, debit card, credit card,
+          money order, or electronic funds transfer&rdquo;</em> and describes ORC 4301.24
+          as prohibiting purchase &ldquo;on credit&rdquo;. Buying outside that is a
           <strong>first-degree misdemeanor</strong> under ORC 4301.99(C) and reaches the
           permit through ORC 4301.25(A). <strong>The exposure is the lodge's, not
           ours</strong> &mdash; which is exactly why this app refuses the flow rather
@@ -1355,6 +1378,58 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
           (B). <strong>This app does not yet produce a compliant 2915.10 record
           set.</strong></div>
         </div>
+
+        <div class="card"><h3>How current the law in this app is &mdash; re-checked 2026-09-27</h3>
+          <div class="note"><strong>Every statute and rule this app cites was read against
+          codes.ohio.gov, and the date it was read is the only honest expiry.</strong> A
+          compliance app whose citations are undated is a compliance app that cannot tell you
+          when it stopped being right.</div>
+          <div class="tw" style="margin-top:12px"><table>
+            <thead><tr><th>Change</th><th>Status on 2026-09-27</th><th>What this app does about it</th></tr></thead>
+            <tbody>
+            <tr><td><strong>HB 96</strong> (136th General Assembly)</td>
+              <td><span class="tag ok">IN FORCE</span> ORC 2915.01 shows effective
+              <strong>2025-09-30</strong> and lists HB 96 as its amending act</td>
+              <td>The session-hours limits this app enforces come from the (S) definitions as
+              amended. <strong>ORC 4303.17(B)</strong> separately allows a charitable
+              organisation holding a D-4 to serve alcohol in the part of the premises used for
+              bingo &mdash; this app has never blocked that, so there is nothing to change</td></tr>
+            <tr><td><strong>Online raffles</strong></td>
+              <td><span class="tag err">NOT LAW</span> checked twice, two sections:
+              <strong>ORC 2915.01 defines no &ldquo;online raffle&rdquo; or &ldquo;online
+              raffle platform&rdquo;</strong>, and <strong>ORC 2915.092</strong> does not
+              mention them &mdash; not in the version effective 2023-04-07 and
+              <strong>not in the HB 455 version dated 2026-10-09</strong> either</td>
+              <td><strong>Nothing, deliberately.</strong> This was reported to us as in force
+              under HB 96 and it is not. Building a raffle-online flow against a bill that has
+              not passed would put an unlawful path in a compliance app &mdash;
+              <strong>tracked, not built</strong></td></tr>
+            <tr><td><strong>SB 197</strong> &mdash; charitable gaming to the Casino Control
+              Commission on 2027-01-01</td>
+              <td><span class="tag warn">NOT CONFIRMED PASSED</span></td>
+              <td><strong>Nothing, deliberately.</strong> If it is enacted, the regulator's
+              name changes and the quarterly deadlines may. This app says &ldquo;Ohio
+              Attorney General&rdquo; throughout because that is who the licence is from
+              today. <strong>Re-check its status before quoting any deadline for a 2027
+              period</strong></td></tr>
+            <tr><td><strong>ORC 2915.101 distribution threshold</strong></td>
+              <td><span class="tag ok">MOVED, and this app was stale</span></td>
+              <td>The statute prints $250,000 &ldquo;or a greater amount prescribed by the
+              attorney general&rdquo;. <strong>OAC 109:1-4-21, effective 2023-11-01</strong>,
+              replaces it with <strong>$330,000</strong>. This app defaulted to the base
+              figure until 2026-09-27; a device still holding $250,000 is flagged on the
+              Distribution panel and is <strong>not corrected silently</strong></td></tr>
+            <tr><td><strong>ORC 4303.17(A)(1)</strong> &mdash; the D-4 members-only cite used
+              in four places here</td>
+              <td><span class="tag ok">CORRECT</span></td>
+              <td>An external audit questioned whether 4303.17 has an (A)(1) at all.
+              <strong>It does.</strong> Two independent sources &mdash; codes.ohio.gov and
+              law.onecle.com &mdash; print (A)(1), (A)(2), (B) and (C), and the
+              members-only sentence and the officer certification of initiation fee and
+              yearly dues are both inside (A)(1). <strong>No change; the doubt is
+              recorded so nobody re-raises it.</strong></td></tr>
+            </tbody></table></div>
+        </div>
       </div>
 
       <!-- ============ PHASE 3 — ACCOUNTS AND PROFIT CHAIN (3.1, 3.2, 3.4) ============ -->
@@ -1396,7 +1471,32 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
             <div><label>Method</label><select id="ex-method"><option value="check">Check</option><option value="eft">Electronic fund transfer</option></select></div>
           </div>
           <div><label>Description (required for anything other than the canteen line)</label><input id="ex-desc" placeholder="what this expense was"></div>
+          <div class="grid" style="margin-top:10px">
+            <div><label>Prepared by</label><select id="ex-prepared"></select></div>
+            <div><label>Approved by &mdash; a second officer</label><select id="ex-approved"></select></div>
+          </div>
+          <div style="margin-top:10px">
+            <label style="font-weight:normal"><input type="checkbox" id="ex-transfer" onchange="sfRenderTransferField()">
+            This payment is a <strong>TRANSFER to another post account</strong>, not an expense</label>
+          </div>
+          <div id="ex-transfer-wrap" style="display:none"><label>Destination account (outside the segregated account)</label><input id="ex-transfer-to" placeholder="e.g. Post general fund -- name it exactly as the bank does"></div>
           <div style="margin-top:10px"><button class="btn" onclick="sfAddExpense()">Record payment</button></div>
+          <div class="blockbox" style="margin-top:12px"><strong>Two people, and not the
+          same person twice &mdash; added 2026-09-27.</strong> Every Ohio post theft in the
+          2024&ndash;2026 record went through a single-signature path. <strong>Fraternal
+          Order of Eagles No. 213 (Youngstown) lost its licence in November 2025</strong>
+          on findings that included <em>blank checks signed without the two required
+          signatures</em>. <strong>AMVETS Post 24 (Dayton)</strong>: about <strong>$622,000</strong>
+          and 41 months' federal prison, from transfers between accounts and card use that
+          nobody reconciled for two and a half years. <strong>VFW Post 4044</strong>:
+          charitable-account checks with memos like <em>&ldquo;help veterans in need&rdquo;</em>
+          passed review for two years. So this app refuses a payment with no second
+          approver, refuses one where the approver and the preparer are the same officer,
+          and refuses one where the approver is the payee. <strong>What it cannot do, said
+          plainly:</strong> it cannot see a wet signature on a cheque, it cannot know
+          whether the two people were in the same room, and it does not claim the payment
+          was authorised &mdash; only that two named active officers are on the record and
+          that they are different people.</div>
           <div class="flagbox" style="margin-top:12px"><strong>Only ORC 2915.01(GG)(11) has been read against primary source in this build.</strong>
           That division permits <em>"expenses for maintaining and operating a charitable
           organization's facilities, including, but not limited to, a post home, club
@@ -1410,13 +1510,26 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
           to be drawn on this same account, so they will look like a payment &mdash; but
           a distribution is <em>where net profit went</em>, not an expense subtracted in
           arriving at it. Recording one here understates net profit and would feed a
-          wrong figure to the ORC 2915.101 tiered-distribution calculation. Disbursement
-          is Phase 4 and is not built; there is deliberately no category for it yet.</div>
+          wrong figure to the ORC 2915.101 tiered-distribution calculation. <strong>Record
+          it in the Distribution panel instead</strong>, which is built and which applies
+          the ORC 2915.101 tiers and the ORC 2915.01(V) purpose list. <em>Until 2026-09-27
+          this paragraph told you disbursement had not been built yet &mdash; weeks after it
+          had been. There is still deliberately no disbursement category on THIS form, which
+          is the part that was always true.</em></div>
+          <!-- THE CORRECTION NOTE DELIBERATELY DOES NOT QUOTE THE OLD SENTENCE.
+               tests/sairnfreedom_segregation_of_duties.js arm D1 asserts the
+               string "Phase 4 and is not built" is absent from the RENDERED
+               copy, and the note above is rendered, not a comment -- so quoting
+               it verbatim made the arm red against a file that was correct. The
+               arm was kept strict and the prose was reworded, rather than
+               teaching the arm to tell an assertion from a citation of one: a
+               literal-absence arm that has to make that distinction is the arm
+               that will eventually get it wrong in the passing direction. -->
         </div>
 
         <div class="card"><h3>Payments drawn on gaming accounts</h3>
           <div class="tw"><table>
-            <thead><tr><th>Date</th><th>Account</th><th>Payee</th><th>Category</th><th>Method</th><th>Amount</th><th></th></tr></thead>
+            <thead><tr><th>Date</th><th>Account</th><th>Payee</th><th>Category</th><th>Prepared &rarr; Approved</th><th>Method</th><th>Amount</th><th></th></tr></thead>
             <tbody id="ex-tbody"></tbody></table></div>
         </div>
 
@@ -1456,6 +1569,62 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
           <div class="tw"><table>
             <thead><tr><th>Name</th><th>Age</th><th>Eligibility</th><th>Reason</th><th></th></tr></thead>
             <tbody id="op-tbody"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- ============ TRUSTEE AUDIT (added 2026-09-27) ============ -->
+      <div class="panel" id="panel-trustees">
+        <div class="ph"><div><div class="ptitle">Trustee Audit</div>
+          <div class="pdesc">The quarterly audit someone other than the finance officer has to do &mdash; and the packet they need to do it</div></div></div>
+        <div id="tr-flags"></div>
+        <div class="kpi-row" id="tr-kpis"></div>
+
+        <div class="card"><h3>The packet</h3>
+          <div id="tr-packet"></div>
+          <div class="note" style="margin-top:12px">Everything above is computed from what
+          this app already holds. It is assembled here so a trustee is not reading five
+          panels and a bank statement to answer one question &mdash; which is what the
+          spreadsheets described in the AG's own enforcement notices were doing.</div>
+        </div>
+
+        <div class="card"><h3>Record a completed audit</h3>
+          <div class="grid">
+            <div><label>Quarter audited</label><select id="tr-quarter"></select></div>
+            <div><label>Date completed</label><input type="date" id="tr-date"></div>
+            <div><label>Prepared by &mdash; a trustee, not the finance officer</label><select id="tr-by"></select></div>
+          </div>
+          <div class="grid" style="margin-top:10px">
+            <div><label>Fidelity bond amount</label><input type="number" id="tr-bond" min="0" step="1"></div>
+            <div><label>Bond expires</label><input type="date" id="tr-bond-exp"></div>
+          </div>
+          <div style="margin-top:10px"><label>What the trustees actually counted and compared (required)</label><input id="tr-notes" placeholder="e.g. reconciled both gaming accounts to the July bank statements; counted the canteen till"></div>
+          <div style="margin-top:10px">
+            <button class="btn sec" onclick="sfTestTrusteeAudit()">Test this audit</button>
+            <button class="btn" onclick="sfRecordTrusteeAudit()">Record audit</button>
+          </div>
+          <div id="tr-testout"></div>
+          <div class="blockbox" style="margin-top:12px"><strong>The finance officer may not
+          prepare this, and that is the whole control.</strong> The VFW's own Manual of
+          Procedure requires the trustees to audit <strong>quarterly</strong>, makes them
+          <strong>individually liable</strong>, says the <strong>Quartermaster must not
+          prepare the audit</strong>, and warns that a <strong>missed audit can void the
+          bond</strong>. <strong>Fraternal Order of Eagles No. 213</strong> was revoked in
+          November 2025 after an absent president &ldquo;led to theft&rdquo;. So this app
+          refuses an audit prepared by whoever holds the finance capability, and refuses
+          one prepared by somebody who is not a trustee at all.</div>
+          <div class="flagbox" style="margin-top:12px"><strong>This record is held on this
+          device only.</strong> Every other collection in this app syncs to the server; this
+          one cannot yet, because registering a new synced resource needs an edit to
+          <code>api/sd-data.js</code>, which another session holds. <strong>A trustee audit
+          is evidence, and evidence in one browser is one cleared cache from gone</strong>
+          &mdash; so print or keep the packet after each audit until the server leg lands.
+          Tracked as an open-work row rather than left as a surprise.</div>
+        </div>
+
+        <div class="card"><h3>Audits recorded</h3>
+          <div class="tw"><table>
+            <thead><tr><th>Quarter</th><th>Completed</th><th>Prepared by</th><th>Bond</th><th>Bond expires</th><th>What was counted</th><th></th></tr></thead>
+            <tbody id="tr-tbody"></tbody></table></div>
         </div>
       </div>
     </main>
@@ -2106,7 +2275,7 @@ function sfHydrateAll(){
    confirmed for Elks only. */
 var ORG_TYPES = [
   { id:'legion',  label:'American Legion', statutory:'veterans',  titles:{ 'post.govern':'Commander', 'post.govern.deputy':'Vice Commander', 'records.write':'Adjutant', 'finance.write':'Finance Officer', 'member.admit':'Adjutant', 'services.refer':'Service Officer', 'legal.review':'Judge Advocate', 'history.write':'Historian', 'ceremonial.manage':'Sergeant-at-Arms', 'chaplain.pastoral':'Chaplain' } },
-  { id:'vfw',     label:'VFW',             statutory:'veterans',  titles:{ 'post.govern':'Commander', 'post.govern.deputy':'Senior Vice Commander', 'records.write':'Adjutant', 'finance.write':'Quartermaster', 'member.admit':'Adjutant', 'services.refer':'Service Officer', 'legal.review':'Judge Advocate', 'history.write':'Historian', 'ceremonial.manage':'Sergeant-at-Arms', 'chaplain.pastoral':'Chaplain' } },
+  { id:'vfw',     label:'VFW',             statutory:'veterans',  titles:{ 'post.govern':'Commander', 'post.govern.deputy':'Senior Vice Commander', 'records.write':'Adjutant', 'finance.write':'Quartermaster', 'member.admit':'Adjutant', 'services.refer':'Service Officer', 'legal.review':'Judge Advocate', 'history.write':'Historian', 'ceremonial.manage':'Sergeant-at-Arms', 'chaplain.pastoral':'Chaplain', 'trustee.audit':'Trustee' } },
   { id:'elks',    label:'Elks',            statutory:'fraternal', titles:{ 'post.govern':'Exalted Ruler', 'post.govern.deputy':'Leading Knight', 'records.write':'Secretary', 'finance.write':'Treasurer', 'member.admit':'Secretary', 'services.refer':'Service Officer', 'legal.review':'Esquire', 'history.write':'Historian', 'ceremonial.manage':'Tiler', 'chaplain.pastoral':'Chaplain' } },
   { id:'moose',   label:'Moose',           statutory:'fraternal', titles:{ 'post.govern':'Governor', 'post.govern.deputy':'Junior Governor', 'records.write':'Administrator', 'finance.write':'Treasurer', 'member.admit':'Administrator', 'services.refer':'Service Officer', 'legal.review':'Prelate', 'history.write':'Historian', 'ceremonial.manage':'Sergeant-at-Arms', 'chaplain.pastoral':'Chaplain' } },
   { id:'eagles',  label:'Eagles',          statutory:'fraternal', titles:{ 'post.govern':'Worthy President', 'post.govern.deputy':'Worthy Vice President', 'records.write':'Worthy Secretary', 'finance.write':'Worthy Treasurer', 'member.admit':'Worthy Secretary', 'services.refer':'Service Officer', 'legal.review':'Worthy Conductor', 'history.write':'Historian', 'ceremonial.manage':'Inside Guard', 'chaplain.pastoral':'Worthy Chaplain' } }
@@ -2119,6 +2288,16 @@ var CAPABILITIES = [
   { id:'post.govern.deputy', label:'Deputy governance',          sole:false, provisioning:true },
   { id:'records.write',      label:'Records and minutes',        sole:false, provisioning:false },
   { id:'finance.write',      label:'Finance (bonded)',           sole:false, provisioning:false },
+  /* ADDED 2026-09-27 for the trustee audit. DELIBERATELY HAS NO PER-ORG TITLE
+     EXCEPT VFW'S. The VFW Manual of Procedure is the one source read for this:
+     trustees audit QUARTERLY, they are individually liable, the Quartermaster
+     must not prepare the audit, and a missed audit can void the bond. So `vfw`
+     gets 'Trustee' and nothing else does -- titleFor() falls back to this
+     label, which is honest for an Elks or Moose post rather than an invented
+     title that reads as researched. Filling the other four by analogy is
+     exactly the per-app role-vocabulary guess this platform's own rules
+     forbid. */
+  { id:'trustee.audit',      label:'Trustee / audit committee',  sole:false, provisioning:false },
   { id:'member.admit',       label:'Admit members',              sole:false, provisioning:false },
   { id:'services.refer',     label:'Service officer (referral only)', sole:false, provisioning:false },
   { id:'legal.review',       label:'Bylaws and disputes',        sole:false, provisioning:false },
@@ -3001,11 +3180,14 @@ function sfRenderWaivers(){
    ORC 2915.09(C)(6): no session between 2 a.m. and 10 a.m., with instant
      bingo sales permitted to begin at 9 a.m. for a 10 a.m. session.
 
-   THESE ARE CONSTANTS AND THE $250,000 DISTRIBUTION THRESHOLD IS NOT.
-   2915.101 says "or adjusted amount" and so must be configuration when
-   Phase 4 builds it; 2915.09 carries no such adjustment language for these,
-   so hardcoding them here is correct rather than lazy. Noted because the two
-   look like the same kind of number and are not. */
+   THESE ARE CONSTANTS AND THE 2915.101 DISTRIBUTION THRESHOLD IS NOT.
+   2915.101 says "or a greater amount prescribed by the attorney general" and so
+   is configuration -- Phase 4 built it that way, and the AG has in fact moved it
+   to $330,000 (OAC 109:1-4-21, eff. 2023-11-01); 2915.09 carries no such
+   adjustment language for the numbers below, so hardcoding them here is correct
+   rather than lazy. Noted because the two look like the same kind of number and
+   are not -- and the threshold's own default was stale from 2023-11-01 until
+   2026-09-27, which is the cost of that resemblance. */
 var MAX_CORE_MINUTES = 300;
 var MAX_INSTANT_WING_MINUTES = 120;
 var MAX_SESSIONS_PER_7_DAYS = 3;
@@ -3408,6 +3590,79 @@ function sfCloseAccount(id){
   sfRenderAll();
 }
 
+/* ════════════════════════════════════════════════════════════════════════════
+   TWO-PERSON APPROVAL ON MONEY LEAVING A GAMING ACCOUNT -- NEW 2026-09-27
+   ════════════════════════════════════════════════════════════════════════════
+   WHY THIS IS A REFUSAL AND NOT A REMINDER. Ohio's 2024-2026 record has no post
+   penalised because of software. Every theft was a segregation-of-duties
+   failure, and each one ran for years:
+
+     FOE No. 213, Youngstown -- licence REVOKED, Nov 2025. The findings included
+       "blank checks signed without the two required signatures".
+     AMVETS Post 24, Dayton -- about $622,000, 41 months federal prison. The
+       commander moved money out of the fundraising and scholarship accounts and
+       made 1,900+ card and ATM transactions over about 2.5 years.
+     VFW Post 4044 -- $35,007.30. Charitable-account cheques with memos like
+       "help veterans in need" passed review for about two years.
+     Miamisburg Moose -- $119,420.67 restitution. No board review of card
+       statements or payroll changes.
+
+   THE PURPOSE TAG THE APP ALREADY HAD STOPS THE WRONG CATEGORY. It cannot stop
+   a false memo, which is exactly what VFW 4044 was. A second named approver is
+   the control the FOE 213 order says was bypassed.
+
+   THREE REFUSALS AND NO MORE, because each one is defensible from the record:
+     1. no approver named;
+     2. the approver IS the preparer (FOE 213: one person, two signature lines);
+     3. the approver IS the payee (Miamisburg Moose: self-directed money).
+
+   WHAT IT DOES NOT DO, stated rather than implied: it cannot see a wet
+   signature, cannot know the two officers were in the same room, and does not
+   assert the payment was authorised. It asserts that two different named ACTIVE
+   officers are on the record. That is a real control and a small one.
+
+   NOT RETROACTIVE, and it must not be. Payments recorded before today have no
+   preparer or approver, and this app does not invent one -- a backfilled
+   approval is a forged control, and it would be worse than the gap. They render
+   as "no approval recorded (pre-2026-09-27)" and the trustee packet counts them
+   separately rather than folding them into either total. */
+function activeOfficerNames(){
+  return getOfficers().filter(function(o){ return o.active; }).map(function(o){ return o.name; });
+}
+function isActiveOfficer(name){
+  return activeOfficerNames().indexOf(String(name||''))>=0;
+}
+/* Shared by the payment path and the disbursement path -- one implementation,
+   because two copies of a dual-approval rule is two rules that can drift, and
+   the whole subject here is a control nobody was checking. */
+function dualApprovalRefusals(preparedBy, approvedBy, payee, whatLabel){
+  var out=[];
+  var p=String(preparedBy||'').trim(), a=String(approvedBy||'').trim();
+  if(!p){
+    out.push({ cite:'Segregation of duties', fatal:true,
+      text:'Name the officer who prepared this '+whatLabel+'. ORC 2915.10(A)(2) requires the record; who prepared it is what makes a second approver mean anything.' });
+  } else if(!isActiveOfficer(p)){
+    out.push({ cite:'Segregation of duties', fatal:true,
+      text:'"'+p+'" is not an active officer of this post. FOE No. 213 lost its licence in part because an officer NOT ON THE APPLICATION managed bingo.' });
+  }
+  if(!a){
+    out.push({ cite:'Segregation of duties', fatal:true,
+      text:'A second officer must approve this '+whatLabel+'. Fraternal Order of Eagles No. 213 was revoked in November 2025 on findings that included blank checks signed without the two required signatures.' });
+  } else if(!isActiveOfficer(a)){
+    out.push({ cite:'Segregation of duties', fatal:true,
+      text:'"'+a+'" is not an active officer of this post, so the approval names nobody who can be held to it.' });
+  }
+  if(p && a && p===a){
+    out.push({ cite:'Segregation of duties', fatal:true,
+      text:'The approver and the preparer are the same officer. One person on both lines is the control FOE No. 213 bypassed -- it is not a second signature, it is the same signature twice.' });
+  }
+  if(a && String(payee||'').trim() && a.toLowerCase()===String(payee).trim().toLowerCase()){
+    out.push({ cite:'Segregation of duties', fatal:true,
+      text:'The approver is the payee. The Miamisburg Moose administrator\'s card spending and unauthorised raises ran because nobody outside the transaction reviewed it.' });
+  }
+  return out;
+}
+
 function sfAddExpense(){
   var accId=$('ex-account').value;
   if(!accId){ toast('Select the account this is drawn on','err'); return; }
@@ -3428,18 +3683,353 @@ function sfAddExpense(){
     toast('Refused: '+money(amount)+' exceeds the '+money(bal)+' in that account. 2915.10(C) permits payment only from the segregated account.','err');
     return;
   }
+  var isTransfer = !!($('ex-transfer') && $('ex-transfer').checked);
+  var transferTo = ($('ex-transfer-to') && $('ex-transfer-to').value || '').trim();
+  /* A TRANSFER IS NOT AN EXPENSE, and the statutory expense limb is the one
+     thing it cannot be. (GG)(11) permits facility and canteen OPERATING cost;
+     money moved to the post's general fund is not an operating cost, and
+     labelling it as one is how $622,000 left AMVETS Post 24 looking ordinary. */
+  if(isTransfer){
+    if(!transferTo){
+      toast('Refused: name the destination account. ORC 2915.10(C) devotes this account exclusively to the session -- a transfer out is the exception, and an unnamed destination is not a record.','err');
+      return;
+    }
+    if(c && c.validated){
+      toast('Refused: a transfer to another account is not a facility or canteen operating cost under ORC 2915.01(GG)(11). Record it as "Other expense" so it is never counted as a validated statutory limb.','err');
+      return;
+    }
+  }
+  var preparedBy=($('ex-prepared')?$('ex-prepared').value:'');
+  var approvedBy=($('ex-approved')?$('ex-approved').value:'');
+  var dual=dualApprovalRefusals(preparedBy, approvedBy, payee, 'payment');
+  if(dual.length){
+    toast('Refused -- '+dual[0].text,'err');
+    return;
+  }
   var list=getGamingExpenses();
   list.push({ id:'ex'+Date.now(), accountId:accId, date:$('ex-date').value||localToday(), payee:payee,
-              amount:amount, category:cat, method:$('ex-method').value, description:desc });
+              amount:amount, category:cat, method:$('ex-method').value, description:desc,
+              preparedBy:String(preparedBy).trim(), approvedBy:String(approvedBy).trim(),
+              transfer:isTransfer, transferTo:isTransfer?transferTo:'' });
   st(K_GEXPENSES,list);
   $('ex-payee').value=''; $('ex-amount').value=''; $('ex-desc').value='';
-  toast('Payment recorded');
+  if($('ex-transfer')) $('ex-transfer').checked=false;
+  if($('ex-transfer-to')) $('ex-transfer-to').value='';
+  sfRenderTransferField();
+  toast(isTransfer ? 'Transfer recorded -- it is now a standing exception on this panel'
+                   : 'Payment recorded');
   sfRenderAll();
+}
+function sfRenderTransferField(){
+  var w=$('ex-transfer-wrap'), cb=$('ex-transfer');
+  if(w) w.style.display = (cb && cb.checked) ? '' : 'none';
+}
+/* One officer picker builder for every approval slot. The EMPTY option is
+   deliberate and must stay: a picker that defaults to the first officer puts a
+   name on a record nobody chose, which is a fabricated approval and worse than
+   a refusal. The selection is PRESERVED across re-render so a validation refusal
+   does not silently drop what the user picked. */
+function sfFillOfficerSelect(id){
+  var s=$(id); if(!s) return;
+  var p=getPost(), offs=getOfficers().filter(function(o){ return o.active; });
+  var prev=s.value;
+  s.innerHTML = offs.length
+    ? '<option value="">Select an officer</option>'+offs.map(function(o){
+        return '<option value="'+H(o.name)+'">'+H(o.name)+' &mdash; '+H(titleFor(o.capability,p.orgType))+'</option>'; }).join('')
+    : '<option value="">No active officers &mdash; assign officers first</option>';
+  if(prev) s.value=prev;
 }
 function sfDeleteExpense(id){
   st(K_GEXPENSES, getGamingExpenses().filter(function(e){ return e.id!==id; }));
   toast('Payment removed');
   sfRenderAll();
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   THE TRUSTEE AUDIT -- NEW 2026-09-27
+   ════════════════════════════════════════════════════════════════════════════
+   ONE SOURCE, READ ONCE, AND IT IS NOT A STATUTE. The VFW Manual of Procedure is
+   what this is built from: trustees audit QUARTERLY, they are INDIVIDUALLY
+   LIABLE, the QUARTERMASTER MUST NOT PREPARE the audit, and a MISSED AUDIT CAN
+   VOID THE BOND. That is an order's internal governance document, not Ohio law,
+   and the refusals below say so rather than dressing them in a Chapter 2915
+   citation they do not have.
+
+   WHY IT EARNS A PANEL ANYWAY. Ohio's 2024-2026 record has no post penalised
+   because of software; every theft was a segregation-of-duties failure that ran
+   for years. FOE No. 213 was revoked in November 2025 after an absent president
+   "led to theft". A quarterly audit by somebody who did not write the cheques is
+   the control the losses went around.
+
+   THE PACKET IS THE POINT, not the record. A trustee reading five panels and a
+   bank statement is the spreadsheet the enforcement notices describe. The packet
+   assembles what this app already holds -- balances, the distribution position,
+   every transfer out, every payment with no second approver -- and states the
+   ONE number it cannot know: what the bank says. The variance field is where the
+   trustee puts that, and a variance is the finding, not the app's guess at one.
+
+   NOT SERVER-SYNCED, and that is a limitation rather than a design: registering
+   a new synced resource needs api/sd-data.js (resource allow-list, app map, and
+   the id-column map), which is held by another session. Flagged in the panel and
+   in the open-work index rather than left for somebody to discover after a
+   cleared cache. */
+var K_TRUSTEE_AUDITS='sf_trustee_audits';
+function getTrusteeAudits(){ return ld(K_TRUSTEE_AUDITS, []); }
+/* Quarters are the VFW's fixed quarterly cadence, expressed as the calendar
+   quarters the Ohio AG's own instant-bingo reporting already uses on this panel
+   set, so a trustee is not reconciling two different quarter definitions. */
+function quarterOf(dateStr){
+  var d=parseLocalDate(dateStr);
+  if(!d) return null;
+  return d.getFullYear()+'-Q'+(Math.floor(d.getMonth()/3)+1);
+}
+function recentQuarters(n){
+  var out=[], d=parseLocalDate(localToday());
+  if(!d) return out;
+  var y=d.getFullYear(), q=Math.floor(d.getMonth()/3)+1;
+  for(var i=0;i<n;i++){
+    out.push(y+'-Q'+q);
+    q--; if(q<1){ q=4; y--; }
+  }
+  return out;
+}
+function officerHolds(name, capId){
+  return getOfficers().filter(function(o){
+    return o.active && o.name===name && o.capability===capId; }).length>0;
+}
+function readTrusteeForm(){
+  return { quarter:($('tr-quarter')?$('tr-quarter').value:''),
+           date:($('tr-date')?$('tr-date').value:''),
+           by:($('tr-by')?$('tr-by').value:''),
+           bond:Number(($('tr-bond')?$('tr-bond').value:0)||0),
+           bondExpires:($('tr-bond-exp')?$('tr-bond-exp').value:''),
+           notes:(($('tr-notes')?$('tr-notes').value:'')||'').trim() };
+}
+function trusteeAuditRefusals(a){
+  var out=[], p=getPost();
+  if(!a.quarter) out.push({ cite:'input', text:'Select the quarter this audit covers.' });
+  if(!a.date) out.push({ cite:'input', text:'A completion date is required -- a quarterly cadence cannot be measured without one.' });
+  if(!a.notes){
+    out.push({ cite:'VFW Manual of Procedure', fatal:true,
+      text:'Say what the trustees actually counted and compared. An audit record with no content is the shape American Legion Post 366 settled over -- "revised internal controls" was the remedy precisely because the records said nothing.' });
+  }
+  var by=String(a.by||'').trim();
+  if(!by){
+    out.push({ cite:'VFW Manual of Procedure', fatal:true,
+      text:'Name the trustee who prepared this audit. The trustees are individually liable for it, which requires a name.' });
+  } else {
+    if(!isActiveOfficer(by)){
+      out.push({ cite:'VFW Manual of Procedure', fatal:true,
+        text:'"'+by+'" is not an active officer of this post.' });
+    } else {
+      if(officerHolds(by,'finance.write')){
+        out.push({ cite:'VFW Manual of Procedure', fatal:true,
+          text:'"'+by+'" holds '+titleFor('finance.write',p.orgType)+', and the finance officer must not prepare the audit of their own books. This is the separation the Manual of Procedure names explicitly, and it is the control every Ohio post theft in the 2024-2026 record went around.' });
+      }
+      if(!officerHolds(by,'trustee.audit')){
+        out.push({ cite:'VFW Manual of Procedure', fatal:true,
+          text:'"'+by+'" is not assigned the '+titleFor('trustee.audit',p.orgType)+' capability. Assign it under Officers first -- an audit signed by somebody with no audit role is not an independent audit, it is a second copy of the same signature.' });
+      }
+    }
+  }
+  /* THE BOND IS A REFUSAL ONLY WHEN IT IS EXPIRED ON THE AUDIT DATE, not when
+     it is merely absent: a post may genuinely not have the figure to hand on the
+     day, and refusing the whole record for that would push the audit out of the
+     app. An ABSENT bond is a flag on the packet instead, which is visible and
+     does not destroy the record. */
+  if(a.bondExpires && a.date){
+    var exp=parseLocalDate(a.bondExpires), on=parseLocalDate(a.date);
+    if(exp && on && exp<on){
+      out.push({ cite:'VFW Manual of Procedure', fatal:true,
+        text:'The bond expired on '+a.bondExpires+', before the audit date of '+a.date+'. The Manual of Procedure warns that a missed audit can VOID the bond; an audit certifying a period the bond did not cover records the opposite of reassurance.' });
+    }
+  }
+  return out;
+}
+function sfTestTrusteeAudit(){
+  var box=$('tr-testout'); if(!box) return;
+  box.innerHTML='<div style="margin-top:12px">'+refusalHtml(trusteeAuditRefusals(readTrusteeForm()),'Passes every check this app implements. That is not an opinion on whether the audit was done well.')+'</div>';
+}
+function sfRecordTrusteeAudit(){
+  var a=readTrusteeForm(), refusals=trusteeAuditRefusals(a), box=$('tr-testout');
+  if(refusals.length){
+    if(box) box.innerHTML='<div style="margin-top:12px">'+refusalHtml(refusals,'')+'</div>';
+    toast('Refused -- '+refusals.length+' check(s) failed','err');
+    return;
+  }
+  var list=getTrusteeAudits();
+  list.push({ id:'tr'+Date.now(), quarter:a.quarter, date:a.date, by:a.by,
+              bond:a.bond, bondExpires:a.bondExpires, notes:a.notes });
+  st(K_TRUSTEE_AUDITS,list);
+  if($('tr-notes')) $('tr-notes').value='';
+  if(box) box.innerHTML='';
+  toast('Audit recorded');
+  sfRenderAll();
+}
+function sfDeleteTrusteeAudit(id){
+  st(K_TRUSTEE_AUDITS, getTrusteeAudits().filter(function(t){ return t.id!==id; }));
+  toast('Audit record removed');
+  sfRenderAll();
+}
+
+function sfRenderTrustees(){
+  var p=getPost(), audits=getTrusteeAudits(), accs=getAccounts();
+  var qs=$('tr-quarter');
+  if(qs){
+    var prevq=qs.value;
+    qs.innerHTML=recentQuarters(8).map(function(q){ return '<option value="'+H(q)+'">'+H(q)+'</option>'; }).join('');
+    if(prevq) qs.value=prevq;
+  }
+  if($('tr-date') && !$('tr-date').value) $('tr-date').value=localToday();
+  sfFillOfficerSelect('tr-by');
+
+  /* Carry the last recorded bond forward into the form as a DEFAULT only -- it
+     is the figure most likely still true, and retyping it every quarter is how
+     it stops being recorded at all. It is prefilled, never assumed: the record
+     stores whatever is in the field at the moment of recording. */
+  var last=audits.length?audits[audits.length-1]:null;
+  if(last && $('tr-bond') && !$('tr-bond').value) $('tr-bond').value=last.bond||'';
+  if(last && $('tr-bond-exp') && !$('tr-bond-exp').value) $('tr-bond-exp').value=last.bondExpires||'';
+
+  var tb=$('tr-tbody');
+  if(tb){
+    tb.innerHTML = audits.length
+      ? audits.slice().reverse().map(function(t){
+          var exp=parseLocalDate(t.bondExpires), today=parseLocalDate(localToday());
+          var bondTag = !t.bondExpires ? '<span class="tag warn">not recorded</span>'
+            : (exp && today && exp<today ? '<span class="tag err">EXPIRED</span>' : '<span class="tag ok">current</span>');
+          return '<tr><td>'+H(t.quarter)+'</td><td>'+H(t.date)+'</td><td>'+H(t.by)+'</td>'+
+            '<td>'+(t.bond?money(t.bond):'<span class="tag warn">not recorded</span>')+'</td>'+
+            '<td>'+H(t.bondExpires||'--')+' '+bondTag+'</td><td>'+H(t.notes)+'</td>'+
+            '<td><button class="btn sm sec" onclick="sfDeleteTrusteeAudit(\''+H(t.id)+'\')">Remove</button></td></tr>';
+        }).join('')
+      : '<tr><td colspan="7" class="empty">No trustee audit recorded. The VFW Manual of Procedure requires one every quarter.</td></tr>';
+  }
+
+  /* ── THE PACKET ─────────────────────────────────────────────────────────
+     Assembled from what the app holds, with the one thing it cannot know
+     stated as a gap rather than filled with a computed figure. */
+  var exps=getGamingExpenses();
+  var transfers=exps.filter(function(e){ return e.transfer; });
+  var unapproved=exps.filter(function(e){ return !e.preparedBy && !e.approvedBy; });
+  var selfApproved=exps.filter(function(e){
+    return e.preparedBy && e.approvedBy && e.preparedBy===e.approvedBy; });
+  var disb=getDisbursements();
+  var disbUnapproved=disb.filter(function(d){ return !d.preparedBy && !d.approvedBy; });
+  var cfg=getP4Config();
+  /* The distribution POSITION, computed the same way the Distribution panel does
+     -- through netProfitByGame() and tieredRequirement(), never a second
+     arithmetic path. A trustee packet holding its own copy of the tier maths is
+     two engines that can disagree, and the disagreement would surface as an
+     audit finding against a post that had done nothing wrong. */
+  var yr=String(parseLocalDate(localToday()) ? parseLocalDate(localToday()).getFullYear() : '');
+  var np=netProfitByGame(yr);
+  var req=tieredRequirement(np.tieredRegimeNet, cfg.threshold);
+  var distributedTiered=disb.filter(function(d){
+    return d.source==='gaming_net_profit'
+      && TIERED_REGIME_GAMES.indexOf(d.game)>=0
+      && String(d.date||'').slice(0,4)===yr;
+  }).reduce(function(s,d){ return s+Number(d.amount||0); },0);
+  var shortfall=req.required-distributedTiered;
+
+  var pk=$('tr-packet');
+  if(pk){
+    var rows = accs.length
+      ? accs.map(function(a){
+          var dep=accountDeposits(a.id), pay=accountPayments(a.id);
+          return '<tr><td>'+H(a.name)+'</td><td>'+H((accountKind(a.kind)||{}).label||a.kind)+'</td>'+
+            '<td style="text-align:right">'+money(dep)+'</td><td style="text-align:right">'+money(pay)+'</td>'+
+            '<td style="text-align:right"><strong>'+money(dep-pay)+'</strong></td></tr>';
+        }).join('')
+      : '<tr><td colspan="5" class="empty">No gaming account exists. ORC 2915.10(C) requires one before any session may be held.</td></tr>';
+    pk.innerHTML =
+      '<div class="tw"><table><thead><tr><th>Account</th><th>Kind</th><th>Deposited</th>'+
+      '<th>Paid out</th><th>This app says the balance is</th></tr></thead><tbody>'+rows+
+      '</tbody></table></div>'+
+      '<div class="blockbox" style="margin-top:12px"><strong>The one number this app cannot '+
+      'know is the bank\'s.</strong> Every figure above is what THIS APP was told. A trustee '+
+      'audit is the comparison against the statement, and this app has no bank feed &mdash; so '+
+      'it does not compute a variance and does not print a zero for one. Put what the '+
+      'statement says in the notes field below. <strong>A variance is the finding; a '+
+      'fabricated zero would be the opposite of one.</strong></div>'+
+      '<div class="tw" style="margin-top:14px"><table><tbody>'+
+      '<tr><td>Transfers OUT of a gaming account &mdash; the ORC 2915.10(C) exception</td>'+
+      '<td style="text-align:right"><strong>'+transfers.length+'</strong> / '+
+        money(transfers.reduce(function(s,e){ return s+Number(e.amount||0); },0))+'</td></tr>'+
+      '<tr><td>Payments with NO second approver (recorded before 2026-09-27)</td>'+
+      '<td style="text-align:right"><strong>'+unapproved.length+'</strong></td></tr>'+
+      '<tr><td>Payments where preparer and approver are the SAME officer</td>'+
+      '<td style="text-align:right"><strong>'+selfApproved.length+'</strong>'+
+        (selfApproved.length?' <span class="tag err">refused since 2026-09-27 -- these predate it</span>':'')+'</td></tr>'+
+      '<tr><td>Disbursements with NO second approver</td>'+
+      '<td style="text-align:right"><strong>'+disbUnapproved.length+'</strong></td></tr>'+
+      '<tr><td>ORC 2915.101 threshold this device is using</td>'+
+      '<td style="text-align:right"><strong>'+money(cfg.threshold)+'</strong>'+
+        (p4ThresholdStale()!==null ? ' <span class="tag err">below the AG\'s adjusted '+money(P4_AG_ADJUSTED_THRESHOLD)+'</span>' : ' <span class="tag ok">at or above the AG\'s adjusted amount</span>')+'</td></tr>'+
+      '<tr><td>ORC 2915.101 required distribution for '+H(yr)+' &mdash; and what has gone out</td>'+
+      '<td style="text-align:right"><strong>'+money(req.required)+'</strong> required / '+
+        money(distributedTiered)+' distributed'+
+        (shortfall>0.005 ? ' <span class="tag err">short by '+money(shortfall)+'</span>'
+                         : ' <span class="tag ok">no shortfall</span>')+'</td></tr>'+
+      '</tbody></table></div>'+
+      '<div class="flagbox" style="margin-top:12px"><strong>Underpaying the contracted charity '+
+      'is the Ohio AG\'s lead charitable-bingo issue, which is why it is on this packet.</strong> '+
+      'American Legion No. 243 (Galion) drew a notice of intent to DENY its 2026 licence over a '+
+      '$23,945.70 shortfall. FOE No. 316 (Salem) paid a $2,500 penalty and repaid $106,529.91 '+
+      'over 24 months after its application misstated what the charity received. '+
+      '<strong>ORC 2915.101 measures this per CALENDAR YEAR and sets no deadline inside the '+
+      'year</strong>, so a shortfall here is a running position rather than a missed date &mdash; '+
+      'and the figure is computed through the same <code>tieredRequirement()</code> the '+
+      'Distribution panel uses, not a second copy of the tier maths.</div>';
+  }
+
+  var k=$('tr-kpis');
+  if(k){
+    var qlist=recentQuarters(4), done={};
+    audits.forEach(function(t){ done[t.quarter]=1; });
+    var missing=qlist.filter(function(q){ return !done[q]; });
+    k.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Audits recorded</div><div class="kpi-value">'+audits.length+'</div><div class="kpi-change">Quarterly cadence</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Last four quarters missing</div><div class="kpi-value">'+missing.length+'</div><div class="kpi-change">'+(missing.length?H(missing.join(', ')):'none')+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Transfers out flagged</div><div class="kpi-value">'+transfers.length+'</div><div class="kpi-change">ORC 2915.10(C) exception</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Trustees assigned</div><div class="kpi-value">'+getOfficers().filter(function(o){ return o.active && o.capability==='trustee.audit'; }).length+'</div><div class="kpi-change">'+H(titleFor('trustee.audit',p.orgType))+'</div></div>';
+  }
+
+  var fl=$('tr-flags');
+  if(fl){
+    var out='';
+    var trustees=getOfficers().filter(function(o){ return o.active && o.capability==='trustee.audit'; });
+    if(!trustees.length){
+      out += '<div class="blockbox"><strong>No officer holds '+H(titleFor('trustee.audit',p.orgType))+
+        '.</strong> Nobody can prepare an audit until one is assigned under Officers, and this app '+
+        'will refuse every attempt until then rather than accept one from whoever is to hand &mdash; '+
+        'which is how the audit stops being independent.</div>';
+    }
+    var q4=recentQuarters(4), seen={};
+    audits.forEach(function(t){ seen[t.quarter]=t; });
+    var missingQ=q4.filter(function(q){ return !seen[q]; });
+    if(missingQ.length){
+      out += '<div class="flagbox"><strong>No recorded audit for '+H(missingQ.join(', '))+
+        '.</strong> The VFW Manual of Procedure sets a quarterly cadence and warns that a missed '+
+        'audit can VOID THE BOND. <strong>This counts records in this app, not audits in the '+
+        'world</strong> &mdash; an audit that happened and was never entered reads identically to '+
+        'one that did not happen, and this app cannot tell them apart.</div>';
+    }
+    var lastA=audits.length?audits[audits.length-1]:null;
+    if(lastA && !lastA.bond){
+      out += '<div class="flagbox"><strong>The most recent audit records no bond amount.</strong> '+
+        'The bond is what stands behind an individually liable trustee; an audit that does not '+
+        'state it leaves the one figure a claim would turn on unrecorded.</div>';
+    }
+    if(lastA && lastA.bondExpires){
+      var e=parseLocalDate(lastA.bondExpires), t0=parseLocalDate(localToday());
+      if(e && t0 && e<t0){
+        out += '<div class="blockbox"><strong>The bond recorded on the most recent audit expired on '+
+          H(lastA.bondExpires)+'.</strong> Record the current bond with the next audit.</div>';
+      }
+    }
+    fl.innerHTML=out;
+  }
 }
 
 function sfRenderAccounts(){
@@ -3456,6 +4046,9 @@ function sfRenderAccounts(){
   var ec=$('ex-cat');
   if(ec) ec.innerHTML = EXPENSE_CATEGORIES.map(function(c){
     return '<option value="'+H(c.id)+'">'+H(c.label)+'</option>'; }).join('');
+  sfFillOfficerSelect('ex-prepared');
+  sfFillOfficerSelect('ex-approved');
+  sfRenderTransferField();
 
   var tb=$('ac-tbody');
   if(tb){
@@ -3471,13 +4064,22 @@ function sfRenderAccounts(){
   }
   var etb=$('ex-tbody'), exps=getGamingExpenses();
   if(etb){
-    if(!exps.length){ etb.innerHTML='<tr><td colspan="7" class="empty">No payments recorded.</td></tr>'; }
+    if(!exps.length){ etb.innerHTML='<tr><td colspan="8" class="empty">No payments recorded.</td></tr>'; }
     else {
       etb.innerHTML = exps.slice().reverse().map(function(e){
         var c=expenseCategory(e.category);
         var tag = (c && c.validated) ? '<span class="tag ok">(GG)(11)</span>' : '<span class="tag warn">Not validated</span>';
+        if(e.transfer) tag = '<span class="tag err">TRANSFER OUT</span>';
+        /* A ROW FROM BEFORE 2026-09-27 SAYS SO RATHER THAN LOOKING APPROVED.
+           An em-dash in an approval column reads as "not applicable"; these
+           rows are "never checked", which is a different fact. */
+        var appr = (e.preparedBy || e.approvedBy)
+          ? H(e.preparedBy||'(none)')+' &rarr; '+H(e.approvedBy||'(none)')
+          : '<span class="tag warn">no approval recorded (pre-2026-09-27)</span>';
         return '<tr><td>'+H(e.date)+'</td><td>'+H((accountById(e.accountId)||{}).name||'(removed)')+'</td><td>'+H(e.payee)+'</td>'+
-          '<td>'+tag+' '+H(e.description||'')+'</td><td>'+H(e.method==='eft'?'EFT':'Check')+'</td><td>'+money(e.amount)+'</td>'+
+          '<td>'+tag+' '+H(e.transfer ? ('to '+(e.transferTo||'(unnamed)')+' -- '+(e.description||'')) : (e.description||''))+'</td>'+
+          '<td>'+appr+'</td>'+
+          '<td>'+H(e.method==='eft'?'EFT':'Check')+'</td><td>'+money(e.amount)+'</td>'+
           '<td><button class="btn sm sec" onclick="sfDeleteExpense(\''+H(e.id)+'\')">Remove</button></td></tr>';
       }).join('');
     }
@@ -3517,6 +4119,50 @@ function sfRenderAccountFlags(){
     var bal=accountDeposits(a.id)-accountPayments(a.id);
     if(bal<0) out += '<div class="blockbox"><strong>'+H(a.name)+' is overdrawn.</strong> Payments exceed deposited gross profit, which cannot happen lawfully under ORC 2915.10(C).</div>';
   });
+
+  /* ── TRANSFERS OUT ARE A STANDING EXCEPTION, NEW 2026-09-27 ───────────────
+     ORC 2915.10(C) devotes this account EXCLUSIVELY to the session or game, so
+     money leaving it for another post account is not an ordinary entry -- it is
+     the one movement the exclusivity rule is about. AMVETS Post 24 lost about
+     $622,000 through transfers between accounts and card use that nobody
+     reconciled for two and a half years.
+
+     THIS FLAG NEVER CLEARS AND THAT IS THE DESIGN. Every other flag on this
+     panel is a condition to fix; this one is a LIST, and a list that empties
+     itself once somebody has read it is how a two-and-a-half-year pattern stays
+     invisible. It is not a refusal either: a transfer out can be lawful, and an
+     app that blocked it would push it out of the record and into the bank. */
+  var transfers=getGamingExpenses().filter(function(e){ return e.transfer; });
+  if(transfers.length){
+    var tt=transfers.reduce(function(s,e){ return s+Number(e.amount||0); },0);
+    out += '<div class="flagbox"><strong>'+transfers.length+' transfer(s) OUT of a gaming account &mdash; '+
+      money(tt)+' in total.</strong> ORC 2915.10(C) devotes these accounts exclusively to '+
+      'the session or game, so a transfer out is always an exception worth a trustee\'s eye. '+
+      '<strong>This list does not clear.</strong> AMVETS Post 24 (Dayton) lost about $622,000 '+
+      'through transfers between accounts nobody reconciled for two and a half years; a flag '+
+      'that disappeared once somebody had seen it is how that stays invisible. '+
+      '<span class="tag info">Not a refusal</span> a transfer out can be lawful, and blocking '+
+      'it would move it from this record into the bank statement alone.'+
+      '<div class="tw" style="margin-top:10px"><table><thead><tr><th>Date</th><th>From</th>'+
+      '<th>To</th><th>Amount</th><th>Prepared &rarr; Approved</th></tr></thead><tbody>'+
+      transfers.slice().reverse().map(function(e){
+        return '<tr><td>'+H(e.date)+'</td><td>'+H((accountById(e.accountId)||{}).name||'(removed)')+'</td>'+
+          '<td>'+H(e.transferTo||'(unnamed)')+'</td><td>'+money(e.amount)+'</td>'+
+          '<td>'+((e.preparedBy||e.approvedBy) ? H(e.preparedBy||'(none)')+' &rarr; '+H(e.approvedBy||'(none)')
+                 : '<span class="tag warn">none recorded</span>')+'</td></tr>';
+      }).join('')+'</tbody></table></div></div>';
+  }
+
+  /* Payments with no approval pair. Counted rather than described, because
+     "some older payments" is not a number a trustee can act on. */
+  var unapproved=getGamingExpenses().filter(function(e){ return !e.preparedBy && !e.approvedBy; });
+  if(unapproved.length){
+    out += '<div class="flagbox"><strong>'+unapproved.length+' payment(s) carry no prepared-by '+
+      'and no approved-by.</strong> Two-person approval was added on 2026-09-27 and is '+
+      '<strong>not applied backwards</strong> &mdash; a backfilled approval is a forged '+
+      'control, and worse than the gap it hides. These rows are counted separately in the '+
+      'trustee packet rather than folded into either total.</div>';
+  }
   box.innerHTML=out;
 }
 
@@ -3584,14 +4230,23 @@ function sfRenderProfitChain(){
       '<tr><td>Less other expenses <span class="tag warn">not validated</span></td><td style="text-align:right">'+money(other)+'</td></tr>'+
       '<tr><td><strong>Net profit</strong> &mdash; ORC 2915.01(FF)</td><td style="text-align:right"><strong>'+money(netProfit)+'</strong></td></tr>'+
     '</tbody></table></div>'+
-    '<div class="note">Net profit is the figure the distribution rules then bind. '+
-    '<strong>Those rules are Phase 4 and are not built.</strong> ORC 2915.101 is tiered '+
-    '&mdash; at least 25% of the first $250,000 and at least 50% above it, per calendar year, '+
-    'with the threshold expressed as "or adjusted amount" so it must be configuration rather '+
-    'than a constant. Separately, ORC 2915.01(V) governs purpose-tagged distribution of '+
-    'traditional bingo net profit only, and its category list differs between veterans '+
-    'organisations under (V)(2) and fraternal organisations under (V)(3). Nothing here '+
-    'distributes anything or claims a distribution is compliant.</div>';
+    '<div class="note">Net profit is the figure the distribution rules then bind, and '+
+    '<strong>those rules ARE built &mdash; see the Distribution panel.</strong> '+
+    '<em>This paragraph said they were &ldquo;not built&rdquo; until 2026-09-27, three weeks '+
+    'after they were. The correction is recorded rather than quietly overwritten because the '+
+    'old sentence told a treasurer the distribution test did not exist, and that test is the '+
+    'one the Ohio AG enforces most often &mdash; underpaying the contracted charity is the '+
+    'lead issue in its 2024-2026 bingo enforcement.</em> ORC 2915.101 is tiered &mdash; at '+
+    'least 25% of the first '+money(getP4Config().threshold)+' and at least 50% above it, per '+
+    'calendar year &mdash; and <code>tieredRequirement()</code> computes the requirement while '+
+    'the Distribution panel shows the running shortfall against it. The threshold is read from '+
+    'configuration, not a constant, because the statute says "or adjusted amount"; the figure '+
+    'shown here is whatever this device has set. Separately, ORC 2915.01(V) governs '+
+    'purpose-tagged distribution of traditional bingo net profit only, and its category list '+
+    'differs between veterans organisations under (V)(2) and fraternal organisations under '+
+    '(V)(3). <strong>Still true and unchanged:</strong> nothing here MOVES money and nothing '+
+    'claims a completed distribution is compliant &mdash; the requirement and the shortfall are '+
+    'a position, not a filing.</div>';
 }
 
 /* ---- OPERATOR ELIGIBILITY (3.6) ---------------------------------------- */
@@ -4583,7 +5238,15 @@ function sfToggleF2Fields(){
    alcohol, where searching is not merely ungrounded but unlawful for the
    customer. */
 var VENDOR_CATEGORIES = [
-  { id:'beer',          label:'Beer',              shoppable:false, cite:'OAC 4301:1-1-43(J)(2)', why:'One distributor per brand per territory; a retailer may not purchase a brand from a wholesaler whose exclusive area does not cover the premises. Discounts and rebates are banned both directions and the sale must be for cash.' },
+  /* "MUST BE FOR CASH" WAS WRONG AND IS CORRECTED, 2026-09-27. This tile read
+     "the sale must be for cash", which an officer reads as currency only. ORC
+     4301.24(D) and OAC 4301:1-1-43(H)(2) do say "except for cash", but "cash"
+     there is a TERM OF ART meaning not-on-credit: OAC 4301-9-01(B) says these
+     purchases "may be paid for by cash, check, debit card, credit card, money
+     order, or electronic funds transfer" and describes 4301.24 as prohibiting
+     purchase "on credit". The tile is advisory and gates nothing, so this is a
+     copy correction -- but it is the copy an officer would have acted on. */
+  { id:'beer',          label:'Beer',              shoppable:false, cite:'OAC 4301:1-1-43(J)(2)', why:'One distributor per brand per territory; a retailer may not purchase a brand from a wholesaler whose exclusive area does not cover the premises. Discounts and rebates are banned both directions (4301:1-1-43(A)(2)). Payment may NOT be on credit -- ORC 4301.24(D) -- but cash, check, debit card, credit card, money order and EFT are all permitted instruments (OAC 4301-9-01(B)).' },
   { id:'wine',          label:'Wine',              shoppable:false, cite:'OAC 4301:1-1-43(J)(2) and 4301:1-1-03(C)', why:'The territory bar applies, plus a 33 1/3% minimum wholesale markup and a quarterly price schedule stating the price to all wholesale and retail permit holders.' },
   { id:'spirits',       label:'Spirits',           shoppable:false, cite:'State monopoly', why:'Spirits are sold at a uniform statewide price. There is no cheaper vendor to find, and a shop-around flow risks inducing an offence.' },
   { id:'food',          label:'Food',              shoppable:true },
@@ -4796,17 +5459,65 @@ function getTiers(){ return ld(K_TIERS, []); }
 function getAwards(){ return ld(K_AWARDS, []); }
 function getServiceLog(){ return ld(K_SERVICE, []); }
 function getNationalCategories(){ return ld(K_NATCATS, []); }
-function getP4Config(){ return ld(K_P4CONFIG, { threshold:250000, serviceStartMonth:1, serviceStartDay:1 }); }
+/* ── THE THRESHOLD DEFAULT WAS THE STATUTORY BASE AND THE AG HAD ALREADY
+   ADJUSTED IT, CORRECTED 2026-09-27 ──────────────────────────────────────────
+   ORC 2915.101 prints "two hundred fifty thousand dollars, OR A GREATER AMOUNT
+   PRESCRIBED BY THE ATTORNEY GENERAL to adjust for changes in prices as measured
+   by the consumer price index". The default here was 250000 -- the base, which
+   has not been the operative figure since 2023.
+
+   THE ADJUSTED AMOUNT IS $330,000, and it is a rule, not a guess: OAC 109:1-4-21
+   "Distributing net profit from proceeds of sale of instant bingo", EFFECTIVE
+   2023-11-01, says the two-hundred-fifty-thousand figure "shall be replaced with
+   three hundred thirty thousand dollars". Read at codes.ohio.gov 2026-09-27.
+
+   WHICH DIRECTION THE OLD DEFAULT WAS WRONG IN, because it is the opposite of
+   what it looks like and an audit of this app got it backwards. A LOWER
+   threshold SHRINKS the 25% tier and pushes money into the 50% tier, so it
+   computes a requirement that is TOO HIGH. On $300,000 of tiered-regime net
+   profit: at 250000 the app demanded 62,500 + 25,000 = $87,500; at 330000 it
+   demands $75,000. So the stale default was CONSERVATIVE on the requirement --
+   it asked the post to give MORE than the law requires, never less, and it is
+   therefore NOT an exposure in the direction the Ohio AG actually enforces
+   (underpaying the contracted charity).
+
+   IT WAS STILL WRONG, AND HERE IS THE HARM: the Distribution panel would tell a
+   post it was "Short by $12,500" when it was not short at all. A fabricated
+   shortfall is a figure an officer acts on -- moving $12,500 out of the post to
+   close a gap that does not exist -- and this platform's whole discipline is
+   about numbers nothing supports.
+
+   THE DEFAULT ONLY HELPS A NEW DEVICE. sf_phase4_config is deliberately NOT
+   server-synced, so a device that already saved 250000 keeps it and no default
+   change reaches it. p4ThresholdStale() below exists for exactly that device and
+   is surfaced as a flag rather than silently corrected: the threshold is a
+   configured compliance figure, and a tool that quietly rewrites one is the
+   auto-remediation shape this platform refuses. */
+var P4_STATUTORY_BASE_THRESHOLD = 250000;
+var P4_AG_ADJUSTED_THRESHOLD = 330000;
+var P4_AG_ADJUSTED_CITE = 'OAC 109:1-4-21, effective 2023-11-01';
+function getP4Config(){ return ld(K_P4CONFIG, { threshold:P4_AG_ADJUSTED_THRESHOLD, serviceStartMonth:1, serviceStartDay:1 }); }
+/* Null when the configured threshold is at or above the AG's adjusted amount;
+   otherwise the shortfall in the THRESHOLD itself, which is what makes the
+   required-distribution figure too high. Returns a number, never a boolean, so
+   the caller can say how far off it is rather than only that it is off. */
+function p4ThresholdStale(){
+  var t = Number((getP4Config()||{}).threshold || 0);
+  if(!(t > 0)) return null;
+  return t < P4_AG_ADJUSTED_THRESHOLD ? (P4_AG_ADJUSTED_THRESHOLD - t) : null;
+}
 
 /* ---- ORC 2915.101, verbatim structure ---------------------------------
    Veteran's, fraternal or sporting organisations, per CALENDAR YEAR:
-     first $250,000 (or the adjusted amount) -- at least 25% distributed,
+     first $250,000 STATUTORY BASE, $330,000 as adjusted by the Attorney General
+       (OAC 109:1-4-21, eff. 2023-11-01) -- at least 25% distributed,
        not more than 75% deducted and retained;
      above that amount -- a minimum of 50% distributed, 5% may go to the
        organisation's OWN charitable purposes, 45% deducted and retained.
    Every other charitable organisation distributes 100%.
    The Attorney General may adjust the threshold for changes in prices as
-   measured by the consumer price index, which is why it is configuration.
+   measured by the consumer price index, which is why it is configuration --
+   and it HAS, so the base figure is no longer the operative one.
    NOTE THE ASYMMETRY: the 5% own-purpose allowance appears only in the
    ABOVE-threshold tier. There is no equivalent in the first tier, and adding
    one by symmetry would overstate what may be retained. */
@@ -4920,6 +5631,13 @@ function disbursementRefusals(d){
   if(!d.recipient) out.push({ cite:'input', text:'Name the recipient.' });
   if(!(Number(d.amount)>0)) out.push({ cite:'input', text:'Amount must be greater than zero.' });
   if(!d.date) out.push({ cite:'input', text:'A date is required.' });
+  /* DUAL APPROVAL APPLIES WHATEVER THE FUNDING SOURCE, and it is placed ABOVE
+     the general-funds early return on purpose. Chapter 2915 governs gaming net
+     profit only, so the early return below is right about the STATUTE -- but VFW
+     Post 4044's theft was charitable-account cheques with false memos, and the
+     segregation-of-duties control is not a Chapter 2915 rule. Putting this after
+     the return would have exempted exactly the money the thefts went through. */
+  out = out.concat(dualApprovalRefusals(d.preparedBy, d.approvedBy, d.recipient, 'disbursement'));
   if(d.source!=='gaming_net_profit') return out;   // general funds are not governed by Ch. 2915
 
   var p=ohioPurposesForOrg();
@@ -4956,7 +5674,9 @@ function readDisbForm(){
            date:$('db-date').value, source:$('db-source').value, game:$('db-game').value,
            direction:$('db-direction').value,
            purpose:$('db-purpose')?$('db-purpose').value:'',
-           natcat:$('db-natcat')?$('db-natcat').value:'' };
+           natcat:$('db-natcat')?$('db-natcat').value:'',
+           preparedBy:$('db-prepared')?$('db-prepared').value:'',
+           approvedBy:$('db-approved')?$('db-approved').value:'' };
 }
 function sfTestDisbursement(){
   var box=$('db-testout'); if(!box) return;
@@ -4973,7 +5693,8 @@ function sfRecordDisbursement(){
   }
   var list=getDisbursements();
   list.push({ id:'db'+Date.now(), recipient:d.recipient, amount:d.amount, date:d.date||localToday(),
-              source:d.source, game:d.game, direction:d.direction, purpose:d.purpose, natcat:d.natcat });
+              source:d.source, game:d.game, direction:d.direction, purpose:d.purpose, natcat:d.natcat,
+              preparedBy:String(d.preparedBy||'').trim(), approvedBy:String(d.approvedBy||'').trim() });
   st(K_DISB,list);
   $('db-recipient').value=''; $('db-amount').value='';
   if(box) box.innerHTML='';
@@ -5046,7 +5767,27 @@ function sfRenderDisbursements(){
     ? cats.map(function(c){ return '<span class="tag info" style="margin:3px 5px 3px 0;display:inline-block">'+H(c)+' <a href="#" onclick="sfRemoveNationalCategory(\''+H(c)+'\');return false;" style="color:inherit;text-decoration:none">&times;</a></span>'; }).join('')
     : 'No national categories recorded yet.';
   if($('db-date') && !$('db-date').value) $('db-date').value=localToday();
+  sfFillOfficerSelect('db-prepared');
+  sfFillOfficerSelect('db-approved');
   if($('db-threshold')) $('db-threshold').value=cfg.threshold;
+  /* THE FLAG, NOT A SILENT REWRITE. A device that saved 250000 before
+     2026-09-27 still holds it, because sf_phase4_config is not server-synced, so
+     a default change cannot reach it. Correcting it here would be a tool
+     rewriting a configured compliance figure without being asked. */
+  var tf=$('db-threshold-flag'), stale=p4ThresholdStale();
+  if(tf){
+    tf.innerHTML = stale===null ? '' :
+      '<div class="blockbox" style="margin-top:12px"><strong>This device\'s threshold is '+
+      money(cfg.threshold)+', which is '+money(stale)+' below the Attorney General\'s '+
+      'adjusted amount of '+money(P4_AG_ADJUSTED_THRESHOLD)+' ('+H(P4_AG_ADJUSTED_CITE)+').</strong> '+
+      'Every requirement and shortfall on this panel is computed from the figure above, so '+
+      'they are currently <strong>too high</strong>: a lower threshold moves money out of '+
+      'the 25% tier and into the 50% tier. That errs toward giving more, never less &mdash; '+
+      'but it can print a shortfall that does not exist. <strong>Nothing here has changed '+
+      'your setting.</strong> Enter '+money(P4_AG_ADJUSTED_THRESHOLD)+' and save if that is '+
+      'the amount in force for your calendar year; check the AG\'s current rule first, '+
+      'because this app cannot see a later adjustment than the one it was told about.</div>';
+  }
   sfRenderDisbFields();
 
   var years={};
@@ -5093,13 +5834,17 @@ function sfRenderDisbursements(){
 
   var tb=$('db-tbody');
   if(tb){
-    if(!list.length){ tb.innerHTML='<tr><td colspan="8" class="empty">No disbursements recorded.</td></tr>'; }
+    if(!list.length){ tb.innerHTML='<tr><td colspan="9" class="empty">No disbursements recorded.</td></tr>'; }
     else {
       tb.innerHTML=list.slice().reverse().map(function(d){
         var src=''; FUNDING_SOURCES.forEach(function(f){ if(f.id===d.source) src=f.label; });
+        var appr=(d.preparedBy||d.approvedBy)
+          ? H(d.preparedBy||'(none)')+' &rarr; '+H(d.approvedBy||'(none)')
+          : '<span class="tag warn">no approval recorded (pre-2026-09-27)</span>';
         return '<tr><td>'+H(d.date)+'</td><td>'+H(d.recipient)+'</td><td>'+money(d.amount)+'</td>'+
           '<td>'+H(src)+'</td><td>'+H(d.game?gameLabel(d.game):'--')+'</td>'+
           '<td>'+H(d.purpose||'--')+'</td><td>'+H(d.natcat||'--')+'</td>'+
+          '<td>'+appr+'</td>'+
           '<td><button class="btn sm sec" onclick="sfDeleteDisbursement(\''+H(d.id)+'\')">Remove</button></td></tr>';
       }).join('');
     }
@@ -6900,7 +7645,7 @@ function sfRenderDashboard(){
 function sfRenderAll(){
   sfRenderPost(); sfRenderOfficers(); sfRenderMembers(); sfRenderDues(); sfRenderWaivers();
   sfRenderCanteen(); sfRenderCloseout(); sfRenderEvents(); sfRenderHall(); sfRenderVendors();
-  sfRenderSessions(); sfRenderAccounts(); sfRenderOperators();
+  sfRenderSessions(); sfRenderAccounts(); sfRenderOperators(); sfRenderTrustees();
   sfRenderDisbursements(); sfRenderDonations(); sfRenderService(); sfRenderOutreach();
   sfRenderOnboarding(); sfRenderPaperwork(); sfRenderYouth(); sfRenderServices();
   sfRenderCeremonial(); sfRenderVehicles(); sfRenderNewsletter();
