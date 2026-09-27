@@ -732,6 +732,36 @@ PURPOSES = {
     'hover_auditor_scope_gate.py': ('CHECKER', 'a commit, push or working tree in the HOVER AUDITOR\'s clone that touches platform code -- the role reviews the four build agents and is reviewed by nobody, and its own skill forbids it writing platform code in terms. Armed per-clone by a marker under .git/, so no build clone can inherit it by pulling and each pays one shell file-test per commit. Fails OPEN where the marker is absent (a scope condition: not that clone\'s rule) and CLOSED everywhere else, including when the core-rule sentence is no longer in the skill file -- a gate enforcing a repealed rule reads as coverage'),
     'redaction_check.py': ('CHECKER', 'credential shapes in what is about to be written, and in what a push ships'),
     'html_script_check.py': ('CHECKER', 'a script block that no longer parses, after a Write or Edit'),
+    'push_retry.py': ('TOOL',
+        'an amend that is about to run in a tree where HEAD is not what the '
+        'author thinks it is -- and it REFUSES rather than warns. Five clones '
+        'push to one branch, so a push often loses a race and the honest '
+        'response is fetch, rebase, re-derive the generated documents, amend, '
+        'push again. That loop was written inline per session, and on '
+        '2026-09-26 one of them reached `git commit --amend` WHILE A REBASE WAS '
+        'STOPPED MID-CONFLICT: HEAD was a rewritten copy of cody\'s commit, so '
+        'the amend folded this session\'s work into another session\'s commit '
+        'under their message and authorship. Nothing caught it -- a human '
+        'happened to read the next git log and see a foreign subject line. FOUR '
+        'REFUSALS, each with its reason printed: an operation in progress '
+        '(rebase-merge AND rebase-apply, merge, cherry-pick, revert, bisect -- '
+        'checking only rebase-merge walks straight through the non-interactive '
+        'form); unmerged paths, because `git add -A` on a conflicted tree stages '
+        'the conflict markers and commits them as a fix; HEAD not being one of '
+        'YOUR commits, matched by SUBJECT against a set captured before the '
+        'loop, because a rebase rewrites shas and a sha comparison fails OPEN '
+        'exactly when the rebase it guards does its job; and HEAD already being '
+        'on a remote branch. A could-not-read is its own refusal, never folded '
+        'into safe. Its --loop STOPS on a conflict instead of resolving one, and '
+        'prints the PR 2.5 re-derive commands for a generated-document conflict '
+        'rather than running them. 18 arms, both directions, plus a CONTROL that '
+        'the decision discriminates at all -- a guard that refuses everything '
+        'passes a suite built out of refusals, which is not hypothetical: the '
+        'first local_only_subjects() was `git log --not --remotes` with no '
+        'positive rev, which walks nothing and exits 0, so the safe-set came '
+        'back EMPTY and the guard refused every amend while all fixture arms '
+        'stayed green. Found by running it against a real local commit, and '
+        'there is now a live arm for it'),
     'dispatch_state.py': ('CHECKER',
         'work that is OPEN in docs/SAIRN-OPEN-WORK-INDEX.md and also OWNED by a '
         'session holding a live claim -- the collision a per-item '

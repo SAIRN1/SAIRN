@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**245 files in `tools/`.** By what actually invokes them:
+**246 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -28,7 +28,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 4 | session-start or prompt hooks, informational |
 | **DECIDED** | 70 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 44 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 49 | nothing runs these at all |
+| **UNWIRED** | 50 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
@@ -41,7 +41,7 @@ By what they are, independent of wiring:
 | LIVE | 25 |
 | PUSH-GATE | 1 |
 | REPORTER | 2 |
-| TOOL | 2 |
+| TOOL | 3 |
 
 **70 tool(s) are DECIDED -- deliberately not promoted, with the reason
 recorded in `report_only_checks.py`.** They are listed below with those
@@ -377,7 +377,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (49)
+## UNWIRED (50)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -421,6 +421,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `posthook.cjs` | LIBRARY | the Node half of a PostToolUse hook | &mdash; |
 | `probe_selector.py` | REPORTER | which of the 64 sabotage probes a given push actually needs -- the scoped alternative to a 30.6-minute pre-push wall measured on 2026-09-25. The subject is DERIVED from each probe's own MUTATIONS file slots and stage= tuple, read with ast because importing a probe RUNS it, so no new declaration exists to go stale. A probe whose subject cannot be read is REPORTED and exits 1 -- never silently skipped (the silent-pass shape the corpus exists to catch) and never silently included (which makes undeterminable cost the whole 30 minutes). Its acceptance test is executable, --self-check, and the arm that matters is that a docs-only push selects NOTHING: running the corpus to be safe is how the wall gets in through the back door | &mdash; |
 | `purpose_expired_measure.py` | GENERATOR | nothing. It is a recorded REFUSAL with a reproducible measurement behind it. Three "purpose expired" detectors were designed as the Ariane 5 sharpening of the reachability checker -- the question frequency can never answer, since Flight 501 ran correct software whose PRECONDITION had expired -- and all three were measured before anything was built and all three refused: a never-true guard (0 instances, an empty population cannot be validated), a role comparison outside the app vocabulary (14 hits, 14 false positives, every one a chat-message role or an employee job title), and a handler branch on an ungranted action (70 of 100, premise wrong -- the registry governs one dispatcher, not every handler). It exists so the next session does not spend the same afternoon reaching the same three refusals. What discriminates rare-but-legitimate from purposeless today is activity_cadence.json, a human declaration, and R4's coverage gate is why it cannot discriminate yet -- a DATA problem, not a design one | &mdash; |
+| `push_retry.py` | TOOL | an amend that is about to run in a tree where HEAD is not what the author thinks it is -- and it REFUSES rather than warns. Five clones push to one branch, so a push often loses a race and the honest response is fetch, rebase, re-derive the generated documents, amend, push again. That loop was written inline per session, and on 2026-09-26 one of them reached `git commit --amend` WHILE A REBASE WAS STOPPED MID-CONFLICT: HEAD was a rewritten copy of cody's commit, so the amend folded this session's work into another session's commit under their message and authorship. Nothing caught it -- a human happened to read the next git log and see a foreign subject line. FOUR REFUSALS, each with its reason printed: an operation in progress (rebase-merge AND rebase-apply, merge, cherry-pick, revert, bisect -- checking only rebase-merge walks straight through the non-interactive form); unmerged paths, because `git add -A` on a conflicted tree stages the conflict markers and commits them as a fix; HEAD not being one of YOUR commits, matched by SUBJECT against a set captured before the loop, because a rebase rewrites shas and a sha comparison fails OPEN exactly when the rebase it guards does its job; and HEAD already being on a remote branch. A could-not-read is its own refusal, never folded into safe. Its --loop STOPS on a conflict instead of resolving one, and prints the PR 2.5 re-derive commands for a generated-document conflict rather than running them. 18 arms, both directions, plus a CONTROL that the decision discriminates at all -- a guard that refuses everything passes a suite built out of refusals, which is not hypothetical: the first local_only_subjects() was `git log --not --remotes` with no positive rev, which walks nothing and exits 0, so the safe-set came back EMPTY and the guard refused every amend while all fixture arms stayed green. Found by running it against a real local commit, and there is now a live arm for it | &mdash; |
 | `reservation_lock_invariants.js` | CHECKER | a reservation compare-and-swap that has stopped being one -- item 78's second target. It enumerates EVERY interleaving of 2, 3 and 4 concurrent reservers against one leg_merch_units unit (6, 90 and 2520 orderings, no sampling) and asserts that at most one is ever told it succeeded, with the blind-upsert semantics every OTHER transition on that resource uses as the CONTROL -- if the control ever stops violating, the clean result is vacuous and the run says so. It also reads the real branch out of api/sd-data.js and exits 2 COULD NOT RUN, never 0, if the &data->>status=eq.Available precondition is no longer inside the guarded PATCH: a checker that keeps passing after the lock it models is replaced by an upsert is the defect, not the check. It does NOT prove Postgres atomicity -- that assumption is printed on every run rather than hidden | &mdash; |
 | `resource_reachability_check.py` | CHECKER | for every REGISTERED resource, does any client name it -- the question that finds a capability the platform describes as BUILT while no user can reach it. It exists because the narrower check it replaces could not have found the second instance: the SAIRNmechanical `eligibility` defect was caught by enumerating extraActions and asking whether each verb was sent, and SAIRNdental `dnt_rollup` needs no extra action -- it is a plain read, so that check never looked at it. A PANEL CENSUS CANNOT FIND EITHER: SAIRNdental was 22 panels / 22 nav targets / 22 sidebar ids, three identical sets, precisely because the roll-up was in none of the three. A FINDING IS "no client names this", never "delete it" -- a resource fed by a cron or read by another server endpoint is legitimately here and needs somebody to SAY so. IT CARRIES A CALIBRATION ARM, which is what makes its zeros mean anything: a substring search that finds nothing proves nothing, because a bad path produces the same output as a genuinely unreachable resource for every resource at once, so it reports how many of each app it DID find and an app below a stated floor is CANNOT TELL rather than N findings. ITS OWN FIRST RUN WAS WRONG AND SAYS SO: it read only <app>.html and reported StoneDesk sd_hr_certs (Tier A) as unreachable when stonedesk-hr.html names it, caught by hand-reading every finding before publishing the number. It CANNOT see a name built by concatenation, a caller behind a dead flag, or whether the panel works. | &mdash; |
 | `role_gate_mc_config.py` | CHECKER | a TLA+ model instance that has gone stale against the apps it describes -- `--check` refuses when role sets move and docs/spec/MCRoleGates.* still says otherwise, so the model cannot keep passing about a platform that no longer exists. READS EXPORTS AND INTERNAL CONSTANTS SEPARATELY and says which: an earlier version read only module.exports and concluded 10 of 16 apps had no MANAGEMENT_ROLES, when FOUR declare one internally and never export it. The const anchor sits at LINE START on purpose -- four apps carry the text MANAGEMENT_ROLES inside a comment saying they have no such concept and that inventing one would be a new authorisation tier, so an unanchored scraper invents exactly the tier that comment refuses. EXCLUDES the six apps with no management concept and prints the exclusion every run rather than supplying a set, because Management = Provisioning would make ProvisioningIsManagement true by construction | &mdash; |
@@ -463,7 +464,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      245   git ls-files tools/
+  tools on disk                      246   git ls-files tools/
   hook entries                        13   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                61   report_only_checks.REGISTRY
