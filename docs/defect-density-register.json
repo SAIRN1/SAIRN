@@ -14914,67 +14914,6 @@
       "recurrence_open": "FIVE BLOCKERS REMAIN AND THE JOIN IS STILL NOT BUILDABLE, enumerated in docs/2026-09-26-sairncare-compliance-join-scoping.md: the requirement audience is prose while the roster carries a role code; recorded hours carry a category that requirements do not; stacking comes in at least three kinds including prose conditional on a staff member's tenure; an initial-hours-with-deadline requirement is a gate on whether somebody may work at all and needs a hire date the engine never receives; and the annual window is undefined. ONE OF SIX SEEDED STATES CAN CURRENTLY BE ANSWERED AT ALL, which is a disclosed gap rather than coverage -- a WV facility now gets no per-staff answer, which is worse for the user than a correct one and better than a false pass. Separately, opts.staff is CALLER-SUPPLIED, so whenever the wiring is built the aggregation must happen server-side against alf_staff_credentials: a client sending its own annual_hours_recorded while the authoritative append-only record sits unread on the server is the same shape as the attribution defect recorded against f0c0cb7a."
     },
     {
-      "commit": "c123a9250021",
-      "date": "2026-09-26",
-      "subject": "fix(sairncare): the family-contact panel never worked -- all three callers read a shape the transport has never returned",
-      "files": [
-        "sairncare.html",
-        "tests/sairncare_transport_refusal.js"
-      ],
-      "lines_added": 221,
-      "lines_removed": 10,
-      "app": "sairncare",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "sairncare.html's three family-contact callers (alfFamilyRefresh, the write callback, alfFamilyPreview) read res.status and res.body off an alfData() result. alfData resolves to d.data on success and null on failure and has never returned that shape, so the feature was broken in BOTH directions: on success res.body was undefined and every caller took its failure branch, rendering 'Could not load family contacts' over an empty array every time the read worked; on failure res was null and res.status threw, so the branch meant to explain a 401 or 403 could never run and the panel said nothing. Recording a contact, listing contacts and previewing what a family member sees were all non-functional. The other 33 alfData callers use its real contract",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The three callers and alfData's current contract cannot be separated by git without a bisect over sairncare.html's history, and alfData's error handling was changed at least once (deea8c55, 2026-09-21). Naming a sha would be a guess; what is certain is that the callers and the transport have disagreed for as long as both have had their current shapes."
-      },
-      "phase_note": "The callers were written against a transport shape that does not exist. Not a design or requirement error -- alfData's contract is clear and 33 other callers honour it; these three were written or left against a different one.",
-      "contributing_factors": [
-        {
-          "factor": "alfData()'s contract is `d.data` on success and null on failure, but the three family-contact callers were written against a `{status, body}` shape it has never returned -- so the transport and one caller group disagreed with nothing in between to notice",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "alfFamilyData() added as a full-body transport on the same argument alfRoute() already makes, and all three callers moved onto it"
-        },
-        {
-          "factor": "the failure was symmetric and that hid it: on SUCCESS res.body was undefined so every caller took its failure branch and rendered 'Could not load', and on FAILURE res was null so res.status threw and nothing rendered at all. A user saw a permanently broken panel rather than a wrong message, which reads as 'not built yet' instead of 'defective'",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "seven arms in tests/sairncare_transport_refusal.js drive both directions, including that a successful read carries provisioned AND data"
-        },
-        {
-          "factor": "nothing tested any client-side family-contact path. The endpoint had 18 green arms in api/sd-data-family-contacts.test.js and the panel had none, so server and client could disagree indefinitely",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "the arms were added to the suite that already lifts these functions out of the shipped file by anchor and throws on a missing anchor, so they run against sairncare.html rather than a copy"
-        },
-        {
-          "factor": "the broken panel was itself why the missing role gate on this read went unnoticed until 2026-09-26 -- any employee could list every family contact's phone number, and it was found by reading the endpoint rather than by anybody using the screen",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "recorded here rather than left implicit; a feature nobody can use is not exercising its own gates, which is an argument for the file-level arm that ties callers to the transport"
-        },
-        {
-          "factor": "the regression path is a fourth caller written against the old shape, which no contract-level arm can see",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "an arm asserts on the file that ZERO alfData calls name alf_family_contacts and that alfFamilyData has its definition plus three callers; ablation confirms it is the arm that fires"
-        }
-      ],
-      "recurrence_open": "All three callers are on alfFamilyData and a file-level arm asserts zero alfData calls name this resource. NOT closed: no check compares a transport's return contract against what its callers read, anywhere on the platform -- this was found by reading, and alfData has 33 other callers plus alfRoute and alfPostRaw as siblings, each with its own shape. A checker parsing caller property access against a transport's return statements is the obvious control and is not built. Also open: the client-side panels of every other SAIRNcare resource have no tests at all, so the same server/client divergence could exist elsewhere in this file."
-    },
-    {
       "commit": "1f9936429432",
       "date": "2026-09-26",
       "subject": "fix(bridge): the one endpoint of forty-one that never asked whether the licence was still active -- on the write path that carries expense invoices",
@@ -15433,6 +15372,69 @@
       "recurrence_open": "code1/code2 are now fenced in the app and STILL INVISIBLE to tools/adversarial_prompt_corpus.py, because no generic untrusted-field word list can name them. So this app's coverage rests on somebody having read it, not on a check -- and the same is true of every other app's domain-specific field names. The per-app field list the scanner's own header calls the real fix is still unwritten. Separately, whether a fenced prompt actually resists a determined payload is unmeasured: no model call has been driven against the injection corpus (docs/2026-09-13-ai-red-teaming-scoping.md)."
     },
     {
+      "commit": "b7ea436177dd",
+      "date": "2026-09-26",
+      "subject": "fix(methodology): --list no longer crashes, the index check fires on the edit, and dispatch_state moved to the moment its question is asked",
+      "files": [
+        ".claude/settings.json",
+        "docs/2026-09-26-invocation-path-sweep.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/traceability-matrix.md",
+        "tools/dispatch_state.py",
+        "tools/index_duplicate_hook.py",
+        "tools/report_only_checks.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 758,
+      "lines_removed": 71,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/report_only_checks.py --list raised KeyError: 'evidence' and printed nothing usable. Four REGISTRY entries carry no `evidence` key -- register_freshness_check.py, log_cluster.py, allan_deviation_check.py, response_shape_check.py -- and the loop read e['evidence'] directly, so it died on the first one it reached. `--list` is the registry's ONLY human-readable surface: it is what prints, for each of the 62 registered checkers, what it catches, why that matters, and what it found on a real run. It has been unusable since a9394d8e on 2026-09-17 added the first entry without that key, and nothing noticed for nine days because nothing else in the file reads `evidence`. The same commit range also closed two WIRING gaps found by the sweep in docs/2026-09-26-invocation-path-sweep.md: index_duplicate_check.py only ever ran on `git push` although the document it checks is edited with Write/Edit (now tools/index_duplicate_hook.py), and dispatch_state.py answered \"what should I work on\" at push time, after the work (now --hook at SessionStart).",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "a9394d8ebddc",
+        "date": "2026-09-17",
+        "subject": "feat(cron-liveness): commit the status document back, and correct the cadence claim to the measured one",
+        "lag_days": 9
+      },
+      "citation_note": "not-citable: no section of docs/SAIRN-PROCESS-RULES.md covers a reporting surface that stopped working. The nearest shapes are named elsewhere: item 8 of docs/2026-09-13-cross-domain-disciplines.md (nothing announces the day a check stops testing anything -- here, the day a surface stops printing), and the defect class named by this same session's sweep, a check whose only trigger cannot fire for what it checks. Neither document is the vocabulary --rule validates against, so citing a number from either would resolve to nothing. Recorded as not-citable with the real pointers rather than forced into the closest 1.x section.",
+      "contributing_factors": [
+        {
+          "factor": "The loop read four optional dict keys with e['key'] rather than asking whether they were present. Any entry missing any of them kills the whole listing, and the failure is total rather than partial -- one incomplete entry hides all 62.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Reads are guarded and a MISSING entry prints an explicit NO EVIDENCE RECORDED line naming what that means. Not `.get(k, '')`: an empty string turns a crash into a blank cell and makes an unmeasured checker indistinguishable from a measured one, which is the substitution tooling_inventory.py already refuses when it declines to emit a blank cell."
+        },
+        {
+          "factor": "`evidence` is read by exactly one code path in the repo -- this listing -- so an entry lacking it is invisible everywhere else. The registry sweep, the hook, the push notice and the inventory all work fine without it, which is why nine days passed with no signal.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The count is printed at the END of --list, where it cannot be scrolled past, with the four tool names. 4 of 62 today."
+        },
+        {
+          "factor": "No check asserts that a REGISTRY entry is complete. Entries are hand-written dicts added by whoever registers a checker, and the only thing that ever validated them was a crash at the moment somebody happened to run one flag.",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "NOT built here. report_only_checks.py is shared by every session and a schema assertion over 61 entries is a change with a blast radius, not a side effect of fixing a crash -- it would also have to decide whether a missing field blocks a push, which is a decision with an owner. Raised in docs/2026-09-26-invocation-path-sweep.md instead."
+        },
+        {
+          "factor": "The obvious repair was to write evidence text for the four. That would have fabricated the one field in this registry that is supposed to BE a measurement -- a recorded real run with numbers -- for checkers nobody has run.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Nothing was invented. The absence is printed as an absence, and the four names are listed so somebody can run them and record what they actually found."
+        }
+      ],
+      "recurrence_open": "FOUR CHECKERS STILL HAVE NO RECORDED EVIDENCE, and that is now printed and counted rather than crashing -- but it is not fixed. A registered checker with no recorded run is a promotion decision made on nothing, and the count is the thing that should not grow. Nothing prevents a fifth: --add has no equivalent for this registry, entries are hand-written dicts, and no check asserts that every REGISTRY entry carries the four fields --list reads. That guard was NOT built here, deliberately: report_only_checks.py is shared by every session and adding a schema assertion to it is a decision with a blast radius, not a side effect of fixing a crash. The other three optional reads in the same loop (promoted, catches, why_it_matters) are now tolerant too, so a future entry missing one of those prints \"(not stated)\" rather than dying -- which closes the crash class but widens the silent-gap class by three fields, and only `evidence` is counted.",
+      "single_factor_note": "n/a -- four factors"
+    },
+    {
       "commit": "be352a7d021a",
       "date": "2026-09-26",
       "subject": "fix(stonedesk): the customer list was one write per record, and the guard I added made each one two trips",
@@ -15542,6 +15544,67 @@
         }
       ],
       "recurrence_open": "the loader's docstring also documented a --verify flag that does not exist (verification is unconditional); nothing checks a tool's own header against its own argparse. And the four dead opened_at_sha stamps in the review ledger are the same class of dead pointer and are repaired by nothing yet."
+    },
+    {
+      "commit": "c123a9250021",
+      "date": "2026-09-26",
+      "subject": "fix(sairncare): the family-contact panel never worked -- all three callers read a shape the transport has never returned",
+      "files": [
+        "sairncare.html",
+        "tests/sairncare_transport_refusal.js"
+      ],
+      "lines_added": 221,
+      "lines_removed": 10,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "sairncare.html's three family-contact callers (alfFamilyRefresh, the write callback, alfFamilyPreview) read res.status and res.body off an alfData() result. alfData resolves to d.data on success and null on failure and has never returned that shape, so the feature was broken in BOTH directions: on success res.body was undefined and every caller took its failure branch, rendering 'Could not load family contacts' over an empty array every time the read worked; on failure res was null and res.status threw, so the branch meant to explain a 401 or 403 could never run and the panel said nothing. Recording a contact, listing contacts and previewing what a family member sees were all non-functional. The other 33 alfData callers use its real contract",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The three callers and alfData's current contract cannot be separated by git without a bisect over sairncare.html's history, and alfData's error handling was changed at least once (deea8c55, 2026-09-21). Naming a sha would be a guess; what is certain is that the callers and the transport have disagreed for as long as both have had their current shapes."
+      },
+      "phase_note": "The callers were written against a transport shape that does not exist. Not a design or requirement error -- alfData's contract is clear and 33 other callers honour it; these three were written or left against a different one.",
+      "contributing_factors": [
+        {
+          "factor": "alfData()'s contract is `d.data` on success and null on failure, but the three family-contact callers were written against a `{status, body}` shape it has never returned -- so the transport and one caller group disagreed with nothing in between to notice",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "alfFamilyData() added as a full-body transport on the same argument alfRoute() already makes, and all three callers moved onto it"
+        },
+        {
+          "factor": "the failure was symmetric and that hid it: on SUCCESS res.body was undefined so every caller took its failure branch and rendered 'Could not load', and on FAILURE res was null so res.status threw and nothing rendered at all. A user saw a permanently broken panel rather than a wrong message, which reads as 'not built yet' instead of 'defective'",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "seven arms in tests/sairncare_transport_refusal.js drive both directions, including that a successful read carries provisioned AND data"
+        },
+        {
+          "factor": "nothing tested any client-side family-contact path. The endpoint had 18 green arms in api/sd-data-family-contacts.test.js and the panel had none, so server and client could disagree indefinitely",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the arms were added to the suite that already lifts these functions out of the shipped file by anchor and throws on a missing anchor, so they run against sairncare.html rather than a copy"
+        },
+        {
+          "factor": "the broken panel was itself why the missing role gate on this read went unnoticed until 2026-09-26 -- any employee could list every family contact's phone number, and it was found by reading the endpoint rather than by anybody using the screen",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "recorded here rather than left implicit; a feature nobody can use is not exercising its own gates, which is an argument for the file-level arm that ties callers to the transport"
+        },
+        {
+          "factor": "the regression path is a fourth caller written against the old shape, which no contract-level arm can see",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "an arm asserts on the file that ZERO alfData calls name alf_family_contacts and that alfFamilyData has its definition plus three callers; ablation confirms it is the arm that fires"
+        }
+      ],
+      "recurrence_open": "All three callers are on alfFamilyData and a file-level arm asserts zero alfData calls name this resource. NOT closed: no check compares a transport's return contract against what its callers read, anywhere on the platform -- this was found by reading, and alfData has 33 other callers plus alfRoute and alfPostRaw as siblings, each with its own shape. A checker parsing caller property access against a transport's return statements is the obvious control and is not built. Also open: the client-side panels of every other SAIRNcare resource have no tests at all, so the same server/client divergence could exist elsewhere in this file."
     },
     {
       "commit": "c8b5e5b123c4",
