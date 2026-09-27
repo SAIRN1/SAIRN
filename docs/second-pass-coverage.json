@@ -1,0 +1,24 @@
+{
+  "_what": "Pinned second-pass coverage. Written by tools/second_pass_coverage_scan.py --baseline. A ratchet: `documented_without_second_pass` must never rise.",
+  "_why": "A flow is normally tested from a clean state. The state a user is actually in when anything goes wrong is the SECOND attempt after a refused or aborted first one. Both of 2026-09-27 defects were that shape.",
+  "documented_files": [
+    "api/cron-watchdog.test.js",
+    "api/sc-credentials.test.js",
+    "api/sd-data-dental-ledger-validation.test.js",
+    "api/sd-data-food-temp-unevaluated.test.js",
+    "api/sd-data-law-trusttx-clearance.test.js",
+    "api/sd-data-roofing-projected-isolation.test.js",
+    "tests/collection_delete_reaches_the_server.js",
+    "tests/run_tier_a_review_gate_probe.py",
+    "tests/sairnbuild_retainage_race.js",
+    "tests/sairnbuild_server_backup.js",
+    "tests/sairncode_gates_mutation_control.js",
+    "tests/sairnlaw_clearance_refusal_review_probe.js",
+    "tests/sairnscape_outbound_queue.js",
+    "tests/sc_credentials_probe.py"
+  ],
+  "documented_without_second_pass": 14,
+  "first_attempt_only_actions": 145,
+  "suites_driving_actions": 103,
+  "suites_with_second_pass": 2
+}
