@@ -34,8 +34,8 @@
       "task": "SAIRNbuild external competitive-gap audit, five lenses, docs only, isolated cloud-research lane, lands on PR SAIRN1/SAIRN#18 branch claude/wizardly-ride-wtun13, not main. Internal code findings written up for the owning build session, not fixed. `check` said CLEAR. SUBJECT NAMED PER PR 4.3 FILES: docs/cloud-research/sairnbuild-external-competitive-gap-audit-2026-09-27.md",
       "claimed_at": "2026-09-27T03:33:18Z",
       "claimed_at_epoch": 1790479998.5123541,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-27T03:48:26Z",
       "files": [
         "docs/cloud-research/sairnbuild-external-competitive-gap-audit-2026-09-27.md"
       ]
