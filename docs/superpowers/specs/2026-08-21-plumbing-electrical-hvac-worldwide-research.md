@@ -21,8 +21,12 @@ Research pass, 2026-08-21. No code written, no repository files touched beyond t
 > Act's 15 lb and 53. §4 below organises regulatory divergence **per country** and
 > §6 states the HVAC need as *"EPA 608 (US) / F-Gas (EU)"*; both assume the
 > regulatory unit is the nation, and a sub-national fork with its own threshold
-> **and** its own GWP floor has no row in either. **§4 wants re-scoping from "per
-> country" to "per jurisdiction that can legislate a threshold."** The triage also
+> **and** its own GWP floor has no row in either. **STRUCTURE ADDED 2026-09-26:
+> see §4.1 below, which introduces regulatory LEVEL as an axis independent of
+> country and carries all three refrigerant limbs in one table — including the
+> detail that both US rules say 50 lb with DIFFERENT comparison operators, so a
+> unit at exactly 50.0 lb is in scope federally and out at state level.** The
+> closing paragraph of §4 is amended in place for the same reason. The triage also
 > corrects §8's dominant-pain row — data portability is now **partially built**
 > (one export dataset, `mech_credentials`, beside three still-disclosed
 > not-live buttons) — and records three marker counts that moved without their
@@ -173,7 +177,106 @@ Sources: [Business.gov.nl F-gas certificates](https://business.gov.nl/regulation
 
 Sources: [ESA](https://esasafe.com/contractor-licensing-master-electricians/), [TSSA](https://www.tssa.org/licensing-and-registration), [TSASK](https://www.tsask.ca/electrical/)
 
+---
+
+### 4.1 THE AXIS THE FOUR BLOCKS ABOVE DO NOT HAVE — regulatory LEVEL, added 2026-09-26
+
+**Everything above this line is organised by COUNTRY, and that is one axis short.**
+A rule has a *level* — supranational, national, or sub-national — and **a
+sub-national rule can regulate the same object as a national one, on its own
+threshold, with its own comparison operator.** Nothing in §4 as originally
+written has a row for that, which is why the finding below had nowhere to go.
+
+**How the gap showed itself, which is the only reason it is being fixed now.**
+This section did carry the idea that US *licensing* is state/municipal — the
+first line of the US block says so. What it did not carry is a sub-national
+**compliance rule with a numeric threshold on a regulated object**, which is a
+different kind of thing: licensing attaches to a *person*, a threshold attaches
+to a *machine*, and only the second one can disagree with a federal number about
+the same machine. On 2026-09-25 `api/_lib/mech-assets.js` gained a **third**
+refrigerant limb and it is a **US state** rule. The 2026-09-17 correction above
+had already split one bullet into two federal rules; a third could not be added
+the same way, because it is not federal and "United States" is a single heading.
+
+**THE MISSING STRUCTURE, stated as the thing to key on: `(regulated object ×
+level × threshold × comparison × scope predicate)`.** Worked through on the one
+object where all three levels now exist:
+
+| Level | Rule | Threshold | Comparison | Extra predicate | Reaches |
+|---|---|---|---|---|---|
+| **National (US)** | 40 CFR 82.157, Section 608 leak repair | **50 lb** | **≥ — 50 lb *or more*** | none | every asset |
+| **National (US)** | 40 CFR 84.106, AIM Act subpart C | **15 lb** | ≥ | HFC with **GWP > 53**; 30-day repair window, 10-day follow-up verification | every asset |
+| **Sub-national (US, CA)** | **17 CCR 95380 *et seq.*, CARB Refrigerant Management Program** | **50 lb** | **> — *more than* 50 lb** | **GWP > 150**, and the asset must be **in California** | only assets whose state is recorded as CA |
+| Supranational (EU) | F-Gas, EU 2015/2067 | by Category I–III | — | mutual recognition across member states | EU only; no SAIRN customer today |
+
+**THREE CONSEQUENCES THAT ONLY APPEAR ONCE LEVEL IS AN AXIS**, each of which a
+per-country structure hides:
+
+1. **The same number is not the same threshold.** Both US rules in rows 1 and 3
+   say 50 lb, and **the comparison differs**: 82.157 reaches an appliance
+   normally containing 50 pounds *or more*; the CARB program reaches a system
+   containing *more than* 50 pounds. **A unit weighed at exactly 50.0 lb is
+   therefore IN scope federally and OUT of scope at state level.** A single
+   shared constant with a shared comparison would have answered one of them
+   wrongly and silently. Driven both ways at exactly 50 in
+   `api/_lib/mech-assets.test.js`.
+2. **A sub-national rule needs a scope value the national ones do not have.**
+   `unknown_jurisdiction` — not `below`, not `not_applicable`. **An asset whose
+   state nobody recorded is not a finding that CARB does not reach it.** The
+   first gap CARB exposed was not the threshold; it was that the registry had no
+   way to say *where* an asset was. Any future sub-national rule needs the same
+   third answer, and a per-country table never prompts for it.
+3. **Some cross-level implications are sound and their converses are not, so
+   they must be derived rather than assumed.** CARB's GWP floor is 150 and the
+   AIM Act's is 53. If a contractor has stated the refrigerant is **not** above
+   53, it cannot be above 150, so the state substance test answers without
+   asking again. **The converse is unsound** — above 53 says nothing about 150 —
+   and R-152a, at roughly 124 GWP, is in AIM scope and out of CARB's. **A
+   three-limb rule set is not three independent booleans, and it is not one rule
+   with three thresholds either.**
+
+**WHAT TO DO WITH THIS SECTION RATHER THAN THE APP.** Re-scope §4 from *"per
+country"* to *"per jurisdiction that can legislate a threshold."* The country
+blocks above are still correct and are not being rewritten — they are the right
+shape for licensing, which is what most of their content is. **What they must
+stop being read as is a complete enumeration of the rules that bind a machine.**
+The US block has one line for EPA 608 and now needs three rows, and California is
+the first state to appear in it.
+
+**WHETHER OTHER STATES HAVE COMPARABLE PROGRAMMES IS AN OPEN QUESTION AND IS
+DELIBERATELY NOT ANSWERED HERE.** No search was run for one, so this section
+states neither that they exist nor that they do not — the honest answer is
+*unexamined*, and it is written that way because the cheap version of this
+sentence ("several other states operate their own HFC programs") is a claim with
+nothing behind it and would be indistinguishable from a researched one. **The
+structural point does not depend on the count:** the axis is needed the moment a
+sub-national threshold exists at all, and one does.
+
+**One limit stated plainly, because it is the same trap this section keeps
+falling into:** CARB was found in **shipped code**, not in a research pass. Its
+threshold, floor, operator and citation above are as `api/_lib/mech-assets.js`
+states them and were **not** re-read against 17 CCR 95380 here. That file's own
+comment records what it deliberately does **not** encode — inspection
+frequency, registration deadlines, reporting cadence, and the tiering by system
+size are all real parts of the program and none of them is modelled. Do not read
+this table as the program.
+
+---
+
 **What determines shared-core vs. separate-logic potential:** the research supports treating compliance logic as **inherently non-shareable across the three trades** — plumbing's fork is code-based (UPC/IPC) and regionally binary; electrical's is largely version/amendment-based (NEC editions) with the UK/EU using an entirely different standard family (BS 7671/IEC); HVAC's is the one with a genuine *federal* (EPA 608/AIM Act) and *EU-wide* (F-Gas) forcing function layered on top of state/provincial licensing. A shared platform could plausibly share generic "licensing/cert expiration tracking" infrastructure, but the actual compliance *content* (what data must be logged, on what threshold, under what regulator) is trade-specific and jurisdiction-specific in ways that don't reduce to one shared model.
+
+> **AMENDED 2026-09-26 — the sentence above is right about the conclusion and
+> wrong about the layering, and §4.1 is why.** *"federal and EU-wide forcing
+> function layered on top of state/provincial LICENSING"* has the sub-national
+> level carrying licensing only. It does not: CARB (17 CCR 95380) is a **state
+> forcing function on the same regulated object as the two federal ones**, with
+> its own threshold, its own GWP floor and a *different comparison operator* at
+> the same number. So the layering is not
+> federal-compliance-over-state-licensing — it is **compliance at two levels at
+> once, which can disagree about one machine.** The conclusion the sentence
+> reaches is if anything stronger for it: compliance content does not reduce to
+> one shared model, and now it does not reduce to one shared model *per
+> country* either.
 
 ---
 
