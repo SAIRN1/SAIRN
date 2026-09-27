@@ -43,6 +43,17 @@
       "status": "released",
       "released_at": "2026-09-27T23:44:44Z",
       "files": null
+    },
+    {
+      "id": "hover-1790552971",
+      "session": "hover",
+      "subject": "hover",
+      "task": "backlog: individually re-review the four stalest build-agent obligations (cc, fourth, hank, cody), then one genuinely undirected sweep pass FILES: .claude/skills/sairn-hover-auditor/",
+      "claimed_at": "2026-09-27T23:49:31Z",
+      "claimed_at_epoch": 1790552971.404564,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ]
 }
