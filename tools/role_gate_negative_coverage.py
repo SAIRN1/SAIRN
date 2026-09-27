@@ -153,67 +153,276 @@ ROLE_REFUSAL = re.compile(r"""FORBIDDEN|NOT_AUTHORIS|NOT_AUTHORIZ|"""
                           r"""status(?:Code)?\s*,\s*403|403\s*,""")
 
 
-def driven(all_roles):
-    """{resource: {roles any suite drives it with}}.
+# ── MASKING, SO A BOUNDARY IS FOUND IN CODE AND NOT IN PROSE ────────────────
+# Two masks from one pass over the source, both the SAME LENGTH as the input so
+# every offset still lines up with the original:
+#
+#   brace_mask -- strings, comments AND regex literals blanked. The ONLY text
+#                 brace matching may look at. A `{` inside a message string is
+#                 not a nesting level, and counting it closes a loop body one
+#                 brace early; the mirror case (a stray `}` in a string) closes
+#                 it late, which OVER-credits, and over-crediting is the
+#                 direction that retires the check.
+#   code       -- comments blanked, STRINGS KEPT. Everything this rule actually
+#                 looks for lives inside a string -- `resource: 'alf_facility'`,
+#                 `'FORBIDDEN'` -- so strings must survive. Comments must not:
+#                 crediting a role named in prose turns a real gap into a pass,
+#                 which is the 16-for-11 over-report in a worse place.
+#
+# A regex literal is detected by the standard expression-start heuristic. It can
+# be wrong, and the consequence is a boundary that ends early (under-credit,
+# safe) or late (over-credit, not safe) -- which is why an unterminated body is a
+# hard NO CREDIT below rather than a body that runs to end of file.
+_REGEX_START_BEFORE = set('(,=:[!&|?{};+-*%~^<>\n\t ')
 
-    ── A ROLE PASSED AS A VARIABLE WAS INVISIBLE, AND THE FIX HAD TO NOT BE A
-    ── LOOSENING (2026-09-27) ────────────────────────────────────────────────
-    The first version matched only `role: 'x'` and `tokenFor('x')`. Real arms are
+
+def masks(s):
+    """(brace_mask, code) -- same length as s. See the block comment above."""
+    brace = list(s)
+    code = list(s)
+    i, n = 0, len(s)
+    prev = '\n'  # what preceded the current position, ignoring whitespace
+
+    def blank(a, b, keep_in_code):
+        for k in range(a, b):
+            if s[k] != '\n':
+                brace[k] = ' '
+                if not keep_in_code:
+                    code[k] = ' '
+
+    while i < n:
+        c = s[i]
+        if c in '\'"`':
+            j, quote = i + 1, c
+            while j < n:
+                if s[j] == '\\':
+                    j += 2
+                    continue
+                if s[j] == quote:
+                    break
+                j += 1
+            blank(i, min(j + 1, n), keep_in_code=True)
+            prev = 'x'
+            i = min(j + 1, n)
+            continue
+        if c == '/' and i + 1 < n and s[i + 1] == '/':
+            j = s.find('\n', i)
+            j = n if j < 0 else j
+            blank(i, j, keep_in_code=False)
+            i = j
+            continue
+        if c == '/' and i + 1 < n and s[i + 1] == '*':
+            j = s.find('*/', i + 2)
+            j = n if j < 0 else j + 2
+            blank(i, j, keep_in_code=False)
+            i = j
+            continue
+        if c == '/' and prev in _REGEX_START_BEFORE:
+            j = i + 1
+            while j < n and s[j] != '\n':
+                if s[j] == '\\':
+                    j += 2
+                    continue
+                if s[j] == '/':
+                    break
+                j += 1
+            if j < n and s[j] == '/':
+                blank(i, j + 1, keep_in_code=True)
+                prev = 'x'
+                i = j + 1
+                continue
+        if not c.isspace():
+            prev = c
+        i += 1
+    return ''.join(brace), ''.join(code)
+
+
+def body_end(brace, open_idx):
+    """Index just past the `}` matching the `{` at open_idx in `brace`, or None.
+
+    None means the boundary COULD NOT BE FOUND, and every caller treats that as
+    NO CREDIT. A scanner that fell back to end-of-file would credit every
+    resource named in the rest of the suite to whatever roles the loop declared,
+    which is the magic-window defect with an infinite window.
+    """
+    if open_idx is None or open_idx >= len(brace) or brace[open_idx] != '{':
+        return None
+    depth = 0
+    for k in range(open_idx, len(brace)):
+        if brace[k] == '{':
+            depth += 1
+        elif brace[k] == '}':
+            depth -= 1
+            if depth == 0:
+                return k + 1
+    return None
+
+
+# A suite ARM asserts a role refusal. Required inside the loop body -- a role
+# list plus a resource plus no refusal is the family-contacts shape exactly.
+_LIST_DECL = re.compile(r"""const\s+([A-Za-z_$][\w$]*)\s*=\s*\[([^\]]*)\]\s*;""")
+_STRINGS = re.compile(r"""['"]([a-z0-9_]+)['"]""")
+_FOR_OF = re.compile(r"""for\s*\(\s*(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s+of\s+"""
+                     r"""(\[[^\]]*\]|[A-Za-z_$][\w$]*)\s*\)\s*\{""")
+_FOR_EACH = re.compile(r"""([A-Za-z_$][\w$]*)\s*\.forEach\s*\(\s*(?:function\s*)?\(?\s*"""
+                       r"""([A-Za-z_$][\w$]*)[^)]*\)?\s*(?:=>)?\s*\{""")
+_RESOURCE_AT = re.compile(r"""resource\s*[:=]+\s*['"]([a-z0-9_]+)['"]""")
+
+
+def _role_list(text, all_roles):
+    """The declared roles in an array-literal body, or None if it names none.
+
+    ── THE INTERSECTION, NOT THE SUBSET, AND THE BUG THAT PROVED IT (2026-09-27)
+    This first required EVERY member to be a declared role, and that silently
+    credited NOTHING on the very arm the rule was written for:
+
+        const ALF_NON_MGMT = ['nursing', 'med_aide', 'caregiver', 'activities'];
+
+    `caregiver` is a real SAIRNcare role -- sairncare.html offers it in both role
+    dropdowns -- but it appears in NO roleSet({...}) declaration in api/sd-data.js,
+    so it is absent from all_roles. One unrecognised member rejected the whole
+    list and three real roles went uncredited. A subset test makes the rule only
+    as complete as the role universe it is handed.
+
+    So: credit the INTERSECTION and require it non-empty. A `for ... of RESOURCES`
+    intersects to nothing and still contributes nothing, which is the case the
+    subset test was protecting and it is protected either way.
+
+    THE UNRECOGNISED MEMBER IS ITSELF A FINDING AND IS NOT SWALLOWED HERE. A role
+    the app offers that no gate's allowed-set ever names can never appear in
+    `excluded`, so no gate can ever be reported uncovered on it -- see
+    unknown_roles() and the UNDECLARED ROLES block in main().
+    """
+    items = _STRINGS.findall(text)
+    if not items:
+        return None
+    got = set(items) & all_roles
+    return got or None
+
+
+def loop_driven(src, all_roles):
+    """{resource: {roles}} from role checks written as a LOOP over a role list.
+
+    ── THE POSITIVE-DETECTION GAP THIS CLOSES (2026-09-27) ────────────────────
+    The literal rule below matches `role: 'x'` and `tokenFor('x')`. Real arms are
     written as a loop over a declared list:
 
         const ALF_NON_MGMT = ['nursing', 'med_aide', 'caregiver', 'activities'];
         for (const role of ALF_NON_MGMT) { ... call(hash, emp, role, ...) ... }
 
-    There is no `role: 'nursing'` anywhere in that, so four arms that DO drive the
-    excluded roles -- and that fail when the gate is deleted, proven by ablation --
-    left the resource reading `driven-as=owner`. The tool would have kept demanding
-    an arm that already existed.
+    There is no `role: 'nursing'` anywhere in that. So four arms that DO drive the
+    excluded roles -- green, and CAUGHT under ablation -- left alf_facility
+    reading `driven-as=owner`, and the tool went on demanding an arm that already
+    existed. That is a FALSE NEGATIVE, not merely a noisy false alarm: the ratchet
+    could never register the work.
 
-    A BARE QUOTED ROLE ANYWHERE IN THE FILE WOULD FIX IT AND BREAK THE TOOL: it is
-    the same over-crediting that made the first resource matcher report 16 for 11,
-    and here it is worse, because crediting a comment turns a real gap into a pass.
-    So a bare literal counts ONLY IN A FILE THAT ALSO ASSERTS A ROLE REFUSAL --
-    FORBIDDEN, NOT_AUTHORIS(Z)ED or a 403. A suite that names a role and never
-    asserts a refusal is exactly the family-contact shape and must keep failing.
+    ── WHY THIS IS NOT ATTEMPT 1 AGAIN ───────────────────────────────────────
+    Attempt 1 admitted a bare role literal in any file that asserted a refusal
+    ANYWHERE. It moved uncovered 12 -> 7, and ablating the five it newly credited
+    found TWO STILL SILENT: a suite can name `caregiver` and assert a 403 about
+    two unrelated resources. FILE-WIDE ATTRIBUTION WAS THE DEFECT, not the idea
+    of reading a variable.
 
-    ── AND THEN TWO ATTEMPTS TO FIX THAT WERE BOTH WRONG, IN OPPOSITE
-    ── DIRECTIONS, WHICH IS WHY THIS IS A SCREEN AND NOT A VERDICT ───────────
-    ATTEMPT 1, TOO LOOSE: admit a bare literal in any file that ALSO asserts a
-    refusal anywhere. It moved the figure 12 -> 7, and I ablated the five it newly
-    credited instead of trusting it. TWO WERE STILL SILENT -- deleting sd_customers'
-    and alf_mar's gates failed NOTHING across 400 suites. A file can name
-    `caregiver` and assert a 403 about two unrelated resources, which is what those
-    suites do. It would have absolved two real gaps.
+    So this rule is BODY-SCOPED and needs all four of these at once:
+      1. an array literal whose members are ALL role names (a `for ... of
+         RESOURCES` contributes nothing);
+      2. a for-of or .forEach over it, whose body boundary is found by BRACE
+         MATCHING on masked code -- not a character count, and not end-of-file
+         when the braces do not close;
+      3. the loop variable used as an identifier inside that body;
+      4. inside that same body, a role refusal asserted AND a `resource:` /
+         `resource ===` literal. Only those resources are credited.
 
-    ATTEMPT 2, TOO STRICT: require the role and the resource in the same test ARM.
-    Uncovered fell to 1 and NOT DRIVEN jumped 15 -> 29, because the resource is
-    usually named in a helper, a UNITS table or a loop OUTSIDE the arm. It stopped
-    seeing the drives at all.
+    Locked against synthetic fixtures in both directions BEFORE it was believed
+    about this repo: tests/role_gate_loop_rule_probe.py. N2 there is attempt 1's
+    exact failure; N4/N5/N6 are the boundary.
 
-    SO THE STATIC RULE IS THE ORIGINAL STRICT ONE AND IT IS A SCREEN, NOT A
-    VERDICT. `role: 'x'` or `tokenFor('x')` only. It OVER-reports, deliberately:
-    a suite driving an excluded role through a variable reads as uncovered, which
-    asks for an arm that may already exist. That is the safe direction, and the
-    honest resolution is that the ONLY sound measurement here is ABLATION -- delete
-    the gate and see whether anything fails -- which `--ablate` now does on demand.
-    Every reduction in the pinned figure should be an ablation-CONFIRMED one.
+    STILL A SCREEN, NOT A VERDICT. It can only find the shapes it knows, and it
+    cannot check that the loop variable is passed in the ROLE position rather than
+    some other argument. `--ablate` remains the only sound measurement, and the
+    pin must only ever be lowered on an ablation-CONFIRMED result.
     """
+    brace, code = masks(src)
+    lists = {}
+    for m in _LIST_DECL.finditer(code):
+        got = _role_list(m.group(2), all_roles)
+        if got:
+            lists[m.group(1)] = got
+
+    out = {}
+    heads = []
+    for m in _FOR_OF.finditer(code):
+        var, src_expr = m.group(1), m.group(2)
+        roles = (_role_list(src_expr, all_roles) if src_expr.startswith('[')
+                 else lists.get(src_expr))
+        heads.append((m.end() - 1, var, roles))
+    for m in _FOR_EACH.finditer(code):
+        heads.append((m.end() - 1, m.group(2), lists.get(m.group(1))))
+
+    for open_idx, var, roles in heads:
+        if not roles:
+            continue
+        end = body_end(brace, open_idx)
+        if end is None:
+            # Boundary not found. NO CREDIT -- see body_end().
+            continue
+        body_code = code[open_idx:end]
+        body_brace = brace[open_idx:end]
+        # The loop variable must actually appear in code position in the body.
+        if not re.search(r'\b%s\b' % re.escape(var), body_brace):
+            continue
+        if not ROLE_REFUSAL.search(body_code):
+            continue
+        for res in set(_RESOURCE_AT.findall(body_code)):
+            out.setdefault(res, set()).update(roles)
+    return out
+
+
+def literal_driven(src, all_roles):
+    """{resource: {roles}} from the ORIGINAL strict literal rule.
+
+    `role: 'x'` or `tokenFor('x')`, attributed to every `resource:` position in
+    the same file. FILE-WIDE, and deliberately kept that way: it over-reports in
+    the safe direction (it asks for an arm that may already exist), and the two
+    attempts to tighten or loosen it both made the tool worse. See the module
+    docstring for all three.
+    """
+    roles = set()
+    for r in all_roles:
+        if re.search(r"""role\s*[:=]\s*['"]%s['"]""" % re.escape(r), src) \
+           or re.search(r"""(?:tokenFor|token|session|sessionFor|as)\(\s*['"]%s['"]"""
+                        % re.escape(r), src):
+            roles.add(r)
+    if not roles:
+        return {}
+    out = {}
+    for res in set(re.findall(r"""resource\s*[:=]\s*['"]([a-z0-9_]+)['"]""", src)):
+        out[res] = set(roles)
+    return out
+
+
+def file_driven(src, all_roles):
+    """{resource: {roles}} for ONE suite's source text -- both rules, unioned.
+
+    Separate from driven() so the fixture probe can drive it on synthetic text.
+    A rule that can only be exercised against the real repo cannot distinguish
+    "the rule is right" from "the repo happens to suit it".
+    """
+    out = {}
+    for part in (literal_driven(src, all_roles), loop_driven(src, all_roles)):
+        for res, roles in part.items():
+            out.setdefault(res, set()).update(roles)
+    return out
+
+
+def driven(all_roles):
+    """{resource: {roles any suite drives it with}} across every suite."""
     out = {}
     for p in suite_files():
         s = io.open(p, encoding='utf-8', errors='replace').read()
         if 'role' not in s:
             continue
-        roles = set()
-        for r in all_roles:
-            if re.search(r"""role\s*[:=]\s*['"]%s['"]""" % re.escape(r), s) \
-               or re.search(r"""(?:tokenFor|token|session|sessionFor|as)\(\s*['"]%s['"]"""
-                            % re.escape(r), s):
-                roles.add(r)
-        if not roles:
-            continue
-        # STRICT: a `resource:` / `resource ===` position only. See the docstring --
-        # the loose version counted mentions and over-reported by five.
-        for res in set(re.findall(r"""resource\s*[:=]\s*['"]([a-z0-9_]+)['"]""", s)):
+        for res, roles in file_driven(s, all_roles).items():
             out.setdefault(res, set()).update(roles)
     return out
 
