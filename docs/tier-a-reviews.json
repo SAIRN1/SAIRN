@@ -4147,6 +4147,30 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-27T03:42:29Z",
+      "opened_at_sha": "54e4835ac96ea02dec8301b9a3252d228b186b0f",
+      "resources": [
+        "alf_staff",
+        "sen_visits"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/_lib/compliance-rules-staff-join.test.js",
+        "api/_resources/sairnsenior.js",
+        "api/sd-data-sen-evv-clock.test.js",
+        "api/sd-data.js"
+      ],
+      "what": "queue14 items 1-4 (hank): (1) api/_lib/auth.js -- legacyDecryptionKeys() gives legacy ciphertext decryption the dual-key path signing already had, because the four-step SD_AUTH_SECRET rotation this file publishes destroyed every pre-split ciphertext at step 2 while telling the reader nobody was affected; plus sql/legacy_ciphertext_census.sql, the select the revoke doc said nobody had run. (2) api/sd-data.js + api/_resources/sairnsenior.js -- cc's api/_lib/sen-evv-clock.js wired, all three exports: the caregiver clock write is checked before it is stored, a new DECLARED propose_clock_correction action appends rather than overwrites, and the read returns both the original and the corrected time. (3) sql/sairncare_compliance_seed.json -- applies_to_positions for OH, IN and both PA chapters, 6 mapped and 10 recorded as not mappable. (4) api/_lib/compliance-rules.js + api/sd-data.js -- the annual window is a computed default anchored to each staff member's hire date, replacing the three-way 400.\n\nATTACK HARDEST, in this order:\n\n(a) THE EVV CLOCK WIRING IS THE HIGHEST-CONSEQUENCE THING IN THIS BATCH and I wrote the seam, not the rules. A federal EVV record now carries a server-observed skew beside a caregiver-claimed time, and my branch decides which of those two is stored. VERIFY THAT THE CLAIMED TIME IS WHAT PERSISTS on every path, including the offline replay path I did not build and cannot drive: if my Object.assign of the module's stamps can ever land on a clock field, I have re-stamped an EVV record with server time and produced one that is \"precise, plausible and false\". The module's arm H2 asserts stamp keys are never clock fields; I am relying on that assertion rather than re-checking it, which is exactly the copy-exactly trap item 43 is about.\n\n(b) propose_clock_correction IS A NEW WRITE PATH I ADDED TO A REGULATED RECORD, gated on SEN_VISIT_SCHEDULER_ROLES. I argued a caregiver must not correct their own clock because that is the unverified self-assertion EVV exists to stop. Decide whether that is right -- it also means a caregiver who mis-typed their own clock-in has NO route to fix it and must ask the office, and if the office is one person who is also the caregiver, there is no route at all. That may be the correct trade or it may be a lockout I have not seen, and it is the same shape as the bootstrap trapdoor.\n\n(c) THE LEGACY DUAL-KEY PATH WIDENS WHAT CAN DECRYPT A CIPHERTEXT, which is the wrong direction for a security change even when it is the right direction for a migration. I claim it is safe because GCM's auth tag makes a wrong key fail cleanly and because encryption still uses only the current key. VERIFY the second half independently: if any path can write with the previous secret, the old key never retires and I have made the rotation permanent rather than drainable.\n\n(d) THE HIRE-DATE ANCHOR IS A COMPLIANCE RULE I IMPLEMENTED FROM A ONE-LINE DECISION. Michael said rolling twelve months anchored to hire date; I chose \"most recent hire anniversary at or before the evaluation date\". Check that boundary: somebody hired 2024-11-03 and evaluated exactly 2026-11-03 lands on the anniversary itself, and I put them in the year STARTING that day rather than the one ending it. One day either way changes whether a year's training counts.\n\n(e) I MAPPED \"direct care staff\" TO caregiver+med_aide+nursing AND LEFT activities OUT. That is a reading of 55 Pa. Code 2800.4, and if an activities director in a PCH does assist with ADLs under that definition, I have under-required for them -- which reports somebody with a real obligation as having none. Under-inclusion is the dangerous direction here and it is the one I chose in the name of not inventing facts.\n\n(f) THE CENSUS SQL IS UNRUN AND ITS COUNT GATES A DESTRUCTIVE STEP. It is the precondition I wrote for step 4 of the rotation (clear SD_AUTH_SECRET_PREVIOUS). If its legacy/v2 discriminator is wrong in either direction, step 4 either gets blocked for ever or gets cleared while legacy rows remain. The preflight already caught me naming the wrong table once.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-09-27T03:42:29Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
