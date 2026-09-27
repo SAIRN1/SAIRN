@@ -6187,3 +6187,287 @@ earn.
    the `SAIRN_INTERNAL_KEY` comment-field value; `tools/wait_for.py` still has no
    probe; the CDT upload path still must not be built; and my expired
    `hover-three-fixes` claim still reads open in the record.
+
+---
+
+## 2026-09-26 (Cody) -- cody-q13, seven items, all seven closed
+
+Claim `cody-q13`, released on writing this. Every commit pushed; each generated
+document re-checked at the new HEAD after every rebase, and **two rebase
+conflicts on generated docs were resolved by re-running the generators rather
+than merging text, per PR 2.5** -- the section written earlier in the day, used
+twice on the same day.
+
+Nothing in `sairnbiz.html`, `sairnsenior.html` or `sairnvet.html` was touched:
+`cc-queue12` holds all three, and three of the seven items are about findings in
+them.
+
+### 1. Nine waiters in stonedesk.html stop giving up in silence
+
+`76a80486`. Eight blocks poll for `window.addMsg` every 150-200ms and stop after
+ten seconds; every one called `clearInterval` and **nothing else**. Eight
+chat-enhancement hooks declined to install on every page load and said so
+nowhere -- which is why the dormancy had to be found by opening a browser console
+on the deployed page.
+
+`sdHookDormant(hook, global)` prints the shared **cause once** and **one line per
+hook**: eight identical explanations would be noise, eight names are eight facts.
+On `window` because each waiter lives in its own IIFE in its own script block, and
+every caller guards on `typeof` so if the first block throws the other eight
+degrade to the silence they had rather than to a TypeError.
+
+**THE REPORT IS CONDITIONAL, and that is the part that could have been wrong.**
+Each give-up timer fires whether or not its interval already succeeded, so an
+unconditional call would announce a dormancy for a hook that installed at t=3s --
+the same class of false statement as the silence, in the other direction.
+
+**The message carries the white-on-white constraint with BOTH colours**, because
+"hook did not install" without it invites somebody to just install it:
+`renderMarkdownRich` hardcodes `#F0F0FF` headings and `rgba(240,240,255,0.8)` list
+text for a dark surface while the live `.msg-bubble` is `#FFFFFF`. Arm 4b asserts
+both are present -- either alone is not actionable.
+
+**AND A COMMENT IN THAT FILE WAS WRONG, corrected rather than left.** `:21148`
+said *"THESE CHIPS ARE NOT DEAD ... installHook() wraps the LIVE addMsg()"*. There
+is no `addMsg` in the file: every one of the eight `window.addMsg =` lines sits
+inside an `install*Hook()` that returns early unless it is already a function, and
+a real `function addMsg(role, content)` survives only in
+`archive/branch-lucid-ptolemy-b73vu0/` -- the retired chat that comment's own
+first paragraph says was replaced. Two comments in one file disagreed and the
+browser-verified one was right. **The 2026-09-08 retarget it justifies is not
+reverted**, and the reasoning is written down: it removed a real TypeError from a
+path that is currently unreachable, which is the right state for it to be in.
+
+13 arms, four sabotages each caught by the intended arm. **And arm 1a went RED
+against a correct file on its first run** -- `/function\s+addMsg\s*\(/` matched
+`sdHookDormant`'s own warning text, which contains *"a real `function
+addMsg(...)`"* inside a **string literal**, so the comment filter could not remove
+it. My disclosure tripped my premise check. The anchor now requires an identifier
+parameter list and an opening brace. **Second time in two sessions that my own
+prose tripped my own scanner.**
+
+Live-verified: 9 disclosure call sites on the deployed page.
+
+### 2. `defect_register.py --planned` -- the 62 actions the file recorded and never read back
+
+`0456f0cb`. `action_status` has had a `planned` value since the field existed and
+`--check` asserted only that such a factor carries non-empty text. 62 planned
+actions across 58 records, oldest 12 days.
+
+**TWO COUNTS, NOT ONE, and they differ** -- a record can carry more than one
+planned factor. Arm A1 uses a fixture where they differ so a build reporting one
+figure twice cannot pass.
+
+**The one mechanical signal it can honestly give:** is the record's fix-commit sha
+named in `docs/SAIRN-OPEN-WORK-INDEX.md`? The index carries ~380 sha tokens, so
+the comparison is real. **53 of 62 are REGISTER-ONLY** -- reachable from one file,
+and that file is not the one anybody opens to pick work.
+
+**It does not fail and does not age into a finding.** A planned action can be
+correctly deferred for months, and a checker crying wolf on all 62 from its first
+run would be switched off within a day -- after which the register would carry a
+control that claims to watch this and does not.
+
+**AND THE COUNT RIDES ON `--check`, which is the command that actually runs.**
+`report_only_checks` invokes `--check` on every push; the full report is invoked by
+nothing. One line goes out with every push, and if it ever cannot be computed it
+says COULD NOT COUNT and says *"that is not zero"*.
+
+`planned_facts()` takes `now` and `idx` injectably so the probe drives synthetic
+fixtures; pointing a control at the live register would make every arm depend on
+today's record set. 12 arms, `DR_MODULE_DIR` override for negative controls, four
+sabotages caught -- including the two that matter: dropping a record with an
+unusable date (makes the backlog smaller than it is) and an empty index reading as
+TRACKED (fail-open).
+
+### 3. The eight enterprise RCM panels, MEASURED
+
+`5d5f32d8`, `tools/panel_depth.py` + `docs/2026-09-26-sairncode-rcm-panel-depth.md`.
+The debt two documents recorded and neither paid -- the 09-23 internal audit
+(*"a direct depth check on those eight panels is owed before pitching a large
+hospital system"*) and the 09-26 cloud audit, which deferred it again.
+
+**claims 9/9. prebill, hcc, drg, rac, denial, ar, revenue each 6/9, each missing
+the SAME three deep signals** -- `server_named`, `domain_verb`, `verb_sent`.
+
+**The sharpest part is what comment-stripping found.** `api/sd-data.js` mentions
+`sc_denial`, `sc_ar` and `sc_revenue` repeatedly and **every one of those mentions
+is a comment.** Code-line count: `sc_claims` 4, the other seven **0**. All seven
+ride the generic `SC_RESOURCES` handler -- no per-resource rule, by construction.
+Cross-checked across the whole `sc_` family: `therapy_accumulator` on `sc_claims`
+is the **only** domain verb SAIRNcode has.
+
+**TWO NUMBERS, never added** (PRESENT and COULD-NOT-TELL), and **no threshold** --
+one would manufacture a pass/fail out of a design question, and several of the
+seven may correctly have no domain verb because there is no second fact to compute.
+
+**The fixture lock earned itself before any data was touched.** Version `.1`'s
+`sig_panel` searched the raw file and the lock's *"a panel named ONLY in a
+comment"* fixture refused the criteria -- exit 2, NOTHING REAL WAS JUDGED. Then
+the **first real run** exposed a second error the lock had not predicted:
+`domain_verb` credited `sc_prebill` with five verbs (`sc_drg`, `sc_eligibility`,
+`sc_fraud`, `sc_hcc`, `sc_pctc`) because `SC_TIER_A_SOFT_DELETE_ONLY` puts several
+resource names on one line. Sibling names now excluded by prefix, two fixtures
+added, `CRITERIA_VERSION` `.1` -> `.2`. **Declared: one fixture corrected because
+its expectation was wrong, two added; none changed to match tool output.**
+
+### 4. The site-asset register exports, three rules kept apart
+
+`94fbf115`. The 08-21 research rates data portability the **dominant** real-world
+pain in this category, and the app could produce exactly one register as a file --
+not the one carrying the contractor's EPA and CARB position.
+
+**AND MY OWN 08-21 TRIAGE WAS WRONG ABOUT WHERE TO BUILD IT, corrected here.** It
+said the three remaining `mechNotLive('CSV export')` buttons were the candidates.
+They are not: all three sit inside the SAIRN Suite and SAIRNbiz Connector panels,
+whose own headers read *"Links only -- no data sync"*. They are cross-app sync
+exports on connectors that do not sync. Wiring them would have answered a
+different question and implied the connector works.
+
+**Three rules, six columns, never merged**, each rule's REASON beside its scope
+because the reason is the citation an inspector wants. Preamble carries all three
+citations, forbids summing, and states the boundary: 82.157 is 50 lb **or more**,
+17 CCR 95380 is **more than** 50, so a unit at **exactly 50.0 lb** is in scope
+federally and out at state level.
+
+**No supersession here, checked rather than copied.** `evaluateRegistry` does not
+reduce -- `rows` is a 1:1 map over every asset -- so reusing the credentials
+export's "on the board?" framing would have implied a problem this register does
+not have.
+
+**A charge of 0 is a measurement.** `r.refrigerant_charge_lb || ''` is the obvious
+accessor and it is wrong: 0 is falsy and blank means NEVER WEIGHED. Driven both
+ways.
+
+**And adding a second export made the FIRST one's messages lie**, fixed in the
+same change: the not-loaded toast said *"the credential register"* and the success
+toast claimed *"including records the board supersedes"*, both hardcoded when
+credentials was the only dataset and both false of this one. Arms D1-D3 hold
+**both** so fixing one cannot break the other.
+
+20 arms, board built by the **real** `evaluateRegistry` rather than hand-written --
+the credential suite's own header records what happens otherwise. Five sabotages,
+five caught. Live-verified on the deployment.
+
+**Tier A obligation recorded and assigned to cloud**, and **the record's text was
+repaired immediately after recording, with the repair declared in the record**: the
+sentence naming the charge accessor was written inside shell backticks, so bash
+substituted it away and the obligation landed with a gap exactly where the line to
+look at belonged.
+
+### 5. Wave 3 -- CLOSED, with one criterion's wording corrected
+
+`c56f98e5`, `docs/2026-09-26-wave3-audit-closeout.md`.
+
+**StoneDesk is not "8/8 closed"; it is 8 of 8 gaps with no UN-GATED work left.**
+GAP 4 step 1 (real image acceptance) landed today; step 2 needs a scanner
+interface -- Slabsmith, SideShot, Iride or Mapascan -- and `slabsmith` is still 0
+in the file. "8/8 closed" invites *"so Vein Match reads scanner files?"* and the
+answer is no. The audit row now carries both halves.
+
+**SAIRNbiz's 1099 fix verified and it is the right shape:** `sb1099Threshold` is
+keyed to the **payment date**, which matters because OBBBA CPI-indexes the figure
+from 2027 and a constant would have gone stale inside fifteen months.
+
+**SAIRNvet is the least ambiguous of the three:** `7bc26782` corrected a
+butorphanol HORSE dose that was 2-4x the FDA-approved equine figure, `f3484b3c`
+removed 284 green "Verified" ticks nothing had ever verified, and `980a9d2c` warns
+on 315 species-copied doses **derived from the table** rather than hand-listed --
+which is the half still true next month.
+
+**AND THERE IS NO "full-platform-audit Wave 1/2/3" ANYWHERE IN THIS REPO.** The
+only Wave 3 on disk is the click-through re-verification, a **different** wave
+that closed 2026-09-23 over the same three apps -- which is exactly how the two
+get confused. The criteria came with the dispatch, so they are written into the
+closeout where they can be checked.
+
+### 6. SAIRNbiz -- the four findings beyond the 1099 bug, prioritised
+
+`c56f98e5`, `docs/2026-09-26-sairnbiz-internal-findings-triage.md`. F1 already
+cc's and already fixed.
+
+**F4 first, not F2.** The Benefits panel's six invented strings are all still
+present; two of them **look computed** (*"Avg 5.2%"*, *"Plan Assets (est.)
+$284,000"*), which is the hardest kind of fabrication; and one -- *"Workers Comp --
+Active, BWC Ohio"* -- asserts **the Ohio Bureau of Workers' Compensation** to
+every customer in every state. The fix is deletion or disclosure and this app has
+done it twice.
+
+**AND A ONE-LINE UNBLOCK FOUND UNDER F2.** Cloud says the phantom-wage blocker is
+gone because timesheets are store-backed. **Cloud is right and the app's own screen
+still says the opposite:** `:1036` justifies leaving the configurable overtime
+threshold unwired on the grounds that *"its hours are demo figures, not a real
+store"* -- true until 2026-09-15, false since. Hours come from `sb_ts` keyed by
+employee id, `saveTimesheet()` is a real writer with a re-checked active-employee
+guard, and an employee with no record renders `--` and is excluded rather than
+defaulted to a full week. **A stale sentence is holding a feature back with a
+reason that stopped being true.** F2 is then two different sizes of work and is
+being treated as one.
+
+F3 third (undisclosed omission in a computed figure, low exposure, and it runs
+*opposite* to the wage-base overstatement the app **does** disclose). F5 fourth --
+one string, in a prompt, in `stonedesk.html` rather than `sairnbiz.html`, and the
+remedy is Michael's sentence to write.
+
+### 7. SAIRNsenior -- triaged, and the best build is not in cloud's gap list
+
+`c56f98e5`, `docs/2026-09-26-sairnsenior-cloud-audit-triage.md`.
+
+**PRIORITY 1, new in this triage: a caregiver with an EXPIRED CPR can be assigned
+to a client, and the app already knows.** `cpr_expiry` is stored and editable,
+`certDaysUntil()` drives two KPIs and renders a **red "Expired"** badge, and the
+assignment path at `:2342`/`:2355` reads neither. Two screens, two answers, no
+disagreement flagged. Cloud listed this in §7.3 as a candidate it *recorded but did
+not investigate*. It is the smallest real build in the audit, and
+SAIRNmechanical's `evaluateEligibility` + its 2026-09-17 caller fix is the
+precedent -- **including that comment's warning to SURFACE the answer rather than
+silently refuse**, which is right here too: a hard refusal would block an agency
+covering a shift in an emergency. Limit named: `cpr_expiry` is ONE certification
+and `sen_training_records` exists separately, so gate on what is recorded and say
+what is not gated.
+
+**PRIORITY 2: cloud's newest gap is HALF BUILT.** §7.1 item 2 says visit
+maintenance with reason codes *"does not exist"*; cloud's own §8 flags that as a
+grep floor. Read: the **detection** exists -- three named exception types at
+`:5482`, an EVV Exceptions KPI, and a table naming client, caregiver, date and
+issue. The **resolution** does not; `reason code` is 0. That is cc's item, and the
+verification cc was told to do is this: **build onto the existing detector, do not
+build a detector.**
+
+**THE BLOCKER CORRECTION, which changes who has to act.** SAIRNsenior's recorded
+blocker is *"a trading-partner agreement per aggregator"*. Cloud establishes the
+real gate is **a pilot agency per state that names SAIRNsenior** -- Colorado,
+Connecticut and Indiana all require the provider to sponsor the vendor first, and
+**no signed TPA exists at that layer at all**. The TPA is real but lives at the
+837/EDI layer, which is why every competitor names a clearinghouse. **So the first
+state is chosen by where the first Medicaid customer is, not by which spec is
+cleanest** -- the 08-27 ranking of NY/LA/TX holds for learning and not for
+sequencing. Also carries the three market credential-custody models, and notes
+that the safest one and the clearinghouse question are gated on the **same unset
+`SD_ENCRYPTION_KEY`**.
+
+**Priority 3 carries a metric distinction cloud's ordering hides:** EVV Completion
+(30d) already exists; an **edit rate** does not and cannot, because nothing records
+an edit. Different numerators, different denominators, and a state threshold
+written for one is not a threshold for the other.
+
+### Raised, not acted on
+
+1. **`SD_ENCRYPTION_KEY` still unset** -- now gating two separate decisions (the
+   clearinghouse key and SAIRNsenior's per-agency aggregator credentials).
+2. **`SAIRN_INTERNAL_KEY`'s env var still has its value in its plaintext
+   `comment` field.**
+3. **62 planned register actions, 53 register-only** -- now surfaced on every
+   push, but surfacing is not doing.
+4. **`media_type:'image/jpeg'` hardcoded at eight sites in `stonedesk.html`** --
+   and `sairnroofing.html:5320` already does it right with
+   `pendingPhotoMediaType`, so the fix has a same-platform model.
+5. **The slow-response indicator in `stonedesk.html` can never fire** -- its
+   `checkDone` interval clears `_activeTimeout` at 500ms while the indicator is
+   set to appear at 8000ms, and the interval only checks that the container
+   EXISTS, not that a response arrived. Found while reading the waiters; **not in
+   scope and not fixed.**
+6. **`tools/wait_for.py` still has no probe.**
+7. **The CDT upload path still must not be built** until counsel answers the CPT
+   licensing question.
+8. **My expired `hover-three-fixes` claim still reads open** in the record.
