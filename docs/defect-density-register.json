@@ -14914,6 +14914,58 @@
       "recurrence_open": "FIVE BLOCKERS REMAIN AND THE JOIN IS STILL NOT BUILDABLE, enumerated in docs/2026-09-26-sairncare-compliance-join-scoping.md: the requirement audience is prose while the roster carries a role code; recorded hours carry a category that requirements do not; stacking comes in at least three kinds including prose conditional on a staff member's tenure; an initial-hours-with-deadline requirement is a gate on whether somebody may work at all and needs a hire date the engine never receives; and the annual window is undefined. ONE OF SIX SEEDED STATES CAN CURRENTLY BE ANSWERED AT ALL, which is a disclosed gap rather than coverage -- a WV facility now gets no per-staff answer, which is worse for the user than a correct one and better than a false pass. Separately, opts.staff is CALLER-SUPPLIED, so whenever the wiring is built the aggregation must happen server-side against alf_staff_credentials: a client sending its own annual_hours_recorded while the authoritative append-only record sits unread on the server is the same shape as the attribution defect recorded against f0c0cb7a."
     },
     {
+      "commit": "131b9022ff48",
+      "date": "2026-09-26",
+      "subject": "feat(sairnsenior): an expired CPR refuses the assignment -- on all three write paths, and the join it needed did not exist",
+      "files": [
+        "sairnsenior.html",
+        "tests/lib/strip_comments.js",
+        "tests/sairnbiz_benefits_and_overtime.js",
+        "tests/sairnsenior_cert_gate.js"
+      ],
+      "lines_added": 509,
+      "lines_removed": 22,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "A caregiver whose CPR certification had expired could be assigned to a client and scheduled onto a visit, on all three write paths -- saveClient(), senReassignClient() and saveVisit() -- while the app already held the expiry date, already computed the days remaining with certDaysUntil(), and already rendered a red \"Expired\" badge for that same caregiver on the Caregivers panel. Two screens gave two answers about the same person and nothing flagged the disagreement. The underlying reason no check existed is structural rather than an omission: assigned_employee_id is an employee_id from SAIRNbiz's roster and a sen_caregivers row is keyed CG-... with a name, so there was no field joining the assignment to the certificate. Fixed by declaring the link (a \"Linked employee\" select on the caregiver record) and gating all three paths through it before any write; an expired certificate refuses and names the date and the day count, while an unlinked or undated record is a third state that allows and says so rather than passing silently.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The caregiver record and the client assignment path both predate any commit that could be called the injection -- neither introduced the missing join, the app was built without it. Naming one of them would put a sha on a design gap."
+      },
+      "citation_note": "1.11 is about a check that must fail CLOSED when a dependency is absent. Applied here to the data rather than to a tool: the unlinked case is a COULD-NOT-CHECK that is reported rather than folded into a pass, which is the same third state.",
+      "phase_note": "The two records were designed without a join, which is why the check was not expressible rather than merely not written. Stated rather than inferred: saveCaregiver() has never carried an employee id field.",
+      "contributing_factors": [
+        {
+          "factor": "the certificate data and the assignment data were owned by two different records with no field joining them -- a sen_caregivers row keyed CG-... with a name, and an assigned_employee_id out of another app's roster -- so the check was not skipped, it was not expressible",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "a Linked employee select on the caregiver record, resolved by employee_id, with an unlinked record producing COULD NOT CHECK rather than OK"
+        },
+        {
+          "factor": "the expiry was rendered as a badge on one panel and that made it look handled. A value shown in red somewhere reads as a control even when nothing consumes it -- the same shape as SAIRNmechanical's credentials subtitle claiming an eligibility computation that no caller requested",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "a checker over each app's *_expiry fields asking which decision paths read them, which would have caught this and the SAIRNmechanical eligibility case together -- named in recurrence_open and NOT built here"
+        },
+        {
+          "factor": "three separate write paths assign a caregiver, and a gate added to the obvious one would have left the other two open. saveClient, senReassignClient and saveVisit were written at different times for different reasons",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "all three gated before any write, and arm D3 asserts the check precedes the st() call on each so a refusal cannot leave a record behind"
+        }
+      ],
+      "recurrence_open": "The gate covers the three paths that assign a caregiver to care. It does NOT cover clock-in: vsClockIn() records a real visit event and does not re-check the certificate, so a visit scheduled while a certificate was valid can be worked after it lapses. That is arguably correct -- refusing a clock-in leaves a caregiver standing in a client's home with no way to record the visit -- and it is a product decision nobody has made, so it is named here rather than assumed either way. The gate is also single-certificate: cpr_expiry only. bgcheck_date is stored and not gated, and sen_training_records and sen_training_rules exist as separate resources the gate does not read, so a caregiver can be current on CPR and overdue on state training hours and the gate says nothing. Nothing mechanically detects the general shape either -- a stored expiry date that a decision path does not consult -- and a checker over each app's *_expiry fields against the write paths that assign the person they belong to would have found this one and the SAIRNmechanical eligibility case together. Named and NOT built here."
+    },
+    {
       "commit": "1f4d199092b3",
       "date": "2026-09-26",
       "subject": "fix(sairnvet): the cattle flunixin route was IV/IM and the label is IV ONLY -- a food-residue finding, not a dosing one",
@@ -16273,24 +16325,23 @@
       "recurrence_open": "The pin is resolved for the seed exemption. Nothing checks that any OTHER consumer of pushed_tip() treats its return as a refspec rather than a sha -- the same value is passed to the seed comparison and to export_sql_at, and whether either of those is refspec-safe was not audited here."
     },
     {
-      "commit": "131b9022ff48",
-      "date": "2026-09-26",
-      "subject": "feat(sairnsenior): an expired CPR refuses the assignment -- on all three write paths, and the join it needed did not exist",
+      "commit": "686a323c79f1",
+      "date": "2026-09-27",
+      "subject": "fix(auth): the documented SD_AUTH_SECRET rotation destroyed legacy ciphertexts, and the procedure sitting next to it said nobody was affected",
       "files": [
-        "sairnsenior.html",
-        "tests/lib/strip_comments.js",
-        "tests/sairnbiz_benefits_and_overtime.js",
-        "tests/sairnsenior_cert_gate.js"
+        "api/_lib/auth.js",
+        "api/_lib/auth.test.js",
+        "sql/legacy_ciphertext_census.sql"
       ],
-      "lines_added": 509,
-      "lines_removed": 22,
-      "app": "sairnsenior",
+      "lines_added": 302,
+      "lines_removed": 3,
+      "app": "PLATFORM",
       "layer": "product",
       "severity": "high",
       "detection_method": "code-review",
-      "summary": "A caregiver whose CPR certification had expired could be assigned to a client and scheduled onto a visit, on all three write paths -- saveClient(), senReassignClient() and saveVisit() -- while the app already held the expiry date, already computed the days remaining with certDaysUntil(), and already rendered a red \"Expired\" badge for that same caregiver on the Caregivers panel. Two screens gave two answers about the same person and nothing flagged the disagreement. The underlying reason no check existed is structural rather than an omission: assigned_employee_id is an employee_id from SAIRNbiz's roster and a sen_caregivers row is keyed CG-... with a name, so there was no field joining the assignment to the certificate. Fixed by declaring the link (a \"Linked employee\" select on the caregiver record) and gating all three paths through it before any write; an expired certificate refuses and names the date and the day count, while an unlinked or undated record is a third state that allows and says so rather than passing silently.",
+      "summary": "api/_lib/auth.js published a four-step SD_AUTH_SECRET rotation in its own comments, ending \"Nobody is signed out; the window drains itself.\" That was true of SESSIONS only, because signingKeys() tries SD_AUTH_SECRET_PREVIOUS. It was never true of secrets at rest: legacyEncryptionKey() derived from getSecret() -- the CURRENT secret only -- so step 2 of that documented procedure made every pre-split legacy ciphertext undecryptable and step 4 removed the last key that could read it. An operator following all four steps in the order the file gave them destroyed data the file said nothing about, and the failure is SILENT: decryptSecret() returns null and every caller reads null as \"no secret stored\", which for SAIRNlaw MFA renders as \"MFA is not set up\". NOT TRIGGERED, and that is measured rather than assumed: SD_AUTH_SECRET was created 2026-08-02 with updatedBy null (never rotated) and SD_AUTH_SECRET_PREVIOUS is absent in the live Vercel env, so no ciphertext was actually lost. Fixed by legacyDecryptionKeys(), which gives legacy DECRYPTION the same dual-key path signing already had -- current secret then previous. Encryption still uses only the current key, because a previous key that could write would keep the old key alive indefinitely. A v2 value still gets exactly one key and no fallback. Step 4 now carries a precondition the other three do not: 4a count remaining legacy ciphertexts (sql/legacy_ciphertext_census.sql, new, read-only), 4b then clear PREVIOUS.",
       "rules": [
-        "1.11"
+        "1.5"
       ],
       "citation_confidence": "arguable",
       "injection_phase": "design",
@@ -16298,31 +16349,39 @@
       "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "unknown_reason": "The caregiver record and the client assignment path both predate any commit that could be called the injection -- neither introduced the missing join, the app was built without it. Naming one of them would put a sha on a design gap."
+        "commit": "509a04f653f7",
+        "date": "2026-09-17",
+        "subject": "feat(auth): split the encryption duty, add key rotation, and scope signing per app",
+        "lag_days": 10
       },
-      "citation_note": "1.11 is about a check that must fail CLOSED when a dependency is absent. Applied here to the data rather than to a tool: the unlinked case is a COULD-NOT-CHECK that is reported rather than folded into a pass, which is the same third state.",
-      "phase_note": "The two records were designed without a join, which is why the check was not expressible rather than merely not written. Stated rather than inferred: saveCaregiver() has never carried an employee id field.",
+      "citation_note": "1.5 covers the SILENT half cleanly and by its own third bullet -- null meaning both \"no data\" and \"read failed\" -- because decryptSecret() returns null for a failed decrypt and every caller reads that as \"nothing stored\". It does NOT cover the other half, which is a written procedure whose reassurance was scoped to one subsystem (sessions) and read as global (the secret). No section names that shape, so the citation is arguable rather than clean, and this note says which half it carries.",
       "contributing_factors": [
         {
-          "factor": "the certificate data and the assignment data were owned by two different records with no field joining them -- a sen_caregivers row keyed CG-... with a name, and an assigned_employee_id out of another app's roster -- so the check was not skipped, it was not expressible",
+          "factor": "Two consumers of the same secret had different rotation tolerance: signingKeys() tried SD_AUTH_SECRET_PREVIOUS, legacyEncryptionKey() derived from the current secret only. Nothing in the file connected the two.",
           "kind": "technical",
           "action_status": "done",
-          "action": "a Linked employee select on the caregiver record, resolved by employee_id, with an unlinked record producing COULD NOT CHECK rather than OK"
+          "action": "legacyDecryptionKeys() returns [current, previous] for legacy decryption only; encryption still uses the current key. Two new arms, and ablating the fallback turns exactly those two red."
         },
         {
-          "factor": "the expiry was rendered as a badge on one panel and that made it look handled. A value shown in red somewhere reads as a control even when nothing consumes it -- the same shape as SAIRNmechanical's credentials subtitle claiming an eligibility computation that no caller requested",
-          "kind": "detection",
-          "action_status": "planned",
-          "action": "a checker over each app's *_expiry fields asking which decision paths read them, which would have caught this and the SAIRNmechanical eligibility case together -- named in recurrence_open and NOT built here"
-        },
-        {
-          "factor": "three separate write paths assign a caregiver, and a gate added to the obvious one would have left the other two open. saveClient, senReassignClient and saveVisit were written at different times for different reasons",
-          "kind": "latent-condition",
+          "factor": "The four-step rotation procedure was written about sessions and published as being about the secret, with a closing reassurance -- 'Nobody is signed out; the window drains itself' -- that was true of the subsystem its author was thinking about and false of the one they were not.",
+          "kind": "process",
           "action_status": "done",
-          "action": "all three gated before any write, and arm D3 asserts the check precedes the st() call on each so a refusal cannot leave a record behind"
+          "action": "The procedure comment now states in place which steps are safe for both duties, and step 4 carries an explicit 4a/4b precondition naming the census that must return zero first."
+        },
+        {
+          "factor": "Nothing would have reported the loss. decryptSecret() returns null for a failed decrypt and for a value that was never stored, so the observable symptom of a destroyed MFA secret is the screen saying MFA is not set up.",
+          "kind": "detection",
+          "action_status": "declined",
+          "note": "Deliberately NOT fixed here. Giving decryptSecret() a third state touches every caller across the apps that share this file and is a separate change nobody has scoped; folding it into a security fix would be the orthogonal-change defect. Carried in recurrence_open instead of silently closed."
+        },
+        {
+          "factor": "SD_AUTH_SECRET had never been rotated in production -- created 2026-08-02, updatedBy null, SD_AUTH_SECRET_PREVIOUS absent -- which is the only reason this is a near miss and not a data-loss incident. The trap was armed for the whole window and survived by non-use.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "Not a thing to fix; a thing to stop relying on. Recorded because the measurement is what turned 'probably fine' into a fact, and because the next rotation would have been the first one."
         }
       ],
-      "recurrence_open": "The gate covers the three paths that assign a caregiver to care. It does NOT cover clock-in: vsClockIn() records a real visit event and does not re-check the certificate, so a visit scheduled while a certificate was valid can be worked after it lapses. That is arguably correct -- refusing a clock-in leaves a caregiver standing in a client's home with no way to record the visit -- and it is a product decision nobody has made, so it is named here rather than assumed either way. The gate is also single-certificate: cpr_expiry only. bgcheck_date is stored and not gated, and sen_training_records and sen_training_rules exist as separate resources the gate does not read, so a caregiver can be current on CPR and overdue on state training hours and the gate says nothing. Nothing mechanically detects the general shape either -- a stored expiry date that a decision path does not consult -- and a checker over each app's *_expiry fields against the write paths that assign the person they belong to would have found this one and the SAIRNmechanical eligibility case together. Named and NOT built here."
+      "recurrence_open": "Three things this change does NOT close. (1) decryptSecret() still returns null for both a failed decrypt and a value that was never stored, so the next key-handling defect in this path will surface as \"MFA is not set up\" rather than as an error. (2) sql/legacy_ciphertext_census.sql is UNRUN and its legacy-vs-v2 discriminator (the `v2.` prefix) is unverified against real rows -- and its count now gates a destructive step, so a wrong discriminator either blocks step 4 for ever or clears PREVIOUS while legacy rows remain. (3) SD_ENCRYPTION_KEY is production-only while SD_AUTH_SECRET and SUPABASE_URL are preview+production; IF preview points at the same Supabase project, a preview deployment is a v2-blind reader and a legacy writer against production rows. Whether it does is one comparison of two env values nobody has made, and it is not asserted."
     }
   ],
   "started": "2026-09-09",
