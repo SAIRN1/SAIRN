@@ -442,6 +442,93 @@ def cmd_reconcile(only=None):
     return EXIT_FINDING if findings else EXIT_CLEAN
 
 
+SESSION_START_CONTESTED_CAP = 14
+
+
+def cmd_session_start():
+    """SessionStart mode. ALWAYS EXITS 0, and prints on every path.
+
+    ── WHY EXIT 0 UNCONDITIONALLY, WHICH IS NOT THE HOUSE STYLE ───────────
+    Every other check here treats could-not-run as a third state with its own
+    non-zero code, and that is right for a gate. A SessionStart hook is not a
+    gate: a non-zero exit there risks interfering with the start of a session
+    that has done nothing yet, and the failure mode would be a session that
+    cannot begin because a read-only advisory could not read something. So the
+    THIRD STATE IS CARRIED IN THE TEXT instead, printed in capitals and named --
+    never folded into silence, which is the part that actually matters.
+
+    ── AND WHY IT IS BOUNDED ──────────────────────────────────────────────
+    The full report is 86 lines and lists 104 contested rows. Ninety lines of
+    preamble at every session start is preamble nobody reads by the third
+    session, and this whole class of finding is about checks that are present
+    and unread. The claims are printed in full because there are never many and
+    they are the half a per-item `check` structurally cannot show you; the
+    contested rows are capped, with the count and the command to see the rest.
+    """
+    bad = self_check(verbose=False)
+    if bad:
+        print('DISPATCH STATE -- COULD NOT RUN: the open/closed rule failed its '
+              'own fixtures, so NOTHING was classified. No conclusion about '
+              'contested work is available this session.')
+        for label, got, want in bad:
+            print('  %r -> %s, expected %s' % (label, got, want))
+        return EXIT_CLEAN
+
+    claims, cproblem = live_claims()
+    rs, rproblem = rows()
+    if rs is None or claims is None:
+        print('DISPATCH STATE -- COULD NOT RUN: %s'
+              % '; '.join(p for p in (cproblem, rproblem) if p))
+        print('  NOTHING was compared. An empty contested list is NOT evidence '
+              'that nothing is contested.')
+        return EXIT_CLEAN
+
+    busy = {}
+    for sess, task, age in claims:
+        busy.setdefault(sess, []).append((task, age))
+    open_rows = [r for r in rs if is_open(r[2]) and not STRIKE.match(r[1])]
+    contested = []
+    for app, item, status, owner in open_rows:
+        os_ = owners_of(owner)
+        if any(s in busy for s in os_):
+            contested.append((app, item, owner, [s for s in os_ if s in busy]))
+
+    print('DISPATCH STATE -- %d open row(s) of %d, %d active claim(s), %d '
+          'contested' % (len(open_rows), len(rs), len(claims), len(contested)))
+    if cproblem or rproblem:
+        # A PARTIAL READ IS NOT A CLEAN ONE. Both sources answered enough to
+        # classify, and something still went wrong; saying so is the difference
+        # between a short list and a short list that is short for a reason.
+        print('  PARTIAL: %s -- the counts above are a FLOOR.'
+              % '; '.join(p for p in (cproblem, rproblem) if p))
+    if claims:
+        print('')
+        print('ACTIVE CLAIMS -- the half a per-item `sairn_claim.py check` '
+              'cannot show you:')
+        for sess, task, age in sorted(claims, key=lambda x: x[2]):
+            print('  %-7s %4.1fh  %s' % (sess, age, task[:96]))
+    else:
+        print('  NO ACTIVE CLAIMS. That is indistinguishable from a claim '
+              'record nobody pushed, so it is not evidence nobody is working.')
+    if contested:
+        print('')
+        print('CONTESTED -- open, and owned by a session working RIGHT NOW. '
+              'Read these before choosing work;')
+        print('  it is not a verdict that it IS the same work, only that the '
+              'owner column and a live')
+        print('  claim point at the same session. This is knowable NOW and not '
+              'at push, which is where')
+        print('  this check used to run.')
+        for app, item, owner, who in contested[:SESSION_START_CONTESTED_CAP]:
+            print('  ! %-13s %-62s -> %s'
+                  % (app[:13], strip_md(item)[:62], ','.join(who)))
+        if len(contested) > SESSION_START_CONTESTED_CAP:
+            print('  ... and %d more. NOT a full list -- see them all with '
+                  '`python tools/dispatch_state.py`.'
+                  % (len(contested) - SESSION_START_CONTESTED_CAP))
+    return EXIT_CLEAN
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument('--all', action='store_true')
@@ -452,7 +539,26 @@ def main(argv=None):
     ap.add_argument('--reconcile', nargs='?', const='ALL', default=None,
                     metavar='SESSION',
                     help='derive each build agent status from real sources')
+    # ── SessionStart MODE, MOVED HERE FROM PUSH TIME (2026-09-26) ──────────
+    # This tool was registered ONLY in report_only_checks.REGISTRY, whose hook
+    # returns 0 unless the Bash command was a `git push`. Its question is "what
+    # should I work on, given what somebody else is already three hours into" --
+    # and PUSH IS THE LEAST USEFUL MOMENT IN THE SESSION TO ASK IT, because by
+    # then the work is done. Right check, wrong moment; found by
+    # tools/invocation_path_scan.py and triaged in
+    # docs/2026-09-26-invocation-path-sweep.md.
+    #
+    # Measured on the run that motivated the tool, 2026-09-16: a five-item queue
+    # was dispatched and FOUR were another session's live or owned work, three
+    # named verbatim in a claim made SIX MINUTES earlier. Every one of those was
+    # knowable at session start and none of them at push.
+    ap.add_argument('--hook', action='store_true',
+                    help='SessionStart mode: the claims, and a bounded slice of '
+                         'the contested rows. Always exits 0.')
     args = ap.parse_args(argv)
+
+    if args.hook:
+        return cmd_session_start()
 
     if args.reconcile:
         return cmd_reconcile(None if args.reconcile == 'ALL'

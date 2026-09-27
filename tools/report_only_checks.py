@@ -1848,55 +1848,6 @@ REGISTRY = [
                     'failure directions, the boundary day, a bare escape hatch '
                     'being refused, and an unreadable register DENYING the push',
     },
-    {
-        'tool': 'dispatch_state.py',
-        'mode': 'once',
-        'verdict': by_exit,
-        'promoted': '2026-09-16, report-only and it must stay that way: it is a '
-                    'READING aid for whoever is picking work, and a gate that '
-                    'refused a push because the platform has open rows would '
-                    'refuse every push forever',
-        'catches': 'work that is open in docs/SAIRN-OPEN-WORK-INDEX.md AND '
-                   'owned by a session holding a live claim -- the collision a '
-                   'per-item `sairn_claim.py check` structurally cannot show '
-                   'you, because it answers about ONE task string you already '
-                   'thought of and cannot enumerate what else exists. Since '
-                   '2026-09-24, `--reconcile` also derives each build agent '
-                   'status from real sources (that clone git state, the live '
-                   'registry, origin/main claims, tier-a obligations) and '
-                   'prints the DISAGREEMENTS -- a hand-written status summary '
-                   'is the thing the weekly reconciliation practice exists to '
-                   'replace',
-        'why_it_matters': 'TWO SOURCES ANSWER "what should I work on" AND '
-                          'NEITHER ANSWERS IT ALONE. The registry says what is '
-                          'OPEN; the claims say what is BEING WORKED. Reading '
-                          'either alone produces a real failure: pick something '
-                          'a live session is three hours into, or ask about the '
-                          'one item you happened to name. MEASURED ON THE RUN '
-                          'THAT MOTIVATED IT, 2026-09-16: a five-item queue was '
-                          'dispatched to this session and FOUR were another '
-                          "session's live or owned work -- three named verbatim "
-                          'in a claim made SIX MINUTES earlier, the fourth '
-                          'owned by that same active session. It does NOT ask '
-                          'the phrase matcher, whose residual false CLEAR is '
-                          'measured and whose obvious repair cost 74 extra '
-                          'false blocks over 20,000 sampled pairs and was '
-                          'rejected; it joins on the owner column and reports '
-                          'CONTESTED rather than deciding',
-        'evidence': 'FIRST RUN 2026-09-16: 158 open rows of 510, 15 active '
-                    'claims, 55 CONTESTED, 31 waiting on Michael, 72 open and '
-                    'UNOWNED -- and ZERO rows that are open, owned, and whose '
-                    'owner is not currently working. Every named owner was live '
-                    'at that moment, so the only genuinely available work was '
-                    'the unowned bucket. 38-arm probe; the arms lean toward the '
-                    'OPEN direction because the dangerous failure is TOO SHORT '
-                    'a list -- an empty dispatch list looks identical to a '
-                    'finished platform. An unseen status word defaults to OPEN, '
-                    'an absent claims directory is COULD NOT RUN rather than '
-                    '"nothing is claimed", and an always-closed classifier is '
-                    'caught by the blind lock before it can print a tidy, empty '
-                    'and completely wrong report',
-    },
 ]
 
 # ── DELIBERATELY NOT PROMOTED, AND WHY ──────────────────────────────────────
@@ -1905,6 +1856,30 @@ REGISTRY = [
 # than left unanswered by default". This is that record for the ones that are
 # NOT going in, so the next session does not re-derive it. Printed by --list.
 NOT_PROMOTED = [
+    ('dispatch_state.py', 'MOVED OUT OF THIS REGISTRY TO SessionStart 2026-09-26, '
+     'which is a PROMOTION to a better trigger and not a demotion -- recorded '
+     'here because this list is where a decision about this registry lives, and '
+     'a tool that simply vanished from it would read as deleted. IT WAS RIGHT '
+     'AND RUNNING AT THE WRONG MOMENT. Its question is "what should I work on, '
+     'given what somebody else is already three hours into", and this registry '
+     'runs at PUSH time: `hook_main()` returns 0 unless the Bash command was a '
+     '`git push`. By the time you push, the work is done. Measured on the run '
+     'that motivated the tool, 2026-09-16: a five-item queue was dispatched and '
+     'FOUR were another session\'s live or owned work, three named verbatim in '
+     'a claim made SIX MINUTES earlier -- every one of those knowable at session '
+     'start and none of them at push. Now `dispatch_state.py --hook`, wired in '
+     '.claude/settings.json under SessionStart beside sairn_claim_hook.py and '
+     'sairn_status.py, which answer adjacent halves of the same question. That '
+     'mode is BOUNDED (the claims in full, the contested rows capped at 14 with '
+     'the count and the command for the rest) because the full report is 86 '
+     'lines and 90 lines of preamble at every session start is preamble nobody '
+     'reads by the third session -- which is this same class of defect one step '
+     'along. It ALWAYS EXITS 0, deliberately against the house style: a '
+     'SessionStart hook is not a gate and a non-zero exit there risks '
+     'interfering with a session that has done nothing yet, so the '
+     'could-not-run third state is carried in CAPITALS in the text instead of '
+     'in the exit code. Found by tools/invocation_path_scan.py; triaged in '
+     'docs/2026-09-26-invocation-path-sweep.md'),
     ('invocation_path_scan.py', 'PROMOTING IT HERE WOULD MAKE IT AN INSTANCE OF ITS '
      'OWN FINDING, and that is the whole reason for the decision rather than a '
      'joke about it. Its subject is WIRING -- .claude/settings.json and this '
@@ -2703,12 +2678,54 @@ def main(argv):
     if '--hook' in argv:
         return hook_main()
     if '--list' in argv:
+        # ── A MISSING FIELD IS A THIRD STATE, NOT A CRASH AND NOT A BLANK ───
+        # `--list` raised KeyError: 'evidence' on the first entry lacking that
+        # key, and FOUR lack it -- register_freshness_check.py, log_cluster.py,
+        # allan_deviation_check.py, response_shape_check.py. So the registry's
+        # ONLY human-readable surface has been unusable since the second of
+        # those was added, and nothing noticed, because nothing else reads
+        # `evidence`. Found 2026-09-26 while sweeping for checks whose trigger
+        # cannot reach their subject; this one could not be reached at all.
+        #
+        # THE FIX IS NOT `.get(k, '')`. An empty string turns a crash into a
+        # blank cell and makes an UNMEASURED checker indistinguishable from a
+        # measured one -- the same substitution `tooling_inventory.py` already
+        # refuses when it declines to emit a blank cell rather than describe a
+        # tool it has no entry for. And writing evidence text for four checkers
+        # nobody has run would fabricate the one field in this registry that is
+        # supposed to BE a measurement.
+        #
+        # So it prints the absence, by name, and reports the count at the end
+        # where it cannot be scrolled past.
+        MISSING = ('NO EVIDENCE RECORDED -- this checker has never had a real '
+                   'run written down here. That is not the same as a clean '
+                   'run, and it is not a reason to invent one: run it and '
+                   'record what it found.')
+        no_evidence = []
         for e in REGISTRY:
-            print('%-32s promoted %s (%s)' % (e['tool'], e['promoted'], e['mode']))
-            print('    catches : %s' % e['catches'])
-            print('    matters : %s' % e['why_it_matters'])
-            print('    evidence: %s' % e['evidence'])
+            print('%-32s promoted %s (%s)'
+                  % (e['tool'], e.get('promoted', '(no promotion note)'),
+                     e.get('mode', '(no mode)')))
+            print('    catches : %s' % e.get('catches', '(not stated)'))
+            print('    matters : %s' % e.get('why_it_matters', '(not stated)'))
+            if 'evidence' in e and str(e['evidence']).strip():
+                print('    evidence: %s' % e['evidence'])
+            else:
+                print('    evidence: %s' % MISSING)
+                no_evidence.append(e['tool'])
         print('')
+        if no_evidence:
+            print('%d of %d REGISTERED CHECKER(S) HAVE NO RECORDED EVIDENCE:'
+                  % (len(no_evidence), len(REGISTRY)))
+            for t in no_evidence:
+                print('  %s' % t)
+            print('  A registered checker with no recorded run is a promotion '
+                  'decision made on')
+            print('  nothing. Printed here rather than left as a blank cell, '
+                  'and counted rather')
+            print('  than listed only, because the count is the thing that '
+                  'should not grow.')
+            print('')
         print('DELIBERATELY NOT PROMOTED (%d) -- the decision, recorded once:'
               % len(NOT_PROMOTED))
         for tool, why in NOT_PROMOTED:

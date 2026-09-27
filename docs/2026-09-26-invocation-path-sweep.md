@@ -172,13 +172,49 @@ checker indistinguishable from a measured one. That is the same decision
 `tooling_inventory.py` already makes when it refuses to emit a blank cell.
 Michael's call, separately from this sweep.
 
+## What was done, same day
+
+Michael decided all five candidates in one pass. Re-run the tool: the candidate
+list is now **3**, and those three are the ones deliberately left alone.
+
+| Candidate | Decision | State |
+|---|---|---|
+| `index_duplicate_check.py` | Wire at edit time | **DONE** — `tools/index_duplicate_hook.py`, PostToolUse Write\|Edit, 12 arms |
+| `dispatch_state.py` | Move to SessionStart | **DONE** — `--hook` mode, removed from the push registry, recorded in `NOT_PROMOTED` |
+| `secrets_inventory.py` | Leave as-is | code-authored variant; the push-time gap does not apply the same way |
+| `dependency_graph.py` | Leave as-is | same |
+| `defect_register.py` | Leave as-is | narrow case; the register is written *through* the tool, which validates on `--add` |
+
+And the `--list` crash below is fixed: it now prints **`NO EVIDENCE RECORDED`**
+as a third state and counts the four checkers that carry it, rather than
+crashing or emitting a blank cell. No evidence was fabricated to fill the gap.
+
+**`dispatch_state.py --hook` is bounded on purpose** — the claims in full, the
+contested rows capped at 14 with the count and the command for the rest. The
+full report is 86 lines and lists 90 contested rows; ninety lines of preamble at
+every session start is preamble nobody reads by the third session, which is this
+same class of defect one step along. It **always exits 0**, deliberately against
+the house style: a SessionStart hook is not a gate, and a non-zero exit there
+risks interfering with a session that has done nothing yet. The could-not-run
+third state is carried in capitals in the text instead of in the exit code.
+
 ## Decisions left open, deliberately
 
-1. Wire `index_duplicate_check.py` at edit time (scoped hook, or a
-   document → checker dispatcher). **Recommended.**
-2. Move `dispatch_state.py` to `SessionStart`.
-3. The code-authored variant: what, if anything, should run when code changes
-   that could stale `SECRETS-INVENTORY.md` or `SPOF-REGISTER.md`.
+~~1. Wire `index_duplicate_check.py` at edit time.~~ **Done, same day.**
+
+~~2. Move `dispatch_state.py` to `SessionStart`.~~ **Done, same day.**
+
+1. The code-authored variant, still open: what, if anything, should run when
+   code changes that could stale `SECRETS-INVENTORY.md` or `SPOF-REGISTER.md`.
+   Decided 2026-09-26 to leave both checkers where they are; the QUESTION of an
+   edit-to-code trigger is not closed by that, only deferred, and the tool
+   prints it as a blind spot on every run.
+2. The stdin reader in the hook wrappers is now on its **second** duplicate
+   copy (`html_script_check.py`, `citation_drift_hook.py`,
+   `index_duplicate_hook.py`). The threshold is written into both wrappers so
+   nobody has to re-derive it: **a third hook wanting it should extract it**
+   into a shared module, and every hook using that module must then fail closed
+   when it is absent.
 
 `invocation_path_scan.py` is **deliberately not promoted** into the push sweep,
 and the reason is recorded in `report_only_checks.NOT_PROMOTED`: its own subject

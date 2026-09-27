@@ -19,13 +19,13 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**243 files in `tools/`.** By what actually invokes them:
+**244 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 13 | reachable from something that can refuse a push or a tool call |
 | **REPORT-ONLY** | 65 | runs automatically on every push, never blocks |
-| **ADVISORY** | 3 | session-start or prompt hooks, informational |
+| **ADVISORY** | 4 | session-start or prompt hooks, informational |
 | **DECIDED** | 70 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 43 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 49 | nothing runs these at all |
@@ -35,7 +35,7 @@ By what they are, independent of wiring:
 | Kind | Count |
 |---|---:|
 | ADVISORY | 3 |
-| CHECKER | 166 |
+| CHECKER | 167 |
 | GENERATOR | 19 |
 | LIBRARY | 25 |
 | LIVE | 25 |
@@ -172,7 +172,6 @@ quiet in practice.
 | `dependency_graph.py` | 2026-09-14, registered REPORT-ONLY on its first day and deliberately not wired into the push gate -- its threshold is a policy and a policy has no business refusing a push until somebody has watched it for a while | a component at or above SPOF_THRESHOLD with no row in docs/SPOF-REGISTER.md, a row marked OPEN that is no longer a chokepoint, and -- the sharp one -- a row marked RETIRED while the component is still above the bar |
 | `discarded_verdict_check.py` | 2026-09-10 | a refusal that is computed and then not read -- the gate runs and its answer is thrown away |
 | `discarded_verdict_crossfile.py` | 2026-09-10 | the CROSS-MODULE half: a verdict returned by a required module and dropped in another file |
-| `dispatch_state.py` | 2026-09-16, report-only and it must stay that way: it is a READING aid for whoever is picking work, and a gate that refused a push because the platform has open rows would refuse every push forever | work that is open in docs/SAIRN-OPEN-WORK-INDEX.md AND owned by a session holding a live claim -- the collision a per-item `sairn_claim.py check` structurally cannot show you, because it answers about ONE task string you already thought of and cannot enumerate what else exists. Since 2026-09-24, `--reconcile` also derives each build agent status from real sources (that clone git state, the live registry, origin/main claims, tier-a obligations) and prints the DISAGREEMENTS -- a hand-written status summary is the thing the weekly reconciliation practice exists to replace |
 | `div_balance_check.py` | 2026-09-10 | an unbalanced <div> tree -- the safe-editing rules say run it after EVERY edit and nothing ever did |
 | `duplicate_global_check.py` | 2026-09-10, after its one real-run finding turned out to be a deliberate wrapper | a second top-level declaration of the same global -- the later one silently wins and the earlier becomes dead code that still reads correctly (Guardian check 13) |
 | `eaten_substitution_check.py` | 2026-09-14, the day it was built, report-only and NOT wired into the push gate: it reports a SHAPE and cannot know a shell caused it, and a check that cannot tell a stray keystroke from an eaten expression has no business refusing a push | a commit message whose paragraph has a continuation line beginning with a stray single space -- what bash leaves behind when a backticked expression inside a double-quoted -m evaluates to nothing and is deleted |
@@ -216,13 +215,14 @@ quiet in practice.
 | `vercel_config_check.py` | 2026-09-09 | a buildCommand over Vercel's 256-char schema limit, and a route whose destination file no cp copies |
 | `write_without_readback_check.py` | 2026-09-10 | a resource an app WRITES to the server and never reads back -- a backup nobody could restore from |
 
-And 4 that are PostToolUse hooks in their own right, not registry entries:
+And 5 that are PostToolUse hooks in their own right, not registry entries:
 
 | Tool | Kind | What it catches | Probe under tests/ |
 |---|---|---|---|
 | `citation_drift_hook.py` | CHECKER | a register citation THIS EDIT drifted -- register_freshness_check.py existed since 2026-09-24 but was wired only through report_only_checks on PostToolUse:Bash, and the two documents it reads (docs/CRITICALITY-TIERS.md, docs/tier-a-reviews.json) are changed with Write/Edit, so editing a citation-bearing document triggered nothing at all. Freshness was held by manual discipline -- which had already failed twice: nine cites on sc_anesthesia_base_units went 30-45 lines stale within a DAY, and 8d0430c3 records five drifted by a CORRECTION to that same document. REPORTS THE DIFFERENCE, NOT THE TOTAL: the document carries 43 drifted cites that are nobody's current edit, so it judges the working copy AND a HEAD baseline through the checker's own check_tiers/check_reviews and prints only current-minus-baseline -- the same decision the push gate's generated-document check already made in its own words. A total printed after every save is noise, and noise is a check somebody turns off. Covered paths are IMPORTED from the checker, never listed here. Fails CLOSED and exits 2 when the checker cannot be imported or raises, and when no baseline exists it says it CANNOT ATTRIBUTE rather than presenting the list as yours. --selftest locks 11 arms against synthetic fixtures, three of which prove the comparison discriminates at all: the first version of that arm cited an identifier appearing a dozen times in one file and read as "the comparison does not work" | &mdash; |
 | `deploy_verify_notify.py` | CHECKER | a push whose deploy never reached the live site | `sairn_http_challenge.py`, `sairn_http_response_shape.py` |
 | `html_script_check.py` | CHECKER | a script block that no longer parses, after a Write or Edit | &mdash; |
+| `index_duplicate_hook.py` | CHECKER | a near-duplicate row pair THIS EDIT added to docs/SAIRN-OPEN-WORK-INDEX.md -- the file every session reads at start to choose work, where two rows on one subject give the reader two answers and no way to tell which is current. index_duplicate_check.py has caught that since it was built, and was wired ONLY into report_only_checks, whose hook returns 0 unless the Bash command was a `git push` -- so it ran after a push and never at the moment a row was added. A WRAPPER rather than the checker in settings.json because the checker does not self-scope by file_path: wired directly it would re-read the whole index after every edit in the repo, which is a check somebody turns off. REPORTS THE DIFFERENCE, NOT THE TOTAL, keyed on ROW TEXT and not line numbers -- every line number moves when a row is inserted above, so a line-keyed diff would report every existing pair as newly introduced by any edit at all. The trade is stated and asserted: rewording one row of an existing pair reads as a new pair. Judges a HEAD baseline via `git show` into a temp file and NEVER writes the working tree. Fails closed, exit 2, when the checker cannot be imported or raises. 12 arms, synthetic fixtures, three of which prove the comparison finds a duplicate at all. Found by invocation_path_scan.py; triaged in docs/2026-09-26-invocation-path-sweep.md as the one candidate of five genuinely the same shape as the citation-drift gap | &mdash; |
 | `report_only_checks.py` | LIBRARY | the report-only registry and its runner -- the entries above | `run_all_tests_hook_gate_probe.py`, `run_assurance_case_probe.py`, `run_baseline_readiness_probe.py`, `run_dora_metrics_probe.py`, `run_export_coverage_probe.py`, `run_literal_drift_control_probe.py`, `run_optimistic_success_probe.py`, `run_report_only_checks_probe.py`, `run_risk_event_tree_probe.py` |
 
 ---
@@ -311,10 +311,11 @@ is how a reader stops believing the number.
 
 ---
 
-## ADVISORY (3)
+## ADVISORY (4)
 
 | Tool | Kind | What it catches | Probe under tests/ |
 |---|---|---|---|
+| `dispatch_state.py` | CHECKER | work that is OPEN in docs/SAIRN-OPEN-WORK-INDEX.md and also OWNED by a session holding a live claim -- the collision a per-item `sairn_claim.py check` structurally cannot show you, because it answers about ONE task string you already thought of and cannot enumerate what else exists. TWO SOURCES ANSWER "what should I work on" AND NEITHER ANSWERS IT ALONE: the index says what is open, the claims say what is being worked, and reading either alone produces a real failure. MEASURED ON THE RUN THAT MOTIVATED IT, 2026-09-16: a five-item queue was dispatched and FOUR were another session's live or owned work, three named verbatim in a claim made SIX MINUTES earlier. It does NOT ask the phrase matcher, whose residual false CLEAR is measured and whose obvious repair cost 74 extra false blocks over 20,000 sampled pairs and was rejected; it joins on the owner column and reports CONTESTED rather than deciding. `--reconcile` derives each build agent's status from real sources (that clone's git state, the live registry, origin/main claims, tier-a obligations) and prints the DISAGREEMENTS. MOVED OUT OF report_only_checks.REGISTRY TO SessionStart 2026-09-26 (`--hook`): it was right and running at the wrong moment -- that registry fires only on `git push`, and by the time you push the work is done. Every one of those four collisions was knowable at session start and none at push. The decision is recorded in report_only_checks.NOT_PROMOTED so a tool vanishing from that list does not read as deleted; found by invocation_path_scan.py, triaged in docs/2026-09-26-invocation-path-sweep.md. The SessionStart mode is BOUNDED (claims in full, contested capped at 14 with the count and the command for the rest) and ALWAYS EXITS 0 -- a SessionStart hook is not a gate, so its could-not-run third state is carried in the TEXT | `run_dispatch_state_probe.py` |
 | `hover_self_health_shim.py` | CHECKER | a SessionStart hook registered by ABSOLUTE PATH into ONE clone, so a second instance of the same role self-checks the FIRST clone record on every firing while its own is never checked at all. Measured 2026-09-22: the hover self-health hook resolved its log from the SCRIPT location and its clone gate resolved from the CWD, and those two disagree the moment a second auditor exists -- which it does. This derives the per-clone path from CLAUDE_PROJECT_DIR and runs THAT, with THREE outcomes rather than two: silent in a build clone, the hook own output passed straight through in an auditor clone that has one, and a NAMED refusal in one that does not. There is deliberately NO fallback to a neighbouring clone copy, because the fallback IS the defect | `run_hover_self_health_shim_probe.py` |
 | `sairn_claim_hook.py` | CHECKER | another session's active claim on the work about to start | `run_push_verify_probe.py` |
 | `sairn_status.py` | REPORTER | what every agent on this machine says it is doing, RIGHT NOW, without a push/pull. The gap tools/session_lock_check.py names in its own header and puts out of scope: the lock answers "is somebody else in THIS directory", this answers "what is every agent doing". tools/dispatch_state.py already joins the open-work index against the claims, but both of its inputs are in git, so its answer is only as fresh as the last fetch and an unpushed claim is invisible. This is the live half: ~/SAIRN-SESSION-LOCKS/status, outside every clone. ONE FILE PER AGENT, NOT ONE FILE WITH SECTIONS -- a shared file needs a read-modify-write and two interleaved readers silently erase each other, which the control measures at 5 of 6 agents lost. Writes are atomic (temp + os.replace) with a Windows retry on both sides of the rename. Read at SessionStart by a hook that FAILS OPEN. It refuses to call two task strings the same work -- that judgement scored 38% with five false positives out of five | `run_claim_doc_freshness_probe.py`, `run_python_escape_hygiene_probe.py`, `run_registry_claim_probe.py`, `run_registry_claim_sabotage_probe.py`, `run_sairn_status_probe.py` |
@@ -460,12 +461,12 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      243   git ls-files tools/
-  hook entries                        11   .claude\settings.json
+  tools on disk                      244   git ls-files tools/
+  hook entries                        13   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
-  report-only registry                62   report_only_checks.REGISTRY
+  report-only registry                61   report_only_checks.REGISTRY
   tools invoked by tests/            172   tests/**/*.py, *.js
-  recorded NOT-promoted decisions     75   report_only_checks.NOT_PROMOTED
+  recorded NOT-promoted decisions     76   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```
 

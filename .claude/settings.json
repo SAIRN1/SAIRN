@@ -45,6 +45,12 @@
             "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/citation_drift_hook.py\"",
             "timeout": 200,
             "statusMessage": "Checking the citations in the document just edited..."
+          },
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/index_duplicate_hook.py\"",
+            "timeout": 90,
+            "statusMessage": "Checking the open-work index for a duplicated row..."
           }
         ]
       },
@@ -137,6 +143,12 @@
             "type": "command",
             "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/sairn_status.py\" --hook",
             "timeout": 12
+          },
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/dispatch_state.py\" --hook",
+            "timeout": 60,
+            "statusMessage": "Joining the open-work index against live claims -- what is already somebody else's..."
           },
           {
             "type": "command",
