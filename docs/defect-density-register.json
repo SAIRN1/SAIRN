@@ -16441,6 +16441,123 @@
       "recurrence_open": "No check exists for the general shape: a probe fixture carrying a LITERAL session name while the code under test resolves that same name from the clone. A grep for quoted clone names inside tests/ is cheap and has not been run, and the four build-agent names plus the hover instances are a small closed vocabulary that a checker could read from .claude/claims/ rather than hardcode -- which is the same mistake one shelf over."
     },
     {
+      "commit": "1a6cac7e0762",
+      "date": "2026-09-27",
+      "subject": "fix(sairncash): three more places a min/max against an unknown answered anyway -- one of them with a confident $0 of income tax",
+      "files": [
+        "sairncash.html",
+        "tests/sairncash_safe_harbor.js"
+      ],
+      "lines_added": 194,
+      "lines_removed": 1,
+      "app": "sairncash",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "Three of sairncash.html's 19 Math.min/Math.max call sites answered a question they could not read. bracketTax() is the worst and the reason is the return value rather than the input: Math.min(NaN, cap) is NaN, NaN > lastCap is false, so no band accumulates, the loop never breaks, and it returns a clean 0 -- measured, bracketTax(NaN|null|undefined,'single') === 0 against 5752 for 50000. A confident $0.00 of federal income tax. calcSeTax() was asymmetric from one line: Math.max(0, null) is 0 and Math.max(0, undefined) is NaN, so the same missing profit was silent down one path and loud down the other. projectAnnualFromYtd()'s 1/365 floor did not do what its own comment claimed -- the comment said it stops a $NaN beside a tax deadline and it only ever covered zero, because Math.max(1/365, NaN) is NaN. All three now refuse a non-finite input instead of computing on it, with zero explicitly still accepted. FOUND BY READING ALL 19 SITES, not by a committed tool.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "a0b9a2115ebc",
+        "date": "2026-08-10",
+        "subject": "feat: SAIRNcash -- deterministic tax/retirement math engine",
+        "lag_days": 48
+      },
+      "citation_note": "1.1 is the quiet-wrong-number rule and this is its arithmetic form: Math.min/Math.max accept an ABSENCE as an operand and return a plausible figure. bracketTax is the clearest instance on the platform -- it does not return NaN, it returns 0.",
+      "contributing_factors": [
+        {
+          "factor": "Math.min and Math.max coerce null to 0 and propagate NaN silently, so an absent operand produces a plausible number rather than an error",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "requireFiniteNumber() refuses a non-finite input at the three boundaries, throwing rather than returning a sentinel because a null return would need handling at four more call sites"
+        },
+        {
+          "factor": "the guards that make these unreachable live are in the CALLERS -- sumIncome/sumDeductions coerce with Number(x)||0 -- so the functions read as safe when only their callers are",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "stated in the code comment and in the commit rather than left as an unexamined reason the defect never fired; the guard is now in the function, where a new call site inherits it"
+        },
+        {
+          "factor": "a code comment asserted a guarantee the code did not provide -- the 1/365 floor was documented as preventing a NaN rendering and only ever covered zero",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the comment is corrected in place and names which lines actually provide the guarantee"
+        },
+        {
+          "factor": "nothing swept the rest of the engine when the same shape was fixed in the safe-harbor calculator hours earlier",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "this sweep; all 19 sites read, 16 confirmed clean, and the two sairnbiz sites of the same shape checked and cleared"
+        }
+      ],
+      "recurrence_open": "THE SWEEP WAS BY HAND AND COVERED ONE FILE. A one-off script ordered the reading and is not committed, so there is no standing check: sairnbuild.html has 16 candidate sites of this shape and is UNEXAMINED, not cleared, and the platform-wide scan produced 286 candidates across 55 files that nobody has read. Nothing prevents the next Math.min against an unknown."
+    },
+    {
+      "commit": "686a323c79f1",
+      "date": "2026-09-27",
+      "subject": "fix(auth): the documented SD_AUTH_SECRET rotation destroyed legacy ciphertexts, and the procedure sitting next to it said nobody was affected",
+      "files": [
+        "api/_lib/auth.js",
+        "api/_lib/auth.test.js",
+        "sql/legacy_ciphertext_census.sql"
+      ],
+      "lines_added": 302,
+      "lines_removed": 3,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "api/_lib/auth.js published a four-step SD_AUTH_SECRET rotation in its own comments, ending \"Nobody is signed out; the window drains itself.\" That was true of SESSIONS only, because signingKeys() tries SD_AUTH_SECRET_PREVIOUS. It was never true of secrets at rest: legacyEncryptionKey() derived from getSecret() -- the CURRENT secret only -- so step 2 of that documented procedure made every pre-split legacy ciphertext undecryptable and step 4 removed the last key that could read it. An operator following all four steps in the order the file gave them destroyed data the file said nothing about, and the failure is SILENT: decryptSecret() returns null and every caller reads null as \"no secret stored\", which for SAIRNlaw MFA renders as \"MFA is not set up\". NOT TRIGGERED, and that is measured rather than assumed: SD_AUTH_SECRET was created 2026-08-02 with updatedBy null (never rotated) and SD_AUTH_SECRET_PREVIOUS is absent in the live Vercel env, so no ciphertext was actually lost. Fixed by legacyDecryptionKeys(), which gives legacy DECRYPTION the same dual-key path signing already had -- current secret then previous. Encryption still uses only the current key, because a previous key that could write would keep the old key alive indefinitely. A v2 value still gets exactly one key and no fallback. Step 4 now carries a precondition the other three do not: 4a count remaining legacy ciphertexts (sql/legacy_ciphertext_census.sql, new, read-only), 4b then clear PREVIOUS.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "509a04f653f7",
+        "date": "2026-09-17",
+        "subject": "feat(auth): split the encryption duty, add key rotation, and scope signing per app",
+        "lag_days": 10
+      },
+      "citation_note": "1.5 covers the SILENT half cleanly and by its own third bullet -- null meaning both \"no data\" and \"read failed\" -- because decryptSecret() returns null for a failed decrypt and every caller reads that as \"nothing stored\". It does NOT cover the other half, which is a written procedure whose reassurance was scoped to one subsystem (sessions) and read as global (the secret). No section names that shape, so the citation is arguable rather than clean, and this note says which half it carries.",
+      "contributing_factors": [
+        {
+          "factor": "Two consumers of the same secret had different rotation tolerance: signingKeys() tried SD_AUTH_SECRET_PREVIOUS, legacyEncryptionKey() derived from the current secret only. Nothing in the file connected the two.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "legacyDecryptionKeys() returns [current, previous] for legacy decryption only; encryption still uses the current key. Two new arms, and ablating the fallback turns exactly those two red."
+        },
+        {
+          "factor": "The four-step rotation procedure was written about sessions and published as being about the secret, with a closing reassurance -- 'Nobody is signed out; the window drains itself' -- that was true of the subsystem its author was thinking about and false of the one they were not.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The procedure comment now states in place which steps are safe for both duties, and step 4 carries an explicit 4a/4b precondition naming the census that must return zero first."
+        },
+        {
+          "factor": "Nothing would have reported the loss. decryptSecret() returns null for a failed decrypt and for a value that was never stored, so the observable symptom of a destroyed MFA secret is the screen saying MFA is not set up.",
+          "kind": "detection",
+          "action_status": "declined",
+          "note": "Deliberately NOT fixed here. Giving decryptSecret() a third state touches every caller across the apps that share this file and is a separate change nobody has scoped; folding it into a security fix would be the orthogonal-change defect. Carried in recurrence_open instead of silently closed."
+        },
+        {
+          "factor": "SD_AUTH_SECRET had never been rotated in production -- created 2026-08-02, updatedBy null, SD_AUTH_SECRET_PREVIOUS absent -- which is the only reason this is a near miss and not a data-loss incident. The trap was armed for the whole window and survived by non-use.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "Not a thing to fix; a thing to stop relying on. Recorded because the measurement is what turned 'probably fine' into a fact, and because the next rotation would have been the first one."
+        }
+      ],
+      "recurrence_open": "Three things this change does NOT close. (1) decryptSecret() still returns null for both a failed decrypt and a value that was never stored, so the next key-handling defect in this path will surface as \"MFA is not set up\" rather than as an error. (2) sql/legacy_ciphertext_census.sql is UNRUN and its legacy-vs-v2 discriminator (the `v2.` prefix) is unverified against real rows -- and its count now gates a destructive step, so a wrong discriminator either blocks step 4 for ever or clears PREVIOUS while legacy rows remain. (3) SD_ENCRYPTION_KEY is production-only while SD_AUTH_SECRET and SUPABASE_URL are preview+production; IF preview points at the same Supabase project, a preview deployment is a v2-blind reader and a legacy writer against production rows. Whether it does is one comparison of two env values nobody has made, and it is not asserted."
+    },
+    {
       "commit": "cc6e38945baa",
       "date": "2026-09-27",
       "subject": "fix(probes): two sabotage anchors had stopped matching ANYTHING, and nothing ran the probes that were failing",
@@ -16545,65 +16662,6 @@
         }
       ],
       "recurrence_open": "The red baseline this record surfaced is NOT closed -- twelve suites and 172 assertions across the whole SAIRNcare test surface plus sairnbuild are still red at HEAD from c8b5e5b1, and api/sd-data.js is deliberately untouched here because the resolution is a judgement about whether the pre-gate should name an app or the stubs should tolerate one that does not. Five AMBIGUOUS anchors in sairndesign_sairngrounds_fault_probe.py and sairnmechanical_fault_probe.py are also open and unfixed."
-    },
-    {
-      "commit": "686a323c79f1",
-      "date": "2026-09-27",
-      "subject": "fix(auth): the documented SD_AUTH_SECRET rotation destroyed legacy ciphertexts, and the procedure sitting next to it said nobody was affected",
-      "files": [
-        "api/_lib/auth.js",
-        "api/_lib/auth.test.js",
-        "sql/legacy_ciphertext_census.sql"
-      ],
-      "lines_added": 302,
-      "lines_removed": 3,
-      "app": "PLATFORM",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "api/_lib/auth.js published a four-step SD_AUTH_SECRET rotation in its own comments, ending \"Nobody is signed out; the window drains itself.\" That was true of SESSIONS only, because signingKeys() tries SD_AUTH_SECRET_PREVIOUS. It was never true of secrets at rest: legacyEncryptionKey() derived from getSecret() -- the CURRENT secret only -- so step 2 of that documented procedure made every pre-split legacy ciphertext undecryptable and step 4 removed the last key that could read it. An operator following all four steps in the order the file gave them destroyed data the file said nothing about, and the failure is SILENT: decryptSecret() returns null and every caller reads null as \"no secret stored\", which for SAIRNlaw MFA renders as \"MFA is not set up\". NOT TRIGGERED, and that is measured rather than assumed: SD_AUTH_SECRET was created 2026-08-02 with updatedBy null (never rotated) and SD_AUTH_SECRET_PREVIOUS is absent in the live Vercel env, so no ciphertext was actually lost. Fixed by legacyDecryptionKeys(), which gives legacy DECRYPTION the same dual-key path signing already had -- current secret then previous. Encryption still uses only the current key, because a previous key that could write would keep the old key alive indefinitely. A v2 value still gets exactly one key and no fallback. Step 4 now carries a precondition the other three do not: 4a count remaining legacy ciphertexts (sql/legacy_ciphertext_census.sql, new, read-only), 4b then clear PREVIOUS.",
-      "rules": [
-        "1.5"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "509a04f653f7",
-        "date": "2026-09-17",
-        "subject": "feat(auth): split the encryption duty, add key rotation, and scope signing per app",
-        "lag_days": 10
-      },
-      "citation_note": "1.5 covers the SILENT half cleanly and by its own third bullet -- null meaning both \"no data\" and \"read failed\" -- because decryptSecret() returns null for a failed decrypt and every caller reads that as \"nothing stored\". It does NOT cover the other half, which is a written procedure whose reassurance was scoped to one subsystem (sessions) and read as global (the secret). No section names that shape, so the citation is arguable rather than clean, and this note says which half it carries.",
-      "contributing_factors": [
-        {
-          "factor": "Two consumers of the same secret had different rotation tolerance: signingKeys() tried SD_AUTH_SECRET_PREVIOUS, legacyEncryptionKey() derived from the current secret only. Nothing in the file connected the two.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "legacyDecryptionKeys() returns [current, previous] for legacy decryption only; encryption still uses the current key. Two new arms, and ablating the fallback turns exactly those two red."
-        },
-        {
-          "factor": "The four-step rotation procedure was written about sessions and published as being about the secret, with a closing reassurance -- 'Nobody is signed out; the window drains itself' -- that was true of the subsystem its author was thinking about and false of the one they were not.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "The procedure comment now states in place which steps are safe for both duties, and step 4 carries an explicit 4a/4b precondition naming the census that must return zero first."
-        },
-        {
-          "factor": "Nothing would have reported the loss. decryptSecret() returns null for a failed decrypt and for a value that was never stored, so the observable symptom of a destroyed MFA secret is the screen saying MFA is not set up.",
-          "kind": "detection",
-          "action_status": "declined",
-          "note": "Deliberately NOT fixed here. Giving decryptSecret() a third state touches every caller across the apps that share this file and is a separate change nobody has scoped; folding it into a security fix would be the orthogonal-change defect. Carried in recurrence_open instead of silently closed."
-        },
-        {
-          "factor": "SD_AUTH_SECRET had never been rotated in production -- created 2026-08-02, updatedBy null, SD_AUTH_SECRET_PREVIOUS absent -- which is the only reason this is a near miss and not a data-loss incident. The trap was armed for the whole window and survived by non-use.",
-          "kind": "latent-condition",
-          "action_status": "not-actionable",
-          "note": "Not a thing to fix; a thing to stop relying on. Recorded because the measurement is what turned 'probably fine' into a fact, and because the next rotation would have been the first one."
-        }
-      ],
-      "recurrence_open": "Three things this change does NOT close. (1) decryptSecret() still returns null for both a failed decrypt and a value that was never stored, so the next key-handling defect in this path will surface as \"MFA is not set up\" rather than as an error. (2) sql/legacy_ciphertext_census.sql is UNRUN and its legacy-vs-v2 discriminator (the `v2.` prefix) is unverified against real rows -- and its count now gates a destructive step, so a wrong discriminator either blocks step 4 for ever or clears PREVIOUS while legacy rows remain. (3) SD_ENCRYPTION_KEY is production-only while SD_AUTH_SECRET and SUPABASE_URL are preview+production; IF preview points at the same Supabase project, a preview deployment is a v2-blind reader and a legacy writer against production rows. Whether it does is one comparison of two env values nobody has made, and it is not asserted."
     }
   ],
   "started": "2026-09-09",
