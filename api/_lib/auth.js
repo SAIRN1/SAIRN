@@ -1018,11 +1018,42 @@ async function credentialStillActive(session, licHash, rest, headers) {
     // answering "active" would silently disable the control. Third state.
     return { ok: false, code: 'NO_ACTIVE_CHECK' };
   }
+  // ── TWO WAYS TO FAIL, ONE CODE, AND A `reason` THAT SEPARATES THEM ──────
+  // ADDED 2026-09-26, BACKWARD COMPATIBLE ON PURPOSE. `code` is unchanged, so
+  // all thirteen existing callers behave exactly as before -- every one of them
+  // branches on `code === 'CREDENTIAL_INACTIVE'` and still refuses both shapes.
+  //
+  // WHY THE DISTINCTION IS NEEDED NOW. api/sd-data.js's pre-gate runs BEFORE the
+  // per-resource app scoping, so it can see a token that is perfectly valid but
+  // belongs to ANOTHER app on this licence -- a SAIRNdental session presented at
+  // a law_ resource. That has no row in `sairndental_employee_auth` for this
+  // licence, and collapsing it into CREDENTIAL_INACTIVE tells the user "this
+  // credential has been deactivated. Sign in again" when their credential is
+  // healthy and they are simply in the wrong app. A wrong explanation sends
+  // somebody to reset a password that was never the problem.
+  //
+  //   reason 'inactive'  the row EXISTS and active is not true -- a real
+  //                      deactivation, the thing set_active does, and the one
+  //                      state every caller must refuse.
+  //   reason 'no-row'    nothing came back. On an app-scoped call site that means
+  //                      the employee is gone; on an UNSCOPED one it may only mean
+  //                      the token belongs to a different app. The caller knows
+  //                      which it is; this function does not, so it says which
+  //                      shape it saw instead of guessing.
   const row = Array.isArray(rows) && rows[0];
-  if (!row || row.active !== true) {
+  if (!row) {
     return {
       ok: false,
       code: 'CREDENTIAL_INACTIVE',
+      reason: 'no-row',
+      message: 'This credential has been deactivated. Sign in again with an active account.'
+    };
+  }
+  if (row.active !== true) {
+    return {
+      ok: false,
+      code: 'CREDENTIAL_INACTIVE',
+      reason: 'inactive',
       message: 'This credential has been deactivated. Sign in again with an active account.'
     };
   }

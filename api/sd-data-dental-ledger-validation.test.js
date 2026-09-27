@@ -51,6 +51,13 @@
 // SAIRNdental licence and session this session does not hold.
 
 const assert = require('assert');
+// ACTIVE-CREDENTIAL PRE-GATE (2026-09-26): api/sd-data.js now re-checks the
+// caller's employee row on EVERY request carrying a token. This suite's fetch
+// stub answers generic rows with no `active` field, which is a state a real
+// deployment cannot be in, so the wrapper answers that one read and passes
+// everything else through. See tests/lib/active_credential_stub.js.
+const { wrapFetch: wrapActiveCred } = require('../tests/lib/active_credential_stub');
+
 const { signSessionToken } = require('./_lib/auth');
 
 const LIC_HASH = 'test-hash';
@@ -119,7 +126,7 @@ function loadHandler(fetchImpl, noValidator) {
     });
     require.cache[require.resolve('./_lib/dental-ledger')] = { exports: stub };
   }
-  global.fetch = fetchImpl;
+  global.fetch = wrapActiveCred(fetchImpl);
   delete require.cache[require.resolve('./sd-data.js')];
   return require('./sd-data.js');
 }

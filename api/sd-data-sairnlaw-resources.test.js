@@ -28,6 +28,13 @@
 // so the cross-check runs in every direction rather than one.
 
 const assert = require('assert');
+// ACTIVE-CREDENTIAL PRE-GATE (2026-09-26): api/sd-data.js now re-checks the
+// caller's employee row on EVERY request carrying a token. This suite's fetch
+// stub answers generic rows with no `active` field, which is a state a real
+// deployment cannot be in, so the wrapper answers that one read and passes
+// everything else through. See tests/lib/active_credential_stub.js.
+const { wrapFetch: wrapActiveCred } = require('../tests/lib/active_credential_stub');
+
 const fs = require('fs');
 const path = require('path');
 
@@ -63,7 +70,7 @@ function loadHandler(fetchImpl) {
   require.cache[require.resolve('./_lib/license')] = {
     exports: { validateLicenseKey: async () => ({ valid: true, active: true, license_hash: LIC_HASH, trial_ends_at: null, stripe_subscription_id: null }) }
   };
-  global.fetch = fetchImpl;
+  global.fetch = wrapActiveCred(fetchImpl);
   delete require.cache[require.resolve('./sd-data.js')];
   return require('./sd-data.js');
 }

@@ -94,22 +94,71 @@ def scan():
                 out[rel] = {'unreadable': str(e)}
                 continue
             gates = explicit = route = 0
-            for t in _code_lines(src):
-                gates += t.count(GATE)
-                explicit += t.count(EXPLICIT)
+            # ── POSITIONS, NOT JUST COUNTS (2026-09-26) ──────────────────────
+            # This tool compared `explicit < gates` and called the file PARTIAL.
+            # That model assumes ONE RE-CHECK PER GATE, and it is the wrong model
+            # for the fix it was built to measure. api/sd-data.js's 131 uncovered
+            # gates were closed by a SINGLE re-check placed at the entry point,
+            # above every gate -- one edit instead of 131 -- and this tool scored
+            # that as a REGRESSION, because the gate count rose by one (the
+            # pre-gate's own verification) while the re-check count stayed at one.
+            #
+            # It would have rewarded 132 scattered copies and punished the
+            # correct fix. Positions are recorded so the pre-gate shape can be
+            # recognised as what it is: STRONGER than per-gate coverage, because
+            # a 133rd gate added tomorrow inherits it.
+            gate_lines = []
+            explicit_lines = []
+            for i, t in enumerate(_code_lines(src)):
+                if t.count(GATE):
+                    gates += t.count(GATE)
+                    gate_lines.append(i)
+                if t.count(EXPLICIT):
+                    explicit += t.count(EXPLICIT)
+                    explicit_lines.append(i)
                 route += len(BY_ROUTE.findall(t))
             if gates or explicit:
-                out[rel] = {'gates': gates, 'explicit': explicit, 'route': route}
+                out[rel] = {'gates': gates, 'explicit': explicit, 'route': route,
+                            'gate_lines': gate_lines,
+                            'explicit_lines': explicit_lines}
     return out
 
 
+def is_pre_gate(row):
+    """Does ONE re-check sit above EVERY gate but the pre-gate's own?
+
+    THE SHAPE THIS RECOGNISES, and why it is stronger than per-gate coverage: a
+    single credentialStillActive() at the dispatcher's entry point, reached after
+    a token has been verified once and before any resource branch. Every existing
+    gate is behind it and so is every gate added later, which per-gate coverage
+    cannot promise.
+
+    THE TEST IS DELIBERATELY STRICT ON BOTH COUNTS, because a loose version of
+    this is an escape hatch that scores any early re-check as total coverage:
+
+      * EXACTLY ONE re-check. Two call sites mean two reads per request and two
+        places for the three-state handling to drift.
+      * EXACTLY ONE gate may precede it -- the pre-gate's own verification, which
+        must run first because the re-check needs a verified session to look up.
+        A re-check with two gates above it leaves those two uncovered, and that
+        is `partial`, not a pre-gate.
+    """
+    if row['explicit'] != 1:
+        return False
+    at = row['explicit_lines'][0]
+    before = [g for g in row['gate_lines'] if g < at]
+    return len(before) == 1
+
+
 def verdict(row):
-    """One of: covered-explicit, covered-by-route, NEITHER, partial."""
+    """One of: covered-pre-gate, covered-explicit, covered-by-route, NEITHER, partial."""
     if row.get('unreadable'):
         return 'UNREADABLE'
     g, e, r = row['gates'], row['explicit'], row['route']
     if not g:
         return 'no-gate'
+    if e and e < g and is_pre_gate(row):
+        return 'covered-pre-gate'
     if e and e < g:
         return 'partial'
     if e:
@@ -192,6 +241,7 @@ def main(argv):
             'gates_uncovered_inside_partial_files': gates_uncovered_in_partial,
             'files_with_neither': len(neither),
             'files_partial': len(partial),
+            'verdict_by_file': {rel: verdict(v) for rel, v in sorted(rows.items())},
         }
         io.open(os.path.join(REPO, PINS), 'w', encoding='utf-8', newline='\n').write(
             json.dumps(data, indent=2, sort_keys=True) + '\n')
@@ -225,11 +275,55 @@ def main(argv):
     ]
     bad = [(k, pins.get(k), v) for k, v in checks
            if pins.get(k) is not None and v > pins[k]]
-    if bad:
+
+    # ── AND A PER-FILE VERDICT RATCHET, BECAUSE THE AGGREGATES HAVE A HOLE ──
+    # FOUND BY ABLATING THE FIX THIS TOOL MEASURES. Deleting api/sd-data.js's
+    # entire pre-gate -- 133 gates left with no re-check at all -- made every
+    # aggregate above read BETTER: gates_uncovered_inside_partial_files went
+    # 131 -> 0, because with zero re-checks the file is no longer `partial`, and
+    # it landed on `covered-by-route` (it contains one incidental
+    # `active=eq.true`) instead of NEITHER. So the numbers improved, exit was 0,
+    # and the fix could have been reverted in silence.
+    #
+    # THE AGGREGATE MODEL CANNOT SEE A DOWNGRADE, only a count. And the obvious
+    # repair -- requiring route >= gates -- is the one this tool must NOT make:
+    # every api/*-auth.js has 3 to 13 gates and ONE `active=eq.true`, inside the
+    # shared loadEmployee() every gated path calls, and accusing all seventeen of
+    # them was this tool's own first wrong number. So the classification is left
+    # alone and the VERDICT ITSELF is pinned per file, on an explicit ordering.
+    # A file may only get better.
+    ORDER = ['NEITHER', 'partial', 'covered-by-route', 'covered-explicit',
+             'covered-pre-gate']
+    pinned_v = pins.get('verdict_by_file') or {}
+    downgrades = []
+    unranked = []
+    for rel, v in sorted(rows.items()):
+        if v.get('unreadable') or rel not in pinned_v:
+            continue
+        now, was = verdict(v), pinned_v[rel]
+        if now not in ORDER or was not in ORDER:
+            # A verdict this ordering does not know is NOT a pass. Silently
+            # skipping it is how a new verdict name would disable the ratchet for
+            # every file that earns it.
+            unranked.append((rel, was, now))
+            continue
+        if ORDER.index(now) < ORDER.index(was):
+            downgrades.append((rel, was, now))
+    if unranked:
+        print('')
+        print('COULD NOT TELL -- a verdict outside the known ordering, so these')
+        print('files were NOT ratcheted. Add the name to ORDER deliberately.')
+        for rel, was, now in unranked:
+            print('   %-28s pinned %r -> now %r' % (rel, was, now))
+        return 2
+
+    if bad or downgrades:
         print('')
         print('REGRESSION -- session-gate re-check coverage got WORSE:')
         for k, was, now in bad:
             print('   %-42s pinned %s -> now %s' % (k, was, now))
+        for rel, was, now in downgrades:
+            print('   %-42s %s -> %s' % (rel, was, now))
         print('Either re-check the new gate, or say why it does not need it and')
         print('re-pin with --baseline in the same commit as the reason.')
         return 1

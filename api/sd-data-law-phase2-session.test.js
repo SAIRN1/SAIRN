@@ -38,6 +38,16 @@
 
 'use strict';
 const assert = require('assert');
+// NO ACTIVE-CREDENTIAL WRAPPER HERE, AND THAT IS THE POINT (2026-09-26).
+// This suite ALREADY answers the `*_employee_auth` read itself -- restStub()
+// returns [{active:false}] or [{active:true}] from its own fixture -- because
+// three of its arms exist specifically to prove a DEACTIVATED employee is
+// refused. tests/lib/active_credential_stub.js forces active:true, so wrapping
+// this file silently disarmed exactly the arms it was written for: 22 of 25
+// went red and said so. A convenience fixture that overrides a suite's own
+// negative state is worse than no fixture, and its header says not to use it
+// for the deactivated case. Recorded here so nobody adds the wrapper back.
+
 const { signSessionToken } = require('./_lib/auth');
 
 const LIC_HASH = 'law-phase2-hash';
@@ -93,6 +103,19 @@ function restStub(opts) {
     if (u.indexOf('sairnlaw_employee_auth') !== -1) {
       return { ok: true, status: 200,
                json: async () => (o.active === false ? [{ active: false }] : [{ active: true }]) };
+    }
+    // ── ANY OTHER APP'S EMPLOYEE TABLE IS EMPTY ON THIS LICENCE ────────────
+    // ADDED 2026-09-26. This fell through to the generic `[{ data: { id: 'X1' } }]`
+    // below, so a lookup in `sairndental_employee_auth` returned a row that
+    // EXISTS with no `active` field -- and the pre-gate correctly reads that as
+    // deactivated, so the three cross-app arms got CREDENTIAL_INACTIVE where
+    // they expect FORBIDDEN. THE FIXTURE WAS MODELLING AN IMPOSSIBLE ROW: a
+    // SAIRNlaw licence has no SAIRNdental employees, so that query returns
+    // NOTHING. Empty is the faithful answer, and with it the pre-gate declines
+    // to judge (no row, unknown app scope) and the branch gate answers
+    // FORBIDDEN -- the right code for "your session is for another app".
+    if (u.indexOf('_employee_auth') !== -1) {
+      return { ok: true, status: 200, json: async () => [] };
     }
     return { ok: true, status: 200, json: async () => [{ data: { id: 'X1' } }] };
   };

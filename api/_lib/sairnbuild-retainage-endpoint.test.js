@@ -129,6 +129,26 @@ function jsonRes(status, body) {
 const FETCH = function (url, opts) {
   opts = opts || {};
   const u = String(url), method = opts.method || 'GET';
+  // ── THE AUTH LOOKUP IS ANSWERED AND NOT COUNTED (2026-09-26) ─────────────
+  // api/sd-data.js gained an active-credential PRE-GATE: one credentialStillActive()
+  // at the entry point covering all 133 verifySessionToken gates instead of the 70
+  // action-pairs the old per-resource placement reached. It costs ONE
+  // `*_employee_auth` read on every request carrying a token, including one that
+  // is about to be refused on role.
+  //
+  // THREE ARMS BELOW ASSERT `requests.length === 0` ON A REFUSAL, and that
+  // property is about THE PROTECTED DATA -- "a 403 issued after the rows were
+  // already pulled has still leaked them". The auth row is not the protected
+  // data; it is the thing that decides. Counting it would make the arms read
+  // "the pre-gate exists", which is a different and already-tested fact, and
+  // would leave nothing asserting the real one. So the lookup is answered with
+  // an active employee (the state every arm here means by "signed in") and
+  // excluded from the count, with the reason at the line that excludes it.
+  if (/_employee_auth\?/.test(u)) {
+    return Promise.resolve({ ok: true, status: 200,
+                             json: async () => ([{ active: true }]),
+                             text: async () => '[{"active":true}]' });
+  }
   requests.push({ url: u, method: method, body: opts.body ? JSON.parse(opts.body) : null });
 
   // bld_release_retainage_atomic RPC (2026-09-21 fix for hover_log #315).

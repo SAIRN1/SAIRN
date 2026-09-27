@@ -129,6 +129,102 @@ check('...and that counts as a regression against the pin', rc == 1, 'exit=%s' %
 os.remove(os.path.join(d, 'api', 'many.js'))
 
 # ---------------------------------------------------------------------------
+print('\n4b. THE PRE-GATE SHAPE -- and why recognising it is not an escape hatch')
+# THIS TOOL'S MODEL WAS WRONG AND ITS OWN SUBJECT PROVED IT. `explicit < gates ->
+# partial` assumes ONE RE-CHECK PER GATE. api/sd-data.js's 131 uncovered gates
+# were closed by a SINGLE re-check at the entry point, above every gate -- one
+# edit rather than 131 -- and this tool called that a REGRESSION, because the gate
+# count rose by one (the pre-gate's own verification) while the re-check count
+# stayed at one. It would have rewarded 132 scattered copies and punished the fix.
+#
+# The recognition is position-based and STRICT, and the negative arms below are
+# the point: a loose version would score any early re-check as total coverage.
+PRE = ("module.exports = async () => {\n"
+       "  const p = verifySessionToken(tokenFromRequest(req), licHash);\n"
+       + RECHECK)
+write(d, 'api/pre.js', PRE + (GATE * 12) + '};\n')
+rc, out = run(d)
+check('ONE re-check with exactly ONE gate above it, and 12 below, is '
+      'covered-pre-gate -- not partial', 'covered-pre-gate' in out
+      and num(out, 'FILES_PARTIAL') == 0,
+      'partial=%s :: %s' % (num(out, 'FILES_PARTIAL'),
+                            [l for l in out.split('\n') if 'pre.js' in l]))
+check('...and it contributes ZERO uncovered gates, because a 13th gate added '
+      'later is behind it too',
+      num(out, 'GATES_UNCOVERED_INSIDE_PARTIAL_FILES') == 0,
+      str(num(out, 'GATES_UNCOVERED_INSIDE_PARTIAL_FILES')))
+os.remove(os.path.join(d, 'api', 'pre.js'))
+
+# ── NEGATIVE 1: TWO gates above the re-check leaves those two uncovered ────
+write(d, 'api/mid.js',
+      "module.exports = async () => {\n" + (GATE * 2) + RECHECK + (GATE * 10) + '};\n')
+rc, out = run(d)
+check('TWO gates above the re-check is PARTIAL, not a pre-gate -- those two run '
+      'on the token alone', num(out, 'FILES_PARTIAL') == 1,
+      [l for l in out.split('\n') if 'mid.js' in l])
+os.remove(os.path.join(d, 'api', 'mid.js'))
+
+# ── NEGATIVE 2: ZERO gates above it is not a pre-gate either ───────────────
+# A re-check with no verified session above it has nothing to look up. The old
+# arm 4 fixture is exactly this shape and must stay partial.
+write(d, 'api/nogate.js',
+      "module.exports = async () => {\n" + RECHECK + (GATE * 10) + '};\n')
+rc, out = run(d)
+check('ZERO gates above the re-check is PARTIAL too -- it would be querying for '
+      'a session nothing has verified', num(out, 'FILES_PARTIAL') == 1,
+      [l for l in out.split('\n') if 'nogate.js' in l])
+os.remove(os.path.join(d, 'api', 'nogate.js'))
+
+# ── NEGATIVE 3: TWO re-checks is not a pre-gate, however early they are ────
+# NAMED tworechecks.js, NOT two.js -- the first draft of this arm reused
+# `api/two.js`, a fixture arm 1 created and arms 5 and 6 still depend on, and then
+# DELETED it. Arm 5's control then failed for a reason that had nothing to do with
+# its subject: removing an unprotected file lowered FILES_WITH_NEITHER, so the pin
+# no longer registered a regression and the control's `rc == 1` went to 0. A
+# fixture that mutates shared state is the probe's own version of the defect this
+# tool hunts, and it took a red arm three sections away to surface it.
+write(d, 'api/tworechecks.js',
+      PRE + RECHECK + (GATE * 10) + '};\n')
+rc, out = run(d)
+check('TWO re-checks is PARTIAL -- two employee reads per request and two places '
+      'for the three-state handling to drift', num(out, 'FILES_PARTIAL') == 1,
+      [l for l in out.split('\n') if 'tworechecks.js' in l])
+os.remove(os.path.join(d, 'api', 'tworechecks.js'))
+
+# ---------------------------------------------------------------------------
+print('\n4c. DELETING A PRE-GATE IS A REGRESSION -- the hole the ablation found')
+# FOUND BY ABLATING THE FIX, NOT BY REVIEW. Removing api/sd-data.js's entire
+# pre-gate made every AGGREGATE read better: uncovered-in-partial went 131 -> 0,
+# because a file with zero re-checks is not `partial` any more, and one incidental
+# `active=eq.true` in 14,900 lines landed it on covered-by-route instead of
+# NEITHER. Numbers improved, exit 0, and the fix could have been reverted in
+# silence. The aggregates cannot see a DOWNGRADE, only a count, so the verdict
+# itself is pinned per file.
+#
+# The obvious repair -- requiring route >= gates -- is the one this tool must NOT
+# make: every api/*-auth.js has 3 to 13 gates and ONE active=eq.true inside the
+# shared loadEmployee() that every gated path calls, and accusing all seventeen
+# was this tool's own first wrong number. Arm 5 guards that. So this arm guards
+# the downgrade instead, leaving the classification alone.
+write(d, 'api/pregate.js', PRE + (GATE * 12) + '};\n')
+rc, out = run(d, '--baseline')
+check('a pre-gate file pins as covered-pre-gate', rc == 0, 'exit=%s' % rc)
+# Now delete ONLY the re-check, leaving the gates and an incidental route hit --
+# strictly worse, and the shape that used to read as an improvement.
+write(d, 'api/pregate.js',
+      "module.exports = async () => {\n"
+      "  const p = verifySessionToken(tokenFromRequest(req), licHash);\n"
+      + (GATE * 12) + ROUTE + '};\n')
+rc, out = run(d)
+check('removing the re-check but keeping an incidental active=eq.true is a '
+      'REGRESSION, not an improvement', rc == 1 and 'REGRESSION' in out,
+      'exit=%s :: %s' % (rc, out[-400:]))
+check('...and it names the file and BOTH verdicts, so the downgrade is legible',
+      'api/pregate.js' in out and 'covered-pre-gate ->' in out, out[-400:])
+os.remove(os.path.join(d, 'api', 'pregate.js'))
+run(d, '--baseline')   # restore the pin for the arms below
+
+# ---------------------------------------------------------------------------
 print('\n5. BOTH MECHANISMS ARE COUNTED -- the arm against this tool\'s own first '
       'wrong number')
 # Counting only credentialStillActive reported 3 of 222 and would have accused
@@ -188,9 +284,21 @@ before_mtime = os.path.getmtime(real_pin) if os.path.isfile(real_pin) else None
 rc, out = run(REPO)
 check('the shipping api/ tree parses and yields a non-trivial gate count',
       (num(out, 'GATES_TOTAL') or 0) > 100, 'gates=%s' % num(out, 'GATES_TOTAL'))
-check('...and api/sd-data.js is reported PARTIAL rather than covered',
-      'api/sd-data.js' in out and 'partial' in out,
-      [l for l in out.split('\n') if 'sd-data' in l])
+sd_row = [l for l in out.split('\n') if 'api/sd-data.js' in l and 'covered' in l
+          or ('api/sd-data.js' in l and 'partial' in l)]
+# ── THIS ARM PASSED FOR THE WRONG REASON AND THEN FOR NO REASON ────────────
+# It read `'api/sd-data.js' in out and 'partial' in out` -- two INDEPENDENT
+# substring tests over the whole output, and the word "partial" appears in the
+# tool's own legend on every run. So it could never fail while the tool printed
+# its legend, and it kept passing on 2026-09-26 after sd-data.js became
+# covered-pre-gate, reporting the OPPOSITE of the truth. Anchored on that file's
+# OWN ROW now, and on the verdict the row actually carries.
+check('api/sd-data.js is reported covered-pre-gate -- a SINGLE re-check at the '
+      'entry point above all 133 gates, which is what closed 131 of them',
+      len(sd_row) == 1 and 'covered-pre-gate' in sd_row[0],
+      str(sd_row))
+check('...and it is NOT reported partial, which is what it was until the '
+      'pre-gate landed', not any('partial' in l for l in sd_row), str(sd_row))
 after_bytes = io.open(real_pin, 'rb').read() if os.path.isfile(real_pin) else None
 after_mtime = os.path.getmtime(real_pin) if os.path.isfile(real_pin) else None
 check('a plain run WROTE NOTHING to the real pin file -- identical bytes AND an '
@@ -198,10 +306,22 @@ check('a plain run WROTE NOTHING to the real pin file -- identical bytes AND an 
       before_bytes == after_bytes and before_mtime == after_mtime,
       'bytes_same=%s mtime_same=%s' % (before_bytes == after_bytes,
                                        before_mtime == after_mtime))
-api_dirty = subprocess.run(['git', '-C', REPO, 'status', '--porcelain', '--', 'api/'],
-                           capture_output=True, text=True, encoding='utf-8',
-                           errors='replace').stdout.strip()
-check('...and no api/ file is modified in the clone', api_dirty == '', api_dirty[:200])
+# THE SAME WRONG INSTRUMENT, SIX LINES BELOW THE COMMENT EXPLAINING IT
+# ── AND IT WAS STILL HERE. The paragraph above records that `git status
+# --porcelain` was the wrong way to ask "did this tool write" and was replaced
+# with bytes and mtime -- FOR THE PIN FILE. The api/ half of the same arm kept
+# the discarded instrument, so it went red on 2026-09-26 the moment api/sd-data.js
+# had an uncommitted edit: it was reporting the AUTHOR's work in progress as the
+# TOOL having written to api/. Fixed the same way, against the files the tool
+# actually reads.
+api_files = [os.path.join(REPO, 'api', 'sd-data.js'),
+             os.path.join(REPO, 'api', 'sd-sub-data.js')]
+api_before = [(io.open(p, 'rb').read(), os.path.getmtime(p)) for p in api_files]
+run(REPO)
+api_after = [(io.open(p, 'rb').read(), os.path.getmtime(p)) for p in api_files]
+check('...and a run WRITES NOTHING to api/ -- bytes AND mtime on the files it '
+      'reads, not `git status`, which reports the author\'s own uncommitted work',
+      api_before == api_after, 'an api/ file was written by the tool')
 
 shutil.rmtree(d, ignore_errors=True)
 print('\n%s  run_session_recheck_coverage_probe: %d failed'

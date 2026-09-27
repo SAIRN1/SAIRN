@@ -211,6 +211,58 @@ atest('a credential whose row is GONE is refused too -- deleted is not active',
     assert.strictEqual(r.code, 'CREDENTIAL_INACTIVE', JSON.stringify(r));
   });
 
+// ── `reason` SEPARATES THE TWO REFUSALS WITHOUT CHANGING `code` (2026-09-26) ─
+// api/sd-data.js's pre-gate runs ABOVE the per-resource app scoping, so it sees
+// valid tokens belonging to another app on the same licence. Those have no row in
+// their own app's table, and reporting "this credential has been deactivated,
+// sign in again" to somebody whose credential is fine sends them to reset a
+// password that was never the problem. The caller knows whether its call site is
+// app-scoped; this function does not, so it says WHICH SHAPE it saw.
+atest('an EMPTY result carries reason "no-row"', async () => {
+  const s = restStub([]);
+  const r = await withFetch(s.fetchImpl,
+    () => credentialStillActive(SESSION, 'LIC', s.rest, {}));
+  assert.strictEqual(r.reason, 'no-row', JSON.stringify(r));
+});
+
+atest('...and an EXPLICIT active:false carries reason "inactive" -- the state '
+  + 'set_active produces, which no app-scope question may excuse', async () => {
+  const s = restStub([{ active: false }]);
+  const r = await withFetch(s.fetchImpl,
+    () => credentialStillActive(SESSION, 'LIC', s.rest, {}));
+  assert.strictEqual(r.reason, 'inactive', JSON.stringify(r));
+});
+
+atest('...and a row with active MISSING ALTOGETHER is "inactive", not "no-row" '
+  + '-- a row that exists and does not say yes is not an absent row', async () => {
+  const s = restStub([{ employee_id: 'e1' }]);
+  const r = await withFetch(s.fetchImpl,
+    () => credentialStillActive(SESSION, 'LIC', s.rest, {}));
+  assert.strictEqual(r.code, 'CREDENTIAL_INACTIVE', JSON.stringify(r));
+  assert.strictEqual(r.reason, 'inactive', JSON.stringify(r));
+});
+
+atest('CONTROL: `code` is UNCHANGED for both shapes, so all thirteen existing '
+  + 'callers still refuse exactly what they refused before', async () => {
+  for (const rows of [[], [{ active: false }]]) {
+    const s = restStub(rows);
+    const r = await withFetch(s.fetchImpl,
+      () => credentialStillActive(SESSION, 'LIC', s.rest, {}));
+    assert.strictEqual(r.ok, false, JSON.stringify(r));
+    assert.strictEqual(r.code, 'CREDENTIAL_INACTIVE', JSON.stringify(r));
+    assert.ok(r.message && /deactivated/.test(r.message), JSON.stringify(r));
+  }
+});
+
+atest('CONTROL: an ACTIVE row carries no reason at all -- the field exists only '
+  + 'to distinguish two refusals, not as a status on every answer', async () => {
+  const s = restStub([{ active: true }]);
+  const r = await withFetch(s.fetchImpl,
+    () => credentialStillActive(SESSION, 'LIC', s.rest, {}));
+  assert.strictEqual(r.ok, true, JSON.stringify(r));
+  assert.strictEqual(r.reason, undefined, JSON.stringify(r));
+});
+
 atest('CONTROL: a TRANSPORT FAILURE is NO_ACTIVE_CHECK, never a deactivation. '
   + 'Answering "inactive" would lock every user out whenever the database '
   + 'blinked', async () => {

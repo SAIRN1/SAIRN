@@ -59,6 +59,13 @@ process.env.SD_AUTH_SECRET = process.env.SD_AUTH_SECRET
 
 const assert = require('assert');
 
+// ACTIVE-CREDENTIAL PRE-GATE (2026-09-26): api/sd-data.js now re-checks the
+// caller's employee row on EVERY request carrying a token. This suite's fetch
+// stub answers generic rows with no `active` field -- a state a real deployment
+// cannot be in -- so the wrapper answers that ONE read and passes everything
+// else through untouched. See tests/lib/active_credential_stub.js.
+const { wrapFetch: wrapActiveCred } = require('../tests/lib/active_credential_stub');
+
 let pass = 0, fail = 0;
 async function test(name, fn) {
   try { await fn(); console.log('  ok   ' + name); pass++; }
@@ -108,12 +115,12 @@ function load() {
       }
     }
   };
-  global.fetch = async function (url, init) {
+  global.fetch = wrapActiveCred(async function (url, init) {
     calls.push({ url: String(url), method: (init && init.method) || 'GET' });
     const m = (init && init.method) || 'GET';
     if (m === 'GET') return { ok: true, status: 200, json: async () => [{ data: { id: 'X-1' } }] };
     return { ok: true, status: 200, json: async () => [{ data: { id: 'X-1' } }] };
-  };
+  });
   delete require.cache[require.resolve('./sd-data.js')];
   return { handler: require('./sd-data.js'), calls: calls };
 }

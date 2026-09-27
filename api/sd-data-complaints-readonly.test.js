@@ -9,6 +9,13 @@
 
 const assert = require('assert');
 
+// ACTIVE-CREDENTIAL PRE-GATE (2026-09-26): api/sd-data.js now re-checks the
+// caller's employee row on EVERY request carrying a token. This suite's fetch
+// stub answers generic rows with no `active` field, which is a state a real
+// deployment cannot be in, so the wrapper answers that one read and passes
+// everything else through. See tests/lib/active_credential_stub.js.
+const { wrapFetch: wrapActiveCred } = require('../tests/lib/active_credential_stub');
+
 // ── THE SESSION THIS HARNESS NEVER SENT (repaired 2026-09-04) ──────────────
 // Every assertion below had been answering 401, not the status it names. The
 // harness sent only `Authorization: Bearer`, and every dnt_* branch of
@@ -80,7 +87,7 @@ async function main() {
         }
       }
     };
-    global.fetch = async function () { throw new Error('fetch should never be called for a write against a read-only resource'); };
+    global.fetch = wrapActiveCred(async function () { throw new Error('fetch should never be called for a write against a read-only resource'); });
     delete require.cache[require.resolve('./sd-data.js')];
     var handler = require('./sd-data.js');
     var res = mockRes();
@@ -98,7 +105,7 @@ async function main() {
         }
       }
     };
-    global.fetch = async function () { return { ok: true, status: 200, json: async function () { return []; } }; };
+    global.fetch = wrapActiveCred(async function () { return { ok: true, status: 200, json: async function () { return []; } }; });
     delete require.cache[require.resolve('./sd-data.js')];
     var handler = require('./sd-data.js');
     var res = mockRes();

@@ -1204,6 +1204,120 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // ══ THE ACTIVE-CREDENTIAL PRE-GATE (2026-09-26) ═══════════════════════
+    // THE MEASUREMENT THAT FORCED THIS. This file carries 132
+    // verifySessionToken() gates and, until now, ONE credentialStillActive() --
+    // the one that used to sit in the SD_SESSION_GATED block below, covering 34
+    // resources and 70 action-pairs. The comment beside it said "NOTHING CLOSED
+    // IT FOR THE DATA PATH", which reads as closed-for-all, and
+    // api/sd-data-active-credential.test.js was eight green arms every one of
+    // which was true of that single call site. A green control, a correct fix
+    // and an accurate-sounding comment coexisted with the property 1 of 132
+    // done. Measured by tools/session_recheck_coverage.py, not estimated.
+    //
+    // ONE EDIT, NOT 131, AND THAT IS WHY IT IS HERE. Every branch in this file
+    // passes through this point with the licence already resolved, so a
+    // re-check placed once covers all 132 -- and a 132nd gate added tomorrow
+    // inherits it without anybody remembering. 131 separate edits would have
+    // been 131 chances to miss one, which is the shape api/_lib/blob.js exists
+    // to end on the write side.
+    //
+    // IT DOES NOT AUTHENTICATE ANYTHING, and that distinction is the whole
+    // reason it can live this high up. An absent or unverifiable token is NOT
+    // refused here: most resources in this file are licence-only, and refusing
+    // them would break every unauthenticated route. The question asked is
+    // strictly "IS THE CREDENTIAL BEHIND THIS TOKEN STILL ACTIVE" -- who may do
+    // what stays with the per-branch gates, unchanged.
+    //
+    // NO expectedApp, DELIBERATELY. verifySessionToken's third argument is
+    // optional and omitting it still checks the signature, the typ (so a
+    // pre-auth token cannot pass), the role-in-app, the expiry AND the licence
+    // binding. What it does not do is assert WHICH app -- and that is correct
+    // here, because the only use for the app at this point is choosing which
+    // employee table to ask. A token minted for another app is still refused by
+    // its own branch gate, which does pass expectedApp. Asserting the app here
+    // would mean re-deriving each of 132 branches' expected app at the entry
+    // point: a second copy of a fact spread over the whole file.
+    //
+    // THE LOG IS ONCE PER REQUEST, NOT ONCE PER GATED RESOURCE -- decided
+    // explicitly rather than inherited. It is a louder line for the same fact
+    // (the old placement could only ever fire once per request anyway, since
+    // one request touches one resource), and the log now carries the resource
+    // and action so a run of them can be attributed.
+    //
+    // NO_ACTIVE_CHECK IS STILL NOT A PASS. It means this app has no employee
+    // table to ask, or the lookup itself failed -- and a transport failure is
+    // not a deactivation. The request continues, because refusing everybody
+    // whenever the database blinks is a worse failure than the one being closed,
+    // and the outcome is LOGGED so a run is visible rather than silent.
+    const preToken = tokenFromRequest(req);
+    if (preToken) {
+      const preSession = verifySessionToken(preToken, licHash);
+      if (preSession) {
+        const preActive = await credentialStillActive(preSession, licHash, rest, headers);
+        // ── AN EMPTY RESULT IS NOT ALWAYS A DEACTIVATION, AND THE FIRST DRAFT
+        // OF THIS PRE-GATE GOT IT WRONG. Running above the per-resource app
+        // scoping means this sees tokens that are valid but belong to ANOTHER
+        // app on this licence -- a SAIRNdental session at a law_ resource. That
+        // has no row in sairndental_employee_auth here, and the first version
+        // answered CREDENTIAL_INACTIVE: "this credential has been deactivated,
+        // sign in again", to somebody whose credential is fine and who is
+        // simply in the wrong app. Three arms of
+        // api/sd-data-law-phase2-session.test.js said so immediately, expecting
+        // FORBIDDEN and getting CREDENTIAL_INACTIVE.
+        //
+        // SO A MISSING ROW IS ONLY A DEACTIVATION WHEN THIS RESOURCE'S EXPECTED
+        // APP IS KNOWN AND MATCHES THE TOKEN'S. SD_GATE_APP (plus `memory`,
+        // which follows the caller) is the only place that answers it, and where
+        // it does not, the branch's OWN gate refuses a mismatched app with
+        // FORBIDDEN three lines later -- the right code with the right reason.
+        //
+        // AN EXPLICIT active:false IS REFUSED UNCONDITIONALLY, because that is
+        // the state set_active produces and the whole control exists for it. No
+        // app-scope question can make a deactivated employee acceptable.
+        //
+        // THE EXPECTED APP IS DERIVED THE SAME WAY THE BRANCH GATE DERIVES IT,
+        // including its `|| 'stonedesk'` default, so this can never be WEAKER
+        // than what a SD_SESSION_GATED resource already had. Two different
+        // expressions for one fact is how the `memory` defect happened in the
+        // first place. Resources NOT on that list have no declared app here at
+        // all, and for those the answer is honestly unknown.
+        const preIsGated = !!(SD_SESSION_GATED[resource]
+          && SD_SESSION_GATED[resource].indexOf(action) !== -1);
+        const preExpectedApp = (resource === 'memory') ? memApp
+          : (preIsGated ? (SD_GATE_APP[resource] || 'stonedesk') : undefined);
+        const preScoped = preExpectedApp !== undefined
+          && preExpectedApp === preSession.app;
+        const preHardRefusal = !preActive.ok
+          && preActive.code === 'CREDENTIAL_INACTIVE'
+          && (preActive.reason === 'inactive' || preScoped);
+        if (preHardRefusal) {
+          res.status(403).json({ error: { code: preActive.code, message: preActive.message } });
+          return;
+        }
+        if (!preActive.ok && preActive.code === 'CREDENTIAL_INACTIVE') {
+          // no-row on an UNSCOPED resource. Logged rather than refused, and
+          // logged rather than dropped: a run of these on one app is how a
+          // genuinely deleted employee would show up, and deletion is not the
+          // lifecycle this platform uses (set_active is), so it should be rare.
+          try {
+            console.warn('sd-data: no ' + preSession.app + ' employee row for '
+              + 'this licence on ' + resource + '/' + action + '. NOT refused '
+              + 'here -- the resource\'s expected app is unknown, so this is '
+              + 'probably a token from another app and the branch gate will '
+              + 'answer FORBIDDEN.');
+          } catch (e) { /* logging must never refuse a request */ }
+        } else if (!preActive.ok) {
+          try {
+            console.warn('sd-data: active-credential re-check DID NOT RUN for app "'
+              + preSession.app + '" (' + preActive.code + ') on '
+              + resource + '/' + action + '. The request was allowed on the '
+              + 'token alone.');
+          } catch (e) { /* logging must never refuse a request */ }
+        }
+      }
+    }
+
     if (SD_SESSION_GATED[resource] && SD_SESSION_GATED[resource].indexOf(action) !== -1) {
       // THE EXPECTED APP IS PER RESOURCE, NOT ALWAYS STONEDESK (2026-09-03).
       // This gate hardcoded 'stonedesk', which was correct while every gated
@@ -1228,36 +1342,20 @@ module.exports = async (req, res) => {
         });
         return;
       }
-      // ── AND THE CREDENTIAL BEHIND IT MUST STILL BE ACTIVE ────────────────
-      // verifySessionToken proves the token was minted by us and has not
-      // expired. It proves nothing about NOW. Until 2026-09-16 a deactivated
-      // employee kept read and write access to every gated resource here for
-      // the remaining life of a 12h token -- and deactivation is the one
-      // control an owner has for somebody who has just left.
+      // ── THE CREDENTIAL RE-CHECK USED TO SIT HERE AND HAS MOVED UP ────────
+      // It is NOT gone: it is the pre-gate above, which covers all 132 gates in
+      // this file instead of this block's 70 action-pairs. It is not duplicated
+      // here on purpose -- two call sites would mean TWO employee-row reads on
+      // every request to a SD_SESSION_GATED resource, and two places for the
+      // three-state handling to drift apart.
       //
-      // api/sc-auth.js closed this for its own roster/set_active on
-      // 2026-08-23 and api/_lib/employee-lifecycle.js carries it for the apps
-      // that share it. NOTHING CLOSED IT FOR THE DATA PATH, which is thirteen
-      // apps' resources.
-      //
-      // NO_ACTIVE_CHECK IS NOT A PASS. It means this app has no employee table
-      // to ask, or the lookup itself failed -- and a transport failure is not a
-      // deactivation. The request continues, because refusing everybody
-      // whenever the database blinks is a worse failure than the one being
-      // closed, and the outcome is LOGGED so a run of them is visible rather
-      // than silent.
-      const stillActive = await credentialStillActive(gateSession, licHash, rest, headers);
-      if (!stillActive.ok && stillActive.code === 'CREDENTIAL_INACTIVE') {
-        res.status(403).json({ error: { code: stillActive.code, message: stillActive.message } });
-        return;
-      }
-      if (!stillActive.ok) {
-        try {
-          console.warn('sd-data: active-credential re-check DID NOT RUN for app "'
-            + gateSession.app + '" (' + stillActive.code + '). The request was '
-            + 'allowed on the token alone.');
-        } catch (e) { /* logging must never refuse a request */ }
-      }
+      // ONE PROPERTY IS WEAKER BY DESIGN AND IS WORTH NAMING: this block's
+      // version re-checked `gateSession`, which had been verified WITH an
+      // expectedApp; the pre-gate re-checks a session verified without one. That
+      // changes nothing about who gets in -- `gateSession` above is still
+      // required and still app-scoped, so a cross-app token is refused three
+      // lines up. It only means the credential lookup and the app-scope decision
+      // are now made at two different points, each where it belongs.
     }
 
     // ── PROFILE ──────────────────────────────────────────────────────────

@@ -82,6 +82,13 @@
 
 const assert = require('assert');
 
+// ACTIVE-CREDENTIAL PRE-GATE (2026-09-26): api/sd-data.js now re-checks the
+// caller's employee row on EVERY request carrying a token. This suite's fetch
+// stub answers generic rows with no `active` field, which is a state a real
+// deployment cannot be in, so the wrapper answers that one read and passes
+// everything else through. See tests/lib/active_credential_stub.js.
+const { wrapFetch: wrapActiveCred } = require('../tests/lib/active_credential_stub');
+
 // Set BEFORE api/_lib/auth is required -- it reads the secret at module load
 // and throws if it is absent, which is correct (a signing key that defaults is
 // a signing key that is not one) and means the order here is load-bearing.
@@ -173,7 +180,7 @@ function loadHandler(licHash, fetchImpl) {
       }
     }
   };
-  global.fetch = fetchImpl;
+  global.fetch = wrapActiveCred(fetchImpl);
   delete require.cache[require.resolve('./sd-data.js')];
   return require('./sd-data.js');
 }

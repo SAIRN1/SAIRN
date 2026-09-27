@@ -30,6 +30,14 @@ const authMod = require(path.join(ROOT, 'api/_lib/auth.js'));
 authMod.tokenFromRequest = (req) => req.headers['x-test-token'] || null;
 authMod.verifySessionToken = (token, licHash, expectedApp) => {
   if (!token) return null;
+  // ── ONE UNSCOPED CALL IS EXPECTED NOW, AND ONLY ONE (2026-09-26) ─────────
+  // api/sd-data.js's active-credential PRE-GATE calls this deliberately without
+  // an expectedApp -- the only use for the app there is choosing which
+  // `*_employee_auth` table to ask, and a cross-app token is still refused by
+  // its own branch gate, which does pass one. An absent expectedApp is allowed;
+  // a WRONG one is still fatal, because a branch gate that quietly dropped its
+  // app scope is the defect this stub exists for.
+  if (expectedApp === undefined) return JSON.parse(token);
   if (expectedApp !== 'sairnlaw') {
     throw new Error('expected app scope not sairnlaw: ' + expectedApp);
   }
