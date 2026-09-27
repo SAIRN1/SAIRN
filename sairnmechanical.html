@@ -996,6 +996,26 @@ async function callClaude(system, messages, maxTokens) {
   </div>
 
   <div class="card">
+    <!-- EXPORT (2026-09-26). The 2026-08-21 worldwide research rates data
+         portability and lock-in the DOMINANT real-world pain in this category,
+         above every trade-specific compliance gap: ServiceTitan's
+         termination-fee complaints, the Housecall Pro to ServiceTitan case with
+         200+ lost job records, PCI-driven inability to move stored card tokens.
+         Until now this app could produce exactly ONE register as a file
+         (mech_credentials) and this was not one of them -- an EPA or CARB
+         inspector asking which units are in scope and when each recorded leak
+         was repaired is asking for a record, not a screenshot.
+
+         THREE RULES, THREE PAIRS OF COLUMNS, NEVER MERGED. The board renders
+         them as three separate cells for a reason written in
+         api/_lib/mech-assets.js: a 20 lb R-410A unit is `below` under 40 CFR
+         82.157 and `at/above` under 84.106, and CARB's 17 CCR 95380 reaches
+         MORE THAN 50 lb against 82.157's 50 OR MORE, so a unit at exactly 50.0
+         lb is in scope federally and out at state level. A single "in scope"
+         column in the file would be this app deciding which rule governs
+         somebody's machine, which is the one thing that engine refuses to do.
+         See docs/superpowers/specs/2026-08-21-... §4.1. -->
+    <button class="btn" onclick="mechExportDataset('site_assets')">Export CSV</button>
     <div class="tw"><table>
       <thead><tr><th>Customer / site</th><th>Type</th><th>Make &amp; model</th><th>Serial</th><th>Installed</th><th>Warranty</th><th>Section 608<div style="font-weight:400;font-size:10px;color:var(--g400)">40 CFR 82.157 &middot; 50 lb</div></th><th>AIM Act<div style="font-weight:400;font-size:10px;color:var(--g400)">40 CFR 84.106 &middot; 15 lb</div></th><th>CARB<div style="font-weight:400;font-size:10px;color:var(--g400)">17 CCR 95380 &middot; over 50 lb &middot; CA only</div></th></tr></thead>
       <tbody id="mech-asset-tbody"><tr><td colspan="9" style="text-align:center;padding:18px;color:var(--g400)">
@@ -2315,6 +2335,9 @@ function mechData(action, resource, payload) {
   // same. The full label is carried beside the stored code so the file is
   // legible to somebody who does not know the codes.
   var _mechCredLast = null;
+  // Set only where a real board came back; nulled on every refusal, error and
+  // not-provisioned path in mechAssetRefresh. See the comment there.
+  var _mechAssetLast = null;
   function mechCsvField(v) {
     return mechCsvCell(v);
   }
@@ -2331,6 +2354,8 @@ function mechData(action, resource, payload) {
       // has to be read through `rows:` -> accessor -> `ld()` -> the sync-pair
       // table, three hops that break quietly; a declaration cannot.
       resource: 'mech_credentials', action: 'read',
+      notLoaded: 'credential register',
+      exportedNote: 'the full register, including records the board supersedes',
       rows: function () {
         if (!_mechCredLast) return null;
         var shown = {};
@@ -2406,6 +2431,84 @@ function mechData(action, resource, payload) {
           return x.board ? 'yes — current for this technician, type and section'
                          : 'no — superseded by a later record for the same key'; }]
       ]
+    },
+    // ── SITE ASSETS (2026-09-26) ──────────────────────────────────────────
+    // The 2026-08-21 worldwide research rates data portability and lock-in the
+    // DOMINANT real-world pain in this category, above every trade-specific
+    // compliance gap. Before this the app could produce one register as a file.
+    //
+    // NO SUPERSESSION HERE, AND THAT IS STATED RATHER THAN ASSUMED. The
+    // credentials export needed its whole "on the board?" apparatus because that
+    // board is latestByKey() -- one row per (technician, type, section) -- so the
+    // file had to carry the superseded history the screen hides. evaluateRegistry
+    // does NOT reduce: `rows` is a 1:1 map over every asset. So board.rows IS
+    // every record and there is nothing to recover. Checked rather than copied;
+    // reusing the credentials framing would have implied a problem this register
+    // does not have.
+    //
+    // THREE RULES, SIX COLUMNS, NEVER MERGED. A single "in scope" column would be
+    // this app deciding which rule governs a customer's machine, which is exactly
+    // what api/_lib/mech-assets.js refuses to do. Each rule's REASON travels
+    // beside its scope, because the reason is the citation and an inspector
+    // asking "why is this one out of scope" is asking for that string.
+    site_assets: {
+      label: 'site-assets',
+      resource: 'mech_site_assets', action: 'read',
+      notLoaded: 'site-asset register',
+      exportedNote: 'every asset in the register, with all three refrigerant rules in their own columns',
+      rows: function () {
+        // NEVER LOADED and GENUINELY EMPTY are different facts. null makes
+        // mechExportDataset refuse; [] writes a header with nothing under it,
+        // which reads as an empty registry to whoever opens the file.
+        if (!_mechAssetLast || !_mechAssetLast.board) return null;
+        return _mechAssetLast.board.rows || [];
+      },
+      preamble: function (rows) {
+        return [
+          'SAIRNmechanical site-asset register — ' + rows.length + ' record(s), every asset, no supersession.',
+          'THREE INDEPENDENT REFRIGERANT RULES. They are reported separately and MUST NOT be summed:',
+          '  Section 608 — 40 CFR 82.157 — an appliance normally containing 50 lb OR MORE.',
+          '  AIM Act — 40 CFR 84.106 — 15 lb, for an HFC with GWP above 53. 30-day repair window, 10-day follow-up verification.',
+          '  CARB RMP — 17 CCR 95380 et seq. — MORE THAN 50 lb, GWP above 150, and only for an asset whose site state is CA.',
+          'A UNIT AT EXACTLY 50.0 lb IS IN SCOPE FEDERALLY AND OUT AT STATE LEVEL: 82.157 says 50 or more, 17 CCR 95380 says more than 50.',
+          'A 20 lb R-410A unit reads below under 82.157 and at/above under 84.106. That disagreement is real, not an error in this file.',
+          'A BLANK CHARGE MEANS NEVER WEIGHED, NOT ZERO. unknown_charge and unknown_substance and unknown_jurisdiction are not findings that a rule does not reach the unit.',
+          'NOT ENCODED BY THIS APP AND NOT IN THIS FILE: inspection frequency, registration deadlines, reporting cadence, and tiering by system size. They are real parts of these programs. Confirm every duty against the current rule.'
+        ];
+      },
+      columns: [
+        ['Asset ID', function (r) { return r.asset_id || ''; }],
+        ['Customer', function (r) { return r.customer_name || ''; }],
+        ['Site', function (r) { return r.site_name || ''; }],
+        ['Site state', function (r) { return r.site_state || ''; }],
+        ['Location on site', function (r) { return r.location_on_site || ''; }],
+        ['Type', function (r) { return r.asset_type || ''; }],
+        ['Make', function (r) { return r.make || ''; }],
+        ['Model', function (r) { return r.model || ''; }],
+        ['Serial', function (r) { return r.serial_no || ''; }],
+        ['Installed on', function (r) { return r.installed_on || ''; }],
+        ['Warranty status', function (r) { return r.warranty_status || ''; }],
+        ['Warranty days', function (r) {
+          return (r.warranty_days === null || r.warranty_days === undefined) ? '' : r.warranty_days; }],
+        ['Refrigerant type', function (r) { return r.refrigerant_type || ''; }],
+        // `|| ''` WOULD BE WRONG HERE. A recorded charge of 0 is falsy and is a
+        // real measurement; blank must mean never weighed and nothing else.
+        ['Charge (lb)', function (r) {
+          return (r.refrigerant_charge_lb === null || r.refrigerant_charge_lb === undefined)
+            ? '' : r.refrigerant_charge_lb; }],
+        ['Section 608 scope (40 CFR 82.157, 50 lb or more)', function (r) { return r.refrigerant_scope || ''; }],
+        ['Section 608 reason', function (r) { return r.refrigerant_reason || ''; }],
+        ['AIM Act scope (40 CFR 84.106, 15 lb, HFC GWP over 53)', function (r) { return r.aim_scope || ''; }],
+        ['AIM Act reason', function (r) { return r.aim_reason || ''; }],
+        ['AIM repair state', function (r) { return r.aim_repair_state || ''; }],
+        ['AIM repair due on', function (r) { return r.aim_repair_due_on || ''; }],
+        ['AIM repair days left', function (r) {
+          return (r.aim_repair_days_left === null || r.aim_repair_days_left === undefined)
+            ? '' : r.aim_repair_days_left; }],
+        ['AIM repair reason', function (r) { return r.aim_repair_reason || ''; }],
+        ['CARB scope (17 CCR 95380, over 50 lb, GWP over 150, CA only)', function (r) { return r.carb_scope || ''; }],
+        ['CARB reason', function (r) { return r.carb_reason || ''; }]
+      ]
     }
   };
   function mechExportDataset(key) {
@@ -2417,8 +2520,13 @@ function mechData(action, resource, payload) {
     // them is a statement about the register. Same distinction MECH_NOT_SHOWN
     // makes on the table above, carried into the file.
     if (rows === null) {
-      showToast('The credential register has not been loaded yet — open this page ' +
-                'or sign in first. An empty file would look like an empty register.', 7000);
+      // PER DATASET, NOT HARDCODED. This message named "the credential register"
+      // when credentials was the only export; with a second one it would have
+      // told a user the wrong register had not loaded, which is a small lie in
+      // the one message whose whole job is to distinguish two states.
+      showToast('The ' + (def.notLoaded || def.label + ' register') + ' has not been ' +
+                'loaded yet — open its page or sign in first. An empty file would ' +
+                'look like an empty register.', 7000);
       return;
     }
     var lines = (def.preamble ? def.preamble(rows) : []).map(function (t) { return mechCsvField(t); });
@@ -2437,8 +2545,12 @@ function mechData(action, resource, payload) {
     link.download = 'sairnmechanical-' + def.label + '-' + new Date().toISOString().slice(0, 10) + '.csv';
     link.click();
     window.URL.revokeObjectURL(url);
+    // ALSO PER DATASET. "including records the board supersedes" is true of
+    // credentials and FALSE of site assets, whose board does not reduce -- and a
+    // toast asserting a property the file does not have is the same defect as a
+    // column claiming one.
     showToast(rows.length + ' record' + (rows.length === 1 ? '' : 's') +
-              ' exported — the full register, including records the board supersedes', 5000);
+              ' exported' + (def.exportedNote ? ' — ' + def.exportedNote : ''), 5000);
   }
   window.mechExportDataset = mechExportDataset;
 
@@ -2710,20 +2822,28 @@ function mechData(action, resource, payload) {
     return mechData('read', 'mech_site_assets', {}).then(function (res) {
       if (res.status === 401 || res.status === 403) {
         // A refusal is not an empty registry.
+        // AND IT IS NOT AN EMPTY FILE EITHER. _mechAssetLast is cleared on every
+        // path that does not produce a real board, so the export refuses rather
+        // than writing a header row with nothing under it -- which would look
+        // like an empty registry to whoever opened it.
+        _mechAssetLast = null;
         if (note) note.textContent = 'Sign in to see site assets — the server declined without an employee session. This is not an empty registry.';
         mechAssetRender(null, MECH_NOT_SHOWN);
         return;
       }
       if (!res.body || !res.body.ok) {
+        _mechAssetLast = null;
         if (note) note.textContent = 'Could not load site assets. Nothing is being shown rather than a partial registry.';
         mechAssetRender(null, MECH_NOT_SHOWN);
         return;
       }
       if (res.body.provisioned === false) {
+        _mechAssetLast = null;
         if (note) note.textContent = 'The site asset registry is not set up yet — run sql/mech_site_assets_schema.sql. Nothing is recorded, and nothing is being guessed.';
         mechAssetRender(null);
         return;
       }
+      _mechAssetLast = res.body;
       var b = res.body.board;
       if (note && b) {
         note.textContent = b.counts.assets + ' asset(s) across ' + b.counts.sites + ' site(s). ' +
