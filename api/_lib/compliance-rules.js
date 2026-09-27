@@ -338,6 +338,140 @@ function evaluateStaffing(rules, opts) {
     'Staffing method "' + d.method + '" is not one this engine implements. It will not fall back to another state’s method.');
 }
 
+// ── THE TRAINING JOIN, BUILT 2026-09-26 ────────────────────────────────────
+// docs/2026-09-26-sairncare-compliance-join-scoping.md's unblock list, items 3
+// and 4, done. Items 1 and 2 of that list need a person and are REFUSED rather
+// than guessed -- see ANNUAL_WINDOWS and matchAudience below.
+//
+// NOTHING HERE DERIVES A FACT FROM PROSE. Every mapping this uses is between two
+// machine-readable token vocabularies; where one side is a sentence, the
+// requirement is reported as UNMAPPED and carried as a disclosed caveat on the
+// finding, never dropped from it. Dropping it is the defect this whole module's
+// header is about: a requirement this code could not read contributing zero and
+// an empty requirement set being indistinguishable from a satisfied one.
+
+// The three defensible readings of `annual_hours`, from the scoping doc. NONE is
+// a default: a window nobody declared is refused, because all three are
+// defensible and picking one silently is inventing a compliance rule.
+const ANNUAL_WINDOWS = {
+  rolling_12_months: 'the twelve months ending on the evaluation date',
+  calendar_year: 'the calendar year containing the evaluation date',
+  facility_training_year: 'the facility\'s own declared training year'
+};
+
+// `alf_staff.position` -- the real select vocabulary in sairncare.html.
+// DELIBERATELY NOT MAPPED TO `administrator`. `owner` is the nearest token and an
+// owner is not necessarily the licensed administrator of record; asserting that
+// would be a licensure claim invented by a lookup table. An audience of
+// `all_staff` needs no mapping at all, which is why it is the one that works.
+const STAFF_POSITIONS = ['nursing', 'med_aide', 'caregiver', 'billing', 'activities', 'owner'];
+
+// -> {key, who, audience, annual_hours, initial_hours, category, topic, pool,
+//     within_general, readable}
+// ONE SHAPE FROM TWO VOCABULARIES. WV rows are {audience, hours_per_year, topic};
+// every other seeded state is {who, annual_hours}. The old branch read only the
+// second, so WV's rows each contributed Number(undefined)||0 -- the false PASS
+// recorded in this file's history. The key is DERIVED from the rule id and the
+// row's position, so a requirement gains a stable identity with no seed edit and
+// nothing to keep in step.
+function normalizeRequirements(rule) {
+  const reqs = (rule.data || {}).requirements || [];
+  return reqs.map(function (r, i) {
+    r = r || {};
+    const annual = r.annual_hours !== undefined ? r.annual_hours : r.hours_per_year;
+    const audience = typeof r.audience === 'string' ? r.audience : null;
+    const withinGeneral = r.counts_toward_general_annual === true;
+    const additive = r.additive === true;
+    return {
+      key: rule.rule_id + '#' + i,
+      who: r.who !== undefined ? r.who : r.audience,
+      audience: audience,
+      annual_hours: annual === undefined ? null : Number(annual),
+      initial_hours: r.initial_hours === undefined ? null : Number(r.initial_hours),
+      // Only an explicitly declared category. `topic` is a sentence ("Alzheimer's
+      // disease and related dementias") and the record vocabulary is a token
+      // (`dementia`); matching them would be PR 1.2 -- matching text that
+      // describes a thing instead of the thing.
+      category: typeof r.category === 'string' ? r.category : null,
+      topic: typeof r.topic === 'string' ? r.topic : null,
+      within_general: withinGeneral,
+      additive: additive,
+      // A POOL IS A SET OF HOURS THAT SATISFY EACH OTHER. Declared only:
+      //   additive          -> its own pool, on top of everything else.
+      //   counts_toward_..  -> inside the general pool, as a floor within it.
+      //   otherwise         -> its own pool, because TWO REQUIREMENTS WITH
+      //                        DIFFERENT SUBJECTS DO NOT SATISFY EACH OTHER.
+      // That last line is the one that matters and it is the conservative
+      // direction: WV's 8 hours on "operation of a residence" and 2 hours on
+      // dementia carry NO stacking flag, and pooling them would make 8 general
+      // hours satisfy the dementia requirement -- the PA false-PASS shape
+      // arriving through an undeclared relationship instead of a declared one.
+      pool: withinGeneral ? 'general' : (rule.rule_id + '#' + i),
+      readable: annual !== undefined || r.who !== undefined
+    };
+  });
+}
+
+// -> {ok:true, audiences:[...]} | {ok:false, ...}
+// WHICH REQUIREMENTS APPLY TO THIS PERSON, decided from tokens on both sides or
+// not decided at all.
+function matchAudience(req, staff) {
+  if (req.audience === 'all_staff') {
+    return { applies: true, why: 'audience all_staff applies to every position' };
+  }
+  // An explicit machine-readable list on either side, where both are tokens.
+  const list = Array.isArray(req.applies_to_positions) ? req.applies_to_positions : null;
+  if (list && staff.position) {
+    return { applies: list.indexOf(staff.position) !== -1,
+             why: 'position ' + staff.position + ' against the requirement\'s declared position list' };
+  }
+  if (req.audience && staff.position && req.audience === staff.position) {
+    return { applies: true, why: 'audience token equals the staff position token' };
+  }
+  return { applies: null,
+           why: req.audience
+             ? ('audience token `' + req.audience + '` has no counterpart in '
+                + 'alf_staff.position (' + STAFF_POSITIONS.join('|') + '). Mapping '
+                + 'it is a human decision, not a lookup this code may invent')
+             : ('this requirement identifies its audience in PROSE, not a token: '
+                + JSON.stringify(String(req.who || '').slice(0, 90))
+                + '. There is no machine mapping to alf_staff.position and '
+                + 'substring-matching a sentence would be matching text that '
+                + 'DESCRIBES a role instead of the role') };
+}
+
+// -> the recorded hours that fall inside the declared window.
+// SERVER-SUPPLIED ONLY -- see the endpoint. The window is reported on every
+// finding so a reader never has to assume which of the three was used.
+function hoursInWindow(records, window, onDate, trainingYearStart) {
+  const out = { total: 0, by_category: {}, counted: 0, skipped_no_date: 0 };
+  const on = String(onDate || '');
+  let from = null;
+  if (window === 'rolling_12_months') {
+    const d = new Date(on + 'T00:00:00Z');
+    if (!isNaN(d.getTime())) {
+      d.setUTCFullYear(d.getUTCFullYear() - 1);
+      from = d.toISOString().slice(0, 10);
+    }
+  } else if (window === 'calendar_year') {
+    from = on.slice(0, 4) + '-01-01';
+  } else if (window === 'facility_training_year') {
+    from = trainingYearStart || null;
+  }
+  (records || []).forEach(function (rec) {
+    const when = rec && rec.completed_on;
+    if (!when) { out.skipped_no_date += 1; return; }
+    if (from && (String(when) < from || String(when) > on)) return;
+    const h = Number(rec.hours);
+    if (!isFinite(h) || h <= 0) return;
+    out.total += h;
+    out.counted += 1;
+    const cat = typeof rec.category === 'string' ? rec.category : '_uncategorised';
+    out.by_category[cat] = (out.by_category[cat] || 0) + h;
+  });
+  return out;
+}
+
 function describeFixed(spec) {
   return '1 direct care staff per ' + spec.per_residents + ' residents' + (spec.shift ? ' (' + spec.shift + ' hours)' : '');
 }
@@ -413,8 +547,16 @@ function evaluateTraining(rules, opts) {
     // recognised and correctly contributes zero to an ANNUAL total -- that is
     // a real Ohio row and must keep working. What is refused is a row carrying
     // NEITHER, which means this code cannot see it at all.
-    const unreadable = reqs.filter(function (r) {
-      return !r || (r.who === undefined && r.annual_hours === undefined);
+    // ── NOW ASKED AFTER NORMALISATION (2026-09-26) ───────────────────────
+    // This used to test the RAW row for `who`/`annual_hours` only, so West
+    // Virginia's `{audience, hours_per_year, topic}` rows were refused as
+    // unreadable -- correct then, because nothing read them, and no longer
+    // true: normalizeRequirements() maps both vocabularies onto one shape. The
+    // refusal is unchanged in meaning and narrower in reach: a row readable in
+    // NEITHER vocabulary is still refused rather than summed, which is the
+    // property that matters.
+    const unreadable = normalizeRequirements(rule).filter(function (r) {
+      return !r.readable && r.annual_hours === null && r.who === undefined;
     });
     if (unreadable.length) {
       return refuse('REQUIREMENTS_NOT_JOINABLE',
@@ -463,36 +605,187 @@ function evaluateTraining(rules, opts) {
     };
     const additive = reqs.filter(stacked);
     out.staff_findings = opts.staff.map(function (s) {
-      const applicable = reqs.filter(function (r) {
+      // ── APPLICABILITY AND THE TARGET BOTH COME OFF THE NORMALISED ROWS ────
+      // They used to come off the RAW rows, and that reproduced the original
+      // defect in a new place: WV's rows carry no `who`, so
+      // `applies_to.indexOf(undefined)` was -1 for every one of them, nothing
+      // was applicable, and the target summed to 0 -- a staff member with three
+      // recorded hours "meeting" a requirement set the code had just decided was
+      // empty. Caught by the endpoint suite, which asserted the required figure
+      // rather than only the verdict. A verdict arm alone would have passed.
+      const normRows = normalizeRequirements(rule);
+      const applicable = normRows.filter(function (r) {
         return !s.applies_to || s.applies_to.indexOf(r.who) !== -1;
       });
       const target = applicable.reduce(function (sum, r) {
         return sum + (Number(r.annual_hours) || 0);
       }, 0);
-      const recorded = Number(s.annual_hours_recorded || 0);
-      const pooled = applicable.some(stacked);
+      const pooled = applicable.some(function (r) {
+        return r.additive || r.within_general;
+      });
+      // ── THE RECORDS PATH, ADDED 2026-09-26 ──────────────────────────────
+      // `records` is the SERVER's own append-only alf_staff_credentials rows,
+      // assembled by api/sd-data.js. `annual_hours_recorded` is the older
+      // caller-supplied total and is still read, because the pure engine is not
+      // the trust boundary and refusing it here would only break its own tests.
+      // WHICH ONE WAS USED IS ON EVERY FINDING: a regulated verdict computed
+      // from a number the caller chose must never be indistinguishable from one
+      // computed from the record the server holds.
+      const hasRecords = Array.isArray(s.records);
+      const win = hasRecords
+        ? hoursInWindow(s.records, opts.annual_window || (rule.data || {}).annual_window,
+                        opts.on_date, opts.facility_training_year_start)
+        : null;
+      const recorded = hasRecords ? win.total : Number(s.annual_hours_recorded || 0);
+      // ── WHICH POOLS APPLY, AND WHETHER RECORDED HOURS CAN REACH THEM ─────
+      // A POOL IS A SET OF HOURS THAT SATISFY EACH OTHER. One applicable pool
+      // means the recorded total is unambiguously that pool's and the
+      // comparison is real. More than one and an unattributed total cannot be
+      // apportioned -- which is the same refusal as before, reached from the
+      // data rather than from a flag.
+      const normApplicable = applicable;
+      const unresolved = normApplicable.filter(function (r) { return r.within_general; });
+      const pools = {};
+      normApplicable.forEach(function (r) {
+        pools[r.pool] = Math.max(pools[r.pool] || 0, Number(r.annual_hours) || 0);
+      });
+      const poolKeys = Object.keys(pools);
+      const poolCount = poolKeys.length;
+      const poolSum = poolKeys.reduce(function (n, k) { return n + pools[k]; }, 0);
+      const poolMax = poolKeys.reduce(function (n, k) { return Math.max(n, pools[k]); }, 0);
+      // ── DETERMINABILITY, NOT POOL-COUNTING (2026-09-26) ──────────────────
+      // The version this replaces answered `null` for ANY multi-pool rule, and
+      // that declined two answers it already had. Attribution only matters in
+      // the MIDDLE:
+      //
+      //   recorded >= sum of every pool's hours  -> TRUE. Every pool can be
+      //     satisfied at once, whatever the apportionment. There is no
+      //     assignment of these hours that fails.
+      //   recorded <  the LARGEST single pool    -> FALSE. At least one pool is
+      //     unreachable under every apportionment.
+      //   between the two                        -> NULL, and genuinely so.
+      //
+      // Both ends are exact -- they quantify over all apportionments rather than
+      // picking one -- so this is strictly more answerable and no less honest. A
+      // TRUE now requires clearing the SUM of every applicable requirement,
+      // which is the strictest reading available, not the summation defect: that
+      // defect was comparing one total against a sum it then reported as a
+      // single target, and reporting a pass in the middle band.
+      // ── AN EMPTY APPLICABLE SET IS NEVER A PASS (2026-09-26) ─────────────
+      // THIS IS THE ORIGINAL DEFECT ARRIVING THROUGH A DIFFERENT DOOR, and the
+      // first version of this very change shipped it: for Ohio, Indiana and both
+      // Pennsylvania chapters EVERY requirement identifies its audience in prose,
+      // so nothing matched, `applicable` was empty, the target summed to 0 and a
+      // caregiver with ZERO recorded hours came back `meets: true`. The
+      // `unmapped_requirements` caveat was right there on the response and the
+      // boolean beside it said compliant.
+      //
+      // "An empty requirement set is indistinguishable from a satisfied one once
+      // it has been summed" is this module's own sentence about the WV vocabulary
+      // bug. Measured, not reasoned about: driving all six seeded rules is what
+      // showed it, and a verdict-only arm would not have.
+      //
+      // So a boolean requires a NON-EMPTY applicable set. An empty one is null,
+      // and the reason distinguishes the two ways it can be empty -- "we could
+      // not read who this applies to" is not "this person has no obligation",
+      // and only the rule's author can say which.
+      const unattributable = unresolved.length > 0;
+      let verdict = null;
+      if (!unattributable && applicable.length > 0) {
+        if (recorded >= poolSum) verdict = true;
+        else if (recorded < poolMax) verdict = false;
+      }
+      const emptyApplicable = applicable.length === 0;
+      // ── COMPUTED, NOT READ OFF A FIELD NOBODY SETS (2026-09-26) ──────────
+      // The first version of this branch tested `out.unmapped_requirements_
+      // pending`, a field name that exists nowhere and is never assigned -- so
+      // the "we could not read who it applies to" message was UNREACHABLE and
+      // every empty applicable set reported "no obligation" instead. That is the
+      // unreachable-branch class from docs/2026-09-26-ghost-failure-path-sweep.md,
+      // committed by the author of that sweep for the third time in a day, and
+      // caught only because the arms in section 4b assert the MESSAGE and not
+      // just the null.
+      const anyUnmapped = normRows.some(function (r) {
+        return matchAudience(r, { position: s.position || null }).applies === null;
+      });
+      const singlePool = !unattributable && !emptyApplicable
+        && (poolCount <= 1 || verdict !== null);
       return {
         staff_id: s.staff_id, name: s.name || '',
+        position: s.position || null,
         required_annual_hours: target,
         recorded_annual_hours: recorded,
         shortfall_hours: Math.max(0, target - recorded),
-        // NULL, NOT FALSE, and not true. A separate pool means this comparison
-        // cannot answer the question either way.
-        meets: pooled ? null : (recorded >= target),
-        meets_unknown_reason: pooled
-          ? ('At least one applicable requirement carries STACKING SEMANTICS '
-             + '-- either ADDITIVE (a separate pool on top of the general '
-             + 'annual total, so summing UNDER-requires) or '
-             + 'COUNTS_TOWARD_GENERAL_ANNUAL (already inside it, so summing '
-             + 'OVER-requires). One recorded hours figure cannot be '
-             + 'apportioned across requirements, so whether this person '
-             + 'complies is not answerable from it in either direction. Read '
-             + 'the requirements below directly, or record hours per '
-             + 'requirement.')
+        // WHERE THE HOURS CAME FROM, on every finding, always.
+        hours_source: hasRecords ? 'server_records' : 'caller_supplied',
+        hours_window: hasRecords
+          ? (opts.annual_window || (rule.data || {}).annual_window || null) : null,
+        hours_window_meaning: hasRecords
+          ? (ANNUAL_WINDOWS[opts.annual_window || (rule.data || {}).annual_window] || null)
+          : null,
+        records_counted: hasRecords ? win.counted : null,
+        records_skipped_no_completed_on: hasRecords ? win.skipped_no_date : null,
+        recorded_hours_by_category: hasRecords ? win.by_category : null,
+        applicable_pool_count: poolCount,
+        // NULL, NOT FALSE, and not true. More than one pool means this
+        // comparison cannot answer the question either way.
+        no_applicable_requirement: emptyApplicable,
+        meets: singlePool ? verdict : null,
+        meets_unknown_reason: !singlePool
+          ? (emptyApplicable
+             ? (anyUnmapped
+                ? ('NO requirement in this rule could be matched to this person, '
+                   + 'and at least one identifies its audience in PROSE rather '
+                   + 'than a token -- so this is "we could not read who it '
+                   + 'applies to", NOT "this person has no obligation". A '
+                   + 'boolean here would be the fabricated pass this module was '
+                   + 'rewritten to stop: an empty requirement set summed to a '
+                   + 'target of 0 that every recorded total clears.')
+                : ('No requirement in this rule applies to this position, so '
+                   + 'there is nothing to compare. Reported as unknown rather '
+                   + 'than as compliant, because "no obligation" is a claim '
+                   + 'about the rule and only its author can make it.'))
+             : unresolved.length
+             ? ('A requirement declares COUNTS_TOWARD_GENERAL_ANNUAL and nothing '
+                + 'on the rule says WHICH row is the general annual one, so the '
+                + 'pool it counts toward cannot be identified. Summing would '
+                + 'OVER-require; treating it as satisfied would UNDER-require. '
+                + 'Declaring the target row\'s key on that requirement closes '
+                + 'this.')
+             : ('This person is subject to ' + poolCount + ' SEPARATE '
+                + 'requirement pools -- sets of hours that do not satisfy each '
+                + 'other -- and the recorded hours are not attributed to any of '
+                + 'them. The total is right and cannot be apportioned, so '
+                + 'whether they comply is not answerable in either direction. '
+                + 'Recording hours per requirement, or giving each requirement '
+                + 'a machine-readable `category` that matches the record '
+                + 'vocabulary, closes this.'))
           : null,
         applicable_requirements: applicable.map(function (r) { return r.who; })
       };
     });
+    // ── EVERY REQUIREMENT THIS CODE COULD NOT ATTRIBUTE, NAMED ON THE RULE ──
+    // NOT dropped from the applicable set silently. A requirement whose audience
+    // is prose is invisible to the matcher, and an invisible requirement
+    // contributing zero is exactly how the first version of this branch turned
+    // WV's two real rows into a confident pass.
+    const normAll = normalizeRequirements(rule);
+    const unmapped = [];
+    normAll.forEach(function (r) {
+      const m = matchAudience(r, { position: null });
+      if (m.applies === null) unmapped.push({ key: r.key, annual_hours: r.annual_hours,
+                                              why: m.why });
+    });
+    if (unmapped.length) {
+      out.unmapped_requirements = unmapped;
+      out.unmapped_requirements_caveat =
+        unmapped.length + ' of ' + normAll.length + ' requirement(s) in this rule '
+        + 'identify their audience in a way this code cannot match to '
+        + '`alf_staff.position`. They are EXCLUDED from every per-staff verdict '
+        + 'above and listed here rather than dropped: a `meets: true` beside an '
+        + 'unmapped requirement means "meets every requirement that could be '
+        + 'attributed", never "compliant".';
+    }
     if (additive.length) {
       out.staff_findings_caveat =
         'This rule carries ' + additive.length + ' requirement(s) with stacking '
@@ -557,5 +850,14 @@ module.exports = {
   evaluateStaffing,
   evaluateTraining,
   describeLicensure,
-  complianceCoverage
+  complianceCoverage,
+  // Exported so the endpoint builds `records` in the window the RULE declares
+  // rather than a second copy of the window arithmetic, and so a probe can drive
+  // the vocabulary normalisation and the audience matcher directly -- both are
+  // the halves that were wrong, and neither was reachable from a test before.
+  ANNUAL_WINDOWS,
+  STAFF_POSITIONS,
+  normalizeRequirements,
+  matchAudience,
+  hoursInWindow
 };

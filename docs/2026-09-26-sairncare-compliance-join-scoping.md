@@ -82,6 +82,116 @@ Measured across all six seeded training rules afterwards:
 
 ---
 
+## BUILT 2026-09-26 (Hank) — the join runs, and what it can answer is MEASURED
+
+**Sections 2 and 3 below are kept as written.** They are the read that scoped
+this, and three of their five blockers are closed by what landed. Do not read
+them as current state; read this section for that, and re-run the measurement
+rather than quoting it.
+
+    node api/_lib/compliance-rules-staff-join.test.js     # 42 arms
+    node api/sd-data-alf-training-join.test.js            # the endpoint half
+
+**AND THE FINDING THAT WAS NOT IN THE SCOPING: THE HOLE WAS ALREADY OPEN.**
+Section 3 says a caller-supplied `opts.staff` "would" let a client send any
+`annual_hours_recorded` it liked — conditional, about the join being written. It
+was reachable before any of this: the evaluate branch built its options as
+`Object.assign({}, payload, …)`, so `payload.staff` went straight into the
+per-staff branch, and anybody holding a SAIRNcare session could POST a staff
+array and be handed a training-compliance verdict computed entirely from numbers
+they chose, while the authoritative append-only record sat unread one branch away.
+**The engine's branch was described as dormant because `sairncare.html` never
+sends `staff`. That is a fact about the UI, not about the endpoint** — the API is
+the boundary, not the panel. `STAFF_NOT_CALLER_SUPPLIED` now refuses it, empty
+array included.
+
+### What the six seeded rules answer now, driven not asserted
+
+| rule | zero recorded hours | over-trained | why |
+|---|---|---|---|
+| **WV** / alr | **`false`** | **`true`** | **The state that used to be REFUSED outright.** Its `{audience, hours_per_year}` rows are read now, and `audience: all_staff` needs no role mapping at all. |
+| MI | no staff branch | no staff branch | `no_state_mandated_hours` — unchanged and correct |
+| OH / rcf | `null` | `null` | every `who` is prose |
+| IN / rcf | `null` | `null` | every `who` is prose |
+| PA / alr | `null` | `null` | every `who` is prose |
+| PA / pch | `null` | `null` | every `who` is prose |
+
+**Two of six, up from one** — and the four `null`s are now blocked on ONE named,
+authorable edit each rather than on five interacting unknowns: an
+`applies_to_positions` token list on the requirement rows, matching the real
+`alf_staff.position` vocabulary (`nursing`, `med_aide`, `caregiver`, `billing`,
+`activities`, `owner`). That is a re-read of the code each row already cites.
+
+### The three blockers that are closed
+
+1. **WV's vocabulary is read** (unblock item 3). `normalizeRequirements()` maps
+   `{audience, hours_per_year}` and `{who, annual_hours}` onto one shape, with a
+   key derived from the rule id and the row's position — a stable requirement
+   identity with no seed edit and nothing to keep in step.
+2. **The stacking arithmetic is decided, per pool, and both ends are exact.** The
+   old branch answered `null` for any multi-pool rule, which declined two answers
+   it already had. Attribution only matters in the middle:
+   `recorded >= SUM of every pool` → **true** (no apportionment fails);
+   `recorded < the LARGEST pool` → **false** (none succeeds); between → `null`,
+   genuinely. A `true` now has to clear the sum of every applicable requirement,
+   which is the strictest available reading.
+3. **The records aggregation is server-side** (unblock item 4), from
+   `alf_staff_credentials` with `record_type=training_hours`, and every finding
+   reports `hours_source`, the window used and the window's meaning.
+
+### The two that are NOT, and one is a question for a person
+
+1. **THE ANNUAL WINDOW IS REFUSED, NOT CHOSEN.** Unblock item 1 is still open and
+   it is Michael's. `annual_hours` can mean the rolling twelve months, the
+   calendar year, or the facility's own training year; all three are defensible
+   and they give different answers, so `include_staff` without a declared
+   `annual_window` is a 400 naming all three. Whichever is used is reported on
+   every finding. An unknown value is refused too — a typo must not silently pick
+   a reading.
+2. **`who` as prose is still prose** (unblock item 2). A requirement whose
+   audience cannot be matched to a position token is listed in
+   `unmapped_requirements` and EXCLUDED from every verdict — **and the caveat says
+   a `meets: true` beside an unmapped requirement means "meets every requirement
+   that could be attributed", never "compliant"**.
+
+### The defect this change shipped and then caught in itself
+
+**An empty applicable set was a PASS.** For OH, IN and both PA chapters every
+requirement's audience is prose, so nothing matched, the target summed to **0**,
+and a caregiver with **zero recorded hours** came back `meets: true` — with the
+`unmapped_requirements` caveat on the same response. That is this module's own
+sentence about the WV bug arriving through a third door: *"an empty requirement
+set is indistinguishable from a satisfied one once it has been summed"* —
+unreadable vocabulary, then unmatched audience.
+
+**Found by driving all six seeded rules, not by reading the diff.** A verdict arm
+on one state would not have shown it. A boolean now requires a non-empty
+applicable set, and section 4b of the pure suite pins it for all four rules in
+both directions — zero hours AND over-trained, because the second is what proves
+the fix is about the empty SET rather than about the hours being low.
+
+**And the message for that case was itself unreachable when first written**: it
+branched on `out.unmapped_requirements_pending`, a field name that exists nowhere
+and is never assigned, so every empty applicable set reported *"no obligation"*
+instead of *"we could not read who it applies to"* — two different facts, and
+only the rule's author can make the first claim. Caught because the 4b arms
+assert the MESSAGE and not just the `null`. That is the third unreachable branch
+this session's author has committed in a day, all recorded in
+`docs/2026-09-26-ghost-failure-path-sweep.md`.
+
+### Still not done, and it is not a wiring gap
+
+**`sairncare.html` does not ask for per-staff findings.** `cqShowTraining()` sends
+no `include_staff`, so nothing in the UI shows a verdict yet. The panel needs a
+window control, and which windows to offer is the same decision as unblock item 1
+— so building the control before the decision would be putting the guess in the
+UI instead of the code. Section 5 of the pure suite now asserts the three facts
+separately (the panel does not ask; the endpoint can; a caller-supplied array is
+refused) because the single "the branch remains dormant" arm it replaces was
+measuring the UI and being read as a statement about reachability.
+
+---
+
 ## 2. Why the records join is still not built
 
 **One of six seeded states can currently be answered at all.** That is the

@@ -11179,11 +11179,114 @@ module.exports = async (req, res) => {
       }
       const ruleRows = await rr.json();
       if (!rr.ok) return upstream(res, ruleRows);
+      // ── A CALLER MAY NOT SUPPLY THE STAFF IT IS JUDGED AGAINST (2026-09-26) ─
+      // THIS WAS REACHABLE, NOT HYPOTHETICAL. `opts` was `Object.assign({},
+      // payload, ...)`, so `payload.staff` passed straight into
+      // evaluateTraining's per-staff branch -- and anybody holding a SAIRNcare
+      // session could POST `staff: [{staff_id, annual_hours_recorded: 999,
+      // applies_to: [...]}]` and be handed a training-compliance verdict computed
+      // entirely from numbers they chose, while the authoritative append-only
+      // alf_staff_credentials record sat unread on the server one branch away.
+      //
+      // The engine's own branch was described as dormant because
+      // sairncare.html never sends `staff`. That is a fact about the UI, not
+      // about the endpoint: the API is the boundary, not the panel.
+      //
+      // docs/2026-09-26-sairncare-compliance-join-scoping.md named this shape as
+      // the hazard to avoid WHEN the join was written. It was already open.
+      if (payload.staff !== undefined) {
+        res.status(400).json({ error: { code: 'STAFF_NOT_CALLER_SUPPLIED',
+          message: 'A per-staff training verdict is computed from the server\'s '
+            + 'own alf_staff_credentials records, never from a staff array in '
+            + 'the request. A caller-supplied hours figure would let the caller '
+            + 'choose the compliance answer while the authoritative record sits '
+            + 'on the server. Ask for it with include_staff:true instead.' } });
+        return;
+      }
       const opts = Object.assign({}, payload, { on_date: payload.on_date || nowISO().slice(0, 10) });
       let result;
       if (payload.requirement_type === 'staffing') result = complianceRules.evaluateStaffing(ruleRows || [], opts);
       else if (payload.requirement_type === 'licensure') result = complianceRules.describeLicensure(ruleRows || [], opts);
-      else result = complianceRules.evaluateTraining(ruleRows || [], opts);
+      else {
+        // ── THE RECORDS JOIN (2026-09-26) ────────────────────────────────────
+        // Opt-in, so every existing caller is unaffected: cqShowTraining() asks
+        // for the requirements and gets exactly what it got before.
+        if (payload.include_staff === true) {
+          // THE WINDOW IS DECLARED OR THE JOIN REFUSES. `annual_hours` has three
+          // defensible readings -- rolling twelve months, calendar year, the
+          // facility's own training year -- and the scoping doc's first unblock
+          // item is that somebody decides. Picking one here would be this
+          // endpoint inventing a compliance rule, so an undeclared window is a
+          // refusal naming the three, and whichever is used is reported on every
+          // finding.
+          const sel = complianceRules.selectRule(ruleRows || [], {
+            state: payload.state, requirement_type: 'training',
+            facility_class: payload.facility_class, on_date: opts.on_date });
+          const declared = payload.annual_window
+            || (sel.ok ? ((sel.rule.data || {}).annual_window || null) : null);
+          if (!declared || !complianceRules.ANNUAL_WINDOWS[declared]) {
+            res.status(400).json({ error: { code: 'ANNUAL_WINDOW_UNDECLARED',
+              message: 'A per-staff verdict needs the ANNUAL WINDOW stated, and '
+                + 'nothing states it. `annual_hours` can mean the rolling twelve '
+                + 'months, the calendar year, or the facility\'s own training '
+                + 'year; all three are defensible and they give different '
+                + 'answers, so this endpoint will not choose. Send '
+                + 'annual_window as one of: '
+                + Object.keys(complianceRules.ANNUAL_WINDOWS).join(', ')
+                + ' (facility_training_year also needs '
+                + 'facility_training_year_start), or record it on the rule.' } });
+            return;
+          }
+          opts.annual_window = declared;
+          // The roster, for positions. A staff member with no position cannot be
+          // matched to any audience except all_staff, and that is reported on the
+          // finding rather than silently excluding them.
+          const sr = await fetch(rest('alf_staff?license_hash=eq.' + enc(licHash)
+            + '&select=staff_id,data'), { headers });
+          if (sr.status === 404 || sr.status === 400) {
+            res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'The staff roster is not set up yet — run sql/sairncare_schema.sql in Supabase first. No per-staff verdict is produced, because a roster read that answered "no staff" would report a facility with no obligations.' } });
+            return;
+          }
+          const staffRows = await sr.json();
+          if (!sr.ok) return upstream(res, staffRows);
+          // And the append-only credential records. THE SAME REFUSAL SHAPE: an
+          // unprovisioned credentials table must not read as "nobody has any
+          // training", which is a facility-wide false FAIL rather than a gap.
+          const cr = await fetch(rest('alf_staff_credentials?license_hash=eq.' + enc(licHash)
+            + '&record_type=eq.training_hours&select=staff_id,data'), { headers });
+          if (cr.status === 404 || cr.status === 400) {
+            res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Staff credential records are not set up yet — run sql/sairncare_staff_credentials_schema.sql in Supabase first. No per-staff verdict is produced: an empty read here is indistinguishable from nobody having done any training, and reporting every staff member as non-compliant is a worse answer than none.' } });
+            return;
+          }
+          const credRows = await cr.json();
+          if (!cr.ok) return upstream(res, credRows);
+          const byStaff = {};
+          (credRows || []).forEach((row) => {
+            const d = row.data || {};
+            const k = String(row.staff_id);
+            (byStaff[k] = byStaff[k] || []).push({
+              hours: d.hours, category: d.category, completed_on: d.completed_on });
+          });
+          // AUDIENCE MATCHING LIVES IN THE PURE MODULE, not here. A second copy
+          // of that decision in this file is a second thing to drift, and it is
+          // the decision most likely to be got wrong.
+          const normReqs = sel.ok ? complianceRules.normalizeRequirements(sel.rule) : [];
+          opts.staff = (staffRows || []).map((row) => {
+            const d = row.data || {};
+            const person = { position: d.position || null };
+            const appliesTo = normReqs
+              .filter((r) => complianceRules.matchAudience(r, person).applies === true)
+              .map((r) => r.who);
+            return {
+              staff_id: row.staff_id, name: d.name || '',
+              position: d.position || null,
+              applies_to: appliesTo,
+              records: byStaff[String(row.staff_id)] || []
+            };
+          });
+        }
+        result = complianceRules.evaluateTraining(ruleRows || [], opts);
+      }
       res.status(200).json(result);
       return;
     }
