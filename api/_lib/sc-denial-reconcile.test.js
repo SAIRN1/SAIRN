@@ -2,6 +2,14 @@
 //
 // Run:  node api/_lib/sc-denial-reconcile.test.js
 //
+// REQUIREMENT: SAIRNcode records denials twice -- sc_denial is a hand-typed
+//   aggregate per code, sc_denial_events is one row per occurrence -- and no
+//   code has ever compared the two, so a practice can read a dashboard that
+//   nothing supports. This file holds the reconciler's refusals: a missing
+//   aggregate count must NOT become a zero, money must compare in whole cents
+//   rather than floats, "agrees" must count only codes that were actually
+//   compared, and the reconciler must pick no side between the two sources.
+//
 // THE ENGINE HAS NO CALLER YET, AND THIS SUITE SAYS SO LOUDLY -- see section F.
 // api/sd-data.js is held by hank-queue13, so the dispatch line is deliberately
 // not added. An engine with no caller is the SAIRNmechanical G3 defect, and the
