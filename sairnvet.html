@@ -7951,6 +7951,116 @@ function prefillProtocol(name){
   showToast('Fill weight/species and click Get Protocol','info');
 }
 
+// ── ONE DOSE COPIED ACROSS EVERY SPECIES ROW, FLAGGED FROM THE DATA ITSELF ──
+//
+// ADDED 2026-09-26. Sourcing 480 unsourced rows one at a time is weeks of work;
+// this is the stopgap that runs today, and it is built out of the root cause
+// rather than out of a list somebody typed.
+//
+// THE ROOT CAUSE, MEASURED: this formulary was largely built by propagating ONE
+// numeric dose across a drug's species rows. 114 drug names carry a single
+// figure on every species row they have -- 295 of 485 rows. The copy is
+// faithful and the species is not, which is item 43 (Ariane 5) in clinical
+// form: correct software, faithfully reused, into a context that invalidates it.
+// Two identical redundant units failed identically because a second copy is not
+// a second opinion; five identical species rows are not five sourced doses.
+//
+// IT IS DERIVED, NOT STORED, AND THAT IS DELIBERATE. Writing a flag onto 295
+// rows would mean 295 edits inside a 200KB single line -- the bulk-edit this
+// project forbids -- and worse, the flag would then be a SECOND declaration of
+// the same fact and would go stale the moment a row got a species-specific
+// dose. Computed from VET_DRUGS on each call, the marker disappears by itself
+// when the row is actually fixed, and it can never disagree with the table.
+//
+// WARNS, NEVER REFUSES, AND THE WORDING SAYS WHY. A shared dose is sometimes
+// correct -- chlorhexidine really is 0.05% in every species, and metronidazole
+// really is close. A gate here would refuse legitimate rows and be switched
+// off within a week. What the marker asserts is only what it can prove: this
+// figure is identical on every species row for this drug, which is the pattern
+// that produced the one instance measured WRONG (Butorphanol/horse carried the
+// dog/cat 0.2-0.4mg/kg against the FDA-approved equine 0.1mg/kg IV -- 2-4x).
+//
+// THE PARSE IS THE FIRST NUMERIC TOKEN, not the whole dose string, because the
+// prose after it differs between rows that carry the same figure ("0.2-0.4mg/kg"
+// vs "0.2-0.4mg/kg q6h PRN") and comparing whole strings would miss exactly the
+// copies this is looking for.
+//
+// ── PER FIGURE, NOT PER DRUG, AND THAT IS A CORRECTION MADE BEFORE THIS
+//    SHIPPED ──────────────────────────────────────────────────────────────
+// The first version asked "does this drug carry ONE figure across every species
+// row" -- which is how the 295-row measurement was taken and is the obvious
+// reading of the root cause. It has a perverse property that BUTORPHANOL ITSELF
+// demonstrated within the hour: correcting the horse row this morning made the
+// group non-uniform, so the rule stopped flagging dog, bird and exotic (unspec.)
+// -- three rows still carrying the very copied figure that was just found wrong
+// on a fourth. A detector that goes quiet because somebody fixed one row is
+// worse than none: the remaining copies look reviewed.
+//
+// So a figure is flagged when it appears on MORE THAN ONE SPECIES ROW for a
+// drug, whether or not other rows of that drug differ. 119 names / 315 rows,
+// against 114 / 295 for the whole-group rule. The five groups only this catches
+// are Butorphanol, Fenbendazole (25-50mg/kg on dog, cat, rabbit, bird, reptile,
+// cattle AND horse), Ivermectin, Morphine and Flunixin Meglumine -- every one a
+// drug where somebody HAS since differentiated at least one species, which is
+// evidence the shared rows needed differentiating too, not evidence they did.
+function svSpeciesCopiedDoses(rows){
+  var numRe = /^\s*([0-9.]+\s*-\s*[0-9.]+\s*[a-z\/%]+|[0-9.]+\s*[a-z\/%]+)/i;
+  var byName = {}, out = { rows: {}, names: 0, count: 0 }, i, j, q;
+  for (i = 0; i < rows.length; i++) {
+    if (!byName[rows[i].name]) { byName[rows[i].name] = []; }
+    byName[rows[i].name].push(rows[i]);
+  }
+  var nameKeys = Object.keys(byName);
+  for (i = 0; i < nameKeys.length; i++) {
+    var group = byName[nameKeys[i]];
+    if (group.length < 2) { continue; }
+    var seen = {};
+    for (j = 0; j < group.length; j++) {
+      var m = numRe.exec(String(group[j].dose == null ? '' : group[j].dose));
+      if (!m) { continue; }
+      var k = m[1].replace(/\s+/g, '').toLowerCase();
+      if (!seen[k]) { seen[k] = []; }
+      seen[k].push(group[j].species);
+    }
+    var ks = Object.keys(seen), hit = false;
+    for (j = 0; j < ks.length; j++) {
+      if (seen[ks[j]].length < 2) { continue; }
+      hit = true;
+      for (q = 0; q < seen[ks[j]].length; q++) {
+        out.rows[nameKeys[i] + '|' + seen[ks[j]][q]] =
+          { figure: ks[j], species: seen[ks[j]], whole: group.length };
+        out.count++;
+      }
+    }
+    if (hit) { out.names++; }
+  }
+  return out;
+}
+
+// Memoised because searchDrugs() runs on every keystroke and this walks 485
+// rows. VET_DRUGS is a literal and never mutates at runtime, so one pass is
+// correct for the life of the page -- if that ever stops being true, delete the
+// cache rather than trying to invalidate it.
+var _svCopiedDoses = null;
+function svCopiedDoseIndex(){
+  if (_svCopiedDoses === null) { _svCopiedDoses = svSpeciesCopiedDoses(VET_DRUGS); }
+  return _svCopiedDoses;
+}
+
+// The one sentence a clinician needs, built per row so it names the species it
+// is actually talking about. Kept here rather than inlined twice: the table and
+// the calculator must say the same thing, and two copies is how they stop.
+function svCopiedDoseWarning(entry, drugName){
+  return 'SAME FIGURE ON ALL ' + entry.species.length + ' SPECIES ROWS for '
+    + drugName + ' (' + entry.species.join(', ') + '): ' + entry.figure
+    + '. This formulary was largely built by copying one dose across a drug’s '
+    + 'species rows, so this figure may never have been checked against this '
+    + 'species. A shared dose is sometimes genuinely correct — and this is '
+    + 'also how the Butorphanol horse row came to carry the dog/cat figure at '
+    + '2-4x the FDA-approved equine dose. Confirm against a species-specific '
+    + 'label or formulary before use.';
+}
+
 function searchDrugs(){
   var name=document.getElementById('drug-name').value.toLowerCase();
   var species=document.getElementById('drug-species').value;
@@ -7987,6 +8097,8 @@ function searchDrugs(){
     tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);">No drugs found</td></tr>';
   } else {
     var flags=redFlags.slice();
+    var copiedIdx = svCopiedDoseIndex();
+    var copiedShown = 0;
     filtered.slice(0,300).forEach(function(d){
       if(d.flag){ flags.push(d.name+': '+d.flag); }
       // ── THE GREEN TICK USED TO BE A CLAIM NOTHING BACKED (2026-09-26) ───────
@@ -8020,9 +8132,37 @@ function searchDrugs(){
       var withdrawal = (d.withdrawalStatus==='verify_required')
         ? '<span style="color:#9A3412;background:#FFF7ED;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600;">🐄 Verify Label</span>'
         : '<span style="color:var(--muted);font-size:12px;">n/a</span>';
-      var row='<tr><td>'+escHtml(d.name)+'</td><td>'+escHtml(d.class)+'</td><td>'+escHtml(d.species)+'</td><td>'+escHtml(d.route)+'</td><td>'+escHtml(d.dose)+'</td><td>'+status+'</td><td>'+withdrawal+'</td><td>'+(d.controlled?'Yes':'No')+'</td></tr>';
+      // ── THE SPECIES-COPY MARKER, IN THE DOSE CELL AND NOT BESIDE THE BADGE ──
+      // It belongs against the FIGURE, because that is what may be wrong. The
+      // status badge answers "was this sourced"; this answers "was this figure
+      // ever specific to this species", and they are different questions with
+      // different answers on the same row -- a row can be Referenced and still
+      // carry a copied number, which is precisely the butorphanol/dog case.
+      var copyEntry = copiedIdx.rows[d.name + '|' + d.species];
+      var doseCell = escHtml(d.dose);
+      if (copyEntry) {
+        copiedShown++;
+        doseCell += ' <span style="color:#9A3412;background:#FFF7ED;border:1px solid #FDBA74;padding:1px 6px;border-radius:4px;font-size:11px;font-weight:700;cursor:help;white-space:nowrap;" title="'
+          + escHtml(svCopiedDoseWarning(copyEntry, d.name))
+          + '">⚠ same figure in all ' + copyEntry.species.length + ' species rows</span>';
+      }
+      var row='<tr><td>'+escHtml(d.name)+'</td><td>'+escHtml(d.class)+'</td><td>'+escHtml(d.species)+'</td><td>'+escHtml(d.route)+'</td><td>'+doseCell+'</td><td>'+status+'</td><td>'+withdrawal+'</td><td>'+(d.controlled?'Yes':'No')+'</td></tr>';
       tbody.innerHTML+=row;
     });
+    // ONE aggregate line, not 295. The red-flag panel is where a clinician
+    // looks for contraindications; 295 individual entries would bury the
+    // fatal-pair warnings that panel exists for, which is the opposite of a
+    // safety improvement.
+    if (copiedShown > 0) {
+      flags.push('⚠ ' + copiedShown + ' of the ' + Math.min(filtered.length, 300)
+        + ' rows shown carry a dose figure identical across every species row '
+        + 'for that drug (' + copiedIdx.count + ' of ' + VET_DRUGS.length
+        + ' rows platform-wide, across ' + copiedIdx.names + ' drugs). See the '
+        + '⚠ marker in the Dose column and hover it for the species list. A '
+        + 'shared dose is sometimes correct; it is also how the Butorphanol '
+        + 'horse row carried the dog/cat figure at 2-4x the FDA-approved '
+        + 'equine dose.');
+    }
     if(flags.length){
       flagDiv.style.display='block';
       document.getElementById('red-flag-text').textContent=flags.join('  |  ');
@@ -8332,6 +8472,10 @@ function calculateDoseAI(){
   var groundingContext = '';
   var calcFromStored = null;
   var gapNotice = '';
+  // Declared HERE, not inside the else-branch below. `var` would hoist it
+  // either way, but the on-screen box reads it outside that branch and a
+  // reader should not have to know about hoisting to see that it is safe.
+  var calcCopyForBox = null;
 
   if(matches.length===0){
     gapNotice = 'This drug/species combination is not in this app\'s stored formulary. Do not guess a specific numeric dose — direct the user to a current veterinary formulary (e.g., Plumb\'s, or a species-specific reference for exotics/zoo) instead.';
@@ -8342,6 +8486,18 @@ function calculateDoseAI(){
         + (m.reference
            ? ' This record CITES a published source: ' + m.reference
            : ' THIS RECORD CITES NO PUBLISHED SOURCE. Say so in your answer: the figure comes from this app\'s stored table and has not been checked against a formulary or label here.');
+    // ── AND WHETHER THE FIGURE WAS EVER SPECIES-SPECIFIC ──────────────────
+    // A SECOND, INDEPENDENT DISCLOSURE, and it has to be separate from the
+    // sourcing one above: a row can cite a source and still carry a figure
+    // copied from another species (butorphanol/dog does), so "is it sourced"
+    // and "was it ever about this species" cannot share one sentence without
+    // one of the two answers going missing.
+    var calcCopy = svCopiedDoseIndex().rows[m.name + '|' + m.species];
+    if (calcCopy) {
+      calcCopyForBox = { figure: calcCopy.figure, species: calcCopy.species, drugName: m.name };
+      groundingContext += ' SPECIES-COPY WARNING, tell the user this plainly: '
+        + svCopiedDoseWarning(calcCopy, m.name);
+    }
     if(m.needsReview || m.doseMin===null || m.doseMax===null){
       gapNotice = 'This entry is flagged needsReview in our database — dosing is not yet verified for this species (reason: ' + (m.flag||'consult specialist reference') + '). Do NOT calculate or state a specific numeric dose. Direct the user to consult a species-specific reference or specialist before dosing.';
       logDoseAudit({type:'dose_calc', drug:drug, species:species, weight:weight, result:'flagged_needs_review', matchedEntry:m.name+'/'+m.species});
@@ -8370,7 +8526,15 @@ function calculateDoseAI(){
     // genuinely performed and can stand behind; the mg/kg range it multiplied
     // is a stored figure that may have no published source. Saying Verified
     // here transferred the confidence of the arithmetic onto the input.
-    document.getElementById('dose-verified-calc').innerHTML = '✓ Calculated in-app from the stored range: '+calcFromStored;
+    document.getElementById('dose-verified-calc').innerHTML = '✓ Calculated in-app from the stored range: '+calcFromStored
+      // ON SCREEN AS WELL AS IN THE PROMPT. Telling only the model leaves the
+      // warning dependent on the model choosing to repeat it, and the green box
+      // is the thing a clinician reads first.
+      + (calcCopyForBox
+         ? '<div style="margin-top:8px;padding:8px;background:#FFF7ED;border:1px solid #FDBA74;border-radius:4px;color:#9A3412;font-weight:600;font-size:13px;">⚠ '
+           + escHtml(svCopiedDoseWarning(calcCopyForBox, calcCopyForBox.drugName))
+           + '</div>'
+         : '');
   }
 
   var system='You are a veterinary pharmacology assistant operating under a strict grounding rule: you may ONLY use the stored formulary record and calculation provided below as your source of truth for the numeric dose. NEVER describe that record as verified: most rows in this formulary carry no published source, and the record itself says whether it cites one. If the record cites no source, tell the user plainly that the figure is unsourced and must be confirmed against a current formulary or product label. If no record is provided, or the record is flagged as unreviewed, you must NOT invent a specific numeric dose — say so explicitly and recommend consulting a current reference or specialist instead. Always mention controlled-substance status and any species-specific contraindications if present in the record. If the species is a food-producing animal (cattle, swine, sheep, poultry, goat), you must NOT state a specific withdrawal time — explicitly tell the user this is formulation/brand-specific and must be verified against the current product label before the animal or its products enter the food supply.';

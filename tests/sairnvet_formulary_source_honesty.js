@@ -33,6 +33,9 @@
 
 const assert = require('assert');
 const fs = require('fs');
+// The species-copy detector is LIFTED out of sairnvet.html and run here rather
+// than reimplemented -- see the CROSS-SPECIES section.
+const vm = require('vm');
 const path = require('path');
 
 const FILE = path.resolve(__dirname, '..', 'sairnvet.html');
@@ -369,39 +372,157 @@ const DRUGS = m ? JSON.parse(m[1]) : null;
       + 'citation, so the work of finding the source is invisible.');
   });
 
-  // ── THE CROSS-SPECIES COPY, MEASURED ON EVERY RUN ───────────────────────
+  // ── THE CROSS-SPECIES COPY, NOW FLAGGED IN THE APP ──────────────────────
   // FOUND 2026-09-26 while sourcing the controlled substances. The formulary
   // was largely built by propagating ONE dose across a drug's species rows,
   // and that is item 43 (Ariane 5) in clinical form: the copy is faithful and
-  // the species is not. It is REPORTED rather than gated, because a shared
-  // dose is sometimes correct -- chlorhexidine really is 0.05% in every
-  // species -- so a threshold here would refuse legitimate rows. What IS
-  // pinned is the instance that was measured WRONG.
-  section('CROSS-SPECIES DOSE COPYING -- reported, not gated');
-  const byName = {};
-  DRUGS.forEach(function (d) { (byName[d.name] = byName[d.name] || []).push(d); });
-  const numRe = /^\s*([0-9.]+\s*-\s*[0-9.]+\s*[a-z/%]+|[0-9.]+\s*[a-z/%]+)/i;
-  let copiedNames = 0, copiedRows = 0;
-  Object.keys(byName).forEach(function (n) {
-    const rows = byName[n];
-    if (rows.length < 2) return;
-    const seen = {};
-    rows.forEach(function (d) {
-      const m = numRe.exec(String(d.dose == null ? '' : d.dose));
-      if (m) {
-        const k = m[1].replace(/\s+/g, '').toLowerCase();
-        (seen[k] = seen[k] || []).push(d.species);
-      }
-    });
-    const keys = Object.keys(seen);
-    if (keys.length === 1 && seen[keys[0]].length > 1) {
-      copiedNames++; copiedRows += seen[keys[0]].length;
-    }
-  });
-  console.log('  ' + copiedNames + ' drug name(s) carry ONE numeric dose across every '
-    + 'species row -- ' + copiedRows + ' of ' + DRUGS.length + ' rows.');
-  console.log('  Reported, not gated: a shared dose is sometimes correct. It is also '
+  // the species is not.
+  //
+  // IT WAS REPORTED-ONLY FOR HALF A DAY and is now a warning in the app --
+  // still never a refusal, because a shared dose is sometimes correct and a
+  // gate here would refuse legitimate rows and be switched off within a week.
+  //
+  // THE DETECTOR IS LIFTED OUT OF THE APP, NOT REIMPLEMENTED HERE, and that
+  // is the whole reason this section was rewritten. This file previously
+  // carried its OWN copy of the grouping logic. Two declarations of one answer
+  // drift -- and they drifted the same day: the app's rule was corrected from
+  // per-drug to per-figure, and a test with its own copy would have gone on
+  // reporting the superseded number while agreeing with nothing.
+  section('CROSS-SPECIES DOSE COPYING -- the app\'s own detector, lifted');
+
+  function lift(name) {
+    const at = src.indexOf('function ' + name + '(');
+    assert.notStrictEqual(at, -1, 'function ' + name + ' not found in sairnvet.html');
+    const end = src.indexOf('\n}', at);
+    assert.notStrictEqual(end, -1, name + ' has no column-0 closing brace');
+    return src.slice(at, end + 2);
+  }
+  const ctx = vm.createContext({});
+  vm.runInContext(lift('svSpeciesCopiedDoses'), ctx);
+  const copied = ctx.svSpeciesCopiedDoses(DRUGS);
+  console.log('  ' + copied.names + ' drug name(s) carry a dose figure on MORE THAN ONE '
+    + 'species row -- ' + copied.count + ' of ' + DRUGS.length + ' rows, all flagged '
+    + 'in the Drug Database and in the calculator\'s grounding context.');
+  console.log('  Warned, never refused: a shared dose is sometimes correct. It is also '
     + 'how butorphanol/horse came to read 2-4x the FDA-approved equine dose.');
+
+  test('the detector really ran and flagged a substantial share of the table', function () {
+    assert.ok(copied.count > 200 && copied.count < DRUGS.length,
+      'the detector flagged ' + copied.count + ' of ' + DRUGS.length + ' rows. '
+      + 'It measured 315 when written. Near zero means the lift or the parse is '
+      + 'broken, not that the formulary got species-specific; all of them means '
+      + 'the grouping collapsed and the marker now says nothing.');
+    assert.ok(copied.names > 100,
+      'only ' + copied.names + ' drug name(s) flagged, against 119 when written.');
+  });
+
+  test('PER FIGURE, not per drug -- fixing one row must not hide the others', function () {
+    // THE ARM THAT EXISTS BECAUSE THE FIRST RULE FAILED THIS. The original
+    // detector asked whether a drug carried ONE figure across every species
+    // row. Correcting butorphanol/horse made the group non-uniform and the
+    // rule went quiet on dog, bird and exotic -- three rows still carrying the
+    // exact figure just found wrong on a fourth. A detector that is silenced
+    // by a partial fix makes the remaining copies look reviewed.
+    ['dog', 'bird', 'exotic (unspecified)'].forEach(function (sp) {
+      const e = copied.rows['Butorphanol|' + sp];
+      assert.ok(e, 'Butorphanol/' + sp + ' is NOT flagged. It carries 0.2-0.4mg/kg, '
+        + 'shared with the other two, and the horse row having been corrected to '
+        + '0.1mg/kg is exactly why a per-drug rule stops seeing it.');
+      assert.ok(/0\.2-0\.4/.test(e.figure),
+        'Butorphanol/' + sp + ' is flagged on figure ' + e.figure
+        + ', not the copied 0.2-0.4 one.');
+    });
+    ['horse', 'cat'].forEach(function (sp) {
+      assert.ok(!copied.rows['Butorphanol|' + sp],
+        'Butorphanol/' + sp + ' is flagged. It now carries its own species-specific '
+        + 'figure with a citation, and warning about a corrected row teaches the '
+        + 'reader to ignore the marker.');
+    });
+  });
+
+  test('the Drug Database renders the marker, and against the DOSE', function () {
+    const fnStart = src.indexOf('function searchDrugs(');
+    const region = src.slice(fnStart, fnStart + 9000);
+    assert.ok(/svCopiedDoseIndex\(\)/.test(region),
+      'searchDrugs() no longer computes the species-copy index, so the 315 rows '
+      + 'are unflagged on the screen a clinician reads.');
+    assert.ok(/same figure in all/.test(region),
+      'the per-row marker text is gone from searchDrugs().');
+    // AGAINST THE FIGURE, not appended to the status badge. They answer
+    // different questions and a row can be Referenced AND copied.
+    assert.ok(/doseCell \+=/.test(region),
+      'the marker is no longer added to the dose cell. It belongs against the '
+      + 'FIGURE -- the status badge answers "was this sourced", the marker '
+      + 'answers "was this figure ever about this species", and butorphanol/dog '
+      + 'is both referenced and copied.');
+    assert.ok(/copiedShown/.test(region) && /rows shown carry a dose figure identical/.test(region),
+      'the aggregate line above the table is gone. Without it a clinician '
+      + 'scanning results has to notice 30 individual markers.');
+
+    // ── THE CHAIN, NOT THE STRINGS. THIS ARM EXISTS BECAUSE THE ONES ABOVE
+    //    ALL PASSED WITH THE MARKER SWITCHED OFF. ─────────────────────────
+    // Ablation, run before this shipped: replacing the guard with `if (false)`
+    // left every assertion above green -- each of them checks that a string is
+    // PRESENT, and a dead branch contains all of them. That is the same defect
+    // the grounding-context arm in this file already carries a note about, and
+    // it reappeared in a fresh arm within the hour.
+    //
+    // So the GUARD is pinned, not the strings inside it. The chain has to be
+    // index -> lookup -> that lookup's result as the condition.
+    assert.ok(/var copyEntry = copiedIdx\.rows\[/.test(region),
+      'copyEntry is no longer looked up out of the species-copy index, so '
+      + 'whatever the branch below tests, it is not "is this row a copy".');
+    assert.ok(/\n\s*if \(copyEntry\) \{/.test(region),
+      'the marker branch is no longer guarded by `if (copyEntry)` exactly. A '
+      + 'constant-false guard (`if (false)`), an added `&& false`, or any other '
+      + 'condition makes the marker unreachable while leaving every string '
+      + 'assertion above satisfied -- which is precisely how this was ablated.');
+    assert.ok(/\n\s*if \(calcCopy\) \{/.test(src),
+      'the calculator\'s species-copy branch is no longer guarded by '
+      + '`if (calcCopy)`, so the model and the box may never be told.');
+    assert.ok(/calcCopyForBox\s*\n?\s*\?/.test(src) || /\(calcCopyForBox\s*$/m.test(src)
+              || /\? '<div style="margin-top:8px;padding:8px;background:#FFF7ED/.test(src),
+      'the on-screen box no longer BRANCHES on calcCopyForBox. The identifier '
+      + 'may still appear, which is not the same thing.');
+  });
+
+  test('the calculator tells the MODEL and shows it ON SCREEN', function () {
+    assert.ok(/SPECIES-COPY WARNING, tell the user this plainly/.test(src),
+      'the dosing grounding context no longer carries the species-copy warning, '
+      + 'so the model presents a copied figure exactly like a species-specific '
+      + 'one.');
+    assert.ok(/calcCopyForBox/.test(src),
+      'the on-screen calculation box no longer shows the warning. Telling only '
+      + 'the model leaves it dependent on the model choosing to repeat it, and '
+      + 'the green box is what a clinician reads first.');
+    // The two disclosures must be SEPARATE. A row can cite a source and still
+    // carry a copied figure, so folding them into one sentence loses an answer.
+    const g = src.indexOf("groundingContext = 'Stored formulary record:");
+    const near = src.slice(g, g + 1600);
+    assert.ok(/CITES NO PUBLISHED SOURCE/.test(near) && /SPECIES-COPY WARNING/.test(near),
+      'the sourcing disclosure and the species-copy disclosure are no longer '
+      + 'both present at the grounding context. They are independent: '
+      + 'butorphanol/dog cites a source AND carries a copied figure.');
+  });
+
+  test('the warning WARNS and does not refuse', function () {
+    const w = src.indexOf('function svCopiedDoseWarning(');
+    assert.notStrictEqual(w, -1, 'svCopiedDoseWarning is gone');
+    const body = src.slice(w, src.indexOf('\n}', w));
+    assert.ok(/sometimes genuinely correct/.test(body),
+      'the warning no longer says a shared dose is sometimes correct. Without '
+      + 'that sentence it reads as "this dose is wrong" on 315 rows, most of '
+      + 'which nobody has checked either way -- and a marker that overclaims '
+      + 'gets ignored.');
+    assert.ok(/Confirm against a species-specific/.test(body),
+      'the warning no longer tells the reader what to DO about it.');
+    // Nothing anywhere may turn this into a block.
+    assert.ok(!/svCopiedDoseIndex[\s\S]{0,400}?(return;|blocked|refuse)/i.test(
+                src.slice(src.indexOf('function calculateDoseAI'), src.indexOf('function calculateDoseAI') + 4000)),
+      'the calculator appears to REFUSE on a species-copied row. It must warn: '
+      + 'a shared dose is sometimes correct, and a gate here refuses legitimate '
+      + 'rows and gets switched off.');
+  });
 
   test('the butorphanol HORSE row no longer carries the dog/cat figure', function () {
     const bh = DRUGS.filter(function (d) {
