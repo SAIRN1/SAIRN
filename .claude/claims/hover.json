@@ -21,6 +21,17 @@
       "status": "released",
       "released_at": "2026-09-24T15:10:57Z",
       "files": null
+    },
+    {
+      "id": "hover-1790511099",
+      "session": "hover",
+      "subject": "hover",
+      "task": "three-item queue: Tier A population completeness-check spec, chain-head external-anchor audit and scoping, combined draw-score implementation in hover_cold_scan_pool + SKILL.md formula FILES: .claude/skills/sairn-hover-auditor/",
+      "claimed_at": "2026-09-27T12:11:39Z",
+      "claimed_at_epoch": 1790511099.9052196,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ]
 }
