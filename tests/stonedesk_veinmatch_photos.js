@@ -42,6 +42,37 @@
 // Negative controls: set SD_HTML to a mutated copy. Arm 0 fails loudly if the
 // block could not be located at all, so a rename cannot turn this suite green
 // by making it test nothing.
+//
+// ── WHERE THIS SUITE RUNS, AND WHY IT IS NOT IN GUARD_TESTS (2026-09-26) ───
+// It IS run automatically. `tools/run_all_tests.py` executes after every push
+// and its own `discover()` returns this file -- confirmed by calling
+// discover() rather than by reading its walk, which is the distinction that
+// matters for a runner documented to stay SILENT on success. So "register it so
+// it runs" is already answered.
+//
+// IT IS DELIBERATELY NOT IN sairn_push_gate_hook.GUARD_TESTS. That registry is
+// the small BLOCKING subset and its own header states the admission rule twice:
+// "EVERY ENTRY IS A RECORDED DEFECT, not a test somebody liked", and it is "the
+// SEAM class: tests that check two independently-maintained sides still AGREE
+// ... a test with no real defect behind it does not belong here -- it belongs in
+// the report-only runner."
+//
+// This suite is a single-panel acceptance suite. Every arm lives inside
+// panel-veinmatch and its own module: the photo handler, the outgoing request
+// body, the saved row, the three KPI cells. There is no second
+// independently-maintained side, so it fails when the panel's own author
+// changes something -- which is the class GUARD_TESTS explicitly excludes,
+// because those failures arrive while somebody is looking at the code rather
+// than silently through a rebase.
+//
+// The closest thing to a seam here is arm 6a, which holds the three fabricated
+// KPIs at '--'. Both sides of that agreement are in the same panel in the same
+// file, so it is a regression guard rather than a seam.
+//
+// IF THAT CHANGES, this is what would qualify it: an assertion that the panel's
+// outgoing image block and some OTHER owner of the same contract still agree --
+// for example api/claude.js's accepted media types, which is a separate file
+// with a separate owner. Nothing asserts that today, in this file or anywhere.
 
 'use strict';
 const fs = require('fs');
