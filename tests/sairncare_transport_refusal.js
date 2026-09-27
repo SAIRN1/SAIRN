@@ -75,6 +75,12 @@ let _crRecords = null, _crScopedToSelf = false;
 let rendered = 0;
 function rCredentials() { rendered += 1; }
 
+// alfFamilyData() passes an abort signal, same as alfData(). Supplied here rather
+// than stubbed away, so the arms exercise the real call shape -- undefined is a
+// legal `signal` value and the fake fetch ignores it.
+const ALF_FETCH_TIMEOUT_MS = 12000;
+function alfFetchTimeoutSignal() { return undefined; }
+
 let NEXT = null;                       // what the fake server answers
 global.fetch = function () {
   return Promise.resolve({
@@ -236,6 +242,122 @@ const REFUSALS = [
     assert.strictEqual(hits, 1,
       'the export\'s null guard is gone or duplicated (' + hits + ' occurrences)');
   });
+
+  // ══ THE THIRD TRANSPORT: FAMILY CONTACTS (2026-09-26) ════════════════════
+  // A DIFFERENT DEFECT FROM THE TWO ABOVE, AND WORSE, BECAUSE IT BROKE THE
+  // SUCCESS PATH TOO. The three family-contact callers read `res.status` and
+  // `res.body` off an alfData() result. alfData resolves to `d.data` on success
+  // and `null` on failure, so it has NEVER returned that shape:
+  //
+  //   SUCCESS -> res is the data array, res.body is undefined, so every caller
+  //              took its failure branch. The contact list rendered "Could not
+  //              load family contacts" over an empty array EVERY TIME IT WORKED.
+  //   FAILURE -> res is null and `res.status` THREW, so the 401/403 branch meant
+  //              to explain the refusal could never run and the panel said
+  //              nothing at all.
+  //
+  // The other 33 alfData callers use its real contract (alf_clients, alf_mar and
+  // alf_staff all check `Array.isArray(serverRows)`), so these three were the
+  // outliers -- the signature of a transport whose contract moved under one
+  // caller group. Fixed with alfFamilyData(), a full-body transport on the same
+  // argument alfRoute() already makes: the read needs `provisioned`, the write
+  // needs the management-only refusal message, and the preview's whole PURPOSE
+  // is the server's refusal (NO_MAR_CONSENT, CONTACT_INACTIVE).
+  section('4. family contacts -- the full-body transport, both directions');
+
+  const SRC_FAM = grab('function alfFamilyData(action,payload){');
+  eval(SRC_FAM);                                             // eslint-disable-line
+
+  await t('SUCCESS carries the WHOLE body, so provisioned and data survive',
+    async () => {
+      NEXT = { status: 200, body: { ok: true, provisioned: true, data: [{ contact_id: 'FC1' }] } };
+      const r = await alfFamilyData('read', {});
+      assert.strictEqual(r.ok, true, JSON.stringify(r));
+      assert.strictEqual(r.body.provisioned, true, 'provisioned was lost');
+      assert.strictEqual(r.body.data.length, 1, 'data was lost');
+      assert.strictEqual(r.error, null);
+    });
+
+  await t('...and the OLD shape would have failed this -- res.body is the thing '
+    + 'the callers read and alfData never returned it', async () => {
+      // The regression this arm exists for, asserted on the CONTRACT rather than
+      // on a string: a result whose `body` is undefined is the broken state, and
+      // it is what every caller saw on success for as long as the defect lived.
+      NEXT = { status: 200, body: { ok: true, provisioned: true, data: [] } };
+      const r = await alfFamilyData('read', {});
+      assert.ok(r.body !== undefined, 'body is undefined -- the callers read res.body');
+      assert.ok(typeof r.status === 'number', 'status is missing -- callers read res.status');
+    });
+
+  await t('a 403 ROLE refusal arrives with the server\'s own message and a 403 '
+    + 'status, so the client can stop saying "sign in"', async () => {
+      NEXT = { status: 403, body: { error: { code: 'FORBIDDEN', message:
+        'Family contact details -- phone, email and the medication-consent trail '
+        + '-- are not available to your role.' } } };
+      const r = await alfFamilyData('read', {});
+      assert.strictEqual(r.ok, false);
+      assert.strictEqual(r.status, 403, 'the status is gone, so 401 and 403 collapse');
+      assert.ok(/not available to your role/.test(r.error.message), JSON.stringify(r.error));
+    });
+
+  await t('CONTROL: a 401 is still distinguishable from that 403 -- they are '
+    + 'different facts and used to share one sentence', async () => {
+      NEXT = { status: 401, body: { error: { code: 'NO_SESSION', message: 'Sign in first' } } };
+      const r = await alfFamilyData('read', {});
+      assert.strictEqual(r.status, 401, JSON.stringify(r));
+      assert.strictEqual(r.error.code, 'NO_SESSION');
+    });
+
+  await t('a consent refusal on family_mar is the ANSWER, not a swallowed error',
+    async () => {
+      NEXT = { status: 403, body: { error: { code: 'NO_MAR_CONSENT', message:
+        'Medication status is granted per contact by the facility and is off until it is.' } } };
+      const r = await alfFamilyData('family_mar', { contact_id: 'FC1' });
+      assert.strictEqual(r.error.code, 'NO_MAR_CONSENT', JSON.stringify(r));
+      assert.ok(/granted per contact/.test(r.error.message));
+    });
+
+  await t('MAR_TOO_LARGE reaches the preview rather than reading as empty',
+    async () => {
+      // Added the same day the MAR read was paged. A truncated medication history
+      // presented as complete is the defect that fix exists for; a preview that
+      // rendered it as "no events" would reintroduce it at the client.
+      NEXT = { status: 413, body: { error: { code: 'MAR_TOO_LARGE', message:
+        'more than 10000 recorded administrations' } } };
+      const r = await alfFamilyData('family_mar', { contact_id: 'FC1' });
+      assert.strictEqual(r.ok, false);
+      assert.ok(!r.body || !r.body.family_mar, 'a partial view came through');
+      assert.ok(/10000/.test(r.error.message), JSON.stringify(r.error));
+    });
+
+  await t('an UNREADABLE body is BAD_RESPONSE, not a silent success', async () => {
+    NEXT = { status: 200, body: null };
+    global.fetch = function () {
+      return Promise.resolve({ ok: true, status: 200,
+        json: function () { return Promise.reject(new Error('not json')); } });
+    };
+    const r = await alfFamilyData('read', {});
+    assert.strictEqual(r.ok, false, JSON.stringify(r));
+    assert.strictEqual(r.error.code, 'BAD_RESPONSE');
+    // restore the shared fake for any later arm
+    global.fetch = function () {
+      return Promise.resolve({ ok: NEXT.status >= 200 && NEXT.status < 300,
+        status: NEXT.status, json: function () { return Promise.resolve(NEXT.body); } });
+    };
+  });
+
+  await t('NO CALLER STILL READS THE OLD SHAPE -- asserted on the file, because '
+    + 'a fourth caller added tomorrow is how this comes back', () => {
+      const src = LINES.join('\n');
+      // Every family-contact call must go through alfFamilyData. An alfData call
+      // naming this resource is the defect by construction.
+      const stale = (src.match(/alfData\(\s*'[a-z_]+'\s*,\s*'alf_family_contacts'/g) || []);
+      assert.strictEqual(stale.length, 0,
+        stale.length + ' family-contact call(s) still use alfData, whose result has '
+        + 'no .status and no .body: ' + JSON.stringify(stale));
+      const viaNew = (src.match(/alfFamilyData\(/g) || []).length;
+      assert.ok(viaNew >= 4, 'expected the definition plus 3 callers, found ' + viaNew);
+    });
 
   console.log('\n' + (fail ? 'FAILED' : 'ok') + '  sairncare transport refusal: ' +
     pass + ' passed, ' + fail + ' failed');

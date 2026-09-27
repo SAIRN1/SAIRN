@@ -1450,6 +1450,69 @@ function alfData(action,resource,payload,withSession){
   });
 }
 
+// ── FAMILY CONTACTS NEED THE FULL BODY TOO, AND ALL THREE CALLERS WERE
+// ── READING A SHAPE alfData HAS NEVER RETURNED (2026-09-26) ─────────────────
+// alfData resolves to `d.data` on success and `null` on any failure. The three
+// family-contact callers read `res.status` and `res.body`:
+//
+//   alfFamilyRefresh()  `if(res.status===401||res.status===403)` then `res.body.ok`
+//   the write callback   `if(res.body&&res.body.ok)` ... `'HTTP '+res.status`
+//   alfFamilyPreview()  `if(!res.body||!res.body.ok||!res.body.family_mar)`
+//
+// SO THE FEATURE WAS BROKEN IN BOTH DIRECTIONS, not just on refusals. On
+// SUCCESS `res` is the data array, `res.body` is undefined, and every one of
+// them took its failure branch -- the contact list rendered "Could not load
+// family contacts" over an empty array every single time it worked. On FAILURE
+// `res` is null and `res.status` THREW, so the 401/403 branch that was supposed
+// to explain the refusal could never run at all and the panel said nothing.
+//
+// THE OTHER 33 alfData CALLERS USE ITS REAL CONTRACT -- alf_clients, alf_mar and
+// alf_staff all do `function(serverRows){ if(!serverRows||!Array.isArray(serverRows)) ... }`.
+// These three are the outliers, which is the signature of a transport whose
+// contract changed under one caller group and took nobody with it.
+//
+// WHY A FULL-BODY TRANSPORT RATHER THAN ADOPTING alfData's CONTRACT: the same
+// argument alfRoute() makes below, and these three need it more. The read needs
+// `provisioned` to tell "never migrated" from "genuinely empty"; the write needs
+// `error.message`; and the preview's whole purpose is the server's refusal --
+// NO_MAR_CONSENT and CONTACT_INACTIVE are the answer, not an error. Collapsing
+// those to null is what alfData is for and is exactly wrong here.
+//
+// AND IT IS WHY THE MISSING ROLE GATE ON THIS RESOURCE WENT UNNOTICED: the panel
+// never worked, so nobody was looking at it. The read had no role check until
+// 2026-09-26 and any employee could list every family contact's phone number --
+// found by reading the endpoint, not by anybody using the screen.
+function alfFamilyData(action,payload){
+  var lic=alfLicenseKey();
+  if(!lic)return Promise.resolve({ok:false,status:0,
+    error:{code:'NO_LICENCE',message:'No licence key in this browser — nothing was sent.'}});
+  var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};
+  if(alfSession&&alfSession.token)h['X-SD-Auth']=alfSession.token;
+  return fetch(DATA_API,{
+    signal: alfFetchTimeoutSignal(),
+    method:'POST',headers:h,
+    body:JSON.stringify({action:action,resource:'alf_family_contacts',app_id:APP_ID,payload:payload||{}})
+  }).then(function(r){
+    return r.json().then(function(d){
+      // status is carried ALONGSIDE the body rather than folded into it, because
+      // the caller needs to distinguish "your role may not" (403 FORBIDDEN) from
+      // "you are not signed in" (401 NO_SESSION), and the server's own message
+      // is the actionable half of both.
+      return {ok:!!(r.ok&&d&&d.ok),status:r.status,body:d||null,
+              error:(d&&d.error)||null};
+    }).catch(function(){
+      return {ok:false,status:r.status,body:null,
+              error:{code:'BAD_RESPONSE',message:'The server returned an unreadable response.'}};
+    });
+  }).catch(function(e){
+    var timedOut=!!(e&&(e.name==='TimeoutError'||e.name==='AbortError'));
+    return {ok:false,status:0,body:null,
+            error:{code:timedOut?'TIMEOUT':'NETWORK',
+                   message:timedOut?('No answer in '+(ALF_FETCH_TIMEOUT_MS/1000)+'s.')
+                                   :'The server could not be reached.'}};
+  });
+}
+
 // Routing needs its OWN transport, deliberately not alfData(): alfData collapses
 // any non-ok response to null, which is right for a save (the caller only needs
 // "did it persist") but destroys the entire value of this engine, whose refusals
@@ -2301,13 +2364,31 @@ function alfFamilyRefresh(){
   if(sel){
     sel.innerHTML=residents().map(function(r){return '<option value="'+H(r.id)+'">'+H(r.name)+'</option>';}).join('');
   }
-  return alfData('read','alf_family_contacts',{},true).then(function(res){
-    if(res.status===401||res.status===403){
+  return alfFamilyData('read',{}).then(function(res){
+    // ── 401 AND 403 ARE DIFFERENT FACTS AND USED TO SHARE ONE SENTENCE ──────
+    // This said "Sign in to see family contacts — the server declined without an
+    // employee session" for BOTH. That was true while 403 could only mean a bad
+    // or missing session. Since 2026-09-26 the read is gated on
+    // ALF_FAMILY_READ_ROLES (owner, billing, nursing), so a 403 now usually
+    // means "your role may not see this" -- and telling a signed-in med_aide to
+    // sign in sends them to reset a password that was never the problem. The
+    // server already writes the right sentence; the client's job is to not
+    // overwrite it with a guess.
+    if(res.status===401){
       if(note) note.textContent='Sign in to see family contacts — the server declined without an employee session. This is not an empty list.';
       ALF_FAM=[]; alfFamilyRender(); return;
     }
-    if(!res.body||!res.body.ok){
-      if(note) note.textContent='Could not load family contacts. Nothing is shown rather than a partial list.';
+    if(res.status===403){
+      // The server's own message, because it names WHICH fields are withheld and
+      // why. The fallback is only for a 403 that arrives with no body at all.
+      if(note) note.textContent=(res.error&&res.error.message)
+        || 'Your role cannot see family contact details. This is not an empty list.';
+      ALF_FAM=[]; alfFamilyRender(); return;
+    }
+    if(!res.ok||!res.body){
+      if(note) note.textContent='Could not load family contacts'
+        +((res.error&&res.error.message)?' — '+res.error.message:'.')
+        +' Nothing is shown rather than a partial list.';
       ALF_FAM=[]; alfFamilyRender(); return;
     }
     if(res.body.provisioned===false){
@@ -2341,15 +2422,19 @@ window.alfFamilySave=function(){
     phone: g('fc-phone')||null,
     mar_consent: g('fc-consent')==='true'
   };
-  alfData('write','alf_family_contacts',payload,true).then(function(res){
-    if(res.body&&res.body.ok){
+  alfFamilyData('write',payload).then(function(res){
+    if(res.ok&&res.body){
       ['fc-id','fc-name','fc-rel','fc-email','fc-phone'].forEach(function(id){var el=$(id);if(el)el.value='';});
       var c=$('fc-consent'); if(c) c.value='false';
       alfFamilyRefresh();
       toast(payload.mar_consent?'Contact recorded — medication status consent GRANTED':'Contact recorded — no medication access');
       return;
     }
-    var msg=(res.body&&res.body.error&&res.body.error.message)||('Could not save (HTTP '+res.status+').');
+    // The server's message first -- on this resource the write is management-only
+    // and its refusal says so in words ("Recording a family contact, and granting
+    // them sight of medication status, is a disclosure decision - management
+    // only"). A bare HTTP number would throw that away.
+    var msg=(res.error&&res.error.message)||('Could not save (HTTP '+res.status+').');
     if(err) err.textContent=msg;
   });
 };
@@ -2358,9 +2443,13 @@ window.alfFamilySave=function(){
 window.alfFamilyPreview=function(contactId){
   var out=$('fc-preview'); if(!out) return;
   out.textContent='Loading…';
-  alfData('family_mar','alf_family_contacts',{contact_id:contactId},true).then(function(res){
-    if(!res.body||!res.body.ok||!res.body.family_mar){
-      out.textContent=(res.body&&res.body.error&&res.body.error.message)
+  alfFamilyData('family_mar',{contact_id:contactId}).then(function(res){
+    if(!res.ok||!res.body||!res.body.family_mar){
+      // THE REFUSAL IS THE ANSWER ON THIS ONE, not an error to paper over.
+      // NO_MAR_CONSENT and CONTACT_INACTIVE are what "see what they see" is
+      // asking, and MAR_TOO_LARGE / MAR_PAGE_UNREADABLE (2026-09-26) say the
+      // history could not be assembled in full rather than that it is empty.
+      out.textContent=(res.error&&res.error.message)
         ||'Could not load. No preview is shown rather than a guess.';
       return;
     }
