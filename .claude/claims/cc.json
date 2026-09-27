@@ -2819,6 +2819,23 @@
         "tests/sairncash_safe_harbor.js",
         "tools/push_retry.py"
       ]
+    },
+    {
+      "id": "cc-1790507533",
+      "session": "cc",
+      "subject": "cc",
+      "task": "re-anchor the sairncash entitlement and sairncare fault-probe stale anchors, plus the probe-anchor freshness tool; SAIRNvet formulary citation sourcing; unguarded Math.min/Math.max null-operand sweep; git-log empty-walk blind-spot sweep. NOT TOUCHING api/sd-data.js production code -- fourth's 132-gate pre-gate regression is REPORTED, not fixed here. SUBJECT NAMED PER PR 4.3 FILES: tests/sairncash_entitlement_fault_probe.py tests/sairncare_fault_probe.py tools/probe_anchor_freshness.py sairnvet.html tools/push_retry.py",
+      "claimed_at": "2026-09-27T11:12:13Z",
+      "claimed_at_epoch": 1790507533.7767892,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "sairnvet.html",
+        "tests/sairncare_fault_probe.py",
+        "tests/sairncash_entitlement_fault_probe.py",
+        "tools/probe_anchor_freshness.py",
+        "tools/push_retry.py"
+      ]
     }
   ],
   "refusals": [
