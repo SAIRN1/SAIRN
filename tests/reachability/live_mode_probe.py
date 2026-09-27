@@ -63,8 +63,7 @@ if __name__ != '__main__':
 
 
 
-REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 TOOL = os.path.join(REPO, 'tools', 'sairn_reachability_check.py')
 EXEMPTIONS = 'tools/reachability_exemptions.json'
 

@@ -34,8 +34,7 @@ import tempfile
 
 CONTROLS_FOR = ['committer_identity_check.py']
 
-REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REL = 'tools/committer_identity_check.py'
 FAIL = []
 

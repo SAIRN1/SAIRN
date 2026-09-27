@@ -35,8 +35,7 @@ import sys
 import tempfile
 import time
 
-REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 HOOK = os.path.join(REPO, 'tools', 'sairn_push_gate_hook.py')
 TARGET = os.path.join(REPO, 'api', 'legal-deadlines.js')
 NEEDLE = '        service_methods: body.service_methods,\n'

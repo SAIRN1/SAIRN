@@ -22,8 +22,7 @@ import os
 import subprocess
 import sys
 
-ROOT = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TARGET = 'sairndental.html'
 SUITE = os.path.join('tests', 'dnt_vendor_write_confirmation.js')
 

@@ -49,8 +49,7 @@ import sys
 import tempfile
 import time
 
-ROOT = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, 'tools'))
 import run_all_tests as rat                              # noqa: E402
 

@@ -66,8 +66,7 @@ import subprocess
 import sys
 import tempfile
 
-REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 LOCK = os.path.join('api', 'sv-witness.js')
 SUITES = [os.path.join('tests', 'failsafe', 'witness_atomicity.js'),
           os.path.join('tests', 'failsafe', 'witness_recovery.js'),

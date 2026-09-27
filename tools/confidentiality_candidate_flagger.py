@@ -111,9 +111,7 @@ import re
 import subprocess
 import sys
 
-REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True,
-                      encoding='utf-8', errors='replace').stdout.strip()
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REGISTER = os.environ.get('SAIRN_TIER_REGISTER') or os.path.join(
     REPO, 'docs', 'CRITICALITY-TIERS.md')
 HANDLER = os.path.join(REPO, 'api', 'sd-data.js')

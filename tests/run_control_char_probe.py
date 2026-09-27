@@ -35,8 +35,7 @@ import subprocess
 import sys
 import tempfile
 
-REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOL = os.path.join(REPO, 'tools', 'control_char_check.py')
 
 NUL = bytes([0])

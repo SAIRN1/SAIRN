@@ -99,8 +99,7 @@ import re
 import subprocess
 import sys
 
-REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # The self-declaration. Read from the file, never from a list kept here.
 DECLARES = re.compile(

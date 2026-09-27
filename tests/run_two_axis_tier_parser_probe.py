@@ -27,8 +27,7 @@ import subprocess
 import sys
 import tempfile
 
-REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOL = os.path.join(REPO, 'tools', 'criticality_tier_check.py')
 
 HEADER = '''# Criticality tiers -- fixture

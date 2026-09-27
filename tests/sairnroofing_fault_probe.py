@@ -43,8 +43,7 @@ import subprocess
 import sys
 import tempfile
 
-REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AUTH = os.path.join('api', 'rf-auth.js')
 HTML = 'sairnroofing.html'
 GATE = os.path.join('tests', 'roofing_claim_gate_single_source.js')

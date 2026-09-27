@@ -38,8 +38,7 @@ import tempfile
 
 CONTROLS_FOR = ['new_checker.py']
 
-REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FAIL = []
 NAME = 'zzprobe_shape'
 

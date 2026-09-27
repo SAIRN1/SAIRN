@@ -46,8 +46,7 @@ import subprocess
 import sys
 import tempfile
 
-REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HTML = 'sairnbiz.html'
 MATCH = os.path.join('tests', 'sairnbiz_bill_cannot_settle_unmatched.js')
 LEDGER = os.path.join('tests', 'sairnbiz_ledger_source_id.js')

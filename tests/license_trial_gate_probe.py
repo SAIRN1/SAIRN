@@ -16,8 +16,7 @@ import re
 import subprocess
 import sys
 
-ROOT = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SUITE = os.path.join('api', 'license-trial-gate.test.js')
 
 LIB = os.path.join('api', '_lib', 'license.js')
