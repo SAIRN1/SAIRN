@@ -4058,6 +4058,26 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-27T02:56:58Z",
+      "opened_at_sha": "10ea5cbb9133209380bbfe05ea9e06a5f13c4d86",
+      "resources": [
+        "alf_family_contacts"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tools/role_gate_negative_coverage.py"
+      ],
+      "what": "tools/role_gate_negative_coverage.py plus its probe: a NEW MEASUREMENT, no gate added or changed. 12 of 31 role-gated resource branches in api/sd-data.js are driven by some suite but NEVER with a role their gate excludes, so deleting those gates would go unnoticed. PROVEN by deleting alf_facility's write role gate -- which lets any authenticated employee change the facility profile including the licensing_state the compliance engine trusts -- and running everything: 213 of 214 api suites and 172 of 183 tests passed, identical to baseline. Zero tests noticed. THE OBLIGATION IS HERE BECAUSE THE PIN FILE AND THE INVENTORY NAME alf_facility as a finding, not because its code changed -- no api/ file is in that commit. WHAT A REVIEWER SHOULD CHECK: one, is the uncovered/covered/not-driven split right, particularly that 17 resources driven by NO suite are counted apart rather than folded into the 12, since folding them in would inflate the ratchet and point people at suites that do not exist; two, the tool resolves allowed roles from each roleSet declaration rather than a list of its own -- confirm it is reading the declarations and not silently defaulting; three, whether 12 is an over-report, because a suite driving a resource through a VARIABLE rather than a literal is invisible to it and I chose over-reporting as the safe direction. Tier A resource named in the findings: alf_facility.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-27T02:56:58Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
