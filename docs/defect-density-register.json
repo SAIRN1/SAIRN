@@ -14964,6 +14964,60 @@
       ]
     },
     {
+      "commit": "7bc26782e533",
+      "date": "2026-09-26",
+      "subject": "fix(sairnvet): the butorphanol HORSE row was 2-4x the FDA-approved equine dose -- the dog/cat figure copied across all five species rows",
+      "files": [
+        "sairnvet.html",
+        "tests/sairnvet_formulary_source_honesty.js"
+      ],
+      "lines_added": 78,
+      "lines_removed": 1,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "code-review",
+      "summary": "sairnvet.html searchDrugs() rendered a green \"Verified\" badge from `d.needsReview ? 'Needs Review' : '\u2713 Verified'` -- the ABSENCE of a review flag read as the PRESENCE of a verification, on 284 of 485 VET_DRUGS rows, with no `reference` field on any row and no source recorded anywhere in the file for the badge to have checked. The same claim reached the clinician through nine further sites including the AI dosing system prompt (\"you may ONLY use the verified database record\") and the grounding context (\"Verified database record:\"). And one of the doses so badged was wrong: the Butorphanol HORSE row carried 0.2-0.4 mg/kg, the dog/cat figure propagated across all five species rows, against the FDA-approved equine 0.1 mg/kg IV (Torbugesic, NADA 135-780) -- 2-4x the label dose, shown to a vet under a tick.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The VET_DRUGS table and the searchDrugs() badge both predate every commit in this register's window, and git log on sairnvet.html does not isolate a commit that introduced either the two-state ternary or the butorphanol/horse row -- the file arrived with the table already populated. Naming a plausible sha here would put a fabricated discovery lag into the IBNR fit, which is the one number this field feeds."
+      },
+      "citation_note": "not-citable: no section of docs/SAIRN-PROCESS-RULES.md names either half of this shape. The badge half is \"the absence of a flag read as the presence of a verification\", and the dose half is a faithful copy into a context that invalidates it -- which IS named, but in docs/2026-09-13-cross-domain-disciplines.md (item 7, Ariane 5: byte-identical is not safe-in-context; and item 8, nothing announces the day a check stops testing anything). That document is not the vocabulary --rule validates against, so citing a section number from it would be a citation that resolves to nothing. Recorded as not-citable with the real pointer rather than forced into the nearest 1.x section.",
+      "contributing_factors": [
+        {
+          "factor": "searchDrugs() chose the badge from needsReview alone, a two-state model over a three-state fact: flagged-for-review, cites-a-source, and neither. `needsReview:false` is the default for a row nobody has touched, so the green state was the state of NOT HAVING BEEN LOOKED AT.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Badge now branches on d.reference and renders three states -- Needs Review / '\u2713 Referenced' / 'No source recorded' -- with the no-source chip deliberately not the green #D1FAE5."
+        },
+        {
+          "factor": "The formulary was largely built by propagating ONE numeric dose across a drug's species rows. The copy is faithful and the species is not; butorphanol/horse is the instance that was measured wrong at 2-4x the FDA-approved equine dose.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The horse row now carries 0.1 mg/kg IV with its Torbugesic NADA 135-780 citation, and an arm pins it against the dog/cat figure returning."
+        },
+        {
+          "factor": "Nothing compared a displayed verification claim against the existence of evidence for it, so the badge, the dashboard prose, the Ask-AI card, the calculator box and the model's own system prompt all made the same unearned claim independently and none of them could be caught by checking another.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/sairnvet_formulary_source_honesty.js, 16 arms, pins the badge region, both AI prompt paths, the grounding context's BRANCH on m.reference (not merely the identifier's presence -- ablation caught that first draft), the calculator box and both prose sites."
+        },
+        {
+          "factor": "Species is data in a row, not schema, so a wrong-species dose is structurally indistinguishable from a right one and there is no per-species bound for it to violate. The app's bounds-checking validates the PATIENT against the row, never the row against the species it claims.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Mechanically flag all 295 species-copied rows using the root-cause pattern itself, as a stopgap ahead of the row-by-row sourcing pass."
+        }
+      ],
+      "recurrence_open": "481 of 485 rows still cite no source. The badge is now honest about them -- \"No source recorded\", not green -- so the app no longer overclaims, but nothing about this change makes those doses verified, and a clinician reading a correctly-badged unsourced row is still reading an unsourced dose. The cross-species copy is REPORTED per run (114 drug names, 295 rows) and deliberately NOT gated, because a shared dose is sometimes correct -- chlorhexidine really is 0.05% in every species -- so a new species-copied row can still land without refusing anything. Only the one measured instance (butorphanol/horse) is pinned by an arm; the other 294 rows are counted, not checked, and no per-species dose bound exists anywhere for a wrong-species figure to violate.",
+      "single_factor_note": "n/a -- four factors"
+    },
+    {
       "commit": "84edca20af14",
       "date": "2026-09-26",
       "subject": "fix(sairncare): every employee could list every family contact's phone number, and a family's MAR silently stopped at 500 rows",
@@ -15370,6 +15424,62 @@
       "recurrence_open": "the loader's docstring also documented a --verify flag that does not exist (verification is unconditional); nothing checks a tool's own header against its own argparse. And the four dead opened_at_sha stamps in the review ledger are the same class of dead pointer and are repaired by nothing yet."
     },
     {
+      "commit": "d4dd7428da11",
+      "date": "2026-09-26",
+      "subject": "fix(sairnbiz): the 1099 threshold was $600 and has been wrong since 1 January 2026 -- year-keyed now, because a second constant goes stale in 2027",
+      "files": [
+        "sairnbiz.html",
+        "tests/sairnbiz_1099_threshold.js"
+      ],
+      "lines_added": 187,
+      "lines_removed": 8,
+      "app": "sairnbiz",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "sairnbiz.html compared vendor YTD spend against a hardcoded 600 to decide \"1099 Required\" -- three sites on one screen: the vendor count (`spendOf(x)>=600`), the undated-prior-year AT-RISK disclosure, and the KPI subtitle, which was the string \"$600+ paid\" TYPED INTO THE MARKUP rather than derived. The IRS minimum reporting threshold rose to $2,000 for tax years beginning after 2025 (Instructions for Forms 1099-MISC and 1099-NEC, Rev. December 2026; P.L. 119-21), so every figure on that screen has over-reported since 1 January 2026, naming vendors as 1099-required who are not -- and the typed subtitle would have kept displaying $600 even if the comparison alone had been corrected.",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "THERE IS NO INJECTING COMMIT, and that is the finding rather than a gap in the search. `git log -S'>=600' -- sairnbiz.html` traces the comparison to 901ccc2d, the app's original commit, where $600 was the CORRECT IRS threshold and had been since 1954. No commit made this code wrong; P.L. 119-21 did, effective for tax years beginning after 2025. Citing 901ccc2d would report a discovery lag spanning a period in which the code was right, which is worse than an honest absence in the one number this field feeds. The meaningful interval is 2026-01-01 to 2026-09-26, and it is stated here because the schema has nowhere to put it."
+      },
+      "citation_note": "ARGUABLE, and said so rather than cited clean. PR 2.3 is written about standing DOCUMENTS -- a fact with a tense needs a read, and a number needs a single source -- and this is app logic, so the section is being applied by analogy. Both halves of it are nonetheless exactly what failed: the threshold is a fact with a tense (true 1954 to 2025-12-31, false after), and the KPI subtitle was a SECOND source for the same number, typed into markup where nothing could keep it agreeing with the comparison. What PR 2.3 does NOT cover, and what no section of that document covers, is the part that makes this class hard: nothing in the repo or the app announces the day a correct hardcoded regulatory figure stops being correct. That shape is named in docs/2026-09-13-cross-domain-disciplines.md item 8, which is not the vocabulary --rule validates against.",
+      "contributing_factors": [
+        {
+          "factor": "The threshold was a bare literal with no year dimension, so the single value it held had to be simultaneously right for 2025 data (which this app can still be opened on -- sbVendorPaidYTD keys off new Date().getFullYear()) and for 2026. No single constant can be.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "sb1099Threshold(year) returns {amount, certain, note}: 600 before 2026, 2000 for 2026 with the authority cited, and for 2027+ the 2026 base with certain:false. A swap of 600 for 2000 would have been wrong for 2025 and stale in 2027 -- the same defect one indexation later instead of seventy-one years later."
+        },
+        {
+          "factor": "The KPI subtitle was the string \"$600+ paid\" typed into the markup, a second declaration of a number the computation also held. A screen can therefore display a threshold the app is not using, and correcting the comparison alone would have left it saying $600.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The subtitle is written from the same function the count uses (id vn-1099-sub), and carries the uncertainty marker and note as a tooltip when the year is past 2026."
+        },
+        {
+          "factor": "Nothing in the repo or the app records that a regulatory constant HAS a tense, so no check, review or reader was ever prompted to ask whether this figure was still current. The code was correct when written and nothing observed the day it stopped being correct.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/sairnbiz_1099_threshold.js, 9 arms, pins the three year states, that the uncertain years still return a usable floor rather than null, that all three call sites read the function rather than a literal, and that the tile marks an uncertain year visibly. Plus a CONTROL asserting the lifted function is really year-keyed -- without which a stub returning one value satisfies every arm above."
+        },
+        {
+          "factor": "An empty or null threshold reads on screen as NO threshold, which under-files -- so the safe failure direction for the uncertain years is not 'refuse to answer' but 'answer with a floor and say it is a floor'. Getting that backwards is how a could-not-tell becomes a silent zero.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The 2027+ branch returns the 2026 base as an explicit floor with certain:false, never null, and an arm pins that it is usable rather than empty."
+        }
+      ],
+      "recurrence_open": "The 2027 figure is NOT closed and is the next instance of this same defect waiting. Indexing for inflation begins in calendar year 2027, so sb1099Threshold(2027) deliberately returns the 2026 BASE with certain:false and a note -- correct as a floor, and still not the published number. Nothing in the repo will announce the day the 2027 figure is published; somebody has to read the IRS instruction and enter it, and if nobody does, the app shows an uncertainty marker forever rather than a wrong figure, which is the best a year-keyed function can do on its own. No standing check re-reads irs.gov, and the same structural exposure exists for every other regulatory constant in this codebase that nobody has audited for a tense -- this record covers ONE threshold in ONE app.",
+      "single_factor_note": "n/a -- four factors"
+    },
+    {
       "commit": "ead626ae90af",
       "date": "2026-09-26",
       "subject": "fix(gh_push): the REST push now runs the REAL hook -- and the hook was never decorative, because nothing else ran the gate at all",
@@ -15425,60 +15535,6 @@
         }
       ],
       "recurrence_open": "THE ENUMERATION OF WAYS CONTENT CAN REACH ORIGIN IS STILL HAND-MAINTAINED AND NOTHING CHECKS IT. Two paths are known and both are now gated; nothing asserts there is no third. A future tool that talks to the GitHub API, a GitHub Action with write permission, or a web-UI edit would each be ungated and nothing would report it. Separately, .githooks/pre-push is installed PER CLONE by tools/install_git_hooks.py and .git/ is not versioned, so a fresh clone has no hook at all -- gh_push.py now refuses in that state, but an ordinary git push does not, and that gap is older and wider than this fix."
-    },
-    {
-      "commit": "7bc26782e533",
-      "date": "2026-09-26",
-      "subject": "fix(sairnvet): the butorphanol HORSE row was 2-4x the FDA-approved equine dose -- the dog/cat figure copied across all five species rows",
-      "files": [
-        "sairnvet.html",
-        "tests/sairnvet_formulary_source_honesty.js"
-      ],
-      "lines_added": 78,
-      "lines_removed": 1,
-      "app": "sairnvet",
-      "layer": "product",
-      "severity": "critical",
-      "detection_method": "code-review",
-      "summary": "sairnvet.html searchDrugs() rendered a green \"Verified\" badge from `d.needsReview ? 'Needs Review' : '\u2713 Verified'` -- the ABSENCE of a review flag read as the PRESENCE of a verification, on 284 of 485 VET_DRUGS rows, with no `reference` field on any row and no source recorded anywhere in the file for the badge to have checked. The same claim reached the clinician through nine further sites including the AI dosing system prompt (\"you may ONLY use the verified database record\") and the grounding context (\"Verified database record:\"). And one of the doses so badged was wrong: the Butorphanol HORSE row carried 0.2-0.4 mg/kg, the dog/cat figure propagated across all five species rows, against the FDA-approved equine 0.1 mg/kg IV (Torbugesic, NADA 135-780) -- 2-4x the label dose, shown to a vet under a tick.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The VET_DRUGS table and the searchDrugs() badge both predate every commit in this register's window, and git log on sairnvet.html does not isolate a commit that introduced either the two-state ternary or the butorphanol/horse row -- the file arrived with the table already populated. Naming a plausible sha here would put a fabricated discovery lag into the IBNR fit, which is the one number this field feeds."
-      },
-      "citation_note": "not-citable: no section of docs/SAIRN-PROCESS-RULES.md names either half of this shape. The badge half is \"the absence of a flag read as the presence of a verification\", and the dose half is a faithful copy into a context that invalidates it -- which IS named, but in docs/2026-09-13-cross-domain-disciplines.md (item 7, Ariane 5: byte-identical is not safe-in-context; and item 8, nothing announces the day a check stops testing anything). That document is not the vocabulary --rule validates against, so citing a section number from it would be a citation that resolves to nothing. Recorded as not-citable with the real pointer rather than forced into the nearest 1.x section.",
-      "contributing_factors": [
-        {
-          "factor": "searchDrugs() chose the badge from needsReview alone, a two-state model over a three-state fact: flagged-for-review, cites-a-source, and neither. `needsReview:false` is the default for a row nobody has touched, so the green state was the state of NOT HAVING BEEN LOOKED AT.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Badge now branches on d.reference and renders three states -- Needs Review / '\u2713 Referenced' / 'No source recorded' -- with the no-source chip deliberately not the green #D1FAE5."
-        },
-        {
-          "factor": "The formulary was largely built by propagating ONE numeric dose across a drug's species rows. The copy is faithful and the species is not; butorphanol/horse is the instance that was measured wrong at 2-4x the FDA-approved equine dose.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The horse row now carries 0.1 mg/kg IV with its Torbugesic NADA 135-780 citation, and an arm pins it against the dog/cat figure returning."
-        },
-        {
-          "factor": "Nothing compared a displayed verification claim against the existence of evidence for it, so the badge, the dashboard prose, the Ask-AI card, the calculator box and the model's own system prompt all made the same unearned claim independently and none of them could be caught by checking another.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "tests/sairnvet_formulary_source_honesty.js, 16 arms, pins the badge region, both AI prompt paths, the grounding context's BRANCH on m.reference (not merely the identifier's presence -- ablation caught that first draft), the calculator box and both prose sites."
-        },
-        {
-          "factor": "Species is data in a row, not schema, so a wrong-species dose is structurally indistinguishable from a right one and there is no per-species bound for it to violate. The app's bounds-checking validates the PATIENT against the row, never the row against the species it claims.",
-          "kind": "latent-condition",
-          "action_status": "planned",
-          "action": "Mechanically flag all 295 species-copied rows using the root-cause pattern itself, as a stopgap ahead of the row-by-row sourcing pass."
-        }
-      ],
-      "recurrence_open": "481 of 485 rows still cite no source. The badge is now honest about them -- \"No source recorded\", not green -- so the app no longer overclaims, but nothing about this change makes those doses verified, and a clinician reading a correctly-badged unsourced row is still reading an unsourced dose. The cross-species copy is REPORTED per run (114 drug names, 295 rows) and deliberately NOT gated, because a shared dose is sometimes correct -- chlorhexidine really is 0.05% in every species -- so a new species-copied row can still land without refusing anything. Only the one measured instance (butorphanol/horse) is pinned by an arm; the other 294 rows are counted, not checked, and no per-species dose bound exists anywhere for a wrong-species figure to violate.",
-      "single_factor_note": "n/a -- four factors"
     },
     {
       "commit": "f0c0cb7ac160",
