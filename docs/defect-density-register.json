@@ -16219,7 +16219,7 @@
       "recurrence_open": "The pin is resolved for the seed exemption. Nothing checks that any OTHER consumer of pushed_tip() treats its return as a refspec rather than a sha -- the same value is passed to the seed comparison and to export_sql_at, and whether either of those is refspec-safe was not audited here."
     },
     {
-      "commit": "61f5576c2d8b",
+      "commit": "7af90882ddae",
       "date": "2026-09-26",
       "subject": "feat(sairnsenior): an expired CPR refuses the assignment -- on all three write paths, and the join it needed did not exist",
       "files": [
