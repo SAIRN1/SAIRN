@@ -13,6 +13,19 @@
       "files": [
         "docs/cloud-research/sairncash-external-competitive-gap-audit-2026-09-26.md"
       ]
+    },
+    {
+      "id": "cloud-1790477085",
+      "session": "cloud",
+      "subject": "sairnfreedom",
+      "task": "SAIRNfreedom external competitive-gap audit, five lenses (competitive, Ohio liquor OAC 4301 and charitable gaming ORC 2915 against the app's gates, accuracy/liability, dues and canteen POS, practitioner voice), docs only, isolated cloud-research lane, lands on PR SAIRN1/SAIRN#18 branch claude/wizardly-ride-wtun13, not main. `check` said CLEAR. Adjacent, not overlapping: cody-q14 writes docs/2026-09-27-sf-events-tier-cell.md about the sf_events tier cell; no shared file. SUBJECT NAMED PER PR 4.3 FILES: docs/cloud-research/sairnfreedom-external-competitive-gap-audit-2026-09-27.md",
+      "claimed_at": "2026-09-27T02:44:45Z",
+      "claimed_at_epoch": 1790477085.926389,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/cloud-research/sairnfreedom-external-competitive-gap-audit-2026-09-27.md"
+      ]
     }
   ]
 }
