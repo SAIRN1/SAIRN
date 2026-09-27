@@ -680,6 +680,40 @@ textarea{resize:vertical;min-height:80px;}
     <div class="kpi"><div class="klbl">Total Ben. Cost/Mo</div><div class="kval" id="bn-cost">$0</div><div class="kt">Employer share</div></div>
     <div class="kpi"><div class="klbl">Cost Per Employee</div><div class="kval" id="bn-cpe">$0</div><div class="kt">Monthly avg</div></div>
   </div>
+  <!-- ── THE PLAN CARDS ARE AN EXAMPLE OFFERING AND NOW SAY SO (2026-09-26) ──
+       Four cards, every value a literal in markup, no script targeting `.sval`.
+       Shown IDENTICALLY to every licence, so a customer in Texas was reading
+       "Medical Mutual of Ohio" and "BWC Ohio" as though they described their own
+       benefits. Three different defect classes were sitting in one block and
+       they get three different treatments rather than one sweep:
+
+         (1) A COMPLIANCE ASSERTION THE APP CANNOT KNOW -- "Workers Comp:
+             Active, BWC Ohio". REMOVED. See the Other Benefits card.
+         (2) TWO VALUES THAT LOOK COMPUTED -- "Employee Contrib. Avg 5.2%" and
+             "Plan Assets (est.) $284,000". REMOVED. An invented provider name
+             reads as sample data; an invented AVERAGE and an invented ASSET
+             TOTAL read as measurements, which is the fabricated-KPI class and
+             the worst of the three.
+         (3) SAMPLE VALUES THAT LOOK LIKE SAMPLE VALUES -- provider names,
+             premiums, renewal dates, accrual rates. KEPT, and disclosed here
+             rather than removed, because this block is the OFFERING and an
+             empty offering card is not more honest than a labelled example.
+
+       SAME RULE AS THE SAFETY-INCIDENTS TILE AND THE TIMESHEET HOURS: while
+       nothing writes a figure, the app SAYS SO instead of showing one. The one
+       number that is real is the $520 employer default, which the KPIs above do
+       use -- and it already carried its own disclosure, which is why it is the
+       only value on these cards that keeps a figure. -->
+  <div style="border-left:3px solid #d97706;background:rgba(217,119,6,0.07);padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:12px;font-size:12px;line-height:1.7">
+    <strong>These four cards are an EXAMPLE offering, not your plan.</strong>
+    Every value in them is fixed text shown to every SAIRNbiz licence &mdash; no
+    provider, premium, renewal date or accrual rate here was entered by you or
+    read from anything. <strong>Nothing on these cards is computed and nothing
+    here feeds a figure</strong>, with one exception that is labelled where it
+    appears: the <em>$520/mo employer default</em>, which the KPIs above fall back
+    to for an employee with no recorded cost. Your real elections and employer
+    costs are the <strong>Enrollment</strong> table below.
+  </div>
   <div class="g2">
     <div class="card"><div class="ch"><span class="ct">Health Insurance</span></div><div class="cb">
       <div class="srow"><span class="slbl">Provider</span><span class="sval">Medical Mutual of Ohio</span></div>
@@ -692,8 +726,19 @@ textarea{resize:vertical;min-height:80px;}
       <div class="srow"><span class="slbl">Provider</span><span class="sval">Fidelity Investments</span></div>
       <div class="srow"><span class="slbl">Employer Match</span><span class="sval">4% dollar-for-dollar</span></div>
       <div class="srow"><span class="slbl">Vesting Schedule</span><span class="sval">3-year graded</span></div>
-      <div class="srow"><span class="slbl">Employee Contrib.</span><span class="sval">Avg 5.2%</span></div>
-      <div class="srow"><span class="slbl">Plan Assets (est.)</span><span class="sval">$284,000</span></div>
+      <!-- ── THE TWO THAT LOOKED COMPUTED, REMOVED 2026-09-26 ──────────────
+           "Avg 5.2%" and "Plan Assets (est.) $284,000". An AVERAGE and an
+           ASSET TOTAL are the two shapes on this whole panel that a reader
+           takes for a measurement: an average implies a population was
+           summed, and "(est.)" implies a method. Both were literals in
+           markup. Nothing in this app records an employee deferral rate or a
+           plan balance, and there is no field to enter one -- so these are
+           not "not yet computed", they are not computable here at all. The
+           rows are KEPT with an explicit not-tracked value rather than
+           deleted, so the absence is visible where the figure used to be
+           instead of the card quietly getting shorter. -->
+      <div class="srow"><span class="slbl">Employee Contrib.</span><span class="sval" style="color:var(--muted,#666)">Not tracked by SAIRNbiz &mdash; no deferral rate is recorded anywhere in this app</span></div>
+      <div class="srow"><span class="slbl">Plan Assets</span><span class="sval" style="color:var(--muted,#666)">Not tracked &mdash; ask your 401(k) recordkeeper. This app holds no plan balance</span></div>
     </div></div>
     <div class="card"><div class="ch"><span class="ct">Dental &amp; Vision</span></div><div class="cb">
       <div class="srow"><span class="slbl">Dental Provider</span><span class="sval">Delta Dental</span></div>
@@ -705,7 +750,26 @@ textarea{resize:vertical;min-height:80px;}
     <div class="card"><div class="ch"><span class="ct">Other Benefits</span></div><div class="cb">
       <div class="srow"><span class="slbl">PTO Accrual</span><span class="sval">1.5 days/month (18/yr)</span></div>
       <div class="srow"><span class="slbl">Sick Days</span><span class="sval">5 days/year</span></div>
-      <div class="srow"><span class="slbl">Workers Comp</span><span class="sval">Active &middot; BWC Ohio</span></div>
+      <!-- ── THE ONE REAL COMPLIANCE BUG ON THIS PANEL, FIXED 2026-09-26 ────
+           This read "Active &middot; BWC Ohio" as fixed text, to every licence.
+           Two assertions in four words, and both are the app's to make and
+           cannot be:
+             * "BWC Ohio" names the OHIO BUREAU OF WORKERS' COMPENSATION, one
+               of only four US monopolistic state funds. An employer in Texas
+               (where coverage is not even compulsory), or California, or
+               anywhere else, was shown the wrong regulator by name.
+             * "Active" asserts that coverage IS IN FORCE. Workers'
+               compensation status is a statutory obligation with real
+               penalties for a lapse, and this app has no policy number, no
+               carrier, no effective date and no way to know.
+           Saying nothing would repeat the same mistake quietly, so the row
+           states what the app cannot know rather than going blank -- the same
+           treatment the two 401(k) figures above got, and the same rule as the
+           safety-incidents tile. THE FIX IS NOT A CONFIGURABLE FIELD: adding
+           one would put a self-reported compliance status on a screen that
+           looks authoritative, which is a bigger decision than removing a
+           wrong constant. Flagged, not built. -->
+      <div class="srow"><span class="slbl">Workers Comp</span><span class="sval" style="color:var(--muted,#666)">Not tracked &mdash; coverage and its regulator are state-specific and this app holds no policy. Confirm with your carrier or state fund</span></div>
       <div class="srow"><span class="slbl">Life Insurance</span><span class="sval">1x annual salary</span></div>
       <div class="srow"><span class="slbl">Tool Allowance</span><span class="sval">$500/yr fabricators</span></div>
     </div></div>
@@ -1032,8 +1096,19 @@ textarea{resize:vertical;min-height:80px;}
            deleting a setting a customer may already have set. -->
       <div class="fg"><label>Fiscal Year Start</label><select id="ss-fy"><option>January</option><option>April</option><option>July</option><option>October</option></select>
         <div style="font-size:11px;color:var(--muted,#666);margin-top:4px">Recorded, not yet used &mdash; no report in this app is period-bounded by fiscal year.</div></div>
+      <!-- WIRED 2026-09-26. This label read "Recorded, not yet used. The
+           Timesheets panel still applies a fixed 40 -- and its hours are demo
+           figures, not a real store, so wiring this would make that look more
+           authoritative than it is." True until 2026-09-15, when
+           saveTimesheet() and the sb_ts store landed; after that it was a
+           stale sentence holding a setting unwired on a premise that no longer
+           existed. THE HISTORY LIVES HERE AND NOT ON THE SCREEN: a user needs
+           to know what the setting does now, and quoting the old wording in
+           rendered markup left the words "not yet used" beside a setting that
+           is used -- which an arm of tests/sairnbiz_benefits_and_overtime.js
+           caught, on my own replacement text. -->
       <div class="fg"><label>Overtime Threshold (hrs/week)</label><input id="ss-ot" type="number" value="40">
-        <div style="font-size:11px;color:var(--muted,#666);margin-top:4px">Recorded, not yet used. The Timesheets panel still applies a fixed 40 &mdash; and its hours are demo figures, not a real store, so wiring this would make that look more authoritative than it is.</div></div>
+        <div style="font-size:11px;color:var(--muted,#666);margin-top:4px"><strong>Used.</strong> The Timesheets panel and its CSV export both compute the OT column and the Est. Pay figure above this number. Outside 1&ndash;168 it is ignored and 40 is used, and the Timesheets panel says so. </div></div>
       <div class="fg"><label>Default Invoice Terms</label><select id="ss-terms"><option>Net 30</option><option>Net 15</option><option>Net 45</option><option>Due on Receipt</option></select>
         <div style="font-size:11px;color:var(--muted,#666);margin-top:4px">Used &mdash; pre-fills the due date on a new invoice. You can still change it per invoice.</div></div>
     </div></div>
@@ -3110,7 +3185,7 @@ function rTS(){
         '<td style="text-align:right;">--</td>'+btn+'</tr>';
     }
     var t=d.reduce(function(a,b){return a+(Number(b)||0);},0);
-    var ot=Math.max(0,t-40);var c=(t-ot)*e.rate+ot*e.rate*1.5;
+    var ot=Math.max(0,t-sbOtThreshold());var c=(t-ot)*e.rate+ot*e.rate*1.5;
     // COUNTED IN THE TOTALS, and this is a decision rather than a consequence
     // of rendering the row. Hours recorded against a week were WORKED in that
     // week and were payable in it; whether the person is on the roster TODAY
@@ -3142,6 +3217,13 @@ function rTS(){
       ? 'No hours recorded for the week of '+week+'. Use Enter on a row to record them; the figures above stay -- rather than 0, because nobody has said anyone worked zero.'
       : 'Hours are not recorded in this app yet, so there is nothing to total. These figures are shown as -- rather than 0 because no hours and no way to enter hours are different facts.';
   }
+  // THE THRESHOLD THAT PRODUCED THE OT COLUMN IS ALWAYS SHOWN. A configurable
+  // number that silently changes a money figure is the defect this app has
+  // already been bitten by twice; if somebody sets 35, the OT column and the
+  // Est. Pay figure both move and nothing on the screen would have said why.
+  // Appended rather than replacing, because the exclusion disclosures above are
+  // about WHOSE hours are counted and this is about HOW they are counted.
+  note=(note?note+' ':'')+sbOtThresholdNote();
   $('ts-note').textContent=note;
   $('ts-note').style.display=note?'':'none';
 }
@@ -4777,11 +4859,16 @@ function csv(type){
       var row=sbTsFor(e.id,sbTsWeek);
       if(!row||!Array.isArray(row.hours)){tsMissing.push(e.fn+' '+e.ln);return;}
       var t=row.hours.reduce(function(a,b){return a+(Number(b)||0);},0);
-      var ot=Math.max(0,t-40);
+      var ot=Math.max(0,t-sbOtThreshold());
       if(rr.correctionOnly)tsDeparted.push(e.fn+' '+e.ln+' ('+(e.status||'not active')+')');
       rows.push([e.fn+' '+e.ln,e.status||'',sbTsWeek].concat(row.hours).concat(
         [t,ot,((t-ot)*e.rate+ot*e.rate*1.5).toFixed(2)]));
     });
+    // THE RULE TRAVELS WITH THE FILE. An OT column in a spreadsheet somebody
+    // costs a week against is uninterpretable without the threshold that made
+    // it -- the same reason the refrigerant export carries its three citations.
+    rows.push([]);
+    rows.push(['NOTE',sbOtThresholdNote()]);
     if(tsMissing.length){
       rows.push([]);
       rows.push(['NOTE','No hours recorded for '+tsMissing.length+' of '+tsActive.length+
@@ -4873,6 +4960,46 @@ function sbCfg(){
   var d={fy:'January',ot:40,terms:'Net 30'};
   try{ var c=ld('sb_cfg',null); return c?{fy:c.fy||d.fy,ot:c.ot||d.ot,terms:c.terms||d.terms}:d; }catch(e){ return d; }
 }
+// ── THE OVERTIME THRESHOLD IS READ NOW (2026-09-26) ────────────────────────
+// It was recorded and ignored, and the on-screen reason for ignoring it --
+// "its hours are demo figures, not a real store" -- stopped being true on
+// 2026-09-15 when saveTimesheet() and the sb_ts store landed. A stale sentence
+// was holding a setting unwired on a premise that no longer existed.
+//
+// TWO CALLERS, ONE FUNCTION, because the threshold decides a MONEY figure and
+// two copies of `t-40` are two places that can disagree about what somebody was
+// paid. rTS() renders the OT column and the Est. Pay figure; csv('timesheet')
+// writes the same two into a file. They now read the same number or neither
+// does.
+//
+// IT VALIDATES, AND A REFUSAL FALLS BACK TO 40 RATHER THAN TO THE BAD VALUE.
+// The stored value is whatever was typed into a number input, so it can be '',
+// 'abc', 0 or 500. A threshold of 0 would make EVERY recorded hour overtime and
+// silently multiply the week's cost by 1.5; a threshold above 168 can never be
+// reached, so no hour is ever overtime and the column reads 0 for ever. Both are
+// wrong in a way nobody would see on the screen, which is why the bound is
+// enforced here and not left to the input's `type=number`.
+function sbOtThreshold(){
+  var raw=sbCfg().ot;
+  var n=Number(raw);
+  // 168 = hours in a week. A threshold at or above it is unreachable, and a
+  // threshold at or below 0 makes every hour overtime -- neither is a setting,
+  // both are a typo, and both fall back rather than being honoured.
+  if(!isFinite(n)||n<=0||n>168) return 40;
+  return n;
+}
+// The number the OT column was actually computed with, for display. Says when it
+// is NOT the statutory default, because a reader seeing an unexpected OT figure
+// needs to know a setting produced it -- a changed threshold silently changing a
+// money figure is the same class as the invented hours this panel replaced.
+function sbOtThresholdNote(){
+  var n=sbOtThreshold();
+  var raw=sbCfg().ot;
+  var rejected=(String(raw).trim()!=='' && Number(raw)!==n);
+  return 'Overtime is computed above '+n+' hours per week'+
+    (n!==40?' (set in Shop Settings, not the federal 40)':'')+
+    (rejected?' — the recorded setting '+JSON.stringify(String(raw))+' is outside 1–168 and was NOT used':'')+'.';
+}
 function loadSettings(){
   var c=sbCfg();
   var set=function(id,v){var el=$(id);if(el)el.value=v;};
@@ -4882,7 +5009,11 @@ function saveSettings(){
   st('sb_cfg',{fy:$('ss-fy').value,ot:$('ss-ot').value,terms:$('ss-terms').value});
   // Names what actually takes effect. A bare "Settings saved" was true and
   // useless: it was equally true when nothing read any of them.
-  toast('Settings saved. Invoice terms ('+$('ss-terms').value+') will pre-fill new invoices; fiscal year and overtime threshold are recorded but not yet used.',6000);
+  // NAMES WHAT TAKES EFFECT, and the overtime half moved from 'recorded but
+  // not yet used' to used in the same change that wired it. A toast that
+  // still said 'not yet used' would be the stale-disclosure defect one layer
+  // out -- a correct setting reported as inert.
+  toast('Settings saved. Invoice terms ('+$('ss-terms').value+') will pre-fill new invoices; the overtime threshold ('+sbOtThreshold()+' hrs/week) now drives the Timesheets OT column and its CSV export; fiscal year is recorded but not yet used.',7000);
 }
 
 // Days a term is worth, for pre-filling a due date. "Due on Receipt" is 0 --
