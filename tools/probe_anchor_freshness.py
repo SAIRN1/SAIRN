@@ -1,0 +1,401 @@
+"""
+A FAULT PROBE WHOSE SABOTAGE ANCHOR NO LONGER MATCHES ITS SUBJECT.
+
+Fast: parses the probes with `ast` and counts strings. Runs no worktree, plants
+no mutation, and takes under a second -- which is the point, because the probes
+themselves take minutes each and are therefore run when somebody remembers.
+
+── WHY (2026-09-27) ────────────────────────────────────────────────────────
+`tests/sairncash_entitlement_fault_probe.py` had been dead since `a100c078`.
+That commit -- "the offline fallback was unbounded: a blocked request meant yes
+forever" -- inserted an `scGraceOk(s)` check into the exact catch block one arm
+anchored on, turning three lines into eight. The probe's `once()` helper refused
+the anchor, the file exited non-zero on its FIRST arm, and two arms never ran.
+
+THE ANCHOR DID NOT DRIFT TO MATCHING THE WRONG THING. It stopped matching
+anything, which is the LOUD failure -- and nobody heard it, because no fault
+probe on this platform is in `report_only_checks.REGISTRY`, in the push gate,
+or in any hook. A loud failure in a tool nobody invokes is exactly as quiet as
+a silent one. That is the finding, and it is why this checker is fast rather
+than thorough: something that takes a second can be wired.
+
+TWO STALE ANCHORS WERE FOUND THE DAY THIS WAS WRITTEN, and they failed in
+OPPOSITE directions, which is why this counts matches rather than testing
+presence:
+
+  * sairncare_fault_probe.py   -- `const ALF_MAR_ROLES = { owner: true, ... }`
+    matched ZERO places. `dadfedf4` wrapped all 48 role maps in `roleSet(...)`
+    for a null prototype, so the literal the anchor spans no longer exists.
+  * sairnmechanical_fault_probe.py -- `if (lb === null || lb < 0) {` matched
+    THREE places. Not gone: AMBIGUOUS. `replace(old, new, 1)` would have
+    silently mutated whichever came first, and the probe would have reported a
+    pass or a failure about a line nobody chose.
+
+NO PROBE-POPULATION TALLY IS CARRIED HERE, AND THE FIRST DRAFT'S WAS WRONG.
+It read "10 green, TWO with stale anchors, one with a red baseline" -- 13, each
+probe in exactly one bucket. The buckets are not exclusive: re-anchoring
+sairncare and then RUNNING it showed its baseline is red too, so it belonged in
+two at once and the tally could not have been right whichever way it was read.
+The red is not an anchor problem and is not this tool's to fix -- `c8b5e5b1`
+("131 of 132 credential gates closed in ONE edit") added a pre-gate that calls
+`verifySessionToken(preToken, licHash)` with no expectedApp, and twelve suites
+stub that function to THROW on an unnamed app. Bisected 2026-09-27: green at
+`c8b5e5b1~1`, 0-passed-20-failed at `c8b5e5b1`. Counting probes is cheap and
+this tool does print its own totals per run; asserting a durable census in a
+docstring is what went wrong, so the census lives in the run output only.
+
+ZERO and MORE-THAN-ONE are both refusals and this reports them separately,
+because the fix differs: a vanished anchor needs re-deriving against what the
+code became, an ambiguous one needs widening.
+
+── WHAT IT CANNOT SEE, printed on every run ───────────────────────────────
+See BLIND_SPOTS. The largest by far: AN ANCHOR THAT STILL MATCHES ONCE MAY
+STILL BE POINTING AT THE WRONG THING. This counts strings; it does not know
+what a line is for. PR 1.3 is exactly that failure and this checker cannot
+detect it -- only running the probe can.
+
+CLI:
+    python tools/probe_anchor_freshness.py
+    python tools/probe_anchor_freshness.py --json
+    python tools/probe_anchor_freshness.py --selftest
+"""
+import ast
+import io
+import json
+import os
+import subprocess
+import sys
+
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# The helper names probes use to plant a mutation. Derived by reading the
+# probes rather than guessed: every one of them passes (subject, old, new)
+# tuples to a local function with one of these names.
+ARM_CALLS = ('arm', 'mutate', 'sabotage', 'plant')
+
+BLIND_SPOTS = [
+    'AN ANCHOR THAT STILL MATCHES ONCE MAY STILL BE POINTING AT THE WRONG '
+    'THING. This counts strings and does not know what a line is FOR. That is '
+    'PR 1.3 and only running the probe can catch it.',
+    'Only anchors passed as a LITERAL string in a call to %s are seen. An '
+    'anchor built by concatenation, an f-string, or read from a variable is '
+    'invisible here and is not reported as unchecked -- it is simply absent '
+    'from the count.' % '/'.join(ARM_CALLS),
+    'The subject path must be a module-level string assignment this can '
+    'resolve. A probe that computes its subject path is skipped, and the skip '
+    'is PRINTED rather than folded into the pass count.',
+    'A probe whose BASELINE is red is not a stale-anchor problem and is '
+    'invisible here -- its subject suite fails, so it stops before any '
+    'mutation and every anchor in it could be perfect. Two were red the day '
+    'this was written: tests/sairnlegacy_fault_probe.py, and '
+    'tests/sairncare_fault_probe.py once its anchors were fixed and it could '
+    'run far enough to show it. A GREEN REPORT HERE IS NOT A WORKING PROBE.',
+    'It says nothing about whether the probe is WIRED. On the day this was '
+    'written, NONE of the 13 fault probes was in report_only_checks.REGISTRY, '
+    'the push gate, or any hook.',
+]
+
+
+def tracked_probes():
+    """Probe files under tests/, from git rather than a walk."""
+    try:
+        p = subprocess.run(['git', 'ls-files', 'tests/'], cwd=REPO,
+                           capture_output=True, timeout=60)
+        if p.returncode != 0:
+            return None
+        names = (p.stdout or b'').decode('utf-8', 'replace').split('\n')
+    except Exception:
+        return None
+    return [n.strip() for n in names
+            if n.strip().endswith('.py') and ('probe' in n or 'control' in n)]
+
+
+def read(path):
+    try:
+        return io.open(os.path.join(REPO, path), encoding='utf-8',
+                       newline='').read()
+    except Exception:
+        return None
+
+
+def lf(text):
+    r"""Carriage returns removed before any comparison.
+
+    A CRLF-VS-LF DIFFERENCE IS NOT DRIFT, and this tool produced two false
+    VANISHED rows before it did this. The probes read their subject out of a
+    fresh `git worktree add`, where `.gitattributes` gives them LF; this clone's
+    working tree holds CRLF for the same files. So an anchor written with `\n`
+    matched perfectly inside the probe and matched zero times here -- on files
+    whose probes were passing at the time.
+
+    CLAUDE.md names this exact trap and the three false alarms it caused in one
+    session on 2026-09-03. Comparing without normalising would have had this
+    checker reporting healthy probes as broken, which is the failure mode that
+    gets a checker switched off.
+    """
+    return (text or '').replace('\r', '')
+
+
+def _path_literal(node):
+    """A file path from a Constant, or from os.path.join('a','b') -- nothing else.
+
+    THE JOIN FORM IS THE COMMON ONE AND THE FIRST VERSION OF THIS MISSED IT.
+    Every fault probe declares its subject as `os.path.join('api', 'sd-data.js')`
+    for Windows, and reading only Constants meant those probes resolved to
+    nothing -- so their anchors landed in "not a resolvable literal" and were
+    never counted. That is precisely where the two REAL stale anchors were: this
+    tool's first run reported zero vanished anchors while two were known to
+    exist, found by running the probes. A sweep that misses the instances that
+    motivated it is worse than no sweep, because it reads as a clean bill.
+    """
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    if isinstance(node, ast.Call):
+        fn = node.func
+        is_join = (getattr(fn, 'attr', None) == 'join'
+                   and getattr(getattr(fn, 'value', None), 'attr', None) == 'path')
+        if is_join and node.args and all(
+                isinstance(a, ast.Constant) and isinstance(a.value, str)
+                for a in node.args):
+            return '/'.join(a.value for a in node.args)
+    return None
+
+
+def subject_names(tree):
+    """{VARNAME: 'path/to/file'} from module-level assignments."""
+    out = {}
+    for node in tree.body:
+        if not isinstance(node, ast.Assign):
+            continue
+        val = _path_literal(node.value)
+        if not val or not val.endswith(('.js', '.html', '.py', '.sql', '.json')):
+            continue
+        for t in node.targets:
+            if isinstance(t, ast.Name):
+                out[t.id] = val
+    return out
+
+
+def sole_subject(names):
+    """The one subject a 2-tuple `(old, new)` edit must mean.
+
+    Some probes carry a single subject and pass `(old, new)` with no path --
+    tests/sairnsenior_fault_probe.py does. The first version of this read those
+    as `(subject, old)` and reported nine COULD-NOT-CHECK rows that were not
+    findings at all, just a misparse. If a probe has more than one plausible
+    subject this returns None and the row is reported as unresolved, because
+    guessing which file a 2-tuple meant is exactly the ambiguity this whole
+    checker exists to refuse.
+    """
+    app = [v for v in names.values() if v.endswith('.html')]
+    return app[0] if len(app) == 1 else None
+
+
+def anchors_in(tree, names):
+    """[(subject_path, anchor_string, lineno)] for every literal anchor found.
+
+    Also returns the count of tuples this could NOT resolve, so an unreadable
+    anchor is a stated gap rather than a silently smaller denominator.
+    """
+    found, unresolved = [], 0
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        fname = getattr(node.func, 'id', None) or getattr(node.func, 'attr', None)
+        if fname not in ARM_CALLS:
+            continue
+        for arg in list(node.args) + [kw.value for kw in node.keywords]:
+            for elt in (arg.elts if isinstance(arg, (ast.List, ast.Tuple)) else [arg]):
+                if not isinstance(elt, ast.Tuple) or len(elt.elts) < 2:
+                    continue
+                subj, old = elt.elts[0], elt.elts[1]
+                path = None
+                if isinstance(subj, ast.Name):
+                    path = names.get(subj.id)
+                elif isinstance(subj, ast.Constant) and isinstance(subj.value, str) \
+                        and subj.value.endswith(('.js', '.html', '.py', '.sql', '.json')):
+                    path = subj.value
+                if path is None and len(elt.elts) == 2:
+                    # `(old, new)` against a probe's single subject. See
+                    # sole_subject() for why this is narrow rather than a guess.
+                    path = sole_subject(names)
+                    old = elt.elts[0]
+                if not path or not isinstance(old, ast.Constant) \
+                        or not isinstance(old.value, str):
+                    unresolved += 1
+                    continue
+                found.append((path, old.value, getattr(elt, 'lineno', 0)))
+    return found, unresolved
+
+
+def scan():
+    probes = tracked_probes()
+    if probes is None:
+        return None
+    subjects = {}
+    rows = []
+    skipped = []
+    for rel in probes:
+        src = read(rel)
+        if src is None:
+            skipped.append((rel, 'could not be read'))
+            continue
+        try:
+            tree = ast.parse(src)
+        except SyntaxError as exc:
+            # A PROBE THAT DOES NOT PARSE IS A FINDING, not a skip: it cannot
+            # run either.
+            rows.append({'probe': rel, 'subject': '-', 'count': -1,
+                         'anchor': 'FILE DOES NOT PARSE: %s' % exc, 'line': 0})
+            continue
+        names = subject_names(tree)
+        anchors, unresolved = anchors_in(tree, names)
+        if unresolved:
+            skipped.append((rel, '%d anchor(s) not a resolvable literal' % unresolved))
+        for path, anchor, line in anchors:
+            if path not in subjects:
+                subjects[path] = read(path)
+            body = subjects[path]
+            if body is None:
+                rows.append({'probe': rel, 'subject': path, 'count': -2,
+                             'anchor': anchor[:110], 'line': line})
+                continue
+            rows.append({'probe': rel, 'subject': path,
+                         'count': lf(body).count(lf(anchor)),
+                         'anchor': anchor[:110], 'line': line})
+    return {'probes': len(probes), 'rows': rows, 'skipped': skipped}
+
+
+def selftest():
+    out, bad = [], 0
+
+    def arm_(name, ok, detail=''):
+        nonlocal bad
+        out.append('  %s %s%s' % ('ok  ' if ok else 'FAIL', name,
+                                  '' if ok else '\n       ' + detail))
+        if not ok:
+            bad += 1
+
+    FIXTURE = (
+        "HTML = 'fixture_subject.html'\n"
+        "DATA = 'api/fixture.js'\n"
+        "def arm(label, edits):\n"
+        "    pass\n"
+        "arm('a', [(HTML, 'ONE_MATCH', 'x')])\n"
+        "arm('b', [(HTML, 'TWICE', 'y')])\n"
+        "arm('c', [(HTML, 'GONE', 'z')])\n"
+        "arm('d', [(HTML, 'a' + 'b', 'w')])\n"
+        "arm('e', [(UNKNOWN, 'ANY', 'v')])\n"
+    )
+    tree = ast.parse(FIXTURE)
+    names = subject_names(tree)
+    arm_('module-level subject paths are resolved',
+         names.get('HTML') == 'fixture_subject.html'
+         and names.get('DATA') == 'api/fixture.js',
+         'resolved %r' % names)
+    anchors, unresolved = anchors_in(tree, names)
+    got = sorted(a for _p, a, _l in anchors)
+    arm_('every LITERAL anchor is found', got == ['GONE', 'ONE_MATCH', 'TWICE'],
+         'found %r' % got)
+    arm_('a CONCATENATED anchor and an UNRESOLVABLE subject are counted as '
+         'unresolved, not silently dropped',
+         unresolved == 2,
+         'unresolved was %d, expected 2 (the a+b concatenation and the '
+         'UNKNOWN subject name)' % unresolved)
+
+    # CRLF IN THE FIXTURE ON PURPOSE. The body carries carriage returns and the
+    # anchors do not, which is exactly the mismatch between this clone's working
+    # tree and the LF worktree the probes read. Without lf() all three counts
+    # below would be 0 and this checker would call every healthy probe broken --
+    # which it did, on two of them, before this fixture existed.
+    body = 'ONE_MATCH\r\nTWICE\r\nTWICE\r\n'
+    counts = dict((a, lf(body).count(lf(a))) for _p, a, _l in anchors)
+    arm_('a unique anchor counts 1', counts.get('ONE_MATCH') == 1)
+    arm_('an AMBIGUOUS anchor counts >1 -- the sairnmechanical shape',
+         counts.get('TWICE') == 2,
+         'three matches is what replace(old, new, 1) silently picks from')
+    arm_('a VANISHED anchor counts 0 -- the sairncash/sairncare shape',
+         counts.get('GONE') == 0)
+    arm_('CONTROL -- the three outcomes are distinguishable',
+         len(set([counts.get('ONE_MATCH'), counts.get('TWICE'),
+                  counts.get('GONE')])) == 3,
+         'the counter returns the same answer for unique, ambiguous and '
+         'vanished, so every arm above is checking one value three times')
+
+    live = scan()
+    arm_('the real scan runs and finds anchors to count',
+         live is not None and len(live['rows']) > 20,
+         'the live scan produced %s rows -- too few to be the real probe set, '
+         'so a clean result would mean nothing'
+         % (len(live['rows']) if live else 'no'))
+    return out, bad
+
+
+def main(argv):
+    if '--selftest' in argv:
+        print('PROBE ANCHOR FRESHNESS -- selftest')
+        o, bad = selftest()
+        for l in o:
+            print(l)
+        print('  %s' % ('ALL ARMS PASS' if not bad else '%d ARM(S) FAILED' % bad))
+        return 1 if bad else 0
+
+    res = scan()
+    if res is None:
+        print('COULD NOT RUN: git ls-files failed, so the probe list is '
+              'unknown. NOT reporting a clean sweep.', file=sys.stderr)
+        return 2
+
+    vanished = [r for r in res['rows'] if r['count'] == 0]
+    ambiguous = [r for r in res['rows'] if r['count'] > 1]
+    unreadable = [r for r in res['rows'] if r['count'] in (-1, -2)]
+    ok = [r for r in res['rows'] if r['count'] == 1]
+
+    if '--json' in argv:
+        print(json.dumps({'vanished': vanished, 'ambiguous': ambiguous,
+                          'unreadable': unreadable, 'ok': len(ok),
+                          'skipped': res['skipped'],
+                          'blind_spots': BLIND_SPOTS}, indent=1))
+        return 1 if (vanished or ambiguous or unreadable) else 0
+
+    print('PROBE ANCHOR FRESHNESS -- a sabotage anchor that no longer matches')
+    print('  %d probe file(s) parsed, %d anchor(s) counted'
+          % (res['probes'], len(res['rows'])))
+    print('  %d match exactly once' % len(ok))
+    print('')
+    print('VANISHED -- matches ZERO places (%d). The code moved; re-derive the '
+          'anchor against' % len(vanished))
+    print('  what it became, and do not restore the old text.')
+    for r in vanished:
+        print('    %s:%d -> %s' % (r['probe'], r['line'], r['subject']))
+        print('        %r' % r['anchor'])
+    print('')
+    print('AMBIGUOUS -- matches MORE THAN ONE place (%d). replace(old, new, 1) '
+          'silently picks the' % len(ambiguous))
+    print('  first, so the probe reports a verdict about a line nobody chose. '
+          'WIDEN the anchor.')
+    for r in ambiguous:
+        print('    %s:%d -> %s  (%d matches)'
+              % (r['probe'], r['line'], r['subject'], r['count']))
+        print('        %r' % r['anchor'])
+    if unreadable:
+        print('')
+        print('COULD NOT CHECK (%d) -- a third state, not a pass:' % len(unreadable))
+        for r in unreadable:
+            print('    %s:%d -> %s  %s'
+                  % (r['probe'], r['line'], r['subject'], r['anchor'][:80]))
+    if res['skipped']:
+        print('')
+        print('NOT FULLY SCANNED (%d) -- printed rather than counted as clean:'
+              % len(res['skipped']))
+        for rel, why in res['skipped']:
+            print('    %s -- %s' % (rel, why))
+    print('')
+    print('WHAT THIS CANNOT SEE:')
+    for b in BLIND_SPOTS:
+        print('  - %s' % b)
+    return 1 if (vanished or ambiguous or unreadable) else 0
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv[1:]))

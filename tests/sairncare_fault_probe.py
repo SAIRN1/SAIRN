@@ -160,23 +160,23 @@ try:
     # A caregiver is not licensed to touch a medication record at all. Adding
     # one role to this object opens both read and write in a single edit.
     arm('a caregiver added to ALF_MAR_ROLES is caught', MAR,
-        [(DATA, 'const ALF_MAR_ROLES = { owner: true, nursing: true, med_aide: true };',
-          'const ALF_MAR_ROLES = { owner: true, nursing: true, med_aide: true, caregiver: true, billing: true, activities: true };')])
+        [(DATA, 'const ALF_MAR_ROLES = roleSet({ owner: true, nursing: true, med_aide: true });',
+          'const ALF_MAR_ROLES = roleSet({ owner: true, nursing: true, med_aide: true, caregiver: true, billing: true, activities: true });')])
 
     # ── 2. ...AND THE OTHER DIRECTION, WHICH IS NOT THE SAME BUG ───────────
     # Refusing everybody is a broken app rather than a breach. A suite that
     # only catches the permissive direction would let a MAR nobody can open
     # ship, and on this subject that means medications are not administered.
     arm('a MAR nobody may open is caught too', MAR,
-        [(DATA, 'const ALF_MAR_ROLES = { owner: true, nursing: true, med_aide: true };',
-          'const ALF_MAR_ROLES = {};')])
+        [(DATA, 'const ALF_MAR_ROLES = roleSet({ owner: true, nursing: true, med_aide: true });',
+          'const ALF_MAR_ROLES = roleSet({});')])
 
     # ── 3. THE ASSIGNEE FILTER STOPS APPLYING ──────────────────────────────
     # BROAD_ROLES gaining med_aide is a one-word edit that turns a scoped MAR
     # into a facility-wide one: every resident's medications, to every aide.
     arm('med_aide promoted into ALF_MAR_BROAD_ROLES is caught', MAR,
-        [(DATA, 'const ALF_MAR_BROAD_ROLES = { owner: true, nursing: true };',
-          'const ALF_MAR_BROAD_ROLES = { owner: true, nursing: true, med_aide: true };')])
+        [(DATA, 'const ALF_MAR_BROAD_ROLES = roleSet({ owner: true, nursing: true });',
+          'const ALF_MAR_BROAD_ROLES = roleSet({ owner: true, nursing: true, med_aide: true });')])
 
     # ── 4. ...OR THE FILTER IS SIMPLY DELETED ──────────────────────────────
     # Same outcome by a different edit, and this is the one the eight-site
@@ -237,19 +237,26 @@ try:
     # the 400 really does come back, and the handler turns it into a 200. The
     # row was never written and the caller is told that it was, which is worse
     # than the overwrite -- there is no second record to reconcile against.
+    # RE-ANCHORED 2026-09-27. The old anchor spanned the `if` and the response
+    # as ADJACENT lines. On 2026-09-22 a seven-line comment was inserted between
+    # them and the message was rewritten to name the correction path, so the
+    # anchor matched zero places -- and because `once()` refuses rather than
+    # warns, this probe died on its first arm and arms 4 onward never ran at all.
+    #
+    # IT NOW ANCHORS ON THE REFUSAL ITSELF, which is what this arm has always
+    # been about, so a comment inserted above it cannot break it again. The
+    # mutation turns the 409 into a 200 by the shortest edit that still parses.
     arm('an ALREADY_RECORDED refusal reported as success is caught', MAR,
-        [(DATA, '        if (/ALREADY_RECORDED/.test(msg)) {\n'
-                "          res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'This entry has already been recorded and cannot be overwritten' } });",
-          '        if (/ALREADY_RECORDED/.test(msg)) {\n'
-          "          res.status(200).json({ ok: true, data: Object.assign({ id: String(payload.id) }, marData) });")])
+        [(DATA, "code: 'ALREADY_RECORDED', message: 'This entry has already been recorded and cannot be overwritten. A CORRECTION is a NEW entry",
+          "code: 'X' } }); res.status(200).json({ ok: true, data: { id: String(payload.id) } }); void ('A CORRECTION is a NEW entry")])
 
     # ── 10. THE INCIDENT LOG OPENS TO THE FLOOR ────────────────────────────
     # Deliberately asymmetric: anyone may FILE, only management/nursing/
     # billing may READ. Widening the read side publishes every resident's
     # falls, med errors and abuse allegations to every employee.
     arm('the incident log opened to every role is caught', INC,
-        [(DATA, 'const ALF_INCIDENT_READ_ROLES = { owner: true, nursing: true, billing: true };',
-          'const ALF_INCIDENT_READ_ROLES = { owner: true, nursing: true, billing: true, caregiver: true, med_aide: true, activities: true };')])
+        [(DATA, 'const ALF_INCIDENT_READ_ROLES = roleSet({ owner: true, nursing: true, billing: true });',
+          'const ALF_INCIDENT_READ_ROLES = roleSet({ owner: true, nursing: true, billing: true, caregiver: true, med_aide: true, activities: true });')])
 
     # ── 11. THE FILER CAN EDIT THEIR OWN REPORT AFTER FILING ───────────────
     # The one guard that makes an incident report evidence rather than a note.
@@ -318,10 +325,10 @@ try:
     # Both role tables widened together, because a suite that catches either
     # alone might be keying on a total rather than on each gate.
     arm('both MAR role tables widened at once is caught', MAR,
-        [(DATA, 'const ALF_MAR_ROLES = { owner: true, nursing: true, med_aide: true };',
+        [(DATA, 'const ALF_MAR_ROLES = roleSet({ owner: true, nursing: true, med_aide: true });',
           'const ALF_MAR_ROLES = { owner: true, nursing: true, med_aide: true, caregiver: true };'),
-         (DATA, 'const ALF_MAR_BROAD_ROLES = { owner: true, nursing: true };',
-          'const ALF_MAR_BROAD_ROLES = { owner: true, nursing: true, med_aide: true };')])
+         (DATA, 'const ALF_MAR_BROAD_ROLES = roleSet({ owner: true, nursing: true });',
+          'const ALF_MAR_BROAD_ROLES = roleSet({ owner: true, nursing: true, med_aide: true });')])
 
     # ── 15. THE CLIENT HALF: A GUARD DEFEATED BY THE LINE ABOVE IT ─────────
     # `tests/faults/alf_rule_read_faults.js` exists because prRefresh() and

@@ -165,9 +165,57 @@ try:
     # Returning true instead turns one failed fetch into permanent access, and
     # a forged record with a real-looking subscriptionId gets it by going
     # offline. The second property no arm was written for.
+    #
+    # ── RE-ANCHORED 2026-09-27, AND THE REASON IS THE INTERESTING PART ────
+    # This anchor was:
+    #
+    #     "  } catch(e) {\n    return isSubscribed();\n  }\n}\n\n// MANAGE BILLING..."
+    #
+    # and it had matched ZERO places since `a100c078` -- "the offline fallback
+    # was unbounded: a blocked request meant yes forever". That commit inserted
+    # an `scGraceOk(s)` check into this exact catch block, so the three lines
+    # this anchor spanned became eight. `once()` then refused, the whole probe
+    # exited non-zero on its FIRST arm, and arms 4 and 5 never ran at all.
+    #
+    # NOTHING NOTICED, and the shape is worth naming: the anchor did not drift
+    # to matching the WRONG thing, which is the failure PR 1.3 is about. It
+    # stopped matching anything, which is louder -- and the probe is not in
+    # report_only_checks.REGISTRY, so nothing ran it. A loud failure in a tool
+    # nobody invokes is exactly as quiet as a silent one.
+    #
+    # THE FIX WAS NOT TO RESTORE THE OLD TEXT. a100c078 is a real improvement
+    # and the anchor now spans only the final fallback, which is the line this
+    # arm was always about -- so the next insertion into that catch block does
+    # not break it again.
     arm('an offline fallback that grants access unconditionally is caught',
-        [(HTML, "  } catch(e) {\n    return isSubscribed();\n  }\n}\n\n// MANAGE BILLING IS A REAL ACTION NOW",
-          "  } catch(e) {\n    return true;\n  }\n}\n\n// MANAGE BILLING IS A REAL ACTION NOW")])
+        [(HTML, "    return isSubscribed();\n  }\n}\n\n// MANAGE BILLING IS A REAL ACTION NOW",
+          "    return true;\n  }\n}\n\n// MANAGE BILLING IS A REAL ACTION NOW")])
+
+    # ── 6. THE GRACE STOPS BEING BOUNDED ───────────────────────────────────
+    # DERIVED THE SAME WAY AS THE REST: by reading scGraceOk() and asking what
+    # each line is load-bearing for. This is the property `a100c078` added, and
+    # no arm here covered it because this file predates it -- which is the same
+    # gap that let arm 4 rot, seen from the other side. A fault probe whose
+    # subject grows a new guarantee and whose arm list does not is measuring
+    # yesterday's function.
+    #
+    # `age <= SC_OFFLINE_GRACE_MS` IS THE WHOLE BOUND. Without it an unreachable
+    # server means yes forever again, which is the defect a100c078 fixed and the
+    # one most likely to come back, because the grace makes the fallback look
+    # safe from the call site.
+    arm('a grace window that is no longer bounded is caught',
+        [(HTML, "  return age <= SC_OFFLINE_GRACE_MS;",
+          "  return true;")])
+
+    # ── 7. THE SKEW GUARD GOES ───────────────────────────────────────────────
+    # The subtlest of the seven, and scGraceOk()'s own comment says why: a
+    # FUTURE `lastVerifiedAt` makes `age <= GRACE` true forever, so the
+    # unbounded window returns through the very field that exists to bound it.
+    # A record is client-writable, so a stamp written ahead on purpose is not a
+    # hypothetical -- it is a text edit.
+    arm('a missing future-stamp guard is caught',
+        [(HTML, "  if (!(age >= 0)) return false;",
+          "  if (false) return false;")])
 
     # ── 5. THE TRIAL SIBLING LOOSENS TO MATCH THE OLD BUG ──────────────────
     # reverifyTrial() is the function that got this right, and it is the
