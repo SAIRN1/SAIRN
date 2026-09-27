@@ -14964,6 +14964,64 @@
       ]
     },
     {
+      "commit": "84edca20af14",
+      "date": "2026-09-26",
+      "subject": "fix(sairncare): every employee could list every family contact's phone number, and a family's MAR silently stopped at 500 rows",
+      "files": [
+        "api/sd-data-family-contacts.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 258,
+      "lines_removed": 10,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "api/sd-data.js alf_family_contacts action read checked verifySessionToken and NO role, so any authenticated sairncare employee of any role -- med_aide, activities, anyone issued a PIN -- could list every family contact on the licence with phone, email, notes and the full medication-consent trail for every resident, while the WRITE half of the same branch has always required management and its refusal message calls this a disclosure decision. Separately the family MAR read was limit=500 with nothing said, and familyMarView computes an adherence PERCENTAGE over the rows it is handed, so a resident past 500 administrations -- under a year at routine dosing -- gave a family member a number and a history presented as complete but computed from part of the record",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "c0ae9a0a5354",
+        "date": "2026-09-26",
+        "subject": "feat(sairncare): the family record, and MAR access gated to administration STATUS only",
+        "lag_days": 0
+      },
+      "phase_note": "Two defects, both introduced when the branch was written. The role gate is an omission on the read half of a branch whose write half carries the rule in words, and the 500-row cap is a literal in the query. Neither is a design or requirement error -- the requirement is stated in the file's own refusal message.",
+      "contributing_factors": [
+        {
+          "factor": "the read and the write of the same resource were gated independently, and only the write asked. The write's own refusal message calls this data a disclosure decision -- management only -- so the requirement was understood and written down on one side of the branch and simply never applied on the other",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the read now checks ALF_FAMILY_READ_ROLES, and the membership is copied from ALF_CRED_READ_ROLES rather than invented, so there is no fourth role set to drift"
+        },
+        {
+          "factor": "eighteen green arms in api/sd-data-family-contacts.test.js all ran as role 'owner'. The role was a parameter the harness defaulted and no arm ever varied, so a completely absent gate was indistinguishable from a correct one",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "five role arms added -- med_aide and activities refused, nursing/owner/billing allowed -- and the refusal is asserted to happen BEFORE any contact row is fetched"
+        },
+        {
+          "factor": "the MAR read carried limit=500 and familyMarView computes an adherence percentage over whatever rows it is handed, so a truncated read produced a clinical figure presented as complete. Nothing in the payload or the response said a cap had been reached",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "paged ascending (append-only makes offset paging stable in that direction only) with a 10000 ceiling that returns 413 and NO partial view, and a non-array page returning 502 rather than an early break"
+        },
+        {
+          "factor": "the test stub returned the same array for every alf_mar call, so it could not have distinguished a paged read from a capped one even if an arm had tried -- every page would have looked full of the same rows",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the stub honours limit and offset; slicing is a no-op for the 18 pre-existing arms whose fixtures are 0-2 rows, and both fixes were then confirmed by separate ablations failing 3 and 5 arms respectively"
+        }
+      ],
+      "recurrence_open": "The gate is closed for this resource and the MAR read is paged. Nothing checks that the read and write halves of a resource branch are gated consistently -- that asymmetry is invisible to node --check and to every suite that does not vary the session role, and the same shape could exist on any other resource in this 14,900-line file. A check comparing role gates across the read/write/extra-action arms of each resource is the obvious control and is NOT built here. The sairncare.html 403 message still says 'sign in' for what is now a role refusal; blocked on another session's claim, not fixed."
+    },
+    {
       "commit": "944a5faadae5",
       "date": "2026-09-26",
       "subject": "fix(blob): item 94 was reported COMPLETE by a grep that could not match the sites it left -- 11 converted, 64 still raw, and now measured",
@@ -15083,64 +15141,6 @@
         }
       ],
       "recurrence_open": "The loop de-duplicates BY FILENAME, so two entries for the same file are caught -- and two entries for DIFFERENT files asserting the same invariant are not, which is the same split-account failure one step out. Nothing compares the registry's entries semantically and nothing reasonably could. Separately, the NOTICE is written to stderr on the push path only; a reader browsing GUARD_TESTS or docs/traceability-matrix.md directly still sees no signal, so this rests on somebody pushing rather than on somebody reading."
-    },
-    {
-      "commit": "84edca20af14",
-      "date": "2026-09-26",
-      "subject": "fix(sairncare): every employee could list every family contact's phone number, and a family's MAR silently stopped at 500 rows",
-      "files": [
-        "api/sd-data-family-contacts.test.js",
-        "api/sd-data.js"
-      ],
-      "lines_added": 258,
-      "lines_removed": 10,
-      "app": "sairncare",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "api/sd-data.js alf_family_contacts action read checked verifySessionToken and NO role, so any authenticated sairncare employee of any role -- med_aide, activities, anyone issued a PIN -- could list every family contact on the licence with phone, email, notes and the full medication-consent trail for every resident, while the WRITE half of the same branch has always required management and its refusal message calls this a disclosure decision. Separately the family MAR read was limit=500 with nothing said, and familyMarView computes an adherence PERCENTAGE over the rows it is handed, so a resident past 500 administrations -- under a year at routine dosing -- gave a family member a number and a history presented as complete but computed from part of the record",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "c0ae9a0a5354",
-        "date": "2026-09-26",
-        "subject": "feat(sairncare): the family record, and MAR access gated to administration STATUS only",
-        "lag_days": 0
-      },
-      "phase_note": "Two defects, both introduced when the branch was written. The role gate is an omission on the read half of a branch whose write half carries the rule in words, and the 500-row cap is a literal in the query. Neither is a design or requirement error -- the requirement is stated in the file's own refusal message.",
-      "contributing_factors": [
-        {
-          "factor": "the read and the write of the same resource were gated independently, and only the write asked. The write's own refusal message calls this data a disclosure decision -- management only -- so the requirement was understood and written down on one side of the branch and simply never applied on the other",
-          "kind": "process",
-          "action_status": "done",
-          "action": "the read now checks ALF_FAMILY_READ_ROLES, and the membership is copied from ALF_CRED_READ_ROLES rather than invented, so there is no fourth role set to drift"
-        },
-        {
-          "factor": "eighteen green arms in api/sd-data-family-contacts.test.js all ran as role 'owner'. The role was a parameter the harness defaulted and no arm ever varied, so a completely absent gate was indistinguishable from a correct one",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "five role arms added -- med_aide and activities refused, nursing/owner/billing allowed -- and the refusal is asserted to happen BEFORE any contact row is fetched"
-        },
-        {
-          "factor": "the MAR read carried limit=500 and familyMarView computes an adherence percentage over whatever rows it is handed, so a truncated read produced a clinical figure presented as complete. Nothing in the payload or the response said a cap had been reached",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "paged ascending (append-only makes offset paging stable in that direction only) with a 10000 ceiling that returns 413 and NO partial view, and a non-array page returning 502 rather than an early break"
-        },
-        {
-          "factor": "the test stub returned the same array for every alf_mar call, so it could not have distinguished a paged read from a capped one even if an arm had tried -- every page would have looked full of the same rows",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "the stub honours limit and offset; slicing is a no-op for the 18 pre-existing arms whose fixtures are 0-2 rows, and both fixes were then confirmed by separate ablations failing 3 and 5 arms respectively"
-        }
-      ],
-      "recurrence_open": "The gate is closed for this resource and the MAR read is paged. Nothing checks that the read and write halves of a resource branch are gated consistently -- that asymmetry is invisible to node --check and to every suite that does not vary the session role, and the same shape could exist on any other resource in this 14,900-line file. A check comparing role gates across the read/write/extra-action arms of each resource is the obvious control and is NOT built here. The sairncare.html 403 message still says 'sign in' for what is now a role refusal; blocked on another session's claim, not fixed."
     },
     {
       "commit": "b015ea783653",
@@ -15425,6 +15425,60 @@
         }
       ],
       "recurrence_open": "THE ENUMERATION OF WAYS CONTENT CAN REACH ORIGIN IS STILL HAND-MAINTAINED AND NOTHING CHECKS IT. Two paths are known and both are now gated; nothing asserts there is no third. A future tool that talks to the GitHub API, a GitHub Action with write permission, or a web-UI edit would each be ungated and nothing would report it. Separately, .githooks/pre-push is installed PER CLONE by tools/install_git_hooks.py and .git/ is not versioned, so a fresh clone has no hook at all -- gh_push.py now refuses in that state, but an ordinary git push does not, and that gap is older and wider than this fix."
+    },
+    {
+      "commit": "7bc26782e533",
+      "date": "2026-09-26",
+      "subject": "fix(sairnvet): the butorphanol HORSE row was 2-4x the FDA-approved equine dose -- the dog/cat figure copied across all five species rows",
+      "files": [
+        "sairnvet.html",
+        "tests/sairnvet_formulary_source_honesty.js"
+      ],
+      "lines_added": 78,
+      "lines_removed": 1,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "code-review",
+      "summary": "sairnvet.html searchDrugs() rendered a green \"Verified\" badge from `d.needsReview ? 'Needs Review' : '\u2713 Verified'` -- the ABSENCE of a review flag read as the PRESENCE of a verification, on 284 of 485 VET_DRUGS rows, with no `reference` field on any row and no source recorded anywhere in the file for the badge to have checked. The same claim reached the clinician through nine further sites including the AI dosing system prompt (\"you may ONLY use the verified database record\") and the grounding context (\"Verified database record:\"). And one of the doses so badged was wrong: the Butorphanol HORSE row carried 0.2-0.4 mg/kg, the dog/cat figure propagated across all five species rows, against the FDA-approved equine 0.1 mg/kg IV (Torbugesic, NADA 135-780) -- 2-4x the label dose, shown to a vet under a tick.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The VET_DRUGS table and the searchDrugs() badge both predate every commit in this register's window, and git log on sairnvet.html does not isolate a commit that introduced either the two-state ternary or the butorphanol/horse row -- the file arrived with the table already populated. Naming a plausible sha here would put a fabricated discovery lag into the IBNR fit, which is the one number this field feeds."
+      },
+      "citation_note": "not-citable: no section of docs/SAIRN-PROCESS-RULES.md names either half of this shape. The badge half is \"the absence of a flag read as the presence of a verification\", and the dose half is a faithful copy into a context that invalidates it -- which IS named, but in docs/2026-09-13-cross-domain-disciplines.md (item 7, Ariane 5: byte-identical is not safe-in-context; and item 8, nothing announces the day a check stops testing anything). That document is not the vocabulary --rule validates against, so citing a section number from it would be a citation that resolves to nothing. Recorded as not-citable with the real pointer rather than forced into the nearest 1.x section.",
+      "contributing_factors": [
+        {
+          "factor": "searchDrugs() chose the badge from needsReview alone, a two-state model over a three-state fact: flagged-for-review, cites-a-source, and neither. `needsReview:false` is the default for a row nobody has touched, so the green state was the state of NOT HAVING BEEN LOOKED AT.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Badge now branches on d.reference and renders three states -- Needs Review / '\u2713 Referenced' / 'No source recorded' -- with the no-source chip deliberately not the green #D1FAE5."
+        },
+        {
+          "factor": "The formulary was largely built by propagating ONE numeric dose across a drug's species rows. The copy is faithful and the species is not; butorphanol/horse is the instance that was measured wrong at 2-4x the FDA-approved equine dose.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The horse row now carries 0.1 mg/kg IV with its Torbugesic NADA 135-780 citation, and an arm pins it against the dog/cat figure returning."
+        },
+        {
+          "factor": "Nothing compared a displayed verification claim against the existence of evidence for it, so the badge, the dashboard prose, the Ask-AI card, the calculator box and the model's own system prompt all made the same unearned claim independently and none of them could be caught by checking another.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/sairnvet_formulary_source_honesty.js, 16 arms, pins the badge region, both AI prompt paths, the grounding context's BRANCH on m.reference (not merely the identifier's presence -- ablation caught that first draft), the calculator box and both prose sites."
+        },
+        {
+          "factor": "Species is data in a row, not schema, so a wrong-species dose is structurally indistinguishable from a right one and there is no per-species bound for it to violate. The app's bounds-checking validates the PATIENT against the row, never the row against the species it claims.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Mechanically flag all 295 species-copied rows using the root-cause pattern itself, as a stopgap ahead of the row-by-row sourcing pass."
+        }
+      ],
+      "recurrence_open": "481 of 485 rows still cite no source. The badge is now honest about them -- \"No source recorded\", not green -- so the app no longer overclaims, but nothing about this change makes those doses verified, and a clinician reading a correctly-badged unsourced row is still reading an unsourced dose. The cross-species copy is REPORTED per run (114 drug names, 295 rows) and deliberately NOT gated, because a shared dose is sometimes correct -- chlorhexidine really is 0.05% in every species -- so a new species-copied row can still land without refusing anything. Only the one measured instance (butorphanol/horse) is pinned by an arm; the other 294 rows are counted, not checked, and no per-species dose bound exists anywhere for a wrong-species figure to violate.",
+      "single_factor_note": "n/a -- four factors"
     },
     {
       "commit": "f0c0cb7ac160",
