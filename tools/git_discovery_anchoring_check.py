@@ -296,9 +296,9 @@ def main(argv=None):
         print('   python tools/git_discovery_anchoring_check.py --baseline')
         return 0
     print('OK -- no worse than pinned (%d unanchored).' % was)
-    print('A RATCHET IS NOT A PASS. %d call site(s) can still answer about the')
-    print('wrong repository, and %d more pass a cwd nobody derived from __file__.'
-          % (now, counts['WEAK']))
+    print('A RATCHET IS NOT A PASS. %d call site(s) can still answer about the '
+          'wrong repository,' % now)
+    print('and %d more pass a cwd nobody derived from __file__.' % counts['WEAK'])
     return 0
 
 
