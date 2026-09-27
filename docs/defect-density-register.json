@@ -16325,6 +16325,122 @@
       "recurrence_open": "The pin is resolved for the seed exemption. Nothing checks that any OTHER consumer of pushed_tip() treats its return as a refspec rather than a sha -- the same value is passed to the seed comparison and to export_sql_at, and whether either of those is refspec-safe was not audited here."
     },
     {
+      "commit": "01150533af4a",
+      "date": "2026-09-27",
+      "subject": "fix(tier-a): the gate's two entry points read DIFFERENT scopes, and its own probe was blind in one clone",
+      "files": [
+        "docs/defect-density-register.json",
+        "tests/run_tier_a_review_gate_probe.py",
+        "tools/tier_a_review_gate.py"
+      ],
+      "lines_added": 347,
+      "lines_removed": 22,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/tier_a_review_gate.py answered a DIFFERENT question depending on which entry point asked. A bare run read the WORKING TREE via working_diff(); the push hook reads merge-base origin/main HEAD..HEAD. A session that committed a new Tier A engine and then ran the tool to check before pushing was told 'No file in this change names a Tier A resource ... Nothing to record', and was then DENIED by the same tool naming seven resources. Both answers were true about what they read and neither was about the question asked -- and because neither printed its scope, the contradiction read as the tool being broken rather than as two scopes. Worse than a wrong answer: the entry point a human invokes to check BEFORE pushing was the one blind to committed-not-pushed work, which is the only state a pre-push check exists for. Fixed: default_scope_diff() reads BOTH, prints the scope it read above the verdict, and returns a THIRD STATE (exit 2) when the outgoing range cannot be resolved rather than reporting clean on the working tree alone; push_range() derives its base from PUSH_BASE_REF instead of a second copy of the hook's string.",
+      "rules": [
+        "1.6"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "6ab9583a0ebb",
+        "date": "2026-09-15",
+        "subject": "feat(gate): the independent-review rule on Tier A code is check 13 now, not a habit",
+        "lag_days": 12
+      },
+      "contributing_factors": [
+        {
+          "factor": "The two entry points were written at different times for different callers and neither named its scope in its output, so a reader could not tell the answer was about the working tree rather than about the push. A bare run printed a verdict with no statement of what it had read.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "default_scope_diff() now reads BOTH ranges and PRINTS the scope above every verdict, so the verdict cannot be read without it."
+        },
+        {
+          "factor": "The push hook and the tool each carried their OWN copy of the merge-base ref string, so the two could drift apart with nothing comparing them.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "push_range() derives the base from PUSH_BASE_REF, and a probe anchor arm re-reads the hook own source for that ref so a future divergence goes red rather than silent."
+        },
+        {
+          "factor": "Nothing distinguished an EMPTY outgoing range from an UNRESOLVABLE one. Both produced a clean verdict -- rule 1.11 inside one tool rather than across two.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "An unresolvable outgoing range is now exit 2 COULD NOT TELL, and a real working-tree finding still outranks it at exit 1."
+        },
+        {
+          "factor": "KNOWN LIMIT, deliberately pinned rather than fixed: the working-tree half cannot see an UNTRACKED file, because two git diff calls cannot.",
+          "kind": "technical",
+          "action_status": "declined",
+          "note": "DECLINED, not overlooked. Closing it means a third read (git ls-files --others), and a Tier A gate that starts reading untracked files refuses on scratch files and .orig leftovers -- a false positive on this gate has an override, and every false positive is a standing incentive to reach for it. Pinned instead: asserted in BOTH directions by probe section 2b, and stated in the scope line the tool prints on every run, so the 0 cannot be read as nothing there."
+        }
+      ],
+      "recurrence_open": "Nothing sweeps the OTHER tools on this platform that have both a human entry point and a hook entry point, asking whether the two read the same scope. tier_a_review_gate.py was found by walking into it, not by anything looking."
+    },
+    {
+      "commit": "01150533af4a",
+      "date": "2026-09-27",
+      "subject": "fix(tier-a): the gate's two entry points read DIFFERENT scopes, and its own probe was blind in one clone",
+      "files": [
+        "docs/defect-density-register.json",
+        "tests/run_tier_a_review_gate_probe.py",
+        "tools/tier_a_review_gate.py"
+      ],
+      "lines_added": 347,
+      "lines_removed": 22,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tests/run_tier_a_review_gate_probe.py section 8 could not test the takeover path AT ALL on the clone this probe most needs to run on. Every arm in that section goes through cmd_discharge(), which resolves the caller from the CLONE via session_name(), rather than taking the caller as an argument the way section 6's _discharge() does -- and the fixtures hardcoded reviewer_owner='cody' and author_session='hank'. On the cody clone owner == caller, so the gate refused with 'cody already owns that obligation. Discharge it without --takeover.' and all three takeover arms reported FAIL for a reason that had nothing whatever to do with the takeover path they were written to pin. On the hank clone author == reviewer, so the same fixtures would have died on SelfSigned instead. One hardcoded name broke the section in one clone, the other broke it in another, and in both cases the probe printed FAIL with the gate behaving exactly as designed -- indistinguishable from a real finding, and green on the other clones the whole time. Fixed: _OWNER and _AUTHOR are derived from session_name() the way _ME already was, and two new guard arms assert they differ from the running clone BEFORE any takeover arm runs. 178 arms pass on the cody clone where 3 of them could not run before.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "a51047b398f0",
+        "date": "2026-09-21",
+        "subject": "feat(tier-a): an obligation is ASSIGNED when it is opened -- the duplicate-review race removed rather than detected",
+        "lag_days": 6
+      },
+      "contributing_factors": [
+        {
+          "factor": "Section 8 drives cmd_discharge(), which resolves the caller from the CLONE, while section 6 next door drives _discharge(), which takes the caller as an ARGUMENT. The fixtures were written in the style of the section above them, so a literal owner name was clone-independent in one section and clone-dependent in the other, with nothing marking the boundary.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Section 8 derives _OWNER and _AUTHOR from session_name() and a pool, and a comment above them states that cmd_discharge resolves the caller from the clone -- the fact that makes a literal wrong there and fine one section up."
+        },
+        {
+          "factor": "The failure was INDISTINGUISHABLE FROM A REAL FINDING. A takeover refused because the caller already owned the record prints FAIL with the gate working exactly as designed, so the three arms looked like a defect in the tool rather than a defect in their own fixture. On hank the same fixtures would have died on SelfSigned -- a different wrong reason for the same non-test.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "TWO guard arms now assert _OWNER != _ME and _AUTHOR not in (_ME, _OWNER) BEFORE any takeover arm runs, so the next time a fixture name collides with the running clone the probe says THAT rather than reporting the tool broken."
+        },
+        {
+          "factor": "The same lesson had ALREADY been learned in this exact section, one step earlier and one field over: the REVIEWER side was changed from a hardcoded name to session_name() with a comment saying so, and the owner and author sides beside it were left literal. A fix applied to one instance of a shape rather than to the shape.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "All three identities in section 8 now come from the same derivation, so the next reader sees one convention instead of a corrected field beside two uncorrected ones."
+        },
+        {
+          "factor": "The probe was green on three of four build clones for eleven days, and nothing aggregates a suite verdict ACROSS clones, so a clone-dependent arm has no observer.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Nothing records which clone a suite verdict came from, so clone-dependence is invisible by construction. Named here rather than built: it needs a decision about where per-clone suite results are written, which is wider than this probe."
+        }
+      ],
+      "recurrence_open": "No check exists for the general shape: a probe fixture carrying a LITERAL session name while the code under test resolves that same name from the clone. A grep for quoted clone names inside tests/ is cheap and has not been run, and the four build-agent names plus the hover instances are a small closed vocabulary that a checker could read from .claude/claims/ rather than hardcode -- which is the same mistake one shelf over."
+    },
+    {
       "commit": "686a323c79f1",
       "date": "2026-09-27",
       "subject": "fix(auth): the documented SD_AUTH_SECRET rotation destroyed legacy ciphertexts, and the procedure sitting next to it said nobody was affected",
