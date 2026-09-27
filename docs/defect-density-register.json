@@ -16558,7 +16558,7 @@
       "recurrence_open": "Three things this change does NOT close. (1) decryptSecret() still returns null for both a failed decrypt and a value that was never stored, so the next key-handling defect in this path will surface as \"MFA is not set up\" rather than as an error. (2) sql/legacy_ciphertext_census.sql is UNRUN and its legacy-vs-v2 discriminator (the `v2.` prefix) is unverified against real rows -- and its count now gates a destructive step, so a wrong discriminator either blocks step 4 for ever or clears PREVIOUS while legacy rows remain. (3) SD_ENCRYPTION_KEY is production-only while SD_AUTH_SECRET and SUPABASE_URL are preview+production; IF preview points at the same Supabase project, a preview deployment is a v2-blind reader and a legacy writer against production rows. Whether it does is one comparison of two env values nobody has made, and it is not asserted."
     },
     {
-      "commit": "9b717f8a73fd",
+      "commit": "623aab6d878a",
       "date": "2026-09-27",
       "subject": "fix(tools): two more reads that exited 0, returned nothing, and were believed -- the empty-walk class push_retry.py caught in itself",
       "files": [
