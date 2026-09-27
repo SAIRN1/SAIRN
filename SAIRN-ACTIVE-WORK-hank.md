@@ -2314,3 +2314,106 @@ citations report `live` and `--reseat` finds nothing to do.
 * **`tests/sairncode_gates.js` registered twice in `GUARD_TESTS`** — flagged to
   cc, and cc has since landed `bbb09250` and `e560d97d` for it. Closed by
   handoff, not by me.
+
+---
+
+## 2026-09-26 (queue12) — two red suites closed, a tier axis resolved, and the ghost-failure-path class given a checker
+
+Landed `c5177e7c`, pushed. `HEAD == origin/main`, tree clean.
+
+**THE FINDING THAT SPANS THE WHOLE QUEUE: three of the eight items were premised
+on facts that had stopped being true, and checking rather than starting was worth
+more than the work would have been.**
+
+* **`run_criticality_tier_probe` was RED on `main` (4 arms)** because
+  `alf_family_contacts` and `mech_insurance_policies` were **registered with no
+  tier row at all**. Both read individually, both Tier A. PROBLEMS 2 → 0.
+  **THE HEADLINE GUARD COULD NOT HAVE SEEN THIS** — it compares the sentence to
+  the rows, so a resource with *no row* is invisible to it and only the NO TIER
+  arm sees that. Two checks, two different questions, and the headline was honest
+  about the table it could see. Sixth recorded drift of that sentence and the
+  first that was a missing row rather than a mis-added number.
+* **`stonedesk_server_backup.js` was RED on `main` (22/1)** on a `soft_delete`
+  family pin holding 8 names against an actual 25. Re-pinned by name with both
+  widenings recorded (`5c781b99`'s sixteen, `72c69220`'s one), **plus a new
+  cross-check against `api/_resources/sairncode.js`'s own `tierASoftDeleteOnly`
+  array** — not a second copy: the hand-written list stays hand-written, and this
+  catches two apps' records of ONE decision disagreeing, which is exactly what
+  went unnoticed for eight days. Proven by ablation (one name added to
+  SAIRNcode's array alone turns one arm red; file restored byte-identical).
+  **AND WHAT I DID NOT DO IS IN THE FILE:** this arm has now gone red on three
+  consecutive CORRECT changes. Deriving the sc_* half outright would end the
+  churn and would stop the arm noticing an sc_* addition at all. That is a
+  decision about how much the suite asserts, it belongs to whoever owns it, and
+  making it while clearing a red is how a guard gets loosened by whoever was
+  inconvenienced by it.
+* **Items 4 and 5 were already built.** The Equipment panel's button is
+  `+ Record Asset` → `mechAssetAdd()` at `:993`; a grep for a `<button>` with no
+  `onclick` anywhere in `sairnmechanical.html` returns **nothing**. The
+  Insurance/COI panel exists at `:419`/`:1079` with `mechInsAdd`, `mechInsRefresh`
+  and `mechInsReadiness`. Both library headers describe the absent state **in the
+  past tense**. So 4 and 5 collapsed into 6.
+* **`sd_comms` B → A on confidentiality**, read out of the app. The seed rows are
+  the argument and they are in the file: *"Following up on our $3,400 quote for
+  fireplace surround"* to a named person. Customer, vendor and internal rows sit
+  in ONE store separated only by a `type` string. **The dispatch's note that comm
+  records are idless and never backed up WAS true and is fixed** (`b42d9b36`,
+  content-derived ids, three reachable call sites) — writing a fixed defect into
+  a standing document as a live one is the staleness this register keeps
+  recording, so it is in the cell as history.
+
+**LIVE-VERIFIED, 19 arms, 0 failed.** `tools/mech_panels_live_check.py` — landed
+rather than run once, because a live verification that is not repeatable is a
+claim with an expiry date. **The arm that matters is the ROUND TRIP, not the
+columns:** column metadata proves the DDL, and only write-then-read proves the app
+preserves the three-state NULLs both tables are designed around.
+
+**ITEM 7 — the ghost failure path.**
+`tools/unreachable_failure_path_scan.py`: 102 files, **CONFIRMED 0**.
+`pcToggleSlab`/`slabSyncOne` was the only instance and it is fixed.
+
+**THE COMMON SHAPE IS NOT "A BUG IN A CHECK" — it is a verdict whose two outcomes
+are computed from something that cannot differ.** The tested value cannot occur;
+both operands are the same refusal; the two cases produce the same observation.
+All three read as working controls on every future review, which is why none was
+found by reading the code that was wrong. Each was found by DRIVING the thing the
+control claimed to make observable.
+
+**A ZERO FROM A SCAN THAT CANNOT SEE ITS OWN DEFECT IS WORTH NOTHING**, so the
+zero is ablated: the probe restores the real pre-fix `slabSyncOne` body into the
+real `stonedesk.html` and demands the finding — **and does not touch the caller**,
+because `pcToggleSlab` is still in the file exactly as it was when its branch
+could not fire. One half of a real disagreement, not a fixture.
+
+**AND THE SCAN'S OWN FIRST DRAFT COMMITTED THE DEFECT FOUR TIMES.** A wrapper
+that looked like it used `jscomments` and checked for three function names that do
+not exist, falling silently through to a hand-rolled fallback that read the `//`
+in a URL as a comment; a blanking pass that turned `return function(t){…}` into a
+bare `return`; an expression-bodied arrow that sent the brace search past the
+function's own `return {…}` — **all five advisory findings in the first real run
+were that, and every one was a false positive**; and `--static` on the panels
+check printing *"no network, no writes"* while running the entire live half.
+Recorded rather than quietly fixed, because that is the cheapest available
+evidence that this class is not somebody else's mistake.
+
+**WHAT I DID NOT DO.**
+
+* **Item 8 stays BLOCKED, and I did not ask for the file.** `api/sd-data.js` is
+  inside `fourth-q9b` whose live item is the 12 blob builders in it, and
+  `write_batch`'s body is `data: storedBlob(c, ['id'])` — the collision is
+  same-LINES.
+* **The live check permanently adds rows to a licence.** 1 retired asset and 4
+  superseded policies named `ZZ-LIVEVERIFY-<timestamp>` on `MECH-PINNACLE-2026`.
+  Both tables grant no DELETE **by design**, so retiring is the recoverable end
+  state and the run says so. Whether a check that does this on every run should
+  instead refuse a licence not marked as a test one is flagged to the reviewer.
+* **The `sd_email_threats` and `sd_sms_log` tier citations I repointed earlier
+  today have drifted again**, from cody's Vein Match work in `stonedesk.html`
+  under their live claim. Not chased: repointing a file another session is
+  actively editing guarantees a third drift, and
+  `tools/register_freshness_propose.py` is the human-merged path for it.
+* **34 bare functions are NOT JUDGED by the scan and it prints them.** Their name
+  is defined more than once in their file — `stonedesk.html` has 23 `render`s —
+  so which definition a caller reaches cannot be told from position. A scan
+  silently declining to judge is indistinguishable from one that judged and found
+  nothing, which is this very defect class.
