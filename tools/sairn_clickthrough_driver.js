@@ -118,6 +118,59 @@
       SCT.errors.push('rejection: ' + String((e.reason && e.reason.message) || e.reason)));
   }
 
+  // ══ VISIBILITY IS RECORDED CONTINUOUSLY, NOT SAMPLED (2026-09-26) ═════════
+  // PER-ROW tabVis was added earlier today and it is still a SAMPLE -- one read
+  // at the moment each control's row is written. That answers "was the tab
+  // hidden when this row was recorded" and NOT "was it hidden for the whole
+  // control", and the gap between those is where the wait lives: a control whose
+  // panel settles in 60 seconds can start hidden, be foregrounded at second 3,
+  // and be recorded as `visible` with no trace that 57 of its 60 seconds were
+  // clamped -- or the reverse, which is worse, because the row then CLAIMS
+  // hidden about a control that mostly ran foreground.
+  //
+  // MEASURED, WHICH IS WHY THIS EXISTS: a run started with visibility=hidden
+  // re-foregrounded ITSELF partway through -- 25 of 67 rows hidden, 42 visible,
+  // in one uninterrupted sweep with nothing executing in the tab. Sampling could
+  // see that the split happened. It could not say WHEN, how many times, or
+  // whether any single control spanned a transition.
+  //
+  // visibilitychange IS AN EVENT, so this costs nothing and cannot be missed the
+  // way a poll can -- and it is not itself throttled, unlike every timer in this
+  // file. The transition LOG is the record; the per-row fields below are derived
+  // from it rather than re-sampled, so they cannot disagree with it.
+  SCT.visLog = [{ at: Date.now(), state: document.visibilityState,
+                  focus: (typeof document.hasFocus === 'function') ? document.hasFocus() : null }];
+  if (!window.__sctVisTrap) {
+    window.__sctVisTrap = true;
+    document.addEventListener('visibilitychange', () => {
+      // Guard the push: a run that ends leaves this listener attached (there is
+      // no teardown hook), and a later run replaces window.SCT -- so write to the
+      // CURRENT SCT, not the one captured when the listener was made.
+      const s = window.SCT;
+      if (s && s.visLog) {
+        s.visLog.push({ at: Date.now(), state: document.visibilityState,
+                        focus: (typeof document.hasFocus === 'function') ? document.hasFocus() : null });
+      }
+    });
+  }
+  // Every state the tab was in between two timestamps, from the log. Used per
+  // control so a row can say "hidden throughout", "visible throughout" or
+  // "SPANNED a transition" -- three states, and the third is the one a sample
+  // silently reports as one of the other two.
+  SCT.visBetween = function (t0, t1) {
+    const log = SCT.visLog;
+    let state = log[0].state;
+    const seen = new Set();
+    for (let k = 0; k < log.length; k++) {
+      if (log[k].at <= t0) { state = log[k].state; continue; }
+      if (log[k].at > t1) break;
+      seen.add(state);
+      state = log[k].state;
+    }
+    seen.add(state);
+    return [...seen];
+  };
+
   // Found by the handler that CALLS the nav function, not by a class: the
   // three apps use .sb-btn, .sidebar-btn and bare <a>, and a class list is one
   // more thing to keep true.
@@ -267,11 +320,26 @@
     const label = (el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 30);
     const before = SCT.errors.length;
     let threw = null;
+    // Stamped BEFORE the click, so the span covers the click and the whole settle
+    // wait -- which is where the 60-second clamps live and therefore the only
+    // window whose visibility actually matters.
+    const tStart = Date.now();
     try { el.click(); } catch (e) { threw = String((e && e.message) || e); }
     whenQuiet(arg, (q) => {
       record(arg, label, before, threw);
       const row = SCT.rows[SCT.rows.length - 1];
-      if (row) { row.settled = q.settled; row.settleMs = q.ms; }
+      if (row) {
+        row.settled = q.settled;
+        row.settleMs = q.ms;
+        // THE SPAN, NOT A SAMPLE. `tabVis` above is the state at the instant the
+        // row was written; this is every state the tab held from the click to the
+        // settle. `['hidden']` means the whole control ran clamped, `['visible']`
+        // means none of it did, and TWO ENTRIES mean the control straddled a
+        // transition -- which a single sample reports as one or the other with
+        // nothing to say it guessed.
+        row.tabVisSpan = SCT.visBetween(tStart, Date.now());
+        row.tabVisSpanned = row.tabVisSpan.length > 1;
+      }
       SCT.i++;
       setTimeout(tick, 15);
     });
@@ -324,6 +392,24 @@
       // shows as a split rather than as whichever state it happened to end in.
       rowsRecordedHidden: r.filter(x => x.tabVis === 'hidden').length,
       rowsRecordedVisible: r.filter(x => x.tabVis === 'visible').length,
+      // ── THE SPAN FIGURES, WHICH ARE THE ONES TO QUOTE (2026-09-26) ───────
+      // rowsRecordedHidden/Visible above are SAMPLES -- the state at the instant
+      // each row was written. These three are derived from the visibilitychange
+      // LOG and describe the whole click-to-settle window per control, so
+      // "the hidden-tab path was exercised on N controls" is a real count.
+      // controlsSpannedTransition is the number a sample cannot produce at all:
+      // controls that were BOTH, which a sample files under whichever it caught.
+      controlsFullyHidden: r.filter(x => x.tabVisSpan && x.tabVisSpan.length === 1
+                                      && x.tabVisSpan[0] === 'hidden').length,
+      controlsFullyVisible: r.filter(x => x.tabVisSpan && x.tabVisSpan.length === 1
+                                       && x.tabVisSpan[0] === 'visible').length,
+      controlsSpannedTransition: r.filter(x => x.tabVisSpanned).length,
+      // The raw record, so a reader can check the three counts above rather than
+      // trust them, and can see WHEN the tab changed rather than only that it did.
+      visibilityTransitions: (SCT.visLog || []).length - 1,
+      visibilityLog: (SCT.visLog || []).map(v => v.state + '@+'
+        + Math.round((v.at - (SCT.visLog[0] || v).at) / 1000) + 's'
+        + (v.focus === false ? ' nofocus' : '')),
       // ── AND timerClampMs IS ONE SAMPLE AGAINST A FIXED THRESHOLD ─────────
       // Measured 2026-09-26: clampMs read 271 at start-up on a run whose worst
       // control then took 59,986ms to settle. 271 is 5.4x the requested 50 and
