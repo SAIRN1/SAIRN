@@ -3038,8 +3038,8 @@
       "task": "queue13: SAIRNcare compliance-engine wiring -- join alf_compliance_rules evaluation to alf_staff_credentials so training rules evaluate against real recorded hours instead of refusing (WV dormant branch, PA additive under-require, OH counts_toward_general_annual over-require, plus the 2 unnamed blockers); stagger the send-reminder and alf-alerts crons in vercel.json off the identical 0 * * * * that causes api/claude 504s at :00; resolve the mech_quotes B vs mech_insurance_policies A confidentiality inconsistency I flagged. api/sd-data.js is FREE (fourth-q9b released) and I am taking the alf_compliance_rules evaluate branch in it -- NOT the blob builders, NOT the 132-gate pre-gate. stonedesk.html and sairnmechanical.html are cody-q13's and are untouched. SUBJECT NAMED PER PR 4.3 FILES: api/_lib/compliance-rules.js api/sd-data.js vercel.json docs/CRITICALITY-TIERS.md docs/2026-09-26-compliance-training-join.md",
       "claimed_at": "2026-09-27T01:57:40Z",
       "claimed_at_epoch": 1790474260.9982145,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-27T02:52:58Z",
       "files": [
         "api/_lib/compliance-rules.js",
         "api/sd-data.js",
