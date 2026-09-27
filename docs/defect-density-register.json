@@ -16441,7 +16441,7 @@
       "recurrence_open": "No check exists for the general shape: a probe fixture carrying a LITERAL session name while the code under test resolves that same name from the clone. A grep for quoted clone names inside tests/ is cheap and has not been run, and the four build-agent names plus the hover instances are a small closed vocabulary that a checker could read from .claude/claims/ rather than hardcode -- which is the same mistake one shelf over."
     },
     {
-      "commit": "1a6cac7e0762",
+      "commit": "607f227f2125",
       "date": "2026-09-27",
       "subject": "fix(sairncash): three more places a min/max against an unknown answered anyway -- one of them with a confident $0 of income tax",
       "files": [
