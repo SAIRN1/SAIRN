@@ -16441,62 +16441,6 @@
       "recurrence_open": "No check exists for the general shape: a probe fixture carrying a LITERAL session name while the code under test resolves that same name from the clone. A grep for quoted clone names inside tests/ is cheap and has not been run, and the four build-agent names plus the hover instances are a small closed vocabulary that a checker could read from .claude/claims/ rather than hardcode -- which is the same mistake one shelf over."
     },
     {
-      "commit": "69518f0e0122",
-      "date": "2026-09-27",
-      "subject": "feat(sairnvet): four food-animal drugs sourced to their FDA labels -- and three of the four had the CATTLE figure on the SWINE row",
-      "files": [
-        "docs/2026-09-27-sairnvet-food-animal-label-sourcing.md",
-        "sairnvet.html",
-        "tests/sairnvet_formulary_source_honesty.js"
-      ],
-      "lines_added": 320,
-      "lines_removed": 1,
-      "app": "sairnvet",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "Four food-animal injectable antimicrobials in sairnvet.html's VET_DRUGS carried figures that were not specific to the species on the row. Tulathromycin: both cattle and swine read route SC/IM where DRAXXIN (NADA 141-244) is subcutaneous in cattle and intramuscular in swine -- each species offered the other's route, with meat withdrawals 13 days apart (18 vs 5). Florfenicol: both read 20-40mg/kg IM/SC, but NUFLOR (NADA 141-063) ties the dose to the route (20mg/kg IM repeated at 48h, 40mg/kg SC once, withdrawal 28 vs 38 days) so it is not a range, and the swine label is 15mg/kg IM, making the stored swine range 33-167 percent above label with SC unlabelled. Ceftiofur: both read 1-2.2mg/kg IM/SC, the cattle figure, where EXCENEL RTU EZ (NADA 141-288) gives swine 3-5mg CE/kg IM -- an UNDER-dose, the opposite consequence direction from florfenicol. Oxytetracycline: both read 10-20mg/kg SID, flattening LA-200's (NADA 113-232) single long-acting 9mg/lb dose and its 3-5mg/lb DAILY dose into one once-daily range, and the swine row carried IV which the label offers in cattle only. Routes and doses corrected to label, references quoted verbatim, withdrawal times populated and each naming its product. Two rows deliberately keep null numeric bounds so the calculator refuses rather than multiplying a false range by a body weight.",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The formulary rows predate this register and were built by propagating one species' figures across a drug's species rows; there is no single commit that introduced the swine values, they were never species-specific. The searchable fact is when the CLASS was named: the species-copy detector landed 2026-09-26 and found the dose half of it."
-      },
-      "citation_note": "A quiet wrong number. Every one of these rows rendered a plausible route and dose with a withdrawal period beside it saying the residue question was handled; none of the eight raised anything. Also item 43 (Ariane 5) in clinical form -- a faithful copy whose species is not.",
-      "contributing_factors": [
-        {
-          "factor": "the formulary was built by propagating one species row across a drug's other species, so a figure that was correct once became a claim about animals it was never about",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "eight rows re-derived from their FDA labels; routes and doses corrected, each reference naming the specific NADA and the products it does NOT cover"
-        },
-        {
-          "factor": "a dose tied to a ROUTE was stored as a range across both routes, which is not the same object -- and the withdrawal period differs by route too",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "the route-coupled rows keep null doseMin/doseMax so the calculator refuses; an arm asserts the nulls, because rebuilding the range in the numeric fields would undo the fix invisibly"
-        },
-        {
-          "factor": "the app's own species-copy detector keys on the DOSE STRING, so it is blind by construction to a copied ROUTE -- and on a food animal the route is the food-safety fact",
-          "kind": "detection",
-          "action_status": "declined",
-          "note": "a route-copy detector would fire on every legitimately shared route in a 485-row table and be switched off within a week, which is the argument the existing copy marker already records for warning rather than refusing. Held by a named test arm instead, and the gap is written into docs/2026-09-27-sairnvet-food-animal-label-sourcing.md section 4 rather than left implicit"
-        },
-        {
-          "factor": "a withdrawal period belongs to a PRODUCT and these rows are generic, so a bare number generalises one label to every formulation of the drug",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "every label_sourced withdrawal string now names its product or NADA, enforced by a control arm -- which found a real pre-existing row on its first run (Flunixin Meglumine/cattle carried a bare 4 days)"
-        }
-      ],
-      "recurrence_open": "470 of 485 rows still record no source. 33 uncited controlled substances and 61 remaining uncited food-animal rows are untouched -- the highest-consequence populations and this pass covered 8 of them. Nothing checks a row against its label on a cadence: the references carry a Retrieved date and a label revision can change a withdrawal period without anything here noticing. And the route-copy blind spot is open by decision, not closed."
-    },
-    {
       "commit": "607f227f2125",
       "date": "2026-09-27",
       "subject": "fix(sairncash): three more places a min/max against an unknown answered anyway -- one of them with a confident $0 of income tax",
@@ -16668,6 +16612,120 @@
         }
       ],
       "recurrence_open": "Three things this change does NOT close. (1) decryptSecret() still returns null for both a failed decrypt and a value that was never stored, so the next key-handling defect in this path will surface as \"MFA is not set up\" rather than as an error. (2) sql/legacy_ciphertext_census.sql is UNRUN and its legacy-vs-v2 discriminator (the `v2.` prefix) is unverified against real rows -- and its count now gates a destructive step, so a wrong discriminator either blocks step 4 for ever or clears PREVIOUS while legacy rows remain. (3) SD_ENCRYPTION_KEY is production-only while SD_AUTH_SECRET and SUPABASE_URL are preview+production; IF preview points at the same Supabase project, a preview deployment is a v2-blind reader and a legacy writer against production rows. Whether it does is one comparison of two env values nobody has made, and it is not asserted."
+    },
+    {
+      "commit": "69518f0e0122",
+      "date": "2026-09-27",
+      "subject": "feat(sairnvet): four food-animal drugs sourced to their FDA labels -- and three of the four had the CATTLE figure on the SWINE row",
+      "files": [
+        "docs/2026-09-27-sairnvet-food-animal-label-sourcing.md",
+        "sairnvet.html",
+        "tests/sairnvet_formulary_source_honesty.js"
+      ],
+      "lines_added": 320,
+      "lines_removed": 1,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "Four food-animal injectable antimicrobials in sairnvet.html's VET_DRUGS carried figures that were not specific to the species on the row. Tulathromycin: both cattle and swine read route SC/IM where DRAXXIN (NADA 141-244) is subcutaneous in cattle and intramuscular in swine -- each species offered the other's route, with meat withdrawals 13 days apart (18 vs 5). Florfenicol: both read 20-40mg/kg IM/SC, but NUFLOR (NADA 141-063) ties the dose to the route (20mg/kg IM repeated at 48h, 40mg/kg SC once, withdrawal 28 vs 38 days) so it is not a range, and the swine label is 15mg/kg IM, making the stored swine range 33-167 percent above label with SC unlabelled. Ceftiofur: both read 1-2.2mg/kg IM/SC, the cattle figure, where EXCENEL RTU EZ (NADA 141-288) gives swine 3-5mg CE/kg IM -- an UNDER-dose, the opposite consequence direction from florfenicol. Oxytetracycline: both read 10-20mg/kg SID, flattening LA-200's (NADA 113-232) single long-acting 9mg/lb dose and its 3-5mg/lb DAILY dose into one once-daily range, and the swine row carried IV which the label offers in cattle only. Routes and doses corrected to label, references quoted verbatim, withdrawal times populated and each naming its product. Two rows deliberately keep null numeric bounds so the calculator refuses rather than multiplying a false range by a body weight.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The formulary rows predate this register and were built by propagating one species' figures across a drug's species rows; there is no single commit that introduced the swine values, they were never species-specific. The searchable fact is when the CLASS was named: the species-copy detector landed 2026-09-26 and found the dose half of it."
+      },
+      "citation_note": "A quiet wrong number. Every one of these rows rendered a plausible route and dose with a withdrawal period beside it saying the residue question was handled; none of the eight raised anything. Also item 43 (Ariane 5) in clinical form -- a faithful copy whose species is not.",
+      "contributing_factors": [
+        {
+          "factor": "the formulary was built by propagating one species row across a drug's other species, so a figure that was correct once became a claim about animals it was never about",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "eight rows re-derived from their FDA labels; routes and doses corrected, each reference naming the specific NADA and the products it does NOT cover"
+        },
+        {
+          "factor": "a dose tied to a ROUTE was stored as a range across both routes, which is not the same object -- and the withdrawal period differs by route too",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the route-coupled rows keep null doseMin/doseMax so the calculator refuses; an arm asserts the nulls, because rebuilding the range in the numeric fields would undo the fix invisibly"
+        },
+        {
+          "factor": "the app's own species-copy detector keys on the DOSE STRING, so it is blind by construction to a copied ROUTE -- and on a food animal the route is the food-safety fact",
+          "kind": "detection",
+          "action_status": "declined",
+          "note": "a route-copy detector would fire on every legitimately shared route in a 485-row table and be switched off within a week, which is the argument the existing copy marker already records for warning rather than refusing. Held by a named test arm instead, and the gap is written into docs/2026-09-27-sairnvet-food-animal-label-sourcing.md section 4 rather than left implicit"
+        },
+        {
+          "factor": "a withdrawal period belongs to a PRODUCT and these rows are generic, so a bare number generalises one label to every formulation of the drug",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "every label_sourced withdrawal string now names its product or NADA, enforced by a control arm -- which found a real pre-existing row on its first run (Flunixin Meglumine/cattle carried a bare 4 days)"
+        }
+      ],
+      "recurrence_open": "470 of 485 rows still record no source. 33 uncited controlled substances and 61 remaining uncited food-animal rows are untouched -- the highest-consequence populations and this pass covered 8 of them. Nothing checks a row against its label on a cadence: the references carry a Retrieved date and a label revision can change a withdrawal period without anything here noticing. And the route-copy blind spot is open by decision, not closed."
+    },
+    {
+      "commit": "f11b03ed0cfc",
+      "date": "2026-09-27",
+      "subject": "fix(sairnlaw): a disposed motion was reported as PENDING, and 2026-02-30 computed from March 2 -- both on an appeal deadline",
+      "files": [
+        "api/_lib/deadline-engine.js",
+        "api/legal-deadlines.js",
+        "docs/MASTER-PLAN.md",
+        "docs/traceability-matrix.md",
+        "tests/sairnlaw_retrigger.js"
+      ],
+      "lines_added": 311,
+      "lines_removed": 11,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "static-checker",
+      "summary": "api/_lib/deadline-engine.js applyRetrigger(): one filter, `!toUTC(e.disposition_date)`, decided whether a qualifying post-judgment motion was still pending. toUTC returns null for anything that is not strictly YYYY-MM-DD, so a caller sending `12/31/2026`, `Dec 31 2026`, `2026-13-45` or a misspelled key was reported as having an UNDISPOSED motion -- and api/legal-deadlines.js maps that MOTION_PENDING refusal to 422, so the reply read as a considered legal answer rather than as a parse failure: \"the period runs from the disposition of the last such motion, so it has not started yet\". On a motion that had been disposed. THE DIRECTION THAT LOSES THE APPEAL: a litigator told the appeal clock has not begun, in a message specific enough to be believed, when it began at the disposition weeks earlier. FRAP 4(a)(4)(A) and its analogues are the rules in question and all three are SEEDED and live (two US federal rules, Ohio App.R. 4(B)(2), Massachusetts Rule 12(a)(2)). Fixed to three states keyed on WHAT THE CALLER SENT rather than on what it parsed to: absent, null or blank is genuinely PENDING and unchanged; a value present and unreadable is a new BAD_DISPOSITION_DATE naming the offending value and the one accepted format and saying in the message that it is not the same answer as pending; a readable date governs. A non-object element is also refused -- retrigger_events is caller-supplied, so `[\"rule_50b_motion\"]` previously read as a pending motion. BAD_DISPOSITION_DATE is deliberately NOT in the 422 list and is NAMED on the 400 side so the mapping is a recorded decision. SECOND DEFECT IN THE SAME FUNCTION, found by the suite written for the first: toUTC accepted `2026-02-30`, which passes the shape regex and which `new Date` does not reject -- it ROLLS OVER to 2026-03-02 and isNaN is false. Every date this engine takes (trigger dates, holiday rows, dispositions) accepted an impossible day and computed from a different one with no error. toUTC now calls api/_lib/calendar-date.js's isCalendarDate, which exists for exactly this, rather than growing an eighth hand-rolled date guard.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/ghost_field_read_scan.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "applyRetrigger and toUTC were both written before this session and neither has a single introducing commit for the DEFECT as opposed to the feature -- toUTC's shape regex has been in the file since it was created, and the pending filter arrived with the retrigger feature. Naming one commit would be a guess with a hash on it."
+      },
+      "citation_note": "1.5 carries the consequence exactly -- a failure state read by the next line as a considered answer, and its own third bullet is null meaning two different things. It does not carry the cause: nothing failed, the caller supplied a value in a format the engine does not accept and a single null erased the difference between \"no date\" and \"not a date\". Arguable rather than clean, and the note says which half.",
+      "contributing_factors": [
+        {
+          "factor": "One null carried two meanings. `!toUTC(x)` is true both when the caller sent nothing and when the caller sent something unreadable, and the refusal built from it asserted the first.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The pending test now reads the RAW caller value (absent/null/blank) and a separate earlier branch refuses a present-but-unparseable one as BAD_DISPOSITION_DATE."
+        },
+        {
+          "factor": "The whole retrigger path had NO test of any kind. Nothing in the repo named applyRetrigger, MOTION_PENDING or retrigger_events, and the element field name disposition_date appeared only inside the one line that read it -- no schema, no validator, no fixture, no document.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/sairnlaw_retrigger.js, 17 arms, the FRAP spec copied field-for-field out of sql/sairnlaw_deadline_seed_us_federal.json rather than invented, plus two negative controls in both directions."
+        },
+        {
+          "factor": "toUTC's shape regex was mistaken for a date validator, and `new Date` silently repairs an impossible day rather than rejecting it. The project's own CLAUDE.md names this behaviour as the reason calendar-date.js exists, and this engine did not use it.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "toUTC calls isCalendarDate. All 39 deadline suites were green before and after, so no worked example in any jurisdiction depended on the looser guard."
+        },
+        {
+          "factor": "A 422 was chosen for MOTION_PENDING because the request is complete and the clock has not begun -- a correct decision that made the wrong answer MORE convincing once an unparseable date could reach it.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "BAD_DISPOSITION_DATE falls to 400 and is named there, with the reason written beside the DESIGNATED_PERIOD_BELOW_FLOOR argument it copies."
+        }
+      ],
+      "recurrence_open": "NO CLIENT SENDS retrigger_events AT ALL -- sairnlaw.html has no caller, so this whole path is reachable only by a direct API consumer and the input contract is still documented nowhere outside the suite. The endpoint does not validate the element shape before handing it to the engine, so the engine is the only thing refusing. And the wider class is untouched: a field written somewhere and read on the WRONG object clears the ghost scan's third condition by construction, which is the member of this family that has now bitten twice. Also open: `dispositions.sort()` compares raw strings, which is correct for ISO dates and is now guaranteed only because everything non-ISO refuses upstream -- nothing asserts that dependency."
     },
     {
       "commit": "cc6e38945baa",
