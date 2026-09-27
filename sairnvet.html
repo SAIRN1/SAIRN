@@ -8075,7 +8075,11 @@ function checkRedFlags(drugName, speciesName){
   return hits;
 }
 
-// Deterministic lookup against the verified VET_DRUGS data — grounds the AI instead of letting it guess.
+// Deterministic lookup against the STORED VET_DRUGS data — grounds the AI instead of letting it
+// guess. "Stored", not "verified": the LOOKUP is deterministic and the stored figure's provenance
+// is a separate question the row's `reference` answers or leaves unanswered. 480 of 485 leave it
+// unanswered. A comment that calls the table verified is what the next editor reads before
+// re-introducing the word downstream, which is how the protocol panel kept it all day.
 function findDrugEntries(drugName, speciesName){
   var d = (drugName||'').toLowerCase().trim();
   var s = (speciesName||'').toLowerCase().trim();
@@ -8192,7 +8196,8 @@ function onDoseVetSignoff(){
 
 // Deterministic food-safety check — independent of drug match confidence. Withdrawal time
 // is a legal/regulatory requirement (FDA), not just a clinical consideration, so this must
-// surface regardless of whether we have a verified numeric dose for the drug in question.
+// surface regardless of whether we have a usable numeric dose for the drug in question ("usable",
+// not "verified" -- having a stored range says nothing about whether anybody sourced it).
 var FOOD_ANIMAL_SPECIES = ['cattle','swine','sheep','poultry','goat','emu','ratite'];
 function isFoodAnimalSpecies(speciesName){
   var s = (speciesName||'').toLowerCase();
@@ -8314,8 +8319,12 @@ function calculateDoseAI(){
   }
 
   // STEP 2 — deterministic grounding lookup against the stored VET_DRUGS
-  // formulary. NOT "verified": 482 of the 485 rows carry no recorded source
-  // (2026-09-26 audit). What is deterministic here is the LOOKUP and the
+  // formulary. NOT "verified": 480 of the 485 rows carry no recorded source
+  // (2026-09-26 audit; was written as 482 and is DERIVED by the arms in
+  // tests/sairnvet_formulary_source_honesty.js, which print the live split on
+  // every run -- a count in a comment is a fact with a tense, and this one went
+  // stale the same day two more rows were sourced).
+  // What is deterministic here is the LOOKUP and the
   // ARITHMETIC, both of which this code really does; whether the stored
   // range is right is a separate question the row's `reference` answers or
   // admits it cannot.
@@ -8396,14 +8405,35 @@ function getProtocolFromClaude(){
   if(!dx||!weight||!species){showToast('Fill all fields','error');return;}
 
   var matches = findDiagnosisEntries(dx, species);
+  // ── VET_DIAGNOSES IS NOT A VERIFIED DATABASE, AND IT HAS NOWHERE TO PUT A
+  //    SOURCE. CORRECTED 2026-09-26, by the live check that followed the
+  //    formulary badge fix rather than by that fix itself.
+  //
+  // The formulary sweep earlier today removed "verified" from the Drug
+  // Database badge, the dosing prompt, the grounding context, the calculator
+  // box and two prose sites, and its test pinned every one of them. THIS PANEL
+  // SURVIVED ALL OF IT, because the arm was scoped to the DOSING prompt and
+  // this is the PROTOCOL prompt -- a different panel, a different table, the
+  // same unearned word, three times in eight lines.
+  //
+  // The table is worse-placed than the formulary, not better: VET_DRUGS has a
+  // `reference` field and 5 of 485 rows fill it. VET_DIAGNOSES has 465 rows
+  // and its keys are name, signs, species, system -- THERE IS NO SOURCE FIELD
+  // AT ALL, so not one row could cite anything even if somebody looked it up.
+  // "Verified" here was not an overstatement of partial sourcing; it described
+  // a property the schema cannot hold.
+  //
+  // And it was said to the MODEL, which then says it to the vet in its own
+  // voice -- the same path the dosing prompt took. A clinician reading "per the
+  // verified database record" cannot tell that nothing was verified.
   var groundingContext = '';
   if(matches.length===0){
-    groundingContext = 'This diagnosis/species combination is not in our verified database. State this explicitly to the user before giving general guidance, and recommend confirming against a current reference (e.g., Merck Veterinary Manual) or specialist consult, especially for exotic/zoo species.';
+    groundingContext = 'This diagnosis/species combination is not in our stored diagnosis library. State this explicitly to the user before giving general guidance, and recommend confirming against a current reference (e.g., Merck Veterinary Manual) or specialist consult, especially for exotic/zoo species.';
   } else {
-    groundingContext = 'Verified database record(s) for this diagnosis: ' + JSON.stringify(matches.slice(0,3)) + '. Ground your protocol in this, and note if it does not fully cover this specific species.';
+    groundingContext = 'Stored diagnosis-library record(s) for this diagnosis -- THIS LIBRARY RECORDS NO SOURCE FOR ANY ENTRY, so treat these as a starting point and not as verified reference material: ' + JSON.stringify(matches.slice(0,3)) + '. Ground your protocol in this, say plainly that the stored entry cites no published source, and note if it does not fully cover this specific species.';
   }
 
-  var system='You are a veterinary clinician with expertise across species. Always respond with a RANKED DIFFERENTIAL (most to least likely), never a single confident diagnosis, along with your reasoning for the ranking. For each treatment recommendation, cite which part of your answer comes from the verified database record versus your own general clinical reasoning. This is clinical decision support only — the treating veterinarian retains full diagnostic and treatment authority; end your response by saying so explicitly.';
+  var system='You are a veterinary clinician with expertise across species. Always respond with a RANKED DIFFERENTIAL (most to least likely), never a single confident diagnosis, along with your reasoning for the ranking. For each treatment recommendation, cite which part of your answer comes from the stored diagnosis-library record versus your own general clinical reasoning. NEVER describe that record as verified: the diagnosis library records no source for any entry, so nothing in it has been checked against a published reference. This is clinical decision support only — the treating veterinarian retains full diagnostic and treatment authority; end your response by saying so explicitly.';
   var messages=[{role:'user',content:'Provide a differential and treatment protocol for suspected '+dx+' in a '+weight+'kg '+species+'. '+groundingContext}];
 
   showToast('Getting protocol...','info');
@@ -8934,7 +8964,7 @@ function askAI(){
   var q=document.getElementById('ai-question').value.trim();
   if(!q){showToast('Enter a question','error');return;}
   var toolDefs=Object.keys(SV_TOOLS).map(function(k){return SV_TOOLS[k].definition;});
-  var system='You are a general veterinary knowledge assistant. Answer clearly and accurately. IMPORTANT: if the question asks for a specific numeric drug dose or asks you to diagnose a specific patient, do NOT provide a specific number or a single diagnosis here — this tool is not connected to the verified drug/diagnosis database or the contraindication safety checks. Instead, tell the user to use the AI Dosing Calculator (for verified, bounds-checked doses) or the Diagnosis Library / Diagnosis Protocol Generator (for a grounded, ranked differential) so the safety checks actually run. You may still discuss general concepts, mechanisms, and reasoning freely, and you may look up real patient roster information (name, species, breed, owner, age, last visit, status) via the get_patients tool when asked -- never guess or invent a specific figure, date, or fact a tool would have provided.';
+  var system='You are a general veterinary knowledge assistant. Answer clearly and accurately. IMPORTANT: if the question asks for a specific numeric drug dose or asks you to diagnose a specific patient, do NOT provide a specific number or a single diagnosis here — this tool is not connected to the stored drug/diagnosis database or the contraindication safety checks. Instead, tell the user to use the AI Dosing Calculator (for a bounds-checked calculation against the stored range, which is not the same as a verified dose -- most formulary rows cite no published source) or the Diagnosis Library / Diagnosis Protocol Generator (for a grounded, ranked differential) so the safety checks actually run. You may still discuss general concepts, mechanisms, and reasoning freely, and you may look up real patient roster information (name, species, breed, owner, age, last visit, status) via the get_patients tool when asked -- never guess or invent a specific figure, date, or fact a tool would have provided.';
   var sharedCtx=(typeof buildSvSharedCompanyContext==='function')?buildSvSharedCompanyContext():'';
   if(sharedCtx) system+='\n\n'+sharedCtx;
   showToast('Asking Claude...','info');

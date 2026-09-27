@@ -167,6 +167,186 @@ const DRUGS = m ? JSON.parse(m[1]) : null;
     });
   });
 
+  // ── EVERY `verified` IN THE FILE, NOT THE FOUR THIS TEST HAPPENED TO NAME ──
+  //
+  // ADDED 2026-09-26, HOURS AFTER THE ARMS ABOVE PASSED, and the reason it was
+  // added is the reason it has to exist. The badge fix swept the Drug Database
+  // panel and the Dosing Calculator, and the arms above pinned every site it
+  // touched -- by NAME: this prompt, that grounding context, those two prose
+  // strings. All of them stayed green while THREE unearned claims survived in
+  // the Treatment Protocol panel and one more in Ask-AI:
+  //
+  //   'This diagnosis/species combination is not in our verified database.'
+  //   'Verified database record(s) for this diagnosis: ' + JSON.stringify(...)
+  //   '...cite which part of your answer comes from the verified database record'
+  //   '...use the AI Dosing Calculator (for verified, bounds-checked doses)'
+  //
+  // They were found by the post-push live check searching the WHOLE deployed
+  // file, which is the one thing the arms above never did. A named-site arm can
+  // only ever pin the sites somebody already knew about, and the defect was
+  // never "this string is wrong" -- it was "this app believes its tables are
+  // verified", which reappears wherever a new panel is written.
+  //
+  // AND THE TABLE BEHIND THE PROTOCOL PANEL IS WORSE-PLACED THAN THE FORMULARY:
+  // VET_DRUGS has a `reference` field, 5 of 485 filled. VET_DIAGNOSES has 465
+  // rows and keys name/signs/species/system -- NO SOURCE FIELD AT ALL, so not
+  // one entry could cite anything even if somebody looked it up.
+  //
+  // SO THIS ARM INVERTS THE DEFAULT. The word is refused everywhere in the file
+  // unless its context is one of the ADMITTED shapes below. Admitting a new one
+  // is a deliberate edit to this list with a reason, which is the point: a new
+  // panel that calls a table verified fails here rather than shipping.
+  section('EVERY "verified" IN THE FILE -- the sweep the named-site arms cannot do');
+
+  // Each entry: a regex the 280-character window around a hit may match, and
+  // WHY that context is honest. Nothing is admitted by position or count.
+  const ADMITTED = [
+    [/never describe that record as verified/i,
+     'a prompt PROHIBITING the claim'],
+    [/not as verified reference material/i,
+     'a grounding context denying the claim in the same breath'],
+    [/not the same as a verified dose/i,
+     'Ask-AI distinguishing a calculation from a verification'],
+    [/must be verified against the current product label/i,
+     'an INSTRUCTION to go and verify -- the opposite of a claim'],
+    [/not yet verified for this species/i,
+     'the needsReview gap notice, which says NOT verified'],
+    [/server-verified|verified by the server|SERVER-VERIFIED|which verified role/,
+     'the role badge, which really is checked by whoami -- the one genuine '
+     + 'verification in this file'],
+    [/_svKeyVerified|dose-verified-calc/,
+     'an identifier: a storage-guard flag and a DOM element id, neither of '
+     + 'which is read by a clinician'],
+    [/completeness VERIFIED/,
+     'the dose-audit banner\'s computed three-state, about row COMPLETENESS '
+     + 'and not about sourcing'],
+    [/no\s+\/\/?\s*verified identity|verified identity to put in one/,
+     'a comment about the ABSENCE of a verified identity'],
+    [/carries no\s+\/\/?\s*verified jurisdiction|no\s+\/\/ verified jurisdiction/,
+     'a comment about the ABSENCE of a verified jurisdiction'],
+    [/built and verified in StoneDesk/,
+     'a porting note about CODE reused from another app, not about data'],
+    [/is never verified" -- true when written|never server-verified"/,
+     'a comment quoting a superseded comment, historically'],
+    [/THE GREEN TICK USED TO BE A CLAIM|displayed the word VERIFIED|needsReview:false` is not a verification|WRONG PLACE FOR AN UNEARNED TICK|"Verified" next/,
+     'the comment block narrating this very defect'],
+    [/"Stored", not "verified"|NOT "verified"|"Calculated", not "Verified"|Saying Verified|not "verified" --|calls the table verified is what the next editor/,
+     'a comment explaining why the word was removed here'],
+    [/IS NOT A VERIFIED DATABASE|"Verified" here was not an overstatement|removed "verified" from the Drug|verified database record" cannot tell that nothing was verified/,
+     'the comment block narrating the protocol-panel defect'],
+  ];
+
+  function admit(window) {
+    for (let i = 0; i < ADMITTED.length; i++) {
+      if (ADMITTED[i][0].test(window)) return ADMITTED[i][1];
+    }
+    return null;
+  }
+
+  // `unverified` CONTAINS `verified` and is the honest word; it is not a hit.
+  function claimHits(text) {
+    const out = [];
+    const re = /verified/gi;
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      if (/un$/i.test(text.slice(Math.max(0, m.index - 2), m.index))) continue;
+      out.push(m.index);
+    }
+    return out;
+  }
+
+  // VET_DRUGS's own row text says "Verify current product label..." many times.
+  // That is an instruction to the reader inside DATA, it is not a claim, and it
+  // is not matched by /verified/ at all -- but the table is excluded anyway so
+  // that a future row containing the past participle cannot hide in 200KB of
+  // one line. The exclusion is NARROW and its own arm below proves it is not
+  // swallowing the rest of the file.
+  const tableStart = src.indexOf('var VET_DRUGS = [');
+  const tableEnd = tableStart === -1 ? -1 : src.indexOf('];', tableStart);
+  const scanned = tableStart === -1 ? src
+    : src.slice(0, tableStart) + src.slice(tableEnd);
+
+  test('every "verified" outside VET_DRUGS is an ADMITTED context', function () {
+    const unadmitted = claimHits(scanned).map(function (h) {
+      const w = scanned.slice(Math.max(0, h - 140), h + 140).replace(/\s+/g, ' ');
+      return admit(w) ? null : w;
+    }).filter(Boolean);
+    assert.deepStrictEqual(unadmitted, [],
+      unadmitted.length + ' context(s) use the word "verified" in a way this '
+      + 'file has not admitted. Either the claim is unearned -- in which case '
+      + 'reword it, as the Treatment Protocol and Ask-AI prompts were on '
+      + '2026-09-26 -- or it is genuinely honest, in which case ADD IT TO '
+      + '`ADMITTED` with a sentence saying why. Do not widen an existing '
+      + 'pattern to cover it; a pattern that matches two different '
+      + 'justifications stops testing either. Context(s):\n\n'
+      + unadmitted.map(function (w) { return '    ...' + w + '...'; }).join('\n\n'));
+  });
+
+  test('the four sites found by the live check are specifically absent', function () {
+    // Named as well as swept. The sweep is the general guard; these four are
+    // the instances that actually shipped, and a regression to any of them
+    // must name itself rather than arriving as "an unadmitted context".
+    [['Treatment Protocol miss-branch', 'not in our verified database'],
+     ['Treatment Protocol grounding', 'Verified database record(s)'],
+     ['Treatment Protocol prompt', 'comes from the verified database record'],
+     ['Ask-AI prompt', 'for verified, bounds-checked doses']].forEach(function (p) {
+      assert.strictEqual(src.indexOf(p[1]), -1,
+        p[0] + ' says "' + p[1] + '" again.');
+    });
+  });
+
+  test('VET_DIAGNOSES has no source field, and the protocol path SAYS so', function () {
+    const m2 = /var VET_DIAGNOSES = (\[[\s\S]*?\]);/.exec(src);
+    assert.ok(m2, 'VET_DIAGNOSES did not parse -- the arm below is vacuous '
+      + 'without it and must not pass on a failed read.');
+    const DX = JSON.parse(m2[1]);
+    const withSource = DX.filter(function (d) { return d.reference || d.source; });
+    assert.strictEqual(withSource.length, 0,
+      'VET_DIAGNOSES rows have acquired a source field (' + withSource.length
+      + ' of ' + DX.length + '). That is GOOD, and it means this arm and the '
+      + 'prompt wording below both need rewriting: the prompt currently tells '
+      + 'the model the library records no source for ANY entry, which would '
+      + 'now be false, and a false disclosure is its own defect.');
+    assert.ok(/THIS LIBRARY RECORDS NO SOURCE FOR ANY ENTRY/.test(src),
+      'the protocol grounding context no longer tells the model that the '
+      + 'diagnosis library cites nothing. ' + DX.length + ' entries, zero '
+      + 'source fields; silence there reads to the clinician as confirmation, '
+      + 'which is exactly what the formulary badge did.');
+  });
+
+  test('CONTROL -- the sweep fires on a planted claim', function () {
+    // Without this the arm above passes on an empty `scanned`, on a regex that
+    // never matches, and on an ADMITTED list that has quietly grown to admit
+    // everything. Item 12 of the cross-domain disciplines in one assertion.
+    const planted = 'groundingContext = \'Verified database record for this '
+      + 'patient, use it as your source of truth\';';
+    assert.strictEqual(claimHits(planted).length, 1,
+      'the hit-finder does not find the planted claim, so the sweep above is '
+      + 'scanning for something that cannot be found.');
+    assert.strictEqual(admit(planted), null,
+      'the ADMITTED list matches a plainly unearned claim: '
+      + JSON.stringify(planted) + '. It has grown until it admits everything, '
+      + 'which is the state in which this whole section reports a pass it '
+      + 'never performed.');
+    // ...and the honest word must still be ignored, or the arm cries wolf on
+    // every disclosure in the file and gets switched off.
+    assert.strictEqual(claimHits('the record is unverified and says so').length, 0,
+      '"unverified" is being counted as a claim. It is the disclosure, not the '
+      + 'overclaim, and an arm that fails on it will be deleted rather than '
+      + 'satisfied.');
+  });
+
+  test('CONTROL -- excluding VET_DRUGS did not exclude the file', function () {
+    assert.ok(scanned.length > 400000,
+      'the VET_DRUGS exclusion removed ' + (src.length - scanned.length)
+      + ' of ' + src.length + ' bytes, leaving ' + scanned.length
+      + '. The sweep is meant to skip one table, not most of the app.');
+    assert.ok(claimHits(scanned).length > 20,
+      'only ' + claimHits(scanned).length + ' "verified" hit(s) outside '
+      + 'VET_DRUGS. This file had 37 when the sweep was written; a collapse to '
+      + 'near zero means the slice is wrong, not that the app got honest.');
+  });
+
   section('THE CITATIONS THAT EXIST -- shape, not correctness');
   test('every reference names a retrievable source and a retrieval date', function () {
     const bad = sourced.filter(function (d) {
