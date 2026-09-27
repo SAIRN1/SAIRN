@@ -15255,6 +15255,59 @@
       "recurrence_open": "11 SPREAD sites are converted and the ratchet pins the rest, so the number cannot silently rise. 64 RAW sites (data: payload straight into the store) are NOT converted -- a sweep across ~20 sairngrounds branches plus stonedesk and mech, each needing its own read consulted for the column list, and it is named rather than started here. The ratchet makes a future 'complete' claim checkable; it does not make it true."
     },
     {
+      "commit": "99310d3fc6bd",
+      "date": "2026-09-26",
+      "subject": "fix(sairnbiz): the plan cards stop asserting Ohio to every customer, and the overtime threshold is read",
+      "files": [
+        "sairnbiz.html",
+        "tests/sairnbiz_benefits_and_overtime.js"
+      ],
+      "lines_added": 440,
+      "lines_removed": 7,
+      "app": "sairnbiz",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "The Benefits panel's \"Workers Comp\" row read \"Active . BWC Ohio\" as fixed text in markup, shown identically to every SAIRNbiz licence. Two assertions the app cannot make: BWC is the OHIO Bureau of Workers' Compensation, one of four monopolistic state funds, so an employer in any other state was shown the wrong regulator by name -- and in Texas, where coverage is not compulsory at all, a regulator that does not apply; and \"Active\" asserts that workers' compensation coverage IS IN FORCE, a statutory obligation carrying real penalties for a lapse, while the app holds no policy number, no carrier and no effective date. Removed, and the row kept with an explicit not-tracked value naming that coverage and its regulator are state-specific, rather than deleted -- a card that quietly gets shorter hides the absence instead of showing it. Two further values in the same block were removed in the same pass for a different reason: \"Employee Contrib. Avg 5.2%\" and \"Plan Assets (est.) $284,000\" LOOKED COMPUTED, an average implying a summed population and \"(est.)\" implying a method, where nothing in the app records a deferral rate or a plan balance and no field exists to enter one.",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "901ccc2dcaec",
+        "date": "2026-06-29",
+        "subject": "feat: Add SAIRNbiz - HR + Accounting backbone [Session 54]",
+        "lag_days": 89
+      },
+      "citation_note": "The nearest standing rule, applied in the other direction: 1.2 says grep cannot tell code from text that describes code. Here a HUMAN cannot tell an example value from an assertion about a regulated status, because in markup both are a .sval span.",
+      "phase_note": "The cards shipped with the app as a static offering summary and nothing suggests a requirement asked for a workers-comp status, so the wrong constant entered when the markup was written rather than being specified.",
+      "contributing_factors": [
+        {
+          "factor": "the four plan cards were written as a static offering summary at the same time as the app, and a plausible example value and an assertion about a regulated status are indistinguishable in markup -- nothing in the shape of a .sval span says which of the two a value is",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the compliance assertion and the two look-computed figures are removed and the rows kept with an explicit not-tracked value; a block-level disclosure now says the remaining card values are an EXAMPLE offering shown identically to every licence and that nothing computes from them"
+        },
+        {
+          "factor": "no check reads rendered markup for a jurisdiction or a compliance status, so a value that is wrong for every customer outside one state is invisible to node --check, to every suite, and to the fabricated-KPI scanner, which looks for numbers with no computation behind them rather than for claims with no knowledge behind them",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "a checker over rendered markup for state-fund names, a state abbreviation beside a compliance label, and status words (Active/Compliant/Current) on a row nothing computes -- named in recurrence_open and NOT built here"
+        },
+        {
+          "factor": "the fabricated-KPI discipline was applied to this app twice before -- the safety-incidents tile and the timesheet hours -- and both times the fix was scoped to the numbers that were WRONG rather than sweeping the panel that contained them, so a neighbouring block of static values was never re-read",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "deliberately not turned into a rule. A sweep triggered by one fix touching every neighbouring panel is how an unrelated regression enters a compliance change; the narrow fix was right both previous times. What is recorded instead is the detection gap above, which catches the class without widening any single fix"
+        }
+      ],
+      "recurrence_open": "The remaining plan-card values -- provider names, premiums, renewal dates, PTO accrual -- are still fixed text and are now covered by a block-level disclosure saying they are an EXAMPLE offering shown to every licence and that nothing computes from them. That is a disclosure, not a fix, and it is the right trade for values that read as sample data. What is NOT protected is the next one of this class: nothing mechanically detects a static markup value that asserts a jurisdiction, a regulator or a compliance status. A checker over rendered markup for state-fund names, state abbreviations beside a compliance label, and status words like Active/Compliant/Current on a row nothing computes would have caught this on the day the app shipped. Named and NOT built here. Note also that the fix deliberately did not add a configurable workers-comp field: that would put a self-reported compliance status on a screen that looks authoritative, which is a larger decision than removing a wrong constant."
+    },
+    {
       "commit": "9d6358d19160",
       "date": "2026-09-26",
       "subject": "fix(push-gate): tests/sairncode_gates.js was registered TWICE in GUARD_TESTS -- run twice per push, and described twice to a reader",
