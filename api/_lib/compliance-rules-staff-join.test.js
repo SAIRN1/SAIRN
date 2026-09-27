@@ -466,6 +466,53 @@ ok('...and a caller-stated window is honoured over the default -- the same '
        && f.hours_window_from !== '2025-11-03';
    })());
 
+section('4e. facility_training_year WITH NO START DATE -- the window that '
+        + 'counted everything (found by tools/ghost_field_read_scan.py)');
+// THE DEFECT THESE ARMS EXIST FOR, and it shipped this morning. The branch read
+// `from = trainingYearStart || null` and fell through; the per-record filter is
+// `if (from && ...)`, so a null `from` SKIPPED THE FILTER and every training
+// record of any age counted. `opts.facility_training_year_start` is the only
+// way to set it and it is spelled nowhere -- so the reachable path was a caller
+// asking for this window and silently getting no window at all.
+const ANCIENT = [{ hours: 500, category: 'general', completed_on: '2019-01-01' }];
+const fty = (drive(WV1, 'caregiver', ANCIENT, '2024-11-03',
+                   { annual_window: 'facility_training_year' }).staff_findings || [])[0];
+ok('THE ARM THAT MATTERS: a 2019 certificate does NOT satisfy a 2026 annual '
+   + 'requirement just because no facility training year was supplied -- '
+   + 'recorded hours are 0, not 500',
+   !!fty && fty.recorded_annual_hours === 0,
+   JSON.stringify(fty || {}).slice(0, 240));
+ok('...and it is a COULD-NOT-TELL, not a fail: window_error names the missing '
+   + 'input and the verdict is null, the same shape NO_HIRE_DATE already had',
+   !!fty && fty.hours_window_error === 'NO_TRAINING_YEAR_START' && fty.meets === null,
+   JSON.stringify({ err: (fty || {}).hours_window_error, meets: (fty || {}).meets }));
+ok('...and no window start is reported, because there is none -- a date here '
+   + 'would be a period the reader could check against nothing',
+   !!fty && fty.hours_window_from === null, String((fty || {}).hours_window_from));
+// THE CONTROL. Supply the start date and the SAME ancient record is still
+// excluded -- so the arm above is testing the missing-input path and not simply
+// a window that can never count anything.
+const ftyOk = (drive(WV1, 'caregiver', ANCIENT, '2024-11-03',
+                     { annual_window: 'facility_training_year',
+                       facility_training_year_start: '2026-01-01' }).staff_findings || [])[0];
+ok('CONTROL: WITH a start date the window computes -- from 2026-01-01, no '
+   + 'error -- and the 2019 record is excluded by the DATE rather than by the '
+   + 'error, so the arms above are not passing on a window that never counts',
+   !!ftyOk && ftyOk.hours_window_from === '2026-01-01'
+   && !ftyOk.hours_window_error && ftyOk.recorded_annual_hours === 0,
+   JSON.stringify(ftyOk || {}).slice(0, 240));
+// AND THE SECOND HALF OF THAT CONTROL: a record INSIDE the supplied window is
+// counted, or the arm above would also pass on a window that excludes all.
+const ftyIn = (drive(WV1, 'caregiver',
+                     [{ hours: 7, category: 'general', completed_on: '2026-06-01' }],
+                     '2024-11-03',
+                     { annual_window: 'facility_training_year',
+                       facility_training_year_start: '2026-01-01' }).staff_findings || [])[0];
+ok('CONTROL, other direction: a record INSIDE the supplied facility year IS '
+   + 'counted (7 hours), so the exclusion above is the date and not the window',
+   !!ftyIn && ftyIn.recorded_annual_hours === 7,
+   JSON.stringify(ftyIn || {}).slice(0, 200));
+
 section('5. WHAT REACHES THIS BRANCH, stated as three facts rather than one');
 const app = fs.readFileSync(path.join(REPO, 'sairncare.html'), 'utf8');
 const api = fs.readFileSync(path.join(REPO, 'api', 'sd-data.js'), 'utf8');

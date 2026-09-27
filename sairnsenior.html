@@ -3382,13 +3382,52 @@ function rfMedian(nums){
 // Real clocked hours for one client, from sen_visits. Reuses the same
 // only-count-what-was-actually-clocked rule the authorisation burn-down uses --
 // a scheduled visit nobody clocked is not delivered time.
+//
+// ── IT RETURNED 0 FOR EVERY CLIENT, ALWAYS. FIXED 2026-09-27 ───────────────
+// This function read `v.actual_start` and `v.actual_end`. A sen_visits row has
+// NO such fields -- the clock is `clock_in_at` / `clock_out_at`, which is what
+// the authorisation burn-down (~:2540), the visit card (~:2964) and
+// `visitHours()` (~:3925) all use. So the guard on the next line was true for
+// every visit ever recorded, the loop added nothing, and the Referral Sources
+// performance table rendered a confident `0.0 h` against every source with a
+// linked client -- while deliberately rendering `--` for the unlinked ones, so
+// the zero read as a measured figure rather than as missing data.
+//
+// THE COMMENT ABOVE WAS ALREADY THE SPECIFICATION and the code disagreed with
+// it: "reuses the same rule the authorisation burn-down uses" was true of the
+// intent and false of the field names. It now really does reuse it, by CALLING
+// `visitHours()` rather than by carrying a third copy of the arithmetic --
+// that function's own header says it exists so "a claim and an
+// insufficient-hours finding must never silently diverge on this arithmetic",
+// and this was the divergence it was written to prevent, one caller along.
+// Same script block (both inside the block spanning ~1339-6052), so the
+// hoisted declaration is genuinely in reach -- checked rather than assumed.
+//
+// Found by tools/ghost_field_read_scan.py: `actual_start` is read in a GATE
+// and is not written, keyed or quoted anywhere in the repo, so the condition
+// could not be false.
+// ── AND THE POSITIVE GUARD IS KEPT, DELIBERATELY ──────────────────────────
+// The version this replaces ended `if(isFinite(ms)&&ms>0)`. `visitHours()` has
+// no such guard: a row whose clock_out_at precedes its clock_in_at returns a
+// NEGATIVE, and adding that here would let one bad row silently cancel a real
+// visit's hours out of the source total. Caught by arm B6 of
+// tests/sairnsenior_referral_hours.js, on the first run, against this very fix.
+//
+// SEPARATE FINDING, FLAGGED AND NOT FIXED HERE: `visitHours()` itself has no
+// non-negative guard, and `generateClaim()` bills `hoursBilled = visitHours(v)`
+// straight off it -- so a backwards pair would bill negative hours. The
+// authorisation burn-down at ~:2540 DOES guard (`isFinite(ms) && ms > 0`), so
+// the three consumers do not agree. api/_lib/sen-evv-clock.js refuses
+// CLOCK_OUT_BEFORE_IN, so the server cannot store one THROUGH THAT PATH, which
+// is why this is a latent disagreement rather than a live billing defect --
+// local rows predating the module are not covered by it. Changing visitHours()
+// touches claim generation and is its own change, not a line in a sweep fix.
 function rfDeliveredHoursFor(clientId){
   var h=0;
   visits().forEach(function(v){
     if(v.client_id!==clientId)return;
-    if(!v.actual_start||!v.actual_end)return;
-    var ms=new Date(v.actual_end).getTime()-new Date(v.actual_start).getTime();
-    if(isFinite(ms)&&ms>0)h+=ms/3600000;
+    var vh=visitHours(v);
+    if(isFinite(vh)&&vh>0)h+=vh;
   });
   return h;
 }

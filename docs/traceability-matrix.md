@@ -114,6 +114,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 
 **Deliberately NOT enforced, with the reason recorded** -- a decision, not an oversight:
 
+- `ghost_field_read_scan.py` -- NOT PROMOTED ON COST, MEASURED RATHER THAN GUESSED: ~90 seconds. It builds a spelled-field universe over 2,229 tracked files -- comment-stripping every one, including three HTML apps over 1MB -- before it can decide a single gate. Every other tool in this registry is seconds; adding a minute and a half to every push is how a gate gets disabled with SAIRN_SEED_GATE=off and then stays disabled, which costs more than the tool is worth. ITS FINDINGS DO NOT CHANGE QUICKLY, which is the other half of the decision: a ghost gate is created by a typo in a condition and then sits there, so a sweep on demand plus its control in the suite catches the same thing a per-push run would, later. Run it when touching a gate, or when a dispatch asks for the sweep: `python tools/ghost_field_read_scan.py`. Its subject and its three confirmed findings are docs/2026-09-27-ghost-field-read-sweep.md; its control pair is tests/run_ghost_field_read_probe.py. AND ONE REASON IT IS NOT A GATE AT ALL, separate from cost: a field written under a COMPUTED key is invisible to it, so a real field can read as a ghost. That is a false-positive direction a human dismisses in one read and a gate cannot.
 - `dispatch_state.py` -- MOVED OUT OF THIS REGISTRY TO SessionStart 2026-09-26, which is a PROMOTION to a better trigger and not a demotion -- recorded here because this list is where a decision about this registry lives, and a tool that simply vanished from it would read as deleted. IT WAS RIGHT AND RUNNING AT THE WRONG MOMENT. Its question is "what should I work on, given what somebody else is already three hours into", and this registry runs at PUSH time: `hook_main()` returns 0 unless the Bash command was a `git push`. By the time you push, the work is done. Measured on the run that motivated the tool, 2026-09-16: a five-item queue was dispatched and FOUR were another session's live or owned work, three named verbatim in a claim made SIX MINUTES earlier -- every one of those knowable at session start and none of them at push. Now `dispatch_state.py --hook`, wired in .claude/settings.json under SessionStart beside sairn_claim_hook.py and sairn_status.py, which answer adjacent halves of the same question. That mode is BOUNDED (the claims in full, the contested rows capped at 14 with the count and the command for the rest) because the full report is 86 lines and 90 lines of preamble at every session start is preamble nobody reads by the third session -- which is this same class of defect one step along. It ALWAYS EXITS 0, deliberately against the house style: a SessionStart hook is not a gate and a non-zero exit there risks interfering with a session that has done nothing yet, so the could-not-run third state is carried in CAPITALS in the text instead of in the exit code. Found by tools/invocation_path_scan.py; triaged in docs/2026-09-26-invocation-path-sweep.md
 - `invocation_path_scan.py` -- PROMOTING IT HERE WOULD MAKE IT AN INSTANCE OF ITS OWN FINDING, and that is the whole reason for the decision rather than a joke about it. Its subject is WIRING -- .claude/settings.json and this file -- both of which change by Write/Edit. This registry runs at PUSH time only: `hook_main()` returns 0 unless the Bash command was a `git push`, which is exactly the gap the tool was written to name after register_freshness_check.py sat correct and un-triggered for two days. Registering it here would give it the same trigger/subject mismatch it reports. ITS OUTPUT IS ALSO THE WRONG SHAPE for a per-push signal: five candidates that each need a READ to decide whether the document named in a checker's `catches` text is its subject or a source it reads, and a five-line list repeated after every push is a list nobody reads by the third time. Run it when the wiring changes -- a hook added, a checker registered, a matcher edited -- and act on the triage in docs/2026-09-26-invocation-path-sweep.md. The honest fix is a Write\|Edit hook scoped to those two files, which is a named decision with a real cost and is NOT being taken unilaterally here
 - `condition_coverage.py` -- IT MUTATES SOURCE, and that alone decides it. The tool flips operands in a real file, re-runs the suite, and restores -- its own output carries a RESTORED column. That is correct alone and wrong on a push path, where two runs can overlap: this platform has already lost a guard overnight because run A snapshotted a clean file, run B snapshotted A's mutation as its "original", and B's restore put the mutation back. Nothing that writes to a tracked file belongs on every push. Its findings are real -- 44 operands on the ledger engine, 12 surviving -- and belong to a session that has decided to spend time on them
@@ -304,6 +305,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **Item 32 gets R6: the rung R4 and R5 cannot reach &mdash; is the RESOURCE asked for, not just the route** | **BUILT 2026-09-14 (CC)** &mdash; inside the EXISTING `tools/sairn_reachability_check.py`, not a second checker. Held by `tests/reachability/resource_demand_probe.py` (18 arms, three mutation controls | `api/sd-data-dental-ledger-validation.test.js`, `tests/reachability/resource_demand_probe.py` |
 | **Item 92: functional core / imperative shell, applied to the TWO functions that decide money &mdash; and a red suite nobody had noticed** | **DONE 2026-09-14 (CC)** &mdash; `api/_lib/ledger.js` + `api/ledger.js`, `sbMatchPure` in `sairnbiz.html`. Held by `tests/functional_core_is_pure.js` (26 arms, four mutation controls). Every pre-exist | `tests/functional_core_is_pure.js`, `tests/sairnbiz_ledger_source_id.js` |
 | **Item 92, THIRD application: `sd_customers write_batch` &mdash; the other named target class, and a suite that was RED on `main` before this change** | **DONE 2026-09-27 (Hank)** &mdash; `api/_lib/customer-batch.js` (new, pure) + the `write_batch` branch of `api/sd-data.js` as a thin shell. Held by `api/_lib/customer-batch.test.js` (40 arms, two nega | `api/_lib/customer-batch.test.js`, `api/sd-data-customer-soft-delete.test.js`, `api/sd-data-customers-batch.test.js`, `tests/functional_core_is_pure.js` |
+| **A branch gated on a field name NOTHING SETS &mdash; THREE CONFIRMED and fixed, 40 triaged, and the tool committed the defect it was built to catch within the hour** | **SWEPT 2026-09-27 (Hank)** &mdash; `tools/ghost_field_read_scan.py` (report-only, NOT promoted, cost recorded) + `tests/run_ghost_field_read_probe.py` (both directions, 16 arms). Full triage: `docs/2 | `tests/run_ghost_field_read_probe.py`, `tests/sairnsenior_referral_hours.js` |
 | **`master_plan.py` gate 4 counts fault probes in PYTHON ONLY, so a JavaScript mutation probe reads as no probe at all** | **CLOSED 2026-09-16 (CC)** &mdash; VERIFIED, not assumed: `fault_probes()` now carries `FAULT_PROBE_JS` and an explicit `tests/faults/` rule, and `docs/MASTER-PLAN.md` prints `sairnbiz ... 2` with `te | `tests/sairnbiz_void_mutation_control.js` |
 | **The three checkers built today had NO DECLARED CONTROL, and two of them then proved only ONE DIRECTION** | **CLOSED 2026-09-14 (CC)** &mdash; `python tools/checker_control_check.py` now reports **NO DECLARED CONTROL 0, ONE DIRECTION 0, BOTH EVIDENCED 39** | `tests/run_literal_drift_control_probe.py` |
 | **Item 89 (look-elsewhere) found the multiplicity gap it was sent for &mdash; and underneath it, THE WATCH TIER HAD BEEN ARITHMETICALLY DISABLED FOR THE ENTIRE FLEET** | **FIXED + MEASURED 2026-09-14 (Cody)** &mdash; `tools/flaky_checker_quarantine.py`, 14 fixtures (3 added), the removal of the fix makes exactly the new ones fail; `tests/run_flaky_quarantine_probe.py` | `tests/run_flaky_quarantine_probe.py` |
@@ -657,15 +659,15 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 656 of 777 traced, 84.4%.
+For context and not as the headline: 658 of 779 traced, 84.5%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 657 citations come from
+### Where the 659 citations come from
 
 | source | citations |
 |---|---|
-| `index` | 317 |
+| `index` | 319 |
 | `declared` | 272 |
 | `declared+index` | 58 |
 | `GUARD_TESTS+index` | 6 |
@@ -826,11 +828,11 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 777   tests/**, api/** (both walked)
-  open-work rows citing a test       371   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 779   tests/**, api/** (both walked)
+  open-work rows citing a test       372   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 10   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
-  recorded NOT-promoted decisions     71   report_only_checks.NOT_PROMOTED
+  recorded NOT-promoted decisions     72   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   sairn_push_gate_hook.py
 ```
 

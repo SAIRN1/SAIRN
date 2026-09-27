@@ -2934,6 +2934,17 @@ async function deriveCharges(residentId){
       }).join('')+'</ul></div>';
   }
   var rv=res.reconciliation_vs_invoice;
+  // A RECONCILIATION THAT COULD NOT BE DONE SAYS SO. 2026-09-27: the server
+  // used to compare against an empty line list -- the stored invoice has no
+  // per-charge detail -- and returned "every line added, net change = the whole
+  // invoice". It now returns null with a reason, and hiding the block on null
+  // would replace a wrong figure with silence, which is the same person making
+  // the same decision with no more information than before.
+  if(res.invoice_exists&&!rv&&res.reconciliation_unavailable_reason){
+    html+='<div style="margin-top:10px"><b>Versus the invoice already on file</b>'+
+      '<div style="font-size:12px;color:var(--warn,#b45309)">Cannot be compared line by line.</div>'+
+      '<div style="font-size:12px;color:var(--muted)">'+H(res.reconciliation_unavailable_reason)+'</div></div>';
+  }
   if(res.invoice_exists&&rv){
     html+='<div style="margin-top:10px"><b>Versus the invoice already on file</b>'+
       '<div style="font-size:12px;color:var(--muted)">Added '+H(String(rv.added.length))+' &middot; Removed '+H(String(rv.removed.length))+

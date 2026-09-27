@@ -510,7 +510,37 @@ function hoursInWindow(records, window, onDate, trainingYearStart, hireDate) {
   } else if (window === 'calendar_year') {
     from = on.slice(0, 4) + '-01-01';
   } else if (window === 'facility_training_year') {
-    from = trainingYearStart || null;
+    // ── A MISSING START DATE MADE THIS WINDOW COUNT EVERYTHING. FIXED
+    //    2026-09-27, hours after it shipped ───────────────────────────────
+    // This read `from = trainingYearStart || null` and fell through. `from` is
+    // then null, the per-record filter below is `if (from && ...)`, so THE DATE
+    // FILTER WAS SKIPPED ENTIRELY and every training record in the table
+    // counted -- a certificate from 2019 satisfying a 2026 annual requirement.
+    // That is the OVER-counting direction: it reports somebody with a real
+    // shortfall as compliant, which is the one direction this module says
+    // elsewhere it will not take.
+    //
+    // AND NOTHING COULD SET IT. `trainingYearStart` is
+    // `opts.facility_training_year_start`, a name that is not written, keyed or
+    // quoted anywhere in this repo and that api/sd-data.js does not accept --
+    // while the endpoint DOES accept `annual_window: 'facility_training_year'`
+    // and validates it as a known window. So the reachable path was: caller
+    // asks for the facility training year, gets no window at all, and is told
+    // nothing. Found by tools/ghost_field_read_scan.py.
+    //
+    // IT FAILS CLOSED NOW, in exactly the shape NO_HIRE_DATE already had
+    // twenty lines up: a window that could not be computed is a
+    // could-not-tell, never zero hours and never all of them. The caller sees
+    // `hours_window_error` and the verdict is null rather than true.
+    // UNTIL SOME SURFACE SUPPLIES A FACILITY TRAINING YEAR, THIS WINDOW IS
+    // UNAVAILABLE BY DESIGN and says so out loud -- which is the honest state,
+    // and is a different thing from the silence it replaces.
+    const start = String(trainingYearStart || '');
+    if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(start)) {
+      out.window_error = 'NO_TRAINING_YEAR_START';
+      return out;
+    }
+    from = start;
   }
   out.window_from = from;
   (records || []).forEach(function (rec) {

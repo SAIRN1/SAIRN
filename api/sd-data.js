@@ -10337,9 +10337,47 @@ module.exports = async (req, res) => {
         res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read the existing invoice, so no reconciliation is shown.' } });
         return;
       }
-      const priorLines = (invRows[0] && invRows[0].data && invRows[0].data.charge_lines) || [];
-      derived.reconciliation_vs_invoice = careCharges.reconcileAgainstInvoice(derived, priorLines);
+      // ── AND `charge_lines` IS NOT A KEY ANY INVOICE HAS. FIXED 2026-09-27 ─
+      // THE ARGUMENT FOR THIS FIX IS THE COMMENT DIRECTLY ABOVE, one case over.
+      // That one closed the UNREADABLE invoice: "this fell back to [], so the
+      // reconciliation reported EVERY derived line as new ... Somebody
+      // regenerates on the strength of that." The read below then did exactly
+      // the same thing for an invoice that was read PERFECTLY WELL: the stored
+      // alf_billing blob carries month, room_board_amount, care_amount,
+      // private_total, hcbs_claim_amount, care_level_breakdown and
+      // revision_history -- and NO per-event `charge_lines` at all. Nothing in
+      // this repo ever writes that key.
+      //
+      // So `priorLines` was ALWAYS `[]`, and reconcileAgainstInvoice against []
+      // answers: every derived line ADDED, nothing removed, nothing changed,
+      // net_change = the ENTIRE amount -- while `invoice_exists: true` sat
+      // beside it, which is what made the figure look like a comparison. On the
+      // view this branch's own comment calls "the audit trail that replaces the
+      // manual reconciliation".
+      //
+      // IT IS A THIRD STATE, NOT A BETTER GUESS. There is no per-event detail on
+      // a stored invoice to reconcile against, so the honest answer is
+      // "cannot reconcile, and here is why" -- never a precise net change
+      // derived from an empty comparison. Found by
+      // tools/ghost_field_read_scan.py.
+      //
+      // NO PRIOR INVOICE IS LEFT ALONE, deliberately: with no invoice on file
+      // every derived line genuinely IS new, `invoice_exists: false` says so,
+      // and reconciling against [] is the right answer there.
+      const priorRow = (invRows[0] && invRows[0].data) || null;
       derived.invoice_exists = !!(Array.isArray(invRows) && invRows.length);
+      if (priorRow && !Array.isArray(priorRow.charge_lines)) {
+        derived.reconciliation_vs_invoice = null;
+        derived.reconciliation_unavailable = 'PRIOR_INVOICE_HAS_NO_CHARGE_LINES';
+        derived.reconciliation_unavailable_reason = 'The invoice already on file '
+          + 'records its totals but not the individual charges behind them, so '
+          + 'there is nothing to compare line by line. Comparing against nothing '
+          + 'would report every charge as newly added and the net change as the '
+          + 'whole invoice, which is a precise figure and a wrong one.';
+      } else {
+        derived.reconciliation_vs_invoice = careCharges.reconcileAgainstInvoice(
+          derived, (priorRow && priorRow.charge_lines) || []);
+      }
       res.status(200).json(derived);
       return;
     }

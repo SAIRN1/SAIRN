@@ -1856,6 +1856,24 @@ REGISTRY = [
 # than left unanswered by default". This is that record for the ones that are
 # NOT going in, so the next session does not re-derive it. Printed by --list.
 NOT_PROMOTED = [
+    ('ghost_field_read_scan.py', 'NOT PROMOTED ON COST, MEASURED RATHER THAN '
+     'GUESSED: ~90 seconds. It builds a spelled-field universe over 2,229 '
+     'tracked files -- comment-stripping every one, including three HTML apps '
+     'over 1MB -- before it can decide a single gate. Every other tool in this '
+     'registry is seconds; adding a minute and a half to every push is how a '
+     'gate gets disabled with SAIRN_SEED_GATE=off and then stays disabled, '
+     'which costs more than the tool is worth. ITS FINDINGS DO NOT CHANGE '
+     'QUICKLY, which is the other half of the decision: a ghost gate is created '
+     'by a typo in a condition and then sits there, so a sweep on demand plus '
+     'its control in the suite catches the same thing a per-push run would, '
+     'later. Run it when touching a gate, or when a dispatch asks for the '
+     'sweep: `python tools/ghost_field_read_scan.py`. Its subject and its three '
+     'confirmed findings are docs/2026-09-27-ghost-field-read-sweep.md; its '
+     'control pair is tests/run_ghost_field_read_probe.py. '
+     'AND ONE REASON IT IS NOT A GATE AT ALL, separate from cost: a field '
+     'written under a COMPUTED key is invisible to it, so a real field can read '
+     'as a ghost. That is a false-positive direction a human dismisses in one '
+     'read and a gate cannot.'),
     ('dispatch_state.py', 'MOVED OUT OF THIS REGISTRY TO SessionStart 2026-09-26, '
      'which is a PROMOTION to a better trigger and not a demotion -- recorded '
      'here because this list is where a decision about this registry lives, and '

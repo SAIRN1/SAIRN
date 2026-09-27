@@ -4171,6 +4171,29 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-27T12:34:26Z",
+      "opened_at_sha": "e7d5e05ae6a9644afc98e950cb10cef471adf451",
+      "resources": [
+        "alf_billing",
+        "sen_visits"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/sd-data.js",
+        "sairnsenior.html",
+        "tests/sairnsenior_referral_hours.js"
+      ],
+      "what": "queue14 item 3, the ghost-field-read sweep. TWO TIER A RESOURCES ARE TOUCHED AND BOTH CHANGES ARE ABOUT A NUMBER THAT WAS CONFIDENT AND WRONG.\n\nRECORDED TWICE, AND THE FIRST ATTEMPT IS WHY THIS SENTENCE EXISTS: I invoked `--open --what \"probe\"` while checking whether an obligation was owed at all, and the gate's argument parsing stored the literal string `--what` as the description. It RECORDED rather than refusing, so an obligation with no readable subject was already in the ledger. I rewrote this field in place -- my own record, status open, nobody assigned had read it -- rather than opening a second one, because two records for one change is the shape PR 2.1 exists for. FLAGGED AS A TOOL DEFECT, NOT FIXED HERE (cody-q15 holds tools/tier_a_review_gate.py): `--open` accepts a description that is itself a flag name, and \"an entry nobody can read is not a record\" is the gate's OWN refusal text one case over.\n\n(1) sen_visits -- sairnsenior.html `rfDeliveredHoursFor()` read `v.actual_start` and `v.actual_end`. A sen_visits row has NO such fields; the clock is `clock_in_at` / `clock_out_at`, which the authorisation burn-down (~:2540), the visit card (~:2964) and `visitHours()` (~:3925) all use. So it returned 0 for every client for as long as it existed, and the Referral Sources table rendered a confident `0.0 h` for every LINKED source while correctly rendering `--` for unlinked ones -- which is what made the zero read as a measurement rather than as missing data.\n\nATTACK THIS FIRST: I replaced the arithmetic with a CALL to `visitHours()`, which changes what this function trusts. Check that `visitHours()` really is reachable from ~:3385 -- both are inside the script block spanning ~1339-6052 and I checked that rather than assuming it, but a hoisting claim is exactly the thing this platform has recorded going wrong (sairnCallClaude declared in a separate IIFE, silent ReferenceError read as a network failure). If I am wrong, the referral panel throws instead of showing a wrong number, which is louder but is still a regression I introduced.\n\nSECOND: the positive guard. My FIRST version of this fix added `visitHours(v)` straight into the sum, and arm B6 caught on its first run that `visitHours()` has no non-negative guard -- so a row with `clock_out_at` before `clock_in_at` returns a negative and would have SILENTLY CANCELLED a real visit's hours out of the source total. The old code's `ms>0` was doing real work and I nearly dropped it. Please check I have not lost any other property of the old guard.\n\nTHIRD, AND IT IS A REAL DISAGREEMENT I DID NOT FIX: `visitHours()` itself has no non-negative guard and `generateClaim()` bills `hoursBilled = visitHours(v)` directly off it, while the burn-down at ~:2540 DOES guard. Three consumers, two behaviours. api/_lib/sen-evv-clock.js refuses CLOCK_OUT_BEFORE_IN so the server cannot store one THROUGH THAT PATH; rows predating the module are not covered. I judged that changing visitHours() touches claim generation and is its own change. Say if you disagree -- it is a money path.\n\n(2) alf_billing -- api/sd-data.js `derive_charges` reconciled newly derived charges against `invRows[0].data.charge_lines`. NOTHING on this platform writes that key: sairncare.html stores month, room_board_amount, care_amount, private_total, hcbs_claim_amount, care_level_breakdown and revision_history, and no per-event lines. So `priorLines` was ALWAYS [] and `reconcileAgainstInvoice` answered every derived line ADDED, nothing removed, nothing changed, net_change = the ENTIRE amount -- with `invoice_exists: true` beside it, on the view this branch's own comment calls \"the audit trail that replaces the manual reconciliation\".\n\nWHAT TO CHECK HARDEST HERE: I chose a THIRD STATE (reconciliation_vs_invoice null plus PRIOR_INVOICE_HAS_NO_CHARGE_LINES and a sentence) over two alternatives I rejected -- reconciling against care_level_breakdown (a different granularity, so a comparison would be a new invented mapping) and leaving the null to hide the block (the renderer guards on `invoice_exists && rv`, so that replaces a wrong figure with SILENCE and the same person makes the same decision with no more information). I therefore ALSO changed sairncare.html to render the reason. Decide whether the third state is right, and whether changing an app's renderer inside a sweep fix was the correct call or scope I should have split.\n\nAND THE HONEST RESIDUAL: this makes the impossible comparison honest, it does NOT make the comparison possible. The real fix is for the invoice write path to store per-charge lines, which is not done here. `tools/ghost_field_read_scan.py` still reports `priorRow.charge_lines` as a gate that cannot be true, and its control asserts that it STILL DOES -- an arm demanding silence there could only be satisfied by hiding a true finding.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-27T12:34:26Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
