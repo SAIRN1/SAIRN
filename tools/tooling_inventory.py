@@ -1038,6 +1038,34 @@ PURPOSES = {
     'stonedesk_storefront_live_check.py': ('LIVE', 'whether sql/stonedesk_public_surface_schema.sql was really run, by probing the three public endpoints -- the instruction "confirm by re-probing, not by the editor reporting success", mechanised'),
     'sairn_ai_fact_scan.py': ('CHECKER', 'a number an AI panel states that no function computes'),
     'sairn_app_map_check.py': ('LIVE', "an app absent from Guardian's own app map, and a route that 404s"),
+    'assertion_label_shape_check.py': ('CHECKER',
+        'AN ASSERTION WHOSE LABEL CLAIMS MORE THAN ITS COMPARISON CAN SEE -- a '
+        'coverage claim backed by a floor. The named instance: an arm labelled '
+        '"every section of the matrix yields requirements" compared with `>=` '
+        'on the section count, so a section the extractor silently skipped '
+        'stayed green. The discriminator is NOT "is there a floor": most floors '
+        'here are correct, and of 57 floor-compared assertions swept by hand '
+        'only two were wrong. It is the DISAGREEMENT -- an exhaustive word in '
+        'the label (every/each/all/none/exactly/only), no self-declared '
+        'one-sidedness (at least / not empty / minimum), a one-sided '
+        'comparison, and no exact comparison anywhere in it. An honest ratchet '
+        'SAYS it is a floor, which is what makes this decidable rather than a '
+        'judgement. TWO TIERS, never summed: CONFIRMED when the exhaustive word '
+        'makes the claim, ADVISORY when it is negated, adverbial, or sitting in '
+        'the rationale after a clause marker -- 12 and 11 on the first corpus, '
+        'of which 9 CONFIRMED hold on reading the source, and the three it does '
+        'not earn are NAMED IN ITS HEADER so the 9/12 is auditable. Criteria '
+        'locked against 34 hand-built fixtures that run FIRST and gate the '
+        'ordinary run, not only --fixtures: a broken criterion exits 2 "nothing '
+        'real was judged" rather than reporting a clean sweep. Four '
+        'false-positive shapes closed by reading its own first real run, each '
+        'with a fixture in both directions -- set-subset (`set(a) <= set(b)` IS '
+        'the universal), `all(...)`, `min()/max()` (`min(xs) >= k` IS `all(x >= '
+        'k)`), and reading the DETAIL argument as the condition, which reported '
+        'the shape of a failure MESSAGE as the shape of the check. PYTHON ONLY '
+        'and it says so on every run: the JS suites are not covered and a clean '
+        'Python verdict is not a platform verdict. REPORT ONLY by decision -- at '
+        '9/12 a false positive must cost a reader ten seconds, not a push'),
     'unreachable_failure_path_scan.py': ('CHECKER',
         'a FAILURE PATH THE CALLER TESTS FOR AND THE CALLEE CANNOT PRODUCE -- a '
         'warning that is present in the source, reviewed, and unreachable. '
