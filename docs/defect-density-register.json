@@ -14914,6 +14914,60 @@
       "recurrence_open": "FIVE BLOCKERS REMAIN AND THE JOIN IS STILL NOT BUILDABLE, enumerated in docs/2026-09-26-sairncare-compliance-join-scoping.md: the requirement audience is prose while the roster carries a role code; recorded hours carry a category that requirements do not; stacking comes in at least three kinds including prose conditional on a staff member's tenure; an initial-hours-with-deadline requirement is a gate on whether somebody may work at all and needs a hire date the engine never receives; and the annual window is undefined. ONE OF SIX SEEDED STATES CAN CURRENTLY BE ANSWERED AT ALL, which is a disclosed gap rather than coverage -- a WV facility now gets no per-staff answer, which is worse for the user than a correct one and better than a false pass. Separately, opts.staff is CALLER-SUPPLIED, so whenever the wiring is built the aggregation must happen server-side against alf_staff_credentials: a client sending its own annual_hours_recorded while the authoritative append-only record sits unread on the server is the same shape as the attribution defect recorded against f0c0cb7a."
     },
     {
+      "commit": "1f4d199092b3",
+      "date": "2026-09-26",
+      "subject": "fix(sairnvet): the cattle flunixin route was IV/IM and the label is IV ONLY -- a food-residue finding, not a dosing one",
+      "files": [
+        "sairnvet.html",
+        "tests/sairnvet_formulary_source_honesty.js"
+      ],
+      "lines_added": 90,
+      "lines_removed": 4,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "sairnvet.html's VET_DRUGS flunixin meglumine CATTLE row carried route \"IV/IM\" where the FDA label (Banamine, NADA 101-479, 50 mg/mL) says the product is for intravenous use only and the dose is \"given by SLOW INTRAVENOUS administration\". Extra-label IM or SC flunixin in cattle is a known cause of violative tissue residues, and the 4-day slaughter withdrawal is established for the intravenous route -- it does not hold for another. The row also stored 1.1mg/kg as the whole dose where the label range is 1.1-2.2mg/kg across two distinct indications (once daily or divided q12h for up to 3 days for pyrexia/BRD/endotoxemia; 2.2mg/kg IV once for acute mastitis), and its withdrawalMeat and withdrawalMilk were null with withdrawalStatus verify_required although the label states 4 days meat and 36 hours milk verbatim. The HORSE row read \"1.1mg/kg SID-BID\" where the label is once daily for up to 5 days; twice-daily dosing is extra-label and flunixin's characteristic toxicities, right dorsal colitis and renal papillary necrosis, are accumulated-dose effects, so a doubled frequency is the specific thing not to get wrong. All 70 food-animal rows shared the same two-state withdrawal display -- verify_required with no figures -- which was honest while none had a sourced time and becomes the wrong answer for any row that acquires one.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The VET_DRUGS table arrived already populated and git log on sairnvet.html isolates no commit that introduced the IV/IM route on the cattle row or the SID-BID frequency on the horse row. Neither was made wrong by a commit; both were wrong as written, and what was missing was the label read. A plausible sha would put a fabricated discovery lag into the one number this field feeds."
+      },
+      "citation_note": "not-citable, and for the same reason as the two SAIRNvet records before it: no section of docs/SAIRN-PROCESS-RULES.md covers a data row whose ROUTE is wrong while everything beside it is right. The nearest named shape is item 7 of docs/2026-09-13-cross-domain-disciplines.md, the Ariane 5 item -- a correct figure in a context that invalidates it, which is exactly what a 4-day withdrawal beside an unlabelled route is: the number is right for the route the label specifies and wrong for the one the row allowed. That document is not the vocabulary --rule validates against, so a section number from it would resolve to nothing.",
+      "contributing_factors": [
+        {
+          "factor": "The route field was free text with no relationship to anything that depends on it. A withdrawal time is only valid for the route it was established on, and nothing in the row, the schema or the rendering tied the two together -- so a wrong route sat beside a correct-looking withdrawal and the pair read as confirmation.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The cattle route now reads SLOW IV ONLY (label) with the extra-label IM warning, the flag states the violative-residue consequence, and an arm requires the WHY rather than just the route -- IV only on its own reads as a preference."
+        },
+        {
+          "factor": "Two withdrawal states could not express a sourced time. verify_required was honest across all 70 food-animal rows while none had a citation, and became actively wrong for the first row that did: it tells a reader to go and look up a figure the app is holding with a reference.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A third state, label_sourced, renders the actual meat and milk times with the label reference on hover. Safe to add because the withdrawal badge in searchDrugs was CHECKED to be the only reader of withdrawalStatus in the file. An arm refuses a label_sourced row with no reference."
+        },
+        {
+          "factor": "The horse dose said SID-BID where the label is once daily capped at 5 days. Flunixin's characteristic toxicities are accumulated-dose effects, so frequency is the specific parameter whose error compounds -- a doubled frequency is worse than a proportionally larger single dose.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The dose states ONCE DAILY with the 5-day cap and names the previous SID-BID as extra-label, with the toxicity reason in the flag."
+        },
+        {
+          "factor": "Nothing in this repository validates a route against a species or against a withdrawal time. The defect was found by a human reading one FDA label; a second instance in the other 484 rows would produce no signal at all.",
+          "kind": "detection",
+          "action_status": "declined",
+          "note": "A route/withdrawal consistency checker needs a SOURCED route to check against and 478 rows have none, so it would report almost nothing today and would read as a clean bill. Named in the recurrence note instead of built, so the decision is recorded rather than the gap being implied."
+        }
+      ],
+      "recurrence_open": "69 of the 70 food-animal rows still carry withdrawalStatus verify_required with null meat and milk times. One is sourced. The third state exists now, so the remaining 69 are visibly unsourced rather than indistinguishable from sourced ones -- but that is a disclosure, not a fix, and a withdrawal time is the figure on this platform with the most direct route into the human food supply.\nROUTE IS NOT VALIDATED ANYWHERE. Nothing checks a row's route against its species, or against a withdrawal time whose validity depends on that route. This defect was found by reading one label; the other 484 rows have routes nobody has checked and there is no arm that could notice a second instance. A route/withdrawal consistency check is the obvious tool and was NOT built here -- it needs a sourced route to check against, and 478 rows have none, so it would report almost nothing today.\nAND THE DOSE STRING IS PROSE. \"1.1-2.2mg/kg slow IV, SID or divided q12h, up to 3 days (pyrexia/BRD/endotoxemia); 2.2mg/kg IV ONCE (acute mastitis)\" carries two regimens for two indications in one free-text field, and doseMin/doseMax hold 1.1 and 2.2 with no indication attached. The calculator multiplies the range by weight and cannot know which indication the clinician means -- so a mastitis case gets a range whose lower bound is the wrong regimen. Structuring per-indication dosing is a table-shape change and is not this fix.",
+      "single_factor_note": "n/a -- four factors"
+    },
+    {
       "commit": "1f9936429432",
       "date": "2026-09-26",
       "subject": "fix(bridge): the one endpoint of forty-one that never asked whether the licence was still active -- on the write path that carries expense invoices",
@@ -15023,75 +15077,57 @@
       "single_factor_note": "n/a -- four factors"
     },
     {
-      "commit": "ec93b60c7002",
+      "commit": "2d9f81ba34cb",
       "date": "2026-09-26",
-      "subject": "fix(sairncash): the quarterly set-aside recommended as little as 4.3% of the IRS floor -- and five more, all verified against the 2026 Form 1040-ES",
+      "subject": "fix(sairnbiz): the plan cards stop asserting Ohio to every customer, and the overtime threshold is read",
       "files": [
-        "sairncash.html",
-        "tests/sairncash_safe_harbor.js"
+        "sairnbiz.html",
+        "tests/sairnbiz_benefits_and_overtime.js"
       ],
-      "lines_added": 1006,
-      "lines_removed": 37,
-      "app": "sairncash",
+      "lines_added": 440,
+      "lines_removed": 7,
+      "app": "sairnbiz",
       "layer": "product",
-      "severity": "critical",
+      "severity": "high",
       "detection_method": "code-review",
-      "summary": "sairncash.html's calcQuarterlySetAside computed the current-year leg of the IRS safe harbor as calcTotalTax(ytdNetProfit), the tax on the profit earned SO FAR, and displayed it under the label \"Estimated annual tax (SE + federal income)\". Math.min(ninetyPct, priorYearBasis) is the statute -- 2026 Form 1040-ES line 12c, \"Enter the smaller of line 12a or 12b\" -- so the min was correct and the term being minimised was not: early in the year the YTD figure is near zero, min therefore selects it, and the recommended quarterly set-aside collapses. MEASURED on the unfixed code: $1,167.17/quarter against an IRS floor of $5,000 for a $120k-pace freelancer on 31 March (23.3%), $397.39 against $9,141.98 in January with no prior-year figure entered (4.3%), $2,140.79 against $3,500 on 30 June (61.2%); and the screen printed \"Estimated annual tax $5,187.42\" where the projected annual tax was $30,640.76. The exposure is the IRC 6654 estimated-tax underpayment penalty, which has NO reasonable-cause waiver -- 6654(e) provides only the de minimis, first-taxable-year and casualty/disaster exceptions. Five further defects in the same engine, all verified against the same 1040-ES: the 110% prior-year trigger was one boolean named prior_year_agi_over_150k for all four filing statuses although MFS triggers at $75,000; sumIncome/sumDeductions summed every cached entry so the figure labelled YTD was all-time; the section 199A QBI deduction was absent although worksheet line 2b takes it off taxable income before the tax is figured, overstating every set-aside; and head-of-household's 24% band top was $201,775, which is SINGLE's Schedule X figure -- Schedule Z says $201,750.",
+      "summary": "The Benefits panel's \"Workers Comp\" row read \"Active . BWC Ohio\" as fixed text in markup, shown identically to every SAIRNbiz licence. Two assertions the app cannot make: BWC is the OHIO Bureau of Workers' Compensation, one of four monopolistic state funds, so an employer in any other state was shown the wrong regulator by name -- and in Texas, where coverage is not compulsory at all, a regulator that does not apply; and \"Active\" asserts that workers' compensation coverage IS IN FORCE, a statutory obligation carrying real penalties for a lapse, while the app holds no policy number, no carrier and no effective date. Removed, and the row kept with an explicit not-tracked value naming that coverage and its regulator are state-specific, rather than deleted -- a card that quietly gets shorter hides the absence instead of showing it. Two further values in the same block were removed in the same pass for a different reason: \"Employee Contrib. Avg 5.2%\" and \"Plan Assets (est.) $284,000\" LOOKED COMPUTED, an average implying a summed population and \"(est.)\" implying a method, where nothing in the app records a deferral rate or a plan balance and no field exists to enter one.",
       "rules": [
-        "2.3"
+        "1.2"
       ],
       "citation_confidence": "arguable",
       "injection_phase": "coding",
-      "phase_confidence": "stated",
+      "phase_confidence": "inferred",
       "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "commit": "a0b9a2115ebc",
-        "date": "2026-08-10",
-        "subject": "feat: SAIRNcash -- deterministic tax/retirement math engine",
-        "lag_days": 47
+        "commit": "901ccc2dcaec",
+        "date": "2026-06-29",
+        "subject": "feat: Add SAIRNbiz - HR + Accounting backbone [Session 54]",
+        "lag_days": 89
       },
-      "citation_note": "ARGUABLE, and it covers one of the six and not the primary one. PR 2.3 -- a fact with a tense needs a read, and a number needs a single source -- is exactly the head-of-household bracket half: the comment above the table claimed four statuses were verified against a source containing two, and $201,775 was single's figure standing in for HoH's $201,750. What PR 2.3 does NOT name, and what no section of that document names, is the shape of the main defect: a CORRECT formula fed the WRONG QUANTITY, with the label on the screen describing the quantity it should have been given. A reviewer checking the safe-harbor rule against the statute confirms Math.min(90% of this year, 100% of last year) and is right to; the defect sits one level below the thing that gets checked. The closest named relative is item 8 of docs/2026-09-13-cross-domain-disciplines.md -- nothing announces the day a check stops testing anything -- applied to a LABEL rather than a check, and that document is not the vocabulary --rule validates against.",
+      "citation_note": "The nearest standing rule, applied in the other direction: 1.2 says grep cannot tell code from text that describes code. Here a HUMAN cannot tell an example value from an assertion about a regulated status, because in markup both are a .sval span.",
+      "phase_note": "The cards shipped with the app as a static offering summary and nothing suggests a requirement asked for a workers-comp status, so the wrong constant entered when the markup was written rather than being specified.",
       "contributing_factors": [
         {
-          "factor": "The formula was right and one of its two inputs was the wrong quantity. A reviewer checking the safe-harbor RULE against the statute finds Math.min(90% of this year, 100% of last year) and confirms it -- which is what the code's own comment did, correctly, for the rule and never for the term. The defect is one level below the thing that was checked.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "projectAnnualFromYtd() annualises YTD by the elapsed fraction of the year and the result is passed to calcTotalTax; the projection and the elapsed percentage are both returned and shown on screen beside the figure, so the basis is visible rather than implied."
-        },
-        {
-          "factor": "A field was labelled \"Estimated annual tax\" and held a year-to-date value. The label was the only thing asserting what the number was, and nothing compared the two. This is the fabricated-figure shape the platform has recorded repeatedly -- a screen stating something the computation does not support -- appearing as a UNIT error rather than as an invented number.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "An arm asserts estAnnual equals the tax on the projection the function itself reports, and the rendering appends the projected profit and elapsed fraction to the displayed figure."
-        },
-        {
-          "factor": "With no income logged the projection is undefined, and the naive result is zero -- which then WINS the min every time and recommends setting aside nothing. The most flattering possible answer arrives by arithmetic accident at exactly the moment a new user first opens the app.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The 90% leg is UNAVAILABLE rather than zero when there is no income to project from; quarterlyAmount is null rather than 0 and the screen prints a dash with \"Nothing to compute yet\" instead of $0.00."
-        },
-        {
-          "factor": "One boolean carried a threshold that is filing-status dependent. prior_year_agi_over_150k cannot express the MFS $75,000 case, and the bug is silent in the direction that costs money: an MFS user with $90,000 of prior-year AGI answers the stored question NO truthfully and receives the 100% basis when they owe 110%.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The stored field is now the AGI amount and SAFE_HARBOR_110_AGI_THRESHOLD is keyed by filing status. The legacy boolean is kept and read, but for MFS it sets agiBasisUncertain rather than deciding -- both the screen and the AI attention digest then say the 110% rule may apply and this figure assumes it does not."
-        },
-        {
-          "factor": "The comment above the bracket tables claimed all four were confirmed against a source that contains only two. The IRS inflation-adjustment release gives every figure as \"$X (for married couples filing jointly)\" -- single and MFJ. HoH and MFS were inference presented as verification, and the HoH 24% top was wrong by $25 because it had been copied from single.",
+          "factor": "the four plan cards were written as a static offering summary at the same time as the app, and a plausible example value and an assertion about a regulated status are indistinguishable in markup -- nothing in the shape of a .sval span says which of the two a value is",
           "kind": "process",
           "action_status": "done",
-          "action": "Every boundary re-derived from the 24 cumulative tax figures printed on the 2026 Form 1040-ES Schedules X, Y-1, Y-2 and Z, all of them pinned by arms across all four statuses, and the comment rewritten to say what was actually read. A band top can be right while its rate is wrong, which is why the cumulative figures rather than the tops are what the arms compare."
+          "action": "the compliance assertion and the two look-computed figures are removed and the rows kept with an explicit not-tracked value; a block-level disclosure now says the remaining card values are an EXAMPLE offering shown identically to every licence and that nothing computes from them"
         },
         {
-          "factor": "No test existed for any of the tax maths. The four SAIRNcash suites cover entitlement and Stripe, and the engine that decides how much money a user sets aside against a non-waivable penalty had no arms at all.",
+          "factor": "no check reads rendered markup for a jurisdiction or a compliance status, so a value that is wrong for every customer outside one state is invisible to node --check, to every suite, and to the fabricated-KPI scanner, which looks for numbers with no computation behind them rather than for claims with no knowledge behind them",
           "kind": "detection",
-          "action_status": "done",
-          "action": "tests/sairncash_safe_harbor.js, 31 arms, every figure quoted from the 1040-ES read directly. Ablated five ways; the fifth found a dead arm before it shipped."
+          "action_status": "planned",
+          "action": "a checker over rendered markup for state-fund names, a state abbreviation beside a compliance label, and status words (Active/Compliant/Current) on a row nothing computes -- named in recurrence_open and NOT built here"
+        },
+        {
+          "factor": "the fabricated-KPI discipline was applied to this app twice before -- the safety-incidents tile and the timesheet hours -- and both times the fix was scoped to the numbers that were WRONG rather than sweeping the panel that contained them, so a neighbouring block of static values was never re-read",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "deliberately not turned into a rule. A sweep triggered by one fix touching every neighbouring panel is how an unrelated regression enters a compliance change; the narrow fix was right both previous times. What is recorded instead is the detection gap above, which catches the class without widening any single fix"
         }
       ],
-      "recurrence_open": "THE ANNUALISED INCOME INSTALLMENT METHOD IS NOT IMPLEMENTED (Form 2210 Schedule AI), and a straight-line projection is wrong for a seasonal earner in both directions -- a landscaper who earns nothing in January is now told to set aside on a projection of nothing, and one who earns everything in Q1 is told to set aside on a projection of four times their year. The default is right and the seasonal case is not covered; it is disclosed on screen as a projection with its elapsed fraction rather than presented as a figure.\nTHE 199A THRESHOLD IS STILL UNVERIFIED. QBI_CERTAIN_CEILING is a conservative floor and says so in its own comment; it is NOT the IRS figure and the app therefore cannot tell a user the moment they cross the real line. The 1040-ES and Pub 505 give only the phase-in range. Until somebody reads Rev. Proc. 2025-32's section 199A table, every high-income QBI figure this app produces is marked uncertain and that is the best available answer, not a good one.\nNO STATE TAX ANYWHERE, which is a prior scoping decision and not this fix, but it means the total a user sets aside is short by their state liability in 41 states.\nTHE YEAR SPLIT USES THE ENTRY DATE, WHICH IS WHEN THE USER TYPED IT, not when the money moved. A December invoice logged in January books to the wrong year and nothing detects it, because the app has no separate payment-date field to compare against.\nAND NOTHING CHECKS THE CONSTANTS AGAINST THE IRS ON A CADENCE. TAX_YEAR_2026 is hand-maintained; the brackets, the SS wage base, the standard deductions, the SEP cap and the deferral limit all change annually and the file will be silently a year stale on 1 January 2027 exactly as the entry totals were silently all-time. That is the same class as the SAIRNbiz 1099 threshold that stood at $600 from 1954 until this month.",
-      "single_factor_note": "n/a -- six factors"
+      "recurrence_open": "The remaining plan-card values -- provider names, premiums, renewal dates, PTO accrual -- are still fixed text and are now covered by a block-level disclosure saying they are an EXAMPLE offering shown to every licence and that nothing computes from them. That is a disclosure, not a fix, and it is the right trade for values that read as sample data. What is NOT protected is the next one of this class: nothing mechanically detects a static markup value that asserts a jurisdiction, a regulator or a compliance status. A checker over rendered markup for state-fund names, state abbreviations beside a compliance label, and status words like Active/Compliant/Current on a row nothing computes would have caught this on the day the app shipped. Named and NOT built here. Note also that the fix deliberately did not add a configurable workers-comp field: that would put a self-reported compliance status on a screen that looks authoritative, which is a larger decision than removing a wrong constant."
     },
     {
       "commit": "7bc26782e533",
@@ -15270,59 +15306,6 @@
         }
       ],
       "recurrence_open": "11 SPREAD sites are converted and the ratchet pins the rest, so the number cannot silently rise. 64 RAW sites (data: payload straight into the store) are NOT converted -- a sweep across ~20 sairngrounds branches plus stonedesk and mech, each needing its own read consulted for the column list, and it is named rather than started here. The ratchet makes a future 'complete' claim checkable; it does not make it true."
-    },
-    {
-      "commit": "2d9f81ba34cb",
-      "date": "2026-09-26",
-      "subject": "fix(sairnbiz): the plan cards stop asserting Ohio to every customer, and the overtime threshold is read",
-      "files": [
-        "sairnbiz.html",
-        "tests/sairnbiz_benefits_and_overtime.js"
-      ],
-      "lines_added": 440,
-      "lines_removed": 7,
-      "app": "sairnbiz",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "The Benefits panel's \"Workers Comp\" row read \"Active . BWC Ohio\" as fixed text in markup, shown identically to every SAIRNbiz licence. Two assertions the app cannot make: BWC is the OHIO Bureau of Workers' Compensation, one of four monopolistic state funds, so an employer in any other state was shown the wrong regulator by name -- and in Texas, where coverage is not compulsory at all, a regulator that does not apply; and \"Active\" asserts that workers' compensation coverage IS IN FORCE, a statutory obligation carrying real penalties for a lapse, while the app holds no policy number, no carrier and no effective date. Removed, and the row kept with an explicit not-tracked value naming that coverage and its regulator are state-specific, rather than deleted -- a card that quietly gets shorter hides the absence instead of showing it. Two further values in the same block were removed in the same pass for a different reason: \"Employee Contrib. Avg 5.2%\" and \"Plan Assets (est.) $284,000\" LOOKED COMPUTED, an average implying a summed population and \"(est.)\" implying a method, where nothing in the app records a deferral rate or a plan balance and no field exists to enter one.",
-      "rules": [
-        "1.2"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "901ccc2dcaec",
-        "date": "2026-06-29",
-        "subject": "feat: Add SAIRNbiz - HR + Accounting backbone [Session 54]",
-        "lag_days": 89
-      },
-      "citation_note": "The nearest standing rule, applied in the other direction: 1.2 says grep cannot tell code from text that describes code. Here a HUMAN cannot tell an example value from an assertion about a regulated status, because in markup both are a .sval span.",
-      "phase_note": "The cards shipped with the app as a static offering summary and nothing suggests a requirement asked for a workers-comp status, so the wrong constant entered when the markup was written rather than being specified.",
-      "contributing_factors": [
-        {
-          "factor": "the four plan cards were written as a static offering summary at the same time as the app, and a plausible example value and an assertion about a regulated status are indistinguishable in markup -- nothing in the shape of a .sval span says which of the two a value is",
-          "kind": "process",
-          "action_status": "done",
-          "action": "the compliance assertion and the two look-computed figures are removed and the rows kept with an explicit not-tracked value; a block-level disclosure now says the remaining card values are an EXAMPLE offering shown identically to every licence and that nothing computes from them"
-        },
-        {
-          "factor": "no check reads rendered markup for a jurisdiction or a compliance status, so a value that is wrong for every customer outside one state is invisible to node --check, to every suite, and to the fabricated-KPI scanner, which looks for numbers with no computation behind them rather than for claims with no knowledge behind them",
-          "kind": "detection",
-          "action_status": "planned",
-          "action": "a checker over rendered markup for state-fund names, a state abbreviation beside a compliance label, and status words (Active/Compliant/Current) on a row nothing computes -- named in recurrence_open and NOT built here"
-        },
-        {
-          "factor": "the fabricated-KPI discipline was applied to this app twice before -- the safety-incidents tile and the timesheet hours -- and both times the fix was scoped to the numbers that were WRONG rather than sweeping the panel that contained them, so a neighbouring block of static values was never re-read",
-          "kind": "latent-condition",
-          "action_status": "declined",
-          "note": "deliberately not turned into a rule. A sweep triggered by one fix touching every neighbouring panel is how an unrelated regression enters a compliance change; the narrow fix was right both previous times. What is recorded instead is the detection gap above, which catches the class without widening any single fix"
-        }
-      ],
-      "recurrence_open": "The remaining plan-card values -- provider names, premiums, renewal dates, PTO accrual -- are still fixed text and are now covered by a block-level disclosure saying they are an EXAMPLE offering shown to every licence and that nothing computes from them. That is a disclosure, not a fix, and it is the right trade for values that read as sample data. What is NOT protected is the next one of this class: nothing mechanically detects a static markup value that asserts a jurisdiction, a regulator or a compliance status. A checker over rendered markup for state-fund names, state abbreviations beside a compliance label, and status words like Active/Compliant/Current on a row nothing computes would have caught this on the day the app shipped. Named and NOT built here. Note also that the fix deliberately did not add a configurable workers-comp field: that would put a self-reported compliance status on a screen that looks authoritative, which is a larger decision than removing a wrong constant."
     },
     {
       "commit": "9d6358d19160",
@@ -15940,6 +15923,77 @@
         }
       ],
       "recurrence_open": "THE ENUMERATION OF WAYS CONTENT CAN REACH ORIGIN IS STILL HAND-MAINTAINED AND NOTHING CHECKS IT. Two paths are known and both are now gated; nothing asserts there is no third. A future tool that talks to the GitHub API, a GitHub Action with write permission, or a web-UI edit would each be ungated and nothing would report it. Separately, .githooks/pre-push is installed PER CLONE by tools/install_git_hooks.py and .git/ is not versioned, so a fresh clone has no hook at all -- gh_push.py now refuses in that state, but an ordinary git push does not, and that gap is older and wider than this fix."
+    },
+    {
+      "commit": "ec93b60c7002",
+      "date": "2026-09-26",
+      "subject": "fix(sairncash): the quarterly set-aside recommended as little as 4.3% of the IRS floor -- and five more, all verified against the 2026 Form 1040-ES",
+      "files": [
+        "sairncash.html",
+        "tests/sairncash_safe_harbor.js"
+      ],
+      "lines_added": 1006,
+      "lines_removed": 37,
+      "app": "sairncash",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "code-review",
+      "summary": "sairncash.html's calcQuarterlySetAside computed the current-year leg of the IRS safe harbor as calcTotalTax(ytdNetProfit), the tax on the profit earned SO FAR, and displayed it under the label \"Estimated annual tax (SE + federal income)\". Math.min(ninetyPct, priorYearBasis) is the statute -- 2026 Form 1040-ES line 12c, \"Enter the smaller of line 12a or 12b\" -- so the min was correct and the term being minimised was not: early in the year the YTD figure is near zero, min therefore selects it, and the recommended quarterly set-aside collapses. MEASURED on the unfixed code: $1,167.17/quarter against an IRS floor of $5,000 for a $120k-pace freelancer on 31 March (23.3%), $397.39 against $9,141.98 in January with no prior-year figure entered (4.3%), $2,140.79 against $3,500 on 30 June (61.2%); and the screen printed \"Estimated annual tax $5,187.42\" where the projected annual tax was $30,640.76. The exposure is the IRC 6654 estimated-tax underpayment penalty, which has NO reasonable-cause waiver -- 6654(e) provides only the de minimis, first-taxable-year and casualty/disaster exceptions. Five further defects in the same engine, all verified against the same 1040-ES: the 110% prior-year trigger was one boolean named prior_year_agi_over_150k for all four filing statuses although MFS triggers at $75,000; sumIncome/sumDeductions summed every cached entry so the figure labelled YTD was all-time; the section 199A QBI deduction was absent although worksheet line 2b takes it off taxable income before the tax is figured, overstating every set-aside; and head-of-household's 24% band top was $201,775, which is SINGLE's Schedule X figure -- Schedule Z says $201,750.",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "a0b9a2115ebc",
+        "date": "2026-08-10",
+        "subject": "feat: SAIRNcash -- deterministic tax/retirement math engine",
+        "lag_days": 47
+      },
+      "citation_note": "ARGUABLE, and it covers one of the six and not the primary one. PR 2.3 -- a fact with a tense needs a read, and a number needs a single source -- is exactly the head-of-household bracket half: the comment above the table claimed four statuses were verified against a source containing two, and $201,775 was single's figure standing in for HoH's $201,750. What PR 2.3 does NOT name, and what no section of that document names, is the shape of the main defect: a CORRECT formula fed the WRONG QUANTITY, with the label on the screen describing the quantity it should have been given. A reviewer checking the safe-harbor rule against the statute confirms Math.min(90% of this year, 100% of last year) and is right to; the defect sits one level below the thing that gets checked. The closest named relative is item 8 of docs/2026-09-13-cross-domain-disciplines.md -- nothing announces the day a check stops testing anything -- applied to a LABEL rather than a check, and that document is not the vocabulary --rule validates against.",
+      "contributing_factors": [
+        {
+          "factor": "The formula was right and one of its two inputs was the wrong quantity. A reviewer checking the safe-harbor RULE against the statute finds Math.min(90% of this year, 100% of last year) and confirms it -- which is what the code's own comment did, correctly, for the rule and never for the term. The defect is one level below the thing that was checked.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "projectAnnualFromYtd() annualises YTD by the elapsed fraction of the year and the result is passed to calcTotalTax; the projection and the elapsed percentage are both returned and shown on screen beside the figure, so the basis is visible rather than implied."
+        },
+        {
+          "factor": "A field was labelled \"Estimated annual tax\" and held a year-to-date value. The label was the only thing asserting what the number was, and nothing compared the two. This is the fabricated-figure shape the platform has recorded repeatedly -- a screen stating something the computation does not support -- appearing as a UNIT error rather than as an invented number.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "An arm asserts estAnnual equals the tax on the projection the function itself reports, and the rendering appends the projected profit and elapsed fraction to the displayed figure."
+        },
+        {
+          "factor": "With no income logged the projection is undefined, and the naive result is zero -- which then WINS the min every time and recommends setting aside nothing. The most flattering possible answer arrives by arithmetic accident at exactly the moment a new user first opens the app.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The 90% leg is UNAVAILABLE rather than zero when there is no income to project from; quarterlyAmount is null rather than 0 and the screen prints a dash with \"Nothing to compute yet\" instead of $0.00."
+        },
+        {
+          "factor": "One boolean carried a threshold that is filing-status dependent. prior_year_agi_over_150k cannot express the MFS $75,000 case, and the bug is silent in the direction that costs money: an MFS user with $90,000 of prior-year AGI answers the stored question NO truthfully and receives the 100% basis when they owe 110%.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The stored field is now the AGI amount and SAFE_HARBOR_110_AGI_THRESHOLD is keyed by filing status. The legacy boolean is kept and read, but for MFS it sets agiBasisUncertain rather than deciding -- both the screen and the AI attention digest then say the 110% rule may apply and this figure assumes it does not."
+        },
+        {
+          "factor": "The comment above the bracket tables claimed all four were confirmed against a source that contains only two. The IRS inflation-adjustment release gives every figure as \"$X (for married couples filing jointly)\" -- single and MFJ. HoH and MFS were inference presented as verification, and the HoH 24% top was wrong by $25 because it had been copied from single.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Every boundary re-derived from the 24 cumulative tax figures printed on the 2026 Form 1040-ES Schedules X, Y-1, Y-2 and Z, all of them pinned by arms across all four statuses, and the comment rewritten to say what was actually read. A band top can be right while its rate is wrong, which is why the cumulative figures rather than the tops are what the arms compare."
+        },
+        {
+          "factor": "No test existed for any of the tax maths. The four SAIRNcash suites cover entitlement and Stripe, and the engine that decides how much money a user sets aside against a non-waivable penalty had no arms at all.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/sairncash_safe_harbor.js, 31 arms, every figure quoted from the 1040-ES read directly. Ablated five ways; the fifth found a dead arm before it shipped."
+        }
+      ],
+      "recurrence_open": "THE ANNUALISED INCOME INSTALLMENT METHOD IS NOT IMPLEMENTED (Form 2210 Schedule AI), and a straight-line projection is wrong for a seasonal earner in both directions -- a landscaper who earns nothing in January is now told to set aside on a projection of nothing, and one who earns everything in Q1 is told to set aside on a projection of four times their year. The default is right and the seasonal case is not covered; it is disclosed on screen as a projection with its elapsed fraction rather than presented as a figure.\nTHE 199A THRESHOLD IS STILL UNVERIFIED. QBI_CERTAIN_CEILING is a conservative floor and says so in its own comment; it is NOT the IRS figure and the app therefore cannot tell a user the moment they cross the real line. The 1040-ES and Pub 505 give only the phase-in range. Until somebody reads Rev. Proc. 2025-32's section 199A table, every high-income QBI figure this app produces is marked uncertain and that is the best available answer, not a good one.\nNO STATE TAX ANYWHERE, which is a prior scoping decision and not this fix, but it means the total a user sets aside is short by their state liability in 41 states.\nTHE YEAR SPLIT USES THE ENTRY DATE, WHICH IS WHEN THE USER TYPED IT, not when the money moved. A December invoice logged in January books to the wrong year and nothing detects it, because the app has no separate payment-date field to compare against.\nAND NOTHING CHECKS THE CONSTANTS AGAINST THE IRS ON A CADENCE. TAX_YEAR_2026 is hand-maintained; the brackets, the SS wage base, the standard deductions, the SEP cap and the deferral limit all change annually and the file will be silently a year stale on 1 January 2027 exactly as the entry totals were silently all-time. That is the same class as the SAIRNbiz 1099 threshold that stood at $600 from 1954 until this month.",
+      "single_factor_note": "n/a -- six factors"
     },
     {
       "commit": "f0c0cb7ac160",
