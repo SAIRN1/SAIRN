@@ -165,7 +165,26 @@
       names.forEach(n => { if (!KEYWORD.has(n) && typeof window[n] !== 'function') missing.push(n); });
     }
     SCT.rows.push({ arg, label, exists: !!el, targetId: el ? el.id : null, vis: visible(el),
-                    chars, ctrls, missing, threw, errs: SCT.errors.slice(before) });
+                    chars, ctrls, missing, threw, errs: SCT.errors.slice(before),
+                    // ── PER-ROW TAB STATE (2026-09-26) ──────────────────────
+                    // report() records document.visibilityState ONCE, at report
+                    // time, and that made every hidden-tab claim about this
+                    // driver unprovable -- including the two it was used for.
+                    //
+                    // MEASURED: a run started with visibility=hidden RE-FOREGROUNDED
+                    // ITSELF partway through. 25 of 67 rows were recorded hidden
+                    // and 42 visible, in one uninterrupted sweep with nothing
+                    // executing in the tab. So a single flag at the end can say
+                    // "visible" about a run that was mostly hidden, or "hidden"
+                    // about one that was mostly not -- and the 2026-09-26
+                    // render-half run reporting clampMs 55/58 was very likely
+                    // this, not somebody forgetting to background the tab.
+                    //
+                    // These two fields make the claim checkable per control:
+                    // "the hidden-tab path was exercised" becomes a count of
+                    // rows, not an assertion about the run.
+                    tabVis: document.visibilityState,
+                    tabFocus: (typeof document.hasFocus === 'function') ? document.hasFocus() : null });
   }
 
   // ── THE FIXED WAIT IS GONE. IT WAS A GUESS RACING A RENDER (2026-09-25) ──
@@ -298,7 +317,22 @@
       navFn: NAV_FN,
       visibility: document.visibilityState,
       hasFocus: (typeof document.hasFocus === 'function') ? document.hasFocus() : null,
-      timerClampMs: SCT.clampMs,                 // requested 50; >400 means throttled
+      // ── THE FIELDS THAT MAKE A HIDDEN-TAB CLAIM CHECKABLE (2026-09-26) ───
+      // `visibility` above is the state AT REPORT TIME and says nothing about
+      // the run. These count the rows, so "the hidden path was exercised" is a
+      // number instead of an assertion. A run that drifts foreground midway now
+      // shows as a split rather than as whichever state it happened to end in.
+      rowsRecordedHidden: r.filter(x => x.tabVis === 'hidden').length,
+      rowsRecordedVisible: r.filter(x => x.tabVis === 'visible').length,
+      // ── AND timerClampMs IS ONE SAMPLE AGAINST A FIXED THRESHOLD ─────────
+      // Measured 2026-09-26: clampMs read 271 at start-up on a run whose worst
+      // control then took 59,986ms to settle. 271 is 5.4x the requested 50 and
+      // unmistakably throttled, yet it is BELOW the 400 this comment used to
+      // call the threshold -- so the honest reading is "compare it to 50, and
+      // read settleMsMax as well", not "under 400 means foreground". The clamp
+      // is PROGRESSIVE; a start-up sample cannot characterise it.
+      timerClampMs: SCT.clampMs,                 // requested 50; ANY large multiple means throttled
+      settleMsMax: r.length ? Math.max.apply(null, r.map(x => x.settleMs || 0)) : null,
       running: SCT.running,
       driven: r.length, navControls: SCT.controls.length,
       // NOT A FINDING, AND KEPT OUT OF F2 DELIBERATELY: a panel that was still
