@@ -16441,6 +16441,62 @@
       "recurrence_open": "No check exists for the general shape: a probe fixture carrying a LITERAL session name while the code under test resolves that same name from the clone. A grep for quoted clone names inside tests/ is cheap and has not been run, and the four build-agent names plus the hover instances are a small closed vocabulary that a checker could read from .claude/claims/ rather than hardcode -- which is the same mistake one shelf over."
     },
     {
+      "commit": "3b0803960bb5",
+      "date": "2026-09-27",
+      "subject": "feat(sairnvet): four food-animal drugs sourced to their FDA labels -- and three of the four had the CATTLE figure on the SWINE row",
+      "files": [
+        "docs/2026-09-27-sairnvet-food-animal-label-sourcing.md",
+        "sairnvet.html",
+        "tests/sairnvet_formulary_source_honesty.js"
+      ],
+      "lines_added": 320,
+      "lines_removed": 1,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "Four food-animal injectable antimicrobials in sairnvet.html's VET_DRUGS carried figures that were not specific to the species on the row. Tulathromycin: both cattle and swine read route SC/IM where DRAXXIN (NADA 141-244) is subcutaneous in cattle and intramuscular in swine -- each species offered the other's route, with meat withdrawals 13 days apart (18 vs 5). Florfenicol: both read 20-40mg/kg IM/SC, but NUFLOR (NADA 141-063) ties the dose to the route (20mg/kg IM repeated at 48h, 40mg/kg SC once, withdrawal 28 vs 38 days) so it is not a range, and the swine label is 15mg/kg IM, making the stored swine range 33-167 percent above label with SC unlabelled. Ceftiofur: both read 1-2.2mg/kg IM/SC, the cattle figure, where EXCENEL RTU EZ (NADA 141-288) gives swine 3-5mg CE/kg IM -- an UNDER-dose, the opposite consequence direction from florfenicol. Oxytetracycline: both read 10-20mg/kg SID, flattening LA-200's (NADA 113-232) single long-acting 9mg/lb dose and its 3-5mg/lb DAILY dose into one once-daily range, and the swine row carried IV which the label offers in cattle only. Routes and doses corrected to label, references quoted verbatim, withdrawal times populated and each naming its product. Two rows deliberately keep null numeric bounds so the calculator refuses rather than multiplying a false range by a body weight.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The formulary rows predate this register and were built by propagating one species' figures across a drug's species rows; there is no single commit that introduced the swine values, they were never species-specific. The searchable fact is when the CLASS was named: the species-copy detector landed 2026-09-26 and found the dose half of it."
+      },
+      "citation_note": "A quiet wrong number. Every one of these rows rendered a plausible route and dose with a withdrawal period beside it saying the residue question was handled; none of the eight raised anything. Also item 43 (Ariane 5) in clinical form -- a faithful copy whose species is not.",
+      "contributing_factors": [
+        {
+          "factor": "the formulary was built by propagating one species row across a drug's other species, so a figure that was correct once became a claim about animals it was never about",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "eight rows re-derived from their FDA labels; routes and doses corrected, each reference naming the specific NADA and the products it does NOT cover"
+        },
+        {
+          "factor": "a dose tied to a ROUTE was stored as a range across both routes, which is not the same object -- and the withdrawal period differs by route too",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the route-coupled rows keep null doseMin/doseMax so the calculator refuses; an arm asserts the nulls, because rebuilding the range in the numeric fields would undo the fix invisibly"
+        },
+        {
+          "factor": "the app's own species-copy detector keys on the DOSE STRING, so it is blind by construction to a copied ROUTE -- and on a food animal the route is the food-safety fact",
+          "kind": "detection",
+          "action_status": "declined",
+          "note": "a route-copy detector would fire on every legitimately shared route in a 485-row table and be switched off within a week, which is the argument the existing copy marker already records for warning rather than refusing. Held by a named test arm instead, and the gap is written into docs/2026-09-27-sairnvet-food-animal-label-sourcing.md section 4 rather than left implicit"
+        },
+        {
+          "factor": "a withdrawal period belongs to a PRODUCT and these rows are generic, so a bare number generalises one label to every formulation of the drug",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "every label_sourced withdrawal string now names its product or NADA, enforced by a control arm -- which found a real pre-existing row on its first run (Flunixin Meglumine/cattle carried a bare 4 days)"
+        }
+      ],
+      "recurrence_open": "470 of 485 rows still record no source. 33 uncited controlled substances and 61 remaining uncited food-animal rows are untouched -- the highest-consequence populations and this pass covered 8 of them. Nothing checks a row against its label on a cadence: the references carry a Retrieved date and a label revision can change a withdrawal period without anything here noticing. And the route-copy blind spot is open by decision, not closed."
+    },
+    {
       "commit": "607f227f2125",
       "date": "2026-09-27",
       "subject": "fix(sairncash): three more places a min/max against an unknown answered anyway -- one of them with a confident $0 of income tax",
@@ -16497,6 +16553,62 @@
         }
       ],
       "recurrence_open": "THE SWEEP WAS BY HAND AND COVERED ONE FILE. A one-off script ordered the reading and is not committed, so there is no standing check: sairnbuild.html has 16 candidate sites of this shape and is UNEXAMINED, not cleared, and the platform-wide scan produced 286 candidates across 55 files that nobody has read. Nothing prevents the next Math.min against an unknown."
+    },
+    {
+      "commit": "623aab6d878a",
+      "date": "2026-09-27",
+      "subject": "fix(tools): two more reads that exited 0, returned nothing, and were believed -- the empty-walk class push_retry.py caught in itself",
+      "files": [
+        "docs/2026-09-27-empty-walk-sweep.md",
+        "tools/accepted_risk_expiry_audit.py",
+        "tools/ai_action_approval_audit.py"
+      ],
+      "lines_added": 373,
+      "lines_removed": 9,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "Two report-only tools read real state, got an empty result with a clean exit code, and printed it as an answer. ai_action_approval_audit.py: app_files() checked git ls-files' return code but ls-files exits 0 and prints nothing when it matches nothing -- driven with it forced to [], the tool printed 'AI call sites found : 0 across 0 app file(s)' with all four verdict counts at zero and exit 0, against a real answer of 73 sites across 17 files including 14 ungated writes. accepted_risk_expiry_audit.py: _rows() returned [] when the open-work index existed but no line parsed as a table row -- driven, it reported 'population : 1' and exit 0 against a real population of 19; and _paused_docs() did not check the return code at all, so a git that failed to launch and a repo with no paused documents were the same answer. Both now refuse, the two _paused_docs cases are separated because zero paused documents is a legitimate state and zero index rows is not, and both selftests now drive their own accessors with a control the fix itself can fail.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "a one-off ast sweep over tools/*.py, NOT committed -- see docs/2026-09-27-empty-walk-sweep.md section 5",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Neither accessor was ever correct, so there is no commit that broke it -- the defect is as old as each function. The searchable fact is when the CLASS was named: tools/push_retry.py fixed the same shape in itself earlier on 2026-09-27, which is what prompted this sweep."
+      },
+      "citation_note": "1.11 is COULD-NOT-RUN is a third state, written for a missing DEPENDENCY. This is the same rule applied to the shape of the DATA: a read that exits 0 and returns nothing is a third state too, and a return code is only half the question.",
+      "contributing_factors": [
+        {
+          "factor": "a return code was treated as the whole failure mode, when git ls-files and git log both exit 0 and print nothing on an empty match",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "both accessors now fold an empty read into a refusal, and the two accepted-risk cases are separated because zero paused documents is legitimate and zero index rows is not"
+        },
+        {
+          "factor": "each selftest drove only the pure classifier with fixtures and never ran the accessor, so a broken accessor was invisible -- and where the failure mode is a refusal, a suite built of refusals passes on a tool that refuses everything",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "both selftests now call their accessors against the real repo and each carries a control that the fix itself can fail; a one-off ast sweep found the four candidates by comparing each selftest call graph against the functions that reach subprocess"
+        },
+        {
+          "factor": "the guard was written at one layer only, so replacing the layer beneath it walked straight through -- the first version of the new control did exactly that and reported a clean sweep of zero files",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "audit() refuses on `not files` rather than `files is None`, so the refusal does not depend on which layer broke"
+        },
+        {
+          "factor": "nothing runs on a cadence to find the next one -- the ast sweep is a scratch script",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "declined for now rather than left silent: making it a tool means writing its blind spots into its own output first (it reads tools/*.py only, cannot tell a reached accessor from a meaningfully asserted one, and is blind to dispatch through a variable), which is most of the work. Recorded in docs/2026-09-27-empty-walk-sweep.md section 5 as an open question, not an omission."
+        }
+      ],
+      "recurrence_open": "NO STANDING CHECK EXISTS. The ast sweep is a one-off in a scratch directory and reads tools/*.py only -- tests/, api/, .claude/ and every JavaScript file were covered by a grep for git rev-walks and by nothing else. Three tools were cleared because an external probe runs them end to end; that the probe RUNS them is verified, that it would NOTICE an empty read is not. And the sweep only finds accessors a selftest cannot REACH: one it calls but asserts nothing useful about reads as covered."
     },
     {
       "commit": "686a323c79f1",
@@ -16556,62 +16668,6 @@
         }
       ],
       "recurrence_open": "Three things this change does NOT close. (1) decryptSecret() still returns null for both a failed decrypt and a value that was never stored, so the next key-handling defect in this path will surface as \"MFA is not set up\" rather than as an error. (2) sql/legacy_ciphertext_census.sql is UNRUN and its legacy-vs-v2 discriminator (the `v2.` prefix) is unverified against real rows -- and its count now gates a destructive step, so a wrong discriminator either blocks step 4 for ever or clears PREVIOUS while legacy rows remain. (3) SD_ENCRYPTION_KEY is production-only while SD_AUTH_SECRET and SUPABASE_URL are preview+production; IF preview points at the same Supabase project, a preview deployment is a v2-blind reader and a legacy writer against production rows. Whether it does is one comparison of two env values nobody has made, and it is not asserted."
-    },
-    {
-      "commit": "623aab6d878a",
-      "date": "2026-09-27",
-      "subject": "fix(tools): two more reads that exited 0, returned nothing, and were believed -- the empty-walk class push_retry.py caught in itself",
-      "files": [
-        "docs/2026-09-27-empty-walk-sweep.md",
-        "tools/accepted_risk_expiry_audit.py",
-        "tools/ai_action_approval_audit.py"
-      ],
-      "lines_added": 373,
-      "lines_removed": 9,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "static-checker",
-      "summary": "Two report-only tools read real state, got an empty result with a clean exit code, and printed it as an answer. ai_action_approval_audit.py: app_files() checked git ls-files' return code but ls-files exits 0 and prints nothing when it matches nothing -- driven with it forced to [], the tool printed 'AI call sites found : 0 across 0 app file(s)' with all four verdict counts at zero and exit 0, against a real answer of 73 sites across 17 files including 14 ungated writes. accepted_risk_expiry_audit.py: _rows() returned [] when the open-work index existed but no line parsed as a table row -- driven, it reported 'population : 1' and exit 0 against a real population of 19; and _paused_docs() did not check the return code at all, so a git that failed to launch and a repo with no paused documents were the same answer. Both now refuse, the two _paused_docs cases are separated because zero paused documents is a legitimate state and zero index rows is not, and both selftests now drive their own accessors with a control the fix itself can fail.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": "a one-off ast sweep over tools/*.py, NOT committed -- see docs/2026-09-27-empty-walk-sweep.md section 5",
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "Neither accessor was ever correct, so there is no commit that broke it -- the defect is as old as each function. The searchable fact is when the CLASS was named: tools/push_retry.py fixed the same shape in itself earlier on 2026-09-27, which is what prompted this sweep."
-      },
-      "citation_note": "1.11 is COULD-NOT-RUN is a third state, written for a missing DEPENDENCY. This is the same rule applied to the shape of the DATA: a read that exits 0 and returns nothing is a third state too, and a return code is only half the question.",
-      "contributing_factors": [
-        {
-          "factor": "a return code was treated as the whole failure mode, when git ls-files and git log both exit 0 and print nothing on an empty match",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "both accessors now fold an empty read into a refusal, and the two accepted-risk cases are separated because zero paused documents is legitimate and zero index rows is not"
-        },
-        {
-          "factor": "each selftest drove only the pure classifier with fixtures and never ran the accessor, so a broken accessor was invisible -- and where the failure mode is a refusal, a suite built of refusals passes on a tool that refuses everything",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "both selftests now call their accessors against the real repo and each carries a control that the fix itself can fail; a one-off ast sweep found the four candidates by comparing each selftest call graph against the functions that reach subprocess"
-        },
-        {
-          "factor": "the guard was written at one layer only, so replacing the layer beneath it walked straight through -- the first version of the new control did exactly that and reported a clean sweep of zero files",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "audit() refuses on `not files` rather than `files is None`, so the refusal does not depend on which layer broke"
-        },
-        {
-          "factor": "nothing runs on a cadence to find the next one -- the ast sweep is a scratch script",
-          "kind": "latent-condition",
-          "action_status": "declined",
-          "note": "declined for now rather than left silent: making it a tool means writing its blind spots into its own output first (it reads tools/*.py only, cannot tell a reached accessor from a meaningfully asserted one, and is blind to dispatch through a variable), which is most of the work. Recorded in docs/2026-09-27-empty-walk-sweep.md section 5 as an open question, not an omission."
-        }
-      ],
-      "recurrence_open": "NO STANDING CHECK EXISTS. The ast sweep is a one-off in a scratch directory and reads tools/*.py only -- tests/, api/, .claude/ and every JavaScript file were covered by a grep for git rev-walks and by nothing else. Three tools were cleared because an external probe runs them end to end; that the probe RUNS them is verified, that it would NOTICE an empty read is not. And the sweep only finds accessors a selftest cannot REACH: one it calls but asserts nothing useful about reads as covered."
     },
     {
       "commit": "cc6e38945baa",
