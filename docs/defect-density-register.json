@@ -16774,6 +16774,286 @@
         }
       ],
       "recurrence_open": "The red baseline this record surfaced is NOT closed -- twelve suites and 172 assertions across the whole SAIRNcare test surface plus sairnbuild are still red at HEAD from c8b5e5b1, and api/sd-data.js is deliberately untouched here because the resolution is a judgement about whether the pre-gate should name an app or the stubs should tolerate one that does not. Five AMBIGUOUS anchors in sairndesign_sairngrounds_fault_probe.py and sairnmechanical_fault_probe.py are also open and unfixed."
+    },
+    {
+      "commit": "2a09aea1909b",
+      "date": "2026-09-27",
+      "subject": "fix(sweep): three branches gated on a field name nothing sets -- a window that counted everything, a KPI that was always 0.0 h, and a reconciliation against nothing",
+      "files": [
+        "api/_lib/compliance-rules-staff-join.test.js",
+        "api/_lib/compliance-rules.js",
+        "api/sd-data.js",
+        "docs/2026-09-27-ghost-field-read-sweep.md",
+        "docs/MASTER-PLAN.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/tier-a-reviews.json",
+        "docs/traceability-matrix.md",
+        "sairncare.html",
+        "sairnsenior.html",
+        "tests/run_ghost_field_read_probe.py",
+        "tests/sairnsenior_referral_hours.js",
+        "tools/ghost_field_read_scan.py",
+        "tools/report_only_checks.py"
+      ],
+      "lines_added": 1375,
+      "lines_removed": 22,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "api/_lib/compliance-rules.js hoursInWindow(): the `facility_training_year` window read `from = trainingYearStart || null` and fell through with no error. `trainingYearStart` is `opts.facility_training_year_start`, a name that is not written, keyed, quoted or declared anywhere in the repo and that api/sd-data.js's evaluate branch does not accept. The per-record filter below is `if (from && ...)`, so a null `from` SKIPPED THE DATE FILTER ENTIRELY and every training record in alf_staff_credentials counted toward the annual total regardless of age -- a 2019 certificate satisfying a 2026 annual requirement. THE OVER-COUNTING DIRECTION: it reports a staff member with a real training shortfall as compliant, on a regulated verdict. REACHABLE, NOT THEORETICAL: api/sd-data.js explicitly validates `annual_window` against complianceRules.ANNUAL_WINDOWS, which INCLUDES facility_training_year, so a caller asking for that window was accepted and silently given no window at all. The response carried hours_window_from: null and hours_window_error: null -- no error anywhere. Fixed to fail closed in the same shape NO_HIRE_DATE already had twenty lines up: window_error 'NO_TRAINING_YEAR_START', nothing counted, verdict null rather than true, and the module says in place that this window is unavailable until some surface supplies a facility training year. Five arms in section 4e of api/_lib/compliance-rules-staff-join.test.js including both control directions.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/ghost_field_read_scan.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "e2d6342dd41e",
+        "date": "2026-09-26",
+        "subject": "feat(sairncare): the training join runs -- WV answers instead of refusing, and the hole the scoping doc called hypothetical was already open",
+        "lag_days": 1
+      },
+      "citation_note": "1.5's third bullet is the closest fit and it is not exact. That bullet is null meaning both \"no data\" and \"read failed\"; here the ambiguous value is a null WINDOW START meaning both \"no facility training year was supplied\" and \"no date filter applies\". The consequence is 1.5's: a failure state read by the next line as a permissive one. It is arguable rather than clean because 1.5 is about a FAILED READ and this was a MISSING INPUT that nothing could have supplied.",
+      "contributing_factors": [
+        {
+          "factor": "The window branch had no third state. Three of the four windows compute a `from` or return a named error; this one alone fell through to null, and the filter below treats null as 'no filter' rather than as 'unknown'.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The branch validates the supplied start date and returns window_error NO_TRAINING_YEAR_START, so the could-not-compute case cannot reach the filter at all."
+        },
+        {
+          "factor": "The endpoint validated the window NAME against the engine's vocabulary and never checked whether the engine could actually compute that window. A name in ANNUAL_WINDOWS was treated as a capability.",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "Not changed here. The engine now answers per staff member with a named error, which is a better answer than a 400 that gives no verdict for anybody else in the roster. Recorded in recurrence_open instead: the endpoint still accepts a window it knows the engine cannot compute."
+        },
+        {
+          "factor": "Nothing could have reported it. A skipped date filter produces a LARGER number, and a larger training total reads as a well-trained employee; there is no error, no null and no empty set to notice.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tools/ghost_field_read_scan.py was built for this class in the same change and found this instance on its first run. Its control pair is tests/run_ghost_field_read_probe.py."
+        },
+        {
+          "factor": "I wrote the hire-date anchor the same morning, in the adjacent branch of the same function, and did not read the sibling window while I was in it.",
+          "kind": "process",
+          "action_status": "not-actionable",
+          "note": "Recorded because the shape matters more than the blame: the defect was in the branch NEXT TO the one being changed, and reviewing the diff would never have shown it. That is the argument for a standing detector rather than for reading harder."
+        }
+      ],
+      "recurrence_open": "api/sd-data.js still accepts `annual_window: 'facility_training_year'` as a valid window even though no surface supplies a facility training year, so a caller can still ask for a window that can only answer could-not-tell -- the engine now says so per staff member rather than silently counting everything, but the endpoint does not refuse it up front and nothing tells an integrator the window is unavailable. And the scan that found this cannot see the wider class it belongs to: a field written somewhere and read on the WRONG object clears its third condition by construction."
+    },
+    {
+      "commit": "2a09aea1909b",
+      "date": "2026-09-27",
+      "subject": "fix(sweep): three branches gated on a field name nothing sets -- a window that counted everything, a KPI that was always 0.0 h, and a reconciliation against nothing",
+      "files": [
+        "api/_lib/compliance-rules-staff-join.test.js",
+        "api/_lib/compliance-rules.js",
+        "api/sd-data.js",
+        "docs/2026-09-27-ghost-field-read-sweep.md",
+        "docs/MASTER-PLAN.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/tier-a-reviews.json",
+        "docs/traceability-matrix.md",
+        "sairncare.html",
+        "sairnsenior.html",
+        "tests/run_ghost_field_read_probe.py",
+        "tests/sairnsenior_referral_hours.js",
+        "tools/ghost_field_read_scan.py",
+        "tools/report_only_checks.py"
+      ],
+      "lines_added": 1375,
+      "lines_removed": 22,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "sairnsenior.html rfDeliveredHoursFor(clientId) read `v.actual_start` and `v.actual_end`. A sen_visits row has no such fields -- the clock is `clock_in_at` / `clock_out_at`, which the authorisation burn-down (~:2540), the visit card (~:2964) and visitHours() (~:3925) all read correctly. So the guard `if(!v.actual_start||!v.actual_end)return;` was true for every visit ever recorded, the loop added nothing, and THE FUNCTION RETURNED 0 FOR EVERY CLIENT FOR AS LONG AS IT EXISTED. rfPerformance() hands that to the Referral Sources table. THE ZERO WAS WORSE THAN A BLANK because the renderer already distinguishes them: `p.linked ? p.hours.toFixed(1)+' h' : '--'`. An unlinked source correctly showed '--' meaning we cannot attribute hours; a LINKED source showed a confident '0.0 h', which reads as \"we looked, and this source's clients received no care\" -- against real clocked visits. Guardian's fabricated-KPI check could not see it: the figure is backed by a real function doing real arithmetic over a real array, and the fabrication arrives through a field NAME. The function's own comment was already the specification -- \"Reuses the same only-count-what-was-actually-clocked rule the authorisation burn-down uses\" -- and was true of the intent and false of the field names. Fixed by CALLING visitHours() rather than carrying a third copy of the clock arithmetic, which is what that function's own header asks for (\"so both compute delivered hours the same way -- a claim and an insufficient-hours finding must never silently diverge on this arithmetic\"). Reachability checked rather than assumed: both are inside the script block spanning ~1339-6052. 11 arms in tests/sairnsenior_referral_hours.js, driven in a vm sandbox against visit fixtures rather than grepped.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/ghost_field_read_scan.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "fb5acb08d1df",
+        "date": "2026-09-02",
+        "subject": "feat(sairnsenior): referral-source CRM -- every figure computed from real visits and claims, none stored",
+        "lag_days": 25
+      },
+      "citation_note": "1.1 is about a check that stopped checking; this is a COMPUTATION that never started. The shared half is exact -- the code reads as working on every review of it and the only symptom is a plausible value -- but 1.1's subject is a guard losing its teeth over time and this one never had any. No section names \"two functions in one file disagree about a field name\", which is the real shape, so the citation is arguable rather than clean.",
+      "contributing_factors": [
+        {
+          "factor": "Three functions in one file computed delivered hours and only two shared an implementation. rfDeliveredHoursFor carried its own copy of the arithmetic and diverged from the other two on the field names, which is precisely the divergence visitHours() was extracted to prevent.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "rfDeliveredHoursFor now calls visitHours(). Arms C2 and C3 assert the delegation and that visitHours still holds the arithmetic, so the delegation cannot be satisfied by an emptied-out helper."
+        },
+        {
+          "factor": "The comment above the function asserted agreement with the burn-down and nothing checked that assertion. A comment claiming a shared rule is the cheapest possible place for a disagreement to hide.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The claim is now structural rather than prose -- there is one implementation and the other caller invokes it -- and the suite drives both."
+        },
+        {
+          "factor": "A zero is the CORRECT answer for a client with no clocked visits, so the wrong answer was indistinguishable from the right one on any screen. There was no error, no null and no empty state to notice.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Arm B1 asserts one clocked visit is 2 hours and arm B5 asserts a client with no visits is 0, so the suite separates the two cases that looked identical."
+        },
+        {
+          "factor": "No test existed for rfPerformance or rfDeliveredHoursFor at all. The referral-source CRM shipped with every figure described as computed and none of them driven.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "tests/sairnsenior_referral_hours.js is the first suite over this function."
+        }
+      ],
+      "recurrence_open": "visitHours() itself has NO non-negative guard, and generateClaim() bills `hoursBilled = visitHours(v)` straight off it, while the authorisation burn-down at ~:2540 DOES guard with `isFinite(ms) && ms > 0`. Three consumers, two behaviours, on a money path. api/_lib/sen-evv-clock.js refuses CLOCK_OUT_BEFORE_IN so the server cannot store such a row THROUGH THAT PATH; rows predating that module are not covered by it and nothing has swept for them. Changing visitHours() touches claim generation and was deliberately left as its own change. Also NOT covered: rfPerformance's other derived figures (revenue, conversion, median days) have no suite, and the renderer's own `--` versus a computed value distinction is not asserted anywhere."
+    },
+    {
+      "commit": "2a09aea1909b",
+      "date": "2026-09-27",
+      "subject": "fix(sweep): three branches gated on a field name nothing sets -- a window that counted everything, a KPI that was always 0.0 h, and a reconciliation against nothing",
+      "files": [
+        "api/_lib/compliance-rules-staff-join.test.js",
+        "api/_lib/compliance-rules.js",
+        "api/sd-data.js",
+        "docs/2026-09-27-ghost-field-read-sweep.md",
+        "docs/MASTER-PLAN.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/tier-a-reviews.json",
+        "docs/traceability-matrix.md",
+        "sairncare.html",
+        "sairnsenior.html",
+        "tests/run_ghost_field_read_probe.py",
+        "tests/sairnsenior_referral_hours.js",
+        "tools/ghost_field_read_scan.py",
+        "tools/report_only_checks.py"
+      ],
+      "lines_added": 1375,
+      "lines_removed": 22,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "api/sd-data.js alf_billing derive_charges: the reconciliation read `invRows[0].data.charge_lines` as the prior invoice's line detail. NO WRITE PATH ON THIS PLATFORM STORES THAT KEY -- sairncare.html's invoice record carries id, month, room_board_amount, care_amount, private_total, private_status, hcbs_claim_amount, hcbs_status, care_level_breakdown, revision_history and generated_by, and no per-event lines at all. So priorLines was ALWAYS [], and careCharges.reconcileAgainstInvoice(derived, []) answers: every derived line ADDED, nothing removed, nothing changed, unchanged_count 0, and net_change equal to the ENTIRE derived amount -- returned beside `invoice_exists: true`, which is what made the figure read as a comparison rather than as a first look. On the view this branch's own comment calls \"the audit trail that replaces the manual reconciliation\". THE ARGUMENT FOR THE FIX WAS ALREADY WRITTEN TWELVE LINES ABOVE IT, for the adjacent case: the 2026-09-04 hardening of the UNREADABLE prior invoice says \"this fell back to [], so the reconciliation reported EVERY derived line as new ... Somebody regenerates on the strength of that.\" The read below it then did exactly that for an invoice that was read perfectly well. Fixed as a named third state -- reconciliation_vs_invoice null, reconciliation_unavailable PRIOR_INVOICE_HAS_NO_CHARGE_LINES, and a sentence saying comparing against nothing would report every charge as new and the net change as the whole invoice. AND THE CLIENT HALF TOO: sairncare.html's renderer guards on `invoice_exists && rv`, so a bare null would have replaced a wrong figure with SILENCE and left the same person deciding with no more information than before; it now renders the reason. NO PRIOR INVOICE is deliberately left alone -- with nothing on file every derived line genuinely is new and invoice_exists:false says so.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/ghost_field_read_scan.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "4ba885d9082d",
+        "date": "2026-08-22",
+        "subject": "feat: SAIRNcare Phase 3 items 1-4 -- pharmacy eMAR, doc-to-charges, AI care plans, late-care alerting",
+        "lag_days": 36
+      },
+      "citation_note": "1.5's own third bullet is a failed read rendering as an empty set that the app then advises from; this is a MISSING KEY rendering as an empty set that the app then reconciles from. Same consequence, same shape, and the file already cites 1.5 twelve lines up for the read-failure half of the identical comparison -- which is the strongest evidence the citation fits. Arguable only because nothing failed here: the read succeeded and the key was never there to begin with.",
+      "contributing_factors": [
+        {
+          "factor": "An empty prior-line list meant both 'no invoice on file' and 'an invoice exists but stores no line detail', and reconcileAgainstInvoice cannot tell those apart -- against [] it reports every line as an addition, which is correct for the first and false for the second.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The branch now distinguishes them: no invoice row still reconciles against [], and an invoice row without a charge_lines array returns null plus PRIOR_INVOICE_HAS_NO_CHARGE_LINES and a reason."
+        },
+        {
+          "factor": "The reader and the writer of the same record were never compared. api/sd-data.js read charge_lines; sairncare.html writes totals and a care-level breakdown. Nothing on the platform ever asserted that the shape written is the shape read.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "Recorded as the real follow-up: the invoice write path should store per-charge lines, which is what makes the reconciliation possible rather than merely honest. Carried in recurrence_open and in the open-work row."
+        },
+        {
+          "factor": "The wrong answer was a precise number on a screen labelled as an audit trail. There is no error, no null and no empty state -- a full net change on a regenerate looks like a large genuine correction, which is exactly when somebody acts on it.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tools/ghost_field_read_scan.py reports this read and its control asserts it STILL DOES, because the fix made the comparison honest and did not make the key exist."
+        },
+        {
+          "factor": "The identical defect one case over had already been found and fixed in this same branch on 2026-09-04, and its comment is still there. The fix was scoped to the failure mode that had been observed rather than to the class.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "Recorded because it is the cheapest evidence for a standing detector over a careful read: the reasoning was correct, present, and adjacent, and the second instance still shipped."
+        }
+      ],
+      "recurrence_open": "THE RECONCILIATION IS STILL IMPOSSIBLE, only honest. Nothing stores per-charge lines on an alf_billing invoice, so an existing invoice can never be compared line by line and the third state is what every caller will now see -- the real fix is for the write path to store them and it is not done here. tools/ghost_field_read_scan.py therefore still reports priorRow.charge_lines as a gate that cannot be true, deliberately, and the control probe asserts it still does: an arm demanding silence there could only be satisfied by hiding a true finding. Also untouched: reconcileAgainstInvoice's own arithmetic has no suite of its own, and the care_level_breakdown that IS stored was considered as a comparison basis and rejected because it is a different granularity -- comparing against it would be a new invented mapping, not a reconciliation."
+    },
+    {
+      "commit": "2a09aea1909b",
+      "date": "2026-09-27",
+      "subject": "fix(sweep): three branches gated on a field name nothing sets -- a window that counted everything, a KPI that was always 0.0 h, and a reconciliation against nothing",
+      "files": [
+        "api/_lib/compliance-rules-staff-join.test.js",
+        "api/_lib/compliance-rules.js",
+        "api/sd-data.js",
+        "docs/2026-09-27-ghost-field-read-sweep.md",
+        "docs/MASTER-PLAN.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/tier-a-reviews.json",
+        "docs/traceability-matrix.md",
+        "sairncare.html",
+        "sairnsenior.html",
+        "tests/run_ghost_field_read_probe.py",
+        "tests/sairnsenior_referral_hours.js",
+        "tools/ghost_field_read_scan.py",
+        "tools/report_only_checks.py"
+      ],
+      "lines_added": 1375,
+      "lines_removed": 22,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "probe-control",
+      "summary": "tools/ghost_field_read_scan.py built its spelled-field universe from RAW file text including comments, with *.md in the source list. The tool's rule is that a gate reading a field never spelled anywhere cannot be true -- so ANY PROSE MENTIONING A DEAD FIELD NAME MAKES IT \"SPELLED\" AND SILENCES THE DETECTOR FOR IT PERMANENTLY. Demonstrated by the fix committed in the same change: writing the regression arm \"rfDeliveredHoursFor must not read actual_start\" put the words actual_start in a comment, and the scan stopped reporting actual_start. Writing the test for a dead field disabled the standing detector for that field. This is PR 1.11's sibling in the other direction and PR 1.1 exactly -- a check that stopped checking -- committed inside a tool whose entire subject is a condition that cannot fire, by the author of the sweep document that named the class. CAUGHT BY THE CONTROL, NOT BY REVIEW: tests/run_ghost_field_read_probe.py MUTATION 1 restores the real shipped pre-fix rfDeliveredHoursFor body into the real sairnsenior.html and demands the scan NAME actual_start; it exited 1 FINDING (so a count-only arm would have passed) and did not name the field. Fixed: spellings now come from code and data and never from prose -- comments stripped from .js/.html/.cjs/.mjs and from .py with a quote-aware # scanner, strings KEPT because a string key is a real spelling, and .md excluded outright. The cost is stated in the tool header rather than left to be found: a field defined ONLY in a markdown spec now reads as a ghost, which is the false-positive direction a human dismisses in one read.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tests/run_ghost_field_read_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "2a09aea1909b",
+        "date": "2026-09-27",
+        "subject": "fix(sweep): three branches gated on a field name nothing sets -- a window that counted everything, a KPI that was always 0.0 h, and a reconciliation against nothing",
+        "lag_days": 0
+      },
+      "citation_note": "1.1 fits without qualification. Its subject is a check that reads as present and has stopped testing anything, with nothing announcing the day it stopped -- and here the silencing event is a test being written, which is the most invisible possible trigger.",
+      "contributing_factors": [
+        {
+          "factor": "The spelled universe was built from raw text, so a COMMENT was treated as evidence that a field exists. The tool had two questions -- 'is this name a real field' and 'does this name appear' -- and answered the first with the second.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "code_only() strips comments per language before spellings are read, keeps strings, and excludes .md entirely. The reason and the cost are in the tool's header at the source list."
+        },
+        {
+          "factor": "*.md was in the spelling sources, which guarantees the failure rather than merely risking it: this repo documents every defect it fixes, by field name, in markdown. The sweep document for this very tool names all three dead fields.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Markdown removed from KEY_PATTERNS with the incident named in place."
+        },
+        {
+          "factor": "The control was written to assert a COUNT and a NAME. Had it asserted only the exit code it would have passed -- the scan did exit 1 FINDING with the defect planted, because 39 other unrelated findings were present.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "MUTATION 1 asserts the scan names the FIELD and the FILE, not that the count moved. That is the arm that caught this, and it is why the probe asserts both."
+        },
+        {
+          "factor": "The regression test and the detector share a subject, so the artefact that proves a defect is fixed is also the artefact that can hide the next one. Nothing on this platform previously named that interaction.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Recorded for the cross-domain disciplines document: any tool whose findings are field NAMES, string anchors or identifiers must exclude prose from its own evidence, or its own test suite will blind it. Not yet written into that file -- it is a standing convention and needs its own edit, not a line in a sweep commit."
+        }
+      ],
+      "recurrence_open": "THE GENERAL SHAPE IS NOT CLOSED, only this instance. Any checker whose subject is a literal name -- a field, a string anchor, an identifier, a rule id -- can be silenced by its own regression test or by the document describing the defect, and nothing sweeps for that. tools/sabotage_control_check.py measures whether controls verify their own sabotage; nothing measures whether a checker's evidence universe includes the prose that discusses its findings. Also open: the .md exclusion means a field defined only in a markdown spec reads as a ghost, and no arm asserts that trade is still the right one; and the scan's ~90s runtime is the reason it is not in the report-only registry, so nothing runs it on a cadence at all -- it fires when a human asks."
     }
   ],
   "started": "2026-09-09",
