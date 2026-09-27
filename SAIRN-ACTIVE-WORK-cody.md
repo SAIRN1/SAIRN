@@ -5951,3 +5951,239 @@ SAIRN never holds a clearinghouse account on a customer's behalf.
    phantom. Not released here because I did not verify its work is done, and
    releasing a claim on unverified work is the same defect in the other
    direction.
+
+---
+
+## 2026-09-26 (Cody) -- cody-q12, five items: four closed, one does not reproduce
+
+Claim `cody-q12`, released on writing this. **A LEXICAL CLAIM BLOCK, DECLARED PER
+PR 4.3 rather than reworded.** `sairn_claim.py` blocked on hank over *"same app:
+stonedesk"*, and hank's own claim text says **"stonedesk.html is cody-q11's and is
+READ ONLY here"** -- their named stonedesk file is `tests/stonedesk_server_backup.js`,
+which I do not touch. Also declared in the claim: my item 5 is a **different
+class** from hank's queue12 sweep (theirs is unreachable-failure-path /
+wrong-field-always-same-answer; mine is a value parsed from model prose with a
+silent fallback), so the two cross-reference rather than duplicate.
+
+### 1. The vmAnalyze/vmPreview orphan is deleted
+
+`7d5d3fc8`. Zero callers, no host panel, and `vm-prev1`/`vm-prev2`/`vm-loading`/
+`vm-mat`/`vm-use`/`vm-bundle` never existed. Its one surviving host element was a
+`display:none` `vm-result` div stranded after `panel-veinmatch`; that went with
+it, so neither is left pointing at the other. Care Guide precedent, same
+`@REGISTER` form, and it is the **cleanest of the eleven entries: no orphan
+storage key at all**, because it persisted nothing -- unlike care-guide-ai's
+`sd_cg_history` there was never a second key to collide.
+
+**The tombstone records why it was deleted rather than wired, because "wire it up"
+was the cheaper-looking option and was wrong.** It genuinely did two-photo vein
+matching, which is what `panel-veinmatch` gained the same day. One line rules it
+out: a 1-10 score parsed out of the model's prose, **defaulting to 5 when the
+regex missed**, rendered as a 60px filled circle headed "Vein Match Score" with a
+verdict beside it. Two details make it the worst version of the class rather than
+an average one -- the default sits **inside the vocabulary of real answers** (5 on
+1-10 is a believable middling score, not a sentinel), and `||5` sits **inside the
+parse as well as outside it**, so `parseInt('0')` being falsy meant a genuine 0
+-- the strongest possible do-not-cut-these-together -- also became 5. **Both
+failure modes converge on the same number.**
+
+Verified: `checkblocks` 131/131 clean, unchanged from baseline. `div_balance`
+4941/4941 PASS, from 4950/4950 -- nine opens and nine closes went, all from the
+deleted block. `orphan_register_check` CLEAN with `DELETED_NAMES` 36 -> 38, which
+is the tool confirming both names are genuinely no longer defined rather than my
+saying so. `dead_dom_readers` 6/6. The 22-arm suite green, and its arm 2e message
+moved to past tense so it stops describing code that no longer exists.
+**Live-verified on the deployed URL**: `function vmPreview(`,
+`async function vmAnalyze(` and `id="vm-result"` all GONE; `vein-photo-input` and
+the tombstone PRESENT.
+
+### 2. `defect_register.py --check` DOES NOT REPRODUCE RED, and this is reported rather than worked around
+
+**The dispatch's premise does not hold at HEAD, and I could not make it hold.**
+Checked exhaustively rather than glanced at:
+
+* `python tools/defect_register.py --check` -> **exit 0**, *"OK: 315 record(s)
+  ... every commit resolves and every field is in vocabulary"*. Run twice, at two
+  different HEADs an hour apart (312 records then, 315 now as other sessions
+  added three).
+* The `1f9936429432` record exists, is complete, and every field is in
+  vocabulary: `app: stonedesk`, `layer: product`, `severity: high`,
+  `detection_method: code-review`, `injection_phase: requirement`,
+  `phase_confidence: stated`, `citation_confidence: clean`, `rules: ["1.11"]`,
+  an `injection` block with a 9-day lag, and three contributing factors with
+  kinds `process`/`detection`/`detection` and statuses `done`/`done`/`planned`.
+* `--verify` -> exit 0. `report_only_checks`' registry entry invokes the same
+  `--check`, so there is no stricter variant running elsewhere.
+* **AND THE CHECK IS NOT BLIND, which is the part worth keeping.** I re-derived
+  every vocabulary from the tool's own constants and audited **all 315 records
+  independently** -- `layer`, `severity`, `detection_method`, `injection_phase`,
+  `phase_confidence`, `citation_confidence`, `app`, plus every contributing
+  factor's `kind` and `action_status`. **Zero out-of-vocabulary values.** That
+  matters because `--check` exempts **214 records** from the `app` vocabulary by
+  date (`APP_VOCAB_FROM = 2026-09-22`), a deliberate and documented exemption
+  whose contents had never been verified. They have been now, once, by a method
+  that ignores the exemption. So the green is green because the register is
+  clean.
+
+**What I did NOT do: manufacture a fix for a green check.** If the red was real
+it was in another clone's working tree or at an earlier commit, and either way it
+is not visible or fixable from here.
+
+**AND THE SWEEP FOUND SOMETHING BETTER THAN THE RED WOULD HAVE BEEN.**
+`1f993642`'s own `recurrence_open` names a control that does not exist -- *"a
+static check over api/*.js asserting every validateLicenseKey caller also reads
+.active would have caught this the day it shipped ... NOT built here"* -- and its
+third contributing factor carries `action_status: "planned"`.
+
+**Nothing surfaces a planned action. Measured: 62 records carry one**, the oldest
+dated 2026-09-14, and `--check` only asserts that the `action` text is non-empty
+(line 410). No report, no ageing, no "was this ever done". **That is a bullet
+recorded as an intention with nothing reading it back** -- the same shape as an
+ACTIVE-WORK bullet being mistaken for a record, 62 times, inside the one document
+whose length reads as evidence of thoroughness. **Raised, not built:** a
+`--planned` view that ages them is the obvious control and it is somebody's
+decision whether the register grows a CAPA follow-up half.
+
+### 3. §4 of the 08-21 trades research gets the axis it was missing
+
+`14bd1ff1`. The research organises regulatory divergence by **country** -- four
+blocks -- and that is one axis short, which is why the CARB finding had nowhere
+to go. A rule has a **level**, and a sub-national rule can regulate the same
+object as a national one on its own threshold with its own comparison operator.
+
+The section did already know US *licensing* is state/municipal. **That is a
+different kind of thing and the distinction is the whole point: licensing
+attaches to a PERSON, a threshold attaches to a MACHINE, and only the second can
+disagree with a federal number about the same machine.**
+
+New §4.1 keys on `(regulated object x level x threshold x comparison x scope
+predicate)` and carries all four limbs of the one object where three levels now
+exist. Three consequences a per-country structure hides:
+
+1. **The same number is not the same threshold.** Both US rules say 50 lb and the
+   **comparisons differ** -- 40 CFR 82.157 reaches an appliance containing 50 lb
+   *or more*; 17 CCR 95380 reaches a system containing *more than* 50 lb. **A
+   unit at exactly 50.0 lb is IN scope federally and OUT at state level.** One
+   shared constant with one shared comparison would have answered one of them
+   wrongly and silently. `api/_lib/mech-assets.test.js:439` drives that boundary.
+2. **A sub-national rule needs a scope value the national ones do not have** --
+   `unknown_jurisdiction`, not `below` and not `not_applicable`. The first gap
+   CARB exposed was not the threshold; it was that the registry had no way to say
+   *where* an asset was. A per-country table never prompts for that.
+3. **Some cross-level implications are sound and their converses are not.** Not
+   above GWP 53 settles 150 too; above 53 says nothing about 150, and R-152a at
+   about 124 is in AIM scope and out of CARB's.
+
+The **closing paragraph of §4 is amended in place** rather than left, because it
+asserts the layering is *"federal and EU-wide forcing function layered on top of
+state/provincial LICENSING"* -- which puts the sub-national level on licensing
+only. It is compliance at two levels at once. The conclusion that paragraph
+reaches survives and is stronger.
+
+**Two limits stated rather than glossed.** CARB was found in **shipped code**, not
+in a research pass -- the threshold, floor, operator and citation are as
+`api/_lib/mech-assets.js` states them and were not re-read against 17 CCR 95380
+here, and that file's own comment lists what it deliberately does not encode.
+**And whether other states run comparable programmes is written as UNEXAMINED
+rather than answered**: no search was run, so the section asserts neither presence
+nor absence. The cheap version of that sentence ("several other states operate
+their own HFC programs") would have been a claim with nothing behind it and
+indistinguishable from a researched one -- I wrote it, caught it on re-read, and
+replaced it.
+
+### 4. The Vein Match suite is NOT going into GUARD_TESTS, and it does not need to
+
+`495c4f8f`, recorded in the suite's own header rather than by editing a registry
+it does not belong in.
+
+**It already runs.** `tools/run_all_tests.py` executes after every push and its
+own `discover()` returns `tests/stonedesk_veinmatch_photos.js` -- confirmed by
+**calling `discover()`**, not by reading its walk, which is the distinction that
+matters for a runner whose documented contract is to stay **silent on success**.
+A background full-suite run exited 0 with no output, which under that contract is
+all-green and is also why it could not confirm discovery on its own.
+
+**It is deliberately not in `GUARD_TESTS`.** That registry's own header states the
+admission rule twice: *"EVERY ENTRY IS A RECORDED DEFECT, not a test somebody
+liked"*, and it is *"the SEAM class: tests that check two independently-maintained
+sides still AGREE ... a test with no real defect behind it does not belong here --
+it belongs in the report-only runner."* Every arm of mine lives inside one panel
+and its own module, so it fails while its author is looking rather than silently
+through a rebase -- the class GUARD_TESTS explicitly excludes. The closest thing
+to a seam is arm 6a, and both sides of that agreement are in the same file.
+**The header now records what WOULD qualify it**: an assertion that the panel's
+outgoing image block and some other owner of the same contract -- `api/claude.js`'s
+accepted media types, a separate file with a separate owner -- still agree.
+Nothing asserts that today, anywhere.
+
+Confirmed in passing, since it was the stated blocker: **cc-queue11's GUARD_TESTS
+duplicate fix landed** -- 10 entries, 10 distinct paths.
+
+### 5. The prose-value-default sweep -- no live instance, and a measured argument against the gate
+
+`495c4f8f`, `docs/2026-09-26-prose-value-default-sweep.md`.
+
+Two passes over 363 files. Mechanical: every extraction, then every ternary/`||`
+fallback within three lines that is not in a safe-default set, **with comment
+lines excluded** -- because the deleted code is quoted inside its own tombstone,
+so a scan that reads comments finds the defect it was written to retire. It did,
+on the first run (PR 1.2, inside the scan written to catch it). Then a hand-read
+of every hit **plus** every `.match(` on a model-response-named variable,
+because pass 1 can only see a fallback that is *written* and a site with no
+fallback at all is a different question.
+
+**Ten sites extract from model output and all ten handle a miss correctly, in
+five different ways** -- which is the finding, because the convention then
+describes existing practice rather than imposing something new. Five return empty
+with guarded use (`sairncare`, `sairnsenior`, `sairndental`, `sairnroofing`,
+`sairngrounds`); one returns a named third value rendered as itself; two refuse
+outright; one renders nothing.
+
+**Two worth copying.** `sairnfreedom.html:4209` asks the **model** for a
+confidence flag -- *"Never guess a number when confident is false"* -- and refuses
+on four conditions, which turns a parse problem into a protocol: **a parse miss
+and a model that knows it is unsure are different events, and only the second can
+be asked for.** `sairnlaw.html:6191` states the class's argument in one line:
+*"a wrong page count on a rule with a hard page limit is worse than no page
+count."*
+
+**One judgment call, and it is not a defect.** `stonedesk.html:42786` defaults
+`match_status` to `'Unknown'` and **persists** it. Cleared on three grounds:
+`'Unknown'` cannot be mistaken for a verdict the way `5` can; it renders in grey
+with the word printed; and `git grep match_status` returns four lines -- schema
+comment, write, two render lines -- with **no count and no filter**, so an Unknown
+cannot quietly shrink an aggregate. Recorded rather than "fixed" so the next sweep
+does not re-open it.
+
+**A GATE IS NOT RECOMMENDED AND THE ARGUMENT IS A NUMBER. 28 candidates, ZERO are
+the defect, ONE was worth reading -- 4% precision**, and 23 of 28 are
+test-harness fakes (`opts.body ? JSON.parse(opts.body) : null`) which are correct
+code and would be noise on every push forever. **The precision cannot be regexed
+better**: the real signature requires knowing whether a variable holds model
+output, which is data flow, and `txt` in vmAnalyze and `txt` in a dozen string
+helpers are the same token. A checker that cannot make that distinction gets
+switched off, and a register then claiming the class is monitored is worse than no
+checker. The scanner stays in the scratchpad uncommitted for the same reason: a 4%
+scanner in `tools/` acquires an inventory entry and a promotion decision it cannot
+earn.
+
+### Raised, not acted on
+
+1. **62 register records carry a `planned` contributing-factor action and nothing
+   surfaces them** (§2). Oldest 2026-09-14. A `--planned` ageing view is the
+   obvious control; whether the register grows a CAPA follow-up half is a
+   decision.
+2. **`media_type:'image/jpeg'` hardcoded at eight sites in `stonedesk.html`** --
+   still open from cody-q11, still orthogonal. Note that `sairnroofing.html:5320`
+   already does it right with `pendingPhotoMediaType`, so the fix has a
+   same-platform model.
+3. **The `defect_register --check` red could not be reproduced** (§2). If it was
+   real, it was in another clone's working tree.
+4. **Nobody has measured how often each of the ten extraction sites' prompt
+   format is actually absent.** Every site is judged on what it does when the
+   format is missing, not on how often it is -- and that measurement needs real
+   responses, not a scan.
+5. **Carried forward unchanged from cody-q11:** `SD_ENCRYPTION_KEY` still unset;
+   the `SAIRN_INTERNAL_KEY` comment-field value; `tools/wait_for.py` still has no
+   probe; the CDT upload path still must not be built; and my expired
+   `hover-three-fixes` claim still reads open in the record.
