@@ -331,7 +331,16 @@ textarea#inp:focus{border-color:rgba(124,111,255,0.45)}
                 <option value="hoh">Head of Household</option>
               </select>
               <input type="number" id="profPriorYearTax" placeholder="Last year's total tax (optional)" min="0" step="0.01">
-              <label style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px"><input type="checkbox" id="profAgiOver150k" style="width:auto"> Last year's AGI was over $150k</label>
+              <!-- A NUMBER, NOT A CHECKBOX, AND THAT IS THE FIX. The old field asked
+                   "Last year's AGI was over $150k" -- one question for four filing
+                   statuses. The 110% trigger is $150,000, or $75,000 IF MARRIED FILING
+                   SEPARATELY (2026 Form 1040-ES line 12b, verbatim), so an MFS user with
+                   $90,000 answered NO truthfully and was given 100% when they owed 110%.
+                   A boolean cannot carry two thresholds; an amount carries any of them.
+                   The old checkbox is kept as a HIDDEN carrier of already-saved profiles
+                   so an existing answer is not silently discarded -- see loadProfile. -->
+              <input type="number" id="profPriorYearAgi" placeholder="Last year's AGI (optional -- sets the 110% rule)" min="0" step="1">
+              <input type="checkbox" id="profAgiOver150k" style="display:none">
               <select id="profRetirementVehicle">
                 <option value="none">No retirement plan</option>
                 <option value="sep">SEP IRA</option>
@@ -350,6 +359,9 @@ textarea#inp:focus{border-color:rgba(124,111,255,0.45)}
               <div class="fin-item"><span id="resQuarterlyLabel">Recommended quarterly set-aside</span><span class="fin-item-amt" id="resQuarterly">$0.00</span></div>
               <div class="fin-item"><span id="resDeadlineLabel">Next quarterly deadline</span><span class="fin-item-amt" id="resDeadline">--</span></div>
             </div>
+            <!-- Populated by renderEstimator, and EMPTY when nothing applies:
+                 a disclosure block that is always visible is one nobody reads. -->
+            <div class="fin-empty" id="estimatorNotes" style="display:none"></div>
           </div>
 
           <div class="fin-section" id="retirementSection">
@@ -1006,20 +1018,64 @@ const TAX_YEAR_2026 = {
   standardDeduction: { single: 16100, mfs: 16100, hoh: 24150, mfj: 32200 },
   sepCap: 72000,
   solo401kDeferral: 24500,
-  // [incomeUpTo, rate] cumulative brackets, confirmed 2026-08-10 against
-  // IRS.gov's own inflation-adjustment release + Tax Foundation's
-  // published table (cross-checked, not single-sourced). MFS confirmed
-  // as exactly half of MFJ at every threshold via two independently
-  // verified data points (10% cap $12,400 = half of MFJ's $24,800;
-  // 37% start $384,350 = half of MFJ's $768,700) -- not assumed from
-  // pre-2026 convention, this year's structure could have changed.
+  // [incomeUpTo, rate] cumulative brackets.
+  //
+  // ── RE-VERIFIED 2026-09-27 AGAINST THE 2026 FORM 1040-ES TAX RATE
+  //    SCHEDULES, AND HoH WAS WRONG ────────────────────────────────────
+  // The previous note said all four were "confirmed against IRS.gov's own
+  // inflation-adjustment release + Tax Foundation's published table". That
+  // release gives thresholds for SINGLE and MFJ ONLY -- read it again: every
+  // figure in it is "$X (for married couples filing jointly)". HoH and MFS
+  // were never in the source it cited, so two of the four tables rested on
+  // inference while the comment read as if all four had been checked.
+  //
+  // THE ERROR THAT FOUND: HoH's 24% band top was $201,775, which is SINGLE's
+  // figure from Schedule X. Schedule Z says $201,750. A $25 copy, and the
+  // same defect class as the SAIRNvet formulary's cross-species dose -- a
+  // faithful copy into a context that invalidates it.
+  //
+  // EVERY BOUNDARY BELOW IS NOW RE-DERIVED FROM THE CUMULATIVE TAX FIGURES
+  // PRINTED ON THE FORM, not read off a column, because the 1040-ES tables
+  // are laid out in four side-by-side schedules whose columns do not survive
+  // text extraction. The arithmetic is checked in
+  // tests/sairncash_safe_harbor.js against all 24 printed figures:
+  //   Schedule X (single)  1,240 / 5,800 / 17,966 / 41,024 / 58,448 / 192,979.25
+  //   Schedule Z (HoH)     1,770 / 7,740 / 16,155 / 39,207 / 56,631 / 191,171
+  //   Schedule Y-1 (MFJ)   2,480 / 11,600 / 35,932 / 82,048 / 116,896 / 206,583.50
+  //   Schedule Y-2 (MFS)   1,240 / 5,800 / 17,966 / 41,024 / 58,448 / 103,291.75
+  // A band top can be right while its rate is wrong; those figures pin both.
+  //
+  // MFS does happen to be exactly half of MFJ at every boundary, and that is
+  // now a RESULT rather than the assumption it was -- note that the same is
+  // NOT true of the standard deduction, where MFS is $16,100 and half of MFJ
+  // would be $16,100 by coincidence of this year's numbers but HoH's $24,150
+  // is not half of anything. Do not re-derive by halving.
   brackets: {
     single: [[12400,0.10],[50400,0.12],[105700,0.22],[201775,0.24],[256225,0.32],[640600,0.35],[Infinity,0.37]],
     mfj:    [[24800,0.10],[100800,0.12],[211400,0.22],[403550,0.24],[512450,0.32],[768700,0.35],[Infinity,0.37]],
-    hoh:    [[17700,0.10],[67450,0.12],[105700,0.22],[201775,0.24],[256200,0.32],[640600,0.35],[Infinity,0.37]],
+    hoh:    [[17700,0.10],[67450,0.12],[105700,0.22],[201750,0.24],[256200,0.32],[640600,0.35],[Infinity,0.37]],
     mfs:    [[12400,0.10],[50400,0.12],[105700,0.22],[201775,0.24],[256225,0.32],[384350,0.35],[Infinity,0.37]]
   }
 };
+
+// ── THE 110% SAFE-HARBOR TRIGGER IS FILING-STATUS DEPENDENT ──────────────
+// 2026 Form 1040-ES, Line 12b, verbatim: "If the AGI shown on your 2025 return
+// is more than $150,000 ($75,000 if married filing separately for 2026), enter
+// 110% of your 2025 tax as figured next."
+//
+// This app stored ONE boolean, `prior_year_agi_over_150k`, for every filing
+// status. An MFS user with $90,000 of prior-year AGI answers that question
+// NO -- correctly -- and is over their real $75,000 threshold, so 110% should
+// apply and 100% was used. That is a straight under-collection against a
+// penalty with no reasonable-cause waiver, aimed at exactly the filing status
+// the rule singles out.
+const SAFE_HARBOR_110_AGI_THRESHOLD = { single: 150000, hoh: 150000, mfj: 150000, mfs: 75000 };
+
+function safeHarborAgiThreshold(filingStatus) {
+  const t = SAFE_HARBOR_110_AGI_THRESHOLD[filingStatus];
+  // An unknown status must not silently get the most generous threshold.
+  return typeof t === 'number' ? t : 75000;
+}
 
 function calcSeTax(netProfit) {
   const netSeEarnings = Math.max(0, netProfit) * 0.9235;
@@ -1045,34 +1101,188 @@ function bracketTax(taxableIncome, filingStatus) {
   return tax;
 }
 
-function calcTotalTax(netProfit, filingStatus, retirementContribution) {
+// ── SECTION 199A QUALIFIED BUSINESS INCOME DEDUCTION ─────────────────────
+// 2026 Form 1040-ES, Estimated Tax Worksheet line 2b, verbatim: "If you can
+// take the qualified business income deduction, enter the estimated amount of
+// the deduction". It comes off taxable income BEFORE the tax is figured, so
+// omitting it OVERSTATED every set-aside this app has ever recommended -- the
+// harmless direction for a penalty and the wrong number for the user's cash.
+//
+// WHAT IS IMPLEMENTED: the below-threshold case, which is the whole of the
+// target market. 20% of QBI, capped at 20% of taxable income before this
+// deduction, with the 2026 minimum.
+//
+// 1040-ES What's New, verbatim: "beginning in 2026, if you have a minimum of
+// $1,000 in total qualified business income from an active trade or business,
+// you may be able to claim a minimum QBID of $400. Also, the phase-in range for
+// taxpayers who are married filing jointly will increase to $150,000 and to
+// $75,000 for all other filing statuses."
+//
+// ── AND WHAT IS NOT, STATED RATHER THAN IMPLIED ──────────────────────────
+// Above a taxable-income THRESHOLD, 199A adds W-2 wage / UBIA limits and an
+// SSTB phase-out, and the flat 20% stops being the answer. THAT THRESHOLD
+// COULD NOT BE VERIFIED FOR 2026: the 1040-ES and Pub 505 both give only the
+// phase-in RANGE above, and neither states the threshold it sits on top of.
+//
+// So CERTAIN_CEILING below is NOT the IRS threshold and must never be
+// described as one. It is a deliberately conservative floor -- comfortably
+// below any plausible 2026 threshold -- above which this figure is marked
+// UNCERTAIN. Erring toward "I cannot tell you" is the only honest option when
+// the constant that decides it has not been read from the source. A guessed
+// threshold that happened to be too HIGH would silently apply a flat 20% to
+// someone the limits bind, which is the failure this platform keeps recording.
+const QBI_CERTAIN_CEILING = { single: 150000, hoh: 150000, mfs: 150000, mfj: 300000 };
+const QBI_MIN_DEDUCTION = 400;
+const QBI_MIN_QBI_FOR_MINIMUM = 1000;
+
+function calcQbiDeduction(qbi, taxableIncomeBeforeQbi, filingStatus) {
+  const q = Math.max(0, Number(qbi) || 0);
+  const ti = Math.max(0, Number(taxableIncomeBeforeQbi) || 0);
+  let deduction = Math.min(0.20 * q, 0.20 * ti);
+  // The 2026 minimum is a FLOOR on the deduction, not on taxable income -- it
+  // cannot exceed what there is to deduct from.
+  if (q >= QBI_MIN_QBI_FOR_MINIMUM) deduction = Math.min(Math.max(deduction, QBI_MIN_DEDUCTION), ti);
+  const ceiling = QBI_CERTAIN_CEILING[filingStatus];
+  const certain = typeof ceiling === 'number' && ti <= ceiling;
+  return {
+    deduction: deduction,
+    certain: certain,
+    note: certain
+      ? 'Estimated at 20% of qualified business income, capped at 20% of taxable income (2026 minimum $400 from $1,000 of QBI). Below the section 199A limits.'
+      : 'NOT a reliable figure at this income. Above the section 199A threshold the W-2 wage / UBIA limits and the specified-service phase-out apply, and a flat 20% is not the answer. The 2026 threshold itself COULD NOT BE VERIFIED from the 1040-ES or Pub 505, which state only the phase-in range ($150,000 MFJ / $75,000 other) -- so this app marks the figure uncertain from a conservative floor rather than guessing where the real line is. Take this one to your accountant.'
+  };
+}
+
+// `opts.applyQbi` defaults to TRUE because the deduction is a real line on the
+// estimated-tax worksheet and leaving it out overstates the tax. It is a
+// parameter at all so the test can measure the difference the deduction makes
+// rather than asserting a number that could be right by coincidence.
+function calcTotalTax(netProfit, filingStatus, retirementContribution, opts) {
+  const applyQbi = !opts || opts.applyQbi !== false;
   const se = calcSeTax(netProfit);
   const addlMedicare = calcAdditionalMedicare(se.netSeEarnings, filingStatus);
   const seTax = se.ssAndMedicare + addlMedicare;
-  const taxableIncome = Math.max(0,
+  const taxableBeforeQbi = Math.max(0,
     se.netSeEarnings - (seTax / 2) - TAX_YEAR_2026.standardDeduction[filingStatus] - (retirementContribution || 0)
   );
+  // QBI for a sole proprietor is the business profit reduced by the deductible
+  // half of SE tax and by retirement contributions -- NOT the same figure as
+  // taxable income, which is also reduced by the standard deduction.
+  const qbi = Math.max(0, Math.max(0, netProfit) - (seTax / 2) - (retirementContribution || 0));
+  const qbiResult = applyQbi
+    ? calcQbiDeduction(qbi, taxableBeforeQbi, filingStatus)
+    : { deduction: 0, certain: true, note: 'QBI deduction not applied.' };
+  const taxableIncome = Math.max(0, taxableBeforeQbi - qbiResult.deduction);
   const incomeTax = bracketTax(taxableIncome, filingStatus);
-  return { seTax, incomeTax, totalTax: seTax + incomeTax, netSeEarnings: se.netSeEarnings, taxableIncome };
+  return { seTax, incomeTax, totalTax: seTax + incomeTax, netSeEarnings: se.netSeEarnings,
+           taxableIncome, taxableBeforeQbi, qbi: qbiResult };
 }
 
-// Real IRS safe-harbor rule: pay the lesser of 90% of this year's
-// estimated tax, or 100% (110% if last year's AGI exceeded $150k) of
-// last year's total tax. hasFullBasis reflects whether a real
-// prior-year figure was entered -- if not, the caller must show this
-// as a partial/best-available estimate, never as final (spec
-// confirmed decision + §1).
-function calcQuarterlySetAside(ytdNetProfit, filingStatus, priorYearTaxLiability, priorYearAgiOver150k) {
-  const estAnnual = calcTotalTax(ytdNetProfit, filingStatus, 0).totalTax;
+// ── THE CURRENT-YEAR LEG IS AN ANNUALISED PROJECTION, NOT YEAR-TO-DATE ───
+//
+// CORRECTED 2026-09-27. This is the fix for the defect that made the whole
+// calculator recommend LESS than the IRS floor for most of the year.
+//
+// 1040-ES General Rule, verbatim: you owe a penalty unless your payments cover
+// "the smaller of: a. 90% of the tax to be shown on your 2026 tax return, or
+// b. 100% of the tax shown on your 2025 tax return."
+//
+// `Math.min` was never the bug -- it IS the statute, and line 12c says so in
+// the form's own words ("Enter the smaller of line 12a or 12b"). The bug was
+// the first term: it was computed as the tax on the profit earned SO FAR, and
+// then displayed under the label "Estimated annual tax". Early in the year that
+// is near zero, `min` therefore selects it, and the recommendation collapses.
+//
+// MEASURED ON THE UNFIXED CODE, BEFORE THIS CHANGE:
+//   31 Mar, $10k/mo pace, prior-year tax $20,000 -> app $1,167/qtr vs floor
+//                                                   $5,000  (23.3%)
+//   31 Jan, $12.5k/mo pace, no prior-year figure  -> app $397/qtr vs floor
+//                                                   $9,142  (4.3%)
+//   30 Jun, $8k/mo pace, prior-year tax $14,000   -> app $2,141/qtr vs floor
+//                                                   $3,500  (61.2%)
+// And on the first of those the screen printed "Estimated annual tax (SE +
+// federal income) $5,187.42" where the projected annual tax was $30,640.76.
+//
+// IRC 6654(e) offers the de minimis, first-taxable-year, and casualty/disaster
+// exceptions and nothing else. There is no reasonable-cause waiver for the
+// estimated-tax underpayment penalty, which is why this one is not a rounding
+// argument: the app was routing users into a charge they cannot appeal.
+//
+// WHAT THIS DOES NOT DO: the annualised income installment method (Form 2210
+// Schedule AI), which a seasonal earner needs because a flat straight-line
+// projection is wrong for them in both directions. A uniform projection is the
+// right DEFAULT and the caller discloses it.
+function projectAnnualFromYtd(ytdNetProfit, asOfDate) {
+  const d = asOfDate instanceof Date ? asOfDate : new Date(asOfDate);
+  const year = d.getUTCFullYear();
+  const start = Date.UTC(year, 0, 1);
+  const end = Date.UTC(year + 1, 0, 1);
+  const raw = (d.getTime() - start) / (end - start);
+  // THE FLOOR IS NOT COSMETIC. On 1 January the elapsed fraction is ~0 and a
+  // naive divide yields Infinity, which renders as "$NaN" or "$Infinity"
+  // beside a tax deadline. One day is the smallest honest denominator.
+  const elapsedFraction = Math.min(1, Math.max(1 / 365, raw));
+  return {
+    elapsedFraction: elapsedFraction,
+    projected: (Number(ytdNetProfit) || 0) / elapsedFraction
+  };
+}
+
+// `priorYearAgi` is a NUMBER (this year's field) or `{legacyOver150k: bool}`
+// (a profile saved before the threshold was made filing-status aware). The
+// legacy shape cannot answer the MFS question, and that is reported rather
+// than assumed -- see agiBasisUncertain.
+function calcQuarterlySetAside(ytdNetProfit, filingStatus, priorYearTaxLiability, priorYearAgi, asOfDate) {
+  const proj = projectAnnualFromYtd(ytdNetProfit, asOfDate || new Date());
+  const projectedAnnualProfit = proj.projected;
+  const annualTax = calcTotalTax(projectedAnnualProfit, filingStatus, 0);
+  const estAnnual = annualTax.totalTax;
   const ninetyPct = 0.9 * estAnnual;
-  let safeHarborBasis = ninetyPct;
+
+  const threshold = safeHarborAgiThreshold(filingStatus);
+  let priorYearPct = 1.0;
+  let agiBasisUncertain = false;
+  if (priorYearAgi && typeof priorYearAgi === 'object') {
+    // Legacy: the stored boolean answered "over $150,000?". For every status
+    // whose real threshold IS $150,000 that answer is still exact. For MFS it
+    // is not: a truthful NO is consistent with $90,000, which is over $75,000.
+    priorYearPct = priorYearAgi.legacyOver150k ? 1.10 : 1.0;
+    agiBasisUncertain = threshold !== 150000 && !priorYearAgi.legacyOver150k;
+  } else if (typeof priorYearAgi === 'number') {
+    priorYearPct = priorYearAgi > threshold ? 1.10 : 1.0;
+  } else if (priorYearTaxLiability) {
+    // A prior-year TAX with no prior-year AGI. 100% is the smaller basis and
+    // therefore the flattering assumption, so it is flagged.
+    agiBasisUncertain = true;
+  }
+
+  // ── A MIN AGAINST AN UNKNOWN IS AN UNKNOWN, NOT ZERO ───────────────────
+  // With no profit recorded yet the projection has nothing to project FROM.
+  // Feeding the resulting $0 into `Math.min` makes it win every time and
+  // recommends nothing -- the same shape as the defect above, one step
+  // earlier, and arriving at the most flattering possible answer. So the 90%
+  // leg is treated as UNAVAILABLE rather than as zero: the prior-year basis
+  // stands alone if there is one, and if there is not, the caller is told
+  // there is nothing to compute.
+  const projectionHasNoData = !(Number(ytdNetProfit) > 0);
+  let priorYearBasis = null;
+  let safeHarborBasis = projectionHasNoData ? null : ninetyPct;
   let hasFullBasis = false;
   if (priorYearTaxLiability) {
-    const priorYearBasis = (priorYearAgiOver150k ? 1.10 : 1.0) * priorYearTaxLiability;
-    safeHarborBasis = Math.min(ninetyPct, priorYearBasis);
-    hasFullBasis = true;
+    priorYearBasis = priorYearPct * priorYearTaxLiability;
+    safeHarborBasis = projectionHasNoData
+      ? priorYearBasis
+      : Math.min(ninetyPct, priorYearBasis);
+    hasFullBasis = !projectionHasNoData;
   }
-  return { estAnnual, safeHarborBasis, quarterlyAmount: safeHarborBasis / 4, hasFullBasis };
+  return {
+    projectedAnnualProfit, elapsedFraction: proj.elapsedFraction,
+    estAnnual, ninetyPct, priorYearBasis, priorYearPct, agiThreshold: threshold,
+    agiBasisUncertain, qbi: annualTax.qbi, projectionHasNoData,
+    safeHarborBasis,
+    quarterlyAmount: safeHarborBasis === null ? null : safeHarborBasis / 4,
+    hasFullBasis
+  };
 }
 
 // Self-employed SEP/Solo 401(k) employer-equivalent contribution --
@@ -1129,21 +1339,42 @@ function initProfileSync() {
 function populateProfileForm() {
   const fs = document.getElementById('profFilingStatus');
   const pyt = document.getElementById('profPriorYearTax');
+  const agiAmt = document.getElementById('profPriorYearAgi');
   const agi = document.getElementById('profAgiOver150k');
   const rv = document.getElementById('profRetirementVehicle');
   if (fs && profileCache.filing_status) fs.value = profileCache.filing_status;
   if (pyt) pyt.value = profileCache.prior_year_tax_liability || '';
+  if (agiAmt) agiAmt.value = profileCache.prior_year_agi || '';
+  // THE LEGACY ANSWER IS CARRIED, NOT DISCARDED. A profile saved before this
+  // change holds only the boolean. Clearing it would throw away a real answer
+  // the user gave; reading it as if it settled the MFS question would be the
+  // original defect wearing a new field. So it is kept, and
+  // priorYearAgiForCalc() marks the MFS case uncertain instead of resolving it.
   if (agi) agi.checked = !!profileCache.prior_year_agi_over_150k;
   if (rv && profileCache.retirement_vehicle) rv.value = profileCache.retirement_vehicle;
+}
+
+// What to hand calcQuarterlySetAside: the AMOUNT when we have it, otherwise the
+// legacy boolean wrapped so the callee can tell the two apart. Returning a bare
+// `false` for "no legacy answer either" would be indistinguishable from "AGI is
+// definitely under the threshold", which is the flattering reading.
+function priorYearAgiForCalc() {
+  const n = Number(profileCache.prior_year_agi);
+  if (isFinite(n) && n > 0) return n;
+  if (typeof profileCache.prior_year_agi_over_150k === 'boolean') {
+    return { legacyOver150k: profileCache.prior_year_agi_over_150k };
+  }
+  return null;
 }
 
 async function saveProfile() {
   if (!window._fbProfileRef || !window._fbSetRaw) { showToast('Sync not ready yet -- try again in a moment'); return; }
   const filing_status = document.getElementById('profFilingStatus').value;
   const prior_year_tax_liability = Number(document.getElementById('profPriorYearTax').value) || null;
+  const prior_year_agi = Number(document.getElementById('profPriorYearAgi').value) || null;
   const prior_year_agi_over_150k = document.getElementById('profAgiOver150k').checked;
   const retirement_vehicle = document.getElementById('profRetirementVehicle').value;
-  await window._fbSetRaw(window._fbProfileRef, { filing_status, prior_year_tax_liability, prior_year_agi_over_150k, retirement_vehicle });
+  await window._fbSetRaw(window._fbProfileRef, { filing_status, prior_year_tax_liability, prior_year_agi, prior_year_agi_over_150k, retirement_vehicle });
   showToast('Profile saved');
 }
 
@@ -1174,8 +1405,63 @@ async function addDeductionEntry(amount, category, description) {
   return true;
 }
 
-function sumIncome() { return incomeCache.reduce((s, e) => s + (Number(e.amount) || 0), 0); }
-function sumDeductions() { return deductionCache.reduce((s, e) => s + (Number(e.amount) || 0), 0); }
+// ── ENTRIES BELONG TO A TAX YEAR, AND NOTHING WAS SPLITTING THEM ──────────
+// CORRECTED 2026-09-27. sumIncome() and sumDeductions() summed EVERY cached
+// entry, so the figure the app called "YTD net profit" was ALL-TIME net profit.
+// On 1 January 2027 every dollar of 2026 was still in the 2027 total, inflating
+// both the projection and the tax; and the label said YTD the whole time.
+//
+// The data was always there -- addIncomeEntry/addDeductionEntry have written a
+// `date` and a `created_at` on every entry since they were written. The
+// aggregation simply ignored them.
+//
+// AN UNPLACEABLE ENTRY IS A THIRD STATE. An entry with no readable date is real
+// money that cannot be attributed to a year. Dropping it understates the
+// set-aside; keeping it may book last year's income this year. Neither is
+// decidable here, so it is counted and returned for the caller to disclose --
+// the same rule this platform applies to every other could-not-tell.
+function entriesForTaxYear(entries, taxYear) {
+  const kept = [], unplaceable = [];
+  (entries || []).forEach(function (e) {
+    if (!e) return;
+    let y = null;
+    // `date` first, `created_at` as the fallback: both writers set created_at,
+    // so treating its absence as unplaceable would report a problem that does
+    // not exist for any entry this app created.
+    if (e.date) {
+      const t = Date.parse(e.date);
+      if (isFinite(t)) y = new Date(t).getUTCFullYear();
+    }
+    if (y === null && e.created_at) {
+      const t = Number(e.created_at);
+      if (isFinite(t) && t > 0) y = new Date(t).getUTCFullYear();
+    }
+    if (y === null) { unplaceable.push(e); return; }
+    if (y === taxYear) kept.push(e);
+  });
+  return { entries: kept, unplaceable: unplaceable };
+}
+
+// The tax year the estimator is working in. Taken from the same clock the
+// deadlines are, so a January user looking at Q4 of the prior year is at least
+// consistent with the deadline shown beside the figure.
+function currentTaxYear() { return new Date().getUTCFullYear(); }
+
+function sumIncome() {
+  return entriesForTaxYear(incomeCache, currentTaxYear())
+    .entries.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+}
+function sumDeductions() {
+  return entriesForTaxYear(deductionCache, currentTaxYear())
+    .entries.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+}
+// Surfaced so renderEstimator can disclose it. A count nobody shows is the
+// same as no count.
+function unplaceableEntryCount() {
+  const y = currentTaxYear();
+  return entriesForTaxYear(incomeCache, y).unplaceable.length
+       + entriesForTaxYear(deductionCache, y).unplaceable.length;
+}
 function ytdNetProfit() { return sumIncome() - sumDeductions(); }
 
 // Verified against IRS.gov for tax year 2026 specifically -- each date
@@ -1204,7 +1490,7 @@ function nextQuarterlyDeadline() {
 function renderEstimator() {
   const ytd = ytdNetProfit();
   const filingStatus = profileCache.filing_status || 'single';
-  const result = calcQuarterlySetAside(ytd, filingStatus, profileCache.prior_year_tax_liability, profileCache.prior_year_agi_over_150k);
+  const result = calcQuarterlySetAside(ytd, filingStatus, profileCache.prior_year_tax_liability, priorYearAgiForCalc(), new Date());
   // calcRetirementEstimate's 2nd param must be the FULL SE tax (SS +
   // Medicare + Additional Medicare) -- calcTotalTax().seTax already
   // includes all three (sairncash.html:658-667, unchanged, already
@@ -1224,17 +1510,70 @@ function renderEstimator() {
   const missingNoteEl = document.getElementById('profileMissingNote');
 
   if (ytdEl) ytdEl.textContent = '$' + (Number(ytd)||0).toFixed(2);
-  if (annualEl) annualEl.textContent = '$' + (Number(result.estAnnual)||0).toFixed(2);
-  if (quarterlyEl) quarterlyEl.textContent = '$' + (Number(result.quarterlyAmount)||0).toFixed(2);
-  if (quarterlyLabelEl) quarterlyLabelEl.textContent = result.hasFullBasis
-    ? 'Recommended quarterly set-aside'
-    : 'Partial estimate (90% of this year only) -- add prior-year tax above for the full figure';
+  if (annualEl) {
+    // The label says "Estimated ANNUAL tax", so the projection it rests on is
+    // shown beside it. A projected figure whose basis is invisible is the same
+    // claim the old YTD number was making silently.
+    annualEl.textContent = '$' + (Number(result.estAnnual)||0).toFixed(2)
+      + (result.projectionHasNoData ? '' :
+         ' (on $' + Math.round(result.projectedAnnualProfit).toLocaleString()
+         + ' projected, ' + Math.round(result.elapsedFraction * 100) + '% of the year elapsed)');
+  }
+  // `quarterlyAmount` is NULL, not zero, when there is nothing to compute from.
+  // `(Number(null)||0).toFixed(2)` would print "$0.00" -- a recommendation to
+  // set aside nothing, which is the most dangerous possible rendering of "I
+  // don't know yet".
+  if (quarterlyEl) quarterlyEl.textContent = result.quarterlyAmount === null
+    ? '--'
+    : '$' + Number(result.quarterlyAmount).toFixed(2);
+  if (quarterlyLabelEl) {
+    quarterlyLabelEl.textContent = result.quarterlyAmount === null
+      ? 'Nothing to compute yet -- log some income, or add last year\'s tax above'
+      : (result.hasFullBasis
+          ? 'Recommended quarterly set-aside (lesser of 90% of projected 2026 tax and '
+            + (result.priorYearPct === 1.10 ? '110%' : '100%') + ' of last year\'s)'
+          : 'Based on 90% of projected 2026 tax only -- add last year\'s tax above for the full safe harbor');
+  }
   if (deadlineEl) {
     const next = nextQuarterlyDeadline();
     deadlineEl.textContent = next ? (next.dateStr + ' (' + next.days + ' days)') : 'N/A';
   }
   if (retirementEl) retirementEl.textContent = '$' + (Number(retirement.estimate)||0).toFixed(2);
   if (missingNoteEl) missingNoteEl.style.display = result.hasFullBasis ? 'none' : '';
+
+  // ── THE THREE DISCLOSURES, EACH ONLY WHEN IT APPLIES ───────────────────
+  // A warning that shows every time is a warning nobody reads, which is why
+  // none of these is unconditional.
+  const notes = [];
+  if (result.agiBasisUncertain) {
+    notes.push(result.agiThreshold !== 150000
+      ? 'THE 110% RULE MAY APPLY AND THIS FIGURE ASSUMES IT DOES NOT. Married '
+        + 'filing separately triggers 110% of last year\'s tax above $75,000 of '
+        + 'prior-year AGI, and the answer stored for you was given to an older '
+        + 'question that asked about $150,000. Enter last year\'s AGI above to '
+        + 'settle it.'
+      : 'Last year\'s AGI is not recorded, so 100% of last year\'s tax was used. '
+        + 'If your prior-year AGI was over $'
+        + result.agiThreshold.toLocaleString() + ', the IRS floor is 110% and '
+        + 'this figure is low. Enter it above.');
+  }
+  if (result.qbi && result.qbi.certain === false) {
+    notes.push('QBI DEDUCTION: ' + result.qbi.note);
+  }
+  const unplaceable = (typeof unplaceableEntryCount === 'function') ? unplaceableEntryCount() : 0;
+  if (unplaceable > 0) {
+    notes.push(unplaceable + ' entr' + (unplaceable === 1 ? 'y' : 'ies') + ' could '
+      + 'not be placed in a tax year (no readable date) and '
+      + (unplaceable === 1 ? 'is' : 'are') + ' NOT included in the '
+      + currentTaxYear() + ' figures above. That is real money left out, not '
+      + 'money that does not exist -- the set-aside is low by whatever it '
+      + 'represents.');
+  }
+  const noteEl = document.getElementById('estimatorNotes');
+  if (noteEl) {
+    noteEl.innerHTML = notes.map(function (n) { return '<div>' + n + '</div>'; }).join('');
+    noteEl.style.display = notes.length ? '' : 'none';
+  }
 }
 
 async function submitIncome() {
@@ -1345,7 +1684,7 @@ function renderPredictiveInsights() {
 }
 
 // ── ASSISTANT ─────────────────────────────────────────────────────
-const SYSTEM_PROMPT = 'You are SAIRNcash, a financial co-pilot for freelancers and the self-employed (quarterly tax set-asides, deduction categorization, SEP IRA/Solo 401(k) contribution limits). Every number you give is an ESTIMATE, not a filing-ready figure -- say so plainly whenever you give one. You do not file taxes and must never imply that you do or that using SAIRNcash completes a filing obligation -- if a question calls for actually filing something, say plainly that SAIRNcash does not do that and the user should bring this to their accountant or filing software (TurboTax, H&R Block, a CPA) instead. Never provide your own estimate as a substitute for a real number the user hasn\'t given you -- ask for the real figures you need. When explaining a number, you will be given the already-computed figure and the inputs it came from in the user\'s message context -- explain it in plain language. Never recompute, restate a different number, or imply a different figure is more correct. You have one tool, get_attention_digest, that checks this user\'s real logged data for a small, fixed set of items worth flagging. Never provide your own estimate, guess, or general-knowledge substitute for anything that tool would answer -- if it errors or a question calls for data you have not actually retrieved via the tool this turn, say so plainly and stop.';
+const SYSTEM_PROMPT = 'You are SAIRNcash, a financial co-pilot for freelancers and the self-employed (quarterly tax set-asides, deduction categorization, SEP IRA/Solo 401(k) contribution limits). Every number you give is an ESTIMATE, not a filing-ready figure -- say so plainly whenever you give one. You do not file taxes and must never imply that you do or that using SAIRNcash completes a filing obligation -- if a question calls for actually filing something, say plainly that SAIRNcash does not do that and the user should bring this to their accountant or filing software (TurboTax, H&R Block, a CPA) instead. Never provide your own estimate as a substitute for a real number the user hasn\'t given you -- ask for the real figures you need. When explaining a number, you will be given the already-computed figure and the inputs it came from in the user\'s message context -- explain it in plain language. Never recompute, restate a different number, or imply a different figure is more correct. IF THE USER ASKS ABOUT FORM 1099-K: the 2026 reporting threshold is gross payments over $20,000 AND more than 200 transactions, both conditions, restored by the One Big Beautiful Bill to the pre-ARPA figures. Say plainly that this is a threshold on WHEN THE PAYMENT PLATFORM must file the form, NOT a threshold on what the user owes tax on -- income is taxable whether or not a 1099-K ever arrives, and a platform may send one below the threshold anyway. Never tell a user that income under $20,000 or under 200 transactions does not need to be reported. You have one tool, get_attention_digest, that checks this user\'s real logged data for a small, fixed set of items worth flagging. Never provide your own estimate, guess, or general-knowledge substitute for anything that tool would answer -- if it errors or a question calls for data you have not actually retrieved via the tool this turn, say so plainly and stop.';
 
 // ── AI TOOL-CALLING (2026-08-18, agentic follow-up) ─────────────────
 // Single-user analog of SAIRNbiz's SB_TOOLS/sbRegisterTool pattern (see
@@ -1393,12 +1732,46 @@ function computeAttentionItems() {
   // Mirrors the app's own inline #profileMissingNote condition
   // (renderEstimator(), sairncash.html) -- same real signal, not a new one.
   var ytd = ytdNetProfit();
-  var result = calcQuarterlySetAside(ytd, profileCache.filing_status || 'single', profileCache.prior_year_tax_liability, profileCache.prior_year_agi_over_150k);
+  // SAME ARGUMENTS AS renderEstimator, VIA THE SAME HELPER. This call site was
+  // passing the raw `prior_year_agi_over_150k` boolean and no date -- so after
+  // the safe-harbor fix the AI digest would have gone on reporting against the
+  // old, un-annualised basis while the screen showed the corrected one, and the
+  // two would have disagreed in front of the user. A second call site with its
+  // own argument list is how one fix becomes half a fix.
+  var result = calcQuarterlySetAside(ytd, profileCache.filing_status || 'single',
+    profileCache.prior_year_tax_liability, priorYearAgiForCalc(), new Date());
   if (!result.hasFullBasis) {
     findings.push({
       area: 'incomplete_profile',
       severity: 'warning',
-      detail: 'Prior-year tax liability is not on file, so the quarterly estimate is a partial figure (90% of this year only), not the full safe-harbor calculation.'
+      detail: 'Prior-year tax liability is not on file, so the quarterly estimate is a partial figure (90% of projected 2026 tax only), not the full safe-harbor calculation.'
+    });
+  }
+  // THE 110%-MAY-APPLY CASE IS ITS OWN FINDING, not folded into the one above.
+  // It is the item that costs money: an MFS user over $75,000 of prior-year AGI
+  // owes 110% and this app used to give them 100%, and the underpayment penalty
+  // has no reasonable-cause waiver.
+  if (result.agiBasisUncertain) {
+    findings.push({
+      area: 'prior_year_agi_missing',
+      severity: 'warning',
+      detail: 'Last year\'s AGI is not recorded as an amount, so the estimate assumes the 100% prior-year basis. The IRS floor is 110% above $'
+        + result.agiThreshold.toLocaleString() + ' of prior-year AGI for this filing status'
+        + (result.agiThreshold !== 150000
+            ? ' -- and the answer on file was given to an older question that asked about $150,000, so it does not settle this one'
+            : '')
+        + '. Entering the amount in the Tax Profile settles it.'
+    });
+  }
+  var unplaceableNow = (typeof unplaceableEntryCount === 'function') ? unplaceableEntryCount() : 0;
+  if (unplaceableNow > 0) {
+    findings.push({
+      area: 'entries_without_a_tax_year',
+      severity: 'warning',
+      detail: unplaceableNow + ' entr' + (unplaceableNow === 1 ? 'y has' : 'ies have')
+        + ' no readable date, so ' + (unplaceableNow === 1 ? 'it is' : 'they are')
+        + ' excluded from the ' + currentTaxYear() + ' totals entirely. The figures are low by whatever that represents.',
+      count: unplaceableNow
     });
   }
   return findings;
