@@ -92,25 +92,13 @@ function grab(sig, terminator) {
 // this file -- the arms all pass, and the strings being searched for are in
 // markup rather than in JS literals, so the exposure is nil today. A suite
 // asserting on JS string contents would need more than this.
-const codeOnly = (() => {
-  const out = [];
-  let i = 0, html_c = false, blk_c = false;
-  while (i < html.length) {
-    if (!html_c && !blk_c && html.startsWith('<!--', i)) { html_c = true; i += 4; continue; }
-    if (html_c && html.startsWith('-->', i)) { html_c = false; i += 3; continue; }
-    if (!html_c && !blk_c && html.startsWith('/*', i)) { blk_c = true; i += 2; continue; }
-    if (blk_c && html.startsWith('*/', i)) { blk_c = false; i += 2; continue; }
-    if (!html_c && !blk_c && html.startsWith('//', i)) {
-      const nl = html.indexOf('\n', i);
-      i = nl === -1 ? html.length : nl;
-      continue;
-    }
-    if (!html_c && !blk_c) out.push(html[i]);
-    else if (html[i] === '\n') out.push('\n');   // keep line structure for slicing
-    i++;
-  }
-  return out.join('');
-})();
+const { stripComments } = require('./lib/strip_comments.js');
+// Shared, because three suites grew three versions in one day and all three
+// were wrong differently -- see that module's header. The naive inline version
+// this replaces treated `/*` as a comment start anywhere, so
+// `accept="image/*"` opened a block comment that swallowed the rest of the
+// file and arm E1 failed against correct markup.
+const codeOnly = stripComments(html);
 
 console.log('SAIRNbiz -- the plan cards stop asserting Ohio, and the OT threshold is read');
 

@@ -543,6 +543,26 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
          and has been reporting it missing since 2026-08-27. -->
     <div class="fg"><label>State caregiver ID <span style="font-weight:400;color:var(--muted)">— federal EVV element 5 of 6; assigned by the state, not by this app</span></label>
       <input id="cg-state-id" placeholder="As issued by your state's EVV programme"></div>
+    <!-- ── THE LINK THE CERT GATE NEEDS, AND WHY A NAME WOULD NOT DO ─────
+         2026-09-26. Assignment blocks on an expired CPR now, and that gate needs
+         to get from an ASSIGNED EMPLOYEE to a CAREGIVER RECORD. The two were
+         never joined: `assigned_employee_id` on a client and on a visit is an
+         `employee_id` out of SAIRNbiz's roster, and a `sen_caregivers` row is
+         keyed `CG-...` with a `name` and nothing else.
+
+         MATCHING ON NAME WAS THE OBVIOUS SHORTCUT AND IT IS WORSE THAN NO GATE.
+         A roster display name differing from the caregiver record by a middle
+         initial, a married name or Bob-for-Robert produces NO MATCH -- and a
+         no-match gate PASSES, silently, on exactly the person it exists to stop.
+         Two caregivers with one name is the same failure pointing at the wrong
+         certificate. So the link is DECLARED here rather than inferred, and an
+         unlinked record makes the gate say COULD NOT CHECK instead of OK.
+
+         IT IS OPTIONAL ON PURPOSE. Making it required would refuse every
+         caregiver edit on every existing install until somebody migrated the
+         data, which is a bigger harm than the one being fixed. -->
+    <div class="fg"><label>Linked employee <span style="font-weight:400;color:var(--muted)">— who this person is on the roster. Without it an expired-certificate check on an assignment cannot reach this record, and it will say so rather than pass</span></label>
+      <select id="cg-employee"><option value="">Not linked</option></select></div>
     <div class="fr">
       <div class="fg"><label>Aide type</label><select id="cg-aide-type">
         <option value="">Not recorded</option>
@@ -1874,6 +1894,23 @@ function senEmployeeName(id){
   if(_senRoster){var m=_senRoster.find(function(e){return e.employee_id===id;});if(m)return m.display_name||m.employee_id;}
   return id;
 }
+// Fills the caregiver modal's roster link. Keeps a stored value that is no
+// longer on the roster as an option rather than dropping it: silently clearing a
+// link would turn a checked caregiver into an unchecked one, which is the
+// direction that must never happen quietly.
+function senPopulateCaregiverEmployee(cur){
+  var sel=$('cg-employee');
+  if(!sel)return;
+  var opts=['<option value="">Not linked</option>'];
+  var seen=false;
+  senAssignable().forEach(function(e){
+    if(String(e.employee_id)===String(cur))seen=true;
+    opts.push('<option value="'+H(e.employee_id)+'">'+H(e.display_name||e.employee_id)+'</option>');
+  });
+  if(cur&&!seen)opts.push('<option value="'+H(cur)+'">'+H(cur)+' — not on the current roster</option>');
+  sel.innerHTML=opts.join('');
+  sel.value=cur||'';
+}
 function senPopulateAssigneeControls(){
   var sel=$('classignee');
   if(!sel||!_senRoster)return;
@@ -2334,6 +2371,11 @@ async function saveClient(){
     :(senIsBroadRead()
       ?((existing&&existing.assigned_employee_id)||'')
       :((existing&&existing.assigned_employee_id)||(senSession&&senSession.employee_id)||''));
+  // THE GATE, BEFORE THE RECORD IS BUILT. Placed here rather than after the
+  // write so a refusal leaves nothing behind -- the same ordering saveVisit and
+  // senReassignClient use below.
+  var _cg=senCertGateMessage(senCertGate(assignedTo));
+  if(_cg.block){toast(_cg.msg,9000);return;}
   var rec={
     id:ceid||newId('CL'),name:name,phone:$('cl-phone').value.trim(),address:$('cl-address').value.trim(),
     diagnosis:$('cl-diagnosis').value.trim(),payer:$('cl-payer').value,authorized_hours:Number($('cl-hours').value)||0,
@@ -2346,16 +2388,82 @@ async function saveClient(){
   st('sen_clients',list);
   closeClientModal();rClients();rDash();
   var syncResult=await senData('write','sen_clients',rec,true);
-  toast(syncResult?('Saved - '+rec.name):'Saved on this device only -- server sync failed, try again with a connection');
+  // A COULD-NOT-CHECK IS SAID ON EVERY SAVE, not once. Appended to whichever
+  // outcome the sync produced, because both are true at the same time and the
+  // certification half is the one nobody would otherwise learn.
+  toast((syncResult?('Saved - '+rec.name):'Saved on this device only -- server sync failed, try again with a connection')
+        +(_cg.msg?' '+_cg.msg:''),_cg.msg?9000:undefined);
 }
 async function senReassignClient(id,newEmployeeId){
   var list=clients();
   var c=list.find(function(x){return x.id===id;});
   if(!c){toast('Client not found');return;}
+  // SAME GATE ON THE REASSIGN PATH. A UI that refuses to OFFER is not a refusal
+  // to DO, and this function is reachable independently of the client modal.
+  var g=senCertGateMessage(senCertGate(newEmployeeId));
+  if(g.block){toast(g.msg,9000);return;}
   c.assigned_employee_id=newEmployeeId||'';
   st('sen_clients',list);rClients();
   var syncResult=await senData('write','sen_clients',c,true);
-  toast(syncResult?(c.name+' reassigned to '+senEmployeeName(newEmployeeId)):'Reassignment saved on this device only -- server sync failed, try again with a connection');
+  toast((syncResult?(c.name+' reassigned to '+senEmployeeName(newEmployeeId)):'Reassignment saved on this device only -- server sync failed, try again with a connection')
+        +(g.msg?' '+g.msg:''),g.msg?9000:undefined);
+}
+// ── EXPIRED-CERTIFICATE GATE ON ASSIGNMENT (2026-09-26) ────────────────────
+// The app KNEW and did not act. `cpr_expiry` is stored per caregiver,
+// `certDaysUntil()` computes the days, `rCaregivers()` renders a red **Expired**
+// badge -- and three write paths assigned that person to a client or a visit
+// without asking. Two screens, two answers, and no disagreement flagged.
+//
+// IT REFUSES RATHER THAN WARNING, which is a decision and not the default here.
+// api/_lib/mech-credentials.js's dispatch-eligibility comment argues the other
+// way for its own case -- "WHAT THIS IS NOT: a gate. Nothing here refuses a
+// dispatch" -- because a mechanical dispatcher covering an emergency call should
+// not be stopped by a lapsed certificate. Michael's call for SAIRNsenior is the
+// opposite and is recorded as his: an expired CPR on a caregiver going into a
+// client's home is refused. The refusal names the date and the number of days so
+// it is actionable in the same breath.
+//
+// THREE STATES, AND THE THIRD IS NEVER FOLDED INTO A PASS. `unlinked` and
+// `no_date` are COULD-NOT-CHECK, not OK. They allow the assignment -- blocking
+// on could-not-tell would make every existing install unusable until its data
+// was migrated -- and they say so on screen, every time, naming which record
+// could not be reached. An allow that is silent about why is the state this
+// whole gate exists to remove.
+function senCertGate(employeeId){
+  if(!employeeId) return {state:'unassigned'};
+  var cg=caregivers().filter(function(c){return c&&c.employee_id&&String(c.employee_id)===String(employeeId);});
+  // MORE THAN ONE LINKED RECORD IS ITS OWN ANSWER. Picking the first would make
+  // the gate depend on array order, and the safe reading of two records for one
+  // employee is that nobody knows which certificate governs.
+  if(cg.length>1) return {state:'ambiguous', count:cg.length};
+  if(!cg.length) return {state:'unlinked', who:senEmployeeName(employeeId)};
+  var c=cg[0];
+  if(!c.cpr_expiry) return {state:'no_date', who:c.name};
+  var d=certDaysUntil(c.cpr_expiry);
+  if(d===null) return {state:'no_date', who:c.name};
+  if(d<0) return {state:'expired', who:c.name, days:Math.abs(d), on:c.cpr_expiry};
+  if(d<=30) return {state:'expiring', who:c.name, days:d, on:c.cpr_expiry};
+  return {state:'ok', who:c.name, days:d, on:c.cpr_expiry};
+}
+// One sentence per state, so all three callers refuse and disclose identically.
+// Returns {block:bool, msg:string} -- `msg` empty only where there is nothing to say.
+function senCertGateMessage(g){
+  if(g.state==='expired')
+    return {block:true, msg:'REFUSED. '+g.who+"'s CPR certification expired on "+g.on+
+      ' — '+g.days+' day'+(g.days===1?'':'s')+' ago. Nothing was saved. Record the renewal on the '+
+      'Caregivers panel, then assign.'};
+  if(g.state==='ambiguous')
+    return {block:true, msg:'REFUSED. '+g.count+' caregiver records are linked to this employee, so '+
+      'which certificate governs is unknown. Nothing was saved. Fix the link on the Caregivers panel.'};
+  if(g.state==='unlinked')
+    return {block:false, msg:'Certification NOT CHECKED — '+g.who+' is not linked to a caregiver record, '+
+      'so this app cannot see their CPR date. Saved anyway. Set "Linked employee" on their Caregivers entry.'};
+  if(g.state==='no_date')
+    return {block:false, msg:'Certification NOT CHECKED — no CPR expiry is recorded for '+g.who+
+      '. Saved anyway. An absent date is not a current certificate.'};
+  if(g.state==='expiring')
+    return {block:false, msg:g.who+"'s CPR expires in "+g.days+' day'+(g.days===1?'':'s')+' ('+g.on+').'};
+  return {block:false, msg:''};
 }
 function newId(prefix){return prefix+'-'+Date.now()+'-'+Math.floor(Math.random()*1000);}
 function rClients(){
@@ -2553,6 +2661,7 @@ function senHydrateCaregivers(){
 function openCaregiverModal(){
   if(!senIsManagement()){toast('Only management can add or edit caregiver records');return;}
   cgeid=null;['cg-name','cg-phone','cg-cpr','cg-bgcheck','cg-notes','cg-state-id'].forEach(function(f){$(f).value='';});
+  senPopulateCaregiverEmployee('');
   $('cg-status').value='onboarding';
   brFillSelect('cg-branch','');
   $('caregivermodal').classList.add('on');
@@ -2562,6 +2671,7 @@ function editCaregiver(id){
   if(!senIsManagement()){toast('Only management can add or edit caregiver records');return;}
   var c=caregivers().find(function(x){return x.id===id;});if(!c)return;
   cgeid=id;$('cg-name').value=c.name||'';$('cg-phone').value=c.phone||'';$('cg-cpr').value=c.cpr_expiry||'';
+  senPopulateCaregiverEmployee(c.employee_id||'');
   $('cg-bgcheck').value=c.bgcheck_date||'';$('cg-status').value=c.status||'onboarding';$('cg-notes').value=c.notes||'';
   $('cg-aide-type').value=c.aide_type||'';$('cg-program').value=c.program||'';
   if($('cg-state-id'))$('cg-state-id').value=c.state_caregiver_id||'';
@@ -2575,6 +2685,8 @@ async function saveCaregiver(){
     bgcheck_date:$('cg-bgcheck').value,status:$('cg-status').value,notes:$('cg-notes').value.trim(),
     aide_type:$('cg-aide-type').value,program:$('cg-program').value,
     state_caregiver_id:($('cg-state-id')&&$('cg-state-id').value.trim())||'',
+    // The roster link the cert gate resolves through. See the field's own comment.
+    employee_id:($('cg-employee')&&$('cg-employee').value)||'',
     branch_id:($('cg-branch')&&$('cg-branch').value)||''};
   var list=caregivers();
   if(cgeid){list=list.map(function(x){return x.id===cgeid?rec:x;});}else{list.push(rec);}
@@ -3019,6 +3131,11 @@ async function saveVisit(){
   var date=$('vs-date').value;
   if(!date){toast('Select a date');return;}
   var cl=clients().find(function(c){return c.id===clientId;});
+  // THE THIRD ASSIGNMENT PATH, AND THE ONE CLOSEST TO THE CLIENT'S DOOR. A visit
+  // is the actual appointment; the other two assign a caregiver to a person in
+  // general. Gated before the record is built so a refusal leaves nothing.
+  var vg=senCertGateMessage(senCertGate($('vs-caregiver').value||''));
+  if(vg.block){toast(vg.msg,9000);return;}
   var rec={id:newId('VS'),client_id:clientId,client_name:cl?cl.name:'',
     scheduled_date:date,scheduled_start:$('vs-start').value,scheduled_end:$('vs-end').value,
     service_type:($('vs-service-type')&&$('vs-service-type').value)||'',
@@ -3026,7 +3143,8 @@ async function saveVisit(){
   var list=visits();list.push(rec);st('sen_visits',list);
   closeVisitModal();renderScheduleView();vsRenderKpis();
   var saved=await senData('write','sen_visits',rec,true);
-  toast(saved?'Visit scheduled':'Saved on this device only -- server sync failed, try again with a connection');
+  toast((saved?'Visit scheduled':'Saved on this device only -- server sync failed, try again with a connection')
+        +(vg.msg?' '+vg.msg:''),vg.msg?9000:undefined);
 }
 
 // ── REFERRAL SOURCES (competitive-gap audit A7, 2026-09-02) ──────────────
