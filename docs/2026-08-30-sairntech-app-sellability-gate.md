@@ -107,6 +107,25 @@ and 64 rules when the app had eleven and 119. The catalog card must render the
 specific half **from live data** wherever possible, exactly as that document
 concluded the app itself should.
 
+**IT HAPPENED A SECOND TIME AND THE SECOND ONE WAS WORSE (found 2026-09-26).**
+The replacement claim — written on 2026-08-24 with a header recording the first
+staleness — described **eleven jurisdictions and 119 rules** when the app had
+**39 and 437**. An understatement is embarrassing and harmless. What made this
+one different is that the same sentence also carried *"every jurisdiction carries
+both domains and a holiday calendar for 2026 through 2031"*, and that was TRUE
+OF THE ELEVEN AND FALSE OF THE 39: 12 of 39 carry both domains and roughly half
+the calendars stop at 2026. So a document whose only purpose is external claims
+promised appellate coverage in 27 jurisdictions that have none.
+
+**The mechanism is worth more than the instance.** Nobody wrote anything false.
+A correctly-scoped sentence ("all eleven carry both") outlived its scope as
+jurisdictions were added, and a later reader could not tell whether "all eleven"
+meant *all of them* or *these eleven*. **So Check 3 is not only "is the count
+current" — it is "does every UNIVERSAL word in the claim still quantify over the
+current set."** A claim that ages into a lie by growth, rather than by editing,
+passes a count check and fails this one. The fixed claim now carries a runnable
+re-derivation block instead of figures to be trusted.
+
 ### Check 4 — Guardian v2 passes, with coverage disclosed
 
 **Fail if:** Check 0a (syntax) fails, or Check 0b finds a fabricated KPI, or the

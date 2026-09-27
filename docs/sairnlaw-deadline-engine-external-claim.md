@@ -1,29 +1,144 @@
 # SAIRNlaw deadline engine — approved external-facing claim
 
-**Updated 2026-08-24, after the Batch 2 `sairn-decision-gate` re-run.**
-Supersedes the Phase 8c version, which described **five jurisdictions and 64
-rules** and had gone **four phases stale**. This is the sentence to use with
-anyone outside the team — proposals, sales conversations, status updates. Do
-not paraphrase it looser.
+**Updated 2026-09-26 (Fourth). The 2026-08-24 version had gone stale in THREE
+directions at once, and two of them were overstatements in a document whose
+stated purpose is proposals and sales conversations.** The header of that version
+opens by recording that the one before it "had gone four phases stale." It
+happened again, which is the argument for the measurement block below rather than
+for a fourth apology.
 
-> The deadline engine computes civil-litigation and appellate deadlines across
-> eleven jurisdictions — federal, Ohio, Indiana, Michigan, Pennsylvania,
-> Illinois, Florida, California, Texas, New York and Georgia — from 119 rules,
-> every one of them encoded from primary-source rule text read verbatim, with a
-> full audit trail from the date back to the authority that produced it. No
-> language model is anywhere in the computation. Every jurisdiction carries both
-> domains and a holiday calendar for 2026 through 2031, and every calendar is
-> built from the statute that defines a legal holiday rather than from a court's
-> published closure schedule, because those two lists genuinely differ. The
-> engine refuses rather than estimating anything it does not cover — a missing
-> rule, a missing holiday year, an ambiguous rule set, or a rule that sets no
-> deadline at all. **It computes from the trigger date it is given and does not
-> verify that the date means what the rule requires; where a rule runs from a
-> legally computed or defined event, the user must supply that event's date, and
-> the engine will not detect a wrong one.** Appeal periods in particular are not
-> portable across state lines: Michigan allows twenty-one days, Pennsylvania ten
-> in three named subject matters, Texas twenty for an accelerated appeal, and the
-> clock starts from a different event in five different states.
+**WHAT WAS WRONG, each measured rather than estimated:**
+
+| The 2026-08-24 claim said | Measured 2026-09-26 | Direction |
+|---|---|---|
+| "eleven jurisdictions … from 119 rules" | **39 jurisdictions, 437 rules** across 47 seed files | UNDERSTATED, 3.7x |
+| "Every jurisdiction carries both domains" | **12 of 39** carry both; 27 are civil-litigation only | **OVERSTATED** |
+| "a holiday calendar for 2026 through 2031" | **16 of 34** calendar files reach 2031; 15 carry **2026 only** | **OVERSTATED** |
+
+The understatement cost a sale nobody made. **The two overstatements are the
+serious ones**: this sentence promised appellate coverage in 27 jurisdictions that
+have none and five extra years of holidays that were never emitted — and the
+Alabama calendar's own `_readme` says "2027 IS NOT EMITTED" in those words. On a
+deadline product a missing holiday year is safe in the ENGINE, which refuses; it
+is not safe in the CLAIM, which said it was covered. A firm that relied on the
+sentence for appellate work in a civil-litigation-only jurisdiction would find
+out from a refusal, not from us.
+
+**RE-DERIVE THE NUMBERS, DO NOT QUOTE THEM FROM HERE.** That is the whole lesson
+of three stale versions. The jurisdiction and rule counts come from the seed
+files, which are the authority:
+
+```
+python - <<'PY'
+import json, io, glob, collections
+seeds = sorted(glob.glob('sql/sairnlaw_deadline_seed_*.json'))
+rules, doms = 0, collections.defaultdict(set)
+for p in seeds:
+    d = json.load(io.open(p, encoding='utf-8'))
+    for r in (d.get('rules') if isinstance(d, dict) else d) or []:
+        rules += 1
+        if r.get('jurisdiction') and r.get('domain'):
+            doms[r['jurisdiction']].add(r['domain'])
+print('seed files', len(seeds), '| rules', rules, '| jurisdictions', len(doms))
+print('both domains', sum(1 for j in doms if len(doms[j]) >= 2), 'of', len(doms))
+PY
+```
+
+This is the sentence to use with anyone outside the team — proposals, sales
+conversations, status updates. Do not paraphrase it looser, and do not quote its
+figures without re-running the block above.
+
+> The deadline engine computes litigation deadlines across **39 jurisdictions,
+> including the federal rules, from 437 rules** — every one of them encoded from
+> primary-source rule text read verbatim, with a full audit trail from the date
+> back to the authority that produced it. No language model is anywhere in the
+> computation. **Coverage is per jurisdiction and is not uniform: 12 of the 39
+> carry both civil-litigation and appellate rules, and the remaining 27 carry
+> civil litigation only. Holiday calendars likewise vary — roughly half reach
+> 2031 and the rest currently carry 2026 alone.** Every calendar is built from
+> the statute that defines a legal holiday rather than from a court's published
+> closure schedule, because those two lists genuinely differ. The engine refuses
+> rather than estimating anything it does not cover — a missing rule, a missing
+> holiday year, an ambiguous rule set, or a rule that sets no deadline at all.
+> **It computes from the trigger date it is given and does not verify that the
+> date means what the rule requires; where a rule runs from a legally computed or
+> defined event, the user must supply that event's date, and the engine will not
+> detect a wrong one.** Appeal periods in particular are not portable across state
+> lines: Michigan allows twenty-one days, Pennsylvania ten in three named subject
+> matters, Texas twenty for an accelerated appeal, and the clock starts from a
+> different event in five different states.
+
+**"Civil-litigation and appellate" became "litigation", and the per-jurisdiction
+sentence carries the detail.** One adjective covering two dimensions is the
+failure mode this file's own history names; a blanket "both domains" was that
+adjective doing it again.
+
+---
+
+## The positioning this claim USED to rest on, and why it has moved
+
+**Do not lead with jurisdiction scale, and do not present the citator as
+something competitors lack.** Both were reasonable positions and both have been
+overtaken.
+
+- **Jurisdiction scale.** Clio ships a native court-rules / deadline capability.
+  39 jurisdictions is a real engineering fact and a poor differentiator: it is a
+  number a funded competitor can match by buying data, and a prospect cannot tell
+  two coverage tables apart in a demo.
+- **A shipped citator.** Clio's roughly **$1B acquisition of vLex (2025)** —
+  reported as the largest private legal-tech transaction to date — gives them a
+  real citator with a research corpus behind it. "We have a working citator" is
+  no longer a distinguishing sentence; theirs is bigger.
+
+**WHAT THE ABOVE RESTS ON, STATED SO NOBODY OVER-READS IT.** Third-party reports
+gathered in `docs/cloud-research/SAIRNlaw-external-competitive-gap-audit-2026-09-25.md`
+§6. **No vendor page was fetched in that pass** — Clio's own domain was blocked,
+as that document says on its first page. So this is "assume a well-funded
+competitor has parity or better", which is the right planning posture, and NOT a
+verified feature comparison. It would be a mistake to tell a prospect what Clio
+does or does not do on this evidence.
+
+### The two things that are actually still ours to claim
+
+**1. THE US + ENGLAND & WALES COMBINATION, UNDER LICENCES THAT PERMIT IT.** The
+citator resolves US authority through CourtListener and England & Wales through
+**Find Case Law (The National Archives)** under the Open Justice Licence, which
+expressly permits commercial use and incorporation into a product. That
+combination is narrow, it is deliberate, and it is durable for a reason that has
+nothing to do with engineering: `docs/sairnlaw-international-coverage-scope.md`
+records that Australia, Scotland, Northern Ireland and Ireland are excluded by
+their sources' own written terms — AustLII names AI uses, BAILII names this
+product category — and CanLII has sued an AI legal-research platform over
+scraping. **A competitor cannot buy its way past a written prohibition, and one
+that routes around it has a different problem than we do.** Say the combination
+and say the licence; do not imply broader international coverage.
+
+**2. NATIVE INTEGRATION — ONE APP, NOT AN INTEGRATION.** The deadline engine, the
+citator, the matter record, the conflict check and the IOLTA three-way
+reconciliation are the same application, so a computed deadline lands on the
+matter and a verified citation is checked before it is displayed as authority,
+without a connector, a sync window or a second vendor relationship. This is the
+claim that a consolidating market makes *stronger* rather than weaker — the
+competitive signals in that same audit §6 are acquisitions and partnerships
+(vLex, Harvey–LexisNexis, Smokeball–Thomson Reuters), which is integration work
+somebody still has to finish.
+
+**Say "native" only where it is true.** SAIRNlaw carries **no payments
+integration at all** (same audit, §6) and its trust reconciliation is explicitly
+**table stakes rather than a differentiator** — that document's own words, §2.7.
+Claiming a unified suite and then being asked about payments is worse than not
+claiming it.
+
+### What NOT to say
+
+- Not "the only", "no other platform", "unmatched", or any exclusivity framing.
+  Nothing in either audit supports an exclusivity claim, and §4 of the external
+  audit labels its one candidate differentiator — the intake conflict check's
+  blocking override — a **candidate, not a confirmed one**, pending a follow-up
+  pass it asks for and has not had.
+- Not a jurisdiction count as a headline.
+- Not "we have a citator" as a differentiator; the citator is now support for the
+  US+UK claim, not the claim itself.
 
 ---
 
@@ -57,7 +172,7 @@ cleared authorisation.
 approved claim above — *"every one of them encoded from primary-source rule text
 read verbatim, with a full audit trail from the date back to the authority that
 produced it"* — describes provenance. Anything holding the licence key can
-overwrite any of those 119 rules, and the column that records who verified it
+overwrite any of those 437 rules, and the column that records who verified it
 will say `null`. `tools/sairn_load_state_check.py` would then correctly report
 the licence as STALE against the repo **and would not be able to say who changed
 it or when**. The audit trail is the product. A customer-held key that can
@@ -185,11 +300,26 @@ discipline described below, which is the real governance control on this feature
 | Ohio | 7 | 5 | 2 | 6 | discovery rules set no deadline |
 | Illinois | 6 | 4 | 2 | 5 | thinnest set |
 
-**119 rules; federal 18%.** All eleven carry both civil-litigation and appellate
-rules and holiday calendars for 2026–2031. Eight backward-counted. Seven
-designated-period. Two capped. Four multi-trigger. One terminal-day rule.
-Periods are counted in calendar days or in months by anniversary date — nothing
-in the engine approximates a month as thirty days.
+**119 rules across those eleven; federal 18%. THOSE ELEVEN each carry both
+civil-litigation and appellate rules and holiday calendars for 2026–2031.**
+Eight backward-counted. Seven designated-period. Two capped. Four multi-trigger.
+One terminal-day rule. Periods are counted in calendar days or in months by
+anniversary date — nothing in the engine approximates a month as thirty days.
+
+> **THIS TABLE IS A DATED SNAPSHOT OF THE BATCH 2 ELEVEN, NOT CURRENT COVERAGE
+> (scoped 2026-09-26).** It was accurate on 2026-08-24 and is kept because the
+> per-jurisdiction shape of those eleven is what the demonstrations below are
+> built on. The platform is now 39 jurisdictions and 437 rules, and **the
+> "each carry both domains and 2026–2031 calendars" property is true of THESE
+> ELEVEN and NOT of the 28 added since** — 12 of 39 carry both domains, and
+> roughly half the calendars stop at 2026.
+>
+> The sentence above used to read "All eleven carry both …", and as jurisdictions
+> were added a reader could not tell whether "all eleven" meant "all of them" or
+> "these eleven". It was the second reading, and the approved claim at the top of
+> this file had already generalised it to the first. That is how the
+> overstatement got into a sales document: not by anybody writing something
+> false, but by a scoped sentence outliving its scope.
 
 ## The three things most worth demonstrating
 
@@ -220,10 +350,25 @@ filing.
 
 ## Claims that are NOT approved
 
-- ❌ *"litigation deadlines across eleven jurisdictions"* used **unqualified** —
-  implies parity that does not exist. Illinois has 6 rules, federal has 21.
-  Federal is still the only jurisdiction with summary-judgment, expert-disclosure
-  or pretrial-disclosure rules.
+- ❌ *"litigation deadlines across 39 jurisdictions"* used **unqualified** —
+  implies parity that does not exist, and the gap is far wider now than when this
+  entry was written against eleven. Illinois has 6 rules, federal has 21, and
+  **27 of the 39 have no appellate rules at all.** Federal is still the only
+  jurisdiction with summary-judgment, expert-disclosure or pretrial-disclosure
+  rules. Every count in this bullet needs re-deriving before it is quoted; see the
+  block at the top of this file.
+- ❌ **Any exclusivity framing** — "the only platform", "no other vendor",
+  "unmatched". Added 2026-09-26. Nothing in either competitive audit supports one,
+  and the external audit's single candidate differentiator is labelled a candidate
+  pending a follow-up pass it has not had.
+- ❌ **Jurisdiction count as the headline, or "we have a citator" as a
+  differentiator.** Added 2026-09-26 — Clio ships a native rules capability and
+  bought vLex. Lead with the US + England & Wales combination under licences that
+  permit it, and with native integration. Reasoning in the positioning section
+  above, including what that reasoning does and does not rest on.
+- ❌ **"A fully integrated suite"** without qualification — SAIRNlaw carries no
+  payments integration at all, and its trust reconciliation is table stakes in
+  this category rather than an advantage.
 - ❌ *"a thirty-day appeal deadline"* stated generally — **false in Michigan**
   (21), in three Pennsylvania subject matters (10), and for a Texas accelerated
   appeal (20). The single most dangerous generalisation in the product.
