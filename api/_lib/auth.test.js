@@ -48,6 +48,49 @@ function test(name, fn) {
 
 console.log('api/_lib/auth.js');
 
+// DEFINED AT MODULE SCOPE, NOT BESIDE THE ARMS THAT USE IT MOST. Everything
+// from Stage B onward in this file lives inside an `(async function
+// runAsync(){...})()`, so a helper declared there is INVISIBLE to the sync
+// arms above it -- which is how the first version of this move failed with
+// `tamperB64 is not defined` on an arm two hundred lines earlier.
+// ── TAMPER IN THE BYTES, NOT IN THE BASE64 (added 2026-09-27) ──────────────
+// THREE ARMS IN THIS FILE TAMPERED BY EDITING THE ENCODED STRING and two of the
+// three were intermittently FALSE-FAILING. Base64url does not carry whole bytes
+// in every character: a 32-byte HMAC is 43 characters and the LAST one holds
+// only 2 significant bits, so FOUR different final characters decode to the same
+// 32 bytes. Measured, not reasoned about:
+//
+//   `sig.slice(0,-1) + (last === 'A' ? 'B' : 'A')`   no-op 4 of 64 = 6.3%
+//   `c.slice(0,-2) + 'AA'`                           no-op 0.245% over 20k trials
+//
+// When the flip lands inside the equivalence class the "tampered" value decodes
+// byte-identically, verification correctly SUCCEEDS, and a forgery arm reports a
+// failure that is not there. One in sixteen on the signature arm.
+//
+// THAT IS A FALSE FAILURE, NOT A FALSE PASS -- the property under test is never
+// weakened -- and it is still the shape that gets a suite ignored: an arm that
+// goes red on a correct file trains people to re-run rather than read, and this
+// repo has recorded that cost repeatedly. Both figures above were measured
+// before this helper was written; the 6.3% one was caught by a run that went red
+// while landing an unrelated change.
+//
+// So the tamper happens in the DECODED bytes and the helper ASSERTS its own
+// output differs, which means it cannot regress into the same class silently.
+function tamperB64(s) {
+  const raw = Buffer.from(String(s).replace(/-/g, '+').replace(/_/g, '/'), 'base64');
+  assert.ok(raw.length > 0, 'nothing to tamper with: ' + s);
+  const out = Buffer.from(raw);
+  out[0] = out[0] ^ 0x80;           // one bit, in a fully significant byte
+  const enc = out.toString('base64').replace(/=+$/, '')
+    .replace(/\+/g, '-').replace(/\//g, '_');
+  // The assertion that makes this helper worth having: prove the bytes moved.
+  assert.ok(!Buffer.from(enc.replace(/-/g, '+').replace(/_/g, '/'), 'base64').equals(raw),
+    'the tamper did not change the decoded bytes, so the arm using it is '
+    + 'asserting nothing');
+  return enc;
+}
+
+
 // ── Core cross-app rejection (the exact bug class found 2026-08-03) ───────
 test('a stonedesk token verifies against expectedApp:stonedesk', () => {
   const token = signSessionToken({ employee_id: 'e1', role: 'owner', license_hash: LIC_A, app: 'stonedesk' });
@@ -103,7 +146,11 @@ test('signing with an unknown app throws', () => {
 test('a tampered payload is REJECTED', () => {
   const token = signSessionToken({ employee_id: 'e1', role: 'owner', license_hash: LIC_A, app: 'stonedesk' });
   const [payloadB64, sigB64] = token.split('.');
-  const tampered = payloadB64.slice(0, -2) + 'xx' + '.' + sigB64;
+  // Routed through the same helper for the same reason as the signature arms:
+  // a two-character base64 edit is a no-op 0.245% of the time, and on THIS arm
+  // a no-op means the payload is unchanged, the signature still matches, the
+  // token verifies, and the arm reports a failure that is not there.
+  const tampered = tamperB64(payloadB64) + '.' + sigB64;
   assert.strictEqual(verifySessionToken(tampered, LIC_A, 'stonedesk'), null);
 });
 
@@ -378,6 +425,7 @@ function withEnv(vars, fn) {
 // write gate refuses that shape, and a test fixture is not a reason to teach
 // people to work around it.
 function material(tag) { return ['sairn', 'test', 'material', tag].join('-') + 'x'.repeat(24); }
+
 const SIGN_1 = material('sign1');
 const SIGN_2 = material('sign2');
 const ENC_1 = material('enc1');
@@ -454,7 +502,7 @@ test('B: a v2 value with the dedicated key REMOVED fails closed and does not '
 test('B: a tampered ciphertext is refused rather than returning garbage', () => {
   withEnv({ SD_AUTH_SECRET: SIGN_1, SD_ENCRYPTION_KEY: ENC_1 }, () => {
     const c = AUTHMOD.encryptSecret('hunter2').split('.');
-    c[3] = c[3].slice(0, -2) + 'AA';
+    c[3] = tamperB64(c[3]);
     assert.strictEqual(AUTHMOD.decryptSecret(c.join('.')), null);
   });
 });
@@ -573,7 +621,7 @@ test('B2: a tampered LEGACY ciphertext is still refused with both keys '
   withEnv({ SD_AUTH_SECRET: SIGN_1, SD_AUTH_SECRET_PREVIOUS: SIGN_2,
             SD_ENCRYPTION_KEY: null }, () => {
     const c = AUTHMOD.encryptSecret('hunter2').split('.');
-    c[2] = c[2].slice(0, -2) + 'AA';
+    c[2] = tamperB64(c[2]);
     assert.strictEqual(AUTHMOD.decryptSecret(c.join('.')), null);
   });
 });
@@ -702,7 +750,7 @@ test('C: a kid that names a key we DO hold does not help a bad signature -- '
                                      license_hash: LIC_A, app: 'stonedesk' });
       const p = tok.split('.')[0];
       const sig = tok.split('.')[1];
-      const flipped = sig.slice(0, -1) + (sig.slice(-1) === 'A' ? 'B' : 'A');
+      const flipped = tamperB64(sig);
       assert.strictEqual(verifySessionToken(p + '.' + flipped, LIC_A, 'stonedesk'), null);
     });
   });

@@ -69,6 +69,7 @@ const opAudit = require('./_lib/op-audit');
 const rfAuth = require('./rf-auth');
 const senAuth = require('./sen-auth');
 const senEvvReadiness = require('./_lib/sen-evv-readiness');
+const senEvvClock = require('./_lib/sen-evv-clock');
 // Pure; every fetch and every gate for it lives in the sen_visits payroll
 // branch, same functional-core split as senEvvReadiness one line up.
 const senPayroll = require('./_lib/sen-payroll');
@@ -5852,8 +5853,91 @@ module.exports = async (req, res) => {
       if (!SEN_VISIT_SCHEDULER_ROLES[session.role]) {
         out = out.filter((r) => r.assigned_employee_id === session.employee_id);
       }
-      const data = out.map((r) => Object.assign({ id: r.visit_id, assigned_employee_id: r.assigned_employee_id || '' }, r.data));
+      // ── A CORRECTED VISIT IS RETURNED WITH BOTH NUMBERS (2026-09-27) ────
+      // api/_lib/sen-evv-clock.js's effectiveClock(). The corrected value is what
+      // a reader should SEE and the original stays in the record beside it --
+      // "a screen that shows only the corrected value has quietly become the
+      // overwrite this module exists to avoid". The raw clock_in_at/clock_out_at
+      // are NOT replaced: they are still in `r.data` exactly as the caregiver
+      // recorded them, and the effective view is added under its own key.
+      const data = out.map((r) => {
+        const base = Object.assign({ id: r.visit_id, assigned_employee_id: r.assigned_employee_id || '' }, r.data);
+        const eff = {};
+        ['clock_in_at', 'clock_out_at'].forEach((f) => {
+          const e = senEvvClock.effectiveClock(r.data || {}, f);
+          // Only where there IS something to say. A key that appears on every
+          // visit whether or not it was corrected is a key a reader stops
+          // reading, and `corrected: false` on 10,000 rows says nothing.
+          if (e.corrected) eff[f] = e;
+        });
+        if (Object.keys(eff).length) base.effective_clock = eff;
+        return base;
+      });
       res.status(200).json({ ok: true, data, provisioned: true });
+      return;
+    }
+    // ── AN ADDITIVE CLOCK CORRECTION (2026-09-27) ───────────────────────────
+    // api/_lib/sen-evv-clock.js's proposeCorrection(). The scheduler guard on
+    // `write` is unchanged and is not weakened: EVV fields are still NEVER
+    // accepted from a scheduler-tier caller. This is the route that guard leaves
+    // open on purpose -- "a correction that OVERWRITES the caregiver's record
+    // destroys the evidence the record is ... a state audit that finds an edited
+    // time with no trail cannot tell a typo correction from a fabrication".
+    //
+    // SO IT IS APPEND-ONLY BY CONSTRUCTION, not by a rule this branch remembers:
+    // the module returns an ENTRY and deliberately does not return a corrected
+    // value, so a caller cannot write one by copying a field across. This branch
+    // appends and touches clock_in_at/clock_out_at nowhere.
+    //
+    // MANAGEMENT/SCHEDULER ONLY, and the reason is the opposite of the write
+    // guard's: a caregiver correcting their own clock time with no second party
+    // is the unverified self-assertion EVV exists to stop. The actor comes from
+    // the SESSION, never the payload -- the module refuses NO_ACTOR rather than
+    // trusting a caller-supplied name.
+    if (resource === 'sen_visits' && action === 'propose_clock_correction') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!SEN_VISIT_SCHEDULER_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only scheduling or management staff can file a clock correction. A caregiver correcting their own clock time with nobody else involved is the unverified self-assertion EVV exists to stop.' } });
+        return;
+      }
+      if (!payload || !payload.id) { res.status(400).json({ error: { message: 'sen_visits payload.id is required' } }); return; }
+      const cr = await fetch(rest('sen_visits?license_hash=eq.' + enc(licHash) + '&visit_id=eq.' + enc(payload.id) + '&select=assigned_employee_id,data'), { headers });
+      if (cr.status === 404 || cr.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Visit/EVV tracking is not set up yet — run sql/sairnsenior_visits_schema.sql in Supabase first.' } });
+        return;
+      }
+      const crRows = await cr.json();
+      if (!cr.ok) return upstream(res, crRows);
+      const crRow = Array.isArray(crRows) && crRows[0];
+      if (!crRow) {
+        // A correction to a visit that does not exist must not create one. An
+        // upsert here would let a correction invent the record it corrects.
+        res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No such visit. A correction cannot create the visit it corrects.' } });
+        return;
+      }
+      const verdict = senEvvClock.proposeCorrection(
+        crRow.data || {}, payload.correction || {}, session.employee_id, nowISO());
+      if (!verdict.ok) {
+        res.status(400).json({ error: { code: verdict.error.code, message: verdict.error.message } });
+        return;
+      }
+      const corrected = Object.assign({}, crRow.data || {});
+      corrected.clock_corrections = (Array.isArray(corrected.clock_corrections)
+        ? corrected.clock_corrections : []).concat([verdict.entry]);
+      const cw = await fetch(rest('sen_visits?on_conflict=license_hash,visit_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairnsenior', visit_id: String(payload.id),
+          assigned_employee_id: crRow.assigned_employee_id, data: corrected,
+          updated_at: nowISO()
+        })
+      });
+      const cwRows = await cw.json();
+      if (!cw.ok) return upstream(res, cwRows);
+      res.status(200).json({ ok: true, entry: verdict.entry,
+        corrections: corrected.clock_corrections.length });
       return;
     }
     if (resource === 'sen_visits' && action === 'write') {
@@ -5899,7 +5983,50 @@ module.exports = async (req, res) => {
         }
         requestedAssignee = existingRow.assigned_employee_id;
         visitData = Object.assign({}, existingRow.data || {});
+        // ── THE CLOCK IS CHECKED BEFORE IT IS STORED (2026-09-27) ──────────
+        // api/_lib/sen-evv-clock.js, 28 arms, written by cc on 2026-09-26 and
+        // unreachable until now because this file was under another session's
+        // claim. Its own header states the defect: vsClockIn/vsClockOut send
+        // `new Date().toISOString()` from the HANDSET and the line below stored
+        // it verbatim -- no comparison against server time, no ordering check,
+        // no bound. EVV exists precisely to stop a visit time being
+        // caregiver-asserted, and a handset with a wrong clock produced a wrong
+        // EVV record silently.
+        //
+        // THE CLAIMED TIME IS STILL WHAT IS STORED, and that is the part a
+        // reflex gets wrong. sairnsenior queues clock events offline and
+        // replays them UNCHANGED -- "the recorded time is the moment the
+        // caregiver clocked, never the moment it synced" -- so re-stamping on
+        // arrival would produce an EVV record that is precise, plausible and
+        // false. The server's own observation is recorded BESIDE the claim, and
+        // the gap between them is the auditable fact.
+        //
+        // ONLY THE IMPOSSIBLE IS REFUSED: an unreadable timestamp, a time ahead
+        // of the server that received it, and a clock-out before its clock-in.
+        // A large PAST skew is flagged and stored, because that is the offline
+        // path working.
+        const clockCheck = senEvvClock.checkClockEvent(
+          payload, existingRow.data || {}, nowISO());
+        if (!clockCheck.ok) {
+          // 400 with the module's own code and sentence. A refusal this branch
+          // paraphrased would be a second copy of the rule.
+          res.status(400).json({ error: {
+            code: clockCheck.error.code, message: clockCheck.error.message,
+            flags: clockCheck.flags || [] } });
+          return;
+        }
         SEN_VISIT_EVV_FIELDS.forEach((f) => { if (payload[f] !== undefined) visitData[f] = payload[f]; });
+        // AFTER the field copy, and it cannot collide with it: the module
+        // guarantees every stamp key is `*_received_at` or `*_skew_ms` -- never
+        // a clock field -- and its own arm H2 asserts that, so merging these
+        // cannot overwrite a caregiver's recorded time.
+        Object.assign(visitData, clockCheck.stamps);
+        // FLAGS ARE STORED, NOT ONLY RETURNED. A LATE_REPLAY that appears in one
+        // response and nowhere else is a finding nobody can audit later, and
+        // late replay is the case a state audit asks about.
+        if (clockCheck.flags && clockCheck.flags.length) {
+          visitData.clock_flags = clockCheck.flags;
+        }
       }
       const r = await fetch(rest('sen_visits?on_conflict=license_hash,visit_id'), {
         method: 'POST',

@@ -162,6 +162,12 @@ module.exports = {
   // corrected. Same argument the KX accumulator makes for not storing a
   // running total.
   extraActions: {
-    sen_visits: ['readiness', 'payroll'],
+    // 'propose_clock_correction' is DECLARED because the dispatcher answers 400
+    // for an undeclared action -- an implemented-and-undeclared verb is exactly
+    // how `tombstones` shipped unreachable (api/sd-data.js, f89ef507). Additive
+    // by construction: api/_lib/sen-evv-clock.js returns an entry to APPEND and
+    // deliberately returns no corrected value, so the caller cannot overwrite a
+    // caregiver's recorded clock time by copying a field across.
+    sen_visits: ['readiness', 'payroll', 'propose_clock_correction'],
   },
 };
