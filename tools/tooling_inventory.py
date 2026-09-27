@@ -73,6 +73,31 @@ GATE = os.path.join('tools', 'sairn_push_gate_hook.py')
 # LIVE means it makes a real network or database request, so it cannot be wired
 # into a hook without making every push talk to the outside world.
 PURPOSES = {
+    'ghost_field_read_scan.py': ('CHECKER',
+        'a branch GATED on a field name that is spelled nowhere -- so the '
+        'condition cannot be true and the branch cannot run. A property read '
+        'inside an `if`/`while`/ternary/`&&`/`!` whose field is not a JS or DOM '
+        'builtin and is never written, never a key, never quoted and never '
+        'declared anywhere in the repo. That third condition is what makes a '
+        'zero mean something: a name read and never spelled cannot have a '
+        'value. THREE CONFIRMED ON ITS FIRST RUNS, all precise-and-wrong on a '
+        'regulated or money surface: a training window that skipped its own '
+        'date filter and counted a 2019 certificate against a 2026 '
+        'requirement; a referral-source KPI that returned 0.0 h for every '
+        'client because it read actual_start on a row keyed clock_in_at; and an '
+        'invoice reconciliation against charge_lines, a key nothing writes, so '
+        'every charge read as ADDED and the net change as the whole invoice. '
+        'THREE BUCKETS, not one list -- findings, declared third-party '
+        'contracts (an owner named per entry, and a declaration matching '
+        'nothing is REPORTED so the list cannot rot), and request fields no '
+        'caller sends, which is dormancy rather than a wrong field. NOT '
+        'PROMOTED to the report-only registry on measured cost, ~90s over 2,229 '
+        'files, recorded in NOT_PROMOTED with that number. Cannot see a field '
+        'written under a COMPUTED key, so a real field can read as a ghost -- '
+        'which is why it reports rather than gates. Control pair: '
+        'tests/run_ghost_field_read_probe.py, both directions, MUTATION 1 on '
+        'the real shipped pre-fix body. Sweep: '
+        'docs/2026-09-27-ghost-field-read-sweep.md'),
     'panel_depth.py': ('CHECKER',
         'a panel that looks built because its vocabulary is present. Nine '
         'signals per panel, four SHALLOW (a panel div, a nav route, a '
