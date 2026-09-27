@@ -4078,6 +4078,26 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-27T03:05:32Z",
+      "opened_at_sha": "49b0d2ec81584acdb1aaf061b298672b7d409bfa",
+      "resources": [
+        "sb_ts"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "docs/CRITICALITY-TIERS.md"
+      ],
+      "what": "sb_ts (Tier A) is now read by a CONFIGURABLE threshold. sbOtThreshold() reads sb_cfg.ot and both overtime computations go through it -- rTS() at ~:3177 rendering the OT column and the Est. Pay figure, and csv('timesheet') at ~:4844 writing the same two into a file. Before this a hardcoded 40 sat in both places.\n\nREVIEW THE VALIDATION BOUNDS FIRST, they are the part a reader would most plausibly simplify away. The stored value is whatever was typed into a number input, so it can be '', 'abc', 0, -5 or 500. A threshold of 0 makes EVERY recorded hour overtime and multiplies the week's cost by 1.5; a threshold above 168 can never be reached, so no hour is ever overtime and the column reads 0 for ever. Neither looks wrong on screen. Outside 1-168 it falls back to 40 and sbOtThresholdNote() NAMES the rejected value, because a user who typed 0 would otherwise see a normal-looking column and believe the setting took effect. A blank setting is deliberately NOT reported as rejected -- an absent setting is not a typo. Arms B3/B4/B6/B7 drive every shape.\n\nSECOND READ: whether one function is genuinely enough. The threshold decides money, and two copies of t-40 are two places that can disagree about what a person was paid. Arm C1 asserts no bare Math.max(0,t-40) survives and that exactly two call sites go through the helper. Arm C2 proves REACHABILITY by script-block boundary rather than by eye -- the definition is at ~:4959 and the callers are at ~:3177 and ~:4844, which relies on hoisting inside one block, and this app already carries a comment about sairnCallClaude being declared in a separate IIFE and throwing a silent ReferenceError that read as a network failure.\n\nNOT sb_ts, BUT IN THE SAME COMMIT AND WORTH A LOOK: the Benefits plan cards stopped asserting \"Workers Comp: Active . BWC Ohio\" to every licence, and two look-computed 401(k) figures were removed. The neutralised rows KEEP their labels with an explicit not-tracked value rather than being deleted, and the $520 employer default KEEPS its figure because the KPIs fall back to it -- arm A7 exists so a later sweep cannot blank the one value a computation reads.\n\n19 arms green, five sabotages each caught by the intended arm. checkblocks 5/5, div_balance PASS. Defect recorded: the BWC assertion, against e5eb7911, injection 901ccc2d.\n\nRECORDED WITH --resources BECAUSE THE TWO GATES DISAGREED, and that is itself worth a look. The PUSH gate refused this push naming \"sb_ts  sairnbiz.html\". tier_a_review_gate.py --open, both bare and with --range origin/main..HEAD, answered \"No file in this change names a Tier A resource on a changed line\" and refused to record anything. Both are behaving as written -- the push gate tests the FILE, the review gate tests the CHANGED LINE, and no changed line here contains the literal sb_ts (the only occurrence is inside sbTsRows(), which I did not touch). The obligation is real regardless: sb_ts hours now drive an OT figure through a configurable threshold. But a push gate that demands a record the recording tool declines to write is a path straight to SAIRN_SEED_GATE=off, on the one check whose subject is somebody not being told. Flagged, not fixed.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-09-27T03:05:32Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
