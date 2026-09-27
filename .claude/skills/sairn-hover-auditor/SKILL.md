@@ -1769,6 +1769,45 @@ re-check-something-that-passed rule below still applies ACROSS sessions
 false-negative-rate job. What changes is only the within-session ordering:
 unread first, within the same weight class, until that class is dry.
 
+**The combined draw score, a COORDINATOR-DIRECTED policy, 2026-09-27 —
+this is the ONE formula that implements the fourth axis and the fifth rule
+together, and it is mechanical now, not head-math.** Michael's decision,
+verbatim in intent: the rotation combines both signals in one draw score,
+risk-weighted primary, coverage (time since last individually read)
+secondary, both checked together at draw time. THE HONEST BEFORE-STATE,
+confirmed from source before tightening: the two signals were two separate
+rules — `hover_cold_scan_pool.py --pick` served only the never-mentioned
+bucket (and went structurally silent the day that bucket emptied, 2026-09-23),
+while the risk weighting lived in the operator's head via
+`defect_density_weighting.py`'s printed report, with the within-app slice
+plain alphabetical. That approximated the intent and scored nothing. NOW:
+`python hover_cold_scan_pool.py --draw N` computes, per Tier B/C register
+row, the lexicographic key
+
+    (1) app risk DESC   — defect_density_weighting.py's module_density,
+                          consumed over its --json contract, the resource's
+                          app resolved from api/_resources/*.js (derived,
+                          never a hand map — the app-map lesson)
+    (2) staleness DESC  — self-log entries since the resource was last
+                          mentioned; never-mentioned sorts as +infinity,
+                          so the fifth rule's unread-first survives INSIDE
+                          the score instead of beside it
+    (3) name ASC        — deterministic tiebreak
+
+Lexicographic rather than a weighted sum ON PURPOSE: a sum needs
+coefficients and there is no measured history to calibrate them from —
+a picked coefficient would be laundered into fact by the code (the
+sweep-cadence lesson). REASONED, not calibrated; revisit when repeat-gap
+history exists. FAIL-CLOSED both directions: --draw refuses outright
+(exit 2, naming the tool) when defect_density_weighting.py is absent or
+fails its own classifier control, and refuses when api/_resources derives
+zero apps — a missing instrument is never scored as all-zero risk.
+Six ordering fixtures lock the formula in both directions
+(--selftest), including risk-dominates, unread-beats-stale, and
+unmapped-sinks-never-wins. The unweighted-random slice below keeps its
+false-negative-rate job unchanged — it is deliberately OUTSIDE this score,
+because its whole purpose is to catch what any weighting misses.
+
 - **Vary what triggers attention**, not only freshest-commit / highest-stakes.
   A rotation that always picks the same signal is still a predictable pattern
   even if it never repeats the same agent twice in a row.
