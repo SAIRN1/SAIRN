@@ -112,6 +112,27 @@ async function call(handler, opts) {
       // The licence row. app_id null = unattributable, the documented fallback.
       return { ok: true, status: 200, json: async () => [{ status: 'active', app_id: null }] };
     }
+    // ── THE ACTIVE-CREDENTIAL LOOKUP IS ANSWERED AND NOT COUNTED ───────────
+    // ADDED 2026-09-26. api/sd-data.js gained an active-credential PRE-GATE:
+    // one credentialStillActive() at the entry point covering all 133
+    // verifySessionToken gates instead of the 70 action-pairs the per-resource
+    // placement reached. It reads `sairncode_employee_auth` on every request
+    // carrying a token, including one about to be refused on role.
+    //
+    // `sawUpstream` MEANS "DID THIS REACH STORAGE", and the arms below use it to
+    // prove a refusal touched nothing -- because a 403 issued after the rows
+    // were already pulled has still reached them. The auth row is not the
+    // protected data; it is the thing that DECIDES. Counting it turned
+    // "refused without touching storage" into "the pre-gate exists", which is a
+    // separate and already-tested fact, and left nothing asserting the real one:
+    // the coder arm went 0/4 while the handler was behaving correctly.
+    //
+    // It is answered with an ACTIVE employee, which is what these arms mean by a
+    // signed-in coder -- the question they ask is about ROLE, not about whether
+    // the credential is live.
+    if (/_employee_auth\?/.test(String(url))) {
+      return { ok: true, status: 200, json: async () => [{ active: true }] };
+    }
     out.sawUpstream = true;
     out.upstreamMethods.push((init && init.method) || 'GET');
     return { ok: true, status: 200, json: async () => [] };
