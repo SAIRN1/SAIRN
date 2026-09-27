@@ -4938,3 +4938,204 @@ this morning -- as one of 4 UNGUARDED controls. Reported here rather than fixed
 in this commit: it is a different file, a different defect and a different
 claim, and bundling it would be the orthogonal-change rule I am supposed to be
 holding.
+
+## 2026-09-27 -- recovery queue: two dead probes, three min-against-an-unknown sites, two empty walks, and four food-animal labels
+
+Session recovered after a loss. Seven-item queue, six items mine and the seventh
+explicitly not.
+
+### 1-2. No orphaned session, and nothing was lost
+
+`cc.lock` at `~/SAIRN-SESSION-LOCKS` names `claude_pid` 33348 started 07:01:01 --
+**this** session, matched on pid AND process start time, so the start-time
+defence in `session_lock_check.py` did its job rather than reporting a recycled
+pid as alive. Two live `claude` processes were unaccounted for by the status
+registry (39868, 54712); read from the lock files they are **fourth** and
+**cody**, not a second holder of this clone. No collision.
+
+HEAD was 12 commits behind `origin/main` with three files uncommitted and no
+stash. **The two dirty files were not touched by any of the 12 incoming
+commits**, checked with `git log HEAD..origin/main --name-only -- <paths>` before
+fast-forwarding rather than after.
+
+### 3. Two sabotage anchors had stopped matching ANYTHING, and nothing ran the probes
+
+`cc6e3894` / `1ff35d41`. `tests/sairncash_entitlement_fault_probe.py` had been
+dead since `a100c078` inserted an `scGraceOk(s)` bound into the exact catch block
+arm 4 anchored on -- three lines became eight, `once()` refused, the probe exited
+non-zero on its FIRST arm and arms 4 and 5 never ran.
+`tests/sairncare_fault_probe.py` the same way since `dadfedf4` wrapped 48 role
+maps in `roleSet(...)`.
+
+**These did not drift onto the wrong code -- that is PR 1.3 and it is the QUIET
+failure. They stopped matching anything, the LOUD one, and it was exactly as
+quiet, because no fault probe on this platform is in
+`report_only_checks.REGISTRY`, the push gate, or any hook.** A loud failure in a
+tool nobody invokes is silent.
+
+Re-anchored against what the code BECAME, not restored: each anchor now spans
+only the line the arm was always about, so the next insertion above it does not
+break it again. sairncash grew two arms for the guarantees `a100c078` added and
+nothing covered -- an unbounded grace window, and the future-stamp skew guard.
+
+`tools/probe_anchor_freshness.py` is the cheap standing half: `ast`-parses every
+probe, counts each literal anchor, reports VANISHED (0) and AMBIGUOUS (>1)
+**separately** because the fixes are opposite -- re-derive versus widen. Under a
+second against minutes per probe, which is the whole argument for it. **It found
+five AMBIGUOUS anchors still open** (`sairndesign_sairngrounds_fault_probe.py`
+x4, `sairnmechanical_fault_probe.py` x1); row added to the index, not fixed.
+
+**Its first draft carried a tally that could not have been right**: "10 green,
+TWO stale, one red baseline" -- 13, each probe in one bucket. Re-anchoring
+sairncare and then RUNNING it showed its baseline is red too, so it belonged in
+two at once. The docstring now carries no durable census; the run prints its own.
+
+### 3b. Found while doing it, NOT mine, and reported rather than fixed
+
+**`c8b5e5b1`'s 132-gate credential pre-gate turned TWELVE test suites red and
+nothing said so for ten hours.** Bisected: `tests/sairncare/test-alf-mar.js` is
+20-passed-0-failed at `c8b5e5b1~1` and 0-passed-20-failed at `c8b5e5b1`. One line
+-- the pre-gate calls `verifySessionToken(preToken, licHash)` with no
+`expectedApp`, deliberately, because it runs above per-resource app scoping; and
+twelve suites stub that function to THROW on an unnamed app, also deliberately,
+as a control that every `sd-data` call names its scope. Two intents collide. 172
+assertions, the whole SAIRNcare test surface plus `sairnbuild_retainage_race`.
+
+`api/sd-data.js` NOT touched: whether the pre-gate should name an app or the
+stubs should tolerate one that does not is a judgement about an auth control on
+medication records, not a drive-by. The index row says explicitly **not** to just
+loosen the twelve stubs -- that deletes the control for 132 real gates to
+accommodate one exception -- and names the two suites that are GREEN with the
+same stub, so the shape of a working version is already on disk.
+
+**Two failures hid each other:** the one probe that would have gone red here had
+a dead anchor of its own and stopped before reaching its baseline check.
+
+### 5. Three more places a min/max against an unknown answered anyway
+
+`607f227f`. `Math.min(5, null)` is 0 and `Math.max(1/365, NaN)` is NaN. All 19
+`Math.min`/`Math.max` sites in `sairncash.html` read; 16 clean.
+
+**`bracketTax()` is the worst and the reason is the RETURN VALUE.**
+`Math.min(NaN, cap)` is NaN, `NaN > lastCap` is false, no band accumulates, the
+loop never breaks, and it returns a clean **0** -- not NaN. Measured:
+`bracketTax(NaN|null|undefined,'single') === 0` against 5752 for 50000. "$0.00 of
+federal income tax" is a figure a user can read, believe and act on.
+
+`calcSeTax()` was asymmetric from ONE line: `Math.max(0, null)` is 0 and
+`Math.max(0, undefined)` is NaN, so the same missing profit was silent down one
+path and loud down the other.
+
+**`projectAnnualFromYtd()`'s 1/365 floor did not do what its own comment
+claimed.** The comment said it stops a "$NaN beside a tax deadline"; it only ever
+covered ZERO. And this one is LIVE-REACHABLE where the others are not --
+`calcQuarterlySetAside` passes `asOfDate || new Date()`, an invalid Date object is
+TRUTHY, so the fallback hands it through and `instanceof Date` accepts it. `null`
+is refused separately from the `getTime()` test because `new Date(null)` is the
+1970 epoch, a perfectly finite date.
+
+Why none has shipped a wrong number, stated rather than omitted:
+`sumIncome`/`sumDeductions` coerce upstream. **That is the CALLER being careful,
+not the function being safe.**
+
+Arms written and run against the unfixed code FIRST: 3 failed, control passed.
+**And the first draft of those arms had a defect worth recording** -- it called
+the function again inside the assertion MESSAGE, so once the guard existed the
+message expression threw and all three arms failed carrying the guard's own text,
+reading exactly like an unfixed app. Measured, not asserted: dropping
+`requireFiniteNumber` from the lift list makes all three arms pass on a
+ReferenceError and the CONTROL is the only thing that catches it (18/17).
+
+Live-verified 200 at `sairn.vercel.app/sairncash`.
+
+### 6. Two more reads that exited 0, returned nothing, and were believed
+
+`623aab6d`. Swept two ways because the shape has two halves.
+
+**Pass A, the literal command:** every `git log` / `rev-list` in `tools/`,
+`tests/`, `.claude/`, `api/`. The no-positive-rev walk appears **exactly once** on
+the platform and `push_retry.py` already fixed it. `deploy_verify_notify.py` was
+the one worth reading closely and is CORRECT -- an empty result falls through and
+verifies anyway, failing open on purpose.
+
+**Pass B, the architecture:** an `ast` pass for accessors a selftest's call graph
+can never reach. Eleven tools have both; four had a gap; each then DRIVEN with its
+accessor forced empty, because a gap in a call graph is a question and only
+running it is an answer.
+
+- `ai_action_approval_audit.py` -- `app_files()` checked the return code, and that
+  is HALF the failure mode: `git ls-files` exits 0 and prints nothing when it
+  matches nothing. Forced to `[]`: "AI call sites found : 0 across 0 app
+  file(s)", all four counts zero, exit 0. A clean sweep of a platform whose real
+  answer is 73 sites and 14 ungated writes.
+- `accepted_risk_expiry_audit.py` -- TWO. `_rows()` returned `[]` when the index
+  existed but no line parsed; forced to `[]`: **"population : 1"**, exit 0,
+  against a real 19. `_paused_docs()` did not check the return code **at all**.
+
+**The two `_paused_docs` cases are fixed DIFFERENTLY and that is the point:** zero
+index rows is not a real state so `_rows()` refuses; zero paused documents IS a
+real state so `_paused_docs()` keeps `[]` and refuses only when git could not be
+asked.
+
+`citation_drift_hook.py` was CHECKED and is correct -- `paths or None`, with a
+docstring giving the same reason in its own words. `index_duplicate_hook.py`
+likewise; its `_pairs_for()` residual is recorded and deliberately left, because
+both sides of that comparison come from the same parser.
+
+Both tools now DRIVE their own accessors in their own selftest, each with a
+control the fix itself can fail. The `_paused_docs` arm asserts only that git was
+**ASKED** and answered, never a count, because zero is legitimate there.
+
+### 4. Four food-animal drugs sourced, and three of four had the CATTLE figure on the SWINE row
+
+`69518f0e`. Formulary citations 7 of 485 -> **15**. Every quote retrieved from
+DailyMed and written verbatim into the row's own `reference`.
+
+- **Tulathromycin** (DRAXXIN, NADA 141-244) -- the ROUTE was swapped. Cattle
+  "Inject subcutaneously", swine "Inject intramuscularly", same 2.5mg/kg. Both
+  rows read `SC/IM`. Withdrawal 18 days cattle, 5 swine -- 13 days apart.
+- **Florfenicol** (NUFLOR/NUFLOR-S, NADA 141-063) -- the dose is TIED to the
+  route. Cattle 20mg/kg IM repeated at 48h OR 40mg/kg SC once, withdrawal 28 vs
+  38 days; swine 15mg/kg IM. Both rows read "20-40mg/kg" `IM/SC`, which on the
+  cattle row is not a range and permits a double IM dose or a half SC one, and on
+  the swine row is the cattle figure, 33-167% above label.
+- **Ceftiofur** (EXCENEL RTU EZ, NADA 141-288) -- swine had the cattle dose, and
+  **this one UNDER-doses**: label 3-5mg CE/kg IM against a stored 1-2.2. The
+  opposite consequence direction from florfenicol, and the register says so rather
+  than calling both "wrong dose".
+- **Oxytetracycline** (LA-200, NADA 113-232) -- a SINGLE long-acting 9mg/lb dose
+  and a 3-5mg/lb DAILY dose flattened into "10-20mg/kg SID", which invites
+  20mg/kg every day and is neither. Swine carried IV, labelled in cattle only.
+
+**Two rows deliberately keep NULL `doseMin`/`doseMax`** so the calculator refuses:
+a min/max spanning 20 and 40 would let it multiply the false range by a body
+weight and print it. Removing a misleading range from the prose and rebuilding it
+in the numeric fields fixes nothing. An arm asserts the nulls.
+
+**The app's own copy detector cannot see the tulathromycin case, structurally:**
+`svCopiedDoseIndex()` keys on the DOSE STRING, and tulathromycin's dose is
+genuinely identical in both species -- only the route differs. On a food animal
+the route IS the food-safety fact. A route-copy detector would fire on every
+legitimately shared route in a 485-row table and be switched off within a week, so
+the gap is held by a named arm and written into the doc rather than closed.
+
+5 arms added (34 -> 39), ablated with 6 mutations -> 6 single-arm failures, green
+again. **The product-name control found a real row on its first run:**
+`Flunixin Meglumine/cattle` carried a bare "4 days", which generalises one
+product's withdrawal to every formulation.
+
+Live-verified 200 at `sairn.vercel.app/sairnvet` -- 15 citing a source, all eight
+routes and bounds as pushed.
+
+### 7. Not taken
+
+Task #19's remaining two write-fault findings (`slabSyncOne`, `sdLineageSyncOne`,
+`stonedesk.html`) stay with cody's claim. Not read, not touched.
+
+### Reported, not fixed -- three of them
+
+The twelve-suite pre-gate regression (above). Five AMBIGUOUS sabotage anchors.
+And `docs/SAIRN-OPEN-WORK-INDEX.md:355` is malformed at 11 cells -- it landed
+with `4a280bb7` carrying an unescaped double pipe, which is PR 2.1's own example
+of the hazard; my two rows check clean and the one pipe of mine that needed it is
+written as an HTML entity.
