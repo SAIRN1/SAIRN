@@ -1,65 +1,66 @@
 #!/usr/bin/env python3
-"""tools/conflict_marker_preflight.py -- a rebase on a contested file cannot
-ship an unresolved conflict, and cannot ship a BLIND side-pick either.
+"""tools/conflict_marker_preflight.py -- the half of a bad conflict resolution
+that leaves NO MARKERS: a whole side taken and the other side's work discarded.
 
-    python tools/conflict_marker_preflight.py            # check the working tree
-    python tools/conflict_marker_preflight.py --staged   # only what is staged
+    python tools/conflict_marker_preflight.py            # the working tree
     python tools/conflict_marker_preflight.py --paths a b
 
 Exit 0 CLEAN, 1 FOUND SOMETHING, 2 COULD NOT RUN. Never 0 for "could not tell".
 
-── THE DEFECT, AND WHY THE PUSH GATE CATCHING IT IS NOT GOOD ENOUGH ────────
-2026-09-27: a `git checkout --ours` taken mid-rebase to clear a conflict shipped
-SIX conflict markers into docs/tier-a-reviews.json. The push gate did catch it --
-by luck, because that gate greps for markers as one of many things it does, at
-the very end of the work. By then the bad resolution had been committed, carried
-through the rest of the rebase, and was being reasoned about as if it were the
-file's real content.
+── THIS TOOL ALMOST SHIPPED AS A DUPLICATE, AND THAT IS RECORDED HERE RATHER
+── THAN QUIETLY FIXED ──────────────────────────────────────────────────────
+It was first written with its own marker scanner. `tools/conflict_marker_check.py`
+HAS EXISTED SINCE 2026-09-15, is already a push gate, and is STRICTLY STRONGER at
+that job: four marker shapes including diff3 `|||||||` (which my version missed
+entirely), anchored at column zero, with a MEASURED zero-false-positive baseline
+across 2,069 tracked files, plus --outgoing and --json. I built a weaker second
+copy because I did not read docs/TOOLING-INVENTORY.md first, which is the one step
+this platform's own rules put before building any checker.
 
-PRE-FLIGHT means at the moment of resolution, not at the end of the run. It is
-the same lesson as cross-domain discipline 10 (no long run whose first check is
-at the end): the Gotthard Base Tunnel's intermediate shafts exist so a 57km leap
-of faith becomes several short surveyable drives. A conflict resolution is a
-boundary, and this is the survey at that boundary.
+So the marker half is DELEGATED to that tool, not reimplemented. What is left is
+the part it says it cannot do -- and its header says so in as many words:
 
-── AND THE HALF A MARKER GREP CANNOT SEE, WHICH IS THE WORSE HALF ──────────
-`git checkout --ours <file>` DOES NOT LEAVE MARKERS. It resolves cleanly, silently,
-and throws away everything the other side changed. The six markers were the
-VISIBLE symptom of a habit whose normal outcome is invisible: a file that parses,
-passes every check, and is missing another session's work.
+    "A conflict resolved WRONGLY. A file with no markers can still have had the
+     wrong side kept, and nothing mechanical can tell."
 
-So check C compares each resolved file against BOTH stages recorded in the index.
-Byte-identical to stage 2 or stage 3 means one side was taken wholesale and the
-other discarded -- which is sometimes right and must never be silent. On a file
-another session is actively editing, it is how their work disappears.
+The first clause is right. The last clause is too strong, and check C is the
+counter-example: a resolution BYTE-IDENTICAL to one entire side, on a path where
+both sides changed, is mechanically detectable. Not every wrong resolution -- a
+hand-merge that drops one line is still invisible -- but the blind `--ours` /
+`--theirs` form, which is the one that caused the damage, is not.
 
-── THREE CHECKS, AND B IS DELIBERATELY A DIFFERENT MECHANISM ───────────────
-  A  MARKERS     the conflict TRIAD in order, on masked-free raw lines
-  B  PARSE       structured files must still parse (JSON, JSONL)
-  C  BLIND PICK  a resolution byte-identical to one whole side
+── THE DEFECT ──────────────────────────────────────────────────────────────
+2026-09-27: a `git checkout --ours` taken mid-rebase put six conflict markers
+into docs/tier-a-reviews.json. The markers were the VISIBLE symptom. `--ours`
+normally leaves no markers at all: it resolves cleanly, parses cleanly, passes
+the push gate, and another session's work is simply gone.
 
-B shares no mechanism with A: a file can carry markers A misses (a marker shape
-git never wrote, an encoding A read wrongly) and B still refuses it, and a file
-can be corrupted in ways that are not markers at all and only B sees. Cross-domain
-discipline 6 -- independence needs a structurally different method, not a second
-copy of the same one. docs/tier-a-reviews.json is exactly the file where both
-apply, and B would have caught it even if A had been written wrong.
+AND `--ours` IS INVERTED DURING A REBASE. It keeps the branch you are rebasing
+ONTO; `--theirs` is your own replayed commit. This file's probe was written
+expecting the opposite and the fixture proved it wrong. That inversion is half of
+why the blind form is dangerous here: it reads as "keep mine" and does the
+reverse.
+
+── WHAT THIS ADDS, AND NOTHING ELSE ────────────────────────────────────────
+  A  MARKERS     DELEGATED to tools/conflict_marker_check.py. Absent => exit 2.
+  B  PARSE       structured files must still parse. A different mechanism from A
+                 (discipline 6): it catches a truncated or half-merged JSON with
+                 no markers in it, which A is structurally incapable of seeing.
+  C  BLIND PICK  a resolution byte-identical to one whole side, where BOTH sides
+                 had changed the path. THE NEW ONE.
 
 ── FAIL CLOSED (PR §1.11) ──────────────────────────────────────────────────
-Every git invocation this makes is required, not optional. If `git` is absent, or
-a command errors, or a path cannot be decoded, the answer is exit 2 with the
-reason named -- never a pass. A check that skips when its dependency is missing
-reports a pass it never performed.
+Check A's delegate is a REQUIRED dependency. If tools/conflict_marker_check.py is
+missing or will not run, this exits 2 and names it -- it does not skip check A and
+report the other two as a pass. That is the single most common defect shape on
+this platform and wrapping the call in `if os.path.isfile(...)` would commit it.
 
 ── WIRING ──────────────────────────────────────────────────────────────────
-NOT wired into .claude/settings.json here: that file is named in cc's active
-claim (PR §4.3), so the hook line is left for its owner. To wire it, add to
-PreToolUse on Bash, or install as .git/hooks/pre-commit:
-
-    python tools/conflict_marker_preflight.py || exit 1
-
-Run it by hand the moment a conflict is resolved and before `git rebase
---continue`, which is the point it exists for.
+NOT wired: the hook line belongs in .claude/settings.json, which cc holds under an
+active claim (PR §4.3). Run it by hand the moment a conflict is resolved and
+BEFORE `git rebase --continue`, which is the point it exists for -- the push gate
+already runs the marker half at the end, and the end is too late to be a
+pre-flight.
 """
 import argparse
 import io
@@ -69,19 +70,7 @@ import subprocess
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-# BUILT FROM chr() ON PURPOSE. Written literally, this file would contain the
-# very triad it looks for, and every run would report itself -- so the tool would
-# need a skip-list naming itself, and a skip-list is a hole that grows. There is
-# no exclusion list anywhere in this file, which is why the probe's fixtures are
-# written to a temp directory at runtime rather than committed.
-_LT, _EQ, _GT = chr(60), chr(61), chr(62)
-OURS_MARK = _LT * 7
-BASE_MARK = _EQ * 7
-THEIRS_MARK = _GT * 7
-
-TEXT_SKIP_EXT = {'.png', '.jpg', '.jpeg', '.gif', '.ico', '.pdf', '.zip',
-                 '.woff', '.woff2', '.ttf', '.eot', '.jar', '.exe', '.dll'}
+MARKER_TOOL = os.path.join(REPO, 'tools', 'conflict_marker_check.py')
 
 
 class CouldNotRun(Exception):
@@ -90,14 +79,15 @@ class CouldNotRun(Exception):
 
 def git(*args, **kw):
     """Run git or raise CouldNotRun. There is no 'git was not available' pass."""
+    allow_fail = kw.pop('allow_fail', False)
     try:
         r = subprocess.run(('git',) + args, cwd=REPO, capture_output=True,
-                           timeout=kw.pop('timeout', 60))
+                           timeout=60)
     except FileNotFoundError:
         raise CouldNotRun('`git` is not on PATH, so NOTHING was checked')
     except Exception as exc:
         raise CouldNotRun('git %s did not run: %s' % (' '.join(args), exc))
-    if r.returncode != 0 and not kw.get('allow_fail'):
+    if r.returncode != 0 and not allow_fail:
         raise CouldNotRun('git %s exited %d: %s'
                           % (' '.join(args), r.returncode,
                              r.stderr.decode('utf-8', 'replace').strip()))
@@ -111,13 +101,14 @@ def assert_this_repo():
     Measured 2026-09-27: the user's HOME DIRECTORY is itself a git repository, so
     git's upward discovery succeeds from anywhere beneath it. `git rev-parse
     --git-dir` run in a scratch directory does not error -- it cheerfully returns
-    C:/Users/marsh/.git, `ls-files` returns that repo's files, and a check that
-    trusted it would report a confident CLEAN about a repository it was never
-    pointed at. The probe caught exactly this: the fail-closed arm exited 0.
+    C:/Users/marsh/.git, `ls-files` answers with THAT repository's files, and a
+    check that trusted it would print a confident CLEAN about a repository it was
+    never pointed at. This tool's own probe caught exactly that: the fail-closed
+    arm exited 0.
 
-    This is the same shape as clone_name()'s cwd bug in
-    tools/session_lock_check.py -- a tool that believed where it was standing
-    instead of establishing it.
+    Same shape as clone_name()'s cwd bug in tools/session_lock_check.py -- a tool
+    that believed where it was standing instead of establishing it. Swept
+    platform-wide by tools/git_discovery_anchoring_check.py.
     """
     out, _ = git('rev-parse', '--show-toplevel')
     top = os.path.normcase(os.path.abspath(out.strip()))
@@ -134,9 +125,9 @@ def in_progress():
     """(kind, detail) -- 'rebase' / 'merge' / 'cherry-pick' / None."""
     gd, _ = git('rev-parse', '--git-dir')
     gd = os.path.join(REPO, gd.strip())
-    for d, kind in (('rebase-merge', 'rebase'), ('rebase-apply', 'rebase')):
+    for d in ('rebase-merge', 'rebase-apply'):
         if os.path.isdir(os.path.join(gd, d)):
-            return kind, d
+            return 'rebase', d
     for f, kind in (('MERGE_HEAD', 'merge'), ('CHERRY_PICK_HEAD', 'cherry-pick')):
         if os.path.isfile(os.path.join(gd, f)):
             return kind, f
@@ -144,23 +135,16 @@ def in_progress():
 
 
 def candidate_paths(args):
-    """The files to check, and NEVER a silent empty set."""
     if args.paths:
         return [p.replace(os.sep, '/') for p in args.paths]
-    if args.staged:
-        out, _ = git('diff', '--cached', '--name-only', '--diff-filter=ACMR')
-    else:
-        out, _ = git('ls-files', '--modified', '--others', '--cached',
-                     '--exclude-standard')
+    out, _ = git('ls-files', '--modified', '--others', '--cached',
+                 '--exclude-standard')
     seen, paths = set(), []
     for line in out.splitlines():
         p = line.strip()
-        if not p or p in seen:
-            continue
-        seen.add(p)
-        if os.path.splitext(p)[1].lower() in TEXT_SKIP_EXT:
-            continue
-        paths.append(p)
+        if p and p not in seen:
+            seen.add(p)
+            paths.append(p)
     return paths
 
 
@@ -174,40 +158,54 @@ def read_text(path):
     except OSError as exc:
         raise CouldNotRun('%s could not be read (%s) -- NOT a pass' % (path, exc))
     if b'\x00' in raw[:8000]:
-        return None  # binary; check A does not apply and says so by omission
+        return None
     return raw.decode('utf-8', 'replace')
 
 
-# ── CHECK A: THE TRIAD, IN ORDER ────────────────────────────────────────────
-# A single `<<<<<<<` is not a conflict. Documentation shows one, a test fixture
-# carries one, a diff pasted into a comment has all three out of order. Requiring
-# the ORDERED TRIAD -- ours, then base, then theirs, each at line start -- is what
-# separates a real unresolved conflict from prose about one, and it is why this
-# tool needs no skip-list.
+# ── CHECK A: DELEGATED, AND A REQUIRED DEPENDENCY ───────────────────────────
 
-def check_markers(path, text):
-    if text is None:
+def check_markers(paths):
+    """Ask tools/conflict_marker_check.py. Its absence is exit 2, not a skip."""
+    if not os.path.isfile(MARKER_TOOL):
+        raise CouldNotRun(
+            'tools/conflict_marker_check.py is MISSING, so the marker half of '
+            'this pre-flight DID NOT RUN. Check A is not optional and is not '
+            'reimplemented here -- that tool owns the measured zero-false-'
+            'positive baseline and the diff3 marker shape. Restore it.')
+    if not paths:
         return []
-    ours = base = None
-    for i, line in enumerate(text.splitlines(), 1):
-        s = line.rstrip('\r')
-        if s.startswith(OURS_MARK):
-            ours, base = i, None
-        elif s.startswith(BASE_MARK) and s.strip(_EQ) == '' and ours:
-            base = i
-        elif s.startswith(THEIRS_MARK) and ours and base:
-            return [('MARKERS', path,
-                     'an unresolved conflict: %s at line %d, %s at %d, %s at %d'
-                     % (OURS_MARK, ours, BASE_MARK, base, THEIRS_MARK, i))]
-    return []
+    try:
+        r = subprocess.run(
+            [sys.executable, MARKER_TOOL, '--json', '--files'] + list(paths),
+            cwd=REPO, capture_output=True, timeout=300)
+    except Exception as exc:
+        raise CouldNotRun('tools/conflict_marker_check.py did not run: %s' % exc)
+    try:
+        got = json.loads(r.stdout.decode('utf-8', 'replace'))
+    except ValueError:
+        raise CouldNotRun(
+            'tools/conflict_marker_check.py --json did not return JSON (exit %d). '
+            'Check A produced no answer and this is NOT a pass: %s'
+            % (r.returncode, r.stderr.decode('utf-8', 'replace')[:200]))
+    if got.get('unreadable'):
+        raise CouldNotRun('the marker check could not read %d file(s): %s'
+                          % (len(got['unreadable']), got['unreadable'][:2]))
+    return [('MARKERS', h['file'],
+             'unresolved %s marker at line %d -- %s'
+             % (h['kind'], h['line'], h['text'].strip()))
+            for h in got.get('findings', [])]
 
 
-# ── CHECK B: DOES IT STILL PARSE ────────────────────────────────────────────
-# A different mechanism from A on purpose -- see the module docstring. This is
-# the check that would have refused docs/tier-a-reviews.json regardless of
-# whether the marker scan was written correctly.
+# ── CHECK B: A MECHANISM A DOES NOT SHARE ───────────────────────────────────
 
 def check_parses(path, text):
+    """Structured files must still parse.
+
+    Kept rather than delegated because the marker check reads bytes and looks for
+    four line shapes -- it is structurally incapable of seeing a JSON truncated
+    mid-object, a half-applied hand merge, or an encoding mangled on the way in.
+    None of those are markers and all of them are unfinished files.
+    """
     if text is None:
         return []
     low = path.lower()
@@ -215,28 +213,36 @@ def check_parses(path, text):
         if low.endswith('.json'):
             json.loads(text)
         elif low.endswith('.jsonl') or low.endswith('.ndjson'):
-            for n, line in enumerate(text.splitlines(), 1):
+            for line in text.splitlines():
                 if line.strip():
                     json.loads(line)
+        else:
+            return []
     except ValueError as exc:
-        return [('PARSE', path, 'will not parse as %s: %s'
-                 % (os.path.splitext(path)[1].lstrip('.').upper() or 'JSON', exc))]
+        return [('PARSE', path, 'will not parse: %s' % exc)]
     return []
 
 
 # ── CHECK C: A WHOLE SIDE TAKEN, AND THE OTHER SIDE'S WORK DISCARDED ────────
 
 def check_blind_pick(paths):
-    """Resolutions byte-identical to one entire conflict stage.
+    """Resolutions byte-identical to one entire side of a real three-way conflict.
 
-    `git checkout --ours` and `--theirs` leave NO markers, so A and B both pass
-    while the other session's changes are gone. The index still remembers both
-    stages during a rebase, and after `git add` the staged blob can still be
-    compared against them -- so this asks the question the marker grep cannot.
+    ── THE COMPARISON CANNOT COME FROM THE INDEX STAGES ────────────────────
+    The first cut read `git ls-files -u`. `git add` CLEARS those stages, so by the
+    moment a pre-flight is actually run -- after resolving, before continuing --
+    there was nothing left to compare and this returned clean with the defect in
+    front of it. Its probe caught that; nothing else would have.
 
-    NOT AN ERROR BY ITSELF. Taking one side whole is sometimes the correct
-    resolution. It must simply never be SILENT, which is the whole difference
-    between this and the habit that caused the defect.
+    HEAD and REBASE_HEAD/MERGE_HEAD survive resolution, so the two sides are read
+    from the COMMITS. And only where a GENUINE three-way conflict existed: both
+    sides changed the path relative to the merge base. A path only one side
+    touched resolves to that side legitimately, and flagging it would train
+    people to ignore this check -- which is the failure mode that matters most
+    for a check nothing yet invokes.
+
+    NOT AN ERROR BY ITSELF. Taking one side whole is sometimes the right
+    resolution. It must simply never be SILENT.
     """
     kind, _ = in_progress()
     if kind is None:
@@ -246,24 +252,11 @@ def check_blind_pick(paths):
     out, _ = git('diff', '--name-only', '--diff-filter=U', allow_fail=True)
     unmerged = {l.strip() for l in out.splitlines() if l.strip()}
     for p in sorted(unmerged):
-        if paths and p not in paths:
-            continue
-        findings.append(('UNRESOLVED', p,
-                         'still conflicted in the index during a %s -- resolve it '
-                         'before continuing' % kind))
+        if not paths or p in paths:
+            findings.append(('UNRESOLVED', p,
+                             'still conflicted in the index during a %s -- '
+                             'resolve it before continuing' % kind))
 
-    # ── THE COMPARISON CANNOT COME FROM THE INDEX STAGES ────────────────────
-    # The first cut read `git ls-files -u`. `git add` CLEARS those stages, so by
-    # the time anyone would run a pre-flight -- after resolving, before
-    # continuing -- there was nothing left to compare and the check silently
-    # returned nothing. It passed every arm of the probe that mattered while
-    # detecting the defect in none of them.
-    #
-    # HEAD and REBASE_HEAD/MERGE_HEAD survive resolution, so the two sides are
-    # read from the COMMITS instead, and only where a genuine three-way conflict
-    # existed: both sides changed the path relative to the merge base. A path
-    # only one side touched resolves to that side legitimately and is not a
-    # finding.
     other = None
     for ref in ('REBASE_HEAD', 'MERGE_HEAD', 'CHERRY_PICK_HEAD'):
         out, rc = git('rev-parse', '--verify', '--quiet', ref, allow_fail=True)
@@ -296,10 +289,8 @@ def check_blind_pick(paths):
             continue
         if base is not None:
             was = blob(base, p)
-            # Only ONE side changed it -- resolving to that side is correct, not
-            # a blind pick. Flagging it would train people to ignore this check.
             if was is not None and (was == ours or was == theirs):
-                continue
+                continue  # only one side changed it; resolving to that side is right
         for side, label in ((ours, 'ours'), (theirs, 'theirs')):
             if cur == side:
                 findings.append(('BLIND-PICK', p, (
@@ -307,18 +298,15 @@ def check_blind_pick(paths):
                     'discarded WHOLE, and both sides had changed it. Confirm '
                     'that is intended; on a file another session is editing it '
                     'is how their work disappears. NOTE THE INVERSION: during a '
-                    'REBASE, `--ours` is the branch being rebased ONTO and '
+                    'REBASE `--ours` is the branch being rebased ONTO and '
                     '`--theirs` is your own replayed commit -- the opposite of '
-                    'what the words suggest, which is half of why the blind '
-                    'form is dangerous here.' % label)))
+                    'what the words suggest.' % label)))
                 break
     return findings
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument('--staged', action='store_true',
-                    help='check only what is staged, for a pre-commit hook')
     ap.add_argument('--paths', nargs='*', help='check these paths only')
     args = ap.parse_args(argv)
 
@@ -326,11 +314,9 @@ def main(argv=None):
         assert_this_repo()
         kind, detail = in_progress()
         paths = candidate_paths(args)
-        findings = []
+        findings = check_markers(paths)
         for p in paths:
-            text = read_text(p)
-            findings += check_markers(p, text)
-            findings += check_parses(p, text)
+            findings += check_parses(p, read_text(p))
         findings += check_blind_pick(set(paths))
     except CouldNotRun as e:
         sys.stderr.write('COULD NOT RUN -- %s\n' % e)
@@ -338,10 +324,10 @@ def main(argv=None):
                          'and nothing downstream may treat it as one.\n')
         return 2
 
-    print('CONFLICT-MARKER PRE-FLIGHT')
-    print('%d path(s) examined%s.'
-          % (len(paths), (' -- a %s is IN PROGRESS (%s)' % (kind, detail))
-             if kind else ''))
+    print('CONFLICT PRE-FLIGHT (markers delegated to conflict_marker_check.py)')
+    print('%d path(s)%s.' % (len(paths),
+                             (' -- a %s is IN PROGRESS (%s)' % (kind, detail))
+                             if kind else ''))
     if not paths:
         print('')
         print('NOTHING TO CHECK is not the same as CLEAN. If that is a surprise,')
@@ -349,11 +335,12 @@ def main(argv=None):
 
     if not findings:
         print('')
-        print('CLEAN -- no ordered conflict triad, every structured file parses,')
-        print('and no resolution equals one whole side.')
+        print('CLEAN -- no markers, every structured file parses, and no')
+        print('resolution equals one whole side.')
         if not kind:
-            print('No rebase/merge in progress, so check C had nothing to compare')
-            print('against and proved nothing. That is a scope limit, not a pass.')
+            print('No rebase/merge in progress, so CHECK C HAD NOTHING TO COMPARE')
+            print('AGAINST and proved nothing. That is a scope limit, not a pass --')
+            print('this tool is only meaningful mid-operation.')
         return 0
 
     print('')
@@ -362,9 +349,9 @@ def main(argv=None):
         print('               %s' % why)
     print('')
     print('DO NOT `git rebase --continue` OR COMMIT UNTIL THESE ARE SETTLED.')
-    print('Resolve by keeping BOTH sides on purpose. A blind --ours/--theirs is')
-    print("what put six markers in docs/tier-a-reviews.json, and its quiet")
-    print('outcome -- a clean file missing another session\'s work -- is worse.')
+    print('Keep BOTH sides on purpose. A blind --ours/--theirs is what put six')
+    print('markers in docs/tier-a-reviews.json, and its QUIET outcome -- a clean,')
+    print("parseable file missing another session's work -- is the worse half.")
     return 1
 
 
