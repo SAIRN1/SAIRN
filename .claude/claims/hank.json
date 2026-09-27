@@ -3047,6 +3047,25 @@
         "docs/CRITICALITY-TIERS.md",
         "vercel.json"
       ]
+    },
+    {
+      "id": "hank-1790478221",
+      "session": "hank",
+      "subject": "hank",
+      "task": "queue14: SD_AUTH_SECRET rotation destroys legacy ciphertexts and the procedure next to it says nobody is affected -- give legacy decryption the same dual-key path signing has, plus measure live whether SD_ENCRYPTION_KEY is set and ship the unrun legacy-row select; reclaim api/sd-data.js and wire cc's sen-evv-clock module at 5745-5804; author applies_to_positions for OH IN and both PA chapters; replace the annual-window 400 with rolling 12 months anchored to hire date; item 92 write_batch functional core; sweep for branches gated on a payload field name that exists nowhere; scope whether authentication-shaped material needs its own tracked flag; apply the new section 2 transactional-vs-deliberative line to the rest of the registry. sairncare.html is fourth-q10's, sairnsenior.html and sairnbiz.html are cody-q14's and cc's, all untouched. CRITICALITY-TIERS.md is free -- cody's sf_events cell is delivered as replacement TEXT in its own doc, not as an edit. SUBJECT NAMED PER PR 4.3 FILES: api/_lib/auth.js api/_lib/auth.test.js api/sd-data.js api/_lib/compliance-rules.js docs/CRITICALITY-TIERS.md tools/payload_field_ghost_scan.py sql/legacy_ciphertext_census.sql",
+      "claimed_at": "2026-09-27T03:03:41Z",
+      "claimed_at_epoch": 1790478221.4265916,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/_lib/auth.js",
+        "api/_lib/auth.test.js",
+        "api/_lib/compliance-rules.js",
+        "api/sd-data.js",
+        "docs/CRITICALITY-TIERS.md",
+        "sql/legacy_ciphertext_census.sql",
+        "tools/payload_field_ghost_scan.py"
+      ]
     }
   ],
   "refusals": [
