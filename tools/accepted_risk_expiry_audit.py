@@ -153,6 +153,21 @@ def _invokers():
 
 
 def _rows():
+    """Index rows, or None for COULD-NOT-TELL.
+
+    AN EMPTY ROW LIST IS None AND NOT []. The file existing is not the same as
+    the file parsing: a changed table shape, a rewritten legend, a document
+    moved to a different separator, and every line fails the `count('|') >= 6`
+    test while `os.path.isfile` stays happily true. Measured 2026-09-27 with
+    this function forced to []: the tool reported "population : 1", four
+    verdict counts, and exit 0 -- against a real population of 19. A tool that
+    lost the entire open-work index reported a normal-looking result.
+
+    Same shape as `git log --not --remotes` with no positive rev, which walked
+    nothing, exited 0, printed nothing, and made push_retry.py's guard refuse
+    every amend forever (tools/push_retry.py:142). Exit 0 with empty output is
+    a third state, never an answer.
+    """
     if not os.path.isfile(INDEX):
         return None
     out = []
@@ -160,15 +175,28 @@ def _rows():
         s = line.strip()
         if s.startswith('|') and s.count('|') >= 6:
             out.append((i, s))
-    return out
+    return out or None
 
 
 def _paused_docs():
-    """Files that declare themselves a pause. A paused mechanism is an accepted
-    risk wearing a filename, and it is the shape most likely to be forgotten --
-    nothing in the index has to mention it at all."""
+    """Files that declare themselves a pause, or None if git could not be asked.
+
+    A paused mechanism is an accepted risk wearing a filename, and it is the
+    shape most likely to be forgotten -- nothing in the index has to mention it
+    at all.
+
+    THE RETURN CODE WAS NOT CHECKED AT ALL, which is the worst version of the
+    empty-walk shape rather than a milder one: a `git ls-files` that failed to
+    launch left `ls.stdout` empty and this returned [], so "git is broken" and
+    "there are no paused documents" were the same answer and the tool carried
+    on and printed a population. Unlike a ZERO row count, ZERO PAUSED DOCS IS A
+    LEGITIMATE STATE, so the two cases genuinely differ and are now separate:
+    rc != 0 is None and refuses; an empty list is [] and is an answer.
+    """
     ls = subprocess.run(['git', '-C', REPO, 'ls-files', 'docs/*PAUSED*',
                          'docs/*paused*'], capture_output=True, text=True, encoding='utf-8', errors='replace')
+    if ls.returncode != 0:
+        return None
     return [f for f in ls.stdout.split('\n') if f.strip()]
 
 
@@ -205,7 +233,10 @@ def audit():
         verdict, tools = classify(row, invokers)
         found.append({'where': 'index:%d' % lineno, 'subject': subject[:150],
                       'verdict': verdict, 'tools': tools})
-    for doc in _paused_docs():
+    paused = _paused_docs()
+    if paused is None:
+        return None
+    for doc in paused:
         p = os.path.join(REPO, doc)
         if not os.path.isfile(p):
             continue
@@ -252,6 +283,71 @@ def selftest():
     else:
         print('  all %d fixtures classified correctly, including BOTH directions '
               '(a tool that is invoked and one that is not).' % len(cases))
+
+    # ── AND THE INPUT, NOT JUST THE CLASSIFIER ─────────────────────────────
+    # Every arm above hands a fixture string to classify(). They prove the
+    # DECISION MODEL and nothing about the code that feeds it, and the two can
+    # disagree completely. push_retry.py caught exactly that in itself: a
+    # `git log --not --remotes` with no positive rev walked nothing, exited 0,
+    # returned an empty safe-set, and its guard refused every amend forever
+    # while every fixture arm still passed.
+    #
+    # THE SAME BLIND SPOT WAS LIVE HERE. Driven 2026-09-27 with _rows() forced
+    # to []: the tool reported "population : 1" and exited 0, against a real
+    # population of 19. Losing the entire open-work index looked like a result.
+    print('')
+    rows = _rows()
+    if rows is None:
+        print('  FAIL _rows() returned None on the real repo -- the open-work '
+              'index is missing or no line in it parses as a table row.')
+        bad += 1
+    else:
+        print('  ok   _rows() reads the real index: %d row(s)' % len(rows))
+    paused = _paused_docs()
+    if paused is None:
+        print('  FAIL _paused_docs() returned None -- `git ls-files` failed.')
+        bad += 1
+    else:
+        # ZERO IS A REAL ANSWER HERE and the arm says so rather than asserting
+        # a count it cannot know. The claim is that git was ASKED.
+        print('  ok   _paused_docs() asked git and got an answer: %d doc(s)'
+              % len(paused))
+    found = audit()
+    if not found:
+        print('  FAIL audit() found no accepted-risk rows at all against a real '
+              'index, which is a matcher failure rather than a clean register.')
+        bad += 1
+    else:
+        print('  ok   audit() finds %d accepted-risk decision(s) on real input'
+              % len(found))
+
+    # THE CONTROLS FOR THE FIX ITSELF. Without these, `out or None` and the
+    # returncode check could both be deleted and every arm above would pass.
+    g = globals()
+    real_rows, g['_rows'] = _rows, lambda: None
+    try:
+        collapsed = audit()
+    finally:
+        g['_rows'] = real_rows
+    if collapsed is None:
+        print('  ok   CONTROL -- an unreadable index REFUSES rather than '
+              'reporting a small population')
+    else:
+        print('  FAIL CONTROL -- an unreadable index produced %d row(s) instead '
+              'of a refusal' % len(collapsed))
+        bad += 1
+    real_p, g['_paused_docs'] = _paused_docs, lambda: None
+    try:
+        collapsed = audit()
+    finally:
+        g['_paused_docs'] = real_p
+    if collapsed is None:
+        print('  ok   CONTROL -- a failed `git ls-files` REFUSES rather than '
+              'reporting zero paused documents')
+    else:
+        print('  FAIL CONTROL -- a failed ls-files produced %d row(s) instead '
+              'of a refusal' % len(collapsed))
+        bad += 1
     return 2 if bad else 0
 
 

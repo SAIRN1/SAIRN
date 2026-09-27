@@ -147,12 +147,32 @@ RENDER = re.compile(r'\b(?:innerHTML|textContent|\.value\s*=|appendChild|insertA
 
 
 def app_files():
+    """The app files to audit, or None for COULD-NOT-TELL.
+
+    AN EMPTY LIST IS RETURNED AS None, AND THAT IS THE WHOLE POINT OF THIS
+    DOCSTRING. `git ls-files` exits 0 and prints nothing whenever it matches
+    nothing -- a changed pathspec, a run from outside the repo, a directory
+    layout that moved -- so a non-zero return code is only HALF the failure
+    mode. Measured 2026-09-27 before the fix: with this function returning [],
+    the tool printed "AI call sites found : 0 across 0 app file(s)", all four
+    verdict counts at zero, and exited 0. Indistinguishable from a clean sweep
+    of a platform whose real answer is 73 call sites and 14 ungated writes.
+
+    Same shape as `git log --not --remotes` with no positive rev, which had
+    nothing to walk FROM, exited 0, printed nothing, and made push_retry.py's
+    amend guard refuse every amend forever (tools/push_retry.py:142). rc == 0
+    with empty output is a third state and is never folded into an answer.
+
+    ZERO APP FILES IS NOT A REAL STATE OF THIS REPO, so collapsing it into the
+    existing could-not-tell path loses nothing a caller could have used.
+    """
     out = subprocess.run(['git', '-C', REPO, 'ls-files', '*.html'],
                          capture_output=True, encoding='utf-8', errors='replace')
     if out.returncode != 0:
         return None
-    return [f for f in out.stdout.split('\n')
-            if f and not f.startswith(('archive/', 'docs/'))]
+    files = [f for f in out.stdout.split('\n')
+             if f and not f.startswith(('archive/', 'docs/'))]
+    return files or None
 
 
 def functions(src):
@@ -191,7 +211,14 @@ def classify(body):
 
 def audit():
     files = app_files()
-    if files is None:
+    # `not files` RATHER THAN `files is None`, so the refusal does not depend on
+    # WHICH layer broke. app_files() already folds an empty match into None, and
+    # this second check is not redundant: the control arm in selftest() drives
+    # audit() with app_files replaced, and the first version of that control
+    # passed straight through this line and reported a clean sweep of zero
+    # files. A guard that only works when the layer beneath it is intact is the
+    # guard that was missing here in the first place.
+    if not files:
         return None
     rows = []
     for rel in files:
@@ -250,6 +277,54 @@ def selftest():
         print('  all %d fixtures classified correctly, in BOTH directions '
               '(a gated write and an ungated one, an AI call and a non-AI one).'
               % (len(cases) + 1))
+
+    # ── AND THE INPUT, NOT JUST THE CLASSIFIER ─────────────────────────────
+    # Every arm above is a fixture handed straight to classify(). They prove
+    # the DECISION MODEL and nothing at all about the code that feeds it, and
+    # the two can disagree completely. push_retry.py's selftest caught exactly
+    # that in itself: `git log --not --remotes` with no positive rev walked
+    # nothing, exited 0, returned an empty safe-set, and the guard refused
+    # every amend forever while every fixture arm still passed -- because the
+    # fixtures were refusals and a tool that always refuses satisfies them.
+    #
+    # THE SAME BLIND SPOT WAS LIVE HERE AND IS WHY THESE ARMS EXIST. Driven
+    # 2026-09-27 with app_files() forced to []: the tool printed "AI call sites
+    # found : 0 across 0 app file(s)", all four counts zero, exit 0. A clean
+    # sweep of a platform whose real answer is 73 sites and 14 ungated writes.
+    print('')
+    files = app_files()
+    if files is None:
+        print('  FAIL app_files() returned None on the real repo -- either '
+              '`git ls-files` failed or it matched nothing, and neither is a '
+              'state this checkout should be in.')
+        bad += 1
+    else:
+        print('  ok   app_files() reads the real repo: %d app file(s)' % len(files))
+        rows = audit()
+        if not rows:
+            print('  FAIL audit() found no AI call sites at all in %d files. '
+                  'That is a transport-pattern failure, not a clean platform.'
+                  % len(files))
+            bad += 1
+        else:
+            print('  ok   audit() finds %d AI call site(s) across %d file(s) -- '
+                  'the scanner reaches real code'
+                  % (len(rows), len(set(r['app'] for r in rows))))
+        # THE CONTROL FOR THE FIX ITSELF. Without it, `files or None` could be
+        # deleted and every arm above would still pass.
+        real, globals()['app_files'] = app_files, lambda: []
+        try:
+            empty = audit()
+        finally:
+            globals()['app_files'] = real
+        if empty is None:
+            print('  ok   CONTROL -- an EMPTY file list is refused as '
+                  'could-not-tell, not reported as zero findings')
+        else:
+            print('  FAIL CONTROL -- an empty file list produced %r instead of '
+                  'a refusal, so a scanner that matched nothing still reports '
+                  'a clean sweep.' % (empty,))
+            bad += 1
     return 2 if bad else 0
 
 
@@ -258,7 +333,11 @@ def main():
         return selftest()
     rows = audit()
     if rows is None:
-        print('COULD NOT CHECK: `git ls-files` failed, so NOTHING WAS MEASURED.')
+        print('COULD NOT CHECK: `git ls-files` either FAILED or MATCHED NOTHING,')
+        print('so NOTHING WAS MEASURED. Both are refusals and neither is a pass:')
+        print('ls-files exits 0 and prints nothing when it matches nothing, so a')
+        print('clean exit code is only half the question. Zero app files is not a')
+        print('real state of this repo.')
         print('Zero findings here is not a clean sweep.')
         return 2
     if '--json' in sys.argv:
