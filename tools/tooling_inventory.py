@@ -840,6 +840,30 @@ PURPOSES = {
     'stonedesk_storefront_live_check.py': ('LIVE', 'whether sql/stonedesk_public_surface_schema.sql was really run, by probing the three public endpoints -- the instruction "confirm by re-probing, not by the editor reporting success", mechanised'),
     'sairn_ai_fact_scan.py': ('CHECKER', 'a number an AI panel states that no function computes'),
     'sairn_app_map_check.py': ('LIVE', "an app absent from Guardian's own app map, and a route that 404s"),
+    'unreachable_failure_path_scan.py': ('CHECKER',
+        'a FAILURE PATH THE CALLER TESTS FOR AND THE CALLEE CANNOT PRODUCE -- a '
+        'warning that is present in the source, reviewed, and unreachable. '
+        'pcToggleSlab() read `ok === false` to warn "the catalog on the web has '
+        'NOT changed" since the public catalog shipped, and slabSyncOne() '
+        'returned undefined on every path, so a failed publish said "Slab '
+        'published to the catalog". That is WORSE than a missing warning: a gap '
+        'is visible, and a present unreachable branch reads as coverage on every '
+        'future review. It is a DISAGREEMENT BETWEEN TWO FUNCTIONS, which no '
+        'single-file review catches by construction. Decides ONE shape of the '
+        'family and names the other two it cannot: a probe reading the wrong '
+        'payload key so both sides of its comparison are the same refusal, and a '
+        'criterion that cannot distinguish its two cases. Truthiness is '
+        'deliberately NOT a finding (!undefined is true, so that branch fires '
+        'every time, which may be what the guard wants) and a bare result merely '
+        'BOUND is advisory, counted separately. It REFUSES to judge a function '
+        'whose name is defined more than once in its file -- stonedesk.html has '
+        '23 `render`s -- and PRINTS the refusal, because a scan silently '
+        'declining to judge is indistinguishable from one that judged and found '
+        'nothing. No hand-rolled comment stripper: it uses jscomments and exits '
+        '2 naming it when absent, because its own first draft proved the '
+        'alternative -- a fallback that read the `//` in a URL as a comment and '
+        'called a function with two real `return` statements bare. REPORT ONLY '
+        'and not a gate, by decision'),
     'mech_panels_live_check.py': ('LIVE',
         'a SAIRNmechanical panel that looks wired and does not reach its table, '
         'and -- with --static, needing no licence -- a dropdown offering a value '
