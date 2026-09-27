@@ -1,6 +1,7 @@
 """The independent-review rule on Tier A code, as a gate rather than a habit.
 
-    python tools/tier_a_review_gate.py                 # check the working tree
+    python tools/tier_a_review_gate.py                 # working tree AND the
+                                                       # outgoing push range
     python tools/tier_a_review_gate.py --diff-range A..B   # check a commit range
     python tools/tier_a_review_gate.py --open "why"    # record this session's obligation
     python tools/tier_a_review_gate.py --list          # what is open, and whose
@@ -863,6 +864,99 @@ def working_diff():
 
 def range_diff(base, tip):
     return git('diff', '-U3', base, tip)
+
+
+# ── THE TWO ENTRY POINTS ANSWERED DIFFERENT QUESTIONS (2026-09-27) ──────────
+# Register 1a79c8a08a1d, recorded 11 days and left planned: "the gate's two
+# halves disagreed and nothing reconciled them -- a reader who checked first
+# would have been told the opposite of what happened."
+#
+# WALKED INTO AGAIN TODAY, WHICH IS WHY IT IS BEING CLOSED RATHER THAN RE-AGED.
+# A session committed a new Tier A engine, ran `python tools/tier_a_review_gate
+# .py` to check before pushing, and was told in as many words:
+#
+#     "No file in this change names a Tier A resource on a changed line, and no
+#      changed line falls inside a registered coding rule. Nothing to record."
+#
+# and then the push was DENIED by this same tool naming seven resources. Both
+# answers were correct about what they read. The bare entry point read the
+# WORKING TREE, which was clean because the work was already committed; the
+# push hook reads `merge-base origin/main HEAD..HEAD`, the outgoing commits.
+#
+# THE SHAPE OF THE DEFECT IS NOT "ONE HALF WAS WRONG". It is that the default
+# scope silently EXCLUDED the only scope the caller cared about, and said
+# "nothing to record" -- a clean verdict about a question nobody asked. That is
+# the same family as PR 1.11: an answer that cannot be told from the answer to
+# the question you meant.
+#
+# So the default now reads BOTH, names what it read, and -- the half that keeps
+# this from being a new silent pass -- if the outgoing range cannot be resolved
+# it returns COULD NOT TELL for that half rather than quietly reporting on the
+# working tree alone. `--diff-range` and `--stdin-diff` are unchanged: a caller
+# that names a scope gets exactly that scope, and the push hook is such a caller.
+PUSH_BASE_REF = 'origin/main'
+
+
+def push_range():
+    """(base, tip) -- the range tools/sairn_push_gate_hook.py will examine.
+
+    Derived the same way the hook derives it, from the same refs, rather than
+    copied as a string: two spellings of "what is being pushed" is the defect
+    this function exists to remove, and writing a second one here would be it.
+    """
+    tip = git('rev-parse', 'HEAD').strip()
+    if not tip:
+        raise CouldNotTell('HEAD does not resolve to a commit')
+    base = git('merge-base', PUSH_BASE_REF, tip).strip()
+    if not base:
+        raise CouldNotTell('no merge-base between %s and HEAD' % PUSH_BASE_REF)
+    return base, tip
+
+
+def default_scope_diff():
+    """(diff text, notes, could_not_tell) for a run that named no scope.
+
+    `could_not_tell` is a THIRD state and the caller must exit 2 on it. It is
+    true when the outgoing range could not be read -- which is not "no Tier A
+    resource touched", and is not a finding either.
+    """
+    wt = working_diff()
+    try:
+        base, tip = push_range()
+    except CouldNotTell as e:
+        return wt, [
+            'COULD NOT TELL, and this is NOT a pass. The OUTGOING COMMIT RANGE '
+            'could not be resolved (%s), so only the uncommitted working tree '
+            'was examined.' % e,
+            'The push gate examines the range, not the working tree. A clean '
+            'answer about the working tree says NOTHING about whether your '
+            'push will be blocked -- which is exactly how this tool told one '
+            'session "nothing to record" minutes before denying its push.',
+            'Name the scope yourself to get a real answer:  '
+            'python tools/tier_a_review_gate.py --diff-range <base>..HEAD',
+        ], True
+    rng = range_diff(base, tip)
+    n = len([ln for ln in git('rev-list', '%s..%s' % (base, tip)).split('\n')
+             if ln.strip()])
+    notes = [
+        'SCOPE: the uncommitted working tree AND the outgoing range '
+        '%s..%s (%d commit(s)) -- the same range the push gate reads. '
+        'Both, because a clean working tree is not an empty push.'
+        % (base[:12], tip[:12], n),
+        # NAMED BECAUSE A LIMIT NOBODY STATES READS AS COVERAGE. working_diff()
+        # is two `git diff` calls and neither sees an untracked file, so a
+        # brand-new handler sitting unstaged contributes nothing to the answer
+        # above. `git add` makes it visible; so does committing it, via the
+        # range. Pinned in both directions by section 2b of the probe.
+        'THE WORKING-TREE HALF EXCLUDES UNTRACKED FILES -- a new file that has '
+        'never been `git add`ed is not in this answer. Add or commit it first.',
+    ]
+    if n == 0:
+        notes.append('NOTE: 0 outgoing commits against %s. If you have not '
+                     'fetched, that number is as stale as your last fetch and '
+                     'the push may still find commits to examine.'
+                     % PUSH_BASE_REF)
+    return wt + '\n' + rng, notes, False
 
 
 def open_records(data, session=None):
@@ -2446,6 +2540,7 @@ def main(argv):
     # silent empty string, which this gate reads as "no Tier A resource touched"
     # -- a pass. Exit 2 keeps could-not-tell separate from both a finding and a
     # clean run, the same way check() has always treated an unreadable register.
+    scope_notes, scope_unknown = [], False
     try:
         if '--diff-range' in argv:
             rng = argv[argv.index('--diff-range') + 1]
@@ -2454,15 +2549,29 @@ def main(argv):
         elif '--stdin-diff' in argv:
             text = sys.stdin.read()
         else:
-            text = working_diff()
+            # SEE default_scope_diff() -- a bare run used to read the working
+            # tree ONLY and answer "nothing to record" about a scope the push
+            # gate does not examine.
+            text, scope_notes, scope_unknown = default_scope_diff()
     except CouldNotTell as e:
         sys.stderr.write('COULD NOT TELL -- the diff could not be read, so NOTHING '
                          'WAS CHECKED. This is NOT a pass:\n  %s\n' % e)
         return 2
     code, lines = check(text)
     out = sys.stderr if code else sys.stdout
+    # THE SCOPE IS PRINTED BEFORE THE VERDICT, and on the same stream, because a
+    # verdict whose scope is one scroll away is a verdict read without it.
+    for ln in scope_notes:
+        out.write(ln + '\n')
+    if scope_notes:
+        out.write('\n')
     for ln in lines:
         out.write(ln + '\n')
+    # An unresolvable outgoing range outranks a clean verdict about the other
+    # half: 0 would say "checked, nothing found". It does NOT outrank a real
+    # finding -- a finding is something that WAS found and stays a 1.
+    if scope_unknown and code == 0:
+        return 2
     return code
 
 

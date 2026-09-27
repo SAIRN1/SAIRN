@@ -1111,32 +1111,65 @@ check('eligible_reviewers() consults is_hover_session rather than != HOVER_SESSI
 # An obligation assigned to a session that never runs again would block for
 # ever, and this platform already records that shape for expired claims. So:
 # explicit flag, time gate, recorded handover -- never silent.
-_fresh_owner = _orec(owner='cody',
+#
+# EVERY ARM BELOW GOES THROUGH cmd_discharge(), WHICH RESOLVES THE CALLER FROM
+# THE CLONE rather than taking it as an argument the way section 6's _discharge()
+# does. So the fixture's OWNER may not be a literal: these fixtures said
+# owner='cody', and on the cody clone owner == caller, so the gate refused with
+# "cody already owns that obligation. Discharge it without --takeover." and all
+# three takeover arms reported FAIL for a reason that had nothing to do with the
+# takeover path. They were green on hank, cc and fourth the whole time. That is
+# convention 8 wearing a fixture: the arms stopped testing anything in exactly
+# one clone and nothing said so.
+#
+# _ME is derived (it already was, one lesson earlier, for the REVIEWER side);
+# _OWNER is now derived too, from the same source, and the pair is ASSERTED to
+# differ before any arm runs -- so this cannot silently become untestable again
+# in whichever clone happens to share a hardcoded name.
+# THE AUTHOR IS DERIVED FOR THE SAME REASON, and it is a SECOND instance of the
+# same defect rather than a precaution: the fixtures' author was the literal
+# 'hank', and the self-review guard refuses when reviewer == author, so on the
+# hank clone these arms died on SelfSigned instead -- one hardcoded name broke
+# the section in one clone, the other broke it in another, and neither announced
+# itself as anything but FAIL.
+_ME = g.session_name()
+_POOL = ('cc', 'fourth', 'hank', 'cody', 'fifth')
+_OWNER = next(n for n in _POOL if n != _ME and not g.is_hover_session(n))
+_AUTHOR = next(n for n in _POOL
+               if n not in (_ME, _OWNER) and not g.is_hover_session(n))
+check('the fixture owner is NOT this clone, so a takeover is REACHABLE here -- '
+      'without this the three arms below pass or fail on which clone ran them',
+      _OWNER != _ME and not g.is_hover_session(_OWNER),
+      'owner=%r me=%r' % (_OWNER, _ME))
+check('...and the fixture AUTHOR is neither this clone nor the owner, so the '
+      'self-review guard cannot be what refuses these arms',
+      _AUTHOR != _ME and _AUTHOR != _OWNER,
+      'author=%r owner=%r me=%r' % (_AUTHOR, _OWNER, _ME))
+_fresh_owner = _orec(author=_AUTHOR, owner=_OWNER,
                      assigned=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()))
 _fp = _ostage([_fresh_owner])
-_rc = g.cmd_discharge('hank', 'v', opened_at='2026-05-01T00:00:00Z',
+_rc = g.cmd_discharge(_AUTHOR, 'v', opened_at='2026-05-01T00:00:00Z',
                       takeover=True)
 _fresh_w = json.load(io.open(_fp, encoding='utf-8'))['records'][0]
 check('a takeover is REFUSED while the owner is still inside the window -- '
       'taking it early is the race again, wearing a flag',
       _rc == 1 and _fresh_w.get('reviewer_session') is None,
       (_rc, _fresh_w.get('reviewer_session')))
-_stale = _orec(owner='cody', assigned='2020-01-01T00:00:00Z')
+_stale = _orec(author=_AUTHOR, owner=_OWNER, assigned='2020-01-01T00:00:00Z')
 _sp = _ostage([_stale])
-_rc = g.cmd_discharge('hank', 'a real verdict', opened_at='2026-05-01T00:00:00Z',
-                      takeover=True)
+_rc = g.cmd_discharge(_AUTHOR, 'a real verdict',
+                      opened_at='2026-05-01T00:00:00Z', takeover=True)
 # READ THE FILE BACK, not the dict handed to _ostage. cmd_discharge loads the
 # register from disk and mutates ITS OWN copy, so asserting on the local dict
 # checks an object nothing wrote to -- which is what the first version of these
 # two arms did, and they reported FAIL over a takeover that had plainly worked.
 _stale_w = json.load(io.open(_sp, encoding='utf-8'))['records'][0]
 # THE REVIEWER IS THE SESSION RUNNING THE COMMAND, NOT THE AUTHOR ARGUMENT.
-# 'hank' above is whose obligation it is; the reviewer is this clone. The first
-# version of these arms expected 'hank' in both places and failed on a takeover
-# that had plainly worked -- the same author/reviewer confusion the gate itself
-# refuses, reproduced in its own probe. Derived from session_name() rather than
-# hardcoded so this passes in whichever clone runs it.
-_ME = g.session_name()
+# _AUTHOR above is whose obligation it is; the reviewer is this clone. The first
+# version of these arms expected the author name in both places and failed on a
+# takeover that had plainly worked -- the same author/reviewer confusion the gate
+# itself refuses, reproduced in its own probe. Derived from session_name() rather
+# than hardcoded so this passes in whichever clone runs it.
 check('a takeover IS allowed once the assignment is stale, so a dead owner '
       'cannot block an obligation for ever',
       _rc == 0 and _stale_w.get('reviewer_session') == _ME,
@@ -1144,26 +1177,26 @@ check('a takeover IS allowed once the assignment is stale, so a dead owner '
 check('...and the handover is RECORDED -- from, by, at and how long it was '
       'held -- rather than silently overwriting the assignment',
       (isinstance(_stale_w.get('owner_takeover'), dict)
-       and _stale_w['owner_takeover'].get('from') == 'cody'
+       and _stale_w['owner_takeover'].get('from') == _OWNER
        and _stale_w['owner_takeover'].get('by') == _ME
        and _stale_w['owner_takeover'].get('owner_held_hours', 0) > g.OWNER_STALE_HOURS),
       _stale_w.get('owner_takeover'))
 check('...and the ASSIGNED OWNER is left in the record beside the takeover, so '
       'the handover can be read afterwards rather than leaving a record that '
-      'looks as if hank owned it all along',
-      _stale_w.get('reviewer_owner') == 'cody', _stale_w.get('reviewer_owner'))
-_nostamp = _orec(owner='cody')
+      'looks as if the taker owned it all along',
+      _stale_w.get('reviewer_owner') == _OWNER, _stale_w.get('reviewer_owner'))
+_nostamp = _orec(author=_AUTHOR, owner=_OWNER)
 _nostamp['owner_assigned_at'] = None
 _np = _ostage([_nostamp])
-_rc = g.cmd_discharge('hank', 'v', opened_at='2026-05-01T00:00:00Z',
+_rc = g.cmd_discharge(_AUTHOR, 'v', opened_at='2026-05-01T00:00:00Z',
                       takeover=True)
 check('an UNREADABLE assignment time is COULD NOT TELL (exit 2), not a free '
       'takeover -- a takeover on an unknown age is a takeover on a guess',
       _rc == 2 and json.load(io.open(_np, encoding='utf-8'))['records'][0]
       .get('reviewer_session') is None, _rc)
-_unowned = _orec(owner=None)
+_unowned = _orec(author=_AUTHOR, owner=None)
 _ostage([_unowned])
-_rc = g.cmd_discharge('hank', 'v', opened_at='2026-05-01T00:00:00Z',
+_rc = g.cmd_discharge(_AUTHOR, 'v', opened_at='2026-05-01T00:00:00Z',
                       takeover=True)
 check('--takeover on an UNOWNED record is refused with the right reason: '
       'there is nothing to take over',
@@ -1517,6 +1550,189 @@ try:
 finally:
     g.REPO, g.REVIEWS = _real_repo8, _real_rev8
     shutil.rmtree(_tmp8, ignore_errors=True)
+
+
+
+# ── SECTION 9: THE TWO ENTRY POINTS MUST ANSWER THE SAME QUESTION ────────────
+# Register 1a79c8a08a1d, recorded 2026-09-16 and left `planned` for eleven days:
+# "the gate's two halves disagreed and nothing reconciled them -- a reader who
+# checked first would have been told the opposite of what happened."
+#
+# THE DEFECT, CONCRETELY. A bare run read the WORKING TREE. The push hook reads
+# `merge-base origin/main HEAD..HEAD`. So a session that COMMITS its work and
+# then checks before pushing -- the ordinary order -- was told "Nothing to
+# record", and was then denied by this same tool naming seven resources. Both
+# answers were true about what they read; neither was about the question asked.
+#
+# ARM 1 IS THE WHOLE POINT AND IT IS A DISCRIMINATION ARM: a clean working tree
+# with a committed-not-pushed hunk naming a Tier A resource. Run against the
+# PRE-FIX scope (working_diff alone) it is EMPTY -- asserted here beside the
+# fixed answer, so this arm cannot pass against the tool it was written to fix.
+# Without that second half it would be a test that the gate finds findings,
+# which sections 1-3 already cover.
+#
+# DRIVEN AGAINST A REAL GIT REPOSITORY with a real refs/remotes/origin/main,
+# because the thing under test is how two git invocations disagree. A stub git
+# would test this probe's arrangement and nothing about the tool.
+print()
+print('SECTION 9 -- a bare run and the push gate read the SAME scope')
+_tmp9 = tempfile.mkdtemp(prefix='tier-a-scope-probe-')
+_real9 = (g.REPO, g.REGISTER, g.REVIEWS)
+
+
+def _g9(*a):
+    return subprocess.run(['git'] + list(a), cwd=_tmp9, capture_output=True,
+                          encoding='utf-8', errors='replace')
+
+
+def _w9(rel, text):
+    p = os.path.join(_tmp9, rel.replace('/', os.sep))
+    d = os.path.dirname(p)
+    if d and not os.path.isdir(d):
+        os.makedirs(d)
+    io.open(p, 'w', encoding='utf-8', newline='\n').write(text)
+
+
+def _run9():
+    """(exit code, everything it printed) for a bare `main([])`."""
+    import contextlib
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
+        rc = g.main([])
+    return rc, buf.getvalue()
+
+
+try:
+    _g9('init', '-q', '-b', 'main')
+    _g9('config', 'user.email', 'probe@example.invalid')
+    _g9('config', 'user.name', 'probe')
+    # The resource list is the REAL one -- a fixture list would let the arms
+    # pass against a parser that cannot read the document the gate really uses.
+    _w9('docs/CRITICALITY-TIERS.md',
+        io.open(os.path.join(REPO, 'docs', 'CRITICALITY-TIERS.md'),
+                encoding='utf-8', errors='replace').read())
+    _w9('docs/tier-a-reviews.json', json.dumps({'records': []}))
+    _w9('api/x.js', 'const a = 1;\n')
+    _g9('add', '-A')
+    _g9('commit', '-q', '-m', 'base')
+    _sha9_base = _g9('rev-parse', 'HEAD').stdout.strip()
+    _g9('update-ref', 'refs/remotes/origin/main', _sha9_base)
+
+    g.REPO = _tmp9
+    g.REGISTER = os.path.join(_tmp9, 'docs', 'CRITICALITY-TIERS.md')
+    g.REVIEWS = os.path.join(_tmp9, 'docs', 'tier-a-reviews.json')
+
+    check('the fixture repo yields the REAL Tier A resource set, so the arms '
+          'below are not passing against an empty list',
+          len(g.tier_a_resources()) > 50, len(g.tier_a_resources()))
+
+    # 1. THE DEFECT. Committed, not pushed, working tree clean.
+    _w9('api/x.js', "const a = 1;\nconst t = 'sc_claims';\n")
+    _g9('add', '-A')
+    _g9('commit', '-q', '-m', 'name a Tier A resource')
+    check('the working tree really is CLEAN -- otherwise arm 1 would pass for '
+          'the wrong reason', _g9('status', '--porcelain').stdout.strip() == '',
+          _g9('status', '--porcelain').stdout)
+    _pre9 = g.check(g.working_diff())[0]
+    check('THE PRE-FIX SCOPE IS BLIND TO IT: working_diff() alone answers 0 '
+          'CLEAN on a committed-not-pushed Tier A change -- this is the '
+          'verdict one session was given minutes before its push was denied',
+          _pre9 == 0, _pre9)
+    _rc9, _out9 = _run9()
+    check('...and a bare run now FINDS it -- exit 1, not 0', _rc9 == 1, _rc9)
+    check('...names the resource it found', 'sc_claims' in _out9, _out9[:300])
+    check('...and SAYS WHAT SCOPE IT READ, so the verdict cannot be read '
+          'without it',
+          'SCOPE:' in _out9 and 'outgoing range' in _out9, _out9[:300])
+
+    # 2. THE OLD SCOPE MUST NOT HAVE BEEN REPLACED BY THE NEW ONE. An
+    #    uncommitted change is still the common case and was never broken.
+    _g9('update-ref', 'refs/remotes/origin/main',
+        _g9('rev-parse', 'HEAD').stdout.strip())
+    _w9('api/x.js', "const a = 1;\nconst t = 'sc_claims';\nconst u = 'sc_revenue';\n")
+    _rc9b, _out9b = _run9()
+    check('an UNCOMMITTED edit naming a Tier A resource is still found -- the '
+          'push range was ADDED to the working tree, not substituted for it',
+          _rc9b == 1 and 'sc_revenue' in _out9b, (_rc9b, _out9b[:200]))
+
+    # 2b. A LIMIT THIS SECTION FOUND AND IS PINNING RATHER THAN QUIETLY FIXING.
+    #     `working_diff()` is two `git diff` calls, so an UNTRACKED new file is
+    #     invisible to the working-tree half -- a brand-new api/sc-foo.js sitting
+    #     unstaged names nothing as far as a bare run is concerned. The first
+    #     draft of arm 2 used an untracked file and went red for exactly this,
+    #     which is the only reason anybody knows.
+    #
+    #     IT IS NOT THE SAME DEFECT AND IS NOT BEING FIXED HERE: the file becomes
+    #     visible the moment it is `git add`ed or committed, and the push range --
+    #     which is the scope this section added -- catches it either way. What
+    #     would be wrong is leaving the limit undocumented, so it is asserted in
+    #     BOTH directions below and named in the scope line the tool prints.
+    _g9('checkout', '--', 'api/x.js')
+    _w9('api/untracked.js', "const w = 'sc_revenue';\n")
+    _rc9b2, _out9b2 = _run9()
+    check('KNOWN LIMIT, pinned: an UNTRACKED file is invisible to the '
+          'working-tree half -- 0, because two `git diff` calls cannot see it',
+          _rc9b2 == 0, (_rc9b2, _out9b2[:200]))
+    check('...and the tool SAYS the working-tree half excludes untracked files, '
+          'so the 0 above cannot be read as "nothing there"',
+          'untracked' in _out9b2.lower(), _out9b2[:400])
+    _g9('add', 'api/untracked.js')
+    _rc9b3, _out9b3 = _run9()
+    check('...and `git add` makes it visible immediately -- the limit is about '
+          'untracked, not about new',
+          _rc9b3 == 1 and 'sc_revenue' in _out9b3, (_rc9b3, _out9b3[:200]))
+    _g9('rm', '-q', '-f', '--cached', 'api/untracked.js')
+    os.remove(os.path.join(_tmp9, 'api', 'untracked.js'))
+
+    # 3. AND THE CLEAN CASE, driven because a section that only ever sees
+    #    findings would pass against a tool that returns 1 unconditionally.
+    _rc9c, _out9c = _run9()
+    check('nothing outgoing and nothing uncommitted is 0 CLEAN, not a finding',
+          _rc9c == 0 and 'Nothing to record' in _out9c, (_rc9c, _out9c[:200]))
+
+    # 4. FAIL CLOSED WHEN THE RANGE CANNOT BE RESOLVED (PR 1.11). Deleting
+    #    origin/main is the realistic version: a clone whose remote ref was
+    #    never fetched. The pre-fix tool answered 0 here on a clean tree, and 0
+    #    means "checked, nothing found".
+    _g9('update-ref', '-d', 'refs/remotes/origin/main')
+    _text9, _notes9, _unk9 = g.default_scope_diff()
+    check('with no origin/main the outgoing range is a COULD NOT TELL, not an '
+          'empty diff', _unk9 is True, (_unk9, _notes9))
+    check('...and it says so in words a reader can act on, naming the flag that '
+          'gets a real answer',
+          any('COULD NOT TELL' in n for n in _notes9)
+          and any('--diff-range' in n for n in _notes9), _notes9)
+    _rc9d, _out9d = _run9()
+    check('...and the bare run exits 2, never 0 -- a clean verdict about half '
+          'the scope is the defect this section closes', _rc9d == 2, _rc9d)
+
+    # 5. COULD-NOT-TELL MUST NOT SWALLOW A REAL FINDING. Exit 2 outranks a
+    #    clean 0 and must NOT outrank a 1: a finding is something that WAS
+    #    found, and downgrading it to could-not-tell would lose it.
+    _w9('api/x.js', "const a = 1;\nconst v = 'sc_denial';\n")
+    _rc9e, _out9e = _run9()
+    check('an unresolvable range plus a REAL working-tree finding is still 1, '
+          'not 2 -- the finding survives the uncertainty about the other half',
+          _rc9e == 1 and 'sc_denial' in _out9e, (_rc9e, _out9e[:200]))
+
+    # 6. THE ANCHOR. This whole section is worthless if the hook stops reading
+    #    origin/main -- the two halves would silently disagree again in a new
+    #    way. Re-referenced against the hook's own source rather than restated
+    #    here, per the eighth cross-domain discipline.
+    _hook9 = os.path.join(REPO, 'tools', 'sairn_push_gate_hook.py')
+    _hook9_src = io.open(_hook9, encoding='utf-8', errors='replace').read() \
+        if os.path.isfile(_hook9) else ''
+    check('the push hook is present, so this anchor arm actually ran',
+          _hook9_src != '', _hook9)
+    _want9 = "'merge-base', '%s'" % g.PUSH_BASE_REF
+    check('the hook still derives the Tier A base from %r -- if this goes red, '
+          'PUSH_BASE_REF is stale and the two entry points have drifted apart '
+          'again' % g.PUSH_BASE_REF,
+          _want9 in _hook9_src, 'searched for: %r' % _want9)
+finally:
+    g.REPO, g.REGISTER, g.REVIEWS = _real9
+    shutil.rmtree(_tmp9, ignore_errors=True)
+
 
 print()
 if fails:
