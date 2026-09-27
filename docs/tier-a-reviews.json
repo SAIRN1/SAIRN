@@ -4009,6 +4009,30 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-27T02:17:49Z",
+      "opened_at_sha": "191d2dce53691a6b89fd8b51bc4fb702252ab87e",
+      "resources": [
+        "alf_clients",
+        "alf_family_contacts",
+        "alf_mar",
+        "alf_staff"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "sairncare.html",
+        "tests/sairncare_transport_refusal.js"
+      ],
+      "what": "sairncare.html family contacts: all three callers read res.status and res.body off an alfData result -- a shape alfData has never returned -- so the panel was broken in both directions. Moved onto a full-body transport alfFamilyData; 401 now separated from 403 so a role refusal prints the server message. REVIEW: whether a fourth transport in this file is right rather than an alfData option; whether the file-level arm tying callers to the transport is sufficient (it is the only thing that does); and the note beyond the fix -- the panel being broken is why the missing role gate went unnoticed, and the other SAIRNcare panels have no client tests. Tier A touched: alf_family_contacts, alf_clients, alf_staff.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-27T02:17:49Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
