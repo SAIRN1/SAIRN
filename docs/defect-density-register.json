@@ -14914,6 +14914,67 @@
       "recurrence_open": "FIVE BLOCKERS REMAIN AND THE JOIN IS STILL NOT BUILDABLE, enumerated in docs/2026-09-26-sairncare-compliance-join-scoping.md: the requirement audience is prose while the roster carries a role code; recorded hours carry a category that requirements do not; stacking comes in at least three kinds including prose conditional on a staff member's tenure; an initial-hours-with-deadline requirement is a gate on whether somebody may work at all and needs a hire date the engine never receives; and the annual window is undefined. ONE OF SIX SEEDED STATES CAN CURRENTLY BE ANSWERED AT ALL, which is a disclosed gap rather than coverage -- a WV facility now gets no per-staff answer, which is worse for the user than a correct one and better than a false pass. Separately, opts.staff is CALLER-SUPPLIED, so whenever the wiring is built the aggregation must happen server-side against alf_staff_credentials: a client sending its own annual_hours_recorded while the authoritative append-only record sits unread on the server is the same shape as the attribution defect recorded against f0c0cb7a."
     },
     {
+      "commit": "191d2dce5369",
+      "date": "2026-09-26",
+      "subject": "fix(sairncare): the family-contact panel never worked -- all three callers read a shape the transport has never returned",
+      "files": [
+        "sairncare.html",
+        "tests/sairncare_transport_refusal.js"
+      ],
+      "lines_added": 221,
+      "lines_removed": 10,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "sairncare.html's three family-contact callers (alfFamilyRefresh, the write callback, alfFamilyPreview) read res.status and res.body off an alfData() result. alfData resolves to d.data on success and null on failure and has never returned that shape, so the feature was broken in BOTH directions: on success res.body was undefined and every caller took its failure branch, rendering 'Could not load family contacts' over an empty array every time the read worked; on failure res was null and res.status threw, so the branch meant to explain a 401 or 403 could never run and the panel said nothing. Recording a contact, listing contacts and previewing what a family member sees were all non-functional. The other 33 alfData callers use its real contract",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The three callers and alfData's current contract cannot be separated by git without a bisect over sairncare.html's history, and alfData's error handling was changed at least once (deea8c55, 2026-09-21). Naming a sha would be a guess; what is certain is that the callers and the transport have disagreed for as long as both have had their current shapes."
+      },
+      "phase_note": "The callers were written against a transport shape that does not exist. Not a design or requirement error -- alfData's contract is clear and 33 other callers honour it; these three were written or left against a different one.",
+      "contributing_factors": [
+        {
+          "factor": "alfData()'s contract is `d.data` on success and null on failure, but the three family-contact callers were written against a `{status, body}` shape it has never returned -- so the transport and one caller group disagreed with nothing in between to notice",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "alfFamilyData() added as a full-body transport on the same argument alfRoute() already makes, and all three callers moved onto it"
+        },
+        {
+          "factor": "the failure was symmetric and that hid it: on SUCCESS res.body was undefined so every caller took its failure branch and rendered 'Could not load', and on FAILURE res was null so res.status threw and nothing rendered at all. A user saw a permanently broken panel rather than a wrong message, which reads as 'not built yet' instead of 'defective'",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "seven arms in tests/sairncare_transport_refusal.js drive both directions, including that a successful read carries provisioned AND data"
+        },
+        {
+          "factor": "nothing tested any client-side family-contact path. The endpoint had 18 green arms in api/sd-data-family-contacts.test.js and the panel had none, so server and client could disagree indefinitely",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the arms were added to the suite that already lifts these functions out of the shipped file by anchor and throws on a missing anchor, so they run against sairncare.html rather than a copy"
+        },
+        {
+          "factor": "the broken panel was itself why the missing role gate on this read went unnoticed until 2026-09-26 -- any employee could list every family contact's phone number, and it was found by reading the endpoint rather than by anybody using the screen",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "recorded here rather than left implicit; a feature nobody can use is not exercising its own gates, which is an argument for the file-level arm that ties callers to the transport"
+        },
+        {
+          "factor": "the regression path is a fourth caller written against the old shape, which no contract-level arm can see",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "an arm asserts on the file that ZERO alfData calls name alf_family_contacts and that alfFamilyData has its definition plus three callers; ablation confirms it is the arm that fires"
+        }
+      ],
+      "recurrence_open": "All three callers are on alfFamilyData and a file-level arm asserts zero alfData calls name this resource. NOT closed: no check compares a transport's return contract against what its callers read, anywhere on the platform -- this was found by reading, and alfData has 33 other callers plus alfRoute and alfPostRaw as siblings, each with its own shape. A checker parsing caller property access against a transport's return statements is the obvious control and is not built. Also open: the client-side panels of every other SAIRNcare resource have no tests at all, so the same server/client divergence could exist elsewhere in this file."
+    },
+    {
       "commit": "1f9936429432",
       "date": "2026-09-26",
       "subject": "fix(bridge): the one endpoint of forty-one that never asked whether the licence was still active -- on the write path that carries expense invoices",
@@ -15133,104 +15194,6 @@
         }
       ],
       "recurrence_open": "The gate is closed for this resource and the MAR read is paged. Nothing checks that the read and write halves of a resource branch are gated consistently -- that asymmetry is invisible to node --check and to every suite that does not vary the session role, and the same shape could exist on any other resource in this 14,900-line file. A check comparing role gates across the read/write/extra-action arms of each resource is the obvious control and is NOT built here. The sairncare.html 403 message still says 'sign in' for what is now a role refusal; blocked on another session's claim, not fixed."
-    },
-    {
-      "commit": "c8b5e5b123c4",
-      "date": "2026-09-26",
-      "subject": "fix(sd-data): 131 of 132 credential gates closed in ONE edit -- and both controls that were meant to catch this had to be rebuilt first",
-      "files": [
-        "api/_lib/auth.js",
-        "api/_lib/auth.test.js",
-        "api/_lib/dnt-rollup-endpoint.test.js",
-        "api/_lib/law-trust-reconcile-endpoint.test.js",
-        "api/_lib/sairnbuild-retainage-endpoint.test.js",
-        "api/sd-data-active-credential.test.js",
-        "api/sd-data-appointments-photos.test.js",
-        "api/sd-data-complaints-readonly.test.js",
-        "api/sd-data-cross-tenant-isolation.test.js",
-        "api/sd-data-dental-financial-tier.test.js",
-        "api/sd-data-dental-ledger-validation.test.js",
-        "api/sd-data-dental-provider-scope.test.js",
-        "api/sd-data-dental-settings-patch.test.js",
-        "api/sd-data-employees-refusal.test.js",
-        "api/sd-data-law-phase2-session.test.js",
-        "api/sd-data-leg-session-gate.test.js",
-        "api/sd-data-quote-request-soft-delete.test.js",
-        "api/sd-data-sairnlaw-resources.test.js",
-        "api/sd-data-sb-void-role.test.js",
-        "api/sd-data-sv-session-gate.test.js",
-        "api/sd-data-unconfirmed-write-sweep.test.js",
-        "api/sd-data.js",
-        "docs/MASTER-PLAN.md",
-        "docs/TOOLING-INVENTORY.md",
-        "docs/session-recheck-coverage.json",
-        "docs/traceability-matrix.md",
-        "tests/lib/active_credential_stub.js",
-        "tests/run_session_recheck_coverage_probe.py",
-        "tools/session_recheck_coverage.py",
-        "tools/tooling_inventory.py"
-      ],
-      "lines_added": 895,
-      "lines_removed": 92,
-      "app": "stonedesk",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "independent-review",
-      "summary": "api/sd-data.js carried 132 verifySessionToken gates and ONE credentialStillActive, placed inside the SD_SESSION_GATED conditional so it covered 34 resources and 70 action-pairs. A credential DEACTIVATED after its token was issued kept read and write on the other 131 gates for up to the 12h token life, across thirteen apps' resources -- and deactivation is the one control an owner has over somebody who has just left. The comment beside the single call site read NOTHING CLOSED IT FOR THE DATA PATH, which reads as closed-for-all, and its eight-arm control was green because every arm was true of that one call site",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "bfa3fff4c5fc",
-        "date": "2026-09-16",
-        "subject": "fix(auth): a deactivated employee kept read and write on every gated resource -- the 2026-08-23 fix was app-shaped and the defect was not",
-        "lag_days": 10
-      },
-      "phase_note": "The requirement was understood and written down -- the comment at the original call site states it exactly. What failed was placing the check where it only reached the resources on one list.",
-      "contributing_factors": [
-        {
-          "factor": "the re-check was placed inside the SD_SESSION_GATED conditional, so it covered the 70 action-pairs on that list and nothing else, while the comment beside it said NOTHING CLOSED IT FOR THE DATA PATH -- which reads as closed-for-all",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "moved to a single pre-gate at the dispatcher entry point above every gate, so all 133 are covered and a 134th inherits it"
-        },
-        {
-          "factor": "api/sd-data-active-credential.test.js was eight arms -- imported, called, awaited, ordered, 403, NO_ACTIVE_CHECK does not refuse, logged, logging cannot refuse -- and EVERY ONE was true of a single call site. A regex for one await is satisfied by one match, so nothing asserted COVERAGE",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "three coverage arms added: the re-check must not sit inside a per-resource conditional, exactly one verifySessionToken gate may precede it (counted, not sampled), and there must be exactly one call site"
-        },
-        {
-          "factor": "tools/session_recheck_coverage.py modelled coverage as one re-check per gate, so the single-edit fix made the gate count rise while the re-check count stayed at one and the tool reported a REGRESSION -- it would have rewarded 132 scattered copies",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "it records positions and recognises covered-pre-gate, with negative arms for two-gates-above, zero-gates-above and two-re-checks so the recognition cannot become an escape hatch"
-        },
-        {
-          "factor": "ablating the whole pre-gate made every pinned aggregate read BETTER -- uncovered-in-partial 131 to 0, because a file with zero re-checks is not partial and one incidental active=eq.true landed it on covered-by-route -- so deleting the fix would have exited 0",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "the per-file VERDICT is pinned on an explicit ordering and may only improve; re-ablated and the deletion is now a named regression. The classification was left alone because requiring route >= gates would accuse all seventeen api/*-auth.js files, this tool's own first wrong number"
-        },
-        {
-          "factor": "the first pre-gate answered CREDENTIAL_INACTIVE to a valid token from ANOTHER app on the same licence, because credentialStillActive collapses no-row and active:false into one code -- telling a healthy user to sign in again",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "a `reason` field distinguishes them without changing `code`, so thirteen callers are unaffected; an explicit active:false is refused unconditionally and a missing row only when the resource's expected app is known and matches"
-        },
-        {
-          "factor": "a probe arm read 'api/sd-data.js' in out AND 'partial' in out as two independent substring tests, and the word partial appears in the tool's own legend on every run -- so it could never fail and kept passing while reporting the opposite of the truth",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "anchored on that file's own row and its actual verdict; a sibling check using git status --porcelain, the instrument the comment six lines above it says was already discarded, replaced with bytes and mtime"
-        }
-      ],
-      "recurrence_open": "All 133 gates are covered by one pre-gate and the per-file verdict is pinned, so deleting it is a named regression rather than an apparent improvement. What is NOT closed: 11 api files with 12 gates carry NEITHER mechanism (accounting.js and ledger.js are MONEY, alf-alerts.js is a life-safety sweep, sc-credentials and sc-eligibility touch named-patient data) and the per-gate read of those 12 is still not done. Separately, nothing checks that a NEW endpoint file gets a pre-gate at all -- the ratchet notices a new file with no mechanism, but only after it is written."
     },
     {
       "commit": "944a5faadae5",
@@ -15579,6 +15542,104 @@
         }
       ],
       "recurrence_open": "the loader's docstring also documented a --verify flag that does not exist (verification is unconditional); nothing checks a tool's own header against its own argparse. And the four dead opened_at_sha stamps in the review ledger are the same class of dead pointer and are repaired by nothing yet."
+    },
+    {
+      "commit": "c8b5e5b123c4",
+      "date": "2026-09-26",
+      "subject": "fix(sd-data): 131 of 132 credential gates closed in ONE edit -- and both controls that were meant to catch this had to be rebuilt first",
+      "files": [
+        "api/_lib/auth.js",
+        "api/_lib/auth.test.js",
+        "api/_lib/dnt-rollup-endpoint.test.js",
+        "api/_lib/law-trust-reconcile-endpoint.test.js",
+        "api/_lib/sairnbuild-retainage-endpoint.test.js",
+        "api/sd-data-active-credential.test.js",
+        "api/sd-data-appointments-photos.test.js",
+        "api/sd-data-complaints-readonly.test.js",
+        "api/sd-data-cross-tenant-isolation.test.js",
+        "api/sd-data-dental-financial-tier.test.js",
+        "api/sd-data-dental-ledger-validation.test.js",
+        "api/sd-data-dental-provider-scope.test.js",
+        "api/sd-data-dental-settings-patch.test.js",
+        "api/sd-data-employees-refusal.test.js",
+        "api/sd-data-law-phase2-session.test.js",
+        "api/sd-data-leg-session-gate.test.js",
+        "api/sd-data-quote-request-soft-delete.test.js",
+        "api/sd-data-sairnlaw-resources.test.js",
+        "api/sd-data-sb-void-role.test.js",
+        "api/sd-data-sv-session-gate.test.js",
+        "api/sd-data-unconfirmed-write-sweep.test.js",
+        "api/sd-data.js",
+        "docs/MASTER-PLAN.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/session-recheck-coverage.json",
+        "docs/traceability-matrix.md",
+        "tests/lib/active_credential_stub.js",
+        "tests/run_session_recheck_coverage_probe.py",
+        "tools/session_recheck_coverage.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 895,
+      "lines_removed": 92,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "api/sd-data.js carried 132 verifySessionToken gates and ONE credentialStillActive, placed inside the SD_SESSION_GATED conditional so it covered 34 resources and 70 action-pairs. A credential DEACTIVATED after its token was issued kept read and write on the other 131 gates for up to the 12h token life, across thirteen apps' resources -- and deactivation is the one control an owner has over somebody who has just left. The comment beside the single call site read NOTHING CLOSED IT FOR THE DATA PATH, which reads as closed-for-all, and its eight-arm control was green because every arm was true of that one call site",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "bfa3fff4c5fc",
+        "date": "2026-09-16",
+        "subject": "fix(auth): a deactivated employee kept read and write on every gated resource -- the 2026-08-23 fix was app-shaped and the defect was not",
+        "lag_days": 10
+      },
+      "phase_note": "The requirement was understood and written down -- the comment at the original call site states it exactly. What failed was placing the check where it only reached the resources on one list.",
+      "contributing_factors": [
+        {
+          "factor": "the re-check was placed inside the SD_SESSION_GATED conditional, so it covered the 70 action-pairs on that list and nothing else, while the comment beside it said NOTHING CLOSED IT FOR THE DATA PATH -- which reads as closed-for-all",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "moved to a single pre-gate at the dispatcher entry point above every gate, so all 133 are covered and a 134th inherits it"
+        },
+        {
+          "factor": "api/sd-data-active-credential.test.js was eight arms -- imported, called, awaited, ordered, 403, NO_ACTIVE_CHECK does not refuse, logged, logging cannot refuse -- and EVERY ONE was true of a single call site. A regex for one await is satisfied by one match, so nothing asserted COVERAGE",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "three coverage arms added: the re-check must not sit inside a per-resource conditional, exactly one verifySessionToken gate may precede it (counted, not sampled), and there must be exactly one call site"
+        },
+        {
+          "factor": "tools/session_recheck_coverage.py modelled coverage as one re-check per gate, so the single-edit fix made the gate count rise while the re-check count stayed at one and the tool reported a REGRESSION -- it would have rewarded 132 scattered copies",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "it records positions and recognises covered-pre-gate, with negative arms for two-gates-above, zero-gates-above and two-re-checks so the recognition cannot become an escape hatch"
+        },
+        {
+          "factor": "ablating the whole pre-gate made every pinned aggregate read BETTER -- uncovered-in-partial 131 to 0, because a file with zero re-checks is not partial and one incidental active=eq.true landed it on covered-by-route -- so deleting the fix would have exited 0",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the per-file VERDICT is pinned on an explicit ordering and may only improve; re-ablated and the deletion is now a named regression. The classification was left alone because requiring route >= gates would accuse all seventeen api/*-auth.js files, this tool's own first wrong number"
+        },
+        {
+          "factor": "the first pre-gate answered CREDENTIAL_INACTIVE to a valid token from ANOTHER app on the same licence, because credentialStillActive collapses no-row and active:false into one code -- telling a healthy user to sign in again",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "a `reason` field distinguishes them without changing `code`, so thirteen callers are unaffected; an explicit active:false is refused unconditionally and a missing row only when the resource's expected app is known and matches"
+        },
+        {
+          "factor": "a probe arm read 'api/sd-data.js' in out AND 'partial' in out as two independent substring tests, and the word partial appears in the tool's own legend on every run -- so it could never fail and kept passing while reporting the opposite of the truth",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "anchored on that file's own row and its actual verdict; a sibling check using git status --porcelain, the instrument the comment six lines above it says was already discarded, replaced with bytes and mtime"
+        }
+      ],
+      "recurrence_open": "All 133 gates are covered by one pre-gate and the per-file verdict is pinned, so deleting it is a named regression rather than an apparent improvement. What is NOT closed: 11 api files with 12 gates carry NEITHER mechanism (accounting.js and ledger.js are MONEY, alf-alerts.js is a life-safety sweep, sc-credentials and sc-eligibility touch named-patient data) and the per-gate read of those 12 is still not done. Separately, nothing checks that a NEW endpoint file gets a pre-gate at all -- the ratchet notices a new file with no mechanism, but only after it is written."
     },
     {
       "commit": "d4dd7428da11",
