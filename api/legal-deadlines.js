@@ -878,6 +878,15 @@ module.exports = async (req, res) => {
               // defect in the request being described, not missing information,
               // and it is the one refusal here that says something is WRONG
               // rather than merely absent.
+              //
+              // BAD_DISPOSITION_DATE (2026-09-27) lands on the same 400 by the
+              // SAME argument, and it is named here rather than left to the
+              // default so that is a decision and not a coincidence. It is
+              // deliberately NOT beside MOTION_PENDING one line up: that pair
+              // used to be one state, and a caller who sent `12/31/2026` was
+              // told with a 422 that the appeal period had not started. 422
+              // means "the request is complete and the answer is that the clock
+              // has not begun"; an unreadable date is not that.
               : 400);
       res.status(status).json(result);
       return;

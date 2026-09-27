@@ -46,8 +46,28 @@
 // arithmetic is how off-by-one date bugs happen (this platform has already
 // had one -- see the sairn_fdate_utc_bug entry), and a date that is off by one
 // day here is a missed filing.
+// ── `new Date` SILENTLY REPAIRS AN IMPOSSIBLE DATE, AND THIS ENGINE ATE IT ──
+// (2026-09-27.) The shape regex passed `2026-02-30`, and
+// `new Date('2026-02-30T00:00:00Z')` is not invalid -- it ROLLS OVER to
+// 2026-03-02 and `isNaN` is false. So every date this engine takes accepted a
+// day that does not exist and computed from a different one, with no error
+// anywhere: a trigger date, a holiday row, a motion's disposition. On a legal
+// deadline that is a wrong answer two days out, delivered confidently.
+//
+// Found by arm B4 of tests/sairnlaw_retrigger.js while testing something else,
+// which is the honest provenance -- `2026-13-45` was the case I was after (it
+// really is Invalid Date) and `2026-02-30` is the one that was silently wrong.
+//
+// api/_lib/calendar-date.js EXISTS FOR EXACTLY THIS and says so in its own
+// header, so this imports `isCalendarDate` rather than growing an eighth
+// hand-rolled date guard -- the duplication the Guardian skill says to resolve
+// on discovery. ONLY THE PURE HALF IS USED: that module's `todayFrom(nowMs)`
+// can reach a clock and is deliberately not touched here, which is the same
+// line api/_lib/ledger.js draws and that tests/functional_core_is_pure.js
+// asserts for it. This module's "PURE -- no I/O" header still holds.
+var isCalendarDate = require('./calendar-date').isCalendarDate;
 function toUTC(iso) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(iso || ''))) return null;
+  if (!isCalendarDate(String(iso == null ? '' : iso))) return null;
   var d = new Date(iso + 'T00:00:00Z');
   return isNaN(d.getTime()) ? null : d;
 }
@@ -4673,7 +4693,61 @@ function applyRetrigger(rule, currentTriggerDate, input) {
   });
   if (!qualifying.length) return { ok: true, date: currentTriggerDate, retriggered: false };
 
-  var undisposed = qualifying.filter(function (e) { return !toUTC(e.disposition_date); });
+  // ── "PENDING" AND "I COULD NOT READ YOUR DATE" ARE NOT THE SAME ANSWER ───
+  // (2026-09-27.) This was one filter: `!toUTC(e.disposition_date)`. `toUTC`
+  // returns null for ANYTHING that is not strictly `YYYY-MM-DD` -- so
+  // `12/31/2026`, `Dec 31 2026`, `2026-13-45` and a MISSPELLED KEY all arrived
+  // here as "undisposed", and the caller was told
+  //
+  //     "the period runs from the disposition of the last such motion, so it
+  //      has not started yet"
+  //
+  // on a motion that WAS disposed. api/legal-deadlines.js maps MOTION_PENDING
+  // to 422, so the answer reads as a considered refusal rather than as a
+  // parse failure. THIS IS AN APPEAL DEADLINE: being told the clock has not
+  // started when it started weeks ago is the one direction that loses the
+  // appeal, and the message is specific enough to be believed.
+  //
+  // THREE STATES NOW, and the distinction is what the CALLER SENT, not what
+  // it parsed to:
+  //   * the key is absent, null or blank  -> genuinely PENDING. Unchanged.
+  //   * a value is present and unreadable -> BAD_DISPOSITION_DATE, which NAMES
+  //     the offending value and the one accepted format, and is never
+  //     "pending".
+  //   * a readable date                   -> it governs.
+  //
+  // A NON-OBJECT ELEMENT IS ALSO NOT PENDING. `retrigger_events` is
+  // caller-supplied (`body.retrigger_events`, api/legal-deadlines.js), so a
+  // string in that array -- `["motion_for_new_trial"]` instead of
+  // `[{event: ..., disposition_date: ...}]` -- would previously have read as a
+  // pending motion. It now refuses, because a shape this function cannot read
+  // is not a fact about the docket.
+  var malformed = qualifying.filter(function (e) {
+    var raw = (e && typeof e === 'object') ? e.disposition_date : undefined;
+    return raw !== undefined && raw !== null && String(raw).trim() !== ''
+      && !toUTC(raw);
+  });
+  if (malformed.length) {
+    return {
+      ok: false, code: 'BAD_DISPOSITION_DATE',
+      message: malformed.length + ' qualifying motion' +
+        (malformed.length === 1 ? ' carries a disposition date' : 's carry disposition dates') +
+        ' this engine cannot read: ' +
+        malformed.map(function (e) { return JSON.stringify(e.disposition_date); }).join(', ') +
+        '. The only accepted format is YYYY-MM-DD. This is NOT the same answer as ' +
+        '"the motion is still pending" -- a motion that HAS been disposed, sent in a ' +
+        'format this engine cannot parse, would otherwise be reported as pending and ' +
+        'the appeal period as not yet started.',
+      malformed: malformed.map(function (e) {
+        return { event: e.event, disposition_date: e.disposition_date };
+      }),
+      authority: spec.authority || null
+    };
+  }
+  var undisposed = qualifying.filter(function (e) {
+    var raw = (e && typeof e === 'object') ? e.disposition_date : undefined;
+    return raw === undefined || raw === null || String(raw).trim() === '';
+  });
   if (undisposed.length) {
     return {
       ok: false, code: 'MOTION_PENDING',
