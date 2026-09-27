@@ -14964,6 +14964,60 @@
       ]
     },
     {
+      "commit": "f80460a45f11",
+      "date": "2026-09-26",
+      "subject": "fix(sairnvet): the ketamine label is HIGHER than our figure, and no canine butorphanol label exists at all",
+      "files": [
+        "sairnvet.html",
+        "tests/sairnvet_formulary_source_honesty.js"
+      ],
+      "lines_added": 105,
+      "lines_removed": 1,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "sairnvet.html's VET_DRUGS carried two ketamine rows at 5-10mg/kg IM with needsReview:false and no flag beyond the Schedule III note, and a butorphanol dog row at 0.2-0.4mg/kg with the bare flag \"Schedule IV\" -- and reading the actual FDA labels showed both were making silent claims. Ketaset (ketamine HCl 100 mg/mL, NADA 043-304) gives 11mg/kg IM for restraint and 22 to 33mg/kg for anaesthesia, so the stored figure is 2-6x BELOW the only label for the species, and that label approves cats and subhuman primates only -- every canine use is extra-label. For butorphanol there is NO FDA-approved injectable label covering dogs at all: Torbugesic-SA (NADA 141-047) is cats, Torbugesic (NADA 135-780) and Butorphic (ANADA 200-332) are horses. On a screen that had no way to say \"checked, and there is nothing to cite\", a verified absence and an unexamined blank were indistinguishable, and a row whose only label disagrees with it by 2-6x was showing needsReview:false.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The VET_DRUGS table arrived already populated and git log on sairnvet.html isolates no commit that introduced either the ketamine 5-10mg/kg figure or the bare Schedule IV flag on the butorphanol dog row. Neither was WRONG when written -- both are conventional extra-label practice -- and no commit made them wrong either; what was missing was the label read that shows what they omit. A plausible sha here would put a fabricated discovery lag into the one number this field feeds."
+      },
+      "citation_note": "not-citable: no section of docs/SAIRN-PROCESS-RULES.md covers a data row that makes a clinical claim by omission. The nearest named shape is item 7 of docs/2026-09-13-cross-domain-disciplines.md -- byte-identical is not safe-in-context, the Ariane 5 item -- which is the cross-species half of this formulary's problem but not this half. This half is narrower and has no name yet: an ABSENCE that has been verified and an absence nobody looked at are the same blank cell, so a reader cannot tell a checked row from an unchecked one. That distinction is the same three-state discipline PR 1.11 applies to a check that could not run, applied to DATA instead of to a checker, and it is being recorded as not-citable rather than stretched onto 1.11.",
+      "contributing_factors": [
+        {
+          "factor": "A row could say nothing about its label status, so a verified absence and an unexamined blank looked identical. The badge distinguishes cited from uncited, which is a different question from checked versus unchecked.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Both rows now state in the flag what was read and what was found, and the butorphanol flag NAMES all three application numbers that were checked -- an absence claim is only checkable if it says which labels were read."
+        },
+        {
+          "factor": "needsReview was false on a row whose only FDA label disagrees with its figure by 2-6x. The flag is the app's own mechanism for exactly that and nothing had set it, because nobody had read the label.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "needsReview is TRUE on both ketamine rows, which also routes the AI Dosing Calculator to refuse a numeric dose and direct the user to a species-specific reference."
+        },
+        {
+          "factor": "The reflex on finding a label is to attach it as a citation. For ketamine that would have put a green tick beside a figure the label contradicts -- the same defect already recorded on buprenorphine/cat, where the Simbadol label disagrees with the stored 0.01-0.03mg/kg.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Arms assert that NEITHER row acquires a reference, with the reason in the failure message, and a CONTROL arm counts rows recording a verified absence so one cannot be deleted as prose."
+        },
+        {
+          "factor": "A web search returned \"Torbutrol Tablets, NADA 135-780\" for the canine antitussive product. 135-780 is Torbugesic's EQUINE application number, so that result is wrong about at least one thing.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "Nothing was cited from it. There is no mechanism here to validate a NADA number against the FDA database before it is written into a reference, and building one is a different piece of work -- the existing arm only requires that a reference CONTAIN an identifier and a retrieval date, not that the identifier resolves. Recorded so the next sourcing pass knows the shape of the trap rather than rediscovering it."
+        }
+      ],
+      "recurrence_open": "480 of 485 rows still cite no source, and only 2 now record a VERIFIED absence. The other 478 are genuinely unexamined, and the badge says so -- but nothing distinguishes \"nobody has looked\" from \"looked, and there is nothing to cite\" except a human writing it into the flag, which is manual discipline and will not scale to 478 rows. No schema field carries label status; it lives in prose inside `flag`, so the arms pin it by string match and a reworded flag can drop it. The structural fix -- a labelStatus field with a closed vocabulary (APPROVED / EXTRA_LABEL_NO_LABEL / LABEL_CONFLICTS / UNEXAMINED) -- was NOT built here: it is a table-shape change across 485 rows and a rendering change, and it should be one decision rather than a side effect of sourcing three rows. Also not established: whether the 5-10mg/kg ketamine figure matches a citable published protocol. It is consistent with balanced-anaesthesia practice, but this pass did not find a specific reference for it, so the row states the conflict without resolving it.",
+      "single_factor_note": "n/a -- four factors"
+    },
+    {
       "commit": "2cec9c094b0b",
       "date": "2026-09-26",
       "subject": "fix(sairnvet): four more unearned \"verified\" claims -- in the panel this morning's sweep never looked at",
