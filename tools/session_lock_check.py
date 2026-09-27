@@ -128,6 +128,68 @@ def lock_path(name):
     return os.path.join(LOCK_DIR, name + '.lock')
 
 
+# ── A SESSIONSTART WARNING IS A SNAPSHOT, AND NOTHING RETRACTED IT ──────────
+# Added 2026-09-27 after it cost a session. cmd_start() correctly reported
+# "another session is LIVE, tool use will be REFUSED". Michael then ended that
+# process. The PreToolUse guard did exactly the right thing -- re-checked, read
+# DEAD, reclaimed the lock, allowed every call -- SILENTLY. So the only statement
+# about the lock anywhere in the session's context was the one from SessionStart,
+# which was now false, and it kept reading as current fact. The session reported
+# a block that no longer existed.
+#
+# THE GUARD WAS NOT WRONG. The warning had no expiry and no retraction, which is
+# discipline 8 (nothing announces the day a check stops testing anything) in its
+# purest form: a true statement that quietly stops being true, with no event.
+#
+# A SNAPSHOT NEEDS THREE THINGS AND IT HAD NONE OF THEM:
+#   1. a stated AS-OF, so a reader knows it is a snapshot at all;
+#   2. a named way to RE-VALIDATE it on demand      -> `status`
+#   3. something that SPEAKS when it becomes false  -> the retraction below
+# (3) is the one that matters. The process that observes the transition is the
+# guard, and it already had the fact in hand -- it just did not say it.
+WARN_SUFFIX = '.warned.json'
+
+
+def warned_path(name):
+    return os.path.join(LOCK_DIR, name + WARN_SUFFIX)
+
+
+def read_warned(name):
+    try:
+        with open(warned_path(name), 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
+def clear_warned(name):
+    try:
+        os.remove(warned_path(name))
+    except OSError:
+        pass
+
+
+def retract(name, about_pid, why):
+    """Say that the SessionStart warning about `about_pid` is now FALSE.
+
+    stderr on purpose: it is the channel this file's UNKNOWN branch already uses
+    and that this platform has proven reaches the session as feedback. A
+    PreToolUse hook's stdout is reserved for the permission decision, and
+    malforming that to carry prose would risk the decision itself -- a retraction
+    that broke the guard would be a worse bug than the one it fixes.
+    """
+    sys.stderr.write(
+        'SESSION LOCK RETRACTED -- the SessionStart warning for the %r clone is '
+        'NO LONGER TRUE. %s\n'
+        'CLAUDE_PID %s was live when this session started and is not now. The '
+        'lock has been reclaimed by THIS session and NOTHING IS BLOCKED. Do not '
+        'go on reporting the earlier warning: it was a snapshot taken at session '
+        'start, it was correct then, and it is stale now. Re-validate at any time '
+        'with:  python tools/session_lock_check.py status\n'
+        % (name, why, about_pid))
+    clear_warned(name)
+
+
 def read_lock(path):
     try:
         with open(path, 'r', encoding='utf-8') as f:
@@ -346,6 +408,18 @@ def cmd_start():
         state, why = owner_state(info)
 
         if state == ALIVE:
+            # RECORD WHAT WAS WARNED ABOUT, so the guard can retract it by name
+            # when the process goes. Without this the guard reclaims silently and
+            # the warning below outlives its own truth -- which is exactly what
+            # happened on 2026-09-27.
+            try:
+                write_lock(warned_path(name), {
+                    'claude_pid': info.get('claude_pid'),
+                    'claude_start': info.get('claude_start'),
+                    'warned_at': time.strftime('%Y-%m-%dT%H:%M:%S'),
+                })
+            except OSError:
+                pass  # the warning still goes out; only the retraction is lost
             emit_context('SessionStart', (
                 "SESSION LOCK: another session is LIVE in %s. %s -- this is a "
                 "confirmed running process, not a stale lock. Tool use in this "
@@ -354,7 +428,19 @@ def cmd_start():
                 "which session continues. Note: this check only catches two "
                 "sessions in the SAME clone directory -- it cannot see a "
                 "different clone working the same task."
-            ) % (_describe(name, info, path), why))
+                "\n\nTHIS IS A SNAPSHOT TAKEN AT %s, NOT A STANDING FACT. It is "
+                "true as of that instant and NOTHING ABOUT IT UPDATES ITSELF in "
+                "what you have already read. If that session exits, the guard "
+                "reclaims the lock on the very next tool call and this paragraph "
+                "becomes false with no further message in your context -- so DO "
+                "NOT re-report it later as current. It expires the moment it is "
+                "acted on. Re-validate before repeating it:"
+                "\n    python tools/session_lock_check.py status"
+                "\nA retraction WILL be printed to stderr on the first tool call "
+                "after that process ends, but stderr you never triggered is "
+                "stderr you never see -- the command above is the one you can run."
+            ) % (_describe(name, info, path), why,
+                 time.strftime('%Y-%m-%dT%H:%M:%S')))
             # DO NOT reclaim. The guard needs the LIVE owner's identity in the
             # lock file; overwriting it here would make every later check read
             # 'self' and the deny would never fire. This is the whole reason
@@ -407,6 +493,12 @@ def cmd_guard():
             % (_describe(name, info, path), why, path))
 
     if state == DEAD:
+        # THE TRANSITION, SAID OUT LOUD. This branch already knew the warned-about
+        # process was gone and reclaimed in silence; the silence is what let the
+        # SessionStart warning keep reading as current.
+        warned = read_warned(name)
+        if warned and str(warned.get('claude_pid')) == str(info.get('claude_pid')):
+            retract(name, warned.get('claude_pid'), why)
         write_lock(path, lock_payload())
         return
 
@@ -437,6 +529,55 @@ def cmd_heartbeat():
             pass
 
 
+def cmd_status():
+    """Re-validate the lock NOW and print it. The named way to check a snapshot.
+
+    A SessionStart warning cannot update itself, so the minimum a snapshot owes a
+    reader is a command that answers the same question fresh. Prints to STDOUT and
+    is safe to run at any time -- it takes no lock, writes nothing, and reclaims
+    nothing, so running it can never change the answer it is reporting.
+    """
+    name = clone_name()
+    path = lock_path(name)
+    info = read_lock(path) if os.path.exists(path) else None
+    now = time.strftime('%Y-%m-%dT%H:%M:%S')
+    print('SESSION LOCK STATUS for the %r clone, as of %s' % (name, now))
+    if info is None:
+        print('  NO LOCK FILE. Nobody has claimed this clone.')
+        return 0
+    state, why = owner_state(info)
+    stale = is_stale(path)
+    print('  lock  : %s' % path)
+    print('  owner : %s' % _describe(name, info, path))
+    print('  state : %s -- %s' % (state.upper(), why))
+    if stale:
+        print('  NOTE  : the lock file is older than the %dh staleness window, so '
+              'it would be reclaimed on the next tool call regardless of liveness.'
+              % (STALE_SECONDS // 3600))
+    warned = read_warned(name)
+    if warned:
+        print('  WARNED: a SessionStart warning was issued at %s about CLAUDE_PID '
+              '%s.' % (warned.get('warned_at'), warned.get('claude_pid')))
+        if state != ALIVE:
+            print('          THAT WARNING IS NO LONGER TRUE. It has not been '
+                  'retracted yet only because no tool call has run since the '
+                  'process ended.')
+    if state == ALIVE:
+        print('')
+        print('  BLOCKED. Tool use in a second session here WILL be refused.')
+        return 1
+    if state == UNKNOWN:
+        print('')
+        print('  COULD NOT TELL -- the third state. Falling back to the %dh '
+              'staleness rule; nothing is blocked and nothing is proven.'
+              % (STALE_SECONDS // 3600))
+        return 2
+    print('')
+    print('  NOT BLOCKED.%s' % (' This session owns the lock.' if state == SELF
+                                else ' The recorded owner is gone.'))
+    return 0
+
+
 if __name__ == '__main__':
     action = sys.argv[1] if len(sys.argv) > 1 else 'start'
     if action == 'start':
@@ -445,3 +586,9 @@ if __name__ == '__main__':
         cmd_heartbeat()
     elif action == 'guard':
         cmd_guard()
+    elif action == 'status':
+        sys.exit(cmd_status())
+    else:
+        sys.stderr.write('unknown action %r -- one of start|heartbeat|guard|'
+                         'status\n' % action)
+        sys.exit(2)
