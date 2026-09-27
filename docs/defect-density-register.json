@@ -16441,6 +16441,112 @@
       "recurrence_open": "No check exists for the general shape: a probe fixture carrying a LITERAL session name while the code under test resolves that same name from the clone. A grep for quoted clone names inside tests/ is cheap and has not been run, and the four build-agent names plus the hover instances are a small closed vocabulary that a checker could read from .claude/claims/ rather than hardcode -- which is the same mistake one shelf over."
     },
     {
+      "commit": "372dfc140846",
+      "date": "2026-09-27",
+      "subject": "fix(probes): two sabotage anchors had stopped matching ANYTHING, and nothing ran the probes that were failing",
+      "files": [
+        "tests/sairncare_fault_probe.py",
+        "tests/sairncash_entitlement_fault_probe.py",
+        "tools/probe_anchor_freshness.py"
+      ],
+      "lines_added": 473,
+      "lines_removed": 17,
+      "app": "sairncash",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "probe-control",
+      "summary": "tests/sairncash_entitlement_fault_probe.py had been dead since a100c078. That commit inserted an scGraceOk(s) bound into the exact catch block arm 4 anchored on, turning the three lines the anchor spanned into eight, so once() refused the anchor and the probe exited non-zero on its FIRST arm -- arms 4 and 5 never ran at all. The entitlement gate's offline-fallback and trial-sibling properties were therefore unmutated and unverified for the whole window. Re-anchored against what the code became rather than restored: the anchor now spans only the final fallback line the arm was always about, so a later insertion above it cannot break it again, and two arms were added for the guarantees a100c078 introduced and nothing covered -- an unbounded grace window and the future-stamp skew guard.",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tests/sairncash_entitlement_fault_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "a100c0785f51",
+        "date": "2026-09-16",
+        "subject": "fix(sairncash): the offline fallback was unbounded -- a blocked request meant yes forever",
+        "lag_days": 11
+      },
+      "citation_note": "1.3 is the adjacent half of this class and not the identical one, and the difference is the finding. 1.3 is an anchor that STILL MATCHES but now points at different code -- the quiet failure. This anchor matched ZERO places, which is the LOUD failure: once() refuses, the probe exits non-zero on its first arm. It was exactly as quiet, because nothing on this platform runs the fault probes.",
+      "contributing_factors": [
+        {
+          "factor": "an anchor spanning three ADJACENT lines of a catch block, where the improvement most likely to be made is an insertion into that block",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "re-anchored onto the single final-fallback line the arm is about, so an insertion above it does not break it"
+        },
+        {
+          "factor": "no fault probe on this platform is in report_only_checks.REGISTRY, the push gate, or any hook, so a probe failing loudly is never heard",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "tools/probe_anchor_freshness.py was built as the cheap wirable half -- under a second against minutes per probe -- and it already found five more broken anchors; WIRING it into report_only_checks.REGISTRY is the named next step and is NOT done here"
+        },
+        {
+          "factor": "the probes take minutes each, so they are run when somebody remembers rather than on a cadence",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "the runtime is inherent -- each probe builds a throwaway worktree and runs real node suites; the answer is a fast proxy check, not a faster probe"
+        }
+      ],
+      "recurrence_open": "NOTHING IS WIRED YET. The freshness checker exists and is not in any hook, gate or registry, so the next stale anchor is found the same way this one was -- by somebody happening to run the probe. It also cannot see the 1.3 case at all: an anchor matching exactly once may still point at the wrong thing, and only running the probe catches that."
+    },
+    {
+      "commit": "372dfc140846",
+      "date": "2026-09-27",
+      "subject": "fix(probes): two sabotage anchors had stopped matching ANYTHING, and nothing ran the probes that were failing",
+      "files": [
+        "tests/sairncare_fault_probe.py",
+        "tests/sairncash_entitlement_fault_probe.py",
+        "tools/probe_anchor_freshness.py"
+      ],
+      "lines_added": 473,
+      "lines_removed": 17,
+      "app": "sairncare",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "tests/sairncare_fault_probe.py had been dead since dadfedf4, which wrapped all 48 role membership sets in roleSet(...) for a null prototype. Four arms anchored on the bare object literal -- const ALF_MAR_ROLES = { owner: true, ... } -- which no longer exists anywhere in api/sd-data.js, so the anchors matched ZERO places and the probe stopped on its first mutation. SAIRNcare's scope-of-practice and assignee-scoping gates, which are medication-record and PHI gates, were unmutated for the whole window. Re-anchored onto the roleSet(...) form. Running it afterwards surfaced a SECOND and unrelated failure that is NOT fixed here and is not an anchor problem: c8b5e5b1's single-entry-point credential pre-gate calls verifySessionToken(preToken, licHash) with no expectedApp, and twelve suites stub that function to THROW on an unnamed app -- bisected 20-of-20 green at c8b5e5b1~1 and 0-of-20 at c8b5e5b1.",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/probe_anchor_freshness.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "dadfedf48ac9",
+        "date": "2026-09-24",
+        "subject": "fix(platform): all 48 role membership sets get a null prototype, not just roofing",
+        "lag_days": 3
+      },
+      "citation_note": "Same class as the sairncash record filed against this commit and found a DIFFERENT way, which is why it is a separate record: that one announced itself by failing when somebody ran it, this one was found by a checker built afterwards that reads anchors without running anything. Two structurally different methods, one defect shape.",
+      "contributing_factors": [
+        {
+          "factor": "four arms anchored on a bare object literal that a platform-wide refactor rewrote in one sweep",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "re-anchored onto the roleSet(...) form the code now uses"
+        },
+        {
+          "factor": "dadfedf4 changed 48 sites across the platform and nothing asked which CHECKS read those sites as text",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "tools/probe_anchor_freshness.py answers that question in under a second and is the thing to run after any sweep of this shape; it is built and is NOT yet wired into the push gate or report_only_checks.REGISTRY"
+        },
+        {
+          "factor": "a probe with a RED BASELINE is indistinguishable from a probe with a stale anchor until the anchor is fixed and it can run far enough to say so",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the freshness checker prints this as a named blind spot on every run, and the tooling-inventory entry carries it: a green report here is not a working probe"
+        }
+      ],
+      "recurrence_open": "The red baseline this record surfaced is NOT closed -- twelve suites and 172 assertions across the whole SAIRNcare test surface plus sairnbuild are still red at HEAD from c8b5e5b1, and api/sd-data.js is deliberately untouched here because the resolution is a judgement about whether the pre-gate should name an app or the stubs should tolerate one that does not. Five AMBIGUOUS anchors in sairndesign_sairngrounds_fault_probe.py and sairnmechanical_fault_probe.py are also open and unfixed."
+    },
+    {
       "commit": "686a323c79f1",
       "date": "2026-09-27",
       "subject": "fix(auth): the documented SD_AUTH_SECRET rotation destroyed legacy ciphertexts, and the procedure sitting next to it said nobody was affected",
