@@ -127,7 +127,8 @@
             "initial_deadline": "within 14 days of the first day of work",
             "annual_hours": 4,
             "counts_toward_general_annual": true,
-            "stacking": "counts_toward_general"
+            "stacking": "counts_toward_general",
+            "positions_not_mappable": "ASSIGNMENT, not a role. \"staff serving residents with late-stage cognitive impairment\" is a fact about the resident roster, not about position -- two caregivers in one facility differ on it. Mapping it to a position would assert an obligation for people who do not serve that population and miss the ones who do."
           },
           {
             "who": "staff serving BOTH the cognitive-impairment population and residents with serious mental illness",
@@ -136,16 +137,27 @@
             "annual_hours": 8,
             "counts_toward_general_annual": true,
             "stacking": "counts_toward_general",
-            "note": "divided in equal proportions for each population"
+            "note": "divided in equal proportions for each population",
+            "positions_not_mappable": "ASSIGNMENT, and narrower than row 0 -- staff serving BOTH populations. Same reason, more so."
           },
           {
             "who": "all staff — general continuing education",
-            "annual_hours": 8
+            "annual_hours": 8,
+            "applies_to_positions": [
+              "nursing",
+              "med_aide",
+              "caregiver",
+              "billing",
+              "activities",
+              "owner"
+            ],
+            "applies_to_positions_basis": "OAC 173-39-02.16: \"all staff -- general continuing education\". Every position, and nothing about it depends on assignment."
           },
           {
             "who": "administrator",
             "annual_hours": 9,
-            "note": "in gerontology, health care, business administration, or residential care facility operation"
+            "note": "in gerontology, health care, business administration, or residential care facility operation",
+            "positions_not_mappable": "LICENSED OFFICE. `owner` is the nearest token and an owner is not necessarily the licensed administrator of record; asserting that would be a licensure claim invented by a lookup table. Refused here on 2026-09-26 for the same reason in docs/CRITICALITY-TIERS.md and refused again."
           }
         ],
         "memory_care_initial_topics": [
@@ -256,13 +268,21 @@
             "who": "staff who have contact with residents",
             "initial_hours": 6,
             "initial_deadline": "within 6 months",
-            "annual_hours": 3
+            "annual_hours": 3,
+            "applies_to_positions": [
+              "caregiver",
+              "med_aide",
+              "nursing",
+              "activities"
+            ],
+            "applies_to_positions_basis": "410 IAC 16.2-5-1.3, \"staff who have contact with residents\". The four positions whose ROLE entails resident contact. `billing` and `owner` are left off because contact for those two is a per-facility fact -- and that under-includes rather than over-includes, so both stay in unmapped_requirements for a person in those positions rather than being silently treated as exempt."
           },
           {
             "who": "director of the Alzheimer's and dementia special care unit",
             "initial_hours": 12,
             "initial_deadline": "within 3 months of initial employment as director",
-            "annual_hours": 6
+            "annual_hours": 6,
+            "positions_not_mappable": "LICENSED OFFICE -- \"director of the Alzheimer's and dementia special care unit\". No position token names a unit directorship."
           }
         ],
         "purpose": "to meet the needs or preferences, or both, of cognitively impaired residents effectively and to gain understanding of the current standards of care for residents with dementia",
@@ -501,15 +521,28 @@
             "includes": [
               "training that includes a demonstration of job duties, followed by supervised practice",
               "successful completion and passing of the Department-approved direct care training course and competency test"
-            ]
+            ],
+            "applies_to_positions": [
+              "caregiver",
+              "med_aide",
+              "nursing"
+            ],
+            "applies_to_positions_basis": "55 Pa. Code 2800.4 defines a direct care staff person as one who assists residents with ADLs or IADLs and provides personal care. caregiver, med_aide and nursing all do; billing and activities do not, and `owner` is an office rather than a care role."
           },
           {
             "who": "direct care staff — general annual",
-            "annual_hours": 16
+            "annual_hours": 16,
+            "applies_to_positions": [
+              "caregiver",
+              "med_aide",
+              "nursing"
+            ],
+            "applies_to_positions_basis": "Same 2800.4 definition as row 0."
           },
           {
             "who": "administrator — general annual",
-            "annual_hours": 24
+            "annual_hours": 24,
+            "positions_not_mappable": "LICENSED OFFICE -- administrator."
           },
           {
             "who": "all staff (administrative, direct care, ancillary, substitute personnel, volunteers) — dementia baseline",
@@ -518,7 +551,16 @@
             "annual_hours": 2,
             "additive": true,
             "stacking": "additive",
-            "note": "in addition to the other training requirements of the chapter"
+            "note": "in addition to the other training requirements of the chapter",
+            "applies_to_positions": [
+              "nursing",
+              "med_aide",
+              "caregiver",
+              "billing",
+              "activities",
+              "owner"
+            ],
+            "applies_to_positions_basis": "2800.142 names it explicitly: \"administrative, direct care, ancillary, substitute personnel, volunteers\" -- broader than any position list, so every token is in it."
           },
           {
             "who": "direct care staff working in a special care unit for residents with Alzheimer's disease or dementia",
@@ -527,7 +569,8 @@
             "annual_hours": 8,
             "additive": true,
             "stacking": "additive",
-            "note": "in addition to the 16 hours of annual training specified in § 2800.65"
+            "note": "in addition to the 16 hours of annual training specified in § 2800.65",
+            "positions_not_mappable": "ASSIGNMENT -- direct care staff WORKING IN a special care unit. Which unit somebody works in is not their position."
           }
         ],
         "prior_to_first_workday": "Orientation in general fire safety and emergency preparedness, plus first aid and CPR certification before providing direct care.",
@@ -655,7 +698,8 @@
               "successful completion and passing of the Department-approved direct care training course and the competency test",
               "initial direct care staff person training across the 16 topics listed in § 2600.65(d)(3)"
             ],
-            "reciprocity": "If the staff person completed the required initial direct care training within the past year at another home and provides written verification, the initial-training requirement does not apply again."
+            "reciprocity": "If the staff person completed the required initial direct care training within the past year at another home and provides written verification, the initial-training requirement does not apply again.",
+            "positions_not_mappable": "ASSIGNMENT AND TENURE -- \"hired after April 24, 2006\". A hire date is not a position, and the engine is not given one for this purpose."
           },
           {
             "who": "direct care staff — general annual",
@@ -663,25 +707,34 @@
             "counting_rules": [
               "Staff orientation counts toward the 12 hours in the first year of employment.",
               "On-the-job training may count for at most 6 of the 12 hours required annually."
-            ]
+            ],
+            "applies_to_positions": [
+              "caregiver",
+              "med_aide",
+              "nursing"
+            ],
+            "applies_to_positions_basis": "55 Pa. Code 2600.4 carries the same direct-care definition as the ALR chapter."
           },
           {
             "who": "administrator — general annual",
             "annual_hours": 24,
-            "note": "The Department-approved administrator training course fulfils the annual requirement for the first year."
+            "note": "The Department-approved administrator training course fulfils the annual requirement for the first year.",
+            "positions_not_mappable": "LICENSED OFFICE -- administrator."
           },
           {
             "who": "administrator — before initial employment",
             "initial_hours": 100,
             "gate": "a Department-approved orientation, a 100-hour standardized Department-approved administrator training course, and a Department-approved competency-based test with a passing score",
-            "exemption": "Does not apply to an administrator hired or promoted prior to October 24, 2005."
+            "exemption": "Does not apply to an administrator hired or promoted prior to October 24, 2005.",
+            "positions_not_mappable": "LICENSED OFFICE, and a pre-employment gate rather than an annual total."
           },
           {
             "who": "direct care staff working in a secured dementia care unit",
             "annual_hours": 6,
             "additive": true,
             "stacking": "additive",
-            "note": "in addition to the 12 hours of annual training specified in § 2600.65. § 2600.236 sets no initial-hours figure for the unit — contrast the ALR chapter's 8 initial hours within 30 days of hire."
+            "note": "in addition to the 12 hours of annual training specified in § 2600.65. § 2600.236 sets no initial-hours figure for the unit — contrast the ALR chapter's 8 initial hours within 30 days of hire.",
+            "positions_not_mappable": "ASSIGNMENT -- direct care staff working in a secured dementia care unit."
           }
         ],
         "no_general_dementia_requirement": true,

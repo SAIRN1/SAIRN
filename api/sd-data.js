@@ -11339,32 +11339,30 @@ module.exports = async (req, res) => {
         // Opt-in, so every existing caller is unaffected: cqShowTraining() asks
         // for the requirements and gets exactly what it got before.
         if (payload.include_staff === true) {
-          // THE WINDOW IS DECLARED OR THE JOIN REFUSES. `annual_hours` has three
-          // defensible readings -- rolling twelve months, calendar year, the
-          // facility's own training year -- and the scoping doc's first unblock
-          // item is that somebody decides. Picking one here would be this
-          // endpoint inventing a compliance rule, so an undeclared window is a
-          // refusal naming the three, and whichever is used is reported on every
-          // finding.
+          // ── THE WINDOW IS DECIDED NOW, NOT REFUSED (2026-09-27) ───────────
+          // This block used to 400 ANNUAL_WINDOW_UNDECLARED naming the three
+          // readings, because picking one would have been the endpoint inventing
+          // a compliance rule. Michael decided it: ROLLING TWELVE MONTHS ANCHORED
+          // TO EACH STAFF MEMBER'S HIRE DATE. The engine carries that as
+          // DEFAULT_ANNUAL_WINDOW, so the refusal is gone and a verdict is
+          // possible without anybody re-stating it per request.
+          //
+          // A STATED WINDOW IS STILL HONOURED -- rule first, then request, then
+          // the decision -- and an UNKNOWN one is still refused rather than
+          // silently falling back, because a typo must not choose a reading.
           const sel = complianceRules.selectRule(ruleRows || [], {
             state: payload.state, requirement_type: 'training',
             facility_class: payload.facility_class, on_date: opts.on_date });
-          const declared = payload.annual_window
-            || (sel.ok ? ((sel.rule.data || {}).annual_window || null) : null);
-          if (!declared || !complianceRules.ANNUAL_WINDOWS[declared]) {
-            res.status(400).json({ error: { code: 'ANNUAL_WINDOW_UNDECLARED',
-              message: 'A per-staff verdict needs the ANNUAL WINDOW stated, and '
-                + 'nothing states it. `annual_hours` can mean the rolling twelve '
-                + 'months, the calendar year, or the facility\'s own training '
-                + 'year; all three are defensible and they give different '
-                + 'answers, so this endpoint will not choose. Send '
-                + 'annual_window as one of: '
-                + Object.keys(complianceRules.ANNUAL_WINDOWS).join(', ')
-                + ' (facility_training_year also needs '
-                + 'facility_training_year_start), or record it on the rule.' } });
+          if (payload.annual_window
+              && !complianceRules.ANNUAL_WINDOWS[payload.annual_window]) {
+            res.status(400).json({ error: { code: 'ANNUAL_WINDOW_UNKNOWN',
+              message: 'annual_window ' + JSON.stringify(payload.annual_window)
+                + ' is not one this engine computes. Omit it for the default '
+                + '(rolling twelve months from each staff member hire anniversary) or '
+                + 'send one of: '
+                + Object.keys(complianceRules.ANNUAL_WINDOWS).join(', ') + '.' } });
             return;
           }
-          opts.annual_window = declared;
           // The roster, for positions. A staff member with no position cannot be
           // matched to any audience except all_staff, and that is reported on the
           // finding rather than silently excluding them.
@@ -11407,6 +11405,15 @@ module.exports = async (req, res) => {
             return {
               staff_id: row.staff_id, name: d.name || '',
               position: d.position || null,
+              // THE ANCHOR FOR THE DEFAULT WINDOW. alf_staff stores an open jsonb
+              // blob, so this needs no migration -- but NOTHING WRITES IT YET:
+              // sairncare.html's saveStaff() collects name, phone, position,
+              // cert_expiry, bgcheck_date, status and notes, and no hire date.
+              // Until a `hire_date` input exists, every finding comes back
+              // NO_HIRE_DATE with meets:null, which is the honest answer and not
+              // a verdict. The field name is fixed here so the UI half has one
+              // spelling to write.
+              hire_date: d.hire_date || null,
               applies_to: appliesTo,
               records: byStaff[String(row.staff_id)] || []
             };

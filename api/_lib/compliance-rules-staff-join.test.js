@@ -265,61 +265,206 @@ ok('...and null is reserved for the pooled case, not used everywhere',
 //
 // What it asserts now is the three separate facts, each on its own arm, so no
 // one of them can be mistaken for another.
-// ── 4b. THE FABRICATED PASS, ARRIVING THROUGH A THIRD DOOR ─────────────────
-// THIS IS THE ARM THAT MATTERS MOST IN THIS FILE, and it exists because the
-// first version of the records join shipped the defect it was written to fix.
-// For Ohio, Indiana and both Pennsylvania chapters EVERY requirement identifies
-// its audience in prose, so nothing matched, `applicable` was empty, the target
-// summed to 0, and a caregiver with ZERO recorded hours came back `meets: true`
-// -- with the `unmapped_requirements` caveat sitting on the same response.
+// ── 4b. AN EMPTY APPLICABLE SET IS NEVER A PASS ────────────────────────────
+// RE-PINNED 2026-09-27 (Hank) when the position lists landed, and NOT reverted:
+// this section used to drive OH/IN/PA on the grounds that EVERY audience there
+// was prose so nothing matched. That is precisely what item 3 fixed, so those
+// four rules now answer — the old assertion was made false ON PURPOSE.
 //
-// This module's own sentence about the WV bug is the diagnosis: "an empty
+// THE PROPERTY IS UNCHANGED AND STILL NEEDS AN ARM, so it is driven where the
+// applicable set is genuinely empty rather than where it used to be: a `billing`
+// position against a rule whose requirements are direct-care only.
+//
+// THE DEFECT IT GUARDS, kept because the first version of the records join
+// shipped it: nothing matched, `applicable` was empty, the target summed to 0,
+// and a caregiver with ZERO recorded hours came back `meets: true` — with the
+// `unmapped_requirements` caveat sitting on the same response. This module's own
+// sentence about the WV vocabulary bug, arriving through a third door: "an empty
 // requirement set is indistinguishable from a satisfied one once it has been
-// summed." Same sentence, third door: unreadable VOCABULARY, then unmatched
-// AUDIENCE.
-//
-// FOUND BY MEASURING ALL SIX SEEDED RULES, not by reading the diff. A
-// verdict-only arm on one state would not have shown it.
+// summed."
 section('4b. AN EMPTY APPLICABLE SET IS NEVER A PASS');
-const proseStates = ['OH', 'IN', 'PA'];
-proseStates.forEach(function (st) {
-  const rules = training.filter(function (r) { return r.state === st; });
-  rules.forEach(function (rule) {
-    const norm = e.normalizeRequirements(rule);
-    const applies = norm
-      .filter(function (r) { return e.matchAudience(r, { position: 'caregiver' }).applies === true; })
-      .map(function (r) { return r.who; });
-    const res = e.evaluateTraining([rule], {
-      state: rule.state, facility_class: rule.facility_class, on_date: '2026-09-26',
-      annual_window: 'rolling_12_months',
-      staff: [{ staff_id: 'S', position: 'caregiver', applies_to: applies,
-                records: [] }]
-    });
-    const f = (res.staff_findings || [])[0];
-    ok(rule.rule_id + ': a caregiver with ZERO recorded hours is NOT reported '
-       + 'as meeting anything, because no requirement could be matched to them',
-       !!f && f.meets === null && f.no_applicable_requirement === true,
-       JSON.stringify(f || res).slice(0, 240));
-    ok(rule.rule_id + ': ...and the reason says "we could not read who it '
-       + 'applies to" rather than "no obligation" -- only the rule author can '
-       + 'make the second claim',
-       !!f && /could not read who it/.test(f.meets_unknown_reason || ''),
-       (f || {}).meets_unknown_reason);
-    ok(rule.rule_id + ': ...and an OVER-trained caregiver is ALSO null, which '
-       + 'is the half that proves the fix is about the empty SET and not about '
-       + 'the hours being low',
-       (function () {
-         const over = e.evaluateTraining([rule], {
-           state: rule.state, facility_class: rule.facility_class,
-           on_date: '2026-09-26', annual_window: 'rolling_12_months',
-           staff: [{ staff_id: 'S', position: 'caregiver', applies_to: applies,
-                     records: [{ hours: 500, category: 'general',
-                                 completed_on: '2026-06-01' }] }] });
-         const g = (over.staff_findings || [])[0];
-         return !!g && g.meets === null;
-       })());
+
+// One driver for 4b/4c/4d. It builds `applies_to` the way api/sd-data.js does —
+// through matchAudience() — rather than hand-listing `who` strings, so these arms
+// exercise the same mapping the endpoint uses and cannot pass against a shape the
+// product does not have.
+function drive(rule, position, records, hire, extra) {
+  const norm = e.normalizeRequirements(rule);
+  const applies = norm
+    .filter(function (r) { return e.matchAudience(r, { position: position }).applies === true; })
+    .map(function (r) { return r.who; });
+  return e.evaluateTraining([rule], Object.assign({
+    state: rule.state, facility_class: rule.facility_class, on_date: '2026-09-27',
+    staff: [{ staff_id: 'S', position: position, applies_to: applies,
+              hire_date: hire, records: records }]
+  }, extra || {}));
+}
+const LOTS = [{ hours: 500, category: 'general', completed_on: '2026-06-01' }];
+const PCH = training.filter(function (r) {
+  return r.state === 'PA' && r.facility_class === 'pch';
+})[0];
+
+const billingOut = drive(PCH, 'billing', LOTS, '2024-11-03');
+const bf = (billingOut.staff_findings || [])[0];
+ok('a position NO requirement maps to is meets:null even with 500 recorded '
+   + 'hours -- the empty SET is the reason, not the hours',
+   !!bf && bf.meets === null && bf.no_applicable_requirement === true,
+   JSON.stringify(bf || billingOut).slice(0, 240));
+ok('...and the reason says "we could not read who it applies to" rather than '
+   + '"no obligation" -- only the rule author can make the second claim',
+   !!bf && /could not read who it/.test(bf.meets_unknown_reason || ''),
+   (bf || {}).meets_unknown_reason);
+ok('...and it reports 0 required over 0 applicable pools, which is exactly the '
+   + 'state that used to be summed into a pass',
+   !!bf && bf.required_annual_hours === 0 && bf.applicable_pool_count === 0,
+   JSON.stringify(bf || {}).slice(0, 200));
+
+// ── 4c. THE POSITION LISTS, AND WHAT THEY DELIBERATELY REFUSE TO MAP ───────
+// Item 3. Authored into sql/sairncare_compliance_seed.json from the code each row
+// already cites, onto the real `alf_staff.position` vocabulary. The arms are
+// about the DISTINCTION rather than the count: a row naming a ROLE CLASS is
+// mapped, and a row naming an ASSIGNMENT ("staff serving residents with
+// late-stage cognitive impairment") or a LICENSED OFFICE ("administrator") is
+// not — neither is a fact about position, and mapping `owner` to `administrator`
+// would be a licensure claim invented by a lookup table. Refused on 2026-09-26 in
+// docs/CRITICALITY-TIERS.md for the same reason, and refused again here.
+section('4c. the position lists map role classes and refuse assignments');
+['OH', 'IN', 'PA'].forEach(function (st) {
+  training.filter(function (r) { return r.state === st; }).forEach(function (rule) {
+    const f = (drive(rule, 'caregiver', [], '2024-11-03').staff_findings || [])[0];
+    ok(rule.rule_id + ': a caregiver with ZERO hours is FALSE now -- a real '
+       + 'verdict where this rule used to answer null for want of an audience',
+       !!f && f.meets === false && f.required_annual_hours > 0,
+       JSON.stringify(f || {}).slice(0, 220));
+    const over = (drive(rule, 'caregiver', LOTS, '2024-11-03').staff_findings || [])[0];
+    ok(rule.rule_id + ': ...and TRUE when over-trained, so the verdict tracks the '
+       + 'hours rather than being pinned one way by the mapping',
+       !!over && over.meets === true, JSON.stringify(over || {}).slice(0, 220));
   });
 });
+
+const ohRule = training.filter(function (r) { return r.state === 'OH'; })[0];
+const ohMapped = drive(ohRule, 'caregiver', LOTS, '2024-11-03');
+ok('Ohio STILL DISCLOSES its unmapped requirements rather than dropping them -- '
+   + 'two assignment rows and an administrator row are not facts about position, '
+   + 'and a meets:true beside them means "meets what could be attributed", never '
+   + '"compliant"',
+   Array.isArray(ohMapped.unmapped_requirements)
+   && ohMapped.unmapped_requirements.length === 3,
+   JSON.stringify((ohMapped.unmapped_requirements || []).map(function (u) { return u.key; })));
+
+ok('every mapped position token is in the REAL alf_staff.position vocabulary -- '
+   + 'a token this app cannot store would match nobody and read as an exemption',
+   (function () {
+     const bad = [];
+     training.forEach(function (rule) {
+       ((rule.data || {}).requirements || []).forEach(function (q) {
+         (q.applies_to_positions || []).forEach(function (t) {
+           if (e.STAFF_POSITIONS.indexOf(t) === -1) bad.push(rule.rule_id + ':' + t);
+         });
+       });
+     });
+     return !bad.length;
+   })(), 'unknown position tokens in the seed');
+
+ok('...and every mapped row records the BASIS for its mapping, so a reader can '
+   + 'disagree with the READING rather than with a bare list',
+   (function () {
+     const missing = [];
+     training.forEach(function (rule) {
+       ((rule.data || {}).requirements || []).forEach(function (q, i) {
+         if (q.applies_to_positions && !q.applies_to_positions_basis) {
+           missing.push(rule.rule_id + '#' + i);
+         }
+       });
+     });
+     return !missing.length;
+   })(), 'a position list with no recorded basis');
+
+ok('...and every row deliberately LEFT unmapped records why, so an absent list '
+   + 'reads as a decision rather than as an omission somebody forgot',
+   (function () {
+     const bare = [];
+     ['OH', 'IN', 'PA'].forEach(function (st) {
+       training.filter(function (r) { return r.state === st; }).forEach(function (rule) {
+         ((rule.data || {}).requirements || []).forEach(function (q, i) {
+           if (!q.applies_to_positions && !q.positions_not_mappable) {
+             bare.push(rule.rule_id + '#' + i);
+           }
+         });
+       });
+     });
+     return !bare.length;
+   })(), 'a requirement with neither a position list nor a recorded reason');
+
+// ── 4d. THE ANNUAL WINDOW: DECIDED, ANCHORED, AND STILL REFUSING TO GUESS ──
+// Item 4, Michael's decision. The three-way 400 is replaced by a COMPUTED
+// DEFAULT: rolling twelve months ending on each staff member's most recent hire
+// anniversary. Anchoring is not a detail — one facility-wide window makes
+// somebody hired in November non-compliant for eleven months against a figure
+// they have not had a year to earn, and the underlying requirements are already
+// hire-relative ("within 6 months", "within the first 30 days of the date of
+// hire", "in the first year of employment").
+section('4d. the annual window is computed, anchored to hire, and names its own '
+        + 'could-not-tell');
+const WV1 = training.filter(function (r) { return r.state === 'WV'; })[0];
+
+const anchored = (drive(WV1, 'caregiver', LOTS, '2024-11-03').staff_findings || [])[0];
+ok('THE ANCHOR: hired 2024-11-03, evaluated 2026-09-27 -- the window opens '
+   + '2025-11-03. Not a calendar year, and not 365 days counted back from today',
+   !!anchored && anchored.hours_window_from === '2025-11-03',
+   JSON.stringify(anchored || {}).slice(0, 260));
+ok('...and the finding names the window AND what it means, because a verdict '
+   + 'computed over a period the reader cannot see is one they cannot check -- '
+   + 'and with a per-person anchor the period differs per row',
+   !!anchored && anchored.hours_window === 'rolling_12_months_from_hire'
+   && /hire anniversary/.test(anchored.hours_window_meaning || ''),
+   JSON.stringify(anchored || {}).slice(0, 260));
+
+const stale = (drive(WV1, 'caregiver',
+  [{ hours: 500, category: 'general', completed_on: '2025-06-01' }],
+  '2024-11-03').staff_findings || [])[0];
+ok('hours BEFORE the window do not count: 500 hours dated 2025-06-01 fall in the '
+   + 'PREVIOUS training year for a 2024-11-03 hire, so the verdict is FALSE',
+   !!stale && stale.recorded_annual_hours === 0 && stale.meets === false,
+   JSON.stringify(stale || {}).slice(0, 260));
+
+const noHire = (drive(WV1, 'caregiver', LOTS, null).staff_findings || [])[0];
+ok('THE ARM THAT MATTERS FOR THE WINDOW: no recorded hire date is meets:NULL, '
+   + 'not false -- a total of zero derived from a MISSING FIELD would report a '
+   + 'fully trained person as non-compliant, which is the empty-set defect one '
+   + 'direction over',
+   !!noHire && noHire.meets === null
+   && noHire.hours_window_error === 'NO_HIRE_DATE',
+   JSON.stringify(noHire || {}).slice(0, 260));
+ok('...and the reason names the missing field and BOTH ways out, rather than '
+   + 'leaving a null for a reader to interpret',
+   !!noHire && /no recorded hire date/.test(noHire.meets_unknown_reason || '')
+   && /facility-wide windows/.test(noHire.meets_unknown_reason || ''),
+   (noHire || {}).meets_unknown_reason);
+
+const future = (drive(WV1, 'caregiver', LOTS, '2027-01-01').staff_findings || [])[0];
+ok('a hire date AFTER the evaluation date is named, not guessed past',
+   !!future && future.meets === null
+   && future.hours_window_error === 'HIRE_DATE_AFTER_EVALUATION',
+   JSON.stringify(future || {}).slice(0, 220));
+
+ok('THE DECISION IS A DEFAULT, NOT THE REMOVAL OF A CHOICE: the three '
+   + 'facility-wide windows are all still available to a caller that states one',
+   Object.keys(e.ANNUAL_WINDOWS).length === 4
+   && !!e.ANNUAL_WINDOWS.rolling_12_months
+   && !!e.ANNUAL_WINDOWS.calendar_year
+   && !!e.ANNUAL_WINDOWS.facility_training_year,
+   Object.keys(e.ANNUAL_WINDOWS).join(','));
+ok('...and a caller-stated window is honoured over the default -- the same '
+   + 'caregiver evaluated on the facility-wide rolling year sees a DIFFERENT '
+   + 'window start, which is what proves the anchor is doing work',
+   (function () {
+     const f = (drive(WV1, 'caregiver', LOTS, '2024-11-03',
+                      { annual_window: 'rolling_12_months' }).staff_findings || [])[0];
+     return !!f && f.hours_window === 'rolling_12_months'
+       && f.hours_window_from !== '2025-11-03';
+   })());
 
 section('5. WHAT REACHES THIS BRANCH, stated as three facts rather than one');
 const app = fs.readFileSync(path.join(REPO, 'sairncare.html'), 'utf8');

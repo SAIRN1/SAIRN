@@ -354,10 +354,34 @@ function evaluateStaffing(rules, opts) {
 // a default: a window nobody declared is refused, because all three are
 // defensible and picking one silently is inventing a compliance rule.
 const ANNUAL_WINDOWS = {
+  rolling_12_months_from_hire: 'the twelve months ending on this staff member\'s '
+    + 'most recent hire anniversary at or before the evaluation date -- each '
+    + 'person\'s own training year',
   rolling_12_months: 'the twelve months ending on the evaluation date',
   calendar_year: 'the calendar year containing the evaluation date',
   facility_training_year: 'the facility\'s own declared training year'
 };
+
+// ── THE DECISION, MADE 2026-09-27 (Michael) ────────────────────────────────
+// `annual_hours` had three defensible readings and this module refused to pick
+// one. That was honest and it also meant no caller could get a verdict at all --
+// a silent wrong answer converted into a blocked feature. The decision is ROLLING
+// TWELVE MONTHS ANCHORED TO EACH STAFF MEMBER'S HIRE DATE, and it is the DEFAULT
+// rather than a required input, so a verdict is possible without anybody
+// re-stating it per request.
+//
+// WHY THE ANCHOR MATTERS AND IS NOT A DETAIL. One facility-wide window makes
+// somebody hired in November non-compliant for their first eleven months against
+// an annual figure they have not had a year to earn. A per-person year is also
+// how the underlying requirements already read: "within 6 months", "within the
+// first 30 days of the date of hire", "in the first year of employment" are all
+// hire-relative.
+//
+// A MISSING HIRE DATE IS NOT A DEFAULT TO TODAY. That would restart everybody's
+// year on every evaluation and report a fully trained person as having zero
+// hours. It is a per-person could-not-tell naming the missing field, and the
+// other three windows stay available for a caller that states one.
+const DEFAULT_ANNUAL_WINDOW = 'rolling_12_months_from_hire';
 
 // `alf_staff.position` -- the real select vocabulary in sairncare.html.
 // DELIBERATELY NOT MAPPED TO `administrator`. `owner` is the nearest token and an
@@ -394,6 +418,15 @@ function normalizeRequirements(rule) {
       // describes a thing instead of the thing.
       category: typeof r.category === 'string' ? r.category : null,
       topic: typeof r.topic === 'string' ? r.topic : null,
+      // ── CARRIED THROUGH, AND THE FIRST VERSION DID NOT (2026-09-27) ──────
+      // matchAudience() has read `applies_to_positions` since it was written and
+      // this function never produced it, so that branch was UNREACHABLE: a
+      // requirement carrying a position list matched nobody, and the seed rows
+      // authored against it would have changed nothing. Fourth instance of the
+      // same class in two days -- a branch gated on a field name that is never
+      // set -- and the one tools/payload_field_ghost_scan.py was written for.
+      applies_to_positions: Array.isArray(r.applies_to_positions)
+        ? r.applies_to_positions : null,
       within_general: withinGeneral,
       additive: additive,
       // A POOL IS A SET OF HOURS THAT SATISFY EACH OTHER. Declared only:
@@ -443,11 +476,32 @@ function matchAudience(req, staff) {
 // -> the recorded hours that fall inside the declared window.
 // SERVER-SUPPLIED ONLY -- see the endpoint. The window is reported on every
 // finding so a reader never has to assume which of the three was used.
-function hoursInWindow(records, window, onDate, trainingYearStart) {
-  const out = { total: 0, by_category: {}, counted: 0, skipped_no_date: 0 };
+function hoursInWindow(records, window, onDate, trainingYearStart, hireDate) {
+  const out = { total: 0, by_category: {}, counted: 0, skipped_no_date: 0,
+                window_from: null, window_error: null };
   const on = String(onDate || '');
   let from = null;
-  if (window === 'rolling_12_months') {
+  if (window === 'rolling_12_months_from_hire') {
+    // The most recent hire anniversary at or before the evaluation date, then
+    // that day one year earlier. Somebody hired 2024-11-03 and evaluated
+    // 2026-09-27 is in the year that began 2025-11-03 -- not a calendar year,
+    // and not the last 365 days counted back from today.
+    const hire = String(hireDate || '');
+    if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(hire)) {
+      out.window_error = 'NO_HIRE_DATE';
+      return out;
+    }
+    if (hire > on) {
+      // Hired after the date being evaluated. A data problem, named rather than
+      // guessed past.
+      out.window_error = 'HIRE_DATE_AFTER_EVALUATION';
+      return out;
+    }
+    const mmdd = hire.slice(4);            // '-MM-DD'
+    let year = Number(on.slice(0, 4));
+    if (on.slice(4) < mmdd) year -= 1;     // this year's anniversary has not arrived
+    from = String(year) + mmdd;
+  } else if (window === 'rolling_12_months') {
     const d = new Date(on + 'T00:00:00Z');
     if (!isNaN(d.getTime())) {
       d.setUTCFullYear(d.getUTCFullYear() - 1);
@@ -458,6 +512,7 @@ function hoursInWindow(records, window, onDate, trainingYearStart) {
   } else if (window === 'facility_training_year') {
     from = trainingYearStart || null;
   }
+  out.window_from = from;
   (records || []).forEach(function (rec) {
     const when = rec && rec.completed_on;
     if (!when) { out.skipped_no_date += 1; return; }
@@ -632,9 +687,14 @@ function evaluateTraining(rules, opts) {
       // from a number the caller chose must never be indistinguishable from one
       // computed from the record the server holds.
       const hasRecords = Array.isArray(s.records);
+      // THE DEFAULT IS THE DECIDED ONE. A rule may still declare its own window
+      // and a caller may still state one -- rule first, then request, then the
+      // decision -- but "nobody said" no longer means "no answer".
+      const windowUsed = (rule.data || {}).annual_window
+        || opts.annual_window || DEFAULT_ANNUAL_WINDOW;
       const win = hasRecords
-        ? hoursInWindow(s.records, opts.annual_window || (rule.data || {}).annual_window,
-                        opts.on_date, opts.facility_training_year_start)
+        ? hoursInWindow(s.records, windowUsed, opts.on_date,
+                        opts.facility_training_year_start, s.hire_date)
         : null;
       const recorded = hasRecords ? win.total : Number(s.annual_hours_recorded || 0);
       // ── WHICH POOLS APPLY, AND WHETHER RECORDED HOURS CAN REACH THEM ─────
@@ -689,7 +749,13 @@ function evaluateTraining(rules, opts) {
       // and the reason distinguishes the two ways it can be empty -- "we could
       // not read who this applies to" is not "this person has no obligation",
       // and only the rule's author can say which.
-      const unattributable = unresolved.length > 0;
+      // ── A WINDOW THAT COULD NOT BE COMPUTED IS NOT ZERO HOURS ────────────
+      // NO_HIRE_DATE returns a total of 0, and 0 against any requirement is
+      // FALSE. That would report every staff member with no recorded hire date
+      // as non-compliant -- a confident wrong answer from a missing field, which
+      // is the same shape as the empty-applicable-set pass one direction over.
+      const windowUnknown = hasRecords && !!win.window_error;
+      const unattributable = unresolved.length > 0 || windowUnknown;
       let verdict = null;
       if (!unattributable && applicable.length > 0) {
         if (recorded >= poolSum) verdict = true;
@@ -718,11 +784,13 @@ function evaluateTraining(rules, opts) {
         shortfall_hours: Math.max(0, target - recorded),
         // WHERE THE HOURS CAME FROM, on every finding, always.
         hours_source: hasRecords ? 'server_records' : 'caller_supplied',
-        hours_window: hasRecords
-          ? (opts.annual_window || (rule.data || {}).annual_window || null) : null,
-        hours_window_meaning: hasRecords
-          ? (ANNUAL_WINDOWS[opts.annual_window || (rule.data || {}).annual_window] || null)
-          : null,
+        hours_window: hasRecords ? windowUsed : null,
+        hours_window_meaning: hasRecords ? (ANNUAL_WINDOWS[windowUsed] || null) : null,
+        // THE WINDOW'S OWN START DATE, on the finding. A verdict computed over a
+        // period the reader cannot see is a verdict they cannot check, and with a
+        // per-person anchor the period differs per row.
+        hours_window_from: hasRecords ? win.window_from : null,
+        hours_window_error: hasRecords ? win.window_error : null,
         records_counted: hasRecords ? win.counted : null,
         records_skipped_no_completed_on: hasRecords ? win.skipped_no_date : null,
         recorded_hours_by_category: hasRecords ? win.by_category : null,
@@ -732,7 +800,18 @@ function evaluateTraining(rules, opts) {
         no_applicable_requirement: emptyApplicable,
         meets: singlePool ? verdict : null,
         meets_unknown_reason: !singlePool
-          ? (emptyApplicable
+          ? (windowUnknown
+             ? (win.window_error === 'NO_HIRE_DATE'
+                ? ('This person has no recorded hire date, and the annual window '
+                   + 'is anchored to it. Recorded hours cannot be placed in a '
+                   + 'training year, so no verdict is produced -- a total of zero '
+                   + 'would report a fully trained person as non-compliant from a '
+                   + 'missing field. Record the hire date, or ask for one of the '
+                   + 'facility-wide windows explicitly.')
+                : ('The recorded hire date is AFTER the date being '
+                   + 'evaluated, so there is no training year to compute. That is '
+                   + 'a data problem and it is named rather than guessed past.'))
+             : emptyApplicable
              ? (anyUnmapped
                 ? ('NO requirement in this rule could be matched to this person, '
                    + 'and at least one identifies its audience in PROSE rather '
@@ -771,10 +850,32 @@ function evaluateTraining(rules, opts) {
     // WV's two real rows into a confident pass.
     const normAll = normalizeRequirements(rule);
     const unmapped = [];
+    // ── ASKED STRUCTURALLY, NOT BY PROBING WITH A NULL POSITION (2026-09-27) ─
+    // This list used to be built by calling matchAudience(r, {position: null}),
+    // and that MISREPORTED EVERY MAPPED ROW: the position-list branch requires a
+    // position to compare against, so a row carrying a perfectly good
+    // `applies_to_positions` fell through to "identifies its audience in PROSE"
+    // and was counted as unmapped. Ohio reported 4 of 4 unmapped when one row is
+    // mapped to all six positions.
+    //
+    // WRONG IN THE CAUTIOUS DIRECTION, and still wrong: the caveat overstated the
+    // gap, and a reader who checked one of those rows and found it mapped would
+    // have had a reason to distrust the whole list. Caught by an arm that
+    // asserted the COUNT rather than the presence of the list.
+    //
+    // The rule-level question is "could this row EVER be matched to a position",
+    // which is a property of the row, so it is answered from the row: a
+    // machine-readable `audience`, or a declared position list, is mappable.
+    // Whether it matches a PARTICULAR person stays where it belongs, in the
+    // per-staff loop.
     normAll.forEach(function (r) {
-      const m = matchAudience(r, { position: null });
-      if (m.applies === null) unmapped.push({ key: r.key, annual_hours: r.annual_hours,
-                                              why: m.why });
+      const mappable = r.audience === 'all_staff'
+        || (Array.isArray(r.applies_to_positions) && r.applies_to_positions.length > 0)
+        || (r.audience && STAFF_POSITIONS.indexOf(r.audience) !== -1);
+      if (!mappable) {
+        unmapped.push({ key: r.key, annual_hours: r.annual_hours,
+                        why: matchAudience(r, { position: null }).why });
+      }
     });
     if (unmapped.length) {
       out.unmapped_requirements = unmapped;

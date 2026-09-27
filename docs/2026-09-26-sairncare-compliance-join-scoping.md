@@ -139,6 +139,83 @@ authorable edit each rather than on five interacting unknowns: an
    `alf_staff_credentials` with `record_type=training_hours`, and every finding
    reports `hours_source`, the window used and the window's meaning.
 
+### SUPERSEDED 2026-09-27 — both of those are closed too
+
+**The window was decided and the position lists were authored**, so the table
+above is history as of the next section. Re-run the suites rather than reading
+either table as current:
+
+    node api/_lib/compliance-rules-staff-join.test.js    # 53 arms
+    node api/sd-data-alf-training-join.test.js           # 16 arms
+
+**THE WINDOW (unblock item 1) — Michael's decision: rolling twelve months
+anchored to each staff member's hire date.** It is a computed DEFAULT now, not a
+required input, so the three-way 400 is gone. Anchoring is the part that matters:
+one facility-wide window makes somebody hired in November non-compliant for
+eleven months against a figure they have not had a year to earn, and the
+requirements are already hire-relative — *"within 6 months"*, *"within the first
+30 days of the date of hire"*, *"in the first year of employment"*. A stated
+window is still honoured and an UNKNOWN one is still refused
+(`ANNUAL_WINDOW_UNKNOWN`), because a typo must not silently choose a reading.
+
+**AND THE ANCHOR HAS NO SOURCE YET, WHICH IS THE ONE THING LEFT.** `alf_staff`
+carries no hire date: `saveStaff()` collects name, phone, position, `cert_expiry`,
+`bgcheck_date`, status and notes. So every finding comes back
+`hours_window_error: NO_HIRE_DATE` with `meets: null` — the honest answer, and
+not a verdict. **It is NOT a schema change:** `alf_staff` stores an open jsonb
+blob, so one `hire_date` input in `sairncare.html` is the whole remaining gap,
+and the endpoint fixes the spelling (`data.hire_date`) so the UI half has one
+name to write. That file is inside `fourth-q10`'s claim, which is why it is named
+here rather than edited. An arm proves the full path works the moment the field
+is populated.
+
+**THE POSITION LISTS (unblock item 2) — authored for OH, IN and both PA
+chapters**, from the code each row already cites, onto the real
+`alf_staff.position` vocabulary. 6 requirements mapped, **10 recorded as NOT
+mappable with the reason on the row**, because the distinction is the point:
+
+| shape | example | mapped? |
+|---|---|---|
+| ROLE CLASS | *"direct care staff"* (55 Pa. Code 2800.4/2600.4), *"all staff"* | **yes** |
+| ASSIGNMENT | *"staff serving residents with late-stage cognitive impairment"*, *"working in a secured dementia care unit"* | no — a fact about the resident roster or the unit, not about position |
+| LICENSED OFFICE | *"administrator"*, *"director of the … special care unit"* | no — `owner` is the nearest token and an owner is not necessarily the licensed administrator; refused on 2026-09-26 in `docs/CRITICALITY-TIERS.md` for the same reason |
+| TENURE | *"hired after April 24, 2006"* | no — a hire date is not a position |
+
+### What every seeded rule answers now, driven not asserted
+
+| rule | zero hours | over-trained | note |
+|---|---|---|---|
+| WV / alr | `false` | `true` | |
+| OH / rcf | `false` | `true` | 3 of 4 rows unmapped and disclosed |
+| IN / rcf | `false` | `true` | 1 of 2 unmapped |
+| PA / alr | `false` | `true` | 3 pools; the caregiver total is 18 |
+| PA / pch | `false` | `true` | |
+| MI | no staff branch | no staff branch | `no_state_mandated_hours`, correct |
+
+**Five of five hour-mandating states, up from one** — with a populated
+`hire_date`. Without one, all five are `NO_HIRE_DATE`.
+
+### And a defect this pass found in its own predecessor
+
+**The rule-level `unmapped_requirements` list misreported every MAPPED row.** It
+was built by calling `matchAudience(r, {position: null})`, and the position-list
+branch needs a position to compare against — so a row carrying a perfectly good
+`applies_to_positions` fell through to *"identifies its audience in PROSE"* and
+was counted as unmapped. Ohio reported **4 of 4** when one row is mapped to all
+six positions. Wrong in the cautious direction and still wrong: the caveat
+overstated the gap, and a reader who checked one of those rows and found it
+mapped had a reason to distrust the whole list. Caught by an arm that asserted
+the COUNT rather than the presence of the list. The question is structural now —
+*can this row ever be matched to a position* — and is answered from the row.
+
+**AND `applies_to_positions` WAS UNREACHABLE WHEN THE LISTS WERE AUTHORED.**
+`matchAudience()` has read it since it was written and `normalizeRequirements()`
+never produced it, so the seed edits would have changed nothing. Fourth instance
+in two days of a branch gated on a field name that is never set — the class
+`tools/payload_field_ghost_scan.py` exists for.
+
+---
+
 ### The two that are NOT, and one is a question for a person
 
 1. **THE ANNUAL WINDOW IS REFUSED, NOT CHOSEN.** Unblock item 1 is still open and
