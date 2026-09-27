@@ -3091,8 +3091,8 @@
       "task": "ghost-field-read sweep (queue14 item 3): branches gated on a field name spelled nowhere. tools/ghost_field_read_scan.py plus control. THREE CONFIRMED, all fixed here: (1) api/_lib/compliance-rules.js facility_training_year reads opts.facility_training_year_start which no caller can set, so from=null and the per-record date filter is SKIPPED -- every training record of any age counted, the over-counting direction; (2) sairnsenior.html rfDeliveredHoursFor reads v.actual_start/v.actual_end where the real fields are clock_in_at/clock_out_at, so the referral-source table rendered a confident 0.0 h per linked source; (3) api/sd-data.js derive_charges reads data.charge_lines and the alf_billing invoice has no such key, so the reconciliation reported EVERY line ADDED and net_change as the whole amount against an invoice that exists -- the comment directly above already made that argument for the unreadable case. Fixing the whole path: server third state plus the sairncare.html renderer saying why. CONFLICT DECLARED PER PR 4.3: fourth-q10 named sairncare.html, finished 8.5h ago, fourth live row IDLE/DEAD. cody-q14 named sairnsenior.html, expired, work landed 131b9022; cody live row is cody-q15, names neither. cc-queue11 named api/_lib/compliance-rules.js, finished 17h ago. SUBJECT NAMED PER PR 4.3 FILES: tools/ghost_field_read_scan.py tests/run_ghost_field_read_probe.py api/_lib/compliance-rules.js api/_lib/compliance-rules-staff-join.test.js sairnsenior.html tests/sairnsenior_referral_hours.js api/sd-data.js sairncare.html docs/2026-09-27-ghost-field-read-sweep.md",
       "claimed_at": "2026-09-27T12:08:53Z",
       "claimed_at_epoch": 1790510933.2804358,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-27T23:33:41Z",
       "files": [
         "api/_lib/compliance-rules-staff-join.test.js",
         "api/_lib/compliance-rules.js",
