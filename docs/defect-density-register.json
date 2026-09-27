@@ -16441,7 +16441,7 @@
       "recurrence_open": "No check exists for the general shape: a probe fixture carrying a LITERAL session name while the code under test resolves that same name from the clone. A grep for quoted clone names inside tests/ is cheap and has not been run, and the four build-agent names plus the hover instances are a small closed vocabulary that a checker could read from .claude/claims/ rather than hardcode -- which is the same mistake one shelf over."
     },
     {
-      "commit": "372dfc140846",
+      "commit": "cc6e38945baa",
       "date": "2026-09-27",
       "subject": "fix(probes): two sabotage anchors had stopped matching ANYTHING, and nothing ran the probes that were failing",
       "files": [
@@ -16494,7 +16494,7 @@
       "recurrence_open": "NOTHING IS WIRED YET. The freshness checker exists and is not in any hook, gate or registry, so the next stale anchor is found the same way this one was -- by somebody happening to run the probe. It also cannot see the 1.3 case at all: an anchor matching exactly once may still point at the wrong thing, and only running the probe catches that."
     },
     {
-      "commit": "372dfc140846",
+      "commit": "cc6e38945baa",
       "date": "2026-09-27",
       "subject": "fix(probes): two sabotage anchors had stopped matching ANYTHING, and nothing ran the probes that were failing",
       "files": [
