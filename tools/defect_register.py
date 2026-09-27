@@ -1528,6 +1528,28 @@ def cmd_check(argv=()):
     print('    standing-rule citations: %d cited, %d deliberately not-citable, '
           'every id checked against %s'
           % (cited, len(reg['records']) - cited, RULES_DOC))
+    # ── ONE LINE, ON THE COMMAND THAT ACTUALLY RUNS (2026-09-26) ───────────
+    # `--check` is what report_only_checks invokes on every push; the full
+    # report is not. A surface for the planned backlog that only appears when
+    # somebody types `--planned` is another document nobody opens, which is the
+    # exact defect it was built to fix. So the COUNT rides along here -- one
+    # line, never a failure, never the list. The list is a deliberate read.
+    try:
+        _p, _vis = planned_facts(reg['records'])
+        if _p:
+            _ro = len([t for t in _p if not _vis(t[1])])
+            _ages = [a for a, _, _ in _p if a >= 0]
+            print('    planned actions owed: %d across %d record(s), %d of them '
+                  'REGISTER-ONLY%s. NOT a finding and this check does not fail '
+                  'on them -- `--planned` for the list.'
+                  % (len(_p), len({id(r) for _, r, _ in _p}), _ro,
+                     (', oldest %dd' % max(_ages)) if _ages else ''))
+    except Exception as _e:                                     # noqa: BLE001
+        # SAID OUT LOUD RATHER THAN SWALLOWED. This line is informational and
+        # must never turn a clean --check red, but a summary that silently
+        # stopped appearing would be indistinguishable from a backlog of zero.
+        print('    planned actions owed: COULD NOT COUNT (%s: %s). That is not '
+              'zero.' % (type(_e).__name__, _e))
     return 0
 
 
@@ -1950,6 +1972,117 @@ def cmd_report():
     print('    api/, sql/ or tools/, so a product defect in an endpoint is')
     print('    registered but not divided by anything. That is a known')
     print('    limitation, not an oversight.')
+    print('')
+    planned_block(recs, full=False)
+    return 0
+
+
+# ── PLANNED ACTIONS: THE HALF OF A CAPA THIS FILE RECORDED AND NEVER READ BACK
+# ── (2026-09-26) ───────────────────────────────────────────────────────────
+# `contributing_factors[].action_status` has four values and one of them is
+# `planned` -- "named, not yet done". `--check` asserts only that such a factor
+# carries non-empty `action` TEXT. Nothing has ever listed them, aged them, or
+# asked whether any of them happened.
+#
+# MEASURED WHEN THIS WAS WRITTEN: 62 planned factors across 58 records, the
+# oldest 2026-09-14. That is an INTENTION recorded inside the one document whose
+# LENGTH reads as evidence of thoroughness -- the same shape as a bullet in an
+# ACTIVE-WORK file being mistaken for a record, except here it is wearing the
+# word "action" and sitting beside 315 things that really were done.
+#
+# TWO COUNTS, NOT ONE, and they differ: a record can carry more than one planned
+# factor, so "62 planned actions" and "58 records with one" are different facts
+# and quoting either as the other overstates or understates. Both are printed.
+#
+# THE ONE MECHANICAL SIGNAL THIS CAN HONESTLY GIVE. It cannot tell whether an
+# action was carried out -- that needs somebody to read the action and go and
+# look. What it CAN tell is whether the intention is reachable from anywhere a
+# session actually looks for work: does the record's fix-commit sha appear in
+# docs/SAIRN-OPEN-WORK-INDEX.md? The index carries ~380 sha tokens, so this is a
+# real comparison rather than a vacuous one. A REGISTER-ONLY planned action
+# exists in exactly one place, and that place is a file nobody opens to decide
+# what to build.
+#
+# WHY IT DOES NOT FAIL. Exit stays 0 and no threshold turns an old planned
+# action into a finding. "Old" is not evidence of anything here: a planned action
+# can be correctly deferred for months, and a checker that cried wolf on all 62
+# from the first run would be switched off within a day -- after which the
+# register would carry a control that claims to watch this and does not. The
+# ageing figures are printed so a human can see the distribution and decide.
+def planned_facts(recs, now=None, idx=None):
+    """[(days_old, record, factor)] oldest first, plus the index-visibility map.
+
+    `now` and `idx` are injectable SO THAT A PROBE CAN DRIVE THIS. Reading the
+    real index and the real git date inside here would make every arm of the
+    probe depend on the repo's current state, which is the thing that makes a
+    control stop discriminating -- it would go red the day somebody edits the
+    index for an unrelated reason. Defaults are the real sources.
+    """
+    if idx is None:
+        idx_path = os.path.join(REPO, 'docs', 'SAIRN-OPEN-WORK-INDEX.md')
+        idx = ''
+        if os.path.isfile(idx_path):
+            idx = io.open(idx_path, encoding='utf-8', errors='replace').read()
+    if now is None:
+        now = today()
+    out = []
+    for r in recs:
+        for f in (r.get('contributing_factors') or []):
+            if f.get('action_status') != 'planned':
+                continue
+            age = lag_days(r.get('date'), now)
+            out.append((age if age is not None else -1, r, f))
+    out.sort(key=lambda t: (-t[0], str(t[1].get('commit', ''))))
+    def visible(r):
+        sha = str(r.get('commit', '') or '')
+        if not sha or not idx:
+            return False
+        return sha[:7] in idx or sha[:12] in idx
+    return out, visible
+
+
+def planned_block(recs, full, now=None, idx=None):
+    rows, visible = planned_facts(recs, now=now, idx=idx)
+    if not rows:
+        print('PLANNED ACTIONS -- none. An EMPTY list here is not evidence that')
+        print('  every recorded action was carried out; it is indistinguishable')
+        print('  from a register where nobody uses the `planned` status.')
+        return
+    ages = [a for a, _, _ in rows if a >= 0]
+    n_recs = len({id(r) for _, r, _ in rows})
+    reg_only = [t for t in rows if not visible(t[1])]
+    print('PLANNED ACTIONS -- recorded as owed, and nothing else reads them back')
+    print('  %d planned action(s) across %d record(s) -- TWO different numbers, '
+          'because a record can carry more than one' % (len(rows), n_recs))
+    if ages:
+        mid = sorted(ages)[len(ages) // 2]
+        print('  age in days since the fixing commit: min %d, median %d, max %d'
+              % (min(ages), mid, max(ages)))
+    print('  %d of %d are REGISTER-ONLY -- their fix commit is named nowhere in '
+          'docs/SAIRN-OPEN-WORK-INDEX.md, so the intention is reachable from one '
+          'file and that file is not the one a session opens to pick work'
+          % (len(reg_only), len(rows)))
+    print('  NOT A FINDING AND NOT AGED INTO ONE. This cannot tell whether an')
+    print('  action happened -- only that it was written down as owed and never')
+    print('  updated. "planned" is the author\'s word at write time.')
+    show = rows if full else rows[:5]
+    for age, r, f in show:
+        print('  %4s  %-12s %-16s %s'
+              % (('%dd' % age) if age >= 0 else '  ?',
+                 str(r.get('commit', ''))[:12], str(r.get('app', ''))[:16],
+                 ('' if visible(r) else '[register-only] ')
+                 + str(f.get('action', '')).replace('\n', ' ')[:110]))
+    if not full and len(rows) > len(show):
+        print('  ... %d more. Full list: python tools/defect_register.py --planned'
+              % (len(rows) - len(show)))
+
+
+def cmd_planned():
+    reg = load()
+    recs = reg.get('records', [])
+    print('DEFECT REGISTER -- planned actions, oldest first')
+    print('')
+    planned_block(recs, full=True)
     return 0
 
 
@@ -1966,6 +2099,8 @@ def main(argv):
         return cmd_post_rewrite()
     if '--reseat' in argv:
         return cmd_reseat()
+    if '--planned' in argv:
+        return cmd_planned()
     return cmd_report()
 
 
