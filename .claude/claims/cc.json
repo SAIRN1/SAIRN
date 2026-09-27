@@ -2802,6 +2802,23 @@
         "tools/index_duplicate_hook.py",
         "tools/report_only_checks.py"
       ]
+    },
+    {
+      "id": "cc-1790477581",
+      "session": "cc",
+      "subject": "sairncash",
+      "task": "quarterly tax set-aside safe-harbor: the current-year leg is tax on YTD profit not an ANNUALIZED projection, so Math.min picks a near-zero basis early in the year and recommends less than the IRS safe harbor (no reasonable-cause waiver for the 6654 penalty); MFS 110% trigger is 75k not 150k; entries never split by tax year; 199A QBI not applied; verify HoH and MFS brackets; 1099-K threshold 20000/200 for 2026 OBBBA-restored. Regression test FIRST then fix. Plus SAIRNvet formulary sourcing continued and the retry-loop mid-rebase guard. sairnbiz.html is cody-q14's and NOT touched; api/sd-data.js is hank's and NOT touched. SUBJECT NAMED PER PR 4.3 FILES: sairncash.html tests/sairncash_safe_harbor.js sairnvet.html tools/push_retry.py docs/2026-09-27-sairncash-tax-year-scoping.md",
+      "claimed_at": "2026-09-27T02:53:01Z",
+      "claimed_at_epoch": 1790477581.2167647,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/2026-09-27-sairncash-tax-year-scoping.md",
+        "sairncash.html",
+        "sairnvet.html",
+        "tests/sairncash_safe_harbor.js",
+        "tools/push_retry.py"
+      ]
     }
   ],
   "refusals": [
