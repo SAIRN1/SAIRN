@@ -302,6 +302,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **INDEPENDENT REVIEW of Fourth&rsquo;s item 65a (nightly backup) and item 78 (role-gate formal spec): FOUR findings, one of them a published credential** | **REVIEWED 2026-09-14 (CC)** at `518782ec` and `858ad4a6`+`d7091d3f`. Three register records, `detection_method: independent-review`. **Findings raised, NOT fixed &mdash; they are Fourth&rsquo;s files | `tests/app_session_isolation.js` |
 | **Item 32 gets R6: the rung R4 and R5 cannot reach &mdash; is the RESOURCE asked for, not just the route** | **BUILT 2026-09-14 (CC)** &mdash; inside the EXISTING `tools/sairn_reachability_check.py`, not a second checker. Held by `tests/reachability/resource_demand_probe.py` (18 arms, three mutation controls | `api/sd-data-dental-ledger-validation.test.js`, `tests/reachability/resource_demand_probe.py` |
 | **Item 92: functional core / imperative shell, applied to the TWO functions that decide money &mdash; and a red suite nobody had noticed** | **DONE 2026-09-14 (CC)** &mdash; `api/_lib/ledger.js` + `api/ledger.js`, `sbMatchPure` in `sairnbiz.html`. Held by `tests/functional_core_is_pure.js` (26 arms, four mutation controls). Every pre-exist | `tests/functional_core_is_pure.js`, `tests/sairnbiz_ledger_source_id.js` |
+| **Item 92, THIRD application: `sd_customers write_batch` &mdash; the other named target class, and a suite that was RED on `main` before this change** | **DONE 2026-09-27 (Hank)** &mdash; `api/_lib/customer-batch.js` (new, pure) + the `write_batch` branch of `api/sd-data.js` as a thin shell. Held by `api/_lib/customer-batch.test.js` (40 arms, two nega | `api/_lib/customer-batch.test.js`, `api/sd-data-customer-soft-delete.test.js`, `api/sd-data-customers-batch.test.js`, `tests/functional_core_is_pure.js` |
 | **`master_plan.py` gate 4 counts fault probes in PYTHON ONLY, so a JavaScript mutation probe reads as no probe at all** | **CLOSED 2026-09-16 (CC)** &mdash; VERIFIED, not assumed: `fault_probes()` now carries `FAULT_PROBE_JS` and an explicit `tests/faults/` rule, and `docs/MASTER-PLAN.md` prints `sairnbiz ... 2` with `te | `tests/sairnbiz_void_mutation_control.js` |
 | **The three checkers built today had NO DECLARED CONTROL, and two of them then proved only ONE DIRECTION** | **CLOSED 2026-09-14 (CC)** &mdash; `python tools/checker_control_check.py` now reports **NO DECLARED CONTROL 0, ONE DIRECTION 0, BOTH EVIDENCED 39** | `tests/run_literal_drift_control_probe.py` |
 | **Item 89 (look-elsewhere) found the multiplicity gap it was sent for &mdash; and underneath it, THE WATCH TIER HAD BEEN ARITHMETICALLY DISABLED FOR THE ENTIRE FLEET** | **FIXED + MEASURED 2026-09-14 (Cody)** &mdash; `tools/flaky_checker_quarantine.py`, 14 fixtures (3 added), the removal of the fix makes exactly the new ones fail; `tests/run_flaky_quarantine_probe.py` | `tests/run_flaky_quarantine_probe.py` |
@@ -652,17 +653,17 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 653 of 775 traced, 84.3%.
+For context and not as the headline: 654 of 776 traced, 84.3%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 654 citations come from
+### Where the 655 citations come from
 
 | source | citations |
 |---|---|
 | `index` | 315 |
-| `declared` | 278 |
-| `declared+index` | 51 |
+| `declared` | 277 |
+| `declared+index` | 53 |
 | `GUARD_TESTS+index` | 6 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
@@ -822,8 +823,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 775   tests/**, api/** (both walked)
-  open-work rows citing a test       366   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 776   tests/**, api/** (both walked)
+  open-work rows citing a test       367   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 10   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     71   report_only_checks.NOT_PROMOTED

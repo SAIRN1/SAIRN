@@ -35,6 +35,10 @@ const { verifySessionToken, tokenFromRequest, ROLES_BY_APP, credentialStillActiv
 // two Tier A reviews named; the remaining hand-rolled delete lists are an
 // open-work row, not a silent difference.
 const { storedBlob } = require('./_lib/blob');
+// customerBatch: the sd_customers write_batch DECISIONS -- what is writable,
+// what is refused by name, what was skipped -- as pure functions of their
+// arguments. Item 92. The fetches stay in the branch; see its comment.
+const customerBatch = require('./_lib/customer-batch');
 const { validatePhotosPayload } = require('./_lib/dental-photo-validation');
 const { getExecContext } = require('./_lib/exec-context');
 const mechAuth = require('./mech-auth');
@@ -3401,66 +3405,51 @@ module.exports = async (req, res) => {
       // carries `refused: [{id, reason}]` and the client is expected to drop
       // those ids locally, which is what the tombstone action already asks of
       // it.
+      // ── THE DECISIONS MOVED OUT; THE I/O STAYED (item 92, 2026-09-27) ───
+      // Every line below that is not a `fetch` or a `res` call is now a call
+      // into api/_lib/customer-batch.js. WHAT CHANGED IS WHERE THE DECISION
+      // LIVES AND NOTHING ELSE: the codes, the statuses, the message strings,
+      // the response keys and the trip count are byte-for-byte what they were,
+      // which is why api/sd-data-customers-batch.test.js is UNCHANGED and
+      // still green -- a refactor that also changed behaviour could not be
+      // verified as either.
+      //
+      // THE FALL-THROUGH RULE STAYS HERE, deliberately. A transport failure
+      // propagates to the outer catch and nothing is written; a completed
+      // request that ANSWERED with a refusal falls through, because the store
+      // answered and said nothing about a deletion. That is a decision about
+      // an I/O outcome, so it belongs beside the fetch rather than in a module
+      // that would have to be handed a response object to see it.
       if (action === 'write_batch') {
-        const brecs = (payload && Array.isArray(payload.records)) ? payload.records : null;
-        if (!brecs) {
-          res.status(400).json({ error: { code: 'NO_RECORDS', message: 'write_batch needs payload.records as an array. A single record still uses write.' } });
+        const bplan = customerBatch.planBatch(payload, customerBatch.BATCH_CAP);
+        if (bplan.refusal) {
+          res.status(bplan.refusal.status).json({ error: { code: bplan.refusal.code,
+                                                           message: bplan.refusal.message } });
           return;
         }
-        // A CAP, AND IT REFUSES RATHER THAN TRUNCATING. A silently truncated
-        // batch is the same defect as the discarded write it replaces -- the
-        // caller is told the list was saved and part of it never left.
-        if (brecs.length > 500) {
-          res.status(413).json({ error: { code: 'BATCH_TOO_LARGE', message: 'write_batch accepts at most 500 records; send them in chunks. It refuses rather than truncating, because a truncated batch reports success for records that were never sent.' } });
-          return;
-        }
-        if (!brecs.length) {
+        if (bplan.empty) {
           res.status(200).json({ ok: true, written: 0, refused: [], note: 'empty batch' });
           return;
         }
-        const bwithId = brecs.filter(function (c) { return c && c.id; });
-        const bskipped = brecs.length - bwithId.length;
-        if (!bwithId.length) {
-          res.status(400).json({ error: { code: 'NO_IDS', message: 'no record in this batch carries an id' } });
-          return;
-        }
-        // ONE pre-read for the whole batch. Same guard, same meaning, same
-        // fall-through rules as the single-record path above: a transport
-        // failure propagates to the outer catch and nothing is written; a
-        // completed request that answered with a refusal falls through,
-        // because the store answered and said nothing about a deletion.
-        const bids = bwithId.map(function (c) { return String(c.id); });
-        const bdel = {};
+        const bskipped = bplan.skippedWithoutId;
+        // ONE pre-read for the whole batch.
         const bcur = await fetch(rest('sd_customers?license_hash=eq.' + enc(licHash) +
-          '&customer_id=in.(' + bids.map(enc).join(',') + ')&select=customer_id,data'),
-          { headers });
-        if (bcur.ok) {
-          const brows = await bcur.json().catch(function () { return null; });
-          (Array.isArray(brows) ? brows : []).forEach(function (row) {
-            if (row && row.data && row.data._deleted_at) bdel[String(row.customer_id)] = true;
-          });
-        }
-        const bkeep = bwithId.filter(function (c) { return !bdel[String(c.id)]; });
-        const brefused = bwithId
-          .filter(function (c) { return bdel[String(c.id)]; })
-          .map(function (c) {
-            return { id: c.id, code: 'DELETED',
-                     reason: 'that customer record was deleted on another device; drop it locally' };
-          });
+          '&customer_id=in.(' + customerBatch.ids(bplan.withId).map(enc).join(',') +
+          ')&select=customer_id,data'), { headers });
+        let bdelRows = null;
+        if (bcur.ok) bdelRows = await bcur.json().catch(function () { return null; });
+        const bsplit = customerBatch.partition(bplan.withId,
+                                               customerBatch.tombstonedIds(bdelRows));
+        const bkeep = bsplit.keep;
+        const brefused = bsplit.refused;
         if (!bkeep.length) {
           res.status(200).json({ ok: true, written: 0, refused: brefused,
                                  skipped_without_id: bskipped });
           return;
         }
-        // SAME BLOB RULE AS THE SINGLE WRITE, and the same column list: the
-        // read spreads {id: customer_id} + data, so `id` is the only real
-        // column. `_deleted_at` is deliberately NOT stripped -- it lives
-        // inside data by design and the guard above reads it there.
-        const bbody = bkeep.map(function (c) {
-          return { license_hash: licHash, app_id: 'stonedesk',
-                   customer_id: String(c.id), data: storedBlob(c, ['id']),
-                   updated_at: nowISO() };
-        });
+        const bbody = customerBatch.upsertRows(bkeep, { licHash: licHash,
+                                                        appId: 'stonedesk',
+                                                        now: nowISO() });
         const bw = await fetch(rest('sd_customers?on_conflict=license_hash,customer_id'), {
           method: 'POST',
           headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates' }),

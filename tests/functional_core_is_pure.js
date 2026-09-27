@@ -370,4 +370,89 @@ section('5. the shell is thin, and stays thin');
      + 'body is: ' + body.trim().replace(/\s+/g, ' '));
 }
 
+// ── SECTION 6 ADDED 2026-09-27, AND IT IS THE THIRD PLACE, NOT A SWEEP ─────
+// The header above says "exactly two places" and that was true when written.
+// This is the third: `sd_customers write_batch`, which is the plan's OTHER
+// named target class -- "state-mutation code shaped like the Quote Builder
+// bug" -- rather than another money comparison.
+//
+// WHAT MADE IT WORTH DOING RATHER THAN A STYLE PREFERENCE: the branch decides
+// which of up to 500 records are written, which are refused by name and which
+// were skipped, and every one of those decisions was reachable only through
+// sixty lines of fake fetch, fake licence module and fake session. The falsy-id
+// cases (`{id: 0}`, `{id: ''}`) were untested for that reason alone.
+section('6. api/_lib/customer-batch.js -- the write_batch decisions, item 92');
+{
+  const src = rd('api/_lib/customer-batch.js');
+  const core = stripJs(src);
+  const found = IMPURE.filter(([re]) => re.test(core)).map(([, name]) => name);
+  ok(found.length === 0,
+     'the customer-batch core contains none of: ' + IMPURE.map(([, x]) => x).join(', ')
+     + (found.length ? ' -- FOUND ' + found.join(', ') : ''));
+  ok(/Pure functions, no I\/O/.test(src),
+     '...and its header makes that claim, so this arm guards a sentence '
+     + 'somebody wrote rather than one nobody did');
+
+  // A SOURCE SCAN CANNOT SEE IMPURITY REACHED THROUGH A DEPENDENCY. It has
+  // exactly one import, and that module is itself pure.
+  const imports = [...src.matchAll(/require\(\s*'([^']+)'\s*\)/g)].map((m) => m[1]);
+  ok(imports.length === 1 && imports[0] === './blob',
+     'the core imports exactly one module, ./blob: ' + imports.join(', '));
+  ok(IMPURE.filter(([re]) => re.test(stripJs(rd('api/_lib/blob.js')))).length === 0,
+     '...and ./blob is itself free of every construct above, so the scan above '
+     + 'is not passing on impurity one level down');
+
+  // ── THE CLOCK ARM, DRIVEN RATHER THAN GREPPED ────────────────────────────
+  // "No `new Date` in the source" is satisfied by a module that takes a clock
+  // from its caller AND by one that silently falls back to a default. Only the
+  // first is pure, and only behaviour tells them apart.
+  const cb = require(path.join(ROOT, 'api/_lib/customer-batch.js'));
+  const noClock = cb.upsertRows([{ id: 'C1' }], { licHash: 'h', appId: 'a' });
+  ok(noClock[0].updated_at === undefined,
+     'upsertRows has NO fallback clock -- omitting `now` gives '
+     + 'updated_at: undefined, not a timestamp this module invented');
+  const args = [{ id: 'C1', name: 'A' }];
+  const ctx2 = { licHash: 'h', appId: 'stonedesk', now: '2026-01-01T00:00:00Z' };
+  assert.deepStrictEqual(cb.upsertRows(args, ctx2), cb.upsertRows(args, ctx2));
+  n++; console.log('  ok   ...and the same arguments give a deep-equal answer twice');
+  ok(/updated_at:\s*c\.now/.test(core),
+     'CONTROL: the field really is populated from the argument -- the arm above '
+     + 'would also pass if updated_at had simply been dropped');
+
+  // ── THE SHELL IS THIN, AND STAYS THIN ───────────────────────────────────
+  // Same arm as section 5, same reason: the moment the branch starts filtering
+  // or counting again, the core stops being the whole decision and a reader
+  // has to check two places to know what the endpoint does.
+  //
+  // EXTRACTED FROM THE RAW SOURCE AND STRIPPED AFTERWARDS, in that order. The
+  // first version searched the STRIPPED file for `action === 'write_batch'` and
+  // could never match: stripJs() replaces every string literal with '', so the
+  // action name it was anchored on had already been erased. That is the
+  // vanishing-anchor shape PR 1.3 is about, caught here by the arm failing
+  // rather than by passing on an empty body.
+  const rawShell = rd('api/sd-data.js');
+  const start = rawShell.indexOf("if (action === 'write_batch') {");
+  let body = '';
+  if (start >= 0) {
+    let i = rawShell.indexOf('{', start), depth = 0;
+    for (; i < rawShell.length; i++) {
+      if (rawShell[i] === '{') depth++;
+      else if (rawShell[i] === '}') { depth--; if (!depth) break; }
+    }
+    body = stripJs(rawShell.slice(start, i + 1));
+  }
+  ok(start >= 0 && !!body,
+     'the write_batch branch is still present under its original action name');
+  ok(/customerBatch\.planBatch\(/.test(body) && /customerBatch\.partition\(/.test(body)
+     && /customerBatch\.upsertRows\(/.test(body),
+     'the branch delegates all three decisions -- planBatch, partition, upsertRows');
+  ok(!/\.filter\(/.test(body) && !/_deleted_at/.test(body),
+     'and it does NO filtering of its own and never reads _deleted_at -- both '
+     + 'were in this branch before the split, and a second spelling of the '
+     + 'deletion rule is a second place for it to be wrong');
+  ok(/await fetch\(/.test(body),
+     'CONTROL: the branch still does its own I/O, so the two arms above are '
+     + 'describing a thin shell rather than an empty one');
+}
+
 console.log('\nALL ' + n + ' ASSERTIONS PASS');
