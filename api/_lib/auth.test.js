@@ -459,6 +459,125 @@ test('B: a tampered ciphertext is refused rather than returning garbage', () => 
   });
 });
 
+// ══ STAGE B2: THE ROTATION THE PROCEDURE PROMISED, FOR LEGACY CIPHERTEXTS ══
+// 2026-09-27. Stage C published a four-step SD_AUTH_SECRET rotation in
+// api/_lib/auth.js's own comments, ending "Nobody is signed out; the window
+// drains itself." That is true of SESSIONS -- signingKeys() tries the previous
+// secret -- and was NEVER true of legacy ciphertexts: legacyEncryptionKey()
+// derived from the CURRENT secret only, so step 2 made every pre-split value
+// undecryptable and step 4 removed the last key that could read it.
+//
+// THE FAILURE IS SILENT, which is why it needs arms rather than a note:
+// decryptSecret() returns null and every caller reads null as "no secret
+// stored" -- for MFA, "MFA is not set up".
+//
+// MEASURED IN PRODUCTION BEFORE THIS WAS WRITTEN: SD_ENCRYPTION_KEY exists
+// (created 2026-09-26, production only) and SD_AUTH_SECRET has never been
+// updated since 2026-08-02, so no legacy value has been orphaned yet. This is
+// the arm that keeps it that way.
+
+test('B2: THE ARM THAT MATTERS -- a legacy value survives the documented '
+   + 'SD_AUTH_SECRET rotation when PREVIOUS is set, which is what the '
+   + 'procedure in auth.js already promises for sessions', () => {
+  let legacy;
+  withEnv({ SD_AUTH_SECRET: SIGN_1, SD_AUTH_SECRET_PREVIOUS: null,
+            SD_ENCRYPTION_KEY: null }, () => {
+    legacy = AUTHMOD.encryptSecret('attorney-totp-secret');
+    assert.strictEqual(legacy.split('.').length, 3, 'precondition: not legacy');
+  });
+  // Step 1 and 2 of the procedure: previous := old, current := new.
+  withEnv({ SD_AUTH_SECRET: SIGN_2, SD_AUTH_SECRET_PREVIOUS: SIGN_1,
+            SD_ENCRYPTION_KEY: ENC_1 }, () => {
+    assert.strictEqual(AUTHMOD.decryptSecret(legacy), 'attorney-totp-secret',
+      'a legacy ciphertext did NOT survive the rotation the file documents, so '
+      + 'following those four steps is still a silent data-loss event');
+  });
+});
+
+test('B2: TEETH -- and once PREVIOUS is CLEARED (step 4) it is gone, so the arm '
+   + 'above is about the drain and not about a permanent second key', () => {
+  let legacy;
+  withEnv({ SD_AUTH_SECRET: SIGN_1, SD_AUTH_SECRET_PREVIOUS: null,
+            SD_ENCRYPTION_KEY: null }, () => {
+    legacy = AUTHMOD.encryptSecret('attorney-totp-secret');
+  });
+  withEnv({ SD_AUTH_SECRET: SIGN_2, SD_AUTH_SECRET_PREVIOUS: null,
+            SD_ENCRYPTION_KEY: ENC_1 }, () => {
+    assert.strictEqual(AUTHMOD.decryptSecret(legacy), null,
+      'clearing PREVIOUS did not end the drain, which would mean the old key '
+      + 'is reachable from somewhere else and the rotation never completes');
+  });
+});
+
+test('B2: ENCRYPTION never uses the previous secret -- a previous key that could '
+   + 'WRITE would keep the old key alive for ever, which is the opposite of a '
+   + 'rotation', () => {
+  let fresh;
+  withEnv({ SD_AUTH_SECRET: SIGN_2, SD_AUTH_SECRET_PREVIOUS: SIGN_1,
+            SD_ENCRYPTION_KEY: null }, () => {
+    fresh = AUTHMOD.encryptSecret('written-during-the-window');
+  });
+  // Readable under the CURRENT secret alone...
+  withEnv({ SD_AUTH_SECRET: SIGN_2, SD_AUTH_SECRET_PREVIOUS: null,
+            SD_ENCRYPTION_KEY: null }, () => {
+    assert.strictEqual(AUTHMOD.decryptSecret(fresh), 'written-during-the-window');
+  });
+  // ...and NOT under the previous one, which is what proves it was not written
+  // with it.
+  withEnv({ SD_AUTH_SECRET: SIGN_1, SD_AUTH_SECRET_PREVIOUS: null,
+            SD_ENCRYPTION_KEY: null }, () => {
+    assert.strictEqual(AUTHMOD.decryptSecret(fresh), null,
+      'a value written while PREVIOUS was set decrypts under the PREVIOUS key, '
+      + 'so encryption is picking the wrong one');
+  });
+});
+
+test('B2: a v2 value does NOT fall back to the previous SIGNING secret either -- '
+   + 'the whole point of the split is that the signing secret cannot read '
+   + 'secrets at rest', () => {
+  let v2;
+  withEnv({ SD_AUTH_SECRET: SIGN_1, SD_ENCRYPTION_KEY: ENC_1 }, () => {
+    v2 = AUTHMOD.encryptSecret('hunter2');
+    assert.strictEqual(v2.split('.')[0], 'v2', 'precondition: not v2');
+  });
+  withEnv({ SD_AUTH_SECRET: SIGN_1, SD_AUTH_SECRET_PREVIOUS: SIGN_1,
+            SD_ENCRYPTION_KEY: null }, () => {
+    assert.strictEqual(AUTHMOD.decryptSecret(v2), null,
+      'a v2 ciphertext was read using a signing secret');
+  });
+});
+
+test('B2: ORDER DOES NOT DECIDE IT -- the current key is tried first and a value '
+   + 'written under the PREVIOUS one still comes back, because the GCM auth tag '
+   + 'makes the wrong key fail cleanly rather than yielding garbage', () => {
+  let underPrev;
+  withEnv({ SD_AUTH_SECRET: SIGN_1, SD_AUTH_SECRET_PREVIOUS: null,
+            SD_ENCRYPTION_KEY: null }, () => {
+    underPrev = AUTHMOD.encryptSecret('needle');
+  });
+  withEnv({ SD_AUTH_SECRET: SIGN_2, SD_AUTH_SECRET_PREVIOUS: SIGN_1,
+            SD_ENCRYPTION_KEY: null }, () => {
+    assert.strictEqual(AUTHMOD.decryptSecret(underPrev), 'needle');
+  });
+  // And a key that was NEVER held reads nothing, so the loop is not simply
+  // returning the first thing that parses.
+  withEnv({ SD_AUTH_SECRET: SIGN_2, SD_AUTH_SECRET_PREVIOUS: NEVER_HELD,
+            SD_ENCRYPTION_KEY: null }, () => {
+    assert.strictEqual(AUTHMOD.decryptSecret(underPrev), null);
+  });
+});
+
+test('B2: a tampered LEGACY ciphertext is still refused with both keys '
+   + 'configured -- two chances to decrypt must not become two chances to '
+   + 'accept a forgery', () => {
+  withEnv({ SD_AUTH_SECRET: SIGN_1, SD_AUTH_SECRET_PREVIOUS: SIGN_2,
+            SD_ENCRYPTION_KEY: null }, () => {
+    const c = AUTHMOD.encryptSecret('hunter2').split('.');
+    c[2] = c[2].slice(0, -2) + 'AA';
+    assert.strictEqual(AUTHMOD.decryptSecret(c.join('.')), null);
+  });
+});
+
 // ══ STAGE C: KEY ID + DUAL-KEY VERIFICATION ══════════════════════════════
 // The whole claim is that a rotation completes without signing anybody out.
 // Driven as the four real steps of that rotation, in order.

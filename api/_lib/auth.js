@@ -354,6 +354,29 @@ function getSecret() {
 //   4. clear SD_AUTH_SECRET_PREVIOUS.
 // Nobody is signed out; the window drains itself.
 //
+// ── AND STEP 4 IS ALSO THE POINT OF NO RETURN FOR LEGACY CIPHERTEXTS ───────
+// CORRECTED 2026-09-27. These four steps were written about SESSIONS and read as
+// being about the secret. They were not safe for SECRETS AT REST: until today
+// `legacyEncryptionKey()` derived from the CURRENT secret only, so step 2 made
+// every pre-split ciphertext undecryptable and step 4 removed the last key that
+// could read it -- silently, because decryptSecret() returns null and every
+// caller reads null as "no secret stored", which for MFA means "MFA is not set
+// up". Following this list in order was a data-loss event that this list said
+// nothing about, which is Stage B's own sentence one level along.
+//
+// `legacyDecryptionKeys()` now gives legacy decryption the same dual-key path
+// step 1 gives signing, so steps 1-3 are safe for both. **STEP 4 IS NOT, AND
+// CANNOT BE:** clearing the previous secret ends the only route to a legacy
+// ciphertext for good. So step 4 has a precondition the other three do not:
+//
+//   4a. confirm NO legacy ciphertext remains -- sql/legacy_ciphertext_census.sql
+//       counts them, per table, by the `v2.` prefix the format carries for
+//       exactly this purpose;
+//   4b. then clear SD_AUTH_SECRET_PREVIOUS.
+//
+// A count of zero is the only thing that makes step 4 reversible-by-not-needing-
+// to-be. "Probably backfilled" is what the version segment exists to replace.
+//
 // THE KEY ID IS DERIVED FROM THE KEY, not named by hand. A hand-kept name is a
 // second thing to get wrong during the one operation where being wrong logs
 // everybody out, and this platform has recorded that shape (a hand-written list
@@ -740,6 +763,44 @@ function dedicatedEncryptionKey() {
 function legacyEncryptionKey() {
   return crypto.createHash('sha256').update(getSecret()).digest();
 }
+// ── LEGACY DECRYPTION GETS THE DUAL-KEY PATH SIGNING ALREADY HAD ───────────
+// 2026-09-27. Stage C added `SD_AUTH_SECRET_PREVIOUS` and published a four-step
+// rotation procedure in this file's own comments, ending with the reassurance
+// *"Nobody is signed out; the window drains itself."* That is true of SESSIONS,
+// because signingKeys() tries the previous secret.
+//
+// IT WAS NEVER TRUE OF LEGACY CIPHERTEXTS. `legacyEncryptionKey()` derives from
+// getSecret() -- the CURRENT secret, only -- so step 2 of that procedure ("set
+// SD_AUTH_SECRET to the new one") made every pre-split ciphertext undecryptable,
+// and step 4 ("clear SD_AUTH_SECRET_PREVIOUS") removed the last copy of the key
+// that could read them. An operator following all four steps, in the order the
+// file gives them, destroys data the file says nothing about -- and the failure
+// is SILENT: decryptSecret() returns null, and every caller reads null as "no
+// secret stored", which for MFA means "MFA is not set up".
+//
+// THAT IS THE EXACT DEFECT STAGE B WAS WRITTEN ABOUT, one level along: *"'Rotate
+// the shared secret' reads as routine hygiene and was a data-loss event with a
+// delayed fuse."* Stage B split the duties so the shared secret COULD be rotated,
+// and left the rotation procedure sitting next to a decrypt path that still could
+// not survive it.
+//
+// TRYING BOTH IS SAFE HERE, and this file already says why: GCM's auth tag makes
+// a wrong key fail cleanly rather than yielding garbage. So a legacy value is
+// tried against the current secret and then the previous one, in that order.
+//
+// ENCRYPTION STILL USES ONLY THE CURRENT KEY. A previous secret that could write
+// would keep the old key alive indefinitely, which is the opposite of a rotation.
+// And this is a DRAIN, not a home: once the last legacy row is backfilled to v2,
+// SD_AUTH_SECRET_PREVIOUS can be cleared and the fallback stops mattering --
+// which is what the version segment in the stored format exists to let you know.
+function legacyDecryptionKeys() {
+  const keys = [legacyEncryptionKey()];
+  const prev = process.env.SD_AUTH_SECRET_PREVIOUS;
+  if (prev && String(prev).trim()) {
+    keys.push(crypto.createHash('sha256').update(String(prev)).digest());
+  }
+  return keys;
+}
 function encryptSecret(plaintext) {
   const dedicated = dedicatedEncryptionKey();
   const key = dedicated || legacyEncryptionKey();
@@ -756,7 +817,7 @@ function decryptSecret(stored) {
   // value was written with the dedicated key and must not silently fall back to
   // the signing secret: that fallback would quietly re-couple the two duties
   // this split exists to separate.
-  let key;
+  let keys;
   if (parts.length === 4 && parts[0] === ENC_V2) {
     const dedicated = dedicatedEncryptionKey();
     if (!dedicated) {
@@ -769,16 +830,26 @@ function decryptSecret(stored) {
         + 'value was written by a deployment that had the key.');
       return null;
     }
-    key = dedicated;
+    // A v2 value has EXACTLY ONE key, and no fallback. The fallback would
+    // quietly re-couple the two duties this split exists to separate.
+    keys = [dedicated];
     parts = parts.slice(1);
   } else if (parts.length === 3) {
-    key = legacyEncryptionKey();
+    keys = legacyDecryptionKeys();
   } else {
     return null;
   }
   const iv = b64urlDecode(parts[0]);
   const authTag = b64urlDecode(parts[1]);
   const encrypted = b64urlDecode(parts[2]);
+  for (let i = 0; i < keys.length; i++) {
+    const out = tryDecrypt(keys[i], iv, authTag, encrypted);
+    if (out !== null) return out;
+  }
+  return null;
+}
+
+function tryDecrypt(key, iv, authTag, encrypted) {
   try {
     // authTagLength IS NOT OPTIONAL HERE, and omitting it is not the same as
     // leaving it at a safe default. Node accepts a GCM tag of 4, 8, or 12-16
