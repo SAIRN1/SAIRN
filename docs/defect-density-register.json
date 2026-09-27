@@ -16776,7 +16776,7 @@
       "recurrence_open": "The red baseline this record surfaced is NOT closed -- twelve suites and 172 assertions across the whole SAIRNcare test surface plus sairnbuild are still red at HEAD from c8b5e5b1, and api/sd-data.js is deliberately untouched here because the resolution is a judgement about whether the pre-gate should name an app or the stubs should tolerate one that does not. Five AMBIGUOUS anchors in sairndesign_sairngrounds_fault_probe.py and sairnmechanical_fault_probe.py are also open and unfixed."
     },
     {
-      "commit": "2a09aea1909b",
+      "commit": "e987dfb266b6",
       "date": "2026-09-27",
       "subject": "fix(sweep): three branches gated on a field name nothing sets -- a window that counted everything, a KPI that was always 0.0 h, and a reconciliation against nothing",
       "files": [
@@ -16846,7 +16846,7 @@
       "recurrence_open": "api/sd-data.js still accepts `annual_window: 'facility_training_year'` as a valid window even though no surface supplies a facility training year, so a caller can still ask for a window that can only answer could-not-tell -- the engine now says so per staff member rather than silently counting everything, but the endpoint does not refuse it up front and nothing tells an integrator the window is unavailable. And the scan that found this cannot see the wider class it belongs to: a field written somewhere and read on the WRONG object clears its third condition by construction."
     },
     {
-      "commit": "2a09aea1909b",
+      "commit": "e987dfb266b6",
       "date": "2026-09-27",
       "subject": "fix(sweep): three branches gated on a field name nothing sets -- a window that counted everything, a KPI that was always 0.0 h, and a reconciliation against nothing",
       "files": [
@@ -16916,7 +16916,7 @@
       "recurrence_open": "visitHours() itself has NO non-negative guard, and generateClaim() bills `hoursBilled = visitHours(v)` straight off it, while the authorisation burn-down at ~:2540 DOES guard with `isFinite(ms) && ms > 0`. Three consumers, two behaviours, on a money path. api/_lib/sen-evv-clock.js refuses CLOCK_OUT_BEFORE_IN so the server cannot store such a row THROUGH THAT PATH; rows predating that module are not covered by it and nothing has swept for them. Changing visitHours() touches claim generation and was deliberately left as its own change. Also NOT covered: rfPerformance's other derived figures (revenue, conversion, median days) have no suite, and the renderer's own `--` versus a computed value distinction is not asserted anywhere."
     },
     {
-      "commit": "2a09aea1909b",
+      "commit": "e987dfb266b6",
       "date": "2026-09-27",
       "subject": "fix(sweep): three branches gated on a field name nothing sets -- a window that counted everything, a KPI that was always 0.0 h, and a reconciliation against nothing",
       "files": [
@@ -16986,7 +16986,7 @@
       "recurrence_open": "THE RECONCILIATION IS STILL IMPOSSIBLE, only honest. Nothing stores per-charge lines on an alf_billing invoice, so an existing invoice can never be compared line by line and the third state is what every caller will now see -- the real fix is for the write path to store them and it is not done here. tools/ghost_field_read_scan.py therefore still reports priorRow.charge_lines as a gate that cannot be true, deliberately, and the control probe asserts it still does: an arm demanding silence there could only be satisfied by hiding a true finding. Also untouched: reconcileAgainstInvoice's own arithmetic has no suite of its own, and the care_level_breakdown that IS stored was considered as a comparison basis and rejected because it is a different granularity -- comparing against it would be a new invented mapping, not a reconciliation."
     },
     {
-      "commit": "2a09aea1909b",
+      "commit": "e987dfb266b6",
       "date": "2026-09-27",
       "subject": "fix(sweep): three branches gated on a field name nothing sets -- a window that counted everything, a KPI that was always 0.0 h, and a reconciliation against nothing",
       "files": [
