@@ -21152,6 +21152,27 @@ async function generateFollowUps(aiResponse) {
         // addMessage's null container -- the click did nothing, silently, and
         // the chips stayed on screen inviting another try.
         //
+        // ── CORRECTED 2026-09-26: THE SENTENCE ABOVE IS WRONG ABOUT "THE LIVE
+        // ── addMsg()", AND THE FIX IT JUSTIFIES IS STILL RIGHT. ──────────────
+        // There is NO addMsg in this file. Measured: every one of the eight
+        // `window.addMsg =` lines sits inside an install*Hook() that returns
+        // early unless window.addMsg is ALREADY a function, and a real
+        // `function addMsg(role, content)` exists only in
+        // archive/branch-lucid-ptolemy-b73vu0/ -- the retired legacy chat this
+        // comment's own first paragraph says was replaced. So installHook()
+        // wraps nothing, generateFollowUps() never runs, and no chip is
+        // rendered. The note at ~:22686 says the same thing and says it was
+        // PROVEN IN THE BROWSER; two comments in one file disagreed, and this
+        // is the one that was wrong.
+        //
+        // WHY THIS RETARGET IS STILL CORRECT AND IS NOT BEING REVERTED: the old
+        // handler drove three things that do not exist, so if the chips are
+        // ever rendered -- which is what wiring addMsg back up would do -- the
+        // old code would fail exactly as described. The fix removed a live
+        // TypeError from a path that is currently unreachable. That is the
+        // right state for it to be in, and `sdAIQuick` is the right target.
+        // What was wrong was only the claim about TODAY.
+        //
         // sdAIQuick() is the same retarget already applied to
         // custFollowUpAI/vendorSpendAI/warrAskClaude: it fills #ai-input and
         // sends through sdAISend(), so the answer renders in the live panel and
@@ -21176,6 +21197,49 @@ async function generateFollowUps(aiResponse) {
   }
 }
 
+// ── THE GIVE-UP SAYS SO NOW (2026-09-26) ──────────────────────────────────
+// EIGHT blocks in this file wait for `window.addMsg` on a 200ms interval and
+// stop after ten seconds, and every one of them stopped SILENTLY. Nothing on
+// screen, nothing in the console, no state anywhere recording that eight
+// chat-enhancement hooks had declined to install. That silence is why the
+// dormancy had to be discovered by opening a browser console on the deployed
+// page (see the note at ~:22686, which did exactly that) instead of being
+// readable on any page load for free.
+//
+// THIS DISCLOSES; IT DOES NOT BUILD THE FEATURES OUT. Wiring the hooks up is a
+// product decision and one of them has a known visual defect -- named in the
+// message below so a reader acting on the warning cannot miss it.
+//
+// ATTACHED TO `window` ON PURPOSE. Each of the eight lives in its own IIFE in
+// its own <script> block, so a function declared here would be invisible to the
+// other seven. Every caller guards on `typeof` so that if this block ever
+// throws or is removed, the seven others degrade to the silence they had before
+// rather than to a TypeError.
+window.sdHookDormant = function (hookName, globalName) {
+  var seen = window.__sdDormantHooks || (window.__sdDormantHooks = []);
+  if (seen.indexOf(hookName) !== -1) return;   // one line per hook, not per tick
+  seen.push(hookName);
+  if (seen.length === 1) {
+    // THE CAUSE, ONCE. Eight identical explanations would be noise; eight
+    // NAMES are eight facts, so the names repeat and the reason does not.
+    console.warn('[SAIRN stonedesk] AI-chat enhancement hooks are NOT installing. '
+      + 'This is a KNOWN state, not a new fault. `window.addMsg` has no definition in '
+      + 'this file: every `window.addMsg =` sits INSIDE an install*Hook() that returns '
+      + 'early unless window.addMsg is already a function, so the wrapper chain has no '
+      + 'head. The head was the retired legacy chat -- a real `function addMsg(...)` '
+      + 'survives only in archive/branch-lucid-ptolemy-b73vu0/. Each hook named below '
+      + 'polled every 200ms for 10s and then stopped. Nothing a user does is broken by '
+      + 'this; the features are simply not running. '
+      + 'BEFORE WIRING ANY OF THEM UP: installMarkdownHook renders through '
+      + 'renderMarkdownRich, which hardcodes #F0F0FF headings and rgba(240,240,255,0.8) '
+      + 'list text for a DARK surface, while the live .msg-bubble is '
+      + 'background:#FFFFFF;color:#1A1410 -- switching it on as-is paints near-white '
+      + 'text on white. The colours must move to theme variables first. See ~:22694.');
+  }
+  console.warn('[SAIRN stonedesk] hook did not install: ' + hookName
+    + '() -- waited on window.' + globalName + ', gave up after 10s');
+};
+
 // Install hook once addMsg is available
 if (typeof window.addMsg === 'function') {
   installHook();
@@ -21187,8 +21251,16 @@ if (typeof window.addMsg === 'function') {
       installHook();
     }
   }, 200);
-  // Give up after 10 seconds
-  setTimeout(function() { clearInterval(checkInterval); }, 10000);
+  // Give up after 10 seconds -- AND SAY SO. The report is conditional on the
+  // global STILL being missing, because this timer fires whether or not the
+  // interval already succeeded and cleared: an unconditional call here would
+  // announce a dormancy on a hook that installed at t=3s, which is the same
+  // class of lie as the silence it replaces.
+  setTimeout(function() {
+    clearInterval(checkInterval);
+    if (typeof window.addMsg !== 'function' && typeof window.sdHookDormant === 'function')
+      window.sdHookDormant('installHook', 'addMsg');
+  }, 10000);
 }
 
 // Also hook via DOMContentLoaded
@@ -21376,7 +21448,14 @@ if (typeof window.addMsg === 'function') {
       installMemoryHook();
     }
   }, 200);
-  setTimeout(function() { clearInterval(ck); }, 10000);
+  // Give up after 10s AND SAY SO -- see the sdHookDormant note at ~:21179.
+  // Conditional on the global still being missing, so a hook that installed
+  // before the deadline is never reported as dormant.
+  setTimeout(function() {
+    clearInterval(ck);
+    if (typeof window.addMsg !== 'function' && typeof window.sdHookDormant === 'function')
+      window.sdHookDormant('installMemoryHook', 'addMsg');
+  }, 10000);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -21740,7 +21819,12 @@ if (typeof window.addMsg === 'function') {
   var ck = setInterval(function(){
     if (typeof window.addMsg === 'function'){ clearInterval(ck); installActionHook(); }
   }, 200);
-  setTimeout(function(){ clearInterval(ck); }, 10000);
+  // Give up after 10s AND SAY SO -- see the sdHookDormant note at ~:21179.
+  setTimeout(function(){
+    clearInterval(ck);
+    if (typeof window.addMsg !== 'function' && typeof window.sdHookDormant === 'function')
+      window.sdHookDormant('installActionHook', 'addMsg');
+  }, 10000);
 }
 document.addEventListener('DOMContentLoaded', function(){ setTimeout(installActionHook, 600); });
 
@@ -21908,7 +21992,12 @@ if (typeof window.addMsg === 'function') {
   var ck = setInterval(function(){
     if (typeof window.addMsg === 'function'){ clearInterval(ck); installSimplifyHook(); }
   }, 200);
-  setTimeout(function(){ clearInterval(ck); }, 10000);
+  // Give up after 10s AND SAY SO -- see the sdHookDormant note at ~:21179.
+  setTimeout(function(){
+    clearInterval(ck);
+    if (typeof window.addMsg !== 'function' && typeof window.sdHookDormant === 'function')
+      window.sdHookDormant('installSimplifyHook', 'addMsg');
+  }, 10000);
 }
 document.addEventListener('DOMContentLoaded', function(){ setTimeout(installSimplifyHook, 600); });
 
@@ -22256,7 +22345,12 @@ else {
   var ck = setInterval(function(){
     if (typeof window.addMsg === 'function'){ clearInterval(ck); installHandoffHook(); }
   }, 200);
-  setTimeout(function(){ clearInterval(ck); }, 10000);
+  // Give up after 10s AND SAY SO -- see the sdHookDormant note at ~:21179.
+  setTimeout(function(){
+    clearInterval(ck);
+    if (typeof window.addMsg !== 'function' && typeof window.sdHookDormant === 'function')
+      window.sdHookDormant('installHandoffHook', 'addMsg');
+  }, 10000);
 }
 })();
 
@@ -22849,7 +22943,19 @@ else {
   var ck = setInterval(function(){
     if (typeof window.addMsg === 'function'){ clearInterval(ck); installMarkdownHook(); }
   }, 150);
-  setTimeout(function(){ clearInterval(ck); }, 10000);
+  // Give up after 10s AND SAY SO -- see the sdHookDormant note at ~:21179.
+  // THIS IS THE ONE WITH THE VISUAL DEFECT, and sdHookDormant's first message
+  // names it: renderMarkdownRich hardcodes #F0F0FF headings and
+  // rgba(240,240,255,0.8) list text for a DARK surface while the live
+  // .msg-bubble is white, so wiring this hook up without first moving those
+  // colours to theme variables paints near-white text on white. The disclosure
+  // exists so nobody reads "hook did not install" as "just install it". Full
+  // reasoning at ~:22790.
+  setTimeout(function(){
+    clearInterval(ck);
+    if (typeof window.addMsg !== 'function' && typeof window.sdHookDormant === 'function')
+      window.sdHookDormant('installMarkdownHook', 'addMsg');
+  }, 10000);
 }
 
 })();
@@ -23372,7 +23478,12 @@ else {
   var ck = setInterval(function(){
     if (typeof window.addMsg === 'function'){ clearInterval(ck); installConfidenceHook(); }
   }, 200);
-  setTimeout(function(){ clearInterval(ck); }, 10000);
+  // Give up after 10s AND SAY SO -- see the sdHookDormant note at ~:21179.
+  setTimeout(function(){
+    clearInterval(ck);
+    if (typeof window.addMsg !== 'function' && typeof window.sdHookDormant === 'function')
+      window.sdHookDormant('installConfidenceHook', 'addMsg');
+  }, 10000);
 }
 
 })();
@@ -23534,7 +23645,19 @@ else {
   var ck = setInterval(function(){
     if (typeof window.sendMessage === 'function'){ clearInterval(ck); installSlowResponseDetector(); }
   }, 200);
-  setTimeout(function(){ clearInterval(ck); }, 10000);
+  // Give up after 10s AND SAY SO -- see the sdHookDormant note at ~:21179.
+  // THE ODD ONE OUT, DISCLOSED ANYWAY. This waiter guards `window.sendMessage`,
+  // not `addMsg`, and sendMessage IS defined (a top-level `async function
+  // sendMessage()`), so the `if` above is taken and this else-branch -- and this
+  // timer -- never register at all. Given eight siblings that DO fire, leaving
+  // this one bare would read as an oversight rather than as the difference it is,
+  // and if sendMessage ever stops being global this speaks instead of going
+  // quiet. Guarded on sendMessage, deliberately not on addMsg.
+  setTimeout(function(){
+    clearInterval(ck);
+    if (typeof window.sendMessage !== 'function' && typeof window.sdHookDormant === 'function')
+      window.sdHookDormant('installSlowResponseDetector', 'sendMessage');
+  }, 10000);
 }
 
 })();
@@ -24066,7 +24189,12 @@ else {
   var ck = setInterval(function(){
     if (typeof window.addMsg === 'function'){ clearInterval(ck); installLearningHook(); }
   }, 200);
-  setTimeout(function(){ clearInterval(ck); }, 10000);
+  // Give up after 10s AND SAY SO -- see the sdHookDormant note at ~:21179.
+  setTimeout(function(){
+    clearInterval(ck);
+    if (typeof window.addMsg !== 'function' && typeof window.sdHookDormant === 'function')
+      window.sdHookDormant('installLearningHook', 'addMsg');
+  }, 10000);
 }
 document.addEventListener('DOMContentLoaded', function(){ setTimeout(installLearningHook, 500); });
 
