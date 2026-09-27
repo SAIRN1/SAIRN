@@ -1,8 +1,9 @@
 """tools/role_gate_negative_coverage.py -- which role gates would survive being
 deleted, because no test ever drives them with a role they exclude?
 
-    python tools/role_gate_negative_coverage.py
+    python tools/role_gate_negative_coverage.py                    # the SCREEN
     python tools/role_gate_negative_coverage.py --list
+    python tools/role_gate_negative_coverage.py --ablate alf_facility   # the PROOF
     python tools/role_gate_negative_coverage.py --baseline   # after a real change
 
 ── THE DEFECT THIS EXISTS FOR ──────────────────────────────────────────────
@@ -48,8 +49,15 @@ their own, and this tool says nothing about them -- and it cannot judge whether 
 gate is CORRECT. A gate excluding the wrong roles passes here as long as somebody
 tests the exclusion it does implement.
 
-A RATCHET, pinned to docs/role-gate-negative-coverage.json. The honest state is 11
-of 30 and a check that simply failed would sit permanently red. An absent,
+── THE DEFAULT PASS IS A SCREEN; --ablate IS THE PROOF ─────────────────────
+Three static rules were tried for step 3 and ALL THREE WERE WRONG -- see driven().
+The screen over-reports on purpose. `--ablate <resource>` deletes that gate, runs
+all 400 suites, and reports CAUGHT or SILENT: the property itself rather than a
+pattern correlated with it. Settle any individual gate that way before believing
+the screen about it, and never lower the pin on the strength of the screen alone.
+
+A RATCHET, pinned to docs/role-gate-negative-coverage.json. The honest state is 12
+of 31 by the screen and a check that simply failed would sit permanently red. An absent,
 unparseable or `uncovered`-less pin is exit 2 COULD NOT TELL, never 0 -- and so is
 finding zero role gates at all, because the gate shape moving must not read as
 "everything is covered".
@@ -59,6 +67,7 @@ import io
 import json
 import os
 import re
+import subprocess
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -138,8 +147,57 @@ def suite_files():
     return out
 
 
+# A suite ASSERTS a role refusal. Required alongside a bare role literal -- see
+# driven() for why a literal alone is not enough.
+ROLE_REFUSAL = re.compile(r"""FORBIDDEN|NOT_AUTHORIS|NOT_AUTHORIZ|"""
+                          r"""status(?:Code)?\s*,\s*403|403\s*,""")
+
+
 def driven(all_roles):
-    """{resource: {roles any suite drives it with}}."""
+    """{resource: {roles any suite drives it with}}.
+
+    ── A ROLE PASSED AS A VARIABLE WAS INVISIBLE, AND THE FIX HAD TO NOT BE A
+    ── LOOSENING (2026-09-27) ────────────────────────────────────────────────
+    The first version matched only `role: 'x'` and `tokenFor('x')`. Real arms are
+    written as a loop over a declared list:
+
+        const ALF_NON_MGMT = ['nursing', 'med_aide', 'caregiver', 'activities'];
+        for (const role of ALF_NON_MGMT) { ... call(hash, emp, role, ...) ... }
+
+    There is no `role: 'nursing'` anywhere in that, so four arms that DO drive the
+    excluded roles -- and that fail when the gate is deleted, proven by ablation --
+    left the resource reading `driven-as=owner`. The tool would have kept demanding
+    an arm that already existed.
+
+    A BARE QUOTED ROLE ANYWHERE IN THE FILE WOULD FIX IT AND BREAK THE TOOL: it is
+    the same over-crediting that made the first resource matcher report 16 for 11,
+    and here it is worse, because crediting a comment turns a real gap into a pass.
+    So a bare literal counts ONLY IN A FILE THAT ALSO ASSERTS A ROLE REFUSAL --
+    FORBIDDEN, NOT_AUTHORIS(Z)ED or a 403. A suite that names a role and never
+    asserts a refusal is exactly the family-contact shape and must keep failing.
+
+    ── AND THEN TWO ATTEMPTS TO FIX THAT WERE BOTH WRONG, IN OPPOSITE
+    ── DIRECTIONS, WHICH IS WHY THIS IS A SCREEN AND NOT A VERDICT ───────────
+    ATTEMPT 1, TOO LOOSE: admit a bare literal in any file that ALSO asserts a
+    refusal anywhere. It moved the figure 12 -> 7, and I ablated the five it newly
+    credited instead of trusting it. TWO WERE STILL SILENT -- deleting sd_customers'
+    and alf_mar's gates failed NOTHING across 400 suites. A file can name
+    `caregiver` and assert a 403 about two unrelated resources, which is what those
+    suites do. It would have absolved two real gaps.
+
+    ATTEMPT 2, TOO STRICT: require the role and the resource in the same test ARM.
+    Uncovered fell to 1 and NOT DRIVEN jumped 15 -> 29, because the resource is
+    usually named in a helper, a UNITS table or a loop OUTSIDE the arm. It stopped
+    seeing the drives at all.
+
+    SO THE STATIC RULE IS THE ORIGINAL STRICT ONE AND IT IS A SCREEN, NOT A
+    VERDICT. `role: 'x'` or `tokenFor('x')` only. It OVER-reports, deliberately:
+    a suite driving an excluded role through a variable reads as uncovered, which
+    asks for an arm that may already exist. That is the safe direction, and the
+    honest resolution is that the ONLY sound measurement here is ABLATION -- delete
+    the gate and see whether anything fails -- which `--ablate` now does on demand.
+    Every reduction in the pinned figure should be an ablation-CONFIRMED one.
+    """
     out = {}
     for p in suite_files():
         s = io.open(p, encoding='utf-8', errors='replace').read()
@@ -189,13 +247,110 @@ def analyse():
     return sets, gated, uncovered, covered, undriven
 
 
+def ablate(resource):
+    """Delete `resource`'s role gate(s), run every suite, report CAUGHT or SILENT.
+
+    ── THE ONLY SOUND MEASUREMENT IN THIS FILE ─────────────────────────────────
+    The static pass above is a SCREEN: it asks whether a suite names an excluded
+    role, which is a proxy for the real question. This asks the real question --
+    delete the gate and see whether anything goes red. Three static rules were
+    tried and all three were wrong (see driven()); this one cannot be, because it
+    is the property itself rather than a pattern that correlates with it.
+
+    IT COSTS A FULL SUITE RUN PER GATE, which is why it is on demand and not the
+    default. It restores the file and asserts byte-identity before returning --
+    a mutation tool that can leave a repo mutated is worse than no tool, and this
+    one edits the platform's largest dispatcher.
+    """
+    src = io.open(SD, encoding='utf-8', errors='replace').read()
+    marks = [(m.start(), m.group(1)) for m in BRANCH_MARK.finditer(src)]
+    blocks = []
+    for i, (pos, name) in enumerate(marks):
+        if name != resource:
+            continue
+        end = marks[i + 1][0] if i + 1 < len(marks) else len(src)
+        for g in re.finditer(r' *if \(!([A-Z][A-Z0-9_]*ROLES)\[session\.role\]\) \{\n'
+                             r'(?:[^\n]*\n)*?[ ]*\}\n', src[pos:end]):
+            blocks.append((pos + g.start(), pos + g.end(), g.group(1)))
+    if not blocks:
+        sys.stderr.write('COULD NOT TELL -- no role gate found for %r. Either the '
+                         'name is wrong or the gate shape moved; this is not '
+                         '"the gate is untested".\n' % resource)
+        return 2
+
+    suites = []
+    for pat in (('api',), ('api', '_lib'), ('tests',)):
+        d = os.path.join(REPO, *pat)
+        if not os.path.isdir(d):
+            continue
+        for n in sorted(os.listdir(d)):
+            if n.endswith('.test.js') or (pat[0] == 'tests' and n.endswith('.js')):
+                suites.append(os.path.join(d, n))
+
+    def run_all():
+        bad = set()
+        for f in suites:
+            try:
+                r = subprocess.run(['node', f], capture_output=True, timeout=300)
+                if r.returncode != 0:
+                    bad.add(os.path.relpath(f, REPO).replace(os.sep, '/'))
+            except Exception:
+                bad.add(os.path.relpath(f, REPO).replace(os.sep, '/') + ' (error)')
+        return bad
+
+    print('ABLATING %s -- %d gate block(s): %s'
+          % (resource, len(blocks), ', '.join(b[2] for b in blocks)))
+    print('baseline over %d suites (this takes a while) ...' % len(suites))
+    base = run_all()
+    print('baseline failures: %d' % len(base))
+
+    rc = 0
+    try:
+        for start, end, rs in blocks:
+            mutated = src[:start] + src[end:]
+            io.open(SD, 'w', encoding='utf-8', newline='\n').write(mutated)
+            chk = subprocess.run(['node', '--check', SD], capture_output=True)
+            if chk.returncode != 0:
+                # NOT a pass. A mutation that will not parse has tested nothing,
+                # and reporting it as CAUGHT would be the worst possible answer.
+                print('  %-24s COULD NOT TELL -- the mutation does not parse' % rs)
+                rc = max(rc, 2)
+                io.open(SD, 'w', encoding='utf-8', newline='\n').write(src)
+                continue
+            newly = sorted(run_all() - base)
+            if newly:
+                print('  %-24s CAUGHT by %d suite(s): %s'
+                      % (rs, len(newly), ', '.join(newly[:3])))
+            else:
+                print('  %-24s *** SILENT *** deleting this gate failed NOTHING'
+                      % rs)
+                rc = max(rc, 1)
+            io.open(SD, 'w', encoding='utf-8', newline='\n').write(src)
+    finally:
+        io.open(SD, 'w', encoding='utf-8', newline='\n').write(src)
+    # Byte-identity, asserted rather than assumed.
+    if io.open(SD, encoding='utf-8', errors='replace').read() != src:
+        sys.stderr.write('RESTORE FAILED -- %s is not byte-identical. FIX THIS '
+                         'BEFORE ANYTHING ELSE.\n' % SD)
+        return 2
+    print('restored byte-identical')
+    return rc
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
+    ap.add_argument('--ablate', metavar='RESOURCE',
+                    help='delete that resource\'s role gate(s), run every suite and '
+                         'report CAUGHT or SILENT. The only sound measurement here; '
+                         'exit 1 if any gate is SILENT, 2 if it could not be told')
     ap.add_argument('--list', action='store_true', help='print every uncovered gate')
     ap.add_argument('--baseline', action='store_true',
                     help='rewrite the pin to the CURRENT numbers. Only correct after '
                          'a real arm is added, never to make a run pass')
     args = ap.parse_args(argv)
+
+    if args.ablate:
+        return ablate(args.ablate)
 
     try:
         sets, gated, uncovered, covered, undriven = analyse()

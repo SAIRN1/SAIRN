@@ -342,6 +342,67 @@ function marEntry(licHash, entryId, residentId, assignee, tenant) {
     assert.strictEqual(JSON.parse(post.opts.body).license_hash, HASH_A);
   });
 
+  // ══ THE ROLE GATE, WHICH NOTHING TESTED UNTIL NOW (2026-09-27) ═══════════
+  // tools/role_gate_negative_coverage.py flagged alf_facility as one of 12
+  // role-gated resources driven by a suite but NEVER with a role the gate
+  // excludes. PROVEN by deleting the gate: 213 of 214 api suites and 172 of 183
+  // tests/ passed, identical to baseline. NOTHING noticed that any authenticated
+  // SAIRNcare employee could rewrite the facility profile.
+  //
+  // WHY THIS IS THE ONE TO START WITH. The write carries `licensing_state`, and
+  // the compliance rules engine selects a state's rule set from it -- so a
+  // caregiver flipping OH to WV does not corrupt a cosmetic field, it changes
+  // which staffing and training law the facility is evaluated against. The gate
+  // is the only thing between those.
+  //
+  // EVERY ARM ASSERTS NOTHING WAS WRITTEN as well as the status. A 403 issued
+  // after the upsert has already gone is the shape this suite's own UNREACHED
+  // bookkeeping exists to catch elsewhere.
+  const ALF_MGMT = ['owner', 'billing'];
+  const ALF_NON_MGMT = ['nursing', 'med_aide', 'caregiver', 'activities'];
+
+  for (const role of ALF_NON_MGMT) {
+    await test('alf_facility [ROLE] ' + role + ' CANNOT write the facility profile, '
+      + 'and nothing is upserted', async () => {
+        const { res, calls } = await call(HASH_A, 'emp-1', role,
+          { action: 'write', resource: 'alf_facility',
+            payload: { id: 'F-A', name: 'Renamed', licensing_state: 'WV' } }, []);
+        assert.strictEqual(res.statusCode, 403,
+          role + ' got ' + res.statusCode + ' ' + JSON.stringify(res.body)
+          + ' -- a non-management role reached the facility profile write');
+        assert.strictEqual(res.body && res.body.error && res.body.error.code, 'FORBIDDEN',
+          'refused for the wrong reason: ' + JSON.stringify(res.body));
+        assert.strictEqual(firstPost(calls), undefined,
+          role + ' was refused AFTER the upsert was sent -- the row is already changed');
+      });
+  }
+
+  await test('alf_facility [ROLE-ctl] CONTROL: management roles still CAN, so the '
+    + 'arms above are not refusing everybody', async () => {
+      for (const role of ALF_MGMT) {
+        const { res, calls } = await call(HASH_A, 'emp-1', role,
+          { action: 'write', resource: 'alf_facility',
+            payload: { id: 'F-A', name: 'A Facility' } }, []);
+        assert.ok(firstPost(calls),
+          role + ' could not write the facility profile (' + res.statusCode + ' '
+          + JSON.stringify(res.body) + ') -- the gate is refusing management too');
+      }
+    });
+
+  await test('alf_facility [ROLE-ord] the refusal happens BEFORE the licensing_state '
+    + 'validator, so a bad state from a bad role is refused on the ROLE', async () => {
+      // Ordering matters for the message a caregiver sees. If the state validator
+      // ran first they would be told their state code is wrong, which is a wrong
+      // explanation for a request they were never allowed to make -- the same
+      // defect class as sairncare.html telling a role-refused employee to sign in.
+      const { res } = await call(HASH_A, 'emp-1', 'caregiver',
+        { action: 'write', resource: 'alf_facility',
+          payload: { id: 'F-A', licensing_state: 'NOT-A-STATE' } }, []);
+      assert.strictEqual(res.body && res.body.error && res.body.error.code, 'FORBIDDEN',
+        'a non-management caller with an invalid state was told about the STATE '
+        + 'rather than the role: ' + JSON.stringify(res.body));
+    });
+
   await test('alf_facility [Winj] a payload license_hash does not move the row',
     async () => {
       const { res, calls } = await call(HASH_A, 'emp-1', 'owner',
