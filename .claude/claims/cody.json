@@ -2464,8 +2464,8 @@
       "task": "disclose the 8 silent stonedesk waiters guarding 9 dormant chat hooks (give-up made visible, features NOT built out); build a --planned surface for the 62 defect-register records nothing reads back; build the highest-priority item from my own SAIRNcode cloud-audit scoping (depth measurement of the 8 enterprise RCM panels); build the highest-priority item from my own 08-21 trades triage (extend MECH_EXPORTS to the three still-not-live CSV buttons, closing the data-portability row); confirm/close full-platform-audit Wave 3 for StoneDesk+SAIRNbiz+SAIRNvet; extract and prioritise the 4 SAIRNbiz internal findings beyond the 1099 bug cc holds; triage the SAIRNsenior cloud audit for build-worthy findings beyond the 2 EVV items. NOT TOUCHING sairnbiz.html 1099 threshold -- that is cc's. SUBJECT NAMED PER PR 4.3 FILES: stonedesk.html tools/defect_register.py sairnmechanical.html docs/2026-09-26-sairncode-rcm-depth.md docs/2026-09-26-sairnbiz-internal-findings.md docs/2026-09-26-sairnsenior-cloud-triage.md docs/2026-09-26-wave3-closeout.md",
       "claimed_at": "2026-09-27T01:12:43Z",
       "claimed_at_epoch": 1790471563.5452626,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-27T02:24:21Z",
       "files": [
         "docs/2026-09-26-sairnbiz-internal-findings.md",
         "docs/2026-09-26-sairncode-rcm-depth.md",
