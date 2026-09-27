@@ -40,8 +40,8 @@
       "task": "four-item queue: wire chain-head email anchor behind --anchor, CRITERIA_VERSION 3 implied-file citations for hover_editor_review, self-directed capability/gap research round, resume --draw rotation FILES: .claude/skills/sairn-hover-auditor/",
       "claimed_at": "2026-09-27T12:42:26Z",
       "claimed_at_epoch": 1790512946.9215262,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-27T23:44:44Z",
       "files": null
     }
   ]
