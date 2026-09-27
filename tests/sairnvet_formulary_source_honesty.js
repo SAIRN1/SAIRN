@@ -543,6 +543,110 @@ const DRUGS = m ? JSON.parse(m[1]) : null;
       'the horse row lost its FDA label citation');
   });
 
+  // ── WHAT THE LABEL READS ACTUALLY FOUND (2026-09-26) ────────────────────
+  // The sourcing pass is not only about adding citations. Reading the real FDA
+  // labels for the controlled substances produced two facts that are MORE use
+  // to a clinician than a citation would have been, and neither could be
+  // recorded as a `reference` without lying:
+  //
+  //   * KETAMINE: the label figure is HIGHER than the stored one, by 2-6x.
+  //     Ketaset NADA 043-304 says 11mg/kg IM for restraint and 22-33mg/kg for
+  //     anaesthesia; this table stores 5-10mg/kg, which is balanced-anaesthesia
+  //     co-induction practice. Citing the label here would put a tick beside a
+  //     figure its own source contradicts -- the buprenorphine/cat mistake.
+  //     And dogs are not an approved species on that label at all.
+  //
+  //   * BUTORPHANOL/DOG: there is NO FDA-approved injectable butorphanol label
+  //     covering dogs. Torbugesic-SA is cats-only, Torbugesic and Butorphic are
+  //     horses-only. A verified ABSENCE is a finding; it is recorded in the
+  //     flag, and the row deliberately stays uncited.
+  //
+  // These arms exist because a verified absence is the easiest thing in this
+  // file to delete by accident: it looks like prose, and nothing else would
+  // notice it going.
+  section('THE LABEL READS -- a verified ABSENCE is a finding, not a blank');
+
+  function row(name, species) {
+    return DRUGS.filter(function (d) {
+      return d.name === name && d.species === species;
+    })[0];
+  }
+
+  test('ketamine/cat records that the FDA label figure is HIGHER, and is not cited to it', function () {
+    const kc = row('Ketamine', 'cat');
+    assert.ok(kc, 'the ketamine cat row is gone');
+    assert.ok(/043-304/.test(String(kc.flag)),
+      'the ketamine cat flag no longer names NADA 043-304 (Ketaset). Without the '
+      + 'label identifier a reader cannot check the conflict for themselves.');
+    assert.ok(/11\s*mg\/kg/.test(String(kc.flag)) && /22\s*to\s*33\s*mg\/kg/.test(String(kc.flag)),
+      'the flag no longer states the label FIGURES (11mg/kg restraint, 22-33mg/kg '
+      + 'anaesthesia). Naming the label without its numbers does not tell a vet '
+      + 'that the stored 5-10mg/kg is a different thing -- it is the '
+      + 'buprenorphine/Simbadol lesson: a brand name is not a warning, the '
+      + 'concentrations are. flag was: ' + String(kc.flag).slice(0, 200));
+    assert.ok(!kc.reference,
+      'the ketamine cat row has acquired a citation. It must NOT be cited to '
+      + 'the Ketaset label, which gives 11-33mg/kg against the 5-10mg/kg stored '
+      + 'here -- a green tick beside a figure its own source contradicts is '
+      + 'worse than no tick.');
+    assert.strictEqual(kc.needsReview, true,
+      'the ketamine cat row is no longer flagged for review, although the only '
+      + 'FDA label for the species disagrees with its figure by 2-6x.');
+  });
+
+  test('ketamine/dog records that NO label covers dogs at all', function () {
+    const kd = row('Ketamine', 'dog');
+    assert.ok(kd, 'the ketamine dog row is gone');
+    assert.ok(/NO FDA-APPROVED KETAMINE LABEL COVERS DOGS/.test(String(kd.flag)),
+      'the ketamine dog flag no longer states that no approved label covers '
+      + 'dogs. Ketaset NADA 043-304 approves cats and subhuman primates only; '
+      + 'every canine use is extra-label and that is a fact a reader cannot '
+      + 'derive from a missing citation.');
+    assert.ok(!kd.reference, 'the ketamine dog row has acquired a citation, '
+      + 'and there is no canine label to cite.');
+  });
+
+  test('butorphanol/dog records the verified ABSENCE of a canine label', function () {
+    const bd = row('Butorphanol', 'dog');
+    assert.ok(bd, 'the butorphanol dog row is gone');
+    assert.ok(/NO FDA-APPROVED INJECTABLE BUTORPHANOL LABEL COVERS DOGS/.test(String(bd.flag)),
+      'the butorphanol dog flag no longer records that no canine label exists.');
+    // THE THREE LABELS THAT WERE CHECKED, not just the conclusion. A claim that
+    // "no label covers dogs" is only checkable if it says WHICH labels were
+    // read -- otherwise it is an assertion of absence with nothing behind it,
+    // which is the same shape as the green tick this whole file exists to stop.
+    ['141-047', '135-780', '200-332'].forEach(function (id) {
+      assert.ok(String(bd.flag).indexOf(id) !== -1,
+        'the flag no longer names ' + id + '. The absence claim is only '
+        + 'checkable if the labels that were READ are named: Torbugesic-SA '
+        + '(NADA 141-047, cats), Torbugesic (NADA 135-780, horses), Butorphic '
+        + '(ANADA 200-332, horses).');
+    });
+    assert.ok(!bd.reference, 'the butorphanol dog row has acquired a citation, '
+      + 'and the whole point of the flag is that there is nothing to cite.');
+  });
+
+  test('CONTROL -- an absence claim is not the same as an uncited row', function () {
+    // Without this, the three arms above pass on a table where every row has
+    // no reference and no flag either -- which is the state the file was in
+    // this morning and is precisely what is being improved on.
+    const uncitedAndUnflagged = DRUGS.filter(function (d) {
+      return !d.reference && !String(d.flag || '').trim();
+    }).length;
+    assert.ok(uncitedAndUnflagged < DRUGS.length,
+      'EVERY row is both uncited and unflagged, so the arms above are not '
+      + 'distinguishing a verified absence from an empty row.');
+    const verifiedAbsences = DRUGS.filter(function (d) {
+      return !d.reference && /NO FDA-APPROVED/.test(String(d.flag || ''));
+    }).length;
+    console.log('  rows recording a VERIFIED ABSENCE of an approved label: '
+      + verifiedAbsences);
+    assert.ok(verifiedAbsences >= 2,
+      'only ' + verifiedAbsences + ' row(s) record a verified absence. Two were '
+      + 'established by reading the labels on 2026-09-26; a drop below that '
+      + 'means one was deleted as prose.');
+  });
+
   test('the buprenorphine CAT row names the formulation trap', function () {
     const bc = DRUGS.filter(function (d) {
       return d.name === 'Buprenorphine' && d.species === 'cat';
