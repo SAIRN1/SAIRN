@@ -14964,60 +14964,6 @@
       ]
     },
     {
-      "commit": "f80460a45f11",
-      "date": "2026-09-26",
-      "subject": "fix(sairnvet): the ketamine label is HIGHER than our figure, and no canine butorphanol label exists at all",
-      "files": [
-        "sairnvet.html",
-        "tests/sairnvet_formulary_source_honesty.js"
-      ],
-      "lines_added": 105,
-      "lines_removed": 1,
-      "app": "sairnvet",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "sairnvet.html's VET_DRUGS carried two ketamine rows at 5-10mg/kg IM with needsReview:false and no flag beyond the Schedule III note, and a butorphanol dog row at 0.2-0.4mg/kg with the bare flag \"Schedule IV\" -- and reading the actual FDA labels showed both were making silent claims. Ketaset (ketamine HCl 100 mg/mL, NADA 043-304) gives 11mg/kg IM for restraint and 22 to 33mg/kg for anaesthesia, so the stored figure is 2-6x BELOW the only label for the species, and that label approves cats and subhuman primates only -- every canine use is extra-label. For butorphanol there is NO FDA-approved injectable label covering dogs at all: Torbugesic-SA (NADA 141-047) is cats, Torbugesic (NADA 135-780) and Butorphic (ANADA 200-332) are horses. On a screen that had no way to say \"checked, and there is nothing to cite\", a verified absence and an unexamined blank were indistinguishable, and a row whose only label disagrees with it by 2-6x was showing needsReview:false.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The VET_DRUGS table arrived already populated and git log on sairnvet.html isolates no commit that introduced either the ketamine 5-10mg/kg figure or the bare Schedule IV flag on the butorphanol dog row. Neither was WRONG when written -- both are conventional extra-label practice -- and no commit made them wrong either; what was missing was the label read that shows what they omit. A plausible sha here would put a fabricated discovery lag into the one number this field feeds."
-      },
-      "citation_note": "not-citable: no section of docs/SAIRN-PROCESS-RULES.md covers a data row that makes a clinical claim by omission. The nearest named shape is item 7 of docs/2026-09-13-cross-domain-disciplines.md -- byte-identical is not safe-in-context, the Ariane 5 item -- which is the cross-species half of this formulary's problem but not this half. This half is narrower and has no name yet: an ABSENCE that has been verified and an absence nobody looked at are the same blank cell, so a reader cannot tell a checked row from an unchecked one. That distinction is the same three-state discipline PR 1.11 applies to a check that could not run, applied to DATA instead of to a checker, and it is being recorded as not-citable rather than stretched onto 1.11.",
-      "contributing_factors": [
-        {
-          "factor": "A row could say nothing about its label status, so a verified absence and an unexamined blank looked identical. The badge distinguishes cited from uncited, which is a different question from checked versus unchecked.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Both rows now state in the flag what was read and what was found, and the butorphanol flag NAMES all three application numbers that were checked -- an absence claim is only checkable if it says which labels were read."
-        },
-        {
-          "factor": "needsReview was false on a row whose only FDA label disagrees with its figure by 2-6x. The flag is the app's own mechanism for exactly that and nothing had set it, because nobody had read the label.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "needsReview is TRUE on both ketamine rows, which also routes the AI Dosing Calculator to refuse a numeric dose and direct the user to a species-specific reference."
-        },
-        {
-          "factor": "The reflex on finding a label is to attach it as a citation. For ketamine that would have put a green tick beside a figure the label contradicts -- the same defect already recorded on buprenorphine/cat, where the Simbadol label disagrees with the stored 0.01-0.03mg/kg.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Arms assert that NEITHER row acquires a reference, with the reason in the failure message, and a CONTROL arm counts rows recording a verified absence so one cannot be deleted as prose."
-        },
-        {
-          "factor": "A web search returned \"Torbutrol Tablets, NADA 135-780\" for the canine antitussive product. 135-780 is Torbugesic's EQUINE application number, so that result is wrong about at least one thing.",
-          "kind": "latent-condition",
-          "action_status": "not-actionable",
-          "note": "Nothing was cited from it. There is no mechanism here to validate a NADA number against the FDA database before it is written into a reference, and building one is a different piece of work -- the existing arm only requires that a reference CONTAIN an identifier and a retrieval date, not that the identifier resolves. Recorded so the next sourcing pass knows the shape of the trap rather than rediscovering it."
-        }
-      ],
-      "recurrence_open": "480 of 485 rows still cite no source, and only 2 now record a VERIFIED absence. The other 478 are genuinely unexamined, and the badge says so -- but nothing distinguishes \"nobody has looked\" from \"looked, and there is nothing to cite\" except a human writing it into the flag, which is manual discipline and will not scale to 478 rows. No schema field carries label status; it lives in prose inside `flag`, so the arms pin it by string match and a reworded flag can drop it. The structural fix -- a labelStatus field with a closed vocabulary (APPROVED / EXTRA_LABEL_NO_LABEL / LABEL_CONFLICTS / UNEXAMINED) -- was NOT built here: it is a table-shape change across 485 rows and a rendering change, and it should be one decision rather than a side effect of sourcing three rows. Also not established: whether the 5-10mg/kg ketamine figure matches a citable published protocol. It is consistent with balanced-anaesthesia practice, but this pass did not find a specific reference for it, so the row states the conflict without resolving it.",
-      "single_factor_note": "n/a -- four factors"
-    },
-    {
       "commit": "2cec9c094b0b",
       "date": "2026-09-26",
       "subject": "fix(sairnvet): four more unearned \"verified\" claims -- in the panel this morning's sweep never looked at",
@@ -15075,6 +15021,77 @@
       ],
       "recurrence_open": "The sweep now refuses `verified` anywhere in sairnvet.html outside VET_DRUGS unless the context is one of fifteen ADMITTED shapes -- so a new panel in THIS FILE cannot ship the claim. Nothing extends that to the other 21 app files. StoneDesk, SAIRNcare, SAIRNcode and the rest have their own AI prompts and their own stored tables, and no check anywhere asks whether any of them calls an unsourced table verified; this record covers one file. Nor does the sweep judge SOURCING: 480 of 485 formulary rows and 465 of 465 diagnosis rows still cite nothing, and the app is now honest about that rather than fixed. VET_DIAGNOSES has no schema slot for a citation at all, so sourcing it is a table change nobody has scoped. And the arm is a WORD sweep: a prompt that claims verification without using the word -- \"checked against the current literature\", \"confirmed dosing\" -- passes it untouched.",
       "single_factor_note": "n/a -- four factors"
+    },
+    {
+      "commit": "ec93b60c7002",
+      "date": "2026-09-26",
+      "subject": "fix(sairncash): the quarterly set-aside recommended as little as 4.3% of the IRS floor -- and five more, all verified against the 2026 Form 1040-ES",
+      "files": [
+        "sairncash.html",
+        "tests/sairncash_safe_harbor.js"
+      ],
+      "lines_added": 1006,
+      "lines_removed": 37,
+      "app": "sairncash",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "code-review",
+      "summary": "sairncash.html's calcQuarterlySetAside computed the current-year leg of the IRS safe harbor as calcTotalTax(ytdNetProfit), the tax on the profit earned SO FAR, and displayed it under the label \"Estimated annual tax (SE + federal income)\". Math.min(ninetyPct, priorYearBasis) is the statute -- 2026 Form 1040-ES line 12c, \"Enter the smaller of line 12a or 12b\" -- so the min was correct and the term being minimised was not: early in the year the YTD figure is near zero, min therefore selects it, and the recommended quarterly set-aside collapses. MEASURED on the unfixed code: $1,167.17/quarter against an IRS floor of $5,000 for a $120k-pace freelancer on 31 March (23.3%), $397.39 against $9,141.98 in January with no prior-year figure entered (4.3%), $2,140.79 against $3,500 on 30 June (61.2%); and the screen printed \"Estimated annual tax $5,187.42\" where the projected annual tax was $30,640.76. The exposure is the IRC 6654 estimated-tax underpayment penalty, which has NO reasonable-cause waiver -- 6654(e) provides only the de minimis, first-taxable-year and casualty/disaster exceptions. Five further defects in the same engine, all verified against the same 1040-ES: the 110% prior-year trigger was one boolean named prior_year_agi_over_150k for all four filing statuses although MFS triggers at $75,000; sumIncome/sumDeductions summed every cached entry so the figure labelled YTD was all-time; the section 199A QBI deduction was absent although worksheet line 2b takes it off taxable income before the tax is figured, overstating every set-aside; and head-of-household's 24% band top was $201,775, which is SINGLE's Schedule X figure -- Schedule Z says $201,750.",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "a0b9a2115ebc",
+        "date": "2026-08-10",
+        "subject": "feat: SAIRNcash -- deterministic tax/retirement math engine",
+        "lag_days": 47
+      },
+      "citation_note": "ARGUABLE, and it covers one of the six and not the primary one. PR 2.3 -- a fact with a tense needs a read, and a number needs a single source -- is exactly the head-of-household bracket half: the comment above the table claimed four statuses were verified against a source containing two, and $201,775 was single's figure standing in for HoH's $201,750. What PR 2.3 does NOT name, and what no section of that document names, is the shape of the main defect: a CORRECT formula fed the WRONG QUANTITY, with the label on the screen describing the quantity it should have been given. A reviewer checking the safe-harbor rule against the statute confirms Math.min(90% of this year, 100% of last year) and is right to; the defect sits one level below the thing that gets checked. The closest named relative is item 8 of docs/2026-09-13-cross-domain-disciplines.md -- nothing announces the day a check stops testing anything -- applied to a LABEL rather than a check, and that document is not the vocabulary --rule validates against.",
+      "contributing_factors": [
+        {
+          "factor": "The formula was right and one of its two inputs was the wrong quantity. A reviewer checking the safe-harbor RULE against the statute finds Math.min(90% of this year, 100% of last year) and confirms it -- which is what the code's own comment did, correctly, for the rule and never for the term. The defect is one level below the thing that was checked.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "projectAnnualFromYtd() annualises YTD by the elapsed fraction of the year and the result is passed to calcTotalTax; the projection and the elapsed percentage are both returned and shown on screen beside the figure, so the basis is visible rather than implied."
+        },
+        {
+          "factor": "A field was labelled \"Estimated annual tax\" and held a year-to-date value. The label was the only thing asserting what the number was, and nothing compared the two. This is the fabricated-figure shape the platform has recorded repeatedly -- a screen stating something the computation does not support -- appearing as a UNIT error rather than as an invented number.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "An arm asserts estAnnual equals the tax on the projection the function itself reports, and the rendering appends the projected profit and elapsed fraction to the displayed figure."
+        },
+        {
+          "factor": "With no income logged the projection is undefined, and the naive result is zero -- which then WINS the min every time and recommends setting aside nothing. The most flattering possible answer arrives by arithmetic accident at exactly the moment a new user first opens the app.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The 90% leg is UNAVAILABLE rather than zero when there is no income to project from; quarterlyAmount is null rather than 0 and the screen prints a dash with \"Nothing to compute yet\" instead of $0.00."
+        },
+        {
+          "factor": "One boolean carried a threshold that is filing-status dependent. prior_year_agi_over_150k cannot express the MFS $75,000 case, and the bug is silent in the direction that costs money: an MFS user with $90,000 of prior-year AGI answers the stored question NO truthfully and receives the 100% basis when they owe 110%.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The stored field is now the AGI amount and SAFE_HARBOR_110_AGI_THRESHOLD is keyed by filing status. The legacy boolean is kept and read, but for MFS it sets agiBasisUncertain rather than deciding -- both the screen and the AI attention digest then say the 110% rule may apply and this figure assumes it does not."
+        },
+        {
+          "factor": "The comment above the bracket tables claimed all four were confirmed against a source that contains only two. The IRS inflation-adjustment release gives every figure as \"$X (for married couples filing jointly)\" -- single and MFJ. HoH and MFS were inference presented as verification, and the HoH 24% top was wrong by $25 because it had been copied from single.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Every boundary re-derived from the 24 cumulative tax figures printed on the 2026 Form 1040-ES Schedules X, Y-1, Y-2 and Z, all of them pinned by arms across all four statuses, and the comment rewritten to say what was actually read. A band top can be right while its rate is wrong, which is why the cumulative figures rather than the tops are what the arms compare."
+        },
+        {
+          "factor": "No test existed for any of the tax maths. The four SAIRNcash suites cover entitlement and Stripe, and the engine that decides how much money a user sets aside against a non-waivable penalty had no arms at all.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/sairncash_safe_harbor.js, 31 arms, every figure quoted from the 1040-ES read directly. Ablated five ways; the fifth found a dead arm before it shipped."
+        }
+      ],
+      "recurrence_open": "THE ANNUALISED INCOME INSTALLMENT METHOD IS NOT IMPLEMENTED (Form 2210 Schedule AI), and a straight-line projection is wrong for a seasonal earner in both directions -- a landscaper who earns nothing in January is now told to set aside on a projection of nothing, and one who earns everything in Q1 is told to set aside on a projection of four times their year. The default is right and the seasonal case is not covered; it is disclosed on screen as a projection with its elapsed fraction rather than presented as a figure.\nTHE 199A THRESHOLD IS STILL UNVERIFIED. QBI_CERTAIN_CEILING is a conservative floor and says so in its own comment; it is NOT the IRS figure and the app therefore cannot tell a user the moment they cross the real line. The 1040-ES and Pub 505 give only the phase-in range. Until somebody reads Rev. Proc. 2025-32's section 199A table, every high-income QBI figure this app produces is marked uncertain and that is the best available answer, not a good one.\nNO STATE TAX ANYWHERE, which is a prior scoping decision and not this fix, but it means the total a user sets aside is short by their state liability in 41 states.\nTHE YEAR SPLIT USES THE ENTRY DATE, WHICH IS WHEN THE USER TYPED IT, not when the money moved. A December invoice logged in January books to the wrong year and nothing detects it, because the app has no separate payment-date field to compare against.\nAND NOTHING CHECKS THE CONSTANTS AGAINST THE IRS ON A CADENCE. TAX_YEAR_2026 is hand-maintained; the brackets, the SS wage base, the standard deductions, the SEP cap and the deferral limit all change annually and the file will be silently a year stale on 1 January 2027 exactly as the entry totals were silently all-time. That is the same class as the SAIRNbiz 1099 threshold that stood at $600 from 1954 until this month.",
+      "single_factor_note": "n/a -- six factors"
     },
     {
       "commit": "7bc26782e533",
@@ -16094,6 +16111,60 @@
         }
       ],
       "recurrence_open": "nothing checks that a client transport's return contract matches what each endpoint action actually sends. This fix is one action in one app; the other sixteen transports have the same shape and were not swept."
+    },
+    {
+      "commit": "f80460a45f11",
+      "date": "2026-09-26",
+      "subject": "fix(sairnvet): the ketamine label is HIGHER than our figure, and no canine butorphanol label exists at all",
+      "files": [
+        "sairnvet.html",
+        "tests/sairnvet_formulary_source_honesty.js"
+      ],
+      "lines_added": 105,
+      "lines_removed": 1,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "sairnvet.html's VET_DRUGS carried two ketamine rows at 5-10mg/kg IM with needsReview:false and no flag beyond the Schedule III note, and a butorphanol dog row at 0.2-0.4mg/kg with the bare flag \"Schedule IV\" -- and reading the actual FDA labels showed both were making silent claims. Ketaset (ketamine HCl 100 mg/mL, NADA 043-304) gives 11mg/kg IM for restraint and 22 to 33mg/kg for anaesthesia, so the stored figure is 2-6x BELOW the only label for the species, and that label approves cats and subhuman primates only -- every canine use is extra-label. For butorphanol there is NO FDA-approved injectable label covering dogs at all: Torbugesic-SA (NADA 141-047) is cats, Torbugesic (NADA 135-780) and Butorphic (ANADA 200-332) are horses. On a screen that had no way to say \"checked, and there is nothing to cite\", a verified absence and an unexamined blank were indistinguishable, and a row whose only label disagrees with it by 2-6x was showing needsReview:false.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The VET_DRUGS table arrived already populated and git log on sairnvet.html isolates no commit that introduced either the ketamine 5-10mg/kg figure or the bare Schedule IV flag on the butorphanol dog row. Neither was WRONG when written -- both are conventional extra-label practice -- and no commit made them wrong either; what was missing was the label read that shows what they omit. A plausible sha here would put a fabricated discovery lag into the one number this field feeds."
+      },
+      "citation_note": "not-citable: no section of docs/SAIRN-PROCESS-RULES.md covers a data row that makes a clinical claim by omission. The nearest named shape is item 7 of docs/2026-09-13-cross-domain-disciplines.md -- byte-identical is not safe-in-context, the Ariane 5 item -- which is the cross-species half of this formulary's problem but not this half. This half is narrower and has no name yet: an ABSENCE that has been verified and an absence nobody looked at are the same blank cell, so a reader cannot tell a checked row from an unchecked one. That distinction is the same three-state discipline PR 1.11 applies to a check that could not run, applied to DATA instead of to a checker, and it is being recorded as not-citable rather than stretched onto 1.11.",
+      "contributing_factors": [
+        {
+          "factor": "A row could say nothing about its label status, so a verified absence and an unexamined blank looked identical. The badge distinguishes cited from uncited, which is a different question from checked versus unchecked.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Both rows now state in the flag what was read and what was found, and the butorphanol flag NAMES all three application numbers that were checked -- an absence claim is only checkable if it says which labels were read."
+        },
+        {
+          "factor": "needsReview was false on a row whose only FDA label disagrees with its figure by 2-6x. The flag is the app's own mechanism for exactly that and nothing had set it, because nobody had read the label.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "needsReview is TRUE on both ketamine rows, which also routes the AI Dosing Calculator to refuse a numeric dose and direct the user to a species-specific reference."
+        },
+        {
+          "factor": "The reflex on finding a label is to attach it as a citation. For ketamine that would have put a green tick beside a figure the label contradicts -- the same defect already recorded on buprenorphine/cat, where the Simbadol label disagrees with the stored 0.01-0.03mg/kg.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Arms assert that NEITHER row acquires a reference, with the reason in the failure message, and a CONTROL arm counts rows recording a verified absence so one cannot be deleted as prose."
+        },
+        {
+          "factor": "A web search returned \"Torbutrol Tablets, NADA 135-780\" for the canine antitussive product. 135-780 is Torbugesic's EQUINE application number, so that result is wrong about at least one thing.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "Nothing was cited from it. There is no mechanism here to validate a NADA number against the FDA database before it is written into a reference, and building one is a different piece of work -- the existing arm only requires that a reference CONTAIN an identifier and a retrieval date, not that the identifier resolves. Recorded so the next sourcing pass knows the shape of the trap rather than rediscovering it."
+        }
+      ],
+      "recurrence_open": "480 of 485 rows still cite no source, and only 2 now record a VERIFIED absence. The other 478 are genuinely unexamined, and the badge says so -- but nothing distinguishes \"nobody has looked\" from \"looked, and there is nothing to cite\" except a human writing it into the flag, which is manual discipline and will not scale to 478 rows. No schema field carries label status; it lives in prose inside `flag`, so the arms pin it by string match and a reworded flag can drop it. The structural fix -- a labelStatus field with a closed vocabulary (APPROVED / EXTRA_LABEL_NO_LABEL / LABEL_CONFLICTS / UNEXAMINED) -- was NOT built here: it is a table-shape change across 485 rows and a rendering change, and it should be one decision rather than a side effect of sourcing three rows. Also not established: whether the 5-10mg/kg ketamine figure matches a citable published protocol. It is consistent with balanced-anaesthesia practice, but this pass did not find a specific reference for it, so the row states the conflict without resolving it.",
+      "single_factor_note": "n/a -- four factors"
     },
     {
       "commit": "fa0f2b90d3b8",
