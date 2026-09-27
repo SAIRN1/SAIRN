@@ -2417,3 +2417,108 @@ evidence that this class is not somebody else's mistake.
   so which definition a caller reaches cannot be told from position. A scan
   silently declining to judge is indistinguishable from one that judged and found
   nothing, which is this very defect class.
+
+---
+
+## 2026-09-26 (queue13) — the training join runs, a security hole that was called hypothetical was already open, and I reversed my own tier call
+
+Landed `1d35801d`, pushed, **LIVE-VERIFIED** against the real SAIRNcare
+deployment (9 arms, 0 failed, read-only — `evaluate` writes nothing).
+
+**THE FINDING THAT WAS NOT IN ANYBODY'S SCOPING.** The scoping doc says a
+caller-supplied `opts.staff` *"would"* let a client send any
+`annual_hours_recorded` it liked — conditional, about the join being written.
+**It was reachable before any of this.** The evaluate branch built its options as
+`Object.assign({}, payload, …)`, so `payload.staff` went straight into
+`evaluateTraining`'s per-staff branch, and anybody holding a SAIRNcare session
+could POST a staff array and be handed a training-compliance verdict computed
+entirely from numbers they chose, while the authoritative append-only record sat
+unread one branch away. **The engine's branch was called dormant because
+`sairncare.html` never sends `staff` — a fact about the UI, not about the
+endpoint.** The API is the boundary, not the panel. Refused live now, empty array
+included.
+
+**WHAT THE SIX SEEDED RULES ANSWER, DRIVEN NOT ASSERTED: two of six, up from one.**
+WV answers `false` on zero hours and `true` on over-trained — the state that used
+to be REFUSED outright. MI's no-mandate answer is unchanged. OH, IN and both PA
+chapters are `null` because every `who` is prose — **and each is now blocked on
+ONE named authorable edit** (an `applies_to_positions` token list matching the
+real `alf_staff.position` vocabulary) rather than on five interacting unknowns.
+
+**THE ARITHMETIC CHANGE IS THE ONE WORTH ATTACKING AND I SAID SO IN THE
+OBLIGATION.** The old branch answered `null` for any multi-pool rule, which
+declined two answers it already had: `recorded >= SUM of every pool` is TRUE
+because no apportionment fails, `recorded < the LARGEST pool` is FALSE because
+none succeeds, between is genuinely `null`. Both ends quantify over all
+apportionments rather than picking one. **A `true` now has to clear the sum of
+every applicable requirement** — the strictest available reading, not the
+summation defect, which reported a pass in the MIDDLE band while presenting the
+sum as one target.
+
+**AND THIS CHANGE SHIPPED THE DEFECT IT WAS WRITTEN TO FIX, THEN CAUGHT IT.**
+An empty applicable set was a PASS: for OH, IN and both PA chapters every audience
+is prose, so nothing matched, the target summed to **0**, and a caregiver with
+**zero recorded hours** came back `meets: true` — with the `unmapped_requirements`
+caveat on the same response. That is this module's own sentence about the WV
+vocabulary bug arriving through a third door: *"an empty requirement set is
+indistinguishable from a satisfied one once it has been summed."* **Found by
+driving all six seeded rules, not by reading the diff** — a verdict arm on one
+state would not have shown it.
+
+**And the message for that case was itself unreachable when first written**: it
+branched on `out.unmapped_requirements_pending`, a field name that exists nowhere
+and is never assigned, so every empty applicable set reported *"no obligation"*
+instead of *"we could not read who it applies to"*. Two different facts, and only
+the rule's author can make the first claim. Caught because the new arms assert the
+MESSAGE and not just the `null`. **Third unreachable branch I have committed in a
+day**, all three recorded in `docs/2026-09-26-ghost-failure-path-sweep.md`.
+
+**THE WINDOW IS REFUSED, NOT CHOSEN, and that may be the wrong shape.** Rolling
+twelve months, calendar year, or the facility's own training year — all three
+defensible, they give different answers, so `include_staff` without a declared
+`annual_window` is a 400 naming all three and an unknown value is refused too.
+Honest, and it also means **no caller can get a verdict until somebody decides**.
+I may have converted a silent wrong answer into a permanently blocked feature;
+that is attack point (e) on the obligation.
+
+**ITEM 2's PREMISE WAS 12 DAYS STALE AND THE REAL WORK WAS READING AN UNREAD
+ANSWER.** The crons are `:07` and `:37` with in-code jitter, landed `b162c871` on
+2026-09-14 from the same production figures the dispatch quotes. `vercel.json` is
+not changed. **What nobody had done was read the falsifiable test that commit set
+for itself** — *"if the failures MOVE WITH THE SCHEDULE the collision was the
+cause; if they STAY AT :00 … this was the wrong fix, cheaply."* Read from the same
+pre-aggregated table the 54 failures were measured in: **one error group in seven
+days, a `url.parse()` deprecation notice on two unrelated routes. 54 → 0.** The
+collision was the cause. A prediction with a stated refutation condition is worth
+nothing until somebody looks.
+
+**ITEM 3: I WAS WRONG AND THE REGISTER WAS CONSISTENT.** `mech_insurance_policies`
+reclassified **A → B** on confidentiality, reversing my own call from 24 hours
+earlier. The measurement that settled it: the §3.2 pass stamped 16 group names and
+**every group is unanimous on that axis** — `MONEY_INTERNAL` 34/34 B,
+`FIRM_CONFIDENTIAL` 3/3 A. So a distinction had been applied 37 times and **never
+written down**, which is why a new row had to guess. It is written into §2 now:
+**TRANSACTIONAL RECORD vs DELIBERATIVE POSITION.** Two of my three original
+arguments fail against it — "the whole schedule" is a VOLUME argument and volume is
+what `AGGREGATE` already handles at B, and `subcontractors` is A/A because the data
+is about a THIRD PARTY, which is exactly what does not transfer when the subject is
+the firm itself. **The third survives and is not a confidentiality argument at
+all:** `policy_no` joined to `carrier` is authentication-shaped material, recorded
+in §2 as a gap **neither axis expresses**, with the remedy named rather than
+absorbed into a letter that would change no code. **Bending 34 consistent rows to
+match one new one would have been the wrong direction of correction.**
+
+**WHAT I DID NOT DO.**
+
+* **`sairncare.html` is untouched.** The panel needs a window control and which
+  windows to offer is the same open decision, so building it now would move the
+  guess from the code into the UI.
+* **Item 4 (methodology 92, `write_batch`) — `fourth-q9b` HAS RELEASED**, so the
+  block Michael set is lifted by its own condition. Not taken this pass: it was
+  fourth of four and items 1–3 were the priorities. Nobody holds `api/sd-data.js`
+  now.
+* **Pre-existing and not mine, confirmed by stashing:**
+  `tests/sairncare/test-alf-compliance.js` is 1/24 on `main`; the seam check's 18
+  could-not-tells are all one `roleSet()` shape across 18 auth endpoints; and
+  `api/sd-data.js`'s citation drift delta from this change is **zero** — 33
+  drifted cells before and after, identical.
