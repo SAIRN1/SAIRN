@@ -1905,6 +1905,23 @@ REGISTRY = [
 # than left unanswered by default". This is that record for the ones that are
 # NOT going in, so the next session does not re-derive it. Printed by --list.
 NOT_PROMOTED = [
+    ('invocation_path_scan.py', 'PROMOTING IT HERE WOULD MAKE IT AN INSTANCE OF ITS '
+     'OWN FINDING, and that is the whole reason for the decision rather than a '
+     'joke about it. Its subject is WIRING -- .claude/settings.json and this '
+     'file -- both of which change by Write/Edit. This registry runs at PUSH '
+     'time only: `hook_main()` returns 0 unless the Bash command was a `git '
+     'push`, which is exactly the gap the tool was written to name after '
+     'register_freshness_check.py sat correct and un-triggered for two days. '
+     'Registering it here would give it the same trigger/subject mismatch it '
+     'reports. ITS OUTPUT IS ALSO THE WRONG SHAPE for a per-push signal: five '
+     'candidates that each need a READ to decide whether the document named in '
+     'a checker\'s `catches` text is its subject or a source it reads, and a '
+     'five-line list repeated after every push is a list nobody reads by the '
+     'third time. Run it when the wiring changes -- a hook added, a checker '
+     'registered, a matcher edited -- and act on the triage in '
+     'docs/2026-09-26-invocation-path-sweep.md. The honest fix is a Write|Edit '
+     'hook scoped to those two files, which is a named decision with a real '
+     'cost and is NOT being taken unilaterally here'),
     # ── TRIAGE BATCH 2026-09-16, SECOND PASS. These close the last of the
     # ── untriaged CHECKER tools; each was RUN and its output read.
     ('condition_coverage.py', 'IT MUTATES SOURCE, and that alone decides it. The tool '

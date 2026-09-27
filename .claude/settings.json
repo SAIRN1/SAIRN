@@ -39,6 +39,12 @@
             "type": "command",
             "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/html_script_check.py\"",
             "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/citation_drift_hook.py\"",
+            "timeout": 200,
+            "statusMessage": "Checking the citations in the document just edited..."
           }
         ]
       },

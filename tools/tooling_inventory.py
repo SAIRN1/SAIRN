@@ -660,6 +660,51 @@ PURPOSES = {
     'hover_auditor_scope_gate.py': ('CHECKER', 'a commit, push or working tree in the HOVER AUDITOR\'s clone that touches platform code -- the role reviews the four build agents and is reviewed by nobody, and its own skill forbids it writing platform code in terms. Armed per-clone by a marker under .git/, so no build clone can inherit it by pulling and each pays one shell file-test per commit. Fails OPEN where the marker is absent (a scope condition: not that clone\'s rule) and CLOSED everywhere else, including when the core-rule sentence is no longer in the skill file -- a gate enforcing a repealed rule reads as coverage'),
     'redaction_check.py': ('CHECKER', 'credential shapes in what is about to be written, and in what a push ships'),
     'html_script_check.py': ('CHECKER', 'a script block that no longer parses, after a Write or Edit'),
+    'invocation_path_scan.py': ('CHECKER',
+        'a registered check whose ONLY TRIGGER CANNOT FIRE FOR WHAT IT CHECKS '
+        '-- a correct, wired checker that never runs at the moment its subject '
+        'changes. Written after register_freshness_check.py sat correct and '
+        'un-triggered for two days: its only wiring was report_only_checks.'
+        'REGISTRY, whose hook_main() returns 0 unless the Bash command was a '
+        '`git push`, and both documents it reads are changed with Write/Edit. '
+        'READS THE PUSH GATE OUT OF THE SOURCE rather than assuming it, because '
+        'that one `if payload and not pushes(cmd)` line is what every trigger '
+        'label rests on. FOLLOWS ONE HOP of wrapper indirection -- its own first '
+        'run reported register_freshness_check as uncovered AFTER '
+        'citation_drift_hook.py had been written to run it on an edit, because '
+        'it looked for the checker\'s name where the wrapper\'s name is. '
+        'ENUMERATES, NEVER DECIDES: whether a document in a checker\'s `catches` '
+        'text is its SUBJECT or a SOURCE it reads is a read, not a regex, and '
+        'generated documents are counted SEPARATELY because an edit is not how '
+        'they change and the push gate already DENIES a stale one. On the day it '
+        'was written: 62 registered checkers, all push-triggered; 5 candidates; '
+        '53 declaring no document subject. Triage in '
+        'docs/2026-09-26-invocation-path-sweep.md. Deliberately NOT promoted -- '
+        'registering it in the push sweep would make it an instance of its own '
+        'finding, and the reason is recorded in NOT_PROMOTED'),
+    'citation_drift_hook.py': ('CHECKER',
+        'a register citation THIS EDIT drifted -- register_freshness_check.py '
+        'existed since 2026-09-24 but was wired only through report_only_checks '
+        'on PostToolUse:Bash, and the two documents it reads '
+        '(docs/CRITICALITY-TIERS.md, docs/tier-a-reviews.json) are changed with '
+        'Write/Edit, so editing a citation-bearing document triggered nothing at '
+        'all. Freshness was held by manual discipline -- which had already failed '
+        'twice: nine cites on sc_anesthesia_base_units went 30-45 lines stale '
+        'within a DAY, and 8d0430c3 records five drifted by a CORRECTION to that '
+        'same document. REPORTS THE DIFFERENCE, NOT THE TOTAL: the document '
+        'carries 43 drifted cites that are nobody\'s current edit, so it judges '
+        'the working copy AND a HEAD baseline through the checker\'s own '
+        'check_tiers/check_reviews and prints only current-minus-baseline -- the '
+        'same decision the push gate\'s generated-document check already made in '
+        'its own words. A total printed after every save is noise, and noise is a '
+        'check somebody turns off. Covered paths are IMPORTED from the checker, '
+        'never listed here. Fails CLOSED and exits 2 when the checker cannot be '
+        'imported or raises, and when no baseline exists it says it CANNOT '
+        'ATTRIBUTE rather than presenting the list as yours. --selftest locks 11 '
+        'arms against synthetic fixtures, three of which prove the comparison '
+        'discriminates at all: the first version of that arm cited an identifier '
+        'appearing a dozen times in one file and read as "the comparison does not '
+        'work"'),
     'deploy_verify_notify.py': ('CHECKER', 'a push whose deploy never reached the live site'),
     # Same reason as the line above: this said "the 26 entries above" and the
     # registry holds thirty-six. The count is printed by the closing-error block.

@@ -19,14 +19,14 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**240 files in `tools/`.** By what actually invokes them:
+**242 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 13 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 64 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 65 | runs automatically on every push, never blocks |
 | **ADVISORY** | 3 | session-start or prompt hooks, informational |
-| **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
+| **DECIDED** | 70 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 43 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 48 | nothing runs these at all |
 
@@ -35,7 +35,7 @@ By what they are, independent of wiring:
 | Kind | Count |
 |---|---:|
 | ADVISORY | 3 |
-| CHECKER | 163 |
+| CHECKER | 165 |
 | GENERATOR | 19 |
 | LIBRARY | 25 |
 | LIVE | 25 |
@@ -43,7 +43,7 @@ By what they are, independent of wiring:
 | REPORTER | 2 |
 | TOOL | 2 |
 
-**69 tool(s) are DECIDED -- deliberately not promoted, with the reason
+**70 tool(s) are DECIDED -- deliberately not promoted, with the reason
 recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
@@ -143,7 +143,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (64)
+## REPORT-ONLY (65)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -215,17 +215,18 @@ quiet in practice.
 | `vercel_config_check.py` | 2026-09-09 | a buildCommand over Vercel's 256-char schema limit, and a route whose destination file no cp copies |
 | `write_without_readback_check.py` | 2026-09-10 | a resource an app WRITES to the server and never reads back -- a backup nobody could restore from |
 
-And 3 that are PostToolUse hooks in their own right, not registry entries:
+And 4 that are PostToolUse hooks in their own right, not registry entries:
 
 | Tool | Kind | What it catches | Probe under tests/ |
 |---|---|---|---|
+| `citation_drift_hook.py` | CHECKER | a register citation THIS EDIT drifted -- register_freshness_check.py existed since 2026-09-24 but was wired only through report_only_checks on PostToolUse:Bash, and the two documents it reads (docs/CRITICALITY-TIERS.md, docs/tier-a-reviews.json) are changed with Write/Edit, so editing a citation-bearing document triggered nothing at all. Freshness was held by manual discipline -- which had already failed twice: nine cites on sc_anesthesia_base_units went 30-45 lines stale within a DAY, and 8d0430c3 records five drifted by a CORRECTION to that same document. REPORTS THE DIFFERENCE, NOT THE TOTAL: the document carries 43 drifted cites that are nobody's current edit, so it judges the working copy AND a HEAD baseline through the checker's own check_tiers/check_reviews and prints only current-minus-baseline -- the same decision the push gate's generated-document check already made in its own words. A total printed after every save is noise, and noise is a check somebody turns off. Covered paths are IMPORTED from the checker, never listed here. Fails CLOSED and exits 2 when the checker cannot be imported or raises, and when no baseline exists it says it CANNOT ATTRIBUTE rather than presenting the list as yours. --selftest locks 11 arms against synthetic fixtures, three of which prove the comparison discriminates at all: the first version of that arm cited an identifier appearing a dozen times in one file and read as "the comparison does not work" | &mdash; |
 | `deploy_verify_notify.py` | CHECKER | a push whose deploy never reached the live site | `sairn_http_challenge.py`, `sairn_http_response_shape.py` |
 | `html_script_check.py` | CHECKER | a script block that no longer parses, after a Write or Edit | &mdash; |
 | `report_only_checks.py` | LIBRARY | the report-only registry and its runner -- the entries above | `run_all_tests_hook_gate_probe.py`, `run_assurance_case_probe.py`, `run_baseline_readiness_probe.py`, `run_dora_metrics_probe.py`, `run_export_coverage_probe.py`, `run_literal_drift_control_probe.py`, `run_optimistic_success_probe.py`, `run_report_only_checks_probe.py`, `run_risk_event_tree_probe.py` |
 
 ---
 
-## DECIDED -- not promoted, on purpose (69)
+## DECIDED -- not promoted, on purpose (70)
 
 **These are not gaps.** Each carries a recorded reason in
 `tools/report_only_checks.py`'s `NOT_PROMOTED` list -- a read-list whose own
@@ -263,6 +264,7 @@ is how a reader stops believing the number.
 | `hover_separation_ci.py` | CHECKER | NOT A REGISTRY CANDIDATE BY DESIGN. Its whole purpose is to run where a local check cannot be switched off -- GitHub's side of the push, as a required status. Putting it in a registry that runs locally would reintroduce exactly the bypass it exists to close |
 | `idempotency_check.py` | CHECKER | NOT REJECTED -- BLOCKED, and the blocker is specific: it reaches the network, and unlike the two LIVE tools above that dependency looks removable rather than essential. It already has a FIXTURES block, so the blind lock is in place. What it needs before promotion is the network half separated from the static half so the static half can run offline and report a real verdict instead of COULD NOT RUN. That is a code change with an owner, not a decision, and it is deliberately not made here because narrowing somebody else's checker to make it promotable is how a criterion gets loosened to produce a number. |
 | `independence_check.py` | CHECKER | BLOCKED ON A CONTROL PAIR, which is the one thing that cannot be waived. It has FIXTURES and no probe anywhere under tests/ references it, so nothing has ever made it fail on purpose -- and this repo's own record is that literal_drift_check.py was promoted with `verdict: by_exit` and no sys.exit in it, and checkblocks.py exited 0 for months, both of which a control pair would have caught on day one. Write tests/run_independence_probe.py with both directions and a CONTROLS_FOR line, then this is a promotion candidate rather than a judgement call. |
+| `invocation_path_scan.py` | CHECKER | PROMOTING IT HERE WOULD MAKE IT AN INSTANCE OF ITS OWN FINDING, and that is the whole reason for the decision rather than a joke about it. Its subject is WIRING -- .claude/settings.json and this file -- both of which change by Write/Edit. This registry runs at PUSH time only: `hook_main()` returns 0 unless the Bash command was a `git push`, which is exactly the gap the tool was written to name after register_freshness_check.py sat correct and un-triggered for two days. Registering it here would give it the same trigger/subject mismatch it reports. ITS OUTPUT IS ALSO THE WRONG SHAPE for a per-push signal: five candidates that each need a READ to decide whether the document named in a checker's `catches` text is its subject or a source it reads, and a five-line list repeated after every push is a list nobody reads by the third time. Run it when the wiring changes -- a hook added, a checker registered, a matcher edited -- and act on the triage in docs/2026-09-26-invocation-path-sweep.md. The honest fix is a Write|Edit hook scoped to those two files, which is a named decision with a real cost and is NOT being taken unilaterally here |
 | `landing_verification.py` | CHECKER | DELIBERATELY NOT ON THE PUSH PATH, and the reason is the check itself rather than a preference. Two of its three sections need the NETWORK -- 22 live route fetches and two package registries -- so on every push it would add roughly a minute, and worse, it would FLAP: a transient DNS failure or a Vercel bot-mitigation challenge is honestly reported as COULD NOT TELL, which is exit 2, which on a push reads as a refusal nobody can act on. A gate that goes amber for reasons outside the repo is how overrides become routine, and this repo already records that costing more than the gate saved. IT IS ALSO ANSWERING THE WRONG QUESTION FOR A PUSH: it asks whether work that ALREADY landed is live, whether the OTHER clones are current, and whether packages have moved -- none of which the diff in front of it can change. The post-push half is already covered for the one route it matters most on by deploy_verify_notify.py. Run it deliberately: at session start, after a push somebody needs to be sure of, and before trusting another clone. tests/run_landing_verification_probe.py is its control and IS on the test path |
 | `licence_recoverability_check.py` | LIVE | live probes needing a real licence and a network; correctly manual. |
 | `load_schema_snapshot.py` | CHECKER | NOT A CHECKER. It loads a snapshot for other tools to read. Its failure mode is that its OUTPUT is stale, which is a question for the checks that consume it and not one it can ask about itself |
@@ -456,12 +458,12 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      240   git ls-files tools/
-  hook entries                        10   .claude\settings.json
+  tools on disk                      242   git ls-files tools/
+  hook entries                        11   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                62   report_only_checks.REGISTRY
   tools invoked by tests/            172   tests/**/*.py, *.js
-  recorded NOT-promoted decisions     74   report_only_checks.NOT_PROMOTED
+  recorded NOT-promoted decisions     75   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```
 
