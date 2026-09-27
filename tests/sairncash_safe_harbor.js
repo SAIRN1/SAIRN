@@ -108,8 +108,14 @@ const NEEDED_FNS = ['calcSeTax', 'calcAdditionalMedicare', 'bracketTax',
 // Functions the FIX introduces. Lifted if present, and their absence is a
 // FAILURE with the reason named -- not a skip, which would make a missing fix
 // look like a passing test.
+// `requireFiniteNumber` IS LISTED HERE ON PURPOSE AND ITS ABSENCE WOULD BE THE
+// MOST DANGEROUS OMISSION IN THIS FILE. calcSeTax and bracketTax call it; if it
+// were not lifted, every `assert.throws` arm below would PASS -- on a
+// ReferenceError, not on the guard -- and the suite would report the fix
+// present when it was absent. The CONTROL arm that drives the finite path is
+// the second line of defence against exactly that.
 const FIX_FNS = ['projectAnnualFromYtd', 'calcQbiDeduction', 'entriesForTaxYear',
-                 'safeHarborAgiThreshold'];
+                 'safeHarborAgiThreshold', 'requireFiniteNumber'];
 const FIX_CONSTS = ['SAFE_HARBOR_110_AGI_THRESHOLD', 'QBI_CERTAIN_CEILING',
                     'QBI_MIN_DEDUCTION', 'QBI_MIN_QBI_FOR_MINIMUM'];
 
@@ -565,6 +571,125 @@ for (const f of NEEDED_FNS.concat(FIX_FNS)) {
       'the prompt does not explicitly forbid the "under the threshold so not '
       + 'reportable" answer, which is the one that costs the user money.');
   });
+
+  // ── A MIN AGAINST AN UNKNOWN IS NOT ZERO ────────────────────────────────
+  //
+  // The safe-harbor defect was `Math.min` selecting a term that was near zero
+  // because it had not been computed yet. `Math.min` was never the bug and the
+  // statute really does say "the smaller of" -- what made it dangerous is that
+  // `min` treats an ABSENCE as a very small number and returns it without
+  // comment. `Math.min(5, null)` is 0. `Math.max(1/365, NaN)` is NaN.
+  //
+  // These arms sweep the REST of the tax engine for the same shape. Every one
+  // was written and run against the code as it stood after the safe-harbor fix
+  // and every one FAILED, which is recorded in the commit that fixes them.
+  //
+  // WHY IT MATTERS EVEN THOUGH NO LIVE CALLER CAN REACH IT TODAY: sumIncome()
+  // and sumDeductions() coerce with `Number(e.amount) || 0` and reduce from 0,
+  // so the profit arriving from the UI is always finite. That is the CALLER
+  // being careful, not the function being safe, and it is one new call site
+  // away from being untrue. A calculator that answers "$0 of tax" to a question
+  // it could not understand has told the user something worse than nothing.
+  section('A MIN AGAINST AN UNKNOWN IS NOT ZERO -- the rest of the engine');
+
+  const nonFinite = [['NaN', NaN], ['null', null], ['undefined', undefined],
+                     ['the string "abc"', 'abc'], ['an empty string', ''],
+                     ['an object', {}]];
+
+  // THE MESSAGE HAS TO BE BUILT WITHOUT CALLING THE FUNCTION AGAIN, and the
+  // first version of these arms got that wrong: it put the call inside the
+  // assertion message, so once the guard existed the message expression threw
+  // and every arm failed WITH THE GUARD'S OWN TEXT while the guard was working
+  // perfectly. A failure whose message is the proof of success is worse than a
+  // silent one -- it reads as an unfixed app. `refusal()` returns a description
+  // either way and never propagates.
+  function refusal(fn) {
+    try { return 'returned ' + JSON.stringify(fn()); }
+    catch (e) { return 'THREW ' + (e && e.name) + ': ' + (e && e.message); }
+  }
+
+  test('bracketTax REFUSES a non-finite taxable income instead of answering $0',
+    function () {
+      // THE WORST OF THE THREE, and the reason is the return value rather than
+      // the input. `Math.min(NaN, cap)` is NaN, `NaN > lastCap` is false, so no
+      // band ever accumulates, the loop never breaks, and the function returns
+      // a clean 0. Not NaN -- ZERO. "$0.00 of federal income tax" is a number a
+      // user can read, believe, and act on.
+      for (const [label, v] of nonFinite) {
+        const call = function () { return ctx.bracketTax(v, 'single'); };
+        assert.throws(call,
+          'bracketTax(' + label + ', "single") ' + refusal(call)
+          + '. A confident $0 of income tax from an input the function could '
+          + 'not read is the quiet wrong number this whole suite exists to '
+          + 'prevent.');
+      }
+    });
+
+  test('calcSeTax REFUSES a non-finite net profit, and null and undefined agree',
+    function () {
+      // ASYMMETRY IS THE TELL. `Math.max(0, null)` is 0 and `Math.max(0,
+      // undefined)` is NaN, so the same missing value produced a silent zero
+      // down one path and a visible NaN down the other -- from one line. Two
+      // different wrong answers to one question is how a defect survives a
+      // test that happens to pass the loud one.
+      for (const [label, v] of nonFinite) {
+        const call = function () { return ctx.calcSeTax(v).ssAndMedicare; };
+        assert.throws(call,
+          'calcSeTax(' + label + ').ssAndMedicare ' + refusal(call)
+          + '. null yields 0 and undefined yields NaN from the identical '
+          + 'Math.max, so the same absence is silent on one path and loud on '
+          + 'the other.');
+      }
+    });
+
+  test('projectAnnualFromYtd REFUSES an unusable as-of date -- the 1/365 floor does NOT stop NaN',
+    function () {
+      // THE COMMENT ABOVE THE FLOOR CLAIMED MORE THAN THE FLOOR DELIVERS:
+      // "a naive divide yields Infinity, which renders as $NaN or $Infinity
+      // beside a tax deadline. One day is the smallest honest denominator."
+      // True of zero and false of NaN -- `Math.max(1/365, NaN)` is NaN, so
+      // elapsedFraction is NaN and `projected` is NaN, which is exactly the
+      // rendering the floor was written to prevent.
+      //
+      // AND IT IS LIVE-REACHABLE, which the null/undefined cases are not:
+      // calcQuarterlySetAside passes `asOfDate || new Date()`, and an INVALID
+      // DATE OBJECT is truthy, so `||` hands it straight through and
+      // `instanceof Date` accepts it.
+      const bad = [['an invalid Date object', new Date('garbage')],
+                   ['an unparseable string', 'not-a-date'],
+                   ['null', null], ['undefined', undefined], ['NaN', NaN]];
+      for (const [label, v] of bad) {
+        const call = function () { return ctx.projectAnnualFromYtd(30000, v); };
+        assert.throws(call,
+          'projectAnnualFromYtd(30000, ' + label + ') ' + refusal(call)
+          + '. A NaN elapsedFraction is the exact "$NaN beside a tax deadline" '
+          + 'the floor above it says it prevents. NOTE that JSON.stringify '
+          + 'renders NaN as null, so an elapsedFraction printed as null above '
+          + 'IS the NaN.');
+      }
+    });
+
+  test('CONTROL -- the finite path is untouched by the refusals above',
+    function () {
+      // Without this, a guard written as `throw` at the top of each function
+      // would satisfy all three arms above and break the calculator.
+      assert.ok(ctx.bracketTax(50000, 'single') > 0,
+        'bracketTax(50000, "single") no longer returns a positive tax, so the '
+        + 'non-finite guard is refusing real input too.');
+      assert.ok(ctx.calcSeTax(120000).ssAndMedicare > 0,
+        'calcSeTax(120000) no longer returns a positive SE tax.');
+      assert.strictEqual(ctx.bracketTax(0, 'single'), 0,
+        'a taxable income of exactly ZERO is a real answer and must still be '
+        + 'accepted -- it is the one value a non-finite guard is most likely to '
+        + 'reject by accident.');
+      const p = ctx.projectAnnualFromYtd(30000, new Date('2026-06-30T12:00:00Z'));
+      assert.ok(p.elapsedFraction > 0.4 && p.elapsedFraction < 0.6,
+        'projectAnnualFromYtd on 30 June returned elapsedFraction '
+        + p.elapsedFraction + ', so the guard changed the arithmetic rather '
+        + 'than only the refusal.');
+      assert.ok(Math.abs(p.projected - 30000 / p.elapsedFraction) < 0.01,
+        'the projection no longer equals ytd / elapsedFraction.');
+    });
 
   // ── CONTROLS ────────────────────────────────────────────────────────────
   section('CONTROL -- these arms must be able to fail');

@@ -1077,7 +1077,46 @@ function safeHarborAgiThreshold(filingStatus) {
   return typeof t === 'number' ? t : 75000;
 }
 
+// ── A MIN AGAINST AN UNKNOWN IS NOT ZERO ─────────────────────────────────
+//
+// `Math.min(5, null)` is 0 and `Math.max(1 / 365, NaN)` is NaN. Both functions
+// accept an ABSENCE as an operand and answer anyway, which is the shape behind
+// the safe-harbor defect fixed the same day: `min` was right, the thing being
+// minimised was a number that had not been computed yet.
+//
+// `bracketTax` was the worst instance and the reason is the RETURN VALUE, not
+// the input. `Math.min(NaN, cap)` is NaN, `NaN > lastCap` is false, so no band
+// ever accumulates, the loop never breaks, and the function returns a clean
+// **0** -- not NaN. "$0.00 of federal income tax" is a figure a user can read,
+// believe and act on. `calcSeTax` was asymmetric from a single line:
+// `Math.max(0, null)` is 0 and `Math.max(0, undefined)` is NaN, so the same
+// missing value was silent down one path and visible down the other.
+//
+// THE ONLY REASON NONE OF THIS HAS SHIPPED A WRONG NUMBER is that
+// `sumIncome()` and `sumDeductions()` coerce with `Number(e.amount) || 0` and
+// reduce from 0, so the profit arriving from the UI is always finite. That is
+// the CALLER being careful, not the function being safe, and it is one new call
+// site away from being untrue.
+//
+// THESE THROW RATHER THAN RETURNING A SENTINEL. They are pure arithmetic with
+// one honest contract -- a finite number in -- and every live caller already
+// satisfies it, so this is a guard against the NEXT call site rather than a
+// path the UI can reach. A null return would have to be handled at four more
+// sites, and each handler is another place to forget. ZERO IS A REAL ANSWER
+// and is accepted: it is the value a guard like this is likeliest to reject by
+// accident, and a control arm in tests/sairncash_safe_harbor.js asserts it.
+function requireFiniteNumber(label, v) {
+  if (typeof v !== 'number' || !isFinite(v)) {
+    throw new TypeError('sairncash tax engine: ' + label + ' must be a finite '
+      + 'number, got ' + (typeof v) + ' ' + String(v) + '. Refusing rather '
+      + 'than answering, because Math.min/Math.max treat an absence as a very '
+      + 'small number and return a confident wrong figure.');
+  }
+  return v;
+}
+
 function calcSeTax(netProfit) {
+  requireFiniteNumber('netProfit', netProfit);
   const netSeEarnings = Math.max(0, netProfit) * 0.9235;
   const ss = 0.124 * Math.min(netSeEarnings, TAX_YEAR_2026.ssWageBase);
   const medicare = 0.029 * netSeEarnings;
@@ -1090,6 +1129,7 @@ function calcAdditionalMedicare(netSeEarnings, filingStatus) {
 }
 
 function bracketTax(taxableIncome, filingStatus) {
+  requireFiniteNumber('taxableIncome', taxableIncome);
   const table = TAX_YEAR_2026.brackets[filingStatus];
   let tax = 0, lastCap = 0;
   for (const [cap, rate] of table) {
@@ -1213,7 +1253,32 @@ function calcTotalTax(netProfit, filingStatus, retirementContribution, opts) {
 // projection is wrong for them in both directions. A uniform projection is the
 // right DEFAULT and the caller discloses it.
 function projectAnnualFromYtd(ytdNetProfit, asOfDate) {
+  // ── THE 1/365 FLOOR BELOW DOES NOT STOP NaN, AND ITS COMMENT SAID IT DID.
+  // `Math.max(1 / 365, NaN)` is NaN, so an unreadable date produced a NaN
+  // elapsedFraction and a NaN projection -- the exact "$NaN beside a tax
+  // deadline" the floor was written to prevent. The floor answers ZERO; it has
+  // nothing to say about an absence.
+  //
+  // AND THIS ONE IS LIVE-REACHABLE, unlike the two arithmetic guards above.
+  // `calcQuarterlySetAside` passes `asOfDate || new Date()`, and an INVALID
+  // DATE OBJECT is truthy, so `||` hands it straight through and `instanceof
+  // Date` accepts it.
+  //
+  // `null` IS CHECKED SEPARATELY FROM THE getTime() TEST and that is not
+  // redundant: `new Date(null)` is the 1970 epoch, a perfectly finite date, so
+  // a missing value would otherwise be projected against a 56-year-old year
+  // instead of refused.
+  if (asOfDate === null || asOfDate === undefined) {
+    throw new TypeError('sairncash tax engine: asOfDate is ' + String(asOfDate)
+      + '. Refusing rather than defaulting -- new Date(null) is the 1970 epoch '
+      + 'and would project this year\'s profit against that year.');
+  }
   const d = asOfDate instanceof Date ? asOfDate : new Date(asOfDate);
+  if (!isFinite(d.getTime())) {
+    throw new TypeError('sairncash tax engine: asOfDate did not parse to a '
+      + 'real date (' + String(asOfDate) + '). Refusing rather than answering, '
+      + 'because the 1/365 floor below cannot turn a NaN back into a fraction.');
+  }
   const year = d.getUTCFullYear();
   const start = Date.UTC(year, 0, 1);
   const end = Date.UTC(year + 1, 0, 1);
@@ -1221,6 +1286,9 @@ function projectAnnualFromYtd(ytdNetProfit, asOfDate) {
   // THE FLOOR IS NOT COSMETIC. On 1 January the elapsed fraction is ~0 and a
   // naive divide yields Infinity, which renders as "$NaN" or "$Infinity"
   // beside a tax deadline. One day is the smallest honest denominator.
+  // IT ONLY EVER COVERED ZERO. `Math.max(1 / 365, NaN)` is NaN, so the two
+  // refusals at the top of this function -- not this line -- are what keep an
+  // unreadable date from reaching the division.
   const elapsedFraction = Math.min(1, Math.max(1 / 365, raw));
   return {
     elapsedFraction: elapsedFraction,
