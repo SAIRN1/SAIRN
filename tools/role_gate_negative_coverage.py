@@ -1,0 +1,281 @@
+"""tools/role_gate_negative_coverage.py -- which role gates would survive being
+deleted, because no test ever drives them with a role they exclude?
+
+    python tools/role_gate_negative_coverage.py
+    python tools/role_gate_negative_coverage.py --list
+    python tools/role_gate_negative_coverage.py --baseline   # after a real change
+
+── THE DEFECT THIS EXISTS FOR ──────────────────────────────────────────────
+api/sd-data.js's `alf_family_contacts` read had NO role gate at all until
+2026-09-26: any authenticated SAIRNcare employee of any role could list every
+family contact on the licence with phone, email and the full medication-consent
+trail. Its suite, api/sd-data-family-contacts.test.js, was EIGHTEEN GREEN ARMS at
+the time, and the reason none of them saw it is one line:
+
+    verifySessionToken: function () { return { employee_id: 'owner-1',
+                                               role: opts.role || 'owner' }; }
+
+**EVERY ARM RAN AS `owner`.** The role was a parameter the harness defaulted and
+no arm ever varied, so a completely ABSENT gate and a correct one produce
+identical output. This tool asks the question those eighteen arms could not:
+**if the gate were deleted, would anything go red?**
+
+── WHAT IT MEASURES, AND WHY IT IS NOT "DO THE TESTS MENTION A ROLE" ───────
+For each resource branch in api/sd-data.js that tests a role set:
+
+  1. the ALLOWED roles, resolved from the `roleSet({...})` declaration itself --
+     not from a list here, which would be a second copy of a fact the file owns;
+  2. the EXCLUDED roles, being every role any set declares minus those;
+  3. every (resource, role) pair the test suites actually DRIVE.
+
+A gate is reported when a suite drives the resource but NEVER with an excluded
+role. That is strictly stronger than "the suite mentions a role": a suite can pass
+`role: 'owner'` on every arm, mention FORBIDDEN in a comment, and still be unable
+to detect the gate's removal.
+
+── WHAT IT CANNOT DO, AND THE FIRST ONE BIT ME ─────────────────────────────
+IT CANNOT TELL A SUITE THAT DRIVES A RESOURCE FROM ONE THAT MENTIONS IT. The
+first version matched any quoted lowercase string in a test file, so a resource
+named in a COMMENT counted as exercised -- that reported 16 gates instead of 11,
+and five of those were mentions. Only a `resource:` or `resource ===` position
+counts now, which is the opposite error: a suite driving a resource through a
+variable is invisible and its gate will be reported as uncovered. An over-report
+is the safe direction here (it asks for an arm that already exists), and it is
+stated rather than left for a reader to discover.
+
+IT ALSO CANNOT SEE role gates outside api/sd-data.js -- api/*-auth.js files carry
+their own, and this tool says nothing about them -- and it cannot judge whether a
+gate is CORRECT. A gate excluding the wrong roles passes here as long as somebody
+tests the exclusion it does implement.
+
+A RATCHET, pinned to docs/role-gate-negative-coverage.json. The honest state is 11
+of 30 and a check that simply failed would sit permanently red. An absent,
+unparseable or `uncovered`-less pin is exit 2 COULD NOT TELL, never 0 -- and so is
+finding zero role gates at all, because the gate shape moving must not read as
+"everything is covered".
+"""
+import argparse
+import io
+import json
+import os
+import re
+import sys
+
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SD = os.path.join(REPO, 'api', 'sd-data.js')
+PIN = os.path.join(REPO, 'docs', 'role-gate-negative-coverage.json')
+
+# ── A BRANCH ENDS WHERE THE NEXT ONE BEGINS, NOT AT A CHARACTER COUNT ───────
+# THIS WAS `BRANCH_WINDOW = 3000` AND THE PROBE CAUGHT IT. A fixed window from
+# `resource === 'x'` reaches into the NEXT branch and swallows ITS role gate, so a
+# resource gated on ALF_MANAGEMENT_ROLES was reported as gated on
+# `ALF_CARE_ROLES,ALF_MANAGEMENT_ROLES`. Union the two members and the ALLOWED set
+# becomes every role, the EXCLUDED set becomes empty, and no test can ever be
+# found driving an excluded role -- so the gate is reported uncovered NO MATTER
+# WHAT ANY SUITE DOES. An arm that drove it correctly still failed.
+#
+# It is the same defect as the magic 4200-char window in
+# tests/roofing_claim_gate_single_source.js, fixed the same way and for the same
+# reason: a fixed length is a guess about a subject whose extent is knowable.
+BRANCH_MARK = re.compile(r"resource === '([a-z0-9_]+)'")
+
+
+class CouldNotTell(Exception):
+    pass
+
+
+def _read(path, what):
+    if not os.path.isfile(path):
+        raise CouldNotTell('%s does not exist, so %s could not be read'
+                           % (os.path.relpath(path, REPO), what))
+    return io.open(path, encoding='utf-8', errors='replace').read()
+
+
+def role_sets(src):
+    """{SET_NAME: {member roles}} from the roleSet() declarations themselves."""
+    out = {}
+    for m in re.finditer(r'const\s+([A-Z][A-Z0-9_]*ROLES)\s*=\s*roleSet\(\{([^}]*)\}\)', src):
+        out[m.group(1)] = set(re.findall(r'([a-z_][a-z0-9_]*)\s*:\s*true', m.group(2)))
+    if not out:
+        raise CouldNotTell('no roleSet({...}) declaration matched in api/sd-data.js '
+                           '-- the declaration shape moved and NOTHING was resolved. '
+                           'This is not "no role sets".')
+    return out
+
+
+def gated_branches(src):
+    """{resource: {role set names its branch tests}}.
+
+    Each branch runs from its own `resource === '...'` to the NEXT one. See
+    BRANCH_MARK: a fixed-length window swallowed the following branch's gate and
+    made the resource unfalsifiable.
+    """
+    marks = [(m.start(), m.group(1)) for m in BRANCH_MARK.finditer(src)]
+    out = {}
+    for i, (pos, name) in enumerate(marks):
+        end = marks[i + 1][0] if i + 1 < len(marks) else len(src)
+        for g in re.finditer(r'!\s*([A-Z][A-Z0-9_]*ROLES)\s*\[\s*session\.role\s*\]',
+                             src[pos:end]):
+            out.setdefault(name, set()).add(g.group(1))
+    if not out:
+        raise CouldNotTell('no resource branch tested a role set -- the gate shape '
+                           'moved and NOTHING was measured. This is not '
+                           '"no role gates".')
+    return out
+
+
+def suite_files():
+    out = []
+    for pat in (('api', '*.test.js'), ('api', '_lib', '*.test.js'), ('tests', '*.js')):
+        d = os.path.join(REPO, *pat[:-1])
+        if not os.path.isdir(d):
+            continue
+        for n in sorted(os.listdir(d)):
+            if n.endswith('.test.js') or (pat[0] == 'tests' and n.endswith('.js')):
+                out.append(os.path.join(d, n))
+    if not out:
+        raise CouldNotTell('no test files found under api/ or tests/')
+    return out
+
+
+def driven(all_roles):
+    """{resource: {roles any suite drives it with}}."""
+    out = {}
+    for p in suite_files():
+        s = io.open(p, encoding='utf-8', errors='replace').read()
+        if 'role' not in s:
+            continue
+        roles = set()
+        for r in all_roles:
+            if re.search(r"""role\s*[:=]\s*['"]%s['"]""" % re.escape(r), s) \
+               or re.search(r"""(?:tokenFor|token|session|sessionFor|as)\(\s*['"]%s['"]"""
+                            % re.escape(r), s):
+                roles.add(r)
+        if not roles:
+            continue
+        # STRICT: a `resource:` / `resource ===` position only. See the docstring --
+        # the loose version counted mentions and over-reported by five.
+        for res in set(re.findall(r"""resource\s*[:=]\s*['"]([a-z0-9_]+)['"]""", s)):
+            out.setdefault(res, set()).update(roles)
+    return out
+
+
+def analyse():
+    src = _read(SD, 'the role gates')
+    sets = role_sets(src)
+    gated = gated_branches(src)
+    all_roles = set()
+    for v in sets.values():
+        all_roles |= v
+    drv = driven(all_roles)
+
+    uncovered, covered, undriven = [], [], []
+    for res in sorted(gated):
+        allowed = set()
+        for name in gated[res]:
+            allowed |= sets.get(name, set())
+        excluded = all_roles - allowed
+        got = drv.get(res)
+        if not got:
+            # NOT the same finding. Nothing drives this resource at all, so there is
+            # no suite to add an arm to -- that is a coverage gap of a different
+            # kind and is counted apart rather than folded in.
+            undriven.append((res, sorted(gated[res])))
+            continue
+        if got & excluded:
+            covered.append((res, sorted(got & excluded)))
+        else:
+            uncovered.append((res, sorted(gated[res]), sorted(got)))
+    return sets, gated, uncovered, covered, undriven
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--list', action='store_true', help='print every uncovered gate')
+    ap.add_argument('--baseline', action='store_true',
+                    help='rewrite the pin to the CURRENT numbers. Only correct after '
+                         'a real arm is added, never to make a run pass')
+    args = ap.parse_args(argv)
+
+    try:
+        sets, gated, uncovered, covered, undriven = analyse()
+    except CouldNotTell as e:
+        sys.stderr.write('COULD NOT TELL -- %s\n' % e)
+        sys.stderr.write('This is the THIRD STATE and is NOT a clean run.\n')
+        return 2
+
+    print('ROLE-GATE NEGATIVE COVERAGE (api/sd-data.js)')
+    print('%d role set(s) declared, %d resource branch(es) gated on one.'
+          % (len(sets), len(gated)))
+    print('')
+    print('UNCOVERED -- a suite drives it, never with a role the gate excludes: %d'
+          % len(uncovered))
+    print('COVERED   -- some suite drives it with an excluded role:             %d'
+          % len(covered))
+    print('NOT DRIVEN by any suite at all (a different gap, counted apart):     %d'
+          % len(undriven))
+    print('')
+    if args.list or uncovered:
+        for res, gs, got in uncovered:
+            print('   %-26s gate=%-34s driven-as=%s'
+                  % (res, ','.join(gs)[:34], ','.join(got)))
+    if args.list and undriven:
+        print('')
+        print('   NOT DRIVEN:')
+        for res, gs in undriven:
+            print('   %-26s gate=%s' % (res, ','.join(gs)))
+    print('')
+    print('AN UNCOVERED GATE WOULD SURVIVE BEING DELETED. That is the whole claim --')
+    print('not that the gate is wrong, but that nothing would notice its absence.')
+    print('api/sd-data-family-contacts.test.js was 18 green arms over a resource with')
+    print('NO GATE AT ALL, because every arm ran as owner.')
+    print('')
+
+    if args.baseline:
+        io.open(PIN, 'w', encoding='utf-8', newline='\n').write(json.dumps({
+            '_what': 'Pinned role-gate negative coverage. Written by '
+                     'tools/role_gate_negative_coverage.py --baseline. A ratchet: '
+                     '`uncovered` must never rise. Lower it by adding an arm that '
+                     'drives the resource with a role its gate excludes.',
+            'uncovered': len(uncovered),
+            'covered': len(covered),
+            'not_driven': len(undriven),
+            'gated_total': len(gated),
+            'uncovered_resources': [u[0] for u in uncovered],
+        }, indent=2, sort_keys=True) + '\n')
+        print('wrote %s' % os.path.relpath(PIN, REPO))
+        return 0
+
+    if not os.path.isfile(PIN):
+        sys.stderr.write('COULD NOT TELL -- %s does not exist, so nothing was '
+                         'compared. Run --baseline once to pin the measured state.\n'
+                         % os.path.relpath(PIN, REPO))
+        return 2
+    try:
+        pin = json.load(io.open(PIN, encoding='utf-8'))
+    except ValueError as e:
+        sys.stderr.write('COULD NOT TELL -- %s will not parse (%s). NOTHING WAS '
+                         'COMPARED.\n' % (os.path.relpath(PIN, REPO), e))
+        return 2
+    was = pin.get('uncovered')
+    if not isinstance(was, int):
+        sys.stderr.write('COULD NOT TELL -- the pin carries no integer `uncovered`.\n')
+        return 2
+
+    if len(uncovered) > was:
+        print('REGRESSION -- uncovered role gates rose from %d to %d.' % (was, len(uncovered)))
+        print('Either add an arm driving the new gate with a role it excludes, or say')
+        print('why it does not need one and re-pin with --baseline in the same commit.')
+        return 1
+    if len(uncovered) < was:
+        print('IMPROVED -- uncovered fell from %d to %d. Re-pin:' % (was, len(uncovered)))
+        print('   python tools/role_gate_negative_coverage.py --baseline')
+        return 0
+    print('OK -- no worse than pinned (%d uncovered).' % was)
+    print('A RATCHET IS NOT A PASS. %d gate(s) would still survive deletion.'
+          % len(uncovered))
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

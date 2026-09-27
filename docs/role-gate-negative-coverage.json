@@ -1,0 +1,21 @@
+{
+  "_what": "Pinned role-gate negative coverage. Written by tools/role_gate_negative_coverage.py --baseline. A ratchet: `uncovered` must never rise. Lower it by adding an arm that drives the resource with a role its gate excludes.",
+  "covered": 2,
+  "gated_total": 31,
+  "not_driven": 17,
+  "uncovered": 12,
+  "uncovered_resources": [
+    "alf_claim_routes",
+    "alf_clients",
+    "alf_facility",
+    "alf_mar",
+    "alf_staff_credentials",
+    "bld_draws",
+    "bld_tna",
+    "sd_customers",
+    "sd_quote_requests",
+    "sdn_clients",
+    "sen_claims",
+    "sen_clients"
+  ]
+}
