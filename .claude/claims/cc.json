@@ -2784,6 +2784,24 @@
         "sairnvet.html",
         "tools/citation_drift_hook.py"
       ]
+    },
+    {
+      "id": "cc-1790474449",
+      "session": "cc",
+      "subject": "platform",
+      "task": "report_only_checks --list KeyError evidence -> print a third state never fabricate; index_duplicate_check.py PostToolUse Write|Edit scoped hook the same shape as citation_drift_hook; dispatch_state.py moved from push-time to SessionStart; SPOF dependency-graph sweep methodology item 91 with a named retirement schedule; SAIRNvet formulary citation sourcing continued row by row. api/sd-data.js DELIBERATELY EXCLUDED -- hank-queue13 claimed it 0.0h ago for the alf_compliance_rules evaluate branch and BLOCKED my sen-EVV wiring on the same declared FILE; flagged to the coordinating session rather than reworded past the matcher (PR 4.3). SUBJECT NAMED PER PR 4.3 FILES: tools/report_only_checks.py tools/dispatch_state.py tools/index_duplicate_hook.py .claude/settings.json sairnvet.html docs/2026-09-26-spof-retirement-schedule.md",
+      "claimed_at": "2026-09-27T02:00:49Z",
+      "claimed_at_epoch": 1790474449.2326477,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        ".claude/settings.json",
+        "docs/2026-09-26-spof-retirement-schedule.md",
+        "sairnvet.html",
+        "tools/dispatch_state.py",
+        "tools/index_duplicate_hook.py",
+        "tools/report_only_checks.py"
+      ]
     }
   ],
   "refusals": [
