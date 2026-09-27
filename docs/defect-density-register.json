@@ -15255,7 +15255,7 @@
       "recurrence_open": "11 SPREAD sites are converted and the ratchet pins the rest, so the number cannot silently rise. 64 RAW sites (data: payload straight into the store) are NOT converted -- a sweep across ~20 sairngrounds branches plus stonedesk and mech, each needing its own read consulted for the column list, and it is named rather than started here. The ratchet makes a future 'complete' claim checkable; it does not make it true."
     },
     {
-      "commit": "99310d3fc6bd",
+      "commit": "e5eb7911d233",
       "date": "2026-09-26",
       "subject": "fix(sairnbiz): the plan cards stop asserting Ohio to every customer, and the overtime threshold is read",
       "files": [
