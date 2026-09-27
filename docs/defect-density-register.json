@@ -7302,7 +7302,7 @@
       "injection": {
         "commit": "286f945f661f",
         "date": "2026-07-23",
-        "subject": "Add StoneDesk Agent SDK (sd-store.js + sd-agent.js) \u2014 tool-calling agent for profile/slabs/memory, write_slab confirm-first, verified end-to-end on preview.",
+        "subject": "Add StoneDesk Agent SDK (sd-store.js + sd-agent.js) — tool-calling agent for profile/slabs/memory, write_slab confirm-first, verified end-to-end on preview.",
         "lag_days": 55
       },
       "citation_note": "The process rules are about checks, documents and coordination. None of them covers a cost control that was never wired, and inventing a citation to fill the field is the exact thing `not-citable` exists to prevent.",
@@ -13978,7 +13978,7 @@
       "injection": {
         "unknown_reason": "The tool was authored in a commit the rebase has since rewritten more than once; naming a sha that may not be reachable would be worse than saying so. It was injected when the tool was first written, 2026-09-24, in the same session."
       },
-      "citation_note": "PR \u00a71.11 is the closest standing rule and it is about a check that depends on an ABSENT TOOL, which is not this. This is a check whose subject is PRESENT and unmeasurable, reporting a pass. The family is the same -- \"could not run\" is a third state and is never folded into \"passed\" -- so it is cited rather than recorded as uncitable.",
+      "citation_note": "PR §1.11 is the closest standing rule and it is about a check that depends on an ABSENT TOOL, which is not this. This is a check whose subject is PRESENT and unmeasurable, reporting a pass. The family is the same -- \"could not run\" is a third state and is never folded into \"passed\" -- so it is cited rather than recorded as uncitable.",
       "phase_note": "The third state was implemented for the absent-plan shape and for a zero-item plan, and the items-present-none-checkable shape was simply not considered. The probe's arm for the neighbouring case shows the author was thinking about it and stopped one shape short.",
       "contributing_factors": [
         {
@@ -15107,7 +15107,7 @@
       "layer": "product",
       "severity": "critical",
       "detection_method": "code-review",
-      "summary": "sairnvet.html searchDrugs() rendered a green \"Verified\" badge from `d.needsReview ? 'Needs Review' : '\u2713 Verified'` -- the ABSENCE of a review flag read as the PRESENCE of a verification, on 284 of 485 VET_DRUGS rows, with no `reference` field on any row and no source recorded anywhere in the file for the badge to have checked. The same claim reached the clinician through nine further sites including the AI dosing system prompt (\"you may ONLY use the verified database record\") and the grounding context (\"Verified database record:\"). And one of the doses so badged was wrong: the Butorphanol HORSE row carried 0.2-0.4 mg/kg, the dog/cat figure propagated across all five species rows, against the FDA-approved equine 0.1 mg/kg IV (Torbugesic, NADA 135-780) -- 2-4x the label dose, shown to a vet under a tick.",
+      "summary": "sairnvet.html searchDrugs() rendered a green \"Verified\" badge from `d.needsReview ? 'Needs Review' : '✓ Verified'` -- the ABSENCE of a review flag read as the PRESENCE of a verification, on 284 of 485 VET_DRUGS rows, with no `reference` field on any row and no source recorded anywhere in the file for the badge to have checked. The same claim reached the clinician through nine further sites including the AI dosing system prompt (\"you may ONLY use the verified database record\") and the grounding context (\"Verified database record:\"). And one of the doses so badged was wrong: the Butorphanol HORSE row carried 0.2-0.4 mg/kg, the dog/cat figure propagated across all five species rows, against the FDA-approved equine 0.1 mg/kg IV (Torbugesic, NADA 135-780) -- 2-4x the label dose, shown to a vet under a tick.",
       "rules": [],
       "citation_confidence": "not-citable",
       "injection_phase": "design",
@@ -15123,7 +15123,7 @@
           "factor": "searchDrugs() chose the badge from needsReview alone, a two-state model over a three-state fact: flagged-for-review, cites-a-source, and neither. `needsReview:false` is the default for a row nobody has touched, so the green state was the state of NOT HAVING BEEN LOOKED AT.",
           "kind": "technical",
           "action_status": "done",
-          "action": "Badge now branches on d.reference and renders three states -- Needs Review / '\u2713 Referenced' / 'No source recorded' -- with the no-source chip deliberately not the green #D1FAE5."
+          "action": "Badge now branches on d.reference and renders three states -- Needs Review / '✓ Referenced' / 'No source recorded' -- with the no-source chip deliberately not the green #D1FAE5."
         },
         {
           "factor": "The formulary was largely built by propagating ONE numeric dose across a drug's species rows. The copy is faithful and the species is not; butorphanol/horse is the instance that was measured wrong at 2-4x the FDA-approved equine dose.",
@@ -16217,6 +16217,58 @@
         }
       ],
       "recurrence_open": "The pin is resolved for the seed exemption. Nothing checks that any OTHER consumer of pushed_tip() treats its return as a refspec rather than a sha -- the same value is passed to the seed comparison and to export_sql_at, and whether either of those is refspec-safe was not audited here."
+    },
+    {
+      "commit": "5192346a1d24",
+      "date": "2026-09-26",
+      "subject": "feat(sairnsenior): an expired CPR refuses the assignment -- on all three write paths, and the join it needed did not exist",
+      "files": [
+        "sairnsenior.html",
+        "tests/lib/strip_comments.js",
+        "tests/sairnbiz_benefits_and_overtime.js",
+        "tests/sairnsenior_cert_gate.js"
+      ],
+      "lines_added": 509,
+      "lines_removed": 22,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "A caregiver whose CPR certification had expired could be assigned to a client and scheduled onto a visit, on all three write paths -- saveClient(), senReassignClient() and saveVisit() -- while the app already held the expiry date, already computed the days remaining with certDaysUntil(), and already rendered a red \"Expired\" badge for that same caregiver on the Caregivers panel. Two screens gave two answers about the same person and nothing flagged the disagreement. The underlying reason no check existed is structural rather than an omission: assigned_employee_id is an employee_id from SAIRNbiz's roster and a sen_caregivers row is keyed CG-... with a name, so there was no field joining the assignment to the certificate. Fixed by declaring the link (a \"Linked employee\" select on the caregiver record) and gating all three paths through it before any write; an expired certificate refuses and names the date and the day count, while an unlinked or undated record is a third state that allows and says so rather than passing silently.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The caregiver record and the client assignment path both predate any commit that could be called the injection -- neither introduced the missing join, the app was built without it. Naming one of them would put a sha on a design gap."
+      },
+      "citation_note": "1.11 is about a check that must fail CLOSED when a dependency is absent. Applied here to the data rather than to a tool: the unlinked case is a COULD-NOT-CHECK that is reported rather than folded into a pass, which is the same third state.",
+      "phase_note": "The two records were designed without a join, which is why the check was not expressible rather than merely not written. Stated rather than inferred: saveCaregiver() has never carried an employee id field.",
+      "contributing_factors": [
+        {
+          "factor": "the certificate data and the assignment data were owned by two different records with no field joining them -- a sen_caregivers row keyed CG-... with a name, and an assigned_employee_id out of another app's roster -- so the check was not skipped, it was not expressible",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "a Linked employee select on the caregiver record, resolved by employee_id, with an unlinked record producing COULD NOT CHECK rather than OK"
+        },
+        {
+          "factor": "the expiry was rendered as a badge on one panel and that made it look handled. A value shown in red somewhere reads as a control even when nothing consumes it -- the same shape as SAIRNmechanical's credentials subtitle claiming an eligibility computation that no caller requested",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "a checker over each app's *_expiry fields asking which decision paths read them, which would have caught this and the SAIRNmechanical eligibility case together -- named in recurrence_open and NOT built here"
+        },
+        {
+          "factor": "three separate write paths assign a caregiver, and a gate added to the obvious one would have left the other two open. saveClient, senReassignClient and saveVisit were written at different times for different reasons",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "all three gated before any write, and arm D3 asserts the check precedes the st() call on each so a refusal cannot leave a record behind"
+        }
+      ],
+      "recurrence_open": "The gate covers the three paths that assign a caregiver to care. It does NOT cover clock-in: vsClockIn() records a real visit event and does not re-check the certificate, so a visit scheduled while a certificate was valid can be worked after it lapses. That is arguably correct -- refusing a clock-in leaves a caregiver standing in a client's home with no way to record the visit -- and it is a product decision nobody has made, so it is named here rather than assumed either way. The gate is also single-certificate: cpr_expiry only. bgcheck_date is stored and not gated, and sen_training_records and sen_training_rules exist as separate resources the gate does not read, so a caregiver can be current on CPR and overdue on state training hours and the gate says nothing. Nothing mechanically detects the general shape either -- a stored expiry date that a decision path does not consult -- and a checker over each app's *_expiry fields against the write paths that assign the person they belong to would have found this one and the SAIRNmechanical eligibility case together. Named and NOT built here."
     }
   ],
   "started": "2026-09-09",
