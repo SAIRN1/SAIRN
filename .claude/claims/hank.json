@@ -3066,6 +3066,23 @@
         "sql/legacy_ciphertext_census.sql",
         "tools/payload_field_ghost_scan.py"
       ]
+    },
+    {
+      "id": "hank-1790509716",
+      "session": "hank",
+      "subject": "hank",
+      "task": "ghost-field-read sweep (queue14 item 3): branches gated on a field name spelled nowhere. tools/ghost_field_read_scan.py plus control. TWO CONFIRMED and both FIXED here: api/_lib/compliance-rules.js facility_training_year window reads opts.facility_training_year_start which no caller can set, so from=null and the date filter is SKIPPED -- every training record of any age counts, the over-counting direction; and sairnsenior.html rfDeliveredHoursFor reads v.actual_start/v.actual_end where the real fields are clock_in_at/clock_out_at, so the referral-source performance table renders a confident 0.0 h for every linked source. CONFLICT DECLARED PER PR 4.3: cody-q14 named sairnsenior.html and that claim is EXPIRED (9.2h) with its work LANDED at 131b9022; cody's live row is cody-q15 (tier_a probe, sairnfreedom.html, tests/lib/strip_comments.js) which names neither of my files. cc-queue11 named api/_lib/compliance-rules.js and finished 17h ago. SUBJECT NAMED PER PR 4.3 FILES: tools/ghost_field_read_scan.py tests/run_ghost_field_read_probe.py api/_lib/compliance-rules.js sairnsenior.html docs/2026-09-27-ghost-field-read-sweep.md",
+      "claimed_at": "2026-09-27T11:48:36Z",
+      "claimed_at_epoch": 1790509716.6101305,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/_lib/compliance-rules.js",
+        "docs/2026-09-27-ghost-field-read-sweep.md",
+        "sairnsenior.html",
+        "tests/run_ghost_field_read_probe.py",
+        "tools/ghost_field_read_scan.py"
+      ]
     }
   ],
   "refusals": [
