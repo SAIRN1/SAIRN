@@ -3135,6 +3135,26 @@
         "docs/CRITICALITY-TIERS.md",
         "tools/auth_shaped_field_scan.py"
       ]
+    },
+    {
+      "id": "hank-1790559726",
+      "session": "hank",
+      "subject": "hank",
+      "task": "queue15 FREE BATCH -- api/sd-data.js is BLOCKED and NOT TAKEN (see conflict note). Items taken: (5) api/legal-deadlines.js add_rule and add_holidays WRITE law_deadline_rules and law_holidays with NO 401 and NO role check -- the caller is resolved at :692 and used only to stamp verified_by, so any holder of a valid SAIRNlaw licence key can author or OVERWRITE a deadline rule with no employee session at all. Regression test FIRST, then gate to a purpose-named authoring role set, and tools/load_deadline_seed.py must sign in because it currently sends the bearer key alone and the gate would break seeding. (3) sairnbiz.html ts-note: render the overtime disclosure expanded only when the threshold is non-default or the exclusion changes the displayed figure, collapsed otherwise; update the always-on arms. (6) class sweeps: hand-kept extraction lists, harnesses classifying calls by ORDER instead of METHOD, fixed-width slice windows on source text. (10) instrument-vs-code discrimination recorded per suite plus a known-bad control on every harness touched this session. (11) self-audit of the skill log, tool inventory and methodology registry. (8) MECH-AUDIT-2026 provisioning scope and the stale skill-doc endpoint counts. CONFLICT DECLARED PER PR 4.3 RATHER THAN REWORDED: fourth holds api/sd-data.js under a LIVE 'sairncare' claim made 2026-09-28T00:49:05Z whose own task is 'caregiver made a real enforced role in api/sd-data.js roleSets' -- genuinely the same subject as queue15 items 1 and 2, which are BOTH rf-entities and mech_insurance_policies ROLE GATES in that file. fourth also has 13 unpushed local commits. So items 1, 2 and the FIX half of item 4 are NOT TAKEN; their audits are done read-only and reported. SUBJECT NAMED PER PR 4.3 FILES: api/legal-deadlines.js api/law-auth.js tools/load_deadline_seed.py api/legal-deadlines-auth.test.js sairnbiz.html tests/sairnbiz_timesheet_hours.js docs/2026-09-27-instrument-vs-code.md docs/2026-09-27-refusal-text-vs-gate-sweep.md",
+      "claimed_at": "2026-09-28T01:42:06Z",
+      "claimed_at_epoch": 1790559726.8522213,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/law-auth.js",
+        "api/legal-deadlines-auth.test.js",
+        "api/legal-deadlines.js",
+        "docs/2026-09-27-instrument-vs-code.md",
+        "docs/2026-09-27-refusal-text-vs-gate-sweep.md",
+        "sairnbiz.html",
+        "tests/sairnbiz_timesheet_hours.js",
+        "tools/load_deadline_seed.py"
+      ]
     }
   ],
   "refusals": [
@@ -3175,6 +3195,36 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "same app: sairncare",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-28T01:39:27Z",
+      "my_subject": "hank",
+      "my_task": "queue15 items 1-2: rf_entities read gate allows BROAD_READ_ROLES (owner, admin, estimator) behind a 403 that says 'management-level information' -- MICHAEL'S DECISION: the refusal text is policy, the gate is wrong, so restrict to MANAGEMENT_ROLES. Regression test FIRST (estimator refused, owner and admin allowed), then a platform-wide sweep for every gate whose refusal text names a tier NARROWER than the role set it admits, each fixed test-first. Then policy_no on mech_insurance_policies read: MICHAEL'S DECISION -- management sees the full value, every other role gets the LAST FOUR only, and the insurance panel renders the masked value. Regression test first, live-verify by role and report observed values. SUBJECT NAMED PER PR 4.3 FILES: api/sd-data.js api/rf-auth.js api/sd-data-mech-insurance.test.js api/sd-data-rf-entities-role.test.js sairnmechanical.html docs/2026-09-27-refusal-text-vs-gate-sweep.md",
+      "other_session": "fourth",
+      "other_subject": "sairncare",
+      "other_task": "roleSet() seam test closing the 6 COULD-NOT-TELL seams into api/_lib/auth.js before roleSet membership is changed; caregiver made a real enforced role in api/sd-data.js roleSets and reconciled against both sairncare.html dropdowns; the SAIRNcare credential pre-gate red suites (12 suites / 172 assertions on medication-record auth, cc's bisection carries over); the 33 WEAK git anchors; sd-sub-data.js's two verifySessionToken call sites read individually; second-pass retry arms starting with tests/sairnscape_outbound_queue.js; conflict_marker_preflight ORIG_HEAD..HEAD post-operation mode; switch-level reclassification of the second-pass sweep; counter-wraparound sweep; lost-independent-backstop sweep; hidden-state audit.\n\nCONFLICT DECLARED PER PR 4.3 RATHER THAN REWORDED: api/legal-deadlines.js IS HANK'S -- the claim tool refused my previous attempt naming it (hank holds 'hank' on that file, registry-only, not yet on origin). The 401/403 fix for unauthenticated add_rule/add_holidays is therefore NOT in this claim and is NOT being done by me. It is a LIVE unauthenticated write path to the legal deadline rules the entire SAIRNlaw product claim rests on, and docs/2026-08-30-sairntech-app-sellability-gate.md records it as an open pre-launch blocker -- flagged to hank and to the coordinating session rather than reworded past the matcher. api/_lib/auth.js is shared and I am ADDING A TEST FILE beside it, not editing it, unless the caregiver work forces a change there, in which case I will re-check first.\n\nSUBJECT NAMED PER PR 4.3 FILES: api/_lib/auth-roleset-seam.test.js api/sd-data.js sairncare.html tools/conflict_marker_preflight.py tools/second_pass_coverage_scan.py tests/sairnscape_outbound_queue.js docs/",
+      "other_claimed_at": "2026-09-28T00:49:05Z",
+      "shared_files": [
+        "api/sd-data.js"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-28T01:39:27Z",
+      "my_subject": "hank",
+      "my_task": "queue15 items 1-2: rf_entities read gate allows BROAD_READ_ROLES (owner, admin, estimator) behind a 403 that says 'management-level information' -- MICHAEL'S DECISION: the refusal text is policy, the gate is wrong, so restrict to MANAGEMENT_ROLES. Regression test FIRST (estimator refused, owner and admin allowed), then a platform-wide sweep for every gate whose refusal text names a tier NARROWER than the role set it admits, each fixed test-first. Then policy_no on mech_insurance_policies read: MICHAEL'S DECISION -- management sees the full value, every other role gets the LAST FOUR only, and the insurance panel renders the masked value. Regression test first, live-verify by role and report observed values. SUBJECT NAMED PER PR 4.3 FILES: api/sd-data.js api/rf-auth.js api/sd-data-mech-insurance.test.js api/sd-data-rf-entities-role.test.js sairnmechanical.html docs/2026-09-27-refusal-text-vs-gate-sweep.md",
+      "other_session": "fourth",
+      "other_subject": "sairncare-incidents",
+      "other_task": "alf_incidents server-set recorded_by plus the reported_by payload strip and the care-role self-scope read; migration sql/sairncare_incidents_recorded_by.sql. FILES: api/sd-data.js api/sd-data-alf-caregiver-scope.test.js sql/sairncare_incidents_recorded_by.sql",
+      "other_claimed_at": "2026-09-28T01:19:45Z",
+      "shared_files": [
+        "api/sd-data.js"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
