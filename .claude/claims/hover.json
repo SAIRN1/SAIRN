@@ -62,8 +62,8 @@
       "task": "self-audit items: real undirected-sweep fallback (cold bucket exhausted) built into hover_cold_scan_pool.py; H1-labeled note in SKILL.md's fourth-rotation-axis paragraph FILES: .claude/skills/sairn-hover-auditor/",
       "claimed_at": "2026-09-28T00:17:56Z",
       "claimed_at_epoch": 1790554676.2585418,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-28T00:26:10Z",
       "files": null
     }
   ]
