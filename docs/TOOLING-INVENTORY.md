@@ -19,24 +19,25 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**260 files in `tools/`.** By what actually invokes them:
+**262 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 14 | reachable from something that can refuse a push or a tool call |
 | **REPORT-ONLY** | 68 | runs automatically on every push, never blocks |
 | **ADVISORY** | 4 | session-start or prompt hooks, informational |
-| **DECIDED** | 72 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
+| **DECIDED** | 73 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 48 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 54 | nothing runs these at all |
+| **UNWIRED** | 55 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
 | ADVISORY | 3 |
-| CHECKER | 180 |
+| CHECKER | 181 |
 | GENERATOR | 19 |
+| GUARD | 1 |
 | LIBRARY | 25 |
 | LIVE | 26 |
 | PUSH-GATE | 1 |
@@ -44,7 +45,7 @@ By what they are, independent of wiring:
 | TOOL | 3 |
 | UNWIRED | 1 |
 
-**72 tool(s) are DECIDED -- deliberately not promoted, with the reason
+**73 tool(s) are DECIDED -- deliberately not promoted, with the reason
 recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
@@ -239,7 +240,7 @@ And 5 that are PostToolUse hooks in their own right, not registry entries:
 
 ---
 
-## DECIDED -- not promoted, on purpose (72)
+## DECIDED -- not promoted, on purpose (73)
 
 **These are not gaps.** Each carries a recorded reason in
 `tools/report_only_checks.py`'s `NOT_PROMOTED` list -- a read-list whose own
@@ -282,6 +283,7 @@ is how a reader stops believing the number.
 | `invocation_path_scan.py` | CHECKER | PROMOTING IT HERE WOULD MAKE IT AN INSTANCE OF ITS OWN FINDING, and that is the whole reason for the decision rather than a joke about it. Its subject is WIRING -- .claude/settings.json and this file -- both of which change by Write/Edit. This registry runs at PUSH time only: `hook_main()` returns 0 unless the Bash command was a `git push`, which is exactly the gap the tool was written to name after register_freshness_check.py sat correct and un-triggered for two days. Registering it here would give it the same trigger/subject mismatch it reports. ITS OUTPUT IS ALSO THE WRONG SHAPE for a per-push signal: five candidates that each need a READ to decide whether the document named in a checker's `catches` text is its subject or a source it reads, and a five-line list repeated after every push is a list nobody reads by the third time. Run it when the wiring changes -- a hook added, a checker registered, a matcher edited -- and act on the triage in docs/2026-09-26-invocation-path-sweep.md. The honest fix is a Write|Edit hook scoped to those two files, which is a named decision with a real cost and is NOT being taken unilaterally here |
 | `landing_verification.py` | CHECKER | DELIBERATELY NOT ON THE PUSH PATH, and the reason is the check itself rather than a preference. Two of its three sections need the NETWORK -- 22 live route fetches and two package registries -- so on every push it would add roughly a minute, and worse, it would FLAP: a transient DNS failure or a Vercel bot-mitigation challenge is honestly reported as COULD NOT TELL, which is exit 2, which on a push reads as a refusal nobody can act on. A gate that goes amber for reasons outside the repo is how overrides become routine, and this repo already records that costing more than the gate saved. IT IS ALSO ANSWERING THE WRONG QUESTION FOR A PUSH: it asks whether work that ALREADY landed is live, whether the OTHER clones are current, and whether packages have moved -- none of which the diff in front of it can change. The post-push half is already covered for the one route it matters most on by deploy_verify_notify.py. Run it deliberately: at session start, after a push somebody needs to be sure of, and before trusting another clone. tests/run_landing_verification_probe.py is its control and IS on the test path |
 | `licence_recoverability_check.py` | LIVE | live probes needing a real licence and a network; correctly manual. |
+| `live_probe_residue_audit.py` | CHECKER | PROMOTED? NO -- and the reason is that its subject changes only when somebody WRITES a live probe, which is a handful of times a year. A push-time run would report the same seven writers for ever, which is the always-passing checker this registry has a name for. IT IS A PRE-COMMIT QUESTION for whoever adds a live probe, and the convention that invokes it is docs/2026-09-28-verification-residue.md. Built after one probe wrote a rule to LAW-TEST-2026 to verify an identity strip -- seeing what an endpoint STORES needs a write -- and DELETE was revoked platform-wide on that table in August, so the row needs a human in the SQL editor. One probe, one un-deletable row, on a licence a prospect may be shown. The rule it enforces was ALREADY SETTLED in sql/stonedesk_recovery_admin_seed.sql -- THE FIX IS THE LICENCE, NOT THE PIN -- and applied by roofing in September; nothing made the other probes follow because the rule lived in a SQL comment rather than in the code path that writes. Its companion guard tools/audit_licence.py IS in the code path and exits 2 COULD NOT RUN on a non-audit key. CANNOT tell whether the guard is called on the path that actually writes -- presence is necessary, not sufficient. Control pair: tests/run_live_probe_residue_probe.py, FIVE directions including the one that matters most, that a COMPLIANT probe stays silent. |
 | `load_schema_snapshot.py` | CHECKER | NOT A CHECKER. It loads a snapshot for other tools to read. Its failure mode is that its OUTPUT is stale, which is a question for the checks that consume it and not one it can ask about itself |
 | `local_only_collection_check.py` | CHECKER | its EXIT CODE is fixed and shipped -- 3 for could-not-tell, 1 only for a real finding -- but it still reports could-not-tell for sairncash.html and sairnroofing.html, so wiring it now means a notice on EVERY push. HAND-CHECKED: every localStorage.setItem in those two is device state (device id, subscription, trial, usage, licence fingerprint), so there is genuinely nothing to find -- the tool just cannot PROVE it. Classifying those five keys was tried and REVERTED: it broke two arms of tests/local_only_shape_probe.py, and changing a classifier to silence a notice is how a checker starts lying. Promote it when it can tell "nothing to find" from "nothing I can see". |
 | `missing_dom_target_check.py` | CHECKER | its 137 findings are an OPEN, OWNED row (Fourth). Promoting it now would fire on every push against work already in progress. |
@@ -394,7 +396,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (54)
+## UNWIRED (55)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -404,6 +406,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 |---|---|---|---|
 | `alf_facility_role_gate_live_probe.py` | LIVE | does the DEPLOYED alf_facility write gate refuse a non-management role? The gate is verified three ways already and none is live: in-process arms driving the real handler, an ABLATION proving those arms catch the gate's deletion, and the gate present on origin/main. CLAUDE.md is explicit that a clean push is not proof. Three states and UNVERIFIED is neither of the others: 0 every excluded role that ran was refused 403 FORBIDDEN AND management was still allowed, 1 the deployed endpoint disagreed with the design, 2 credentials absent / licence unknown / transport failure. THE MANAGEMENT CONTROL ARM IS LOAD-BEARING -- without it a run where every refusal passes cannot tell a working gate from a total lockout, so if that arm does not run the result is UNVERIFIED even when every refusal passed. It does NOT provision credentials: absent PINs are UNVERIFIED, never a skipped section that manufactures a pass. Measured 2026-09-27 with no credentials present: an unauthenticated write returns 401 NO_LICENSE and a bogus licence 401 INVALID_LICENSE -- real evidence about the LICENCE gate and NO evidence about the ROLE gate, which sits below both. Needs ALF_LICENSE plus ALF_NURSING_EMP/PIN, ALF_MEDAIDE_EMP/PIN and ALF_EMP/ALF_PIN to say anything at all. | &mdash; |
 | `audit_checkpoint_status.py` | LIVE | a daily audit checkpoint that FAILED, or could not be asked -- written to docs/AUDIT-CHECKPOINT-STATUS.md instead of a log line nobody opens | &mdash; |
+| `audit_licence.py` | GUARD | a write to a demo-facing licence, refused IN THE CODE PATH rather than in a convention. require_audit_licence(key) returns the key for a *-AUDIT-* licence and exits 2 COULD NOT RUN otherwise, naming the key, the seed file that mints an audit licence and the bootstrap step. THREE STATES: audit key proceeds, non-audit refuses, NO key refuses -- because a probe that returns early on a missing key looks exactly like one that ran and found nothing. Exit 2 and never 1: a refusal to run is not a finding about the subject. An allowlist entry requires a SENTENCE, the same decision --rule not-citable and the no-defect-record trailer already made. NOT for loaders, which write to real licences by design. | &mdash; |
 | `bypass_log.py` | CHECKER | item 86, the battleshort pattern -- every push-gate override recorded in its OWN log, and a REPEATEDLY bypassed check reported as a defect in the CHECK rather than a discipline problem in whoever keeps bypassing it. Until this, SAIRN_SEED_GATE=off returned from the hook before a single check ran and NOTHING recorded that it happened. Both override sites now record, FAIL-SAFE: a push is never blocked because its logging failed, proven by driving the hook with the logger deliberately broken. A STANDING bypass with no expires_at is INVALID rather than permanent -- that is the switch nobody flips back. An empty log is evidence about the HOOK, not the platform: --no-verify never reaches it | &mdash; |
 | `claim_provenance.py` | LIVE | not a checker and deliberately not one: it RECORDS how a Tier A claim was established -- what was observed, WHEN it was observed as distinct from when it was typed, by what method, and how somebody else could redo it -- and refuses a record that could not later be checked. Judging staleness is a separate build, after the chain has something in it, because the two tools that shipped able to judge with nothing to judge are the pattern this avoids. Subjects derive from docs/CRITICALITY-TIERS.md plus `migration:<file>.sql` validated against sql/, never a second hand-maintained list, and a zero-subject parse is treated as a broken reader rather than an empty register | &mdash; |
 | `csv_formula_injection_check.py` | CHECKER | a CSV cell built by string concatenation that carries NO guard against a leading =/+/-/@/TAB/CR -- the characters Excel, LibreOffice and Sheets execute as a FORMULA on open, which the surrounding quotes do not prevent because the importer strips them before evaluating. Reports two different failures: a RAW construction outside any helper (an unguarded export path) and a guard HELPER whose body no longer guards (worse -- every call site still reads as covered). Accepts THREE guard shapes, including a stricter split form and one factored into a named constant, because the first version reported the module every app copied as the only unguarded helper on the platform -- the sabotage_control_check inversion, reproduced. Reports a THIRD state since 2026-09-18: a CALL TO A HELPER THAT IS NOT DEFINED, which is worse than either -- the export does not lose its guard, it THROWS. The sweep this file verifies shipped two of them, where replacing the quoted expression after a spaceless `return` glued the keyword to the new call; node --check passed, the raw count correctly went to zero, and this file reported the app GUARDED. A ZERO IS NOT COVERAGE: an export written with a library, a template, or no quoting at all has no .replace to match and is invisible to it | &mdash; |
@@ -485,12 +488,12 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      260   git ls-files tools/
+  tools on disk                      262   git ls-files tools/
   hook entries                        14   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                64   report_only_checks.REGISTRY
-  tools invoked by tests/            180   tests/**/*.py, *.js
-  recorded NOT-promoted decisions     78   report_only_checks.NOT_PROMOTED
+  tools invoked by tests/            181   tests/**/*.py, *.js
+  recorded NOT-promoted decisions     79   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```
 

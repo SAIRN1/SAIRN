@@ -41,6 +41,15 @@ PLANTED = os.path.join(REPO, 'tools', '_zz_planted_gate_caller_probe.py')
 PLANTED_REL = 'tools/_zz_planted_gate_caller_probe.py'
 OTHER_REL = 'tools/_zz_some_other_file_entirely.py'
 
+# ── LIVE-PROBE CLASS, DECLARED (2026-09-28) ─────────────────────────────────
+# FIXTURE. This file contains a bearer-key `add_rule` caller as a STRING, because
+# planting one is how it proves tools/gate_caller_impact.py reports it. It makes
+# NO live request of its own -- the only network-shaped code here is inside the
+# FIXTURE literal, which is written to disk and deleted again. Declared so
+# tools/live_probe_residue_audit.py stops asking; the same self-reference that
+# made gate_caller_impact.py flag its own control.
+LIVE_PROBE_CLASS = 'FIXTURE'
+
 EXIT_CLEAN, EXIT_FINDING, EXIT_COULD_NOT_RUN = 0, 1, 2
 passed = failed = 0
 

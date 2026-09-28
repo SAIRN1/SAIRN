@@ -82,11 +82,32 @@ sys.path.insert(0, os.path.join(REPO, 'tools'))
 
 import sairn_http as H  # noqa: E402
 
+# ── LIVE-PROBE CLASS AND RESIDUE, DECLARED (2026-09-28) ─────────────────────
+# VERIFICATION. The management CONTROL performs a REAL WRITE to alf_facility, and
+# that is not incidental -- a role gate cannot be shown to ADMIT anybody without
+# one, and a probe that only drives the excluded roles proves a refusal rather
+# than a gate.
+#
+# RESIDUE IS A SINGLE ROW WITH A STABLE ID, which is the design that makes it
+# harmless: ALF_FACILITY_ID defaults to `ZZ-GATE-FAC`, the write is an upsert on
+# it, so N runs leave ONE row rather than N. It is not deleted afterwards because
+# the next run overwrites it and because DELETE is revoked on this table -- the
+# path out is named below rather than implied.
+LIVE_PROBE_CLASS = 'VERIFICATION'
+LIVE_PROBE_RESIDUE = 'sql/zz_probe_residue_delete_2026-09-28.sql -- one upserted alf_facility row, id ZZ-GATE-FAC, stable across runs'
+
 BASE = os.environ.get('ALF_BASE', 'https://sairn.vercel.app')
 DATA = BASE + '/api/sd-data'
 AUTH = BASE + '/api/alf-auth'
 
 LICENSE = os.environ.get('ALF_LICENSE', '')
+# An audit licence or nothing. Exits 2 COULD NOT RUN on a demo-facing key
+# rather than upserting a facility row onto it.
+if LICENSE:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from audit_licence import require_audit_licence
+    LICENSE = require_audit_licence(LICENSE, tool=__file__,
+                                    writes='alf_facility (upsert, id ZZ-GATE-FAC)')
 FACILITY = os.environ.get('ALF_FACILITY_ID', 'ZZ-GATE-FAC')
 
 # (role, employee id env, pin env). Declared roles first -- see the header.

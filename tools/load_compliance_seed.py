@@ -92,6 +92,13 @@ SEED = os.path.join(REPO, 'sql', 'sairncare_compliance_seed.json')
 DATA_API = 'https://sairn.vercel.app/api/sd-data'
 AUTH_API = 'https://sairn.vercel.app/api/alf-auth'
 
+# ── LIVE-PROBE CLASS, DECLARED (2026-09-28) ─────────────────────────────────
+# LOADER, not verification. This writes reference rules to REAL customer and demo
+# licences because that is its entire purpose, so it must NOT be gated on an
+# audit licence -- doing so would break seeding. tools/audit_licence.py exists for
+# the other class and deliberately does not apply here.
+# Read by tools/live_probe_residue_audit.py, which refuses to infer this.
+LIVE_PROBE_CLASS = 'LOADER'
 EXIT_OK, EXIT_REFUSED, EXIT_COULD_NOT_RUN = 0, 1, 2
 
 

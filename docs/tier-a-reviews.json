@@ -4303,6 +4303,27 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-28T03:40:54Z",
+      "opened_at_sha": "1faa4d99526a3e80c29464dec352f32b64124910",
+      "resources": [
+        "alf_facility"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tools/alf_facility_role_gate_live_probe.py",
+        "tools/audit_licence.py"
+      ],
+      "what": "--what-file",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-09-28T03:40:54Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

@@ -29,7 +29,19 @@ import sairn_http  # noqa: E402
 
 AUTH = 'https://sairn.vercel.app/api/rf-auth'
 DATA = 'https://sairn.vercel.app/api/sd-data'
+# ── LIVE-PROBE CLASS AND RESIDUE, DECLARED (2026-09-28) ─────────────────────
+# VERIFICATION, already pointed at RF-AUDIT-2026 by default for the reason
+# sql/sairnroofing_audit_license_seed.sql gives at length.
+LIVE_PROBE_CLASS = 'VERIFICATION'
+LIVE_PROBE_RESIDUE = 'none -- writes and reconciles on the audit licence only, and every id it uses is re-used rather than generated, so a re-run overwrites rather than accumulates'
+
 LICENSE = os.environ.get('RF_LICENSE', 'RF-AUDIT-2026')
+# Same reasoning as tools/rf_claim_gate_live_probe.py: the default is right
+# and the guard is what makes an override fail loudly instead of silently.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from audit_licence import require_audit_licence
+LICENSE = require_audit_licence(LICENSE, tool=__file__,
+                                writes='rf_claims and a reconcile')
 EMP = os.environ.get('RF_EMP', '')
 SECRET = os.environ.get('RF_PIN', '')
 FORGED = 'fake-unsigned-session'

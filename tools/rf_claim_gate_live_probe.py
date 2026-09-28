@@ -29,7 +29,21 @@ import sairn_http  # noqa: E402
 
 AUTH = 'https://sairn.vercel.app/api/rf-auth'
 DATA = 'https://sairn.vercel.app/api/sd-data'
+# ── LIVE-PROBE CLASS AND RESIDUE, DECLARED (2026-09-28) ─────────────────────
+# VERIFICATION, and it was already doing the right thing: RF_LICENSE defaults to
+# RF-AUDIT-2026, the dedicated audit licence minted on 2026-09-02 precisely so
+# roofing verification stopped writing to the customer licence. This declaration
+# records that rather than leaving it as a default somebody could change.
+LIVE_PROBE_CLASS = 'VERIFICATION'
+LIVE_PROBE_RESIDUE = 'none -- `setup` upserts one narrow-role credential on the audit licence, overwritten by the next run; no customer licence is touched'
+
 LICENSE = os.environ.get('RF_LICENSE', 'RF-AUDIT-2026')
+# The default is already the audit licence; the guard is what stops an
+# override from quietly pointing it at RF-PINNACLE-2026.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from audit_licence import require_audit_licence
+LICENSE = require_audit_licence(LICENSE, tool=__file__,
+                                writes='a narrow-role credential via setup')
 EMP = os.environ.get('RF_EMP', '')
 SECRET = os.environ.get('RF_PIN', '')
 NARROW_ID = 'zz-gate-foreman'

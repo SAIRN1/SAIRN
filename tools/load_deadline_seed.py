@@ -55,6 +55,13 @@ _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
 import sairn_http  # noqa: E402  -- browser-shaped fetch; see that module
 
 
+# ── LIVE-PROBE CLASS, DECLARED (2026-09-28) ─────────────────────────────────
+# LOADER, not verification. This writes reference rules to REAL customer and demo
+# licences because that is its entire purpose, so it must NOT be gated on an
+# audit licence -- doing so would break seeding. tools/audit_licence.py exists for
+# the other class and deliberately does not apply here.
+# Read by tools/live_probe_residue_audit.py, which refuses to infer this.
+LIVE_PROBE_CLASS = 'LOADER'
 DEFAULT_ENDPOINT = "https://sairn.vercel.app/api/legal-deadlines"
 SQL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sql")
 

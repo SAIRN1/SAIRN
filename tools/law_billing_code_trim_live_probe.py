@@ -42,7 +42,8 @@ it needs no rate or hours: those gates apply to billable work.
 
 CREDENTIALS COME FROM THE ENVIRONMENT, NEVER THIS FILE:
 
-    LAW_LICENSE   the licence key      (demo row: LAW-PINNACLE-2026)
+    LAW_LICENSE   the AUDIT licence key (LAW-AUDIT-2026; a demo-facing
+                  licence is REFUSED -- see LIVE_PROBE_CLASS below)
     LAW_EMP       an employee_id       (demo row: sairn-demo-owner)
     LAW_PIN       that employee's PIN
 
@@ -91,6 +92,21 @@ def read_row(key, token):
     return None, (st, 'the row was written and did not come back')
 
 
+# ── LIVE-PROBE CLASS AND RESIDUE, DECLARED (2026-09-28) ─────────────────────
+# VERIFICATION, and it WROTE TO THE DEMO-FACING LICENCE. This file's own usage
+# note said `LAW_LICENSE  the licence key  (demo row: LAW-PINNACLE-2026)` -- the
+# licence a prospect is shown -- and it drives a `write` to exercise billing-code
+# normalisation. That is the shape that produced an un-deletable probe row on
+# LAW-TEST-2026 on 2026-09-28: a verification that must write, pointed at a
+# licence that is not for writing to.
+#
+# The guard below refuses a non-audit licence outright, so this now needs
+# LAW-AUDIT-2026 (sql/audit_license_seed_mech_law_2026-09-28.sql) rather than
+# taking whatever LAW_LICENSE happens to hold.
+LIVE_PROBE_CLASS = 'VERIFICATION'
+LIVE_PROBE_RESIDUE = 'sql/zz_probe_residue_delete_2026-09-28.sql -- one normalised billing-code row per run on the audit licence; the ids are generated, so runs ACCUMULATE and this is a real residue rather than an upsert'
+
+
 def main():
     key = os.environ.get('LAW_LICENSE', '').strip()
     emp = os.environ.get('LAW_EMP', '').strip()
@@ -101,6 +117,13 @@ def main():
         print('cannot be reached without a real licence AND a real session.')
         print('  docs/2026-09-03-demo-credentials.md carries the demo row.')
         return 2
+    # ── AN AUDIT LICENCE OR NOTHING ─────────────────────────────────────────
+    # Exits 2 COULD NOT RUN on a demo-facing key rather than writing to it. The
+    # old usage note pointed at LAW-PINNACLE-2026 and is corrected above.
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from audit_licence import require_audit_licence
+    key = require_audit_licence(key, tool=__file__,
+                                writes='law_billing_codes (a generated row per run)')
     if MAXLEN is None:
         print('UNVERIFIED -- MAX_BILLING_CODE_CHARS could not be read out of')
         print('api/_lib/law-timeentry.js, so the length arm has no bound to')

@@ -195,7 +195,28 @@ def write_role_overrides():
 AUTH = 'https://sairn.vercel.app/api/sc-auth'
 DATA = 'https://sairn.vercel.app/api/sd-data'
 
+# ── LIVE-PROBE CLASS AND RESIDUE, DECLARED (2026-09-28) ─────────────────────
+# VERIFICATION, and the SHARPEST case on the platform: it drives `write`,
+# `setup`, `set_active` AND `delete` against Tier A SAIRNcode resources. There is
+# no SC-AUDIT-2026 yet, so today this runs against whatever SC_LICENSE names --
+# which for SAIRNcode is SC-PINNACLE-2026, a demo-facing licence.
+#
+# THE GUARD BELOW WILL REFUSE THAT, DELIBERATELY, and that is the point: this
+# probe should not run again until an audit licence exists for it. Minting one is
+# a line in sql/audit_license_seed_mech_law_2026-09-28.sql's successor and is
+# named in docs/2026-09-28-verification-residue.md as the outstanding item.
+LIVE_PROBE_CLASS = 'VERIFICATION'
+LIVE_PROBE_RESIDUE = 'sql/zz_probe_residue_delete_2026-09-28.sql -- and see the doc: this probe needs SC-AUDIT-2026 before it is run again'
+
 LICENSE = os.environ.get('SC_LICENSE', '')
+# THIS WILL REFUSE TODAY AND THAT IS INTENDED. No SC-AUDIT-2026 exists, and
+# this probe drives write, setup, set_active AND delete against Tier A
+# SAIRNcode resources -- it must not run against SC-PINNACLE-2026 again.
+if LICENSE:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from audit_licence import require_audit_licence
+    LICENSE = require_audit_licence(LICENSE, tool=__file__,
+                                    writes='Tier A sc_* rows, credentials and a delete')
 EMP = os.environ.get('SC_EMP', '')
 PIN = os.environ.get('SC_PIN', '')
 
