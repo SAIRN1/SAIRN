@@ -18374,6 +18374,104 @@
       "recurrence_open": "NO CLIENT SENDS retrigger_events AT ALL -- sairnlaw.html has no caller, so this whole path is reachable only by a direct API consumer and the input contract is still documented nowhere outside the suite. The endpoint does not validate the element shape before handing it to the engine, so the engine is the only thing refusing. And the wider class is untouched: a field written somewhere and read on the WRONG object clears the ghost scan's third condition by construction, which is the member of this family that has now bitten twice. Also open: `dispositions.sort()` compares raw strings, which is correct for ISO dates and is now guaranteed only because everything non-ISO refuses upstream -- nothing asserts that dependency."
     },
     {
+      "commit": "aaa9e071a922",
+      "date": "2026-09-28",
+      "subject": "fix(probes): the three SILENT arms -- a 1200-character window that stopped part-way through the FIRST log, and a mutation that could not produce the defect its own label named",
+      "files": [
+        "api/sd-data-active-credential.test.js",
+        "tests/law_trusttx_session_probe.py"
+      ],
+      "lines_added": 86,
+      "lines_removed": 15,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "probe-control",
+      "summary": "api/sd-data-active-credential.test.js read its last two arms through slice(indexOf('await credentialStillActive('), +1200) -- a CHARACTER DISTANCE, the third magic window in this file after the 400-char one re-anchored 2026-09-26. The pre-gate has since grown the app-scope derivation, the preHardRefusal condition and the no-row branch, and 1200 characters now stop PART-WAY THROUGH THE FIRST console.warn. The COULD-NOT-RUN log both arms are named for sits entirely OUTSIDE the window, so both were satisfied by the no-row log instead, and /NO_ACTIVE_CHECK|preActive.code/ matched 'preActive.code === CREDENTIAL_INACTIVE' in the REFUSAL CONDITION rather than in any log at all. tests/active_credential_gate_probe.py arms 5 and 6 were SILENT: deleting the could-not-run log, and stripping its try/catch, each left the suite green. Both arms now slice the pre-gate on its real ends and the logging arm asserts over the could-not-tell BRANCH located by its guard; the control arm COUNTS guarded vs total console.warn so a second unguarded one cannot hide behind the first. Both probe arms now catch.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tests/active_credential_gate_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The window was 1200 characters when written and was correct then; it stopped covering the could-not-run log when the pre-gate grew the app-scope derivation and the no-row branch, which happened across several commits by different sessions. No single commit moved the log out of the window."
+      },
+      "citation_note": "The arms DID run; what they could not do is test the property they name. 1.11 is cited for its principle -- a check must not report a pass it never performed -- rather than for its literal subject, an absent dependency.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "A character-distance window measures PROXIMITY, not the property. It is correct on the day it is written and silently wrong the moment code is inserted between the anchor and the thing being asserted -- and nothing about the arm changes, so nothing announces it.",
+          "action_status": "done",
+          "action": "Both arms re-anchored on the block ends the sibling arms already use, and the branch-specific arm located by its own guard rather than by distance."
+        },
+        {
+          "kind": "detection",
+          "factor": "Two arms asserting over the SAME slice, with the slice wide enough to contain a DIFFERENT log than the one they name. Either log satisfied both, so the arms corroborated each other while measuring one thing.",
+          "action_status": "done",
+          "action": "The logging arm now slices the could-not-tell branch alone; the control arm counts every log in the pre-gate against the guarded count."
+        },
+        {
+          "kind": "process",
+          "factor": "This file had ALREADY re-anchored a 400-char window on 2026-09-26 and wrote the reason down in a comment -- a magic window measures proximity, not the property -- and the two 1200-char windows eleven lines below were left in place in the same edit.",
+          "action_status": "planned",
+          "action": "Seven more character windows survive in other suites; named in the commit message and an open-work row, not yet re-anchored."
+        }
+      ],
+      "recurrence_open": "Seven more magic character windows survive elsewhere (api/sd-data-scp-session-gate.test.js +900, tests/sairnbuild_wip_percent_complete.js +900/+700/+600, tests/sairnscape_outbound_queue_review_probe.js +400, tests/sairnvet_formulary_source_honesty.js +4000, tests/stonedesk_server_backup.js +200). Nothing yet detects the shape mechanically -- each has been found by a probe going SILENT, which only happens where a sabotage probe exists."
+    },
+    {
+      "commit": "aaa9e071a922",
+      "date": "2026-09-28",
+      "subject": "fix(probes): the three SILENT arms -- a 1200-character window that stopped part-way through the FIRST log, and a mutation that could not produce the defect its own label named",
+      "files": [
+        "api/sd-data-active-credential.test.js",
+        "tests/law_trusttx_session_probe.py"
+      ],
+      "lines_added": 86,
+      "lines_removed": 15,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "probe-control",
+      "summary": "tests/law_trusttx_session_probe.py arm 6 -- 'a DEACTIVATED credential falls through to the warning path, so somebody who has just left the firm keeps trust access for the life of a 12h token' -- planted NOTHING. Its mutation disabled 'if (!preActive.ok && preActive.code === CREDENTIAL_INACTIVE) {', which is the NO-ROW-ON-AN-UNSCOPED-RESOURCE log branch and sits AFTER 'if (preHardRefusal) { ... return; }'. A genuinely deactivated credential (reason === inactive) never reaches it -- it is refused 403 one branch earlier -- so 'if (false)' there changed which MESSAGE a cross-app token is logged with and nothing else. api/sd-data-law-trusttx-session.test.js stayed green BECAUSE THE LABELLED DEFECT WAS NEVER PLANTED, and the arm was reported SILENT for days. A mutation that cannot produce the outcome its label names is worse than a missing arm: the arm reads as coverage on the highest-stakes gate on the platform, an attorney IOLTA client trust ledger. The earlier diagnosis blamed a stale 1200-character window in api/sd-data-active-credential.test.js and two credentialStillActive( call sites -- there is ONE call site and that is a different suite, so that diagnosis was wrong about this arm while being right about a different real defect. Repointed at 'if (preHardRefusal) {', which is what the probe docstring already said the defect was; the suite's arm 4 is driven with active:false and now goes red.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tests/law_trusttx_session_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The mutation has aimed at that line since the arm was written; whether the preHardRefusal branch already sat above it at that moment was not traced, and the pre-gate has been restructured by several sessions since. Either the anchor was wrong from the start or it was overtaken -- the record does not guess which."
+      },
+      "citation_note": "The arm ran and passed; what it never did was plant the defect it names, so a green result reported coverage that did not exist. Cited for the principle rather than the literal absent-dependency subject.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "The mutation targeted a branch that is UNREACHABLE for the input the suite drives. The refusal returns one branch earlier, so disabling the log branch below it cannot change the outcome for a deactivated credential.",
+          "action_status": "done",
+          "action": "Anchor repointed to the refusal guard itself, verified by the suite going red under the mutation and green when restored."
+        },
+        {
+          "kind": "detection",
+          "factor": "The sabotage harness scores an arm by whether the suite goes red, which cannot distinguish a suite that fails to catch a planted defect from a mutation that planted no defect. Both read as SILENT, and the first is the diagnosis a reader reaches for.",
+          "action_status": "not-actionable",
+          "note": "No check is proposed, and that is a decision rather than an omission. Detecting it mechanically would mean proving the mutated branch is reachable for the inputs the suite drives, which is a reachability question the harness has no model for and would need a driven execution trace it does not collect. Recorded so the next SILENT report is read with this alternative in hand."
+        },
+        {
+          "kind": "process",
+          "factor": "The probe docstring stated the defect correctly -- the refusal DOWNGRADED to the warning path -- and the mutation beside it did something else. Nothing compares an arm label or docstring against what the mutation can actually produce.",
+          "action_status": "planned",
+          "action": "Read the remaining 74 probes MUTATIONS lists for arms whose mutation targets a branch below an earlier return, starting with the probes over api/sd-data.js pre-gate anchors. Recorded as an open-work row rather than swept in here."
+        }
+      ],
+      "recurrence_open": "Nothing detects a mutation that cannot produce its labelled outcome. The harness reports SILENT identically for a blind suite and an inert mutation, and 74 other probes with MUTATIONS lists have never been audited for this shape. The three-SILENT-arm report this closes contained one instance of each, which is exactly why they were misdiagnosed as one cause."
+    },
+    {
       "commit": "857729ddd75a",
       "date": "2026-09-28",
       "subject": "fix(methodology): the plan's staleness checker read 0 claims from 6 files and reported drift anyway -- plus the SAIRNcode autonomy scoping",
