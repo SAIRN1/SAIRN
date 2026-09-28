@@ -199,6 +199,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#128308; 16 sabotage anchors are DEAD across 8 probe files &mdash; unmasked by fixing a wired checker that had been exiting 2 COULD NOT RUN** | **FOUND 2026-09-28 (CC), corroborated by running one of the probes** | `tests/active_credential_gate_probe.py` |
 | **&#128993; FIVE sabotage anchors match MORE THAN ONE place, so each probe reports a verdict about a line nobody chose &mdash; and NO fault probe is wired into anything** | **FOUND 2026-09-27 (CC) by `tools/probe_anchor_freshness.py`, which is itself wired to nothing** | `tests/sairndesign_sairngrounds_fault_probe.py`, `tests/sairnmechanical_fault_probe.py` |
 | **&#128993; SIXTEEN `api/*-auth.js` bootstrap refusals still name a remedy that CANNOT WORK in the state that produces the most confusing 409 &mdash; `action:setup`, which requires an Owner session a zero-active-Owner licence cannot obtain** | **FIXED IN SAIRNvet ONLY, 2026-09-25 (Fourth).** `api/sv-auth.js`&rsquo;s 409 now names BOTH remedies &mdash; `action:setup` if an Owner can still sign in, and DIRECT DATABASE ACCESS if none is active | `api/sv-auth.test.js` |
 | **&#128993; TEN review records in `docs/tier-a-reviews.json` cite a sha that NO LONGER RESOLVES &mdash; the record&rsquo;s own pointer to the work it reviewed is dead** | **MEASURED 2026-09-25 (Hank) by `tools/register_freshness_check.py`; NOT repaired, deliberately.** A repair here is a per-record JUDGEMENT (which of several same-day commits did this record review?),  | `tests/app_session_isolation_probe.py`, `tests/server_wins_hydration.js` |
@@ -571,6 +572,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#128993; The redaction disclosure is written onto every `mech_docs` row and NOTHING renders it** | **REPORTED 2026-09-28 (CC) &mdash; and the module itself is CORRECT** | `api/_lib/mech-redact.test.js` |
 | **Gate 4 on the most regulated subject in the seam &mdash; and both endpoint fixtures tested the input shape that was never at risk** | **BUILT 2026-09-15 (Hank)** &mdash; `7e7e4513`. `tests/sairnmechanical_fault_probe.py`, 11 mutation arms + 5 controls, green after two real coverage gaps were closed. MASTER-PLAN `sairnmechanical` fau | `tests/sairnmechanical_fault_probe.py` |
 | `tests/sairn_storage_wrapper_honesty.js` CRASHED, so every app after SAIRNmechanical was covered by nothing &mdash; and the check that survived could be satisfied by a CODE COMMENT | **FIXED 2026-09-10 (Cody)** &mdash; 41 arms restored to life and 10 added, 51 pass; 3 mutation controls across three app files all bite, all restored byte-identical | `tests/sairn_storage_wrapper_honesty.js` |
 | ~~**REVIEWED: the cheque number is NOT a safe key, and the SQL has not run yet**~~ &mdash; **CLOSED: check_id is a minted per-record id, the number stays data, and a repeat is REPORTED** | **CLOSED 2026-09-10 (CC)**, `bcee0215`. Built `6ddb8154` (CC), independently reviewed the same day (Hank), fixed by the author on the reviewer's finding | `tests/mech_check_register_identity.js` |
@@ -660,21 +662,21 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 129 test files are traced to no stated requirement
+### 128 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 664 of 793 traced, 83.7%.
+For context and not as the headline: 665 of 793 traced, 83.9%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 665 citations come from
+### Where the 666 citations come from
 
 | source | citations |
 |---|---|
-| `index` | 319 |
-| `declared` | 277 |
-| `declared+index` | 59 |
+| `index` | 320 |
+| `declared` | 276 |
+| `declared+index` | 60 |
 | `GUARD_TESTS+index` | 6 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
@@ -687,7 +689,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | kind | count | what it means | the fix |
 |---|---|---|---|
 | **bound to a subject, tied to no requirement** | 28 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 101 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **no subject binding either** | 100 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
 **These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 28 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
@@ -710,7 +712,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/sairndental/public-complaint-thread.test.js`
 - `api/sairndental/send-reminder.test.js`
 - `api/sd-agent-budget.test.js`
-- `tests/active_credential_gate_probe.py`
 - `tests/approval_persistence_probe.py`
 - `tests/audit_checkpoint_probe.py`
 - `tests/claims/run_fileset_matcher_probe.py`
@@ -842,7 +843,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 793   tests/**, api/** (both walked)
-  open-work rows citing a test       373   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       375   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 10   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                64   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     73   report_only_checks.NOT_PROMOTED
