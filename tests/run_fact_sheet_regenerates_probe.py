@@ -17,7 +17,7 @@ were seven:
   --update on a deliberately stale figure       -> CORRECTED, and the run stamped
   a BROKEN command under --update               -> old figure stands, exit 2, NO stamp
   point it at a MISSING sheet                   -> COULD NOT RUN (exit 2, never 0)
-  the real sheet, unmodified                    -> SILENT
+  a COPY that --update has just refreshed       -> SILENT
 
 **THE COPY IS THE POINT.** A control that edited the real sheet would leave the
 document Michael is carrying into a meeting in an unknown state if it crashed
@@ -25,8 +25,16 @@ between the edit and the restore. `--sheet` exists so this probe never touches i
 
 THE LAST DIRECTION IS THE ONE THAT MATTERS MOST. A checker that reports every
 sheet is useless, and this one has every row AND every restatement to get wrong:
-if it fired on the real sheet, nobody would run it, and it would be ignored on
+if it fired on a CURRENT sheet, nobody would run it, and it would be ignored on
 the day a figure really had moved.
+
+**AND IT IS ASSERTED AGAINST A REFRESHED COPY, NOT AGAINST THE REAL DOCUMENT.**
+The first version asserted the real sheet on disk was clean, was green once, and
+was RED on main permanently after that -- four sessions push continuously and
+the commits figure moves every few minutes, including on the commit that
+refreshes it. A control that is red on main for a reason that is not a defect
+gets ignored, and then it is ignored on the day it is right. The real sheet's
+live exit code is PRINTED as information and asserted on by nothing.
 """
 import io
 import os
@@ -87,12 +95,43 @@ RES_VALUE = _m.group(1)
 
 print('CONTROL PAIR -- tools/fact_sheet_regenerates.py\n')
 
-print('BASELINE -- the real sheet, untouched')
-rc, out = run(SHEET_REL)
-ok(rc == EXIT_CLEAN,
-   'THE ARM THAT MATTERS MOST: the real sheet is clean (exit %d). A checker that '
-   'fired here would be ignored on the day a figure really moved.' % rc,
-   out[-500:])
+print('BASELINE -- a COPY that --update has just refreshed must be SILENT')
+# **NOT THE REAL SHEET, AND THAT IS THE WHOLE POINT OF THIS ARM'S SHAPE.**
+# The first version asserted the real document on disk was clean. It was green
+# for one run and then RED on main permanently, because four sessions push
+# continuously and the commits figure moves every few minutes -- including on
+# the commit that refreshes it. A control that is red on main for a reason that
+# is not a defect gets ignored, and then it is ignored on the day it is right.
+#
+# The property this arm is actually for is NO FALSE POSITIVES: the checker must
+# be silent on a sheet that IS current. So the copy is refreshed first and the
+# check is run against that. The real sheet's live state is REPORTED below, as
+# information, and is not an assertion -- because "somebody has run --update in
+# the last five minutes" is not a fact about this tool.
+try:
+    io.open(COPY, 'w', encoding='utf-8', newline='\n').write(ORIGINAL)
+    env = dict(os.environ, PYTHONIOENCODING='utf-8')
+    p0 = subprocess.run([sys.executable, TOOL, '--sheet', COPY_REL, '--update',
+                         '--now', '2026-01-01 00:00'], cwd=REPO, env=env,
+                        capture_output=True, text=True, encoding='utf-8',
+                        errors='replace')
+    ok(p0.returncode == EXIT_CLEAN,
+       '--update refreshes the copy cleanly (got %d)' % p0.returncode,
+       (p0.stdout or '')[-400:])
+    rc, out = run(COPY_REL)
+    ok(rc == EXIT_CLEAN,
+       'THE ARM THAT MATTERS MOST: a refreshed sheet is clean (exit %d). A '
+       'checker that fired here would be ignored on the day a figure really '
+       'moved.' % rc, out[-500:])
+finally:
+    if os.path.exists(COPY):
+        os.remove(COPY)
+
+rc_live, out_live = run(SHEET_REL)
+print('  --   the real sheet on disk right now: exit %d. NOT AN ASSERTION -- it '
+      'drifts within minutes of any refresh and that is the document\'s state, '
+      'not this tool\'s defect.' % rc_live)
+
 m = re.search(r'ALL (\d+) checkable figures and (\d+) restatements', out)
 ok(bool(m) and int(m.group(1)) >= 15,
    'and it actually CHECKED something -- %s figures, not zero'
@@ -219,8 +258,12 @@ try:
        'the update run exits 0 (got %d)' % p2.returncode, (p2.stdout or '')[-300:])
     ok('**12345**' not in after,
        'THE ARM THAT MATTERS: the stale figure was CORRECTED, not left standing')
-    ok(RES_ROW in after,
-       'and corrected to the value the command actually returns')
+    rc2, out2 = run(COPY_REL)
+    ok(rc2 == EXIT_CLEAN,
+       'and corrected to the value the command actually returns -- asserted by '
+       'running the CHECK over the updated copy (exit %d) rather than comparing '
+       'to a figure written down here, which stops being the answer the day the '
+       'resource count moves' % rc2, out2[-400:])
     ok('Figures refreshed 2026-01-01 00:00' in after,
        'and the run time is stamped, so a reader can see how fresh it is')
 finally:
