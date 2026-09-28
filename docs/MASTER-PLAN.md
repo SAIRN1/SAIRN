@@ -47,14 +47,14 @@ Every column names the tool that produced it. `res` = resources owned in `api/_r
 | `sairnscape` | 12 | ✅ | 5 | 5 | 1 | — |
 | `sairnsenior` | 15 | ✅ | 16 | 15 | 3 | — |
 | `sairnvet` | 42 | ✅ | 20 | 19 | 8 | — |
-| `stonedesk` | 36 | ✅ | 24 | 19 | 10 | — |
+| `stonedesk` | 36 | ✅ | 25 | 20 | 10 | — |
 | `stonedesk-catalog` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 | `stonedesk-hr` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 | `stonedesk-intake` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 
-**Platform totals: 390 resources owned by an app, 275 test files attributed to one, 234 of those traced, 63 fault probes.**
+**Platform totals: 390 resources owned by an app, 276 test files attributed to one, 235 of those traced, 63 fault probes.**
 
-**And the denominators that are NOT the same thing**, stated because conflating them is what went wrong: there are **803** test files on disk in total and **665** of them are traced — most are not attributed to any single app, so the per-app `traced` column above sums to less. A rate over the subset you looked at is not a rate.
+**And the denominators that are NOT the same thing**, stated because conflating them is what went wrong: there are **804** test files on disk in total and **666** of them are traced — most are not attributed to any single app, so the per-app `traced` column above sums to less. A rate over the subset you looked at is not a rate.
 
 **THIS DOCUMENT USED TO PRINT TWO DIFFERENT VALUES FOR THAT SECOND NUMBER, IN ONE RUN.** The prose above counted citations to files that are on disk; the closing-error leg at the bottom counted citations outright, and on 2026-09-18 they read **512** and **518**. Four of the six were real test files under `api/` subdirectories that `all_tests()` listed two hardcoded directories instead of walking, and two were citations to files that are not there. Both halves are fixed at the source: `all_tests()` now walks `api/` the same way it always walked `tests/`, and `traced()` drops a citation naming a file that does not exist. The two figures are now one population and cannot diverge again without a code change.
 
@@ -132,8 +132,8 @@ The table above names every contributor, which is necessary and is not enough: a
 ```
   app files                         22   git ls-files '*.html'
   apps owning a resource            17   api/_resources/index.js OWNER_BY_RESOURCE
-  test files on disk               803   tests/**, api/** (both walked)
-  tests traced to a requirement    665   traceability_matrix.traced(), citations to files ON DISK only
+  test files on disk               804   tests/**, api/** (both walked)
+  tests traced to a requirement    666   traceability_matrix.traced(), citations to files ON DISK only
   declared fault probes            112   MUTATIONS blocks + *_fault_probe.py + *_mutation_control.js + tests/faults/*.js
   attested migrations                5   hand-recorded, Michael, directly, 2026-09-10
 ```
