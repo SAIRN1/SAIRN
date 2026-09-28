@@ -18426,6 +18426,66 @@
       "recurrence_open": "Nothing derives the list-then-prose convention from the register; it is still an assumption about how people write these cells, now with an arm that fires when a cell breaks the shape in this particular way. A cell that names a resource in a PREAMBLE before the list -- the original request's own hypothetical -- would still place badly and no arm covers it. The wider class is open: the register is hand-written prose that several tools parse."
     },
     {
+      "commit": "277d11de0010",
+      "date": "2026-09-28",
+      "subject": "fix(hooks): five fail-opens in git hooks, where `exit 0` is not a skip but a DECISION to allow",
+      "files": [
+        ".githooks/post-rewrite",
+        ".githooks/pre-commit",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/fail-open-coverage.json",
+        "tests/run_fail_open_probe.py",
+        "tools/fail_open_scan.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 552,
+      "lines_removed": 14,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": ".githooks/pre-commit and .githooks/post-rewrite each guarded their preconditions with `|| exit 0`, and from a git hook exit 0 MEANS ALLOW. In pre-commit the two guarded lines were `ROOT=$(git rev-parse --show-toplevel)` and `GITDIR=$(git rev-parse --git-dir)`, and the consequence is sharper than a generic fail-open: WITHOUT GITDIR THE SCOPE TEST ON THE NEXT LINE CANNOT RUN EITHER, so a discovery failure silently disarmed the hover-auditor scope gate in the one clone that gate exists for -- the role the platform documents as having no second reader. pre-commit also used `exec`, replacing the shell with the first checker, so any second check added later would have looked correct and never run. In post-rewrite the exit code was already correct by design (git ignores post-rewrite's status and the hook runs after the fact), but both guards exited SILENTLY, so a missing defect_register.py meant the register was not re-seated and nothing said so; the next signal was the push gate refusing with 'that sha is not in this history' several steps later, which is the exact round trip that hook was built to remove.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/fail_open_scan.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The guards were present when each hook was first written; they are correct-looking defensive shell rather than a regression introduced by a later change, so there is no injecting commit -- the defect is the idiom."
+      },
+      "citation_note": "From a git hook, exit 0 is not silence -- it is a decision to allow. Could-not-check was spelled the same as passed, in files whose only job is to refuse.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "`|| exit 0` reads as a graceful skip and, from a git hook, means ALLOW THE COMMIT. The idiom is identical for a SCOPE guard (does this apply here) and a DEPENDENCY guard (can I check at all), so the two were written the same way and only one of them is correct.",
+          "action": "Dependency guards refuse and name what is missing. The SCOPE guard in pre-commit -- the hover-auditor clone marker -- is UNCHANGED, because absent means not applicable and refusing there would break every commit in four build clones.",
+          "action_status": "done"
+        },
+        {
+          "kind": "technical",
+          "factor": "`exec` replaced the shell with the single checker, so each of these hooks could only ever run one check. The same shape had already been found and fixed in prepare-commit-msg hours earlier and was still present here.",
+          "action": "Removed; checks run in sequence and the worst exit code wins.",
+          "action_status": "done"
+        },
+        {
+          "kind": "detection",
+          "factor": "Nothing enumerated fail-open shapes. Each hook was read on its own and each looked defensive, which is exactly how the idiom spread -- it is what a careful author writes when they do not want a hook to be noisy.",
+          "action": "tools/fail_open_scan.py, a ratchet over four shapes, which classifies SCOPE apart from DEPENDENCY rather than flagging every `|| exit 0`.",
+          "action_status": "done"
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "A fail-open in post-rewrite is invisible at the moment it happens and only shows up downstream as a push-gate refusal. The person pays twice: once for the failure and once for diagnosing it far from its cause.",
+          "action": "The guards warn loudly on stderr and name the recovery command, while still exiting 0 so the rebase is never failed after the fact.",
+          "action_status": "done"
+        }
+      ],
+      "recurrence_open": "PARTLY CLOSED AND MEASURED: hook fail-opens 5 -> 0, but 16 dependency-shaped fail-opens remain in tools/ where exit 0 is not a decision to allow something, and they are unswept. The scanner reads TEXT, so a fail-open through a helper, a trap or a Python default argument is invisible and the universe is a FLOOR. And the distinction the tool rests on -- SCOPE versus DEPENDENCY -- is inferred from what the guard NAMES, so a scope guard whose marker has an unusual name will be miscounted as a finding."
+    },
+    {
       "commit": "2e1ad2775558",
       "date": "2026-09-28",
       "subject": "fix(gate): a credential in a STAGED blob is now refused at commit, and the hook that should have caught it failed OPEN twice",
@@ -18484,58 +18544,6 @@
       "recurrence_open": "OPEN IN TWO DIRECTIONS. (1) A SCAN OF ALL SEVEN SAIRN CLONES found ONE unreachable blob carrying a github_pat shape in SAIRN-cc -- unreachable, so never on origin, but present in that clone's object store and needing the same reflog-expire-and-prune treatment. A build agent must not reach into another clone, so it is reported rather than fixed. (2) The blanket-staging habit is only partly addressed: regenerate steps now stage explicit paths, but every other git add -A, git add . and git commit -a across tools, scripts and hooks is unswept, and tools/push_retry.py already exists to replace exactly the loop that caused this."
     },
     {
-      "commit": "8f0ac2c431b4",
-      "date": "2026-09-28",
-      "subject": "fix(tools): claim_activity_check called ELEVEN EXPIRED claims active -- every finding it produced that day was of that shape",
-      "files": [
-        "tests/run_claim_activity_probe.py",
-        "tools/claim_activity_check.py"
-      ],
-      "lines_added": 331,
-      "lines_removed": 8,
-      "app": "PLATFORM",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "tools/claim_activity_check.py selected claims on c.get('status') == 'active' -- the RAW field in the claim file -- where sairn_claim.is_active() also applies the four-hour staleness rule and a liveness check on the owning process. The sibling tool draws that distinction at its own call site in its own words ('Uses is_active(), not the raw status field: an EXPIRED claim is one this...') and this one did not. MEASURED at the fix: 13 records carry status active and is_active() is true for TWO, so ELEVEN OF THIRTEEN were reported as 'active NNh and NO commit has touched its declared files' when they had expired hours or days earlier and were blocking nobody -- sairn_claim.py check already ignores them. Every finding the tool produced that day was of that shape: non-empty, plausible, and pointing at nothing anybody could act on in the way the sentence implied. A report-only check whose entire output is vacuous is a false-finding generator, which is the shape that gets a check switched off. Fixed by importing is_active() rather than reimplementing it, and failing closed (exit 2, naming the tool) when it cannot be imported. EXPIRED-BUT-UNRELEASED is now a named third state -- still reported, with a reason saying it blocks nobody, and excluded from the exit code so a backlog of seven does not leave the check red forever. Regression control written first: 8 of 10 arms failed before the fix; the known-bad arm ablates the liveness call back to the raw-status rule and requires the 100h fixture to be called NO ACTIVITY again, paired with an arm requiring the live fixture still found.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "5eea7768e3c7",
-        "date": "2026-09-28",
-        "subject": "check(methodology): publish the BLIND SPOT beside checked/universe, ratchet it downward, and a known-bad control that a broken declaration must fail",
-        "lag_days": 0
-      },
-      "citation_note": "The check ran and reported. What it could not do is tell held from expired, so every sentence it printed asserted something it had not established. Cited for 1.11's principle rather than its literal absent-dependency subject -- though the fix does add the literal case too, since the staleness rule now comes from another tool and its absence exits 2.",
-      "contributing_factors": [
-        {
-          "kind": "technical",
-          "factor": "A boolean with two sources of truth: the `status` field on the record and the staleness rule in the sibling tool. Reading the field is the obvious thing and is right only for the moment the claim is made.",
-          "action_status": "done",
-          "action": "is_active() is imported from sairn_claim.py and applied to every record; the raw field is never consulted alone."
-        },
-        {
-          "kind": "detection",
-          "factor": "The tool had NO control of any kind -- no probe, no known-bad fixture -- and its selftest exercised the FILES: parser and touched_since() only, never the selection rule. The one part that decided what gets reported was the one part nothing drove.",
-          "action_status": "done",
-          "action": "tests/run_claim_activity_probe.py, eleven arms over constructed claim directories via a new SAIRN_CLAIM_DIR override, with a known-bad arm that plants the raw-status rule back and a paired arm proving the ablation does not merely break the tool."
-        },
-        {
-          "kind": "process",
-          "factor": "Nothing asked whether the findings were ACTIONABLE. The tool was read as working because it printed rows, and rows on a report-only check read as signal. Three findings, all three vacuous, for as long as it had existed.",
-          "action_status": "planned",
-          "action": "No general check proposed yet for a report-only tool whose output is entirely of one vacuous shape. Recorded as the open recurrence."
-        }
-      ],
-      "recurrence_open": "Nothing detects a report-only check whose findings are all of one vacuous shape. This one printed rows from the day it was written and the rows read as signal because the report was non-empty; the registry records 65 report-only checks and no property of any of them says what an ACTIONABLE finding would look like. The sibling half is also open: any other tool reading a claim's `status` field directly inherits this defect, and nothing enumerates those readers."
-    },
-    {
       "commit": "857729ddd75a",
       "date": "2026-09-28",
       "subject": "fix(methodology): the plan's staleness checker read 0 claims from 6 files and reported drift anyway -- plus the SAIRNcode autonomy scoping",
@@ -18591,6 +18599,58 @@
         }
       ],
       "recurrence_open": "No shared reader for .claude/claims/*.json exists. sairn_claim.py writes it and at least two tools parse it again independently, so a parser wrong in one is invisible to the others. Naming it rather than consolidating, because the writers live in several sessions declared files."
+    },
+    {
+      "commit": "8f0ac2c431b4",
+      "date": "2026-09-28",
+      "subject": "fix(tools): claim_activity_check called ELEVEN EXPIRED claims active -- every finding it produced that day was of that shape",
+      "files": [
+        "tests/run_claim_activity_probe.py",
+        "tools/claim_activity_check.py"
+      ],
+      "lines_added": 331,
+      "lines_removed": 8,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/claim_activity_check.py selected claims on c.get('status') == 'active' -- the RAW field in the claim file -- where sairn_claim.is_active() also applies the four-hour staleness rule and a liveness check on the owning process. The sibling tool draws that distinction at its own call site in its own words ('Uses is_active(), not the raw status field: an EXPIRED claim is one this...') and this one did not. MEASURED at the fix: 13 records carry status active and is_active() is true for TWO, so ELEVEN OF THIRTEEN were reported as 'active NNh and NO commit has touched its declared files' when they had expired hours or days earlier and were blocking nobody -- sairn_claim.py check already ignores them. Every finding the tool produced that day was of that shape: non-empty, plausible, and pointing at nothing anybody could act on in the way the sentence implied. A report-only check whose entire output is vacuous is a false-finding generator, which is the shape that gets a check switched off. Fixed by importing is_active() rather than reimplementing it, and failing closed (exit 2, naming the tool) when it cannot be imported. EXPIRED-BUT-UNRELEASED is now a named third state -- still reported, with a reason saying it blocks nobody, and excluded from the exit code so a backlog of seven does not leave the check red forever. Regression control written first: 8 of 10 arms failed before the fix; the known-bad arm ablates the liveness call back to the raw-status rule and requires the 100h fixture to be called NO ACTIVITY again, paired with an arm requiring the live fixture still found.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "5eea7768e3c7",
+        "date": "2026-09-28",
+        "subject": "check(methodology): publish the BLIND SPOT beside checked/universe, ratchet it downward, and a known-bad control that a broken declaration must fail",
+        "lag_days": 0
+      },
+      "citation_note": "The check ran and reported. What it could not do is tell held from expired, so every sentence it printed asserted something it had not established. Cited for 1.11's principle rather than its literal absent-dependency subject -- though the fix does add the literal case too, since the staleness rule now comes from another tool and its absence exits 2.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "A boolean with two sources of truth: the `status` field on the record and the staleness rule in the sibling tool. Reading the field is the obvious thing and is right only for the moment the claim is made.",
+          "action_status": "done",
+          "action": "is_active() is imported from sairn_claim.py and applied to every record; the raw field is never consulted alone."
+        },
+        {
+          "kind": "detection",
+          "factor": "The tool had NO control of any kind -- no probe, no known-bad fixture -- and its selftest exercised the FILES: parser and touched_since() only, never the selection rule. The one part that decided what gets reported was the one part nothing drove.",
+          "action_status": "done",
+          "action": "tests/run_claim_activity_probe.py, eleven arms over constructed claim directories via a new SAIRN_CLAIM_DIR override, with a known-bad arm that plants the raw-status rule back and a paired arm proving the ablation does not merely break the tool."
+        },
+        {
+          "kind": "process",
+          "factor": "Nothing asked whether the findings were ACTIONABLE. The tool was read as working because it printed rows, and rows on a report-only check read as signal. Three findings, all three vacuous, for as long as it had existed.",
+          "action_status": "planned",
+          "action": "No general check proposed yet for a report-only tool whose output is entirely of one vacuous shape. Recorded as the open recurrence."
+        }
+      ],
+      "recurrence_open": "Nothing detects a report-only check whose findings are all of one vacuous shape. This one printed rows from the day it was written and the rows read as signal because the report was non-empty; the registry records 65 report-only checks and no property of any of them says what an ACTIONABLE finding would look like. The sibling half is also open: any other tool reading a claim's `status` field directly inherits this defect, and nothing enumerates those readers."
     },
     {
       "commit": "aaa9e071a922",
