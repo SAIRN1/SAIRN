@@ -150,8 +150,8 @@
       "task": "hover round seven: mirror token check and, if present, remote setup plus push plus a from-remote restore drill; a sweep of Tier B register cells whose wording waves off enforcement while a consumer gates on the row; confirm my entries six-oh-five through six-oh-eight cross-reference and route; one undirected batch; next rotation draw. My writes stay in hover-audit-log and my own claim file. FILES: .claude/skills/sairn-hover-auditor/",
       "claimed_at": "2026-09-28T04:48:18Z",
       "claimed_at_epoch": 1790570898.1865716,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-28T04:54:46Z",
       "files": null
     }
   ],
