@@ -304,6 +304,22 @@ def resolve(consts, entry):
     # arm that has no anchor by construction. Structural arms are reported
     # in their own line rather than dropped: an exclusion nobody sees is how
     # a real stale anchor would hide in the same category.
+    # ── AN ANCHOR NAMED BY A CONSTANT IS SUBSTITUTED, NOT COUNTED AS TEXT ──
+    # FALSE VANISHED, found 2026-09-28. The target half of this function has
+    # resolved `@NAME` from consts since it was written; the ANCHOR half never
+    # did, so an arm written as `(label, SUBJECT, ROW_LOOP, replacement)` --
+    # where ROW_LOOP is a module-level multi-line string, the readable way to
+    # write a long unique span -- had the nine characters '@ROW_LOOP' counted
+    # as literal text. Zero matches, reported ANCHOR-0 against an anchor that
+    # matches its subject EXACTLY ONCE.
+    #
+    # A FALSE VANISHED IS WORSE THAN A MISS: it sends somebody to re-derive a
+    # healthy anchor, and the re-derivation is the risky edit. Two of the 16
+    # findings this tool reported after its exit-2 fix were this, and both
+    # probes were correct.
+    if isinstance(old, str) and old.startswith('@') and old[1:] in consts \
+            and isinstance(consts[old[1:]], str):
+        old = consts[old[1:]]
     if isinstance(old, str) and old.startswith('@') and old[1:] not in consts:
         # A TRANSFORM FUNCTION, so there is no text anchor in the entry --
         # the anchor, if any, lives inside the function body and this tool

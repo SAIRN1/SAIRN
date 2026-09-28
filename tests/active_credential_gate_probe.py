@@ -68,33 +68,37 @@ MUTATIONS = [
      "reads as correct at a glance; the gate now tests a pending promise, whose "
      "`.ok` is undefined, so nothing is ever refused",
      API,
-     "      const stillActive = await credentialStillActive(gateSession, "
+     "        const preActive = await credentialStillActive(preSession, "
      "licHash, rest, headers);",
-     "      const stillActive = credentialStillActive(gateSession, "
+     "        const preActive = credentialStillActive(preSession, "
      "licHash, rest, headers);"),
 
     ("2. the refusal stops being conditioned on CREDENTIAL_INACTIVE, so a "
      "transport failure or an app with no employee table refuses EVERY "
      "employee. The obvious repair for that symptom is to delete the gate",
      API,
-     "      if (!stillActive.ok && stillActive.code === "
-     "'CREDENTIAL_INACTIVE') {",
-     "      if (!stillActive.ok) {"),
+     "        const preHardRefusal = !preActive.ok\n"
+     "          && preActive.code === 'CREDENTIAL_INACTIVE'\n"
+     "          && (preActive.reason === 'inactive' || preScoped);",
+     "        const preHardRefusal = !preActive.ok;"),
 
     ("3. the refusal is conditioned on the WRONG state -- a deactivated "
      "employee is let through and a could-not-tell is refused. Both answers "
      "inverted, neither visible",
      API,
-     "      if (!stillActive.ok && stillActive.code === "
-     "'CREDENTIAL_INACTIVE') {",
-     "      if (!stillActive.ok && stillActive.code === 'NO_ACTIVE_CHECK') {"),
+     "        const preHardRefusal = !preActive.ok\n"
+     "          && preActive.code === 'CREDENTIAL_INACTIVE'\n"
+     "          && (preActive.reason === 'inactive' || preScoped);",
+     "        const preHardRefusal = !preActive.ok\n"
+     "          && preActive.code === 'NO_ACTIVE_CHECK'\n"
+     "          && (preActive.reason === 'inactive' || preScoped);"),
 
     ("4. 403 becomes 401, which reads as a session problem and tells the user "
      "to sign in again -- which they can, because the thing that is off is "
      "their credential, not their session",
      API,
-     "        res.status(403).json({ error: { code: stillActive.code, message: stillActive.message } });",
-     "        res.status(401).json({ error: { code: stillActive.code, message: stillActive.message } });"),
+     "          res.status(403).json({ error: { code: preActive.code, message: preActive.message } });",
+     "          res.status(401).json({ error: { code: preActive.code, message: preActive.message } });"),
 
     ("5. the log goes. A re-check that DID NOT RUN now passes in total silence, "
      "and the third state becomes indistinguishable from a pass",
@@ -113,20 +117,21 @@ MUTATIONS = [
     ("6. the log loses its try/catch, so a logging failure throws out of the "
      "gate and refuses a caller for a reason that has nothing to do with them",
      API,
-     ["        try {\n          console.warn('sd-data: active-credential re-check DID NOT RUN",
-      "        } catch (e) { /* logging must never refuse a request */ }"],
-     ["          console.warn('sd-data: active-credential re-check DID NOT RUN",
-      ""]),
+     ["          try {\n            console.warn('sd-data: active-credential re-check DID NOT RUN",
+      "              + 'token alone.');\n"
+      "          } catch (e) { /* logging must never refuse a request */ }"],
+     ["            console.warn('sd-data: active-credential re-check DID NOT RUN",
+      "              + 'token alone.');"]),
 
     ("7. a SECOND copy of the app-to-table map appears in sd-data.js. The map "
      "has no derivable rule -- four apps use a prefix, the rest the full name, "
      "and sairncare's table is not alf_* -- so a stale local copy answers "
      "NO_ACTIVE_CHECK for whichever app it missed, silently",
      API,
-     "      const stillActive = await credentialStillActive(gateSession, "
+     "        const preActive = await credentialStillActive(preSession, "
      "licHash, rest, headers);",
-     "      const AUTH_TABLE_BY_APP = { stonedesk: 'sd_employee_auth' };\n"
-     "      const stillActive = await credentialStillActive(gateSession, "
+     "        const AUTH_TABLE_BY_APP = { stonedesk: 'sd_employee_auth' };\n"
+     "        const preActive = await credentialStillActive(preSession, "
      "licHash, rest, headers);"),
 ]
 
