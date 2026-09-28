@@ -18430,64 +18430,6 @@
       "recurrence_open": "The restatement anchors are hand-written regexes over prose. A sentence rewritten for style will now be REPORTED rather than silently skipped, which is the important half -- but somebody still has to re-anchor it, and nothing measures how often that happens. The tooling-inventory and live-probe rows remain unchecked and are named rather than covered."
     },
     {
-      "commit": "73c75db05dc2",
-      "date": "2026-09-28",
-      "subject": "fix(control): the fact-sheet probe asserted the REAL sheet was clean, so it was red on main permanently",
-      "files": [
-        "docs/FACT-SHEET-2026-09-29.md",
-        "tests/run_fact_sheet_regenerates_probe.py"
-      ],
-      "lines_added": 59,
-      "lines_removed": 16,
-      "app": "tooling",
-      "layer": "test",
-      "severity": "moderate",
-      "detection_method": "probe-control",
-      "summary": "tests/run_fact_sheet_regenerates_probe.py asserted the REAL docs/FACT-SHEET-2026-09-29.md was clean as its no-false-positive baseline. Four sessions push continuously, so the commits figure moves within minutes of any refresh -- including on the commit that refreshes it. The arm was green on its first run and red on main thereafter. Fixed by copying the sheet, refreshing the COPY with --update, and asserting silence on that; the real sheet's live exit code is now printed as information and asserted on by nothing.",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": "tests/run_fact_sheet_regenerates_probe.py",
-      "found_by_session": null,
-      "injection": {
-        "commit": "00a3df270332",
-        "date": "2026-09-28",
-        "subject": "feat(fact-sheet): --update rewrites every derivable figure, including the ones restated in prose",
-        "lag_days": 0
-      },
-      "citation_note": "1.1 is about a check that silently stopped testing anything. This is its mirror and the same family: a control that is RED for a reason that is not a defect also stops being a check, because the next reader learns to discount it. The extension worth naming is the SUBJECT -- a clean-baseline arm must assert against state the control itself established, never against a shared live document other sessions mutate.",
-      "contributing_factors": [
-        {
-          "factor": "The baseline arm's subject was a shared live document that four other sessions mutate continuously, so its state was not a property of the tool under test.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The arm now writes a COPY, refreshes it with --update, and asserts silence on that copy. The subject is one the control put into a known state itself."
-        },
-        {
-          "factor": "The control was run once, went green, and was committed. A one-run green on a subject that changes by the minute cannot distinguish a correct check from a lucky one.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Run twice before committing any control whose subject is shared state; both runs are recorded in the commit message."
-        },
-        {
-          "factor": "Nothing in the repository flags a control whose assertion depends on state outside its own writes, so the shape had to be noticed by a human reading two consecutive runs.",
-          "kind": "detection",
-          "action_status": "planned",
-          "action": "Candidate check: a control that asserts on a repo-tracked file it did not itself write in that run. Not built here -- it needs a real definition of 'its own writes' before it is worth anything."
-        },
-        {
-          "factor": "The whole fact sheet is a document whose figures move hourly because four build clones and an auditor push to one branch. Any check anchored to its live values inherits that.",
-          "kind": "latent-condition",
-          "action_status": "not-actionable",
-          "note": "The push rate is the point of the platform, not a defect to fix. It is what --update exists for."
-        }
-      ],
-      "recurrence_open": "Nothing yet prevents the NEXT control from anchoring an assertion to a live shared file; the detection action above is a candidate, not a gate. And --update itself is unguarded against a derivation that returns a plausible-but-wrong number as opposed to one that fails outright."
-    },
-    {
       "commit": "1da31d4ceb77",
       "date": "2026-09-28",
       "subject": "fix(tools): the rollup dedup dropped a real list member -- found discharging fourth's 41h-overdue obligation, and the assumption it rested on had already failed",
@@ -18596,6 +18538,64 @@
         }
       ],
       "recurrence_open": "OPEN IN TWO DIRECTIONS. (1) A SCAN OF ALL SEVEN SAIRN CLONES found ONE unreachable blob carrying a github_pat shape in SAIRN-cc -- unreachable, so never on origin, but present in that clone's object store and needing the same reflog-expire-and-prune treatment. A build agent must not reach into another clone, so it is reported rather than fixed. (2) The blanket-staging habit is only partly addressed: regenerate steps now stage explicit paths, but every other git add -A, git add . and git commit -a across tools, scripts and hooks is unswept, and tools/push_retry.py already exists to replace exactly the loop that caused this."
+    },
+    {
+      "commit": "73c75db05dc2",
+      "date": "2026-09-28",
+      "subject": "fix(control): the fact-sheet probe asserted the REAL sheet was clean, so it was red on main permanently",
+      "files": [
+        "docs/FACT-SHEET-2026-09-29.md",
+        "tests/run_fact_sheet_regenerates_probe.py"
+      ],
+      "lines_added": 59,
+      "lines_removed": 16,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "probe-control",
+      "summary": "tests/run_fact_sheet_regenerates_probe.py asserted the REAL docs/FACT-SHEET-2026-09-29.md was clean as its no-false-positive baseline. Four sessions push continuously, so the commits figure moves within minutes of any refresh -- including on the commit that refreshes it. The arm was green on its first run and red on main thereafter. Fixed by copying the sheet, refreshing the COPY with --update, and asserting silence on that; the real sheet's live exit code is now printed as information and asserted on by nothing.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tests/run_fact_sheet_regenerates_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "00a3df270332",
+        "date": "2026-09-28",
+        "subject": "feat(fact-sheet): --update rewrites every derivable figure, including the ones restated in prose",
+        "lag_days": 0
+      },
+      "citation_note": "1.1 is about a check that silently stopped testing anything. This is its mirror and the same family: a control that is RED for a reason that is not a defect also stops being a check, because the next reader learns to discount it. The extension worth naming is the SUBJECT -- a clean-baseline arm must assert against state the control itself established, never against a shared live document other sessions mutate.",
+      "contributing_factors": [
+        {
+          "factor": "The baseline arm's subject was a shared live document that four other sessions mutate continuously, so its state was not a property of the tool under test.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The arm now writes a COPY, refreshes it with --update, and asserts silence on that copy. The subject is one the control put into a known state itself."
+        },
+        {
+          "factor": "The control was run once, went green, and was committed. A one-run green on a subject that changes by the minute cannot distinguish a correct check from a lucky one.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Run twice before committing any control whose subject is shared state; both runs are recorded in the commit message."
+        },
+        {
+          "factor": "Nothing in the repository flags a control whose assertion depends on state outside its own writes, so the shape had to be noticed by a human reading two consecutive runs.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "Candidate check: a control that asserts on a repo-tracked file it did not itself write in that run. Not built here -- it needs a real definition of 'its own writes' before it is worth anything."
+        },
+        {
+          "factor": "The whole fact sheet is a document whose figures move hourly because four build clones and an auditor push to one branch. Any check anchored to its live values inherits that.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "The push rate is the point of the platform, not a defect to fix. It is what --update exists for."
+        }
+      ],
+      "recurrence_open": "Nothing yet prevents the NEXT control from anchoring an assertion to a live shared file; the detection action above is a candidate, not a gate. And --update itself is unguarded against a derivation that returns a plausible-but-wrong number as opposed to one that fails outright."
     },
     {
       "commit": "857729ddd75a",
@@ -18857,6 +18857,62 @@
         }
       ],
       "recurrence_open": "PARTLY CLOSED AND MEASURED. The scan now covers Object.assign mappers in four api files: 91 examined, 54 still spread the blob last, 4 exploitable, 0 identity. The 4 remaining are data keys rather than attribution and are unfixed. WHAT IS NOT COVERED AT ALL: a mapper built through a helper, a spread operator or assembled across statements; the strip list is unioned per FILE rather than per resource, so the tool under-reports; and identity fields with NO column to override -- alf_mar administered_by is caller-supplied with nothing to shadow -- are a separate class this tool is blind to by construction."
+    },
+    {
+      "commit": "e1ec9d2f31b7",
+      "date": "2026-09-28",
+      "subject": "feat(fact-sheet): the detection-method table summed to 358 against a stated total of 366",
+      "files": [
+        "docs/FACT-SHEET-2026-09-29.md",
+        "tests/run_fact_sheet_regenerates_probe.py",
+        "tools/fact_sheet_regenerates.py"
+      ],
+      "lines_added": 169,
+      "lines_removed": 15,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "The fact sheet's nine detection-method rows were outside tools/fact_sheet_regenerates.py's coverage entirely, so they held the values typed when the sheet was written while the register moved underneath them. They summed to 358 against a stated total of 366 -- eight defects counted in the totals table and in no row of the breakdown on the facing page, on a document due to be printed and read aloud.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The detection table and the checker were written in the same session as the sheet. There is no commit where the checker covered these nine rows and then stopped; the gap was present from the tool's first version."
+      },
+      "citation_note": "1.1 exactly: nine numbers on a page that no check had ever looked at, in a document whose entire claim is that every figure regenerates. The CHECKED / UNIVERSE line read 22 / 22 and the denominator was the tool's own list.",
+      "contributing_factors": [
+        {
+          "factor": "The checker's coverage was its own list of labelled rows. The detection-method table was simply never added to that list, so nine printed figures had nothing watching them at all.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The nine rows are derived from the register and refreshed by --update. The row label lives in one dict so there is one place to edit, not two."
+        },
+        {
+          "factor": "Each of the nine rows could be individually exact while the table stopped accounting for every defect, because a detection method the sheet has no row for is counted nowhere.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "An unlisted detection_method is REFUSED in both modes before any edit, so --update cannot stamp a sheet whose table no longer adds up."
+        },
+        {
+          "factor": "No check compared a breakdown table to the total it breaks down. The eight-defect gap was visible to anyone who added nine numbers and nobody had.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "That arithmetic is now the refusal above, and the control drives it against a fixture register through --register."
+        },
+        {
+          "factor": "The sheet carries three separate breakdowns of the same 366 defects -- severity, layer and detection method -- because a reader wants all three. Every breakdown is another population that can drift out of agreement with the total.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Severity and layer are both derived and both sum correctly today, but neither is checked for summing. Worth the same refusal; not built here because it needs the sheet to state each subtotal before a mismatch means anything."
+        }
+      ],
+      "recurrence_open": "The severity and layer breakdowns have the same shape and are not checked for summing to the total -- they happen to be right today. And the nine detection row labels are hand-written regexes; a renamed row is REPORTED rather than silently dropped, but somebody still has to re-anchor it."
     },
     {
       "commit": "f44c608aa1a1",
