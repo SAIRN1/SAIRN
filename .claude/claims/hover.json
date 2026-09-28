@@ -252,6 +252,17 @@
       "status": "released",
       "released_at": "2026-09-28T21:34:56Z",
       "files": null
+    },
+    {
+      "id": "hover-1790631421",
+      "session": "hover",
+      "subject": "hover",
+      "task": "hover audit-log housekeeping round five: write one routable note about a pet-service row's evidence text; individually re-check a batch of earlier results by reading the underlying files myself, then report the remaining unchecked count; sample the cold pool once undirected; draw the next weighted rotation pick. FILES: .claude/skills/sairn-hover-auditor/",
+      "claimed_at": "2026-09-28T21:37:01Z",
+      "claimed_at_epoch": 1790631421.523772,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
