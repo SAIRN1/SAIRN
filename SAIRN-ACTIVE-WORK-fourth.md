@@ -815,3 +815,39 @@ EXISTING alf_incidents ROWS CARRY AN UNTRUSTWORTHY data.reported_by AND ARE NOT 
 Migration to apply: `sql/sairncare_incidents_recorded_by.sql`. Until it is run, the
 incident read answers **503 MIGRATION_REQUIRED** for every role rather than an
 empty log. Fix: `8d0fff5c`. Register record: `52b07afa`, CRITICAL.
+
+
+## 2026-09-28 — teardown-assertion sweep: the universe is ONE, and saying so is the result
+
+**CHECKED / UNIVERSE: 9 of 9 writing live probes read; 1 performs a teardown.**
+Derived from `tools/live_probe_residue_audit.py`, which already enumerates every
+file under `tools/ tests/ scripts/` that addresses the live host and sends a
+write action, then cross-read against every file naming `set_active`,
+`delete`, `soft_delete` or `deactivate`.
+
+| | |
+|---|---|
+| writing live probes | 9 (2 FIXTURE, 2 LOADER, 5 VERIFICATION) |
+| of those, performing a teardown | **1** — `tools/sc_tier_a_write_gate_live_probe.py` |
+| declaring a named residue instead | 4 (3 with a SQL path, 1 `residue=none` with the reason) |
+| other files naming a teardown verb | 2, both static fixtures — `tests/quote_request_soft_delete_panel.js`, `tests/sairnlegacy_session_gate_review_probe.js`. Neither reaches the network; the verb is the subject of an assertion, not a request. |
+
+**THE ONE GAP, AND IT WAS HALF-CLOSED ALREADY.** That probe's row cleanup was
+already asserted — it deletes, then reads back and requires the row to be absent
+from a read. Its **credential** cleanup was not: it asserted `st == 200` from the
+`set_active` call and stopped there. Fixed — the roster is now read back and both
+subjects must show `active == false`, with an empty or unreadable roster failing
+rather than passing.
+
+**Asserting the RESPONSE and asserting the STATE are different claims.** The
+2026-09-28 incident on the ALF credentials was one notch worse than this (a 400
+rendered as OK because the script read `error.code` and not the status), and
+fixing that class stops at "check the status" — which is still the endpoint's
+account of itself. A credential left live is the worse residue of the two: it is
+a way in, on a licence that outlives the run.
+
+**NO CHECKER WAS BUILT FOR THIS, deliberately.** A sweep over a universe of one
+is how every wrong number this session was produced — a tool written in reaction
+to an incident, with the control feeling like overhead. `live_probe_residue_audit.py`
+already carries the declared-class mechanism; if the teardown population grows
+past a handful, a fourth obligation belongs there rather than in a new tool.

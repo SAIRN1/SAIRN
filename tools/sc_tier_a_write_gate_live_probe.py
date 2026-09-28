@@ -640,6 +640,34 @@ def main():
                             key=LICENSE, token=admin)
             check('deactivated %s -> %s' % (emp, st), st == 200,
                   json.dumps(body)[:200])
+        # ── THE TEARDOWN IS READ BACK, NOT INFERRED FROM ITS OWN REPLY ────────
+        # The row deletions above already do this (`...no longer appears in a
+        # read of X`); the credential half did not, and a credential left live
+        # is the worse residue of the two -- it is a way in, on a licence that
+        # outlives this run.
+        #
+        # PAID FOR ON 2026-09-28, on a different probe and one notch worse: a
+        # deactivation answered 400 and the script printed OK, because it read
+        # `error.code` and a 400 without that field rendered as success. The
+        # arms above are already immune to that -- they assert `st == 200` --
+        # but a 200 is still the endpoint's account of itself. Asserting the
+        # RESPONSE and asserting the STATE are different claims, and only the
+        # second one is what "deactivated" means.
+        #
+        # One request, not one per employee: `roster` returns the whole tenant,
+        # so asking twice would buy nothing and write nothing new.
+        st, body = post(AUTH, {'action': 'roster'}, key=LICENSE, token=admin)
+        roster = (body or {}).get('employees') or [] if isinstance(body, dict) else []
+        by_id = dict((e.get('employee_id'), e) for e in roster
+                     if isinstance(e, dict))
+        still_live = [e for e in (CODER_ID, AUDITOR_ID)
+                      if by_id.get(e, {}).get('active') is not False]
+        check('...and the roster confirms both subjects are inactive',
+              st == 200 and not still_live,
+              'roster status %s; still active or unseen: %s. AN EMPTY OR '
+              'UNREADABLE ROSTER IS A FAILURE HERE, NOT A PASS -- "could not '
+              'tell" must not read as "cleaned up".'
+              % (st, still_live or json.dumps(body)[:160]))
 
     print()
     for note in notes:
