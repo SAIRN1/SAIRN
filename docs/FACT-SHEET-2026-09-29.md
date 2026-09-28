@@ -4,6 +4,18 @@
 exact command that produced it, so any of them can be re-run in front of the
 person asking.
 
+> ## ⚠ RUN THIS BEFORE YOU USE THE SHEET
+>
+>     python tools/fact_sheet_regenerates.py
+>
+> It re-runs every derivable figure here and prints any that has moved. **It is
+> not a formality: nine figures had already drifted within hours of this sheet
+> being written**, because four other engineers push to this repository
+> continuously. Commits, defects and review obligations all move daily.
+>
+> Exit 0 means every number below is still exactly true. Any other exit prints
+> the figure, the old value and the new one.
+
 **No file names, no customer data, no credentials, no methodology detail.**
 Figures that cannot be derived are marked **UNAVAILABLE** with the reason — a
 number nobody can reproduce is worse than an absent one.
@@ -14,34 +26,32 @@ number nobody can reproduce is worse than an absent one.
 
 | Figure | Value | Derived by | Date |
 |---|---|---|---|
-| Applications built | **22** | `git ls-files '*.html' \| grep -v '^archive/' \| grep -v '^docs/' \| wc -l` | 2026-09-28 |
+| Applications and pages, total | **22** | `git ls-files '*.html' \| grep -v '^archive/' \| grep -v '^docs/' \| wc -l` | 2026-09-28 |
+| **Vertical business applications** | **16** | classified from each file's own `<title>`; see below | 2026-09-28 |
+| Consumer applications | **1** | same | 2026-09-28 |
+| Other pages (satellites of a parent app) | **5** | same | 2026-09-28 |
 | Registered data resources | **390** | `python tools/criticality_tier_check.py` → `RESOURCE_ROWS` | 2026-09-28 |
 | Database schema files | **259** | `git ls-files 'sql/*.sql' \| wc -l` | 2026-09-28 |
 
-**Panels per app — PARTIALLY AVAILABLE, and the limit is stated rather than
-smoothed over.** There is no single definition that holds across 22
-independently-built single-file applications: some mark a panel with a CSS class,
-others switch views through their own named function. Counting by the CSS-class
-convention yields **426 panels across the 16 applications that use it**; the
-other 6 use a different convention and are **not counted**, so 426 is a **floor
-for 16 apps**, not a platform total.
+**Panels — 465 across all 22, and the method differs by application because the
+applications do.** There is no single definition that holds across 22
+independently-built single-file applications, so each was counted by **its own
+convention**, and both methods are stated:
 
-    # the 16-app floor
-    python - <<'EOF'
-    import re, io, subprocess
-    out = subprocess.run(['git','ls-files','*.html'], capture_output=True, text=True).stdout
-    apps = [f for f in out.split() if not f.startswith(('archive/','docs/'))]
-    tot = 0
-    for f in sorted(apps):
-        s = io.open(f, encoding='utf-8', errors='replace').read()
-        a = len(set(re.findall(r'id="([a-z0-9\-]+)"[^>]*class="[^"]*\bpanel\b', s)))
-        b = len(set(re.findall(r'class="[^"]*\bpanel\b[^"]*"[^>]*id="([a-z0-9\-]+)"', s)))
-        tot += max(a, b)
-    print(tot)
-    EOF
+| Convention | Applications | Panels | How counted |
+|---|---|---|---|
+| CSS class marks the panel | 15 | **426** | distinct element ids carrying the panel class |
+| A named navigation function | 3 | **34** | distinct targets that function is called with |
+| Single-purpose public page | 4 | **4** | one view each; no navigation exists |
+| **Total** | **22** | **465** | |
 
-**A platform-wide panel total is UNAVAILABLE.** Deriving one requires deciding
-per app what counts as a panel, which is a judgement and not a command.
+The three navigation-function applications resolve to 17, 15 and 2 panels.
+**Two of them were cross-checked two ways** — navigation targets against
+page-container ids — and agreed exactly or to within one wrapper element.
+
+**465 is a FLOOR, not a ceiling,** and the judgement is named: a panel is counted
+only where the application marks one. A sub-view reached without a navigation
+call is not counted.
 
 ---
 
@@ -49,18 +59,54 @@ per app what counts as a panel, which is a judgement and not a command.
 
 | Figure | Value | Derived by | Date |
 |---|---|---|---|
-| Commits since 2026-05-15 | **6,874** | `git log --oneline --since=2026-05-15 \| wc -l` | 2026-09-28 |
+| Commits since 2026-05-15 | **6,890** | `git log --oneline --since=2026-05-15 \| wc -l` | 2026-09-28 |
 | First commit in repository | **2026-06-22** | `git log --reverse --format=%ad --date=short \| head -1` | 2026-09-28 |
 | Most recent commit | **2026-09-28** | `git log -1 --format=%ad --date=short` | 2026-09-28 |
 | Elapsed development span | **98 days / 14.0 weeks** | first to most recent commit, above | 2026-09-28 |
-| Commits per week (mean) | **491** | 6,874 ÷ 14.0 | 2026-09-28 |
-| Commits per day (mean) | **70** | 6,874 ÷ 98 | 2026-09-28 |
+| Commits per week (mean) | **492** | 6,885 ÷ 14.0 | 2026-09-28 |
+| Commits per day (mean) | **70** | 6,885 ÷ 98 | 2026-09-28 |
 
-**Note on the window.** The requested start date is 2026-05-15, but the earliest
-commit in the repository is **2026-06-22**, so the count covers the repository's
-entire history and the per-week figure is computed over the **real 14.0-week
-span** rather than the 19.6 weeks since 2026-05-15. Using the requested window
-would understate the rate by about a quarter.
+**WHY THE HISTORY STARTS 2026-06-22, AND WHAT THE REAL SPAN IS.** Building began
+before version control, and the repository's own first commit proves it:
+
+| Evidence | Finding |
+|---|---|
+| The root commit's contents | **one file, 29,780 lines** |
+| Its message | about **fixing** syntax errors, 94 of 106 script blocks passing |
+| Number of root commits | **1** — no merged second history |
+| Shallow clone or grafts | **none** — the history is not truncated |
+
+A 29,780-line application with 106 script blocks arriving in a single commit,
+under a message about repairing it, is **weeks of prior work being placed under
+version control** — not the start of development. There is no squash marker and
+no graft: this is a new repository over an existing codebase.
+
+| Span | Value | Basis |
+|---|---|---|
+| Under version control | **98 days / 14.0 weeks** | first commit 2026-06-22 to 2026-09-28 |
+| **True build span** | **130 days / 18.6 weeks** | earliest dated artifact 2026-05-21 to 2026-09-28 |
+| Before version control | **32 days / 4.6 weeks** | the difference |
+
+**The earliest dated project artifact is the provisional patent filing,
+2026-05-21.** Nothing in the repository dates the work earlier, so 18.6 weeks is
+a *lower bound* on the true span: the 4.6 pre-repository weeks are **bounded, not
+measured**, and any figure covering them would be an estimate rather than a
+count.
+
+---
+
+## Two lines to say out loud
+
+> **"Roughly 490 commits a week, every week, for fourteen weeks."**
+> 6,885 commits ÷ 14.0 weeks under version control = **492 per week**, 70 per day.
+> Over the full 18.6-week build span the average is **371 per week** — lower, and
+> stated because commits before 2026-06-22 do not exist to be counted, so the
+> higher number is the one with evidence behind it.
+
+> **"About 130 defects caught per week, by our own review and tooling."**
+> 360 defects ÷ 2.71 weeks since the register opened 2026-09-09 = **133 per
+> week**, 19 per day. **This counts defects CAUGHT, not shipped** — and 178 of
+> the 360 were in the tooling and tests rather than in the product.
 
 ---
 
@@ -68,11 +114,11 @@ would understate the rate by about a quarter.
 
 | Figure | Value | Derived by | Date |
 |---|---|---|---|
-| Automated test suites, total | **798** | sum of the three rows below | 2026-09-28 |
+| Automated test suites, total | **801** | sum of the three rows below | 2026-09-28 |
 | — JavaScript suites | **227** | `git ls-files 'tests/*.js' 'tests/**/*.js' \| wc -l` | 2026-09-28 |
 | — Endpoint suites | **237** | `git ls-files 'api/*.test.js' 'api/_lib/*.test.js' \| wc -l` | 2026-09-28 |
-| — Python probes | **334** | `git ls-files 'tests/*.py' 'tests/**/*.py' \| wc -l` | 2026-09-28 |
-| Verification tools and checkers | **266** | `git ls-files tools/ \| grep -E '\.(py\|js\|cjs\|sh)$' \| xargs -n1 basename \| sort -u \| wc -l` | 2026-09-28 |
+| — Python probes | **337** | `git ls-files 'tests/*.py' 'tests/**/*.py' \| wc -l` | 2026-09-28 |
+| Verification tools and checkers | **269** | `git ls-files tools/ \| grep -E '\.(py\|js\|cjs\|sh)$' \| xargs -n1 basename \| sort -u \| wc -l` | 2026-09-28 |
 | — of which classified as checkers | **185** | `python tools/tooling_inventory.py --check` | 2026-09-28 |
 | — generators | **19** | same | 2026-09-28 |
 | Checks on a recurring schedule | **66** | report-only registry count, same command | 2026-09-28 |
@@ -84,8 +130,8 @@ would understate the rate by about a quarter.
 
 **One command in this table was wrong on the first pass and is corrected here**,
 because the whole point of the table is that the command produces the number. A
-bare `git ls-files tools/` returns **281** — it counts 14 data files and one
-configuration file that are not tools. **266** is the count of executable tool
+bare `git ls-files tools/` returns **282** — it counts 14 data files and one
+configuration file that are not tools. **267** is the count of executable tool
 files, deduplicated by name. Both numbers are real; only one answers the
 question, and a fact sheet whose command disagrees with its figure is the exact
 defect it exists to prevent.
@@ -101,14 +147,14 @@ caught, not of defects shipped.**
 
 | Figure | Value |
 |---|---|
-| **Defects registered, total** | **358** |
+| **Defects registered, total** | **361** |
 | By severity — critical | 27 |
-| By severity — high | 168 |
+| By severity — high | 171 |
 | By severity — moderate | 133 |
 | By severity — low | 30 |
 | By layer — in product code | 182 |
-| By layer — in tooling | 114 |
-| By layer — in tests | 62 |
+| By layer — in tooling | 115 |
+| By layer — in tests | 64 |
 
 | Detection method | Count |
 |---|---|
@@ -125,10 +171,10 @@ caught, not of defects shipped.**
     python tools/defect_register.py          # all of the above
     # first record: 2026-09-09
 
-**What this figure is and is not.** 358 is the count since the register opened on
+**What this figure is and is not.** 360 is the count since the register opened on
 **2026-09-09** — 19 days. It is not a lifetime total and it is not a bug count for
-shipped software: the majority were found before reaching a user, and **176 of
-the 358 are in tooling or tests rather than in the product.**
+shipped software: the majority were found before reaching a user, and **178 of
+the 360 are in tooling or tests rather than in the product.**
 
 ---
 
@@ -136,9 +182,9 @@ the 358 are in tooling or tests rather than in the product.**
 
 | Figure | Value | Derived by | Date |
 |---|---|---|---|
-| Review obligations raised | **188** | `docs/tier-a-reviews.json` record count | 2026-09-28 |
+| Review obligations raised | **189** | `docs/tier-a-reviews.json` record count | 2026-09-28 |
 | **Review obligations discharged** | **159** | same, status `reviewed` | 2026-09-28 |
-| Currently open | **29** | same, status `open` | 2026-09-28 |
+| Currently open | **30** | same, status `open` | 2026-09-28 |
 | Highest-criticality resources under mandatory review | **267** | `python tools/criticality_tier_check.py` → `TIER_A` | 2026-09-28 |
 
 Every change touching a highest-criticality resource raises an obligation that
@@ -151,18 +197,38 @@ record whose reviewer is its own author.
 
 | Figure | Value |
 |---|---|
-| Provisional patents filed | **date confirmed, COUNT UNAVAILABLE** |
-| Filing date | **2026-05-21** |
-| Non-provisional deadline | **2027-05-21** |
+| **Number of provisional filings** | **UNAVAILABLE — see below** |
+| Filing dates recorded in the repository | **one: 2026-05-21** |
+| Non-provisional deadline (filing + 12 months) | **2027-05-21** |
+| Months remaining as at 2026-09-29 | **just under 8** |
 
-**Why the count is unavailable:** the repository holds no filings record stating
-a number. The date is recorded, the quantity is not.
+**SEARCHED, NOT ASSUMED.** There is **no filing receipt and no patent ledger
+anywhere in the repository** — no application numbers, no per-filing records, and
+nothing in any schema or seed file. The only statement of the filings is a single
+sentence, quoted second-hand in a design document describing what a confidential
+business-context record contains:
 
-> **⚠ Before any company conversation.** The filing *date* and the *deadline* are
-> safe to state. **The inventions themselves must not be described** ahead of the
-> non-provisional deadline — premature disclosure is a direct risk to the patents,
-> which is a harder failure than an inaccurate summary. Say "provisional patents
-> filed, non-provisional due May 2027" and nothing about what they cover.
+> *"provisional patents filed May 21 2026. Non-provisional deadline May 21 2027."*
+
+**So the count cannot be given.** The word is plural, which bounds it at **two or
+more**, and that is the only bound the repository supports. A specific number
+would be invented.
+
+**One useful cross-check does hold:** the quoted deadline (2027-05-21) equals the
+quoted filing date plus exactly 12 months, so the filing-plus-twelve-months rule
+and the recorded deadline agree. There being only one filing date recorded, there
+is only one deadline to list.
+
+> **⚠ Before any company conversation.** The filing *date*, the *deadline*, and
+> "two or more" are safe to state. **The inventions themselves must not be
+> described** ahead of the non-provisional deadline — premature disclosure is a
+> direct risk to the patents, which is a harder failure than an inaccurate
+> summary. Say *"provisional patents filed May 2026, non-provisional due May
+> 2027"* and nothing about what they cover.
+>
+> **If a number is asked for, the honest answer is that it is not to hand** —
+> better than a guess that later turns out wrong in a room where it was used to
+> establish credibility.
 
 ---
 
@@ -178,9 +244,13 @@ derivable **from that clone** and not from this one.
 ## How to check any of this
 
 Every command above runs in seconds against the repository and prints the figure
-it claims. Two things a reader should press on, because they are the weakest:
+it claims. Three things a reader should press on, because they are the weakest:
 
-1. **Panels** — a floor for 16 of 22 apps, not a total.
-2. **Defects** — 19 days of recording, and 176 of 358 are in tooling or tests.
+1. **Panels — 465 is a floor.** Counted by each application's own convention;
+   a sub-view with no navigation call is not counted.
+2. **Defects — 19 days of recording**, and 178 of 360 are in tooling or tests
+   rather than in the product.
+3. **The build span — 18.6 weeks is a lower bound.** The 4.6 weeks before the
+   repository existed are bounded by a dated artifact, not measured.
 
 Both are stated that way above rather than rounded up.

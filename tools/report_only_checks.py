@@ -155,6 +155,14 @@ def by_section(rc, out):
 
 REGISTRY = [
     {
+        'tool': 'fact_sheet_regenerates.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-28, report-only. Under 3 seconds, and its number moves the moment anybody commits -- which is the point: the document it checks is carried into company meetings and every figure in it claims to be re-runnable.',
+        'catches': 'a figure published in docs/FACT-SHEET-2026-09-29.md that the command beside it no longer produces',
+        'why_it_matters': 'NINE OF TWENTY-ONE FIGURES HAD ALREADY DRIFTED within hours of the sheet being written, because four engineers push to this repository continuously -- commits, defects and review obligations all move daily. A sheet whose figures cite their own derivation reads as authoritative, which is exactly what makes a stale one dangerous: the number gets stated in a room where it was used to establish credibility. Off-by-one is a finding with no tolerance, because a tolerance is a rounding policy nobody agreed. It DOES NOT check the panel counts or the patent dates -- those are a stated per-application judgement and a quoted sentence, and encoding either here would turn a stated judgement into a hidden one.',
+    },
+    {
         'tool': 'verification_owed_report.py',
         'mode': 'once',
         'verdict': by_exit,

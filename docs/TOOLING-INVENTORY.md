@@ -19,12 +19,12 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**268 files in `tools/`.** By what actually invokes them:
+**269 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 14 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 70 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 71 | runs automatically on every push, never blocks |
 | **ADVISORY** | 4 | session-start or prompt hooks, informational |
 | **DECIDED** | 74 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 50 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
@@ -35,7 +35,7 @@ By what they are, independent of wiring:
 | Kind | Count |
 |---|---:|
 | ADVISORY | 3 |
-| CHECKER | 187 |
+| CHECKER | 188 |
 | GENERATOR | 19 |
 | GUARD | 1 |
 | LIBRARY | 25 |
@@ -157,7 +157,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (70)
+## REPORT-ONLY (71)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -191,6 +191,7 @@ quiet in practice.
 | `duplicate_global_check.py` | 2026-09-10, after its one real-run finding turned out to be a deliberate wrapper | a second top-level declaration of the same global -- the later one silently wins and the earlier becomes dead code that still reads correctly (Guardian check 13) |
 | `eaten_substitution_check.py` | 2026-09-14, the day it was built, report-only and NOT wired into the push gate: it reports a SHAPE and cannot know a shell caused it, and a check that cannot tell a stray keystroke from an eaten expression has no business refusing a push | a commit message whose paragraph has a continuation line beginning with a stray single space -- what bash leaves behind when a backticked expression inside a double-quoted -m evaluates to nothing and is deleted |
 | `export_coverage_check.py` | 2026-09-14, report-only. It FAILED ON ITS FIRST DAY on four real gaps and PASSES NOW -- all four were closed the same day. NOT wired into the push gate: a missing export is a product decision and has no business refusing somebody else's push | a Class A (append-only by design) resource sitting in an app whose CSV export registry ALREADY EXISTS and does not carry it. Resources in apps with NO export machinery at all are counted separately and are NOT gated -- that is a feature nobody built, not a gap in one that exists |
+| `fact_sheet_regenerates.py` | 2026-09-28, report-only. Under 3 seconds, and its number moves the moment anybody commits -- which is the point: the document it checks is carried into company meetings and every figure in it claims to be re-runnable. | a figure published in docs/FACT-SHEET-2026-09-29.md that the command beside it no longer produces |
 | `fail_open_check.py` | 2026-09-10 | a read that turns "I could not ask" into "there is none" -- an absent record and an unreachable server rendering the same |
 | `flaky_checker_quarantine.py` | 2026-09-16, report-only. 2.6 seconds, and it is one of the few checks whose subject is THIS REGISTRY -- it reports which registered checks have evidence of ever having been measured, so it is the thing that would notice the rest going quiet. | a registered checker with no evidence either way -- never measured, as distinct from measured and stable |
 | `gate_column_check.py` | 2026-09-11, the day it was built | a server file reading a property off a queried row that is NOT a column of that table -- a read that can only ever produce undefined, and a gate built on it that can never fire |
@@ -497,11 +498,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      268   git ls-files tools/
+  tools on disk                      269   git ls-files tools/
   hook entries                        14   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
-  report-only registry                66   report_only_checks.REGISTRY
-  tools invoked by tests/            185   tests/**/*.py, *.js
+  report-only registry                67   report_only_checks.REGISTRY
+  tools invoked by tests/            186   tests/**/*.py, *.js
   recorded NOT-promoted decisions     80   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```

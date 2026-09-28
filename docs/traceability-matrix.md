@@ -50,6 +50,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 
 | Requirement (what it catches) | Tool | Evidence at promotion |
 |---|---|---|
+| a figure published in docs/FACT-SHEET-2026-09-29.md that the command beside it no longer produces | `fact_sheet_regenerates.py` |  |
 |  | `verification_owed_report.py` |  |
 | a handler that receives a model answer and WRITES it with no human approval step between | `ai_action_approval_audit.py` | REAL RUN 2026-09-16: 74 AI call sites across 17 app files. 14 WRITES_UNGATED, 0 GATED_IN_BODY, 39 RENDER_ONLY, 21 NO_WRITE. The zero is the striking figure -- not one call site on this platform has an explicit confirm between the model answer and the write -- and the 39 are safe for a structural reason rather than a checked one. Named rows include sairnbuild.html aiAsk and two sairngrounds handlers |
 | the defect rate crossing the declared budget, on both a rolling 30-day window and a permanent count | `defect_budget_policy.py` | REAL RUN 2026-09-16: 118 records, digest 1e3f40bf761b9730, BOTH windows at 0.0% remaining -> ALL HANDS. THE TOOL REFUSES TO READ THAT AS A CRISIS and says so: "Both windows read the most extreme band on the first reading, which means the budget is wrong rather than the platform being in crisis." BUDGET_PER_WINDOW is 60; the OBSERVED rate is 198.9 weighted defects per 30 days over 40 days of register. Registered UNCALIBRATED and gating nothing, because the calibration needs readings across pushes and there is no other way to get them |
@@ -667,11 +668,11 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 135 test files are traced to no stated requirement
+### 136 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 665 of 800 traced, 83.1%.
+For context and not as the headline: 665 of 801 traced, 83.0%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -693,10 +694,10 @@ An untraced test is not a bad test. It means no source in this repo states what 
 
 | kind | count | what it means | the fix |
 |---|---|---|---|
-| **bound to a subject, tied to no requirement** | 28 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
+| **bound to a subject, tied to no requirement** | 29 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
 | **no subject binding either** | 107 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
-**These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 28 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
+**These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 29 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
 - `api/_lib/alf-family-mar.test.js`
 - `api/_lib/compliance-rules-staff-join.test.js`
@@ -770,6 +771,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_defect_register_vocab_probe.py`
 - `tests/run_entry_point_scope_probe.py`
 - `tests/run_exec_msgs_gate_sabotage_probe.py`
+- `tests/run_fact_sheet_regenerates_probe.py`
 - `tests/run_gate_caller_impact_probe.py`
 - `tests/run_gh_push_gate_probe.py`
 - `tests/run_graduated_exemption_probe.py`
@@ -854,10 +856,10 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 800   tests/**, api/** (both walked)
+  test files on disk                 801   tests/**, api/** (both walked)
   open-work rows citing a test       376   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 10   sairn_push_gate_hook.GUARD_TESTS
-  report-only registry                66   report_only_checks.REGISTRY
+  report-only registry                67   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     75   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   sairn_push_gate_hook.py
 ```

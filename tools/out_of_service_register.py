@@ -82,8 +82,26 @@ def detect_undeclared(declared_subjects):
                          encoding='utf-8', errors='replace')
     if out.returncode != 0:
         return None, '`git ls-files` failed, so the probe universe is unknown.'
+    # ── THIS TOOL'S OWN CONTROL CARRIES AN OUT-OF-SERVICE PROBE AS A FIXTURE ──
+    # tests/run_out_of_service_probe.py writes a VERIFICATION probe guarded to a
+    # non-existent licence, because planting one is how it proves this detector
+    # reports it. So the detector saw its own fixture and reported it.
+    #
+    # THIRD INSTANCE OF THIS SHAPE IN ONE SESSION, which is why it is worth the
+    # comment rather than a silent line: tools/gate_caller_impact.py flagged its
+    # own control's fixture string, tools/live_probe_residue_audit.py's demo-key
+    # check matched its own explanatory PROSE, and now this. A checker whose
+    # subject is "a file that looks like X" will match the file that DEMONSTRATES
+    # X, and its own control is the most likely such file in the repo.
+    #
+    # EXCLUDED BY NAME, not by a pattern. "Skip anything matching *_probe.py"
+    # would silence every genuine probe -- and a probe is exactly what this tool
+    # is meant to find.
+    SELF_CONTROL = 'tests/run_out_of_service_probe.py'
     found = []
     for f in [x.strip() for x in out.stdout.split('\n') if x.strip()]:
+        if f == SELF_CONTROL:
+            continue
         try:
             src = read(os.path.join(REPO, f))
         except (IOError, OSError):
