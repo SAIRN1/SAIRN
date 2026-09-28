@@ -1315,6 +1315,20 @@ PURPOSES = {
         'beat dependency list is READ FROM heartbeat.js and returns None on a read '
         'failure, never an empty set. 5 locked fixtures, 23-arm control whose '
         'ablation restores the REAL pre-fix shape in memory. REPORT ONLY'),
+    'parse_zero_third_state_check.py': ('CHECKER',
+        'A CHECKER THAT REPORTS A CLEAN SWEEP BECAUSE IT READ NOTHING. It '
+        'enumerates a corpus, finds nothing, prints "read 0 file(s) / CLEAN", and '
+        'that output is indistinguishable from a real clean sweep -- the coverage '
+        '"0 of 0 is not 100%" failure moved down a level. Locates the CORPUS '
+        'VARIABLE in a tool\'s main() -- assigned from a callee that RETURNS an '
+        'enumeration (glob/walk/listdir or git ls-files, 3 hops), whose len() is '
+        'PRINTED -- and classifies the empty case GUARDED / GUARD PRESENT WRONG '
+        'EXIT / NO GUARD. A findings list is NOT a corpus: an empty one is the '
+        'correct clean, and reporting those was 22 of the first run\'s 28 rows. '
+        'Found five real sites on 2026-09-29, all fixed, including a guard that '
+        'printed COULD NOT MEASURE and returned 0. Publishes CHECKED / UNIVERSE '
+        'with the COULD-NOT-TELL count named rather than folded into cleared. '
+        '--propose never applies. 9 fixtures, 22-arm control. REPORT ONLY'),
     'entry_point_scope_check.py': ('CHECKER',
         'A TOOL WHOSE SEVERAL ENTRY POINTS READ DIFFERENT POPULATIONS -- the copy '
         'a human invokes is not the copy that enforces. The named instance cost a '
