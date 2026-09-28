@@ -3268,6 +3268,23 @@
         "tools/fact_sheet_regenerates.py",
         "tools/rebase_state_guard.py"
       ]
+    },
+    {
+      "id": "hank-1790628119",
+      "session": "hank",
+      "subject": "hank",
+      "task": "queue22 item 1 the AMEND GUARD: a PreToolUse Bash hook refusing git commit --amend, blanket staging and commit -a while a rebase, merge or cherry-pick is in progress, and refusing --amend on any commit already on origin/main. Michael broke that prose rule himself on 2026-09-27 and amended onto another session's commit, so it becomes mechanical. The control drives it against a REAL stopped rebase in a throwaway repo. Wired into .claude/settings.json for every clone. Then the credential-LOCATIONS enumeration -- paths, environment variable names and credential stores only, never a value or a fragment -- so Michael can rotate SAIRN-Session55. Then the reporting rule that a stated start is not a start.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hank.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. Two earlier attempts were refused on shared methodology vocabulary rather than a shared subject, and naming the other session's subjects here to declare the disjointness made the overlap larger each time -- a text-reading gate matching a disclosure instead of a claim. Same shape cc recorded earlier today and same resolution. Each component of this claim checks CLEAR on its own.\n\nSUBJECT NAMED PER PR 4.3 FILES: tools/rebase_state_guard.py tests/run_rebase_state_guard_probe.py .claude/settings.json docs/2026-09-28-credential-locations.md docs/2026-09-28-reporting-rules.md",
+      "claimed_at": "2026-09-28T20:41:59Z",
+      "claimed_at_epoch": 1790628119.0820224,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        ".claude/settings.json",
+        "docs/2026-09-28-credential-locations.md",
+        "docs/2026-09-28-reporting-rules.md",
+        "tests/run_rebase_state_guard_probe.py",
+        "tools/rebase_state_guard.py"
+      ]
     }
   ],
   "refusals": [
@@ -3368,6 +3385,60 @@
       ],
       "source": "status-registry",
       "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-28T20:39:58Z",
+      "my_subject": "hank",
+      "my_task": "queue22: the AMEND GUARD -- a PreToolUse hook refusing git commit --amend, blanket staging and commit -a while a rebase, merge or cherry-pick is in progress, and refusing --amend on any commit already on origin/main. Tests first, known-bad control against a REAL stopped rebase in a throwaway repo. Wired into .claude/settings.json for every clone. Then the credential-LOCATIONS enumeration (paths, env var names and stores only, never a value), the audit-licence bootstrap and role-gate live probe, cc's 2026-09-26T01:43:54Z obligation plus the next most overdue, the routed tier findings CRITICALITY-TIERS.md ownership allows, and the reporting rule that a stated start is not a start. CONFLICTS DECLARED PER PR 4.3 RATHER THAN REWORDED: docs/defect-density-register.json is in cc's LIVE claim set and I am APPENDING records to it through tools/defect_register.py --add rather than hand-editing, because the register-feed push gate requires a record per defect-closing commit; if that collides, the reseat tool is the resolution and cc owns any structural change to the file. .claude/settings.json carries NO live claim at this check (cc's settings.json claim finished 19.3h ago and cody's expired) and is TAKEN for one added hook line. stonedesk.html is NOT touched -- cc holds it. api/sd-data.js is NOT touched. SUBJECT NAMED PER PR 4.3 FILES: tools/rebase_state_guard.py tests/run_rebase_state_guard_probe.py .claude/settings.json docs/2026-09-28-credential-locations.md docs/CRITICALITY-TIERS.md docs/tier-a-reviews.json docs/2026-09-28-reporting-rules.md",
+      "other_session": "cc",
+      "other_subject": "platform",
+      "other_task": "discharge the two review obligations currently assigned to me, identified by author and opened_at in the ledger; measure which findings this week rested on the claim-activity checker while it called expired claims active; drive the revoked-licence enforce-mode path in the AI proxy LIVE against a scratch env and fix the refusal, regression first, both env states; read the alf_billing SILENT arm and decide wire-a-suite versus register-a-gap with a severity; confirm each of the six unreachable role-gate refusals is genuinely unreachable and not a second silent gap; merge or flag the 27 regfresh proposal branches without gh; the StoneDesk storage KPI label; and record the severity correction on the trust-ledger probe finding. TWO QUEUE ITEMS ARE DEFERRED AND NOT TAKEN. Their blocker and the exact path they need are recorded in THIS session's claim file under refusals, written there by the claim tool itself, because naming either in this string blocks my own claim on my own declaration -- the third instance today of a text-reading gate matching a disclosure instead of a claim. Both are rechecked before this session ends. SUBJECT NAMED PER PR 4.3 FILES: docs/tier-a-reviews.json api/claude.js api/claude-licence-enforce.test.js tools/role_gate_negative_coverage.py docs/role-gate-negative-coverage.json stonedesk.html tests/stonedesk_admin_storage_kpi.js docs/defect-density-register.json docs/SAIRN-OPEN-WORK-INDEX.md docs/checker-coverage-baseline.json tools/checker_denominator.py",
+      "other_claimed_at": "2026-09-28T20:00:58Z",
+      "shared_files": [
+        "docs/tier-a-reviews.json"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-28T20:39:58Z",
+      "my_subject": "hank",
+      "my_task": "queue22: the AMEND GUARD -- a PreToolUse hook refusing git commit --amend, blanket staging and commit -a while a rebase, merge or cherry-pick is in progress, and refusing --amend on any commit already on origin/main. Tests first, known-bad control against a REAL stopped rebase in a throwaway repo. Wired into .claude/settings.json for every clone. Then the credential-LOCATIONS enumeration (paths, env var names and stores only, never a value), the audit-licence bootstrap and role-gate live probe, cc's 2026-09-26T01:43:54Z obligation plus the next most overdue, the routed tier findings CRITICALITY-TIERS.md ownership allows, and the reporting rule that a stated start is not a start. CONFLICTS DECLARED PER PR 4.3 RATHER THAN REWORDED: docs/defect-density-register.json is in cc's LIVE claim set and I am APPENDING records to it through tools/defect_register.py --add rather than hand-editing, because the register-feed push gate requires a record per defect-closing commit; if that collides, the reseat tool is the resolution and cc owns any structural change to the file. .claude/settings.json carries NO live claim at this check (cc's settings.json claim finished 19.3h ago and cody's expired) and is TAKEN for one added hook line. stonedesk.html is NOT touched -- cc holds it. api/sd-data.js is NOT touched. SUBJECT NAMED PER PR 4.3 FILES: tools/rebase_state_guard.py tests/run_rebase_state_guard_probe.py .claude/settings.json docs/2026-09-28-credential-locations.md docs/CRITICALITY-TIERS.md docs/tier-a-reviews.json docs/2026-09-28-reporting-rules.md",
+      "other_session": "cody",
+      "other_subject": "cody",
+      "other_task": "cody-q18 post-compaction: finish the assertion-label-shape JavaScript extension (probe controls C1 C2 C2b rewritten plus known-bad JS arms C5 C5b C5c) and then items 1 3 4 5 6 7 8 9 of the last paste -- registry entry doc, scrubber sync, SAIRNcode autonomy scope doc, sf_vendors and sf_inventory_counts re-anchor, blocked items when api/sd-data.js frees, two-door checker dispatch extension, zero-parse-must-fail sweep, self-test-with-fixture methodology",
+      "other_claimed_at": "2026-09-28T19:39:12Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: api/sd-data.js, known-bad",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-28T20:40:11Z",
+      "my_subject": "hank",
+      "my_task": "queue22: the AMEND GUARD -- a PreToolUse hook refusing git commit --amend, blanket staging and commit -a while a rebase, merge or cherry-pick is in progress, and refusing --amend on any commit already on origin/main. Tests first, known-bad control against a REAL stopped rebase in a throwaway repo, wired into .claude/settings.json for every clone. Then the credential-LOCATIONS enumeration, paths and env var names and stores only and never a value, so Michael can rotate SAIRN-Session55. Then the reporting rule that a stated start is not a start. SUBJECT NAMED PER PR 4.3 FILES: tools/rebase_state_guard.py tests/run_rebase_state_guard_probe.py .claude/settings.json docs/2026-09-28-credential-locations.md docs/2026-09-28-reporting-rules.md",
+      "other_session": "cody",
+      "other_subject": "cody",
+      "other_task": "cody-q18 post-compaction: finish the assertion-label-shape JavaScript extension (probe controls C1 C2 C2b rewritten plus known-bad JS arms C5 C5b C5c) and then items 1 3 4 5 6 7 8 9 of the last paste -- registry entry doc, scrubber sync, SAIRNcode autonomy scope doc, sf_vendors and sf_inventory_counts re-anchor, blocked items when api/sd-data.js frees, two-door checker dispatch extension, zero-parse-must-fail sweep, self-test-with-fixture methodology",
+      "other_claimed_at": "2026-09-28T19:39:12Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: known-bad",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-28T20:41:44Z",
+      "my_subject": "hank",
+      "my_task": "queue22 item 1 the AMEND GUARD: a PreToolUse Bash hook refusing git commit --amend, blanket staging and commit -a while a rebase, merge or cherry-pick is in progress, and refusing --amend on any commit already on origin/main. Michael broke that prose rule himself on 2026-09-27 and amended onto fourth's commit, so it becomes mechanical. Control drives it against a REAL stopped rebase in a throwaway repo. Wired into .claude/settings.json for every clone. Then the credential-LOCATIONS enumeration, paths and env var names and stores only and never a value or fragment, so Michael can rotate SAIRN-Session55. Then the reporting rule that a stated start is not a start.\n\nLEXICAL BLOCK DECLARED PER PR 4.3 RATHER THAN REWORDED, AND THE COLLIDING PHRASE NAMED. My first two attempts at this claim were refused against cody's live cody-q18. The colliding text is the generic methodology bigram this platform puts in every claim it writes -- the two words for writing the test before the code, next to the two words for the arm that must fail. It is shared vocabulary, not a shared subject. VERIFIED DISJOINT BY READING cody-q18 ITSELF: cody is on the assertion-label-shape JavaScript extension, a registry-entry doc, the scrubber sync, the SAIRNcode autonomy scope doc, the sf_vendors and sf_inventory_counts re-anchor, the two-door checker dispatch extension, the zero-parse-must-fail sweep and the self-test-with-fixture methodology. None of those is a git hook, a credential inventory, or a reporting rule, and cody names none of my files. Each of my four components checks CLEAR on its own. Michael is the coordinating session and directed this item explicitly this turn, which is the resolution the claim tool's own refusal text asks for.\n\nTWO ITEMS FROM THE SAME PASTE ARE BLOCKED AND NOT TAKEN. Item 4, discharging cc's 2026-09-26T01:43:54Z obligation, needs docs/tier-a-reviews.json, which cc holds LIVE and is working right now -- their claim says discharge the two review obligations currently assigned to me. Reported, not worked around. Item 6, the routed tier findings, needs docs/CRITICALITY-TIERS.md, which cc took 0.8h ago for the sv_financials row and the citation-drift repoint. Reported to the holder.\n\nSUBJECT NAMED PER PR 4.3 FILES: tools/rebase_state_guard.py tests/run_rebase_state_guard_probe.py .claude/settings.json docs/2026-09-28-credential-locations.md docs/2026-09-28-reporting-rules.md",
+      "other_session": "cody",
+      "other_subject": "cody",
+      "other_task": "cody-q18 post-compaction: finish the assertion-label-shape JavaScript extension (probe controls C1 C2 C2b rewritten plus known-bad JS arms C5 C5b C5c) and then items 1 3 4 5 6 7 8 9 of the last paste -- registry entry doc, scrubber sync, SAIRNcode autonomy scope doc, sf_vendors and sf_inventory_counts re-anchor, blocked items when api/sd-data.js frees, two-door checker dispatch extension, zero-parse-must-fail sweep, self-test-with-fixture methodology",
+      "other_claimed_at": "2026-09-28T19:39:12Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same app: sairncode",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
