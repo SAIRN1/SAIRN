@@ -36,6 +36,20 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+// COMMENT STRIPPING COMES FROM THE SHARED LIBRARY, 2026-09-27. This file
+// carried its own ad-hoc copy. Five separate copies across the suite were
+// wrong in three different ways -- a line filter that kept every continuation
+// line of a block comment, a greedy regex that ate a real statement, and a
+// state machine that read accept="image/*" as a comment start -- and each one
+// produced a green run against a file that should have gone red, or the
+// reverse. tests/lib/strip_comments.js is the single implementation and
+// tests/lib/strip_comments.test.js is its control.
+//
+// stripJs() AND NOT stripComments(): the input here is a bare JavaScript
+// FRAGMENT. stripComments() treats everything outside <script> as markup, so
+// on a fragment it strips NOTHING AT ALL and looks correct doing it -- which
+// is a worse failure than any of the three copies it replaced.
+const { stripJs } = require(path.join(__dirname, 'lib', 'strip_comments.js'));
 
 const HTML = path.join(__dirname, '..', 'stonedesk.html');
 const src = fs.readFileSync(HTML, 'utf8');
@@ -163,8 +177,7 @@ check('so does a chamfered corner',
   // verbatim, which is worth keeping and would otherwise make this assertion
   // fail on the very change it is checking -- the same trap as a scanner
   // re-flagging a fix because the fix explains what it replaced.
-  const gate = fn('window.sdHistoryLoadIntoDrawingTool=function(){')
-    .split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+  const gate = stripJs(fn('window.sdHistoryLoadIntoDrawingTool=function(){'));
   check('the confirm gate no longer reads the raw boxes',
     /gN\('da-len'\) > 0 \|\| gN\('da-dep'\) > 0/.test(gate), false);
   check('it defers to the shared guard instead of inlining the test',
@@ -174,8 +187,7 @@ check('so does a chamfered corner',
   const guard = fn('function dcHasUnsavedWork() {');
   check('the shared guard is the thing that asks about edited dimensions',
     /dcDimsEdited\(\)/.test(guard), true);
-  const drawingsLoad = fn('window.sdDrawingsLoad=function(id){')
-    .split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+  const drawingsLoad = stripJs(fn('window.sdDrawingsLoad=function(id){'));
   check('and the Saved Drawings loader calls the SAME guard, not a copy',
     /dcHasUnsavedWork\(\)/.test(drawingsLoad), true);
   check('there is exactly one definition of it in the file',

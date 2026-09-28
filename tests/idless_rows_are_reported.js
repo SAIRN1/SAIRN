@@ -31,6 +31,20 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+// COMMENT STRIPPING COMES FROM THE SHARED LIBRARY, 2026-09-27. This file
+// carried its own ad-hoc copy. Five separate copies across the suite were
+// wrong in three different ways -- a line filter that kept every continuation
+// line of a block comment, a greedy regex that ate a real statement, and a
+// state machine that read accept="image/*" as a comment start -- and each one
+// produced a green run against a file that should have gone red, or the
+// reverse. tests/lib/strip_comments.js is the single implementation and
+// tests/lib/strip_comments.test.js is its control.
+//
+// stripJs() AND NOT stripComments(): the input here is a bare JavaScript
+// FRAGMENT. stripComments() treats everything outside <script> as markup, so
+// on a fragment it strips NOTHING AT ALL and looks correct doing it -- which
+// is a worse failure than any of the three copies it replaced.
+const { stripJs } = require(path.join(__dirname, 'lib', 'strip_comments.js'));
 const assert = require('assert');
 
 const ROOT = path.join(__dirname, '..');
@@ -59,9 +73,7 @@ function syncBody(app, fnName) {
   const h = read(app);
   const i = h.indexOf('function ' + fnName + '(');
   assert.ok(i > 0, fnName + ' not found in ' + app);
-  return balanced(h, i).split('\n')
-    .filter(l => !l.trim().startsWith('//') && !l.trim().startsWith('/*') && !l.trim().startsWith('*'))
-    .join('\n');
+  return stripJs(balanced(h, i));
 }
 
 // app -> [sync function, mechanism]

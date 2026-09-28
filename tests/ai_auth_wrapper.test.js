@@ -21,6 +21,19 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
+// COMMENT STRIPPING COMES FROM THE SHARED LIBRARY, 2026-09-27. This file
+// carried its own ad-hoc copy. Copies across the suite were wrong in three
+// different ways -- a line filter that kept every continuation line of a block
+// comment, a greedy regex that ate a real statement, and a state machine that
+// read accept="image/*" as a comment start -- and each produced a green run
+// against a file that should have gone red, or the reverse.
+// tests/lib/strip_comments.js is the single implementation;
+// tests/lib/strip_comments.test.js is its control.
+//
+// stripComments() and NOT stripJs(): the input here is a WHOLE HTML file, so
+// the <script> boundaries matter -- outside them `/*` is not a comment, which
+// is what keeps accept="image/*" from swallowing the rest of the file.
+const { stripComments } = require(path.join(__dirname, 'lib', 'strip_comments.js'));
 const vm = require('vm');
 
 const ROOT = path.join(__dirname, '..');
@@ -205,7 +218,7 @@ t('SAIRNcash is NOT patched -- it moved to its own endpoint instead', () => {
   assert.strictEqual(html.indexOf('__sairnAiAuthInstalled'), -1,
     'sairncash got the licence wrapper, but it has no licence key -- it should '
     + 'be calling /api/sairncash/ai instead');
-  const code = html.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+  const code = stripComments(html);
   assert.strictEqual(code.indexOf("fetch('/api/claude'"), -1,
     'a sairncash call site still points at the shared proxy');
   assert.ok(code.indexOf('/api/sairncash/ai') !== -1, 'the new endpoint is not called');

@@ -21,6 +21,19 @@
 
 'use strict';
 const assert = require('assert');
+// COMMENT STRIPPING COMES FROM THE SHARED LIBRARY, 2026-09-27. A line filter
+// like the one that used to be here keeps every CONTINUATION line of a block
+// comment and every TRAILING `//` comment, so a suite asserting a string is
+// ABSENT can be satisfied by the comment recording its removal. It also cannot
+// see a regex literal containing `//`, which the shared version handles.
+// tests/lib/strip_comments.js is the single implementation;
+// tests/lib/strip_comments.test.js is its control.
+//
+// stripJs() AND NOT stripComments(): the input is JavaScript or a fragment of
+// it. stripComments() treats everything outside <script> as markup, so on a
+// fragment it strips NOTHING and looks correct doing it.
+const path = require('path');
+const { stripJs } = require(path.join(__dirname, '..', '..', 'tests', 'lib', 'strip_comments.js'));
 const m = require('./roofing-supplier-match');
 
 let pass = 0, fail = 0;
@@ -232,7 +245,7 @@ test('junk input does not throw', () => {
 
 test('the module ships NO seeded suppliers or part numbers', () => {
   const src = require('fs').readFileSync(require.resolve('./roofing-supplier-match.js'), 'utf8');
-  const code = src.split('\n').filter(l => l.trim().indexOf('//') !== 0).join('\n');
+  const code = stripJs(src);
   assert.ok(!/ABC Supply|Beacon|SRS|const SEED|SAMPLE_/.test(code), 'seed data in the engine');
 });
 

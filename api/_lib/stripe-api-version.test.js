@@ -38,6 +38,10 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
+// stripJs() AND NOT stripComments(): the input is JavaScript, not an HTML file.
+// stripComments() treats everything outside <script> as markup, so it would
+// strip NOTHING here and look correct doing it.
+const { stripJs } = require(path.join(__dirname, '..', '..', 'tests', 'lib', 'strip_comments.js'));
 
 const API = path.join(__dirname, '..');
 let pass = 0, fail = 0;
@@ -50,8 +54,15 @@ function test(name, fn) {
 // Comments are stripped before matching. Without this the explanatory comment
 // beside each call site -- which quotes the pinned form -- would satisfy the
 // scan, and it would keep passing after somebody deleted the code under it.
+//
+// MIGRATED 2026-09-27 to the shared library. The version here was a GREEDY
+// `/\/\*[\s\S]*?\*\//g` -- the second of the three shapes tests/lib/strip_comments.js
+// replaces, and the one recorded in tests/stonedesk_field_quote_wiring.js as
+// having matched across an unintended span and eaten a real statement, taking a
+// count from two to ZERO. It also could not see a regex literal containing `//`,
+// which hides the rest of the line.
 function stripComments(src) {
-  return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');
+  return stripJs(src);
 }
 
 function walk(dir, out) {

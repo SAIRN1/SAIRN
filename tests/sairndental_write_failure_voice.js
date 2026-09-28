@@ -29,11 +29,24 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+// COMMENT STRIPPING COMES FROM THE SHARED LIBRARY, 2026-09-27. This file
+// carried its own ad-hoc copy. Copies across the suite were wrong in three
+// different ways -- a line filter that kept every continuation line of a block
+// comment, a greedy regex that ate a real statement, and a state machine that
+// read accept="image/*" as a comment start -- and each produced a green run
+// against a file that should have gone red, or the reverse.
+// tests/lib/strip_comments.js is the single implementation;
+// tests/lib/strip_comments.test.js is its control.
+//
+// stripComments() and NOT stripJs(): the input here is a WHOLE HTML file, so
+// the <script> boundaries matter -- outside them `/*` is not a comment, which
+// is what keeps accept="image/*" from swallowing the rest of the file.
+const { stripComments } = require(path.join(__dirname, 'lib', 'strip_comments.js'));
 const assert = require('assert');
 const vm = require('vm');
 
 const html = fs.readFileSync(path.join(__dirname, '..', 'sairndental.html'), 'utf8').replace(/\r\n/g, '\n');
-const codeOnly = html.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+const codeOnly = stripComments(html);
 
 let pass = 0, fail = 0;
 const queue = [];
@@ -54,7 +67,6 @@ function fnBody(name) {
   assert.ok(at > 0, 'not found in sairndental.html: ' + name);
   return fnBodyAt(at);
 }
-const stripComments = (src) => src.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
 
 // ═══════════════════════════════════════════════════════════════════════════
 section('the false sentence is gone from code');

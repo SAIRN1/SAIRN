@@ -20,6 +20,23 @@
 
 'use strict';
 const assert = require('assert');
+// COMMENT STRIPPING COMES FROM THE SHARED LIBRARY, 2026-09-27. This file
+// carried its own ad-hoc copy. Copies across the suite were wrong in three
+// different ways -- a line filter that kept every continuation line of a block
+// comment, a greedy regex that ate a real statement, and a state machine that
+// read accept="image/*" as a comment start -- and each produced a green run
+// against a file that should have gone red, or the reverse. The shared version
+// also handles REGEX LITERALS, which a line filter cannot: `var re = /\\/\\//;`
+// read as a line comment HIDES the rest of the line, and hidden code makes an
+// absence assertion pass on code that is present.
+// tests/lib/strip_comments.js is the single implementation;
+// tests/lib/strip_comments.test.js is its control.
+//
+// stripJs() AND NOT stripComments(): the input here is JavaScript, not an HTML
+// file. stripComments() treats everything outside <script> as markup, so it
+// would strip NOTHING and look correct doing it.
+const path = require('path');
+const { stripJs } = require(path.join(__dirname, '..', '..', 'tests', 'lib', 'strip_comments.js'));
 const G = require('./roofing-gl-export.js');
 const B = require('./roofing-billing.js');
 
@@ -86,7 +103,7 @@ test('an unmapped role refuses the WHOLE export and returns no lines', () => {
 test('nothing is ever posted to a default or suspense account', () => {
   // The failure this prevents: an export that "works" by inventing 9999.
   const src = require('fs').readFileSync(__dirname + '/roofing-gl-export.js', 'utf8');
-  const code = src.split('\n').filter(l => !l.trim().startsWith('//')).join('\n');
+  const code = stripJs(src);
   assert.ok(!/suspense/i.test(code), 'a suspense account appeared in the code');
   assert.ok(!/\|\|\s*'[0-9]{4}'/.test(code),
     'an account number is being defaulted with || in the code');
@@ -315,7 +332,7 @@ test('...and the DEBIT and CREDIT columns are still NUMBERS', () => {
 
 test('nothing here claims to be IIF or a QuickBooks connection', () => {
   const src = require('fs').readFileSync(__dirname + '/roofing-gl-export.js', 'utf8');
-  const code = src.split('\n').filter(l => !l.trim().startsWith('//')).join('\n');
+  const code = stripJs(src);
   assert.ok(!/\.iif|intuit|oauth/i.test(code),
     'the module claims an integration it does not have');
 });
