@@ -18374,7 +18374,7 @@
       "recurrence_open": "NO CLIENT SENDS retrigger_events AT ALL -- sairnlaw.html has no caller, so this whole path is reachable only by a direct API consumer and the input contract is still documented nowhere outside the suite. The endpoint does not validate the element shape before handing it to the engine, so the engine is the only thing refusing. And the wider class is untouched: a field written somewhere and read on the WRONG object clears the ghost scan's third condition by construction, which is the member of this family that has now bitten twice. Also open: `dispositions.sort()` compares raw strings, which is correct for ISO dates and is now guaranteed only because everything non-ISO refuses upstream -- nothing asserts that dependency."
     },
     {
-      "commit": "f82d642cbea5",
+      "commit": "857729ddd75a",
       "date": "2026-09-28",
       "subject": "fix(methodology): the plan's staleness checker read 0 claims from 6 files and reported drift anyway -- plus the SAIRNcode autonomy scoping",
       "files": [
