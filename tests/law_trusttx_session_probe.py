@@ -79,8 +79,8 @@ MUTATIONS = [
      "somebody who has just left the firm keeps trust access for the life of a "
      "12h token",
      API,
-     "      if (!stillActive.ok && stillActive.code === 'CREDENTIAL_INACTIVE') {",
-     "      if (false) {"),
+     "        if (!preActive.ok && preActive.code === 'CREDENTIAL_INACTIVE') {",
+     "        if (false) {"),
 
     ("7. the ADJACENT reconcile branch loses its own session check -- moving "
      "the hole next door is the exact failure this finding is about",

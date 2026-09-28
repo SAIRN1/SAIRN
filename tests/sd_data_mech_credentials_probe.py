@@ -61,7 +61,8 @@ MUTATIONS = [
      "      if (!session) {"),
     ("2. writing stops being management-only, so a technician records their "
      "own licence",
-     SRC, "      if (!mechAuth.MANAGEMENT_ROLES[session.role]) {",
+     SRC, "      if (!mechAuth.MANAGEMENT_ROLES[session.role]) {\n"
+     "        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only an Owner or Manager can record a technician credential' } });",
      "      if (false && !mechAuth.MANAGEMENT_ROLES[session.role]) {"),
     ("3. the EPA 608 section stops being required, so the record cannot answer "
      "the question it exists for",

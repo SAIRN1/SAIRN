@@ -127,8 +127,8 @@ MUTATIONS = [
      "assignee beside the authorised one -- invisible today only because the "
      "read branch's Object.assign happens to overlay the real column last",
      os.path.join('api', 'sd-data.js'),
-     "      delete dataBlob.assigned_employee_id;\n",
-     ""),
+     "        storedBlob(payload, ['id', 'job_id', 'assigned_employee_id', 'status']),",
+     "        storedBlob(payload, ['id', 'job_id', 'status']),"),
 ]
 
 if __name__ == '__main__':
