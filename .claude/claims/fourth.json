@@ -2492,8 +2492,8 @@
       "task": "queue11 items 1,3,4: excluded-role test arms for the 12 role-gated resources the negative-coverage ratchet flags, starting with alf_facility write; a pre-flight conflict-marker check plus a sweep for other fixed-size text windows used instead of a real boundary; and a staleness sweep of the other external and marketing-facing claims docs for the scoped-to-N pattern. TEST FILES AND TOOLS ONLY -- I do NOT touch api/sd-data.js, which hank holds, and adding arms needs no change to it. Items 2 and 5 verified already done. SUBJECT NAMED PER PR 4.3 FILES: api/sd-data-alf-isolation.test.js tools/conflict_marker_preflight.py tools/role_gate_negative_coverage.py docs/",
       "claimed_at": "2026-09-27T03:26:14Z",
       "claimed_at_epoch": 1790479574.1517422,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-28T20:12:18Z",
       "files": [
         "api/sd-data-alf-isolation.test.js",
         "tools/conflict_marker_preflight.py",
