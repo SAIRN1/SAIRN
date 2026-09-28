@@ -80,10 +80,26 @@ def tracked():
     return [f.strip() for f in out.stdout.split('\n') if f.strip()]
 
 
+# ── THIS TOOL'S OWN CONTROL CARRIES A CALLER AS A FIXTURE ───────────────────
+# tests/run_gate_caller_impact_probe.py embeds a bearer-key `add_rule` caller as
+# a STRING, because that is how it plants the defect this tool must report. On
+# the first run after the fixture was written the tool flagged it -- correctly as
+# a literal, wrongly as a caller. That is the house defect named in
+# tools/checker_kit.py's own header: "mutation_anchor_check.py flagged its own
+# probe for carrying the pattern as a fixture string."
+#
+# EXCLUDED BY NAME, NOT BY A PATTERN. A rule like "skip anything matching
+# *_probe.py" would silence every real probe that calls an endpoint -- and seven
+# of the fourteen genuine callers this tool found are probes. One file, named,
+# with the reason.
+SELF_CONTROL = 'tests/run_gate_caller_impact_probe.py'
+
+
 def caller_files(files):
     return [f for f in files
             if f.startswith(CALLER_DIRS) and f.endswith(CALLER_EXT)
-            and not f.startswith('archive/')]
+            and not f.startswith('archive/')
+            and f != SELF_CONTROL]
 
 
 # ── argparse USES THE WORD `action` TOO, AND THE FIRST RUN PROVED IT ────────

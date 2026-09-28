@@ -143,6 +143,42 @@ function triggerOption(r) {
 // A rule with no traceable authority cannot be saved. Same discipline as
 // sc_scrubrules and sc_credential_scope: this table only ever holds rules a
 // human actually read and sourced.
+// ── AN IDENTITY IS ASSERTED BY THE SESSION, NEVER BY THE PAYLOAD ────────────
+// (2026-09-28.) `authority.verified_by` was already safe -- it is overwritten
+// LAST in the Object.assign below, so a forged one could not survive. THE REST
+// OF THE CALLER'S OBJECT WAS NOT. `Object.assign({}, body.rule, { ...three
+// keys... })` stores every other field verbatim, so a caller sending
+// `recorded_by: "somebody else"` had it written into the provenance record of a
+// rule that decides filing deadlines. Caught by arm E2 of
+// api/legal-deadlines-auth.test.js, which failed on exactly that.
+//
+// STRIPPED RATHER THAN VALIDATED. A validator would have to know every identity
+// spelling a caller might invent; removing the class and re-deriving the one
+// field the server owns cannot be got wrong the same way. This is the same
+// decision api/_lib/blob.js made for scope keys, in its words: "stripping them
+// is not optional and not listed per call site."
+//
+// AND IT IS DELIBERATELY *NOT* IN api/_lib/blob.js, which is where a reader
+// would look next. That module's header says the scope keys "are the only
+// universal truth, so they are the only thing hidden here", and that COLUMN keys
+// stay per-branch on purpose. Identity-assertion keys are a third class, and
+// folding them into a module that argues against exactly that would be a change
+// to its design smuggled in as a bug fix. If a second endpoint needs this, that
+// is the moment to decide where it lives -- not now, with one caller.
+//
+// NOT A DEEP STRIP. It removes these keys at the level it is handed, and the two
+// call sites hand it both the rule and its `authority` object. A nested object
+// nobody passes in is untouched, and that is a known limit rather than an
+// oversight: `dates[]` entries are data, not provenance.
+const IDENTITY_KEYS = ['verified_by', 'recorded_by', 'created_by', 'updated_by',
+                       'author', 'authored_by', 'employee_id', 'role'];
+function strippedOfIdentity(obj) {
+  if (!obj || typeof obj !== 'object') return obj;
+  const out = Object.assign({}, obj);
+  IDENTITY_KEYS.forEach(function (k) { delete out[k]; });
+  return out;
+}
+
 function validateRulePayload(p) {
   if (!p || typeof p !== 'object') return 'A rule object is required.';
   // `count` is required for every shape EXCEPT resolve_periods, where each
@@ -939,9 +975,9 @@ module.exports = async (req, res) => {
     if (action === 'add_rule') {
       const err = validateRulePayload(body.rule);
       if (err) { res.status(400).json({ ok: false, code: 'INVALID_RULE', message: err }); return; }
-      const rule = Object.assign({}, body.rule, {
+      const rule = Object.assign({}, strippedOfIdentity(body.rule), {
         version: body.rule.version || 1,
-        authority: Object.assign({}, body.rule.authority, {
+        authority: Object.assign({}, strippedOfIdentity(body.rule.authority), {
           retrieved_at: body.rule.authority.retrieved_at || new Date().toISOString().slice(0, 10),
           // Server-derived, never client-supplied. CORRECTED 2026-08-29: this
           // is whoever was SIGNED IN when the row was written, NOT who verified
@@ -952,6 +988,14 @@ module.exports = async (req, res) => {
           // api/reference-fingerprint.js and the platform divergence query
           // subtract this field before hashing: leaving it in made 87 rules and
           // 48 calendars read as diverged when none of them had.
+          // `caller` CANNOT be null here any more -- the gate above refuses
+          // both actions without a session -- so this is no longer a
+          // fallback, it is a guard against the gate being removed. Kept
+          // rather than simplified to `caller.employee_id`: if somebody
+          // deletes the gate, a stored null is a visible absence of
+          // provenance and a thrown TypeError is a 502 nobody can read.
+          // The comment above is corrected accordingly: a bearer-key load
+          // no longer reaches this line at all.
           verified_by: caller ? caller.employee_id : null
         })
       });
@@ -968,8 +1012,8 @@ module.exports = async (req, res) => {
       if (err) { res.status(400).json({ ok: false, code: 'INVALID_CALENDAR', message: err }); return; }
       const cal = body.calendar;
       const entryId = cal.jurisdiction + ':' + cal.year;
-      const stored = Object.assign({}, cal, {
-        authority: Object.assign({}, cal.authority, {
+      const stored = Object.assign({}, strippedOfIdentity(cal), {
+        authority: Object.assign({}, strippedOfIdentity(cal.authority), {
           retrieved_at: (cal.authority && cal.authority.retrieved_at) || new Date().toISOString().slice(0, 10),
           verified_by: caller ? caller.employee_id : null
         })

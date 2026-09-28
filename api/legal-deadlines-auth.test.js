@@ -232,6 +232,55 @@ async function main() {
     assert.ok(r.code !== 401 && r.code !== 403, JSON.stringify(r.body).slice(0, 200));
   });
 
+  section('E. IDENTITY IS SERVER-SET -- a caller cannot sign somebody else\'s name');
+  // The stored row is the provenance record for a rule that decides filing
+  // deadlines. `authority.verified_by` was already overwritten LAST in the
+  // Object.assign, so that one field could not be forged -- but the REST of the
+  // caller's object survives verbatim, and any identity-shaped key the override
+  // list does not name is stored exactly as sent.
+  await test('E1. a forged authority.verified_by is REPLACED by the session, '
+    + 'never stored', async () => {
+      const forged = JSON.parse(JSON.stringify(GOOD_RULE));
+      forged.authority.verified_by = 'E-SOMEBODY-ELSE';
+      const r = await call('add_rule', { rule: forged }, 'attorney');
+      assert.strictEqual(r.code, 200, JSON.stringify(r.body).slice(0, 200));
+      assert.strictEqual(r.body.stored.authority.verified_by, 'E-1',
+        'the caller\'s value survived: '
+        + JSON.stringify(r.body.stored.authority));
+    });
+  await test('E2. and a forged TOP-LEVEL identity field is STRIPPED, not stored '
+    + '-- the override list names three keys and the caller\'s object supplies '
+    + 'the rest', async () => {
+      const forged = Object.assign({}, GOOD_RULE, {
+        recorded_by: 'E-SOMEBODY-ELSE',
+        created_by: 'E-SOMEBODY-ELSE',
+        verified_by: 'E-SOMEBODY-ELSE',
+        author: 'E-SOMEBODY-ELSE'
+      });
+      const r = await call('add_rule', { rule: forged }, 'attorney');
+      assert.strictEqual(r.code, 200, JSON.stringify(r.body).slice(0, 200));
+      const stored = r.body.stored;
+      ['recorded_by', 'created_by', 'verified_by', 'author'].forEach(function (k) {
+        assert.ok(!(k in stored) || stored[k] === 'E-1',
+          k + ' was stored as the caller sent it: ' + JSON.stringify(stored[k]));
+      });
+    });
+  await test('E3. ...and the same for a holiday calendar, which moves every date '
+    + 'in a jurisdiction', async () => {
+      const forged = JSON.parse(JSON.stringify(GOOD_CALENDAR));
+      forged.authority.verified_by = 'E-SOMEBODY-ELSE';
+      forged.recorded_by = 'E-SOMEBODY-ELSE';
+      const r = await call('add_holidays', { calendar: forged }, 'owner');
+      assert.strictEqual(r.code, 200, JSON.stringify(r.body).slice(0, 200));
+    });
+  await test('E4. CONTROL: the legitimate fields the caller DOES own still '
+    + 'survive, so E2 is a strip and not a wipe', async () => {
+      const r = await call('add_rule', { rule: GOOD_RULE }, 'attorney');
+      assert.strictEqual(r.body.stored.rule_id, GOOD_RULE.rule_id);
+      assert.strictEqual(r.body.stored.authority.citation, GOOD_RULE.authority.citation);
+      assert.strictEqual(r.body.stored.computation, 'frcp_6a');
+    });
+
   section('D. KNOWN-BAD CONTROL -- the arms must be shown to fail');
   await test('D1. CONTROL: asserting an UNAUTHENTICATED add_rule SUCCEEDS fails, '
     + 'so section A distinguishes the gate from its absence', async () => {
