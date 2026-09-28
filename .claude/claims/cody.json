@@ -2539,6 +2539,17 @@
         "tools/assertion_label_shape_check.py",
         "tools/entry_point_scope_check.py"
       ]
+    },
+    {
+      "id": "cody-1790594275",
+      "session": "cody",
+      "subject": "cody-q17",
+      "task": "x",
+      "claimed_at": "2026-09-28T11:17:55Z",
+      "claimed_at_epoch": 1790594275.7667327,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
@@ -2568,6 +2579,21 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "same app: stonedesk",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-28T11:16:55Z",
+      "my_subject": "cody-q17",
+      "my_task": "queue17: discharge my two most-overdue eligible Tier A reviews (hank 2026-09-24T22:49:01Z sc_anesthesia_base_units and cc 2026-09-24T23:40:40Z law_clients/law_deadlines/law_trusttx/quotes, both 84h); write the report-only REGISTRY entry text to docs rather than editing cc's file; rank and categorise the 464 JavaScript suite files outside the Python parser and build the cheapest extension covering the largest block, tests first plus a known-bad control; extend the two-door checker to resolve cmd_* dispatch and handler tables and publish how many doors it now resolves; enumerate every checker that reports a count from a parse and make each fail COULD NOT RUN on a zero-item parse with a known-bad control each; add a self-test fixture to every report-only checker that runs on every real run and prints beside the real result; re-anchor and correct the sf_vendors and sf_inventory_counts tier cells after reading ORC 2915.09(A)(1); scoped SAIRNcode autonomy build list DOCS ONLY; and the sairn-code-scrubber user-store sync written to docs if the file is held. DECLARED CONFLICTS PER PR 4.3, NOT REWORDED: tools/report_only_checks.py is cc's and I do NOT edit it -- the registry entry is delivered as paste-ready TEXT in docs/2026-09-29-registry-entries-cody.md, which is exactly how the previous round handled the same block. api/sd-data.js is fourth's and the two items needing it (sf_trustee_audits server sync, slabSyncOne/sdLineageSyncOne) are RECHECKED PER ITEM and taken only if it frees. .claude/skills/sairn-code-scrubber/SKILL.md carries cc's section 27 and I do not overwrite it by hand -- the sync is written to docs and reported. SUBJECT NAMED PER PR 4.3 FILES: tools/assertion_label_shape_check.py tools/entry_point_scope_check.py tools/cron_beat_refusal_check.py tools/parse_zero_third_state_check.py tools/checker_selftest_check.py tests/run_parse_zero_third_state_probe.py tests/run_checker_selftest_probe.py tests/run_entry_point_scope_probe.py tests/run_assertion_label_shape_probe.py docs/tier-a-reviews.json docs/CRITICALITY-TIERS.md docs/2026-09-29-registry-entries-cody.md docs/2026-09-29-scrubber-sync-cody.md docs/2026-09-29-sairncode-autonomy-scope-cody.md docs/2026-09-29-js-parser-gap-cody.md",
+      "other_session": "cc",
+      "other_subject": "platform",
+      "other_task": "claim_activity_check.py reports EXPIRED claims as active because it reads the raw status field instead of sairn_claim.is_active() -- three findings today, all three vacuous; expired-but-unreleased made a named third state with a regression control FIRST. Then the could-not-read ratchet doc; the sv_financials B->A tier row on availability and integrity with confidentiality staying B; the citation-drift repoint in docs/CRITICALITY-TIERS.md; the next checker_denominator batch; and whatever still exits 2 COULD NOT RUN. CONFLICTS DECLARED PER PR 4.3 RATHER THAN REWORDED: hank's LIVE queue20 says 'Then the obligation backlog with backfill_shas', which touches docs/tier-a-reviews.json -- so the TWENTY review-record citation drifts are NOT TAKEN by me and only the seventy in CRITICALITY-TIERS.md are; docs/CRITICALITY-TIERS.md itself is named by NO live claim (cody-q16 and hank-queue13 both expired) and is taken here. SUBJECT NAMED PER PR 4.3 FILES: tools/claim_activity_check.py tests/run_claim_activity_probe.py docs/CRITICALITY-TIERS.md tools/checker_denominator.py docs/2026-09-28-could-not-read-ratchet.md",
+      "other_claimed_at": "2026-09-28T10:59:11Z",
+      "shared_files": [
+        "docs/CRITICALITY-TIERS.md"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
