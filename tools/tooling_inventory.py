@@ -1244,6 +1244,31 @@ PURPOSES = {
     'stonedesk_storefront_live_check.py': ('LIVE', 'whether sql/stonedesk_public_surface_schema.sql was really run, by probing the three public endpoints -- the instruction "confirm by re-probing, not by the editor reporting success", mechanised'),
     'sairn_ai_fact_scan.py': ('CHECKER', 'a number an AI panel states that no function computes'),
     'sairn_app_map_check.py': ('LIVE', "an app absent from Guardian's own app map, and a route that 404s"),
+    'cron_beat_refusal_check.py': ('CHECKER',
+        'A CRON REFUSAL THAT RETURNS WITHOUT WRITING A HEARTBEAT -- the FALSE '
+        'GREEN. api/sairndental/send-reminder.js returned 502 on a failed '
+        'dnt_appointments read and wrote no beat, 23 times between 2026-09-12 and '
+        '2026-09-14 per the provider error table; because the job SUCCEEDS most '
+        'hours, the last good beat stayed fresh and cron-watchdog reported '
+        'send-reminder=ok through the whole outage. The same defect in '
+        'audit-checkpoint.js refused on EVERY run and so produced a visible '
+        'NEVER_BEAT -- the intermittent one is the dangerous shape. THE '
+        'DISTINCTION THAT MAKES IT DECIDABLE: a PRE-AUTH 401 must NOT beat, '
+        'because a beat written before the secret is checked lets anyone with the '
+        'URL forge liveness for a job that never ran, which is strictly worse '
+        'than no beat; past the secret the caller IS the scheduler and a refusal '
+        'IS the job failing. Pre-auth is decided STRUCTURALLY -- does the '
+        'refusal own enclosing `if` names an auth marker -- because the first '
+        'version compared line numbers against the last marker and reported the '
+        '401 itself. A THIRD STATE the first real run earned: CANNOT BEAT, for a '
+        'post-auth 500 on a missing SUPABASE_URL, where beat() writes to Supabase '
+        'with that same variable so the fix is impossible locally; all three '
+        'first-run findings were that shape, they are printed on every clean run '
+        'rather than folded into it, and the out-of-band answer is named '
+        '(cron_liveness_check.py on GitHub Actions, a different scheduler). The '
+        'beat dependency list is READ FROM heartbeat.js and returns None on a read '
+        'failure, never an empty set. 5 locked fixtures, 23-arm control whose '
+        'ablation restores the REAL pre-fix shape in memory. REPORT ONLY'),
     'entry_point_scope_check.py': ('CHECKER',
         'A TOOL WHOSE SEVERAL ENTRY POINTS READ DIFFERENT POPULATIONS -- the copy '
         'a human invokes is not the copy that enforces. The named instance cost a '
