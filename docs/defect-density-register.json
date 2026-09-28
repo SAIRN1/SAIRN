@@ -16325,6 +16325,62 @@
       "recurrence_open": "The pin is resolved for the seed exemption. Nothing checks that any OTHER consumer of pushed_tip() treats its return as a refspec rather than a sha -- the same value is passed to the seed comparison and to export_sql_at, and whether either of those is refspec-safe was not audited here."
     },
     {
+      "commit": "0030d6b49804",
+      "date": "2026-09-27",
+      "subject": "fix(sairnlaw): a caller could write somebody else's name into a deadline rule's provenance -- and the new caller-impact tool flagged its own fixture",
+      "files": [
+        "api/legal-deadlines-auth.test.js",
+        "api/legal-deadlines.js",
+        "tools/gate_caller_impact.py"
+      ],
+      "lines_added": 114,
+      "lines_removed": 5,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "api/legal-deadlines.js add_rule and add_holidays merged the caller's own object into the stored row with Object.assign({}, body.rule, { version, authority }) -- so every field the three-key override did not name was stored VERBATIM. authority.verified_by itself was safe, because it is overwritten last inside the nested assign, but any other identity-shaped key a caller invented was not: sending `recorded_by: \"E-SOMEBODY-ELSE\"` on a rule wrote that name into the provenance record of a rule that decides filing deadlines, and the same held for created_by, updated_by, author and authored_by. The stored row is what api/reference-fingerprint.js and the platform divergence query read, and what a reader would consult to find out who put a rule in. So a caller could attribute their own authoring to another employee on the one table where provenance is the point. Fixed by stripping an identity-key class from the caller's object at both levels the two call sites hand it -- the rule or calendar object and its nested authority object -- and re-deriving verified_by from the verified session afterwards. STRIPPED RATHER THAN VALIDATED because a validator would have to anticipate every identity spelling a caller might invent, while removing the class and re-deriving the one field the server owns cannot fail the same way. Found by writing arm E2 of api/legal-deadlines-auth.test.js, which failed on recorded_by before the fix.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the Object.assign merge has carried this shape since add_rule was written; git log -S finds the feature commit rather than a commit that removed a strip."
+      },
+      "citation_note": "No section covers a caller-supplied field being stored as provenance. 1.5's shape -- a value computed correctly and then not acted on -- is close in that verified_by WAS derived from the session and the caller's other identity fields were merged in anyway, so the correct derivation sat beside an uncontrolled path. Arguable, and the note says so.",
+      "contributing_factors": [
+        {
+          "factor": "An allowlist of three overridden keys was doing the work of a denylist. Object.assign's semantics mean everything NOT named survives, so the safety of the stored row depended on the override list being complete -- and it was written for version and retrieved_at, not for identity.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "strippedOfIdentity() removes an eight-key identity class from the caller's object before the merge, at both levels the call sites pass it."
+        },
+        {
+          "factor": "One identity field WAS handled correctly, which made the rest look handled. authority.verified_by is derived from the session and carries a long comment explaining why -- so a reader checking whether identity was server-set found a convincing yes.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The strip is applied to the same objects the override touches, so the two live together rather than one implying the other."
+        },
+        {
+          "factor": "Nothing tested what the endpoint STORES as opposed to what it answers. The new auth suite was written for the gate; the identity arms were added to it because the gate work put the stored shape in front of me.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Arms E1-E4 in api/legal-deadlines-auth.test.js drive a forged value at both levels and include a control that the fields the caller legitimately owns still survive, so the strip cannot pass as a wipe."
+        },
+        {
+          "factor": "The strip is local to this endpoint and the natural home for it -- api/_lib/blob.js -- argues against taking it, because that module's header states the scope keys are the only universal truth it will hide.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "Recorded rather than resolved: if a second endpoint needs an identity strip, that is the moment to decide where the class lives. Acting now would be a design change to blob.js smuggled in as a bug fix, and acting never leaves two copies the day it recurs."
+        }
+      ],
+      "recurrence_open": "NOT A DEEP STRIP, and that limit is written at the helper: it removes identity keys at the level it is handed, which is the rule or calendar object and its authority object. A nested structure nobody passes in is untouched -- dates[] entries are data rather than provenance, which is the judgement, not an oversight. The class is also NOT swept platform-wide: every other endpoint that merges a caller's object into a stored row with Object.assign has the same allowlist-doing-a-denylist shape, and nothing enumerates them. api/_lib/blob.js covers the SCOPE keys across branches and deliberately does not cover identity, so there is no existing sweep to extend. And the identity key list itself is hand-kept: a caller inventing a ninth spelling is stored, which is the residual an allowlist-free design cannot remove."
+    },
+    {
       "commit": "01150533af4a",
       "date": "2026-09-27",
       "subject": "fix(tier-a): the gate's two entry points read DIFFERENT scopes, and its own probe was blind in one clone",
@@ -16777,6 +16833,70 @@
         }
       ],
       "recurrence_open": "Three things this change does NOT close. (1) decryptSecret() still returns null for both a failed decrypt and a value that was never stored, so the next key-handling defect in this path will surface as \"MFA is not set up\" rather than as an error. (2) sql/legacy_ciphertext_census.sql is UNRUN and its legacy-vs-v2 discriminator (the `v2.` prefix) is unverified against real rows -- and its count now gates a destructive step, so a wrong discriminator either blocks step 4 for ever or clears PREVIOUS while legacy rows remain. (3) SD_ENCRYPTION_KEY is production-only while SD_AUTH_SECRET and SUPABASE_URL are preview+production; IF preview points at the same Supabase project, a preview deployment is a v2-blind reader and a legacy writer against production rows. Whether it does is one comparison of two env values nobody has made, and it is not asserted."
+    },
+    {
+      "commit": "bb840eeccb3c",
+      "date": "2026-09-27",
+      "subject": "fix(tests): the nine label-claims-universal arms, each replaced by the comparison its own label was making",
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "tests/push_gate/check9_probe.py",
+        "tests/push_gate/refspec_and_override_probe.py",
+        "tests/reachability/resource_demand_probe.py",
+        "tests/run_assertion_label_shape_probe.py",
+        "tests/run_assurance_case_probe.py",
+        "tests/run_checker_confidence_probe.py",
+        "tests/run_register_feed_gate_probe.py",
+        "tests/run_rotation_blast_radius_probe.py",
+        "tests/run_testability_gate_probe.py",
+        "tools/assertion_label_shape_check.py"
+      ],
+      "lines_added": 293,
+      "lines_removed": 31,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "Nine test arms across eight suites labelled an EXHAUSTIVE claim and compared ONE-SIDEDLY, found by tools/assertion_label_shape_check.py. In each the floor was numerically true and the label was about a population, so the failure the arm names could not move it. 'every promoted checker is scored' was backed by a floor of 20 against a registry of 62, so a checker DISAPPEARING from the score left 61 and stayed green. 'EVERY gate is fed from the capture' was backed by a count of three with four gates, so a fifth gate reading the raw stream -- the exact defect the arm above it prevents -- would leave four replays, clear the floor, and silently eat stdin from every gate after it. 'exactly one object is emitted, never two' was backed by a less-than-or-equal-to-one, WHICH PASSES ON ZERO, so the one outcome the label rules out was the one it admitted. 'fixtures of EVERY verdict' was backed by a floor of four with five verdicts, making the arm above it vacuous for whichever verdict lost its fixture. 'EVERY revision is EXPLAINED' was a count of two joined by an or-clause satisfied by the first transition for ever. TWO WERE NOT FLOOR PROBLEMS AT ALL: 'every committed seed json is present in the export' ran its SUBSET BACKWARDS and against the WORKING TREE when the function it tests reproduces a COMMIT, so an export that silently dropped a seed satisfied it perfectly; and 'the context that bounds EVERY LEAF' was a floor on a DOCUMENT-level field that does not range over leaves at all. All nine now compare against a derived denominator. CONFIRMED went from 12 to 3, and two suites went from red to fully green.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "assertion_label_shape_check.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Nine arms written across many months by several sessions; no single injection commit, and attributing one would put a wrong sha in the lag figure."
+      },
+      "contributing_factors": [
+        {
+          "factor": "EVERY ONE OF THE NINE WAS A ONE-SIDED COMPARISON UNDER A UNIVERSAL LABEL, and a count cannot see a missing member. A floor of 20 against a registry of 62 stayed green while a checker disappeared from the score; a floor of three gate lines with four gates stayed green while a fifth gate ate stdin; a floor of four verdicts with five verdicts stayed green while a verdict lost its fixture. In each case the floor was numerically true and the label was about a population.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Each arm now compares against a DERIVED denominator -- the registry, the hook's own gate lines, the gate's own return literals, git ls-tree at the commit, the criteria version's revision number -- so the arm goes red when the population changes rather than when a number does."
+        },
+        {
+          "factor": "TWO OF THE NINE WERE NOT FLOOR PROBLEMS AT ALL AND WOULD HAVE BEEN MIS-FIXED BY TIGHTENING THE NUMBER. The refspec arm's subset ran BACKWARDS and against the WRONG POPULATION (the working tree, when the function reproduces a commit), and the assurance-case arm claimed a per-leaf bound about a field that is document-level and does not range over leaves. A sweep that only tightened comparisons would have left both wrong and looking fixed.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Both were read to the source before editing. The refspec arm now compares MISSING and EXTRA sets against git's own list at the same commit; the assurance arm is split into the not-empty check it really was plus the per-leaf claim the label implied and nothing tested."
+        },
+        {
+          "factor": "The repo's check() helper IS NOT ONE IDIOM and it broke two of the corrections. tests/ carries check(name, cond, detail), check(label, actual, expected), check(label, ok, detail) and check(name, got, want). Two fixes were written in the wrong local form and every arm failed comparing a detail string to True -- the same signature-variance hazard the checker that FOUND these arms is deliberately immune to, reproduced by hand in its own follow-up.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "NOT CLOSED. Each corrected arm is now written in its file's own form with a comment saying which form that is, but nothing checks it -- a suite could grow a fourth signature and a future fix would fail the same way. A checker comparing each file's own check() signature against the call shapes in that file is the mechanical fix and is named rather than built."
+        },
+        {
+          "factor": "ONE FIX PUNISHED CORRECT CODE AND ONE EXISTING ARM ALREADY DID. The first assurance-case correction compared ALL declared leaves against the JSON and went red against a tool behaving exactly as designed -- evaluate() emits an empty evidence list for an undeveloped subgoal. And arm 3b of the testability probe tested endswith .py under the label 'a BARE tool FILENAME', so a sentence ending in a filename made it red while the extractor was correct.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The assurance universe is now the leaves of DEVELOPED subgoals, with a third arm pinning that a leaf can only vanish WITH its subgoal marked undeveloped. 3b now requires the whole cell to be one filename-shaped token, and the looser reading is kept as a printed ADVISORY count rather than deleted, because a number nobody prints is a number nobody can notice moving."
+        }
+      ],
+      "recurrence_open": "The SIGNATURE-VARIANCE half is not closed: nothing compares a suite own check() signature against the call shapes in the same file, so a future correction can still be written in the wrong local form and fail comparing a detail string to True. It happened twice inside this one change."
     },
     {
       "commit": "69518f0e0122",
@@ -17532,62 +17652,6 @@
         }
       ],
       "recurrence_open": "The criteria are still a guess about what a correct anchor looks like. Three forms are recognised -- replace-once, declared-count, and single-subject 2-tuples -- and a probe using a fourth form is not reported as unchecked, it is simply absent from the count. Nothing measures how many anchors the tool cannot see."
-    },
-    {
-      "commit": "0030d6b49804",
-      "date": "2026-09-27",
-      "subject": "fix(sairnlaw): a caller could write somebody else's name into a deadline rule's provenance -- and the new caller-impact tool flagged its own fixture",
-      "files": [
-        "api/legal-deadlines-auth.test.js",
-        "api/legal-deadlines.js",
-        "tools/gate_caller_impact.py"
-      ],
-      "lines_added": 114,
-      "lines_removed": 5,
-      "app": "sairnlaw",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "api/legal-deadlines.js add_rule and add_holidays merged the caller's own object into the stored row with Object.assign({}, body.rule, { version, authority }) -- so every field the three-key override did not name was stored VERBATIM. authority.verified_by itself was safe, because it is overwritten last inside the nested assign, but any other identity-shaped key a caller invented was not: sending `recorded_by: \"E-SOMEBODY-ELSE\"` on a rule wrote that name into the provenance record of a rule that decides filing deadlines, and the same held for created_by, updated_by, author and authored_by. The stored row is what api/reference-fingerprint.js and the platform divergence query read, and what a reader would consult to find out who put a rule in. So a caller could attribute their own authoring to another employee on the one table where provenance is the point. Fixed by stripping an identity-key class from the caller's object at both levels the two call sites hand it -- the rule or calendar object and its nested authority object -- and re-deriving verified_by from the verified session afterwards. STRIPPED RATHER THAN VALIDATED because a validator would have to anticipate every identity spelling a caller might invent, while removing the class and re-deriving the one field the server owns cannot fail the same way. Found by writing arm E2 of api/legal-deadlines-auth.test.js, which failed on recorded_by before the fix.",
-      "rules": [
-        "1.5"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "the Object.assign merge has carried this shape since add_rule was written; git log -S finds the feature commit rather than a commit that removed a strip."
-      },
-      "citation_note": "No section covers a caller-supplied field being stored as provenance. 1.5's shape -- a value computed correctly and then not acted on -- is close in that verified_by WAS derived from the session and the caller's other identity fields were merged in anyway, so the correct derivation sat beside an uncontrolled path. Arguable, and the note says so.",
-      "contributing_factors": [
-        {
-          "factor": "An allowlist of three overridden keys was doing the work of a denylist. Object.assign's semantics mean everything NOT named survives, so the safety of the stored row depended on the override list being complete -- and it was written for version and retrieved_at, not for identity.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "strippedOfIdentity() removes an eight-key identity class from the caller's object before the merge, at both levels the call sites pass it."
-        },
-        {
-          "factor": "One identity field WAS handled correctly, which made the rest look handled. authority.verified_by is derived from the session and carries a long comment explaining why -- so a reader checking whether identity was server-set found a convincing yes.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "The strip is applied to the same objects the override touches, so the two live together rather than one implying the other."
-        },
-        {
-          "factor": "Nothing tested what the endpoint STORES as opposed to what it answers. The new auth suite was written for the gate; the identity arms were added to it because the gate work put the stored shape in front of me.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Arms E1-E4 in api/legal-deadlines-auth.test.js drive a forged value at both levels and include a control that the fields the caller legitimately owns still survive, so the strip cannot pass as a wipe."
-        },
-        {
-          "factor": "The strip is local to this endpoint and the natural home for it -- api/_lib/blob.js -- argues against taking it, because that module's header states the scope keys are the only universal truth it will hide.",
-          "kind": "process",
-          "action_status": "planned",
-          "action": "Recorded rather than resolved: if a second endpoint needs an identity strip, that is the moment to decide where the class lives. Acting now would be a design change to blob.js smuggled in as a bug fix, and acting never leaves two copies the day it recurs."
-        }
-      ],
-      "recurrence_open": "NOT A DEEP STRIP, and that limit is written at the helper: it removes identity keys at the level it is handed, which is the rule or calendar object and its authority object. A nested structure nobody passes in is untouched -- dates[] entries are data rather than provenance, which is the judgement, not an oversight. The class is also NOT swept platform-wide: every other endpoint that merges a caller's object into a stored row with Object.assign has the same allowlist-doing-a-denylist shape, and nothing enumerates them. api/_lib/blob.js covers the SCOPE keys across branches and deliberately does not cover identity, so there is no existing sweep to extend. And the identity key list itself is hand-kept: a caller inventing a ninth spelling is stored, which is the residual an allowlist-free design cannot remove."
     },
     {
       "commit": "e12ed262317d",
