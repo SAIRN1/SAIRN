@@ -156,6 +156,73 @@ def main():
     finally:
         shutil.rmtree(root, ignore_errors=True)
 
+    # ── 4. THE SCANNER ITSELF, AGAINST A DECOY ──────────────────────────
+    # Sections 1-3 drive the HOOKS. Nothing drove the SCANNER's counting, and
+    # that is how it came to count its own docstring six times and publish two
+    # wrong figures (21, then 16; the real number is 30). A count is the easiest
+    # output to believe and the hardest to falsify by reading.
+    #
+    # EVERY FIXTURE HERE IS ASSEMBLED AT RUNTIME. Writing a literal
+    # `except: pass` into this file would make the probe a finding in the very
+    # scan it is testing -- the same self-match, one level out.
+    print('')
+    print('4. THE SCANNER, fed a known-bad decoy and its prose twin')
+    import tempfile as _tf
+    import shutil as _sh
+    sys.path.insert(0, os.path.join(REPO, 'tools'))
+    import fail_open_scan as S
+
+    _EXC = 'except'
+    _PASS = 'pass'
+    REAL = (
+        'import os\n'
+        'def load(p):\n'
+        '    try:\n'
+        '        return open(p).read()\n'
+        '    %s Exception:\n'
+        '        %s\n' % (_EXC, _PASS))
+    PROSE = (
+        '"""A checker.\n'
+        '\n'
+        'It looks for `%s: %s` and for `|| exit 0`, which are the shapes that\n'
+        'make a gate report success when it could not run.\n'
+        '"""\n'
+        'import os\n'
+        'def load(p):\n'
+        '    return open(p).read()\n' % (_EXC, _PASS))
+
+    d = _tf.mkdtemp(prefix='failopen-decoy-')
+    saved_repo, saved_dirs = S.REPO, S.SCAN_DIRS
+    try:
+        os.makedirs(os.path.join(d, 'tools'))
+        io.open(os.path.join(d, 'tools', 'real_defect.py'), 'w',
+                encoding='utf-8', newline='\n').write(REAL)
+        io.open(os.path.join(d, 'tools', 'prose_only.py'), 'w',
+                encoding='utf-8', newline='\n').write(PROSE)
+        S.REPO, S.SCAN_DIRS = d, ('tools',)
+        res = S.scan()
+        real = res.get('tools/real_defect.py', [])
+        prose = res.get('tools/prose_only.py', [])
+        expect('  a REAL bare-except-pass in executable code is CAUGHT',
+               [h['shape'] for h in real], ['bare-except-pass'])
+        expect('  the SAME text inside a docstring is NOT counted',
+               prose, [])
+
+        # A file that will not tokenise must be COULD NOT TELL, never scanned
+        # raw -- a raw fallback would reinstate the self-match it just fixed.
+        io.open(os.path.join(d, 'tools', 'broken.py'), 'w',
+                encoding='utf-8', newline='\n').write('def f(:\n    ' + _PASS + '\n')
+        raised = False
+        try:
+            S.scan()
+        except S.CouldNotTell:
+            raised = True
+        expect('  an untokenisable file is COULD NOT TELL, not scanned raw',
+               raised, True)
+    finally:
+        S.REPO, S.SCAN_DIRS = saved_repo, saved_dirs
+        _sh.rmtree(d, ignore_errors=True)
+
     print('')
     if FAILURES:
         print('%d of %d FAILED:' % (len(FAILURES), N[0]))

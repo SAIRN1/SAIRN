@@ -75,6 +75,29 @@ EXEC_HOOK = re.compile(r'^\s*exec\s+', re.M)
 BARE_EXCEPT = re.compile(
     r'except\s*(?:Exception)?\s*(?:as\s+\w+)?\s*:\s*(?:\n\s+)?(pass|return\s+0|return\s+True)')
 
+# ── WHAT THE `try` ACTUALLY WRAPS (2026-09-29) ───────────────────────────
+# Reading all 30 dependency-shaped sites showed most of them are CORRECT, and
+# several carry a written argument for being correct. A count of a SHAPE is not
+# a count of defects, and ratcheting on the raw number would have driven 30
+# edits to code that is already right.
+#
+# BENIGN is decided from the BODY OF THE TRY, not from a list of file names:
+#   * `sys.stdout.reconfigure(...)`  -- best-effort encoding. Failing means
+#     mojibake, never a wrong verdict, and refusing to run because stdout could
+#     not be reconfigured would be absurd.
+#   * `os.chmod(...)`, `os.remove(...)`, `worktree remove` -- best-effort
+#     cleanup and permissions.
+# DOCUMENTED is a nearby comment that STATES the decision -- tools/
+# deploy_verify_notify.py:93 says "Fails OPEN (checks anyway) ... because the
+# alternative is silently skipping a real verification", which is fail-open in
+# the SAFE direction. A decision somebody wrote down and argued is not the same
+# finding as one nobody noticed.
+BENIGN_BODY = re.compile(
+    r'\.reconfigure\(|os\.chmod\(|os\.remove\(|worktree|st_mode|unlink\(')
+DOCUMENTED = re.compile(
+    r'fails?\s+open|deliberate|best[- ]effort|on purpose|silently skipping',
+    re.I)
+
 # A guard whose SUBJECT is applicability, not capability. Absent => not here.
 SCOPE_WORDS = re.compile(
     r'auditor-clone|-clone\b|marker|applies|applicable|opt-?in|enabled'
@@ -243,9 +266,22 @@ def scan():
             hits.append({'line': masked.count('\n', 0, m.start()) + 1,
                          'shape': 'exec-blocks-rest', 'scope': False,
                          'text': 'exec -- no later check can run'})
+        raw_all = src.splitlines()
         for m in BARE_EXCEPT.finditer(masked):
-            hits.append({'line': masked.count('\n', 0, m.start()) + 1,
-                         'shape': 'bare-except-pass', 'scope': False,
+            ln = masked.count('\n', 0, m.start()) + 1
+            # Walk back to this handler's own `try:` so the classification is
+            # made from WHAT IS BEING GUARDED, not from the file's name.
+            lo = ln - 1
+            while lo > 0 and 'try:' not in raw_all[lo - 1]:
+                lo -= 1
+                if ln - lo > 14:
+                    break
+            body = '\n'.join(raw_all[max(0, lo - 1):ln])
+            near = '\n'.join(raw_all[max(0, ln - 6):min(len(raw_all), ln + 3)])
+            hits.append({'line': ln, 'shape': 'bare-except-pass',
+                         'scope': False,
+                         'benign': bool(BENIGN_BODY.search(body)),
+                         'documented': bool(DOCUMENTED.search(near)),
                          'text': m.group(0).replace('\n', ' ')[:70]})
         if hits:
             res[rel] = hits
@@ -269,10 +305,17 @@ def main(argv=None):
         sys.stderr.write('This is the THIRD STATE and is NOT a clean run.\n')
         return 2
 
-    dep, scope = [], []
+    dep, scope, benign, documented = [], [], [], []
     for rel, hits in res.items():
         for h in hits:
-            (scope if h['scope'] else dep).append((rel, h))
+            if h['scope']:
+                scope.append((rel, h))
+            elif h.get('benign'):
+                benign.append((rel, h))
+            elif h.get('documented'):
+                documented.append((rel, h))
+            else:
+                dep.append((rel, h))
     hooks = [(r, h) for r, h in dep if r.startswith('.githooks/')]
 
     print('FAIL-OPEN SCAN -- a gate reporting SUCCESS when it could not run')
@@ -280,6 +323,8 @@ def main(argv=None):
     print('  DEPENDENCY-shaped (could not check -> reported clean) : %d' % len(dep))
     print('    of those, in a GIT HOOK, where exit 0 means ALLOW   : %d' % len(hooks))
     print('  SCOPE-shaped (does not apply here -> exit 0 is right) : %d' % len(scope))
+    print('  BENIGN   (best-effort encoding, chmod, cleanup)       : %d' % len(benign))
+    print('  DOCUMENTED (the decision is written down and argued)  : %d' % len(documented))
     print('')
     if hooks:
         print('  IN HOOKS -- highest consequence, because exit 0 is a decision:')
