@@ -1894,6 +1894,51 @@ REGISTRY = [
                     'being refused, and an unreadable register DENYING the push',
     },
     {
+        'tool': 'checker_denominator.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-28, report-only. 12.3 seconds, measured -- the '
+                    'slowest entry in this registry by a wide margin, and the '
+                    'cost is deliberate: it re-derives each universe from the '
+                    'repo rather than asking the tool, because a universe the '
+                    'tool supplies is the tool grading its own denominator. '
+                    'REGISTERED IN ITS OWN FIRST SELF-AUDIT, which found that '
+                    'the tool built to catch unmeasured checkers was itself '
+                    'unregistered, unwired and unprobed.',
+        'catches': 'a wired checker whose COVERAGE falls silently -- the '
+                   'universe of candidates grows and the checked count does '
+                   'not, so a clean report keeps being produced about a '
+                   'shrinking share of the population',
+        'why_it_matters': 'THE INCIDENT IS NOT HYPOTHETICAL AND IS TWO DAYS '
+                          'OLD. Two anchor-freshness checkers ran side by side, '
+                          'both wired, both correct, populations overlapping by '
+                          'ZERO -- 82 and 12 of 98 -- while three probes in the '
+                          'smaller half were DEAD. Nothing was broken and '
+                          'nothing was stale: the number of things being '
+                          'CHECKED was never compared against the number of '
+                          'things there ARE. IT RATCHETS ON REGRESSION, NOT ON '
+                          'A TARGET, and that distinction is the whole design: '
+                          'failing on coverage being LOW would produce a red '
+                          'nobody can clear, and a check nobody can clear is a '
+                          'check somebody turns off',
+        'evidence': 'FIRST BASELINE 2026-09-28, taken AFTER unifying the two '
+                    'anchor populations so the ratchet measures forward from '
+                    'the corrected state rather than blessing the 12 that '
+                    'caused the incident: probe_anchor_freshness 87/98 (89%), '
+                    'mutation_anchor_check 82/98 (84%), overrun_inversion_scan '
+                    '6/22 (27%), ai_action_approval_audit 22/22 (100%). 8-arm '
+                    'selftest drives compare() on synthetic pairs in every '
+                    'direction -- the incident shape trips, growth matched by '
+                    'new coverage does not, a falling checked count on a steady '
+                    'universe trips, BOTH shrinking does not because deleting '
+                    'probes is legitimate, long-standing low coverage does not '
+                    'because it is a stated limit, a missing baseline is '
+                    'UNBASELINED and never OK, and a CONTROL that the verdicts '
+                    'are not all one value. COVERS 4 OF THE 63 ENTRIES IN THIS '
+                    'REGISTRY and says so on every run; the other 59 publish no '
+                    'denominator and are not measured',
+    },
+    {
         'tool': 'overrun_inversion_scan.py',
         'mode': 'once',
         'verdict': by_exit,
