@@ -256,6 +256,55 @@ def declared_count(elt):
     return False  # a 4th element that is not an int literal: unreadable
 
 
+def flat_arm_positions(tree):
+    """{helper_name: (old_index, new_index)} for the FLAT positional arm form.
+
+    ── A THIRD CONVENTION, AND NOTHING WAS POINTED AT IT (2026-09-27) ───────
+    Measured across 99 probe files, there are THREE ways an anchor is declared
+    on this platform and each is a different call shape:
+
+      1. a module-level MUTATIONS list        85 probes  mutation_anchor_check.py
+      2. arm(..., [(SUBJECT, old, new)])      10 probes  this file
+      3. arm(label, suite, old, new)           2 probes  NOTHING
+
+    Overlap between 1 and 2 is ZERO -- two checkers, two disjoint populations,
+    neither aware of the other. The three probes that died silently this week
+    were all in population 2, which is why a WIRED checker for population 1
+    could not have caught any of them. Population 3 is tests/sairnbiz_fault_
+    probe.py and tests/sairnvet_fault_probe.py, the second of which arms a
+    controlled-substance register.
+
+    ── THE SHAPE IS READ OFF THE HELPER'S OWN DECLARATION, NEVER GUESSED ────
+    A positional heuristic ("the last two string literals are old and new")
+    would misread ordinary assertion helpers -- tests/run_adversarial_prompt_
+    corpus_probe.py has `def arm(name, ok, detail='')` and
+    tests/push_gate/missing_checker_probe.py has a seven-parameter arm that
+    takes fixtures, not anchors. Both carry three string literals per call and
+    neither declares an anchor.
+
+    AND THE OBVIOUS DISCRIMINATOR IS CIRCULAR AND MUST NOT BE USED: "treat it as
+    an anchor if the subject contains it" can never report an anchor as VANISHED,
+    because vanishing is exactly the case where the subject does not contain it.
+    A rule that requires a match in order to look is a rule that reports every
+    healthy anchor and no broken one.
+
+    So the discriminator is the PARAMETER NAMES: a helper whose signature
+    literally has `old` and `new` is a mutation helper, and their positions say
+    which arguments to read. That is exact, non-circular, and it rejects both
+    false candidates above.
+    """
+    out = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        if node.name not in ARM_CALLS:
+            continue
+        params = [a.arg for a in node.args.args]
+        if 'old' in params and 'new' in params:
+            out[node.name] = (params.index('old'), params.index('new'))
+    return out
+
+
 def anchors_in(tree, names):
     """[(subject_path, anchor_string, lineno, expect)] for every literal anchor.
 
@@ -266,11 +315,26 @@ def anchors_in(tree, names):
     anchor is a stated gap rather than a silently smaller denominator.
     """
     found, unresolved = [], 0
+    flat = flat_arm_positions(tree)
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
             continue
         fname = getattr(node.func, 'id', None) or getattr(node.func, 'attr', None)
         if fname not in ARM_CALLS:
+            continue
+        if fname in flat:
+            # CONVENTION 3. The helper's own signature said where `old` is.
+            oi = flat[fname][0]
+            if oi >= len(node.args):
+                unresolved += 1
+                continue
+            old_node = node.args[oi]
+            path = sole_subject(names)
+            if not path or not isinstance(old_node, ast.Constant) \
+                    or not isinstance(old_node.value, str):
+                unresolved += 1
+                continue
+            found.append((path, old_node.value, getattr(node, 'lineno', 0), None))
             continue
         for arg in list(node.args) + [kw.value for kw in node.keywords]:
             for elt in (arg.elts if isinstance(arg, (ast.List, ast.Tuple)) else [arg]):
@@ -394,6 +458,41 @@ def selftest():
         # A NON-LITERAL COUNT IS UNRESOLVED, NEVER GUESSED.
         "arm('h', [(HTML, 'ONE_MATCH', 'x2', HOW_MANY)])\n"
     )
+    # ── CONVENTION 3, IN BOTH DIRECTIONS ───────────────────────────────────
+    # A helper whose signature literally names `old` and `new` IS a mutation
+    # helper and its parameter positions say which arguments to read. One whose
+    # signature does not is an assertion helper and must be left alone, however
+    # many string literals its calls carry -- tests/run_adversarial_prompt_
+    # corpus_probe.py has `def arm(name, ok, detail='')` and would be misread by
+    # any positional heuristic.
+    FLAT_YES = ("HTML = 'fixture_subject.html'\n"
+                "def arm(label, suite, old, new):\n    pass\n"
+                "arm('a', SUITE, 'ONE_MATCH', 'x')\n"
+                "arm('b', SUITE, 'GONE', 'y')\n")
+    FLAT_NO = ("HTML = 'fixture_subject.html'\n"
+               "def arm(name, ok, detail=''):\n    pass\n"
+               "arm('1. a thing holds', 'yes', 'detail text')\n")
+    ty = ast.parse(FLAT_YES)
+    tn = ast.parse(FLAT_NO)
+    arm_('a FLAT arm helper is recognised from its own signature',
+         flat_arm_positions(ty) == {'arm': (2, 3)},
+         'read %r' % (flat_arm_positions(ty),))
+    arm_('...and an ASSERTION helper of the same name is NOT',
+         flat_arm_positions(tn) == {},
+         'read %r -- `def arm(name, ok, detail)` declares no anchor, and a '
+         'positional heuristic would have taken its three string literals as '
+         'one' % (flat_arm_positions(tn),))
+    fa, _fu = anchors_in(ty, subject_names(ty))
+    arm_('...and its anchors are read against the probe SOLE subject',
+         sorted(a for _p, a, _l, _e in fa) == ['GONE', 'ONE_MATCH']
+         and all(p == 'fixture_subject.html' for p, _a, _l, _e in fa),
+         'read %r' % (fa,))
+    na, _nu = anchors_in(tn, subject_names(tn))
+    arm_('CONTROL -- the assertion helper contributes NO anchors at all',
+         na == [],
+         'read %r. If this ever returns rows, every assertion in every probe '
+         'named arm() becomes a phantom anchor and the VANISHED list fills '
+         'with strings that were never anchors.' % (na,))
     tree = ast.parse(FIXTURE)
     names = subject_names(tree)
     arm_('module-level subject paths are resolved',
