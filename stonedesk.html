@@ -6348,7 +6348,7 @@ function sdCsvCell(v){var s=v==null?'':String(v);if(/^[=+\-@\t\r]/.test(s)&&!(s!
 </div>
 <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px">
   <div class="kpi"><div class="kpi-val" id="adm-users">0</div><div class="kpi-label">Users</div></div>
-  <div class="kpi"><div class="kpi-val" id="adm-storage" style="color:var(--brand2)">0%</div><div class="kpi-label">Storage Used</div></div>
+  <div class="kpi"><div class="kpi-val" id="adm-storage" style="color:var(--brand2)">--</div><div class="kpi-label">Browser Storage &mdash; all SAIRN apps</div></div>
   <div class="kpi"><div class="kpi-val" id="adm-backup">--</div><div class="kpi-label">Last Backup</div></div>
   <div class="kpi"><div class="kpi-val" id="adm-version">v52</div><div class="kpi-label">Build</div></div>
   <div class="kpi"><div class="kpi-val" style="color:var(--brand2)">✓</div><div class="kpi-label">API Connected</div></div>
@@ -6390,9 +6390,36 @@ function sdCsvCell(v){var s=v==null?'':String(v);if(/^[=+\-@\t\r]/.test(s)&&!(s!
   function renderAdminOverviewKPIs(){
     var users=[]; try{users=JSON.parse(localStorage.getItem('sd_emp_directory_v1')||'[]');}catch(e){}
     var uEl=document.getElementById('adm-users'); if(uEl) uEl.textContent=users.length;
+    // ── IT SHOWED A PERCENTAGE OF A GUESS, OVER A POPULATION IT DID NOT NAME
+    // ── (2026-09-28) ─────────────────────────────────────────────────────
+    // This read `Math.min(100, Math.round((totalBytes/1024/5120)*100))` into a
+    // card labelled "Storage Used". THREE things were wrong with it and only
+    // one is the `Math.min` that tools/overrun_inversion_scan.py flagged:
+    //
+    //   1. THE CAP IS NOT THE DEFECT, and that scan's own header says it
+    //      cannot tell a correct cap from a defective one. A localStorage
+    //      quota is a HARD ceiling -- a write past it throws -- so the ratio
+    //      cannot legitimately exceed 1 and the cap could never hide an
+    //      overrun. FALSE POSITIVE for that class, recorded as one.
+    //   2. THE DENOMINATOR WAS ASSUMED. 5120 KB is a guess at the quota, and
+    //      real quotas vary by browser and by origin. Where the true quota is
+    //      larger this reported a half-used store as FULL -- and a full store
+    //      is a number an owner acts on by deleting data.
+    //   3. THE POPULATION WAS NOT THE ONE THE LABEL NAMED. The loop sums EVERY
+    //      key in localStorage, which here is every SAIRN app in the browser,
+    //      and the card said "Storage Used" on StoneDesk's admin page. The
+    //      paragraph eleven lines below draws exactly that distinction for the
+    //      delete buttons: "removes only what StoneDesk stored -- other SAIRN
+    //      apps in this browser are untouched."
+    //
+    // So: report the MEASURED bytes and let the label name the population. The
+    // browser's real limit is not knowable synchronously and this app does not
+    // guess at it -- a percentage returns the day navigator.storage.estimate()
+    // is wired, with its own quota rather than a constant.
     var totalBytes=0; for(var i=0;i<localStorage.length;i++){ try{ var k=localStorage.key(i); totalBytes+=(localStorage.getItem(k)||'').length*2; }catch(e){} }
-    var pct=Math.min(100, Math.round((totalBytes/1024/5120)*100));
-    var sEl=document.getElementById('adm-storage'); if(sEl) sEl.textContent=pct+'%';
+    var kb=totalBytes/1024;
+    var sEl=document.getElementById('adm-storage');
+    if(sEl) sEl.textContent = kb>=1024 ? (kb/1024).toFixed(1)+' MB' : Math.round(kb)+' KB';
     var lastBackup=localStorage.getItem('sd_last_backup');
     var bEl=document.getElementById('adm-backup'); if(bEl) bEl.textContent=lastBackup?new Date(lastBackup).toLocaleDateString():'--';
   }
