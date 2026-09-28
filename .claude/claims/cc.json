@@ -2873,6 +2873,24 @@
         "tools/probe_anchor_freshness.py",
         "tools/report_only_checks.py"
       ]
+    },
+    {
+      "id": "cc-1790565287",
+      "session": "cc",
+      "subject": "cc",
+      "task": "discharge my five overdue Tier A review obligations; fix response_shape_check.py false positives found while reviewing (a Module-scope walk that descends into every function body, so a binding in one function leaks into another, plus a for-loop target that never clears a tracked name) and correct the registry evidence I wrote from its uncorrected count; triage the 16 dead sabotage anchors by owner and fix the ones in free files; add checked/universe plus an UNREADABLE count to the registry checkers in batches with a ratchet on each; a report-only check for a claim active with no commit touching its files; and whatever else still exits 2 COULD NOT RUN. CONFLICTS DECLARED PER PR 4.3 RATHER THAN REWORDED -- api/sd-data.js is FOURTH'S (two live claims) so the mech_docs session gate is NOT taken; docs/CRITICALITY-TIERS.md is named by HANK and CODY so the mech_docs tier row and the sv_financials tier verdict are NOT landed by me, only read and reported; stonedesk.html is named in CODY'S live q16 so the :6394 overrun instance is NOT taken. SUBJECT NAMED PER PR 4.3 FILES: tools/response_shape_check.py tools/checker_denominator.py tools/claim_activity_check.py tools/report_only_checks.py docs/tier-a-reviews.json docs/2026-09-28-could-not-read-ratchet.md",
+      "claimed_at": "2026-09-28T03:14:47Z",
+      "claimed_at_epoch": 1790565287.4104345,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/2026-09-28-could-not-read-ratchet.md",
+        "docs/tier-a-reviews.json",
+        "tools/checker_denominator.py",
+        "tools/claim_activity_check.py",
+        "tools/report_only_checks.py",
+        "tools/response_shape_check.py"
+      ]
     }
   ],
   "refusals": [
