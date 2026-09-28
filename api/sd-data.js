@@ -10537,7 +10537,25 @@ module.exports = async (req, res) => {
       if (r.status === 404) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
-      const data = (rows || []).map((r) => Object.assign({ id: r.entry_id, resident_id: r.resident_id, created_at: r.created_at, recorded_by: r.recorded_by || '' }, r.data));
+      // ── THE COLUMN WINS OVER THE BLOB, AND IT DID NOT (2026-09-28) ──────
+      // This spread `r.data` LAST, so any key inside the stored blob
+      // overwrote the authoritative column of the same name. Combined with
+      // `recorded_by` missing from the write's strip list, a caller could send
+      // `recorded_by` in the payload, have it stored inside `data`, and have it
+      // OVERWRITE the server-set column on every read -- reinstating the exact
+      // attribution spoof the column was added to close.
+      //
+      // FOUND LIVE, NOT BY A TEST. The in-process arm asserted the POST body
+      // sent to PostgREST carried the session's employee_id, and it did: the
+      // COLUMN was always correct. Nothing asserted what came back. A live
+      // write with `reported_by` AND `recorded_by` both forged read back
+      // `recorded_by: 'FORGED-SOMEONE-ELSE'` against ALF-TEST-2026. This is the
+      // round-trip half of the second-pass class: the first hop was tested and
+      // the return hop was not.
+      const data = (rows || []).map((r) => Object.assign({}, r.data, {
+        id: r.entry_id, resident_id: r.resident_id, created_at: r.created_at,
+        recorded_by: r.recorded_by || ''
+      }));
       res.status(200).json({ ok: true, data, provisioned: true, scoped_to_self: !incBroad });
       return;
     }
@@ -10579,7 +10597,12 @@ module.exports = async (req, res) => {
       // existing report, and the column answers "who filed it", not "who last
       // touched it" -- overwriting it on a follow-up note would erase the
       // reporter, which is the one fact this change exists to record.
-      const incidentData = storedBlob(payload, ['id', 'resident_id', 'created_at', 'reported_by']);
+      // `recorded_by` IS STRIPPED TOO, and its absence here was half of the
+      // 2026-09-28 live defect: it is a real COLUMN on this table, so a payload
+      // copy of it inside `data` is a second answer to the same question -- and
+      // the read mapper then preferred the blob. Both halves are fixed; either
+      // alone would have left the spoof reachable.
+      const incidentData = storedBlob(payload, ['id', 'resident_id', 'created_at', 'reported_by', 'recorded_by']);
       const incidentRow = {
         license_hash: licHash, app_id: 'sairncare', entry_id: String(payload.id), resident_id: payload.resident_id ? String(payload.resident_id) : null,
         data: incidentData, updated_at: nowISO()

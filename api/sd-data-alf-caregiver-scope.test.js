@@ -615,6 +615,69 @@ await test('WRITE: an UPDATE does not re-stamp recorded_by -- the column answers
       + 'erases the one fact this column exists to hold');
   });
 
+await test('ROUND TRIP: a forged recorded_by does not survive the READ -- the '
+  + 'COLUMN wins over the blob', async () => {
+    // THE ARM THAT WAS MISSING, AND ITS ABSENCE WAS A LIVE DEFECT (2026-09-28).
+    // The write arm above asserts the POST BODY carries the session's
+    // employee_id, and it always did -- the column was correct. Nothing
+    // asserted what came BACK. `recorded_by` was not in the strip list, so a
+    // payload copy landed inside `data`, and the read mapper spread `data`
+    // LAST, so the blob overwrote the column. Driven live against
+    // ALF-TEST-2026, a write with recorded_by forged read back
+    // 'FORGED-SOMEONE-ELSE'.
+    //
+    // The fixture puts the forged value in BOTH places a real attacker could
+    // reach: the stored blob and the column.
+    const forged = {
+      __table: 'alf_incidents', license_hash: HASH, entry_id: 'INC-RT',
+      resident_id: 'C-MINE', created_at: '2026-01-01', recorded_by: ME,
+      data: { category: 'fall', recorded_by: 'FORGED', reported_by: 'FORGED',
+              id: 'FORGED-ID', resident_id: 'FORGED-RESIDENT' }
+    };
+    const { res } = await call('nursing',
+      { action: 'read', resource: 'alf_incidents' }, [forged]);
+    const row = (res.body.data || [])[0];
+    assert.ok(row, 'no row came back, so this arm proves nothing');
+    assert.strictEqual(row.recorded_by, ME,
+      'THE BLOB OVERWROTE THE COLUMN: recorded_by read back as '
+      + JSON.stringify(row.recorded_by) + '. That reinstates the attribution '
+      + 'spoof the column exists to close.');
+    assert.strictEqual(row.id, 'INC-RT',
+      'a payload id inside the blob overwrote the real entry_id');
+    assert.strictEqual(row.resident_id, 'C-MINE',
+      'a payload resident_id inside the blob overwrote the real column');
+  });
+
+await test('WRITE: recorded_by is STRIPPED from the blob too -- the second half '
+  + 'of the fix, pinned separately', async () => {
+    // ABLATION SAID THIS ARM WAS MISSING. Reverting ONLY the strip turned no
+    // arm red: the mapper fix alone closes the round trip, so the strip was
+    // defence in depth with nothing pinning it. A layer no test can see is a
+    // layer the next refactor deletes for being redundant.
+    const { res, calls } = await call('caregiver',
+      { action: 'write', resource: 'alf_incidents',
+        payload: { id: 'INC-STRIP', resident_id: 'C-MINE', category: 'fall',
+                   recorded_by: 'FORGED', reported_by: 'FORGED' } }, []);
+    assert.strictEqual(res.statusCode, 200, 'refused: ' + JSON.stringify(res.body));
+    const sent = JSON.parse(firstPost(calls).opts.body);
+    assert.strictEqual('recorded_by' in (sent.data || {}), false,
+      'a payload recorded_by was stored INSIDE the blob: '
+      + JSON.stringify(sent.data) + '. The column is correct, so nothing breaks '
+      + 'today -- but the row then carries two answers to "who filed this", and '
+      + 'any future reader that prefers the blob reinstates the spoof.');
+    assert.strictEqual(sent.recorded_by, ME, 'the column is wrong');
+  });
+
+await test('ROUND TRIP CONTROL: an ordinary blob field still reaches the caller, '
+  + 'so the arm above is not testing an empty response', async () => {
+    const { res } = await call('nursing',
+      { action: 'read', resource: 'alf_incidents' },
+      [incident('INC-RT2', 'C-MINE', ME)]);
+    const row = (res.body.data || [])[0];
+    assert.strictEqual(row.category, 'fall',
+      'blob fields no longer survive at all -- the fix went too far');
+  });
+
 await test('READ: a caregiver sees ONLY the incidents they filed', async () => {
   const { res } = await call('caregiver',
     { action: 'read', resource: 'alf_incidents' },
