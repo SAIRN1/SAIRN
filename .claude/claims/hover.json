@@ -98,6 +98,17 @@
       "status": "released",
       "released_at": "2026-09-28T02:15:03Z",
       "files": null
+    },
+    {
+      "id": "hover-1790561954",
+      "session": "hover",
+      "subject": "hover",
+      "task": "fix the false staleness reset (restrict mention signal to ref-field citations, not summary prose); reconcile draw-log counts; scope a hover-audit-log backup design; run one undirected batch; resume rotation FILES: .claude/skills/sairn-hover-auditor/",
+      "claimed_at": "2026-09-28T02:19:14Z",
+      "claimed_at_epoch": 1790561954.683824,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
