@@ -109,6 +109,17 @@
       "status": "released",
       "released_at": "2026-09-28T02:45:48Z",
       "files": null
+    },
+    {
+      "id": "hover-1790564034",
+      "session": "hover",
+      "subject": "hover",
+      "task": "resolved-read staleness signal (ref citations resolved to resources at recorded sha, fixtures first, re-measure); undirected tie-break replacing alphabetical; backup mirror script plus scratch restore test, no push; audit the three floor-measurement resources; resume rotation FILES: .claude/skills/sairn-hover-auditor/",
+      "claimed_at": "2026-09-28T02:53:54Z",
+      "claimed_at_epoch": 1790564034.7226682,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
