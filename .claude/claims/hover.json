@@ -216,8 +216,8 @@
       "task": "hover audit-log housekeeping: redo two citation-offset numbers with the mechanical method; add a test locking a python default-argument mistake in the watch-list script; run the scheduled mirror restore check if it comes due and report pass or fail; sample the cold pool once undirected; draw the next weighted rotation pick. FILES: .claude/skills/sairn-hover-auditor/",
       "claimed_at": "2026-09-28T20:02:58Z",
       "claimed_at_epoch": 1790625778.2566402,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-28T20:17:01Z",
       "files": null
     }
   ],
