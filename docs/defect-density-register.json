@@ -18429,6 +18429,60 @@
         }
       ],
       "recurrence_open": "No shared reader for .claude/claims/*.json exists. sairn_claim.py writes it and at least two tools parse it again independently, so a parser wrong in one is invisible to the others. Naming it rather than consolidating, because the writers live in several sessions declared files."
+    },
+    {
+      "commit": "cf5c65dd0941",
+      "date": "2026-09-28",
+      "subject": "fix(sairncare): the alf_op_audits write ECHO spread its blob after the columns -- and a sweep for the whole class",
+      "files": [
+        ".claude/claims/fourth.json",
+        "api/sd-data.js",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/blob-override-coverage.json",
+        "tools/blob_overrides_column_scan.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 321,
+      "lines_removed": 9,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "static-checker",
+      "summary": "api/sd-data.js's alf_op_audits WRITE response echoed the created row as Object.assign({id, record_type, passed, recorded_by, reviewed_by}, body.data) -- the stored blob spread LAST, so a caller-supplied `reviewed_by` or `recorded_by` inside the blob overwrote the server-set value in the response. That branch's storedBlob strip list is deliberately just ['id', 'record_type'], so both identity keys DO remain in the blob. The stored row and every later READ were correct: the read path at :11009 uses the opposite, safe order (blob first, columns last). Only the echo returned to the writer was wrong, so a caller forging reviewed_by sees their own forged sign-off reflected back and no other reader ever does. alf_op_audits records fire drills, food temperatures and sanitation checks, and reviewed_by is the management sign-off on them.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/blob_overrides_column_scan.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The echo and the read were written at different times and the branch has been edited by several sessions; no single commit introduced the divergence, which arose from one path being added beside another that already had the opposite order."
+      },
+      "citation_note": "Two paths serialising one row in opposite orders: each was right on its own reading and only their disagreement was the defect.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "Two paths on one resource serialise the same row in opposite orders. The READ builds Object.assign({}, x.data, {columns}) and the WRITE echo built Object.assign({columns}, x.data). Both read naturally; only one is safe, and nothing in the file made the difference visible at the point of writing either.",
+          "action": "The echo now uses the same order as the read: blob first, columns overwrite.",
+          "action_status": "done"
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "The strip list for this branch is minimal BY A DOCUMENTED DECISION that is correct as far as it goes. Its comment states that it checked the read path, found the safe order there, and concluded the identity keys need not be stripped. That reasoning holds for the path it names and there was a second path it did not name.",
+          "action": "Left minimal. The fix is the order, not the strip list -- widening the strip list would have removed fields from `data` for no reason, which is exactly what the original comment argues against.",
+          "action_status": "declined",
+          "note": "Stripping recorded_by and reviewed_by here would delete them from the stored blob for every consumer, to defend against a shadow that the corrected order already makes impossible. The author's argument for the minimal list is sound and survives this defect; what failed was that the argument was applied to one of two paths. Recording the decision rather than reversing it."
+        },
+        {
+          "kind": "detection",
+          "factor": "Nothing compared the two serialisation paths of a single resource against each other. Each was reviewed on its own and each looked right in isolation, which is how the pair diverged.",
+          "action": "tools/blob_overrides_column_scan.py enumerates every Object.assign mapper across api/sd-data.js, sd-sub-data.js, sc-ai.js and law-auth.js, and pairs its column keys against the file's strip list -- spread order alone is not a finding, so it reports the PAIR. Identity keys are counted apart from data keys.",
+          "action_status": "done"
+        }
+      ],
+      "recurrence_open": "PARTLY CLOSED AND MEASURED. The scan now covers Object.assign mappers in four api files: 91 examined, 54 still spread the blob last, 4 exploitable, 0 identity. The 4 remaining are data keys rather than attribution and are unfixed. WHAT IS NOT COVERED AT ALL: a mapper built through a helper, a spread operator or assembled across statements; the strip list is unioned per FILE rather than per resource, so the tool under-reports; and identity fields with NO column to override -- alf_mar administered_by is caller-supplied with nothing to shadow -- are a separate class this tool is blind to by construction."
     }
   ],
   "started": "2026-09-09",
