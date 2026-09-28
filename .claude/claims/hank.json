@@ -3112,8 +3112,8 @@
       "task": "deadline-engine applyRetrigger: a PENDING motion and an UNPARSEABLE disposition date both yield MOTION_PENDING 422 'the appeal period has not started', so a caller sending 12/31/2026 or a misspelled key is told they still have time on an appeal deadline -- toUTC returns null for anything not strictly YYYY-MM-DD and nothing distinguishes the two. The whole retrigger path (FRAP 4(a)(4)(A), Ohio App.R. 4(B)(2), Mass Rule 12(a)(2), all three SEEDED and wired to a 422) has NO test anywhere and its element field name disposition_date is documented nowhere. Fix plus first suite. Then the next highest-severity items from the ghost-field triage doc and a verdict on the nine unreachable fault-injection options. CONFLICTS DECLARED PER PR 4.3, NOT REWORDED: (1) cc holds docs/SAIRN-OPEN-WORK-INDEX.md live and is repairing malformed row 355 -- row 356 has the IDENTICAL defect and both are mine; told cc through the status note rather than editing the file, because two sessions on one row is PR 2.1. (2) cc holds sairnbuild.html live, so the two SAIRNbuild items in my queue (demo-company data on first sign-in, the Client Portal with no homeowner login) are BLOCKED ON FILE OWNERSHIP and not taken. (3) cc holds tools/report_only_checks.py -- I already landed my NOT_PROMOTED entry there at abd39b07 and will not touch it again. SUBJECT NAMED PER PR 4.3 FILES: api/_lib/deadline-engine.js tests/sairnlaw_retrigger.js api/legal-deadlines.js docs/2026-09-27-ghost-field-read-sweep.md",
       "claimed_at": "2026-09-27T23:36:08Z",
       "claimed_at_epoch": 1790552168.4605405,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-28T01:09:55Z",
       "files": [
         "api/_lib/deadline-engine.js",
         "api/legal-deadlines.js",
