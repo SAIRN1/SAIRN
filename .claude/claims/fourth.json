@@ -2507,8 +2507,8 @@
       "task": "roleSet() seam test closing the 6 COULD-NOT-TELL seams into api/_lib/auth.js before roleSet membership is changed; caregiver made a real enforced role in api/sd-data.js roleSets and reconciled against both sairncare.html dropdowns; the SAIRNcare credential pre-gate red suites (12 suites / 172 assertions on medication-record auth, cc's bisection carries over); the 33 WEAK git anchors; sd-sub-data.js's two verifySessionToken call sites read individually; second-pass retry arms starting with tests/sairnscape_outbound_queue.js; conflict_marker_preflight ORIG_HEAD..HEAD post-operation mode; switch-level reclassification of the second-pass sweep; counter-wraparound sweep; lost-independent-backstop sweep; hidden-state audit.\n\nCONFLICT DECLARED PER PR 4.3 RATHER THAN REWORDED: api/legal-deadlines.js IS HANK'S -- the claim tool refused my previous attempt naming it (hank holds 'hank' on that file, registry-only, not yet on origin). The 401/403 fix for unauthenticated add_rule/add_holidays is therefore NOT in this claim and is NOT being done by me. It is a LIVE unauthenticated write path to the legal deadline rules the entire SAIRNlaw product claim rests on, and docs/2026-08-30-sairntech-app-sellability-gate.md records it as an open pre-launch blocker -- flagged to hank and to the coordinating session rather than reworded past the matcher. api/_lib/auth.js is shared and I am ADDING A TEST FILE beside it, not editing it, unless the caregiver work forces a change there, in which case I will re-check first.\n\nSUBJECT NAMED PER PR 4.3 FILES: api/_lib/auth-roleset-seam.test.js api/sd-data.js sairncare.html tools/conflict_marker_preflight.py tools/second_pass_coverage_scan.py tests/sairnscape_outbound_queue.js docs/",
       "claimed_at": "2026-09-28T00:49:05Z",
       "claimed_at_epoch": 1790556545.4841514,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-28T04:42:42Z",
       "files": [
         "api/_lib/auth-roleset-seam.test.js",
         "api/sd-data.js",
