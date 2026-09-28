@@ -18805,7 +18805,7 @@
       "recurrence_open": "Nothing detects a mutation that cannot produce its labelled outcome. The harness reports SILENT identically for a blind suite and an inert mutation, and 74 other probes with MUTATIONS lists have never been audited for this shape. The three-SILENT-arm report this closes contained one instance of each, which is exactly why they were misdiagnosed as one cause."
     },
     {
-      "commit": "ade620ee6946",
+      "commit": "cf5e2c6bb520",
       "date": "2026-09-28",
       "subject": "fix(tooling): the fail-open scanner counted its own docstring -- eight of eighteen reported sites were prose",
       "files": [
