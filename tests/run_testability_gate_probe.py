@@ -26,6 +26,7 @@ CONTROLS_FOR = ['tools/testability_gate.py']
 #
 import io
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -57,9 +58,41 @@ def run(*args, **kw):
 print('1. the criteria classify their own hand-decided cases')
 bad = G.run_fixtures()
 check('1a  every fixture classifies as decided', bad == [], bad)
-check('1b  and there are fixtures of every verdict, so 1a is not vacuous',
-      len(set(v for _, v in C.FIXTURES)) >= 4,
-      sorted(set(v for _, v in C.FIXTURES)))
+# ── 1b WAS A FLOOR UNDER A UNIVERSAL CLAIM, CORRECTED 2026-09-28 ───────────
+# It read `len(set(verdicts)) >= 4` under the label "there are fixtures of every
+# verdict, so 1a is not vacuous". FIVE verdicts exist. So a verdict silently
+# dropped from the fixture set left four, the arm stayed green, and 1a -- "every
+# fixture classifies as decided" -- became vacuous for the dropped one. That is
+# the exact shape the arm exists to prevent, in the arm itself.
+#
+# THE VOCABULARY IS DERIVED FROM THE GATE, NOT RETYPED HERE. classify() in
+# tools/testability_gate.py returns five string literals and declares no list, so
+# a hardcoded set here would be a sixth place to drift. Reading the returns means
+# ADDING a verdict with no fixture goes RED, which a floor can never do.
+_VERDICT_RETURNS = re.findall(r"return\s+'([A-Z][A-Z-]+)'",
+                              io.open(os.path.join(REPO, 'tools', 'testability_gate.py'),
+                                      encoding='utf-8').read())
+_GATE_VERDICTS = set(_VERDICT_RETURNS)
+check('1b0 the gate\'s verdict vocabulary was READ from its own returns, and is '
+      'not empty -- an empty set would make 1b vacuous in the other direction',
+      len(_GATE_VERDICTS) >= 2, sorted(_GATE_VERDICTS))
+_FIXTURE_VERDICTS = set(v for _, v in C.FIXTURES)
+# WRITTEN AS A SET DIFFERENCE, NOT `>=`. Both say the same thing, and the
+# difference says it better: it names the missing members instead of yielding a
+# bare boolean, and `assertion_label_shape_check.py` correctly cannot tell a
+# superset comparison between two NAMES from a numeric floor -- a name may hold a
+# set or an int and nothing static can say which. The difference form is
+# unambiguous to the reader and to the checker at once.
+check('1b  there is a fixture for EVERY verdict the gate can return, so 1a is '
+      'not vacuous for any of them',
+      _GATE_VERDICTS - _FIXTURE_VERDICTS == set(),
+      'gate can return %s; fixtures cover %s; MISSING %s'
+      % (sorted(_GATE_VERDICTS), sorted(_FIXTURE_VERDICTS),
+         sorted(_GATE_VERDICTS - _FIXTURE_VERDICTS)))
+check('1b2 ...and no fixture claims a verdict the gate cannot return, which '
+      'would mean the fixture set is testing a vocabulary that no longer exists',
+      _FIXTURE_VERDICTS - _GATE_VERDICTS == set(),
+      sorted(_FIXTURE_VERDICTS - _GATE_VERDICTS))
 rc, out = run('--fixtures')
 check('1c  the lock can be run on its own and passes', rc == 0, 'exit %d' % rc)
 
@@ -158,9 +191,29 @@ check('3a3 ...and every section that yielded was one we expected -- no '
 # Section 3's second column is `Tool` and section 4's is `Status`. If the
 # extractor were taking cell 2 those sections would be full of filenames and
 # status strings, not sentences.
-tool_like = [r for s, r in reqs if r.endswith('.py') or r.endswith('.js')]
-check('3b  no requirement is a bare tool FILENAME -- that is the `Tool` column',
+# ── 3b's COMPARISON WAS BROADER THAN ITS OWN LABEL, FIXED 2026-09-28 ────────
+# The label says "a BARE tool FILENAME". The test was `r.endswith('.py')`, which
+# also matches any SENTENCE that happens to end with a filename -- and one did:
+# an open-work row reading "...and it is invisible to checker_confidence.py" made
+# this arm red while the extractor was taking exactly the column it should.
+# A control that fails on correct input is one somebody switches off, and this
+# repo has that written down twice.
+#
+# BARE now means bare: the whole requirement is one filename-shaped token with no
+# spaces. That is what "the extractor took the Tool column" would actually look
+# like, and it is still a real finding if it ever happens.
+tool_like = [r for s, r in reqs
+             if (r.endswith('.py') or r.endswith('.js')) and ' ' not in r.strip()]
+check('3b  no requirement is a bare tool FILENAME -- the WHOLE cell is one '
+      'filename, which is what taking the `Tool` column would look like',
       len(tool_like) == 0, tool_like[:3])
+# The old, looser reading is kept as an ADVISORY count rather than deleted: a
+# sentence ending in a filename is not a finding, but a sudden jump in how many
+# do would still be worth a reader's eye, and a number nobody prints is a number
+# nobody can notice moving.
+_ends_with_tool = [r for s, r in reqs if r.endswith('.py') or r.endswith('.js')]
+print('       (advisory, not a finding: %d requirement(s) END with a tool '
+      'filename while not BEING one)' % (len(_ends_with_tool) - len(tool_like)))
 status_like = [r for s, r in reqs if r.upper().startswith(('OPEN', 'CLOSED', 'BUILT'))]
 check('3c  no requirement is a bare STATUS -- that is the `Status` column',
       len(status_like) == 0, status_like[:3])

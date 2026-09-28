@@ -201,7 +201,20 @@ check('C1. the bare run reads a NON-EMPTY file list -- a zero here would make '
       bool(_m) and int(_m.group(1)) > 50, _m.group(0) if _m else out[:300])
 check('C2. the JavaScript suites are declared NOT COVERED in the output, so a '
       'clean Python verdict cannot be read as a platform verdict',
-      'NOT COVERED' in out and 'JavaScript' in out, out[:600])
+      'NOT CHECKED' in out and 'JavaScript' in out
+      and re.search(r'CHECKED / UNIVERSE: (\d+) of (\d+)', out) is not None,
+      out[:600])
+# ── THE DENOMINATOR IS ASSERTED, NOT JUST ITS PRESENCE ─────────────────────
+# "It prints a coverage line" is satisfied by a line that prints 0 of 0. The two
+# numbers are read back and compared, so a denominator that collapses -- a git
+# call that failed and returned nothing, the commonest way a coverage figure goes
+# vacuous -- is a RED arm rather than a clean 100%.
+_cu = re.search(r'CHECKED / UNIVERSE: (\d+) of (\d+)', out)
+check('C2b. ...and the two figures are REAL: checked > 0, universe > checked, so '
+      'a collapsed denominator cannot read as full coverage',
+      _cu is not None and int(_cu.group(1)) > 0
+      and int(_cu.group(2)) > int(_cu.group(1)),
+      _cu.group(0) if _cu else 'no CHECKED / UNIVERSE line at all')
 check('C3. both tier counts appear on the real run too',
       re.search(r'TIERS: \d+ CONFIRMED, \d+ ADVISORY', out) is not None,
       out[:800])

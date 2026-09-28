@@ -140,8 +140,14 @@ try:
     a1 = hook()
     check('a clean tree is NOT blocked by check 9',
           'a named GUARD test is failing' not in a1['reason'], a1['reason'][:200])
-    check('...and exactly one hookSpecificOutput object is emitted, never two',
-          a1['objects'] <= 1, 'objects=%d raw=%s' % (a1['objects'], a1['raw'][:200]))
+    # ── `<= 1` PASSED ON ZERO, CORRECTED 2026-09-28 ────────────────────────
+    # The label says EXACTLY ONE, never two. `<= 1` admits ZERO -- a hook that
+    # emitted no hookSpecificOutput at all, which is the gate answering nothing
+    # and is the one outcome the label rules out. The ceiling was right and the
+    # floor was missing, so the arm could only ever catch the "two" half.
+    check('...and exactly one hookSpecificOutput object is emitted, never two '
+          'and never ZERO -- zero is the gate answering nothing',
+          a1['objects'] == 1, 'objects=%d raw=%s' % (a1['objects'], a1['raw'][:200]))
 
     # ── ARM 2b: AN ORDINARY DIRTY TREE IS NOT A FINDING ────────────────────
     # The hazard this whole family keeps producing is a check that treats
@@ -243,8 +249,9 @@ try:
           _a4_said or ('the full suite holds the run lock' in _gate_orig
                        and 'guard_note = (' in _gate_orig),
           'context=' + a4['context'][:200])
-    check('...and still emits only one object',
-          a4['objects'] <= 1, 'objects=%d' % a4['objects'])
+    # Same correction as arm 1: `<= 1` was satisfied by an absent object.
+    check('...and still emits EXACTLY one object, not zero',
+          a4['objects'] == 1, 'objects=%d' % a4['objects'])
 finally:
     io.open(TARGET, 'w', encoding='utf-8', newline='').write(ORIGINAL)
     if os.path.exists(LOCK):

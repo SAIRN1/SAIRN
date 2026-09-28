@@ -161,8 +161,28 @@ ok('...and blocks on it rather than ignoring its status',
 # is consumed by its first reader; a chain that read it twice would leave the
 # EXISTING six-check gate with nothing, silently disabling it to add one.
 ok('stdin is captured ONCE and replayed', hook.count('REFS=$(cat)') == 1, hook[-800:])
-ok('...and every gate is fed from the capture, not from the stream',
-   hook.count("printf '%s\\n' \"$REFS\" |") >= 3, hook[-800:])
+# ── A FLOOR UNDER A UNIVERSAL CLAIM, CORRECTED 2026-09-28 ──────────────────
+# This read `count("printf ... $REFS |") >= 3` under the label "EVERY gate is fed
+# from the capture". Four gates are piped from $REFS today. At a floor of three, a
+# FIFTH gate added reading the raw stream -- which is precisely the defect the arm
+# above ('stdin is captured ONCE and replayed') exists to prevent -- would leave
+# four replays, clear the floor, and the arm would stay green while the new gate
+# silently ate the stream from the ones after it.
+#
+# COUNTED AGAINST THE REAL DENOMINATOR, derived from the hook itself: every line
+# that pipes into a tools/*.py --pre-push. A gate is fed from the capture or it is
+# named. No floor, and adding a gate cannot pass by arithmetic.
+_gate_lines = [l for l in hook.split(chr(10))
+               if not l.lstrip().startswith('#')
+               and '--pre-push' in l and 'tools/' in l]
+_from_capture = [l for l in _gate_lines if "printf '%s" + chr(92) + "n' \"$REFS\" |" in l]
+_from_stream = [l for l in _gate_lines if l not in _from_capture]
+ok('F0 the gate lines were FOUND in the hook -- an empty list would make the arm '
+   'below vacuous, which is how a count-based version of it could pass',
+   len(_gate_lines) >= 2, _gate_lines)
+ok('...and EVERY gate is fed from the capture, not from the stream (%d gate(s))'
+   % len(_gate_lines),
+   _from_stream == [], 'NOT fed from $REFS: ' + repr(_from_stream))
 # COMMENT LINES ARE EXCLUDED, because this file's own comment EXPLAINS the
 # `| exec` trap and would otherwise fail the arm that checks for it -- a check
 # defeated by its own documentation, which is the shape worth avoiding here of

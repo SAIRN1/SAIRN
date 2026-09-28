@@ -23,6 +23,7 @@ rather than for it.
 import contextlib
 import io
 import os
+import re
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -197,10 +198,32 @@ check('CRITERIA_VERSION records that at least one revision happened -- the '
       rev.isdigit() and int(rev) >= 2, R.CRITERIA_VERSION)
 src_rbr = io.open(os.path.join(REPO, 'tools', 'rotation_blast_radius.py'),
                   encoding='utf-8').read()
-check('...and every revision is EXPLAINED in the source, with the direction it '
-      'moved the number. A version bump with no reason is a version bump',
-      src_rbr.count('-> .') >= 2 or src_rbr.count('.1 -> .2') >= 1,
-      [l.strip()[:70] for l in src_rbr.splitlines() if '-> .' in l][:4])
+# ── A FLOOR UNDER A UNIVERSAL CLAIM, CORRECTED 2026-09-28 ──────────────────
+# It read `count('-> .') >= 2 or count('.1 -> .2') >= 1` under the label "EVERY
+# revision is EXPLAINED". Two ways that passed without checking the claim:
+#
+#   1. THE COUNT HAS NO RELATIONSHIP TO THE NUMBER OF REVISIONS. At .3 there are
+#      two transitions to explain; at .7 there are six, and a floor of two would
+#      still be satisfied by the two oldest. A version bump with no reason -- the
+#      exact thing the label forbids -- could not move this arm.
+#   2. THE `or` MADE IT WEAKER STILL. The right-hand side is satisfied by the
+#      FIRST transition alone, for ever, whatever the version becomes.
+#
+# THE DENOMINATOR IS THE VERSION ITSELF. CRITERIA_VERSION's trailing `.N` says how
+# many revisions there have been, so N-1 transitions must each be explained by
+# name. Bumping the version now REQUIRES adding the explanation, which is the
+# claim the label was making all along.
+_ver_rev = re.search(r'\.(\d+)\s*$', str(R.CRITERIA_VERSION))
+check('the criteria version carries a revision number this arm can count from',
+      _ver_rev is not None, R.CRITERIA_VERSION)
+_n_rev = int(_ver_rev.group(1)) if _ver_rev else 0
+_transitions = ['.%d -> .%d' % (k, k + 1) for k in range(1, _n_rev)]
+_unexplained = [t for t in _transitions if t not in src_rbr]
+check('...and EVERY revision is EXPLAINED in the source, with the direction it '
+      'moved the number -- %d transition(s) implied by version %s'
+      % (len(_transitions), R.CRITERIA_VERSION),
+      _unexplained == [],
+      'NO EXPLANATION IN THE SOURCE FOR: %s' % _unexplained)
 
 print('\n7. THE RUN REFUSES TO REPORT A POSTURE')
 rc, out = run([])

@@ -646,10 +646,25 @@ def main(argv):
               '(no comparison at the call site)'
               % (len(paths), len(confirmed) + len(advisory) + len(clean_rows),
                  not_judged))
-        print('NOT COVERED, and this line is the coverage statement: the '
-              'JavaScript suites.\n  Every arm above came from a Python ast '
-              'parse. A clean verdict here says\n  nothing whatever about '
-              'tests/*.js or api/**/*.test.js.')
+        # ── CHECKED / UNIVERSE, PRINTED AS TWO NUMBERS WITH A NAMED GAP ──────
+        # A rate over the subset you looked at is not a rate. This tool reads
+        # PYTHON ONLY, so the honest denominator is not "the test suite" -- it is
+        # the test suite split into what this tool can parse and what it cannot,
+        # with both counted from git rather than estimated.
+        _js, _ = tracked('tests/*.js', 'tests/**/*.js',
+                         'api/*.test.js', 'api/**/*.test.js')
+        _uni = len(paths) + len(_js)
+        print('\nCHECKED / UNIVERSE: %d of %d suite files (%.0f%%).'
+              % (len(paths), _uni, (100.0 * len(paths) / _uni) if _uni else 0))
+        print('  The %d NOT CHECKED are JavaScript, and that is a capability gap '
+              'rather than a\n  sampling choice: every arm above came from a '
+              'Python `ast` parse tree, for the\n  reason checker_control_check.py '
+              'rebuilt itself in 2026-09-13 -- patterns over\n  text counted '
+              'docstrings, path constants and print calls as evidence. A clean\n'
+              '  verdict here says NOTHING about tests/*.js or api/**/*.test.js.'
+              % len(_js))
+        print('  BOTH FIGURES ARE COUNTED FROM `git ls-files`, so the gap moves '
+              'when the repo\n  does and cannot be quoted stale from a document.')
         for n in notes:
             print('  excluded: %s' % n)
         # TWO NUMBERS, NEVER SUMMED. Printed BEFORE the findings so a reader

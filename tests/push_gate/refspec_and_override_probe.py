@@ -223,10 +223,39 @@ d, note = H.export_sql_at(REPO, 'HEAD')
 check("export produced a directory", bool(d) and os.path.isdir(d), True)
 if d:
     exported = sorted(f for f in os.listdir(d) if f.endswith('.json'))
-    on_disk = sorted(f for f in os.listdir(os.path.join(REPO, 'sql'))
-                     if f.endswith('.json'))
-    check("every committed seed json is present in the export",
-          set(exported) <= set(on_disk) and len(exported) > 0, True)
+    # ── THE LABEL AND THE COMPARISON WERE ABOUT DIFFERENT THINGS, FIXED
+    #    2026-09-28 ───────────────────────────────────────────────────────────
+    # It read `set(exported) <= set(on_disk)` against the WORKING TREE, under the
+    # label "every committed seed json is present in the export". Two separate
+    # errors in one line:
+    #
+    #   1. THE SUBSET RUNS THE WRONG WAY. `exported <= on_disk` says the export
+    #      adds nothing; "every committed json is present" needs the OTHER
+    #      direction. A seed that the export silently DROPPED -- the one failure
+    #      this arm exists to catch, because the gate then compares a seed set
+    #      that is missing a file -- satisfied it perfectly.
+    #   2. THE DENOMINATOR IS THE WRONG POPULATION. export_sql_at() reproduces
+    #      sql/ AS OF A COMMIT; the working tree is a different set. An
+    #      uncommitted new seed is on disk and correctly absent from the export,
+    #      and a committed seed deleted in the working tree is correctly IN the
+    #      export and absent from disk. Either one moves this arm for a reason
+    #      that has nothing to do with export_sql_at().
+    #
+    # The denominator is now git's own list at the same commit, so the two sides
+    # are one population and the comparison is EQUALITY.
+    _tree = subprocess.run(['git', '-C', REPO, 'ls-tree', '--name-only', 'HEAD', 'sql/'],
+                           capture_output=True, text=True, encoding='utf-8',
+                           errors='replace')
+    committed = sorted(os.path.basename(l) for l in _tree.stdout.split('\n')
+                       if l.strip().endswith('.json'))
+    check("the committed seed list was READ from git and is non-empty -- an empty "
+          "denominator is how a subset comparison passes vacuously",
+          len(committed) > 0, True)
+    check("every committed seed json is present in the export -- MISSING set",
+          sorted(set(committed) - set(exported)), [])
+    check("...and the export invents nothing that is not committed at that "
+          "commit -- EXTRA set",
+          sorted(set(exported) - set(committed)), [])
     check("clean tree -> no divergence note", note, '')
 
 bad, bad_note = H.export_sql_at(REPO, 'not-a-real-commit-zzz')

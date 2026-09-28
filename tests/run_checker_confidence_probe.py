@@ -24,6 +24,9 @@ sys.path.insert(0, os.path.join(REPO, 'tools'))
 
 import checker_confidence as C                                  # noqa: E402
 import flaky_checker_quarantine as FLAKY                        # noqa: E402
+# READ ONLY, for the denominator in section 5. checker_confidence.py already
+# imports this module itself, so this adds no dependency the probe did not have.
+import checker_control_check as CTRL                            # noqa: E402
 
 CONTROLS_FOR = ['checker_confidence.py']
 
@@ -115,7 +118,34 @@ def main():
                        env=dict(os.environ, PYTHONIOENCODING='utf-8', PYTHONUTF8='1'))
     doc = json.loads(r.stdout)
     rows = doc['rows']
-    check('every promoted checker is scored', len(rows) > 20, True)
+    # ── A FLOOR UNDER A UNIVERSAL CLAIM, CORRECTED 2026-09-28 ────────────────
+    # This read `len(rows) > 20` under the label "every promoted checker is
+    # scored". The registry held far more than 20, so a checker silently
+    # DISAPPEARING from the score -- the one failure this arm names -- left the
+    # count comfortably above the floor and the arm green. A count cannot see a
+    # missing member; only a set comparison can.
+    #
+    # THE DENOMINATOR IS READ FROM THE REGISTRY, NOT RETYPED. promoted() in
+    # checker_control_check.py reads report_only_checks.REGISTRY, which is the
+    # same source checker_confidence.py itself scores, so this compares the two
+    # ENDS of one pipeline rather than comparing the tool against a number
+    # somebody remembered.
+    # THIS FILE'S check() IS check(label, ACTUAL, EXPECTED), not
+    # check(label, cond, detail). The first version of this correction passed a
+    # boolean and a message and every arm failed comparing a detail string to
+    # True -- which is the same signature-variance hazard the checker that found
+    # this arm is built to be immune to. Written in the local form deliberately.
+    _scored = set(x['tool'] for x in rows)
+    _promoted = set(CTRL.promoted())
+    check('0  the promoted set was READ and is non-empty -- an empty denominator '
+          'would make the arms below vacuous in the silent direction',
+          len(_promoted) > 0, True)
+    check('every promoted checker is scored -- the MISSING SET, not a floor '
+          '(%d promoted, %d scored)' % (len(_promoted), len(_scored)),
+          sorted(_promoted - _scored), [])
+    check('...and nothing is scored that is NOT promoted, which would mean the '
+          'score covers a population the registry does not',
+          sorted(_scored - _promoted), [])
     check('no row is rated above either of its inputs',
           [x['tool'] for x in rows
            if {'UNKNOWN': 0, 'LOW': 1, 'MEDIUM': 2, 'HIGH': 3}[x['confidence']]

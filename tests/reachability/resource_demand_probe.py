@@ -92,9 +92,34 @@ for app in sorted(registered):
 check('3b  FIRES: it finds exactly the two resources named nowhere',
       sorted(unrequested) == [('sairndental', 'dnt_ar'), ('sairndental', 'dnt_revenue')],
       unrequested)
-check('3c  SILENT: every other registered resource is named somewhere a caller '
-      'could reach it -- so the rung is not reporting the whole registry',
-      len(unrequested) < 5, len(unrequested))
+# ── A FLOOR UNDER A UNIVERSAL CLAIM, AND REDUNDANT, FIXED 2026-09-28 ────────
+# 3c read `len(unrequested) < 5` under the label "EVERY other registered resource
+# is named somewhere". Two problems at once:
+#
+#   1. THE FLOOR TOLERATED FOUR. Under a label saying "every", up to four
+#      resources could go unnamed -- exactly the silent under-reporting the rung
+#      exists to find -- and the arm stayed green.
+#   2. IT WAS ALSO REDUNDANT with 3b, which already pins `sorted(unrequested)`
+#      to an exact two-element list. A tolerance of four beside an equality of
+#      two adds nothing and hides that it adds nothing.
+#
+# The label's real claim is the COMPLEMENT of 3b, so it is written as one: every
+# registered resource except the two known exceptions is named somewhere. That is
+# not a duplicate of 3b -- 3b would still pass if the registry shrank to those two
+# rows, and this would not.
+_KNOWN_UNNAMED = {('sairndental', 'dnt_ar'), ('sairndental', 'dnt_revenue')}
+_universe = [(app, name) for app in sorted(registered) for name in sorted(registered[app])]
+check('3c0 CHECKED / UNIVERSE is published, because a silent half proves nothing '
+      'without its denominator: %d of %d registered resources were examined'
+      % (len(_universe), sum(len(v) for v in registered.values())),
+      len(_universe) == sum(len(v) for v in registered.values()) and len(_universe) > 300,
+      '%d examined vs %d registered' % (len(_universe),
+                                        sum(len(v) for v in registered.values())))
+check('3c  SILENT: every registered resource EXCEPT the two known exceptions is '
+      'named somewhere a caller could reach it (%d of %d named)'
+      % (len(_universe) - len(unrequested), len(_universe)),
+      set(unrequested) - _KNOWN_UNNAMED == set(),
+      'UNEXPECTEDLY UNNAMED: %s' % sorted(set(unrequested) - _KNOWN_UNNAMED))
 
 print('4. ACKNOWLEDGEMENTS are visible, reasoned, and cannot rot')
 check('4a  both findings are acknowledged, so the OPEN list is empty today',
