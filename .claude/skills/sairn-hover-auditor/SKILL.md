@@ -2777,6 +2777,81 @@ caution or consensus instead of surfacing it -- a true catch only one side
 made can be the one that gets smoothed away. Hold this line as hard for
 this role's own contested findings as it is held for item 64's design.
 
+## Four further standing rules, 2026-09-28 (Michael's direct instruction, sourced separately from the build-agent registry)
+
+**1. When reviewing a lifecycle/status fix, check the transition PAIR, not
+the transition in isolation.** Before marking a fix to state-machine-shaped
+logic (a credential's active/deactivated lifecycle, a claim's
+claimed/released state, a discharge gate's open/reviewed status) SOUND,
+ask what state the resource was actually IN immediately after the PRIOR
+transition that leads into the one being fixed -- not just whether the
+fixed transition behaves correctly in isolation from a clean starting
+state. A transition that is provably correct FROM a well-formed prior
+state can still be reachable from a malformed one a real session actually
+produces (a crashed claim, a mid-rebase partial write, a retry after a
+409). Verifying only the isolated transition is the same shape as testing
+a function against a hand-built input instead of the input its own
+upstream caller actually produces.
+
+**2. Hidden-state cross-check: when reading a resource for its
+confidentiality/integrity axis, cross-check every stored field the code
+actually BRANCHES ON against what the tier registry's own evidence cell
+NAMES for that resource.** A field a handler reads and decides on, but the
+registry's field list never mentions, is a decision point nobody graded --
+it passed by omission, not by being checked and found fine. **This
+session's own concrete case, found before the rule was named:** `sf_events`
+(log #553) -- the register's evidence cell listed `{title, date, start,
+end, kind, alcohol, sessionId}` and separately claimed neither compliance
+hook was wired, but `eventRefusals()` was already gating bookings on
+`e.gaming`, `e.prizeCap`, `e.accountId` and `e.games` -- four fields the
+handler branches on for real, statutory determinations, and NONE of them
+appeared in the cell's own field list. The cell's field list and the
+handler's real branch set had already diverged; nobody had cross-checked
+them against each other until this rule's own justification was being
+gathered.
+
+**3. Sabotage-test a new checking tool against the REALISTIC transition
+into a bad state, not only the bad state reached directly.** A fixture that
+plants the bad state by direct assignment (teleporting a resource straight
+to "corrupted") can pass while the tool still misses the SAME bad state
+when it arrives via the path a real session actually produces -- right
+after a rebase, right after a claim releases, right after a retry. A tool
+whose only negative controls are teleported-in states has been shown to
+catch the shape of the defect, not that it catches the defect ARRIVING the
+way it really would. **Self-audit, done rather than assumed clean:** this
+role's own newest fixtures (`draw_order`/`undirected_order` in
+`hover_cold_scan_pool.py`, `hover_editor_review_criteria.py`'s IMPLIED_LINE
+cases, `hover_log.py`'s `--contradicts` fixtures below) are ALL
+teleported-in synthetic states -- hand-built dicts and hand-built log rows,
+none of them produced by actually running the surrounding real workflow
+(a real `--pick`/`--draw` sequence, a real rebase, a real retry). Named as
+a real, current gap in this role's own recent tool-building rather than
+implied fixed by writing this rule -- the standard applies going forward,
+starting with the next tool whose subject is genuinely process-order-
+sensitive (a claim-state or session-liveness checker, the shape
+`sabotage_closed_system_check.py` and `tools/session_lock_check.py`'s own
+liveness fix already had to reckon with for exactly this reason).
+
+**4. When a later read CONTRADICTS an already-logged CLEAN verdict on the
+same resource, log it as its own distinct, higher-salience entry -- never
+folded in as an ordinary updated verdict.** An updated verdict (new
+information added to a still-correct earlier call) and a DRIFT note (the
+world moved after a correct-at-the-time read) are both routine. A
+contradiction -- an earlier CLEAN call that was simply wrong when made --
+is a different, rarer, more important event: it means this role's own
+prior check missed something checkable at the time, not just that time
+passed. **Built as a structured field, not a prose convention a future
+reader has to trust was worded consistently**, the same reason
+`process_pass`/`eqa_checkpoint`/`undirected_sweep` are fields rather than
+keywords: `hover_log.py --add --contradicts <seq>` (2026-09-28) stamps a
+`contradicts` pointer to the specific prior entry being overturned,
+REFUSES if that seq does not exist (a dangling pointer would look like a
+real contradiction forever in an append-only log) and REFUSES on any type
+other than `finding` (a contradiction of a clean verdict is a finding by
+definition, never a plain check). `--tail` renders it as a visible
+`[[CONTRADICTS #N]]` tag so it cannot be scanned past as an ordinary row.
+Six fixtures lock it in both directions before the first real use.
+
 ## Five further real precedents, genuinely new this round
 
 Checked against the file first -- the surrounding research in this dispatch
