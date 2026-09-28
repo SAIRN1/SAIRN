@@ -17014,7 +17014,7 @@
       "recurrence_open": "OPEN AND MECHANICAL: nothing compares a newly added checker against docs/TOOLING-INVENTORY.md, so the next duplicate will be caught the way this one was -- by somebody happening to grep. The inventory is generated and complete, which is exactly what makes the check cheap to build, and it does not exist."
     },
     {
-      "commit": "8d0fff5cc3ef",
+      "commit": "6977854db7c8",
       "date": "2026-09-27",
       "subject": "fix(sairncare): ANY employee could file an abuse/neglect incident attributed to somebody else -- who filed it is now SET, not SENT",
       "files": [
