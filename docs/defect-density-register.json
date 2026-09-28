@@ -18540,6 +18540,64 @@
       "recurrence_open": "OPEN IN TWO DIRECTIONS. (1) A SCAN OF ALL SEVEN SAIRN CLONES found ONE unreachable blob carrying a github_pat shape in SAIRN-cc -- unreachable, so never on origin, but present in that clone's object store and needing the same reflog-expire-and-prune treatment. A build agent must not reach into another clone, so it is reported rather than fixed. (2) The blanket-staging habit is only partly addressed: regenerate steps now stage explicit paths, but every other git add -A, git add . and git commit -a across tools, scripts and hooks is unswept, and tools/push_retry.py already exists to replace exactly the loop that caused this."
     },
     {
+      "commit": "453193f36367",
+      "date": "2026-09-28",
+      "subject": "fix(claude): a REVOKED licence was served AND charged to the paying pool -- and the refusal half REVERSES a decision this repo had recorded",
+      "files": [
+        "api/claude-cost-controls.test.js",
+        "api/claude-licence-enforce.test.js",
+        "api/claude.js",
+        "docs/MASTER-PLAN.md",
+        "docs/traceability-matrix.md"
+      ],
+      "lines_added": 334,
+      "lines_removed": 17,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "api/claude.js derives authState 'inactive' at :309 -- lic.valid && !lic.active, a licence that EXISTS and has been REVOKED -- and two places then failed to use it. (1) THE BUDGET, LIVE IN BOTH AUTH MODES: :430 read `if (authState === 'valid' || authState === 'inactive')`, so a revoked tenant kept budgetApp as the LICENSED app and spent against the daily AI ceiling that app's PAYING tenants share, while rule 2 three lines above reserves anon:<app_id> for callers without a valid licence. The tenant sub-budget bounded the damage and did not remove it. (2) THE REFUSAL, LATENT: the enforce-mode refusal at :325 tested only 'absent' and 'invalid', so a revoked licence fell through and was served on the endpoint that spends the platform's own Anthropic key. OBSERVED LIVE before changing anything, against the real handler with the licence store and limiter stubbed: state=inactive mode=enforce, HTTP 200, limiter called with {appId:'stonedesk', tenantKey:'h-rev'}. `status` is this platform's ONLY licence revocation control -- license_keys carries no expiry this code enforces -- so being revoked is the entire mechanism for cutting off a cancelled, refunded or charged-back account, and the key is shipped to the browser and never rotated. SAME SHAPE api/bridge.js CLOSED ON 2026-09-26, one file over, on a write path; this is a spend path. THE REFUSAL HALF REVERSES A RECORDED DECISION: api/claude-cost-controls.test.js asserted 200 with the argument 'an inactive licence is a billing state and cutting off AI is not this endpoint's call -- the app's own licence gate already handles it'. Reversed on direct instruction, with the old text kept in full in that arm, because one clause of it is checkable and false: the endpoint is callable directly with the browser-held key, so the app's own gate is client-side for that path. Whether a revoked customer keeps AI is a commercial question and is recorded as one. Regression written first, 12 arms across both env states, 3 failing before the fix; each half ablated separately to prove they are independently held.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The budget branch and the refusal branch were written at different times for different purposes and neither commit introduced a disagreement on its own; the third state was already being derived when each was added. No single commit is the injection and the record does not guess at one."
+      },
+      "citation_note": "Not an absent dependency. Cited for the neighbouring principle: a third state was derived and then folded into the other two by omission -- the refusal treated revoked as not-refusable and the budget treated it as current, so one input got two contradictory readings in one request.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "A three-state classification consumed by two-state tests. `inactive` was derived correctly and then omitted from both lists that branch on the state -- the refusal listed absent/invalid, the budget listed valid/inactive, and no reader of either line could see the third state was unhandled from the line itself.",
+          "action_status": "done",
+          "action": "The refusal names 'inactive' explicitly with its own 403 and code, and the budget branch narrows to 'valid' alone so a revoked licence falls to the anonymous pool."
+        },
+        {
+          "kind": "detection",
+          "factor": "api/claude.js had three suites and none drove a revoked licence through the BUDGET path at all. The one arm that drove it through the refusal path asserted the defective behaviour as correct, with an argument, so the suite would have stayed green through any amount of review.",
+          "action_status": "done",
+          "action": "api/claude-licence-enforce.test.js drives both env states and captures the appId the limiter is called with, which is the observable the budget defect lives in."
+        },
+        {
+          "kind": "process",
+          "factor": "The decision not to refuse was recorded in a TEST ARM rather than anywhere a person looks when asking a commercial question. It read as settled to anybody who ran the suite and was invisible to everybody else.",
+          "action_status": "planned",
+          "action": "Raise the revoked-customer-AI question as an open-work row so the decision lives somewhere a non-engineer can find and reverse it, rather than only inside a green assertion."
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "The refusal half armed on an ENVIRONMENT VARIABLE, not on code. SAIRN_CLAUDE_AUTH_MODE defaults to observe, so the defect was invisible until somebody flipped a variable -- a change nobody reviews as code and which no diff would have shown.",
+          "action_status": "done",
+          "action": "Both env states are now driven explicitly by the suite, and an arm asserts the variable really switches per request rather than at module load, so neither mode can go untested again."
+        }
+      ],
+      "recurrence_open": "Nothing sweeps for a derived state that is computed and then omitted from the branches that consume it. Both defects here are that one shape, in one file, ten lines apart, and a grep for the state name would have found them in seconds -- but no check knows which states a handler derives. The wider half is also open: no tool enumerates behaviour that is gated behind an environment variable and therefore changes without a diff, which is how the refusal half stayed latent."
+    },
+    {
       "commit": "73c75db05dc2",
       "date": "2026-09-28",
       "subject": "fix(control): the fact-sheet probe asserted the REAL sheet was clean, so it was red on main permanently",
@@ -18862,62 +18920,56 @@
       "recurrence_open": "Nothing detects a mutation that cannot produce its labelled outcome. The harness reports SILENT identically for a blind suite and an inert mutation, and 74 other probes with MUTATIONS lists have never been audited for this shape. The three-SILENT-arm report this closes contained one instance of each, which is exactly why they were misdiagnosed as one cause."
     },
     {
-      "commit": "453193f36367",
+      "commit": "adcf6a19c5cb",
       "date": "2026-09-28",
-      "subject": "fix(claude): a REVOKED licence was served AND charged to the paying pool -- and the refusal half REVERSES a decision this repo had recorded",
+      "subject": "fix(probe): a credential teardown asserted its own REPLY, never the state",
       "files": [
-        "api/claude-cost-controls.test.js",
-        "api/claude-licence-enforce.test.js",
-        "api/claude.js",
-        "docs/MASTER-PLAN.md",
-        "docs/traceability-matrix.md"
+        "SAIRN-ACTIVE-WORK-fourth.md",
+        "tools/sc_tier_a_write_gate_live_probe.py"
       ],
-      "lines_added": 334,
-      "lines_removed": 17,
-      "app": "PLATFORM",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "independent-review",
-      "summary": "api/claude.js derives authState 'inactive' at :309 -- lic.valid && !lic.active, a licence that EXISTS and has been REVOKED -- and two places then failed to use it. (1) THE BUDGET, LIVE IN BOTH AUTH MODES: :430 read `if (authState === 'valid' || authState === 'inactive')`, so a revoked tenant kept budgetApp as the LICENSED app and spent against the daily AI ceiling that app's PAYING tenants share, while rule 2 three lines above reserves anon:<app_id> for callers without a valid licence. The tenant sub-budget bounded the damage and did not remove it. (2) THE REFUSAL, LATENT: the enforce-mode refusal at :325 tested only 'absent' and 'invalid', so a revoked licence fell through and was served on the endpoint that spends the platform's own Anthropic key. OBSERVED LIVE before changing anything, against the real handler with the licence store and limiter stubbed: state=inactive mode=enforce, HTTP 200, limiter called with {appId:'stonedesk', tenantKey:'h-rev'}. `status` is this platform's ONLY licence revocation control -- license_keys carries no expiry this code enforces -- so being revoked is the entire mechanism for cutting off a cancelled, refunded or charged-back account, and the key is shipped to the browser and never rotated. SAME SHAPE api/bridge.js CLOSED ON 2026-09-26, one file over, on a write path; this is a spend path. THE REFUSAL HALF REVERSES A RECORDED DECISION: api/claude-cost-controls.test.js asserted 200 with the argument 'an inactive licence is a billing state and cutting off AI is not this endpoint's call -- the app's own licence gate already handles it'. Reversed on direct instruction, with the old text kept in full in that arm, because one clause of it is checkable and false: the endpoint is callable directly with the browser-held key, so the app's own gate is client-side for that path. Whether a revoked customer keeps AI is a commercial question and is recorded as one. Regression written first, 12 arms across both env states, 3 failing before the fix; each half ablated separately to prove they are independently held.",
+      "lines_added": 64,
+      "lines_removed": 0,
+      "app": "sairncode",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "sc_tier_a_write_gate_live_probe.py asserted the set_active REPLY and never the roster, so a deactivation that answered 200 and did nothing would leave two live credentials on the audit licence and report a clean run",
       "rules": [
-        "1.11"
+        "1.5"
       ],
-      "citation_confidence": "arguable",
+      "citation_confidence": "clean",
       "injection_phase": "coding",
       "phase_confidence": "stated",
       "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "unknown_reason": "The budget branch and the refusal branch were written at different times for different purposes and neither commit introduced a disagreement on its own; the third state was already being derived when each was added. No single commit is the injection and the record does not guess at one."
+        "commit": "ef4618133c33",
+        "date": "2026-09-15",
+        "subject": "feat(sairncode): auditor may write sc_compliance -- and the gate is now LIVE-verified, which is how the unpushed half was caught",
+        "lag_days": 13
       },
-      "citation_note": "Not an absent dependency. Cited for the neighbouring principle: a third state was derived and then folded into the other two by omission -- the refusal treated revoked as not-refusable and the budget treated it as current, so one input got two contradictory readings in one request.",
+      "phase_note": "the credential deactivation loop was written with only a status assertion in the same commit that introduced it; the row cleanup beside it already read back",
       "contributing_factors": [
         {
+          "factor": "asserting the response and asserting the state are different claims, and a 200 is still the endpoint account of itself",
           "kind": "technical",
-          "factor": "A three-state classification consumed by two-state tests. `inactive` was derived correctly and then omitted from both lists that branch on the state -- the refusal listed absent/invalid, the budget listed valid/inactive, and no reader of either line could see the third state was unhandled from the line itself.",
           "action_status": "done",
-          "action": "The refusal names 'inactive' explicitly with its own 403 and code, and the budget branch narrows to 'valid' alone so a revoked licence falls to the anonymous pool."
+          "action": "the roster is read back once after the loop and both subjects must show active == false; an empty or unreadable roster fails rather than passes"
         },
         {
-          "kind": "detection",
-          "factor": "api/claude.js had three suites and none drove a revoked licence through the BUDGET path at all. The one arm that drove it through the refusal path asserted the defective behaviour as correct, with an argument, so the suite would have stayed green through any amount of review.",
-          "action_status": "done",
-          "action": "api/claude-licence-enforce.test.js drives both env states and captures the appId the limiter is called with, which is the observable the budget defect lives in."
-        },
-        {
-          "kind": "process",
-          "factor": "The decision not to refuse was recorded in a TEST ARM rather than anywhere a person looks when asking a commercial question. It read as settled to anybody who ran the suite and was invisible to everybody else.",
-          "action_status": "planned",
-          "action": "Raise the revoked-customer-AI question as an open-work row so the decision lives somewhere a non-engineer can find and reverse it, rather than only inside a green assertion."
-        },
-        {
+          "factor": "the row cleanup in the same loop was already read back, so the file looked like it had the discipline -- it had it for one of two halves",
           "kind": "latent-condition",
-          "factor": "The refusal half armed on an ENVIRONMENT VARIABLE, not on code. SAIRN_CLAUDE_AUTH_MODE defaults to observe, so the defect was invisible until somebody flipped a variable -- a change nobody reviews as code and which no diff would have shown.",
-          "action_status": "done",
-          "action": "Both env states are now driven explicitly by the suite, and an arm asserts the variable really switches per request rather than at module load, so neither mode can go untested again."
+          "action_status": "not-actionable",
+          "note": "a partially-applied discipline reads as an applied one at review; nothing mechanical distinguishes them here and a rule restating it would be the sixth restatement"
+        },
+        {
+          "factor": "the probe cannot be run in this environment (needs SC-AUDIT-2026 and two PINs), so no run has ever exercised its own teardown path",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "the probe is already recorded as needing SC-AUDIT-2026 before it is re-run; the read-back is source-verified only until then"
         }
       ],
-      "recurrence_open": "Nothing sweeps for a derived state that is computed and then omitted from the branches that consume it. Both defects here are that one shape, in one file, ten lines apart, and a grep for the state name would have found them in seconds -- but no check knows which states a handler derives. The wider half is also open: no tool enumerates behaviour that is gated behind an environment variable and therefore changes without a diff, which is how the refusal half stayed latent."
+      "recurrence_open": "the fix is source-verified and NOT driven live -- the same evidence class that missed the alf_incidents read-path override on 2026-09-28. Nothing sweeps the platform for a cleanup step that asserts its own reply instead of the resulting state; the measured universe of live teardowns is 1, which is why no checker was built, and that figure is a floor that will move as probes are added"
     },
     {
       "commit": "cf5e2c6bb520",
@@ -18975,6 +19027,59 @@
         }
       ],
       "recurrence_open": "OPEN AND NOW COUNTED FOUR TIMES IN ONE SESSION: sairn_sql_preflight read a table name out of an English sentence; text_gate_literal_sweep missed every precompiled regex and undercounted its own universe by 27; fail_open_scan counted its own docstring; and tools/tier_a_review_gate.py attributed the scp_quotes resource from the word 'quotes' in a docstring about quote characters. The last is CODY'S file and is reported, not edited. The general corrective action -- an empirical decoy probe per text-reading gate -- exists as a backlog inside text_gate_literal_sweep and covers 2 of 157."
+    },
+    {
+      "commit": "d1fe316a9ae2",
+      "date": "2026-09-28",
+      "subject": "fix(auth): two spellings of one role check disagreed, and nothing stopped them",
+      "files": [
+        "api/_lib/auth-roleset-seam.test.js",
+        "api/_lib/auth.js",
+        "tests/role_maps_have_no_prototype.js"
+      ],
+      "lines_added": 131,
+      "lines_removed": 3,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "hasRole(MAP, role) requires === true while the bracket form MAP[role] that 48 gates use grants on any truthy value, so a role map written { owner: 1 } is granted by one spelling and refused by the other",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "dadfedf48ac9",
+        "date": "2026-09-24",
+        "subject": "fix(platform): all 48 role membership sets get a null prototype, not just roofing",
+        "lag_days": 4
+      },
+      "phase_note": "hasRole() was introduced with === true in the same commit that wrapped the 48 bracket-form gates, so two non-equivalent spellings of one authorisation check have coexisted since that commit by design",
+      "contributing_factors": [
+        {
+          "factor": "two spellings of the same check with different semantics, used interchangeably across 18 files, with nothing at either spelling saying they differ",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "hasRole is recorded as the decided semantics in a comment at its definition, and the seam test that documented the divergence now points at what enforces the precondition"
+        },
+        {
+          "factor": "the precondition that makes them equivalent -- every map carries true and nothing else -- was an OBSERVATION written in a comment, with nothing to announce the day it stopped being true",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "section 4 of tests/role_maps_have_no_prototype.js reads the literal of every roleSet declaration in api/ and fails on any value that is not true; ablation driven both ways in a worktree"
+        },
+        {
+          "factor": "the obvious remedy -- rewrite the 48 bracket sites to hasRole -- was declined, because roleSet exists precisely so those sites are fixed WITHOUT being edited and a 48-site mechanical sweep transcription error is the failure mode it closed",
+          "kind": "process",
+          "action_status": "declined",
+          "note": "recorded as a decision rather than left as an open action, so the next reader does not re-propose the sweep"
+        }
+      ],
+      "recurrence_open": "the enforcement covers the single-line const NAME_ROLES = roleSet({...}) shape in api/ only. A role gate built from a multi-line literal, a helper, or a map assembled at runtime is outside it, and the arm cannot see a map that is correct in source and mutated afterwards -- that is the runtime section above it, which reaches only EXPORTED maps and therefore not the 25 declared inside functions in api/sd-data.js"
     },
     {
       "commit": "d211c6293616",
@@ -19078,6 +19183,58 @@
         }
       ],
       "recurrence_open": "PARTLY CLOSED AND MEASURED. The scan now covers Object.assign mappers in four api files: 91 examined, 54 still spread the blob last, 4 exploitable, 0 identity. The 4 remaining are data keys rather than attribution and are unfixed. WHAT IS NOT COVERED AT ALL: a mapper built through a helper, a spread operator or assembled across statements; the strip list is unioned per FILE rather than per resource, so the tool under-reports; and identity fields with NO column to override -- alf_mar administered_by is caller-supplied with nothing to shadow -- are a separate class this tool is blind to by construction."
+    },
+    {
+      "commit": "dea05ca6fffe",
+      "date": "2026-09-28",
+      "subject": "fix(tooling): an UNTRACKED tool was reported as one that no longer exists",
+      "files": [
+        "tests/run_tooling_inventory_probe.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 117,
+      "lines_removed": 7,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "tooling_inventory.py reported a PURPOSES entry whose tool is UNTRACKED as one that no longer exists -- a confident wrong cause that sends the reader after a deletion that never happened",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "9a5b81aa68b0",
+        "date": "2026-09-12",
+        "subject": "feat(tools,docs): the tooling inventory, GENERATED, because the last one was stale in three days",
+        "lag_days": 16
+      },
+      "phase_note": "the two-bucket split is in the original generator commit -- extra = [t for t in PURPOSES if t not in tools], with tools coming from git ls-files, so the untracked case was never a separate state",
+      "contributing_factors": [
+        {
+          "factor": "the tool list is derived from git ls-files, so an unadded file is indistinguishable from a deleted one at the point the message is written",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "missing_purposes() returns three buckets and the refusal names the untracked cause with the staging command spelled out by name"
+        },
+        {
+          "factor": "PR 1.11 was read as a rule about EXIT CODES only, so folding two causes into one sentence did not read as the same defect",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the docstring and the refusal text both now state that the rule applies to text as much as to exit codes"
+        },
+        {
+          "factor": "the probe had no arm for a PURPOSES entry with no tool, in either direction, so the message was never driven",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "section K of tests/run_tooling_inventory_probe.py plants both fixtures against the real function and asserts the two states read differently"
+        }
+      ],
+      "recurrence_open": "nothing sweeps the other generators for a message that attributes a single wrong cause to two states; the untracked blind spot itself is unchanged -- an untracked tool is still invisible to the inventory, which is correct, and only the explanation was wrong"
     },
     {
       "commit": "e1ec9d2f31b7",
