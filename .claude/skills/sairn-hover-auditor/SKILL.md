@@ -1748,6 +1748,19 @@ caught before being reverted. Consult it before a rotation pick as a real,
 additional input alongside Tier and freshness -- it does not replace either,
 and with this little history it should not yet dominate either.
 
+**[H1 CONFIRMATION, 2026-09-27]** `hover-audit-log/` is a local, per-clone
+directory outside this git repo, so the paragraph above cannot name a single
+shared file -- each hover instance builds its own. **H1's build (this
+clone) is the fail-closed draw the paragraph describes**: `defect_density_
+weighting.py` (with a `--json` contract added 2026-09-27) is consumed as the
+PRIMARY factor by `hover_cold_scan_pool.py --draw N`'s combined score (app
+risk DESC, staleness DESC, name ASC -- see the fifth-rotation-rule section
+below, added the same day), refusing outright rather than scoring
+all-zero risk if the weighting tool is absent or its own classifier control
+fails. Said here, labeled, rather than left for a reader to guess which
+instance's tooling this passage is actually about. This note is scoped to
+H1 only and does not describe or assume anything about H2's separate build.
+
 **A fifth rotation rule, a COORDINATOR-DIRECTED policy change, 2026-09-25:
 within a session, the draw pool prefers never-individually-read rows first,
 and falls back to already-read rows only when the unread set for that weight
