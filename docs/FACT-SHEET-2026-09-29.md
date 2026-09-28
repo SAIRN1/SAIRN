@@ -4,19 +4,29 @@
 exact command that produced it, so any of them can be re-run in front of the
 person asking.
 
-> ## ⚠ RUN THIS BEFORE YOU USE THE SHEET
+> ## ⚠ RUN THIS BEFORE YOU PRINT THE SHEET
 >
->     python tools/fact_sheet_regenerates.py
+> From `C:\Users\marsh\Documents\SAIRN-hank`:
 >
-> It re-runs every derivable figure here and prints any that has moved. **It is
-> not a formality: nine figures had already drifted within hours of this sheet
-> being written**, because four other engineers push to this repository
-> continuously. Commits, defects and review obligations all move daily.
+>     python tools/fact_sheet_regenerates.py --update
 >
-> Exit 0 means every number below is still exactly true. Any other exit prints
-> the figure, the old value and the new one.
+> That REWRITES every figure below from its own command and stamps the time. It
+> never touches a figure it cannot derive — a derivation that fails leaves the
+> old number standing and exits non-zero, so "refreshed" and "refreshed as far
+> as it could" are never the same answer. **If it exits non-zero, read what it
+> says before printing.**
+>
+> To CHECK without changing anything, drop `--update`: exit 0 means every number
+> below is still exactly true, and any other exit prints the figure, the old
+> value and the new one.
+>
+> **It is not a formality: 22 figures had moved in the twenty minutes between two
+> runs on 2026-09-28**, because four other engineers push to this repository
+> continuously. Commits, defects and review obligations all move hourly. **The
+> commits figure is stale again the moment anything is committed, including this
+> refresh itself** — so run it last, immediately before printing.
 
-**Figures refreshed 2026-09-28 07:51 by `python tools/fact_sheet_regenerates.py --update`.**
+**Figures refreshed 2026-09-28 07:55 by `python tools/fact_sheet_regenerates.py --update`.**
 
 **No file names, no customer data, no credentials, no methodology detail.**
 Figures that cannot be derived are marked **UNAVAILABLE** with the reason — a
@@ -61,12 +71,12 @@ call is not counted.
 
 | Figure | Value | Derived by | Date |
 |---|---|---|---|
-| Commits since 2026-05-15 | **6,913** | `git log --oneline --since=2026-05-15 \| wc -l` | 2026-09-28 |
+| Commits since 2026-05-15 | **6,914** | `git log --oneline --since=2026-05-15 \| wc -l` | 2026-09-28 |
 | First commit in repository | **2026-06-22** | `git log --reverse --format=%ad --date=short \| head -1` | 2026-09-28 |
 | Most recent commit | **2026-09-28** | `git log -1 --format=%ad --date=short` | 2026-09-28 |
 | Elapsed development span | **98 days / 14.0 weeks** | first to most recent commit, above | 2026-09-28 |
-| Commits per week (mean) | **494** | 6,913 ÷ 14.0 | 2026-09-28 |
-| Commits per day (mean) | **71** | 6,913 ÷ 98 | 2026-09-28 |
+| Commits per week (mean) | **494** | 6,914 ÷ 14.0 | 2026-09-28 |
+| Commits per day (mean) | **71** | 6,914 ÷ 98 | 2026-09-28 |
 
 **WHY THE HISTORY STARTS 2026-06-22, AND WHAT THE REAL SPAN IS.** Building began
 before version control, and the repository's own first commit proves it:
@@ -100,7 +110,7 @@ count.
 ## Two lines to say out loud
 
 > **"Roughly 490 commits a week, every week, for fourteen weeks."**
-> 6,913 commits ÷ 14.0 weeks under version control = **494 per week**, 71 per day.
+> 6,914 commits ÷ 14.0 weeks under version control = **494 per week**, 71 per day.
 > Over the full 18.6-week build span the average is **372 per week** — lower, and
 > stated because commits before 2026-06-22 do not exist to be counted, so the
 > higher number is the one with evidence behind it.
@@ -255,4 +265,4 @@ it claims. Three things a reader should press on, because they are the weakest:
 3. **The build span — 18.6 weeks is a lower bound.** The 4.6 weeks before the
    repository existed are bounded by a dated artifact, not measured.
 
-Both are stated that way above rather than rounded up.
+All three are stated that way above rather than rounded up.
