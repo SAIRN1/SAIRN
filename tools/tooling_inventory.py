@@ -73,6 +73,30 @@ GATE = os.path.join('tools', 'sairn_push_gate_hook.py')
 # LIVE means it makes a real network or database request, so it cannot be wired
 # into a hook without making every push talk to the outside world.
 PURPOSES = {
+    'blob_overrides_column_scan.py': ('CHECKER',
+        'a read mapper that spreads its stored blob AFTER the authoritative '
+        'columns, where the blob can actually carry one of those column names. '
+        'Object.assign applies sources LEFT TO RIGHT, so the blob -- a copy of '
+        'the payload the caller sent -- overwrites the column. MEASURED LIVE: '
+        'alf_incidents read back recorded_by as the forged payload value while '
+        'the column in the database was correct the whole time, and NINE GREEN '
+        'ABLATION-VERIFIED ARMS MISSED IT because they asserted the OUTBOUND '
+        'request body and nothing asserted what came back. IT REPORTS A PAIR, '
+        'NOT A PATTERN: spread order alone is not the defect, because '
+        '`{id: r.entry_id}, r.data` is safe wherever `id` is stripped on write. '
+        'A finding needs the blob spread last AND a column name absent from the '
+        'strip list. IDENTITY keys (recorded_by, administered_by, approved_by, '
+        'signed_by, verified_by, reviewed_by, witnessed_by, created_by and kin) '
+        'are counted SEPARATELY, because an exploitable `notes` is a '
+        'data-integrity bug and an exploitable `reviewed_by` is an attribution '
+        'spoof. CANNOT SEE a mapper built through a helper, a spread operator or '
+        'assembled across statements, so the universe is a FLOOR and says so; '
+        'and the strip list is unioned PER FILE rather than per resource, which '
+        'makes it UNDER-report rather than invent findings. It also does NOT '
+        'cover identity fields that have no column at all -- alf_mar '
+        '`administered_by` is caller-supplied with nothing to override, which is '
+        'a different class this tool is blind to by construction. A RATCHET on '
+        'docs/blob-override-coverage.json.'),
     'auth_header_name_sweep.py': ('CHECKER',
         'a caller sending the session under a header name the SERVER NEVER '
         'READS. The quietest failure available: nothing 400s, the request is '

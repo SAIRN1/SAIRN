@@ -11910,7 +11910,23 @@ module.exports = async (req, res) => {
       }
       const wrows = await w.json();
       if (!w.ok) return upstream(res, wrows);
-      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id, record_type: body.record_type, passed: body.passed, recorded_by: body.recorded_by, reviewed_by: body.reviewed_by || '' }, body.data) });
+      // ── THE WRITE ECHO HAD THE OPPOSITE ORDER TO THE READ (2026-09-28) ──
+      // The strip-list comment above reasons about this exact question and is
+      // correct AS FAR AS IT WENT: it checked the READ path at :11009, found
+      // `Object.assign({}, x.data, {...})` -- columns LAST -- and concluded
+      // nothing in the blob can shadow a column, so `recorded_by`,
+      // `reviewed_by`, `observed_on` and `passed` need not be stripped.
+      //
+      // THIS LINE IS A SECOND PATH WITH THE OPPOSITE ORDER. It spread
+      // `body.data` last, so a payload `reviewed_by` or `recorded_by` -- which
+      // the strip list deliberately leaves in the blob -- overwrote the
+      // server-set value in the response. The stored row and every later read
+      // stayed correct; only the echo to the writer was wrong, which is why
+      // this is an inconsistency rather than the alf_incidents-class spoof.
+      //
+      // Found by tools/blob_overrides_column_scan.py, which pairs mapper keys
+      // against the strip list precisely because neither alone is the defect.
+      res.status(200).json({ ok: true, data: Object.assign({}, body.data, { id: payload.id, record_type: body.record_type, passed: body.passed, recorded_by: body.recorded_by, reviewed_by: body.reviewed_by || '' }) });
       return;
     }
 

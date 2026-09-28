@@ -1,0 +1,9 @@
+{
+  "_what": "Pinned blob-overrides-column coverage. Written by tools/blob_overrides_column_scan.py --baseline. A ratchet: `exploitable` and `identity` must never rise.",
+  "_why": "A read mapper that spreads the stored blob after the authoritative columns lets the caller overwrite them. Measured live on alf_incidents: recorded_by read back as the forged payload value while the column was correct.",
+  "blob_first": 38,
+  "blob_last": 54,
+  "exploitable": 4,
+  "identity": 0,
+  "identity_sites": []
+}

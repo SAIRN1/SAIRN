@@ -2624,6 +2624,21 @@
       "source": "status-registry",
       "why": "same declared FILES",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-28T04:09:16Z",
+      "my_subject": "review-alf-mar-family",
+      "my_task": "discharge hank's 2026-09-26T12:36:06Z alf_mar/mech_credentials obligation -- the family_mar disclosure path. Driving points 1,2,3,5,6; declaring non-independence on 4. FILES: docs/tier-a-reviews.json",
+      "other_session": "cc",
+      "other_subject": "cc",
+      "other_task": "discharge my five overdue Tier A review obligations; fix response_shape_check.py false positives found while reviewing (a Module-scope walk that descends into every function body, so a binding in one function leaks into another, plus a for-loop target that never clears a tracked name) and correct the registry evidence I wrote from its uncorrected count; triage the 16 dead sabotage anchors by owner and fix the ones in free files; add checked/universe plus an UNREADABLE count to the registry checkers in batches with a ratchet on each; a report-only check for a claim active with no commit touching its files; and whatever else still exits 2 COULD NOT RUN. CONFLICTS DECLARED PER PR 4.3 RATHER THAN REWORDED -- api/sd-data.js is FOURTH'S (two live claims) so the mech_docs session gate is NOT taken; docs/CRITICALITY-TIERS.md is named by HANK and CODY so the mech_docs tier row and the sv_financials tier verdict are NOT landed by me, only read and reported; stonedesk.html is named in CODY'S live q16 so the :6394 overrun instance is NOT taken. SUBJECT NAMED PER PR 4.3 FILES: tools/response_shape_check.py tools/checker_denominator.py tools/claim_activity_check.py tools/report_only_checks.py docs/tier-a-reviews.json docs/2026-09-28-could-not-read-ratchet.md",
+      "other_claimed_at": "2026-09-28T03:14:47Z",
+      "shared_files": [
+        "docs/tier-a-reviews.json"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
 }
