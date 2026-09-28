@@ -3194,6 +3194,26 @@
         "tools/identity_field_strip_scan.py",
         "tools/live_probe_residue_audit.py"
       ]
+    },
+    {
+      "id": "hank-1790568843",
+      "session": "hank",
+      "subject": "hank",
+      "task": "queue18: discharge cc's 2026-09-25T23:51:26Z Tier A obligation (sdn_invoices, sen_clients, sf_youth_participants), 52h overdue, most overdue assigned to me -- A-limb is a LIVE AUTH FIX on a money path with four named attacks. THE RECORD FILE IS BLOCKED AND THE VERDICT IS NOT: docs/tier-a-reviews.json is in cc's DECLARED FILE SET (claim 2026-09-28T03:14:47Z) and docs/CRITICALITY-TIERS.md is in cody-q16's (2026-09-28T01:49:22Z), so both are READ ONLY here and my verdict plus the exact replacement cells are DELIVERED AS TEXT in docs I own -- the same pattern cody used for the sf_events cell, because two sessions hand-editing one row is the collision PR 2.1 exists for. Also: one consolidated audit-licence seed covering every probe blocked for want of one, SC-AUDIT-2026 included; deterministic per-run ids in law_billing_code_trim_live_probe.py plus a generated-id sweep across every live probe; the out-of-service control register with a known-bad control and a published count; the hover findings as replacement text; and SAIRNbuild items 9-10, sairnbuild.html being in nobody's declared file set. SUBJECT NAMED PER PR 4.3 FILES: docs/2026-09-28-tier-a-review-verdicts-hank.md sql/audit_license_seed_2026-09-28.sql tools/law_billing_code_trim_live_probe.py tools/out_of_service_register.py tests/run_out_of_service_probe.py docs/out-of-service-controls.json docs/2026-09-28-hover-tier-cells.md sairnbuild.html",
+      "claimed_at": "2026-09-28T04:14:03Z",
+      "claimed_at_epoch": 1790568843.2729843,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/2026-09-28-hover-tier-cells.md",
+        "docs/2026-09-28-tier-a-review-verdicts-hank.md",
+        "docs/out-of-service-controls.json",
+        "sairnbuild.html",
+        "sql/audit_license_seed_2026-09-28.sql",
+        "tests/run_out_of_service_probe.py",
+        "tools/law_billing_code_trim_live_probe.py",
+        "tools/out_of_service_register.py"
+      ]
     }
   ],
   "refusals": [
@@ -3261,6 +3281,36 @@
       "other_claimed_at": "2026-09-28T01:19:45Z",
       "shared_files": [
         "api/sd-data.js"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-28T04:13:22Z",
+      "my_subject": "hank",
+      "my_task": "queue18 item 0 FIRST: discharge cc's 2026-09-25T23:51:26Z Tier A obligation (sdn_invoices, sen_clients, sf_youth_participants), 52h overdue and the most overdue one assigned to me. Its A-limb is a LIVE AUTH FIX on a money path and cc names four things to attack. REVIEW ONLY -- I write docs/tier-a-reviews.json and nothing else on that limb; api/sd-data.js and sairndesign.html are READ. Then: one consolidated audit-licence seed covering every probe blocked for want of one including SC-AUDIT-2026, deterministic per-run ids in law_billing_code_trim_live_probe.py plus a sweep for generated ids in every other live probe, the out-of-service control register with a known-bad control, the hover findings in files I hold, and SAIRNbuild items 9-10 now that sairnbuild.html is free. api/sd-data.js is cc's and is NOT TAKEN. SUBJECT NAMED PER PR 4.3 FILES: docs/tier-a-reviews.json sql/audit_license_seed_2026-09-28.sql tools/law_billing_code_trim_live_probe.py tools/out_of_service_register.py tests/run_out_of_service_probe.py docs/out-of-service-controls.json docs/CRITICALITY-TIERS.md sairnbuild.html",
+      "other_session": "cc",
+      "other_subject": "cc",
+      "other_task": "discharge my five overdue Tier A review obligations; fix response_shape_check.py false positives found while reviewing (a Module-scope walk that descends into every function body, so a binding in one function leaks into another, plus a for-loop target that never clears a tracked name) and correct the registry evidence I wrote from its uncorrected count; triage the 16 dead sabotage anchors by owner and fix the ones in free files; add checked/universe plus an UNREADABLE count to the registry checkers in batches with a ratchet on each; a report-only check for a claim active with no commit touching its files; and whatever else still exits 2 COULD NOT RUN. CONFLICTS DECLARED PER PR 4.3 RATHER THAN REWORDED -- api/sd-data.js is FOURTH'S (two live claims) so the mech_docs session gate is NOT taken; docs/CRITICALITY-TIERS.md is named by HANK and CODY so the mech_docs tier row and the sv_financials tier verdict are NOT landed by me, only read and reported; stonedesk.html is named in CODY'S live q16 so the :6394 overrun instance is NOT taken. SUBJECT NAMED PER PR 4.3 FILES: tools/response_shape_check.py tools/checker_denominator.py tools/claim_activity_check.py tools/report_only_checks.py docs/tier-a-reviews.json docs/2026-09-28-could-not-read-ratchet.md",
+      "other_claimed_at": "2026-09-28T03:14:47Z",
+      "shared_files": [
+        "docs/tier-a-reviews.json"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-28T04:13:22Z",
+      "my_subject": "hank",
+      "my_task": "queue18 item 0 FIRST: discharge cc's 2026-09-25T23:51:26Z Tier A obligation (sdn_invoices, sen_clients, sf_youth_participants), 52h overdue and the most overdue one assigned to me. Its A-limb is a LIVE AUTH FIX on a money path and cc names four things to attack. REVIEW ONLY -- I write docs/tier-a-reviews.json and nothing else on that limb; api/sd-data.js and sairndesign.html are READ. Then: one consolidated audit-licence seed covering every probe blocked for want of one including SC-AUDIT-2026, deterministic per-run ids in law_billing_code_trim_live_probe.py plus a sweep for generated ids in every other live probe, the out-of-service control register with a known-bad control, the hover findings in files I hold, and SAIRNbuild items 9-10 now that sairnbuild.html is free. api/sd-data.js is cc's and is NOT TAKEN. SUBJECT NAMED PER PR 4.3 FILES: docs/tier-a-reviews.json sql/audit_license_seed_2026-09-28.sql tools/law_billing_code_trim_live_probe.py tools/out_of_service_register.py tests/run_out_of_service_probe.py docs/out-of-service-controls.json docs/CRITICALITY-TIERS.md sairnbuild.html",
+      "other_session": "cody",
+      "other_subject": "cody-q16",
+      "other_task": "queue16: fix the 9 label-claims-universal arms assertion_label_shape_check.py found (regression arm FIRST per arm, in each owning suite), then widen the sweep and publish that tool's OWN checked/universe inside the tool; re-anchor the sf_ceremonial_items and sf_bottle_fills citation drifts; land the sf_events tier row from docs/2026-09-27-sf-events-tier-cell.md; enumerate every tool with more than one entry point over one population and add a control per tool that fails when the entry points disagree on the universe; five more register-only planned-action closures with controls; SAIRNcode autonomous-coding scoping DOCS ONLY no build; self-audit of MY OWN skill log and the methodology registry. LEXICAL BLOCK DECLARED PER PR 4.3 RATHER THAN REWORDED: cc holds a live claim sharing the phrases 'checked/universe', 'coverage denominators' and 'self-audit of my own skill log, tool inventory and methodology registry'. VERIFIED DISJOINT AND NOT TAKEN BY ME: tools/checker_denominator.py, tools/report_only_checks.py, tools/mutation_anchor_check.py, tools/probe_anchor_freshness.py and .claude/settings.json are ALL cc's and I edit NONE of them. My checked/universe is printed by my own tool about its own file list, not through cc's denominator module; cc's 'unify the two anchor-freshness populations' is TWO TOOLS with disjoint populations while mine is ONE TOOL with two entry points, a different subject with the same vocabulary; and a self-audit of one's own skill log is per-session by construction -- hank's queue15 item 11 is the same wording for the same reason. BLOCKED AND NOT TAKEN, REPORTED NOT WORKED AROUND: (a) registering assertion_label_shape_check.py in the report-only REGISTRY needs tools/report_only_checks.py, cc's; (b) sf_trustee_audits server sync needs api/sd-data.js, fourth's LIVE claim; (c) the slabSyncOne/sdLineageSyncOne write-fault fix needs api/sd-data.js, same holder. SUBJECT NAMED PER PR 4.3 FILES: tools/assertion_label_shape_check.py tools/entry_point_scope_check.py tests/run_entry_point_scope_probe.py docs/CRITICALITY-TIERS.md tests/push_gate/check9_probe.py tests/push_gate/refspec_and_override_probe.py tests/run_checker_confidence_probe.py tests/reachability/resource_demand_probe.py tests/run_assurance_case_probe.py tests/run_register_feed_gate_probe.py tests/run_rotation_blast_radius_probe.py tests/run_testability_gate_probe.py api/_resources/sairnfreedom.js docs/2026-09-28-entry-point-scope-divergence.md docs/2026-09-28-sairncode-autonomous-coding-scope.md docs/2026-09-28-cody-self-audit.md",
+      "other_claimed_at": "2026-09-28T01:49:22Z",
+      "shared_files": [
+        "docs/CRITICALITY-TIERS.md"
       ],
       "source": "status-registry",
       "why": "same declared FILES",
