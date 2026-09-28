@@ -18374,6 +18374,120 @@
       "recurrence_open": "NO CLIENT SENDS retrigger_events AT ALL -- sairnlaw.html has no caller, so this whole path is reachable only by a direct API consumer and the input contract is still documented nowhere outside the suite. The endpoint does not validate the element shape before handing it to the engine, so the engine is the only thing refusing. And the wider class is untouched: a field written somewhere and read on the WRONG object clears the ghost scan's third condition by construction, which is the member of this family that has now bitten twice. Also open: `dispositions.sort()` compares raw strings, which is correct for ISO dates and is now guaranteed only because everything non-ISO refuses upstream -- nothing asserts that dependency."
     },
     {
+      "commit": "00a3df270332",
+      "date": "2026-09-28",
+      "subject": "feat(fact-sheet): --update rewrites every derivable figure, including the ones restated in prose",
+      "files": [
+        "docs/FACT-SHEET-2026-09-29.md",
+        "tests/run_fact_sheet_regenerates_probe.py",
+        "tools/fact_sheet_regenerates.py"
+      ],
+      "lines_added": 509,
+      "lines_removed": 40,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/fact_sheet_regenerates.py checked only the fact-sheet rows that carry their own command and exited 0 while the document contradicted itself. The commits row had been refreshed 6,890 -> 6,900 and the line directly beneath it still read '6,885 / 14.0'; the say-out-loud block still said 360 defects against a register of 362, and the bare-ls-files paragraph still said 282 and 267 against a table row of 269. Sixteen restated figures were wrong on a sheet due to be printed and read aloud, under a stamp saying the figures had just been refreshed.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The restatement prose and the checker were written in the same session as the sheet itself; there is no commit where the checker covered these figures and then stopped. The gap was present from the tool's first version, so there is no injection commit to name that is not also the tool's own root."
+      },
+      "citation_note": "This is 1.1 in its exact stated form: nothing announced the day the check stopped covering part of its subject -- except it never covered it, and the CHECKED / UNIVERSE line made that look like full coverage because the denominator was the tool's own list.",
+      "contributing_factors": [
+        {
+          "factor": "The checker's coverage was defined by a table of labelled rows, and every figure the sheet stated a second time in prose was outside that table. Nothing enumerated the sheet's numbers; the tool enumerated its own.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "DERIVED_PATTERNS now anchors each restatement and rewrites only the digits inside it. A reworded anchor is a FINDING, not a skip."
+        },
+        {
+          "factor": "CHECKED / UNIVERSE printed 22 / 22 and read as complete coverage of the document, when the denominator was the tool's own list rather than the sheet's figures.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "NOT_DERIVED_HERE names every figure the tool does not check, printed on every run, and a restatement count is printed beside the figure count."
+        },
+        {
+          "factor": "The drift was only visible by reading the sheet next to the checker's clean exit. No check compared a figure to the same figure written elsewhere in the same document.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "That comparison is now the check: each restatement is recomputed from the rows it restates and compared."
+        },
+        {
+          "factor": "The sheet is written for humans and repeats its own figures in prose deliberately, because a number in a sentence is what gets said out loud in a meeting. Internal restatement is a feature of the document, so the duplication cannot be removed.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "The fix has to be a check over the restatements, not their elimination -- deleting them would make the sheet worse at its job."
+        }
+      ],
+      "recurrence_open": "The restatement anchors are hand-written regexes over prose. A sentence rewritten for style will now be REPORTED rather than silently skipped, which is the important half -- but somebody still has to re-anchor it, and nothing measures how often that happens. The tooling-inventory and live-probe rows remain unchecked and are named rather than covered."
+    },
+    {
+      "commit": "0d9da6be3627",
+      "date": "2026-09-28",
+      "subject": "fix(control): the fact-sheet probe asserted the REAL sheet was clean, so it was red on main permanently",
+      "files": [
+        "docs/FACT-SHEET-2026-09-29.md",
+        "tests/run_fact_sheet_regenerates_probe.py"
+      ],
+      "lines_added": 59,
+      "lines_removed": 16,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "probe-control",
+      "summary": "tests/run_fact_sheet_regenerates_probe.py asserted the REAL docs/FACT-SHEET-2026-09-29.md was clean as its no-false-positive baseline. Four sessions push continuously, so the commits figure moves within minutes of any refresh -- including on the commit that refreshes it. The arm was green on its first run and red on main thereafter. Fixed by copying the sheet, refreshing the COPY with --update, and asserting silence on that; the real sheet's live exit code is now printed as information and asserted on by nothing.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tests/run_fact_sheet_regenerates_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "00a3df270332",
+        "date": "2026-09-28",
+        "subject": "feat(fact-sheet): --update rewrites every derivable figure, including the ones restated in prose",
+        "lag_days": 0
+      },
+      "citation_note": "1.1 is about a check that silently stopped testing anything. This is its mirror and the same family: a control that is RED for a reason that is not a defect also stops being a check, because the next reader learns to discount it. The extension worth naming is the SUBJECT -- a clean-baseline arm must assert against state the control itself established, never against a shared live document other sessions mutate.",
+      "contributing_factors": [
+        {
+          "factor": "The baseline arm's subject was a shared live document that four other sessions mutate continuously, so its state was not a property of the tool under test.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The arm now writes a COPY, refreshes it with --update, and asserts silence on that copy. The subject is one the control put into a known state itself."
+        },
+        {
+          "factor": "The control was run once, went green, and was committed. A one-run green on a subject that changes by the minute cannot distinguish a correct check from a lucky one.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Run twice before committing any control whose subject is shared state; both runs are recorded in the commit message."
+        },
+        {
+          "factor": "Nothing in the repository flags a control whose assertion depends on state outside its own writes, so the shape had to be noticed by a human reading two consecutive runs.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "Candidate check: a control that asserts on a repo-tracked file it did not itself write in that run. Not built here -- it needs a real definition of 'its own writes' before it is worth anything."
+        },
+        {
+          "factor": "The whole fact sheet is a document whose figures move hourly because four build clones and an auditor push to one branch. Any check anchored to its live values inherits that.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "The push rate is the point of the platform, not a defect to fix. It is what --update exists for."
+        }
+      ],
+      "recurrence_open": "Nothing yet prevents the NEXT control from anchoring an assertion to a live shared file; the detection action above is a candidate, not a gate. And --update itself is unguarded against a derivation that returns a plausible-but-wrong number as opposed to one that fails outright."
+    },
+    {
       "commit": "1da31d4ceb77",
       "date": "2026-09-28",
       "subject": "fix(tools): the rollup dedup dropped a real list member -- found discharging fourth's 41h-overdue obligation, and the assumption it rested on had already failed",
@@ -18424,66 +18538,6 @@
         }
       ],
       "recurrence_open": "Nothing derives the list-then-prose convention from the register; it is still an assumption about how people write these cells, now with an arm that fires when a cell breaks the shape in this particular way. A cell that names a resource in a PREAMBLE before the list -- the original request's own hypothetical -- would still place badly and no arm covers it. The wider class is open: the register is hand-written prose that several tools parse."
-    },
-    {
-      "commit": "f44c608aa1a1",
-      "date": "2026-09-28",
-      "subject": "fix(hooks): five fail-opens in git hooks, where `exit 0` is not a skip but a DECISION to allow",
-      "files": [
-        ".githooks/post-rewrite",
-        ".githooks/pre-commit",
-        "docs/TOOLING-INVENTORY.md",
-        "docs/fail-open-coverage.json",
-        "tests/run_fail_open_probe.py",
-        "tools/fail_open_scan.py",
-        "tools/tooling_inventory.py"
-      ],
-      "lines_added": 552,
-      "lines_removed": 14,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "static-checker",
-      "summary": ".githooks/pre-commit and .githooks/post-rewrite each guarded their preconditions with `|| exit 0`, and from a git hook exit 0 MEANS ALLOW. In pre-commit the two guarded lines were `ROOT=$(git rev-parse --show-toplevel)` and `GITDIR=$(git rev-parse --git-dir)`, and the consequence is sharper than a generic fail-open: WITHOUT GITDIR THE SCOPE TEST ON THE NEXT LINE CANNOT RUN EITHER, so a discovery failure silently disarmed the hover-auditor scope gate in the one clone that gate exists for -- the role the platform documents as having no second reader. pre-commit also used `exec`, replacing the shell with the first checker, so any second check added later would have looked correct and never run. In post-rewrite the exit code was already correct by design (git ignores post-rewrite's status and the hook runs after the fact), but both guards exited SILENTLY, so a missing defect_register.py meant the register was not re-seated and nothing said so; the next signal was the push gate refusing with 'that sha is not in this history' several steps later, which is the exact round trip that hook was built to remove.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": "tools/fail_open_scan.py",
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The guards were present when each hook was first written; they are correct-looking defensive shell rather than a regression introduced by a later change, so there is no injecting commit -- the defect is the idiom."
-      },
-      "citation_note": "From a git hook, exit 0 is not silence -- it is a decision to allow. Could-not-check was spelled the same as passed, in files whose only job is to refuse.",
-      "contributing_factors": [
-        {
-          "kind": "technical",
-          "factor": "`|| exit 0` reads as a graceful skip and, from a git hook, means ALLOW THE COMMIT. The idiom is identical for a SCOPE guard (does this apply here) and a DEPENDENCY guard (can I check at all), so the two were written the same way and only one of them is correct.",
-          "action": "Dependency guards refuse and name what is missing. The SCOPE guard in pre-commit -- the hover-auditor clone marker -- is UNCHANGED, because absent means not applicable and refusing there would break every commit in four build clones.",
-          "action_status": "done"
-        },
-        {
-          "kind": "technical",
-          "factor": "`exec` replaced the shell with the single checker, so each of these hooks could only ever run one check. The same shape had already been found and fixed in prepare-commit-msg hours earlier and was still present here.",
-          "action": "Removed; checks run in sequence and the worst exit code wins.",
-          "action_status": "done"
-        },
-        {
-          "kind": "detection",
-          "factor": "Nothing enumerated fail-open shapes. Each hook was read on its own and each looked defensive, which is exactly how the idiom spread -- it is what a careful author writes when they do not want a hook to be noisy.",
-          "action": "tools/fail_open_scan.py, a ratchet over four shapes, which classifies SCOPE apart from DEPENDENCY rather than flagging every `|| exit 0`.",
-          "action_status": "done"
-        },
-        {
-          "kind": "latent-condition",
-          "factor": "A fail-open in post-rewrite is invisible at the moment it happens and only shows up downstream as a push-gate refusal. The person pays twice: once for the failure and once for diagnosing it far from its cause.",
-          "action": "The guards warn loudly on stderr and name the recovery command, while still exiting 0 so the rebase is never failed after the fact.",
-          "action_status": "done"
-        }
-      ],
-      "recurrence_open": "PARTLY CLOSED AND MEASURED: hook fail-opens 5 -> 0, but 16 dependency-shaped fail-opens remain in tools/ where exit 0 is not a decision to allow something, and they are unswept. The scanner reads TEXT, so a fail-open through a helper, a trap or a Python default argument is invisible and the universe is a FLOOR. And the distinction the tool rests on -- SCOPE versus DEPENDENCY -- is inferred from what the guard NAMES, so a scope guard whose marker has an unusual name will be miscounted as a finding."
     },
     {
       "commit": "2e1ad2775558",
@@ -18803,6 +18857,66 @@
         }
       ],
       "recurrence_open": "PARTLY CLOSED AND MEASURED. The scan now covers Object.assign mappers in four api files: 91 examined, 54 still spread the blob last, 4 exploitable, 0 identity. The 4 remaining are data keys rather than attribution and are unfixed. WHAT IS NOT COVERED AT ALL: a mapper built through a helper, a spread operator or assembled across statements; the strip list is unioned per FILE rather than per resource, so the tool under-reports; and identity fields with NO column to override -- alf_mar administered_by is caller-supplied with nothing to shadow -- are a separate class this tool is blind to by construction."
+    },
+    {
+      "commit": "f44c608aa1a1",
+      "date": "2026-09-28",
+      "subject": "fix(hooks): five fail-opens in git hooks, where `exit 0` is not a skip but a DECISION to allow",
+      "files": [
+        ".githooks/post-rewrite",
+        ".githooks/pre-commit",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/fail-open-coverage.json",
+        "tests/run_fail_open_probe.py",
+        "tools/fail_open_scan.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 552,
+      "lines_removed": 14,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": ".githooks/pre-commit and .githooks/post-rewrite each guarded their preconditions with `|| exit 0`, and from a git hook exit 0 MEANS ALLOW. In pre-commit the two guarded lines were `ROOT=$(git rev-parse --show-toplevel)` and `GITDIR=$(git rev-parse --git-dir)`, and the consequence is sharper than a generic fail-open: WITHOUT GITDIR THE SCOPE TEST ON THE NEXT LINE CANNOT RUN EITHER, so a discovery failure silently disarmed the hover-auditor scope gate in the one clone that gate exists for -- the role the platform documents as having no second reader. pre-commit also used `exec`, replacing the shell with the first checker, so any second check added later would have looked correct and never run. In post-rewrite the exit code was already correct by design (git ignores post-rewrite's status and the hook runs after the fact), but both guards exited SILENTLY, so a missing defect_register.py meant the register was not re-seated and nothing said so; the next signal was the push gate refusing with 'that sha is not in this history' several steps later, which is the exact round trip that hook was built to remove.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/fail_open_scan.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The guards were present when each hook was first written; they are correct-looking defensive shell rather than a regression introduced by a later change, so there is no injecting commit -- the defect is the idiom."
+      },
+      "citation_note": "From a git hook, exit 0 is not silence -- it is a decision to allow. Could-not-check was spelled the same as passed, in files whose only job is to refuse.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "`|| exit 0` reads as a graceful skip and, from a git hook, means ALLOW THE COMMIT. The idiom is identical for a SCOPE guard (does this apply here) and a DEPENDENCY guard (can I check at all), so the two were written the same way and only one of them is correct.",
+          "action": "Dependency guards refuse and name what is missing. The SCOPE guard in pre-commit -- the hover-auditor clone marker -- is UNCHANGED, because absent means not applicable and refusing there would break every commit in four build clones.",
+          "action_status": "done"
+        },
+        {
+          "kind": "technical",
+          "factor": "`exec` replaced the shell with the single checker, so each of these hooks could only ever run one check. The same shape had already been found and fixed in prepare-commit-msg hours earlier and was still present here.",
+          "action": "Removed; checks run in sequence and the worst exit code wins.",
+          "action_status": "done"
+        },
+        {
+          "kind": "detection",
+          "factor": "Nothing enumerated fail-open shapes. Each hook was read on its own and each looked defensive, which is exactly how the idiom spread -- it is what a careful author writes when they do not want a hook to be noisy.",
+          "action": "tools/fail_open_scan.py, a ratchet over four shapes, which classifies SCOPE apart from DEPENDENCY rather than flagging every `|| exit 0`.",
+          "action_status": "done"
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "A fail-open in post-rewrite is invisible at the moment it happens and only shows up downstream as a push-gate refusal. The person pays twice: once for the failure and once for diagnosing it far from its cause.",
+          "action": "The guards warn loudly on stderr and name the recovery command, while still exiting 0 so the rebase is never failed after the fact.",
+          "action_status": "done"
+        }
+      ],
+      "recurrence_open": "PARTLY CLOSED AND MEASURED: hook fail-opens 5 -> 0, but 16 dependency-shaped fail-opens remain in tools/ where exit 0 is not a decision to allow something, and they are unswept. The scanner reads TEXT, so a fail-open through a helper, a trap or a Python default argument is invisible and the universe is a FLOOR. And the distinction the tool rests on -- SCOPE versus DEPENDENCY -- is inferred from what the guard NAMES, so a scope guard whose marker has an unusual name will be miscounted as a finding."
     }
   ],
   "started": "2026-09-09",
