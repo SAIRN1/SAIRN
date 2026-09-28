@@ -128,8 +128,8 @@
       "task": "no-sha citation credit removed from resolved-read (fixture-first, re-measure); four routable finding entries; self-health-hook cwd-dependence reproduce+fix+sweep; freshness-floor provenance facts; provenance-due entry; resume rotation FILES: .claude/skills/sairn-hover-auditor/",
       "claimed_at": "2026-09-28T03:42:49Z",
       "claimed_at_epoch": 1790566969.5188189,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-28T04:06:40Z",
       "files": null
     }
   ],
