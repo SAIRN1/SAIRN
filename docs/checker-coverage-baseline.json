@@ -1,0 +1,26 @@
+{
+ "ai_action_approval_audit.py": {
+  "checked": 22,
+  "reason": "First baseline, 2026-09-28. Taken AFTER unifying the two anchor-freshness populations onto one denominator (probe_anchor_freshness 12 -> 87 of 98) so the ratchet measures forward from the corrected state rather than blessing the 12 that caused the incident. overrun_inversion_scan at 6 of 22 is a CLEAN-vs-UNPARSED ambiguity stated in its note, not a coverage claim.",
+  "unit": "root .html apps",
+  "universe": 22
+ },
+ "mutation_anchor_check.py": {
+  "checked": 82,
+  "reason": "First baseline, 2026-09-28. Taken AFTER unifying the two anchor-freshness populations onto one denominator (probe_anchor_freshness 12 -> 87 of 98) so the ratchet measures forward from the corrected state rather than blessing the 12 that caused the incident. overrun_inversion_scan at 6 of 22 is a CLEAN-vs-UNPARSED ambiguity stated in its note, not a coverage claim.",
+  "unit": "probe files declaring a mutation anchor",
+  "universe": 98
+ },
+ "overrun_inversion_scan.py": {
+  "checked": 6,
+  "reason": "First baseline, 2026-09-28. Taken AFTER unifying the two anchor-freshness populations onto one denominator (probe_anchor_freshness 12 -> 87 of 98) so the ratchet measures forward from the corrected state rather than blessing the 12 that caused the incident. overrun_inversion_scan at 6 of 22 is a CLEAN-vs-UNPARSED ambiguity stated in its note, not a coverage claim.",
+  "unit": "root .html apps",
+  "universe": 22
+ },
+ "probe_anchor_freshness.py": {
+  "checked": 87,
+  "reason": "First baseline, 2026-09-28. Taken AFTER unifying the two anchor-freshness populations onto one denominator (probe_anchor_freshness 12 -> 87 of 98) so the ratchet measures forward from the corrected state rather than blessing the 12 that caused the incident. overrun_inversion_scan at 6 of 22 is a CLEAN-vs-UNPARSED ambiguity stated in its note, not a coverage claim.",
+  "unit": "probe files declaring a mutation anchor",
+  "universe": 98
+ }
+}

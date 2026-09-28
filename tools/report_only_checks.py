@@ -1440,6 +1440,17 @@ REGISTRY = [
                           'check (app map, tool provenance, claim-doc '
                           'freshness, the SPOF retirement citation half) for '
                           'the two registers that had none',
+        'evidence': 'REAL RUN 2026-09-28, exit 1: 607 citations verified OK, 188 '
+                    'UNVERIFIABLE (counted, never folded into the pass), 83 '
+                    'DRIFTED, 3 FROZEN (declared non-pointers, listed rather than '
+                    'absorbed). THE FOUR-WAY SPLIT IS THE EVIDENCE: a tool of this '
+                    'shape that reported one number would be hiding 188 cells it '
+                    'could not check inside whichever bucket flattered it. The '
+                    'drifted rows are line-number pointers into files four clones '
+                    'edit concurrently -- tiers/sd_customers cites '
+                    'stonedesk.html:25428 near custSave and custSave is now at '
+                    '25556 -- so the count moves on every push and is a re-read '
+                    'queue rather than a defect count.',
     },
     {
         'tool': 'temporary_state_check.py',
@@ -1636,6 +1647,18 @@ REGISTRY = [
                           'different subjects that share boilerplate measure '
                           '0.91 here, so a threshold picked by intuition '
                           'produces clusters that look meaningful and are not',
+        'evidence': 'REAL RUN 2026-09-28, exit 0: blind lock 6 of 6 on fixtures '
+                    'whose answer is known in BOTH directions, then 2,195 strings '
+                    'from 96 api/ sources, 68 labelled related pairs against 4,000 '
+                    'unrelated. TWO DISTRIBUTIONS, NEVER ONE SCORE: related '
+                    'min/p50/max all 1.000; unrelated p50 0.048, p90 0.183, p99 '
+                    '0.583, max 0.907. THE 0.907 IS THE POINT and the tool\'s own '
+                    'fixture names it -- SHARED BOILERPLATE, DIFFERENT SUBJECT '
+                    'scores 0.910 and must NOT read as high. A single threshold '
+                    'over this corpus would merge unrelated messages that happen to '
+                    'share a refusal template, which is the false positive the '
+                    'header was written about and is measured on every run rather '
+                    'than asserted once.',
     },
     {
         'tool': 'allan_deviation_check.py',
@@ -1665,6 +1688,17 @@ REGISTRY = [
                           '+0.27 for a textbook linear drift, because a real '
                           'series carries more than one noise type and a single '
                           'fit measures the CROSSOVER rather than either process',
+        'evidence': 'REAL RUN 2026-09-28, exit 2 -- AND THE EXIT 2 IS THE RESULT, '
+                    'not a failure. Blind lock 4 of 4 on synthetic series (white '
+                    'noise -> slope -0.50, linear drift -> +0.86, random walk -> '
+                    '+0.48, a 12-point series correctly reported underpowered at '
+                    'usable=2). It then REFUSED the real question: 350 records over '
+                    '51 daily bins, mean 6.863/day, and 74% of every record in the '
+                    'window falls in its final quarter. NOT A STATIONARY SERIES, so '
+                    'the slope would be about register ADOPTION and not about '
+                    'defects -- a true number about the wrong thing. A tool that '
+                    'answered anyway would have produced the most citable figure in '
+                    'the register and the least defensible one.',
     },
     {
         'tool': 'response_shape_check.py',
@@ -1697,6 +1731,17 @@ REGISTRY = [
                           'correct and unreachable because of the thing it '
                           'defended against, which is why a guard inside the '
                           'type is not enough on its own',
+        'evidence': 'REAL RUN 2026-09-28, exit 1: blind lock 8 of 8 -- three MUST '
+                    'FLAG shapes and five MUST NOT, including a plain dict that '
+                    'never touched fetch and a name rebound before use -- then 29 '
+                    'FINDINGS of a Response object used as if it were the body. '
+                    'Named rows include tools/load_compliance_seed.py lines 123, '
+                    '127 and 132, all bound from the same fetch_json() at line 104. '
+                    'THE FIVE NEGATIVE FIXTURES ARE HALF THE EVIDENCE: this class '
+                    'is a one-token difference from correct code (r.status is '
+                    'right, r.get() is not), so a checker that only proved it can '
+                    'FIRE would be one that flags every response handler on the '
+                    'platform.',
     },
     {
         'tool': 'check_precedence.py',
@@ -1847,6 +1892,52 @@ REGISTRY = [
                     'tests/run_register_feed_gate_probe.py, including both '
                     'failure directions, the boundary day, a bare escape hatch '
                     'being refused, and an unreadable register DENYING the push',
+    },
+    {
+        'tool': 'overrun_inversion_scan.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-28, report-only. 0.6 seconds over the tracked .js '
+                    'and .html tree. Registered because the class it catches is '
+                    'INTRODUCED BY A DEFENSIVE EDIT -- somebody adding a cap to '
+                    'stop a bar overflowing -- so it arrives in commits that '
+                    'look like tidying and never in commits that look risky.',
+        'catches': 'a cap on a RATIO that turns an overrun into completion or '
+                   'into a maximum -- Math.min(1, spent/budget) and its '
+                   'spellings -- where the capped value then FEEDS a derived '
+                   'figure rather than only being drawn',
+        'why_it_matters': 'THE CAP DOES NOT ROUND AN OVERRUN OFF, IT INVERTS '
+                          'THE FINDING. SAIRNbuild reported a job 30% over its '
+                          'cost budget as 100% complete, earned the WHOLE '
+                          'contract from it, and read as maximally UNDER-billed '
+                          '-- the exact opposite of its real position, on the '
+                          'one report a surety underwriter reads to find profit '
+                          'fade. WITHOUT THE THIRD PART A CAP IS USUALLY RIGHT: '
+                          'a progress bar capped at its own track is correct, '
+                          'and six of the seventeen first-sweep hits are that. '
+                          'So every row is RANKED and every row is a READ '
+                          'REQUEST -- the tool cannot follow a capped value to '
+                          'its consumer and says so on every run',
+        'evidence': 'FIRST REAL SWEEP 2026-09-28: 17 hits, 3 HIGH / 8 MEDIUM / '
+                    '6 LOW, ALL SEVENTEEN READ BY HAND. Zero NEW instances of '
+                    'the full class -- the two that exist (sairnbuild.html '
+                    'jobWIP and api/_lib/wip-accounting.js) were fixed the day '
+                    'before and the scanner finds both, which is what makes the '
+                    'zero mean something. FOUR VERIFIED NON-HITS WORTH THE '
+                    'NAMES because each looks like the defect and is not: '
+                    'stonedesk.html:26521 caps a schedule bar while '
+                    'schedUrgency() prints OVERDUE beside it; '
+                    'stonedesk.html:20008 prints the raw value/max next to the '
+                    'clamped bar; api/_lib/dental-credentials.js:214-215 feeds '
+                    'a behind/on_track VERDICT -- the third part IS present -- '
+                    'but BOTH caps are unreachable by construction, because '
+                    'logged >= required returns complete and daysRemaining < 0 '
+                    'returns overdue before either line runs. ONE MINOR '
+                    'INSTANCE REPORTED AND NOT FIXED: stonedesk.html:6394, the '
+                    'admin storage KPI, renders Math.min(100, bytes/5MB*100) as '
+                    'the only figure, so 140% of quota reads identically to '
+                    'exactly full -- stonedesk.html is not in this session\'s '
+                    'file set',
     },
     {
         'tool': 'probe_anchor_freshness.py',

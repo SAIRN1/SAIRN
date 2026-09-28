@@ -428,3 +428,73 @@ Three of the five above were found that way and none was found by reading. A
 red arm discovered while you are already in the file is a two-minute fix; the
 same arm discovered by somebody else in a week is a day of archaeology and a
 suite nobody trusts.
+
+## 27. A cap on a ratio that turns an OVERRUN into COMPLETION
+
+**Found 2026-09-27 in SAIRNbuild's WIP schedule, and the cap was not the
+sloppy part -- it read as defensive.**
+
+```js
+var pct = estTotal > 0 ? Math.min(1, costToDate / estTotal) : 0;
+var earned = Math.round(pct * revised);
+```
+
+A job that had spent **130% of its estimated cost** reported **100% complete**,
+so `earned` became the **whole contract** -- the largest figure the arithmetic
+can produce -- and over/under billing swung to its most **UNDER-billed**
+reading. The truth was the opposite: that job was losing money and was probably
+over-billed.
+
+**THE CAP DID NOT ROUND AN OVERRUN OFF. IT INVERTED THE FINDING**, on the one
+report a surety underwriter and a bank read specifically to find profit fade.
+
+### The three parts, and all three have to be present
+
+1. a **RATIO** -- something divided by an estimate, budget, target or total;
+2. a **CAP** at the ratio's nominal maximum (`Math.min(1, ...)`,
+   `Math.min(100, ...)`, `if (r > 1) r = 1`);
+3. the capped value **FEEDING something else** -- a money figure, a verdict, a
+   status -- rather than only being drawn.
+
+**WITHOUT (3) A CAP IS USUALLY RIGHT.** A progress bar capped at 100% of its
+track is correct: the bar is a picture, nothing is derived from it, and a
+130%-wide div is a layout bug. Six of the seventeen hits on the first real
+sweep were exactly that and are not defects.
+
+### The question to ask of each one
+
+**When the input EXCEEDS the estimate, does the output move towards "fine"?**
+
+A cap that clamps towards the **safe** end is a defensive clamp. A cap that
+clamps towards the **reassuring** end is an inversion -- because exceeding an
+estimate is evidence **the estimate was wrong**, not evidence the work is done.
+The two are the same three tokens and opposite defects.
+
+### The fix is not "remove the cap"
+
+Report the ratio **uncapped** -- that is informative, it says costs passed the
+estimate -- and **REFUSE the derived figure**, because `earned = contract x
+percent complete` is meaningless once the percent is not a real fraction of a
+real forecast. Refuse with the reason named; do not print a number.
+
+**AND CHECK THE CONSUMER OF THE REFUSAL.** SAIRNbuild's over-billed KPI
+filtered on `overUnder > 0`; with `overUnder` refused as `null`, `null > 0` is
+**false**, so every stale-forecast job would have dropped **silently** out of
+the count -- a refusal reading as a clean bill, which is worse than the cap it
+replaced. Count a POSITION, and surface the ones you could not judge.
+
+### The companion defect, which travels with it
+
+A **stale denominator**. SAIRNbuild divided by the ORIGINAL cost budget, never
+re-forecast, while accepted change orders added their VALUE to the contract and
+their COST to nothing. Either alone is survivable; together they invert the
+answer twice. **If you find the cap, check whether the denominator is ever
+revised** -- and whether anything adds to the numerator's twin without adding
+to it.
+
+### Detection
+
+`python tools/overrun_inversion_scan.py` -- ranks HIGH/MEDIUM/LOW and prints
+what it cannot see. It **cannot follow the capped value to its consumer**, so
+every row is a read request and never a verdict. A cap written without
+`Math.min` is invisible to it.

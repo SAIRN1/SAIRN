@@ -63,6 +63,7 @@ import ast
 import io
 import json
 import os
+import re
 import subprocess
 import sys
 
@@ -366,6 +367,66 @@ def anchors_in(tree, names):
     return found, unresolved
 
 
+def mutations_anchors(rel):
+    """Anchors from the MUTATIONS convention, DELEGATED not reimplemented.
+
+    ── UNIFYING THE TWO POPULATIONS (2026-09-28) ─────────────────────────
+    This tool covered the 12 probe files that pass edit tuples or use a flat
+    arm(); `tools/mutation_anchor_check.py` covered the 82 that declare a
+    module-level MUTATIONS list. MEASURED OVERLAP: ZERO. Two wired, correct
+    checkers reporting clean results about disjoint halves of one population,
+    while three probes in the half this one reads were dead.
+
+    THE READER IS IMPORTED, NOT COPIED. mutation_anchor_check.read_probe() and
+    resolve() already know four declaration shapes, including two this file
+    does not, and a second copy would be a second thing to keep in step -- the
+    duplicate-scanner mistake tools/conflict_marker_preflight.py records making
+    against conflict_marker_check.py. What this file adds is one POPULATION and
+    one report, not a second parser.
+
+    Returns [(subject_path, anchor, lineno, expect)] in this file's own shape,
+    or None when the delegate cannot be used -- which is a COULD NOT CHECK and
+    is never an empty list, because an empty list here would silently shrink
+    the denominator the whole change exists to publish.
+    """
+    try:
+        sys.path.insert(0, os.path.join(REPO, 'tools'))
+        import mutation_anchor_check as mac
+    except Exception:
+        return None
+    try:
+        consts, muts = mac.read_probe(os.path.join(REPO, rel))
+    except Exception:
+        return None
+    out = []
+    for entry in muts:
+        try:
+            target, old = mac.resolve(consts, entry)
+        except Exception:
+            continue
+        # A structural arm has no text anchor by construction and is not a
+        # freshness question. Counting it would inflate the checked figure with
+        # rows that can never rot, which is the opposite of the point.
+        if not target or target == getattr(mac, 'STRUCTURAL', None):
+            continue
+        if not isinstance(old, str):
+            continue
+        # A '@name' IS A NAME, NOT TEXT, and counting it as an anchor reported
+        # four false VANISHED rows on the first unified run -- '@ENTRIES',
+        # '@GATE', '@REFUSE'. The delegate renders a bare Name that way; it
+        # means the mutation is a module value or a transform, so there is no
+        # string in the subject to find and zero matches is the correct,
+        # meaningless answer. Skipped rather than counted, because a false
+        # VANISHED is worse than the silence it replaces: it sends somebody to
+        # re-anchor a healthy arm.
+        if old.startswith('@'):
+            continue
+        rel_target = os.path.relpath(target, REPO).replace(os.sep, '/') \
+            if os.path.isabs(target) else str(target).replace(os.sep, '/')
+        out.append((rel_target, old, 0, None))
+    return out
+
+
 def scan():
     probes = tracked_probes()
     if probes is None:
@@ -388,6 +449,15 @@ def scan():
             continue
         names = subject_names(tree)
         anchors, unresolved = anchors_in(tree, names)
+        # ── THE MUTATIONS CONVENTION, delegated. See mutations_anchors(). ──
+        if re.search(r'^MUTATIONS\s*=', src, re.M):
+            extra = mutations_anchors(rel)
+            if extra is None:
+                skipped.append((rel, 'declares MUTATIONS and the delegate '
+                                     'tools/mutation_anchor_check.py could not '
+                                     'be used -- COULD NOT CHECK, not clean'))
+            else:
+                anchors = anchors + extra
         if unresolved:
             skipped.append((rel, '%d anchor(s) not a resolvable literal' % unresolved))
         for path, anchor, line, expect in anchors:
