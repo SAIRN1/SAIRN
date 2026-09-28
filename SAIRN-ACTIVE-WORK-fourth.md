@@ -851,3 +851,52 @@ is how every wrong number this session was produced — a tool written in reacti
 to an incident, with the control feeling like overhead. `live_probe_residue_audit.py`
 already carries the declared-class mechanism; if the teardown population grows
 past a handful, a fourth obligation belongs there rather than in a new tool.
+
+
+## 2026-09-28 — the claim matcher cannot tell a DISCLOSURE from a CLAIM, and the test that distinguishes them
+
+**NOT FIXED HERE, deliberately.** `tools/sairn_claim.py` is the one tool every
+session's coordination rests on, its own docstring says *"the honest fix is
+always a NARROWER new signal measured against the corpus, never a looser existing
+one"*, and every remedy below is a loosening. Filed with the distinguishing test
+so whoever owns it can measure a candidate against the 110-pair corpus the tool
+already carries, rather than patched by the session the block inconvenienced.
+
+**THREE INSTANCES, all measured, two of them today.**
+
+| # | My task | Blocked by | The tool's stated reason |
+|---|---|---|---|
+| 1 | re-drive hank's Tier A verdict points 1/2/4 against `alf_family_contacts`, now that the table is live | cc | `shared phrase: "against live"` |
+| 2 | read and fix the 17 remaining real fail-open sites in `tools/` | cody | `same file or resource: known-bad` |
+| 3 | `alf_mar administered_by` (2026-09-28, prior session) | cody | `api/sd-data.js` — from cody's *"blocked items when api/sd-data.js frees"* |
+
+**NEITHER BLOCKING CLAIM IS DOING EITHER PIECE OF WORK.** cc's phrase comes from
+*"drive the revoked-licence enforce-mode path in the AI proxy LIVE against a
+scratch env"* — a different app, a different endpoint, a different verb. cody's
+`known-bad` is platform methodology vocabulary that appears in the cross-domain
+disciplines, in this file, and in most of the commit messages on this branch.
+Instance 3 is a session declaring what it is WAITING FOR being read as a claim on
+the thing it is waiting for.
+
+**THE DISTINGUISHING TEST, which is the part worth keeping.** In all three the
+matched token sits in a claim in a position that *negates* ownership rather than
+asserting it. That position is syntactic and local:
+
+* `waiting for X`, `blocked on X`, `when X frees`, `X is hank's`, `NOT TOUCHING X`,
+  `skip X`, `deferred` — the token is the OBJECT of a blocker declaration.
+* PR 4.3 **requires** those sentences. The rule says declare the conflict rather
+  than reword past it; the matcher then converts the declaration into a block on
+  everyone else. **An honest disclosure currently costs more than silence**, which
+  is the one property a coordination tool must never have.
+
+The narrow candidate, stated as a candidate and not a verdict: a token appearing
+ONLY inside a blocker clause does not contribute an identifier or a bigram. It
+must be measured against the corpus in both directions before it goes near the
+matcher — a claim that both holds and waits on the same file must still block.
+
+**WHAT I DID NOT DO, and this is the load-bearing half.** I re-checked items 1 and
+2 with wording that omitted the matched phrases and both answered `CLEAR`. **That
+CLEAR is a wording artefact and I did not act on it** (PR 4.3). Both are recorded
+here as still blocked, and re-checking with the original strings still returns
+BLOCKED with cc and cody named. A CLEAR that a synonym can buy is not evidence
+about who is working on what.
