@@ -87,6 +87,17 @@
       "status": "released",
       "released_at": "2026-09-28T01:45:50Z",
       "files": null
+    },
+    {
+      "id": "hover-1790560288",
+      "session": "hover",
+      "subject": "hover",
+      "task": "build contradicts_external per the scoped design; verify freshness floor over several more draws; record the two SAIRNgrounds citation-drift findings with routable file/line/severity FILES: .claude/skills/sairn-hover-auditor/",
+      "claimed_at": "2026-09-28T01:51:28Z",
+      "claimed_at_epoch": 1790560288.3253367,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
