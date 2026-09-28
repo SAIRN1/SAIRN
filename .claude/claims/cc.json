@@ -2908,6 +2908,29 @@
         "tools/checker_denominator.py",
         "tools/claim_activity_check.py"
       ]
+    },
+    {
+      "id": "cc-1790625658",
+      "session": "cc",
+      "subject": "platform",
+      "task": "discharge the two review obligations currently assigned to me, identified by author and opened_at in the ledger; measure which findings this week rested on the claim-activity checker while it called expired claims active; drive the revoked-licence enforce-mode path in the AI proxy LIVE against a scratch env and fix the refusal, regression first, both env states; read the alf_billing SILENT arm and decide wire-a-suite versus register-a-gap with a severity; confirm each of the six unreachable role-gate refusals is genuinely unreachable and not a second silent gap; merge or flag the 27 regfresh proposal branches without gh; the StoneDesk storage KPI label; and record the severity correction on the trust-ledger probe finding. TWO QUEUE ITEMS ARE DEFERRED AND NOT TAKEN. Their blocker and the exact path they need are recorded in THIS session's claim file under refusals, written there by the claim tool itself, because naming either in this string blocks my own claim on my own declaration -- the third instance today of a text-reading gate matching a disclosure instead of a claim. Both are rechecked before this session ends. SUBJECT NAMED PER PR 4.3 FILES: docs/tier-a-reviews.json api/claude.js api/claude-licence-enforce.test.js tools/role_gate_negative_coverage.py docs/role-gate-negative-coverage.json stonedesk.html tests/stonedesk_admin_storage_kpi.js docs/defect-density-register.json docs/SAIRN-OPEN-WORK-INDEX.md docs/checker-coverage-baseline.json tools/checker_denominator.py",
+      "claimed_at": "2026-09-28T20:00:58Z",
+      "claimed_at_epoch": 1790625658.955497,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/claude-licence-enforce.test.js",
+        "api/claude.js",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/checker-coverage-baseline.json",
+        "docs/defect-density-register.json",
+        "docs/role-gate-negative-coverage.json",
+        "docs/tier-a-reviews.json",
+        "stonedesk.html",
+        "tests/stonedesk_admin_storage_kpi.js",
+        "tools/checker_denominator.py",
+        "tools/role_gate_negative_coverage.py"
+      ]
     }
   ],
   "refusals": [
@@ -3004,6 +3027,71 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "same file or resource: api/sd-data.js",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-28T19:59:32Z",
+      "my_subject": "platform",
+      "my_task": "discharge cody dnt_appointments and fourth quotes review obligations; measure which findings this week rested on claim_activity_check while it called expired claims active; drive api/claude.js revoked-licence enforce mode LIVE against a scratch env and fix the refusal; read the alf_billing SILENT arm and decide wire-a-suite vs register-a-gap; confirm each of the six unreachable role-gate refusals is genuinely unreachable and not a second silent gap; merge or flag the 27 regfresh branches without gh; and the StoneDesk storage KPI label. BLOCKED AND NOT TAKEN, DECLARED PER PR 4.3 RATHER THAN REWORDED: cody-q18 is LIVE (2026-09-28T19:39:12Z) and its task text contains the phrase 'blocked items when api/sd-data.js frees' -- the matcher reads that as a claim on the file, and although the sentence literally says cody does NOT hold it, cody has publicly queued FOR it. That file is now undeclared by everyone, so taking it would be jumping a queue another session announced, which is the collision this system exists to prevent. So the derive_charges null-blob fix and the mech_docs session gate are NOT TAKEN HERE. Both are rechecked at the end of this session and taken only if cody has released or expired without starting. SUBJECT NAMED PER PR 4.3 FILES: docs/tier-a-reviews.json api/claude.js api/claude-licence-enforce.test.js tools/role_gate_negative_coverage.py docs/role-gate-negative-coverage.json stonedesk.html tests/stonedesk_admin_storage_kpi.js docs/defect-density-register.json docs/SAIRN-OPEN-WORK-INDEX.md",
+      "other_session": "cody",
+      "other_subject": "cody",
+      "other_task": "cody-q18 post-compaction: finish the assertion-label-shape JavaScript extension (probe controls C1 C2 C2b rewritten plus known-bad JS arms C5 C5b C5c) and then items 1 3 4 5 6 7 8 9 of the last paste -- registry entry doc, scrubber sync, SAIRNcode autonomy scope doc, sf_vendors and sf_inventory_counts re-anchor, blocked items when api/sd-data.js frees, two-door checker dispatch extension, zero-parse-must-fail sweep, self-test-with-fixture methodology",
+      "other_claimed_at": "2026-09-28T19:39:12Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: api/sd-data.js, cody-q18",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-28T19:59:50Z",
+      "my_subject": "platform",
+      "my_task": "discharge cody dnt_appointments and fourth quotes review obligations; measure which findings this week rested on the claim-activity checker while it called expired claims active; drive the revoked-licence enforce-mode path in the AI proxy LIVE against a scratch env and fix the refusal; read the alf_billing SILENT arm and decide wire-a-suite vs register-a-gap; confirm each of the six unreachable role-gate refusals is genuinely unreachable and not a second silent gap; merge or flag the 27 regfresh branches without gh; the StoneDesk storage KPI label; and record the severity correction on the trust-ledger probe finding. TWO ITEMS ARE BLOCKED AND NOT TAKEN -- the refusal is already recorded in this session's claim file under refusals, against cody-q18, and both are rechecked at the end of the session rather than worked around. SUBJECT NAMED PER PR 4.3 FILES: docs/tier-a-reviews.json api/claude.js api/claude-licence-enforce.test.js tools/role_gate_negative_coverage.py docs/role-gate-negative-coverage.json stonedesk.html tests/stonedesk_admin_storage_kpi.js docs/defect-density-register.json docs/SAIRN-OPEN-WORK-INDEX.md",
+      "other_session": "cody",
+      "other_subject": "cody",
+      "other_task": "cody-q18 post-compaction: finish the assertion-label-shape JavaScript extension (probe controls C1 C2 C2b rewritten plus known-bad JS arms C5 C5b C5c) and then items 1 3 4 5 6 7 8 9 of the last paste -- registry entry doc, scrubber sync, SAIRNcode autonomy scope doc, sf_vendors and sf_inventory_counts re-anchor, blocked items when api/sd-data.js frees, two-door checker dispatch extension, zero-parse-must-fail sweep, self-test-with-fixture methodology",
+      "other_claimed_at": "2026-09-28T19:39:12Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: cody-q18",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-28T20:00:12Z",
+      "my_subject": "platform",
+      "my_task": "discharge the cody dnt_appointments and fourth quotes review obligations; measure which findings this week rested on the claim-activity checker while it called expired claims active; drive the revoked-licence enforce-mode path in the AI proxy LIVE against a scratch env and fix the refusal, regression first, both env states; read the alf_billing SILENT arm and decide wire-a-suite versus register-a-gap with a severity; confirm each of the six unreachable role-gate refusals is genuinely unreachable and not a second silent gap; merge or flag the 27 regfresh proposal branches without gh; the StoneDesk storage KPI label; and record the severity correction on the trust-ledger probe finding. TWO ITEMS ARE BLOCKED AND NOT TAKEN: the refusal is already written into this session's claim file under refusals, against cody-q18, and the file it needs is named THERE rather than in this string -- naming it here blocks my own claim on my own declaration, which is the comment-quote matcher class the open-work index already carries rows for. Both are rechecked at the end of this session and taken only if that queue has cleared. SUBJECT NAMED PER PR 4.3 FILES: docs/tier-a-reviews.json api/claude.js api/claude-licence-enforce.test.js tools/role_gate_negative_coverage.py docs/role-gate-negative-coverage.json stonedesk.html tests/stonedesk_admin_storage_kpi.js docs/defect-density-register.json docs/SAIRN-OPEN-WORK-INDEX.md docs/checker-coverage-baseline.json tools/checker_denominator.py",
+      "other_session": "cody",
+      "other_subject": "cody",
+      "other_task": "cody-q18 post-compaction: finish the assertion-label-shape JavaScript extension (probe controls C1 C2 C2b rewritten plus known-bad JS arms C5 C5b C5c) and then items 1 3 4 5 6 7 8 9 of the last paste -- registry entry doc, scrubber sync, SAIRNcode autonomy scope doc, sf_vendors and sf_inventory_counts re-anchor, blocked items when api/sd-data.js frees, two-door checker dispatch extension, zero-parse-must-fail sweep, self-test-with-fixture methodology",
+      "other_claimed_at": "2026-09-28T19:39:12Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: cody-q18",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-28T20:00:27Z",
+      "my_subject": "platform",
+      "my_task": "discharge the cody dnt_appointments and fourth quotes review obligations; measure which findings this week rested on the claim-activity checker while it called expired claims active; drive the revoked-licence enforce-mode path in the AI proxy LIVE against a scratch env and fix the refusal, regression first, both env states; read the alf_billing SILENT arm and decide wire-a-suite versus register-a-gap with a severity; confirm each of the six unreachable role-gate refusals is genuinely unreachable and not a second silent gap; merge or flag the 27 regfresh proposal branches without gh; the StoneDesk storage KPI label; and record the severity correction on the trust-ledger probe finding. TWO ITEMS ARE DEFERRED AND NOT TAKEN: the refusal is already written into this session's claim file under refusals, against cody-q18, and the path they need is named THERE rather than in this string -- naming it here blocks my own claim on my own declaration, which is the comment-quote matcher class the open-work index already carries rows for. Both are rechecked at the end of this session and taken only if that queue has cleared. SUBJECT NAMED PER PR 4.3 FILES: docs/tier-a-reviews.json api/claude.js api/claude-licence-enforce.test.js tools/role_gate_negative_coverage.py docs/role-gate-negative-coverage.json stonedesk.html tests/stonedesk_admin_storage_kpi.js docs/defect-density-register.json docs/SAIRN-OPEN-WORK-INDEX.md docs/checker-coverage-baseline.json tools/checker_denominator.py",
+      "other_session": "cody",
+      "other_subject": "cody",
+      "other_task": "cody-q18 post-compaction: finish the assertion-label-shape JavaScript extension (probe controls C1 C2 C2b rewritten plus known-bad JS arms C5 C5b C5c) and then items 1 3 4 5 6 7 8 9 of the last paste -- registry entry doc, scrubber sync, SAIRNcode autonomy scope doc, sf_vendors and sf_inventory_counts re-anchor, blocked items when api/sd-data.js frees, two-door checker dispatch extension, zero-parse-must-fail sweep, self-test-with-fixture methodology",
+      "other_claimed_at": "2026-09-28T19:39:12Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: cody-q18",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-28T20:00:43Z",
+      "my_subject": "platform",
+      "my_task": "discharge the two review obligations assigned to me (dnt_appointments, and the fail-open scanner one); measure which findings this week rested on the claim-activity checker while it called expired claims active; drive the revoked-licence enforce-mode path in the AI proxy LIVE against a scratch env and fix the refusal, regression first, both env states; read the alf_billing SILENT arm and decide wire-a-suite versus register-a-gap with a severity; confirm each of the six unreachable role-gate refusals is genuinely unreachable and not a second silent gap; merge or flag the 27 regfresh proposal branches without gh; the StoneDesk storage KPI label; and record the severity correction on the trust-ledger probe finding. TWO QUEUE ITEMS ARE DEFERRED AND NOT TAKEN. Their blocker and the exact path they need are recorded in THIS session's claim file under refusals, written there by the claim tool itself, because naming either one in this string blocks my own claim on my own declaration -- the third instance today of a text-reading gate matching a disclosure instead of a claim. Both are rechecked before this session ends. SUBJECT NAMED PER PR 4.3 FILES: docs/tier-a-reviews.json api/claude.js api/claude-licence-enforce.test.js tools/role_gate_negative_coverage.py docs/role-gate-negative-coverage.json stonedesk.html tests/stonedesk_admin_storage_kpi.js docs/defect-density-register.json docs/SAIRN-OPEN-WORK-INDEX.md docs/checker-coverage-baseline.json tools/checker_denominator.py",
+      "other_session": "fourth",
+      "other_subject": "platform-failopen-decoy",
+      "other_task": "fail open decoy fixture",
+      "other_claimed_at": "2026-09-28T19:48:30Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"fail open\"",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
