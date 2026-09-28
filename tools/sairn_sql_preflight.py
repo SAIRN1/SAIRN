@@ -101,20 +101,109 @@ NOT_A_TABLE = {
 
 
 def strip_noise(sql):
-    """Remove comments and string/dollar-quoted literals.
+    """Remove comments and string/dollar-quoted literals, ONE PASS, left to right.
 
-    Literals go first and are replaced by a placeholder of equal length so that
-    offsets are preserved and a table name never gets read out of a string. A
-    seed file full of `insert ... values ('update customers set ...')` would
-    otherwise produce findings from its own data.
+    Returns a string of the SAME LENGTH with every comment and literal blanked,
+    so offsets are preserved and a table name can never be read out of prose.
+
+    ── THIS WAS FOUR SEPARATE re.sub PASSES AND THEY DESYNCHRONISED ─────────
+    The old order was `/* */`, then `--`, then `$$`, then `'...'`. Each pass ran
+    over the WHOLE file without knowing what the others had already consumed, so
+    a `--` INSIDE A STRING LITERAL was blanked as a line comment -- taking the
+    string's CLOSING QUOTE with it. From that point the literal matcher was
+    desynchronised for the rest of the file.
+
+    Measured on the file that exposed it:
+
+        comment on column public.alf_incidents.recorded_by is
+          'Employee id of the filer, ... '
+          '(2026-09-27) -- NOT that the filer is unknown ... '
+          'from the reported_by key inside the data blob: ...';
+
+        references(strip_noise(sql)) -> {'alf_incidents', 'the'}
+
+    and the gate refused a push with MISSING_TABLE `the` -- a table that exists
+    only inside an English sentence.
+
+    THE FALSE POSITIVE WAS THE HARMLESS HALF. Desynchronisation runs both ways:
+    text after the broken literal is parsed as code, and REAL SQL AFTER IT CAN
+    LAND INSIDE WHAT THE SCANNER BELIEVES IS A STRING AND BE SKIPPED. A probe
+    fixture proves the old code silently lost an entire
+    `update ... set ... where ...` -- which is precisely the statement this
+    gate's own argument says must never go unchecked, because a wrong column in
+    a WHERE matches nothing and reports success.
+
+    A SINGLE SCAN IS THE ONLY FIX THAT GENERALISES. Whichever opener comes first
+    wins and consumes through its own terminator; nothing else is even looked at
+    until it closes. Control: tests/run_sql_preflight_literal_probe.py, which
+    drives both directions and carries an arm asserting real SQL SURVIVES --
+    without it, a strip_noise() that blanked the whole file would pass every
+    negative arm.
     """
-    def blank(m):
-        return re.sub(r'\S', ' ', m.group(0))
-    sql = re.sub(r'/\*.*?\*/', blank, sql, flags=re.S)
-    sql = re.sub(r'(?m)--[^\n]*', blank, sql)
-    sql = re.sub(r"\$\$.*?\$\$", blank, sql, flags=re.S)
-    sql = re.sub(r"'(?:[^']|'')*'", blank, sql, flags=re.S)
-    return sql
+    out = list(sql)
+    i, n = 0, len(sql)
+
+    def blank(a, b):
+        for k in range(a, min(b, n)):
+            if not out[k].isspace():
+                out[k] = ' '
+
+    while i < n:
+        two = sql[i:i + 2]
+        if two == '/*':
+            # Postgres block comments NEST, unlike C. A naive `.*?\*/` stops at
+            # the first close and leaves the outer comment's tail as code.
+            depth, j = 1, i + 2
+            while j < n and depth:
+                if sql[j:j + 2] == '/*':
+                    depth += 1
+                    j += 2
+                    continue
+                if sql[j:j + 2] == '*/':
+                    depth -= 1
+                    j += 2
+                    continue
+                j += 1
+            blank(i, j)
+            i = j
+            continue
+        if two == '--':
+            j = sql.find('\n', i)
+            j = n if j < 0 else j
+            blank(i, j)
+            i = j
+            continue
+        if sql[i] == '$':
+            # $tag$ ... $tag$ as well as bare $$ ... $$
+            m = re.match(r'\$([A-Za-z_][A-Za-z_0-9]*)?\$', sql[i:])
+            if m:
+                tag = m.group(0)
+                j = sql.find(tag, i + len(tag))
+                j = n if j < 0 else j + len(tag)
+                blank(i, j)
+                i = j
+                continue
+        if sql[i] == "'":
+            j = i + 1
+            while j < n:
+                if sql[j] == "'":
+                    if sql[j + 1:j + 2] == "'":   # '' is an escaped quote
+                        j += 2
+                        continue
+                    j += 1
+                    break
+                j += 1
+            blank(i, j)
+            i = j
+            continue
+        if sql[i] == '"':
+            # A quoted IDENTIFIER is not a literal and must survive -- it is the
+            # table name. Skipped over, never blanked.
+            j = sql.find('"', i + 1)
+            i = (n if j < 0 else j + 1)
+            continue
+        i += 1
+    return ''.join(out)
 
 
 def _clean_ident(tok):
