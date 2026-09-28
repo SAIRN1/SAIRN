@@ -18374,6 +18374,121 @@
       "recurrence_open": "NO CLIENT SENDS retrigger_events AT ALL -- sairnlaw.html has no caller, so this whole path is reachable only by a direct API consumer and the input contract is still documented nowhere outside the suite. The endpoint does not validate the element shape before handing it to the engine, so the engine is the only thing refusing. And the wider class is untouched: a field written somewhere and read on the WRONG object clears the ghost scan's third condition by construction, which is the member of this family that has now bitten twice. Also open: `dispositions.sort()` compares raw strings, which is correct for ISO dates and is now guaranteed only because everything non-ISO refuses upstream -- nothing asserts that dependency."
     },
     {
+      "commit": "2e1ad2775558",
+      "date": "2026-09-28",
+      "subject": "fix(gate): a credential in a STAGED blob is now refused at commit, and the hook that should have caught it failed OPEN twice",
+      "files": [
+        ".githooks/prepare-commit-msg",
+        "docs/TOOLING-INVENTORY.md",
+        "tests/run_staged_credential_probe.py",
+        "tools/staged_credential_check.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 472,
+      "lines_removed": 49,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": ".githooks/prepare-commit-msg FAILED OPEN in two places and could only ever run one check. It read `ROOT=$(git rev-parse --show-toplevel) || exit 0` and `[ -f \"$ROOT/tools/staged_conflict_marker_check.py\" ] || exit 0`, and exit 0 from this hook ALLOWS THE COMMIT -- so a git-discovery failure allowed it and a MISSING CHECKER allowed it. It then used `exec`, replacing the shell with the first checker, so any second check appended to it would have been silently unreachable. The consequence was measured the same day: a GitHub personal access token under .claude/ was staged by a git add -A inside a regenerate-after-rebase one-liner and reached a commit with no commit-time check of any kind looking at content. The push gate refused the push, which is the last line rather than the first -- by then the blob was in the object store, in the index and in a commit that had to be amended, and the credential had to be treated as exposed regardless.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The hook was written with one checker and the || exit 0 guards were present from the start; they were correct-looking defensive shell rather than a change that introduced a regression, so there is no injecting commit -- the defect is the idiom."
+      },
+      "citation_note": "Two preconditions used exit 0 to mean 'could not check', and from a git hook exit 0 means ALLOW. Could-not-run was spelled the same as passed, in the file whose whole job is to refuse.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "`|| exit 0` reads as a graceful skip and means ALLOW THE COMMIT. Two separate preconditions -- repository discovery and checker presence -- both used it, so the hook was silently absent in exactly the situations where something had gone wrong enough to be worth checking.",
+          "action": "Both are refusals that name what is missing. A clone with no checkers should not be committing through this hook.",
+          "action_status": "done"
+        },
+        {
+          "kind": "technical",
+          "factor": "`exec` replaced the shell with the single checker, so the hook's structure permitted exactly one check forever. Adding a second would have looked correct and never run.",
+          "action": "Both checks run in a loop and the worst exit code wins.",
+          "action_status": "done"
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "There was no commit-time check of staged CONTENT for credentials at all -- only the push gate, and only a name-based gitignore afterwards. A name rule closes the case that already happened; the next credential will be in a file with an ordinary name.",
+          "action": "tools/staged_credential_check.py reads staged blobs for issuer-prefixed shapes, never prints the match, and exempts scanners by a self-describing marker in the blob rather than by a skip-list.",
+          "action_status": "done"
+        },
+        {
+          "kind": "process",
+          "factor": "The staging habit is the root cause and it is mine. `git add -A` in an ad-hoc rebase loop had already committed conflict markers twice in this session before it picked up a credential. tools/push_retry.py exists precisely to replace that loop and its header documents the identical one-liner as the near-miss it was built for; I hand-wrote the loop instead of using the tool.",
+          "action": "Regenerate steps now stage by explicit path. The broader sweep of every blanket-stage site is separate work.",
+          "action_status": "planned"
+        }
+      ],
+      "recurrence_open": "OPEN IN TWO DIRECTIONS. (1) A SCAN OF ALL SEVEN SAIRN CLONES found ONE unreachable blob carrying a github_pat shape in SAIRN-cc -- unreachable, so never on origin, but present in that clone's object store and needing the same reflog-expire-and-prune treatment. A build agent must not reach into another clone, so it is reported rather than fixed. (2) The blanket-staging habit is only partly addressed: regenerate steps now stage explicit paths, but every other git add -A, git add . and git commit -a across tools, scripts and hooks is unswept, and tools/push_retry.py already exists to replace exactly the loop that caused this."
+    },
+    {
+      "commit": "857729ddd75a",
+      "date": "2026-09-28",
+      "subject": "fix(methodology): the plan's staleness checker read 0 claims from 6 files and reported drift anyway -- plus the SAIRNcode autonomy scoping",
+      "files": [
+        "docs/2026-09-28-cody-self-audit.md",
+        "docs/2026-09-28-sairncode-autonomous-coding-scope.md",
+        "docs/verification-methodology-implementation-plan.md",
+        "tests/run_verification_plan_staleness_probe.py",
+        "tools/verification_plan_staleness_check.py"
+      ],
+      "lines_added": 415,
+      "lines_removed": 10,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "tools/verification_plan_staleness_check.py READ 0 CLAIM RECORDS FROM 6 CLAIM FILES AND REPORTED DRIFT ANYWAY. claims() treated a claim file as a single record and looked for `subject` at the top level; the real shape is {session, claims: [...], refusals: [...]}, so it parsed nothing, returned an empty map, and then EVERY `claim=` marker in the methodology plan resolved to 'no ACTIVE claim of that name exists' and was reported STALE-INFLIGHT. Measured before and after: 0 claim records, then 543. THIS IS RULE 1.11 WITH THE ARROW REVERSED -- not could-not-run folded into passed, but COULD-NOT-PARSE FOLDED INTO FOUND: the tool had read its source successfully, because the directory existed, and produced verdicts from nothing. A false-finding generator is the shape that gets a check switched off. It went unnoticed because the control's claim arm asserted only that STALE-INFLIGHT FIRES for a name nobody holds, with no paired positive, so a detector stuck on one answer satisfied it -- verified by running the control against the pre-fix tool, which exits 0. And the broken path had never run in practice: the tool sat at exit 2 COULD NOT TELL since it was written because no item in the plan carried a verify marker, which is a correct refusal and also a perfect hiding place. Fixed: both shapes read, released claims excluded, and a directory yielding zero records now returns measured=False. The two drifts the tool now reports SURVIVED the fix, which is what makes them real.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The parser has been wrong since claims() was written; the exact commit was not traced because the code path had never executed against real markers and the lag figure would be meaningless."
+      },
+      "contributing_factors": [
+        {
+          "factor": "The tool returned measured=True on the strength of the DIRECTORY EXISTING, not on having parsed anything out of it. Six files were opened, every one parsed to zero usable records, and the function reported success -- so the caller had no way to distinguish an empty claim record from an unreadable one.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A directory of files that yields zero records now returns measured=False, which makes every claim= marker COULD NOT TELL instead of a fabricated STALE-INFLIGHT. Both claim-file shapes are read and released claims are excluded from active."
+        },
+        {
+          "factor": "THE CONTROL PASSED AND WOULD HAVE KEPT PASSING. ARM 5 asserted only that STALE-INFLIGHT FIRES for a claim name nobody holds, which a detector stuck on fire satisfies perfectly. The commit direction had its paired positive; the claim direction never did, so the one arm covering the broken code path could not fail.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "ARM 5b names a claim that IS actively held and demands silence, reading the LIVE claim record rather than a fixture because a fixture would not have exercised the parser that was broken. Ablation-verified: with the old parser restored in a temp copy the arm fails loudly as COULD NOT DRIVE, and the ablation script refuses to report if its own patch did not apply."
+        },
+        {
+          "factor": "NOBODY HAD EVER FED THE TOOL, so the broken path had never run against real markers. It sat at exit 2 COULD NOT TELL from the day it was written -- 10 item lines and not one verify marker -- which is a correct refusal and also a perfect hiding place: the claims() code path was unreachable in practice.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Three markers added for the only three items whose state is verifiable from the repo today; eight remain UNVERIFIABLE and are printed as a third state rather than counted clean. Marking an item whose state has not been checked would convert an unknown into an assertion."
+        },
+        {
+          "factor": "The claim-file shape is read independently by several tools and there is no shared accessor. sairn_claim.py writes it, dispatch_state.py and this tool each parse it again, and a parser that is wrong in one of them is invisible to the others.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "NOT CLOSED. A single shared reader for .claude/claims/*.json would make this class impossible, and it is named rather than built because the writers are spread across sessions' declared files and consolidating them needs an owner for each."
+        }
+      ],
+      "recurrence_open": "No shared reader for .claude/claims/*.json exists. sairn_claim.py writes it and at least two tools parse it again independently, so a parser wrong in one is invisible to the others. Naming it rather than consolidating, because the writers live in several sessions declared files."
+    },
+    {
       "commit": "aaa9e071a922",
       "date": "2026-09-28",
       "subject": "fix(probes): the three SILENT arms -- a 1200-character window that stopped part-way through the FIRST log, and a mutation that could not produce the defect its own label named",
@@ -18470,63 +18585,6 @@
         }
       ],
       "recurrence_open": "Nothing detects a mutation that cannot produce its labelled outcome. The harness reports SILENT identically for a blind suite and an inert mutation, and 74 other probes with MUTATIONS lists have never been audited for this shape. The three-SILENT-arm report this closes contained one instance of each, which is exactly why they were misdiagnosed as one cause."
-    },
-    {
-      "commit": "857729ddd75a",
-      "date": "2026-09-28",
-      "subject": "fix(methodology): the plan's staleness checker read 0 claims from 6 files and reported drift anyway -- plus the SAIRNcode autonomy scoping",
-      "files": [
-        "docs/2026-09-28-cody-self-audit.md",
-        "docs/2026-09-28-sairncode-autonomous-coding-scope.md",
-        "docs/verification-methodology-implementation-plan.md",
-        "tests/run_verification_plan_staleness_probe.py",
-        "tools/verification_plan_staleness_check.py"
-      ],
-      "lines_added": 415,
-      "lines_removed": 10,
-      "app": "PLATFORM",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "independent-review",
-      "summary": "tools/verification_plan_staleness_check.py READ 0 CLAIM RECORDS FROM 6 CLAIM FILES AND REPORTED DRIFT ANYWAY. claims() treated a claim file as a single record and looked for `subject` at the top level; the real shape is {session, claims: [...], refusals: [...]}, so it parsed nothing, returned an empty map, and then EVERY `claim=` marker in the methodology plan resolved to 'no ACTIVE claim of that name exists' and was reported STALE-INFLIGHT. Measured before and after: 0 claim records, then 543. THIS IS RULE 1.11 WITH THE ARROW REVERSED -- not could-not-run folded into passed, but COULD-NOT-PARSE FOLDED INTO FOUND: the tool had read its source successfully, because the directory existed, and produced verdicts from nothing. A false-finding generator is the shape that gets a check switched off. It went unnoticed because the control's claim arm asserted only that STALE-INFLIGHT FIRES for a name nobody holds, with no paired positive, so a detector stuck on one answer satisfied it -- verified by running the control against the pre-fix tool, which exits 0. And the broken path had never run in practice: the tool sat at exit 2 COULD NOT TELL since it was written because no item in the plan carried a verify marker, which is a correct refusal and also a perfect hiding place. Fixed: both shapes read, released claims excluded, and a directory yielding zero records now returns measured=False. The two drifts the tool now reports SURVIVED the fix, which is what makes them real.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The parser has been wrong since claims() was written; the exact commit was not traced because the code path had never executed against real markers and the lag figure would be meaningless."
-      },
-      "contributing_factors": [
-        {
-          "factor": "The tool returned measured=True on the strength of the DIRECTORY EXISTING, not on having parsed anything out of it. Six files were opened, every one parsed to zero usable records, and the function reported success -- so the caller had no way to distinguish an empty claim record from an unreadable one.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "A directory of files that yields zero records now returns measured=False, which makes every claim= marker COULD NOT TELL instead of a fabricated STALE-INFLIGHT. Both claim-file shapes are read and released claims are excluded from active."
-        },
-        {
-          "factor": "THE CONTROL PASSED AND WOULD HAVE KEPT PASSING. ARM 5 asserted only that STALE-INFLIGHT FIRES for a claim name nobody holds, which a detector stuck on fire satisfies perfectly. The commit direction had its paired positive; the claim direction never did, so the one arm covering the broken code path could not fail.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "ARM 5b names a claim that IS actively held and demands silence, reading the LIVE claim record rather than a fixture because a fixture would not have exercised the parser that was broken. Ablation-verified: with the old parser restored in a temp copy the arm fails loudly as COULD NOT DRIVE, and the ablation script refuses to report if its own patch did not apply."
-        },
-        {
-          "factor": "NOBODY HAD EVER FED THE TOOL, so the broken path had never run against real markers. It sat at exit 2 COULD NOT TELL from the day it was written -- 10 item lines and not one verify marker -- which is a correct refusal and also a perfect hiding place: the claims() code path was unreachable in practice.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "Three markers added for the only three items whose state is verifiable from the repo today; eight remain UNVERIFIABLE and are printed as a third state rather than counted clean. Marking an item whose state has not been checked would convert an unknown into an assertion."
-        },
-        {
-          "factor": "The claim-file shape is read independently by several tools and there is no shared accessor. sairn_claim.py writes it, dispatch_state.py and this tool each parse it again, and a parser that is wrong in one of them is invisible to the others.",
-          "kind": "latent-condition",
-          "action_status": "planned",
-          "action": "NOT CLOSED. A single shared reader for .claude/claims/*.json would make this class impossible, and it is named rather than built because the writers are spread across sessions' declared files and consolidating them needs an owner for each."
-        }
-      ],
-      "recurrence_open": "No shared reader for .claude/claims/*.json exists. sairn_claim.py writes it and at least two tools parse it again independently, so a parser wrong in one is invisible to the others. Naming it rather than consolidating, because the writers live in several sessions declared files."
     },
     {
       "commit": "d84b1af6a15b",
