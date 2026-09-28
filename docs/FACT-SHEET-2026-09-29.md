@@ -16,7 +16,7 @@ person asking.
 > Exit 0 means every number below is still exactly true. Any other exit prints
 > the figure, the old value and the new one.
 
-**Figures refreshed 2026-09-28 07:36 by `python tools/fact_sheet_regenerates.py --update`.**
+**Figures refreshed 2026-09-28 07:51 by `python tools/fact_sheet_regenerates.py --update`.**
 
 **No file names, no customer data, no credentials, no methodology detail.**
 Figures that cannot be derived are marked **UNAVAILABLE** with the reason — a
@@ -61,12 +61,12 @@ call is not counted.
 
 | Figure | Value | Derived by | Date |
 |---|---|---|---|
-| Commits since 2026-05-15 | **6,912** | `git log --oneline --since=2026-05-15 \| wc -l` | 2026-09-28 |
+| Commits since 2026-05-15 | **6,913** | `git log --oneline --since=2026-05-15 \| wc -l` | 2026-09-28 |
 | First commit in repository | **2026-06-22** | `git log --reverse --format=%ad --date=short \| head -1` | 2026-09-28 |
 | Most recent commit | **2026-09-28** | `git log -1 --format=%ad --date=short` | 2026-09-28 |
 | Elapsed development span | **98 days / 14.0 weeks** | first to most recent commit, above | 2026-09-28 |
-| Commits per week (mean) | **494** | 6,912 ÷ 14.0 | 2026-09-28 |
-| Commits per day (mean) | **71** | 6,912 ÷ 98 | 2026-09-28 |
+| Commits per week (mean) | **494** | 6,913 ÷ 14.0 | 2026-09-28 |
+| Commits per day (mean) | **71** | 6,913 ÷ 98 | 2026-09-28 |
 
 **WHY THE HISTORY STARTS 2026-06-22, AND WHAT THE REAL SPAN IS.** Building began
 before version control, and the repository's own first commit proves it:
@@ -100,7 +100,7 @@ count.
 ## Two lines to say out loud
 
 > **"Roughly 490 commits a week, every week, for fourteen weeks."**
-> 6,912 commits ÷ 14.0 weeks under version control = **494 per week**, 71 per day.
+> 6,913 commits ÷ 14.0 weeks under version control = **494 per week**, 71 per day.
 > Over the full 18.6-week build span the average is **372 per week** — lower, and
 > stated because commits before 2026-06-22 do not exist to be counted, so the
 > higher number is the one with evidence behind it.
