@@ -164,6 +164,17 @@
       "status": "released",
       "released_at": "2026-09-28T10:16:54Z",
       "files": null
+    },
+    {
+      "id": "hover-1790591343",
+      "session": "hover",
+      "subject": "hover",
+      "task": "hover round nine: mirror hardening (helper-reset guard with a must-fail arm, token-expiry warning, session-end push routine with the anchor recorded and verified); resolver out-of-vocabulary nearest-owner fix from the other auditor's report, fixtures first, re-measure; async extraction crash fix in my js-exec tool with a must-fail arm; three routable finding entries and a routing check on my last five entries; one undirected batch; next rotation draw. Every write of mine lands under hover-audit-log or my own claim record. SCOPE: .claude/skills/sairn-hover-auditor/",
+      "claimed_at": "2026-09-28T10:29:03Z",
+      "claimed_at_epoch": 1790591343.5728936,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
@@ -256,6 +267,19 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "same file or resource: cody-q16",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-28T10:28:42Z",
+      "my_subject": "hover",
+      "my_task": "hover round nine: mirror hardening (helper-reset guard with a must-fail arm, token-expiry warning, session-end push routine with anchor recorded and verified); resolver out-of-vocabulary nearest-owner fix from the other auditor's report, fixtures first, re-measure; async extraction crash fix in my js-exec tool with a must-fail arm; three routable finding entries and a routing-field confirm on my last five entries; one undirected batch; next rotation draw. My writes stay in hover-audit-log and my own claim file. FILES: .claude/skills/sairn-hover-auditor/",
+      "other_session": "fourth",
+      "other_subject": "platform-staging-discipline",
+      "other_task": "enumerate and replace git add -A / git add . / git commit -a across tools, scripts, hooks and loops with explicit path lists; a pre-commit check refusing any STAGED file whose CONTENT matches a credential shape; known-bad control with an innocently-named token file. FILES: tools/staged_credential_check.py tests/run_staged_credential_probe.py tools/blanket_stage_scan.py docs/",
+      "other_claimed_at": "2026-09-28T10:21:01Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"file files\"",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
