@@ -59,12 +59,21 @@ DEFAULT_ENDPOINT = "https://sairn.vercel.app/api/legal-deadlines"
 SQL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sql")
 
 
-def post(endpoint, key, payload, timeout=30):
+def post(endpoint, key, payload, timeout=30, token=None):
     body = json.dumps(payload).encode("utf-8")
+    headers = {"Content-Type": "application/json", "Authorization": "Bearer " + key}
+    # ── THE SESSION IS NOW REQUIRED BY THE ENDPOINT (2026-09-27) ────────────
+    # `add_rule` and `add_holidays` had NO 401 and NO role check: the licence key
+    # alone could author or OVERWRITE a deadline rule, and the stored row drives
+    # every computed date for that jurisdiction. They are now gated to an owner
+    # or attorney session, so this loader signs in and sends the token. Without
+    # it every write answers 401 NO_SESSION -- which is the gate working, and is
+    # why the sign-in below is not optional.
+    if token:
+        headers["X-SD-Auth"] = token
     req = urllib.request.Request(
         endpoint, data=body, method="POST",
-        headers=sairn_http.with_browser_ua(
-            {"Content-Type": "application/json", "Authorization": "Bearer " + key}))
+        headers=sairn_http.with_browser_ua(headers))
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return r.status, json.loads(r.read().decode("utf-8"))
@@ -121,6 +130,12 @@ def main():
     ap.add_argument("--key", default=os.environ.get("SAIRNLAW_LICENSE_KEY", ""),
                     help="SAIRNlaw license key (default: $SAIRNLAW_LICENSE_KEY)")
     ap.add_argument("--endpoint", default=os.environ.get("SAIRNLAW_DEADLINES_API", DEFAULT_ENDPOINT))
+    ap.add_argument("--auth-endpoint", default=os.environ.get(
+        "SAIRNLAW_AUTH_API", DEFAULT_ENDPOINT.replace("legal-deadlines", "law-auth")))
+    ap.add_argument("--employee", default=os.environ.get("SAIRNLAW_EMP", ""),
+                    help="employee id for the authoring session (default: $SAIRNLAW_EMP)")
+    ap.add_argument("--pin", default=os.environ.get("SAIRNLAW_PIN", ""),
+                    help="PIN for that employee (default: $SAIRNLAW_PIN)")
     ap.add_argument("--dry-run", action="store_true",
                     help="parse and report what would be sent; makes no network call")
     args = ap.parse_args()
@@ -147,10 +162,42 @@ def main():
             "Rules and calendars are stored PER LICENSE, so the key decides which\n"
             "tenant this lands in -- it is not a formality and must not be guessed.")
 
+    # ── SIGN IN, BECAUSE A LICENCE KEY IS NO LONGER AUTHORITY ───────────────
+    # COULD NOT RUN, never a partial load. If the sign-in fails, every write
+    # would answer 401 and this would print a wall of identical failures that
+    # read as a broken seed file rather than as a missing credential.
+    if not args.employee or not args.pin:
+        raise SystemExit(
+            "COULD NOT RUN: add_rule and add_holidays now require an OWNER or\n"
+            "ATTORNEY session -- a licence key identifies the firm, not the person\n"
+            "asserting what a rule of procedure says. Set SAIRNLAW_EMP and\n"
+            "SAIRNLAW_PIN, or pass --employee/--pin.\n"
+            "Nothing was sent, and an unloaded seed is INERT rather than absent.")
+    st, res = post(args.auth_endpoint, args.key,
+                   {"action": "login", "employee_id": args.employee, "pin": args.pin})
+    token = (res or {}).get("token")
+    if st != 200 or not token:
+        raise SystemExit(
+            "COULD NOT RUN: sign-in failed (HTTP %s) -- %s\nNothing was sent."
+            % (st, json.dumps(res)[:300]))
+    role = ((res or {}).get("role") or "").lower()
+    print("signed in as %s (%s)" % (args.employee, role or "role unknown"))
+    if role not in ("owner", "attorney"):
+        # Said BEFORE the writes rather than discovered as N identical 403s: the
+        # endpoint limits authoring to owner/attorney, and a paralegal credential
+        # would otherwise produce one refusal per rule with nothing naming the
+        # pattern.
+        raise SystemExit(
+            "COULD NOT RUN: role %r may not author deadline rules. The endpoint\n"
+            "limits add_rule and add_holidays to an owner or an attorney, because\n"
+            "authoring a rule asserts what a rule of procedure says and cites the\n"
+            "authority for it. Nothing was sent." % role)
+
     failures = []
 
     for src, cal in calendars:
-        st, res = post(args.endpoint, args.key, {"action": "add_holidays", "calendar": cal})
+        st, res = post(args.endpoint, args.key, {"action": "add_holidays", "calendar": cal},
+                       token=token)
         tag = "%s:%s" % (cal.get("jurisdiction"), cal.get("year"))
         if st == 200 and res.get("ok"):
             print("  ok   CAL  %-12s %d dates" % (tag, res.get("count", 0)))
@@ -160,7 +207,8 @@ def main():
             failures.append(("calendar", tag, src, st, msg))
 
     for src, rule in rules:
-        st, res = post(args.endpoint, args.key, {"action": "add_rule", "rule": rule})
+        st, res = post(args.endpoint, args.key, {"action": "add_rule", "rule": rule},
+                       token=token)
         rid = rule.get("rule_id")
         if st == 200 and res.get("ok"):
             print("  ok   RULE %s" % rid)
