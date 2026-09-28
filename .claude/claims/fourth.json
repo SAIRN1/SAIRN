@@ -2547,6 +2547,22 @@
         "api/sd-data.js",
         "sql/sairncare_incidents_recorded_by.sql"
       ]
+    },
+    {
+      "id": "fourth-1790560778",
+      "session": "fourth",
+      "subject": "platform-text-gates",
+      "task": "sairn_sql_preflight.py literal/comment stripping with a regression control; the text-parsing-gate sweep and a known-bad control per gate; register citation survivability across a rebase. FILES: tools/sairn_sql_preflight.py tests/run_sql_preflight_literal_probe.py tools/text_gate_literal_sweep.py tools/defect_register.py docs/",
+      "claimed_at": "2026-09-28T01:59:38Z",
+      "claimed_at_epoch": 1790560778.2603657,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "tests/run_sql_preflight_literal_probe.py",
+        "tools/defect_register.py",
+        "tools/sairn_sql_preflight.py",
+        "tools/text_gate_literal_sweep.py"
+      ]
     }
   ],
   "refusals": [
