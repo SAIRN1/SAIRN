@@ -30,3 +30,9 @@ sql/_scratch_*
 # and exits 2 when it is absent, which is COULD NOT RUN and never a pass.
 docs/spec/states/
 tools/vendor/
+
+# Credential files must never be swept in by a `git add -A`. A GitHub PAT
+# reached a commit on 2026-09-28 exactly that way and the push gate caught it.
+.claude/github_pat*
+.claude/*token*
+.claude/*secret*
