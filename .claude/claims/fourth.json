@@ -2532,6 +2532,21 @@
         "api/sd-data.js",
         "sql/sairncare_incidents_recorded_by.sql"
       ]
+    },
+    {
+      "id": "fourth-1790560589",
+      "session": "fourth",
+      "subject": "sairncare-incidents",
+      "task": "alf_incidents recorded_by attribution fix and the family-contact narrow tier. FILES: api/sd-data.js api/sd-data-alf-caregiver-scope.test.js sql/sairncare_incidents_recorded_by.sql",
+      "claimed_at": "2026-09-28T01:56:29Z",
+      "claimed_at_epoch": 1790560589.876377,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/sd-data-alf-caregiver-scope.test.js",
+        "api/sd-data.js",
+        "sql/sairncare_incidents_recorded_by.sql"
+      ]
     }
   ],
   "refusals": [
