@@ -3240,8 +3240,8 @@
       "task": "queue20 item 1 FIRST, time-critical: fact-sheet corrections for Michael's company visits tomorrow -- app count broken by category, panels for the six apps using a different convention counted by THEIR convention with a stated floor, provisional filing dates from any receipt or ledger with deadlines at filing plus twelve months, the true build span with evidence for why git history starts 2026-06-22 when building began mid-May and the patent filed 2026-05-21, and two per-week lines. Then item 3: the four audit licences now EXIST, so bootstrap owner and non-management accounts through the product endpoints, re-run the alf_facility role-gate probe with real sessions and report observed values per role, repoint and re-run the remaining live probes, and create Ted's care-role employee on ALF-AUDIT-2026. Then item 2 credential LOCATIONS only, never a value. Then the obligation backlog with backfill_shas, and the regenerates-or-fails fact-sheet checker. SUBJECT NAMED PER PR 4.3 FILES: docs/FACT-SHEET-2026-09-29.md tools/fact_sheet_regenerates.py tests/run_fact_sheet_regenerates_probe.py docs/2026-09-28-credential-locations.md",
       "claimed_at": "2026-09-28T10:25:06Z",
       "claimed_at_epoch": 1790591106.70393,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-28T11:00:34Z",
       "files": [
         "docs/2026-09-28-credential-locations.md",
         "docs/FACT-SHEET-2026-09-29.md",
