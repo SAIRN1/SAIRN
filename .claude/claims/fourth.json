@@ -2600,8 +2600,8 @@
       "task": "report-only register of commits whose message says live verification is owed with no later commit or log recording it; wired into the recurring run; known-bad control. FILES: tools/verification_owed_report.py tests/run_verification_owed_probe.py docs/",
       "claimed_at": "2026-09-28T04:46:02Z",
       "claimed_at_epoch": 1790570762.3740282,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-28T05:06:59Z",
       "files": [
         "tests/run_verification_owed_probe.py",
         "tools/verification_owed_report.py"
