@@ -1,48 +1,68 @@
 #!/bin/sh
 # .githooks/prepare-commit-msg
 #
-# ONE JOB: refuse any commit that stages a conflict marker.
+# Refuses a COMMIT that stages something no one ever means to commit:
+#   * an unresolved conflict marker  -- tools/staged_conflict_marker_check.py
+#   * credential-shaped CONTENT      -- tools/staged_credential_check.py
 #
-# ── WHY HERE AND NOT IN pre-commit (measured 2026-09-24) ───────────────────
-# This check was first written into pre-commit, which is the conventional
-# place and is WRONG FOR THE ONE SHAPE IT WAS BUILT FOR. The defect being
-# guarded is `git add -A` while a rebase is mid-conflict, followed by
-# `git rebase --continue`. Tested in a throwaway repo:
+# WHY prepare-commit-msg AND NOT pre-commit. `git rebase --continue` -- the
+# operation that produced every conflict-marker instance, and the
+# regenerate-after-rebase step that staged a GitHub token on 2026-09-28 -- does
+# not fire pre-commit at all. prepare-commit-msg fires on both.
 #
-#     git rebase --continue  fires  prepare-commit-msg, post-commit,
-#                                   post-rewrite
-#     git rebase --continue  does NOT fire  pre-commit, commit-msg
+# `--no-verify` not bypassing it is deliberate and worth saying out loud:
+# neither a conflict marker nor a token is something a person means to commit,
+# so the escape hatch for "skip the slow checks" should not also skip these.
+# `git commit` aborts when this hook exits non-zero; inside a rebase the step
+# stops with "error: could not commit staged changes", the rebase stays in
+# progress and the resolution stays staged -- which is the cheap state to fix
+# from.
 #
-# So a pre-commit copy of this check watches the normal commit path and is
-# silent on the exact path that has put a marker on origin/main four times.
-# It would have reported a clone as protected while the protection could not
-# fire -- the shape PR §1.11 is about.
+# ── THIS HOOK FAILED OPEN TWICE, AND BOTH ARE FIXED HERE (2026-09-28) ──────
+# It used to read:
 #
-# prepare-commit-msg is not a second copy, it is a STRICTLY WIDER one, also
-# verified rather than read off the docs:
+#     ROOT=$(git rev-parse --show-toplevel) || exit 0
+#     [ -f "$ROOT/tools/staged_conflict_marker_check.py" ] || exit 0
+#     exec "$PY" "$ROOT/tools/staged_conflict_marker_check.py"
 #
-#     normal commit        pre-commit YES   prepare-commit-msg YES
-#     commit --amend       pre-commit YES   prepare-commit-msg YES
-#     commit --no-verify   pre-commit no    prepare-commit-msg YES
-#     cherry-pick --cont.  pre-commit YES   prepare-commit-msg YES
-#     rebase --continue    pre-commit no    prepare-commit-msg YES
+# `exit 0` means ALLOW THE COMMIT. So a git-discovery failure allowed it, and a
+# MISSING CHECKER allowed it -- the exact shape CLAUDE.md calls the most common
+# defect on this platform: "a check that depends on another tool must fail
+# CLOSED when that tool is absent. A gate wrapped in `if os.path.isfile(...)`
+# does not skip one check, it reports a pass it never performed."
 #
-# There is no case where pre-commit fires and this does not, which is why the
-# check lives in one hook rather than two. Two hooks running one tool is not
-# a second opinion -- it is the Ariane 5 redundancy the cross-domain notes
-# already charge for.
+# A missing checker is now a REFUSAL that names the file. If a clone genuinely
+# has no checkers, that clone should not be committing through this hook.
 #
-# `--no-verify` not bypassing it is deliberate and worth saying out loud: a
-# conflict marker is never something a person means to commit, so the escape
-# hatch for "skip the slow checks" should not also skip this one. `git commit`
-# aborts when this hook exits non-zero; inside a rebase the step stops with
-# "error: could not commit staged changes", the rebase stays in progress and
-# the resolution stays staged -- which is the cheap state to fix from.
+# AND `exec` MEANT ONLY ONE CHECK COULD EVER RUN. It replaced the shell with
+# the first checker, so appending a second would have been silently dead code.
+# Both now run and the worst exit code wins.
 #
 # INSTALL (per clone, once): python tools/install_git_hooks.py
 
-ROOT=$(git rev-parse --show-toplevel) || exit 0
-[ -f "$ROOT/tools/staged_conflict_marker_check.py" ] || exit 0
+ROOT=$(git rev-parse --show-toplevel)
+if [ -z "$ROOT" ]; then
+  echo "prepare-commit-msg: REFUSED -- 'git rev-parse --show-toplevel' gave no" >&2
+  echo "  repository root, so no staged check could run. This is not a pass." >&2
+  exit 1
+fi
 
 command -v python >/dev/null 2>&1 && PY=python || PY=python3
-exec "$PY" "$ROOT/tools/staged_conflict_marker_check.py"
+if ! command -v "$PY" >/dev/null 2>&1; then
+  echo "prepare-commit-msg: REFUSED -- no python on PATH, so the staged" >&2
+  echo "  conflict-marker and credential checks did not run." >&2
+  exit 1
+fi
+
+STATUS=0
+for CHECK in staged_conflict_marker_check.py staged_credential_check.py; do
+  if [ ! -f "$ROOT/tools/$CHECK" ]; then
+    echo "prepare-commit-msg: REFUSED -- tools/$CHECK is MISSING, so that" >&2
+    echo "  check DID NOT RUN. A missing checker is not a clean commit." >&2
+    STATUS=1
+    continue
+  fi
+  "$PY" "$ROOT/tools/$CHECK" || STATUS=1
+done
+
+exit $STATUS

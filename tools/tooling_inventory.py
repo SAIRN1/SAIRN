@@ -73,6 +73,29 @@ GATE = os.path.join('tools', 'sairn_push_gate_hook.py')
 # LIVE means it makes a real network or database request, so it cannot be wired
 # into a hook without making every push talk to the outside world.
 PURPOSES = {
+    'staged_credential_check.py': ('CHECKER',
+        'a COMMIT about to make credential CONTENT durable -- an issuer-prefixed '
+        'token, key or PEM header in a STAGED blob, whatever the file is called '
+        'and whatever staged it. Wired into .githooks/prepare-commit-msg beside '
+        'staged_conflict_marker_check.py and NOT pre-commit, because '
+        '`git rebase --continue` does not fire pre-commit at all and a '
+        'regenerate-after-rebase step is exactly where the 2026-09-28 token came '
+        'from. NAME-BASED IGNORING IS NOT ENOUGH and that is the point: a '
+        '.gitignore rule closes the case that already happened, and the next one '
+        'will be called notes.txt. IT NEVER PRINTS THE MATCH -- the regex is '
+        'evaluated, the boolean kept, the match object discarded; echoing a '
+        'secret to explain that you found one copies it into the terminal, the '
+        'scrollback and whatever collects them. The exemption for scanners and '
+        'fixtures is a SELF-DESCRIBING MARKER IN THE BLOB rather than a '
+        'skip-list, so it travels with the file and expires when the file stops '
+        'being about patterns -- the cost, stated, is that a real scanner which '
+        'genuinely leaked a token would be exempt. CANNOT SEE a credential with '
+        'no issuer prefix: a bare API key, a password or a connection string is '
+        'invisible to it, so zero findings is NOT proof of no secrets. Control: '
+        'tests/run_staged_credential_probe.py, 15 arms, whose fixtures are '
+        'assembled at runtime because writing a literal PEM header was refused '
+        'by the platform write guard -- and whose fail-closed arm caught this '
+        'tool answering about C:/Users/marsh/.git instead of the clone.'),
     'blob_overrides_column_scan.py': ('CHECKER',
         'a read mapper that spreads its stored blob AFTER the authoritative '
         'columns, where the blob can actually carry one of those column names. '
