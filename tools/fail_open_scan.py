@@ -85,6 +85,82 @@ class CouldNotTell(Exception):
     pass
 
 
+def mask_python(src):
+    """`src` with every STRING and COMMENT blanked, same length, via tokenize.
+
+    ── THIS TOOL REPORTED ITSELF SIX TIMES (2026-09-29) ─────────────────────
+    Its first version matched raw source, so its own docstring -- which quotes
+    `|| exit 0` and `except: pass` to EXPLAIN them -- counted as six findings,
+    and tools/tooling_inventory.py added two more from the PURPOSES entry
+    describing this very tool. EIGHT OF EIGHTEEN REPORTED SITES WERE PROSE, and
+    the published figures (21 dependency, then 16) were inflated by a scanner
+    reading its own description of the thing it looks for.
+
+    That is exactly the class tools/text_gate_literal_sweep.py was built to
+    measure, committed by the scanner written after it -- the third instance in
+    one session.
+
+    TOKENIZE, NOT A REGEX. A regex for Python strings has to model triple
+    quotes, raw and f prefixes, escapes and nesting; the tokenizer already
+    does. On a file that will not tokenize -- a syntax error, a bad encoding --
+    this raises, and the caller turns that into COULD NOT TELL rather than
+    scanning the raw text and pretending.
+    """
+    import io as _io
+    import tokenize as _tok
+    out = list(src)
+    rdr = _io.StringIO(src).readline
+    lines = src.splitlines(keepends=True)
+    starts = []
+    pos = 0
+    for ln in lines:
+        starts.append(pos)
+        pos += len(ln)
+    for tok in _tok.generate_tokens(rdr):
+        if tok.type not in (_tok.STRING, _tok.COMMENT):
+            continue
+        (r1, c1), (r2, c2) = tok.start, tok.end
+        a = starts[r1 - 1] + c1
+        b = starts[r2 - 1] + c2
+        for k in range(a, min(b, len(out))):
+            if out[k] != '\n':
+                out[k] = ' '
+    return ''.join(out)
+
+
+def mask_shell(src):
+    """`src` with shell comments and quoted strings blanked, same length.
+
+    A `#` inside a quoted string is not a comment and a quote inside a comment
+    does not open a string, so this is one left-to-right pass rather than two
+    regex sweeps -- the same correction made to sairn_sql_preflight.strip_noise.
+    """
+    out = list(src)
+    i, n = 0, len(src)
+    while i < n:
+        c = src[i]
+        if c == '#':
+            j = src.find('\n', i)
+            j = n if j < 0 else j
+            for k in range(i, j):
+                out[k] = ' '
+            i = j
+            continue
+        if c in '\'"':
+            q, j = c, i + 1
+            while j < n and src[j] != q:
+                if src[j] == '\\':
+                    j += 1
+                j += 1
+            for k in range(i, min(j + 1, n)):
+                if out[k] != '\n':
+                    out[k] = ' '
+            i = min(j + 1, n)
+            continue
+        i += 1
+    return ''.join(out)
+
+
 def files():
     out = []
     for d in SCAN_DIRS:
@@ -102,12 +178,28 @@ def files():
     return out
 
 
-def classify_line(line, is_hook):
-    """(shape, scope) for one line, or (None, False)."""
-    if EXIT0.search(line):
-        return 'exit-0-on-failure', bool(SCOPE_WORDS.search(line))
-    if DEVNULL_IGNORED.search(line) and '||' in line and 'exit' in line:
-        return 'swallowed-error', bool(SCOPE_WORDS.search(line))
+def classify_line(masked, raw, is_hook):
+    """(shape, scope) for one line, or (None, False).
+
+    ── THE SHAPE COMES FROM CODE, THE SUBJECT FROM THE LITERAL ─────────────
+    Two different questions need two different inputs, and conflating them
+    broke this twice in opposite directions.
+
+    SHAPE is matched on the MASKED line, because `|| exit 0` written inside a
+    docstring is prose about the defect, not the defect -- this tool reported
+    ITSELF six times before the mask existed.
+
+    SCOPE is matched on the RAW line, because the thing that makes a guard a
+    scope test is the NAME IT TESTS FOR -- `$GITDIR/sairn-hover-auditor-clone`
+    -- and that name lives in a string literal, which the mask blanks. Reading
+    scope from the masked line made every scope guard vanish and reclassified
+    the hover-auditor marker test as a hook fail-open, which would have demanded
+    every commit in four build clones be refused.
+    """
+    if EXIT0.search(masked):
+        return 'exit-0-on-failure', bool(SCOPE_WORDS.search(raw))
+    if DEVNULL_IGNORED.search(masked) and '||' in masked and 'exit' in masked:
+        return 'swallowed-error', bool(SCOPE_WORDS.search(raw))
     return None, False
 
 
@@ -121,21 +213,38 @@ def scan():
             raise CouldNotTell('%s could not be read (%s) -- NOT a pass'
                                % (rel, exc))
         is_hook = rel.startswith('.githooks/')
+        # ── MATCH CODE, NOT PROSE ────────────────────────────────────────
+        # Every shape below is a phrase this repo also WRITES ABOUT. Matching
+        # raw source made this tool report itself six times from its own
+        # docstring. The mask keeps offsets, so line numbers stay true.
+        try:
+            if rel.endswith('.py'):
+                masked = mask_python(src)
+            else:
+                masked = mask_shell(src)
+        except Exception as exc:                                 # noqa: BLE001
+            raise CouldNotTell(
+                '%s could not be tokenised (%s), so its shapes were NOT '
+                'measured. Scanning the raw text instead would count prose as '
+                'code, which is the defect this mask exists for.'
+                % (rel, str(exc)[:80]))
         hits = []
-        for i, line in enumerate(src.splitlines(), 1):
-            if line.lstrip().startswith('#'):
+        raw_lines = src.splitlines()
+        for i, line in enumerate(masked.splitlines(), 1):
+            if not line.strip():
                 continue
-            shape, scope = classify_line(line, is_hook)
+            raw_line = raw_lines[i - 1] if i <= len(raw_lines) else ''
+            shape, scope = classify_line(line, raw_line, is_hook)
             if shape:
                 hits.append({'line': i, 'shape': shape, 'scope': scope,
-                             'text': line.strip()[:78]})
-        if is_hook and EXEC_HOOK.search(src):
-            m = EXEC_HOOK.search(src)
-            hits.append({'line': src.count('\n', 0, m.start()) + 1,
+                             'text': raw_line.strip()[:78]})
+        if is_hook and EXEC_HOOK.search(masked):
+            m = EXEC_HOOK.search(masked)
+            hits.append({'line': masked.count('\n', 0, m.start()) + 1,
                          'shape': 'exec-blocks-rest', 'scope': False,
                          'text': 'exec -- no later check can run'})
-        for m in BARE_EXCEPT.finditer(src):
-            hits.append({'line': src.count('\n', 0, m.start()) + 1,
+        for m in BARE_EXCEPT.finditer(masked):
+            hits.append({'line': masked.count('\n', 0, m.start()) + 1,
                          'shape': 'bare-except-pass', 'scope': False,
                          'text': m.group(0).replace('\n', ' ')[:70]})
         if hits:
