@@ -146,6 +146,47 @@ def main():
     check('...and nothing is scored that is NOT promoted, which would mean the '
           'score covers a population the registry does not',
           sorted(_scored - _promoted), [])
+
+    # ── THE JOIN, AND BOTH DIRECTIONS OF IT (added 2026-09-28) ──────────────
+    # Closes the planned action recorded on 0eb9ef7efd2f: a checker scored LOW or
+    # UNKNOWN on PROVEN, with a test file that NAMES it and declares no
+    # CONTROLS_FOR, is the exact state subprocess_decode_check was in -- the
+    # control existed, its declaration parsed to nothing, and the discrepancy was
+    # visible only to somebody who already knew.
+    _cands = C.naming_candidates()
+    # THIS FILE'S check() IS check(label, ACTUAL, EXPECTED). Written in that form
+    # deliberately: the same signature slip broke the first version of the arms
+    # above, and it is the open recurrence recorded on the nine-arm defect.
+    check('the join RUNS and returns a mapping, not None -- a join that threw '
+          'would print COULD NOT TELL and this arm must not accept that as none',
+          isinstance(_cands, dict), True)
+    check('...and it EXCLUDES exempt checkers: npm_audit_check.py is named '
+          'incidentally by two probes and is exempt WITH A REASON, so it is not '
+          'a missing control and must not be reported for ever',
+          'npm_audit_check.py' in _cands, False)
+    check('...and it excludes every checker that DOES declare a control, or the '
+          'candidate list would name the 58 that are already evidenced',
+          sorted(t for t in _cands
+                 if C.control_states().get(t) in ('BOTH', 'ONE')), [])
+    # THE BAND MUST NOT MOVE FOR A CHECKER THAT ONLY HAS A CANDIDATE. Driven on
+    # the real one rather than asserted: hover_process_pass_freshness.py has a
+    # naming candidate today and its PROVEN band must still be the no-control
+    # band, because a file naming a checker is not evidence the checker fires.
+    _cand_tool = sorted(_cands)[0] if _cands else None
+    check('THE JOIN IS REPORTED BESIDE THE BAND AND NEVER FOLDED INTO IT -- a '
+          'checker WITH a naming candidate still sits at the no-control band',
+          (None if _cand_tool is None
+           else next((x['evidence'] for x in rows if x['tool'] == _cand_tool), None)),
+          (None if _cand_tool is None else C.NAME[C.evidence_band('NONE')[0]]))
+    _plain = subprocess.run([sys.executable, os.path.join(REPO, 'tools',
+                                                          'checker_confidence.py')],
+                            capture_output=True, text=True, encoding='utf-8',
+                            errors='replace', cwd=REPO,
+                            env=dict(os.environ, PYTHONIOENCODING='utf-8',
+                                     PYTHONUTF8='1'))
+    check('...and the candidate section is PRINTED, because a join whose answer '
+          'never reaches the report is a join nobody can act on',
+          'UNDECLARED CONTROL CANDIDATES' in (_plain.stdout or ''), True)
     check('no row is rated above either of its inputs',
           [x['tool'] for x in rows
            if {'UNKNOWN': 0, 'LOW': 1, 'MEDIUM': 2, 'HIGH': 3}[x['confidence']]

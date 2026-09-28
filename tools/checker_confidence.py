@@ -111,6 +111,65 @@ def evidence_band(state):
     }.get(state, (UNKNOWN, 'no control state'))
 
 
+# ── THE JOIN THAT WAS AVAILABLE AND NOT MADE, CLOSED 2026-09-28 ─────────────
+# Recorded as owed on 0eb9ef7efd2f (2026-09-16) and register-only for twelve days:
+#
+#   "Nothing joins a checker confidence score to the existence of a control file
+#    that names it. The tool already reports those candidates, so the join is
+#    available and not made."
+#
+# THE DEFECT IT CAME FROM: this tool rated subprocess_decode_check LOW while its
+# control was driving it in BOTH directions. The control existed; its CONTROLS_FOR
+# declaration parsed to nothing, so `declared` had no entry, the state was NONE,
+# and the band was LOW. The discrepancy was visible only to somebody who already
+# knew the control existed -- which is the opposite of what a confidence score is
+# for.
+#
+# checker_control_check ALREADY computes the missing half: for each checker it
+# knows how many test files NAME it without declaring CONTROLS_FOR. It reports
+# that as a count and nothing reads it back. This is the read-back.
+#
+# WHY IT IS A SEPARATE SIGNAL AND NOT A BAND ADJUSTMENT: a file that names a
+# checker is NOT evidence the checker fires. Folding it into the band would invent
+# confidence from a mention, which is the fabrication shape this whole tool
+# exists to refuse. It is reported BESIDE the band as an UNDECLARED CANDIDATE, so
+# a reader is told where to look rather than given a better number.
+def naming_candidates():
+    """{tool: [test files that NAME it but declare no CONTROLS_FOR]}.
+
+    Same traversal checker_control_check uses, so the two cannot disagree about
+    which files name what. Returns {} on any read failure rather than a partial
+    map, because a partial map here would under-report candidates and the whole
+    point is not to under-report.
+    """
+    declared, mentions = {}, {}
+    try:
+        paths = CTRL.test_files()
+    except Exception:                                            # noqa: BLE001
+        return {}
+    for path in paths:
+        try:
+            src = io.open(path, encoding='utf-8', errors='replace').read()
+        except Exception:                                        # noqa: BLE001
+            continue
+        stripped = CTRL.strip(path, src)
+        for tool in CTRL.declared_controls(stripped):
+            declared.setdefault(tool, []).append(path)
+        # A MENTION is the tool's basename appearing in the stripped source
+        # WITHOUT a CONTROLS_FOR declaration for it in the same file. Stripped,
+        # so a comment naming a checker is not counted as naming it -- that is
+        # the same distinction checker_control_check rebuilt itself around in
+        # September, and getting it wrong here would manufacture candidates.
+        for tool in CTRL.promoted():
+            if tool in stripped and tool not in CTRL.declared_controls(stripped):
+                mentions.setdefault(tool, []).append(path)
+    # EXEMPT checkers are excluded: they are declared exempt WITH A REASON, so a
+    # file naming one is not a missing control. npm_audit_check.py is named by two
+    # probes incidentally and would otherwise be reported as a candidate for ever.
+    return {t: fs for t, fs in mentions.items()
+            if t not in declared and t not in CTRL.EXEMPT}
+
+
 def control_states():
     """{tool: state} by reading checker_control_check's own machinery."""
     promoted = CTRL.promoted()
@@ -256,6 +315,53 @@ def main(argv):
                 print('  %s -- %s' % (r['tool'], r['confidence']))
                 print('      stability: %s' % r['stability_why'])
                 print('      proven   : %s' % r['evidence_why'])
+
+        # ── THE JOIN, CLOSED 2026-09-28 (planned action on 0eb9ef7efd2f) ────
+        # A checker sitting at LOW or UNKNOWN on the PROVEN signal, with a test
+        # file that NAMES it and declares no CONTROLS_FOR, is the exact state
+        # subprocess_decode_check was in: the control existed, its declaration
+        # parsed to nothing, and the discrepancy was visible only to somebody who
+        # already knew. This is the read-back of a number
+        # checker_control_check was already computing.
+        #
+        # IT IS NOT FOLDED INTO THE BAND. A file naming a checker is not evidence
+        # the checker fires, and inventing confidence from a mention is the
+        # fabrication this whole tool refuses. Reported BESIDE the band, so a
+        # reader is told where to look rather than given a better number.
+        try:
+            cands = naming_candidates()
+        except Exception as e:                                   # noqa: BLE001
+            cands = None
+            print('')
+            print('  UNDECLARED CONTROL CANDIDATES: COULD NOT TELL (%s: %s).'
+                  % (type(e).__name__, e))
+            print('  That is not "none found" -- the join did not run.')
+        if cands is not None:
+            weak = set(r['tool'] for r in rows if r['_band'] <= LOW)
+            joined = {t: f for t, f in cands.items() if t in weak}
+            print('')
+            if joined:
+                print('  UNDECLARED CONTROL CANDIDATES (%d) -- a checker scored '
+                      'LOW or UNKNOWN on' % len(joined))
+                print('  PROVEN, with a test file that NAMES it and declares no '
+                      'CONTROLS_FOR:')
+                for t in sorted(joined):
+                    print('    %-36s %s' % (t, ', '.join(
+                        os.path.basename(x) for x in joined[t][:3])))
+                print('  IF ONE OF THOSE IS REALLY THE CONTROL, ADD CONTROLS_FOR '
+                      'AND THE BAND MOVES')
+                print('  ON ITS OWN. This is the state subprocess_decode_check '
+                      'was in: rated LOW')
+                print('  while its control drove it BOTH WAYS, and nothing '
+                      'joined the two facts.')
+            else:
+                print('  UNDECLARED CONTROL CANDIDATES: none. %d checker(s) are '
+                      'LOW or UNKNOWN on' % len(weak))
+                print('  PROVEN and NO test file names any of them, so the '
+                      'missing controls are')
+                print('  genuinely missing rather than merely undeclared. That '
+                      'is a MEASURED zero,')
+                print('  not an unrun join.')
 
     return finish(
         ['%s is LOW confidence: %s / %s' % (r['tool'], r['stability_why'],
