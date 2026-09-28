@@ -84,8 +84,8 @@
       "task": "close 3 self-directed items: realistic-transition sabotage fixtures for draw_order/undirected_order/IMPLIED_LINE; diagnose the repeated-app draw pattern and add a freshness floor; scope cross-instance --contradicts FILES: .claude/skills/sairn-hover-auditor/",
       "claimed_at": "2026-09-28T01:14:25Z",
       "claimed_at_epoch": 1790558065.8152688,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-28T01:45:50Z",
       "files": null
     }
   ],
