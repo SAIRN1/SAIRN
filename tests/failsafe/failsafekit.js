@@ -152,6 +152,17 @@ function restWorld(opts) {
       const m = /employee_id=eq\.([^&]+)/.exec(u);
       const who = m ? decodeURIComponent(m[1]) : null;
       const revoked = o.revoked || [];
+      // VERDICT 2026-09-27: KEPT, AND NOTHING HERE DRIVES IT ON PURPOSE.
+      // tools/ghost_field_read_scan.py flags `employeeLookupFails` as a knob no
+      // caller can turn. It is not a coverage gap: the fail-closed behaviour
+      // this would drive -- an employee lookup that ANSWERS WITH A REFUSAL must
+      // refuse the witness rather than proceed -- is asserted four times in
+      // api/sv-witness.test.js as `WITNESS_CHECK_FAILED` (503), through that
+      // endpoint's own harness. The arms in THIS file are about INTERRUPTION,
+      // and a second copy of an assertion that already exists is a second thing
+      // to drift. The knob stays because a future interruption arm may need to
+      // combine the two, and deleting it would delete the record that the case
+      // was considered.
       if (o.employeeLookupFails) {
         return { ok: false, status: 500, json: async () => ({ message: 'employee lookup failed' }) };
       }

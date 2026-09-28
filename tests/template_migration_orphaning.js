@@ -218,6 +218,74 @@ test('MUTANT: ignoring the save result sets the flag on a failed migration', () 
   assert.strictEqual(store['sd_templates'], undefined, 'the mutant saved after all');
 });
 
+// ── THE OTHER WRITE, WHOSE RETURN IS ALSO IGNORED (added 2026-09-27) ────────
+// `opts.rawOk` has existed in this harness since it was written and NOTHING
+// EVER PASSED IT. Found by tools/ghost_field_read_scan.py: `rawOk` is read in a
+// gate and is not written, keyed or quoted anywhere in the repo -- a
+// fault-injection knob nobody can turn, which looks exactly like one that was
+// turned and caught.
+//
+// IT MATTERS BECAUSE THE 2026-09-04 FIX WAS HALF A FIX. It checked `tmSave()`
+// and left `stRaw(FLAG,'1')` on the very next line unchecked -- the identical
+// shape, one line apart. `stRaw` returns false on the same quota failure.
+//
+// THE CONSEQUENCE IS NOT DATA LOSS AND THE CODE SAYS SO: without the flag the
+// next load retries, and the `have[id]` guard makes the retry harmless. So this
+// fails in the SAFE direction BY DESIGN. These arms exist to turn that sentence
+// from a comment into something that fails if it stops being true -- because
+// the comment is the only thing asserting it, and the last time a claim about
+// this function lived only in prose it was wrong.
+section('the OTHER unchecked write: stRaw(FLAG) failing is safe, and now proven so');
+
+test('a flag write that fails leaves the flag unset -- so the migration retries '
+  + 'rather than marking itself done on a write that did not land', () => {
+  const b = build({ store: { sd_template_records: JSON.stringify(LEGACY) }, rawOk: false });
+  b.run();
+  assert.strictEqual(b.store[FLAG], undefined,
+    'the flag is present after a failed stRaw, which the harness says cannot happen');
+});
+
+test('...and the records DID migrate and save, so the retry is the only cost -- '
+  + 'this is the safe direction the code comment claims', () => {
+  const b = build({ store: { sd_template_records: JSON.stringify(LEGACY) }, rawOk: false });
+  b.run();
+  assert.strictEqual(b.ctx.tmRecords.length, 2, 'the migration itself did not run');
+  assert.strictEqual(b.store['sd_templates'], 'saved', 'the save did not land');
+  assert.ok(b.store['sd_template_records'], 'the legacy rows were destroyed');
+});
+
+test('...and it does NOT report a failure to the user, because nothing failed '
+  + 'that the user can act on -- an error toast here would train them to '
+  + 'ignore the one that matters', () => {
+  const b = build({ store: { sd_template_records: JSON.stringify(LEGACY) }, rawOk: false });
+  b.run();
+  assert.ok(!/err:/.test(b.notes.join(' | ')),
+    'an error was shown for a failure with no user-visible consequence: '
+    + b.notes.join(' | '));
+  assert.match(b.notes.join(' | '), /2 template records migrated/,
+    'it did not report the migration that actually happened');
+});
+
+test('the retry IS idempotent -- running again with the same legacy rows adds '
+  + 'no duplicates, which is the whole reason failing without the flag is safe', () => {
+  const b = build({ store: { sd_template_records: JSON.stringify(LEGACY) }, rawOk: false });
+  b.run();
+  const migrated = b.ctx.tmRecords.slice();
+  const b2 = build({ store: { sd_template_records: JSON.stringify(LEGACY) },
+                     existing: migrated });
+  b2.run();
+  assert.strictEqual(b2.ctx.tmRecords.length, 2,
+    'the retry duplicated the records: ' + b2.ctx.tmRecords.map(r => r.id).join(','));
+  assert.strictEqual(b2.store[FLAG], '1', 'the successful retry did not set the flag');
+});
+
+test('CONTROL: with rawOk unset the flag IS written, so the four arms above '
+  + 'distinguish a failed flag write from a flag that is never written at all', () => {
+  const b = build({ store: { sd_template_records: JSON.stringify(LEGACY) } });
+  b.run();
+  assert.strictEqual(b.store[FLAG], '1');
+});
+
 section('the duplication itself really is resolved');
 
 test('the canonical key is sd_templates and the legacy one is only ever read', () => {

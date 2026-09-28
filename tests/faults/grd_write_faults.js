@@ -281,6 +281,54 @@ test('...and a HANG behaves the same, because a timeout arrives as a refusal',
       JSON.stringify(ctx.__state.toasts));
   });
 
+// ── THE FAULT THIS FILE COULD INJECT AND NEVER DID (added 2026-09-27) ───────
+// `opts.noGps` has existed in `ctxFor` since this probe was written and NOTHING
+// EVER PASSED IT. Found by tools/ghost_field_read_scan.py: `noGps` is read in a
+// gate and is not written, keyed or quoted anywhere in the repo.
+//
+// A FAULT PROBE WITH AN UNINJECTED FAULT IS THE WORST PLACE FOR THIS. Every
+// other arm here drives a transport failure; the one failure the app handles by
+// REFUSING OUTRIGHT -- no GPS fix, so no point at all -- was never driven. And
+// an uninjected fault reads exactly like an injected one that was caught, which
+// is the whole shape docs/2026-09-26-ghost-failure-path-sweep.md is about.
+//
+// IT IS ALSO THE FIRST GUARD IN THE FUNCTION, so if it ever stops returning
+// early, every arm above starts testing a path the user should never reach --
+// a point written with `lat: undefined`.
+test('NO GPS FIX: the capture is refused before anything is written, and the '
+  + 'user is told why -- the first guard in addCoursePoint, never once driven',
+  async () => {
+    const ctx = ctxFor({ noGps: true });
+    await ctx.addCoursePoint();
+    // TWO messages, not one: the "Getting GPS fix..." notice fires first and is
+    // the same notice the refusal arms above count. Asserted as two rather than
+    // loosened to "at least one", because the point of this arm is that the
+    // refusal is the LAST thing the user sees -- toast() is textContent, so a
+    // correction only corrects if nothing follows it.
+    assert.strictEqual(ctx.__state.toasts.length, 2,
+      'expected the GPS notice and the refusal -- got: '
+      + JSON.stringify(ctx.__state.toasts));
+    assert.ok(/Could not get a GPS fix/.test(ctx.__state.toasts[1]),
+      'the refusal is not the message the user is left with: '
+      + JSON.stringify(ctx.__state.toasts));
+    assert.ok(!/Point captured/.test(ctx.__state.toasts.join(' | ')),
+      'a point with no GPS fix was announced as captured');
+  });
+
+test('...and NOTHING is written locally or pushed -- a point with no coordinates '
+  + 'is worse than no point, because the table would show it as real',
+  async () => {
+    const ctx = ctxFor({ noGps: true });
+    const before = ctx.__zone.points.length;
+    await ctx.addCoursePoint();
+    assert.strictEqual(ctx.__zone.points.length, before,
+      'a coordinate-less point was appended to the zone');
+    assert.strictEqual(ctx.__state.writes, undefined,
+      'a write was attempted with no GPS fix: ' + JSON.stringify(ctx.__state.writes));
+    assert.strictEqual(ctx.__state.renders, 0,
+      'the points table was re-rendered for a point that does not exist');
+  });
+
 test('CONTROL: a SUCCESSFUL push does say "Point captured", with the accuracy',
   async () => {
     // A caller that never announces success is not a fix, it is a deleted

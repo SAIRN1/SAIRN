@@ -240,22 +240,71 @@ signature promises a capability it does not have. Worth a decision, not urgent.
 | `stonedesk.html:12765` | `data.imageUrl` | |
 | `stonedesk-hr.html:273` | `date.Great` | Almost certainly a parse artefact; listed rather than dropped. |
 
-### Test-harness option flags that cannot be enabled
+### Test-harness option flags that cannot be enabled — SETTLED 2026-09-27
 
 A fault-injection or stub option that **no caller ever passes**, so that arm of
 the harness can never run. This is the fault-probe equivalent of the class: a
 sabotage that cannot be applied looks exactly like one that was applied and
 caught.
 
-`tests/faults/grd_write_faults.js:124` `opts.noGps` ·
-`tests/failsafe/failsafekit.js:155` `o.employeeLookupFails` ·
-`tests/run_sairnlaw_rate_limit_probe.js:68-9` `o.racyStatus` ·
-`tests/sairnbiz_timesheet_hours.js:138` `opts.noRender` ·
-`tests/sairnscape_memory.js:90` `opts.cloudBody` ·
-`tests/sd_data_unconfirmed_write_review_probe.js:111-2` `opts.patchStatus` ·
-`tests/template_migration_orphaning.js:81` `opts.rawOk` ·
-`api/sd-data-alf-training-join.test.js:95` `opts.rulesStatus` ·
-`api/sd-data-family-contacts.test.js:87` `opts.marStatus`
+**All nine are now settled.** Six were real uncovered failure modes and are
+**driven**; three are scaffolding and carry a **verdict comment at the knob**, so
+the next reader — and the next scan run — sees the decision in place rather than
+re-deriving it. Nothing was deleted: deleting a knob deletes the record that the
+case was considered.
+
+| Knob | Verdict | What was done |
+|---|---|---|
+| `tests/template_migration_orphaning.js` `opts.rawOk` | **real, safe direction** | The 2026-09-04 fix checked `tmSave()` and left `stRaw(FLAG,'1')` on the very next line unchecked. Fails safe (no flag → retry, and `have[id]` makes the retry harmless) and the code *says* so — now 5 arms assert it instead of a comment, including that the retry is idempotent and that no error is shown for a failure with no user-visible consequence. |
+| `tests/sd_data_unconfirmed_write_review_probe.js` `opts.patchStatus` | **real gap in a review** | The review answered "is 404 right for a zero-row PATCH" and never asked what happens when the PATCH is **refused**. Added as QUESTION 1b: a refused PATCH is a *third* answer (502, upstream body logged), not a reuse of 404 or of `WRITE_UNCONFIRMED`. Named dependency recorded: the refusal's 502 carries no `code` where `WRITE_UNCONFIRMED`'s does. |
+| `tests/faults/grd_write_faults.js` `opts.noGps` | **real, and the worst place for it** | A fault probe with an uninjected fault. `addCoursePoint`'s *first* guard — no GPS fix, refuse outright — was never driven. 2 arms: the refusal is the last thing the user sees, and nothing is appended to the zone, pushed, or re-rendered. |
+| `tests/run_sairnlaw_rate_limit_probe.js` `o.racyStatus` | **real, and the one case the file's own standard demanded** | Section D covers every way the *RPC* can fail; this is the layer below — RPC gone **and** the fallback's own window read failing. Measured: it **throws**, `wexLookup` does not catch, and `api/legal-reference.js`'s outer catch turns it into 502. Fail-closed, so **no request reaches Cornell**. 4 arms assert "never proceeds" rather than a particular shape, plus the paired positive. *Flagged, not fixed:* the throw escapes the `{ok:false, code}` vocabulary every other branch of `api/_lib/wex.js` maintains. |
+| `api/sd-data-alf-training-join.test.js` `opts.rulesStatus` | **real, third read in the branch** | `credStatus: 404` and an absent roster were driven and argue the same point; the **rules** table — whose absence produces the most convincing wrong answer, "no requirement to compare against" — was not. 3 arms (404, 500, control). |
+| `api/sd-data-family-contacts.test.js` `opts.marStatus` | **real, other half of a driven case** | `marNonArray` (the page parsed, wrong shape) was driven; a page the store **refused** was not. 2 arms: a mid-pagination refusal must not serve the pages that already arrived. |
+| `tests/failsafe/failsafekit.js` `o.employeeLookupFails` | **covered elsewhere — kept** | The fail-closed behaviour it would drive is asserted four times in `api/sv-witness.test.js` as `WITNESS_CHECK_FAILED` (503), through that endpoint's own harness. This file's arms are about *interruption*; a second copy of an existing assertion is a second thing to drift. Verdict written at the knob. |
+| `tests/sairnscape_memory.js` `opts.cloudBody` | **unbuildable, not untested — kept** | Only `cloudDead: true` is ever passed because **`api/memory-cloud` does not exist**. The resolve branch is a placeholder for an endpoint nobody has written. Kept so the shape is ready; the verdict is written at the knob **because a reader seeing a cloud branch in a passing suite would reasonably believe the cloud path is covered, and it is not — it does not run.** |
+| `tests/sairnbiz_timesheet_hours.js` `opts.noRender` | **cosmetic — kept** | The only one of the nine that guards nothing a failure mode depends on; skipping the initial render just saves work. No arm to add. Verdict at the knob. |
+
+#### And settling them found three suites red on `main`
+
+Running each suite in order to judge its knob is what surfaced these. None was
+caused by this change, each was confirmed pre-existing by stashing, and all three
+are now green.
+
+1. **`tests/sairnbiz_timesheet_hours.js` was 46 arms red** with
+   `ReferenceError: sbOtThreshold is not defined`. The configurable overtime
+   threshold landed 2026-09-26 and this suite's hand-kept `fnBody(...)`
+   extraction list was not updated, so **46 of 63 arms failed on a correct
+   file** — the sixth recorded instance of that class. Repaired by extracting
+   the three real functions (`sbCfg`, `sbOtThreshold`, `sbOtThresholdNote`),
+   not stubs: the threshold decides a money figure, and a stub would test the
+   harness's opinion of it.
+2. **Then six of those arms failed for a second reason, and the instrument was
+   wrong rather than the code.** `callHandler` counted the *first* fetch as the
+   auth read and every later one as a write. That held until a second read
+   appeared ahead of the write — the single-entry-point active-credential
+   re-check — after which every refusal arm reported `reached storage before
+   being refused` against a handler that had refused correctly and written
+   nothing. `wrote` is now decided by the **method**, which is a property of the
+   handler; ordering never was.
+3. **`tests/sairnscape_memory.js` had one arm red against correct code.** It
+   read `html.slice(at, at + 1200)` to find a line that really is present — but
+   `scpData` grew a 35-line comment block on 2026-09-21 and pushed the line past
+   character 1200. A fixed character count is a guess about how long a function
+   will stay; the closing brace is the fact. Now brace-matched.
+
+#### One product tension surfaced, flagged and NOT settled by me
+
+`tests/sairnbiz_timesheet_hours.js`'s "a clean week carries no note" arm went
+false because `rTS()` now **appends** `sbOtThresholdNote()` to `ts-note`
+unconditionally. That was deliberate and says so in place — *"a configurable
+number that silently changes a money figure"* must always be visible. But this
+arm's own comment argues the opposite for the same element: *"a disclosure that
+is always on stops being read."* **Both arguments are reasonable and they now
+share one element**, so the exclusion sentence arrives appended to a sentence the
+reader has learned to skip. The arm was repaired to assert its real property (no
+exclusion sentence on a clean week) and the tension is recorded there. It is a
+product decision, not a test fix.
 
 ### Request fields no caller sends — dormancy
 
