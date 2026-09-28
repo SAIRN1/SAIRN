@@ -17308,7 +17308,7 @@
       "recurrence_open": "OPEN ACROSS THE PLATFORM AND NOW MEASURED: 82 of 157 text-reading tools match straight over file text with no literal masking and no decoy control (tools/text_gate_literal_sweep.py). RAW is not by itself a defect -- a marker scan anchored at column zero is correctly raw -- but only 2 of the 157 have an empirical decoy probe, so the other 155 are CLASSIFIED and not TESTED. The sweep itself demonstrated the difficulty on its first run by missing every precompiled regex and undercounting its own universe by 27 tools."
     },
     {
-      "commit": "d5e759a04206",
+      "commit": "ad97da6bce25",
       "date": "2026-09-27",
       "subject": "fix(sairncare): the attribution spoof was still reachable -- a payload recorded_by overwrote the column on every READ",
       "files": [
