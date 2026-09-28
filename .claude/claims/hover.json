@@ -76,6 +76,32 @@
       "status": "released",
       "released_at": "2026-09-28T00:58:46Z",
       "files": null
+    },
+    {
+      "id": "hover-1790558065",
+      "session": "hover",
+      "subject": "hover",
+      "task": "close 3 self-directed items: realistic-transition sabotage fixtures for draw_order/undirected_order/IMPLIED_LINE; diagnose the repeated-app draw pattern and add a freshness floor; scope cross-instance --contradicts FILES: .claude/skills/sairn-hover-auditor/",
+      "claimed_at": "2026-09-28T01:14:25Z",
+      "claimed_at_epoch": 1790558065.8152688,
+      "status": "active",
+      "released_at": null,
+      "files": null
+    }
+  ],
+  "refusals": [
+    {
+      "refused_at": "2026-09-28T01:13:50Z",
+      "my_subject": "hover",
+      "my_task": "close 3 self-directed items: realistic-transition sabotage fixtures for draw_order/undirected_order/IMPLIED_LINE; diagnose+fix the repeated-app draw pattern with a freshness floor; scope (report only) cross-instance --contradicts FILES: .claude/skills/sairn-hover-auditor/",
+      "other_session": "hank",
+      "other_subject": "hank",
+      "other_task": "queue14 item 4: policy_no is authentication-shaped material and neither CRITICALITY-TIERS axis expresses that -- section 2 records it as a gap with an owner. SCOPE the remedy (a third row-level axis vs a FIELD-level register plus a report-only checker) and MEASURE the extent across the platform: every field that is what a fraudulent claim or a call to an issuer needs -- policy_no, coi_policy_no, licence_no, DEA/NPI, member and payer ids, account and routing numbers, booking_slug and any other tenant key resolvable without a session. Deliverable is the measurement and the decision, plus whatever tooling the measurement justifies. docs/CRITICALITY-TIERS.md is FREE: cody-q14's sf_events cell was delivered as replacement TEXT in its own doc and cody's live row is cody-q15 which does not name it. SUBJECT NAMED PER PR 4.3 FILES: docs/CRITICALITY-TIERS.md docs/2026-09-27-authentication-shaped-fields.md tools/auth_shaped_field_scan.py",
+      "other_claimed_at": "2026-09-28T01:10:24Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"only report\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
 }
