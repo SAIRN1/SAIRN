@@ -2654,8 +2654,8 @@
       "task": "fail open decoy fixture",
       "claimed_at": "2026-09-28T19:48:30Z",
       "claimed_at_epoch": 1790624910.021063,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-28T20:02:11Z",
       "files": null
     }
   ],
