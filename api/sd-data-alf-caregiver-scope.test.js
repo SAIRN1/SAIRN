@@ -102,7 +102,18 @@ function postgrestMock(rows, calls) {
       return { ok: true, status: 200, text: async function () { return opts.body; },
                json: async function () { return [sent]; } };
     }
+    // ── THE MOCK MUST ROUTE BY TABLE, AND THE FIRST CUT DID NOT ──────────
+    // Every alf_ query filters on `license_hash=eq.<hash>`, so a flat row set
+    // matched on eq-clauses alone hands an alf_clients row back to an
+    // alf_family_contacts query. The narrow arms still passed -- their own
+    // resident_id filter dropped the stray rows -- and only the BROAD control
+    // caught it, by receiving four rows where two were expected. A fixture leak
+    // that the strict arms absorb and only the control sees is the shape a
+    // control exists for, so it is fixed here rather than worked around in the
+    // assertion.
+    const table = (u.match(/\/rest\/v1\/([a-z0-9_]+)/) || [])[1] || '';
     const matches = rows.filter(function (r) {
+      if (r.__table && table && r.__table !== table) return false;
       return eqs.every(function (kv) { return String(r[kv[0]]) === kv[1]; });
     }).map(function (r) {
       if (!select || select.indexOf('*') !== -1) return r;
@@ -153,7 +164,8 @@ function code(res) {
 }
 
 function client(id, assignee, marker) {
-  return { license_hash: HASH, client_id: id, assigned_employee_id: assignee,
+  return { __table: 'alf_clients',
+           license_hash: HASH, client_id: id, assigned_employee_id: assignee,
            data: { marker: marker, name: 'A Resident' } };
 }
 
@@ -325,9 +337,9 @@ await test('alf_facility read CONTROL: management DOES see rates, so the arm '
 await test('alf_staff_credentials read: caregiver is ALLOWED and SELF-SCOPED -- '
   + 'they see their own training, not the roster\'s', async () => {
     const rows = [
-      { license_hash: HASH, entry_id: 'CR-MINE', staff_id: ME,
+      { __table: 'alf_staff_credentials', license_hash: HASH, entry_id: 'CR-MINE', staff_id: ME,
         record_type: 'credential', data: { marker: 'mine' }, recorded_by: 'owner-1', created_at: '2026-01-01' },
-      { license_hash: HASH, entry_id: 'CR-THEIRS', staff_id: OTHER,
+      { __table: 'alf_staff_credentials', license_hash: HASH, entry_id: 'CR-THEIRS', staff_id: OTHER,
         record_type: 'credential', data: { marker: 'theirs' }, recorded_by: 'owner-1', created_at: '2026-01-02' }
     ];
     const { res } = await call('caregiver',
@@ -412,15 +424,9 @@ section('4. CURRENT BEHAVIOUR ON THE THREE UNSETTLED ONES -- pinned, not blessed
 // deliberate rather than accidental. Each arm says what the argument on the
 // other side is, so the next reader is not left guessing why it is here.
 
-await test('alf_family_contacts read: caregiver is refused. OPEN -- a caregiver '
-  + 'caring for a resident arguably needs their emergency contact', async () => {
-    const { res } = await call('caregiver',
-      { action: 'read', resource: 'alf_family_contacts' }, []);
-    assert.strictEqual(res.statusCode, 403,
-      'this changed. If caregivers were granted family contacts, note that the '
-      + 'gate has NO narrow tier -- it is facility-wide, so this grants every '
-      + 'resident\'s contacts, not the assigned ones.');
-  });
+// alf_family_contacts was an open question here and is now DECIDED -- a care
+// role reads the emergency contact for its own assigned residents only. The
+// arms moved to section 5, which drives both halves of the narrowing.
 
 // alf_staff_credentials was listed here as an open question on the assumption
 // that the gate had no self-scope. IT DOES -- see section 2b -- so the question
@@ -436,6 +442,126 @@ await test('alf_incidents read: caregiver cannot read back the report they just 
       'this changed. The branch deliberately ends the filer\'s WRITE access once '
       + 'the report is saved; not being able to READ your own filed report is a '
       + 'different question and the comment does not address it.');
+  });
+
+// ── 5. THE NARROW FAMILY-CONTACT TIER, BUILT 2026-09-27 ──────────────────
+section('5. alf_family_contacts NARROW TIER -- own assigned residents, and the '
+  + 'consent trail stripped');
+
+function contact(contactId, residentId, marker) {
+  return {
+    __table: 'alf_family_contacts',
+    contact_id: contactId, resident_id: residentId, name: 'A Relative',
+    relationship: 'daughter', email: 'x@example.invalid', phone: '555-0100',
+    active: true, created_at: '2026-01-01', updated_at: '2026-01-01',
+    marker: marker,
+    // The consent trail. Present on every row so its ABSENCE from the narrow
+    // answer is a real assertion and not an empty fixture.
+    mar_consent: true, consent_granted_at: '2026-01-01',
+    consent_granted_by: 'owner-1', consent_revoked_at: null,
+    revoked_at: null, notes: 'SENSITIVE FREE TEXT',
+    recorded_by: 'owner-1', license_hash: HASH
+  };
+}
+
+const FAM_ROWS = [
+  contact('FC-MINE', 'C-MINE', 'mine'),
+  contact('FC-THEIRS', 'C-THEIRS', 'theirs')
+];
+const FAM_CLIENTS = [client('C-MINE', ME, 'mine'), client('C-THEIRS', OTHER, 'theirs')];
+
+await test('ROWS NARROW: a caregiver sees contacts for their OWN assigned '
+  + 'resident only', async () => {
+    const { res } = await call('caregiver',
+      { action: 'read', resource: 'alf_family_contacts' },
+      FAM_ROWS.concat(FAM_CLIENTS));
+    assert.strictEqual(res.statusCode, 200,
+      'caregiver refused the emergency contact: ' + code(res));
+    assert.strictEqual(res.body.scoped_to_assigned, true,
+      'the answer does not declare itself scoped');
+    const ids = (res.body.data || []).map(function (r) { return r.contact_id; });
+    assert.deepStrictEqual(ids, ['FC-MINE'],
+      'got ' + JSON.stringify(ids) + ' -- a caregiver was handed a resident '
+      + 'who is not assigned to them');
+  });
+
+await test('COLUMNS NARROW: the consent trail and notes are ABSENT, not merely '
+  + 'unrendered', async () => {
+    const { res } = await call('caregiver',
+      { action: 'read', resource: 'alf_family_contacts' },
+      FAM_ROWS.concat(FAM_CLIENTS));
+    const row = (res.body.data || [])[0];
+    assert.ok(row, 'no row came back, so this arm proves nothing');
+    ['mar_consent', 'consent_granted_at', 'consent_granted_by',
+     'consent_revoked_at', 'revoked_at', 'notes'].forEach(function (f) {
+      assert.strictEqual(f in row, false,
+        f + ' reached a care role. Whether a family member may see medication '
+        + 'status is the disclosure decision the WRITE gate reserves to '
+        + 'management, and handing over the answer gives away the thing the '
+        + 'gate protects one step removed.');
+    });
+    assert.strictEqual(row.phone, '555-0100',
+      'the emergency number itself did not survive -- the tier is useless');
+    assert.strictEqual(row.name, 'A Relative', 'the contact name did not survive');
+  });
+
+await test('CONTROL: a broad role still gets the FULL row including the consent '
+  + 'trail, so the arm above measures stripping and not an empty select',
+  async () => {
+    const { res } = await call('nursing',
+      { action: 'read', resource: 'alf_family_contacts' },
+      FAM_ROWS.concat(FAM_CLIENTS));
+    assert.strictEqual(res.body.scoped_to_assigned, false,
+      'a broad role was scoped to assignment');
+    const ids = (res.body.data || []).map(function (r) { return r.contact_id; }).sort();
+    assert.deepStrictEqual(ids, ['FC-MINE', 'FC-THEIRS'],
+      'the broad role did not see both residents');
+    assert.strictEqual('mar_consent' in (res.body.data[0] || {}), true,
+      'nobody gets the consent trail, so its absence above proves nothing');
+  });
+
+await test('ASKING FOR SOMEBODY ELSE\'S RESIDENT BY ID is refused, not answered '
+  + 'with an empty list', async () => {
+    const { res } = await call('caregiver',
+      { action: 'read', resource: 'alf_family_contacts',
+        payload: { resident_id: 'C-THEIRS' } },
+      FAM_ROWS.concat(FAM_CLIENTS));
+    assert.strictEqual(res.statusCode, 403,
+      '"you may not see that resident" and "that resident has no contacts" are '
+      + 'different answers, and collapsing them is an oracle: an empty list '
+      + 'would confirm the resident exists');
+    assert.strictEqual(code(res), 'FORBIDDEN', 'wrong refusal code');
+  });
+
+await test('ASKING FOR THEIR OWN resident by id still works', async () => {
+  const { res } = await call('caregiver',
+    { action: 'read', resource: 'alf_family_contacts',
+      payload: { resident_id: 'C-MINE' } },
+    FAM_ROWS.concat(FAM_CLIENTS));
+  assert.strictEqual(res.statusCode, 200, 'refused their own resident: ' + code(res));
+  assert.deepStrictEqual((res.body.data || []).map(function (r) { return r.contact_id; }),
+    ['FC-MINE']);
+});
+
+await test('AN EMPLOYEE WITH NO ASSIGNED RESIDENTS gets an empty list, not a '
+  + '403 -- they are permitted to ask', async () => {
+    const { res } = await call('caregiver',
+      { action: 'read', resource: 'alf_family_contacts' },
+      FAM_ROWS.concat([client('C-THEIRS', OTHER, 'theirs')]));
+    assert.strictEqual(res.statusCode, 200, 'refused: ' + code(res));
+    assert.deepStrictEqual(res.body.data, []);
+    assert.strictEqual(res.body.scoped_to_assigned, true);
+  });
+
+await test('THE WRITE GATE IS UNTOUCHED -- a caregiver still cannot record or '
+  + 'change a family contact', async () => {
+    const { res, calls } = await call('caregiver',
+      { action: 'write', resource: 'alf_family_contacts',
+        payload: { id: 'FC-NEW', resident_id: 'C-MINE', name: 'X' } },
+      FAM_CLIENTS);
+    assert.strictEqual(res.statusCode, 403,
+      'the read narrowing widened the WRITE path: ' + JSON.stringify(res.body));
+    assert.strictEqual(firstPost(calls), undefined, 'a row was written');
   });
 
 console.log('');

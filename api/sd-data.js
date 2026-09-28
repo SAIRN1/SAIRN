@@ -11060,32 +11060,96 @@ module.exports = async (req, res) => {
       // resident's family is care work, not administration. med_aide and
       // activities are OUT, which is the gap this closes.
       //
-      // A NARROWER READ FOR A CARE ROLE IS NOT BUILT HERE AND THAT IS
-      // DELIBERATE. If a med_aide genuinely needs a single resident's emergency
-      // number, the right answer is a resident-scoped projection that omits the
-      // consent trail -- a design decision with an owner, not something to
-      // infer from the fact that the gate used to be missing.
+      // ── AND THE NARROWER READ IS NOW BUILT, 2026-09-27 ──────────────────
+      // The paragraph above said a resident-scoped projection omitting the
+      // consent trail was "a design decision with an owner, not something to
+      // infer". Michael is that owner and has decided: a care role reads the
+      // emergency contact for THEIR OWN ASSIGNED residents, never facility-wide.
+      // This is the FOURTH tier of the same four-tier shape alf_clients already
+      // documents at :6650 -- and note that it is implemented as a FALLTHROUGH,
+      // so it covers med_aide (the example that paragraph used) as well as
+      // caregiver, without either being named in a roleSet.
+      //
+      // TWO THINGS NARROW, NOT ONE, AND BOTH ARE REQUIRED:
+      //   ROWS    only residents assigned to this employee. Derived from
+      //           alf_clients.assigned_employee_id, which is the same source
+      //           every other narrow tier in this app uses -- not a second
+      //           notion of "mine".
+      //   COLUMNS the consent trail is REMOVED, not merely unrendered.
+      //           mar_consent, consent_granted_at/by, consent_revoked_at,
+      //           revoked_at and notes never leave the server for this tier.
+      //           Whether a family member may see medication status is the
+      //           disclosure decision the write gate reserves to management;
+      //           handing the ANSWER to a care role would give away the thing
+      //           the gate exists to protect, one step removed.
+      //
+      // AN EMPLOYEE WITH NO ASSIGNED RESIDENTS GETS AN EMPTY LIST, and that is
+      // the correct answer rather than a 403: they are permitted to ask, and
+      // the true answer is that no contact is in their scope. `activities`
+      // lands here and sees nothing, which matches its read-only-broad tier
+      // having no assignment concept at all.
       const ALF_FAMILY_READ_ROLES = roleSet({ owner: true, billing: true, nursing: true });
+      // The consent trail and free-text notes, stripped for the narrow tier.
+      const ALF_FAMILY_NARROW_COLS = 'contact_id,resident_id,name,relationship,'
+        + 'email,phone,active,created_at,updated_at';
 
       if (action === 'read') {
-        if (!ALF_FAMILY_READ_ROLES[session.role]) {
-          res.status(403).json({ error: { code: 'FORBIDDEN', message:
-            'Family contact details -- phone, email and the medication-consent '
-            + 'trail -- are not available to your role. Recording and reading '
-            + 'them is a disclosure decision.' } });
-          return;
+        const famBroad = !!ALF_FAMILY_READ_ROLES[session.role];
+        let famScope = null;
+        if (!famBroad) {
+          // WHOSE RESIDENTS. One query, filtered server-side by assignment, and
+          // it asks ONLY for the id -- a narrow tier resolving its own scope
+          // must not pull resident data it is not about to return.
+          const ar = await fetch(rest('alf_clients?license_hash=eq.' + enc(licHash)
+            + '&assigned_employee_id=eq.' + enc(String(session.employee_id))
+            + '&select=client_id'), { headers });
+          if (ar.status === 404 || ar.status === 400) {
+            res.status(200).json({ ok: true, data: [], provisioned: false });
+            return;
+          }
+          const arows = await ar.json();
+          if (!ar.ok) return upstream(res, arows);
+          famScope = (arows || []).map((x) => String(x.client_id));
+          if (famScope.length === 0) {
+            res.status(200).json({ ok: true, provisioned: true, data: [],
+                                   scoped_to_assigned: true });
+            return;
+          }
+          // A resident_id the caller asked for that is NOT theirs is refused
+          // here rather than silently returning nothing -- "you may not see
+          // that resident" and "that resident has no contacts" are different
+          // answers and collapsing them is an oracle.
+          if (famP.resident_id
+              && famScope.indexOf(String(famP.resident_id)) === -1) {
+            res.status(403).json({ error: { code: 'FORBIDDEN', message:
+              'That resident is not assigned to you.' } });
+            return;
+          }
         }
         let q = 'alf_family_contacts?license_hash=eq.' + enc(licHash)
-          + '&select=' + famCols + '&order=created_at.desc';
+          + '&select=' + (famBroad ? famCols : ALF_FAMILY_NARROW_COLS)
+          + '&order=created_at.desc';
         if (famP.resident_id) q += '&resident_id=eq.' + enc(String(famP.resident_id));
         const fr = await fetch(rest(q), { headers });
         if (fr.status === 404 || fr.status === 400) {
           res.status(200).json({ ok: true, data: [], provisioned: false });
           return;
         }
-        const frows = await fr.json();
+        let frows = await fr.json();
         if (!fr.ok) return upstream(res, frows);
-        res.status(200).json({ ok: true, provisioned: true, data: frows || [] });
+        if (!famBroad) {
+          // BELT AND BRACES, AND DELIBERATELY BOTH. The select above already
+          // omits the consent columns, and this filter re-applies the row scope
+          // in memory. Either alone would be enough today; together, a future
+          // edit that widens the select or drops the resident_id clause cannot
+          // leak, because the other half still holds. The whole reason this
+          // resource needed a gate at all is that one half of it asked and the
+          // other did not.
+          frows = (frows || []).filter(
+            (x) => famScope.indexOf(String(x.resident_id)) !== -1);
+        }
+        res.status(200).json({ ok: true, provisioned: true, data: frows || [],
+                               scoped_to_assigned: !famBroad });
         return;
       }
 
