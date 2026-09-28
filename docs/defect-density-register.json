@@ -17805,6 +17805,88 @@
         }
       ],
       "recurrence_open": "NO CLIENT SENDS retrigger_events AT ALL -- sairnlaw.html has no caller, so this whole path is reachable only by a direct API consumer and the input contract is still documented nowhere outside the suite. The endpoint does not validate the element shape before handing it to the engine, so the engine is the only thing refusing. And the wider class is untouched: a field written somewhere and read on the WRONG object clears the ghost scan's third condition by construction, which is the member of this family that has now bitten twice. Also open: `dispositions.sort()` compares raw strings, which is correct for ISO dates and is now guaranteed only because everything non-ISO refuses upstream -- nothing asserts that dependency."
+    },
+    {
+      "commit": "ad681db2a5cd",
+      "date": "2026-09-27",
+      "subject": "refactor(tests): every ad-hoc comment stripper onto the shared library -- and the library was hiding real code",
+      "files": [
+        "api/_lib/anon-rate-limit.test.js",
+        "api/_lib/money.test.js",
+        "api/_lib/record-parity.test.js",
+        "api/_lib/roofing-gl-export.test.js",
+        "api/_lib/roofing-supplier-match.test.js",
+        "api/_lib/stripe-api-version.test.js",
+        "api/_resources/extra-actions.test.js",
+        "api/sd-data-dental-ledger-validation.test.js",
+        "api/sd-data-sairnlaw-resources.test.js",
+        "docs/2026-09-27-comment-strip-consolidation-sweep.md",
+        "tests/ai_auth_wrapper.test.js",
+        "tests/aiq_speed_and_waste_calc.js",
+        "tests/idless_rows_are_reported.js",
+        "tests/lib/strip_comments.js",
+        "tests/lib/strip_comments.test.js",
+        "tests/pricing_single_source.js",
+        "tests/refusal_not_empty.js",
+        "tests/sairndental_outbound_queue.js",
+        "tests/sairndental_settings_patch.js",
+        "tests/sairndental_write_failure_voice.js",
+        "tests/sairnlaw_csp.js",
+        "tests/sairnlaw_hydrate.js",
+        "tests/sairnsenior_org_hydrate.js",
+        "tests/server_wins_hydration.js",
+        "tests/stonedesk_drawing_snapshot_budget.js",
+        "tests/stonedesk_followup_chip.js",
+        "tests/stonedesk_po_sequence_and_join.js",
+        "tests/stonedesk_quote_load_state.js",
+        "tests/stonedesk_saved_drawings.js",
+        "tests/sv_audit_completeness.js"
+      ],
+      "lines_added": 1073,
+      "lines_removed": 61,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "tests/lib/strip_comments.js -- the SHARED comment stripper built this week to replace three ad-hoc copies, and depended on by five suites -- read a REGEX LITERAL CONTAINING // AS A LINE COMMENT. On a regex literal spelled slash-backslash-slash-backslash-slash-semicolon (a regex whose body is an escaped double slash) everything after the regex on that line vanished from the stripped output. THIS IS THE FAILING DIRECTION: the whole purpose of stripping comments in these suites is to assert a string is ABSENT from the CODE, and a stripper that hides real code makes that assertion pass on code that is PRESENT. Every one of the five consumers would have reported green. The three copies it replaced all failed loudly in at least one direction, which is why they were found; this one failed silently. It was found by BORROWING THE FIVE ATTACKS in tests/sairnvet_scribe_review_probe.js section A2 -- a review arm that exists to attack a comment stripper and that had already defeated a regex-based one earlier in the month -- into the library's first control. The regex attack went red on the first run. Fixed with regex-literal handling using the previous-significant-character heuristic api/sairnvet-transcribe.test.js already carried correctly, and the library now has a 27-arm control it did not have before. 24 call sites in 20 files were migrated onto it in the same commit, verified by a before/after differential over 25 suites: 25 identical, 0 moved.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The regex-literal hole has been in tests/lib/strip_comments.js since it was written earlier this week; the exact commit was not traced because the library is days old and the point of the record is that five suites adopted it before anything attacked it."
+      },
+      "contributing_factors": [
+        {
+          "factor": "THE LIBRARY HAD NO CONTROL WHILE FIVE SUITES DEPENDED ON IT. It was created to replace three broken copies and was itself never driven in either direction. A shared helper with no test is the same bug with a smaller blast radius on the day it lands and a larger one every day after, because every adopter inherits it at once.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/lib/strip_comments.test.js, 27 arms, with one PAIR per historical bug -- the input that broke the old version AND an input the old version handled that must keep working, because a fixture set that only proves a bug is gone cannot tell a fix from an over-correction."
+        },
+        {
+          "factor": "The failure direction is the silent one. A stripper that HIDES code makes an absence assertion pass on code that is present, so every consumer would have reported green. The three copies it replaced all failed loudly in at least one direction, which is how they were found at all.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Regex literals are now handled, using the previous-significant-character heuristic api/sairnvet-transcribe.test.js already had right. The direction of the heuristic error is CHOSEN: anything it does not recognise stays division, so it can only ever UNDER-strip, and under-stripping goes red."
+        },
+        {
+          "factor": "IT WAS FOUND BY BORROWING AN ATTACK, not by review. tests/sairnvet_scribe_review_probe.js section A2 attacks a comment stripper with five shapes and had already DEFEATED a regex-based one earlier in the month. Those attacks existed on this platform, in a file about a different app, and nothing pointed them at the shared library.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "All five attacks are now arms A1-A6 of the library control, and A6 re-runs them through the whole-file entry point so a fragment and a script block cannot answer differently."
+        },
+        {
+          "factor": "THE SWEEP SEARCH VOCABULARY WAS INCOMPLETE and its first count was a count of what the search could see. It matched startsWith(quote//quote) and missed every site spelled indexOf(quote//quote) !== 0 -- the same rule, a different spelling. Seven more sites appeared when the pattern widened, including a SECOND site in a file the sweep had already finished.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Named rather than closed: the general fix is a checker that finds comment-stripping BY SHAPE rather than by remembered idiom, and its own vocabulary would have the same problem one level up. The doc states the count is a FLOOR and gives the command to re-derive it instead of quoting it."
+        }
+      ],
+      "recurrence_open": "NO CHECK asks whether a SHARED test helper has a control of its own. tests/lib/ now holds two modules (strip_comments.js and active_credential_stub.js) and only one has a test. checker_control_check.py reads report_only_checks.REGISTRY, so it cannot see a test-suite library at all -- a helper is not a checker and is outside its population by construction."
     }
   ],
   "started": "2026-09-09",
