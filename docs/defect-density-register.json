@@ -16441,6 +16441,63 @@
       "recurrence_open": "No check exists for the general shape: a probe fixture carrying a LITERAL session name while the code under test resolves that same name from the clone. A grep for quoted clone names inside tests/ is cheap and has not been run, and the four build-agent names plus the hover instances are a small closed vocabulary that a checker could read from .claude/claims/ rather than hardcode -- which is the same mistake one shelf over."
     },
     {
+      "commit": "25d1c0009efb",
+      "date": "2026-09-27",
+      "subject": "fix(sairnbuild): the WIP schedule capped percent complete at 100% -- so a job losing money reported itself finished, and fully earned",
+      "files": [
+        "api/_lib/wip-accounting.js",
+        "api/_lib/wip-accounting.test.js",
+        "sairnbuild.html",
+        "tests/sairnbuild_wip_percent_complete.js"
+      ],
+      "lines_added": 580,
+      "lines_removed": 17,
+      "app": "sairnbuild",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "code-review",
+      "summary": "sairnbuild.html jobWIP() computed percent complete as Math.min(1, costToDate/budgetFor(id)) and earned revenue as that percent times the revised contract. Three defects: the denominator was the ORIGINAL cost budget and was never re-forecast; the Math.min cap meant a job at 130 percent of budget reported 100 percent complete, so earned became the WHOLE contract and over/under billing swung to its most UNDER-billed reading -- the cap INVERTED the finding rather than rounding an overrun off; and an accepted change order added its value to the contract while nothing added its cost to the budget, because a change-order record in this app carries no cost field at all, so percent complete was computed against a denominator known to be too small and earned revenue was overstated twice. Fixed by adding an optional per-cost-line forecast (estimated cost at completion, falling back to budget), reporting the ratio UNCAPPED, and REFUSING earned revenue and over/under billing -- returning null with a named reason -- wherever the forecast is known to be stale. The identical cap in api/_lib/wip-accounting.js is fixed in the same commit. The change order's cost is NOT invented.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The WIP schedule has computed percent complete this way since the Reports panel was built; there is no commit that introduced the cap, it was written with the panel. The searchable fact is that a cloud competitive-gap audit named it 2026-09-27 and the fix is this commit."
+      },
+      "citation_note": "The archetypal quiet wrong number, and the direction is what makes it critical: every one of the three defects points the REASSURING way. A capped percent, a stale denominator and a contract that grows without its cost all move earned revenue UP and the over-billed position DOWN, on the one report whose reader is looking for the opposite.",
+      "contributing_factors": [
+        {
+          "factor": "percent complete divided by the ORIGINAL budget with no re-forecast mechanism, so the denominator was correct only until the first thing went wrong",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "forecastFor() sums an optional per-line forecast falling back to budget, so a revised budget IS the re-forecast and there is no second job-level override to disagree with it"
+        },
+        {
+          "factor": "Math.min(1, ...) capped the ratio, which reads as defensive rounding and is a claim that the job is finished",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the cap is removed in both the client and api/_lib/wip-accounting.js; the ratio is reported uncapped and the MONEY derived from it is refused instead, because earned = contract x percent is only meaningful while the percent is a real fraction of a real forecast"
+        },
+        {
+          "factor": "an accepted change order moves the contract and there is nowhere to record its COST, so the two halves of the same event land in different places",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "a cost_impact field on the change order was considered and NOT added. It is a data-model change with a form, a validator and a migration behind it, and adding it as a rider on this fix would ship an unvalidated money field. The app discloses that it cannot know the figure and refuses the derived numbers, which is correct today; recording the field is its own decision"
+        },
+        {
+          "factor": "a refused figure re-entering as a number at the display layer -- fmt(null) prints $0, and the KPI filtered on overUnder>0 where null>0 is false",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the table routes both refusable figures through one null-branch helper, the KPI counts a POSITION and names the jobs it could not judge, and the CSV refuses in the same three places and carries a FORECAST BASIS column -- all four sites arm-asserted, because the last review of this file found four sites carrying one piece of arithmetic and the CSV was the one nobody checked"
+        }
+      ],
+      "recurrence_open": "THE CHANGE ORDER'S COST STILL HAS NOWHERE TO LIVE. Until a cost field exists, every job with an accepted CO reads as a refusal rather than a number -- correct, and not the same as working. Nothing re-forecasts automatically and nothing prompts for it. The server module's cost_to_cost branch remains DORMANT: no caller supplies costs, so the corrected behaviour there is proven by arms and has never run on real input, and portfolio() cannot reach it at all."
+    },
+    {
       "commit": "5c03c0ae7d58",
       "date": "2026-09-27",
       "subject": "feat(sairnfreedom): the three controls every Ohio post theft went around -- and a stale threshold that printed a shortfall nobody owed",
@@ -16778,63 +16835,6 @@
       "recurrence_open": "470 of 485 rows still record no source. 33 uncited controlled substances and 61 remaining uncited food-animal rows are untouched -- the highest-consequence populations and this pass covered 8 of them. Nothing checks a row against its label on a cadence: the references carry a Retrieved date and a label revision can change a withdrawal period without anything here noticing. And the route-copy blind spot is open by decision, not closed."
     },
     {
-      "commit": "25d1c0009efb",
-      "date": "2026-09-27",
-      "subject": "fix(sairnbuild): the WIP schedule capped percent complete at 100% -- so a job losing money reported itself finished, and fully earned",
-      "files": [
-        "api/_lib/wip-accounting.js",
-        "api/_lib/wip-accounting.test.js",
-        "sairnbuild.html",
-        "tests/sairnbuild_wip_percent_complete.js"
-      ],
-      "lines_added": 580,
-      "lines_removed": 17,
-      "app": "sairnbuild",
-      "layer": "product",
-      "severity": "critical",
-      "detection_method": "code-review",
-      "summary": "sairnbuild.html jobWIP() computed percent complete as Math.min(1, costToDate/budgetFor(id)) and earned revenue as that percent times the revised contract. Three defects: the denominator was the ORIGINAL cost budget and was never re-forecast; the Math.min cap meant a job at 130 percent of budget reported 100 percent complete, so earned became the WHOLE contract and over/under billing swung to its most UNDER-billed reading -- the cap INVERTED the finding rather than rounding an overrun off; and an accepted change order added its value to the contract while nothing added its cost to the budget, because a change-order record in this app carries no cost field at all, so percent complete was computed against a denominator known to be too small and earned revenue was overstated twice. Fixed by adding an optional per-cost-line forecast (estimated cost at completion, falling back to budget), reporting the ratio UNCAPPED, and REFUSING earned revenue and over/under billing -- returning null with a named reason -- wherever the forecast is known to be stale. The identical cap in api/_lib/wip-accounting.js is fixed in the same commit. The change order's cost is NOT invented.",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The WIP schedule has computed percent complete this way since the Reports panel was built; there is no commit that introduced the cap, it was written with the panel. The searchable fact is that a cloud competitive-gap audit named it 2026-09-27 and the fix is this commit."
-      },
-      "citation_note": "The archetypal quiet wrong number, and the direction is what makes it critical: every one of the three defects points the REASSURING way. A capped percent, a stale denominator and a contract that grows without its cost all move earned revenue UP and the over-billed position DOWN, on the one report whose reader is looking for the opposite.",
-      "contributing_factors": [
-        {
-          "factor": "percent complete divided by the ORIGINAL budget with no re-forecast mechanism, so the denominator was correct only until the first thing went wrong",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "forecastFor() sums an optional per-line forecast falling back to budget, so a revised budget IS the re-forecast and there is no second job-level override to disagree with it"
-        },
-        {
-          "factor": "Math.min(1, ...) capped the ratio, which reads as defensive rounding and is a claim that the job is finished",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "the cap is removed in both the client and api/_lib/wip-accounting.js; the ratio is reported uncapped and the MONEY derived from it is refused instead, because earned = contract x percent is only meaningful while the percent is a real fraction of a real forecast"
-        },
-        {
-          "factor": "an accepted change order moves the contract and there is nowhere to record its COST, so the two halves of the same event land in different places",
-          "kind": "latent-condition",
-          "action_status": "declined",
-          "note": "a cost_impact field on the change order was considered and NOT added. It is a data-model change with a form, a validator and a migration behind it, and adding it as a rider on this fix would ship an unvalidated money field. The app discloses that it cannot know the figure and refuses the derived numbers, which is correct today; recording the field is its own decision"
-        },
-        {
-          "factor": "a refused figure re-entering as a number at the display layer -- fmt(null) prints $0, and the KPI filtered on overUnder>0 where null>0 is false",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "the table routes both refusable figures through one null-branch helper, the KPI counts a POSITION and names the jobs it could not judge, and the CSV refuses in the same three places and carries a FORECAST BASIS column -- all four sites arm-asserted, because the last review of this file found four sites carrying one piece of arithmetic and the CSV was the one nobody checked"
-        }
-      ],
-      "recurrence_open": "THE CHANGE ORDER'S COST STILL HAS NOWHERE TO LIVE. Until a cost field exists, every job with an accepted CO reads as a refusal rather than a number -- correct, and not the same as working. Nothing re-forecasts automatically and nothing prompts for it. The server module's cost_to_cost branch remains DORMANT: no caller supplies costs, so the corrected behaviour there is proven by arms and has never run on real input, and portfolio() cannot reach it at all."
-    },
-    {
       "commit": "79a34efd49d7",
       "date": "2026-09-27",
       "subject": "fix(tooling): the role-gate screen could not see a role check written as a loop, so real passing arms read as driven-as=owner",
@@ -17012,6 +17012,63 @@
         }
       ],
       "recurrence_open": "OPEN AND MECHANICAL: nothing compares a newly added checker against docs/TOOLING-INVENTORY.md, so the next duplicate will be caught the way this one was -- by somebody happening to grep. The inventory is generated and complete, which is exactly what makes the check cheap to build, and it does not exist."
+    },
+    {
+      "commit": "8d0fff5cc3ef",
+      "date": "2026-09-27",
+      "subject": "fix(sairncare): ANY employee could file an abuse/neglect incident attributed to somebody else -- who filed it is now SET, not SENT",
+      "files": [
+        "api/sd-data-alf-caregiver-scope.test.js",
+        "api/sd-data.js",
+        "sql/sairncare_incidents_recorded_by.sql"
+      ],
+      "lines_added": 296,
+      "lines_removed": 23,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "code-review",
+      "summary": "api/sd-data.js's alf_incidents write stored `reported_by` FROM THE CALLER'S PAYLOAD. sql/sairncare_incidents_schema.sql documents reported_by as a field inside the `data` blob, and that blob is storedBlob(payload, ['id','resident_id','created_at']) -- api/_lib/blob.js copies the caller's payload and deletes only the named keys, so every other field, including the reporter's identity, is whatever the request said it was. The write is DELIBERATELY open to any authenticated employee because gating it would discourage mandated reporting, and that decision is correct -- so the two together meant ANY EMPLOYEE COULD FILE AN INCIDENT ATTRIBUTED TO ANY OTHER PERSON. The category vocabulary on this resource includes abuse_neglect_allegation, elopement, fall-with-injury and behavioral incidents; in most US states the reporter's identity on an abuse or neglect allegation is the record a surveyor asks for, and it could be set to a colleague by anybody with a PIN. There was no server-recorded filer at all: the table had no recorded_by column, while four sibling SAIRNcare tables (compliance, family_contacts, op_audit, remaining-migrations) carry one.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The field was present in the resource's first schema and first write path, so it was injected at the resource's creation rather than by a later change; the original alf_incidents commit is not identifiable from the register and the defect is an omission (no server-set column) rather than an edit."
+      },
+      "citation_note": "A field asserting WHO DID SOMETHING, accepted from the caller, is an answer the server never established presented as one it did. The row looked complete and carried a name nobody verified.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "storedBlob() is a DENY-LIST by design -- it copies the payload and deletes named keys. That is right for descriptive content and wrong for any field that asserts WHO DID SOMETHING, because the caller supplies it. Nothing in the helper distinguishes the two kinds of field, and nothing at the call site declared which this was.",
+          "action": "reported_by is now stripped in the call's key list AND a real recorded_by column is set from the verified session. Stripping alone would leave the reporter unrecorded; the column alone would leave a forgeable field sitting beside an authoritative one with no way for a reader to tell them apart.",
+          "action_status": "done"
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "The schema file itself NAMED reported_by in its column comment as part of the data blob's documented contents, so the field read as designed-in rather than accepted-from-the-wire. A reader checking whether attribution was handled would have found it named in the schema and stopped there.",
+          "action": "The new column's comment states outright that it is taken from the session and never from the payload, and that data.reported_by must not be used to backfill it.",
+          "action_status": "done"
+        },
+        {
+          "kind": "detection",
+          "factor": "No check on the platform asks whether an identity or attribution field in a payload is server-set. The role-gate, session-gate and cross-tenant sweeps all ask WHO MAY CALL, not WHOSE NAME GOES ON THE ROW. This was found only while scoping an unrelated read-narrowing question -- there was nothing to filter 'reports I filed' on, and that absence is what exposed it.",
+          "action": "A platform-wide sweep of attribution fields (signed_by, verified_by, approved_by, administered_by, witnessed_by and the like) is queued as its own item, starting with medication administration, DEA witnessing, audit sign-offs and legal-deadline verified_by.",
+          "action_status": "planned"
+        },
+        {
+          "kind": "process",
+          "factor": "The write gate was reviewed as an AUTHORISATION question -- may this role file a report -- and answered correctly and deliberately (any employee may, mandated reporting). The INTEGRITY question, whether the row says something true about who filed it, was never a separate question, so a correct answer to one was taken as coverage of both.",
+          "action": "Recorded rather than fixed by a rule. The two questions are separable and this is the example.",
+          "action_status": "not-actionable",
+          "note": "There is no mechanical rule that would have caught this at review time, and inventing one from a single instance is how a checklist fills with items nobody can apply. The detection factor above carries the real corrective action -- a sweep for the field SHAPE across every resource -- and that is where the generalisation belongs. Recording a fourth process rule here would be the CAPA box this register's own contributing-factors design exists to replace."
+        }
+      ],
+      "recurrence_open": "THE CLASS IS OPEN AND UNSWEPT. storedBlob() is a deny-list used by many resources, so ANY payload field that asserts an identity is caller-supplied unless its call site strips it. The specific candidates queued and NOT yet checked: alf_mar administered_by, SAIRNvet DEA witness fields, alf_op_audits sign-off attribution, and api/legal-deadlines.js authority.verified_by (which is already known to be written from a resolved-but-unenforced session). No check on the platform asks whether an attribution field is server-set -- the role, session and cross-tenant sweeps all ask who may CALL, never whose NAME goes on the row."
     },
     {
       "commit": "c680a4c1dbca",
