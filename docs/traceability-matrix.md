@@ -773,6 +773,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_entry_point_scope_probe.py`
 - `tests/run_exec_msgs_gate_sabotage_probe.py`
 - `tests/run_fact_sheet_regenerates_probe.py`
+- `tests/run_fail_open_probe.py`
 - `tests/run_gate_caller_impact_probe.py`
 - `tests/run_gh_push_gate_probe.py`
 - `tests/run_graduated_exemption_probe.py`
