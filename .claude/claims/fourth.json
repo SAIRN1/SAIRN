@@ -2585,8 +2585,8 @@
       "task": "fix alf_facility_role_gate_live_probe.py sending X-Session-Token where tokenFromRequest reads x-sd-auth; a known-bad control that fails if the probe's session is ignored; and a platform sweep of every live probe and tool that sends a session or auth header for the same wrong-header class, with checked/universe. FILES: tools/alf_facility_role_gate_live_probe.py tests/run_auth_header_name_probe.py tools/auth_header_name_sweep.py docs/",
       "claimed_at": "2026-09-28T03:03:10Z",
       "claimed_at_epoch": 1790564590.5882134,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-28T03:27:49Z",
       "files": [
         "tests/run_auth_header_name_probe.py",
         "tools/alf_facility_role_gate_live_probe.py",
