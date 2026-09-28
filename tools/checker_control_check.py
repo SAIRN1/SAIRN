@@ -94,6 +94,7 @@ import sys
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
 import jscomments as _jscomments                              # noqa: E402
+from checker_kit import EXIT_COULD_NOT_RUN                    # noqa: E402
 
 # ── THE PATTERNS, AND WHAT CHANGED UNDER THEM ────────────────────────────────
 # These run over EXTRACTED ASSERTIONS now, never over raw source, so a word
@@ -445,6 +446,17 @@ def main(argv):
     quiet = '--quiet' in argv
     checkers = promoted()
     tests = test_files()
+    # ── A ZERO-ITEM CORPUS IS NOT A CLEAN SWEEP (PR 1.11) ──────────────────
+    # test_files() walks tests/ and lists api/*.test.js. If either moves, this
+    # returns [] and every checker below reads as having NO CONTROL -- or, on the
+    # other side of a future refactor, as trivially fine. Both verdicts would be
+    # about a directory that was not there, and neither would say so. Added
+    # 2026-09-29 after tools/parse_zero_third_state_check.py named this site.
+    if not tests:
+        print('COULD NOT RUN: no test file was found under tests/ or api/. That '
+              'is not a\nrepo whose checkers have no controls -- the walk found '
+              'nothing, which is a\ndifferent fact and is exit 2, not a verdict.')
+        return EXIT_COULD_NOT_RUN
     bodies, raws = {}, {}
     for t in tests:
         raw = io.open(t, encoding='utf-8', errors='replace').read()

@@ -165,6 +165,19 @@ def main(argv):
     else:
         paths = tracked()
         where = 'every tracked file (%d)' % len(paths)
+        # ── ONLY THIS BRANCH (PR 1.11) ─────────────────────────────────────
+        # An EMPTY TRACKED FILE LIST means `git ls-files` returned nothing --
+        # wrong directory, failed subprocess, not a repo -- and scanning zero
+        # files would print "every tracked file (0)" and then CLEAN.
+        # The --outgoing branch above is deliberately NOT guarded: a push with
+        # nothing to ship legitimately has zero files and MUST NOT fail, which
+        # is why this guard sits inside the else and not above the if. Added
+        # 2026-09-29 after tools/parse_zero_third_state_check.py named the site.
+        if not paths:
+            print('COULD NOT RUN: `git ls-files` returned no tracked file at '
+                  'all. Scanning\nnothing and reporting clean is the failure '
+                  'this check exists to prevent. Exit 2.')
+            return 2
 
     hits, skipped, unreadable = scan(paths)
 

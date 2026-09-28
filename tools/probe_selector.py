@@ -281,6 +281,19 @@ def main(argv=None):
         print('COULD NOT RUN: no tests/ directory. Nothing was selected, which '
               'is not the same as nothing to select.')
         return 2
+    # ── AND AN EMPTY LIST IS THE SAME ANSWER AS A MISSING DIRECTORY ────────
+    # The `is None` guard above covers tests/ being absent. It does NOT cover
+    # tests/ being present and yielding zero probes -- a renamed suffix, a moved
+    # harness, a changed filter -- which printed "CORPUS: 0 harness-dependent
+    # probe(s)" and selected nothing, indistinguishable from a corpus with
+    # nothing to select. Added 2026-09-29 after parse_zero_third_state_check
+    # named this site: a guard on the missing case is not a guard on the empty
+    # one, and the empty one is the commoner failure.
+    if not probes:
+        print('COULD NOT RUN: tests/ exists but yielded NO harness-dependent '
+              'probe at all.\nThat is an enumeration that found nothing, not a '
+              'corpus with nothing in it. Exit 2.')
+        return 2
 
     if args.all:
         print('CORPUS: %d harness-dependent probe(s), with the subject each '

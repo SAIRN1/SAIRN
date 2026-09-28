@@ -169,7 +169,14 @@ def main():
         print('COULD NOT MEASURE: git ls-files returned nothing, so every '
               'figure below\nwould be zero for the wrong reason. That is a '
               'could-not-tell, not a clean tree.')
-        return 0
+        # ── AND THE EXIT CODE HAS TO AGREE WITH THE SENTENCE ABOVE ────────
+        # This returned 0 while printing COULD NOT MEASURE. Anything reading the
+        # exit code -- a hook, a loop, a report -- saw a pass, and the one
+        # reader that mattered was the one that never read the text. Corrected
+        # 2026-09-29 after parse_zero_third_state_check classified it as a guard
+        # present with the wrong exit, which is the defect with a branch in
+        # front of it. PR 1.11: could-not-run is never folded into passed.
+        return 2
 
     n = r5a(files)
     print('R5a  a guard that can never be true            : %d across %d files'

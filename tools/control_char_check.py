@@ -121,6 +121,17 @@ def main(argv):
     else:
         files = tracked()
         skipped, findings = [], []
+        # ── A ZERO-ITEM CORPUS IS NOT A CLEAN SWEEP (PR 1.11) ──────────────
+        # Guarded in the else only: the branch above scans the files a caller
+        # NAMED, and naming none is the caller's business. This branch is the
+        # whole-repo sweep, and an empty one means `git ls-files` returned
+        # nothing -- which would print "tracked files scanned : 0" and then
+        # clean. Added 2026-09-29 after parse_zero_third_state_check named it.
+        if not files:
+            print('COULD NOT RUN: `git ls-files` returned no tracked file. '
+                  'Zero files scanned\nis not zero control characters found. '
+                  'Exit 2, not a pass.')
+            return 2
     for f in files:
         if f.lower().endswith(BINARY_EXT):
             skipped.append(f)
