@@ -17308,6 +17308,65 @@
       "recurrence_open": "OPEN ACROSS THE PLATFORM AND NOW MEASURED: 82 of 157 text-reading tools match straight over file text with no literal masking and no decoy control (tools/text_gate_literal_sweep.py). RAW is not by itself a defect -- a marker scan anchored at column zero is correctly raw -- but only 2 of the 157 have an empirical decoy probe, so the other 155 are CLASSIFIED and not TESTED. The sweep itself demonstrated the difficulty on its first run by missing every precompiled regex and undercounting its own universe by 27 tools."
     },
     {
+      "commit": "c509a5c66aea",
+      "date": "2026-09-27",
+      "subject": "fix(sairncare): the attribution spoof was still reachable -- a payload recorded_by overwrote the column on every READ",
+      "files": [
+        "api/sd-data-alf-caregiver-scope.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 88,
+      "lines_removed": 2,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "live-verification",
+      "summary": "The alf_incidents attribution fix did not close the attribution spoof. `recorded_by` was omitted from the write path's storedBlob strip list even though it is a real column on the table, so a caller-supplied recorded_by was stored INSIDE the data blob; and the read mapper built its response as Object.assign({id, resident_id, created_at, recorded_by: <column>}, r.data) -- spreading the blob LAST, so the blob's copy overwrote the authoritative column on every read. A live write against ALF-TEST-2026 on the deployed endpoint carrying reported_by and recorded_by both set to 'FORGED-SOMEONE-ELSE' read back recorded_by = 'FORGED-SOMEONE-ELSE' while the session's employee_id was 'sairn-demo-owner'. The same spread order applies to `id` and `resident_id`, which were safe only because they ARE in the strip list. Fixed by spreading the blob FIRST and overwriting with the columns, and by adding recorded_by to the strip list.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "957c6f72f542",
+        "date": "2026-09-27",
+        "subject": "fix(sairncare): ANY employee could file an abuse/neglect incident attributed to somebody else -- who filed it is now SET, not SENT",
+        "lag_days": 0
+      },
+      "citation_note": "The write path established the right answer and the read path replaced it with the caller's. The row was correct in the database and wrong in every response, so 'the column is set from the session' was true and useless.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "Object.assign(target, ...sources) applies sources left to right, so putting the stored blob LAST makes every blob key beat the column of the same name. The mapper was written to add columns to a blob rather than to overwrite a blob with columns, and those read identically at a glance.",
+          "action": "The blob is spread FIRST and the authoritative columns overwrite it. Applies to id, resident_id and created_at as well as recorded_by.",
+          "action_status": "done"
+        },
+        {
+          "kind": "technical",
+          "factor": "recorded_by was added as a column but not added to the write's strip list, so the row carried two answers to 'who filed this' -- one authoritative and one caller-supplied. Every other column on the table IS stripped; this one was new and the list was not revisited.",
+          "action": "Added to the strip list. A separate arm pins it, because ablation showed the mapper fix alone closes the round trip and the strip was therefore unpinned.",
+          "action_status": "done"
+        },
+        {
+          "kind": "detection",
+          "factor": "THE SUITE ASSERTED THE FIRST HOP ONLY. The write arm checked the POST body sent to PostgREST and the column in it was always correct; nothing asserted what the READ returned. Nine arms, ablation-verified against four mutations, all green -- and the defect sat in the return path none of them looked at. This is the round-trip face of the second-pass class measured by tools/second_pass_coverage_scan.py the previous day.",
+          "action": "A ROUND TRIP arm that seeds a row with the forged value in BOTH the blob and the column and asserts the response carries the column's value, plus a control asserting ordinary blob fields still reach the caller so the arm cannot pass on an empty response.",
+          "action_status": "done"
+        },
+        {
+          "kind": "process",
+          "factor": "The previous commit's own message stated that live verification was still owed and the change shipped anyway. The gap between 'in-process arms green' and 'the deployed endpoint behaves' was named accurately and then treated as acceptable, and the defect lived in exactly that gap.",
+          "action": "None mechanical. PR 3.2 already requires live verification after a push and it is what found this.",
+          "action_status": "not-actionable",
+          "note": "The rule that would have caught this already exists and was already written down in the commit that shipped the defect. Adding a fifth restatement of it is not a corrective action. What is worth recording is the specific shape: for any resource where a COLUMN and a BLOB can carry the same key, the in-process write arm is structurally incapable of seeing a read-path override, so the live read is not optional for that shape."
+        }
+      ],
+      "recurrence_open": "OPEN AS A SHAPE, NOT AS AN INSTANCE. Wherever a resource has BOTH a real column and a stored blob that can carry the same key, the in-process write arm is structurally incapable of seeing a read-path override -- it asserts the outbound body and the defect is inbound. api/sd-data.js has many such resources (every trail with recorded_by, plus entry_id/resident_id/created_at across six append-only reads), and NOTHING sweeps for a mapper that spreads its blob after its columns. That sweep does not exist and is the real corrective action."
+    },
+    {
       "commit": "c680a4c1dbca",
       "date": "2026-09-27",
       "subject": "fix(tooling): 78 tools derived their repo root FROM unanchored git discovery -- on a machine where that never fails, it just answers wrongly",
