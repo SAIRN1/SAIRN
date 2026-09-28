@@ -2643,8 +2643,8 @@
       "task": "x",
       "claimed_at": "2026-09-28T19:25:00Z",
       "claimed_at_epoch": 1790623500.5585651,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-28T19:40:26Z",
       "files": null
     }
   ],
