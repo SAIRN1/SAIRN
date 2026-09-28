@@ -18426,7 +18426,7 @@
       "recurrence_open": "Nothing derives the list-then-prose convention from the register; it is still an assumption about how people write these cells, now with an arm that fires when a cell breaks the shape in this particular way. A cell that names a resource in a PREAMBLE before the list -- the original request's own hypothetical -- would still place badly and no arm covers it. The wider class is open: the register is hand-written prose that several tools parse."
     },
     {
-      "commit": "277d11de0010",
+      "commit": "f44c608aa1a1",
       "date": "2026-09-28",
       "subject": "fix(hooks): five fail-opens in git hooks, where `exit 0` is not a skip but a DECISION to allow",
       "files": [
