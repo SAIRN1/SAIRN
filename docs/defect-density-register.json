@@ -17534,7 +17534,7 @@
       "recurrence_open": "The criteria are still a guess about what a correct anchor looks like. Three forms are recognised -- replace-once, declared-count, and single-subject 2-tuples -- and a probe using a fourth form is not reported as unchecked, it is simply absent from the count. Nothing measures how many anchors the tool cannot see."
     },
     {
-      "commit": "e039850a2778",
+      "commit": "0030d6b49804",
       "date": "2026-09-27",
       "subject": "fix(sairnlaw): a caller could write somebody else's name into a deadline rule's provenance -- and the new caller-impact tool flagged its own fixture",
       "files": [
