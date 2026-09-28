@@ -18805,6 +18805,63 @@
       "recurrence_open": "Nothing detects a mutation that cannot produce its labelled outcome. The harness reports SILENT identically for a blind suite and an inert mutation, and 74 other probes with MUTATIONS lists have never been audited for this shape. The three-SILENT-arm report this closes contained one instance of each, which is exactly why they were misdiagnosed as one cause."
     },
     {
+      "commit": "ade620ee6946",
+      "date": "2026-09-28",
+      "subject": "fix(tooling): the fail-open scanner counted its own docstring -- eight of eighteen reported sites were prose",
+      "files": [
+        "docs/2026-09-29-result-rederivation.md",
+        "docs/fail-open-coverage.json",
+        "tools/fail_open_scan.py"
+      ],
+      "lines_added": 267,
+      "lines_removed": 26,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/fail_open_scan.py matched its own documentation. The tool searches source for fail-open shapes and its docstring QUOTES those shapes in order to explain them, so it counted itself six times -- from the docstring, the shape table and a print string -- and tools/tooling_inventory.py contributed two more from the PURPOSES entry describing this very tool. EIGHT OF THE EIGHTEEN REPORTED SITES WERE PROSE. The figures published from it, 21 dependency-shaped fail-opens falling to 16, were both inflated by a scanner reading its own description of the thing it looks for, and both were reported to Michael as measurements. After masking strings and comments the true count is THIRTY, worse than either published number, with none in git hooks. Found by re-deriving five recent results after a window change rather than by any check.",
+      "rules": [
+        "1.8"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Present from the tool's first commit: the docstring and the shape table were written together with the matcher, so there is no commit that introduced the self-match -- it shipped with it."
+      },
+      "citation_note": "A scanner whose subject is a source pattern will match its own documentation, and nothing announces the day the number it prints stops being about the codebase.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "The tool matched RAW source. Every shape it hunts is a phrase this repo also writes about, and the file that writes about them most is the tool itself -- so self-matching was not an edge case, it was the first file scanned.",
+          "action": "Strings and comments are masked before matching: Python via tokenize, shell via a single left-to-right pass because a # inside a quoted string is not a comment. Offsets are preserved so line numbers stay true.",
+          "action_status": "done"
+        },
+        {
+          "kind": "technical",
+          "factor": "Masking alone broke the classifier in the opposite direction: SCOPE-shaped guards fell from 2 to ZERO and .githooks/pre-commit's hover-auditor marker test was reclassified as a hook fail-open. Acted on, that would have demanded every commit in four build clones be refused. What makes a guard a scope test is the NAME it tests for, and that name is a string literal the mask blanks.",
+          "action": "Shape is matched on the masked line; subject on the raw line. Two questions, two inputs.",
+          "action_status": "done"
+        },
+        {
+          "kind": "detection",
+          "factor": "Nothing caught this. tools/text_gate_literal_sweep.py measures exactly this class and had been committed hours earlier -- but it CLASSIFIES rather than tests, and its own output says only 2 of 157 gates have an empirical decoy probe. fail_open_scan was one of the 155 classified and never driven.",
+          "action": "None mechanical yet. The decoy-probe backlog named by that sweep is the corrective action and it is not built.",
+          "action_status": "planned"
+        },
+        {
+          "kind": "process",
+          "factor": "Two numbers derived from this tool were reported as measurements before anything drove it against a known-bad input. A count is the easiest kind of output to believe and the hardest to falsify by reading.",
+          "action": "None beyond the masking fix and the re-derivation record.",
+          "action_status": "not-actionable",
+          "note": "The rule that would have caught this already exists on this platform -- lock a check's criteria against synthetic fixtures before running it on real data -- and I followed it for the role-gate loop rule, the conflict pre-flight and the staged-credential check in the same session, and did not for this one. A fifth restatement is not a corrective action. What is worth recording is WHICH tools skipped it: the ones written quickly as a sweep in response to an incident, where the finding felt urgent enough that the control felt like overhead."
+        }
+      ],
+      "recurrence_open": "OPEN AND NOW COUNTED FOUR TIMES IN ONE SESSION: sairn_sql_preflight read a table name out of an English sentence; text_gate_literal_sweep missed every precompiled regex and undercounted its own universe by 27; fail_open_scan counted its own docstring; and tools/tier_a_review_gate.py attributed the scp_quotes resource from the word 'quotes' in a docstring about quote characters. The last is CODY'S file and is reported, not edited. The general corrective action -- an empirical decoy probe per text-reading gate -- exists as a backlog inside text_gate_literal_sweep and covers 2 of 157."
+    },
+    {
       "commit": "d84b1af6a15b",
       "date": "2026-09-28",
       "subject": "fix(sairncare): the alf_op_audits write ECHO spread its blob after the columns -- and a sweep for the whole class",
