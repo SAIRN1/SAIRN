@@ -47,6 +47,15 @@ import sys
 import tempfile
 import time
 
+# DECLARED, so checker_confidence.py can join this control to the checker it
+# drives. Added 2026-09-28 the same day this file landed: the join reported
+# `claim_activity_check.py` as an UNDECLARED CONTROL CANDIDATE on its own first
+# run -- PROVEN LOW with a test file that names the checker and declares
+# nothing -- which is exactly the subprocess_decode_check state that join was
+# built for. The control existed and the declaration did not, and only somebody
+# who already knew would have seen it.
+CONTROLS_FOR = ['tools/claim_activity_check.py']
+
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOL = os.path.join(REPO, 'tools', 'claim_activity_check.py')
 
