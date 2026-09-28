@@ -4248,6 +4248,40 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-28T01:24:38Z",
+      "opened_at_sha": "d617d7fabc47ca671d0bd3e80920d0f21fe5db43",
+      "resources": [
+        "alf_activities",
+        "alf_billing",
+        "alf_claim_routes",
+        "alf_clients",
+        "alf_compliance_rules",
+        "alf_facility",
+        "alf_family_contacts",
+        "alf_incidents",
+        "alf_mar",
+        "alf_op_audits",
+        "alf_payer_rules",
+        "alf_signals",
+        "alf_staff",
+        "alf_staff_credentials"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/sd-data-alf-caregiver-scope.test.js",
+        "api/sd-data.js"
+      ],
+      "what": "TWO REAL CHANGES TO api/sd-data.js AND ONE OF THEM IS A CRITICAL SECURITY FIX. READ THIS BEFORE REVIEWING, because most of the resources named on this obligation did not change at all.\n\n(1) alf_incidents -- THE ONE THAT MATTERS. reported_by was stored FROM THE CALLER'S PAYLOAD: storedBlob(payload, ['id','resident_id','created_at']) copies the payload and deletes only those keys, so the reporter's identity was whatever the request said. The write is deliberately open to any authenticated employee (mandated reporting, and that decision is right), so ANY EMPLOYEE COULD FILE AN INCIDENT -- including an abuse_neglect_allegation -- ATTRIBUTED TO ANY OTHER PERSON. Fixed both halves: reported_by is now STRIPPED from the payload, and a new server-set recorded_by column is written from session.employee_id and never re-stamped on update. The care-role read now self-scopes on recorded_by, and a missing column is its own 503 MIGRATION_REQUIRED rather than an empty log. WHAT TO ATTACK: (a) the migration sql/sairncare_incidents_recorded_by.sql IS NOT APPLIED -- until Michael runs it the read answers 503 for EVERY role, so this change makes the incident log unreadable in production the moment it deploys, and that ordering is a deliberate choice you should second-guess; (b) legacy rows keep recorded_by NULL by decision, so the care tier sees none of them -- confirm management still reads all, which one arm asserts; (c) the 400-body sniff for 42703/recorded_by is a STRING MATCH on an error payload and I did not verify it against a real PostgREST 400; (d) recorded_by is not re-stamped on update, so a management follow-up preserves the original filer -- check that is what you would want.\n\n(2) alf_family_contacts -- a new NARROW TIER. A care role reads emergency contacts for its own assigned residents only, with the consent trail (mar_consent, consent_granted_at/by, consent_revoked_at, revoked_at, notes) removed from the SELECT. The file's own comment asked for exactly this and said it needed an owner; Michael decided. WHAT TO ATTACK: it costs an extra alf_clients query per read; the row scope is applied BOTH in the query and in memory, which is deliberate belt-and-braces and which you may think is one too many; and an unassigned employee gets an empty list rather than a 403.\n\n(3) EVERYTHING ELSE ON THIS OBLIGATION DID NOT CHANGE. alf_activities, alf_billing, alf_claim_routes, alf_compliance_rules, alf_op_audits, alf_payer_rules and alf_signals are named ONLY because api/sd-data-alf-caregiver-scope.test.js drives them as REFUSAL arms -- it asserts a caregiver is refused each one. No branch for any of them was edited. This is the same gate blindness cody recorded on 2026-09-21 running in the fixture direction, and I have not edited tools/tier_a_review_gate.py, which cody holds.\n\nNO roleSet WAS CHANGED anywhere in this range. caregiver remains in no roleSet; both new tiers are fallthroughs.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-28T01:24:38Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
