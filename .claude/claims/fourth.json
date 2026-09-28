@@ -2606,6 +2606,21 @@
         "tests/run_verification_owed_probe.py",
         "tools/verification_owed_report.py"
       ]
+    },
+    {
+      "id": "fourth-1790590861",
+      "session": "fourth",
+      "subject": "platform-staging-discipline",
+      "task": "enumerate and replace git add -A / git add . / git commit -a across tools, scripts, hooks and loops with explicit path lists; a pre-commit check refusing any STAGED file whose CONTENT matches a credential shape; known-bad control with an innocently-named token file. FILES: tools/staged_credential_check.py tests/run_staged_credential_probe.py tools/blanket_stage_scan.py docs/",
+      "claimed_at": "2026-09-28T10:21:01Z",
+      "claimed_at_epoch": 1790590861.3124208,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "tests/run_staged_credential_probe.py",
+        "tools/blanket_stage_scan.py",
+        "tools/staged_credential_check.py"
+      ]
     }
   ],
   "refusals": [
