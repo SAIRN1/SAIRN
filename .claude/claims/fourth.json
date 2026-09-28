@@ -2665,8 +2665,8 @@
       "task": "three unblocked items from the fourth handoff: (1) hasRole strictness -- it requires === true while the bracket form every gate uses accepts any truthy value; decide which is correct, make the gates consistent and pin it; (2) tooling_inventory.py names an untracked new tool as one that no longer exists -- make it name the real cause, fixture first; (3) enumerate every probe that creates a record, credential or licence row and check each for an asserted teardown or a named residue entry, publish checked over universe. FILES: api/_lib/auth.js tools/tooling_inventory.py",
       "claimed_at": "2026-09-28T20:11:53Z",
       "claimed_at_epoch": 1790626313.7164683,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-28T20:39:58Z",
       "files": [
         "api/_lib/auth.js",
         "tools/tooling_inventory.py"
