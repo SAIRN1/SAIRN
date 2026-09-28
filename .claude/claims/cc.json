@@ -2792,8 +2792,8 @@
       "task": "report_only_checks --list KeyError evidence -> print a third state never fabricate; index_duplicate_check.py PostToolUse Write|Edit scoped hook the same shape as citation_drift_hook; dispatch_state.py moved from push-time to SessionStart; SPOF dependency-graph sweep methodology item 91 with a named retirement schedule; SAIRNvet formulary citation sourcing continued row by row. api/sd-data.js DELIBERATELY EXCLUDED -- hank-queue13 claimed it 0.0h ago for the alf_compliance_rules evaluate branch and BLOCKED my sen-EVV wiring on the same declared FILE; flagged to the coordinating session rather than reworded past the matcher (PR 4.3). SUBJECT NAMED PER PR 4.3 FILES: tools/report_only_checks.py tools/dispatch_state.py tools/index_duplicate_hook.py .claude/settings.json sairnvet.html docs/2026-09-26-spof-retirement-schedule.md",
       "claimed_at": "2026-09-27T02:00:49Z",
       "claimed_at_epoch": 1790474449.2326477,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-28T19:53:55Z",
       "files": [
         ".claude/settings.json",
         "docs/2026-09-26-spof-retirement-schedule.md",
@@ -2899,8 +2899,8 @@
       "task": "claim_activity_check.py reports EXPIRED claims as active because it reads the raw status field instead of sairn_claim.is_active() -- three findings today, all three vacuous; expired-but-unreleased made a named third state with a regression control FIRST. Then the could-not-read ratchet doc; the sv_financials B->A tier row on availability and integrity with confidentiality staying B; the citation-drift repoint in docs/CRITICALITY-TIERS.md; the next checker_denominator batch; and whatever still exits 2 COULD NOT RUN. CONFLICTS DECLARED PER PR 4.3 RATHER THAN REWORDED: hank's LIVE queue20 says 'Then the obligation backlog with backfill_shas', which touches docs/tier-a-reviews.json -- so the TWENTY review-record citation drifts are NOT TAKEN by me and only the seventy in CRITICALITY-TIERS.md are; docs/CRITICALITY-TIERS.md itself is named by NO live claim (cody-q16 and hank-queue13 both expired) and is taken here. SUBJECT NAMED PER PR 4.3 FILES: tools/claim_activity_check.py tests/run_claim_activity_probe.py docs/CRITICALITY-TIERS.md tools/checker_denominator.py docs/2026-09-28-could-not-read-ratchet.md",
       "claimed_at": "2026-09-28T10:59:11Z",
       "claimed_at_epoch": 1790593151.9356925,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-28T19:53:55Z",
       "files": [
         "docs/2026-09-28-could-not-read-ratchet.md",
         "docs/CRITICALITY-TIERS.md",
