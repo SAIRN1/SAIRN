@@ -2511,6 +2511,34 @@
         "tests/run_tier_a_review_gate_probe.py",
         "tools/tier_a_review_gate.py"
       ]
+    },
+    {
+      "id": "cody-1790560162",
+      "session": "cody",
+      "subject": "cody-q16",
+      "task": "queue16: fix the 9 label-claims-universal arms assertion_label_shape_check.py found (regression arm FIRST per arm, in each owning suite), then widen the sweep and publish that tool's OWN checked/universe inside the tool; re-anchor the sf_ceremonial_items and sf_bottle_fills citation drifts; land the sf_events tier row from docs/2026-09-27-sf-events-tier-cell.md; enumerate every tool with more than one entry point over one population and add a control per tool that fails when the entry points disagree on the universe; five more register-only planned-action closures with controls; SAIRNcode autonomous-coding scoping DOCS ONLY no build; self-audit of MY OWN skill log and the methodology registry. LEXICAL BLOCK DECLARED PER PR 4.3 RATHER THAN REWORDED: cc holds a live claim sharing the phrases 'checked/universe', 'coverage denominators' and 'self-audit of my own skill log, tool inventory and methodology registry'. VERIFIED DISJOINT AND NOT TAKEN BY ME: tools/checker_denominator.py, tools/report_only_checks.py, tools/mutation_anchor_check.py, tools/probe_anchor_freshness.py and .claude/settings.json are ALL cc's and I edit NONE of them. My checked/universe is printed by my own tool about its own file list, not through cc's denominator module; cc's 'unify the two anchor-freshness populations' is TWO TOOLS with disjoint populations while mine is ONE TOOL with two entry points, a different subject with the same vocabulary; and a self-audit of one's own skill log is per-session by construction -- hank's queue15 item 11 is the same wording for the same reason. BLOCKED AND NOT TAKEN, REPORTED NOT WORKED AROUND: (a) registering assertion_label_shape_check.py in the report-only REGISTRY needs tools/report_only_checks.py, cc's; (b) sf_trustee_audits server sync needs api/sd-data.js, fourth's LIVE claim; (c) the slabSyncOne/sdLineageSyncOne write-fault fix needs api/sd-data.js, same holder. SUBJECT NAMED PER PR 4.3 FILES: tools/assertion_label_shape_check.py tools/entry_point_scope_check.py tests/run_entry_point_scope_probe.py docs/CRITICALITY-TIERS.md tests/push_gate/check9_probe.py tests/push_gate/refspec_and_override_probe.py tests/run_checker_confidence_probe.py tests/reachability/resource_demand_probe.py tests/run_assurance_case_probe.py tests/run_register_feed_gate_probe.py tests/run_rotation_blast_radius_probe.py tests/run_testability_gate_probe.py api/_resources/sairnfreedom.js docs/2026-09-28-entry-point-scope-divergence.md docs/2026-09-28-sairncode-autonomous-coding-scope.md docs/2026-09-28-cody-self-audit.md",
+      "claimed_at": "2026-09-28T01:49:22Z",
+      "claimed_at_epoch": 1790560162.6815383,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/_resources/sairnfreedom.js",
+        "docs/2026-09-28-cody-self-audit.md",
+        "docs/2026-09-28-entry-point-scope-divergence.md",
+        "docs/2026-09-28-sairncode-autonomous-coding-scope.md",
+        "docs/CRITICALITY-TIERS.md",
+        "tests/push_gate/check9_probe.py",
+        "tests/push_gate/refspec_and_override_probe.py",
+        "tests/reachability/resource_demand_probe.py",
+        "tests/run_assurance_case_probe.py",
+        "tests/run_checker_confidence_probe.py",
+        "tests/run_entry_point_scope_probe.py",
+        "tests/run_register_feed_gate_probe.py",
+        "tests/run_rotation_blast_radius_probe.py",
+        "tests/run_testability_gate_probe.py",
+        "tools/assertion_label_shape_check.py",
+        "tools/entry_point_scope_check.py"
+      ]
     }
   ],
   "refusals": [
