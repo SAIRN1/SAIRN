@@ -92,6 +92,11 @@
         "hooks": [
           {
             "type": "command",
+            "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/conflict_marker_preflight_hook.py\"",
+            "timeout": 190
+          },
+          {
+            "type": "command",
             "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/git_push_master_guard.py\"",
             "timeout": 10
           },

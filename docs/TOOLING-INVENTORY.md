@@ -19,11 +19,11 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**253 files in `tools/`.** By what actually invokes them:
+**254 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
-| **BLOCKING** | 13 | reachable from something that can refuse a push or a tool call |
+| **BLOCKING** | 14 | reachable from something that can refuse a push or a tool call |
 | **REPORT-ONLY** | 66 | runs automatically on every push, never blocks |
 | **ADVISORY** | 4 | session-start or prompt hooks, informational |
 | **DECIDED** | 71 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
@@ -35,7 +35,7 @@ By what they are, independent of wiring:
 | Kind | Count |
 |---|---:|
 | ADVISORY | 3 |
-| CHECKER | 173 |
+| CHECKER | 174 |
 | GENERATOR | 19 |
 | LIBRARY | 25 |
 | LIVE | 26 |
@@ -101,7 +101,7 @@ outside world. Unwired is the right state for them and is not a finding.
 
 ---
 
-## BLOCKING (13)
+## BLOCKING (14)
 
 Two entry points, and they are not the same one. `.claude/settings.json`
 PreToolUse fires on a Claude Code **tool call**; `.githooks/pre-push` fires on
@@ -112,6 +112,7 @@ around it. The second exists because the first missed exactly that on
 | Tool | Kind | What it catches | Probe under tests/ |
 |---|---|---|---|
 | `conflict_marker_check.py` | CHECKER | an unresolved VCS conflict marker at the start of a line, in any file in any language -- push-gate check 14, BLOCKING on day one because the false-positive baseline is MEASURED: all four shapes across 2,069 tracked files, zero hits, including the bare seven equals signs that ASCII banners would be expected to produce. Markers reached origin/main THREE TIMES in five days, once into a Tier A source file, while md_table_check carried a conflict regex the whole time -- it reads only markdown tables, is report-only, and gates on the wrong number | `conflict_marker_preflight_probe.py`, `run_conflict_marker_probe.py` |
+| `conflict_marker_preflight_hook.py` | CHECKER | A CONFLICT RESOLUTION THAT LEAVES NO MARKERS -- reported at the one moment it is cheap to undo. It is a SHIM and the shim is the point: tools/conflict_marker_preflight.py costs 7.10 SECONDS over 2,670 paths (measured 2026-09-28), a PreToolUse hook fires on EVERY Bash call, and .githooks/pre-commit already records in its own words that a hook costing real time on every commit is one somebody eventually turns off. This does four filesystem stats against .git/ and returns -- 0.18s on the no-op path, measured -- and runs the full pre-flight ONLY while a rebase, merge, cherry-pick or revert is in progress. THE EARLY EXIT COULD NOT GO INSIDE THE TOOL: that file is named in another active claim, so the guard lives beside it rather than reaching into a file another session holds. IT WARNS AND NEVER DENIES, deliberately -- a mid-rebase state is a NORMAL state and git status, git diff and git add of a resolved file are all legitimate there, so denying Bash during a rebase makes the tool that helps you finish one unusable inside it, which is the path to the hook being disabled and check C lost entirely. THE PRE-FLIGHT EXIT 1 AND EXIT 2 ARE PRINTED WITH DIFFERENT TEXT AND NEVER FOLDED TOGETHER (PR 1.11). A missing pre-flight during an operation is NAMED rather than silently skipped. Held by tests/run_conflict_preflight_hook_probe.py, 22 arms, including a CONTROL that the three outcomes produce DIFFERENT text -- which replaced a check(..., True) that could not fail | `run_conflict_preflight_hook_probe.py` |
 | `control_char_check.py` | CHECKER | a raw C0 control byte in any tracked text file -- an escape sequence typed as its literal character | `check11_probe.py`, `refspec_and_override_probe.py`, `run_control_char_probe.py`, `run_invisible_in_pattern_probe.py`, `run_retry_policy_probe.py` |
 | `employee_auth_guard_check.py` | CHECKER | a SQL file writing credential rows with no recoverability guard (gate check 2) | `check2_and_check5_probe.py`, `missing_checker_probe.py` |
 | `git_push_master_guard.py` | CHECKER | a push aimed at `master`, which is stale | `run_push_master_guard_probe.py` |
@@ -229,7 +230,7 @@ And 5 that are PostToolUse hooks in their own right, not registry entries:
 | `deploy_verify_notify.py` | CHECKER | a push whose deploy never reached the live site | `sairn_http_challenge.py`, `sairn_http_response_shape.py` |
 | `html_script_check.py` | CHECKER | a script block that no longer parses, after a Write or Edit | &mdash; |
 | `index_duplicate_hook.py` | CHECKER | a near-duplicate row pair THIS EDIT added to docs/SAIRN-OPEN-WORK-INDEX.md -- the file every session reads at start to choose work, where two rows on one subject give the reader two answers and no way to tell which is current. index_duplicate_check.py has caught that since it was built, and was wired ONLY into report_only_checks, whose hook returns 0 unless the Bash command was a `git push` -- so it ran after a push and never at the moment a row was added. A WRAPPER rather than the checker in settings.json because the checker does not self-scope by file_path: wired directly it would re-read the whole index after every edit in the repo, which is a check somebody turns off. REPORTS THE DIFFERENCE, NOT THE TOTAL, keyed on ROW TEXT and not line numbers -- every line number moves when a row is inserted above, so a line-keyed diff would report every existing pair as newly introduced by any edit at all. The trade is stated and asserted: rewording one row of an existing pair reads as a new pair. Judges a HEAD baseline via `git show` into a temp file and NEVER writes the working tree. Fails closed, exit 2, when the checker cannot be imported or raises. 12 arms, synthetic fixtures, three of which prove the comparison finds a duplicate at all. Found by invocation_path_scan.py; triaged in docs/2026-09-26-invocation-path-sweep.md as the one candidate of five genuinely the same shape as the citation-drift gap | &mdash; |
-| `report_only_checks.py` | LIBRARY | the report-only registry and its runner -- the entries above | `run_all_tests_hook_gate_probe.py`, `run_assurance_case_probe.py`, `run_baseline_readiness_probe.py`, `run_dora_metrics_probe.py`, `run_export_coverage_probe.py`, `run_literal_drift_control_probe.py`, `run_optimistic_success_probe.py`, `run_report_only_checks_probe.py`, `run_risk_event_tree_probe.py` |
+| `report_only_checks.py` | LIBRARY | the report-only registry and its runner -- the entries above | `run_all_tests_hook_gate_probe.py`, `run_assurance_case_probe.py`, `run_baseline_readiness_probe.py`, `run_dora_metrics_probe.py`, `run_export_coverage_probe.py`, `run_literal_drift_control_probe.py`, `run_mutation_anchor_resolver_probe.py`, `run_optimistic_success_probe.py`, `run_report_only_checks_probe.py`, `run_risk_event_tree_probe.py` |
 
 ---
 
@@ -475,11 +476,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      253   git ls-files tools/
-  hook entries                        13   .claude\settings.json
+  tools on disk                      254   git ls-files tools/
+  hook entries                        14   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                62   report_only_checks.REGISTRY
-  tools invoked by tests/            176   tests/**/*.py, *.js
+  tools invoked by tests/            177   tests/**/*.py, *.js
   recorded NOT-promoted decisions     77   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```

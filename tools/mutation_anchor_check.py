@@ -71,6 +71,20 @@ import sys
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+# A sentinel target meaning "resolved, and it is not a file" -- an in-memory
+# buffer or a transform. Distinct from None (could not resolve) so main() can
+# tell them apart, which is the whole correction made to resolve() on
+# 2026-09-28.
+#
+# NOT A NUL BYTE, and the first version was. `'\x00structural'` reached
+# docs/MASTER-PLAN.md through the generator that reads this tool, and the push
+# gate's control-byte check refused it -- correctly, and it is the reason that
+# check exists: a raw control byte in a tracked file is invisible to a reader
+# and to grep. Angle brackets are safe because no path on this platform
+# contains one, so the sentinel can never collide with a real target.
+STRUCTURAL = '<structural: no file anchor>'
+
+
 def literal(node):
     """The constant value of an AST node, or None if it is not a plain literal."""
     try:
@@ -104,6 +118,21 @@ def element(node):
         pat = literal(node.args[0])
         if isinstance(pat, str):
             return ('re', pat)
+    # ── AN INLINE os.path.join IN THE TARGET SLOT, added 2026-09-28 ────────
+    # A FOURTH shape, and the last thing keeping this tool at exit 2.
+    # tests/fail_open_triage_probe.py arm 5 names its subject as
+    # `os.path.join('api', 'sen-portal.js')` right in the entry rather than via
+    # a module constant. literal() cannot evaluate a Call, so the target read
+    # as None and the arm was reported as "the probe declares 5 candidate
+    # subject files and the arm names none of them" -- while the arm named its
+    # file more precisely than any of the five. read_probe() has resolved this
+    # exact form for module-level constants since it was written; the entry
+    # parser simply never learned it.
+    if (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+            and node.func.attr == 'join' and node.args):
+        parts = [literal(a) for a in node.args]
+        if parts and all(isinstance(p, str) for p in parts):
+            return os.path.join(*parts)
     return literal(node)
 
 
@@ -122,13 +151,29 @@ def read_probe(path):
     """
     tree = ast.parse(io.open(path, encoding='utf-8', errors='replace').read(), path)
     consts, muts = {}, []
+    # ── EVERY MODULE-LEVEL NAME, INCLUDING TUPLE UNPACKING AND def ─────────
+    # Needed to tell a NAME THAT EXISTS BUT IS NOT A PATH -- an in-memory
+    # buffer, a transform function -- from a name that exists NOWHERE, which is
+    # a real typo and a real finding. `RAW_APP, RAW_H, RAW_REG = raw_of(APP),
+    # ...` in tests/sen_evv_payroll_wiring_probe.py is a tuple target, so the
+    # single-Name loop below could not see it and six of its arms read as
+    # "names a thing that does not exist" when the thing is one line up.
+    names = set()
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            for t in node.targets:
+                for sub in (t.elts if isinstance(t, (ast.Tuple, ast.List)) else [t]):
+                    if isinstance(sub, ast.Name):
+                        names.add(sub.id)
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            names.add(node.name)
     for node in tree.body:
         if not isinstance(node, ast.Assign) or len(node.targets) != 1:
             continue
         tgt = node.targets[0]
         if not isinstance(tgt, ast.Name):
             continue
-        if tgt.id == 'MUTATIONS' and isinstance(node.value, (ast.List, ast.Tuple)):
+        if tgt.id == 'MUTATIONS' and isinstance(node.value, (ast.List, ast.Tuple)):  # noqa: E501
             for el in node.value.elts:
                 if isinstance(el, (ast.Tuple, ast.List)):
                     muts.append([element(x) for x in el.elts])
@@ -146,17 +191,109 @@ def read_probe(path):
             parts = [x for x in parts if isinstance(x, str)]
             if parts:
                 consts[tgt.id] = os.path.join(*parts)
+    consts['__names__'] = names
     return consts, muts
 
 
+def is_observer(rel):
+    """A SUITE rather than a SUBJECT: a mutation probe mutates the subject and
+    watches the suite, so a suite path is never the thing an arm mutates."""
+    q = str(rel).replace('\\', '/')
+    return q.startswith('tests/') or '/tests/' in q or q.endswith('.test.js')
+
+
+def sole_subject(consts):
+    """The one file an entry with NO target element can only mean, or None.
+
+    ── WHY THIS EXISTS: `TARGET` IS A NAME NOBODY USES ────────────────────
+    resolve() fell back to `consts.get('TARGET')` for any entry shorter than
+    four elements. MEASURED 2026-09-28 across the 19 probes this tool could not
+    read: **`TARGET` appears in exactly ZERO of them.** They call the subject
+    SUITE (11), APP (3), HANDLER (3), API, ENDPOINT, REGISTRY, SERVING, ENGINE,
+    LOCK, AUTH, SRC, TOOL, SUBJECT and eight more. The fallback was looking for
+    a spelling this repo does not use, which is the one-spelling-of-a-correct-
+    answer defect three tools on this platform have now shipped.
+
+    OBSERVERS ARE DROPPED FIRST, and that is what makes this decidable rather
+    than a guess: a probe names its suite and its subject, and only the subject
+    is ever mutated. What remains after dropping suites is one file in 30 arms.
+
+    MORE THAN ONE REMAINING IS AMBIGUOUS AND STAYS UNREADABLE, with the
+    candidates NAMED. Guessing which of three files an arm meant is exactly the
+    ambiguity this checker exists to refuse, and a wrong guess would count an
+    anchor in the wrong file and report ANCHOR-0 against a healthy arm.
+    """
+    paths = {}
+    for k, v in consts.items():
+        if k == '__names__' or not isinstance(v, str):
+            continue
+        p = v if os.path.isabs(v) else os.path.join(REPO, v)
+        if os.path.exists(p) and not os.path.isdir(p):
+            paths[k] = p
+    nonobs = {k: v for k, v in paths.items() if not is_observer(consts[k])}
+    if len(nonobs) == 1:
+        return list(nonobs.values())[0], sorted(nonobs)
+    return None, sorted(nonobs)
+
+
 def resolve(consts, entry):
-    """(target_path, old) for one MUTATIONS entry, or (None, old) if unresolved."""
+    """(target_path, old) for one MUTATIONS entry, or (None, old) if unresolved.
+
+    ── THE ROOT CAUSE OF THIS TOOL'S EXIT 2, FOUND 2026-09-28 ─────────────
+    It reported 84 arms across 19 probes as "target unresolved" and exited 2 --
+    COULD NOT RUN -- permanently, while wired into report_only_checks.REGISTRY.
+    A wired check that cannot run is the same failure as no check, and it was
+    saying so in output nobody read.
+
+    NOT ONE OF THE 84 WAS A STALE ANCHOR. Two separate defects in THIS
+    FUNCTION, and the message was wrong about both:
+
+      1. THE TARGET RESOLVED FINE AND WAS THROWN AWAY. The type guard below
+         used to read
+
+             if not isinstance(target, str) or not (isinstance(old, str) or ...):
+                 return None, old
+
+         so an arm whose target is a real file but whose mutation is a LAMBDA
+         or transform function returned (None, ...) -- "target unresolved" --
+         about a target that had just been resolved. main() already has a
+         STRUCTURAL bucket for "an arm with no text anchor, nothing to rot"; it
+         was unreachable for these because reaching it needs `target` to
+         survive. Now the two questions are asked separately: is the TARGET
+         resolvable, and separately, is there a TEXT ANCHOR to count.
+
+      2. THE NO-TARGET FALLBACK LOOKED FOR A NAME NOBODY USES. See
+         sole_subject(): `TARGET` appears in ZERO of the 19 probes.
+
+    A NAME THAT EXISTS BUT IS NOT A PATH IS STRUCTURAL, NOT UNREADABLE -- an
+    in-memory buffer like RAW_APP, which is the file's CONTENT rather than its
+    path. A name that exists NOWHERE in the module stays unreadable, because
+    that is a typo and a real finding.
+    """
     if len(entry) >= 4:
         target, old = entry[1], entry[2]
     else:
-        target, old = consts.get('TARGET'), entry[1]
+        target, old = None, (entry[1] if len(entry) > 1 else None)
+    if target is None:
+        # NO TARGET, WHATEVER THE ARITY. The first version only tried this for
+        # entries shorter than four elements, and tests/roofing_claim_gate_
+        # probe.py writes four-element entries whose target slot is a literal
+        # None -- so the fallback was skipped and the arm was reported
+        # unreadable while naming the single candidate it should have used.
+        # "The probe declares 1 candidate and the arm names none of them" is a
+        # message that answers itself, which is how that was spotted.
+        sub, _cands = sole_subject(consts)
+        target = sub
     if isinstance(target, str) and target.startswith('@'):
-        target = consts.get(target[1:])      # the entry named a module constant
+        nm = target[1:]
+        if nm in consts and isinstance(consts.get(nm), str):
+            target = consts[nm]
+        elif nm in consts.get('__names__', ()):
+            # A real module-level name that is not a path: a buffer or a
+            # transform. There is no FILE anchor here by construction.
+            return STRUCTURAL, None
+        else:
+            return None, old
     # ── AN ARM THAT NAMES A FUNCTION HAS NO TEXT ANCHOR TO ROT ──────────
     # read_probe() renders a bare Name as '@name'. For a TARGET that means a
     # module constant; for OLD it can also mean a TRANSFORM FUNCTION, which
@@ -168,13 +305,35 @@ def resolve(consts, entry):
     # in their own line rather than dropped: an exclusion nobody sees is how
     # a real stale anchor would hide in the same category.
     if isinstance(old, str) and old.startswith('@') and old[1:] not in consts:
-        return target, None
-    # A ('re', pattern) anchor is resolvable and countable -- see element().
-    if not isinstance(target, str) or not (isinstance(old, str)
-                                           or (isinstance(old, tuple) and old and old[0] == 're')):
+        # A TRANSFORM FUNCTION, so there is no text anchor in the entry --
+        # the anchor, if any, lives inside the function body and this tool
+        # cannot see it. STRUCTURAL whether or not a target was named: the old
+        # `return target, None` only reached main()'s structural bucket when a
+        # target happened to resolve, so the 2-element
+        # `(label, build_function)` shape -- eight arms in
+        # tests/run_provisioner_health_sole_role_sabotage_probe.py alone -- fell
+        # through to COULD NOT READ instead.
+        return (target if isinstance(target, str) else STRUCTURAL), None
+    # NO ANCHOR AT ALL IS STRUCTURAL WHATEVER THE TARGET IS. An arm carrying
+    # neither a countable anchor nor a resolvable file has nothing that can
+    # rot, so reporting it as COULD NOT READ says "nobody knows" about
+    # something there is nothing to know about -- and it is the bucket a real
+    # stale anchor would hide in. tests/law_trust_reconcile_wiring_probe.py's
+    # four arms are this shape: their mutations are functions and their
+    # constants are fixture STRINGS, not paths.
+    countable = (isinstance(old, str)
+                 or (isinstance(old, tuple) and old and old[0] == 're'))
+    if not countable:
+        return STRUCTURAL, None
+    if not isinstance(target, str):
         return None, old
     p = target if os.path.isabs(target) else os.path.join(REPO, target)
-    return (p if os.path.exists(p) else None), old
+    if not os.path.exists(p):
+        return None, old
+    # THE TARGET IS RESOLVED and `countable` was decided above. A lambda, a
+    # transform or a None mutation is STRUCTURAL rather than unreadable;
+    # conflating the two is defect 1 in the docstring.
+    return p, old
 
 
 
@@ -228,11 +387,20 @@ def main(argv):
             continue               # not a mutation probe; nothing to check
         for entry in muts:
             target, old = resolve(consts, entry)
-            if target and old is None:
+            if target == STRUCTURAL or (target and old is None):
                 structural.append((rel, str(entry[0])[:70]))
                 continue
             if not target:
-                unreadable.append((rel, 'arm %r: target unresolved' % str(entry[0])[:40]))
+                # NAMES THE CANDIDATES rather than saying only "unresolved".
+                # The old message was wrong as well as unhelpful: it said the
+                # target was unresolved for arms whose target had resolved.
+                _sub, cands = sole_subject(consts)
+                why = ('the probe declares %d candidate subject file(s) (%s) and '
+                       'the arm names none of them, so which file it mutates '
+                       'cannot be decided' % (len(cands), ', '.join(cands))
+                       if cands else
+                       'the probe declares no resolvable subject file at all')
+                unreadable.append((rel, 'arm %r: %s' % (str(entry[0])[:40], why)))
                 continue
             if target not in cache:
                 cache[target] = io.open(target, encoding='utf-8', errors='replace').read()
