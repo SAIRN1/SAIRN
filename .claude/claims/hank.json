@@ -3222,8 +3222,8 @@
       "task": "queue19 item 1 FIRST, time-critical: docs/FACT-SHEET-2026-09-29.md -- verified counts only for Michael's company visits tomorrow morning, every figure with the exact command that derives it and the date, anything underivable marked unavailable, no file names, no methodology, no customer data, no credentials. Then discharge the next most overdue obligation assigned to me (cc 2026-09-26T01:43:54Z, 51h, the storedBlob batch). Then A3 comment-stripping in the direct-fetch header check with a comment-only known-bad control and a sweep of every fixed-window token match; the B1 and C1 findings into the defect register; the reviewer-recording path if tools/tier_a_review_gate.py is free; and the hand-kept-list methodology sweep. docs/tier-a-reviews.json docs/CRITICALITY-TIERS.md api/sd-data.js and sairndesign.html are RECHECKED PER ITEM and not taken while held. SUBJECT NAMED PER PR 4.3 FILES: docs/FACT-SHEET-2026-09-29.md tests/gated_resource_direct_fetch_header.js tests/run_direct_fetch_header_probe.js tools/hand_kept_list_audit.py tests/run_hand_kept_list_probe.py docs/2026-09-28-tier-a-review-verdicts-hank.md",
       "claimed_at": "2026-09-28T05:07:53Z",
       "claimed_at_epoch": 1790572073.25124,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-28T10:24:37Z",
       "files": [
         "docs/2026-09-28-tier-a-review-verdicts-hank.md",
         "docs/FACT-SHEET-2026-09-29.md",
