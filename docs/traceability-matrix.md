@@ -115,6 +115,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 
 **Deliberately NOT enforced, with the reason recorded** -- a decision, not an oversight:
 
+- `gate_caller_impact.py` -- NOT PROMOTED BECAUSE IT ANSWERS A QUESTION ASKED AT A MOMENT, not on a cadence: "I am about to narrow this gate -- who calls it?" A push-time run would report the same 14 callers on every push forever, which is the always-passing checker this registry already has a name for. IT IS A PRE-CHANGE TOOL and the convention that invokes it is docs/2026-09-28-gate-tightening-caller-impact.md: before narrowing an authorisation gate, enumerate every caller and publish checked/universe. Built after add_rule and add_holidays were gated to a session and tools/load_deadline_seed.py -- the ONLY caller, sending a bearer key alone -- would have broken seeding on all 48 jurisdictions; it was caught by reading the loader, which is luck dressed as diligence. ITS SWEEP FOUND A REAL BUG: tools/alf_facility_role_gate_live_probe.py sent the session as X-Session-Token where tokenFromRequest reads x-sd-auth only, so every request it ever made carried no session and its role differentiation was never exercised. A CALLER OUTSIDE THIS REPO IS INVISIBLE TO IT, which is the largest gap and the second reason it reports rather than gates. Control pair: tests/run_gate_caller_impact_probe.py, both directions plus an arm that a DIFFERENT exempted path does not silence a finding.
 - `ghost_field_read_scan.py` -- NOT PROMOTED ON COST, MEASURED RATHER THAN GUESSED: ~90 seconds. It builds a spelled-field universe over 2,229 tracked files -- comment-stripping every one, including three HTML apps over 1MB -- before it can decide a single gate. Every other tool in this registry is seconds; adding a minute and a half to every push is how a gate gets disabled with SAIRN_SEED_GATE=off and then stays disabled, which costs more than the tool is worth. ITS FINDINGS DO NOT CHANGE QUICKLY, which is the other half of the decision: a ghost gate is created by a typo in a condition and then sits there, so a sweep on demand plus its control in the suite catches the same thing a per-push run would, later. Run it when touching a gate, or when a dispatch asks for the sweep: `python tools/ghost_field_read_scan.py`. Its subject and its three confirmed findings are docs/2026-09-27-ghost-field-read-sweep.md; its control pair is tests/run_ghost_field_read_probe.py. AND ONE REASON IT IS NOT A GATE AT ALL, separate from cost: a field written under a COMPUTED key is invisible to it, so a real field can read as a ghost. That is a false-positive direction a human dismisses in one read and a gate cannot.
 - `dispatch_state.py` -- MOVED OUT OF THIS REGISTRY TO SessionStart 2026-09-26, which is a PROMOTION to a better trigger and not a demotion -- recorded here because this list is where a decision about this registry lives, and a tool that simply vanished from it would read as deleted. IT WAS RIGHT AND RUNNING AT THE WRONG MOMENT. Its question is "what should I work on, given what somebody else is already three hours into", and this registry runs at PUSH time: `hook_main()` returns 0 unless the Bash command was a `git push`. By the time you push, the work is done. Measured on the run that motivated the tool, 2026-09-16: a five-item queue was dispatched and FOUR were another session's live or owned work, three named verbatim in a claim made SIX MINUTES earlier -- every one of those knowable at session start and none of them at push. Now `dispatch_state.py --hook`, wired in .claude/settings.json under SessionStart beside sairn_claim_hook.py and sairn_status.py, which answer adjacent halves of the same question. That mode is BOUNDED (the claims in full, the contested rows capped at 14 with the count and the command for the rest) because the full report is 86 lines and 90 lines of preamble at every session start is preamble nobody reads by the third session -- which is this same class of defect one step along. It ALWAYS EXITS 0, deliberately against the house style: a SessionStart hook is not a gate and a non-zero exit there risks interfering with a session that has done nothing yet, so the could-not-run third state is carried in CAPITALS in the text instead of in the exit code. Found by tools/invocation_path_scan.py; triaged in docs/2026-09-26-invocation-path-sweep.md
 - `invocation_path_scan.py` -- PROMOTING IT HERE WOULD MAKE IT AN INSTANCE OF ITS OWN FINDING, and that is the whole reason for the decision rather than a joke about it. Its subject is WIRING -- .claude/settings.json and this file -- both of which change by Write/Edit. This registry runs at PUSH time only: `hook_main()` returns 0 unless the Bash command was a `git push`, which is exactly the gap the tool was written to name after register_freshness_check.py sat correct and un-triggered for two days. Registering it here would give it the same trigger/subject mismatch it reports. ITS OUTPUT IS ALSO THE WRONG SHAPE for a per-push signal: five candidates that each need a READ to decide whether the document named in a checker's `catches` text is its subject or a source it reads, and a five-line list repeated after every push is a list nobody reads by the third time. Run it when the wiring changes -- a hook added, a checker registered, a matcher edited -- and act on the triage in docs/2026-09-26-invocation-path-sweep.md. The honest fix is a Write\|Edit hook scoped to those two files, which is a named decision with a real cost and is NOT being taken unilaterally here
@@ -657,11 +658,11 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 127 test files are traced to no stated requirement
+### 128 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 664 of 791 traced, 83.9%.
+For context and not as the headline: 664 of 792 traced, 83.8%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -683,10 +684,10 @@ An untraced test is not a bad test. It means no source in this repo states what 
 
 | kind | count | what it means | the fix |
 |---|---|---|---|
-| **bound to a subject, tied to no requirement** | 27 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
+| **bound to a subject, tied to no requirement** | 28 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
 | **no subject binding either** | 100 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
-**These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 27 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
+**These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 28 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
 - `api/_lib/alf-family-mar.test.js`
 - `api/_lib/compliance-rules-staff-join.test.js`
@@ -758,6 +759,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_defect_register_planned_probe.py`
 - `tests/run_defect_register_vocab_probe.py`
 - `tests/run_exec_msgs_gate_sabotage_probe.py`
+- `tests/run_gate_caller_impact_probe.py`
 - `tests/run_gh_push_gate_probe.py`
 - `tests/run_graduated_exemption_probe.py`
 - `tests/run_hover_eqa_escalation_probe.py`
@@ -836,11 +838,11 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 791   tests/**, api/** (both walked)
+  test files on disk                 792   tests/**, api/** (both walked)
   open-work rows citing a test       373   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 10   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                62   report_only_checks.REGISTRY
-  recorded NOT-promoted decisions     72   report_only_checks.NOT_PROMOTED
+  recorded NOT-promoted decisions     73   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   sairn_push_gate_hook.py
 ```
 

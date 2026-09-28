@@ -103,7 +103,25 @@ def post(url, body, token=None):
     hdrs = {'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + LICENSE}
     if token:
-        hdrs['X-Session-Token'] = token
+        # ── THE HEADER NAME WAS WRONG, SO NO SESSION WAS EVER SENT ──────────
+        # Fixed 2026-09-28. This sent `X-Session-Token`; api/_lib/auth.js's
+        # `tokenFromRequest()` reads `req.headers['x-sd-auth']` and NOTHING ELSE.
+        # So every request this probe has ever made carried a licence and no
+        # session, every role got the identical no-session answer, and the role
+        # differentiation the file exists to demonstrate was never exercised.
+        #
+        # THE CONTROL IS WHAT SAVED IT FROM LYING, and that is the argument for
+        # writing one. With no session, management gets 401 NO_SESSION rather
+        # than "allowed", so the `CONTROL -- management must still be ALLOWED`
+        # section could not pass and the probe reported UNVERIFIED -- the third
+        # state -- instead of a false clean. Without that control the excluded
+        # roles would all have shown "refused" and the probe would have
+        # published a role gate it never reached, which is the shape of
+        # docs/2026-09-26-ghost-failure-path-sweep.md.
+        #
+        # Found by tools/gate_caller_impact.py, which enumerates callers by
+        # whether they send a session header at all.
+        hdrs['X-SD-Auth'] = token
     try:
         r = H.fetch(url, method='POST', data=json.dumps(body).encode(),
                     headers=H.with_browser_ua(hdrs))

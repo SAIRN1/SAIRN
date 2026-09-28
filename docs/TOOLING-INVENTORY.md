@@ -19,14 +19,14 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**254 files in `tools/`.** By what actually invokes them:
+**255 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 14 | reachable from something that can refuse a push or a tool call |
 | **REPORT-ONLY** | 66 | runs automatically on every push, never blocks |
 | **ADVISORY** | 4 | session-start or prompt hooks, informational |
-| **DECIDED** | 71 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
+| **DECIDED** | 72 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 46 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 53 | nothing runs these at all |
 
@@ -35,7 +35,7 @@ By what they are, independent of wiring:
 | Kind | Count |
 |---|---:|
 | ADVISORY | 3 |
-| CHECKER | 174 |
+| CHECKER | 175 |
 | GENERATOR | 19 |
 | LIBRARY | 25 |
 | LIVE | 26 |
@@ -44,7 +44,7 @@ By what they are, independent of wiring:
 | TOOL | 3 |
 | UNWIRED | 1 |
 
-**71 tool(s) are DECIDED -- deliberately not promoted, with the reason
+**72 tool(s) are DECIDED -- deliberately not promoted, with the reason
 recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
@@ -234,7 +234,7 @@ And 5 that are PostToolUse hooks in their own right, not registry entries:
 
 ---
 
-## DECIDED -- not promoted, on purpose (71)
+## DECIDED -- not promoted, on purpose (72)
 
 **These are not gaps.** Each carries a recorded reason in
 `tools/report_only_checks.py`'s `NOT_PROMOTED` list -- a read-list whose own
@@ -267,6 +267,7 @@ is how a reader stops believing the number.
 | `first_article_inspection.py` | CHECKER | ITS MECHANICAL HALF IS PROMOTABLE AND ITS WORKSHEET HALF IS NOT, and promoting the pair would promote the wrong one. "Does this new artefact have a suite at all" is a clean verdict; the claim-versus-arm worksheet is a HUMAN pass by design and a push notice carrying two unmatched lists is a notice nobody reads. It also scans git history for a date window, so wiring it needs a decision about what the window IS on a push -- since-the-merge-base is not the same question as since-today. Split the suite check out, then promote that. |
 | `fmea_draft.py` | CHECKER | NOT A CHECKER. It WRITES a draft, and is already invoked at the only moment its answer changes -- tools/defect_register.py calls the FMEA loop on every --add. A push-time copy would ask the same question with no new information |
 | `fmea_prediction_check.py` | CHECKER | IT REFUSES TO BE QUOTED BARE, which is exactly what a registry entry would do to it. It prints NO-DRAFT first and carries DO NOT QUOTE THIS ALONE beside the drafted-only figure, because a hit rate over the subset somebody happened to draft an FMEA for is not a hit rate. Promotion would put the unqualified number on every push, which is the one presentation the tool was built to prevent. It is run by the FMEA loop when a register record is added, which is the moment its answer can change. |
+| `gate_caller_impact.py` | CHECKER | NOT PROMOTED BECAUSE IT ANSWERS A QUESTION ASKED AT A MOMENT, not on a cadence: "I am about to narrow this gate -- who calls it?" A push-time run would report the same 14 callers on every push forever, which is the always-passing checker this registry already has a name for. IT IS A PRE-CHANGE TOOL and the convention that invokes it is docs/2026-09-28-gate-tightening-caller-impact.md: before narrowing an authorisation gate, enumerate every caller and publish checked/universe. Built after add_rule and add_holidays were gated to a session and tools/load_deadline_seed.py -- the ONLY caller, sending a bearer key alone -- would have broken seeding on all 48 jurisdictions; it was caught by reading the loader, which is luck dressed as diligence. ITS SWEEP FOUND A REAL BUG: tools/alf_facility_role_gate_live_probe.py sent the session as X-Session-Token where tokenFromRequest reads x-sd-auth only, so every request it ever made carried no session and its role differentiation was never exercised. A CALLER OUTSIDE THIS REPO IS INVISIBLE TO IT, which is the largest gap and the second reason it reports rather than gates. Control pair: tests/run_gate_caller_impact_probe.py, both directions plus an arm that a DIFFERENT exempted path does not silence a finding. |
 | `ghost_field_read_scan.py` | CHECKER | NOT PROMOTED ON COST, MEASURED RATHER THAN GUESSED: ~90 seconds. It builds a spelled-field universe over 2,229 tracked files -- comment-stripping every one, including three HTML apps over 1MB -- before it can decide a single gate. Every other tool in this registry is seconds; adding a minute and a half to every push is how a gate gets disabled with SAIRN_SEED_GATE=off and then stays disabled, which costs more than the tool is worth. ITS FINDINGS DO NOT CHANGE QUICKLY, which is the other half of the decision: a ghost gate is created by a typo in a condition and then sits there, so a sweep on demand plus its control in the suite catches the same thing a per-push run would, later. Run it when touching a gate, or when a dispatch asks for the sweep: `python tools/ghost_field_read_scan.py`. Its subject and its three confirmed findings are docs/2026-09-27-ghost-field-read-sweep.md; its control pair is tests/run_ghost_field_read_probe.py. AND ONE REASON IT IS NOT A GATE AT ALL, separate from cost: a field written under a COMPUTED key is invisible to it, so a real field can read as a ghost. That is a false-positive direction a human dismisses in one read and a gate cannot. |
 | `guard_ablation.py` | CHECKER | NOT ON THE PUSH PATH: it did not finish in 180 seconds on this tree. Ablation is expensive by construction -- it removes a guard and re-runs what depended on it -- so this is a property of the method rather than an implementation defect, and the number is recorded rather than treated as a bug to fix. Nothing that cannot state its own worst-case runtime belongs on a blocking path |
 | `hover_auditor_scope_gate.py` | CHECKER | NOT A REGISTRY CANDIDATE AND ALREADY STRONGER THAN ONE. It is a per-clone git hook that REFUSES the commit, which is upstream of any push notice. Registering it would run it a second time, in a second place, with a weaker verdict -- and a check that reports where it elsewhere refuses teaches people that its report is advisory |
@@ -476,12 +477,12 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      254   git ls-files tools/
+  tools on disk                      255   git ls-files tools/
   hook entries                        14   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                62   report_only_checks.REGISTRY
-  tools invoked by tests/            177   tests/**/*.py, *.js
-  recorded NOT-promoted decisions     77   report_only_checks.NOT_PROMOTED
+  tools invoked by tests/            178   tests/**/*.py, *.js
+  recorded NOT-promoted decisions     78   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```
 
