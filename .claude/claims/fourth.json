@@ -2517,6 +2517,21 @@
         "tools/conflict_marker_preflight.py",
         "tools/second_pass_coverage_scan.py"
       ]
+    },
+    {
+      "id": "fourth-1790558385",
+      "session": "fourth",
+      "subject": "sairncare-incidents",
+      "task": "alf_incidents server-set recorded_by plus the reported_by payload strip and the care-role self-scope read; migration sql/sairncare_incidents_recorded_by.sql. FILES: api/sd-data.js api/sd-data-alf-caregiver-scope.test.js sql/sairncare_incidents_recorded_by.sql",
+      "claimed_at": "2026-09-28T01:19:45Z",
+      "claimed_at_epoch": 1790558385.5809374,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/sd-data-alf-caregiver-scope.test.js",
+        "api/sd-data.js",
+        "sql/sairncare_incidents_recorded_by.sql"
+      ]
     }
   ],
   "refusals": [
