@@ -3163,8 +3163,8 @@
       "task": "queue16: (a) sweep every loader, cron, tool and test that authenticates with a bearer or LICENCE KEY ALONE against an endpoint now gated on a session -- the same break tools/load_deadline_seed.py would have had, checked BEFORE it bites; (b) methodology gate-tightening caller impact: enumerate every caller before narrowing a gate, publish checked/universe, and a CONTROL that fails when a tightened gate has an unaccounted caller; (c) api/legal-deadlines.js authority.verified_by and any other payload field asserting an IDENTITY must be server-set -- strip it from the payload, regression test first with a FORGED-value arm; (d) sairnbiz.html ts-note collapsed vs expanded; (e) the three class sweeps -- hand-kept extraction lists, harnesses classifying by order not method, fixed-width slice windows; (f) weekly state report derived from git log, live claims, tier_a_review_gate --list and the self-log, by EXTENDING dispatch_state.py rather than building a second tool, report-only, COULD NOT RUN on any unreadable source; (g) instrument-vs-code doc, self-audit of skill log and tool inventory, MECH-AUDIT-2026 scope, stale skill-doc counts. api/sd-data.js is NOT TAKEN and NOT WAITED ON: fourth holds it under an open sairncare-incidents claim made 2026-09-28T01:56:29Z declaring api/sd-data.js, api/sd-data-alf-caregiver-scope.test.js and sql/sairncare_incidents_recorded_by.sql. Re-checked per item. SUBJECT NAMED PER PR 4.3 FILES: api/legal-deadlines.js api/legal-deadlines-auth.test.js tools/gate_caller_impact.py tests/run_gate_caller_impact_probe.py tools/dispatch_state.py sairnbiz.html tests/sairnbiz_timesheet_hours.js docs/2026-09-28-gate-tightening-caller-impact.md docs/2026-09-28-instrument-vs-code.md",
       "claimed_at": "2026-09-28T02:13:55Z",
       "claimed_at_epoch": 1790561635.067154,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-28T03:02:55Z",
       "files": [
         "api/legal-deadlines-auth.test.js",
         "api/legal-deadlines.js",
