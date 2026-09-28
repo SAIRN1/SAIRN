@@ -204,7 +204,9 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
-| **&#128308; THREE probe arms read SILENT: the mutation applies and no suite goes red &mdash; a COVERAGE GAP that was indistinguishable from a stale anchor while the anchor was dead** | **FOUND 2026-09-28 (CC) by re-anchoring, then RUNNING the probes** | `api/sd-data-active-credential.test.js` |
+| **&#9989; THREE probe arms read SILENT &mdash; and the diagnosis in this row was WRONG ABOUT TWO OF ITS THREE CLAIMS, which is why the old text is quoted below rather than replaced** | **FIXED 2026-09-28 (CC). All three arms now catch; the severity stated here was TOO HIGH and is corrected.** | `api/sd-data-active-credential.test.js` |
+| **&#128993; The role-gate screen&rsquo;s NOT-DRIVEN bucket over-reports by at least 31% &mdash; it cannot see a suite that drives through a TABLE** | **MEASURED 2026-09-28 (CC), and proven against the ablation on one of them** | `api/sd-data-alf-caregiver-scope.test.js` |
+| **&#128993; A COMMERCIAL DECISION recorded only inside a green test assertion: should a REVOKED customer keep AI?** | **REVERSED 2026-09-28 (CC) on direct instruction; raised here so the decision lives somewhere a non-engineer can find it** | `api/claude-cost-controls.test.js` |
 | **&#128308; 16 sabotage anchors are DEAD across 8 probe files &mdash; unmasked by fixing a wired checker that had been exiting 2 COULD NOT RUN** | **FOUND 2026-09-28 (CC), corroborated by running one of the probes** | `tests/active_credential_gate_probe.py` |
 | **&#128993; FIVE sabotage anchors match MORE THAN ONE place, so each probe reports a verdict about a line nobody chose &mdash; and NO fault probe is wired into anything** | **FOUND 2026-09-27 (CC) by `tools/probe_anchor_freshness.py`, which is itself wired to nothing** | `tests/sairndesign_sairngrounds_fault_probe.py`, `tests/sairnmechanical_fault_probe.py` |
 | **&#128993; SIXTEEN `api/*-auth.js` bootstrap refusals still name a remedy that CANNOT WORK in the state that produces the most confusing 409 &mdash; `action:setup`, which requires an Owner session a zero-active-Owner licence cannot obtain** | **FIXED IN SAIRNvet ONLY, 2026-09-25 (Fourth).** `api/sv-auth.js`&rsquo;s 409 now names BOTH remedies &mdash; `action:setup` if an Owner can still sign in, and DIRECT DATABASE ACCESS if none is active | `api/sv-auth.test.js` |
@@ -681,8 +683,8 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | source | citations |
 |---|---|
 | `index` | 320 |
-| `declared` | 279 |
-| `declared+index` | 60 |
+| `declared` | 277 |
+| `declared+index` | 62 |
 | `GUARD_TESTS+index` | 6 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
@@ -864,7 +866,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 811   tests/**, api/** (both walked)
-  open-work rows citing a test       376   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       378   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 10   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                67   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     75   report_only_checks.NOT_PROMOTED
