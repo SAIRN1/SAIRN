@@ -1,7 +1,9 @@
 """A PUBLISHED FIGURE MUST REGENERATE, or it is a claim with a date on it.
 
 Run:  python tools/fact_sheet_regenerates.py
+      python tools/fact_sheet_regenerates.py --update     # rewrite the figures
       python tools/fact_sheet_regenerates.py --sheet <path>
+      python tools/fact_sheet_regenerates.py --register <path>
       python tools/fact_sheet_regenerates.py --json
 
 ── WHY ─────────────────────────────────────────────────────────────────────
@@ -52,6 +54,16 @@ decay exactly like a row and nothing was watching them: on 2026-09-28 the commit
 row was refreshed 6,890 -> 6,900, this tool exited 0, and the line directly
 beneath the row still read 6,885. The checker was clean and the document
 contradicted itself on the page somebody reads aloud. See DERIVED_PATTERNS.
+
+── AND A ROW CAN BE EXACT WHILE THE TABLE STOPS ADDING UP ──────────────────
+The nine detection-method rows are each derived from the register. If the
+register grows a TENTH method, all nine stay exactly right and the table
+silently stops accounting for every defect -- on 2026-09-28 those rows summed to
+358 against a stated total of 366, eight defects counted in one table and not in
+the facing one. So an unlisted method is REFUSED in both modes, before any edit,
+rather than being a row this tool quietly does not count. Driven by the control
+through `--register`, which exists for the same reason `--sheet` does: no control
+edits the real record.
 """
 import argparse
 import datetime
@@ -108,7 +120,29 @@ def tool_value(module_args, pattern):
     return int(m.group(1)) if m else None
 
 
-def derive():
+# The register's own vocabulary for how a defect was found, paired with the
+# sheet's row label for it. THE REGISTER SPELLING IS THE KEY, so a renamed sheet
+# row makes the anchor stop matching and is REPORTED, rather than being a row
+# this tool quietly stops counting.
+DETECTION_METHODS = (
+    'code-review', 'independent-review', 'static-checker', 'live-verification',
+    'probe-control', 'mutation-testing', 'fault-injection', 'hover-audit',
+    'user-report',
+)
+DETECTION_ROW_LABELS = {
+    'code-review': 'Code review',
+    'independent-review': 'Independent review by a second engineer',
+    'static-checker': 'Static checkers',
+    'live-verification': 'Live verification against deployed software',
+    'probe-control': 'Control probes',
+    'mutation-testing': 'Mutation testing',
+    'fault-injection': 'Fault injection',
+    'hover-audit': r'Hover audit \(independent adversarial pass\)',
+    'user-report': 'User report',
+}
+
+
+def derive(register=None):
     """{label: (value, how)} for every figure this tool can re-run.
 
     Each entry's `how` is the SAME command the sheet prints, so a divergence
@@ -174,7 +208,12 @@ def derive():
         d['obligations_total'] = (None, 'review ledger unreadable')
 
     try:
-        reg = json.loads(read(os.path.join(REPO, 'docs', 'defect-density-register.json')))
+        # `register` exists for the SAME reason `--sheet` does: so the control
+        # can drive the refusal path below against a fixture instead of
+        # editing the real register. Not a test-only branch -- the default is
+        # the real file and both callers take the same path through here.
+        reg = json.loads(read(register or os.path.join(
+            REPO, 'docs', 'defect-density-register.json')))
         rows = [r for r in reg.get('records', []) if not r.get('confirmation')]
         d['defects_total'] = (len(rows), 'defect register record count')
         for sev in ('critical', 'high', 'moderate', 'low'):
@@ -183,6 +222,24 @@ def derive():
         for layer in ('product', 'tooling', 'test'):
             d['defects_layer_' + layer] = (len([r for r in rows if r.get('layer') == layer]),
                                            'defect register, layer ' + layer)
+        # THE DETECTION-METHOD TABLE, which was the third population in this
+        # sheet with nothing watching it. On 2026-09-28 its nine rows summed to
+        # 358 against a stated total of 366 -- eight defects that had been
+        # counted in one table and not in the other, on facing pages.
+        for meth in DETECTION_METHODS:
+            d['detect_' + meth.replace('-', '_')] = (
+                len([r for r in rows if r.get('detection_method') == meth]),
+                'defect register, detection_method ' + meth)
+        # AND WHETHER THE NINE ROWS ACCOUNT FOR EVERY RECORD. If the register
+        # grows a tenth method, all nine rows stay individually correct and the
+        # table silently stops adding up to the total printed one page earlier.
+        # That is the same defect as a stale figure and harder to see, so it is
+        # its own check rather than a reader's arithmetic.
+        d['_detect_unlisted'] = (
+            len([r for r in rows
+                 if r.get('detection_method') not in DETECTION_METHODS]),
+            'defect register records whose detection_method is not one of the '
+            'nine rows the sheet prints')
     except Exception:
         d['defects_total'] = (None, 'defect register unreadable')
 
@@ -215,6 +272,13 @@ ROW_PATTERNS = {
     'defects_layer_tooling': r'layer — in tooling \|\s*([\d,]+)',
     'defects_layer_test':    r'layer — in tests \|\s*([\d,]+)',
 }
+
+# The nine detection-method rows, appended rather than written out one by one:
+# the label lives in DETECTION_ROW_LABELS and the row pattern is the same shape
+# for all nine, so there is one place to edit and not two.
+for _meth in DETECTION_METHODS:
+    ROW_PATTERNS['detect_' + _meth.replace('-', '_')] = (
+        r'\| ' + DETECTION_ROW_LABELS[_meth] + r' \|\s*([\d,]+)')
 
 
 # ── RESTATEMENTS: THE SAME FIGURE, WRITTEN AGAIN WITHOUT A COMMAND ──────────
@@ -393,6 +457,11 @@ def main(argv=None):
                     help='rewrite every DERIVABLE figure from its own command and '
                          'stamp the run time. Never touches a figure it cannot '
                          'derive, and exits non-zero if any derivation failed.')
+    ap.add_argument('--register', default=None,
+                    help='read the defect register from here instead of '
+                         'docs/defect-density-register.json. Exists so the control '
+                         'can drive the detection-vocabulary refusal against a '
+                         'fixture rather than editing the real register.')
     ap.add_argument('--now', default=None,
                     help='the timestamp to stamp (default: system clock). Exists so '
                          'the control can assert the stamp without racing a clock.')
@@ -405,7 +474,32 @@ def main(argv=None):
         return EXIT_COULD_NOT_RUN
     sheet = read(path)
 
-    derived = derive()
+    if args.register:
+        rpath = (args.register if os.path.isabs(args.register)
+                 else os.path.join(REPO, args.register))
+        if not os.path.isfile(rpath):
+            print('COULD NOT RUN: --register %s is not on disk. An absent '
+                  'register is not an empty one.' % args.register)
+            return EXIT_COULD_NOT_RUN
+    else:
+        rpath = None
+
+    derived = derive(rpath)
+
+    # ── THE VOCABULARY CHECK, BEFORE EITHER MODE ────────────────────────────
+    # A tenth detection method leaves all nine printed rows individually exact
+    # while the table stops accounting for every defect. Neither refreshing nor
+    # checking the nine rows would notice, so it is refused here in BOTH modes:
+    # --update must not stamp a sheet whose table is missing a row, and the
+    # check must not exit 0 on one.
+    unlisted = derived.get('_detect_unlisted', (None, ''))[0]
+    if unlisted:
+        print('FINDING: %d defect record(s) carry a detection_method that is not '
+              'one of the nine rows the sheet prints, so the detection table no '
+              'longer accounts for every defect even though every printed row is '
+              'still exact. Add the row to the sheet and to DETECTION_ROW_LABELS '
+              'before refreshing.' % unlisted)
+        return EXIT_FINDING
 
     # ── --update: REWRITE WHAT CAN BE DERIVED, TOUCH NOTHING ELSE ───────────
     # THE ORDER MATTERS AND IS THE WHOLE SAFETY PROPERTY: a figure is written

@@ -16,7 +16,8 @@ were seven:
   REWORD the sentence a restatement lives in    -> must be REPORTED as unanchored
   --update on a deliberately stale figure       -> CORRECTED, and the run stamped
   a BROKEN command under --update               -> old figure stands, exit 2, NO stamp
-  point it at a MISSING sheet                   -> COULD NOT RUN (exit 2, never 0)
+  a TENTH detection method in the register      -> REFUSED, and --update writes NOTHING
+  point it at a MISSING sheet or register       -> COULD NOT RUN (exit 2, never 0)
   a COPY that --update has just refreshed       -> SILENT
 
 **THE COPY IS THE POINT.** A control that edited the real sheet would leave the
@@ -37,6 +38,7 @@ gets ignored, and then it is ignored on the day it is right. The real sheet's
 live exit code is PRINTED as information and asserted on by nothing.
 """
 import io
+import json
 import os
 import re
 import shutil
@@ -305,6 +307,64 @@ try:
 finally:
     if os.path.exists(COPY):
         os.remove(COPY)
+
+print('\nDIRECTION -- a TENTH detection method is refused, not quietly dropped')
+# The nine printed detection rows can each be exactly right while the table
+# stops accounting for every defect, because a method the sheet has no row for
+# is simply not counted anywhere. Driven against a FIXTURE register via
+# --register, for the same reason every other arm uses --sheet: the real record
+# is never edited by a control.
+FIXREG_REL = os.path.join('docs', '_zz_fact_sheet_probe_register.json')
+FIXREG = os.path.join(REPO, FIXREG_REL)
+REAL_REG = os.path.join(REPO, 'docs', 'defect-density-register.json')
+try:
+    reg = json.loads(io.open(REAL_REG, encoding='utf-8').read())
+    real_rows = [r for r in reg.get('records', []) if not r.get('confirmation')]
+    ok(bool(real_rows), 'the real register has records to build a fixture from')
+    victim = dict(real_rows[-1])
+    victim['detection_method'] = 'telepathy'
+    reg['records'] = reg['records'] + [victim]
+    io.open(FIXREG, 'w', encoding='utf-8', newline='\n').write(json.dumps(reg))
+
+    env = dict(os.environ, PYTHONIOENCODING='utf-8')
+    p6 = subprocess.run([sys.executable, TOOL, '--sheet', SHEET_REL,
+                         '--register', FIXREG_REL], cwd=REPO, env=env,
+                        capture_output=True, text=True, encoding='utf-8',
+                        errors='replace')
+    out6 = (p6.stdout or '') + (p6.stderr or '')
+    ok(p6.returncode == EXIT_FINDING,
+       'a method with no row in the sheet is a FINDING (got %d)' % p6.returncode,
+       out6[-400:])
+    ok('no longer accounts for every defect' in out6,
+       'and it says the table stopped accounting for every defect, rather than '
+       'printing nine correct rows that no longer add up', out6[-400:])
+
+    before = io.open(SHEET, encoding='utf-8', newline='').read()
+    p7 = subprocess.run([sys.executable, TOOL, '--sheet', SHEET_REL,
+                         '--register', FIXREG_REL, '--update',
+                         '--now', '1999-01-01 00:00'], cwd=REPO, env=env,
+                        capture_output=True, text=True, encoding='utf-8',
+                        errors='replace')
+    ok(p7.returncode == EXIT_FINDING,
+       'and --update REFUSES rather than refreshing around it (got %d)'
+       % p7.returncode, (p7.stdout or '')[-300:])
+    ok(io.open(SHEET, encoding='utf-8', newline='').read() == before,
+       'and wrote nothing at all -- the refusal happens before any edit, so a '
+       'sheet is never left half-refreshed under a stamp')
+finally:
+    if os.path.exists(FIXREG):
+        os.remove(FIXREG)
+
+print('\nDIRECTION -- a MISSING --register is COULD NOT RUN, never clean')
+rc, out = run(SHEET_REL)
+env = dict(os.environ, PYTHONIOENCODING='utf-8')
+p8 = subprocess.run([sys.executable, TOOL, '--sheet', SHEET_REL, '--register',
+                     os.path.join('docs', '_zz_no_such_register.json')],
+                    cwd=REPO, env=env, capture_output=True, text=True,
+                    encoding='utf-8', errors='replace')
+ok(p8.returncode == EXIT_COULD_NOT_RUN,
+   'exits 2, not 0 and not 1 (got %d) -- an absent register is not an empty one'
+   % p8.returncode, (p8.stdout or '')[-300:])
 
 print('\nDIRECTION -- a MISSING sheet is COULD NOT RUN, never clean')
 rc, out = run(os.path.join('docs', '_zz_no_such_sheet.md'))
