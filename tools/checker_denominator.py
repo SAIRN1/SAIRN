@@ -61,7 +61,13 @@ import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASELINE = os.path.join(REPO, 'docs', 'checker-coverage-baseline.json')
-CRITERIA_VERSION = '2026-09-28.1'
+CRITERIA_VERSION = '2026-09-28.2'
+
+# A checker that cannot read this share of its own population is not
+# reporting about that population. STATED rather than tuned: the figure is a
+# judgement and is written here once so a result can be compared against a
+# number somebody chose, not against one that drifted.
+UNREADABLE_CEILING = 0.25
 
 
 def _tracked(*globs):
@@ -178,8 +184,56 @@ def _checked_ai_action_audit():
     return len(files)
 
 
+def _unreadable_probe_anchor_freshness():
+    """Probe files this tool PARSED but could not fully read."""
+    sys.path.insert(0, os.path.join(REPO, 'tools'))
+    import probe_anchor_freshness as paf
+    res = paf.scan()
+    if res is None:
+        raise RuntimeError('probe_anchor_freshness.scan() could not run')
+    skipped = set(rel for rel, _why in res.get('skipped', []))
+    unread = set(r['probe'] for r in res['rows'] if r['count'] in (-1, -2))
+    return len(skipped | unread)
+
+
+def _unreadable_mutation_anchor_check():
+    """Probe files with at least one arm whose target could not be resolved."""
+    sys.path.insert(0, os.path.join(REPO, 'tools'))
+    import mutation_anchor_check as mac
+    import glob as _g
+    bad = set()
+    for path in _g.glob(os.path.join(REPO, 'tests', '**', '*_probe.py'),
+                        recursive=True):
+        rel = os.path.relpath(path, REPO).replace(os.sep, '/')
+        try:
+            consts, muts = mac.read_probe(path)
+        except Exception:
+            bad.add(rel)
+            continue
+        for entry in muts:
+            try:
+                target, old = mac.resolve(consts, entry)
+            except Exception:
+                bad.add(rel)
+                continue
+            if not target and isinstance(old, str):
+                bad.add(rel)
+    return len(bad)
+
+
+def _unreadable_zero_by_construction():
+    """A HARD, MEASURED ZERO rather than an omission.
+
+    An absent number and a measured zero read identically in a table and mean
+    opposite things -- which is the whole reason this dimension exists. These
+    tools read with errors='replace' and have no could-not-read state at all.
+    """
+    return 0
+
+
 TOOLS = [
     {'tool': 'probe_anchor_freshness.py',
+     'unreadable': _unreadable_probe_anchor_freshness,
      'universe': _probes_declaring_anchors,
      'checked': _checked_probe_anchor_freshness,
      'unit': 'probe files declaring a mutation anchor',
@@ -187,6 +241,7 @@ TOOLS = [
              'mutation_anchor_check.py deliberately -- two tools graded on two '
              'different denominators cannot show a zero-overlap gap.'},
     {'tool': 'mutation_anchor_check.py',
+     'unreadable': _unreadable_mutation_anchor_check,
      'universe': _probes_declaring_anchors,
      'checked': _checked_mutation_anchor_check,
      'unit': 'probe files declaring a mutation anchor',
@@ -194,6 +249,7 @@ TOOLS = [
              'summing to more than the universe would mean overlap; summing to '
              'less means a convention neither reads.'},
     {'tool': 'overrun_inversion_scan.py',
+     'unreadable': _unreadable_zero_by_construction,
      'universe': _apps,
      'checked': _checked_overrun_scan,
      'unit': 'root .html apps',
@@ -201,6 +257,7 @@ TOOLS = [
              'clean app is indistinguishable from an unparsed one. Stated '
              'rather than left for somebody to assume the other way.'},
     {'tool': 'ai_action_approval_audit.py',
+     'unreadable': _unreadable_zero_by_construction,
      'universe': _apps,
      'checked': _checked_ai_action_audit,
      'unit': 'root .html apps',
@@ -234,6 +291,16 @@ def measure():
             errors.append('%s: checked count could not be derived (%s: %s)'
                           % (spec['tool'], type(exc).__name__, exc))
             continue
+        if spec.get('unreadable'):
+            try:
+                row['unreadable'] = spec['unreadable']()
+            except Exception as exc:
+                errors.append('%s: UNREADABLE count could not be derived '
+                              '(%s: %s) -- and that is itself a could-not-tell '
+                              'about a could-not-tell, so the row is dropped '
+                              'rather than reported with the dimension missing'
+                              % (spec['tool'], type(exc).__name__, exc))
+                continue
         rows.append(row)
     return rows, errors
 
@@ -266,6 +333,43 @@ def compare(rows, base):
                                 'universe did not shrink -- the tool reads less '
                                 'than it did and nothing else said so.'
                                 % (b['checked'], r['checked'])))
+        # ── THE COULD-NOT-READ RATCHET, added 2026-09-28 ──────────────────
+        # EARNED BY A MEASURED INCIDENT: tools/mutation_anchor_check.py was
+        # wired and exiting 2 with 84 UNREADABLE declarations, and behind that
+        # exit code sat 16 REAL findings nobody could see. An unreadable count
+        # is not a neutral statistic -- it is the size of the blind spot, and a
+        # rising one means a checker is quietly reading less of its own
+        # population while still printing a number.
+        #
+        # RATCHETED DOWNWARD ONLY. It may fall freely; it may not rise. That
+        # asymmetry is the whole point: teaching a checker a new declaration
+        # shape lowers it, and adding declarations in a shape it cannot read
+        # raises it, and only the second is a regression.
+        elif (r.get('unreadable') is not None
+              and b.get('unreadable') is not None
+              and r['unreadable'] > b['unreadable']):
+            out.append(dict(r, verdict='RATCHET TRIPPED', prev=b,
+                            why='the UNREADABLE count ROSE from %d to %d. The '
+                                'blind spot grew: declarations were added in a '
+                                'shape this checker cannot parse, so it is '
+                                'reading less of its population while still '
+                                'reporting a clean number.'
+                                % (b['unreadable'], r['unreadable'])))
+        # ── AND A CEILING, because a ratchet alone permits a large blind spot
+        # forever as long as it never grows. The fraction is stated rather than
+        # tuned: a checker that cannot read a QUARTER of its own population is
+        # not reporting about that population.
+        elif (r.get('unreadable') is not None and r['universe'] > 0
+              and r['unreadable'] > UNREADABLE_CEILING * r['universe']):
+            out.append(dict(r, verdict='RATCHET TRIPPED', prev=b,
+                            why='%d of %d candidates (%.0f%%) are UNREADABLE, '
+                                'over the stated ceiling of %.0f%%. A checker '
+                                'that cannot read that share of its own '
+                                'population is not reporting about that '
+                                'population.'
+                                % (r['unreadable'], r['universe'],
+                                   100.0 * r['unreadable'] / r['universe'],
+                                   100.0 * UNREADABLE_CEILING)))
         else:
             out.append(dict(r, verdict='OK', prev=b))
     return out
@@ -313,10 +417,77 @@ def selftest():
         'compare() returns one verdict for every input, so every arm above is '
         'checking one value repeatedly')
 
+    # ── THE COULD-NOT-READ RATCHET, in every direction ────────────────────
+    def unr(u, c, un, bu, bc, bun):
+        return compare([{'tool': 't', 'universe': u, 'checked': c,
+                         'unreadable': un, 'unit': 'x', 'note': ''}],
+                       {'t': {'universe': bu, 'checked': bc,
+                              'unreadable': bun}})[0]
+
+    arm('a RISING unreadable count trips -- the blind spot grew',
+        unr(100, 90, 12, 100, 90, 4)['verdict'] == 'RATCHET TRIPPED',
+        unr(100, 90, 12, 100, 90, 4))
+    arm('a FALLING unreadable count does NOT trip -- that is the fix landing',
+        unr(100, 90, 2, 100, 90, 9)['verdict'] == 'OK')
+    arm('an unreadable count over the stated ceiling trips even if it did not rise',
+        unr(100, 60, 40, 100, 60, 40)['verdict'] == 'RATCHET TRIPPED',
+        'a ratchet alone permits a large blind spot forever as long as it '
+        'never grows; 40 of 100 is over the %.0f%% ceiling and must fail'
+        % (100 * UNREADABLE_CEILING))
+    arm('...and one UNDER the ceiling that did not rise is OK',
+        unr(100, 90, 10, 100, 90, 10)['verdict'] == 'OK')
+    arm('a tool that publishes NO unreadable count is not treated as zero',
+        compare([{'tool': 't', 'universe': 100, 'checked': 60, 'unit': 'x',
+                  'note': ''}],
+                {'t': {'universe': 100, 'checked': 60}})[0]['verdict'] == 'OK'
+        and 'unreadable' not in compare(
+            [{'tool': 't', 'universe': 100, 'checked': 60, 'unit': 'x',
+              'note': ''}], {'t': {'universe': 100, 'checked': 60}})[0],
+        'an absent blind-spot figure must not silently satisfy the ceiling -- '
+        'it is reported as ? and the ceiling does not apply')
+
+    # ── THE KNOWN-BAD CONTROL, and it drives a REAL checker ───────────────
+    # THE RULE: a checker fed an unparseable declaration must FAIL, not exit
+    # clean. tools/mutation_anchor_check.py exited 2 on 84 unreadable
+    # declarations while hiding 16 real findings, which is the version of this
+    # that already cost something. The weaker failure -- a checker that parses
+    # nothing and reports zero findings -- is the one this arm exists for.
+    import tempfile as _tf
+    import shutil as _sh
+    bad_dir = _tf.mkdtemp(prefix='sairn-knownbad-')
+    try:
+        sys.path.insert(0, os.path.join(REPO, 'tools'))
+        import mutation_anchor_check as _mac
+        p = os.path.join(bad_dir, 'broken_probe.py')
+        io.open(p, 'w', encoding='utf-8').write(
+            'MUTATIONS = [(\n')          # deliberately unparseable
+        raised = False
+        try:
+            _mac.read_probe(p)
+        except Exception:
+            raised = True
+        arm('KNOWN-BAD: an UNPARSEABLE probe makes the reader RAISE, so the '
+            'caller can count it rather than seeing an empty list',
+            raised,
+            'read_probe() returned normally on a file that does not parse. An '
+            'empty MUTATIONS list from a broken file is indistinguishable from '
+            'a file with no mutations, and the checker would report it clean.')
+        # ...and the count this file publishes must MOVE when that happens.
+        arm('KNOWN-BAD: the unreadable counter is a real function, not a '
+            'constant',
+            callable(TOOLS[0].get('unreadable'))
+            and TOOLS[0]['unreadable']() >= 0)
+    finally:
+        _sh.rmtree(bad_dir, ignore_errors=True)
+
     rows, errors = measure()
     arm('the real measurement runs over every registered tool',
         not errors and len(rows) == len(TOOLS),
         'errors=%r rows=%d of %d' % (errors, len(rows), len(TOOLS)))
+    arm('...and every registered tool publishes an unreadable count',
+        all(r.get('unreadable') is not None for r in rows),
+        'tool(s) with no blind-spot figure: %r'
+        % [r['tool'] for r in rows if r.get('unreadable') is None])
     return out, bad
 
 
@@ -356,6 +527,7 @@ def main(argv):
         for r in rows:
             newbase[r['tool']] = {'universe': r['universe'],
                                   'checked': r['checked'],
+                                  'unreadable': r.get('unreadable'),
                                   'unit': r['unit'],
                                   'reason': why}
         io.open(BASELINE, 'w', encoding='utf-8', newline='').write(
@@ -372,12 +544,16 @@ def main(argv):
     print('CHECKER DENOMINATOR -- checked over universe, and a ratchet on the gap')
     print('  criteria %s' % CRITERIA_VERSION)
     print('')
-    print('  %-34s %8s %8s %9s  %s' % ('tool', 'checked', 'universe', 'coverage',
-                                       'verdict'))
+    print('  %-34s %8s %8s %10s %9s  %s'
+          % ('tool', 'checked', 'universe', 'unreadable', 'coverage', 'verdict'))
     for v in verdicts:
         cov = 100.0 * v['checked'] / max(1, v['universe'])
-        print('  %-34s %8d %8d %8.0f%%  %s'
-              % (v['tool'], v['checked'], v['universe'], cov, v['verdict']))
+        # AN ABSENT UNREADABLE COUNT IS PRINTED AS '?' AND NEVER AS 0. A tool
+        # that does not publish its blind spot is not a tool with no blind
+        # spot, and the two must not share a cell.
+        un = ('%d' % v['unreadable']) if v.get('unreadable') is not None else '?'
+        print('  %-34s %8d %8d %10s %8.0f%%  %s'
+              % (v['tool'], v['checked'], v['universe'], un, cov, v['verdict']))
     for v in verdicts:
         print('')
         print('  %s -- %s' % (v['tool'], v['unit']))

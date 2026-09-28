@@ -19,12 +19,12 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**262 files in `tools/`.** By what actually invokes them:
+**263 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 14 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 68 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 69 | runs automatically on every push, never blocks |
 | **ADVISORY** | 4 | session-start or prompt hooks, informational |
 | **DECIDED** | 73 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 48 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
@@ -35,7 +35,7 @@ By what they are, independent of wiring:
 | Kind | Count |
 |---|---:|
 | ADVISORY | 3 |
-| CHECKER | 181 |
+| CHECKER | 182 |
 | GENERATOR | 19 |
 | GUARD | 1 |
 | LIBRARY | 25 |
@@ -154,7 +154,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (68)
+## REPORT-ONLY (69)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -171,6 +171,7 @@ quiet in practice.
 | `check_precedence.py` | 2026-09-15 report-only, AND IT MUST NEVER BE ANYTHING ELSE. Its CONFLICT verdict is a question, not a finding: blocking a push because two of our own tools disagree punishes whoever happens to be pushing for a disagreement that predates them, and the reliable consequence is an override habit this repo has already recorded costing more than the gate saved. RUN AS --self-check, NOT the live pairing, and the reason is cost rather than value: the live run shells out to checker_confidence.py and checker_estimate_fusion.py, both of which THIS SWEEP ALREADY RUNS, so the bare form would run them three times inside a budget already at 330s of 600s. --self-check proves the rule table, which is the part that can silently rot; the live pairing is a deliberate manual run | the precedence table for two independent checks disagreeing about the same subject no longer resolving the way item 64 decided it should -- driven over every ordering of every pair, not a sample |
 | `checkblocks.py` | 2026-09-12, after being given an exit code it never had | a <script> block in an app file that no longer PARSES -- Guardian Check 0a, extracted per block with an HTML parser and run through node --check |
 | `checker_denominator.py` | 2026-09-28, report-only. 12.3 seconds, measured -- the slowest entry in this registry by a wide margin, and the cost is deliberate: it re-derives each universe from the repo rather than asking the tool, because a universe the tool supplies is the tool grading its own denominator. REGISTERED IN ITS OWN FIRST SELF-AUDIT, which found that the tool built to catch unmeasured checkers was itself unregistered, unwired and unprobed. | a wired checker whose COVERAGE falls silently -- the universe of candidates grows and the checked count does not, so a clean report keeps being produced about a shrinking share of the population |
+| `claim_activity_check.py` | 2026-09-28, report-only. 1.3 seconds. Registered because the failure it catches is INVISIBLE TO THE ONLY PERSON WHO could fix it: a claim holder never runs `sairn_claim.py check` against their own claim, so a claim left active after the work lands blocks other clones silently and forever. | an ACTIVE claim older than N hours whose DECLARED FILES have had no commit touch them since the claim was made -- work that finished and a claim that did not |
 | `cleanup_confirm_check.py` | 2026-09-10, written the same day for a rule that existed since 2026-08-26 with no mechanism behind it | a cleanup or migration file whose destructive statements carry no confirm query and no expected answer -- so nobody can ever establish what it did |
 | `comment_quote_check.py` | 2026-09-11, the day it was built | a probe whose assertion matches the target file COMMENTS rather than its code -- a literal that exists only inside a comment, undeclared |
 | `comment_sensitivity_check.py` | 2026-09-12, once its one real finding was fixed | a checker whose ANSWER changes when the target's comments are stripped -- it is matching text that describes code rather than code |
@@ -488,10 +489,10 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      262   git ls-files tools/
+  tools on disk                      263   git ls-files tools/
   hook entries                        14   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
-  report-only registry                64   report_only_checks.REGISTRY
+  report-only registry                65   report_only_checks.REGISTRY
   tools invoked by tests/            181   tests/**/*.py, *.js
   recorded NOT-promoted decisions     79   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py

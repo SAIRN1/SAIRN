@@ -1909,6 +1909,52 @@ REGISTRY = [
                     'being refused, and an unreadable register DENYING the push',
     },
     {
+        'tool': 'claim_activity_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-28, report-only. 1.3 seconds. Registered because '
+                    'the failure it catches is INVISIBLE TO THE ONLY PERSON WHO '
+                    'could fix it: a claim holder never runs `sairn_claim.py '
+                    'check` against their own claim, so a claim left active '
+                    'after the work lands blocks other clones silently and '
+                    'forever.',
+        'catches': 'an ACTIVE claim older than N hours whose DECLARED FILES '
+                   'have had no commit touch them since the claim was made -- '
+                   'work that finished and a claim that did not',
+        'why_it_matters': 'MEASURED INCIDENT: claim cc-1790477581 was opened '
+                          '2026-09-27T02:53:01Z, its work landed the same day, '
+                          'and it stayed active for TWENTY-TWO HOURS -- during '
+                          'which `check` would have BLOCKED another clone from '
+                          'starting any of sairncash.html, '
+                          'tests/sairncash_safe_harbor.js or '
+                          'tools/push_retry.py. IT ASKS ABOUT ACTIVITY AND NOT '
+                          'AGE, deliberately: age alone is the wrong signal '
+                          'because a genuinely long piece of work is not stale '
+                          'and a two-hour claim on finished work is. AND IT '
+                          'RELEASES NOTHING -- releasing another session\'s '
+                          'claim on an inference about commit activity is the '
+                          'auto-remediation discipline 11 forbids, a detector '
+                          'acting on its own finding.',
+        'evidence': 'FIRST REAL RUN 2026-09-28, exit 1, three rows and one of '
+                    'them was a SECOND stale claim of my own that the previous '
+                    'day\'s self-audit had missed: cc-1790381505, active '
+                    '51.7 HOURS, UNDECLARED -- it carries no FILES: section at '
+                    'all, so activity cannot be checked and the tool says that '
+                    'rather than guessing. Also hank-1790000034 at 157.6h '
+                    'UNDECLARED, and cloud-1790481171 at 24.0h NO ACTIVITY '
+                    'across both its declared docs. THE THREE STATES ARE KEPT '
+                    'APART -- NO ACTIVITY, UNDECLARED and COULD NOT TELL -- and '
+                    'an EMPTY declared set returns None rather than False, '
+                    'because "nothing was touched" and "there was nothing to '
+                    'look at" are the two things this tool must never merge. '
+                    '8-arm selftest; one arm FAILED on its first run for a '
+                    'reason worth keeping: it used this tool\'s own path as '
+                    'the has-history fixture, and on the commit that adds the '
+                    'tool that path is untracked, so a working function read as '
+                    'broken -- a fixture that fails exactly once, on the commit '
+                    'that introduces it',
+    },
+    {
         'tool': 'checker_denominator.py',
         'mode': 'once',
         'verdict': by_exit,

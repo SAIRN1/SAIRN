@@ -1,26 +1,30 @@
 {
  "ai_action_approval_audit.py": {
   "checked": 22,
-  "reason": "First baseline, 2026-09-28. Taken AFTER unifying the two anchor-freshness populations onto one denominator (probe_anchor_freshness 12 -> 87 of 98) so the ratchet measures forward from the corrected state rather than blessing the 12 that caused the incident. overrun_inversion_scan at 6 of 22 is a CLEAN-vs-UNPARSED ambiguity stated in its note, not a coverage claim.",
+  "reason": "Criteria 2026-09-28.2 adds the UNREADABLE dimension, so the baseline gains a third number per tool. Taken at the corrected state: probe_anchor_freshness carries 1 unreadable (tests/run_adversarial_prompt_corpus_probe.py, 3 non-literal anchors it names rather than drops), mutation_anchor_check 0 after the resolver fix that took it from 84.",
   "unit": "root .html apps",
-  "universe": 22
+  "universe": 22,
+  "unreadable": 0
  },
  "mutation_anchor_check.py": {
   "checked": 82,
-  "reason": "First baseline, 2026-09-28. Taken AFTER unifying the two anchor-freshness populations onto one denominator (probe_anchor_freshness 12 -> 87 of 98) so the ratchet measures forward from the corrected state rather than blessing the 12 that caused the incident. overrun_inversion_scan at 6 of 22 is a CLEAN-vs-UNPARSED ambiguity stated in its note, not a coverage claim.",
+  "reason": "Criteria 2026-09-28.2 adds the UNREADABLE dimension, so the baseline gains a third number per tool. Taken at the corrected state: probe_anchor_freshness carries 1 unreadable (tests/run_adversarial_prompt_corpus_probe.py, 3 non-literal anchors it names rather than drops), mutation_anchor_check 0 after the resolver fix that took it from 84.",
   "unit": "probe files declaring a mutation anchor",
-  "universe": 98
+  "universe": 98,
+  "unreadable": 0
  },
  "overrun_inversion_scan.py": {
   "checked": 6,
-  "reason": "First baseline, 2026-09-28. Taken AFTER unifying the two anchor-freshness populations onto one denominator (probe_anchor_freshness 12 -> 87 of 98) so the ratchet measures forward from the corrected state rather than blessing the 12 that caused the incident. overrun_inversion_scan at 6 of 22 is a CLEAN-vs-UNPARSED ambiguity stated in its note, not a coverage claim.",
+  "reason": "Criteria 2026-09-28.2 adds the UNREADABLE dimension, so the baseline gains a third number per tool. Taken at the corrected state: probe_anchor_freshness carries 1 unreadable (tests/run_adversarial_prompt_corpus_probe.py, 3 non-literal anchors it names rather than drops), mutation_anchor_check 0 after the resolver fix that took it from 84.",
   "unit": "root .html apps",
-  "universe": 22
+  "universe": 22,
+  "unreadable": 0
  },
  "probe_anchor_freshness.py": {
   "checked": 87,
-  "reason": "First baseline, 2026-09-28. Taken AFTER unifying the two anchor-freshness populations onto one denominator (probe_anchor_freshness 12 -> 87 of 98) so the ratchet measures forward from the corrected state rather than blessing the 12 that caused the incident. overrun_inversion_scan at 6 of 22 is a CLEAN-vs-UNPARSED ambiguity stated in its note, not a coverage claim.",
+  "reason": "Criteria 2026-09-28.2 adds the UNREADABLE dimension, so the baseline gains a third number per tool. Taken at the corrected state: probe_anchor_freshness carries 1 unreadable (tests/run_adversarial_prompt_corpus_probe.py, 3 non-literal anchors it names rather than drops), mutation_anchor_check 0 after the resolver fix that took it from 84.",
   "unit": "probe files declaring a mutation anchor",
-  "universe": 98
+  "universe": 98,
+  "unreadable": 1
  }
 }
