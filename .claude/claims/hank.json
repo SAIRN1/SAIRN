@@ -3128,8 +3128,8 @@
       "task": "queue14 item 4: policy_no is authentication-shaped material and neither CRITICALITY-TIERS axis expresses that -- section 2 records it as a gap with an owner. SCOPE the remedy (a third row-level axis vs a FIELD-level register plus a report-only checker) and MEASURE the extent across the platform: every field that is what a fraudulent claim or a call to an issuer needs -- policy_no, coi_policy_no, licence_no, DEA/NPI, member and payer ids, account and routing numbers, booking_slug and any other tenant key resolvable without a session. Deliverable is the measurement and the decision, plus whatever tooling the measurement justifies. docs/CRITICALITY-TIERS.md is FREE: cody-q14's sf_events cell was delivered as replacement TEXT in its own doc and cody's live row is cody-q15 which does not name it. SUBJECT NAMED PER PR 4.3 FILES: docs/CRITICALITY-TIERS.md docs/2026-09-27-authentication-shaped-fields.md tools/auth_shaped_field_scan.py",
       "claimed_at": "2026-09-28T01:10:24Z",
       "claimed_at_epoch": 1790557824.9472375,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-28T01:38:43Z",
       "files": [
         "docs/2026-09-27-authentication-shaped-fields.md",
         "docs/CRITICALITY-TIERS.md",
