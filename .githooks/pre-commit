@@ -17,11 +17,50 @@
 #     python tools/hover_auditor_scope_gate.py --install
 #
 # INSTALL (per clone, once, same as pre-push): python tools/install_git_hooks.py
+#
+# ── TWO GUARDS LOOKED THE SAME AND ARE NOT (fixed 2026-09-29) ─────────────
+# This file used `|| exit 0` on THREE lines and they are not one thing:
+#
+#   SCOPE      `[ -f "$GITDIR/sairn-hover-auditor-clone" ] || exit 0`
+#              asks DOES THIS GATE APPLY HERE. In a build clone it genuinely
+#              does not, and exiting 0 is correct. UNCHANGED, deliberately --
+#              "fixing" it would refuse every commit in four clones, which is a
+#              far worse bug than the one below.
+#
+#   DEPENDENCY `ROOT=$(git rev-parse ...) || exit 0` asks CAN I CHECK AT ALL.
+#              Exiting 0 there is a pass nobody performed, and worse: without
+#              GITDIR the SCOPE test cannot run either, so a discovery failure
+#              silently disarmed the auditor gate in the one clone it exists
+#              for. If we cannot tell whether this is the hover clone, we
+#              cannot say the gate does not apply. Those now REFUSE.
+#
+# `exec` is gone for the same reason it was removed from prepare-commit-msg: it
+# replaced the shell with the first checker, so any second check added later
+# would have looked correct and never run.
 
-ROOT=$(git rev-parse --show-toplevel) || exit 0
-GITDIR=$(git rev-parse --git-dir) || exit 0
+ROOT=$(git rev-parse --show-toplevel)
+GITDIR=$(git rev-parse --git-dir)
+if [ -z "$ROOT" ] || [ -z "$GITDIR" ]; then
+  echo "pre-commit: REFUSED -- git gave no repository root or git-dir, so the" >&2
+  echo "  hover-auditor scope gate could not even determine whether it applies." >&2
+  echo "  Could-not-tell is not a pass." >&2
+  exit 1
+fi
 
+# SCOPE, NOT DEPENDENCY. Absent marker = this is not the auditor's clone.
 [ -f "$GITDIR/sairn-hover-auditor-clone" ] || exit 0
 
 command -v python >/dev/null 2>&1 && PY=python || PY=python3
-exec "$PY" "$ROOT/tools/hover_auditor_scope_gate.py" --pre-commit
+if ! command -v "$PY" >/dev/null 2>&1; then
+  echo "pre-commit: REFUSED -- this IS the hover auditor's clone and no python" >&2
+  echo "  is on PATH, so the scope gate did not run." >&2
+  exit 1
+fi
+if [ ! -f "$ROOT/tools/hover_auditor_scope_gate.py" ]; then
+  echo "pre-commit: REFUSED -- this IS the hover auditor's clone and" >&2
+  echo "  tools/hover_auditor_scope_gate.py is MISSING, so nothing checked" >&2
+  echo "  what this commit touches." >&2
+  exit 1
+fi
+
+"$PY" "$ROOT/tools/hover_auditor_scope_gate.py" --pre-commit

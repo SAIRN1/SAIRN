@@ -1,0 +1,250 @@
+#!/usr/bin/env python3
+"""tools/fail_open_scan.py -- a gate that reports SUCCESS when it could not run.
+
+    python tools/fail_open_scan.py
+    python tools/fail_open_scan.py --list
+    python tools/fail_open_scan.py --baseline
+
+Exit 0 no worse than pinned, 1 a regression, 2 COULD NOT TELL.
+
+── THE DEFECT, MEASURED ───────────────────────────────────────────────────
+.githooks/prepare-commit-msg read:
+
+    ROOT=$(git rev-parse --show-toplevel) || exit 0
+    [ -f "$ROOT/tools/staged_conflict_marker_check.py" ] || exit 0
+    exec "$PY" "$ROOT/tools/staged_conflict_marker_check.py"
+
+FROM A GIT HOOK, `exit 0` MEANS ALLOW THE COMMIT. So a git-discovery failure
+allowed it and a MISSING CHECKER allowed it -- and `exec` meant a second check
+appended later would have looked correct and never run. On 2026-09-28 a GitHub
+token was staged and reached a commit with no commit-time content check of any
+kind looking at it.
+
+CLAUDE.md names this the most common defect shape on this platform: "a check
+that depends on another tool must fail CLOSED when that tool is absent... it
+does not skip one check, it reports a pass it never performed."
+
+── THE DISCRIMINATOR, AND WITHOUT IT THIS TOOL INVENTS FINDINGS ──────────
+`|| exit 0` is not the defect. The question is what the guarded test MEANS:
+
+  SCOPE TEST       "does this gate apply HERE?" -- absent means NOT APPLICABLE,
+                   and exiting 0 is correct. .githooks/pre-commit tests for
+                   `.git/sairn-hover-auditor-clone`; in a build clone the
+                   auditor gate genuinely does not apply, and refusing every
+                   build commit would be a far worse bug than the one being
+                   fixed.
+  DEPENDENCY TEST  "can I check at all?" -- absent means COULD NOT RUN, and
+                   exiting 0 is a pass nobody performed.
+
+A tool that flagged both would have demanded the hover gate refuse every commit
+in four clones. So SCOPE-shaped guards are classified apart and never counted as
+findings; the classification is by what the guard NAMES -- a marker file, a
+clone marker, an applicability flag -- not by a hand-kept list of line numbers.
+
+── THE FOUR SHAPES IT LOOKS FOR ──────────────────────────────────────────
+  exit-0-on-failure   `... || exit 0`, `|| true` on a guard
+  swallowed-error     stderr to /dev/null with the status ignored
+  exec-blocks-rest    `exec` in a hook, so no later check can be added
+  bare-except-pass    Python `except: pass` / `except Exception: return 0`
+
+── WHAT IT CANNOT DO ─────────────────────────────────────────────────────
+It reads source text, so a fail-open expressed through a helper, a trap, or a
+Python default argument is invisible; the universe is a FLOOR. And it cannot
+tell whether a DEPENDENCY-shaped guard protects something that matters -- a
+cosmetic reporter exiting 0 when its input is missing is fine. That judgement is
+per gate and is why the output is a list to READ.
+
+A RATCHET on docs/fail-open-coverage.json: `dependency_failopen` must never rise.
+"""
+import argparse
+import io
+import json
+import os
+import re
+import sys
+
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PIN = os.path.join(REPO, 'docs', 'fail-open-coverage.json')
+
+HOOK_DIRS = ('.githooks',)
+SCAN_DIRS = ('tools', 'scripts', '.githooks')
+
+EXIT0 = re.compile(r'\|\|\s*(exit\s+0|true)\b')
+DEVNULL_IGNORED = re.compile(r'2>\s*/dev/null\s*(\|\||;|$)')
+EXEC_HOOK = re.compile(r'^\s*exec\s+', re.M)
+BARE_EXCEPT = re.compile(
+    r'except\s*(?:Exception)?\s*(?:as\s+\w+)?\s*:\s*(?:\n\s+)?(pass|return\s+0|return\s+True)')
+
+# A guard whose SUBJECT is applicability, not capability. Absent => not here.
+SCOPE_WORDS = re.compile(
+    r'auditor-clone|-clone\b|marker|applies|applicable|opt-?in|enabled'
+    r'|sairn-hover|\.git/[a-z-]*clone', re.I)
+
+
+class CouldNotTell(Exception):
+    pass
+
+
+def files():
+    out = []
+    for d in SCAN_DIRS:
+        base = os.path.join(REPO, d)
+        if not os.path.isdir(base):
+            continue
+        for root, _, names in os.walk(base):
+            for n in sorted(names):
+                p = os.path.join(root, n)
+                if n.endswith(('.py', '.sh')) or d == '.githooks':
+                    out.append(p)
+    if not out:
+        raise CouldNotTell('no hook or tool files found under %s'
+                           % ', '.join(SCAN_DIRS))
+    return out
+
+
+def classify_line(line, is_hook):
+    """(shape, scope) for one line, or (None, False)."""
+    if EXIT0.search(line):
+        return 'exit-0-on-failure', bool(SCOPE_WORDS.search(line))
+    if DEVNULL_IGNORED.search(line) and '||' in line and 'exit' in line:
+        return 'swallowed-error', bool(SCOPE_WORDS.search(line))
+    return None, False
+
+
+def scan():
+    res = {}
+    for path in files():
+        rel = os.path.relpath(path, REPO).replace(os.sep, '/')
+        try:
+            src = io.open(path, encoding='utf-8', errors='replace').read()
+        except OSError as exc:
+            raise CouldNotTell('%s could not be read (%s) -- NOT a pass'
+                               % (rel, exc))
+        is_hook = rel.startswith('.githooks/')
+        hits = []
+        for i, line in enumerate(src.splitlines(), 1):
+            if line.lstrip().startswith('#'):
+                continue
+            shape, scope = classify_line(line, is_hook)
+            if shape:
+                hits.append({'line': i, 'shape': shape, 'scope': scope,
+                             'text': line.strip()[:78]})
+        if is_hook and EXEC_HOOK.search(src):
+            m = EXEC_HOOK.search(src)
+            hits.append({'line': src.count('\n', 0, m.start()) + 1,
+                         'shape': 'exec-blocks-rest', 'scope': False,
+                         'text': 'exec -- no later check can run'})
+        for m in BARE_EXCEPT.finditer(src):
+            hits.append({'line': src.count('\n', 0, m.start()) + 1,
+                         'shape': 'bare-except-pass', 'scope': False,
+                         'text': m.group(0).replace('\n', ' ')[:70]})
+        if hits:
+            res[rel] = hits
+    if not res:
+        raise CouldNotTell(
+            'no fail-open shape matched anywhere -- the shapes moved and '
+            'NOTHING was measured. This is NOT "every gate fails closed".')
+    return res
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--list', action='store_true')
+    ap.add_argument('--baseline', action='store_true')
+    args = ap.parse_args(argv)
+
+    try:
+        res = scan()
+    except CouldNotTell as e:
+        sys.stderr.write('COULD NOT TELL -- %s\n' % e)
+        sys.stderr.write('This is the THIRD STATE and is NOT a clean run.\n')
+        return 2
+
+    dep, scope = [], []
+    for rel, hits in res.items():
+        for h in hits:
+            (scope if h['scope'] else dep).append((rel, h))
+    hooks = [(r, h) for r, h in dep if r.startswith('.githooks/')]
+
+    print('FAIL-OPEN SCAN -- a gate reporting SUCCESS when it could not run')
+    print('')
+    print('  DEPENDENCY-shaped (could not check -> reported clean) : %d' % len(dep))
+    print('    of those, in a GIT HOOK, where exit 0 means ALLOW   : %d' % len(hooks))
+    print('  SCOPE-shaped (does not apply here -> exit 0 is right) : %d' % len(scope))
+    print('')
+    if hooks:
+        print('  IN HOOKS -- highest consequence, because exit 0 is a decision:')
+        for rel, h in hooks:
+            print('   %-34s :%-4d %-20s %s'
+                  % (rel, h['line'], h['shape'], h['text'][:38]))
+        print('')
+    if args.list:
+        print('  ALL DEPENDENCY-SHAPED:')
+        for rel, h in dep:
+            print('   %-40s :%-4d %s' % (rel, h['line'], h['shape']))
+        print('')
+        print('  SCOPE-SHAPED (not findings, listed so the judgement is visible):')
+        for rel, h in scope:
+            print('   %-40s :%-4d %s' % (rel, h['line'], h['text'][:44]))
+        print('')
+
+    print('CHECKED / UNIVERSE: %d file(s) carry a shape, out of %d scanned.'
+          % (len(res), len(files())))
+    print('A LIST TO READ. `|| exit 0` is not itself the defect -- the question')
+    print('is whether the guard asks "does this apply here" (absent = not')
+    print('applicable, exit 0 correct) or "can I check at all" (absent = could')
+    print('not run, exit 0 is a pass nobody performed). A tool that flagged both')
+    print('would demand the hover gate refuse every commit in four clones.')
+    print('')
+    print('IT READS TEXT: a fail-open through a helper, a trap or a default')
+    print('argument is invisible, so this is a FLOOR.')
+    print('')
+
+    if args.baseline:
+        io.open(PIN, 'w', encoding='utf-8', newline='\n').write(json.dumps({
+            '_what': 'Pinned fail-open coverage. Written by '
+                     'tools/fail_open_scan.py --baseline. A ratchet: '
+                     '`dependency_failopen` and `hook_failopen` must never rise.',
+            '_why': 'From a git hook, exit 0 means ALLOW. A missing checker or a '
+                    'failed git discovery that exits 0 is a pass nobody '
+                    'performed -- which is how a credential reached a commit on '
+                    '2026-09-28.',
+            'files_with_a_shape': len(res),
+            'dependency_failopen': len(dep),
+            'hook_failopen': len(hooks),
+            'scope_shaped': len(scope),
+            'hook_sites': ['%s:%d' % (r, h['line']) for r, h in hooks],
+        }, indent=2, sort_keys=True) + '\n')
+        print('wrote %s' % os.path.relpath(PIN, REPO))
+        return 0
+
+    if not os.path.isfile(PIN):
+        sys.stderr.write('COULD NOT TELL -- %s does not exist, so NOTHING was '
+                         'compared. Run --baseline once.\n'
+                         % os.path.relpath(PIN, REPO))
+        return 2
+    try:
+        pin = json.load(io.open(PIN, encoding='utf-8'))
+    except ValueError as e:
+        sys.stderr.write('COULD NOT TELL -- %s will not parse (%s).\n'
+                         % (os.path.relpath(PIN, REPO), e))
+        return 2
+    was = pin.get('dependency_failopen')
+    if not isinstance(was, int):
+        sys.stderr.write('COULD NOT TELL -- the pin carries no integer '
+                         '`dependency_failopen`.\n')
+        return 2
+    if len(dep) > was:
+        print('REGRESSION -- dependency fail-opens rose from %d to %d.'
+              % (was, len(dep)))
+        return 1
+    if len(dep) < was:
+        print('IMPROVED -- fell from %d to %d. Re-pin:' % (was, len(dep)))
+        return 0
+    print('OK -- no worse than pinned (%d dependency, %d of them in hooks).'
+          % (was, len(hooks)))
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

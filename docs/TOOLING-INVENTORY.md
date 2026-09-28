@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**269 files in `tools/`.** By what actually invokes them:
+**270 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -28,14 +28,14 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 4 | session-start or prompt hooks, informational |
 | **DECIDED** | 74 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 50 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 56 | nothing runs these at all |
+| **UNWIRED** | 57 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
 | ADVISORY | 3 |
-| CHECKER | 188 |
+| CHECKER | 189 |
 | GENERATOR | 19 |
 | GUARD | 1 |
 | LIBRARY | 25 |
@@ -50,13 +50,13 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 41 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 16 wired nowhere at all, and 25
+**The number to act on: 42 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 17 wired nowhere at all, and 25
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 41, by name, so this is actionable rather than a statistic:
+The 42, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
@@ -73,6 +73,7 @@ The 41, by name, so this is actionable rather than a statistic:
 | `csv_formula_injection_check.py` | UNWIRED | a CSV cell built by string concatenation that carries NO guard against a leading =/+/-/@/TAB/CR -- the characters Excel, LibreOffice and Sheets execute as a FORMULA on open, which the surrounding quotes do not prevent because the importer strips them before evaluating. Reports two different failures: a RAW construction outside any helper (an unguarded export path) and a guard HELPER whose body no longer guards (worse -- every call site still reads as covered). Accepts THREE guard shapes, including a stricter split form and one factored into a named constant, because the first version reported the module every app copied as the only unguarded helper on the platform -- the sabotage_control_check inversion, reproduced. Reports a THIRD state since 2026-09-18: a CALL TO A HELPER THAT IS NOT DEFINED, which is worse than either -- the export does not lose its guard, it THROWS. The sweep this file verifies shipped two of them, where replacing the quoted expression after a spaceless `return` glued the keyword to the new call; node --check passed, the raw count correctly went to zero, and this file reported the app GUARDED. A ZERO IS NOT COVERAGE: an export written with a library, a template, or no quoting at all has no .replace to match and is invisible to it |
 | `defect_budget_gate.py` | UNWIRED | new-vertical work proceeding while the defect budget says it should not -- the half of item 20 that nothing had: defect_budget_policy.py MEASURES and states a band, its own header says it cannot stop anybody doing anything, and until now NO CODE ANYWHERE READ IT. Reads the policy module rather than re-deriving the arithmetic, and takes the band vocabulary from that module too -- a first draft hardcoded four band names and three of the four were invented, which would have answered COULD NOT TELL for ever. DOES NOT BIND YET, ON PURPOSE AND LOUDLY: the WINDOW is decided but BUDGET_PER_WINDOW is not, and at 60 against an observed rate several times that, every band reads ALL HANDS -- enforcing on it would halt every push on a number its own author calls uncalibrated. Binds the moment a budget is recorded. Refuses only new-vertical work; refusing reliability work when the budget is exhausted would forbid the one kind that refills it |
 | `entry_point_scope_check.py` | SUITE-ONLY | A TOOL WHOSE SEVERAL ENTRY POINTS READ DIFFERENT POPULATIONS -- the copy a human invokes is not the copy that enforces. The named instance cost a real session a real push: tier_a_review_gate.py answered from the WORKING TREE on a bare run and from `merge-base origin/main HEAD..HEAD` in the push hook, so a session was told "No file in this change names a Tier A resource" and was then DENIED by the same tool naming seven. Both answers were true about what they read and neither was about the question asked. THE CRITERION IS NOT "two doors differ": a door reading no scope accessor at all is answering a different question, which is allowed. A finding requires two doors reading DIFFERENT MEMBERS OF ONE FAMILY -- scope-of-change, file-tree or register -- because working_diff() and push_range() are both "what changed" and that is what makes their disagreement a contradiction. `--fixtures` and `--selftest` are deliberately NOT doors: they read no real state, and counting them gave 70 candidates of which most were correct by construction. THE BARE RUN IS A DOOR and has no flag to key on, which is why the original defect was invisible; calls outside every branch are SHARED by all doors, not attributed to the bare one. Calls are resolved through module functions to RESOLVE_DEPTH, because this repo dispatches `if flag: return cmd_x()` and the first version resolved nothing, reported 9 candidates and CLEAN for all nine -- a checker blind to the shape it was built for. TWO FALSE POSITIVES from real runs are fixtures in both directions: shared setup, and two doors answering two questions. 64 of 240 tools have more than one real-data door; CHECKED / UNIVERSE is printed. Criteria locked against 11 hand-built fixtures that gate the ordinary run. REPORT ONLY, and its zero is ablated rather than asserted -- the control restores the real pre-fix shape and demands it be reported |
+| `fail_open_scan.py` | UNWIRED | a gate that reports SUCCESS when it could not run. FROM A GIT HOOK `exit 0` MEANS ALLOW, so `ROOT=$(git rev-parse ...) || exit 0` and `[ -f tools/x.py ] || exit 0` are not graceful skips -- they are passes nobody performed, and on 2026-09-28 a GitHub token was staged and reached a commit with no commit-time content check looking at it. THE DISCRIMINATOR IS WHAT THE GUARD ASKS, and without it this tool invents findings: a SCOPE test (does this gate apply HERE -- absent means not applicable) is correct to exit 0, and .githooks/pre-commit tests for a hover-auditor clone marker exactly that way, so flagging it would have demanded that every commit in four build clones be refused. A DEPENDENCY test (can I check at all) must refuse. Four shapes: exit-0-on-failure, swallowed-error, exec-blocks-rest (an `exec` in a hook means no later check can ever be added), and bare-except-pass. CANNOT SEE a fail-open expressed through a helper, a trap or a Python default argument, so the universe is a FLOOR; and it cannot judge whether a dependency guard protects something that matters, which is why the output is a list to READ. A RATCHET on docs/fail-open-coverage.json. Control: tests/run_fail_open_probe.py, which copies each real hook into a sandbox repo, takes its dependency away and runs it with sh -- and asserts a DIFFERENT correct answer per hook, because post-rewrite must NOT fail the rebase and must warn instead. |
 | `git_discovery_anchoring_check.py` | UNWIRED | which tools shell out to `git` WITHOUT saying which repository they mean. C:/Users/marsh/.git EXISTS -- the home directory is itself a git repository -- so `rev-parse --show-toplevel` from any scratch directory beneath it SUCCEEDS with exit 0 and returns C:/Users/marsh. An unanchored call does not fail, it answers about the wrong repository, and C:/Users/marsh/tools/ holds a real stale copy of session_lock_check.py for a misrouted probe to find and test successfully. Classifies every call site ASSERTED (toplevel checked against the intended root -- the strongest form, and the only one that catches a WRONG cwd rather than an absent one) / ANCHORED / WEAK / UNANCHORED / UNREADABLE, and reports WEAK apart rather than folding it into either answer, because `cwd=os.getcwd()` credits as a cwd and is not safe. A RATCHET pinned to docs/git-discovery-anchoring.json; an absent or unparseable pin is exit 2 and so is finding zero git callers, because the call shape moving must not read as "everything is anchored". The output says plainly that the UNANCHORED list is a list to READ and not a list of defects -- a tool reaching its cwd through two indirections reads as unanchored. Call extent is paren-matched on a string-and-comment mask, not a fixed window. |
 | `hover_eqa_escalation.py` | SUITE-ONLY | an independence checkpoint that only the audited role can see, which therefore escalates to nobody. The hover auditor own EQA checkpoint reported OVERDUE for sixteen process passes against a cadence of three, and the tool saying so runs ONLY inside the hover clone -- hover_self_health_shim.py is a deliberate silent no-op in a build clone, which is right for a self-check and wrong for an escalation. A role cannot satisfy its own independence checkpoint by definition, so the report has to reach somewhere that is not that role. Asked from OUTSIDE: it READS the self-log and computes the answer independently rather than running the auditor own grader, so the two can DISAGREE and that disagreement is itself a finding. Writes nothing anywhere, asserted by an arm rather than by the docstring. Caught on its first run that the SECOND auditor instance carries no eqa_checkpoint field at all, so it has never recorded an independent validation and nothing was reporting that. An absent, empty, unparseable or field-less log is COULD NOT TELL and exit 2, never clean -- an escalation that reports current because it could not look has escalated nothing |
 | `invariant_registry.js` | SUITE-ONLY | not a checker itself: the LOCKED hand-derived classification of which invariant applies to which engine, the evidence it was read from, and the synthetic fixtures invariant_runner.js must satisfy before touching a real engine |
@@ -405,7 +406,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (56)
+## UNWIRED (57)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -423,6 +424,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `defect_budget_gate.py` | CHECKER | new-vertical work proceeding while the defect budget says it should not -- the half of item 20 that nothing had: defect_budget_policy.py MEASURES and states a band, its own header says it cannot stop anybody doing anything, and until now NO CODE ANYWHERE READ IT. Reads the policy module rather than re-deriving the arithmetic, and takes the band vocabulary from that module too -- a first draft hardcoded four band names and three of the four were invented, which would have answered COULD NOT TELL for ever. DOES NOT BIND YET, ON PURPOSE AND LOUDLY: the WINDOW is decided but BUDGET_PER_WINDOW is not, and at 60 against an observed rate several times that, every band reads ALL HANDS -- enforcing on it would halt every push on a number its own author calls uncalibrated. Binds the moment a budget is recorded. Refuses only new-vertical work; refusing reliability work when the budget is exhausted would forbid the one kind that refills it | &mdash; |
 | `extract_panels.py` | LIBRARY | panel containers out of an app file | &mdash; |
 | `extract_scripts.py` | LIBRARY | script blocks out of an app file, HTML-parser based | &mdash; |
+| `fail_open_scan.py` | CHECKER | a gate that reports SUCCESS when it could not run. FROM A GIT HOOK `exit 0` MEANS ALLOW, so `ROOT=$(git rev-parse ...) || exit 0` and `[ -f tools/x.py ] || exit 0` are not graceful skips -- they are passes nobody performed, and on 2026-09-28 a GitHub token was staged and reached a commit with no commit-time content check looking at it. THE DISCRIMINATOR IS WHAT THE GUARD ASKS, and without it this tool invents findings: a SCOPE test (does this gate apply HERE -- absent means not applicable) is correct to exit 0, and .githooks/pre-commit tests for a hover-auditor clone marker exactly that way, so flagging it would have demanded that every commit in four build clones be refused. A DEPENDENCY test (can I check at all) must refuse. Four shapes: exit-0-on-failure, swallowed-error, exec-blocks-rest (an `exec` in a hook means no later check can ever be added), and bare-except-pass. CANNOT SEE a fail-open expressed through a helper, a trap or a Python default argument, so the universe is a FLOOR; and it cannot judge whether a dependency guard protects something that matters, which is why the output is a list to READ. A RATCHET on docs/fail-open-coverage.json. Control: tests/run_fail_open_probe.py, which copies each real hook into a sandbox repo, takes its dependency away and runs it with sh -- and asserts a DIFFERENT correct answer per hook, because post-rewrite must NOT fail the rebase and must warn instead. | &mdash; |
 | `fetch_blocked_doc.sh` | LIBRARY | fetches a document a plain request cannot reach | &mdash; |
 | `gen_ma_calendar.py` | GENERATOR | a court-holiday calendar or deadline seed for one state | &mdash; |
 | `gen_ma_seed.py` | GENERATOR | a court-holiday calendar or deadline seed for one state | &mdash; |
@@ -498,7 +500,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      269   git ls-files tools/
+  tools on disk                      270   git ls-files tools/
   hook entries                        14   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                67   report_only_checks.REGISTRY

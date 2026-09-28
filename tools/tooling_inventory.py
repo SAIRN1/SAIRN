@@ -73,6 +73,29 @@ GATE = os.path.join('tools', 'sairn_push_gate_hook.py')
 # LIVE means it makes a real network or database request, so it cannot be wired
 # into a hook without making every push talk to the outside world.
 PURPOSES = {
+    'fail_open_scan.py': ('CHECKER',
+        'a gate that reports SUCCESS when it could not run. FROM A GIT HOOK '
+        '`exit 0` MEANS ALLOW, so `ROOT=$(git rev-parse ...) || exit 0` and '
+        '`[ -f tools/x.py ] || exit 0` are not graceful skips -- they are passes '
+        'nobody performed, and on 2026-09-28 a GitHub token was staged and '
+        'reached a commit with no commit-time content check looking at it. THE '
+        'DISCRIMINATOR IS WHAT THE GUARD ASKS, and without it this tool invents '
+        'findings: a SCOPE test (does this gate apply HERE -- absent means not '
+        'applicable) is correct to exit 0, and .githooks/pre-commit tests for a '
+        'hover-auditor clone marker exactly that way, so flagging it would have '
+        'demanded that every commit in four build clones be refused. A '
+        'DEPENDENCY test (can I check at all) must refuse. Four shapes: '
+        'exit-0-on-failure, swallowed-error, exec-blocks-rest (an `exec` in a '
+        'hook means no later check can ever be added), and bare-except-pass. '
+        'CANNOT SEE a fail-open expressed through a helper, a trap or a Python '
+        'default argument, so the universe is a FLOOR; and it cannot judge '
+        'whether a dependency guard protects something that matters, which is '
+        'why the output is a list to READ. A RATCHET on '
+        'docs/fail-open-coverage.json. Control: tests/run_fail_open_probe.py, '
+        'which copies each real hook into a sandbox repo, takes its dependency '
+        'away and runs it with sh -- and asserts a DIFFERENT correct answer per '
+        'hook, because post-rewrite must NOT fail the rebase and must warn '
+        'instead.'),
     'staged_credential_check.py': ('CHECKER',
         'a COMMIT about to make credential CONTENT durable -- an issuer-prefixed '
         'token, key or PEM header in a STAGED blob, whatever the file is called '

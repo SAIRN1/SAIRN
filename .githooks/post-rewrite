@@ -28,9 +28,43 @@
 #
 # INSTALL (per clone, once): python tools/install_git_hooks.py
 
-ROOT=$(git rev-parse --show-toplevel) || exit 0
-[ -f "$ROOT/tools/defect_register.py" ] || exit 0
+# ── THE EXIT CODE IS RIGHT AND THE SILENCE WAS NOT (2026-09-29) ───────────
+# The header above argues, correctly, that this hook must never fail the rebase:
+# it runs AFTER the operation, so a non-zero exit undoes nothing and only prints
+# a failure after a success. git ignores post-rewrite's status anyway. That
+# reasoning is unchanged.
+#
+# WHAT WAS WRONG IS THAT IT WAS SILENT. Both guards were `|| exit 0` with no
+# output, so a failed git discovery or a missing defect_register.py meant the
+# re-seat simply did not happen and NOTHING SAID SO. The next signal was the
+# push gate refusing with "that sha is not in this history", several steps and
+# often several minutes later -- which is the exact round trip this hook was
+# built to remove. A fail-open whose only symptom appears downstream is the
+# most expensive kind, because the person pays for it twice.
+#
+# So the guards now WARN LOUDLY and still exit 0. The exit code is not the
+# control here; the message is.
+ROOT=$(git rev-parse --show-toplevel)
+if [ -z "$ROOT" ]; then
+  echo "post-rewrite: git gave no repository root, so the defect register was" >&2
+  echo "  NOT re-seated after this rewrite. Run: python tools/defect_register.py --reseat" >&2
+  exit 0
+fi
+if [ ! -f "$ROOT/tools/defect_register.py" ]; then
+  echo "post-rewrite: tools/defect_register.py is MISSING, so the register was" >&2
+  echo "  NOT re-seated. Records now cite commits this rewrite replaced." >&2
+  exit 0
+fi
 
 command -v python >/dev/null 2>&1 && PY=python || PY=python3
-"$PY" "$ROOT/tools/defect_register.py" --post-rewrite
+if ! command -v "$PY" >/dev/null 2>&1; then
+  echo "post-rewrite: no python on PATH, so the defect register was NOT" >&2
+  echo "  re-seated after this rewrite." >&2
+  exit 0
+fi
+
+"$PY" "$ROOT/tools/defect_register.py" --post-rewrite || {
+  echo "post-rewrite: the re-seat FAILED. Records may cite commits this" >&2
+  echo "  rewrite replaced. Run: python tools/defect_register.py --reseat" >&2
+}
 exit 0
