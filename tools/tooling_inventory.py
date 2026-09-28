@@ -73,6 +73,26 @@ GATE = os.path.join('tools', 'sairn_push_gate_hook.py')
 # LIVE means it makes a real network or database request, so it cannot be wired
 # into a hook without making every push talk to the outside world.
 PURPOSES = {
+    'auth_header_name_sweep.py': ('CHECKER',
+        'a caller sending the session under a header name the SERVER NEVER '
+        'READS. The quietest failure available: nothing 400s, the request is '
+        'well formed, and the server simply answers its no-session branch -- so '
+        'the caller gets a real HTTP answer to a question it did not ask. '
+        'tools/alf_facility_role_gate_live_probe.py sent `X-Session-Token` while '
+        'tokenFromRequest() reads `x-sd-auth` and nothing else, so every request '
+        'it ever made carried no session and the role differentiation it exists '
+        'to demonstrate was never exercised once. THE EXPECTED NAME IS DERIVED '
+        'FROM api/_lib/auth.js, not typed here, so renaming the header re-points '
+        'the check instead of leaving it passing against a stale constant; if '
+        'tokenFromRequest is missing, reads no header, or reads more than one, it '
+        'exits 2 COULD NOT TELL and never falls back to a default. A file that '
+        'REPLACES tokenFromRequest is exempt BY CONSTRUCTION rather than by name '
+        '-- the exemption expires the moment the stub is removed, which its '
+        'control drives directly. CANNOT SEE a header built from a variable, read '
+        'from an env var or set by a library, so the universe is a FLOOR and says '
+        'so; and it cannot tell whether a caller SHOULD send a session, which is '
+        'tools/gate_caller_impact.py. Control: tests/run_auth_header_name_probe.py, '
+        '11 arms, which plants the real defect and asserts the sweep goes red.'),
     'gate_caller_impact.py': ('CHECKER',
         'a CALLER that will stop authenticating the moment you narrow a gate. Given an endpoint and the action(s) being gated, it names every caller in this repo and whether each sends a session header, and prints checked/universe so a silently narrowed scan is visible. EXIT 1 on an unaccounted caller; a caller that SHOULD be unauthenticated is named individually via --expect-unauthenticated, never skipped as a class, and the control asserts that exempting a DIFFERENT path does not silence a finding. BUILT AFTER A NEAR MISS: add_rule and add_holidays were gated to a session and tools/load_deadline_seed.py -- the only caller, sending a bearer key alone -- would have broken seeding on all 48 jurisdictions. ITS FIRST SWEEP FOUND A REAL BUG: tools/alf_facility_role_gate_live_probe.py sent the session as X-Session-Token where tokenFromRequest reads x-sd-auth only, so every request it had ever made carried no session and the role differentiation it exists to demonstrate was never exercised -- its own CONTROL is what kept that from reading as a pass. CANNOT SEE a caller outside this repo, a dynamically built action name, whether the session carries the right ROLE, or an untracked file. Convention: docs/2026-09-28-gate-tightening-caller-impact.md'),
     'text_gate_literal_sweep.py': ('CHECKER',

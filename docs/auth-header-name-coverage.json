@@ -1,0 +1,14 @@
+{
+  "_what": "Pinned auth-header-name coverage. Written by tools/auth_header_name_sweep.py --baseline. A ratchet: `mismatched` must never rise.",
+  "_why": "A wrong header name is the quietest failure available: the request is well formed and the server answers the no-session branch, so the caller gets a real HTTP answer to a question it did not ask.",
+  "expected_header": "x-sd-auth",
+  "mismatched": 0,
+  "mismatched_files": [],
+  "names_seen": {
+    "x-sd-auth": 88,
+    "x-session-token": 1,
+    "x-test-token": 22
+  },
+  "session_sending_files": 108,
+  "stubbed_exempt": 38
+}
