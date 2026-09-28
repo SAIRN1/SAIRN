@@ -18862,6 +18862,64 @@
       "recurrence_open": "Nothing detects a mutation that cannot produce its labelled outcome. The harness reports SILENT identically for a blind suite and an inert mutation, and 74 other probes with MUTATIONS lists have never been audited for this shape. The three-SILENT-arm report this closes contained one instance of each, which is exactly why they were misdiagnosed as one cause."
     },
     {
+      "commit": "453193f36367",
+      "date": "2026-09-28",
+      "subject": "fix(claude): a REVOKED licence was served AND charged to the paying pool -- and the refusal half REVERSES a decision this repo had recorded",
+      "files": [
+        "api/claude-cost-controls.test.js",
+        "api/claude-licence-enforce.test.js",
+        "api/claude.js",
+        "docs/MASTER-PLAN.md",
+        "docs/traceability-matrix.md"
+      ],
+      "lines_added": 334,
+      "lines_removed": 17,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "api/claude.js derives authState 'inactive' at :309 -- lic.valid && !lic.active, a licence that EXISTS and has been REVOKED -- and two places then failed to use it. (1) THE BUDGET, LIVE IN BOTH AUTH MODES: :430 read `if (authState === 'valid' || authState === 'inactive')`, so a revoked tenant kept budgetApp as the LICENSED app and spent against the daily AI ceiling that app's PAYING tenants share, while rule 2 three lines above reserves anon:<app_id> for callers without a valid licence. The tenant sub-budget bounded the damage and did not remove it. (2) THE REFUSAL, LATENT: the enforce-mode refusal at :325 tested only 'absent' and 'invalid', so a revoked licence fell through and was served on the endpoint that spends the platform's own Anthropic key. OBSERVED LIVE before changing anything, against the real handler with the licence store and limiter stubbed: state=inactive mode=enforce, HTTP 200, limiter called with {appId:'stonedesk', tenantKey:'h-rev'}. `status` is this platform's ONLY licence revocation control -- license_keys carries no expiry this code enforces -- so being revoked is the entire mechanism for cutting off a cancelled, refunded or charged-back account, and the key is shipped to the browser and never rotated. SAME SHAPE api/bridge.js CLOSED ON 2026-09-26, one file over, on a write path; this is a spend path. THE REFUSAL HALF REVERSES A RECORDED DECISION: api/claude-cost-controls.test.js asserted 200 with the argument 'an inactive licence is a billing state and cutting off AI is not this endpoint's call -- the app's own licence gate already handles it'. Reversed on direct instruction, with the old text kept in full in that arm, because one clause of it is checkable and false: the endpoint is callable directly with the browser-held key, so the app's own gate is client-side for that path. Whether a revoked customer keeps AI is a commercial question and is recorded as one. Regression written first, 12 arms across both env states, 3 failing before the fix; each half ablated separately to prove they are independently held.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The budget branch and the refusal branch were written at different times for different purposes and neither commit introduced a disagreement on its own; the third state was already being derived when each was added. No single commit is the injection and the record does not guess at one."
+      },
+      "citation_note": "Not an absent dependency. Cited for the neighbouring principle: a third state was derived and then folded into the other two by omission -- the refusal treated revoked as not-refusable and the budget treated it as current, so one input got two contradictory readings in one request.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "A three-state classification consumed by two-state tests. `inactive` was derived correctly and then omitted from both lists that branch on the state -- the refusal listed absent/invalid, the budget listed valid/inactive, and no reader of either line could see the third state was unhandled from the line itself.",
+          "action_status": "done",
+          "action": "The refusal names 'inactive' explicitly with its own 403 and code, and the budget branch narrows to 'valid' alone so a revoked licence falls to the anonymous pool."
+        },
+        {
+          "kind": "detection",
+          "factor": "api/claude.js had three suites and none drove a revoked licence through the BUDGET path at all. The one arm that drove it through the refusal path asserted the defective behaviour as correct, with an argument, so the suite would have stayed green through any amount of review.",
+          "action_status": "done",
+          "action": "api/claude-licence-enforce.test.js drives both env states and captures the appId the limiter is called with, which is the observable the budget defect lives in."
+        },
+        {
+          "kind": "process",
+          "factor": "The decision not to refuse was recorded in a TEST ARM rather than anywhere a person looks when asking a commercial question. It read as settled to anybody who ran the suite and was invisible to everybody else.",
+          "action_status": "planned",
+          "action": "Raise the revoked-customer-AI question as an open-work row so the decision lives somewhere a non-engineer can find and reverse it, rather than only inside a green assertion."
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "The refusal half armed on an ENVIRONMENT VARIABLE, not on code. SAIRN_CLAUDE_AUTH_MODE defaults to observe, so the defect was invisible until somebody flipped a variable -- a change nobody reviews as code and which no diff would have shown.",
+          "action_status": "done",
+          "action": "Both env states are now driven explicitly by the suite, and an arm asserts the variable really switches per request rather than at module load, so neither mode can go untested again."
+        }
+      ],
+      "recurrence_open": "Nothing sweeps for a derived state that is computed and then omitted from the branches that consume it. Both defects here are that one shape, in one file, ten lines apart, and a grep for the state name would have found them in seconds -- but no check knows which states a handler derives. The wider half is also open: no tool enumerates behaviour that is gated behind an environment variable and therefore changes without a diff, which is how the refusal half stayed latent."
+    },
+    {
       "commit": "cf5e2c6bb520",
       "date": "2026-09-28",
       "subject": "fix(tooling): the fail-open scanner counted its own docstring -- eight of eighteen reported sites were prose",
