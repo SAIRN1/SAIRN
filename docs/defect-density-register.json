@@ -18430,7 +18430,7 @@
       "recurrence_open": "The restatement anchors are hand-written regexes over prose. A sentence rewritten for style will now be REPORTED rather than silently skipped, which is the important half -- but somebody still has to re-anchor it, and nothing measures how often that happens. The tooling-inventory and live-probe rows remain unchecked and are named rather than covered."
     },
     {
-      "commit": "0d9da6be3627",
+      "commit": "73c75db05dc2",
       "date": "2026-09-28",
       "subject": "fix(control): the fact-sheet probe asserted the REAL sheet was clean, so it was red on main permanently",
       "files": [
