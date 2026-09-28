@@ -17222,7 +17222,7 @@
       "recurrence_open": "THE GENERAL SHAPE IS NOT CLOSED, only this instance. Any checker whose subject is a literal name -- a field, a string anchor, an identifier, a rule id -- can be silenced by its own regression test or by the document describing the defect, and nothing sweeps for that. tools/sabotage_control_check.py measures whether controls verify their own sabotage; nothing measures whether a checker's evidence universe includes the prose that discusses its findings. Also open: the .md exclusion means a field defined only in a markdown spec reads as a ghost, and no arm asserts that trade is still the right one; and the scan's ~90s runtime is the reason it is not in the report-only registry, so nothing runs it on a cadence at all -- it fires when a human asks."
     },
     {
-      "commit": "27211ce82d80",
+      "commit": "3752c6cd1bcf",
       "date": "2026-09-27",
       "subject": "fix(session-lock): the SessionStart warning had no expiry and nothing retracted it, so a true statement kept reading as fact after it stopped being one",
       "files": [
@@ -17280,7 +17280,7 @@
       "recurrence_open": "THE CLASS IS WIDE OPEN AND ONLY ONE INSTANCE IS CLOSED. Every SessionStart hook on this platform emits additionalContext once into a context window that cannot be revised -- the dispatch state, the active-claims list and the shared status registry all arrive that way, and all three are snapshots of things that change within the hour. Only the lock now carries an as-of, a status verb and a retraction. The other three do not, and a session reading a two-hour-old claims list as current is the same defect with a different subject."
     },
     {
-      "commit": "362a874e0db7",
+      "commit": "bbe7b7f3b380",
       "date": "2026-09-27",
       "subject": "fix(tooling): the anchoring ratchet CRASHED on its own OK path -- a %d with no argument, committed one commit ago",
       "files": [
@@ -17331,7 +17331,7 @@
       "recurrence_open": "OPEN: no tool here is required to drive its own exit paths, and the PASS path is the least exercised during authoring because the author is watching it fail. tools/report_only_checks.py had the same class in its --list KeyError. A convention that every new checker prints each of its exit codes once in its own probe would close it and does not exist."
     },
     {
-      "commit": "a15cdca20d7b",
+      "commit": "eb8176babc5b",
       "date": "2026-09-27",
       "subject": "fix(tooling): 78 tools derived their repo root FROM unanchored git discovery -- on a machine where that never fails, it just answers wrongly",
       "files": [
@@ -17465,7 +17465,7 @@
       "recurrence_open": "PARTLY OPEN AND MEASURED: 27 unanchored call sites remain plus 33 WEAK ones that pass a cwd nobody derived from __file__, so cwd=os.getcwd() still counts as weak and is not safe. The remaining 27 are one-off git show / git fetch / git clone calls and generic git() wrappers, each needing its own judgement rather than a pattern. The ratchet holds the floor; it does not close the gap. The underlying condition -- a git repository at the home directory with stale tool copies beside it -- is untouched and is Michael's to decide on."
     },
     {
-      "commit": "7ba60c97e741",
+      "commit": "1dfed7340f8b",
       "date": "2026-09-27",
       "subject": "fix(tooling): the role-gate screen could not see a role check written as a loop, so real passing arms read as driven-as=owner",
       "files": [
@@ -17524,7 +17524,7 @@
       "recurrence_open": "THE CLASS IS OPEN. This tool is still blind to a THIRD form of driving a role -- a helper taking the role as an argument, a fixture table, a parameterised runner -- and the module says so: the static pass is a SCREEN and only --ablate is a verdict. More generally every checker whose subject is a source SHAPE inherits this, and the failure direction here was the silent one: a false negative that retires the demand for work genuinely missing elsewhere. Nothing yet compares any checker's verdict against ground truth on a cadence."
     },
     {
-      "commit": "d5b5e3b65e4e",
+      "commit": "ad0a00a9cf78",
       "date": "2026-09-27",
       "subject": "fix(methodology): my conflict pre-flight duplicated an existing push gate, and the sweep for the hazard its probe found says 105 git calls can answer about the wrong repository",
       "files": [
@@ -17585,7 +17585,7 @@
       "recurrence_open": "OPEN AND MECHANICAL: nothing compares a newly added checker against docs/TOOLING-INVENTORY.md, so the next duplicate will be caught the way this one was -- by somebody happening to grep. The inventory is generated and complete, which is exactly what makes the check cheap to build, and it does not exist."
     },
     {
-      "commit": "6e85a6ebc540",
+      "commit": "987aaffc47bb",
       "date": "2026-09-27",
       "subject": "fix(preflight): delegating over the whole working tree blew the Windows argv limit -- the tool failed closed and was still unusable",
       "files": [
