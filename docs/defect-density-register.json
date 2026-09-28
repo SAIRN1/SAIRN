@@ -16554,6 +16554,79 @@
       "recurrence_open": "THE CHANGE ORDER'S COST STILL HAS NOWHERE TO LIVE. Until a cost field exists, every job with an accepted CO reads as a refusal rather than a number -- correct, and not the same as working. Nothing re-forecasts automatically and nothing prompts for it. The server module's cost_to_cost branch remains DORMANT: no caller supplies costs, so the corrected behaviour there is proven by arms and has never run on real input, and portfolio() cannot reach it at all."
     },
     {
+      "commit": "26e72a905b50",
+      "date": "2026-09-27",
+      "subject": "feat(tooling): a live probe that writes must say where the mess goes -- guard in the code path, not a convention in a SQL comment",
+      "files": [
+        "docs/2026-09-28-verification-residue.md",
+        "docs/MASTER-PLAN.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/tier-a-reviews.json",
+        "docs/traceability-matrix.md",
+        "sql/audit_license_seed_mech_law_2026-09-28.sql",
+        "sql/zz_probe_residue_delete_2026-09-28.sql",
+        "tests/run_gate_caller_impact_probe.py",
+        "tests/run_live_probe_residue_probe.py",
+        "tools/alf_facility_role_gate_live_probe.py",
+        "tools/audit_licence.py",
+        "tools/law_billing_code_trim_live_probe.py",
+        "tools/live_probe_residue_audit.py",
+        "tools/load_compliance_seed.py",
+        "tools/load_deadline_seed.py",
+        "tools/report_only_checks.py",
+        "tools/rf_claim_gate_live_probe.py",
+        "tools/rf_roundtrip_probe.py",
+        "tools/sc_tier_a_write_gate_live_probe.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 1085,
+      "lines_removed": 21,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "A live probe that WRITES had nothing preventing it from writing to a demo-facing licence, and the platform had already decided it should not. sql/stonedesk_recovery_admin_seed.sql states the rule -- \"THE FIX IS THE LICENCE, NOT THE PIN\" -- and SAIRNroofing applied it on 2026-09-02 by minting RF-AUDIT-2026; two roofing probes have used it correctly since. Nothing made the other writing probes follow, because the rule lived in a comment in a SQL file rather than anywhere a writing probe would meet it. The consequence became concrete on 2026-09-28: verifying that api/legal-deadlines.js add_rule strips forged identity fields REQUIRES a write, because what an endpoint STORES cannot be read back any other way, so one probe rule was written to LAW-TEST-2026 -- and DELETE was revoked platform-wide on law_deadline_rules on 2026-08-25, so that row cannot be removed by the API (no delete action exists), by service_role (no grant), or by the session that created it. It needs a human in the Supabase editor. Enumerated afterwards: 44 of 818 candidate files address the live host and SEVEN send a write action; tools/law_billing_code_trim_live_probe.py documented its own licence as \"demo row: LAW-PINNACLE-2026\" and generates a new id per run, so its residue ACCUMULATES rather than being overwritten, and tools/sc_tier_a_write_gate_live_probe.py drives write, setup, set_active AND delete against Tier A SAIRNcode resources with no audit licence in existence. Fixed by moving the rule into the code path: tools/audit_licence.py exits 2 COULD NOT RUN on a non-audit licence and also on NO licence, tools/live_probe_residue_audit.py requires every writing probe to declare its class and its residue path, and the two loaders that must write to real licences are declared LOADER rather than inferred, because gating them would break seeding on 48 jurisdictions.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the convention has never been enforced by anything, so there is no commit that removed an enforcement. Its first WRITTEN statement is sql/stonedesk_recovery_admin_seed.sql and its first APPLICATION is the roofing audit licence on 2026-09-02; neither is the birth of the defect, which is the absence of a mechanism rather than a change to one."
+      },
+      "citation_note": "1.1 is the closest: a rule that reads as present and enforces nothing, with nothing announcing it. The difference is that this convention never enforced anything at any point -- it was written as prose in a SQL header and applied by hand once. Arguable rather than clean, and the note says which half it carries.",
+      "contributing_factors": [
+        {
+          "factor": "The rule lived in a SQL file's comment rather than in the code path that writes. A convention enforced by prose holds for whoever read the prose, and two of seven writing probes had.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "tools/audit_licence.py refuses a non-audit licence in the code path, exiting 2 COULD NOT RUN. Wired into all five VERIFICATION probes."
+        },
+        {
+          "factor": "Nothing enumerated which live probes write. The question 'what does verification leave behind' had never been asked as a measurement, so the answer was discovered by creating an un-deletable row.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tools/live_probe_residue_audit.py prints checked/universe and requires a declared class and residue path per writing probe. Control pair with five directions including the one that matters most, that a compliant probe stays silent."
+        },
+        {
+          "factor": "DELETE is revoked platform-wide on the reference tables, so a probe row on one of them is not recoverable by any automated path. That revoke is correct and it removes the usual escape hatch of cleaning up afterwards.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "Nothing to fix -- the revoke should stay. Recorded because it is why the remedy had to be the LICENCE rather than a cleanup step: on these tables there is no cleanup step available."
+        },
+        {
+          "factor": "No audit licence exists for SAIRNmechanical, SAIRNlaw or SAIRNcode, and licence provisioning has always been Michael-only -- license_keys is service-role for read and there is no self-service key generation anywhere in the codebase.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "sql/audit_license_seed_mech_law_2026-09-28.sql mints MECH-AUDIT-2026 and LAW-AUDIT-2026 and is waiting on a human. SC-AUDIT-2026 is named as outstanding in docs/2026-09-28-verification-residue.md; until it exists sc_tier_a_write_gate_live_probe.py is deliberately out of service."
+        }
+      ],
+      "recurrence_open": "THE RESIDUE ROW IS STILL THERE. sql/zz_probe_residue_delete_2026-09-28.sql removes it and needs a human in the SQL editor; until then LAW-TEST-2026 carries a rule under jurisdiction zz-probe. THREE PROBES ARE NOW OUT OF SERVICE BY DESIGN because the licences they need do not exist -- sc_tier_a_write_gate_live_probe.py most sharply -- so the guard has traded a residue risk for a coverage gap, and that trade is stated rather than hidden. PRESENCE OF THE GUARD IS NECESSARY AND NOT SUFFICIENT: the audit is a source scan and cannot tell whether require_audit_licence is called on the path that actually writes, so a probe could import it and still write unguarded. The allowlist takes a sentence and no authority beyond that, which is a deliberate hole copied from --rule not-citable; neither of those precedents writes to a customer licence. Obligation 3 of the three -- a writing probe must FAIL ITS OWN RUN when residue remains -- is NOT enforced by anything: the audit checks that a residue path is DECLARED and exists, not that the probe re-reads the licence afterwards and goes red. And a probe outside this repo is invisible."
+    },
+    {
       "commit": "5c03c0ae7d58",
       "date": "2026-09-27",
       "subject": "feat(sairnfreedom): the three controls every Ohio post theft went around -- and a stale threshold that printed a shortfall nobody owed",
@@ -16833,70 +16906,6 @@
         }
       ],
       "recurrence_open": "Three things this change does NOT close. (1) decryptSecret() still returns null for both a failed decrypt and a value that was never stored, so the next key-handling defect in this path will surface as \"MFA is not set up\" rather than as an error. (2) sql/legacy_ciphertext_census.sql is UNRUN and its legacy-vs-v2 discriminator (the `v2.` prefix) is unverified against real rows -- and its count now gates a destructive step, so a wrong discriminator either blocks step 4 for ever or clears PREVIOUS while legacy rows remain. (3) SD_ENCRYPTION_KEY is production-only while SD_AUTH_SECRET and SUPABASE_URL are preview+production; IF preview points at the same Supabase project, a preview deployment is a v2-blind reader and a legacy writer against production rows. Whether it does is one comparison of two env values nobody has made, and it is not asserted."
-    },
-    {
-      "commit": "bb840eeccb3c",
-      "date": "2026-09-27",
-      "subject": "fix(tests): the nine label-claims-universal arms, each replaced by the comparison its own label was making",
-      "files": [
-        "docs/SAIRN-OPEN-WORK-INDEX.md",
-        "docs/traceability-matrix.md",
-        "tests/push_gate/check9_probe.py",
-        "tests/push_gate/refspec_and_override_probe.py",
-        "tests/reachability/resource_demand_probe.py",
-        "tests/run_assertion_label_shape_probe.py",
-        "tests/run_assurance_case_probe.py",
-        "tests/run_checker_confidence_probe.py",
-        "tests/run_register_feed_gate_probe.py",
-        "tests/run_rotation_blast_radius_probe.py",
-        "tests/run_testability_gate_probe.py",
-        "tools/assertion_label_shape_check.py"
-      ],
-      "lines_added": 293,
-      "lines_removed": 31,
-      "app": "PLATFORM",
-      "layer": "test",
-      "severity": "high",
-      "detection_method": "static-checker",
-      "summary": "Nine test arms across eight suites labelled an EXHAUSTIVE claim and compared ONE-SIDEDLY, found by tools/assertion_label_shape_check.py. In each the floor was numerically true and the label was about a population, so the failure the arm names could not move it. 'every promoted checker is scored' was backed by a floor of 20 against a registry of 62, so a checker DISAPPEARING from the score left 61 and stayed green. 'EVERY gate is fed from the capture' was backed by a count of three with four gates, so a fifth gate reading the raw stream -- the exact defect the arm above it prevents -- would leave four replays, clear the floor, and silently eat stdin from every gate after it. 'exactly one object is emitted, never two' was backed by a less-than-or-equal-to-one, WHICH PASSES ON ZERO, so the one outcome the label rules out was the one it admitted. 'fixtures of EVERY verdict' was backed by a floor of four with five verdicts, making the arm above it vacuous for whichever verdict lost its fixture. 'EVERY revision is EXPLAINED' was a count of two joined by an or-clause satisfied by the first transition for ever. TWO WERE NOT FLOOR PROBLEMS AT ALL: 'every committed seed json is present in the export' ran its SUBSET BACKWARDS and against the WORKING TREE when the function it tests reproduces a COMMIT, so an export that silently dropped a seed satisfied it perfectly; and 'the context that bounds EVERY LEAF' was a floor on a DOCUMENT-level field that does not range over leaves at all. All nine now compare against a derived denominator. CONFIRMED went from 12 to 3, and two suites went from red to fully green.",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": "assertion_label_shape_check.py",
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "Nine arms written across many months by several sessions; no single injection commit, and attributing one would put a wrong sha in the lag figure."
-      },
-      "contributing_factors": [
-        {
-          "factor": "EVERY ONE OF THE NINE WAS A ONE-SIDED COMPARISON UNDER A UNIVERSAL LABEL, and a count cannot see a missing member. A floor of 20 against a registry of 62 stayed green while a checker disappeared from the score; a floor of three gate lines with four gates stayed green while a fifth gate ate stdin; a floor of four verdicts with five verdicts stayed green while a verdict lost its fixture. In each case the floor was numerically true and the label was about a population.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Each arm now compares against a DERIVED denominator -- the registry, the hook's own gate lines, the gate's own return literals, git ls-tree at the commit, the criteria version's revision number -- so the arm goes red when the population changes rather than when a number does."
-        },
-        {
-          "factor": "TWO OF THE NINE WERE NOT FLOOR PROBLEMS AT ALL AND WOULD HAVE BEEN MIS-FIXED BY TIGHTENING THE NUMBER. The refspec arm's subset ran BACKWARDS and against the WRONG POPULATION (the working tree, when the function reproduces a commit), and the assurance-case arm claimed a per-leaf bound about a field that is document-level and does not range over leaves. A sweep that only tightened comparisons would have left both wrong and looking fixed.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Both were read to the source before editing. The refspec arm now compares MISSING and EXTRA sets against git's own list at the same commit; the assurance arm is split into the not-empty check it really was plus the per-leaf claim the label implied and nothing tested."
-        },
-        {
-          "factor": "The repo's check() helper IS NOT ONE IDIOM and it broke two of the corrections. tests/ carries check(name, cond, detail), check(label, actual, expected), check(label, ok, detail) and check(name, got, want). Two fixes were written in the wrong local form and every arm failed comparing a detail string to True -- the same signature-variance hazard the checker that FOUND these arms is deliberately immune to, reproduced by hand in its own follow-up.",
-          "kind": "process",
-          "action_status": "planned",
-          "action": "NOT CLOSED. Each corrected arm is now written in its file's own form with a comment saying which form that is, but nothing checks it -- a suite could grow a fourth signature and a future fix would fail the same way. A checker comparing each file's own check() signature against the call shapes in that file is the mechanical fix and is named rather than built."
-        },
-        {
-          "factor": "ONE FIX PUNISHED CORRECT CODE AND ONE EXISTING ARM ALREADY DID. The first assurance-case correction compared ALL declared leaves against the JSON and went red against a tool behaving exactly as designed -- evaluate() emits an empty evidence list for an undeveloped subgoal. And arm 3b of the testability probe tested endswith .py under the label 'a BARE tool FILENAME', so a sentence ending in a filename made it red while the extractor was correct.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "The assurance universe is now the leaves of DEVELOPED subgoals, with a third arm pinning that a leaf can only vanish WITH its subgoal marked undeveloped. 3b now requires the whole cell to be one filename-shaped token, and the looser reading is kept as a printed ADVISORY count rather than deleted, because a number nobody prints is a number nobody can notice moving."
-        }
-      ],
-      "recurrence_open": "The SIGNATURE-VARIANCE half is not closed: nothing compares a suite own check() signature against the call shapes in the same file, so a future correction can still be written in the wrong local form and fail comparing a detail string to True. It happened twice inside this one change."
     },
     {
       "commit": "69518f0e0122",
@@ -17365,6 +17374,70 @@
         }
       ],
       "recurrence_open": "OPEN AS A SHAPE, NOT AS AN INSTANCE. Wherever a resource has BOTH a real column and a stored blob that can carry the same key, the in-process write arm is structurally incapable of seeing a read-path override -- it asserts the outbound body and the defect is inbound. api/sd-data.js has many such resources (every trail with recorded_by, plus entry_id/resident_id/created_at across six append-only reads), and NOTHING sweeps for a mapper that spreads its blob after its columns. That sweep does not exist and is the real corrective action."
+    },
+    {
+      "commit": "bb840eeccb3c",
+      "date": "2026-09-27",
+      "subject": "fix(tests): the nine label-claims-universal arms, each replaced by the comparison its own label was making",
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "tests/push_gate/check9_probe.py",
+        "tests/push_gate/refspec_and_override_probe.py",
+        "tests/reachability/resource_demand_probe.py",
+        "tests/run_assertion_label_shape_probe.py",
+        "tests/run_assurance_case_probe.py",
+        "tests/run_checker_confidence_probe.py",
+        "tests/run_register_feed_gate_probe.py",
+        "tests/run_rotation_blast_radius_probe.py",
+        "tests/run_testability_gate_probe.py",
+        "tools/assertion_label_shape_check.py"
+      ],
+      "lines_added": 293,
+      "lines_removed": 31,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "Nine test arms across eight suites labelled an EXHAUSTIVE claim and compared ONE-SIDEDLY, found by tools/assertion_label_shape_check.py. In each the floor was numerically true and the label was about a population, so the failure the arm names could not move it. 'every promoted checker is scored' was backed by a floor of 20 against a registry of 62, so a checker DISAPPEARING from the score left 61 and stayed green. 'EVERY gate is fed from the capture' was backed by a count of three with four gates, so a fifth gate reading the raw stream -- the exact defect the arm above it prevents -- would leave four replays, clear the floor, and silently eat stdin from every gate after it. 'exactly one object is emitted, never two' was backed by a less-than-or-equal-to-one, WHICH PASSES ON ZERO, so the one outcome the label rules out was the one it admitted. 'fixtures of EVERY verdict' was backed by a floor of four with five verdicts, making the arm above it vacuous for whichever verdict lost its fixture. 'EVERY revision is EXPLAINED' was a count of two joined by an or-clause satisfied by the first transition for ever. TWO WERE NOT FLOOR PROBLEMS AT ALL: 'every committed seed json is present in the export' ran its SUBSET BACKWARDS and against the WORKING TREE when the function it tests reproduces a COMMIT, so an export that silently dropped a seed satisfied it perfectly; and 'the context that bounds EVERY LEAF' was a floor on a DOCUMENT-level field that does not range over leaves at all. All nine now compare against a derived denominator. CONFIRMED went from 12 to 3, and two suites went from red to fully green.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "assertion_label_shape_check.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Nine arms written across many months by several sessions; no single injection commit, and attributing one would put a wrong sha in the lag figure."
+      },
+      "contributing_factors": [
+        {
+          "factor": "EVERY ONE OF THE NINE WAS A ONE-SIDED COMPARISON UNDER A UNIVERSAL LABEL, and a count cannot see a missing member. A floor of 20 against a registry of 62 stayed green while a checker disappeared from the score; a floor of three gate lines with four gates stayed green while a fifth gate ate stdin; a floor of four verdicts with five verdicts stayed green while a verdict lost its fixture. In each case the floor was numerically true and the label was about a population.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Each arm now compares against a DERIVED denominator -- the registry, the hook's own gate lines, the gate's own return literals, git ls-tree at the commit, the criteria version's revision number -- so the arm goes red when the population changes rather than when a number does."
+        },
+        {
+          "factor": "TWO OF THE NINE WERE NOT FLOOR PROBLEMS AT ALL AND WOULD HAVE BEEN MIS-FIXED BY TIGHTENING THE NUMBER. The refspec arm's subset ran BACKWARDS and against the WRONG POPULATION (the working tree, when the function reproduces a commit), and the assurance-case arm claimed a per-leaf bound about a field that is document-level and does not range over leaves. A sweep that only tightened comparisons would have left both wrong and looking fixed.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Both were read to the source before editing. The refspec arm now compares MISSING and EXTRA sets against git's own list at the same commit; the assurance arm is split into the not-empty check it really was plus the per-leaf claim the label implied and nothing tested."
+        },
+        {
+          "factor": "The repo's check() helper IS NOT ONE IDIOM and it broke two of the corrections. tests/ carries check(name, cond, detail), check(label, actual, expected), check(label, ok, detail) and check(name, got, want). Two fixes were written in the wrong local form and every arm failed comparing a detail string to True -- the same signature-variance hazard the checker that FOUND these arms is deliberately immune to, reproduced by hand in its own follow-up.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "NOT CLOSED. Each corrected arm is now written in its file's own form with a comment saying which form that is, but nothing checks it -- a suite could grow a fourth signature and a future fix would fail the same way. A checker comparing each file's own check() signature against the call shapes in that file is the mechanical fix and is named rather than built."
+        },
+        {
+          "factor": "ONE FIX PUNISHED CORRECT CODE AND ONE EXISTING ARM ALREADY DID. The first assurance-case correction compared ALL declared leaves against the JSON and went red against a tool behaving exactly as designed -- evaluate() emits an empty evidence list for an undeveloped subgoal. And arm 3b of the testability probe tested endswith .py under the label 'a BARE tool FILENAME', so a sentence ending in a filename made it red while the extractor was correct.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The assurance universe is now the leaves of DEVELOPED subgoals, with a third arm pinning that a leaf can only vanish WITH its subgoal marked undeveloped. 3b now requires the whole cell to be one filename-shaped token, and the looser reading is kept as a printed ADVISORY count rather than deleted, because a number nobody prints is a number nobody can notice moving."
+        }
+      ],
+      "recurrence_open": "The SIGNATURE-VARIANCE half is not closed: nothing compares a suite own check() signature against the call shapes in the same file, so a future correction can still be written in the wrong local form and fail comparing a detail string to True. It happened twice inside this one change."
     },
     {
       "commit": "c680a4c1dbca",
