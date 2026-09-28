@@ -16441,6 +16441,61 @@
       "recurrence_open": "No check exists for the general shape: a probe fixture carrying a LITERAL session name while the code under test resolves that same name from the clone. A grep for quoted clone names inside tests/ is cheap and has not been run, and the four build-agent names plus the hover instances are a small closed vocabulary that a checker could read from .claude/claims/ rather than hardcode -- which is the same mistake one shelf over."
     },
     {
+      "commit": "119e64e8a771",
+      "date": "2026-09-27",
+      "subject": "fix(gate): the SQL preflight read table names out of PROSE, and swallowed 140 real lines of a schema file doing it",
+      "files": [
+        "tests/run_sql_preflight_literal_probe.py",
+        "tools/sairn_sql_preflight.py"
+      ],
+      "lines_added": 304,
+      "lines_removed": 13,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "probe-control",
+      "summary": "tools/sairn_sql_preflight.py's strip_noise() removed comments and string literals in FOUR SEPARATE regex passes -- block comments, then line comments, then dollar-quoting, then single-quoted literals -- each run over the whole file with no knowledge of what the others had consumed. So a `--` INSIDE A STRING LITERAL was blanked as a line comment, TAKING THE STRING'S CLOSING QUOTE WITH IT, and the literal matcher was desynchronised for the remainder of the file. Two consequences, and the second is the serious one. LOUD: the gate refused a push with MISSING_TABLE `the`, a table that exists only inside an English sentence in a column comment. SILENT: text after the broken literal is parsed as code and real SQL can land inside what the scanner believes is a string. Measured across all 256 sql/ files under both the old and new stripper, exactly one file's extracted table set changed and it changed by GAINING a table: sql/sairn_circuit_breaker_schema.sql:54 is a comment string that BEGINS with `--`, and everything after it -- including the create-or-replace-function at :65 and its revoke/grant at :171-173, roughly 140 lines -- was invisible to the gate, which reported clean. This is a gate whose own stated argument is that a wrong column in a WHERE matches nothing and reports success.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tests/run_sql_preflight_literal_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "strip_noise() has had the multi-pass shape since the tool was written; the passes were added one at a time as new literal forms were met, so there is no single commit that introduced the desynchronisation -- each pass was correct in isolation and the defect is their composition."
+      },
+      "citation_note": "The gate reported CLEAN over 140 lines it had never parsed. COULD-NOT-SEE was folded into checked, which is the same collapse as folding could-not-run into passed.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "Four independent regex passes cannot model nesting or precedence between comment and literal syntax, because each one rewrites the whole file before the next one sees it. The order chosen (block, line, dollar, quote) makes a `--` inside a literal win over the literal, which is exactly backwards.",
+          "action": "Replaced with a single left-to-right scan: whichever opener comes first wins and consumes through its own terminator, and nothing else is examined until it closes.",
+          "action_status": "done"
+        },
+        {
+          "kind": "technical",
+          "factor": "Three further shapes the passes could not handle at all: Postgres block comments NEST (a non-greedy .*?\\*/ stops at the first close and leaves the outer comment's tail as code), $tag$ dollar quoting was only handled as bare $$, and a double-quoted IDENTIFIER was being blanked as if it were a literal even though it is the table name.",
+          "action": "All three handled explicitly in the scan; the quoted identifier is skipped over rather than blanked.",
+          "action_status": "done"
+        },
+        {
+          "kind": "detection",
+          "factor": "The tool had no control of its own. Its correctness was assumed from the fact that it produced findings, and a gate that produces findings looks like it is working whichever direction it is wrong in. Nothing fed it a file whose comments and literals contained the thing it searches for.",
+          "action": "tests/run_sql_preflight_literal_probe.py, 21 arms in both directions, written BEFORE the fix and reproducing it at 5 of 22 red. Every negative arm is paired with one asserting the real SQL beside it IS still found, so a stripper that blanked the whole file cannot pass.",
+          "action_status": "done"
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "The class is not specific to this tool. Any gate that searches source, SQL or prose finds its pattern inside a literal or a comment unless it removes them first, and the silent direction makes real code invisible rather than merely noisy.",
+          "action": "tools/text_gate_literal_sweep.py classifies every text-reading tool MASKED / BY-DESIGN / RAW with a ratchet, and carries an --empirical decoy harness which is the only thing that can promote a gate to CONFIRMED-SAFE. It reports how few gates have such a probe rather than publishing the masked count as a safety figure.",
+          "action_status": "done"
+        }
+      ],
+      "recurrence_open": "OPEN ACROSS THE PLATFORM AND NOW MEASURED: 82 of 157 text-reading tools match straight over file text with no literal masking and no decoy control (tools/text_gate_literal_sweep.py). RAW is not by itself a defect -- a marker scan anchored at column zero is correctly raw -- but only 2 of the 157 have an empirical decoy probe, so the other 155 are CLASSIFIED and not TESTED. The sweep itself demonstrated the difficulty on its first run by missing every precompiled regex and undercounting its own universe by 27 tools."
+    },
+    {
       "commit": "25d1c0009efb",
       "date": "2026-09-27",
       "subject": "fix(sairnbuild): the WIP schedule capped percent complete at 100% -- so a job losing money reported itself finished, and fully earned",
@@ -17008,6 +17063,68 @@
         }
       ],
       "recurrence_open": "OPEN AS A CLASS: no probe on this platform asserts anything about SCALE. Every arm in every control drives one file, one row, one path, because that is what makes a fixture readable -- so an argv limit, a query-string limit, a memory ceiling or a timeout is invisible to all of them. This is the same shape as the second-pass gap measured in tools/second_pass_coverage_scan.py one commit earlier: the first instance is exercised and the real operating condition is not."
+    },
+    {
+      "commit": "8435809a14c4",
+      "date": "2026-09-27",
+      "subject": "feat(tooling): before you narrow a gate, enumerate its callers -- and the first sweep found a live probe that has never sent a session",
+      "files": [
+        "docs/2026-09-28-gate-tightening-caller-impact.md",
+        "docs/MASTER-PLAN.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/traceability-matrix.md",
+        "tests/run_gate_caller_impact_probe.py",
+        "tools/alf_facility_role_gate_live_probe.py",
+        "tools/gate_caller_impact.py",
+        "tools/report_only_checks.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 565,
+      "lines_removed": 20,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "tools/alf_facility_role_gate_live_probe.py set the employee session as the header `X-Session-Token`. api/_lib/auth.js's tokenFromRequest() reads `req.headers['x-sd-auth']` and nothing else, so the token was never read: every request this probe has ever made against the deployed endpoint carried a licence key and NO session. Its entire subject is the alf_facility write ROLE GATE -- whether a caregiver can rewrite a facility profile including licensing_state, which selects the state rule set the facility's staffing and training compliance is measured against -- and with no session every role received the identical no-session refusal, so the role differentiation the file exists to demonstrate was never exercised. THE PROBE DID NOT PUBLISH A FALSE PASS, AND ITS OWN CONTROL IS THE REASON: it carries a `CONTROL -- management must still be ALLOWED` section, and with no session management earns 401 NO_SESSION rather than an allow, so the control could not pass and the probe reported UNVERIFIED -- the documented third state -- rather than a clean. The defect is therefore that a live role-gate probe has been non-functional since it was written, reporting UNVERIFIED for a reason nobody diagnosed, rather than that it certified a gate it never reached. Found by tools/gate_caller_impact.py, built in the same change to enumerate every caller of an action before its gate is narrowed. Fixed to `X-SD-Auth` with the account written at the line.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/gate_caller_impact.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the header name has been wrong since the probe was written; git log -S on X-Session-Token finds the file's creation, not a commit that changed a working spelling to a broken one."
+      },
+      "citation_note": "1.1 is exact on the consequence -- a check that reads as present and tests nothing, with nothing announcing it -- and slightly off on the cause, because this never worked rather than stopping. Cited with the note because the recognisable half is the one that matters to a reader: the file's output looked like a probe doing its job.",
+      "contributing_factors": [
+        {
+          "factor": "The session header name was invented rather than taken from the reader. tokenFromRequest() accepts exactly one header and the probe chose a different plausible spelling, which no type system, linter or test could catch because both are just strings in a dict.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Corrected to X-SD-Auth, with the reason and the consequence written at the assignment so a later edit does not re-invent a spelling."
+        },
+        {
+          "factor": "Nothing enumerated the callers of a gated action. The probe's own failure was one grep from visible and no tool asked the question, which is the same gap that would have broken seed loading on 48 jurisdictions the day before.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tools/gate_caller_impact.py names every caller of an action and whether it sends a session, with checked/universe printed and a control pair asserting both directions."
+        },
+        {
+          "factor": "A live probe reporting UNVERIFIED is a third state that is correct to print and easy to leave standing. Nobody diagnosed WHY it was unverified, so an honest refusal to conclude became a permanent one.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "Recorded rather than closed: nothing tracks how long a live probe has been reporting UNVERIFIED, and a third state nobody revisits is a gap wearing the right label. The candidate is a staleness view over live-probe verdicts, and it does not exist."
+        },
+        {
+          "factor": "The probe HAD a control, which is the only reason this is a non-functional probe rather than a published false clean.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Nothing to fix. Recorded because it is the strongest evidence on the platform for the control-pair convention: the same defect without a control would have certified a role gate that was never reached."
+        }
+      ],
+      "recurrence_open": "The probe is fixed but NOT RE-RUN in this change: it performs a real WRITE against alf_facility on the demo-facing ALF-TEST-2026 licence as its management control, and queue item 8 exists precisely because automated runs leave residue on demo licences. So whether the role gate actually holds live is STILL UNVERIFIED -- the header fix makes the probe capable of answering, and nobody has asked it yet. Also open: no other live probe was audited for the same wrong-header shape beyond what gate_caller_impact.py's session-header detection covers, and that detection answers \"sends a session header\" rather than \"sends the RIGHT one\" -- a third misspelling would read as SESSION. And nothing tracks how long a live probe has been reporting UNVERIFIED."
     },
     {
       "commit": "84eb61ead156",
@@ -18003,68 +18120,6 @@
         }
       ],
       "recurrence_open": "NO CLIENT SENDS retrigger_events AT ALL -- sairnlaw.html has no caller, so this whole path is reachable only by a direct API consumer and the input contract is still documented nowhere outside the suite. The endpoint does not validate the element shape before handing it to the engine, so the engine is the only thing refusing. And the wider class is untouched: a field written somewhere and read on the WRONG object clears the ghost scan's third condition by construction, which is the member of this family that has now bitten twice. Also open: `dispositions.sort()` compares raw strings, which is correct for ISO dates and is now guaranteed only because everything non-ISO refuses upstream -- nothing asserts that dependency."
-    },
-    {
-      "commit": "8435809a14c4",
-      "date": "2026-09-27",
-      "subject": "feat(tooling): before you narrow a gate, enumerate its callers -- and the first sweep found a live probe that has never sent a session",
-      "files": [
-        "docs/2026-09-28-gate-tightening-caller-impact.md",
-        "docs/MASTER-PLAN.md",
-        "docs/TOOLING-INVENTORY.md",
-        "docs/traceability-matrix.md",
-        "tests/run_gate_caller_impact_probe.py",
-        "tools/alf_facility_role_gate_live_probe.py",
-        "tools/gate_caller_impact.py",
-        "tools/report_only_checks.py",
-        "tools/tooling_inventory.py"
-      ],
-      "lines_added": 565,
-      "lines_removed": 20,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "static-checker",
-      "summary": "tools/alf_facility_role_gate_live_probe.py set the employee session as the header `X-Session-Token`. api/_lib/auth.js's tokenFromRequest() reads `req.headers['x-sd-auth']` and nothing else, so the token was never read: every request this probe has ever made against the deployed endpoint carried a licence key and NO session. Its entire subject is the alf_facility write ROLE GATE -- whether a caregiver can rewrite a facility profile including licensing_state, which selects the state rule set the facility's staffing and training compliance is measured against -- and with no session every role received the identical no-session refusal, so the role differentiation the file exists to demonstrate was never exercised. THE PROBE DID NOT PUBLISH A FALSE PASS, AND ITS OWN CONTROL IS THE REASON: it carries a `CONTROL -- management must still be ALLOWED` section, and with no session management earns 401 NO_SESSION rather than an allow, so the control could not pass and the probe reported UNVERIFIED -- the documented third state -- rather than a clean. The defect is therefore that a live role-gate probe has been non-functional since it was written, reporting UNVERIFIED for a reason nobody diagnosed, rather than that it certified a gate it never reached. Found by tools/gate_caller_impact.py, built in the same change to enumerate every caller of an action before its gate is narrowed. Fixed to `X-SD-Auth` with the account written at the line.",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": "tools/gate_caller_impact.py",
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "the header name has been wrong since the probe was written; git log -S on X-Session-Token finds the file's creation, not a commit that changed a working spelling to a broken one."
-      },
-      "citation_note": "1.1 is exact on the consequence -- a check that reads as present and tests nothing, with nothing announcing it -- and slightly off on the cause, because this never worked rather than stopping. Cited with the note because the recognisable half is the one that matters to a reader: the file's output looked like a probe doing its job.",
-      "contributing_factors": [
-        {
-          "factor": "The session header name was invented rather than taken from the reader. tokenFromRequest() accepts exactly one header and the probe chose a different plausible spelling, which no type system, linter or test could catch because both are just strings in a dict.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Corrected to X-SD-Auth, with the reason and the consequence written at the assignment so a later edit does not re-invent a spelling."
-        },
-        {
-          "factor": "Nothing enumerated the callers of a gated action. The probe's own failure was one grep from visible and no tool asked the question, which is the same gap that would have broken seed loading on 48 jurisdictions the day before.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "tools/gate_caller_impact.py names every caller of an action and whether it sends a session, with checked/universe printed and a control pair asserting both directions."
-        },
-        {
-          "factor": "A live probe reporting UNVERIFIED is a third state that is correct to print and easy to leave standing. Nobody diagnosed WHY it was unverified, so an honest refusal to conclude became a permanent one.",
-          "kind": "process",
-          "action_status": "planned",
-          "action": "Recorded rather than closed: nothing tracks how long a live probe has been reporting UNVERIFIED, and a third state nobody revisits is a gap wearing the right label. The candidate is a staleness view over live-probe verdicts, and it does not exist."
-        },
-        {
-          "factor": "The probe HAD a control, which is the only reason this is a non-functional probe rather than a published false clean.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "Nothing to fix. Recorded because it is the strongest evidence on the platform for the control-pair convention: the same defect without a control would have certified a role gate that was never reached."
-        }
-      ],
-      "recurrence_open": "The probe is fixed but NOT RE-RUN in this change: it performs a real WRITE against alf_facility on the demo-facing ALF-TEST-2026 licence as its management control, and queue item 8 exists precisely because automated runs leave residue on demo licences. So whether the role gate actually holds live is STILL UNVERIFIED -- the header fix makes the probe capable of answering, and nobody has asked it yet. Also open: no other live probe was audited for the same wrong-header shape beyond what gate_caller_impact.py's session-header detection covers, and that detection answers \"sends a session header\" rather than \"sends the RIGHT one\" -- a third misspelling would read as SESSION. And nothing tracks how long a live probe has been reporting UNVERIFIED."
     }
   ],
   "started": "2026-09-09",
