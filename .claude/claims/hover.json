@@ -230,6 +230,17 @@
       "status": "released",
       "released_at": "2026-09-28T20:27:08Z",
       "files": null
+    },
+    {
+      "id": "hover-1790627368",
+      "session": "hover",
+      "subject": "hover",
+      "task": "hover audit-log housekeeping round three: cross-check a sibling instance's earlier note on a supplier resource against my own read of the same file; sample the cold pool once undirected; draw the next weighted rotation pick. FILES: .claude/skills/sairn-hover-auditor/",
+      "claimed_at": "2026-09-28T20:29:28Z",
+      "claimed_at_epoch": 1790627368.904651,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
