@@ -2087,10 +2087,38 @@ module.exports = async (req, res) => {
       // still report "unknown, and unknown is not carried" for every
       // requirement for ever, because the column it reads was never fetched.
       const INS_DATE_RE = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
-      const insCols = 'policy_key,kind,carrier,policy_no,effective_on,expires_on,' +
+      // ── `policy_no` IS NOT FETCHED FOR `readiness` (2026-09-27) ──────────
+      // docs/CRITICALITY-TIERS.md section 2 records authentication-shaped
+      // material as a gap NEITHER AXIS EXPRESSES, with this exact field as the
+      // live example, and says what the remedy is: *"the fix is not to raise a
+      // row's axis, it is to keep the field out of reads that do not need it."*
+      // This is that fix, on the one read that does not need it.
+      //
+      // MEASURED, NOT ASSUMED: `coverageReadiness` returns per-requirement
+      // lines carrying `policy_id`, never `policy_no` -- so the readiness
+      // response has never contained it. The column was fetched and discarded.
+      //
+      // WHY IT IS WORTH THE TWO LINES. A policy number joined to a carrier is
+      // what a fraudulent claim or a call to the insurer needs; it is not
+      // commercial sensitivity, which is why the row is correctly B on
+      // confidentiality and the axis was the wrong instrument. `readiness` and
+      // `read` are both open to ANY verified sairnmechanical session -- only
+      // `write` is management-gated -- so this narrows what the broader of the
+      // two surfaces carries, without changing a single answer it gives.
+      //
+      // STILL OPEN AND DELIBERATELY NOT DECIDED HERE: `read` returns the RAW
+      // rows, `policy_no` included, to every authenticated role including a
+      // technician, because sairnmechanical.html:3019 renders it in the
+      // insurance table. Whether a technician should see the company's policy
+      // numbers is a product decision, recorded in
+      // docs/2026-09-27-authentication-shaped-fields.md rather than taken.
+      const INS_SHARED_COLS = 'policy_key,kind,carrier,effective_on,expires_on,' +
         'each_occurrence,aggregate_limit,certificate_holder,' +
         'additional_insured,waiver_of_subrogation,primary_noncontributory,' +
         'per_project_aggregate,status,notes,recorded_by,created_at,updated_at';
+      const insCols = action === 'read'
+        ? 'policy_no,' + INS_SHARED_COLS
+        : INS_SHARED_COLS;
 
       // The stored row shape -> the engine's policy shape. One place, so read
       // and readiness cannot drift into describing the same row differently.

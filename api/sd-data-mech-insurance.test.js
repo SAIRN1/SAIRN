@@ -273,6 +273,51 @@ async function main() {
     assert.strictEqual(res.body.error.code, 'NO_TODAY');
   });
 
+  // ── AUTHENTICATION-SHAPED MATERIAL IS NOT FETCHED WHERE IT IS NOT USED ────
+  // docs/CRITICALITY-TIERS.md section 2 names `policy_no` as the live example
+  // of material NEITHER AXIS EXPRESSES -- what a fraudulent claim or a call to
+  // the carrier needs, rather than commercial sensitivity -- and states the
+  // remedy: keep the field out of reads that do not need it. `readiness`
+  // returns per-requirement lines carrying `policy_id` and never `policy_no`,
+  // so it was fetching the column and discarding it.
+  //
+  // THESE ARMS EXIST BECAUSE NOTHING ELSE WOULD NOTICE. Every other arm here
+  // asserts an ANSWER, and the answers are identical either way -- which is
+  // exactly why the column could be dropped safely, and exactly why a later
+  // edit could put it back with no arm turning red.
+  await test('readiness does NOT fetch policy_no -- it is never in the answer, '
+    + 'and it is what a call to the carrier needs', async () => {
+      const { handler, calls } = loadHandler({ rows: [] });
+      await handler(mockReq('readiness', { today: TODAY, requirements: [] }), mockRes());
+      const url = calls.find(c => c.method === 'GET').url;
+      assert.ok(url.indexOf('policy_no') === -1,
+        'readiness still fetches policy_no: ' + url);
+    });
+
+  await test('...but READ still does, because the insurance table renders it '
+    + '-- dropping it there would be a deleted feature, not a fix', async () => {
+      const { handler, calls } = loadHandler({ rows: [] });
+      await handler(mockReq('read', { today: TODAY }), mockRes());
+      const url = calls.find(c => c.method === 'GET').url;
+      assert.ok(url.indexOf('policy_no') !== -1,
+        'read stopped fetching policy_no -- sairnmechanical.html renders it: ' + url);
+    });
+
+  await test('CONTROL: readiness still fetches every column the COMPARISON '
+    + 'needs, so the arm above is a narrowing and not a broken select',
+    async () => {
+      const { handler, calls } = loadHandler({ rows: [] });
+      await handler(mockReq('readiness', { today: TODAY, requirements: [] }), mockRes());
+      const url = calls.find(c => c.method === 'GET').url;
+      ['each_occurrence', 'aggregate_limit', 'expires_on', 'carrier', 'kind',
+       'additional_insured', 'waiver_of_subrogation', 'primary_noncontributory',
+       'per_project_aggregate'].forEach(function (c) {
+        assert.ok(url.indexOf(c) !== -1,
+          c + ' was dropped from readiness along with policy_no -- the '
+          + 'comparison would report unknown for every requirement forever');
+      });
+    });
+
   console.log('\n' + (process.exitCode
     ? 'FAILURES ABOVE'
     : 'ALL ' + passed + ' MECH-INSURANCE-ENDPOINT ASSERTIONS PASS'));

@@ -73,8 +73,43 @@ commercial sensitivity at all. It is what a fraudulent claim or a call to the
 issuer needs. `mech_insurance_policies.policy_no` is the live example. **A tier is
 the wrong instrument for it:** the fix is not to raise a row's axis, it is to keep
 the field out of reads that do not need it, and neither axis of this register
-expresses that. Recorded here as a gap with an owner rather than absorbed into a
-confidentiality letter that would not change any code.
+expresses that.
+
+**SCOPED AND CLOSED AS A GAP, 2026-09-27 (Hank) —
+`docs/2026-09-27-authentication-shaped-fields.md`.** It is NOT getting a third
+axis, and the measurement is why rather than the argument above being repeated.
+**Ten distinct authentication-shaped field classes exist on this platform**, so
+the gap is systemic and `policy_no` was only the instance somebody was looking
+at — but the population that matters is READ COLUMN LISTS, not mentions, and
+there are **four such sites in every `api/*.js` and `api/_lib/*.js`** (counting
+the named column-list constants, because a literal `select=` scan sees three of
+the four). All four are audited by name in that document with the consumer that
+justifies each.
+
+**THE AXES ARE ROW-LEVEL AND THIS IS FIELD-LEVEL, which is the whole reason a
+letter cannot say it.** A row carrying one policy number among eighteen columns
+is not *more confidential*; one field in it is *differently dangerous*. A third
+axis would force a re-read of every registered row and change no code.
+
+**AND NO CHECKER EITHER, which is the less obvious half.** A tool that reports the
+same four known rows for ever is the always-passing checker this platform has
+already measured. The threshold for revisiting is written down instead:
+`tools/ghost_field_read_scan.py` already enumerates column-list constants, so §1
+of that document is **reproducible in one command** rather than a number in
+prose — build the checker if the count grows past a handful.
+
+**ONE FIX CAME OUT OF IT.** `mech_insurance_policies` `readiness` was fetching
+`policy_no` and discarding it — `coverageReadiness()` returns `policy_id`, never
+`policy_no` — and `readiness` is open to ANY verified session where only `write`
+is management-gated. The column list is now split, held by three arms including a
+control that the comparison still fetches everything it needs. **`read` keeps the
+field**, because the insurance table renders it; whether a technician should see
+it is recorded there as a product decision, not taken.
+
+**AND THE MEASUREMENT'S OWN HOLE IS NAMED:** `member_id` (12 files) and NPI (7)
+appear in NO read column list, because they live inside jsonb blobs — and
+`select=data` fetches whatever the blob holds. A blob-carried
+authentication-shaped field is invisible to a column-list audit by construction.
 
 **Do not quote any count from this prose.** Run `python tools/criticality_tier_check.py`; it prints the tier count, the migrated count and the outstanding ones, and this file's own gaps note already records that a prose running-total was found wrong once.
 
