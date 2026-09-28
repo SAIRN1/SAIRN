@@ -1815,11 +1815,58 @@ history exists. FAIL-CLOSED both directions: --draw refuses outright
 (exit 2, naming the tool) when defect_density_weighting.py is absent or
 fails its own classifier control, and refuses when api/_resources derives
 zero apps — a missing instrument is never scored as all-zero risk.
-Six ordering fixtures lock the formula in both directions
-(--selftest), including risk-dominates, unread-beats-stale, and
-unmapped-sinks-never-wins. The unweighted-random slice below keeps its
-false-negative-rate job unchanged — it is deliberately OUTSIDE this score,
-because its whole purpose is to catch what any weighting misses.
+
+**A FRESHNESS FLOOR, added 2026-09-28, THE HONEST BEFORE-STATE FIRST: risk
+DESC with no floor let one exhausted high-risk app starve every lower-risk
+app's rows indefinitely.** Diagnosed from a real failure, not theorized:
+three consecutive `--draw` calls in one session (log #570/#571/#574) landed
+entirely on already-swept ground. MEASURED before touching any code:
+sairnbuild and sairnvet, tied for the HIGHEST app risk (11), had a maximum
+per-app staleness of only 21 entries each — every one of their rows had
+just been individually read. Meanwhile sairngrounds and sairnlegacy (risk
+9) held rows up to 218 and 252 entries stale, and stonedesk (risk 8) up to
+201 — over TEN TIMES staler — and pure risk-first ordering could never
+reach them while a higher-risk app existed at all, no matter how completely
+spent that higher-risk app already was. **The formula gained a fourth
+key, still one lexicographic score, not a second independent axis:**
+
+    (0) freshness-floor bucket ASC — 0 if the resource's OWN APP has at
+                                      least one resource at or past
+                                      FRESHNESS_FLOOR (=30 entries, else 1.
+                                      A never-mentioned resource (staleness
+                                      = infinity) always counts as stale
+                                      ground for its app.
+    (1) app risk DESC   — unchanged, exactly as above
+    (2) staleness DESC  — unchanged, exactly as above
+    (3) name ASC        — unchanged, exactly as above
+
+This is a THRESHOLD GATE on the staleness signal already in the tuple,
+hoisted in front of risk only when risk's own candidates have nothing
+genuinely due left to offer — not a new independent signal, both stay in
+the one score exactly as the coordinator's original decision required. An
+app with no stale ground does not disappear; it sinks to bucket 1 until
+something in it ages back past 30. **30 is REASONED FROM THE REAL DIAGNOSIS
+DATA, not picked in the abstract**: it sits between the exhausted apps'
+observed ceiling (21) and the least-stale surviving app's own maximum at
+diagnosis time (39, sairnroofing), margin on both sides — recalibrate once
+real repeat-gap history exists, the same honesty every other REASONED
+constant here carries. Ten ordering fixtures now lock the formula in both
+directions (was six), including the exact production failure shape
+reproduced as a fixture, a NEGATIVE case (a resource exactly AT the floor
+must still count as stale ground, not be swallowed by an over-eager gate),
+and the never-mentioned-always-counts case. **One of the five new fixtures
+failed on its first run — the fixture's own expected order was backwards,
+not `draw_order()`** — corrected the assertion, not the code, and said so
+rather than silently fixing it, the same blind-analysis discipline as
+every fixture-correction declaration elsewhere in this file. Verified
+against real, live data: `--draw 3` after the fix prints the apps sunk by
+the floor by name and surfaces `leg_insurance`/`leg_petcases` (252 entries
+stale) and `msb_bottle_scans` (218 entries stale) — genuinely fresh ground
+this session had never reached before the fix existed.
+
+The unweighted-random slice below keeps its false-negative-rate job
+unchanged — it is deliberately OUTSIDE this score, because its whole
+purpose is to catch what any weighting misses.
 
 - **Vary what triggers attention**, not only freshest-commit / highest-stakes.
   A rotation that always picks the same signal is still a predictable pattern
@@ -2819,18 +2866,28 @@ after a rebase, right after a claim releases, right after a retry. A tool
 whose only negative controls are teleported-in states has been shown to
 catch the shape of the defect, not that it catches the defect ARRIVING the
 way it really would. **Self-audit, done rather than assumed clean:** this
-role's own newest fixtures (`draw_order`/`undirected_order` in
-`hover_cold_scan_pool.py`, `hover_editor_review_criteria.py`'s IMPLIED_LINE
-cases, `hover_log.py`'s `--contradicts` fixtures below) are ALL
-teleported-in synthetic states -- hand-built dicts and hand-built log rows,
-none of them produced by actually running the surrounding real workflow
-(a real `--pick`/`--draw` sequence, a real rebase, a real retry). Named as
-a real, current gap in this role's own recent tool-building rather than
-implied fixed by writing this rule -- the standard applies going forward,
-starting with the next tool whose subject is genuinely process-order-
-sensitive (a claim-state or session-liveness checker, the shape
-`sabotage_closed_system_check.py` and `tools/session_lock_check.py`'s own
-liveness fix already had to reckon with for exactly this reason).
+role's own newest fixtures at the time this rule was written
+(`draw_order`/`undirected_order` in `hover_cold_scan_pool.py`,
+`hover_editor_review_criteria.py`'s IMPLIED_LINE cases, `hover_log.py`'s
+`--contradicts` fixtures below) were ALL teleported-in synthetic states --
+hand-built dicts and hand-built log rows, none of them produced by
+actually running the surrounding real workflow. Named as a real, current
+gap rather than implied fixed by writing this rule. **CLOSED THE SAME DAY,
+2026-09-28:** `draw_order`/`undirected_order` now also carry three
+realistic-transition fixtures that drive the REAL `hover_log.cmd_add()`
+(a scratch `LOG_PATH` override, not a hand-built dict) through an actual
+log-append-then-redraw sequence, plus a real bare-repo push reused from the
+existing stale-clone fixture; `hover_editor_review_criteria.py`'s
+IMPLIED_LINE gained a real third git commit that shifts real lines, so the
+drift a fixture detects is git-produced, not hand-picked. `--contradicts`
+was still new enough that day to have no real historical case to retrofit
+onto (checked, see its own entry) and remains teleported-in by necessity,
+not oversight. The standard still applies going forward, starting with the
+next tool whose subject is genuinely process-order-sensitive (a claim-state
+or session-liveness checker, the shape `sabotage_closed_system_check.py`
+and `tools/session_lock_check.py`'s own liveness fix already had to reckon
+with for exactly this reason) -- this entry is not a template for "write
+the rule, call it done," it is one real gap closed and said so.
 
 **4. When a later read CONTRADICTS an already-logged CLEAN verdict on the
 same resource, log it as its own distinct, higher-salience entry -- never
