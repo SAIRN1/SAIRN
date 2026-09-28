@@ -18431,7 +18431,7 @@
       "recurrence_open": "No shared reader for .claude/claims/*.json exists. sairn_claim.py writes it and at least two tools parse it again independently, so a parser wrong in one is invisible to the others. Naming it rather than consolidating, because the writers live in several sessions declared files."
     },
     {
-      "commit": "562fcfda6ef7",
+      "commit": "aaaa17b3f264",
       "date": "2026-09-28",
       "subject": "fix(sairncare): the alf_op_audits write ECHO spread its blob after the columns -- and a sweep for the whole class",
       "files": [
