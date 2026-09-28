@@ -16441,61 +16441,6 @@
       "recurrence_open": "No check exists for the general shape: a probe fixture carrying a LITERAL session name while the code under test resolves that same name from the clone. A grep for quoted clone names inside tests/ is cheap and has not been run, and the four build-agent names plus the hover instances are a small closed vocabulary that a checker could read from .claude/claims/ rather than hardcode -- which is the same mistake one shelf over."
     },
     {
-      "commit": "ab263fba5d47",
-      "date": "2026-09-27",
-      "subject": "fix(gate): the SQL preflight read table names out of PROSE, and swallowed 140 real lines of a schema file doing it",
-      "files": [
-        "tests/run_sql_preflight_literal_probe.py",
-        "tools/sairn_sql_preflight.py"
-      ],
-      "lines_added": 304,
-      "lines_removed": 13,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "probe-control",
-      "summary": "tools/sairn_sql_preflight.py's strip_noise() removed comments and string literals in FOUR SEPARATE regex passes -- block comments, then line comments, then dollar-quoting, then single-quoted literals -- each run over the whole file with no knowledge of what the others had consumed. So a `--` INSIDE A STRING LITERAL was blanked as a line comment, TAKING THE STRING'S CLOSING QUOTE WITH IT, and the literal matcher was desynchronised for the remainder of the file. Two consequences, and the second is the serious one. LOUD: the gate refused a push with MISSING_TABLE `the`, a table that exists only inside an English sentence in a column comment. SILENT: text after the broken literal is parsed as code and real SQL can land inside what the scanner believes is a string. Measured across all 256 sql/ files under both the old and new stripper, exactly one file's extracted table set changed and it changed by GAINING a table: sql/sairn_circuit_breaker_schema.sql:54 is a comment string that BEGINS with `--`, and everything after it -- including the create-or-replace-function at :65 and its revoke/grant at :171-173, roughly 140 lines -- was invisible to the gate, which reported clean. This is a gate whose own stated argument is that a wrong column in a WHERE matches nothing and reports success.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": "tests/run_sql_preflight_literal_probe.py",
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "strip_noise() has had the multi-pass shape since the tool was written; the passes were added one at a time as new literal forms were met, so there is no single commit that introduced the desynchronisation -- each pass was correct in isolation and the defect is their composition."
-      },
-      "citation_note": "The gate reported CLEAN over 140 lines it had never parsed. COULD-NOT-SEE was folded into checked, which is the same collapse as folding could-not-run into passed.",
-      "contributing_factors": [
-        {
-          "kind": "technical",
-          "factor": "Four independent regex passes cannot model nesting or precedence between comment and literal syntax, because each one rewrites the whole file before the next one sees it. The order chosen (block, line, dollar, quote) makes a `--` inside a literal win over the literal, which is exactly backwards.",
-          "action": "Replaced with a single left-to-right scan: whichever opener comes first wins and consumes through its own terminator, and nothing else is examined until it closes.",
-          "action_status": "done"
-        },
-        {
-          "kind": "technical",
-          "factor": "Three further shapes the passes could not handle at all: Postgres block comments NEST (a non-greedy .*?\\*/ stops at the first close and leaves the outer comment's tail as code), $tag$ dollar quoting was only handled as bare $$, and a double-quoted IDENTIFIER was being blanked as if it were a literal even though it is the table name.",
-          "action": "All three handled explicitly in the scan; the quoted identifier is skipped over rather than blanked.",
-          "action_status": "done"
-        },
-        {
-          "kind": "detection",
-          "factor": "The tool had no control of its own. Its correctness was assumed from the fact that it produced findings, and a gate that produces findings looks like it is working whichever direction it is wrong in. Nothing fed it a file whose comments and literals contained the thing it searches for.",
-          "action": "tests/run_sql_preflight_literal_probe.py, 21 arms in both directions, written BEFORE the fix and reproducing it at 5 of 22 red. Every negative arm is paired with one asserting the real SQL beside it IS still found, so a stripper that blanked the whole file cannot pass.",
-          "action_status": "done"
-        },
-        {
-          "kind": "latent-condition",
-          "factor": "The class is not specific to this tool. Any gate that searches source, SQL or prose finds its pattern inside a literal or a comment unless it removes them first, and the silent direction makes real code invisible rather than merely noisy.",
-          "action": "tools/text_gate_literal_sweep.py classifies every text-reading tool MASKED / BY-DESIGN / RAW with a ratchet, and carries an --empirical decoy harness which is the only thing that can promote a gate to CONFIRMED-SAFE. It reports how few gates have such a probe rather than publishing the masked count as a safety figure.",
-          "action_status": "done"
-        }
-      ],
-      "recurrence_open": "OPEN ACROSS THE PLATFORM AND NOW MEASURED: 82 of 157 text-reading tools match straight over file text with no literal masking and no decoy control (tools/text_gate_literal_sweep.py). RAW is not by itself a defect -- a marker scan anchored at column zero is correctly raw -- but only 2 of the 157 have an empirical decoy probe, so the other 155 are CLASSIFIED and not TESTED. The sweep itself demonstrated the difficulty on its first run by missing every precompiled regex and undercounting its own universe by 27 tools."
-    },
-    {
       "commit": "25d1c0009efb",
       "date": "2026-09-27",
       "subject": "fix(sairnbuild): the WIP schedule capped percent complete at 100% -- so a job losing money reported itself finished, and fully earned",
@@ -17188,6 +17133,61 @@
       "recurrence_open": "OPEN AND MECHANICAL: nothing compares a newly added checker against docs/TOOLING-INVENTORY.md, so the next duplicate will be caught the way this one was -- by somebody happening to grep. The inventory is generated and complete, which is exactly what makes the check cheap to build, and it does not exist."
     },
     {
+      "commit": "ab263fba5d47",
+      "date": "2026-09-27",
+      "subject": "fix(gate): the SQL preflight read table names out of PROSE, and swallowed 140 real lines of a schema file doing it",
+      "files": [
+        "tests/run_sql_preflight_literal_probe.py",
+        "tools/sairn_sql_preflight.py"
+      ],
+      "lines_added": 304,
+      "lines_removed": 13,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "probe-control",
+      "summary": "tools/sairn_sql_preflight.py's strip_noise() removed comments and string literals in FOUR SEPARATE regex passes -- block comments, then line comments, then dollar-quoting, then single-quoted literals -- each run over the whole file with no knowledge of what the others had consumed. So a `--` INSIDE A STRING LITERAL was blanked as a line comment, TAKING THE STRING'S CLOSING QUOTE WITH IT, and the literal matcher was desynchronised for the remainder of the file. Two consequences, and the second is the serious one. LOUD: the gate refused a push with MISSING_TABLE `the`, a table that exists only inside an English sentence in a column comment. SILENT: text after the broken literal is parsed as code and real SQL can land inside what the scanner believes is a string. Measured across all 256 sql/ files under both the old and new stripper, exactly one file's extracted table set changed and it changed by GAINING a table: sql/sairn_circuit_breaker_schema.sql:54 is a comment string that BEGINS with `--`, and everything after it -- including the create-or-replace-function at :65 and its revoke/grant at :171-173, roughly 140 lines -- was invisible to the gate, which reported clean. This is a gate whose own stated argument is that a wrong column in a WHERE matches nothing and reports success.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tests/run_sql_preflight_literal_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "strip_noise() has had the multi-pass shape since the tool was written; the passes were added one at a time as new literal forms were met, so there is no single commit that introduced the desynchronisation -- each pass was correct in isolation and the defect is their composition."
+      },
+      "citation_note": "The gate reported CLEAN over 140 lines it had never parsed. COULD-NOT-SEE was folded into checked, which is the same collapse as folding could-not-run into passed.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "Four independent regex passes cannot model nesting or precedence between comment and literal syntax, because each one rewrites the whole file before the next one sees it. The order chosen (block, line, dollar, quote) makes a `--` inside a literal win over the literal, which is exactly backwards.",
+          "action": "Replaced with a single left-to-right scan: whichever opener comes first wins and consumes through its own terminator, and nothing else is examined until it closes.",
+          "action_status": "done"
+        },
+        {
+          "kind": "technical",
+          "factor": "Three further shapes the passes could not handle at all: Postgres block comments NEST (a non-greedy .*?\\*/ stops at the first close and leaves the outer comment's tail as code), $tag$ dollar quoting was only handled as bare $$, and a double-quoted IDENTIFIER was being blanked as if it were a literal even though it is the table name.",
+          "action": "All three handled explicitly in the scan; the quoted identifier is skipped over rather than blanked.",
+          "action_status": "done"
+        },
+        {
+          "kind": "detection",
+          "factor": "The tool had no control of its own. Its correctness was assumed from the fact that it produced findings, and a gate that produces findings looks like it is working whichever direction it is wrong in. Nothing fed it a file whose comments and literals contained the thing it searches for.",
+          "action": "tests/run_sql_preflight_literal_probe.py, 21 arms in both directions, written BEFORE the fix and reproducing it at 5 of 22 red. Every negative arm is paired with one asserting the real SQL beside it IS still found, so a stripper that blanked the whole file cannot pass.",
+          "action_status": "done"
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "The class is not specific to this tool. Any gate that searches source, SQL or prose finds its pattern inside a literal or a comment unless it removes them first, and the silent direction makes real code invisible rather than merely noisy.",
+          "action": "tools/text_gate_literal_sweep.py classifies every text-reading tool MASKED / BY-DESIGN / RAW with a ratchet, and carries an --empirical decoy harness which is the only thing that can promote a gate to CONFIRMED-SAFE. It reports how few gates have such a probe rather than publishing the masked count as a safety figure.",
+          "action_status": "done"
+        }
+      ],
+      "recurrence_open": "OPEN ACROSS THE PLATFORM AND NOW MEASURED: 82 of 157 text-reading tools match straight over file text with no literal masking and no decoy control (tools/text_gate_literal_sweep.py). RAW is not by itself a defect -- a marker scan anchored at column zero is correctly raw -- but only 2 of the 157 have an empirical decoy probe, so the other 155 are CLASSIFIED and not TESTED. The sweep itself demonstrated the difficulty on its first run by missing every precompiled regex and undercounting its own universe by 27 tools."
+    },
+    {
       "commit": "c680a4c1dbca",
       "date": "2026-09-27",
       "subject": "fix(tooling): 78 tools derived their repo root FROM unanchored git discovery -- on a machine where that never fails, it just answers wrongly",
@@ -17532,6 +17532,62 @@
         }
       ],
       "recurrence_open": "The criteria are still a guess about what a correct anchor looks like. Three forms are recognised -- replace-once, declared-count, and single-subject 2-tuples -- and a probe using a fourth form is not reported as unchecked, it is simply absent from the count. Nothing measures how many anchors the tool cannot see."
+    },
+    {
+      "commit": "e039850a2778",
+      "date": "2026-09-27",
+      "subject": "fix(sairnlaw): a caller could write somebody else's name into a deadline rule's provenance -- and the new caller-impact tool flagged its own fixture",
+      "files": [
+        "api/legal-deadlines-auth.test.js",
+        "api/legal-deadlines.js",
+        "tools/gate_caller_impact.py"
+      ],
+      "lines_added": 114,
+      "lines_removed": 5,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "api/legal-deadlines.js add_rule and add_holidays merged the caller's own object into the stored row with Object.assign({}, body.rule, { version, authority }) -- so every field the three-key override did not name was stored VERBATIM. authority.verified_by itself was safe, because it is overwritten last inside the nested assign, but any other identity-shaped key a caller invented was not: sending `recorded_by: \"E-SOMEBODY-ELSE\"` on a rule wrote that name into the provenance record of a rule that decides filing deadlines, and the same held for created_by, updated_by, author and authored_by. The stored row is what api/reference-fingerprint.js and the platform divergence query read, and what a reader would consult to find out who put a rule in. So a caller could attribute their own authoring to another employee on the one table where provenance is the point. Fixed by stripping an identity-key class from the caller's object at both levels the two call sites hand it -- the rule or calendar object and its nested authority object -- and re-deriving verified_by from the verified session afterwards. STRIPPED RATHER THAN VALIDATED because a validator would have to anticipate every identity spelling a caller might invent, while removing the class and re-deriving the one field the server owns cannot fail the same way. Found by writing arm E2 of api/legal-deadlines-auth.test.js, which failed on recorded_by before the fix.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the Object.assign merge has carried this shape since add_rule was written; git log -S finds the feature commit rather than a commit that removed a strip."
+      },
+      "citation_note": "No section covers a caller-supplied field being stored as provenance. 1.5's shape -- a value computed correctly and then not acted on -- is close in that verified_by WAS derived from the session and the caller's other identity fields were merged in anyway, so the correct derivation sat beside an uncontrolled path. Arguable, and the note says so.",
+      "contributing_factors": [
+        {
+          "factor": "An allowlist of three overridden keys was doing the work of a denylist. Object.assign's semantics mean everything NOT named survives, so the safety of the stored row depended on the override list being complete -- and it was written for version and retrieved_at, not for identity.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "strippedOfIdentity() removes an eight-key identity class from the caller's object before the merge, at both levels the call sites pass it."
+        },
+        {
+          "factor": "One identity field WAS handled correctly, which made the rest look handled. authority.verified_by is derived from the session and carries a long comment explaining why -- so a reader checking whether identity was server-set found a convincing yes.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The strip is applied to the same objects the override touches, so the two live together rather than one implying the other."
+        },
+        {
+          "factor": "Nothing tested what the endpoint STORES as opposed to what it answers. The new auth suite was written for the gate; the identity arms were added to it because the gate work put the stored shape in front of me.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Arms E1-E4 in api/legal-deadlines-auth.test.js drive a forged value at both levels and include a control that the fields the caller legitimately owns still survive, so the strip cannot pass as a wipe."
+        },
+        {
+          "factor": "The strip is local to this endpoint and the natural home for it -- api/_lib/blob.js -- argues against taking it, because that module's header states the scope keys are the only universal truth it will hide.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "Recorded rather than resolved: if a second endpoint needs an identity strip, that is the moment to decide where the class lives. Acting now would be a design change to blob.js smuggled in as a bug fix, and acting never leaves two copies the day it recurs."
+        }
+      ],
+      "recurrence_open": "NOT A DEEP STRIP, and that limit is written at the helper: it removes identity keys at the level it is handed, which is the rule or calendar object and its authority object. A nested structure nobody passes in is untouched -- dates[] entries are data rather than provenance, which is the judgement, not an oversight. The class is also NOT swept platform-wide: every other endpoint that merges a caller's object into a stored row with Object.assign has the same allowlist-doing-a-denylist shape, and nothing enumerates them. api/_lib/blob.js covers the SCOPE keys across branches and deliberately does not cover identity, so there is no existing sweep to extend. And the identity key list itself is hand-kept: a caller inventing a ninth spelling is stored, which is the residual an allowlist-free design cannot remove."
     },
     {
       "commit": "e12ed262317d",
