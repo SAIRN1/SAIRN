@@ -16778,7 +16778,7 @@
       "recurrence_open": "470 of 485 rows still record no source. 33 uncited controlled substances and 61 remaining uncited food-animal rows are untouched -- the highest-consequence populations and this pass covered 8 of them. Nothing checks a row against its label on a cadence: the references carry a Retrieved date and a label revision can change a withdrawal period without anything here noticing. And the route-copy blind spot is open by decision, not closed."
     },
     {
-      "commit": "cbaa5d987a67",
+      "commit": "25d1c0009efb",
       "date": "2026-09-27",
       "subject": "fix(sairnbuild): the WIP schedule capped percent complete at 100% -- so a job losing money reported itself finished, and fully earned",
       "files": [
