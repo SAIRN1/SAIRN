@@ -579,6 +579,45 @@ if _APP in _idx and _APP in _reg and not isinstance(_reg[_APP], C.SHAPE_ERROR):
           'which is the condition these arms are about (%s)' % (_APP, _dups or 'NONE'),
           bool(_dups), 'no duplicate -- these arms would prove nothing here')
 
+    # ── (a0) THE PLAIN RUN KEEPS EVERY NAME THAT OCCURS PLAIN ───────────────
+    # ADDED 2026-09-28 while discharging fourth's 2026-09-26T11:44:25Z
+    # obligation. The dedup that fixed the prose-after-list shape was keyed on
+    # the NAME alone, so a name whose FIRST occurrence is inside a bold
+    # annotation lost its plain-list token instead. `sf_vehicles` is that name
+    # in this very cell -- the fixture arm above already PRINTS it as one of
+    # the duplicates and nothing exercised it, so the probe was reporting the
+    # precondition and then testing half of it.
+    #
+    # Asserted over `_cell_tokens` directly rather than inferred from where an
+    # insert lands, because a dropped member is only SOMETIMES visible in a
+    # placement and is always visible here.
+    _all_toks, _plain_toks = C._cell_tokens(_fl, _fnames)
+    _plain_anywhere = {t[2] for t in _all_toks if not t[3]}
+    _in_run = [t[2] for t in _plain_toks]
+    check('every name that occurs PLAIN in the cell is in the plain run -- a '
+          'name annotated EARLIER in the same cell must not lose its list '
+          'membership to its own annotation',
+          _plain_anywhere == set(_in_run),
+          'dropped from the run: %s' % sorted(_plain_anywhere - set(_in_run)))
+    check('...and the run is still alphabetical, so keeping them did not '
+          'reintroduce a prose mention',
+          _in_run == sorted(_in_run),
+          'out of order: %s' % _in_run)
+
+    # (a1) AND THE PLACEMENT CONSEQUENCE, driven end to end. A name sorting
+    # between `sf_tickets` and `sf_vehicles` must land BEFORE `sf_vehicles`.
+    # Under the first-occurrence rule the successor search skipped the dropped
+    # `sf_vehicles` token and found `sf_vendor_prices`, so the name landed on
+    # the wrong side of a list member that was right there.
+    _ub = 'sf_ub_probe'
+    _newu, _whyu = C._insert_one(_fl, _ub, _fnames | {_ub})
+    check('a name sorting between two list members lands before the LATER one, '
+          'even when that member is annotated earlier in the same cell '
+          '(`%s` before `sf_vehicles`)' % _ub,
+          _whyu is None and 0 <= (_newu or '').find('`%s`' % _ub)
+          < (_newu or '').rfind('`sf_vehicles`'),
+          str(_whyu)[:160] if _whyu else 'landed after `sf_vehicles`')
+
     # (a) THE FIX. A name sorting after every list member is appended at the END
     # OF THE LIST, immediately after the last ALPHABETICAL member.
     _probe = 'zzz_probe_sorts_last'
@@ -592,7 +631,15 @@ if _APP in _idx and _APP in _reg and not isinstance(_reg[_APP], C.SHAPE_ERROR):
         for b in C.BACKTICKED.finditer(_before):
             if b.group(1) in _fnames:
                 _last_listed = b.group(1)
-        _plain_sorted = sorted(n for n in set(_all))
+        # THE PLAIN RUN, NOT EVERY NAME IN THE CELL (corrected 2026-09-28).
+        # This read `sorted(set(_all))` -- the alphabetically greatest
+        # REGISTERED name in the cell, bold ones included -- and called it "the
+        # LAST name in the alphabetical list". On this cell the two coincide,
+        # so the arm passed; a bold-annotated name sorting after every plain
+        # one would have made it demand an append after an ANNOTATION and go
+        # red against correct code. Same label-vs-measurement shape as the arm
+        # added above it.
+        _plain_sorted = sorted(_in_run)
         check('...directly after the LAST name in the alphabetical list (`%s`), '
               'not after a prose mention of an earlier one'
               % (_plain_sorted[-1] if _plain_sorted else '?'),

@@ -468,6 +468,60 @@ def _rollup_line_indices(lines):
 _TAIL_OK = re.compile(r'^\s*(,|\||&mdash;|—|$)')
 
 
+def _cell_tokens(line, names):
+    """(all tokens, the PLAIN run) for one rollup cell. Pure; no I/O.
+
+    Each token is (start, end, name, bold). Split out of `_insert_one` on
+    2026-09-28 so the plain run is assertable directly rather than inferred
+    from where an insert happened to land -- which is the same reason
+    `_insert_one` itself is pure.
+
+    ── DEDUP IS ON THE FIRST *PLAIN* OCCURRENCE, NOT THE FIRST OCCURRENCE ──
+    The rule landed on 2026-09-25 as "first occurrence of each name", which
+    was right about the shape it was written for -- a name in the
+    alphabetical list and AGAIN in the prose after it -- and silently wrong
+    about the mirror image. sairnfreedom's `sf_vehicles` is named first
+    INSIDE a bold annotation and again in the plain list, so keying on the
+    name alone kept the annotation's token and DROPPED A REAL LIST MEMBER.
+
+    That is not cosmetic in two ways. The measurement that justified the
+    original rule -- "taking the first occurrence makes all seventeen plain
+    runs monotonic, where four were not" -- was then partly achieved by
+    DELETING a member rather than by ordering one; and a name sorting
+    between `sf_tickets` and `sf_vehicles` was placed after `sf_vehicles`
+    instead of before it, because the successor the search found was
+    `sf_vendor_prices`.
+
+    The original change's own review request named this exact risk and
+    recorded it as checked-and-true: "if a cell ever mentions a resource in
+    a preamble BEFORE the list, the fix inverts and places worse than the
+    bug did." It was true of the four cells that existed then. The register
+    now carries SIXTEEN duplicated names across SEVEN apps and one of them
+    inverts, two days later -- which is the eighth cross-domain discipline
+    exactly: nothing announces the day an assumption about somebody's prose
+    stops holding.
+
+    Measured both ways on the real register: first-occurrence leaves 0 of 17
+    plain runs non-monotonic but loses `sf_vehicles`; first-PLAIN-occurrence
+    leaves 0 of 17 non-monotonic AND keeps it. Strictly better, so there is
+    no trade to weigh.
+    """
+    toks, seen = [], set()
+    for m in BACKTICKED.finditer(line):
+        if m.group(1) not in names:
+            continue
+        # Inside a bold run iff an odd number of `**` markers precede it.
+        bold = line.count('**', 0, m.start()) % 2 == 1
+        toks.append((m.start(), m.end(), m.group(1), bold))
+    plain = []
+    for t in toks:
+        if t[3] or t[2] in seen:
+            continue
+        seen.add(t[2])
+        plain.append(t)
+    return toks, plain
+
+
 def _insert_one(line, name, names):
     """Insert one backticked name into a rollup line, or say why not.
 
@@ -488,18 +542,13 @@ def _insert_one(line, name, names):
     written about, which is a worse defect than the missing name.
     """
     # ── A NAME MENTIONED TWICE IS IN THE LIST ONCE (added 2026-09-25, found
-    # ── reviewing this change) ──────────────────────────────────────────────
-    # FIRST OCCURRENCE ONLY. These cells name a resource in the alphabetical
-    # list AND SOMETIMES AGAIN in the prose that follows it -- *"&mdash; the
-    # sharpest is `sf_operators`, which carried a named volunteer..."*. Without
-    # this, `plain[-1]` is the PROSE mention rather than the end of the list,
-    # and the append path below lands a new name inside that sentence.
-    #
-    # MEASURED RATHER THAN ARGUED, on the real register at the time: four of
-    # seventeen cells mention a name twice -- stonedesk (`exec_context`),
-    # sairnlaw (`law_clecredits`), sairnroofing (`rf_settings`), sairnfreedom
-    # (`sf_operators`) -- and taking the first occurrence only makes ALL
-    # SEVENTEEN plain runs monotonic, where four were not.
+    # ── reviewing this change; the dedup rule itself now lives in
+    # ── `_cell_tokens`, which records why it is FIRST-PLAIN and not FIRST) ──
+    # These cells name a resource in the alphabetical list AND SOMETIMES AGAIN
+    # in the prose that follows it -- *"&mdash; the sharpest is
+    # `sf_operators`, which carried a named volunteer..."*. Without the dedup,
+    # `plain[-1]` is the PROSE mention rather than the end of the list, and the
+    # append path below lands a new name inside that sentence.
     #
     # `_TAIL_OK` CAUGHT THREE OF THE FOUR AND NOT THE FOURTH, which is why this
     # is a fix and not a tidy-up. Three of those prose mentions are followed by
@@ -516,20 +565,12 @@ def _insert_one(line, name, names):
     # placement as success, which is the "cosmetic and silent" failure this
     # change's own review request predicted, one step worse than predicted
     # because it lands inside a claim about a DIFFERENT resource.
-    toks, _seen = [], set()
-    for m in BACKTICKED.finditer(line):
-        if m.group(1) not in names or m.group(1) in _seen:
-            continue
-        _seen.add(m.group(1))
-        # Inside a bold run iff an odd number of `**` markers precede it.
-        bold = line.count('**', 0, m.start()) % 2 == 1
-        toks.append((m.start(), m.end(), m.group(1), bold))
+    toks, plain = _cell_tokens(line, names)
     if not toks:
         return None, ('its rollup cell names no registered resource of this '
                       'app, so there is no list to insert into. A cell that '
                       'DESCRIBES its resources is not a list and this refuses '
                       'to turn one into the other')
-    plain = [t for t in toks if not t[3]]
     if not plain:
         return None, ('every name in its rollup list carries a bold annotation '
                       'and there is no plain run to insert into. Placing a bare '
