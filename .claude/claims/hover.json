@@ -172,8 +172,8 @@
       "task": "hover round nine: mirror hardening (helper-reset guard with a must-fail arm, token-expiry warning, session-end push routine with the anchor recorded and verified); resolver out-of-vocabulary nearest-owner fix from the other auditor's report, fixtures first, re-measure; async extraction crash fix in my js-exec tool with a must-fail arm; three routable finding entries and a routing check on my last five entries; one undirected batch; next rotation draw. Every write of mine lands under hover-audit-log or my own claim record. SCOPE: .claude/skills/sairn-hover-auditor/",
       "claimed_at": "2026-09-28T10:29:03Z",
       "claimed_at_epoch": 1790591343.5728936,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-28T10:58:43Z",
       "files": null
     }
   ],
