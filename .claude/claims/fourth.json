@@ -2499,6 +2499,24 @@
         "tools/conflict_marker_preflight.py",
         "tools/role_gate_negative_coverage.py"
       ]
+    },
+    {
+      "id": "fourth-1790556545",
+      "session": "fourth",
+      "subject": "sairncare",
+      "task": "roleSet() seam test closing the 6 COULD-NOT-TELL seams into api/_lib/auth.js before roleSet membership is changed; caregiver made a real enforced role in api/sd-data.js roleSets and reconciled against both sairncare.html dropdowns; the SAIRNcare credential pre-gate red suites (12 suites / 172 assertions on medication-record auth, cc's bisection carries over); the 33 WEAK git anchors; sd-sub-data.js's two verifySessionToken call sites read individually; second-pass retry arms starting with tests/sairnscape_outbound_queue.js; conflict_marker_preflight ORIG_HEAD..HEAD post-operation mode; switch-level reclassification of the second-pass sweep; counter-wraparound sweep; lost-independent-backstop sweep; hidden-state audit.\n\nCONFLICT DECLARED PER PR 4.3 RATHER THAN REWORDED: api/legal-deadlines.js IS HANK'S -- the claim tool refused my previous attempt naming it (hank holds 'hank' on that file, registry-only, not yet on origin). The 401/403 fix for unauthenticated add_rule/add_holidays is therefore NOT in this claim and is NOT being done by me. It is a LIVE unauthenticated write path to the legal deadline rules the entire SAIRNlaw product claim rests on, and docs/2026-08-30-sairntech-app-sellability-gate.md records it as an open pre-launch blocker -- flagged to hank and to the coordinating session rather than reworded past the matcher. api/_lib/auth.js is shared and I am ADDING A TEST FILE beside it, not editing it, unless the caregiver work forces a change there, in which case I will re-check first.\n\nSUBJECT NAMED PER PR 4.3 FILES: api/_lib/auth-roleset-seam.test.js api/sd-data.js sairncare.html tools/conflict_marker_preflight.py tools/second_pass_coverage_scan.py tests/sairnscape_outbound_queue.js docs/",
+      "claimed_at": "2026-09-28T00:49:05Z",
+      "claimed_at_epoch": 1790556545.4841514,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/_lib/auth-roleset-seam.test.js",
+        "api/sd-data.js",
+        "sairncare.html",
+        "tests/sairnscape_outbound_queue.js",
+        "tools/conflict_marker_preflight.py",
+        "tools/second_pass_coverage_scan.py"
+      ]
     }
   ],
   "refusals": [
@@ -2512,6 +2530,21 @@
       "other_claimed_at": "2026-09-23T12:56:02Z",
       "shared_files": [
         "docs/CRITICALITY-TIERS.md"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-28T00:48:23Z",
+      "my_subject": "sairncare",
+      "my_task": "roleSet seam test for the 6 could-not-tell auth seams; caregiver role enforced in api/sd-data.js roleSets and reconciled with sairncare.html dropdowns; SAIRNcare credential pre-gate red suites (12 suites, 172 assertions, medication-record auth); legal-deadlines.js add_rule/add_holidays 401/403; WEAK git anchors; sd-sub-data.js two call sites; second-pass retry arms; conflict_marker_preflight ORIG_HEAD mode; switch-level reclassification; counter-wraparound sweep; independent-backstop-lost sweep; hidden-state audit. SUBJECT NAMED PER PR 4.3 FILES: api/_lib/auth.js api/_lib/auth-roleset-seam.test.js api/sd-data.js sairncare.html api/legal-deadlines.js tools/conflict_marker_preflight.py tools/second_pass_coverage_scan.py tests/sairnscape_outbound_queue.js docs/",
+      "other_session": "hank",
+      "other_subject": "hank",
+      "other_task": "deadline-engine applyRetrigger: a PENDING motion and an UNPARSEABLE disposition date both yield MOTION_PENDING 422 'the appeal period has not started', so a caller sending 12/31/2026 or a misspelled key is told they still have time on an appeal deadline -- toUTC returns null for anything not strictly YYYY-MM-DD and nothing distinguishes the two. The whole retrigger path (FRAP 4(a)(4)(A), Ohio App.R. 4(B)(2), Mass Rule 12(a)(2), all three SEEDED and wired to a 422) has NO test anywhere and its element field name disposition_date is documented nowhere. Fix plus first suite. Then the next highest-severity items from the ghost-field triage doc and a verdict on the nine unreachable fault-injection options. CONFLICTS DECLARED PER PR 4.3, NOT REWORDED: (1) cc holds docs/SAIRN-OPEN-WORK-INDEX.md live and is repairing malformed row 355 -- row 356 has the IDENTICAL defect and both are mine; told cc through the status note rather than editing the file, because two sessions on one row is PR 2.1. (2) cc holds sairnbuild.html live, so the two SAIRNbuild items in my queue (demo-company data on first sign-in, the Client Portal with no homeowner login) are BLOCKED ON FILE OWNERSHIP and not taken. (3) cc holds tools/report_only_checks.py -- I already landed my NOT_PROMOTED entry there at abd39b07 and will not touch it again. SUBJECT NAMED PER PR 4.3 FILES: api/_lib/deadline-engine.js tests/sairnlaw_retrigger.js api/legal-deadlines.js docs/2026-09-27-ghost-field-read-sweep.md",
+      "other_claimed_at": "2026-09-27T23:36:08Z",
+      "shared_files": [
+        "api/legal-deadlines.js"
       ],
       "source": "status-registry",
       "why": "same declared FILES",
