@@ -2571,8 +2571,8 @@
       "task": "make register citations survive a rebase -- a record whose sha is dangling but whose subject AND file list match a commit in the outgoing range is the SAME commit rewritten, not a missing record; plus the push-retry timeout diagnosis. FILES: tools/register_feed_gate.py tests/run_register_citation_survival_probe.py docs/",
       "claimed_at": "2026-09-28T02:12:55Z",
       "claimed_at_epoch": 1790561575.7713833,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-28T03:02:32Z",
       "files": [
         "tests/run_register_citation_survival_probe.py",
         "tools/register_feed_gate.py"
