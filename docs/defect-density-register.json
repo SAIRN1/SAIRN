@@ -18374,6 +18374,58 @@
       "recurrence_open": "NO CLIENT SENDS retrigger_events AT ALL -- sairnlaw.html has no caller, so this whole path is reachable only by a direct API consumer and the input contract is still documented nowhere outside the suite. The endpoint does not validate the element shape before handing it to the engine, so the engine is the only thing refusing. And the wider class is untouched: a field written somewhere and read on the WRONG object clears the ghost scan's third condition by construction, which is the member of this family that has now bitten twice. Also open: `dispositions.sort()` compares raw strings, which is correct for ISO dates and is now guaranteed only because everything non-ISO refuses upstream -- nothing asserts that dependency."
     },
     {
+      "commit": "1da31d4ceb77",
+      "date": "2026-09-28",
+      "subject": "fix(tools): the rollup dedup dropped a real list member -- found discharging fourth's 41h-overdue obligation, and the assumption it rested on had already failed",
+      "files": [
+        "tests/run_criticality_tier_probe.py",
+        "tools/criticality_tier_check.py"
+      ],
+      "lines_added": 110,
+      "lines_removed": 22,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "tools/criticality_tier_check.py _insert_one deduped the backticked names in a rollup cell on the NAME alone, so a resource whose FIRST occurrence sits inside a bold annotation lost its PLAIN-list token to its own annotation. sairnfreedom's sf_vehicles is named at offset 184 inside a bold run and again at offset 705 in the plain alphabetical list; the dedup kept the annotation and dropped a real list member. Two consequences, both measured on the live register: the measurement that justified the original rule -- taking the first occurrence makes all seventeen plain runs monotonic, where four were not -- was then partly achieved by DELETING a member rather than by ordering one; and _insert_one's successor search skipped the dropped token, so a name sorting between sf_tickets and sf_vehicles was placed AFTER sf_vehicles rather than before it. Zero live instances: no name has been appended by that path since. FOUND WHILE DISCHARGING THE AUTHOR'S OWN REVIEW REQUEST, which named this exact risk as its attack (2) and recorded it as checked-and-true -- true of the four cells that existed then, and the register now carries sixteen duplicated names across seven cells with one of them inverted, two days later. Fixed to FIRST-PLAIN occurrence: measured both ways, the old rule leaves 0 of 17 non-monotonic and loses sf_vehicles, the new rule leaves 0 of 17 AND keeps it, so there is no trade. The derivation moved into a pure _cell_tokens() so the plain run is assertable directly rather than inferred from where an insert lands. Three arms added and ablated; restoring the old rule turns two red with the dropped name in the failure text. One existing arm corrected in the same commit: it computed sorted(set(all names in the cell)) and called it the last name in the alphabetical list.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "5256db10834b",
+        "date": "2026-09-26",
+        "subject": "review(tier-a): discharge cody's 37h rollup-fixer obligation -- and the append path spliced a name into somebody's sentence",
+        "lag_days": 2
+      },
+      "citation_note": "Not an absent dependency. Cited for the principle one step over: the measurement that justified the rule was reported as achieved when part of it was achieved by deleting a member of the population being measured.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "The dedup key was the NAME, and the property it needed was the name AND its boldness. One correct shape (list then prose) and its mirror image (annotation then list) look identical to a name-only key, and only one of them is what the rule was written for.",
+          "action_status": "done",
+          "action": "Keyed on the first PLAIN occurrence, so an annotated token no longer consumes a name's list membership."
+        },
+        {
+          "kind": "detection",
+          "factor": "The probe already KNEW. Its fixture arm computes and PRINTS the duplicated names it found -- sf_operators and sf_vehicles -- and every arm below it drove only sf_operators. A precondition reported and then half-tested reads as coverage of the whole condition.",
+          "action_status": "done",
+          "action": "Three arms added over the plain run itself, one of them driving sf_vehicles specifically; ablated to confirm two go red with the dropped name named."
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "The rule rested on a stated, checked assumption about somebody's PROSE -- that a twice-named resource is named in the list first. It was true of all four cells when checked and nothing re-checks it as cells are written. The register grew from four duplicated names to sixteen across seven cells in two days.",
+          "action_status": "planned",
+          "action": "The new arms assert the plain run keeps every plain occurrence and stays alphabetical, so a cell that breaks the shape goes red rather than placing quietly. Deriving the convention from the document itself is not done."
+        }
+      ],
+      "recurrence_open": "Nothing derives the list-then-prose convention from the register; it is still an assumption about how people write these cells, now with an arm that fires when a cell breaks the shape in this particular way. A cell that names a resource in a PREAMBLE before the list -- the original request's own hypothetical -- would still place badly and no arm covers it. The wider class is open: the register is hand-written prose that several tools parse."
+    },
+    {
       "commit": "2e1ad2775558",
       "date": "2026-09-28",
       "subject": "fix(gate): a credential in a STAGED blob is now refused at commit, and the hook that should have caught it failed OPEN twice",
@@ -18430,6 +18482,58 @@
         }
       ],
       "recurrence_open": "OPEN IN TWO DIRECTIONS. (1) A SCAN OF ALL SEVEN SAIRN CLONES found ONE unreachable blob carrying a github_pat shape in SAIRN-cc -- unreachable, so never on origin, but present in that clone's object store and needing the same reflog-expire-and-prune treatment. A build agent must not reach into another clone, so it is reported rather than fixed. (2) The blanket-staging habit is only partly addressed: regenerate steps now stage explicit paths, but every other git add -A, git add . and git commit -a across tools, scripts and hooks is unswept, and tools/push_retry.py already exists to replace exactly the loop that caused this."
+    },
+    {
+      "commit": "8f0ac2c431b4",
+      "date": "2026-09-28",
+      "subject": "fix(tools): claim_activity_check called ELEVEN EXPIRED claims active -- every finding it produced that day was of that shape",
+      "files": [
+        "tests/run_claim_activity_probe.py",
+        "tools/claim_activity_check.py"
+      ],
+      "lines_added": 331,
+      "lines_removed": 8,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/claim_activity_check.py selected claims on c.get('status') == 'active' -- the RAW field in the claim file -- where sairn_claim.is_active() also applies the four-hour staleness rule and a liveness check on the owning process. The sibling tool draws that distinction at its own call site in its own words ('Uses is_active(), not the raw status field: an EXPIRED claim is one this...') and this one did not. MEASURED at the fix: 13 records carry status active and is_active() is true for TWO, so ELEVEN OF THIRTEEN were reported as 'active NNh and NO commit has touched its declared files' when they had expired hours or days earlier and were blocking nobody -- sairn_claim.py check already ignores them. Every finding the tool produced that day was of that shape: non-empty, plausible, and pointing at nothing anybody could act on in the way the sentence implied. A report-only check whose entire output is vacuous is a false-finding generator, which is the shape that gets a check switched off. Fixed by importing is_active() rather than reimplementing it, and failing closed (exit 2, naming the tool) when it cannot be imported. EXPIRED-BUT-UNRELEASED is now a named third state -- still reported, with a reason saying it blocks nobody, and excluded from the exit code so a backlog of seven does not leave the check red forever. Regression control written first: 8 of 10 arms failed before the fix; the known-bad arm ablates the liveness call back to the raw-status rule and requires the 100h fixture to be called NO ACTIVITY again, paired with an arm requiring the live fixture still found.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "5eea7768e3c7",
+        "date": "2026-09-28",
+        "subject": "check(methodology): publish the BLIND SPOT beside checked/universe, ratchet it downward, and a known-bad control that a broken declaration must fail",
+        "lag_days": 0
+      },
+      "citation_note": "The check ran and reported. What it could not do is tell held from expired, so every sentence it printed asserted something it had not established. Cited for 1.11's principle rather than its literal absent-dependency subject -- though the fix does add the literal case too, since the staleness rule now comes from another tool and its absence exits 2.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "A boolean with two sources of truth: the `status` field on the record and the staleness rule in the sibling tool. Reading the field is the obvious thing and is right only for the moment the claim is made.",
+          "action_status": "done",
+          "action": "is_active() is imported from sairn_claim.py and applied to every record; the raw field is never consulted alone."
+        },
+        {
+          "kind": "detection",
+          "factor": "The tool had NO control of any kind -- no probe, no known-bad fixture -- and its selftest exercised the FILES: parser and touched_since() only, never the selection rule. The one part that decided what gets reported was the one part nothing drove.",
+          "action_status": "done",
+          "action": "tests/run_claim_activity_probe.py, eleven arms over constructed claim directories via a new SAIRN_CLAIM_DIR override, with a known-bad arm that plants the raw-status rule back and a paired arm proving the ablation does not merely break the tool."
+        },
+        {
+          "kind": "process",
+          "factor": "Nothing asked whether the findings were ACTIONABLE. The tool was read as working because it printed rows, and rows on a report-only check read as signal. Three findings, all three vacuous, for as long as it had existed.",
+          "action_status": "planned",
+          "action": "No general check proposed yet for a report-only tool whose output is entirely of one vacuous shape. Recorded as the open recurrence."
+        }
+      ],
+      "recurrence_open": "Nothing detects a report-only check whose findings are all of one vacuous shape. This one printed rows from the day it was written and the rows read as signal because the report was non-empty; the registry records 65 report-only checks and no property of any of them says what an ACTIONABLE finding would look like. The sibling half is also open: any other tool reading a claim's `status` field directly inherits this defect, and nothing enumerates those readers."
     },
     {
       "commit": "857729ddd75a",
@@ -18639,58 +18743,6 @@
         }
       ],
       "recurrence_open": "PARTLY CLOSED AND MEASURED. The scan now covers Object.assign mappers in four api files: 91 examined, 54 still spread the blob last, 4 exploitable, 0 identity. The 4 remaining are data keys rather than attribution and are unfixed. WHAT IS NOT COVERED AT ALL: a mapper built through a helper, a spread operator or assembled across statements; the strip list is unioned per FILE rather than per resource, so the tool under-reports; and identity fields with NO column to override -- alf_mar administered_by is caller-supplied with nothing to shadow -- are a separate class this tool is blind to by construction."
-    },
-    {
-      "commit": "1da31d4ceb77",
-      "date": "2026-09-28",
-      "subject": "fix(tools): the rollup dedup dropped a real list member -- found discharging fourth's 41h-overdue obligation, and the assumption it rested on had already failed",
-      "files": [
-        "tests/run_criticality_tier_probe.py",
-        "tools/criticality_tier_check.py"
-      ],
-      "lines_added": 110,
-      "lines_removed": 22,
-      "app": "PLATFORM",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "independent-review",
-      "summary": "tools/criticality_tier_check.py _insert_one deduped the backticked names in a rollup cell on the NAME alone, so a resource whose FIRST occurrence sits inside a bold annotation lost its PLAIN-list token to its own annotation. sairnfreedom's sf_vehicles is named at offset 184 inside a bold run and again at offset 705 in the plain alphabetical list; the dedup kept the annotation and dropped a real list member. Two consequences, both measured on the live register: the measurement that justified the original rule -- taking the first occurrence makes all seventeen plain runs monotonic, where four were not -- was then partly achieved by DELETING a member rather than by ordering one; and _insert_one's successor search skipped the dropped token, so a name sorting between sf_tickets and sf_vehicles was placed AFTER sf_vehicles rather than before it. Zero live instances: no name has been appended by that path since. FOUND WHILE DISCHARGING THE AUTHOR'S OWN REVIEW REQUEST, which named this exact risk as its attack (2) and recorded it as checked-and-true -- true of the four cells that existed then, and the register now carries sixteen duplicated names across seven cells with one of them inverted, two days later. Fixed to FIRST-PLAIN occurrence: measured both ways, the old rule leaves 0 of 17 non-monotonic and loses sf_vehicles, the new rule leaves 0 of 17 AND keeps it, so there is no trade. The derivation moved into a pure _cell_tokens() so the plain run is assertable directly rather than inferred from where an insert lands. Three arms added and ablated; restoring the old rule turns two red with the dropped name in the failure text. One existing arm corrected in the same commit: it computed sorted(set(all names in the cell)) and called it the last name in the alphabetical list.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "5256db10834b",
-        "date": "2026-09-26",
-        "subject": "review(tier-a): discharge cody's 37h rollup-fixer obligation -- and the append path spliced a name into somebody's sentence",
-        "lag_days": 2
-      },
-      "citation_note": "Not an absent dependency. Cited for the principle one step over: the measurement that justified the rule was reported as achieved when part of it was achieved by deleting a member of the population being measured.",
-      "contributing_factors": [
-        {
-          "kind": "technical",
-          "factor": "The dedup key was the NAME, and the property it needed was the name AND its boldness. One correct shape (list then prose) and its mirror image (annotation then list) look identical to a name-only key, and only one of them is what the rule was written for.",
-          "action_status": "done",
-          "action": "Keyed on the first PLAIN occurrence, so an annotated token no longer consumes a name's list membership."
-        },
-        {
-          "kind": "detection",
-          "factor": "The probe already KNEW. Its fixture arm computes and PRINTS the duplicated names it found -- sf_operators and sf_vehicles -- and every arm below it drove only sf_operators. A precondition reported and then half-tested reads as coverage of the whole condition.",
-          "action_status": "done",
-          "action": "Three arms added over the plain run itself, one of them driving sf_vehicles specifically; ablated to confirm two go red with the dropped name named."
-        },
-        {
-          "kind": "latent-condition",
-          "factor": "The rule rested on a stated, checked assumption about somebody's PROSE -- that a twice-named resource is named in the list first. It was true of all four cells when checked and nothing re-checks it as cells are written. The register grew from four duplicated names to sixteen across seven cells in two days.",
-          "action_status": "planned",
-          "action": "The new arms assert the plain run keeps every plain occurrence and stays alphabetical, so a cell that breaks the shape goes red rather than placing quietly. Deriving the convention from the document itself is not done."
-        }
-      ],
-      "recurrence_open": "Nothing derives the list-then-prose convention from the register; it is still an assumption about how people write these cells, now with an arm that fires when a cell breaks the shape in this particular way. A cell that names a resource in a PREAMBLE before the list -- the original request's own hypothetical -- would still place badly and no arm covers it. The wider class is open: the register is hand-written prose that several tools parse."
     }
   ],
   "started": "2026-09-09",

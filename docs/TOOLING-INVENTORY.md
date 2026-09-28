@@ -502,7 +502,7 @@ number, and only one of them is a document.
   hook entries                        14   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                67   report_only_checks.REGISTRY
-  tools invoked by tests/            186   tests/**/*.py, *.js
+  tools invoked by tests/            187   tests/**/*.py, *.js
   recorded NOT-promoted decisions     80   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```
