@@ -18639,6 +18639,58 @@
         }
       ],
       "recurrence_open": "PARTLY CLOSED AND MEASURED. The scan now covers Object.assign mappers in four api files: 91 examined, 54 still spread the blob last, 4 exploitable, 0 identity. The 4 remaining are data keys rather than attribution and are unfixed. WHAT IS NOT COVERED AT ALL: a mapper built through a helper, a spread operator or assembled across statements; the strip list is unioned per FILE rather than per resource, so the tool under-reports; and identity fields with NO column to override -- alf_mar administered_by is caller-supplied with nothing to shadow -- are a separate class this tool is blind to by construction."
+    },
+    {
+      "commit": "1da31d4ceb77",
+      "date": "2026-09-28",
+      "subject": "fix(tools): the rollup dedup dropped a real list member -- found discharging fourth's 41h-overdue obligation, and the assumption it rested on had already failed",
+      "files": [
+        "tests/run_criticality_tier_probe.py",
+        "tools/criticality_tier_check.py"
+      ],
+      "lines_added": 110,
+      "lines_removed": 22,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "tools/criticality_tier_check.py _insert_one deduped the backticked names in a rollup cell on the NAME alone, so a resource whose FIRST occurrence sits inside a bold annotation lost its PLAIN-list token to its own annotation. sairnfreedom's sf_vehicles is named at offset 184 inside a bold run and again at offset 705 in the plain alphabetical list; the dedup kept the annotation and dropped a real list member. Two consequences, both measured on the live register: the measurement that justified the original rule -- taking the first occurrence makes all seventeen plain runs monotonic, where four were not -- was then partly achieved by DELETING a member rather than by ordering one; and _insert_one's successor search skipped the dropped token, so a name sorting between sf_tickets and sf_vehicles was placed AFTER sf_vehicles rather than before it. Zero live instances: no name has been appended by that path since. FOUND WHILE DISCHARGING THE AUTHOR'S OWN REVIEW REQUEST, which named this exact risk as its attack (2) and recorded it as checked-and-true -- true of the four cells that existed then, and the register now carries sixteen duplicated names across seven cells with one of them inverted, two days later. Fixed to FIRST-PLAIN occurrence: measured both ways, the old rule leaves 0 of 17 non-monotonic and loses sf_vehicles, the new rule leaves 0 of 17 AND keeps it, so there is no trade. The derivation moved into a pure _cell_tokens() so the plain run is assertable directly rather than inferred from where an insert lands. Three arms added and ablated; restoring the old rule turns two red with the dropped name in the failure text. One existing arm corrected in the same commit: it computed sorted(set(all names in the cell)) and called it the last name in the alphabetical list.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "5256db10834b",
+        "date": "2026-09-26",
+        "subject": "review(tier-a): discharge cody's 37h rollup-fixer obligation -- and the append path spliced a name into somebody's sentence",
+        "lag_days": 2
+      },
+      "citation_note": "Not an absent dependency. Cited for the principle one step over: the measurement that justified the rule was reported as achieved when part of it was achieved by deleting a member of the population being measured.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "The dedup key was the NAME, and the property it needed was the name AND its boldness. One correct shape (list then prose) and its mirror image (annotation then list) look identical to a name-only key, and only one of them is what the rule was written for.",
+          "action_status": "done",
+          "action": "Keyed on the first PLAIN occurrence, so an annotated token no longer consumes a name's list membership."
+        },
+        {
+          "kind": "detection",
+          "factor": "The probe already KNEW. Its fixture arm computes and PRINTS the duplicated names it found -- sf_operators and sf_vehicles -- and every arm below it drove only sf_operators. A precondition reported and then half-tested reads as coverage of the whole condition.",
+          "action_status": "done",
+          "action": "Three arms added over the plain run itself, one of them driving sf_vehicles specifically; ablated to confirm two go red with the dropped name named."
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "The rule rested on a stated, checked assumption about somebody's PROSE -- that a twice-named resource is named in the list first. It was true of all four cells when checked and nothing re-checks it as cells are written. The register grew from four duplicated names to sixteen across seven cells in two days.",
+          "action_status": "planned",
+          "action": "The new arms assert the plain run keeps every plain occurrence and stays alphabetical, so a cell that breaks the shape goes red rather than placing quietly. Deriving the convention from the document itself is not done."
+        }
+      ],
+      "recurrence_open": "Nothing derives the list-then-prose convention from the register; it is still an assumption about how people write these cells, now with an arm that fires when a cell breaks the shape in this particular way. A cell that names a resource in a PREAMBLE before the list -- the original request's own hypothetical -- would still place badly and no arm covers it. The wider class is open: the register is hand-written prose that several tools parse."
     }
   ],
   "started": "2026-09-09",
