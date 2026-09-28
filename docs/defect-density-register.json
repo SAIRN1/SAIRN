@@ -18655,6 +18655,63 @@
       "recurrence_open": "No shared reader for .claude/claims/*.json exists. sairn_claim.py writes it and at least two tools parse it again independently, so a parser wrong in one is invisible to the others. Naming it rather than consolidating, because the writers live in several sessions declared files."
     },
     {
+      "commit": "8bf5891da949",
+      "date": "2026-09-28",
+      "subject": "fix(tooling): the fail-open count was a count of a SHAPE, not of defects -- 30 becomes 17, and the decoy proves the scanner works",
+      "files": [
+        "docs/fail-open-coverage.json",
+        "tests/run_fail_open_probe.py",
+        "tools/fail_open_scan.py"
+      ],
+      "lines_added": 117,
+      "lines_removed": 5,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "probe-control",
+      "summary": "tools/fail_open_scan.py's headline number counted a SHAPE and was published as a count of defects. After the self-match fix it reported 30 dependency-shaped fail-opens in tools/, and that figure was reported to Michael as the work remaining. Reading all 30 showed most are CORRECT: twelve wrap best-effort operations whose failure cannot change any verdict -- nine of them sys.stdout.reconfigure() on Pythons without TextIOWrapper.reconfigure, where failure means mojibake and refusing to run would be absurd -- and one carries a written argument for failing open in the SAFE direction (tools/deploy_verify_notify.py:93: 'Fails OPEN (checks anyway) if the file list cannot be determined, because the alternative is silently skipping a real verification'). Ratcheting on the raw number would have driven thirty edits to code that is already right, and flattening a written, argued decision together with an unnoticed swallow is how a findings list stops being read. Corrected split: 17 real, 12 benign, 1 documented, 1 scope.",
+      "rules": [
+        "1.8"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tests/run_fail_open_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Present from the tool's first commit -- the classifier and the shape table were written together, so there is no commit that introduced it."
+      },
+      "citation_note": "The number kept being published and kept not being about defects; nothing announced that a count of a shape had become a count nobody could act on.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "The tool classified by SHAPE alone. `except Exception: pass` around sys.stdout.reconfigure and around a verdict-bearing parse are the same three tokens, and nothing looked at what was being guarded.",
+          "action": "BENIGN is now decided from the BODY OF THE TRY -- reconfigure, chmod, remove, worktree -- walked back to the handler's own `try:`, not from a list of file names, so it cannot become a skip-list.",
+          "action_status": "done"
+        },
+        {
+          "kind": "technical",
+          "factor": "A decision somebody wrote down and argued was counted identically to one nobody noticed, so the list gave a reader no way to spend attention well.",
+          "action": "DOCUMENTED is a nearby comment stating the decision (fails open / deliberate / best-effort / on purpose), reported as its own class.",
+          "action_status": "done"
+        },
+        {
+          "kind": "detection",
+          "factor": "The number was published BEFORE the scanner was ever driven against a known-bad input. Its existing control drove the git hooks, not the scanner's counting, so nothing could distinguish a working detector from one that had stopped detecting.",
+          "action": "A decoy section: a real bare-except-pass in executable code must be CAUGHT, the same text in a docstring must NOT be, and an untokenisable file must be COULD NOT TELL rather than scanned raw. Fixtures assembled at runtime so the probe is not a finding in its own scan.",
+          "action_status": "done"
+        },
+        {
+          "kind": "process",
+          "factor": "Three figures from this one tool reached Michael as measurements before any of them was falsifiable: 21, then 16, then 30.",
+          "action": "None beyond the decoy.",
+          "action_status": "not-actionable",
+          "note": "The corrective action is the decoy, recorded above. What is worth keeping separately is the pattern in WHICH numbers were wrong: every one came from a sweep written quickly in response to an incident, where the finding felt urgent and the control felt like overhead. The three tools in the same session that DID get fixtures first -- the role-gate loop rule, the conflict pre-flight, the staged-credential check -- were all built as deliberate work rather than as a reaction."
+        }
+      ],
+      "recurrence_open": "OPEN: the 17 are unfixed. And the classification itself is a text heuristic -- BENIGN is inferred from what the try body CONTAINS, so a benign operation spelled differently is miscounted as a finding, and a verdict-bearing call that happens to sit beside an os.remove is miscounted as benign. No control drives the CLASSIFIER, only the detector."
+    },
+    {
       "commit": "8f0ac2c431b4",
       "date": "2026-09-28",
       "subject": "fix(tools): claim_activity_check called ELEVEN EXPIRED claims active -- every finding it produced that day was of that shape",
@@ -18862,6 +18919,55 @@
       "recurrence_open": "OPEN AND NOW COUNTED FOUR TIMES IN ONE SESSION: sairn_sql_preflight read a table name out of an English sentence; text_gate_literal_sweep missed every precompiled regex and undercounted its own universe by 27; fail_open_scan counted its own docstring; and tools/tier_a_review_gate.py attributed the scp_quotes resource from the word 'quotes' in a docstring about quote characters. The last is CODY'S file and is reported, not edited. The general corrective action -- an empirical decoy probe per text-reading gate -- exists as a backlog inside text_gate_literal_sweep and covers 2 of 157."
     },
     {
+      "commit": "d211c6293616",
+      "date": "2026-09-28",
+      "subject": "fix(stonedesk): the Storage KPI was a percentage of a GUESS over a population it did not name -- and the Math.min the scanner flagged was the one part that was right",
+      "files": [
+        "stonedesk.html",
+        "tests/stonedesk_admin_storage_kpi.js"
+      ],
+      "lines_added": 162,
+      "lines_removed": 3,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "stonedesk.html's Admin Overview 'Storage Used' KPI computed Math.min(100, Math.round((totalBytes/1024/5120)*100)) and wrote it into a card labelled only 'Storage Used'. THE FLAGGED Math.min IS THE ONE PART THAT WAS RIGHT and is recorded as a FALSE POSITIVE for the overrun-inversion class: a localStorage quota is a hard ceiling, a write past it throws, so the ratio cannot legitimately exceed 1 and the cap could never hide an overrun. The two real defects were beside it. (1) THE DENOMINATOR WAS ASSUMED: 5120 KB is a guess at the browser quota, real quotas vary by browser and origin, and where the true quota is larger this reported a half-used store as FULL -- a number an owner acts on, by deleting data, from the two delete buttons on the same panel. (2) THE POPULATION WAS NOT THE ONE THE LABEL NAMED: the loop sums EVERY key in localStorage, which on this platform is every SAIRN app in the browser, and presented it as StoneDesk's -- while the paragraph eleven lines below the card draws exactly that distinction for the delete buttons ('removes only what StoneDesk stored -- other SAIRN apps in this browser are untouched'). So the card showed a percentage of a guess over another app's data. Fixed to report the measured bytes with the label naming the population; the percentage returns when navigator.storage.estimate() is wired with a real quota rather than a constant. Regression suite written first with a known-bad control that restores both halves in a copy and requires two arms red, file restored byte-identical.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/overrun_inversion_scan.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The KPI predates the register and the 5120 constant has been in the file since the Admin Overview panel was built; no single commit introduced the mismatch, which is the constant and the label having been written at different times for different scopes."
+      },
+      "citation_note": "Not an absent dependency. Cited for the neighbouring principle: the card reported a figure it had not established -- a measured numerator over an assumed denominator, presented with no sign that half of it was a guess.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "A KPI with a HARDCODED denominator. The numerator is measured and the denominator is a constant nobody can check from the panel, so the figure looks derived and is half invented.",
+          "action_status": "done",
+          "action": "The percentage is gone and the measured bytes are shown. No quota is assumed; the arm forbids the constant returning."
+        },
+        {
+          "kind": "technical",
+          "factor": "A label that names a narrower population than the code sums. 'Storage Used' on StoneDesk's admin page over every SAIRN app's localStorage.",
+          "action_status": "done",
+          "action": "Label reads 'Browser Storage -- all SAIRN apps', and an arm reads the label beside the element id rather than trusting it."
+        },
+        {
+          "kind": "detection",
+          "factor": "The scanner that found the line is explicitly not a verdict -- its own header says it cannot follow a capped value to its consumer -- so the hit sat in a report for days as one of three MODERATE rows, indistinguishable from the two beside it that are fine.",
+          "action_status": "planned",
+          "action": "Triage the other two MODERATE rows (stonedesk.html:20008 and :26667) and the three HIGH ones the same way, recording a verdict per hit so the report shrinks to what is unread rather than staying at full length forever."
+        }
+      ],
+      "recurrence_open": "Nothing detects a KPI whose denominator is a literal. The overrun-inversion scan matches Math.min specifically and would miss the same defect written as `if (pct > 100) pct = 100` or with the constant inlined differently, and it does not look at the LABEL at all -- the population mismatch here was found by reading the card, not by any tool. Both halves of this defect are invisible to every check in the repo."
+    },
+    {
       "commit": "d84b1af6a15b",
       "date": "2026-09-28",
       "subject": "fix(sairncare): the alf_op_audits write ECHO spread its blob after the columns -- and a sweep for the whole class",
@@ -19030,55 +19136,6 @@
         }
       ],
       "recurrence_open": "PARTLY CLOSED AND MEASURED: hook fail-opens 5 -> 0, but 16 dependency-shaped fail-opens remain in tools/ where exit 0 is not a decision to allow something, and they are unswept. The scanner reads TEXT, so a fail-open through a helper, a trap or a Python default argument is invisible and the universe is a FLOOR. And the distinction the tool rests on -- SCOPE versus DEPENDENCY -- is inferred from what the guard NAMES, so a scope guard whose marker has an unusual name will be miscounted as a finding."
-    },
-    {
-      "commit": "d211c6293616",
-      "date": "2026-09-28",
-      "subject": "fix(stonedesk): the Storage KPI was a percentage of a GUESS over a population it did not name -- and the Math.min the scanner flagged was the one part that was right",
-      "files": [
-        "stonedesk.html",
-        "tests/stonedesk_admin_storage_kpi.js"
-      ],
-      "lines_added": 162,
-      "lines_removed": 3,
-      "app": "stonedesk",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "static-checker",
-      "summary": "stonedesk.html's Admin Overview 'Storage Used' KPI computed Math.min(100, Math.round((totalBytes/1024/5120)*100)) and wrote it into a card labelled only 'Storage Used'. THE FLAGGED Math.min IS THE ONE PART THAT WAS RIGHT and is recorded as a FALSE POSITIVE for the overrun-inversion class: a localStorage quota is a hard ceiling, a write past it throws, so the ratio cannot legitimately exceed 1 and the cap could never hide an overrun. The two real defects were beside it. (1) THE DENOMINATOR WAS ASSUMED: 5120 KB is a guess at the browser quota, real quotas vary by browser and origin, and where the true quota is larger this reported a half-used store as FULL -- a number an owner acts on, by deleting data, from the two delete buttons on the same panel. (2) THE POPULATION WAS NOT THE ONE THE LABEL NAMED: the loop sums EVERY key in localStorage, which on this platform is every SAIRN app in the browser, and presented it as StoneDesk's -- while the paragraph eleven lines below the card draws exactly that distinction for the delete buttons ('removes only what StoneDesk stored -- other SAIRN apps in this browser are untouched'). So the card showed a percentage of a guess over another app's data. Fixed to report the measured bytes with the label naming the population; the percentage returns when navigator.storage.estimate() is wired with a real quota rather than a constant. Regression suite written first with a known-bad control that restores both halves in a copy and requires two arms red, file restored byte-identical.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": "tools/overrun_inversion_scan.py",
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The KPI predates the register and the 5120 constant has been in the file since the Admin Overview panel was built; no single commit introduced the mismatch, which is the constant and the label having been written at different times for different scopes."
-      },
-      "citation_note": "Not an absent dependency. Cited for the neighbouring principle: the card reported a figure it had not established -- a measured numerator over an assumed denominator, presented with no sign that half of it was a guess.",
-      "contributing_factors": [
-        {
-          "kind": "technical",
-          "factor": "A KPI with a HARDCODED denominator. The numerator is measured and the denominator is a constant nobody can check from the panel, so the figure looks derived and is half invented.",
-          "action_status": "done",
-          "action": "The percentage is gone and the measured bytes are shown. No quota is assumed; the arm forbids the constant returning."
-        },
-        {
-          "kind": "technical",
-          "factor": "A label that names a narrower population than the code sums. 'Storage Used' on StoneDesk's admin page over every SAIRN app's localStorage.",
-          "action_status": "done",
-          "action": "Label reads 'Browser Storage -- all SAIRN apps', and an arm reads the label beside the element id rather than trusting it."
-        },
-        {
-          "kind": "detection",
-          "factor": "The scanner that found the line is explicitly not a verdict -- its own header says it cannot follow a capped value to its consumer -- so the hit sat in a report for days as one of three MODERATE rows, indistinguishable from the two beside it that are fine.",
-          "action_status": "planned",
-          "action": "Triage the other two MODERATE rows (stonedesk.html:20008 and :26667) and the three HIGH ones the same way, recording a verdict per hit so the report shrinks to what is unread rather than staying at full length forever."
-        }
-      ],
-      "recurrence_open": "Nothing detects a KPI whose denominator is a literal. The overrun-inversion scan matches Math.min specifically and would miss the same defect written as `if (pct > 100) pct = 100` or with the constant inlined differently, and it does not look at the LABEL at all -- the population mismatch here was found by reading the card, not by any tool. Both halves of this defect are invisible to every check in the repo."
     }
   ],
   "started": "2026-09-09",
