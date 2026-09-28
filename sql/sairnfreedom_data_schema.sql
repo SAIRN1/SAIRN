@@ -592,6 +592,31 @@ create policy "svc only sf_tickets" on public.sf_tickets
 revoke all on public.sf_tickets from service_role;
 grant select, insert, update on public.sf_tickets to service_role;
 
+-- Quarterly trustee audits: who attested to the post's financial controls, the
+-- fidelity bond covering the people who handle gaming receipts, and its expiry.
+-- ADDED 2026-09-29. It was the 43rd storage key in sairnfreedom.html and it was
+-- on none of the lists -- not backed up, not registered, not here, and not in
+-- the deliberate-exclusion list either, so nothing recorded a decision about
+-- it. SD_SESSION_GATED for read and write from the day it first reached the
+-- server, which is the only time adding a gate costs nothing.
+create table if not exists public.sf_trustee_audits (
+  id uuid primary key default gen_random_uuid(),
+  license_hash text not null,
+  app_id text not null default 'sairnfreedom',
+  trustee_audit_id text not null,
+  data jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (license_hash, trustee_audit_id),
+  constraint sf_trustee_audits_data_size check (octet_length(data::text) <= 65536)
+);
+alter table public.sf_trustee_audits enable row level security;
+drop policy if exists "svc only sf_trustee_audits" on public.sf_trustee_audits;
+create policy "svc only sf_trustee_audits" on public.sf_trustee_audits
+  for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
+revoke all on public.sf_trustee_audits from service_role;
+grant select, insert, update on public.sf_trustee_audits to service_role;
+
 -- Vehicle service records.
 create table if not exists public.sf_vehicle_service (
   id uuid primary key default gen_random_uuid(),

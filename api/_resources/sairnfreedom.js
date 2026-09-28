@@ -56,6 +56,19 @@ module.exports = {
     'sf_signatures',
     'sf_staff',
     'sf_tickets',
+    // ── sf_trustee_audits, ADDED 2026-09-29. It was the 43rd storage key and
+    //    it was on NONE of the lists -- not backed up, not registered, not in
+    //    the schema, and NOT in the deliberate-exclusion list below either, so
+    //    nothing in the repo recorded a decision about it.
+    //    tools/local_only_collection_check.py measured it as 1 of 36
+    //    collections with no route to a server. The quarterly trustee audit
+    //    carries the auditor's name, the fidelity bond and its expiry -- the
+    //    financial-controls attestation for an ORC 2915 gaming post -- and it
+    //    is SD_SESSION_GATED for read and write in api/sd-data.js, because the
+    //    licence key alone is shipped to the browser.
+    //    tests/sairnfreedom_key_reconciliation.js now EXECUTES the closing
+    //    sentence of this file, so the next key has to be a decision.
+    'sf_trustee_audits',
     'sf_vehicle_service',
     'sf_vehicles',
     'sf_vendor_prices',
@@ -77,6 +90,13 @@ module.exports = {
   //                             it would let one device's first-seen decision
   //                             silently become another device's trust anchor.
   //
-  // 42 keys written, 35 backed up, 7 excluded above -- the count reconciles.
+  // 43 keys written, 36 backed up, 7 excluded above -- the count reconciles.
+  //
+  // AND THAT SENTENCE IS NOW EXECUTED RATHER THAN ASSERTED.
+  // tests/sairnfreedom_key_reconciliation.js reads every `K_x = 'sf_...'`
+  // binding out of sairnfreedom.html and requires each one to be on exactly one
+  // of the two lists. It read 42/35/7 for weeks while the app had 43 keys, and
+  // the odd one out -- sf_trustee_audits -- lived in a single browser the whole
+  // time. A count stated in a comment does not re-run.
   ],
 };

@@ -190,7 +190,7 @@ const POSTURE = {
   // sf_ resources were gated across 2026-09-21/22/24 and every one answers
   // 403, so the gate column read NONE while more than a third of the app was
   // behind a session.
-  sairnfreedom:    { gate: 'SOME', auth: true,  why: 'CORRECTED 2026-09-25. 15 of 35 gate, all via SD_SESSION_GATED (403 FORBIDDEN) -- the Tier A three armed 2026-09-21, eight more after the hover audit 2026-09-22, sf_signatures and the rest 2026-09-24. Per-employee auth DOES exist (api/sf-auth.js, ten capability roles, sairnfreedom_employee_auth); the old row denied both facts' },
+  sairnfreedom:    { gate: 'SOME', auth: true,  why: 'CORRECTED 2026-09-25, RE-COUNTED 2026-09-29. 16 of 36 gate, all via SD_SESSION_GATED (403 FORBIDDEN) -- sf_trustee_audits joined both denominator and numerator on the day it first reached the server -- the Tier A three armed 2026-09-21, eight more after the hover audit 2026-09-22, sf_signatures and the rest 2026-09-24. Per-employee auth DOES exist (api/sf-auth.js, ten capability roles, sairnfreedom_employee_auth); the old row denied both facts' },
   // READS are still licence-only on all 28 and that is what this column
   // measures. The WRITE posture is no longer NONE: on 2026-09-14 Michael
   // decided the six Tier A billing resources -- sc_ar, sc_claims, sc_revenue,
@@ -361,7 +361,7 @@ section('0. the fixture really is a token, and really is app-bound');
   // of them, and it said so wrongly for weeks in four places at once:
   //   sairnlaw      measured SOME while phase 2 finished it on 2026-09-22
   //                 (16 x 401 + 4 x 403 = 20 of 20 -> ALL)
-  //   sairnfreedom  measured NONE with FIFTEEN sf_ resources gated
+  //   sairnfreedom  measured NONE with FIFTEEN sf_ resources gated (SIXTEEN as of 2026-09-29)
   //   sairnscape    measured NONE with its two Tier A resources gated
   //   shared        measured NONE with five of seven gated
   // and sairndesign's row read "1 of 18" while ten of eighteen refuse.

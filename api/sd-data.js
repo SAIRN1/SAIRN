@@ -962,6 +962,16 @@ module.exports = async (req, res) => {
       'sf_service_appointments': ['read', 'write'],
       'sf_signatures':          ['read', 'write'],
       'sf_staff':               ['read', 'write'],
+      // ── sf_trustee_audits, 2026-09-29, GATED ON ARRIVAL ──────────────────
+      // It reached the server for the first time in this same change, so there
+      // is no ungated period to close -- which is the only time adding a gate
+      // costs nothing. The row is {quarter, date, by, bond, bondExpires,
+      // notes}: WHO attested to the post's financial controls, and the fidelity
+      // bond covering the people who handle gaming receipts. That is the ORC
+      // 2915 controls record, it sits beside sf_ledger and sf_accounts which
+      // are both gated, and the licence key on its own is shipped to the
+      // browser and readable by anyone who can open the app.
+      'sf_trustee_audits':      ['read', 'write'],
       'sf_vendor_prices':       ['read', 'write'],
       'sf_waivers':             ['read', 'write'],
       'sf_youth_participants':  ['read', 'write'],
@@ -12479,7 +12489,17 @@ module.exports = async (req, res) => {
       sf_service_appointments: 'service_appointment_id', sf_service_hours: 'service_hour_id',
       sf_service_referrals: 'service_referral_id', sf_sessions: 'session_id',
       sf_shifts: 'shift_id', sf_signatures: 'signature_id', sf_staff: 'staff_id',
-      sf_tickets: 'ticket_id', sf_vehicle_service: 'vehicle_service_id',
+      sf_tickets: 'ticket_id',
+      // sf_trustee_audits, 2026-09-29. REGISTERING A NAME IS NOT WIRING IT:
+      // api/_resources/sairnfreedom.js decides what the allowlist admits, and
+      // THIS table decides what the handler can actually dispatch. A name in
+      // the first and not the second passes the gate and then falls through to
+      // "Unsupported action/resource combination" -- a worse failure than not
+      // registering it, which is the trap api/_resources/sairnlaw.js records
+      // for law_deadline_rules. tests/sairnfreedom_key_reconciliation.js B5
+      // pins both ends.
+      sf_trustee_audits: 'trustee_audit_id',
+      sf_vehicle_service: 'vehicle_service_id',
       sf_vehicles: 'vehicle_id', sf_vendor_prices: 'vendor_price_id',
       sf_vendors: 'vendor_id', sf_waivers: 'waiver_id',
       sf_youth_participants: 'youth_participant_id'
