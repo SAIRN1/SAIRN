@@ -231,7 +231,167 @@ def _unreadable_zero_by_construction():
     return 0
 
 
+def _role_set_reads():
+    """Classify every `!X_ROLES[session.role]` read inside a resource branch.
+
+    Returns {'refusal': n, 'derived': n, 'field': n}.
+
+    ── NOT EVERY ROLE-SET READ IS A GATE, AND THE FIRST VERSION OF THIS ROW
+    ── COUNTED THEM ALL (corrected 2026-09-28, before it was pushed) ────────
+    A first pass put the universe at 60 -- every match of the bare pattern --
+    and reported 21 of them unreachable by `--ablate`, which tripped the 25%
+    ceiling. Reading the 21 showed the number was an upper bound on a blind
+    spot rather than a measurement of one. They are three different things:
+
+      * 6 REAL REFUSALS the ablation regex cannot match, because its condition
+        must be exactly `!X_ROLES[session.role]` followed by `{\\n`. These are
+        compound (`!session || !X_ROLES[...]`, `alreadyExists && !X_ROLES[...]`)
+        or have the whole body on one line. These ARE the blind spot.
+      * 14 DERIVED BOOLEANS -- `const isManagement = !!X_ROLES[session.role];`
+        -- which refuse nothing. They feed a scoping decision further down, and
+        deleting one breaks the branch rather than opening it, so `--ablate`
+        not reaching them is correct and not a gap.
+      * 1 RESPONSE FIELD: `scoped_to_self: !ALF_CRED_READ_ROLES[session.role]`
+        inside a 200 payload. Not a gate at all.
+
+    THE EXCLUSION IS RETURNED RATHER THAN DROPPED, and printed in the row's
+    note, on mutation_anchor_check.py's own rule: an exclusion nobody sees is
+    how a real gap hides inside the category that excuses it.
+
+    CHECKED SEPARATELY AND IT DOES NOT HOLD: no resource the static screen
+    calls gated is gated ONLY by a derived boolean -- every one of the 31 has
+    at least one real refusal. So the screen's resource list is not inflated by
+    this, even though its per-read count was.
+    """
+    sys.path.insert(0, os.path.join(REPO, 'tools'))
+    import re as _re
+    import role_gate_negative_coverage as R
+    src = io.open(R.SD, encoding='utf-8', errors='replace').read()
+    marks = [(m.start(), m.group(1)) for m in R.BRANCH_MARK.finditer(src)]
+    if not marks:
+        raise RuntimeError('no resource branch matched in %s -- the branch '
+                           'shape moved and NOTHING was counted' % R.SD)
+    gate = _re.compile(r'!\s*([A-Z][A-Z0-9_]*ROLES)\s*\[\s*session\.role\s*\]')
+    out = {'refusal': 0, 'derived': 0, 'field': 0}
+    for i, (pos, _name) in enumerate(marks):
+        end = marks[i + 1][0] if i + 1 < len(marks) else len(src)
+        seg = src[pos:end]
+        for m in gate.finditer(seg):
+            ls = seg.rfind('\n', 0, m.start()) + 1
+            st = seg[ls:seg.find('\n', m.start())].strip()
+            if st.startswith('if (') or st.startswith('if('):
+                out['refusal'] += 1
+            elif _re.match(r'^(const|let|var)\s+\w+\s*=', st):
+                out['derived'] += 1
+            else:
+                out['field'] += 1
+    if not out['refusal']:
+        raise RuntimeError('no role-gate REFUSAL matched at all -- the gate '
+                           'spelling moved. This is not "there are no role '
+                           'gates".')
+    return out
+
+
+def _role_gate_blocks():
+    """The universe: role gates that actually REFUSE."""
+    return _role_set_reads()['refusal']
+
+
+def _ablatable_role_gate_blocks():
+    """Gates `--ablate` can actually delete -- the only sound measurement there.
+
+    The static pass classifies all 31 gated RESOURCES. The property is per
+    GATE, and `ablate()` deletes a block matched by a specific shape. Whatever
+    that regex cannot match, the sound instrument cannot reach.
+    """
+    sys.path.insert(0, os.path.join(REPO, 'tools'))
+    import re as _re
+    import role_gate_negative_coverage as R
+    src = io.open(R.SD, encoding='utf-8', errors='replace').read()
+    marks = [(m.start(), m.group(1)) for m in R.BRANCH_MARK.finditer(src)]
+    n = 0
+    for i, (pos, _name) in enumerate(marks):
+        end = marks[i + 1][0] if i + 1 < len(marks) else len(src)
+        n += len(_re.findall(
+            r' *if \(!([A-Z][A-Z0-9_]*ROLES)\[session\.role\]\) \{\n'
+            r'(?:[^\n]*\n)*?[ ]*\}\n', src[pos:end]))
+    return n
+
+
+def _unreadable_role_gate():
+    """Gates the ablation cannot reach -- COUNTED, not left as a footnote."""
+    return _role_gate_blocks() - _ablatable_role_gate_blocks()
+
+
+def _apps_with_resource_registry():
+    sys.path.insert(0, os.path.join(REPO, 'tools'))
+    import criticality_tier_check as C
+    reg = C.apps_with_registries()
+    if not reg:
+        raise RuntimeError('no app registry parsed at all -- this is not '
+                           '"no apps have registries"')
+    return len(reg)
+
+
+def _checked_criticality_tier():
+    """Apps whose registry parsed AND that carry a rollup row to check it."""
+    sys.path.insert(0, os.path.join(REPO, 'tools'))
+    import criticality_tier_check as C
+    reg = C.apps_with_registries()
+    rollup, _rows = C.parse()
+    return len([a for a in reg
+                if a in rollup and not isinstance(reg[a], C.SHAPE_ERROR)])
+
+
+def _unreadable_criticality_tier():
+    """Registries that did NOT parse.
+
+    `fix_rollup_lists` skips these with a bare `continue` and says nothing, so
+    an app whose registry stops parsing leaves the checker reporting a clean
+    run over a smaller table. That silent skip is exactly what a could-not-read
+    count exists to make visible.
+    """
+    sys.path.insert(0, os.path.join(REPO, 'tools'))
+    import criticality_tier_check as C
+    reg = C.apps_with_registries()
+    return len([a for a in reg if isinstance(reg[a], C.SHAPE_ERROR)])
+
+
 TOOLS = [
+    {'tool': 'role_gate_negative_coverage.py',
+     'unreadable': _unreadable_role_gate,
+     'universe': _role_gate_blocks,
+     'checked': _ablatable_role_gate_blocks,
+     'unit': 'role-gate REFUSALS in api/sd-data.js',
+     'note': 'THE UNIT IS THE GATE, NOT THE RESOURCE, and that is the whole '
+             'point of this row. The tool classifies 31 gated RESOURCES and '
+             'the property it is about is per GATE -- seven resources carry '
+             'more than one and get ONE verdict between them. Proved by its '
+             'own instrument on 2026-09-28: `--ablate alf_billing` reports 3 '
+             'gate blocks, 2 CAUGHT and 1 *** SILENT ***, on a resource the '
+             'static screen files under NOT DRIVEN BY ANY SUITE AT ALL. '
+             'CHECKED means reachable by `--ablate`, the only sound '
+             'measurement in that file; UNREADABLE is a real refusal its regex '
+             'cannot match -- a compound condition, or a body on one line. '
+             'EXCLUDED FROM THE UNIVERSE AND SAID OUT LOUD, because an '
+             'exclusion nobody sees is how a gap hides inside the category '
+             'that excuses it: 14 DERIVED BOOLEANS (`const isManagement = '
+             '!!X_ROLES[session.role]`) which refuse nothing and whose '
+             'deletion breaks a branch rather than opening it, and 1 RESPONSE '
+             'FIELD inside a 200 payload. Checked separately: no resource is '
+             'gated ONLY by a derived boolean, so the screen\'s resource list '
+             'is not inflated by them even though a first count of this row '
+             'was.'},
+    {'tool': 'criticality_tier_check.py',
+     'unreadable': _unreadable_criticality_tier,
+     'universe': _apps_with_resource_registry,
+     'checked': _checked_criticality_tier,
+     'unit': 'apps with a resource registry',
+     'note': 'A MEASURED ZERO, not an omission: today every registry parses. '
+             'It is here because `fix_rollup_lists` skips an unparseable '
+             'registry with a bare `continue` and says nothing, so an app '
+             'whose registry breaks would leave the checker reporting a clean '
+             'run over a quietly smaller table.'},
     {'tool': 'probe_anchor_freshness.py',
      'unreadable': _unreadable_probe_anchor_freshness,
      'universe': _probes_declaring_anchors,

@@ -1,30 +1,44 @@
 {
  "ai_action_approval_audit.py": {
   "checked": 22,
-  "reason": "Criteria 2026-09-28.2 adds the UNREADABLE dimension, so the baseline gains a third number per tool. Taken at the corrected state: probe_anchor_freshness carries 1 unreadable (tests/run_adversarial_prompt_corpus_probe.py, 3 non-literal anchors it names rather than drops), mutation_anchor_check 0 after the resolver fix that took it from 84.",
+  "reason": "Correcting the role_gate row's UNIVERSE, which I got wrong in the same session: the first version counted every !X_ROLES[session.role] read (60) and called 21 of them unreachable, which tripped the 25% ceiling. Reading those 21 showed 14 are derived booleans that refuse nothing, 1 is a response field, and only 6 are real refusals the ablation regex cannot match. Universe is now REFUSALS only: 45/39/6. The exclusion is printed in the row note rather than dropped.",
   "unit": "root .html apps",
   "universe": 22,
   "unreadable": 0
  },
+ "criticality_tier_check.py": {
+  "checked": 17,
+  "reason": "Correcting the role_gate row's UNIVERSE, which I got wrong in the same session: the first version counted every !X_ROLES[session.role] read (60) and called 21 of them unreachable, which tripped the 25% ceiling. Reading those 21 showed 14 are derived booleans that refuse nothing, 1 is a response field, and only 6 are real refusals the ablation regex cannot match. Universe is now REFUSALS only: 45/39/6. The exclusion is printed in the row note rather than dropped.",
+  "unit": "apps with a resource registry",
+  "universe": 17,
+  "unreadable": 0
+ },
  "mutation_anchor_check.py": {
   "checked": 82,
-  "reason": "Criteria 2026-09-28.2 adds the UNREADABLE dimension, so the baseline gains a third number per tool. Taken at the corrected state: probe_anchor_freshness carries 1 unreadable (tests/run_adversarial_prompt_corpus_probe.py, 3 non-literal anchors it names rather than drops), mutation_anchor_check 0 after the resolver fix that took it from 84.",
+  "reason": "Correcting the role_gate row's UNIVERSE, which I got wrong in the same session: the first version counted every !X_ROLES[session.role] read (60) and called 21 of them unreachable, which tripped the 25% ceiling. Reading those 21 showed 14 are derived booleans that refuse nothing, 1 is a response field, and only 6 are real refusals the ablation regex cannot match. Universe is now REFUSALS only: 45/39/6. The exclusion is printed in the row note rather than dropped.",
   "unit": "probe files declaring a mutation anchor",
   "universe": 98,
   "unreadable": 0
  },
  "overrun_inversion_scan.py": {
   "checked": 6,
-  "reason": "Criteria 2026-09-28.2 adds the UNREADABLE dimension, so the baseline gains a third number per tool. Taken at the corrected state: probe_anchor_freshness carries 1 unreadable (tests/run_adversarial_prompt_corpus_probe.py, 3 non-literal anchors it names rather than drops), mutation_anchor_check 0 after the resolver fix that took it from 84.",
+  "reason": "Correcting the role_gate row's UNIVERSE, which I got wrong in the same session: the first version counted every !X_ROLES[session.role] read (60) and called 21 of them unreachable, which tripped the 25% ceiling. Reading those 21 showed 14 are derived booleans that refuse nothing, 1 is a response field, and only 6 are real refusals the ablation regex cannot match. Universe is now REFUSALS only: 45/39/6. The exclusion is printed in the row note rather than dropped.",
   "unit": "root .html apps",
   "universe": 22,
   "unreadable": 0
  },
  "probe_anchor_freshness.py": {
   "checked": 87,
-  "reason": "Criteria 2026-09-28.2 adds the UNREADABLE dimension, so the baseline gains a third number per tool. Taken at the corrected state: probe_anchor_freshness carries 1 unreadable (tests/run_adversarial_prompt_corpus_probe.py, 3 non-literal anchors it names rather than drops), mutation_anchor_check 0 after the resolver fix that took it from 84.",
+  "reason": "Correcting the role_gate row's UNIVERSE, which I got wrong in the same session: the first version counted every !X_ROLES[session.role] read (60) and called 21 of them unreachable, which tripped the 25% ceiling. Reading those 21 showed 14 are derived booleans that refuse nothing, 1 is a response field, and only 6 are real refusals the ablation regex cannot match. Universe is now REFUSALS only: 45/39/6. The exclusion is printed in the row note rather than dropped.",
   "unit": "probe files declaring a mutation anchor",
   "universe": 98,
   "unreadable": 1
+ },
+ "role_gate_negative_coverage.py": {
+  "checked": 39,
+  "reason": "Correcting the role_gate row's UNIVERSE, which I got wrong in the same session: the first version counted every !X_ROLES[session.role] read (60) and called 21 of them unreachable, which tripped the 25% ceiling. Reading those 21 showed 14 are derived booleans that refuse nothing, 1 is a response field, and only 6 are real refusals the ablation regex cannot match. Universe is now REFUSALS only: 45/39/6. The exclusion is printed in the row note rather than dropped.",
+  "unit": "role-gate REFUSALS in api/sd-data.js",
+  "universe": 45,
+  "unreadable": 6
  }
 }
