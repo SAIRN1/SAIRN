@@ -225,8 +225,22 @@ test('E5. empty input is empty, not an error and not a pass', () => {
   const o = reconcile([], []);
   assert.strictEqual(o.totals.codes, 0);
   assert.strictEqual(o.rows.length, 0);
-  assert.ok(Array.isArray(o.limits) && o.limits.length >= 4,
-    'the limits travel with every answer, including the empty one');
+  // ── A FLOOR UNDER A UNIVERSAL CLAIM, FIXED 2026-09-29 ────────────────────
+  // This read `o.limits.length >= 4` under the label "the limits travel with
+  // EVERY answer". The module publishes FIVE limits; at a floor of four, one
+  // could be dropped -- including the one that says no probability is computed,
+  // which is the single claim this app has explicitly refused elsewhere -- and
+  // the arm stayed green. Found by tools/assertion_label_shape_check.py on its
+  // first JavaScript run, in my own suite, which is the fairest possible test of
+  // whether that extension was worth building.
+  //
+  // The count is compared EXACTLY and against the module's own published list,
+  // so adding a limit is a deliberate act that updates one number here and
+  // dropping one goes red.
+  assert.ok(Array.isArray(o.limits), 'limits is not an array at all');
+  assert.strictEqual(o.limits.length, 5,
+    'the limits travel with every answer, including the empty one -- exactly the '
+    + 'five the module publishes, so dropping one cannot pass under a floor');
 });
 test('E6. THE LIMITS SAY IT PICKS NO SIDE and computes no probability', () => {
   const j = OUT.limits.join(' ');

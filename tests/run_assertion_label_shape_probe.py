@@ -195,31 +195,84 @@ check('B4b. ...and it says COULD NOT RUN and names the file',
 # ── C. THE REAL CORPUS, and the coverage statement ──────────────────────────
 section('C. the real run says what it read and what it did not')
 rc, out = run()
-_m = re.search(r'read (\d+) Python test file', out)
-check('C1. the bare run reads a NON-EMPTY file list -- a zero here would make '
-      'any verdict vacuous',
-      bool(_m) and int(_m.group(1)) > 50, _m.group(0) if _m else out[:300])
-check('C2. the JavaScript suites are declared NOT COVERED in the output, so a '
-      'clean Python verdict cannot be read as a platform verdict',
-      'NOT CHECKED' in out and 'JavaScript' in out
+_m = re.search(r'read (\d+) Python and (\d+) JavaScript suite file', out)
+check('C1. the bare run reads a NON-EMPTY file list IN BOTH LANGUAGES -- a zero '
+      'in either would make that half of the verdict vacuous',
+      bool(_m) and int(_m.group(1)) > 50 and int(_m.group(2)) > 50,
+      _m.group(0) if _m else out[:300])
+# ── C2 REWRITTEN 2026-09-29, AND THE OLD VERSION WAS RIGHT TO FAIL ──────────
+# It asserted the JavaScript suites are declared NOT COVERED. They ARE covered
+# now, so that arm was asserting a gap that had been closed -- the exact
+# staleness this repo treats as a defect class of its own (discipline 8). What
+# must still be true is the thing the old arm was protecting: a reader cannot
+# mistake partial coverage for whole, so the output must still name WHAT IS NOT
+# READ even when the file denominator reaches 100%.
+check('C2. the output names what is STILL not read even at full file coverage, '
+      'so a 100% denominator cannot be read as "everything is judged"',
+      'STILL NOT READ' in out.upper() and 'COULD NOT RUN' in out
       and re.search(r'CHECKED / UNIVERSE: (\d+) of (\d+)', out) is not None,
-      out[:600])
+      out[:900])
+check('C2c. ...and BOTH languages are named in the coverage statement, so '
+      'neither half can silently drop out of the denominator',
+      'Python' in out and 'JAVASCRIPT' in out.upper(), out[:900])
 # ── THE DENOMINATOR IS ASSERTED, NOT JUST ITS PRESENCE ─────────────────────
 # "It prints a coverage line" is satisfied by a line that prints 0 of 0. The two
 # numbers are read back and compared, so a denominator that collapses -- a git
 # call that failed and returned nothing, the commonest way a coverage figure goes
 # vacuous -- is a RED arm rather than a clean 100%.
 _cu = re.search(r'CHECKED / UNIVERSE: (\d+) of (\d+)', out)
-check('C2b. ...and the two figures are REAL: checked > 0, universe > checked, so '
-      'a collapsed denominator cannot read as full coverage',
+# EXPECTATION CHANGED 2026-09-29, from `universe > checked` to `checked <=
+# universe`. The old arm encoded the capability gap as a REQUIREMENT -- it would
+# have gone red the day the gap closed, which it did. The property worth holding
+# is that the two figures are REAL and CONSISTENT: a collapsed denominator
+# (0 of 0) and a checked count exceeding its own universe are both still caught.
+check('C2b. ...and the two figures are REAL and consistent: checked > 0 and '
+      'checked <= universe, so neither a collapsed denominator nor a count '
+      'exceeding its own universe can pass',
       _cu is not None and int(_cu.group(1)) > 0
-      and int(_cu.group(2)) > int(_cu.group(1)),
+      and int(_cu.group(1)) <= int(_cu.group(2)),
       _cu.group(0) if _cu else 'no CHECKED / UNIVERSE line at all')
 check('C3. both tier counts appear on the real run too',
       re.search(r'TIERS: \d+ CONFIRMED, \d+ ADVISORY', out) is not None,
       out[:800])
 check('C4. exit is 0, 1 or 2 and nothing else',
       rc in (0, 1, 2), rc)
+
+# ── C5. THE KNOWN-BAD JAVASCRIPT CONTROL, BOTH DIRECTIONS ──────────────────
+# Added 2026-09-29 with the JavaScript extension. Section B's known-bad/known-good
+# pair only ever exercised the `ast` path, so every arm above could have passed
+# with the JS extractor returning nothing at all. Numbered C5 because C4 (exit
+# code) already exists above; renumbering it would break nothing here and would
+# silently break anyone quoting an arm name.
+#
+# THE SILENT HALF IS NOT OPTIONAL. "The planted bug is reported" is satisfied by
+# a checker that reports every JS arm it sees; C5b is what makes C5 mean
+# something, and C5c is the commented-out case that checker_control_check had to
+# rebuild itself around in Python -- checked here in JavaScript.
+_bad_js = tmpfile("assert.ok(rows.length >= 3, 'every row is present');\n",
+                  suffix='.js')
+rc_kb, out_kb = run('--paths', _bad_js)
+check('C5. KNOWN-BAD: a JS arm labelling a universal behind a one-sided floor '
+      'IS REPORTED, and the finding names the planted file',
+      rc_kb == 1 and os.path.basename(_bad_js) in out_kb,
+      (rc_kb, out_kb[-400:]))
+_good_js = tmpfile("assert.ok(rows.length === 3, 'every row is present');\n",
+                   suffix='.js')
+rc_kg, out_kg = run('--paths', _good_js)
+check('C5b. ...and THE SILENT HALF: the same label with an EXACT comparison is '
+      'NOT reported, so C5 is not satisfied by a checker that flags every JS arm',
+      rc_kg == 0, (rc_kg, out_kg[-400:]))
+_cmt_js = tmpfile("// assert.ok(rows.length >= 3, 'every row is present');\n",
+                  suffix='.js')
+rc_kc, out_kc = run('--paths', _cmt_js)
+check('C5c. ...and a COMMENTED-OUT arm is not reported -- the comment-stripping '
+      'half of the JS scan is load-bearing and is checked, not assumed',
+      rc_kc == 0, (rc_kc, out_kc[-400:]))
+for _p in (_bad_js, _good_js, _cmt_js):
+    try:
+        os.unlink(_p)
+    except OSError:
+        pass
 
 # ── D. ANCHOR ARMS -- what tells us the day this control stops testing ──────
 section('D. the anchors this control depends on (discipline 8)')
