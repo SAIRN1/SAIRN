@@ -79,6 +79,22 @@ function roleSet(literal) {
 // The explicit form, for a gate that wants to state the check rather than
 // rely on the map's prototype. Holds even if a map is ever rebuilt as a
 // plain literal, and refuses a non-string role instead of coercing it.
+//
+// THIS IS THE CORRECT SEMANTICS OF THE TWO IN USE, decided 2026-09-28. The
+// bracket form the 48 gates use -- `if (!MANAGEMENT_ROLES[session.role])` --
+// grants on any TRUTHY value; this requires `=== true`. So a map written
+// `{ owner: 1 }` is granted by one spelling and refused by the other, from two
+// lines that read as the same check.
+//
+// The gates are NOT being rewritten to this form. roleSet() exists so that
+// every `MAP[role]` site is fixed without being edited, a 48-site mechanical
+// sweep's real failure mode being transcription; swapping the spelling at 48
+// sites would re-open exactly that. The two forms are made to AGREE instead, by
+// pinning the precondition under which they are identical: every role map
+// carries `true` and nothing else. Enforced by section 4 of
+// tests/role_maps_have_no_prototype.js over every
+// `const NAME_ROLES = roleSet({...});` in api/ -- 53 of 53 today, ablation
+// driven both ways. Mixing the spellings is safe only while that arm is green.
 function hasRole(set, role) {
   return typeof role === 'string'
     && Object.prototype.hasOwnProperty.call(set || {}, role)

@@ -60,17 +60,23 @@ const FILES = execFileSync('git', ['ls-files', 'api/*.js', 'api/_lib/*.js'],
 // a bare literal on the right. Anchored to the whole line so a call already
 // wrapped in roleSet(...) does not match -- that is the fixed form.
 const BARE = /^\s*const ([A-Z][A-Z0-9_]*(?:ROLES|KEYS))\s*=\s*\{[^{}]*\}\s*;\s*$/;
-const WRAPPED = /^\s*const ([A-Z][A-Z0-9_]*(?:ROLES|KEYS))\s*=\s*roleSet\(\{[^{}]*\}\)\s*;\s*$/;
+const WRAPPED = /^\s*const ([A-Z][A-Z0-9_]*(?:ROLES|KEYS))\s*=\s*roleSet\((\{[^{}]*\})\)\s*;\s*$/;
 
 section('1. SOURCE -- no bare literal role map anywhere in api/');
 
 const bare = [];
 const wrapped = [];
+const wrappedBodies = [];   // [site, name, literalSourceText] -- for section 4
 for (const rel of FILES) {
   const src = fs.readFileSync(path.join(ROOT, rel), 'utf8');
   src.split('\n').forEach((line, i) => {
-    if (WRAPPED.test(line)) wrapped.push(rel + ':' + (i + 1));
-    else if (BARE.test(line)) bare.push(rel + ':' + (i + 1) + '  ' + line.trim().slice(0, 90));
+    const w = WRAPPED.exec(line);
+    if (w) {
+      wrapped.push(rel + ':' + (i + 1));
+      wrappedBodies.push([rel + ':' + (i + 1), w[1], w[2]]);
+    } else if (BARE.test(line)) {
+      bare.push(rel + ':' + (i + 1) + '  ' + line.trim().slice(0, 90));
+    }
   });
 }
 
@@ -202,6 +208,104 @@ test('hasRole refuses an inherited name, a non-string, and a falsy value', () =>
     assert.strictEqual(a.hasRole(plain, r), false, 'non-string role accepted: ' + String(r));
   }
 });
+
+section('4. VALUE SHAPE -- MAP[role] and hasRole(MAP, role) cannot disagree');
+
+// THE DECISION, recorded at the place that enforces it. Two spellings of the
+// same check are in use across the platform:
+//
+//     if (!MANAGEMENT_ROLES[session.role]) { ...refuse... }   // the 48 gates
+//     if (!hasRole(MANAGEMENT_ROLES, session.role)) { ...refuse... }
+//
+// THEY ARE NOT EQUIVALENT. hasRole() requires `=== true`; the bracket form
+// grants on any truthy value. A map written `{ owner: 1 }` is granted by one
+// spelling and refused by the other -- a difference no reader would expect from
+// two spellings of one check. api/_lib/auth-roleset-seam.test.js drives that
+// divergence directly and records it as latent, which it is: every map in the
+// repo is written `: true` today. Nothing stopped the next one from not being.
+//
+// hasRole() IS THE CORRECT SEMANTICS -- it refuses an inherited name, refuses a
+// non-string role instead of coercing it, and treats `key present but not true`
+// as not-a-role. The gates are made consistent with it WITHOUT rewriting the 48
+// bracket sites, because roleSet()'s own comment argues against exactly that
+// rewrite: the wrapper exists so every `MAP[role]` site is fixed without being
+// edited, a 48-site sweep's real failure mode being transcription.
+//
+// So this arm pins the PRECONDITION that makes the two forms provably identical
+// instead: every role map carries `true` and nothing else. Under that invariant
+// `!!MAP[role]` and `hasRole(MAP, role)` agree on every input, mixing the two
+// spellings is safe, and the day someone writes `owner: 1` this goes red rather
+// than opening a silent gap between two lines that read the same.
+//
+// SCOPE, stated rather than implied: this reads the same single-line
+// `const NAME_ROLES = roleSet({...});` declarations section 1 already
+// enumerates. The two multi-line maps in api/_lib/auth.js -- ROLES_BY_APP
+// (arrays, read with .indexOf) and AUTH_TABLE_BY_APP (table-name strings) --
+// are not role membership sets, are never indexed by a session role, and do not
+// match that shape, so they are outside this arm by the shape of the
+// declaration rather than by a name list that could go stale.
+
+test('the literal body was captured for EVERY wrapped map -- a broken capture '
+  + 'group would empty this arm while section 1 stayed green', () => {
+    assert.strictEqual(wrappedBodies.length, wrapped.length,
+      'section 1 found ' + wrapped.length + ' wrapped map(s) but only '
+      + wrappedBodies.length + ' literal(s) were captured');
+    assert.ok(wrappedBodies.length >= 40,
+      'only ' + wrappedBodies.length + ' literal(s) captured -- a silent zero '
+      + 'here reads exactly like a clean repo');
+  });
+
+test('every role map carries `true` and nothing else, so the bracket form and '
+  + 'hasRole() agree on every input', () => {
+    const offenders = [];
+    for (const [site, name, text] of wrappedBodies) {
+      let obj;
+      try {
+        // Evaluated, not pattern-matched: the values are read by node's own
+        // parser, so this arm cannot be fooled by a spelling a regex for
+        // `true` would miss. A body that will not parse is an error, never a
+        // pass -- "could not tell" is not "clean".
+        obj = (new Function('return (' + text + ');'))();
+      } catch (e) {
+        offenders.push(site + ' ' + name + ' COULD NOT PARSE: ' + e.message);
+        continue;
+      }
+      for (const k of Object.keys(obj)) {
+        if (obj[k] !== true) {
+          offenders.push(site + ' ' + name + '.' + k + ' = '
+            + JSON.stringify(obj[k]) + ' (' + typeof obj[k] + ')');
+        }
+      }
+    }
+    assert.deepStrictEqual(offenders, [],
+      'these values are not `true`, so `MAP[role]` and `hasRole(MAP, role)` '
+      + 'give different answers for them:\n       ' + offenders.join('\n       '));
+    console.log('       ' + wrappedBodies.length + ' of ' + wrapped.length
+      + ' role map(s) checked, all values === true');
+  });
+
+test('NEGATIVE CONTROL: the divergence is real in this runtime AND the arm '
+  + 'above catches it', () => {
+    const a = require(path.join(ROOT, 'api', '_lib', 'auth.js'));
+    // (i) the premise -- if these ever agree, the arm above is guarding nothing
+    const diverging = a.roleSet({ owner: 1 });
+    assert.strictEqual(!!diverging.owner, true, 'premise moved: bracket form');
+    assert.strictEqual(a.hasRole(diverging, 'owner'), false, 'premise moved: hasRole');
+    // (ii) the detection -- the same read the arm above performs, on a planted
+    //      value, must flag it; and must NOT flag the correct form
+    const bad = (new Function('return ({ owner: 1, billing: true });'))();
+    assert.deepStrictEqual(Object.keys(bad).filter((k) => bad[k] !== true), ['owner'],
+      'the value read no longer distinguishes a truthy non-true value');
+    const good = (new Function('return ({ owner: true, billing: true });'))();
+    assert.deepStrictEqual(Object.keys(good).filter((k) => good[k] !== true), [],
+      'the value read now flags a correct map, so the arm above would fail on '
+      + 'clean code');
+    // (iii) the capture -- the line pattern must actually yield the literal
+    const m = WRAPPED.exec('  const ALF_MAR_ROLES = roleSet({ owner: 1 });');
+    assert.ok(m, 'the wrapped pattern no longer matches a real declaration');
+    assert.strictEqual(m[2], '{ owner: 1 }',
+      'the literal capture group returned ' + JSON.stringify(m[2]));
+  });
 
 console.log('\n' + (fail === 0
   ? 'ALL ' + pass + ' ROLE-MAP PROTOTYPE ASSERTIONS PASS'

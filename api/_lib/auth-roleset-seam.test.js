@@ -184,6 +184,14 @@ test('BUT THE BRACKET FORM GRANTS ALL THREE -- the divergence, driven rather '
     // across 18 files, and a map written with `: 1` would be granted by one and
     // refused by the other -- a difference no reader would expect from two
     // spellings of the same check.
+    //
+    // 2026-09-28: "every map is written `: true`" is now ENFORCED rather than
+    // observed -- section 4 of tests/role_maps_have_no_prototype.js reads the
+    // literal of every `const NAME_ROLES = roleSet({...});` in api/ and fails on
+    // any value that is not `true`. Without that arm this comment was a fact
+    // with an expiry date and nothing to announce it. hasRole() is the decided
+    // semantics; see the comment above hasRole in api/_lib/auth.js for why the
+    // 48 bracket sites are not being rewritten to it.
     const set = roleSet({ owner: 1 });
     assert.strictEqual(!!set.owner, true, 'premise moved');
     assert.strictEqual(hasRole(set, 'owner'), false, 'premise moved');
