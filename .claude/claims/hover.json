@@ -241,6 +241,17 @@
       "status": "released",
       "released_at": "2026-09-28T20:40:43Z",
       "files": null
+    },
+    {
+      "id": "hover-1790629962",
+      "session": "hover",
+      "subject": "hover",
+      "task": "hover audit-log housekeeping round four: one undirected sample of the cold pool and the next weighted rotation pick. FILES: .claude/skills/sairn-hover-auditor/",
+      "claimed_at": "2026-09-28T21:12:42Z",
+      "claimed_at_epoch": 1790629962.1355126,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
