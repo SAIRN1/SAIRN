@@ -17644,7 +17644,7 @@
       "recurrence_open": "OPEN AS A CLASS: no probe on this platform asserts anything about SCALE. Every arm in every control drives one file, one row, one path, because that is what makes a fixture readable -- so an argv limit, a query-string limit, a memory ceiling or a timeout is invisible to all of them. This is the same shape as the second-pass gap measured in tools/second_pass_coverage_scan.py one commit earlier: the first instance is exercised and the real operating condition is not."
     },
     {
-      "commit": "9ab18ab96ac9",
+      "commit": "d281325585aa",
       "date": "2026-09-27",
       "subject": "fix(probes): a third dead probe, two unarmed compliance guards -- and my own checker had inverted the signal on four good anchors",
       "files": [
@@ -17697,7 +17697,7 @@
       "recurrence_open": "THE CHECKER COUNTS STRINGS AND CANNOT SEE THE WORST CASE: an anchor matching exactly once may still point at the wrong line (PR 1.3 proper), and only running the probe catches that. The probes themselves are STILL not wired -- nothing runs the 13 fault probes on a cadence, and a probe whose BASELINE is red is invisible to the freshness checker entirely. And the sibling-guard gap was found by accident: nothing asks whether a subject has grown a guarantee the arm list does not cover."
     },
     {
-      "commit": "9ab18ab96ac9",
+      "commit": "d281325585aa",
       "date": "2026-09-27",
       "subject": "fix(probes): a third dead probe, two unarmed compliance guards -- and my own checker had inverted the signal on four good anchors",
       "files": [
