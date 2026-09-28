@@ -1214,6 +1214,34 @@ PURPOSES = {
     'stonedesk_storefront_live_check.py': ('LIVE', 'whether sql/stonedesk_public_surface_schema.sql was really run, by probing the three public endpoints -- the instruction "confirm by re-probing, not by the editor reporting success", mechanised'),
     'sairn_ai_fact_scan.py': ('CHECKER', 'a number an AI panel states that no function computes'),
     'sairn_app_map_check.py': ('LIVE', "an app absent from Guardian's own app map, and a route that 404s"),
+    'entry_point_scope_check.py': ('CHECKER',
+        'A TOOL WHOSE SEVERAL ENTRY POINTS READ DIFFERENT POPULATIONS -- the copy '
+        'a human invokes is not the copy that enforces. The named instance cost a '
+        'real session a real push: tier_a_review_gate.py answered from the WORKING '
+        'TREE on a bare run and from `merge-base origin/main HEAD..HEAD` in the '
+        'push hook, so a session was told "No file in this change names a Tier A '
+        'resource" and was then DENIED by the same tool naming seven. Both answers '
+        'were true about what they read and neither was about the question asked. '
+        'THE CRITERION IS NOT "two doors differ": a door reading no scope accessor '
+        'at all is answering a different question, which is allowed. A finding '
+        'requires two doors reading DIFFERENT MEMBERS OF ONE FAMILY -- '
+        'scope-of-change, file-tree or register -- because working_diff() and '
+        'push_range() are both "what changed" and that is what makes their '
+        'disagreement a contradiction. `--fixtures` and `--selftest` are '
+        'deliberately NOT doors: they read no real state, and counting them gave 70 '
+        'candidates of which most were correct by construction. THE BARE RUN IS A '
+        'DOOR and has no flag to key on, which is why the original defect was '
+        'invisible; calls outside every branch are SHARED by all doors, not '
+        'attributed to the bare one. Calls are resolved through module functions to '
+        'RESOLVE_DEPTH, because this repo dispatches `if flag: return cmd_x()` and '
+        'the first version resolved nothing, reported 9 candidates and CLEAN for '
+        'all nine -- a checker blind to the shape it was built for. TWO FALSE '
+        'POSITIVES from real runs are fixtures in both directions: shared setup, '
+        'and two doors answering two questions. 64 of 240 tools have more than one '
+        'real-data door; CHECKED / UNIVERSE is printed. Criteria locked against 11 '
+        'hand-built fixtures that gate the ordinary run. REPORT ONLY, and its zero '
+        'is ablated rather than asserted -- the control restores the real pre-fix '
+        'shape and demands it be reported'),
     'assertion_label_shape_check.py': ('CHECKER',
         'AN ASSERTION WHOSE LABEL CLAIMS MORE THAN ITS COMPARISON CAN SEE -- a '
         'coverage claim backed by a floor. The named instance: an arm labelled '
