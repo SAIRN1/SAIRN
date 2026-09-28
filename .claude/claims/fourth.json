@@ -2671,6 +2671,21 @@
         "api/_lib/auth.js",
         "tools/tooling_inventory.py"
       ]
+    },
+    {
+      "id": "fourth-1790631149",
+      "session": "fourth",
+      "subject": "tooling",
+      "task": "queue: register the claim-matcher prose-collision defect with the ownership-negating-position test; write plain-prose restatements of two wording-collided items for the matcher owner; correct my own report that SC-AUDIT-2026 is absent -- it is seeded and answers 200 active -- and drive tools/sc_tier_a_write_gate_live_probe.py end to end on it so the new credential-roster readback is driven rather than source-verified; add the asserted-teardown obligation to tools/live_probe_residue_audit.py so a future writing probe with the same gap is caught by the convention that already invokes it; and discharge hank's 42h alf_staff and sen_visits obligation, driving all five attack points. ONE QUEUE ITEM IS DEFERRED AND NOT TAKEN -- its blocker and the exact path it needs are in THIS session's claim file under refusals, written there by the claim tool itself, because naming it here blocks my own claim on my own declaration. CONFLICT DECLARED PER PR 4.3: cc holds docs/tier-a-reviews.json, so the obligation VERDICT lands as a standalone document rather than in the ledger. FILES: tools/live_probe_residue_audit.py tests/run_live_probe_residue_probe.py SAIRN-ACTIVE-WORK-fourth.md",
+      "claimed_at": "2026-09-28T21:32:29Z",
+      "claimed_at_epoch": 1790631149.663614,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-fourth.md",
+        "tests/run_live_probe_residue_probe.py",
+        "tools/live_probe_residue_audit.py"
+      ]
     }
   ],
   "refusals": [
@@ -2756,6 +2771,19 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "same file or resource: known-bad",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-28T21:32:03Z",
+      "my_subject": "tooling",
+      "my_task": "queue: register the claim-matcher prose-collision defect with the ownership-negating-position test; write plain-prose restatements of two wording-collided items for the matcher owner; prepare the alf_mar administered_by fix and its regression suite in a detached worktree ONLY, ready to land the moment cody frees api/sd-data.js, and recheck each round; correct my own report that SC-AUDIT-2026 is absent -- it is seeded and answers 200 active -- and drive tools/sc_tier_a_write_gate_live_probe.py end to end on it so the new credential-roster readback is driven rather than source-verified; add the asserted-teardown obligation to tools/live_probe_residue_audit.py so a future writing probe with the same gap is caught by the convention that already invokes it; and discharge hank's 42h alf_staff/sen_visits obligation, driving all five attack points. CONFLICT DECLARED PER PR 4.3: cc holds docs/tier-a-reviews.json so the obligation VERDICT lands as a standalone document, not in the ledger. FILES: tools/live_probe_residue_audit.py tests/run_live_probe_residue_probe.py SAIRN-ACTIVE-WORK-fourth.md",
+      "other_session": "cody",
+      "other_subject": "cody",
+      "other_task": "cody-q18 post-compaction: finish the assertion-label-shape JavaScript extension (probe controls C1 C2 C2b rewritten plus known-bad JS arms C5 C5b C5c) and then items 1 3 4 5 6 7 8 9 of the last paste -- registry entry doc, scrubber sync, SAIRNcode autonomy scope doc, sf_vendors and sf_inventory_counts re-anchor, blocked items when api/sd-data.js frees, two-door checker dispatch extension, zero-parse-must-fail sweep, self-test-with-fixture methodology",
+      "other_claimed_at": "2026-09-28T19:39:12Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: api/sd-data.js",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
