@@ -345,6 +345,79 @@ ok('all %d tool tables still carry the probe column' % _EXPECTED_TABLES,
    % (_hdr, _EXPECTED_TABLES))
 
 
+print('\nK. a PURPOSES entry with no tool: UNTRACKED and GONE are different states')
+# THE DEFECT: `tools` is `git ls-files tools/`, so a tool file that exists on
+# disk but has never been `git add`ed is absent from it, and its PURPOSES entry
+# was reported as "naming a tool that no longer exists". Observed 2026-09-28 on a
+# newly written tool: the message sent the reader looking for a deletion that
+# never happened, when the file was sitting right there one `git add` away. Same
+# untracked blind spot the Tier A gate warns about explicitly -- PR 1.11, "could
+# not tell" is a third state and must not be folded into either neighbour.
+#
+# Driven on the REAL function against the REAL filesystem. The fixtures are two
+# PURPOSES keys planted for the length of this arm: one whose file is created on
+# disk and deliberately NOT added to git, one that names nothing at all.
+_UNTRACKED_FIXTURE = 'zz_probe_untracked_fixture.py'
+_GONE_FIXTURE = 'zz_probe_deleted_fixture.py'
+_fix_path = os.path.join(REPO, 'tools', _UNTRACKED_FIXTURE)
+
+_tools_j, _, _, _, _reg_j, _ = ti.classify()
+
+# CONTROL FIRST, and it is not decoration: without it, a missing_purposes() that
+# returned two empty lists for any input would pass every arm below.
+_a0, _u0, _g0 = ti.missing_purposes(_tools_j, _reg_j)
+ok('with nothing planted, both buckets are empty',
+   _u0 == [] and _g0 == [],
+   'untracked=%s gone=%s -- the repo already has drift, so the arms below '
+   'cannot attribute what they find to the fixtures' % (_u0, _g0))
+
+try:
+    io.open(_fix_path, 'w', encoding='utf-8').write(
+        '"""throwaway fixture written by tests/run_tooling_inventory_probe.py -- '
+        'deleted in the finally below."""\n')
+    assert _UNTRACKED_FIXTURE not in _tools_j, 'the fixture name is tracked'
+    ti.PURPOSES[_UNTRACKED_FIXTURE] = ('CHECKER', 'fixture')
+    ti.PURPOSES[_GONE_FIXTURE] = ('CHECKER', 'fixture')
+
+    _a, _u, _g = ti.missing_purposes(_tools_j, _reg_j)
+    ok('a PURPOSES entry whose file EXISTS but is untracked lands in UNTRACKED',
+       _u == [_UNTRACKED_FIXTURE],
+       'untracked=%s -- expected exactly the on-disk fixture' % _u)
+    ok('...and it is NOT reported as gone',
+       _UNTRACKED_FIXTURE not in _g,
+       'the untracked fixture was reported as a tool that no longer exists, '
+       'which is the defect this arm exists for')
+    ok('a PURPOSES entry naming no file at all lands in GONE',
+       _g == [_GONE_FIXTURE],
+       'gone=%s -- expected exactly the never-existed fixture' % _g)
+
+    # AND THE TWO MUST READ DIFFERENTLY. Splitting the buckets buys nothing if
+    # the refusal prints one sentence over both.
+    _doc_j, _err_j = ti.build()
+    ok('build() refuses, and names the untracked case in its OWN words',
+       _doc_j is None and _err_j is not None
+       and 'untracked' in _err_j.lower()
+       and 'git add' in _err_j
+       and _UNTRACKED_FIXTURE in _err_j,
+       'refusal text did not name the untracked cause:\n        '
+       + (_err_j or '<generated instead of refusing>')[:600])
+    ok('...and still names the genuinely-deleted case separately',
+       _err_j is not None and 'no longer exists' in _err_j
+       and _GONE_FIXTURE in _err_j
+       and _err_j.index(_UNTRACKED_FIXTURE) != _err_j.index(_GONE_FIXTURE),
+       'the two states are folded into one message:\n        '
+       + (_err_j or '')[:600])
+finally:
+    ti.PURPOSES.pop(_UNTRACKED_FIXTURE, None)
+    ti.PURPOSES.pop(_GONE_FIXTURE, None)
+    if os.path.isfile(_fix_path):
+        os.remove(_fix_path)
+    # TEARDOWN ASSERTED, not assumed -- a cleanup step that cannot fail loudly
+    # is one that does not happen, and this one leaves an untracked file in
+    # tools/ that would confuse the next run of the very tool under test.
+    ok('the on-disk fixture was removed', not os.path.isfile(_fix_path),
+       'left behind: ' + _fix_path)
+
 print('\n%d failure(s)' % len(FAIL))
 for f in FAIL:
     print('  - ' + f)

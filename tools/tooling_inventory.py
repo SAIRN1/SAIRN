@@ -1910,9 +1910,34 @@ def purpose(t, reg):
 
 
 def missing_purposes(tools, reg):
+    """THREE buckets, not two, and the third is the whole point.
+
+    `tools` is `git ls-files tools/`, so a tool file that EXISTS ON DISK but has
+    never been `git add`ed is absent from it. Its PURPOSES entry used to be
+    reported as "naming a tool that no longer exists" -- a confident wrong cause
+    that sends the reader looking for a deletion that never happened, when the
+    file is sitting in tools/ one `git add` away. Observed 2026-09-28 against a
+    newly written tool; it is the same untracked blind spot the Tier A gate
+    warns about explicitly, arriving here as a misleading MESSAGE rather than a
+    missed finding.
+
+    Both remain refusals -- neither state may generate a document -- but PR 1.11
+    applies to text as much as to exit codes: two different causes must not be
+    folded into one sentence that is wrong for one of them.
+    """
     absent = [t for t in tools if t not in reg and t not in PURPOSES]
-    extra = [t for t in PURPOSES if t not in tools]
-    return absent, extra
+    untracked, gone = [], []
+    for t in PURPOSES:
+        if t in tools:
+            continue
+        # The filesystem, not a second git call: the question is precisely
+        # "is it on disk but invisible to git ls-files", and asking git again
+        # would be asking the source that already said no.
+        if os.path.isfile(os.path.join(REPO, 'tools', t)):
+            untracked.append(t)
+        else:
+            gone.append(t)
+    return absent, untracked, gone
 
 
 def build():
@@ -1939,7 +1964,7 @@ def build():
     except closing_error.EmptyLeg as e:
         return None, 'REFUSING to generate -- the traverse did not close: %s' % e
 
-    absent, extra = missing_purposes(tools, reg)
+    absent, untracked, gone = missing_purposes(tools, reg)
     # ── THE THIRD DRIFT DIRECTION, WHICH WENT UNREFUSED FOR FOUR INSTANCES ──
     # This block already refused a tool with NO description and a description
     # for NO tool. It did not refuse a tool described TWICE -- once in REGISTRY
@@ -1966,16 +1991,28 @@ def build():
     # reporting -- which is the right direction for a mistake in a refusal, but
     # worth the comment so the next reader does not repeat it.
     dup = sorted(t for t in reg if t in PURPOSES)
-    if absent or extra or dup:
+    if absent or untracked or gone or dup:
         lines = ['REFUSING to generate -- the hand-written half has drifted.', '']
         if absent:
             lines += ['%d tool(s) in tools/ with no PURPOSES entry. A blank cell in this'
                       % len(absent),
                       'document is exactly how the last one went stale, so this is an error:']
             lines += ['    ' + t for t in absent]
-        if extra:
-            lines += ['', '%d PURPOSES entr(y/ies) naming a tool that no longer exists:' % len(extra)]
-            lines += ['    ' + t for t in extra]
+        if untracked:
+            lines += ['',
+                      '%d PURPOSES entr(y/ies) whose tool IS ON DISK but is UNTRACKED --'
+                      % len(untracked),
+                      'this document derives its tool list from `git ls-files tools/`, so an',
+                      'unadded file is invisible to it. The tool has NOT been deleted:']
+            lines += ['    ' + t for t in untracked]
+            lines += ['', 'Stage them by name -- never `git add -A`, which has swept a',
+                      'credential and conflict markers into commits on this repo:',
+                      '    git add ' + ' '.join('tools/' + t for t in untracked)]
+        if gone:
+            lines += ['', '%d PURPOSES entr(y/ies) naming a tool that no longer exists'
+                      % len(gone),
+                      '(not on disk either -- this one really is a deletion):']
+            lines += ['    ' + t for t in gone]
         if dup:
             lines += ['',
                       '%d tool(s) described in BOTH REGISTRY and PURPOSES:' % len(dup)]
