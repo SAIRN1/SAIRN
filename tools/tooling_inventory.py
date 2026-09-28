@@ -961,6 +961,9 @@ PURPOSES = {
     # corrected count goes stale again on the next check.
     'sairn_push_gate_hook.py': ('CHECKER', 'the numbered push checks; the only tool that calls deny()'),
     'git_push_master_guard.py': ('CHECKER', 'a push aimed at `master`, which is stale'),
+    'rebase_state_guard.py': ('CHECKER', 'an amend or a blanket stage while a '
+                              'rebase, merge or cherry-pick is stopped, and an '
+                              'amend of a commit already on origin/main'),
     # The PREVENT half of the hover auditor separation control. Its DETECT half
     # is hover_separation_audit.py, which is in report_only_checks.REGISTRY and
     # must therefore NOT be described here as well.

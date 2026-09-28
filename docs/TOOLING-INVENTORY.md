@@ -19,11 +19,11 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**271 files in `tools/`.** By what actually invokes them:
+**272 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
-| **BLOCKING** | 14 | reachable from something that can refuse a push or a tool call |
+| **BLOCKING** | 15 | reachable from something that can refuse a push or a tool call |
 | **REPORT-ONLY** | 71 | runs automatically on every push, never blocks |
 | **ADVISORY** | 4 | session-start or prompt hooks, informational |
 | **DECIDED** | 74 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
@@ -35,7 +35,7 @@ By what they are, independent of wiring:
 | Kind | Count |
 |---|---:|
 | ADVISORY | 3 |
-| CHECKER | 190 |
+| CHECKER | 191 |
 | GENERATOR | 19 |
 | GUARD | 1 |
 | LIBRARY | 25 |
@@ -110,7 +110,7 @@ outside world. Unwired is the right state for them and is not a finding.
 
 ---
 
-## BLOCKING (14)
+## BLOCKING (15)
 
 Two entry points, and they are not the same one. `.claude/settings.json`
 PreToolUse fires on a Claude Code **tool call**; `.githooks/pre-push` fires on
@@ -126,6 +126,7 @@ around it. The second exists because the first missed exactly that on
 | `employee_auth_guard_check.py` | CHECKER | a SQL file writing credential rows with no recoverability guard (gate check 2) | `check2_and_check5_probe.py`, `missing_checker_probe.py` |
 | `git_push_master_guard.py` | CHECKER | a push aimed at `master`, which is stale | `run_push_master_guard_probe.py` |
 | `preauth_oracle_check.py` | CHECKER | an endpoint that answers before it authenticates (gate check 7) | `preauth_exemption_anchor_probe.py` |
+| `rebase_state_guard.py` | CHECKER | an amend or a blanket stage while a rebase, merge or cherry-pick is stopped, and an amend of a commit already on origin/main | `run_rebase_state_guard_probe.py` |
 | `redaction_check.py` | CHECKER | credential shapes in what is about to be written, and in what a push ships | &mdash; |
 | `sairn_load_state_check.py` | LIVE | live seed content differing from the repo seed (gate check 1) | `missing_checker_probe.py`, `refspec_and_override_probe.py` |
 | `sairn_push_gate_hook.py` | CHECKER | the numbered push checks; the only tool that calls deny() | `check11_probe.py`, `check12_probe.py`, `check2_and_check5_probe.py`, `check3_probe.py`, `check8_probe.py`, `check9_probe.py`, `gate_freshness_probe.py`, `missing_checker_probe.py`, `redaction_base_probe.py`, `refspec_and_override_probe.py`, `run_assurance_case_probe.py`, `run_baseline_readiness_probe.py`, `run_conflict_marker_probe.py`, `run_dora_metrics_probe.py`, `run_graduated_exemption_probe.py`, `run_optimistic_success_probe.py`, `run_ref_probe.py`, `run_risk_event_tree_probe.py`, `run_tier_a_review_gate_probe.py`, `run_traceability_matrix_probe.py` |
@@ -391,7 +392,7 @@ fixtures. Nothing points them at the real codebase.
 | `run_all_tests.py` | LIBRARY | every .js and .py under tests/, plus api/**/*.test.js | `run_all_tests_floor_probe.py`, `run_all_tests_hook_gate_probe.py`, `run_all_tests_pinned_probe.py`, `run_concurrency_retry_probe.py`, `run_suite_lock_probe.py` |
 | `run_semgrep.py` | LIBRARY | the .semgrep rules, when semgrep is installed | `run_semgrep_encoding_probe.py` |
 | `sabotage.py` | LIBRARY | the negative-control recombination: plant a defect so that FAILING to plant it is LOUD. Four approaches already existed here and each was right about a different failure -- PRESENCE catches a rename, UNIQUENESS catches hitting the wrong site, MATERIALISATION catches the write not landing, and LINE-NUMBER ablation avoids ambiguous anchors entirely. This applies the first three to both planting strategies, and raises CouldNotSabotage as an EXCEPTION rather than returning None so a caller cannot reproduce the silent no-op. It does NOT migrate the remaining unguarded controls -- a mechanical rewrite of somebody else's control is how a working one breaks. Companion to sabotage_control_check.py, which MEASURES the class | `run_first_article_inspection_probe.py`, `run_guard_ablation_probe.py`, `run_selftest_independence_probe.py` |
-| `sairn_claim.py` | LIBRARY | claim / release / check / list on the work-claim files -- plus `audit`, which catches a duplicate claim recorded AFTER the guard that covers it and, just as importantly, reports one recorded BEFORE as HISTORY. Released claims are kept on purpose, so every duplicate ever recorded stays in the file and a reader concludes the bug is live -- WHICH HAS NOW HAPPENED TWICE. Measured 2026-09-16: 631 claims, 6 duplicate groups, EVERY ONE predating its guard (the fourth triple by 43 minutes, the cc pair by 22) and zero in the ~150 claims since. It also counts, APART, the shape that IS live: claims never released, which is not a duplicate and needs the opposite fix. It refuses to decide that two DIFFERENT task strings are the same work -- exact means exact | `run_all_tests_hook_gate_probe.py`, `run_claim_audit_probe.py`, `run_claim_retype_mutation_control.py`, `run_fileset_matcher_probe.py`, `run_fileset_matcher_sabotage_probe.py`, `run_fmea_probe.py`, `run_freshness_probe.py`, `run_matcher_probe.py`, `run_own_claim_overlap_probe.py`, `run_push_master_guard_probe.py`, `run_push_verify_probe.py`, `run_registry_claim_probe.py`, `run_registry_claim_sabotage_probe.py`, `run_released_visibility_probe.py` |
+| `sairn_claim.py` | LIBRARY | claim / release / check / list on the work-claim files -- plus `audit`, which catches a duplicate claim recorded AFTER the guard that covers it and, just as importantly, reports one recorded BEFORE as HISTORY. Released claims are kept on purpose, so every duplicate ever recorded stays in the file and a reader concludes the bug is live -- WHICH HAS NOW HAPPENED TWICE. Measured 2026-09-16: 631 claims, 6 duplicate groups, EVERY ONE predating its guard (the fourth triple by 43 minutes, the cc pair by 22) and zero in the ~150 claims since. It also counts, APART, the shape that IS live: claims never released, which is not a duplicate and needs the opposite fix. It refuses to decide that two DIFFERENT task strings are the same work -- exact means exact | `run_all_tests_hook_gate_probe.py`, `run_claim_audit_probe.py`, `run_claim_retype_mutation_control.py`, `run_fileset_matcher_probe.py`, `run_fileset_matcher_sabotage_probe.py`, `run_fmea_probe.py`, `run_freshness_probe.py`, `run_matcher_probe.py`, `run_own_claim_overlap_probe.py`, `run_push_master_guard_probe.py`, `run_push_verify_probe.py`, `run_rebase_state_guard_probe.py`, `run_registry_claim_probe.py`, `run_registry_claim_sabotage_probe.py`, `run_released_visibility_probe.py` |
 | `sairn_claim_doc_freshness.py` | CHECKER | a dated documentation row inside sairn_claim.py that quietly stopped being true -- the claim-expiry number CLAUDE.md and the tool state independently, the read-all-four instruction whose count goes stale the day a fifth build clone lands, the registry-outside-git premise the no-fetch advisory path rests on, and a FILES: convention the file-set matcher decides on that nothing was feeding. Anchors are asserted to appear exactly once so a reworded doc reports ANCHOR-GONE rather than being silently skipped, and could-not-check exits 2, never 0 | `run_claim_doc_freshness_probe.py` |
 | `sairn_http.py` | LIBRARY | browser-shaped HTTP, raising Challenged rather than letting a 403 look like an answer | `run_cron_liveness_probe.py`, `sairn_http_challenge.py`, `sairn_http_response_shape.py`, `schema_provisioning_probe.py` |
 | `sairn_session_identity.py` | LIBRARY | the ONE answer to 'which session is this clone', read from a per-clone marker in .git/ rather than from the directory name. Hover finding #258, HIGH: session_name() existed byte-for-byte in BOTH tier_a_review_gate.py and sairn_claim.py and both derived identity from os.path.basename(REPO), so a clone renamed SAIRN-cody would DISCHARGE ITS OWN TIER A OBLIGATION and the gate would report an independent review -- and the same string decides who holds a claim, so a rename reassigns work in the other direction too. FAILS CLOSED: a missing marker RAISES and is never guessed, because a fallback would leave the spoofable path live with nothing to say which one answered. NOT A CRYPTOGRAPHIC CONTROL and does not claim to be -- anything that can rename a directory can write a file; what it closes is DRIFT AND ACCIDENT, turning identity from a side effect of a folder name into a deliberate act with a file to point at. Self-check drives all four: missing fails closed, a planted value is actually used from a directory named after nobody, a rename survives, and a marker holding junk is refused rather than returned | `run_freshness_probe.py`, `run_registry_claim_probe.py`, `sabotage_harness.py` |
@@ -502,11 +503,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      271   git ls-files tools/
-  hook entries                        14   .claude\settings.json
+  tools on disk                      272   git ls-files tools/
+  hook entries                        15   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                67   report_only_checks.REGISTRY
-  tools invoked by tests/            189   tests/**/*.py, *.js
+  tools invoked by tests/            190   tests/**/*.py, *.js
   recorded NOT-promoted decisions     80   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```
