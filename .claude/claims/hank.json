@@ -3176,6 +3176,24 @@
         "tools/dispatch_state.py",
         "tools/gate_caller_impact.py"
       ]
+    },
+    {
+      "id": "hank-1790564740",
+      "session": "hank",
+      "subject": "hank",
+      "task": "queue17: (1) delete the zz-probe-identity-20260928 residue I created on LAW-TEST-2026 -- DELETE was revoked platform-wide on law_deadline_rules 2026-08-25 so neither the API nor service_role can do it, raw SQL goes to Michael; (2) MECH-AUDIT-2026 provisioning scope plus repointing every live probe that WRITES off a demo-facing licence; (3) identity-forgery class sweep across every handler that stores a caller-supplied object after overwriting only named keys, strip the identity class, regression test first per site with a forged-value arm, publish checked/universe; (7) METHODOLOGY verification residue -- every writing live probe runs only on an audit licence, cleans up or records a named residue with its deletion path, and FAILS ITS OWN RUN when residue remains; enumerate every live probe with checked/universe and a known-bad control. Then ts-note, the three class sweeps with scanners, the weekly state report, write_batch confirmation, the section 2 confidentiality sweep, the stale skill-doc counts, instrument-vs-code, and the self-audit. api/sd-data.js and sairnbuild.html are RECHECKED PER ITEM and not waited on. SUBJECT NAMED PER PR 4.3 FILES: sql/zz_probe_residue_delete_2026-09-28.sql tools/live_probe_residue_audit.py tests/run_live_probe_residue_probe.py docs/2026-09-28-verification-residue.md docs/2026-09-28-audit-licence-provisioning.md tools/identity_field_strip_scan.py",
+      "claimed_at": "2026-09-28T03:05:40Z",
+      "claimed_at_epoch": 1790564740.3607123,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/2026-09-28-audit-licence-provisioning.md",
+        "docs/2026-09-28-verification-residue.md",
+        "sql/zz_probe_residue_delete_2026-09-28.sql",
+        "tests/run_live_probe_residue_probe.py",
+        "tools/identity_field_strip_scan.py",
+        "tools/live_probe_residue_audit.py"
+      ]
     }
   ],
   "refusals": [
