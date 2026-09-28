@@ -2635,6 +2635,17 @@
         "tests/run_fail_open_probe.py",
         "tools/fail_open_scan.py"
       ]
+    },
+    {
+      "id": "fourth-1790623500",
+      "session": "fourth",
+      "subject": "fourth-selfaudit",
+      "task": "x",
+      "claimed_at": "2026-09-28T19:25:00Z",
+      "claimed_at_epoch": 1790623500.5585651,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
