@@ -19,12 +19,12 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**265 files in `tools/`.** By what actually invokes them:
+**266 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 14 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 69 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 70 | runs automatically on every push, never blocks |
 | **ADVISORY** | 4 | session-start or prompt hooks, informational |
 | **DECIDED** | 74 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 48 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
@@ -35,7 +35,7 @@ By what they are, independent of wiring:
 | Kind | Count |
 |---|---:|
 | ADVISORY | 3 |
-| CHECKER | 184 |
+| CHECKER | 185 |
 | GENERATOR | 19 |
 | GUARD | 1 |
 | LIBRARY | 25 |
@@ -155,7 +155,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (69)
+## REPORT-ONLY (70)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -228,6 +228,7 @@ quiet in practice.
 | `traceability_matrix.py` | 2026-09-10, the day it was built | docs/traceability-matrix.md no longer matching the sources it is derived from -- a guard test, a gate check, a registry entry or an index row moved and the matrix did not |
 | `truthy_sum_check.py` | 2026-09-11, the day it was built | a NEW `+ (x || 0)` in a numeric fold with no Number() around it -- the guard never fires on a non-empty string, so `+` CONCATENATES instead of adding |
 | `vercel_config_check.py` | 2026-09-09 | a buildCommand over Vercel's 256-char schema limit, and a route whose destination file no cp copies |
+| `verification_owed_report.py` | 2026-09-28, report-only and it must STAY report-only. It lists commits whose own message says a live run is owed with nothing recording it done. A GATE HERE WOULD BE CLEARED BY DELETING THE SENTENCE rather than by doing the verification, which would make honest disclosure the expensive option. Built after the alf_incidents fix shipped with "LIVE RE-VERIFICATION IS STILL OWED" in its own commit message -- accurate, in the right place, and the last anybody heard of it until the live run the next day found the fix did not work. Control: tests/run_verification_owed_probe.py. |  |
 | `write_without_readback_check.py` | 2026-09-10 | a resource an app WRITES to the server and never reads back -- a backup nobody could restore from |
 
 And 5 that are PostToolUse hooks in their own right, not registry entries:
@@ -492,11 +493,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      265   git ls-files tools/
+  tools on disk                      266   git ls-files tools/
   hook entries                        14   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
-  report-only registry                65   report_only_checks.REGISTRY
-  tools invoked by tests/            182   tests/**/*.py, *.js
+  report-only registry                66   report_only_checks.REGISTRY
+  tools invoked by tests/            183   tests/**/*.py, *.js
   recorded NOT-promoted decisions     80   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```

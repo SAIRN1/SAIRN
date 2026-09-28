@@ -155,6 +155,23 @@ def by_section(rc, out):
 
 REGISTRY = [
     {
+        'tool': 'verification_owed_report.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-28, report-only and it must STAY report-only. It '
+                    'lists commits whose own message says a live run is owed '
+                    'with nothing recording it done. A GATE HERE WOULD BE '
+                    'CLEARED BY DELETING THE SENTENCE rather than by doing the '
+                    'verification, which would make honest disclosure the '
+                    'expensive option. Built after the alf_incidents fix shipped '
+                    'with "LIVE RE-VERIFICATION IS STILL OWED" in its own commit '
+                    'message -- accurate, in the right place, and the last '
+                    'anybody heard of it until the live run the next day found '
+                    'the fix did not work. Control: '
+                    'tests/run_verification_owed_probe.py.',
+    },
+
+    {
         'tool': 'ai_action_approval_audit.py',
         'mode': 'once',
         'verdict': by_exit,
