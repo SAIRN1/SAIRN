@@ -17944,6 +17944,65 @@
         }
       ],
       "recurrence_open": "NO CHECK asks whether a SHARED test helper has a control of its own. tests/lib/ now holds two modules (strip_comments.js and active_credential_stub.js) and only one has a test. checker_control_check.py reads report_only_checks.REGISTRY, so it cannot see a test-suite library at all -- a helper is not a checker and is outside its population by construction."
+    },
+    {
+      "commit": "e7afcc877ee2",
+      "date": "2026-09-27",
+      "subject": "fix(sairnlaw): a licence key alone could author or OVERWRITE a deadline rule -- no 401, no role check, on the table every computed date reads from",
+      "files": [
+        "api/law-auth.js",
+        "api/legal-deadlines-auth.test.js",
+        "api/legal-deadlines.js",
+        "docs/MASTER-PLAN.md",
+        "docs/traceability-matrix.md",
+        "tools/load_deadline_seed.py"
+      ],
+      "lines_added": 389,
+      "lines_removed": 14,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "code-review",
+      "summary": "api/legal-deadlines.js `add_rule` and `add_holidays` upserted into law_deadline_rules and law_holidays with NO 401 and NO role check. The caller was resolved at :692 by verifySessionToken and used for exactly ONE purpose -- stamping authority.verified_by -- and the file states that plainly in its own comment: \"A bearer-key load stamps null here and a session load stamps an employee id.\" So any holder of a valid SAIRNlaw licence key, with no employee session at all, could author a deadline rule or a holiday calendar; and because both writes are UPSERTS keyed on rule_id and jurisdiction:year, the same request could OVERWRITE an existing one. The stored row is what every computed answer date for that jurisdiction reads from, for every user on that licence, so the blast radius is not one request but every future computation -- and api/_lib/deadline-engine.js's own header says \"a wrong deadline here is malpractice exposure, not a bug\". THE GAP WAS INVISIBLE FROM THE CODE THAT HAS THE CHECK: audit_read, the four AI chain-of-custody actions and every credential path gate on AI_COC_REVIEW_ROLES or PROVISIONING_ROLES, so reading the file top to bottom shows gate after gate and then two branches that resolve a caller and never test it. Fixed by gating both actions on a new purpose-named api/law-auth.js export RULE_AUTHORING_ROLES = {owner, attorney} -- deliberately NOT the existing AI_COC_REVIEW_ROLES, which has the same membership today and is named for a different decision. 401 for no session and 403 for a real session without authority are distinguished, and the 403 is audited. compute, rules_status and rules_fingerprint are untouched. tools/load_deadline_seed.py sent the bearer key ALONE, so the gate would have broken seeding on all 48 jurisdictions: it now signs in and refuses UP FRONT with COULD NOT RUN for a missing credential, a failed sign-in or a role that may not author, rather than emitting one 401 per rule.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "add_rule and add_holidays have carried this shape since the deadline endpoint was written; git log -S on the branch text finds the feature commit, not a commit that REMOVED a check. Naming it would be citing the birth of the feature as the birth of the defect."
+      },
+      "citation_note": "No section names an absent authorisation check. 1.5 is the closest in consequence -- a value computed and then not acted on, here a caller resolved and then not tested -- but 1.5 is about a failure reported by return value and ignored, and this is about an authorisation decision never made. Cited with the note rather than left not-citable, because the \"computed then unused\" shape is the recognisable half.",
+      "contributing_factors": [
+        {
+          "factor": "The caller WAS resolved, so the branch reads as authenticated. `caller` is in scope, referenced, and used -- for the audit stamp -- which is the most convincing possible form of a missing check: the variable is not unused, it is used for the wrong thing.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Both actions now test RULE_AUTHORING_ROLES[caller.role] before any write, with 401 and 403 distinguished and the refusal audited."
+        },
+        {
+          "factor": "The licence key was treated as authority because it is the only credential the seed loader had. The loader sent a bearer key alone, so gating the endpoint would have broken seeding -- which is a reason not to gate it that nobody wrote down and that the code quietly accommodated.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "tools/load_deadline_seed.py signs in and sends X-SD-Auth, and refuses with COULD NOT RUN before sending anything when it cannot."
+        },
+        {
+          "factor": "Nothing tested these two actions at all. api/_lib/deadline-endpoint-inputs.test.js tests the compute SEAM and no suite anywhere drove add_rule or add_holidays, so there was no arm to notice an absent gate.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/legal-deadlines-auth.test.js, 13 arms, written and RUN RED first: 7 failed including a control asserting an unauthenticated add_rule must not answer 200."
+        },
+        {
+          "factor": "SAIRNlaw has no management tier, and api/law-auth.js explicitly warns against inventing one -- so the absence of a role set to gate on was itself a reason the gate was never written.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "A purpose-named RULE_AUTHORING_ROLES rather than a borrowed constant or a generic MANAGEMENT_ROLES, with the distinction from that file's warning written in place."
+        }
+      ],
+      "recurrence_open": "The rest of api/legal-deadlines.js was not audited action by action in this change -- only add_rule and add_holidays were named. Whether any other action on any other endpoint resolves a caller and then fails to test it is the class, and it is not swept: tools/ghost_field_read_scan.py cannot see it, because `caller` IS used and therefore not a ghost read. A sweep for \"resolved and used only for audit\" is the tool this would need and it does not exist. Also open: the loader now requires a credential, so any cron or runbook that loaded seeds with a key alone will refuse until it is given one -- intended, and it will surface as a COULD NOT RUN rather than as a silent no-op."
     }
   ],
   "started": "2026-09-09",
