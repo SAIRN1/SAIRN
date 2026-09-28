@@ -49,9 +49,66 @@ import subprocess
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CLAIMS = os.path.join(REPO, '.claude', 'claims')
+# SAIRN_CLAIM_DIR points this at a constructed claim directory instead of the
+# live one -- the same affordance SAIRN_TIER_REGISTER gives
+# criticality_tier_check.py, and for the same reason: the real directory
+# changes under a test and cannot be made to hold a known shape, so arms
+# driven against it are measuring whatever three other sessions happen to be
+# doing. Not a behaviour switch; the same code runs over a different input.
+CLAIMS = os.environ.get('SAIRN_CLAIM_DIR') or os.path.join(
+    REPO, '.claude', 'claims')
 DEFAULT_HOURS = 6
-CRITERIA_VERSION = '2026-09-28.1'
+CRITERIA_VERSION = '2026-09-28.2'
+
+
+class CouldNotRun(Exception):
+    """Something this check DEPENDS ON is absent. Never folded into a pass."""
+
+
+def _claim_is_active(c):
+    """Is this claim still HELD -- by sairn_claim.py's own rule, not by its
+    `status` field.
+
+    ── THE DEFECT THIS EXISTS FOR, AND IT WAS THIS TOOL'S (2026-09-28) ────
+    `active_claims()` selected on `c.get('status') == 'active'`, the RAW
+    field. That is half the answer. `sairn_claim.is_active()` also applies
+    the four-hour staleness rule -- and a liveness check on the owning
+    process where the registry stamped one -- and sairn_claim.py says so at
+    its own call site: "Uses is_active(), not the raw status field: an
+    EXPIRED claim is one this...". The sibling tool draws the distinction;
+    this one did not.
+
+    MEASURED THE DAY IT WAS FIXED: 13 records carried `status: active` and
+    `is_active()` was true for TWO. So eleven of thirteen were being
+    described as "active NNh and NO commit has touched its declared files"
+    when they had expired hours or days earlier and were blocking nobody --
+    `sairn_claim.py check` already ignores them. Every finding the tool
+    produced that day was of that shape: non-empty, plausible, and pointing
+    at nothing anybody could act on in the way the sentence implied. A
+    false-finding generator is the shape that gets a check switched off.
+
+    IT IS IMPORTED AND NOT REIMPLEMENTED. Two spellings of one staleness
+    rule is two rules that drift, and the rule itself has already changed
+    once (a fixed timeout became a timeout plus process liveness on
+    2026-09-23). A local copy would have frozen the older half here.
+
+    AND IT FAILS CLOSED. If sairn_claim.py cannot be imported, the rule
+    cannot be applied, and falling back to `status == 'active'` would be the
+    defect restored under a different name -- a pass reported that was never
+    performed. PR 1.11.
+    """
+    try:
+        sys.path.insert(0, os.path.join(REPO, 'tools'))
+        import sairn_claim
+    except Exception as e:                                     # noqa: BLE001
+        raise CouldNotRun(
+            'cannot import sairn_claim from %s (%s), so the staleness rule '
+            'that decides whether a claim is still HELD cannot be applied. '
+            'Falling back to the raw `status` field would report every '
+            'expired-but-unreleased claim as a session actively holding it, '
+            'which is the defect this check was fixed for. Nothing was '
+            'measured.' % (os.path.join(REPO, 'tools'), e))
+    return sairn_claim.is_active(c)
 
 # `FILES:` is the declared file set PR 4.3 asks every claim to carry.
 FILES_RE = re.compile(r'FILES:\s*(.+)$', re.S)
@@ -150,6 +207,24 @@ def scan(hours=DEFAULT_HOURS):
             continue
         if age_h < hours:
             continue
+        # ── EXPIRED-BUT-UNRELEASED IS A THIRD ANSWER, NOT A QUIET ACTIVE ONE
+        # It is real clutter and worth clearing, so it is REPORTED. What it
+        # is not is "a session is holding this right now and has stopped
+        # working" -- that sentence names a different person and a different
+        # action, and merging the two is PR 1.11 one domain over.
+        live = _claim_is_active(c)
+        if not live:
+            rows.append({'session': session, 'id': c.get('id'),
+                         'age_h': round(age_h, 1),
+                         'files': declared_files(c.get('task')),
+                         'state': 'EXPIRED',
+                         'why': 'claimed %.1fh ago, past the claim tool\'s own '
+                                'staleness rule, and never released. It BLOCKS '
+                                'NOBODY -- sairn_claim.py check already ignores '
+                                'it -- so this is clutter for its holder to '
+                                'clear, not a claim anybody is waiting on.'
+                                % age_h})
+            continue
         files = declared_files(c.get('task'))
         if not files:
             rows.append({'session': session, 'id': c.get('id'),
@@ -239,25 +314,43 @@ def main(argv):
         except (IndexError, ValueError):
             print('--hours takes a number', file=sys.stderr)
             return 2
-    rows = scan(hours)
+    try:
+        rows = scan(hours)
+    except CouldNotRun as e:
+        print('COULD NOT RUN: %s' % e, file=sys.stderr)
+        return 2
     if rows is None:
         print('COULD NOT RUN: a claim file is missing or will not parse, so '
               'the active-claim list is unknown. An empty report here would '
               'not be a clean one.', file=sys.stderr)
         return 2
 
+    # ── THE EXIT CODE FOLLOWS THE LIVE FINDINGS ONLY, AND THAT IS A DECISION
+    # An EXPIRED row is worth printing and is not worth failing on: this repo
+    # carries eleven of them right now, none of them blocking anybody, and a
+    # check that is red forever on a backlog nobody can clear from here is a
+    # check people stop reading. The rows are still in the report and in the
+    # JSON; only the exit code is scoped.
+    live_rows = [r for r in rows if r['state'] != 'EXPIRED']
+
     if '--json' in argv:
         print(json.dumps({'criteria_version': CRITERIA_VERSION,
                           'hours': hours, 'rows': rows,
+                          'live_findings': len(live_rows),
+                          'expired_unreleased': len(rows) - len(live_rows),
                           'blind_spots': BLIND_SPOTS}, indent=1))
-        return 1 if rows else 0
+        return 1 if live_rows else 0
 
     print('CLAIM ACTIVITY -- an active claim whose declared files have been quiet')
     print('  criteria %s, window %.0fh' % (CRITERIA_VERSION, hours))
     print('')
-    if not rows:
-        print('  CLEAN: every active claim older than %.0fh has had a commit '
-              'touch its declared files.' % hours)
+    if not live_rows:
+        print('  CLEAN: every claim STILL HELD and older than %.0fh has had a '
+              'commit touch its declared files.' % hours)
+        if rows:
+            print('  (%d expired-but-unreleased claim(s) below. They block '
+                  'nobody and do not make this check red.)'
+                  % (len(rows) - len(live_rows)))
     for r in rows:
         print('  %-9s %-14s %6s  %s'
               % (r['session'], r['state'],
@@ -275,7 +368,7 @@ def main(argv):
     print('WHAT THIS CANNOT SEE:')
     for b in BLIND_SPOTS:
         print('  - %s' % b)
-    return 1 if rows else 0
+    return 1 if live_rows else 0
 
 
 if __name__ == '__main__':
