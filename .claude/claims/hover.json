@@ -131,6 +131,17 @@
       "status": "released",
       "released_at": "2026-09-28T04:06:40Z",
       "files": null
+    },
+    {
+      "id": "hover-1790568847",
+      "session": "hover",
+      "subject": "hover",
+      "task": "hover own-tooling round six: backup-mirror owner-name fixtures and the shared-machine token design, nothing pushed anywhere; a measured line-offset table for the SAIRNgrounds section of the criticality register, produced for its owner, no cell edited by me; a re-read of my own log entries five-nine-nine and six-hundred; one undirected batch; the next rotation draw. Everything I write lands in hover-audit-log or my own claim file. FILES: .claude/skills/sairn-hover-auditor/",
+      "claimed_at": "2026-09-28T04:14:07Z",
+      "claimed_at_epoch": 1790568847.1723464,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
@@ -145,6 +156,84 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "shared phrase: \"only report\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-28T04:11:39Z",
+      "my_subject": "hover",
+      "my_task": "mirror owner SAIRN-1 acceptance fixtures + shared-machine credential design report-only no push; consolidated sairngrounds citation-drift list for the register owner; confirm 599/600 judgment text; one undirected batch; resume rotation FILES: .claude/skills/sairn-hover-auditor/",
+      "other_session": "cc",
+      "other_subject": "cc",
+      "other_task": "discharge my five overdue Tier A review obligations; fix response_shape_check.py false positives found while reviewing (a Module-scope walk that descends into every function body, so a binding in one function leaks into another, plus a for-loop target that never clears a tracked name) and correct the registry evidence I wrote from its uncorrected count; triage the 16 dead sabotage anchors by owner and fix the ones in free files; add checked/universe plus an UNREADABLE count to the registry checkers in batches with a ratchet on each; a report-only check for a claim active with no commit touching its files; and whatever else still exits 2 COULD NOT RUN. CONFLICTS DECLARED PER PR 4.3 RATHER THAN REWORDED -- api/sd-data.js is FOURTH'S (two live claims) so the mech_docs session gate is NOT taken; docs/CRITICALITY-TIERS.md is named by HANK and CODY so the mech_docs tier row and the sv_financials tier verdict are NOT landed by me, only read and reported; stonedesk.html is named in CODY'S live q16 so the :6394 overrun instance is NOT taken. SUBJECT NAMED PER PR 4.3 FILES: tools/response_shape_check.py tools/checker_denominator.py tools/claim_activity_check.py tools/report_only_checks.py docs/tier-a-reviews.json docs/2026-09-28-could-not-read-ratchet.md",
+      "other_claimed_at": "2026-09-28T03:14:47Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: report-only",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-28T04:11:39Z",
+      "my_subject": "hover",
+      "my_task": "mirror owner SAIRN-1 acceptance fixtures + shared-machine credential design report-only no push; consolidated sairngrounds citation-drift list for the register owner; confirm 599/600 judgment text; one undirected batch; resume rotation FILES: .claude/skills/sairn-hover-auditor/",
+      "other_session": "cody",
+      "other_subject": "cody-q16",
+      "other_task": "queue16: fix the 9 label-claims-universal arms assertion_label_shape_check.py found (regression arm FIRST per arm, in each owning suite), then widen the sweep and publish that tool's OWN checked/universe inside the tool; re-anchor the sf_ceremonial_items and sf_bottle_fills citation drifts; land the sf_events tier row from docs/2026-09-27-sf-events-tier-cell.md; enumerate every tool with more than one entry point over one population and add a control per tool that fails when the entry points disagree on the universe; five more register-only planned-action closures with controls; SAIRNcode autonomous-coding scoping DOCS ONLY no build; self-audit of MY OWN skill log and the methodology registry. LEXICAL BLOCK DECLARED PER PR 4.3 RATHER THAN REWORDED: cc holds a live claim sharing the phrases 'checked/universe', 'coverage denominators' and 'self-audit of my own skill log, tool inventory and methodology registry'. VERIFIED DISJOINT AND NOT TAKEN BY ME: tools/checker_denominator.py, tools/report_only_checks.py, tools/mutation_anchor_check.py, tools/probe_anchor_freshness.py and .claude/settings.json are ALL cc's and I edit NONE of them. My checked/universe is printed by my own tool about its own file list, not through cc's denominator module; cc's 'unify the two anchor-freshness populations' is TWO TOOLS with disjoint populations while mine is ONE TOOL with two entry points, a different subject with the same vocabulary; and a self-audit of one's own skill log is per-session by construction -- hank's queue15 item 11 is the same wording for the same reason. BLOCKED AND NOT TAKEN, REPORTED NOT WORKED AROUND: (a) registering assertion_label_shape_check.py in the report-only REGISTRY needs tools/report_only_checks.py, cc's; (b) sf_trustee_audits server sync needs api/sd-data.js, fourth's LIVE claim; (c) the slabSyncOne/sdLineageSyncOne write-fault fix needs api/sd-data.js, same holder. SUBJECT NAMED PER PR 4.3 FILES: tools/assertion_label_shape_check.py tools/entry_point_scope_check.py tests/run_entry_point_scope_probe.py docs/CRITICALITY-TIERS.md tests/push_gate/check9_probe.py tests/push_gate/refspec_and_override_probe.py tests/run_checker_confidence_probe.py tests/reachability/resource_demand_probe.py tests/run_assurance_case_probe.py tests/run_register_feed_gate_probe.py tests/run_rotation_blast_radius_probe.py tests/run_testability_gate_probe.py api/_resources/sairnfreedom.js docs/2026-09-28-entry-point-scope-divergence.md docs/2026-09-28-sairncode-autonomous-coding-scope.md docs/2026-09-28-cody-self-audit.md",
+      "other_claimed_at": "2026-09-28T01:49:22Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: report-only",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-28T04:12:30Z",
+      "my_subject": "hover",
+      "my_task": "mirror owner SAIRN-1 acceptance fixtures + shared-machine credential design, no push; consolidated SAIRNgrounds citation-drift measurement list handed to the register owner; confirm log entries 599 and 600; one undirected batch; resume rotation. LEXICAL BLOCK DECLARED PER PR 4.3 RATHER THAN REWORDED: cody-q16 matched on the phrase report-only and on citation-drift vocabulary. VERIFIED DISJOINT: cody re-anchors sf_ceremonial_items and sf_bottle_fills (SAIRNfreedom cells) by EDITING the register; my drift item MEASURES grd_ and msb_ (SAIRNgrounds) cells and produces a list only -- I edit no register cell, no tool of cody's, and nothing in cody's FILES line. My writes stay in hover-audit-log and .claude/claims/hover.json. FILES: .claude/skills/sairn-hover-auditor/",
+      "other_session": "cc",
+      "other_subject": "cc",
+      "other_task": "discharge my five overdue Tier A review obligations; fix response_shape_check.py false positives found while reviewing (a Module-scope walk that descends into every function body, so a binding in one function leaks into another, plus a for-loop target that never clears a tracked name) and correct the registry evidence I wrote from its uncorrected count; triage the 16 dead sabotage anchors by owner and fix the ones in free files; add checked/universe plus an UNREADABLE count to the registry checkers in batches with a ratchet on each; a report-only check for a claim active with no commit touching its files; and whatever else still exits 2 COULD NOT RUN. CONFLICTS DECLARED PER PR 4.3 RATHER THAN REWORDED -- api/sd-data.js is FOURTH'S (two live claims) so the mech_docs session gate is NOT taken; docs/CRITICALITY-TIERS.md is named by HANK and CODY so the mech_docs tier row and the sv_financials tier verdict are NOT landed by me, only read and reported; stonedesk.html is named in CODY'S live q16 so the :6394 overrun instance is NOT taken. SUBJECT NAMED PER PR 4.3 FILES: tools/response_shape_check.py tools/checker_denominator.py tools/claim_activity_check.py tools/report_only_checks.py docs/tier-a-reviews.json docs/2026-09-28-could-not-read-ratchet.md",
+      "other_claimed_at": "2026-09-28T03:14:47Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: report-only",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-28T04:12:30Z",
+      "my_subject": "hover",
+      "my_task": "mirror owner SAIRN-1 acceptance fixtures + shared-machine credential design, no push; consolidated SAIRNgrounds citation-drift measurement list handed to the register owner; confirm log entries 599 and 600; one undirected batch; resume rotation. LEXICAL BLOCK DECLARED PER PR 4.3 RATHER THAN REWORDED: cody-q16 matched on the phrase report-only and on citation-drift vocabulary. VERIFIED DISJOINT: cody re-anchors sf_ceremonial_items and sf_bottle_fills (SAIRNfreedom cells) by EDITING the register; my drift item MEASURES grd_ and msb_ (SAIRNgrounds) cells and produces a list only -- I edit no register cell, no tool of cody's, and nothing in cody's FILES line. My writes stay in hover-audit-log and .claude/claims/hover.json. FILES: .claude/skills/sairn-hover-auditor/",
+      "other_session": "cody",
+      "other_subject": "cody-q16",
+      "other_task": "queue16: fix the 9 label-claims-universal arms assertion_label_shape_check.py found (regression arm FIRST per arm, in each owning suite), then widen the sweep and publish that tool's OWN checked/universe inside the tool; re-anchor the sf_ceremonial_items and sf_bottle_fills citation drifts; land the sf_events tier row from docs/2026-09-27-sf-events-tier-cell.md; enumerate every tool with more than one entry point over one population and add a control per tool that fails when the entry points disagree on the universe; five more register-only planned-action closures with controls; SAIRNcode autonomous-coding scoping DOCS ONLY no build; self-audit of MY OWN skill log and the methodology registry. LEXICAL BLOCK DECLARED PER PR 4.3 RATHER THAN REWORDED: cc holds a live claim sharing the phrases 'checked/universe', 'coverage denominators' and 'self-audit of my own skill log, tool inventory and methodology registry'. VERIFIED DISJOINT AND NOT TAKEN BY ME: tools/checker_denominator.py, tools/report_only_checks.py, tools/mutation_anchor_check.py, tools/probe_anchor_freshness.py and .claude/settings.json are ALL cc's and I edit NONE of them. My checked/universe is printed by my own tool about its own file list, not through cc's denominator module; cc's 'unify the two anchor-freshness populations' is TWO TOOLS with disjoint populations while mine is ONE TOOL with two entry points, a different subject with the same vocabulary; and a self-audit of one's own skill log is per-session by construction -- hank's queue15 item 11 is the same wording for the same reason. BLOCKED AND NOT TAKEN, REPORTED NOT WORKED AROUND: (a) registering assertion_label_shape_check.py in the report-only REGISTRY needs tools/report_only_checks.py, cc's; (b) sf_trustee_audits server sync needs api/sd-data.js, fourth's LIVE claim; (c) the slabSyncOne/sdLineageSyncOne write-fault fix needs api/sd-data.js, same holder. SUBJECT NAMED PER PR 4.3 FILES: tools/assertion_label_shape_check.py tools/entry_point_scope_check.py tests/run_entry_point_scope_probe.py docs/CRITICALITY-TIERS.md tests/push_gate/check9_probe.py tests/push_gate/refspec_and_override_probe.py tests/run_checker_confidence_probe.py tests/reachability/resource_demand_probe.py tests/run_assurance_case_probe.py tests/run_register_feed_gate_probe.py tests/run_rotation_blast_radius_probe.py tests/run_testability_gate_probe.py api/_resources/sairnfreedom.js docs/2026-09-28-entry-point-scope-divergence.md docs/2026-09-28-sairncode-autonomous-coding-scope.md docs/2026-09-28-cody-self-audit.md",
+      "other_claimed_at": "2026-09-28T01:49:22Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same app: sairnfreedom",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-28T04:12:30Z",
+      "my_subject": "hover",
+      "my_task": "mirror owner SAIRN-1 acceptance fixtures + shared-machine credential design, no push; consolidated SAIRNgrounds citation-drift measurement list handed to the register owner; confirm log entries 599 and 600; one undirected batch; resume rotation. LEXICAL BLOCK DECLARED PER PR 4.3 RATHER THAN REWORDED: cody-q16 matched on the phrase report-only and on citation-drift vocabulary. VERIFIED DISJOINT: cody re-anchors sf_ceremonial_items and sf_bottle_fills (SAIRNfreedom cells) by EDITING the register; my drift item MEASURES grd_ and msb_ (SAIRNgrounds) cells and produces a list only -- I edit no register cell, no tool of cody's, and nothing in cody's FILES line. My writes stay in hover-audit-log and .claude/claims/hover.json. FILES: .claude/skills/sairn-hover-auditor/",
+      "other_session": "fourth",
+      "other_subject": "sairncare",
+      "other_task": "roleSet() seam test closing the 6 COULD-NOT-TELL seams into api/_lib/auth.js before roleSet membership is changed; caregiver made a real enforced role in api/sd-data.js roleSets and reconciled against both sairncare.html dropdowns; the SAIRNcare credential pre-gate red suites (12 suites / 172 assertions on medication-record auth, cc's bisection carries over); the 33 WEAK git anchors; sd-sub-data.js's two verifySessionToken call sites read individually; second-pass retry arms starting with tests/sairnscape_outbound_queue.js; conflict_marker_preflight ORIG_HEAD..HEAD post-operation mode; switch-level reclassification of the second-pass sweep; counter-wraparound sweep; lost-independent-backstop sweep; hidden-state audit.\n\nCONFLICT DECLARED PER PR 4.3 RATHER THAN REWORDED: api/legal-deadlines.js IS HANK'S -- the claim tool refused my previous attempt naming it (hank holds 'hank' on that file, registry-only, not yet on origin). The 401/403 fix for unauthenticated add_rule/add_holidays is therefore NOT in this claim and is NOT being done by me. It is a LIVE unauthenticated write path to the legal deadline rules the entire SAIRNlaw product claim rests on, and docs/2026-08-30-sairntech-app-sellability-gate.md records it as an open pre-launch blocker -- flagged to hank and to the coordinating session rather than reworded past the matcher. api/_lib/auth.js is shared and I am ADDING A TEST FILE beside it, not editing it, unless the caregiver work forces a change there, in which case I will re-check first.\n\nSUBJECT NAMED PER PR 4.3 FILES: api/_lib/auth-roleset-seam.test.js api/sd-data.js sairncare.html tools/conflict_marker_preflight.py tools/second_pass_coverage_scan.py tests/sairnscape_outbound_queue.js docs/",
+      "other_claimed_at": "2026-09-28T00:49:05Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"declared per\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-28T04:13:00Z",
+      "my_subject": "hover",
+      "my_task": "hover own-tooling round: mirror owner-name acceptance fixtures and shared-machine credential design, nothing pushed; a measurement list of SAIRNgrounds register-cell line offsets handed to the register owner with no cell edited by me; re-read of my log entries 599 and 600; one undirected batch; next rotation draw. All writes stay in hover-audit-log and my own claim file. Blocks from cody-q16 and fourth verified lexical-only: their claims edit register cells and platform files I do not touch; the refusal records on my claim file carry the full verification. FILES: .claude/skills/sairn-hover-auditor/",
+      "other_session": "cody",
+      "other_subject": "cody-q16",
+      "other_task": "queue16: fix the 9 label-claims-universal arms assertion_label_shape_check.py found (regression arm FIRST per arm, in each owning suite), then widen the sweep and publish that tool's OWN checked/universe inside the tool; re-anchor the sf_ceremonial_items and sf_bottle_fills citation drifts; land the sf_events tier row from docs/2026-09-27-sf-events-tier-cell.md; enumerate every tool with more than one entry point over one population and add a control per tool that fails when the entry points disagree on the universe; five more register-only planned-action closures with controls; SAIRNcode autonomous-coding scoping DOCS ONLY no build; self-audit of MY OWN skill log and the methodology registry. LEXICAL BLOCK DECLARED PER PR 4.3 RATHER THAN REWORDED: cc holds a live claim sharing the phrases 'checked/universe', 'coverage denominators' and 'self-audit of my own skill log, tool inventory and methodology registry'. VERIFIED DISJOINT AND NOT TAKEN BY ME: tools/checker_denominator.py, tools/report_only_checks.py, tools/mutation_anchor_check.py, tools/probe_anchor_freshness.py and .claude/settings.json are ALL cc's and I edit NONE of them. My checked/universe is printed by my own tool about its own file list, not through cc's denominator module; cc's 'unify the two anchor-freshness populations' is TWO TOOLS with disjoint populations while mine is ONE TOOL with two entry points, a different subject with the same vocabulary; and a self-audit of one's own skill log is per-session by construction -- hank's queue15 item 11 is the same wording for the same reason. BLOCKED AND NOT TAKEN, REPORTED NOT WORKED AROUND: (a) registering assertion_label_shape_check.py in the report-only REGISTRY needs tools/report_only_checks.py, cc's; (b) sf_trustee_audits server sync needs api/sd-data.js, fourth's LIVE claim; (c) the slabSyncOne/sdLineageSyncOne write-fault fix needs api/sd-data.js, same holder. SUBJECT NAMED PER PR 4.3 FILES: tools/assertion_label_shape_check.py tools/entry_point_scope_check.py tests/run_entry_point_scope_probe.py docs/CRITICALITY-TIERS.md tests/push_gate/check9_probe.py tests/push_gate/refspec_and_override_probe.py tests/run_checker_confidence_probe.py tests/reachability/resource_demand_probe.py tests/run_assurance_case_probe.py tests/run_register_feed_gate_probe.py tests/run_rotation_blast_radius_probe.py tests/run_testability_gate_probe.py api/_resources/sairnfreedom.js docs/2026-09-28-entry-point-scope-divergence.md docs/2026-09-28-sairncode-autonomous-coding-scope.md docs/2026-09-28-cody-self-audit.md",
+      "other_claimed_at": "2026-09-28T01:49:22Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: cody-q16",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
