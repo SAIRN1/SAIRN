@@ -88,6 +88,59 @@ class _Scope(ast.NodeVisitor):
         self.path, self.findings = path, findings
         self.bound = {}          # name -> (lineno, which fetcher)
 
+    # ── A NESTED FUNCTION IS A DIFFERENT SCOPE AND IS NOT DESCENDED INTO ───
+    # THE FALSE-POSITIVE THIS CLOSES, found 2026-09-28 while reviewing
+    # tools/load_compliance_seed.py. scan_source() builds a scope for
+    # ast.Module and visits its body, and a FunctionDef IS in that body -- so
+    # generic_visit carried ONE module-level scope down through EVERY function
+    # in the file. `r = sairn_http.fetch_json(...)` inside post() therefore
+    # leaked into select_rules(), where `r` is a loop variable over seed rules,
+    # and seven lines of ordinary dict access were reported as a Response used
+    # as a body.
+    #
+    # THE DIRECTION IS WHAT MAKES IT SERIOUS. A checker that misses a defect is
+    # a gap; a checker that manufactures one sends somebody to "fix" correct
+    # code, and this one is wired report-only, so its number is read without
+    # the sites being opened. Its own evidence line in
+    # report_only_checks.REGISTRY quoted the uncorrected count.
+    #
+    # Each function already gets its own _Scope from scan_source's walk, so
+    # refusing to descend loses nothing.
+    def visit_FunctionDef(self, node):
+        return
+
+    visit_AsyncFunctionDef = visit_FunctionDef
+    visit_Lambda = visit_FunctionDef
+
+    # ── A LOOP OR `with` TARGET REBINDS THE NAME, AND THAT CLEARS IT ───────
+    # SECOND HALF OF THE SAME DEFECT, and it is independent: `for r in rules:`
+    # after `r = fetch_json(...)` IN THE SAME FUNCTION would still have
+    # reported every `r.get(...)` in the loop. visit_Assign already clears a
+    # rebound name and these three statements rebind just as certainly.
+    def _clear_target(self, target):
+        for sub in (target.elts if isinstance(target, (ast.Tuple, ast.List))
+                    else [target]):
+            if isinstance(sub, ast.Name):
+                self.bound.pop(sub.id, None)
+
+    def visit_For(self, node):
+        self._clear_target(node.target)
+        self.generic_visit(node)
+
+    visit_AsyncFor = visit_For
+
+    def visit_With(self, node):
+        for item in node.items:
+            if item.optional_vars is not None:
+                self._clear_target(item.optional_vars)
+        self.generic_visit(node)
+
+    visit_AsyncWith = visit_With
+
+    def visit_comprehension(self, node):
+        self._clear_target(node.target)
+        self.generic_visit(node)
+
     # ── binding ────────────────────────────────────────────────────────────
     def visit_Assign(self, node):
         which = _is_fetch_call(node.value)
@@ -244,6 +297,37 @@ def f():
     r = sairn_http.fetch_json(url)
     r = r.body
     return isinstance(r, dict)
+'''),
+    # ── THE TWO FALSE POSITIVES FOUND IN THE WILD, 2026-09-28 ─────────────
+    # Both are from tools/load_compliance_seed.py, where seven ordinary dict
+    # accesses were reported as a Response used as a body.
+    ('MUST NOT FLAG -- a DIFFERENT FUNCTION reusing the same name', False, '''
+def post(url, body):
+    r = sairn_http.fetch_json(url)
+    return r.status, r.body
+
+def select(rules):
+    out = []
+    for r in rules:
+        if r.get('state'):
+            out.append(r['rule_id'])
+    return out
+'''),
+    ('MUST NOT FLAG -- a for-loop target rebinds the name in the SAME function',
+     False, '''
+def f(rules):
+    r = sairn_http.fetch_json(url)
+    seen = r.status
+    for r in rules:
+        seen += 1 if r.get('state') else 0
+    return seen
+'''),
+    # ── AND THE CONTROL FOR THE FIX: the module-scope case must still FLAG
+    # when the misuse really is at module level, otherwise "do not descend"
+    # became "do not look".
+    ('MUST FLAG -- misuse at MODULE level, not inside any function', True, '''
+r = sairn_http.fetch_json(url)
+ok = r.get('ok')
 '''),
 ]
 
