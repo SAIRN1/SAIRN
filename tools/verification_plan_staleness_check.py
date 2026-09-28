@@ -165,24 +165,56 @@ def claims():
         # Not fatal: a repo with no claims directory has no claims, which is a
         # real answer. Said out loud in the report rather than silently empty.
         return out, False
-    for f in sorted(os.listdir(d)):
-        if not f.endswith('.json'):
-            continue
+    # ── THIS READ 0 CLAIMS FROM 6 FILES, AND REPORTED DRIFT ANYWAY ──────────
+    # CORRECTED 2026-09-28. A claim file is `{session, claims: [...], refusals:
+    # [...]}`. This treated a dict as ONE claim record and looked for `subject`
+    # at the TOP level, where it does not exist -- so it parsed nothing, returned
+    # an empty map, and then every `claim=` marker in the plan resolved to "no
+    # ACTIVE claim of that name exists" and was reported STALE-INFLIGHT.
+    #
+    # THAT IS NOT A MISSING FEATURE, IT IS A FALSE-FINDING GENERATOR: the tool had
+    # read its source successfully -- the directory existed, so it returned
+    # `True` for "measured" -- and produced verdicts from nothing. Rule 1.11 with
+    # the arrow reversed: not "could not run folded into passed" but "could not
+    # parse folded into FOUND".
+    #
+    # It went unnoticed because the control's own claim arm (ARM 5) asserted only
+    # that STALE-INFLIGHT FIRES for a name nobody holds, with no paired positive
+    # -- so a detector stuck on one answer satisfied it. That arm is now paired.
+    files = [f for f in sorted(os.listdir(d)) if f.endswith('.json')]
+    unparsed = []
+    for f in files:
         try:
             rec = json.load(io.open(os.path.join(d, f), encoding='utf-8'))
-        except ValueError:
+        except ValueError as e:
+            unparsed.append('%s (%s)' % (f, e))
             continue
-        for c in (rec if isinstance(rec, list) else [rec]):
+        # BOTH SHAPES, because a hand-written fixture is a bare list and the real
+        # files are an object with a `claims` array.
+        if isinstance(rec, dict):
+            entries = rec.get('claims')
+            if not isinstance(entries, list):
+                entries = [rec]
+        else:
+            entries = rec if isinstance(rec, list) else [rec]
+        for c in entries:
             if not isinstance(c, dict):
                 continue
             subj = str(c.get('subject') or c.get('task') or '').strip()
             if not subj:
                 continue
+            released = bool(c.get('released_at') or c.get('released'))
             out[subj] = {
-                'session': c.get('session') or f[:-5],
-                'active': str(c.get('state', 'active')).lower() == 'active',
+                'session': c.get('session') or rec.get('session') if isinstance(rec, dict) else f[:-5],
+                'active': (not released)
+                          and str(c.get('state', 'active')).lower() == 'active',
                 'task': c.get('task', ''),
             }
+    # A DIRECTORY FULL OF FILES THAT YIELDED NOTHING IS NOT "NO CLAIMS".
+    # Returning measured=False here makes every claim= marker COULD NOT TELL
+    # instead of STALE-INFLIGHT, which is the state that was being fabricated.
+    if files and not out:
+        return out, False
     return out, True
 
 

@@ -28,6 +28,10 @@ import tempfile
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOL = os.path.join(REPO, 'tools', 'verification_plan_staleness_check.py')
+# IMPORTED for ARM 5b only, to read the LIVE claim record rather than inventing
+# one -- a fixture claim would not have exercised the parser that was broken.
+sys.path.insert(0, os.path.join(REPO, 'tools'))
+import verification_plan_staleness_check as G                    # noqa: E402
 
 fails = []
 
@@ -151,6 +155,38 @@ try:
     rc, out = run(['--plan', PLAN])
     check('an item marked IN FLIGHT with no active claim of that name is reported',
           rc == 1 and 'STALE-INFLIGHT' in out, 'rc=%s' % rc)
+
+    # ── ARM 5b: THE PAIRED POSITIVE THE CLAIM DIRECTION NEVER HAD ─────────
+    # ADDED 2026-09-28, and it would have caught a real false-finding generator
+    # on the day it was written. ARM 5 above asserts only that STALE-INFLIGHT
+    # FIRES for a name nobody holds -- which a detector stuck on "fire" satisfies
+    # perfectly, and one was: claims() parsed the real claim files' shape wrongly,
+    # read 0 records from 6 files, and reported STALE-INFLIGHT for EVERY claim=
+    # marker including names that were genuinely held.
+    #
+    # So this drives a name that IS actively claimed and demands silence. It reads
+    # the live claim record rather than inventing one, because a fixture claim
+    # would not have exercised the parser that was broken.
+    _live = None
+    try:
+        _cl, _measured = G.claims()
+        _live = next((k for k, v in _cl.items() if v.get('active')), None)
+    except Exception as _e:                                       # noqa: BLE001
+        _live = None
+    if _live:
+        write('## Tier 2\n\n- in flight: something '
+              '<!-- verify: claim=%s -->\n' % _live[:40])
+        rc, out = run(['--plan', PLAN])
+        check('...and an item marked IN FLIGHT whose claim IS actively held is '
+              'NOT reported -- without this arm a tool that read ZERO claims '
+              'would pass ARM 5 and fabricate drift on every marker',
+              'STALE-INFLIGHT' not in out, 'rc=%s out=%s' % (rc, out[-300:]))
+    else:
+        check('...and an item marked IN FLIGHT whose claim IS actively held is '
+              'NOT reported -- COULD NOT DRIVE: no active claim exists to name, '
+              'so the paired positive was not exercised. This is NOT a pass',
+              False, 'no active claim found; claims() returned %d record(s)'
+              % (len(_cl) if isinstance(_cl, dict) else -1))
 
     # ── ARM 6: THE PAIRED POSITIVE ────────────────────────────────────────
     # Every arm above is satisfied by a tool that reports drift on everything.

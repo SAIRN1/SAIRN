@@ -38,8 +38,8 @@ This is what verification_plan_staleness_check.py exists to answer, first real r
 Batches, not tiers — a batch is what can genuinely move together given real dependencies. Work within a batch in any order; don't start a later batch's items until the batch before it is substantially clear.
 
 ## BATCH 1 — already active, just let it finish
-- Item 54 (heartbeat/watchdog) — claimed by Fourth, in progress.
-- Item 77 (injection-phase field) — claimed by Hank, in progress.
+- Item 54 (heartbeat/watchdog) — claimed by Fourth, in progress. <!-- verify: claim=heartbeat -->
+- Item 77 (injection-phase field) — claimed by Hank, in progress. <!-- verify: claim=injection-phase -->
 - The already-dispatched three-way-match/StoneDesk-PO work (CC) and item 35 checkpoint design (Fourth).
 
 ## BATCH 2 — ready now, zero blockers, dispatch next
@@ -50,7 +50,7 @@ When Agent A finishes Tier A work, a DIFFERENT agent reviews it, recorded with d
 
 ## BATCH 4 — gated on Batch 2/3, real dependencies
 - 8, 25, 26 (both remaining branches) — gated on 2/24 (Batch 3) plus 4, 18, 21.
-  - **26 phase 2 BUILT 2026-09-26 (Fourth): `tools/tiering_recheck.py`, control `tests/run_tiering_recheck_probe.py`.** The gate opened for real: 167 review records over 245 resources and 74 independent-review defects. It PROPOSES recheck candidates and never re-tiers. Recorded here because this snapshot is the document that dispatched a rebuild of an already-built tool once (disciplines §10) — check the tool before dispatching this item again.
+  - **26 phase 2 BUILT 2026-09-26 (Fourth): `tools/tiering_recheck.py`, control `tests/run_tiering_recheck_probe.py`.** <!-- verify: commit=tiering_recheck --> The gate opened for real: 167 review records over 245 resources and 74 independent-review defects. It PROPOSES recheck candidates and never re-tiers. Recorded here because this snapshot is the document that dispatched a rebuild of an already-built tool once (disciplines §10) — check the tool before dispatching this item again.
 - 4, 23, 11 (BUILT already), 10 (BUILT already) — 4 still blocked on the register's standing-rules-citation field; 23 is design-done, build-deferred until 2/24 and 4 produce real input.
 - 69 (cell isolation) + 61 (credential inventory/rotation) — dispatch together, same root gap (the shared Supabase key).
 - 88 (articulation points) — dispatch alongside 61/69, same dependency-graph data.
