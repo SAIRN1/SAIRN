@@ -75,11 +75,31 @@ MUTATIONS = [
      "      if (!gateSession) {\n        res.status(403).json({",
      "      if (false) {\n        res.status(403).json({"),
 
+    # ── MUTATION REPOINTED 2026-09-28: IT WAS PLANTING NOTHING ─────────────
+    # This arm aimed at `if (!preActive.ok && preActive.code ===
+    # 'CREDENTIAL_INACTIVE') {` -- but that is the NO-ROW-ON-AN-UNSCOPED-
+    # RESOURCE log branch, and it sits AFTER `if (preHardRefusal) { ...
+    # return; }`. A genuinely deactivated credential (reason === 'inactive')
+    # never reaches it: it is refused 403 one branch earlier. So `if (false)`
+    # there changed which MESSAGE a cross-app token gets logged with and
+    # nothing else, the trust ledger stayed shut, and the suite was green
+    # BECAUSE THE LABELLED DEFECT WAS NEVER PLANTED. Reported as SILENT for
+    # days; the diagnosis blamed a stale anchor in
+    # api/sd-data-active-credential.test.js, which is a different suite and was
+    # a different (real) defect. A mutation that cannot produce the outcome its
+    # label names is worse than a missing arm: the arm reads as coverage.
+    #
+    # The docstring above already says what the defect IS -- the refusal
+    # DOWNGRADED to the warning path -- so the anchor is now the refusal's own
+    # guard. Disabling it drops a deactivated attorney through to the no-row
+    # log and on into the branch gate, which their token and role both satisfy,
+    # and the ledger answers 200. Arm 4 of the suite expects 403
+    # CREDENTIAL_INACTIVE and is driven with active:false, so it goes red.
     ("6. a DEACTIVATED credential falls through to the warning path, so "
      "somebody who has just left the firm keeps trust access for the life of a "
      "12h token",
      API,
-     "        if (!preActive.ok && preActive.code === 'CREDENTIAL_INACTIVE') {",
+     "        if (preHardRefusal) {",
      "        if (false) {"),
 
     ("7. the ADJACENT reconcile branch loses its own session check -- moving "

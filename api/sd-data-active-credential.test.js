@@ -206,29 +206,80 @@ test('a MISSING row on an UNSCOPED resource is not called a deactivation', () =>
     + 'which is how the `memory` defect happened in the first place');
 });
 
-test('...and it is LOGGED, so a run of them is visible rather than silent',
-  () => {
-    const block = CODE.slice(CODE.indexOf('await credentialStillActive('),
-                             CODE.indexOf('await credentialStillActive(') + 1200);
-    assert.ok(/console\.warn/.test(block),
+// ── THE PRE-GATE BLOCK, LOCATED ONCE ───────────────────────────────────────
+// RE-ANCHORED 2026-09-28. The two arms below read
+// `CODE.slice(indexOf('await credentialStillActive('), +1200)` -- a character
+// DISTANCE from the call site, the THIRD in this file after the 400-char one
+// re-anchored on 2026-09-26 and the 4200-char one in
+// tests/roofing_claim_gate_single_source.js. The pre-gate has since grown the
+// app-scope derivation, the hard-refusal condition and the no-row branch, and
+// 1200 characters now stop PART-WAY THROUGH THE FIRST console.warn. The
+// COULD-NOT-RUN log both arms are named for sits entirely OUTSIDE the window.
+//
+// NEITHER ARM WENT RED. They were being satisfied by the no-row log instead:
+// `/NO_ACTIVE_CHECK|preActive\.code/` matched `preActive.code ===
+// 'CREDENTIAL_INACTIVE'` in the REFUSAL CONDITION rather than in any log at
+// all, and `/try\s*\{[\s\S]{0,400}console\.warn/` matched the no-row log's
+// try. tests/active_credential_gate_probe.py arms 5 and 6 were both SILENT --
+// deleting the could-not-run log, and stripping its try/catch, each left this
+// suite green. A magic window measures proximity, not the property.
+//
+// Anchored instead on the block's real ends, which the arms above already use.
+function preGateBlock() {
+  const start = CODE.indexOf('const preToken = tokenFromRequest(req);');
+  assert.ok(start > 0, 'the pre-gate token read moved');
+  const end = CODE.indexOf('if (SD_SESSION_GATED[resource]', start);
+  assert.ok(end > start, 'the SD_SESSION_GATED block moved or no longer follows '
+    + 'the pre-gate, so this block has no honest end');
+  const block = CODE.slice(start, end);
+  assert.ok(block.length > 200,
+    'the pre-gate block came out too short to assert over');
+  return block;
+}
+
+test('...and the COULD-NOT-RUN state is LOGGED, so a run of them is visible '
+  + 'rather than silent', () => {
+    const block = preGateBlock();
+    // THE PROPERTY IS ABOUT ONE BRANCH, so it is asserted over that branch and
+    // not over the whole pre-gate: the no-row branch beside it also logs, and
+    // either log satisfying both arms is exactly the hole being closed here.
+    const eb = block.indexOf('} else if (!preActive.ok) {');
+    assert.ok(eb > 0,
+      'the pre-gate has no separate branch for a could-not-tell answer, so '
+      + 'NO_ACTIVE_CHECK is folded into one of the other two states');
+    const couldNotRun = block.slice(eb);
+    assert.ok(/console\.warn/.test(couldNotRun),
       'a re-check that did not run passes in silence');
-    assert.ok(/NO_ACTIVE_CHECK|preActive\.code|stillActive\.code/.test(block),
+    assert.ok(/NO_ACTIVE_CHECK|preActive\.code|stillActive\.code/.test(couldNotRun),
       'the log does not name which state it was');
     // ONCE PER REQUEST, NOT ONCE PER GATED RESOURCE -- decided explicitly when
     // the pre-gate was built, so the log carries the resource and action to keep
     // a run of them attributable now that it fires above the dispatch.
-    assert.ok(/resource\s*\+\s*'\/'\s*\+\s*action/.test(block),
+    assert.ok(/resource\s*\+\s*'\/'\s*\+\s*action/.test(couldNotRun),
       'the could-not-run log does not say which resource/action it was for, so a '
       + 'run of them cannot be attributed from the logs');
   });
 
-test('CONTROL: the logging cannot itself refuse a request', () => {
-  const block = CODE.slice(CODE.indexOf('await credentialStillActive('),
-                           CODE.indexOf('await credentialStillActive(') + 1200);
-  assert.ok(/try\s*\{[\s\S]{0,400}console\.warn/.test(block),
-    'console.warn is not guarded, so a logging failure would throw out of the '
-    + 'gate and refuse a caller for the wrong reason');
-});
+test('CONTROL: the logging cannot itself refuse a request -- EVERY log in the '
+  + 'pre-gate is guarded, counted rather than sampled', () => {
+    // COUNTED IS THE WHOLE POINT. `/try\s*\{[\s\S]{0,400}console\.warn/` is a
+    // single-match test: one guarded log satisfied it while a second sat
+    // unguarded, which is precisely what arm 6 plants.
+    const block = preGateBlock();
+    const warns = (block.match(/console\.warn/g) || []).length;
+    assert.ok(warns >= 2,
+      'only ' + warns + ' log(s) in the pre-gate. There are two distinct '
+      + 'outcomes that must be logged rather than dropped -- a no-row on an '
+      + 'unscoped resource, and a could-not-run -- so one of them has gone '
+      + 'silent or this arm is measuring less than it claims.');
+    // `[^}]` between the two, so a removed `try` cannot be covered by the
+    // PREVIOUS try: the `} catch` that closes it lies in between.
+    const guarded = (block.match(/try\s*\{[^}]{0,200}console\.warn/g) || []).length;
+    assert.strictEqual(guarded, warns,
+      guarded + ' of ' + warns + ' logs in the pre-gate are inside a try. An '
+      + 'unguarded console.warn throws out of the gate and refuses a caller for '
+      + 'a reason that has nothing to do with them.');
+  });
 
 test('CONTROL: this file would notice the gate being deleted -- the anchors it '
   + 'reads are the real ones', () => {
