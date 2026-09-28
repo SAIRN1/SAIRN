@@ -17642,6 +17642,112 @@
         }
       ],
       "recurrence_open": "OPEN AS A CLASS: no probe on this platform asserts anything about SCALE. Every arm in every control drives one file, one row, one path, because that is what makes a fixture readable -- so an argv limit, a query-string limit, a memory ceiling or a timeout is invisible to all of them. This is the same shape as the second-pass gap measured in tools/second_pass_coverage_scan.py one commit earlier: the first instance is exercised and the real operating condition is not."
+    },
+    {
+      "commit": "9ab18ab96ac9",
+      "date": "2026-09-27",
+      "subject": "fix(probes): a third dead probe, two unarmed compliance guards -- and my own checker had inverted the signal on four good anchors",
+      "files": [
+        "tests/sairnmechanical_fault_probe.py",
+        "tools/probe_anchor_freshness.py",
+        "tools/report_only_checks.py"
+      ],
+      "lines_added": 334,
+      "lines_removed": 27,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "tests/sairnmechanical_fault_probe.py aborted at arm 6 and arms 6-11 had not run. Its anchor was a bare 'if (lb === null || lb < 0) {' which matched one place in api/_lib/mech-assets.js when written and three now, so once() raised rather than silently picking. THE REASON IT WENT TO THREE IS THE LARGER FINDING: two sibling refrigerant-scope guards were added after that arm -- aimScope for the AIM Act and carbScope for California -- each carrying its own copy of the identical unweighed-charge guard, and NEITHER WAS ARMED. With any of the three guards removed a unit nobody weighed reports as BELOW the leak threshold, which is the unknown-reported-as-cleared compliance claim the probe exists to prevent, under three different statutes. Now one arm per guard, each on text unique to its own function, all three caught by mech-assets.test.js, 13 arms green.",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/probe_anchor_freshness.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "dadfedf48ac9",
+        "date": "2026-09-24",
+        "subject": "fix(platform): all 48 role membership sets get a null prototype, not just roofing",
+        "lag_days": 3
+      },
+      "citation_note": "1.3 is an anchor that still matches but points at different code. This is the opposite half again -- the anchor matched THREE places and once() RAISED, so the probe aborted. Recorded under 1.3 because it is the same staleness class and this file has no separate rule number for the loud direction.",
+      "contributing_factors": [
+        {
+          "factor": "an anchor spanning a single line of a guard that is COPIED into each sibling rule scope, so adding a sibling silently makes the anchor ambiguous",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "one arm per guard, each anchored on text unique to its own function and verified at 1 of 1 rather than assumed"
+        },
+        {
+          "factor": "two compliance guards were added to the subject and the probe arm list was not extended, so the probe was measuring yesterdays function",
+          "kind": "process",
+          "action_status": "done",
+          "action": "arms added for aimScope and carbScope; the ambiguity report was the only thing that surfaced the gap and that is written into the probe comment so the next reader knows what >1 means"
+        },
+        {
+          "factor": "no fault probe on this platform was run on any cadence, so a probe that ABORTS is as quiet as one that passes",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tools/probe_anchor_freshness.py is now in report_only_checks.REGISTRY -- 0.4 seconds against minutes per probe, which is what makes a cadence possible; it needs no settings.json change because the registry hook already runs"
+        }
+      ],
+      "recurrence_open": "THE CHECKER COUNTS STRINGS AND CANNOT SEE THE WORST CASE: an anchor matching exactly once may still point at the wrong line (PR 1.3 proper), and only running the probe catches that. The probes themselves are STILL not wired -- nothing runs the 13 fault probes on a cadence, and a probe whose BASELINE is red is invisible to the freshness checker entirely. And the sibling-guard gap was found by accident: nothing asks whether a subject has grown a guarantee the arm list does not cover."
+    },
+    {
+      "commit": "9ab18ab96ac9",
+      "date": "2026-09-27",
+      "subject": "fix(probes): a third dead probe, two unarmed compliance guards -- and my own checker had inverted the signal on four good anchors",
+      "files": [
+        "tests/sairnmechanical_fault_probe.py",
+        "tools/probe_anchor_freshness.py",
+        "tools/report_only_checks.py"
+      ],
+      "lines_added": 334,
+      "lines_removed": 27,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/probe_anchor_freshness.py encoded ONE spelling of a correct anchor -- matches exactly once -- and reported four anchors in tests/sairndesign_sairngrounds_fault_probe.py as AMBIGUOUS. Those edits carry a fourth tuple element declaring the expected occurrence count, and the probe asserts that exact number before replacing every occurrence, which is STRICTLY STRONGER than uniqueness. So a probe that did the harder thing scored worse, the identical inversion tools/sabotage_control_check.py shipped when it did not recognise the count(anchor) != 1 guard and reported five guarded controls as unguarded. Criteria now stamped CRITERIA_VERSION 2026-09-27.2 and printed on every run; a declared count decides which rule applies; a disagreement with it is its own verdict rather than folded into AMBIGUOUS; and a non-literal count is UNRESOLVED rather than guessed.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "372dfc140846",
+        "date": "2026-09-27",
+        "subject": "fix(probes): two sabotage anchors had stopped matching ANYTHING, and nothing ran the probes that were failing",
+        "lag_days": 0
+      },
+      "citation_note": "A quiet wrong number in a CHECKER, which is the worst place for one: it reported four correct probes as broken and would have had somebody widen anchors that were already stronger than the rule being applied.",
+      "contributing_factors": [
+        {
+          "factor": "the criteria encoded one spelling of a correct answer, so a stronger guard read as a broken one",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "declared_count() reads the 4-element edit form and verdict() applies the rule the edit declares; seven selftest arms drive verdict() rather than the counter, with a CONTROL that the declared count actually changes the verdict"
+        },
+        {
+          "factor": "the same inversion had already been paid for once on this platform in sabotage_control_check.py, and the new tool was written without that shape in its fixtures",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the fixture now carries the SAME anchor string under three different rules -- no declared count, a correct declared count, and a wrong one -- which is what proves the rule comes from the edit rather than from the anchor"
+        },
+        {
+          "factor": "a checker with no criteria version produces counts that are silently incomparable across versions",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "CRITERIA_VERSION stamped, printed on every run and in the --json payload, with the version history and what each version reported written beside it"
+        }
+      ],
+      "recurrence_open": "The criteria are still a guess about what a correct anchor looks like. Three forms are recognised -- replace-once, declared-count, and single-subject 2-tuples -- and a probe using a fourth form is not reported as unchecked, it is simply absent from the count. Nothing measures how many anchors the tool cannot see."
     }
   ],
   "started": "2026-09-09",
