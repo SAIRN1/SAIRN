@@ -4282,6 +4282,27 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-28T03:34:57Z",
+      "opened_at_sha": "f88105a88287d89b80d93cf2936066b198b90069",
+      "resources": [
+        "dnt_ar",
+        "dnt_revenue"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tests/reachability/resource_demand_probe.py"
+      ],
+      "what": "queue16: the nine label-claims-universal arms, each replaced by the comparison its own label was making; the sf_events B->A tier promotion with its three companion edits; two citation re-anchors; and a new methodology checker for entry-point scope divergence with its 21-arm control. REVIEW THESE FIVE THINGS SPECIFICALLY: (1) refspec_and_override_probe.py A3 -- I claim the old subset ran BACKWARDS and against the wrong population (working tree vs git ls-tree at the commit); check both halves of that claim, because if the direction was actually right I have inverted a correct arm. (2) resource_demand_probe.py 3c -- I rewrote it as the COMPLEMENT of 3b and argue it is not redundant because 3b survives a registry shrunk to two rows and 3c does not; test that reasoning, it is the whole justification for keeping both. (3) run_rotation_blast_radius_probe.py -- the denominator is now derived from CRITERIA_VERSION's trailing .N implying N-1 explained transitions; confirm that is the right arithmetic and that a version scheme change cannot make it vacuous. (4) entry_point_scope_check.py's FAMILIES criterion -- a finding needs two doors reading different members of ONE family; I rejected the simpler 'two doors differ' rule after it reported two pieces of correct code, so check the family grouping is not now too permissive. (5) the sf_events tier cell asserts sessionId is the ONLY link between a hall event and its minted session, and the whole A call rests on that; verify there is genuinely no second path. THE TIER A TRIGGER HERE IS dnt_ar/dnt_revenue NAMED IN reachability/resource_demand_probe.py, which is a probe ABOUT the two acknowledged-unreachable SAIRNdental resources and touches no dental code -- flagged so the reviewer is not hunting for a dental change that does not exist.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-09-28T03:34:57Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
