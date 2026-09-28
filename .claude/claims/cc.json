@@ -2891,6 +2891,23 @@
         "tools/report_only_checks.py",
         "tools/response_shape_check.py"
       ]
+    },
+    {
+      "id": "cc-1790593151",
+      "session": "cc",
+      "subject": "platform",
+      "task": "claim_activity_check.py reports EXPIRED claims as active because it reads the raw status field instead of sairn_claim.is_active() -- three findings today, all three vacuous; expired-but-unreleased made a named third state with a regression control FIRST. Then the could-not-read ratchet doc; the sv_financials B->A tier row on availability and integrity with confidentiality staying B; the citation-drift repoint in docs/CRITICALITY-TIERS.md; the next checker_denominator batch; and whatever still exits 2 COULD NOT RUN. CONFLICTS DECLARED PER PR 4.3 RATHER THAN REWORDED: hank's LIVE queue20 says 'Then the obligation backlog with backfill_shas', which touches docs/tier-a-reviews.json -- so the TWENTY review-record citation drifts are NOT TAKEN by me and only the seventy in CRITICALITY-TIERS.md are; docs/CRITICALITY-TIERS.md itself is named by NO live claim (cody-q16 and hank-queue13 both expired) and is taken here. SUBJECT NAMED PER PR 4.3 FILES: tools/claim_activity_check.py tests/run_claim_activity_probe.py docs/CRITICALITY-TIERS.md tools/checker_denominator.py docs/2026-09-28-could-not-read-ratchet.md",
+      "claimed_at": "2026-09-28T10:59:11Z",
+      "claimed_at_epoch": 1790593151.9356925,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/2026-09-28-could-not-read-ratchet.md",
+        "docs/CRITICALITY-TIERS.md",
+        "tests/run_claim_activity_probe.py",
+        "tools/checker_denominator.py",
+        "tools/claim_activity_check.py"
+      ]
     }
   ],
   "refusals": [
