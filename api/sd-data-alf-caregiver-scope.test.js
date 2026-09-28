@@ -434,15 +434,9 @@ section('4. CURRENT BEHAVIOUR ON THE THREE UNSETTLED ONES -- pinned, not blessed
 // named rather than deleted, because a question that turned out to be already
 // answered is worth one line to stop it being re-asked.
 
-await test('alf_incidents read: caregiver cannot read back the report they just '
-  + 'filed. OPEN -- deliberate for EDIT, less obviously right for READ', async () => {
-    const { res } = await call('caregiver',
-      { action: 'read', resource: 'alf_incidents' }, []);
-    assert.strictEqual(res.statusCode, 403,
-      'this changed. The branch deliberately ends the filer\'s WRITE access once '
-      + 'the report is saved; not being able to READ your own filed report is a '
-      + 'different question and the comment does not address it.');
-  });
+// alf_incidents read was pinned here as an open question at a flat 403. It is
+// now DECIDED -- a care role reads back its own filings -- and the arms moved to
+// section 6, which drives the server-set attribution the narrowing rests on.
 
 // ── 5. THE NARROW FAMILY-CONTACT TIER, BUILT 2026-09-27 ──────────────────
 section('5. alf_family_contacts NARROW TIER -- own assigned residents, and the '
@@ -562,6 +556,155 @@ await test('THE WRITE GATE IS UNTOUCHED -- a caregiver still cannot record or '
     assert.strictEqual(res.statusCode, 403,
       'the read narrowing widened the WRITE path: ' + JSON.stringify(res.body));
     assert.strictEqual(firstPost(calls), undefined, 'a row was written');
+  });
+
+// ── 6. INCIDENT ATTRIBUTION -- SERVER-SET, AND THE READ THAT RESTS ON IT ──
+section('6. alf_incidents: who filed it is SET, not SENT');
+
+function incident(entryId, residentId, recordedBy, reportedBy) {
+  const row = {
+    __table: 'alf_incidents', license_hash: HASH, entry_id: entryId,
+    resident_id: residentId, created_at: '2026-01-01',
+    data: { category: 'fall', description: 'x', reported_by: reportedBy || null }
+  };
+  if (recordedBy !== undefined) row.recorded_by = recordedBy;
+  return row;
+}
+
+await test('WRITE: recorded_by is set from the SESSION, and a payload '
+  + 'recorded_by cannot override it', async () => {
+    const { res, calls } = await call('caregiver',
+      { action: 'write', resource: 'alf_incidents',
+        payload: { id: 'INC-1', resident_id: 'C-MINE', category: 'fall',
+                   recorded_by: 'owner-1' } }, []);
+    assert.strictEqual(res.statusCode, 200, 'refused: ' + JSON.stringify(res.body));
+    const sent = JSON.parse(firstPost(calls).opts.body);
+    assert.strictEqual(sent.recorded_by, ME,
+      'the filer was taken from the payload, not the session -- got '
+      + JSON.stringify(sent.recorded_by));
+  });
+
+await test('WRITE: reported_by is STRIPPED from the payload, so a caller cannot '
+  + 'attribute a report to somebody else', async () => {
+    const { res, calls } = await call('caregiver',
+      { action: 'write', resource: 'alf_incidents',
+        payload: { id: 'INC-2', resident_id: 'C-MINE', category: 'abuse_neglect_allegation',
+                   reported_by: 'some-other-employee', description: 'x' } }, []);
+    assert.strictEqual(res.statusCode, 200, 'refused: ' + JSON.stringify(res.body));
+    const sent = JSON.parse(firstPost(calls).opts.body);
+    assert.strictEqual('reported_by' in (sent.data || {}), false,
+      'THE FORGEABLE FIELD WAS STORED. Any employee could file an abuse, '
+      + 'neglect or exploitation allegation attributed to anyone else, and the '
+      + 'row would carry two answers to "who reported this" -- one '
+      + 'authoritative, one not, side by side.');
+    assert.strictEqual(sent.recorded_by, ME, 'the real attribution is missing');
+    assert.strictEqual(sent.data.category, 'abuse_neglect_allegation',
+      'stripping took the rest of the report with it');
+  });
+
+await test('WRITE: an UPDATE does not re-stamp recorded_by -- the column answers '
+  + '"who filed it", not "who last touched it"', async () => {
+    const { res, calls } = await call('owner',
+      { action: 'write', resource: 'alf_incidents',
+        payload: { id: 'INC-OLD', resident_id: 'C-MINE', follow_up_notes: 'later' } },
+      [incident('INC-OLD', 'C-MINE', ME)]);
+    assert.strictEqual(res.statusCode, 200, 'refused: ' + JSON.stringify(res.body));
+    const sent = JSON.parse(firstPost(calls).opts.body);
+    assert.strictEqual('recorded_by' in sent, false,
+      'a management follow-up overwrote the reporter with the manager -- which '
+      + 'erases the one fact this column exists to hold');
+  });
+
+await test('READ: a caregiver sees ONLY the incidents they filed', async () => {
+  const { res } = await call('caregiver',
+    { action: 'read', resource: 'alf_incidents' },
+    [incident('INC-MINE', 'C-MINE', ME), incident('INC-THEIRS', 'C-THEIRS', OTHER)]);
+  assert.strictEqual(res.statusCode, 200, 'refused: ' + code(res));
+  assert.strictEqual(res.body.scoped_to_self, true, 'the answer is not declared scoped');
+  const ids = (res.body.data || []).map(function (r) { return r.id; });
+  assert.deepStrictEqual(ids, ['INC-MINE'], 'got ' + JSON.stringify(ids));
+});
+
+await test('READ: a LEGACY row with recorded_by NULL is invisible to the care '
+  + 'tier -- no backfill, by decision', async () => {
+    const { res } = await call('caregiver',
+      { action: 'read', resource: 'alf_incidents' },
+      [incident('INC-LEGACY', 'C-MINE', null, ME)]);
+    const ids = (res.body.data || []).map(function (r) { return r.id; });
+    assert.deepStrictEqual(ids, [],
+      'a legacy row reached the care tier. The only candidate backfill source '
+      + 'is data.reported_by, which is caller-controlled -- filtering on it '
+      + 'would let any employee read any incident by claiming to have filed it.');
+  });
+
+await test('READ CONTROL: management still sees EVERY incident including the '
+  + 'legacy one, so nothing became unreachable', async () => {
+    const { res } = await call('nursing',
+      { action: 'read', resource: 'alf_incidents' },
+      [incident('INC-MINE', 'C-MINE', ME), incident('INC-THEIRS', 'C-THEIRS', OTHER),
+       incident('INC-LEGACY', 'C-MINE', null, ME)]);
+    assert.strictEqual(res.body.scoped_to_self, false, 'management was self-scoped');
+    const ids = (res.body.data || []).map(function (r) { return r.id; }).sort();
+    assert.deepStrictEqual(ids, ['INC-LEGACY', 'INC-MINE', 'INC-THEIRS'],
+      'management lost sight of a report: ' + JSON.stringify(ids));
+  });
+
+await test('READ: data.reported_by is NOT what the scope is computed from -- a '
+  + 'forged reported_by buys nothing', async () => {
+    const { res } = await call('caregiver',
+      { action: 'read', resource: 'alf_incidents' },
+      [incident('INC-FORGED', 'C-THEIRS', OTHER, ME)]);
+    assert.deepStrictEqual((res.body.data || []).map(function (r) { return r.id; }), [],
+      'a row whose data.reported_by names the caller was handed over -- the '
+      + 'scope is being computed from the forgeable field');
+  });
+
+await test('UN-MIGRATED: a missing recorded_by column is its OWN state, not an '
+  + 'empty log and not provisioned:false', async () => {
+    const calls = [];
+    const base = postgrestMock([], calls);
+    const h = loadHandler(async function (url, opts) {
+      if (/alf_incidents\?/.test(String(url)) && !(opts && opts.method === 'POST')) {
+        return { ok: false, status: 400, json: async function () {
+          return { code: '42703', message: 'column alf_incidents.recorded_by does not exist' };
+        } };
+      }
+      return base(url, opts);
+    });
+    const res = mockRes();
+    await h({ method: 'POST',
+      headers: { authorization: 'Bearer KEY-FOR-' + HASH,
+                 'x-sd-auth': signSessionToken({ app: APP, employee_id: ME,
+                   role: 'caregiver', license_hash: HASH }) },
+      body: { action: 'read', resource: 'alf_incidents' } }, res);
+    assert.strictEqual(res.statusCode, 503,
+      'an un-migrated column answered ' + res.statusCode + ' '
+      + JSON.stringify(res.body) + ' -- folding it into provisioned:false plus '
+      + 'an empty list reads as "this facility has no incidents", a confident '
+      + 'wrong answer about a mandated-reporting log');
+    assert.strictEqual(code(res), 'MIGRATION_REQUIRED', 'wrong code');
+    assert.ok(/sairncare_incidents_recorded_by\.sql/.test(
+      res.body.error.message), 'the message does not name the file to run');
+  });
+
+await test('UN-PROVISIONED still behaves as before -- a missing TABLE is not a '
+  + 'migration error', async () => {
+    const calls = [];
+    const base = postgrestMock([], calls);
+    const h = loadHandler(async function (url, opts) {
+      if (/alf_incidents\?/.test(String(url)) && !(opts && opts.method === 'POST')) {
+        return { ok: false, status: 404, json: async function () { return {}; } };
+      }
+      return base(url, opts);
+    });
+    const res = mockRes();
+    await h({ method: 'POST',
+      headers: { authorization: 'Bearer KEY-FOR-' + HASH,
+                 'x-sd-auth': signSessionToken({ app: APP, employee_id: ME,
+                   role: 'caregiver', license_hash: HASH }) },
+      body: { action: 'read', resource: 'alf_incidents' } }, res);
+    assert.strictEqual(res.statusCode, 200, 'a missing table changed shape');
+    assert.strictEqual(res.body.provisioned, false);
   });
 
 console.log('');

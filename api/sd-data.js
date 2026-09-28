@@ -10459,10 +10459,25 @@ module.exports = async (req, res) => {
     if (resource === 'alf_incidents' && action === 'read') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
-      if (!ALF_INCIDENT_READ_ROLES[session.role]) {
-        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'The incident log is not available to your role' } });
-        return;
-      }
+      // ── A CARE ROLE READS BACK ITS OWN FILINGS (2026-09-27) ─────────────
+      // This was a flat 403. A caregiver could file a mandated report and then
+      // not see it, which is a different question from the one the branch
+      // deliberately answers below -- that the filer's WRITE access ends the
+      // moment the report is saved. Ending write access is accountability;
+      // ending read access is just opacity.
+      //
+      // SELF-SCOPE ON recorded_by, WHICH IS SERVER-SET. It is never taken from
+      // the payload (see the write path), so "mine" cannot be claimed. The old
+      // `data.reported_by` is caller-supplied and is NOT used here -- filtering
+      // on it would let any employee read any incident by claiming to have
+      // filed it, which is worse than the flat 403 this replaces.
+      //
+      // LEGACY ROWS HAVE recorded_by NULL and are therefore invisible to this
+      // tier. Michael's decision: no backfill, because the only candidate
+      // source is the forgeable field. Management still reads every row, so
+      // nothing is unreachable -- only the self-service view is empty for rows
+      // filed before the migration.
+      const incBroad = !!ALF_INCIDENT_READ_ROLES[session.role];
       // -- ORDERED BY A COLUMN THE CALLER NEVER RECEIVED (2026-09-23) ------
       // This read has ordered by `created_at` since the append-only ordering
       // pass and did NOT select it, so the client was handed rows in an order
@@ -10487,12 +10502,43 @@ module.exports = async (req, res) => {
       // alf_claim_routes, alf_staff_credentials and alf_op_audits already
       // select created_at, and alf_signals already selects recorded_at, which
       // is the column it orders by. Two reads were missing it, not six.
-      const r = await fetch(rest('alf_incidents?license_hash=eq.' + enc(licHash) + '&select=entry_id,resident_id,data,created_at&order=created_at.desc'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      let incQ = 'alf_incidents?license_hash=eq.' + enc(licHash)
+        + '&select=entry_id,resident_id,data,created_at,recorded_by'
+        + '&order=created_at.desc';
+      if (!incBroad) incQ += '&recorded_by=eq.' + enc(String(session.employee_id));
+      const r = await fetch(rest(incQ), { headers });
+      // ── THREE STATES, NOT TWO (2026-09-27) ──────────────────────────────
+      // `recorded_by` arrives with sql/sairncare_incidents_recorded_by.sql. If
+      // that migration has not been run, PostgREST answers 400 with 42703
+      // (undefined_column) -- and the old code folded EVERY 400 into
+      // `provisioned: false` plus an empty list. On a MIGRATION gap that reads
+      // as "this facility has no incidents", which is a confident wrong answer
+      // about a mandated-reporting log, and it would have been indistinguishable
+      // from a facility that genuinely has none.
+      //
+      // So the column error is separated from the table error and gets its own
+      // state, naming the file to run. A missing TABLE still means not set up;
+      // a missing COLUMN means set up but not migrated; neither is an answer
+      // about incidents.
+      if (r.status === 400) {
+        let why = null;
+        try { why = await r.json(); } catch (e) { why = null; }
+        const msg = JSON.stringify(why || '');
+        if (/42703|recorded_by|undefined_column/i.test(msg)) {
+          res.status(503).json({ error: { code: 'MIGRATION_REQUIRED', message:
+            'The incident log needs one migration before it can be read — run '
+            + 'sql/sairncare_incidents_recorded_by.sql in Supabase. Nothing has '
+            + 'been lost; this is not an empty log.' } });
+          return;
+        }
+        res.status(200).json({ ok: true, data: [], provisioned: false });
+        return;
+      }
+      if (r.status === 404) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
-      const data = (rows || []).map((r) => Object.assign({ id: r.entry_id, resident_id: r.resident_id, created_at: r.created_at }, r.data));
-      res.status(200).json({ ok: true, data, provisioned: true });
+      const data = (rows || []).map((r) => Object.assign({ id: r.entry_id, resident_id: r.resident_id, created_at: r.created_at, recorded_by: r.recorded_by || '' }, r.data));
+      res.status(200).json({ ok: true, data, provisioned: true, scoped_to_self: !incBroad });
       return;
     }
     if (resource === 'alf_incidents' && action === 'write') {
@@ -10513,15 +10559,36 @@ module.exports = async (req, res) => {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management, nursing, or billing can update an incident report after it is filed' } });
         return;
       }
-      // created_at stripped for the same shadow reason as alf_mar above.
-      const incidentData = storedBlob(payload, ['id', 'resident_id', 'created_at']);
+      // ── WHO FILED THIS IS SET HERE, NOT SENT (2026-09-27) ───────────────
+      // `reported_by` was documented in this table's own schema comment as a
+      // field inside `data` -- and `data` is storedBlob(payload, [...]), which
+      // copies the caller's payload and deletes three keys. SO reported_by WAS
+      // WHATEVER THE CALLER SENT. The write is deliberately open to any
+      // authenticated employee (mandated reporting), so ANY EMPLOYEE COULD FILE
+      // AN INCIDENT ATTRIBUTED TO ANYONE ELSE. The category list on this
+      // resource includes abuse, neglect and exploitation allegations.
+      //
+      // TWO HALVES, AND ONE ALONE IS NOT ENOUGH:
+      //   `reported_by` is STRIPPED from the payload, so the forgeable field
+      //   cannot be written at all -- not even as decoration a reader might
+      //   trust. Adding the column without stripping would leave two answers to
+      //   "who reported this", one authoritative and one not, side by side.
+      //   `recorded_by` is a real column set from the VERIFIED SESSION.
+      //
+      // recorded_by IS NOT RE-STAMPED ON UPDATE. Only management may update an
+      // existing report, and the column answers "who filed it", not "who last
+      // touched it" -- overwriting it on a follow-up note would erase the
+      // reporter, which is the one fact this change exists to record.
+      const incidentData = storedBlob(payload, ['id', 'resident_id', 'created_at', 'reported_by']);
+      const incidentRow = {
+        license_hash: licHash, app_id: 'sairncare', entry_id: String(payload.id), resident_id: payload.resident_id ? String(payload.resident_id) : null,
+        data: incidentData, updated_at: nowISO()
+      };
+      if (!alreadyExists) incidentRow.recorded_by = session.employee_id;
       const r = await fetch(rest('alf_incidents?on_conflict=license_hash,entry_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
-        body: JSON.stringify({
-          license_hash: licHash, app_id: 'sairncare', entry_id: String(payload.id), resident_id: payload.resident_id ? String(payload.resident_id) : null,
-          data: incidentData, updated_at: nowISO()
-        })
+        body: JSON.stringify(incidentRow)
       });
       if (r.status === 404 || r.status === 400) {
         res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Incident tracking is not set up yet — run sql/sairncare_incidents_schema.sql in Supabase first.' } });
