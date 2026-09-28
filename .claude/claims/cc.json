@@ -2844,8 +2844,8 @@
       "task": "resolve the 5 AMBIGUOUS sabotage anchors and wire tools/probe_anchor_freshness.py into a recurring run; repair the malformed open-work index row 355; SAIRNbuild WIP percent-complete against the ORIGINAL cost budget with no re-forecast and change orders in the contract but not the budget -- regression test first; methodology sweep for point-in-time vs during-use drift in anchor/fixture freshness tooling. CONFLICT-MARKER HOOK WIRING IS BLOCKED, NOT TAKEN -- tools/conflict_marker_preflight.py is in fourth's 13 unpushed local commits and does not exist on origin/main, so a settings.json hook line would point at a missing file in four clones. api/sd-data.js NOT touched. stonedesk.html NOT touched -- cody holds task19. SUBJECT NAMED PER PR 4.3 FILES: tests/sairndesign_sairngrounds_fault_probe.py tests/sairnmechanical_fault_probe.py tools/probe_anchor_freshness.py tools/report_only_checks.py docs/SAIRN-OPEN-WORK-INDEX.md sairnbuild.html",
       "claimed_at": "2026-09-27T23:27:10Z",
       "claimed_at_epoch": 1790551630.8463495,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-28T01:23:32Z",
       "files": [
         "docs/SAIRN-OPEN-WORK-INDEX.md",
         "sairnbuild.html",
