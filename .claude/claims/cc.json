@@ -2854,6 +2854,25 @@
         "tools/probe_anchor_freshness.py",
         "tools/report_only_checks.py"
       ]
+    },
+    {
+      "id": "cc-1790558999",
+      "session": "cc",
+      "subject": "cc",
+      "task": "overrun-inversion sweep: any cap on a ratio that flips an overrun into completion or a maximum, across every app -- regression test per hit then fix, register the class, wire a scanner; fix mutation_anchor_check.py exiting 2 COULD NOT RUN; fill the four missing report-only REGISTRY evidence fields I own; wire tools/conflict_marker_preflight.py into .claude/settings.json now that it is on origin/main; coverage denominators for every wired checker (checked/universe, fail when the universe grows) and unify the two anchor-freshness populations; self-audit of my own skill log, tool inventory and methodology registry. CONFLICTS DECLARED PER PR 4.3 RATHER THAN REWORDED -- api/sd-data.js IS FOURTH'S (active) and docs/CRITICALITY-TIERS.md IS HANK'S (active), so the mech_docs session gate and the mech_docs tier-row correction are NOT in this claim and are NOT being done by me; they are reported to both owners. tools/conflict_marker_preflight.py is fourth's and I am NOT editing it, only naming its path from settings.json. stonedesk.html is NOT touched. SUBJECT NAMED PER PR 4.3 FILES: tools/mutation_anchor_check.py tools/report_only_checks.py tools/probe_anchor_freshness.py tools/checker_denominator.py .claude/settings.json api/_lib/mech-redact.js docs/2026-09-28-overrun-inversion-sweep.md",
+      "claimed_at": "2026-09-28T01:29:59Z",
+      "claimed_at_epoch": 1790558999.0719547,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        ".claude/settings.json",
+        "api/_lib/mech-redact.js",
+        "docs/2026-09-28-overrun-inversion-sweep.md",
+        "tools/checker_denominator.py",
+        "tools/mutation_anchor_check.py",
+        "tools/probe_anchor_freshness.py",
+        "tools/report_only_checks.py"
+      ]
     }
   ],
   "refusals": [
