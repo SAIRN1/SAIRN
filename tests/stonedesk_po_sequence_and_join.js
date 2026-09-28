@@ -33,6 +33,14 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+// COMMENT STRIPPING COMES FROM THE SHARED LIBRARY, 2026-09-27. This file
+// carried its own copy; five separate ad-hoc versions across the suite were
+// wrong in three different ways, each producing a green run against a file
+// that should have gone red or the reverse. See tests/lib/strip_comments.js.
+// stripJs() and NOT stripComments(): the input here is a bare JavaScript
+// FRAGMENT, and stripComments() treats anything outside <script> as markup --
+// so it would strip NOTHING and look correct doing it.
+const { stripComments: _sharedStripHtml, stripJs } = require(path.join(__dirname, 'lib', 'strip_comments.js'));
 const assert = require('assert');
 const vm = require('vm');
 
@@ -68,9 +76,7 @@ function grab(sig) {
 // went red on the fix's own explanatory comments before this existed: PR 1.2,
 // four times in one session, now in the test rather than the tool.
 function codeOnly(src) {
-  return src.split(String.fromCharCode(10))
-            .filter(l => !l.trim().startsWith('//'))
-            .join(String.fromCharCode(10));
+  return stripJs(src);
 }
 
 function ctxWith(store, els) {

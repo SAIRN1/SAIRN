@@ -1848,6 +1848,64 @@ REGISTRY = [
                     'failure directions, the boundary day, a bare escape hatch '
                     'being refused, and an unreadable register DENYING the push',
     },
+    {
+        'tool': 'probe_anchor_freshness.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-27, report-only. 0.4 seconds over 315 probe files '
+                    'and 100 anchors, which is the ONLY reason this can run on a '
+                    'cadence at all -- the probes it watches take MINUTES each, '
+                    'and that is exactly why they are run when somebody '
+                    'remembers and why two of them had been dead for days. '
+                    'WIRED BECAUSE A POINT-IN-TIME RUN IS NOT THE POINT: an '
+                    'anchor does not rot when somebody looks at it, it rots when '
+                    'a REFACTOR MOVES THE SUBJECT, and that happens between '
+                    'runs. Registering it makes the question get asked after '
+                    'every Bash turn instead of after a dispatch remembers to '
+                    'ask.',
+        'catches': 'a fault probe whose sabotage anchor no longer matches its '
+                   'subject the way the probe assumes -- VANISHED (0 matches), '
+                   'AMBIGUOUS (>1 with no declared count), or COUNT DISAGREES '
+                   '(the edit declares N and the subject no longer has N)',
+        'why_it_matters': 'THE FAILURE IS LOUD AND WAS EXACTLY AS QUIET AS A '
+                          'SILENT ONE. When an anchor vanishes, `once()` raises '
+                          'and the probe DIES on that arm -- taking every later '
+                          'arm with it -- so it is not the PR 1.3 drift-onto-'
+                          'the-wrong-line case, it is a hard abort. Nobody '
+                          'heard it because NO fault probe is in this registry, '
+                          'the push gate, or any hook: a loud failure in a tool '
+                          'nobody invokes is silent. This entry is the first '
+                          'thing on the platform that asks the question without '
+                          'being asked. IT IS NOT A SUBSTITUTE FOR RUNNING THE '
+                          'PROBES and does not claim to be -- it counts strings '
+                          'and cannot tell whether an anchor that still matches '
+                          'once points at the right line',
+        'evidence': 'REAL RUNS 2026-09-27, and the first version of the criteria '
+                    'was WRONG in the dangerous direction for a checker -- it '
+                    'inverted the signal. Criteria 2026-09-27.1 reported 5 '
+                    'AMBIGUOUS; FOUR were false, all in '
+                    'tests/sairndesign_sairngrounds_fault_probe.py, which writes '
+                    'its edits as `(SUBJECT, old, new, 6)` and asserts the exact '
+                    'count before replacing EVERY occurrence. That is STRICTLY '
+                    'STRONGER than the uniqueness guard the criteria encoded, so '
+                    'a probe that did the harder thing scored worse -- the same '
+                    'inversion sabotage_control_check.py shipped when it did not '
+                    'recognise the `count(anchor) != 1` guard. Criteria '
+                    '2026-09-27.2 holds a declared count to ITS number and '
+                    'reports a disagreement as its own verdict. THE FIFTH WAS '
+                    'REAL and is fixed in the same push: '
+                    'tests/sairnmechanical_fault_probe.py anchored on a bare '
+                    '`if (lb === null || lb < 0) {` that matched ONE place when '
+                    'written and THREE now, so the probe ABORTED at arm 6 and '
+                    'arms 6-11 had not run. The reason it went to three is the '
+                    'finding: two SIBLING compliance guards (aimScope for the '
+                    'AIM Act, carbScope for California) were added later and '
+                    'NEITHER WAS ARMED -- the ambiguity was the only signal that '
+                    'the subject grew two guarantees while the arm list stayed '
+                    'at one. Now 13 arms, all green. After both fixes: 100 of '
+                    '100 anchors agree with the rule that applies to them, 4 of '
+                    'them under a declared count',
+    },
 ]
 
 # ── DELIBERATELY NOT PROMOTED, AND WHY ──────────────────────────────────────

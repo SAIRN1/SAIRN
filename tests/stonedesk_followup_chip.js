@@ -24,6 +24,18 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+// COMMENT STRIPPING COMES FROM THE SHARED LIBRARY, 2026-09-27. A line filter
+// like the one that used to be here keeps every CONTINUATION line of a block
+// comment and every TRAILING `//` comment, so a suite asserting a string is
+// ABSENT can be satisfied by the comment recording its removal. It also cannot
+// see a regex literal containing `//`, which the shared version handles.
+// tests/lib/strip_comments.js is the single implementation;
+// tests/lib/strip_comments.test.js is its control.
+//
+// stripJs() AND NOT stripComments(): the input is JavaScript or a fragment of
+// it. stripComments() treats everything outside <script> as markup, so on a
+// fragment it strips NOTHING and looks correct doing it.
+const { stripJs } = require(path.join(__dirname, 'lib', 'strip_comments.js'));
 const assert = require('assert');
 const vm = require('vm');
 
@@ -96,7 +108,7 @@ section('the retired chat is really gone from this path');
 test('the handler names none of the three dead symbols', () => {
   // A negative control on the exact defect. Each of these is a TypeError the
   // moment the handler runs, because none of their targets exist.
-  const src = handlerSource().split('\n').filter((l) => l.trim().indexOf('//') !== 0).join('\n');
+  const src = stripJs(handlerSource());
   ['addMessage(', 'chatHistory', 'sendToClaudeAndRender('].forEach((dead) => {
     assert.strictEqual(src.indexOf(dead), -1, 'the handler still calls ' + dead);
   });

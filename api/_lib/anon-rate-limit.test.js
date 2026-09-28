@@ -14,6 +14,18 @@
 
 const assert = require('assert');
 const path = require('path');
+// COMMENT STRIPPING COMES FROM THE SHARED LIBRARY, 2026-09-27. A line filter
+// like the one that used to be here keeps every CONTINUATION line of a block
+// comment and every TRAILING `//` comment, so a suite asserting a string is
+// ABSENT can be satisfied by the comment recording its removal. It also cannot
+// see a regex literal containing `//`, which the shared version handles.
+// tests/lib/strip_comments.js is the single implementation;
+// tests/lib/strip_comments.test.js is its control.
+//
+// stripJs() AND NOT stripComments(): the input is JavaScript or a fragment of
+// it. stripComments() treats everything outside <script> as markup, so on a
+// fragment it strips NOTHING and looks correct doing it.
+const { stripJs } = require(path.join(__dirname, '..', '..', 'tests', 'lib', 'strip_comments.js'));
 
 let pass = 0, fail = 0;
 function test(name, fn) { queue.push({ name, fn }); }
@@ -333,7 +345,7 @@ test('the limiter is wired ABOVE validateLicenseKey in the handler source', () =
   // the ordering assertion in extra-actions.test.js strips them.
   const fs = require('fs');
   const raw = fs.readFileSync(HANDLER, 'utf8');
-  const src = raw.split('\n').filter((l) => l.trim().indexOf('//') !== 0).join('\n');
+  const src = stripJs(raw);
   const body = src.slice(src.indexOf('module.exports = async (req, res) =>'));
   const check = body.indexOf('checkAnonRate(req)');
   const validate = body.indexOf('await validateLicenseKey(licenseKey)');

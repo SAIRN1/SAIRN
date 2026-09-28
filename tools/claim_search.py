@@ -70,9 +70,7 @@ try:
 except Exception:                                                 # noqa: BLE001
     pass
 
-REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True, encoding='utf-8',
-                      errors='replace').stdout.strip() or os.getcwd()
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) or os.getcwd()
 
 WINDOW = 14          # lines per indexed unit
 STRIDE = 7           # overlapping, so a claim spanning a boundary is still found

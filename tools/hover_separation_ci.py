@@ -114,11 +114,24 @@ def target_repo():
     fixtures cannot see the range-reading half. Its own docstring predicted
     this failure before the run produced it.
     """
+    # ── THE `return REPO` FALLBACK NEVER FIRES ON THIS MACHINE (2026-09-27) ──
+    # C:/Users/marsh/.git EXISTS, so `rev-parse --show-toplevel` walks UP and
+    # returns C:/Users/marsh with exit 0 from any directory beneath the home
+    # directory. git never fails here, so the fallback is unreachable and this
+    # returns a confident wrong root. For a SEPARATION tool that is the worst
+    # possible failure: it would read the wrong repository's history and report a
+    # clean separation it never checked.
+    #
+    # The git answer is accepted ONLY IF IT CONTAINS THIS FILE -- preserving the
+    # worktree case while refusing an unrelated repo found by walking up.
     r = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
                        capture_output=True, text=True, encoding='utf-8',
                        errors='replace')
-    if r.returncode == 0 and r.stdout.strip():
-        return r.stdout.strip()
+    got = (r.stdout or '').strip()
+    if r.returncode == 0 and got:
+        root = os.path.normcase(os.path.abspath(got))
+        if os.path.normcase(os.path.abspath(__file__)).startswith(root):
+            return got
     return REPO
 
 

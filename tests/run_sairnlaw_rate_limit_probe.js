@@ -139,6 +139,70 @@ console.log('\n--- A. the RPC answers ---');
   ok('C3 ...and the fallback still DELAYS when the window is occupied',
     g.delayed === true && g.racy === true, JSON.stringify(g));
 
+  // ── C4/C5: THE FALLBACK'S OWN READ FAILING (added 2026-09-27) ───────────
+  // `opts.racyStatus` has existed in this harness since it was written and
+  // NOTHING EVER PASSED IT. Found by tools/ghost_field_read_scan.py: `racyStatus`
+  // is read in a gate and is not written, keyed or quoted anywhere in the repo.
+  //
+  // IT IS THE ONE CASE THIS FILE'S OWN STANDARD DEMANDS AND NEVER DROVE.
+  // Section D covers every way the RPC can fail. This is the layer below: the
+  // RPC is gone (404) AND the fallback's own GET for the window fails. The
+  // header says "Every fallback path here has to answer 'I could not tell' as
+  // REFUSE, never as go-ahead" -- and a fail-open here is a request actually
+  // sent to somebody else's server in violation of a published crawl-delay,
+  // which is the concrete harm the whole limiter exists to prevent.
+  console.log('\n--- C4/C5. the RPC is gone AND the fallback read fails ---');
+  //
+  // WHAT IT ACTUALLY DOES, MEASURED: it THROWS. `checkCrawlDelayRacy` answers a
+  // 404/400 with a structured `{delayed:true, notProvisioned:true}` -- because
+  // "a migration has not been run" is actionable and "the network is flaky" is
+  // not, which is its own comment -- and then answers every OTHER non-ok status
+  // with `throw new Error('wex crawl-delay check failed: HTTP ' + status)`.
+  //
+  // THE SAFETY PROPERTY HOLDS END TO END and that was traced rather than
+  // assumed: `wexLookup` does not catch it, and api/legal-reference.js's outer
+  // catch turns it into 502 "Upstream connection error — try again" with the
+  // error logged. So NO REQUEST REACHES CORNELL. Fail-closed, which is the one
+  // thing that matters here.
+  //
+  // THE ARM THEREFORE ASSERTS "NEVER PROCEEDS", not "returns delayed:true" --
+  // a throw is a refusal, and demanding a particular shape would fail a
+  // correct implementation. The first version of this arm demanded
+  // `r.delayed === true` and killed the probe with an uncaught rejection.
+  //
+  // FLAGGED, NOT FIXED HERE: the throw escapes the `{ok:false, code:...}`
+  // vocabulary every other branch of api/_lib/wex.js maintains, so the caller
+  // cannot tell a crawl-delay bookkeeping failure from any other upstream
+  // error. Giving it a code is a behaviour change in a file this change does
+  // not otherwise touch.
+  for (const st of [500, 503, 403]) {
+    world({ rpcStatus: 404, racyStatus: st, rows: [] });
+    let proceeded = null, threw = null;
+    try {
+      const r = await WEX.checkCrawlDelay();
+      proceeded = r.delayed === false;
+    } catch (e) {
+      threw = e && e.message;
+    }
+    ok('C4 fallback GET ' + st + ' -> NEVER proceeds. It refuses or throws; a '
+      + '`delayed:false` here is a request actually sent to somebody else\'s '
+      + 'server in breach of a published Crawl-delay',
+      proceeded !== true,
+      'proceeded=' + proceeded + ' threw=' + threw);
+    ok('C4b ...and the refusal NAMES the status, so the log says which failure '
+      + 'it was rather than "something went wrong"',
+      threw === null || /HTTP ' + st + '|HTTP ' + st/.test(String(threw))
+        || String(threw).indexOf(String(st)) !== -1,
+      'threw=' + threw);
+  }
+  // THE PAIRED POSITIVE. Without it, C4 proves only that something always
+  // delays once racyStatus is set.
+  world({ rpcStatus: 404, rows: [] });
+  const readable = await WEX.checkCrawlDelay();
+  ok('C5 CONTROL: the same fallback with a READABLE empty window proceeds, so '
+    + 'C4 is about the read failing and not about the fallback refusing always',
+    readable.delayed === false, JSON.stringify(readable));
+
   // ── D. THE FAIL-OPEN ARMS. Could-not-tell is never "go ahead". ──────────
   console.log('\n--- D. every way the RPC can fail to answer ---');
   const cases = [

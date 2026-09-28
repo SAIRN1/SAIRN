@@ -25,8 +25,7 @@ import subprocess
 import sys
 import tempfile
 
-ROOT = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOL = os.path.join(ROOT, 'tools', 'write_without_readback_check.py')
 
 FAIL = []

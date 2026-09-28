@@ -21,9 +21,7 @@ import os
 import subprocess
 import sys
 
-REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True, encoding='utf-8',
-                      errors='replace').stdout.strip()
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
 TOOL = os.path.join(REPO, 'tools', 'shape_search.py')
 

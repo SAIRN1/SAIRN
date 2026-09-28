@@ -15,6 +15,19 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+// COMMENT STRIPPING COMES FROM THE SHARED LIBRARY, 2026-09-27. This file
+// carried its own ad-hoc copy. Copies across the suite were wrong in three
+// different ways -- a line filter that kept every continuation line of a block
+// comment, a greedy regex that ate a real statement, and a state machine that
+// read accept="image/*" as a comment start -- and each produced a green run
+// against a file that should have gone red, or the reverse.
+// tests/lib/strip_comments.js is the single implementation;
+// tests/lib/strip_comments.test.js is its control.
+//
+// stripJs() AND NOT stripComments(): the input here is a bare JavaScript
+// FRAGMENT. stripComments() treats everything outside <script> as markup, so
+// on a fragment it strips NOTHING and looks correct doing it.
+const { stripJs } = require(path.join(__dirname, 'lib', 'strip_comments.js'));
 const assert = require('assert');
 const vm = require('vm');
 
@@ -44,10 +57,7 @@ function grab(startMarker, endRe) {
 // so an unstripped search finds the documentation before the implementation
 // -- a test defeated by its own subject's comments.
 function stripComments(s) {
-  return s
-    .split(String.fromCharCode(10))
-    .filter(function (l) { return l.trim().indexOf('//') !== 0; })
-    .join(String.fromCharCode(10));
+  return stripJs(s);
 }
 
 // sdAuthWasRefused and sdReadFailed are one-liners, so each is taken to its own

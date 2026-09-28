@@ -111,12 +111,30 @@ import sys
 # Falls back to the file's own location so a run from outside any repo still
 # has an answer rather than crashing.
 def _repo_root():
+    # ── THE FALLBACK BELOW NEVER FIRES ON THIS MACHINE (fixed 2026-09-27) ──
+    # The comment above says the fallback exists "so a run from outside any repo
+    # still has an answer rather than crashing". There IS NO OUTSIDE on this
+    # machine: C:/Users/marsh/.git exists, so `rev-parse --show-toplevel` walks UP
+    # and returns C:/Users/marsh with exit 0 from any scratch or temp directory.
+    # git does not fail, so the fallback is unreachable and the function returns a
+    # CONFIDENT WRONG ROOT -- which is worse than the crash it was written to
+    # avoid, because the crash is visible.
+    #
+    # The git answer is now ACCEPTED ONLY IF IT CONTAINS THIS FILE. That keeps the
+    # original intent (a worktree or a differently-named clone still resolves
+    # correctly) while refusing an unrelated repository discovered by walking up.
+    # Swept platform-wide by tools/git_discovery_anchoring_check.py.
+    here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     try:
         r = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
                            capture_output=True, text=True, encoding='utf-8',
                            errors='replace', timeout=30)
-        if r.returncode == 0 and (r.stdout or '').strip():
-            return (r.stdout or '').strip()
+        got = (r.stdout or '').strip()
+        if r.returncode == 0 and got:
+            root = os.path.normcase(os.path.abspath(got))
+            if os.path.normcase(os.path.abspath(__file__)).startswith(root):
+                return got
+            return here
     except Exception:                                            # noqa: BLE001
         pass
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

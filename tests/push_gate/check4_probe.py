@@ -11,6 +11,7 @@ probe arms returned the right code for the wrong reason.
 #   wrong reason
 #
 import atexit, subprocess, os, sys, re, tempfile
+import os
 
 # ── RUN THIS, DO NOT IMPORT IT (2026-09-11) ────────────────────────────────
 # This probe commits fixtures and mutates a source file. Since the worktree
@@ -32,8 +33,7 @@ if __name__ != '__main__':
         'tools/mutation_anchor_check.py.')
 
 
-MAIN = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
+MAIN = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 EP = 'api/legal-deadlines.js'
 
 # ── THE FIXTURES ARE PLANTED IN A THROWAWAY WORKTREE (2026-09-11) ──────────

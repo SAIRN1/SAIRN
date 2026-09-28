@@ -26,6 +26,19 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+// COMMENT STRIPPING COMES FROM THE SHARED LIBRARY, 2026-09-27. This file
+// carried its own ad-hoc copy. Copies across the suite were wrong in three
+// different ways -- a line filter that kept every continuation line of a block
+// comment, a greedy regex that ate a real statement, and a state machine that
+// read accept="image/*" as a comment start -- and each produced a green run
+// against a file that should have gone red, or the reverse.
+// tests/lib/strip_comments.js is the single implementation;
+// tests/lib/strip_comments.test.js is its control.
+//
+// stripComments() and NOT stripJs(): the input here is a WHOLE HTML file, so
+// the <script> boundaries matter -- outside them `/*` is not a comment, which
+// is what keeps accept="image/*" from swallowing the rest of the file.
+const { stripComments } = require(path.join(__dirname, 'lib', 'strip_comments.js'));
 
 const src = fs.readFileSync(path.join(__dirname, '..', 'sairnlaw.html'), 'utf8');
 
@@ -87,11 +100,7 @@ ok('3a  no unsafe-eval', policy.indexOf("'unsafe-eval'") === -1, '');
 // Layer 30 probe made the identical mistake this morning. A check that cannot
 // tell a quoted example from a live call is the same class of wrong as the
 // thing it is testing, and it is apparently the easy mistake to make twice.
-const CODE = src
-  .replace(/<!--[\s\S]*?-->/g, '')
-  .split('\n')
-  .filter(function (l) { return l.trim().slice(0, 2) !== '//'; })
-  .join('\n');
+const CODE = stripComments(src);
 const evalUses = (CODE.match(/\beval\(|new Function\(/g) || []).length;
 eq('3b  CONTROL: the file contains zero eval() / new Function()', evalUses, 0);
 ok('3c  CONTROL: and the comment that SAYS so is still there, deliberately',

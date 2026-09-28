@@ -1231,7 +1231,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   <div class="card">
     <div class="ch"><span class="ct">WIP Schedule</span><div class="pa" style="margin-left:auto"><button class="btn bo bs" onclick="csv('reports_wip')">Export CSV</button></div></div>
     <div class="cb">
-    <div class="note" style="margin-bottom:12px">% Complete = cost to date &divide; total estimated cost. Earned Revenue = % Complete &times; contract value. Over/Under Billing = draws received to date less earned revenue &mdash; a positive number means billed ahead of work actually done.</div>
+    <div class="note" style="margin-bottom:12px">% Complete = cost to date &divide; <strong>estimated cost at completion</strong> &mdash; the <em>revised</em> forecast, not the original budget. A cost line carrying a revised <code>forecast</code> is used in place of its budget; a line with none falls back to its budget. Earned Revenue = % Complete &times; contract value. Over/Under Billing = draws received to date less earned revenue &mdash; a positive number means billed ahead of work actually done.<br><br><strong>Where the forecast cannot be right, this report REFUSES the figure rather than printing one.</strong> Two cases, both marked &#9888; forecast stale: cost to date has passed the estimate, which proves the estimate is wrong; or an <strong>accepted change order</strong> has added value to the contract while its COST is recorded nowhere &mdash; a change-order record in this app holds no cost field, so re-forecast the affected cost lines. % Complete is <strong>not capped at 100%</strong>: an overrun reads OVER rather than as a finished job.</div>
     <div class="tw"><table><thead><tr><th>Job</th><th>Contract</th><th>Cost to Date</th><th>Est. Total Cost</th><th>% Complete</th><th>Earned Revenue</th><th>Billed to Date</th><th>Over/Under Billing</th></tr></thead>
     <tbody id="rp-wiptbody"></tbody></table></div></div>
   </div>
@@ -3553,6 +3553,20 @@ function committedFor(id){return costs().filter(function(c){return c.job_id===id
 // "total estimated cost" is the budget line, not committed either.
 function actualFor(id){return costs().filter(function(c){return c.job_id===id;}).reduce(function(s,c){return s+(c.actual||0);},0);}
 function budgetFor(id){return costs().filter(function(c){return c.job_id===id;}).reduce(function(s,c){return s+(c.budget||0);},0);}
+// ── THE RE-FORECAST, AND WHY IT IS A SEPARATE FUNCTION FROM budgetFor() ────
+// Percentage-of-completion divides cost incurred by ESTIMATED COST AT
+// COMPLETION, not by the original budget. The two are the same number only
+// while the forecast still equals the budget -- which is exactly the condition
+// that stops holding the moment a job goes sideways, and the WIP schedule was
+// dividing by budgetFor() for the life of the panel.
+//
+// A cost row may now carry `forecast`, the revised estimate for that line. It is
+// OPTIONAL and falls back to `budget` per line, so no stored record changes
+// shape and a job nobody has re-forecast reads exactly as it did. That is the
+// only mechanism: a revised budget IS the re-forecast, and inventing a second
+// job-level override would be a second place the same number can disagree.
+function forecastFor(id){return costs().filter(function(c){return c.job_id===id;}).reduce(function(s,c){return s+(c.forecast!==undefined&&c.forecast!==null?(c.forecast||0):(c.budget||0));},0);}
+function hasForecastFor(id){return costs().some(function(c){return c.job_id===id&&c.forecast!==undefined&&c.forecast!==null;});}
 
 // ONLY accepted change orders move the contract. A sent/draft/rejected CO is
 // not revenue -- counting them would inflate contract value and flatter every
@@ -7431,12 +7445,70 @@ function jobPL(j){
   var marginPctV=revised>0?Math.round(marginD/revised*100):0;
   return{committed:committed,revised:revised,marginD:marginD,marginPct:marginPctV};
 }
+// ── THE WIP SCHEDULE IS THE REPORT A SURETY AND A BANK READ, AND WHAT THEY
+// ── READ IT FOR IS PROFIT FADE. CORRECTED 2026-09-27.
+//
+// This was:
+//
+//     var pct = estTotal > 0 ? Math.min(1, costToDate / estTotal) : 0;
+//     var earned = Math.round(pct * revised);
+//
+// with `estTotal = budgetFor(id)`. Three defects wearing one face, and the
+// direction of every one of them is REASSURING:
+//
+//   1. THE DENOMINATOR WAS THE ORIGINAL BUDGET, NEVER RE-FORECAST. See
+//      forecastFor() above.
+//
+//   2. `Math.min(1, ...)` CAPPED IT AT 100%. A job that had spent 130% of its
+//      budget reported 100% complete, so `earned` became the WHOLE contract --
+//      the largest earned figure the arithmetic can produce -- and over/under
+//      billing swung to its most UNDER-billed reading. The truth is the
+//      opposite: that job is losing money and is probably over-billed. The cap
+//      did not merely round off an overrun, it INVERTED the finding.
+//
+//   3. AN ACCEPTED CHANGE ORDER MOVED THE CONTRACT AND NOT THE FORECAST.
+//      revisedValue() adds an accepted CO's `amount`; nothing adds its cost,
+//      and a change-order record in this app carries NO COST FIELD AT ALL
+//      (id, job_id, description, amount, labour_hrs, status, requested_by,
+//      sent_at, accepted_at, reason). So percent complete was computed against
+//      a denominator known to be too small, and earned revenue was overstated
+//      twice -- once by the inflated percent, once by the larger contract it
+//      multiplies.
+//
+// THE FIX DOES NOT INVENT THE CHANGE ORDER'S COST. That figure is recorded
+// nowhere and guessing it would be a fabricated input feeding a money figure,
+// which is the one thing this platform has paid for repeatedly. It DISCLOSES
+// that the forecast cannot include it and REFUSES the derived figures.
+//
+// WHY REFUSE `earned` RATHER THAN PRINT A PERCENT ABOVE 100: the uncapped
+// percent is informative (it says costs have passed the estimate) and the money
+// derived from it is not. Earned revenue = contract x percent complete is only
+// meaningful while the percent is a real fraction of a real forecast. So `pct`
+// is reported uncapped and `earned`/`overUnder` come back NULL with the reason
+// named, rather than a number a reader would act on.
 function jobWIP(j){
-  var costToDate=actualFor(j.id),estTotal=budgetFor(j.id),revised=revisedValue(j);
-  var pct=estTotal>0?Math.min(1,costToDate/estTotal):0;
-  var earned=Math.round(pct*revised);
+  var costToDate=actualFor(j.id),budget=budgetFor(j.id),forecast=forecastFor(j.id),revised=revisedValue(j);
+  var acceptedCO=acceptedCOFor(j.id);
+  var stale=[];
+  // ONLY AN ACCEPTED CO CREATES THE MISMATCH, because only an accepted one
+  // moves the contract. A draft, sent or rejected CO is not revenue and is not
+  // a cost forecast problem -- flagging those would make the marker meaningless
+  // on every job with an open quote.
+  if(acceptedCO>0&&!hasForecastFor(j.id))stale.push('an accepted change order adds '+fmt(acceptedCO)+' to the contract and its COST is recorded nowhere -- re-forecast the affected cost lines');
+  if(forecast>0&&costToDate>forecast)stale.push('cost to date has passed the estimated cost at completion, so that estimate is wrong');
+  if(!(forecast>0))stale.push('no cost forecast on this job, so percent complete cannot be worked out');
+  var pct=forecast>0?costToDate/forecast:null;
+  var trusted=stale.length===0&&pct!==null;
+  var earned=trusted?Math.round(pct*revised):null;
   var billed=bldDraws().filter(function(d){return d.job_id===j.id;}).reduce(function(s,d){return s+drawMoney(d.amount_received);},0);
-  return{costToDate:costToDate,estTotal:estTotal,pct:pct,earned:earned,billed:billed,overUnder:billed-earned};
+  var overUnder=trusted?billed-earned:null;
+  var position=!trusted?'unknown':(overUnder>0?'over_billed':(overUnder<0?'under_billed':'level'));
+  // `estTotal` is kept as a key because it is the column the WIP table and the
+  // CSV have always shown; it now means the FORECAST rather than the budget,
+  // and `budget` is returned beside it so the two can be shown apart.
+  return{costToDate:costToDate,budget:budget,forecast:forecast,estTotal:forecast,
+         revised:revised,pct:pct,forecastStale:stale,earned:earned,billed:billed,
+         overUnder:overUnder,position:position};
 }
 // Now derived from subDocIssues() rather than carrying its own copy of the
 // rules. This is a STRICT SUPERSET of what it used to flag: everything it
@@ -7467,12 +7539,25 @@ function rReports(){
   var act=js.filter(function(j){return ACTIVE.indexOf(j.stage)!==-1;});
   var committedTotal=act.reduce(function(s,j){return s+committedFor(j.id);},0);
   var marginTotal=act.reduce(function(s,j){return s+(revisedValue(j)-committedFor(j.id));},0);
-  var overBilled=act.filter(function(j){return jobWIP(j).overUnder>0;});
+  // ── COUNT THE POSITION, NOT THE NUMBER. This read `jobWIP(j).overUnder>0`,
+  // which was correct while overUnder was always a number. It is now null on a
+  // job whose cost forecast is stale, and `null > 0` is FALSE -- so every such
+  // job would drop SILENTLY out of this count and the KPI would read zero
+  // over-billed jobs precisely where the report cannot tell. A refusal turning
+  // into a clean bill is worse than the capped percentage it replaced, so the
+  // jobs that cannot be judged are counted separately and NAMED in the
+  // sub-label rather than folded into either answer.
+  var wipRows=act.map(function(j){return jobWIP(j);});
+  var overBilled=wipRows.filter(function(w){return w.position==='over_billed';});
+  var unknownPos=wipRows.filter(function(w){return w.position==='unknown';});
   var complianceIssues=bldSubs().filter(subComplianceIssue);
   $('rp-committed').textContent=fmt(committedTotal);
   $('rp-margin').textContent=fmt(marginTotal);
   $('rp-overbilled').textContent=overBilled.length;
-  $('rp-overbilled-sub').className='kt'+(overBilled.length?' d':'');
+  $('rp-overbilled-sub').textContent=unknownPos.length
+    ? 'Billed ahead of work earned — '+unknownPos.length+' more job(s) could NOT be judged (stale cost forecast)'
+    : 'Billed ahead of work earned';
+  $('rp-overbilled-sub').className='kt'+(overBilled.length||unknownPos.length?' d':'');
   $('rp-compliance').textContent=complianceIssues.length;
   $('rp-compliance-sub').className='kt'+(complianceIssues.length?' d':'');
 
@@ -7490,15 +7575,29 @@ function rReports(){
 
   $('rp-wiptbody').innerHTML=act.length?act.map(function(j){
     var w=jobWIP(j);
-    var col=w.overUnder>0?'var(--danger)':'var(--ok)';
+    // A REFUSED FIGURE IS RENDERED AS A REFUSAL, not handed to fmt(). fmt(null)
+    // would print $0, which reads as a real zero -- the quiet wrong number this
+    // whole correction is about, reintroduced at the last step.
+    var stale=w.forecastStale.length>0;
+    var col=stale?'var(--muted)':(w.overUnder>0?'var(--danger)':'var(--ok)');
+    var why=w.forecastStale.join('; ');
+    var pctCell=w.pct===null
+      ? '<span style="color:var(--muted)" title="'+H(why)+'">not computable</span>'
+      : (Math.round(w.pct*100)+'%'+(w.pct>1
+          ? ' <span style="color:var(--danger);font-weight:700" title="cost to date has passed the estimated cost at completion, so that estimate is wrong">OVER</span>'
+          : ''));
+    var forecastCell=fmt(w.estTotal)
+      +(stale?' <span style="color:#9A3412;background:#FFF7ED;border:1px solid #FDBA74;padding:1px 6px;border-radius:4px;font-size:11px;font-weight:700;cursor:help;white-space:nowrap;" title="'+H(why)+'">&#9888; forecast stale</span>':'')
+      +(w.budget!==w.forecast?' <span style="color:var(--muted);font-size:11px;">(budget '+fmt(w.budget)+')</span>':'');
+    var money=function(v){return v===null?'<span style="color:var(--muted)" title="'+H(why)+'">--</span>':fmt(v);};
     return '<tr><td>'+H(jobLabel(j.id))+'</td>'+
-      '<td>'+fmt(revisedValue(j))+'</td>'+
+      '<td>'+fmt(w.revised)+'</td>'+
       '<td>'+fmt(w.costToDate)+'</td>'+
-      '<td>'+fmt(w.estTotal)+'</td>'+
-      '<td>'+Math.round(w.pct*100)+'%</td>'+
-      '<td>'+fmt(w.earned)+'</td>'+
+      '<td>'+forecastCell+'</td>'+
+      '<td>'+pctCell+'</td>'+
+      '<td>'+money(w.earned)+'</td>'+
       '<td>'+fmt(w.billed)+'</td>'+
-      '<td><strong style="color:'+col+'">'+fmt(w.overUnder)+'</strong></td></tr>';
+      '<td><strong style="color:'+col+'">'+money(w.overUnder)+'</strong></td></tr>';
   }).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No active jobs</td></tr>';
 
   var recentCO=chgOrders().slice().sort(function(a,b){return(b.sent_at||b.accepted_at||'').localeCompare(a.sent_at||a.accepted_at||'');}).slice(0,6);
@@ -8384,8 +8483,22 @@ function csv(type){
   } else if(type==='reports_wip'){
     var wipjs=jobs().filter(function(j){return ACTIVE.indexOf(j.stage)!==-1;});
     if(!wipjs.length){toast('No active jobs to export');return;}
-    rows=[['Job','Contract','Cost to Date','Est. Total Cost','% Complete','Earned Revenue','Billed to Date','Over/Under Billing']];
-    wipjs.forEach(function(j){var w=jobWIP(j);rows.push([jobLabel(j.id),revisedValue(j),w.costToDate,w.estTotal,Math.round(w.pct*100),w.earned,w.billed,w.overUnder]);});
+    // THE EXPORT IS THE ONE PLACE A REFUSED FIGURE DOES REAL DAMAGE, because
+    // the number leaves the screen for a spreadsheet where no marker sits
+    // beside it to contradict it. So it refuses in the same three places the
+    // table does, and carries the FORECAST BASIS as its own column -- the
+    // difference between an original budget and a revised forecast is the whole
+    // point of this correction and a bare "Est. Total Cost" column hides it.
+    rows=[['Job','Contract','Cost to Date','Original Budget','Est. Cost at Completion','Forecast Basis','% Complete','Earned Revenue','Billed to Date','Over/Under Billing']];
+    wipjs.forEach(function(j){
+      var w=jobWIP(j);
+      var basis=w.forecastStale.length?('STALE: '+w.forecastStale.join('; ')):(w.budget!==w.forecast?'revised forecast':'original budget');
+      rows.push([jobLabel(j.id),w.revised,w.costToDate,w.budget,w.forecast,basis,
+        w.pct===null?'not computable':Math.round(w.pct*100),
+        w.earned===null?'not computable':w.earned,
+        w.billed,
+        w.overUnder===null?'not computable':w.overUnder]);
+    });
   } else if(type==='reports_subspend'){
     var spendMap=subSpendMap();
     var spendNames=Object.keys(spendMap);

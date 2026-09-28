@@ -38,8 +38,7 @@ import sys
 
 CONTROLS_FOR = ['invisible_in_pattern_check.py']
 
-REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FAIL = []
 ZWSP = chr(0x200B)
 BS = chr(0x08)

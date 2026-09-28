@@ -27,8 +27,7 @@ import subprocess
 import sys
 import tempfile
 
-REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOL = 'tools/traceability_matrix.py'
 OUT = 'docs/traceability-matrix.md'
 # Files the throwaway worktree needs that HEAD may not carry. The worktree is

@@ -1748,6 +1748,19 @@ caught before being reverted. Consult it before a rotation pick as a real,
 additional input alongside Tier and freshness -- it does not replace either,
 and with this little history it should not yet dominate either.
 
+**[H1 CONFIRMATION, 2026-09-27]** `hover-audit-log/` is a local, per-clone
+directory outside this git repo, so the paragraph above cannot name a single
+shared file -- each hover instance builds its own. **H1's build (this
+clone) is the fail-closed draw the paragraph describes**: `defect_density_
+weighting.py` (with a `--json` contract added 2026-09-27) is consumed as the
+PRIMARY factor by `hover_cold_scan_pool.py --draw N`'s combined score (app
+risk DESC, staleness DESC, name ASC -- see the fifth-rotation-rule section
+below, added the same day), refusing outright rather than scoring
+all-zero risk if the weighting tool is absent or its own classifier control
+fails. Said here, labeled, rather than left for a reader to guess which
+instance's tooling this passage is actually about. This note is scoped to
+H1 only and does not describe or assume anything about H2's separate build.
+
 **A fifth rotation rule, a COORDINATOR-DIRECTED policy change, 2026-09-25:
 within a session, the draw pool prefers never-individually-read rows first,
 and falls back to already-read rows only when the unread set for that weight
@@ -1802,11 +1815,58 @@ history exists. FAIL-CLOSED both directions: --draw refuses outright
 (exit 2, naming the tool) when defect_density_weighting.py is absent or
 fails its own classifier control, and refuses when api/_resources derives
 zero apps — a missing instrument is never scored as all-zero risk.
-Six ordering fixtures lock the formula in both directions
-(--selftest), including risk-dominates, unread-beats-stale, and
-unmapped-sinks-never-wins. The unweighted-random slice below keeps its
-false-negative-rate job unchanged — it is deliberately OUTSIDE this score,
-because its whole purpose is to catch what any weighting misses.
+
+**A FRESHNESS FLOOR, added 2026-09-28, THE HONEST BEFORE-STATE FIRST: risk
+DESC with no floor let one exhausted high-risk app starve every lower-risk
+app's rows indefinitely.** Diagnosed from a real failure, not theorized:
+three consecutive `--draw` calls in one session (log #570/#571/#574) landed
+entirely on already-swept ground. MEASURED before touching any code:
+sairnbuild and sairnvet, tied for the HIGHEST app risk (11), had a maximum
+per-app staleness of only 21 entries each — every one of their rows had
+just been individually read. Meanwhile sairngrounds and sairnlegacy (risk
+9) held rows up to 218 and 252 entries stale, and stonedesk (risk 8) up to
+201 — over TEN TIMES staler — and pure risk-first ordering could never
+reach them while a higher-risk app existed at all, no matter how completely
+spent that higher-risk app already was. **The formula gained a fourth
+key, still one lexicographic score, not a second independent axis:**
+
+    (0) freshness-floor bucket ASC — 0 if the resource's OWN APP has at
+                                      least one resource at or past
+                                      FRESHNESS_FLOOR (=30 entries, else 1.
+                                      A never-mentioned resource (staleness
+                                      = infinity) always counts as stale
+                                      ground for its app.
+    (1) app risk DESC   — unchanged, exactly as above
+    (2) staleness DESC  — unchanged, exactly as above
+    (3) name ASC        — unchanged, exactly as above
+
+This is a THRESHOLD GATE on the staleness signal already in the tuple,
+hoisted in front of risk only when risk's own candidates have nothing
+genuinely due left to offer — not a new independent signal, both stay in
+the one score exactly as the coordinator's original decision required. An
+app with no stale ground does not disappear; it sinks to bucket 1 until
+something in it ages back past 30. **30 is REASONED FROM THE REAL DIAGNOSIS
+DATA, not picked in the abstract**: it sits between the exhausted apps'
+observed ceiling (21) and the least-stale surviving app's own maximum at
+diagnosis time (39, sairnroofing), margin on both sides — recalibrate once
+real repeat-gap history exists, the same honesty every other REASONED
+constant here carries. Ten ordering fixtures now lock the formula in both
+directions (was six), including the exact production failure shape
+reproduced as a fixture, a NEGATIVE case (a resource exactly AT the floor
+must still count as stale ground, not be swallowed by an over-eager gate),
+and the never-mentioned-always-counts case. **One of the five new fixtures
+failed on its first run — the fixture's own expected order was backwards,
+not `draw_order()`** — corrected the assertion, not the code, and said so
+rather than silently fixing it, the same blind-analysis discipline as
+every fixture-correction declaration elsewhere in this file. Verified
+against real, live data: `--draw 3` after the fix prints the apps sunk by
+the floor by name and surfaces `leg_insurance`/`leg_petcases` (252 entries
+stale) and `msb_bottle_scans` (218 entries stale) — genuinely fresh ground
+this session had never reached before the fix existed.
+
+The unweighted-random slice below keeps its false-negative-rate job
+unchanged — it is deliberately OUTSIDE this score, because its whole
+purpose is to catch what any weighting misses.
 
 **HOVER2 LABEL, added 2026-09-27 on direct instruction, self-audit finding
 -- neither of the two passages above describes hover2's own tool, and this
@@ -2800,6 +2860,91 @@ arbiter data above puts a real, measured cost on resolving it toward
 caution or consensus instead of surfacing it -- a true catch only one side
 made can be the one that gets smoothed away. Hold this line as hard for
 this role's own contested findings as it is held for item 64's design.
+
+## Four further standing rules, 2026-09-28 (Michael's direct instruction, sourced separately from the build-agent registry)
+
+**1. When reviewing a lifecycle/status fix, check the transition PAIR, not
+the transition in isolation.** Before marking a fix to state-machine-shaped
+logic (a credential's active/deactivated lifecycle, a claim's
+claimed/released state, a discharge gate's open/reviewed status) SOUND,
+ask what state the resource was actually IN immediately after the PRIOR
+transition that leads into the one being fixed -- not just whether the
+fixed transition behaves correctly in isolation from a clean starting
+state. A transition that is provably correct FROM a well-formed prior
+state can still be reachable from a malformed one a real session actually
+produces (a crashed claim, a mid-rebase partial write, a retry after a
+409). Verifying only the isolated transition is the same shape as testing
+a function against a hand-built input instead of the input its own
+upstream caller actually produces.
+
+**2. Hidden-state cross-check: when reading a resource for its
+confidentiality/integrity axis, cross-check every stored field the code
+actually BRANCHES ON against what the tier registry's own evidence cell
+NAMES for that resource.** A field a handler reads and decides on, but the
+registry's field list never mentions, is a decision point nobody graded --
+it passed by omission, not by being checked and found fine. **This
+session's own concrete case, found before the rule was named:** `sf_events`
+(log #553) -- the register's evidence cell listed `{title, date, start,
+end, kind, alcohol, sessionId}` and separately claimed neither compliance
+hook was wired, but `eventRefusals()` was already gating bookings on
+`e.gaming`, `e.prizeCap`, `e.accountId` and `e.games` -- four fields the
+handler branches on for real, statutory determinations, and NONE of them
+appeared in the cell's own field list. The cell's field list and the
+handler's real branch set had already diverged; nobody had cross-checked
+them against each other until this rule's own justification was being
+gathered.
+
+**3. Sabotage-test a new checking tool against the REALISTIC transition
+into a bad state, not only the bad state reached directly.** A fixture that
+plants the bad state by direct assignment (teleporting a resource straight
+to "corrupted") can pass while the tool still misses the SAME bad state
+when it arrives via the path a real session actually produces -- right
+after a rebase, right after a claim releases, right after a retry. A tool
+whose only negative controls are teleported-in states has been shown to
+catch the shape of the defect, not that it catches the defect ARRIVING the
+way it really would. **Self-audit, done rather than assumed clean:** this
+role's own newest fixtures at the time this rule was written
+(`draw_order`/`undirected_order` in `hover_cold_scan_pool.py`,
+`hover_editor_review_criteria.py`'s IMPLIED_LINE cases, `hover_log.py`'s
+`--contradicts` fixtures below) were ALL teleported-in synthetic states --
+hand-built dicts and hand-built log rows, none of them produced by
+actually running the surrounding real workflow. Named as a real, current
+gap rather than implied fixed by writing this rule. **CLOSED THE SAME DAY,
+2026-09-28:** `draw_order`/`undirected_order` now also carry three
+realistic-transition fixtures that drive the REAL `hover_log.cmd_add()`
+(a scratch `LOG_PATH` override, not a hand-built dict) through an actual
+log-append-then-redraw sequence, plus a real bare-repo push reused from the
+existing stale-clone fixture; `hover_editor_review_criteria.py`'s
+IMPLIED_LINE gained a real third git commit that shifts real lines, so the
+drift a fixture detects is git-produced, not hand-picked. `--contradicts`
+was still new enough that day to have no real historical case to retrofit
+onto (checked, see its own entry) and remains teleported-in by necessity,
+not oversight. The standard still applies going forward, starting with the
+next tool whose subject is genuinely process-order-sensitive (a claim-state
+or session-liveness checker, the shape `sabotage_closed_system_check.py`
+and `tools/session_lock_check.py`'s own liveness fix already had to reckon
+with for exactly this reason) -- this entry is not a template for "write
+the rule, call it done," it is one real gap closed and said so.
+
+**4. When a later read CONTRADICTS an already-logged CLEAN verdict on the
+same resource, log it as its own distinct, higher-salience entry -- never
+folded in as an ordinary updated verdict.** An updated verdict (new
+information added to a still-correct earlier call) and a DRIFT note (the
+world moved after a correct-at-the-time read) are both routine. A
+contradiction -- an earlier CLEAN call that was simply wrong when made --
+is a different, rarer, more important event: it means this role's own
+prior check missed something checkable at the time, not just that time
+passed. **Built as a structured field, not a prose convention a future
+reader has to trust was worded consistently**, the same reason
+`process_pass`/`eqa_checkpoint`/`undirected_sweep` are fields rather than
+keywords: `hover_log.py --add --contradicts <seq>` (2026-09-28) stamps a
+`contradicts` pointer to the specific prior entry being overturned,
+REFUSES if that seq does not exist (a dangling pointer would look like a
+real contradiction forever in an append-only log) and REFUSES on any type
+other than `finding` (a contradiction of a clean verdict is a finding by
+definition, never a plain check). `--tail` renders it as a visible
+`[[CONTRADICTS #N]]` tag so it cannot be scanned past as an ordinary row.
+Six fixtures lock it in both directions before the first real use.
 
 ## Five further real precedents, genuinely new this round
 

@@ -75,9 +75,30 @@ attribution, never enforced, so an unauthenticated write succeeds and stores
 `verified_by: null`. Proven live with a payload built to fail validation:
 `{"action":"add_rule","rule":{}}` returns **400 INVALID_RULE, not 401**.
 
-Anything holding the licence key can overwrite any of the 119 primary-source
-rules the entire product claim rests on, and the provenance column will read
-null.
+Anything holding the licence key can overwrite **any primary-source rule in the
+seed corpus** — the thing the entire product claim rests on — and the provenance
+column will read null.
+
+> **THIS SENTENCE SAID "the 119 primary-source rules" UNTIL 2026-09-27, AND THE
+> NUMBER HAD BEEN WRONG BY 3.7x SINCE BEFORE THE STALENESS INCIDENT BELOW WAS
+> EVEN WRITTEN UP.** Re-derived 2026-09-27: **437 rules across 39 jurisdictions
+> in 47 seed files** (12 of 39 carry both domains). The staleness section further
+> down this file *records* that exact correction — 119 → 437 — and this paragraph,
+> four sections above it, kept the stale figure. **A file can document a
+> staleness incident and still carry the stale number, because the sweep that
+> follows an incident tends to check the section the incident is about.**
+> It is worse than a neutral error here: it understates the blast radius of an
+> open, live security blocker by a factor of 3.7, making the hole sound smaller
+> than it is. The count is now removed rather than corrected — the re-derivation
+> command is in `docs/sairnlaw-deadline-engine-external-claim.md`, which is the
+> only place the figure belongs.
+
+**THE BLOCKER ITSELF IS STILL LIVE, re-checked 2026-09-27 against source, not
+assumed from this document.** `api/legal-deadlines.js` resolves the caller at
+:692 and uses it at :903 and :922 for `verified_by: caller ? caller.employee_id
+: null` — **and nowhere else**. There is no 401 or 403 for an absent session on
+`add_rule` or `add_holidays`. The deferral reasoning below has not been
+overtaken; the hole is open.
 
 **The blocker's own deferral reasoning is what makes it a listing gate:**
 

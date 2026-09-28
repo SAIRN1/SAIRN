@@ -62,8 +62,7 @@ import re
 import subprocess
 import sys
 
-REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LICENSE_LIB = os.path.join('api', '_lib', 'license.js')
 
 # The authority module and the table it reads. Derived from the file rather than

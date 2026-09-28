@@ -62,7 +62,13 @@ QUOTE all three markers in prose -- the 2026-09-11 open-work row contains
 
 ── WHAT IT CANNOT SEE ─────────────────────────────────────────────────────────
   * A conflict resolved WRONGLY. A file with no markers can still have had the
-    wrong side kept, and nothing mechanical can tell.
+    wrong side kept. THE "NOTHING MECHANICAL CAN TELL" THAT USED TO END THIS LINE
+    WAS TOO STRONG, corrected 2026-09-27: `git checkout --ours/--theirs` leaves a
+    resolution BYTE-IDENTICAL to one entire side, and on a path where both sides
+    changed that is mechanically detectable. tools/conflict_marker_preflight.py
+    check C does it, and that is the case that matters, because the blind side-pick
+    is what caused the 2026-09-27 damage. What remains genuinely undetectable is a
+    HAND merge that drops a line -- neither side whole, no marker left.
   * A marker indented by even one space. That is deliberate: git writes them at
     column zero, and accepting leading whitespace would start matching prose.
   * Binary files, which are skipped and NAMED rather than silently dropped.

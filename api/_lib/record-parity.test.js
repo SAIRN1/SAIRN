@@ -26,6 +26,22 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
+// COMMENT STRIPPING COMES FROM THE SHARED LIBRARY, 2026-09-27. This file
+// carried its own ad-hoc copy. Copies across the suite were wrong in three
+// different ways -- a line filter that kept every continuation line of a block
+// comment, a greedy regex that ate a real statement, and a state machine that
+// read accept="image/*" as a comment start -- and each produced a green run
+// against a file that should have gone red, or the reverse. The shared version
+// also handles REGEX LITERALS, which a line filter cannot: `var re = /\\/\\//;`
+// read as a line comment HIDES the rest of the line, and hidden code makes an
+// absence assertion pass on code that is present.
+// tests/lib/strip_comments.js is the single implementation;
+// tests/lib/strip_comments.test.js is its control.
+//
+// stripJs() AND NOT stripComments(): the input here is JavaScript, not an HTML
+// file. stripComments() treats everything outside <script> as markup, so it
+// would strip NOTHING and look correct doing it.
+const { stripJs } = require(path.join(__dirname, '..', '..', 'tests', 'lib', 'strip_comments.js'));
 const P = require('./record-parity.js');
 
 let pass = 0, fail = 0;
@@ -235,7 +251,7 @@ t('it does NOT claim to close the creation-time exposure window', () => {
 });
 t('no Reed-Solomon is implemented, and the single-erasure limit is stated', () => {
   const src = fs.readFileSync(path.join(__dirname, 'record-parity.js'), 'utf8');
-  const code = src.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+  const code = stripJs(src);
   assert.ok(!/GF\(256\)|galois|reedSolomon/i.test(code),
     'checked on CODE with comments stripped -- the header mentions Reed-Solomon '
     + 'precisely to say it is NOT here, and a text match over prose would read '

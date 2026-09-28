@@ -806,3 +806,12 @@ named a premise that was false ("seed never built" — built five days earlier, 
 102 green arms), and four of the six were blocked by another session's claim. The
 two that were mine to do produced a real multi-panel finding and the first
 complete render sweep this platform has had.
+
+
+## 2026-09-27 — alf_incidents `data.reported_by` is UNTRUSTWORTHY on every pre-migration row
+
+EXISTING alf_incidents ROWS CARRY AN UNTRUSTWORTHY data.reported_by AND ARE NOT BACKFILLED. Every row written before 2026-09-27 has a reported_by that was supplied by the request rather than derived from the session, so its value is evidence of nothing -- it may be correct, and there is no way to tell which ones are. Michael's decision, 2026-09-27: NO BACKFILL of the new recorded_by column from that field, because the only available source is the forgeable one and copying it would launder a caller-supplied string into an authoritative column. The stated consequence is that legacy incidents are invisible to the care-role self-scope read (the server cannot tell who filed them) while management continues to read every row, so no report is unreachable. ANY EXPORT, SURVEY RESPONSE OR STATE REPORT THAT QUOTES data.reported_by FOR A PRE-2026-09-27 ROW IS QUOTING AN UNVERIFIED FIELD and must say so.
+
+Migration to apply: `sql/sairncare_incidents_recorded_by.sql`. Until it is run, the
+incident read answers **503 MIGRATION_REQUIRED** for every role rather than an
+empty log. Fix: `8d0fff5c`. Register record: `52b07afa`, CRITICAL.

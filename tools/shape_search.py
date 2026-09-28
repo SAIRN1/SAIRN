@@ -67,9 +67,7 @@ import sys
 
 CRITERIA_VERSION = 'shape-search-1 (2026-09-17)'
 
-REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True, encoding='utf-8',
-                      errors='replace').stdout.strip() or os.getcwd()
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) or os.getcwd()
 
 # ── THE THRESHOLD, AND WHY RAISING IT DOES ALMOST NOTHING ─────────────────
 # Measured on this repository 2026-09-17, 20,000 unrelated pairs drawn from

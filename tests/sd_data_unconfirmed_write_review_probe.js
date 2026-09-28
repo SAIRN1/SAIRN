@@ -102,6 +102,30 @@ function softDeleteMock(opts) {
       const method = (init && init.method) || 'GET';
       calls.push({ url: String(url), method: method });
       if (method === 'GET') {
+        // ── THE ACTIVE-CREDENTIAL RE-CHECK IS A GET TOO, AND THIS PROBE WENT
+        //    BLIND WHEN IT ARRIVED (fixed 2026-09-27) ────────────────────────
+        // `credentialStillActive` selects `active` off the app's employee-auth
+        // table. This mock answered that read with `opts.readRows` -- rows
+        // shaped like the RESOURCE, carrying no `active` field -- so the check
+        // read every caller as deactivated and TWO OF THE THREE QUESTION 1
+        // CASES BELOW never reached the code under test. They answered 403
+        // CREDENTIAL_INACTIVE while the ANSWER prose underneath them asserted
+        // 404 and `already_deleted:true`.
+        //
+        // The probe was correct when written. It stopped testing anything when
+        // the single-entry-point credential re-check was added to all 132
+        // verifySessionToken gates, and NOTHING SAID SO -- the output still
+        // printed three lines and a confident conclusion. That is PR 1.1 inside
+        // a review artefact, which is worse than inside a checker: this file is
+        // the evidence that discharged cc's 2026-09-18T23:19:37Z obligation.
+        //
+        // `opts.inactiveCredential` exists so the refusal can still be DRIVEN
+        // deliberately -- a mock that can no longer produce the refusal is the
+        // opposite failure.
+        if (/select=active/.test(String(url))) {
+          return { ok: true, status: 200,
+                   json: async () => [{ active: !opts.inactiveCredential }] };
+        }
         if (opts.readStatus && opts.readStatus !== 200) {
           return { ok: false, status: opts.readStatus,
                    json: async () => ({ message: 'read failed' }) };
@@ -224,6 +248,41 @@ function softDeleteMock(opts) {
   load." For a TOCTOU miss that sentence is TRUE -- the local row is gone and
   the server state is not what the caller believes. Louder than before, and
   correct. No finding.`);
+
+  // ════════════════════════════════════════════════════════════════════════
+  // QUESTION 1b -- THE CASE THIS REVIEW NEVER ASKED, added 2026-09-27.
+  //
+  // `opts.patchStatus` has existed in this harness since it was written and
+  // NOTHING EVER PASSED IT. Found by tools/ghost_field_read_scan.py: `patchStatus`
+  // is read in a gate and is not written, keyed or quoted anywhere in the repo.
+  // So the review answered "is 404 right when the PATCH matches zero rows" and
+  // never asked what happens when the PATCH is REFUSED -- which is the case a
+  // reader of a review about UNCONFIRMED WRITES would expect to find in it.
+  console.log('\n=== QUESTION 1b: what if the PATCH is REFUSED, not merely unmatched? ===\n');
+
+  for (const st of [500, 409, 403]) {
+    const refused = softDeleteMock({ readRows: [{ data: { id: 'R-1' } }], patchStatus: st });
+    h = load('sd-data.js', refused.fn);
+    res = mockRes();
+    await h(req({ action: 'soft_delete', resource: 'sd_invoices', payload: { id: 'R-1' } }), res);
+    console.log('  PATCH refused %s -> %s %s', st, res.statusCode,
+      JSON.stringify(res.body).slice(0, 90));
+  }
+
+  console.log(`
+  ANSWER: correct, and it is a THIRD answer rather than a reuse of either
+  other one. A refused PATCH answers 502 and the upstream body is logged; it is
+  NOT the 404 of a zero-row match and NOT the 502 WRITE_UNCONFIRMED of an
+  unreadable body. Three distinguishable outcomes for three distinguishable
+  events, which is the property this whole review is about.
+
+  ONE THING A CALLER CANNOT SEE, stated rather than left implicit: the refused
+  PATCH's 502 carries NO \`code\`, where WRITE_UNCONFIRMED's does. So the two are
+  distinguishable only by the absence of a field. That is harmless TODAY because
+  sdData() returns null for any non-2xx and both mean the same thing to a client
+  -- do not believe the write happened -- but a caller that ever branches on the
+  code will read a store refusal as a success-shaped absence. No finding; a
+  named dependency.`);
 
   // ════════════════════════════════════════════════════════════════════════
   console.log('\n=== QUESTION 2: can the dnt-bi 502 fire on a legitimately empty table? ===\n');

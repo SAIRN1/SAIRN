@@ -30,8 +30,7 @@ import os
 import subprocess
 import sys
 
-ROOT = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TARGET = os.path.join(ROOT, 'sairndental.html')
 SUITE = os.path.join('tests', 'sairndental_write_failure_voice.js')
 

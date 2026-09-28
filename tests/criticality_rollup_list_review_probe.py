@@ -63,9 +63,7 @@ import subprocess
 import sys
 import tempfile
 
-REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True,
-                      encoding='utf-8', errors='replace').stdout.strip()
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REL_DOC = os.path.join('docs', 'CRITICALITY-TIERS.md')
 REL_TOOL = os.path.join('tools', 'criticality_tier_check.py')
 REL_PROBE = os.path.join('tests', 'run_criticality_tier_probe.py')

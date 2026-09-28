@@ -23,6 +23,12 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
+// COMMENT STRIPPING COMES FROM THE SHARED LIBRARY, 2026-09-27. This file carried
+// its own greedy `<!--[\s\S]*?-->` regex plus a line filter -- two of the three
+// shapes tests/lib/strip_comments.js exists to replace, and the greedy one is the
+// version that took a real count from two to ZERO in another suite.
+// stripComments() and not stripJs(): the input is a WHOLE HTML file.
+const { stripComments } = require(path.join(__dirname, 'lib', 'strip_comments.js'));
 
 let pass = 0, fail = 0;
 async function test(name, fn) {
@@ -122,8 +128,12 @@ async function readAudit(contentRange, rowCount) {
   const html = fs.readFileSync(path.join(__dirname, '..', 'sairnvet.html'), 'utf8');
 
   await test('THE LIE IS GONE: "not capped" is no longer claimed anywhere', async () => {
-    const lines = html.replace(/<!--[\s\S]*?-->/g, '').split(/\r?\n/)
-      .filter(l => !/^\s*(\/\/|\*)/.test(l))
+    // MIGRATED 2026-09-27 to tests/lib/strip_comments.js. The local version was
+    // a greedy `<!--[\s\S]*?-->` regex plus a line filter -- two of the three
+    // shapes that library replaces. It now also strips `//` and `/* */` inside
+    // <script>, including trailing ones the `^\s*` filter could never reach, so
+    // this arm's absence claim is strictly stronger than it was.
+    const lines = stripComments(html).split(/\r?\n/)
       .filter(l => /not capped/i.test(l));
     assert.deepStrictEqual(lines, [],
       'the unverified completeness claim survives: ' + JSON.stringify(lines));

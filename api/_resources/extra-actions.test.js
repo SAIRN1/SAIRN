@@ -31,6 +31,18 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
+// COMMENT STRIPPING COMES FROM THE SHARED LIBRARY, 2026-09-27. A line filter
+// like the one that used to be here keeps every CONTINUATION line of a block
+// comment and every TRAILING `//` comment, so a suite asserting a string is
+// ABSENT can be satisfied by the comment recording its removal. It also cannot
+// see a regex literal containing `//`, which the shared version handles.
+// tests/lib/strip_comments.js is the single implementation;
+// tests/lib/strip_comments.test.js is its control.
+//
+// stripJs() AND NOT stripComments(): the input is JavaScript or a fragment of
+// it. stripComments() treats everything outside <script> as markup, so on a
+// fragment it strips NOTHING and looks correct doing it.
+const { stripJs } = require(path.join(__dirname, '..', '..', 'tests', 'lib', 'strip_comments.js'));
 const reg = require('./index');
 const handler = require('../sd-data');
 
@@ -609,7 +621,7 @@ async function callHandler(action, resource, key) {
     // A scoping rule the caller chooses is not a scoping rule. body.app_id is
     // client-supplied and this file's own history records what trusting it cost.
     const raw = fs.readFileSync(path.join(__dirname, '..', 'sd-data.js'), 'utf8');
-    const src = raw.split('\n').filter((l) => l.trim().indexOf('//') !== 0).join('\n');
+    const src = stripJs(raw);
     assert.ok(src.indexOf('checkEnvelope(action, resource, lic.app_id)') > 0,
       'the handler does not pass lic.app_id to checkEnvelope');
     assert.ok(src.indexOf('checkEnvelope(action, resource, body.app_id') === -1 &&
@@ -635,7 +647,7 @@ async function callHandler(action, resource, key) {
     // The five runtime assertions above cover the semantic case; this is
     // defence in depth, and is written down as such rather than oversold.
     const raw = fs.readFileSync(path.join(__dirname, '..', 'sd-data.js'), 'utf8');
-    const src = raw.split('\n').filter((l) => l.trim().indexOf('//') !== 0).join('\n');
+    const src = stripJs(raw);
     const body = src.slice(src.indexOf('module.exports = async (req, res) =>'));
     const validate = body.indexOf('await validateLicenseKey(licenseKey)');
     // Prefix, not the whole call: the third argument was added on 2026-09-05

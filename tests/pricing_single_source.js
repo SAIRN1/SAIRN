@@ -26,6 +26,19 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+// COMMENT STRIPPING COMES FROM THE SHARED LIBRARY, 2026-09-27. This file
+// carried its own ad-hoc copy. Copies across the suite were wrong in three
+// different ways -- a line filter that kept every continuation line of a block
+// comment, a greedy regex that ate a real statement, and a state machine that
+// read accept="image/*" as a comment start -- and each produced a green run
+// against a file that should have gone red, or the reverse.
+// tests/lib/strip_comments.js is the single implementation;
+// tests/lib/strip_comments.test.js is its control.
+//
+// stripJs() AND NOT stripComments(): the input here is a bare JavaScript
+// FRAGMENT. stripComments() treats everything outside <script> as markup, so
+// on a fragment it strips NOTHING and looks correct doing it.
+const { stripJs } = require(path.join(__dirname, 'lib', 'strip_comments.js'));
 const assert = require('assert');
 const vm = require('vm');
 
@@ -149,7 +162,7 @@ advisorPricingLines().forEach((line, i) => {
 });
 
 test('the retired "Starter" tier name is gone from every live advisor line', () => {
-  const live = exec.split('\n').filter(l => !l.trim().startsWith('//'));
+  const live = stripJs(exec).split('\n');
   live.forEach(l => assert.ok(!/Starter \$/.test(l), 'still present: ' + l.trim()));
 });
 
@@ -284,8 +297,7 @@ test('at least one competitor is named in exec-context, or this section proves '
 });
 // A price figure anywhere in the same STRING as a competitor's name.
 const PRICE = /\$\s?\d[\d,]*(?:\.\d\d)?(?:\s*-\s*\d[\d,]*)?\s*(?:\/|per\s)?\s*(?:user\s*\/\s*)?(?:mo|month)/i;
-const promptStrings = exec.split('\n')
-  .filter((l) => !l.trim().startsWith('//'))
+const promptStrings = stripJs(exec).split('\n')
   .filter((l) => COMPETITORS.some((c) => l.indexOf(c) !== -1))
   .filter((l) => PRICE.test(l));
 test('every prompt line carrying a competitor price also carries a RETRIEVAL '

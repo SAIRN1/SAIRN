@@ -111,6 +111,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 | the precedence table for two independent checks disagreeing about the same subject no longer resolving the way item 64 decided it should -- driven over every ordering of every pair, not a sample | `check_precedence.py` | FIRST LIVE RUN 2026-09-15 over 48 checkers rated by both checker_confidence.py and checker_estimate_fusion.py found FOUR real disagreements, and rule 1 resolves all four with no tiebreak -- including master_plan.py and traceability_matrix.py, which confidence rates HIGH while fusion reports UNCORRECTED: a HIGH rating does not outrank "its corrector failed its own check". ZERO CONFLICTs on live data so far, said out loud rather than left to be assumed exercised; case 3 is driven on fixtures. 48-arm probe at tests/run_check_precedence_probe.py, including 125 rating combinations that must not move any verdict, and teeth showing a broken rule 1 OR rule 4 exits COULD NOT RUN rather than reporting clean |
 | a module holding SUPABASE_SERVICE_ROLE_KEY -- the key that BYPASSES RLS -- that writes a Tier A resource with no identity check before the write. Separates GATED, PUBLIC_BY_DESIGN (the module declares itself unauthenticated AND carries a limiter) and UNGATED, because a checker that reports a documented public endpoint as a defect is one people switch off | `service_role_tier_a_gate_check.py` | FIRST RUN 2026-09-15: 66 api/ modules read the key; only THREE address a Tier A resource in a write PATH, and all three are correct -- api/sd-data.js GATED, and public-book.js and stonedesk-public.js PUBLIC_BY_DESIGN with limiters. THE STRUCTURAL ANSWER IS THE RESULT: Tier A writes funnel through one gated chokepoint, and the two public endpoints are the declared exceptions. THIS DOES NOT CONTRADICT the open session-gate finding on sd-data.js: this asks whether the MODULE gates, that asks whether a per-resource BRANCH inside it does, and both are true at once. 26-arm probe; three of its eight fixtures exist because the classifier was wrong on a REAL file -- bridge.js (a jsonb key, writes bridge_data), sv-witness.js (killed by the over-correction that fixed bridge.js) and send-reminder.js (writes in helpers above the handler, CRON_SECRET first inside it) |
 | the defect register starving -- a `fix(` commit touching code that no register record cites. The blocking half applies only from its requirement date; this one counts everything before it | `register_feed_gate.py` | MEASURED BEFORE IT WAS DESIGNED, and the measurement chose the shape: 66 `fix(` commits touching code since 2026-09-13 and 62 of them citing no record; 422 across all history against 51 distinct commits cited. A gate refusing all of those would refuse essentially every push, and a wall produces overrides -- which this repo already records costing more than the gate saved. Hence a REQUIREMENT DATE, the same mechanism first_article_check.py uses, with the backlog REPORTED rather than forgiven. 27-arm probe at tests/run_register_feed_gate_probe.py, including both failure directions, the boundary day, a bare escape hatch being refused, and an unreadable register DENYING the push |
+| a fault probe whose sabotage anchor no longer matches its subject the way the probe assumes -- VANISHED (0 matches), AMBIGUOUS (>1 with no declared count), or COUNT DISAGREES (the edit declares N and the subject no longer has N) | `probe_anchor_freshness.py` | REAL RUNS 2026-09-27, and the first version of the criteria was WRONG in the dangerous direction for a checker -- it inverted the signal. Criteria 2026-09-27.1 reported 5 AMBIGUOUS; FOUR were false, all in tests/sairndesign_sairngrounds_fault_probe.py, which writes its edits as `(SUBJECT, old, new, 6)` and asserts the exact count before replacing EVERY occurrence. That is STRICTLY STRONGER than the uniqueness guard the criteria encoded, so a probe that did the harder thing scored worse -- the same inversion sabotage_control_check.py shipped when it did not recognise the `count(anchor) != 1` guard. Criteria 2026-09-27.2 holds a declared count to ITS number and reports a disagreement as its own verdict. THE FIFTH WAS REAL and is fixed in the same push: tests/sairnmechanical_fault_probe.py anchored on a bare `if (lb === null \|\| lb < 0) {` that matched ONE place when written and THREE now, so the probe ABORTED at arm 6 and arms 6-11 had not run. The reason it went to three is the finding: two SIBLING compliance guards (aimScope for the AIM Act, carbScope for California) were added later and NEITHER WAS ARMED -- the ambiguity was the only signal that the subject grew two guarantees while the arm list stayed at one. Now 13 arms, all green. After both fixes: 100 of 100 anchors agree with the rule that applies to them, 4 of them under a declared count |
 
 **Deliberately NOT enforced, with the reason recorded** -- a decision, not an oversight:
 
@@ -656,20 +657,20 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 121 test files are traced to no stated requirement
+### 125 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 660 of 781 traced, 84.5%.
+For context and not as the headline: 664 of 789 traced, 84.2%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 661 citations come from
+### Where the 665 citations come from
 
 | source | citations |
 |---|---|
 | `index` | 319 |
-| `declared` | 273 |
+| `declared` | 277 |
 | `declared+index` | 59 |
 | `GUARD_TESTS+index` | 6 |
 | `GUARD_TESTS` | 2 |
@@ -682,10 +683,10 @@ An untraced test is not a bad test. It means no source in this repo states what 
 
 | kind | count | what it means | the fix |
 |---|---|---|---|
-| **bound to a subject, tied to no requirement** | 26 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 95 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **bound to a subject, tied to no requirement** | 27 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
+| **no subject binding either** | 98 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
-**These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 26 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
+**These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 27 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
 - `api/_lib/alf-family-mar.test.js`
 - `api/_lib/compliance-rules-staff-join.test.js`
@@ -711,6 +712,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/audit_checkpoint_probe.py`
 - `tests/claims/run_fileset_matcher_probe.py`
 - `tests/claims/run_registry_claim_probe.py`
+- `tests/conflict_marker_preflight_probe.py`
 - `tests/criticality_rollup_list_review_probe.py`
 - `tests/demo_seed_licence_scope_probe.py`
 - `tests/dnt_bi_scope_probe.py`
@@ -735,11 +737,13 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/law_trust_reconcile_wiring_probe.py`
 - `tests/lib/active_credential_stub.js`
 - `tests/lib/strip_comments.js`
+- `tests/lib/strip_comments.test.js`
 - `tests/licence_rekey_isolation_probe.py`
 - `tests/mech_docs_redaction_wiring_probe.py`
 - `tests/python_escape_hygiene.py`
 - `tests/python_escape_hygiene_scope_review_probe.py`
 - `tests/rebase_resolve_merge_control.py`
+- `tests/role_gate_loop_rule_probe.py`
 - `tests/run_accepted_risk_expiry_control.py`
 - `tests/run_ai_action_approval_control.py`
 - `tests/run_all_tests_pinned_probe.py`
@@ -801,6 +805,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/sd_data_sb_void_role_probe.py`
 - `tests/sen_evv_payroll_wiring_probe.py`
 - `tests/session_gate_table_probe.py`
+- `tests/session_lock_retraction_probe.py`
 - `tests/sf_operator_payee_review_probe.js`
 - `tests/stale_row_sweep_control.py`
 - `tests/stonedesk_exec_msgs_gate.js`
@@ -829,10 +834,10 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 781   tests/**, api/** (both walked)
+  test files on disk                 789   tests/**, api/** (both walked)
   open-work rows citing a test       373   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 10   sairn_push_gate_hook.GUARD_TESTS
-  report-only registry                61   report_only_checks.REGISTRY
+  report-only registry                62   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     72   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   sairn_push_gate_hook.py
 ```

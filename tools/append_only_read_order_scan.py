@@ -73,9 +73,7 @@ import re
 import subprocess
 import sys
 
-REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True, encoding='utf-8',
-                      errors='replace').stdout.strip() or '.'
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) or '.'
 DISPATCHER = os.path.join('api', 'sd-data.js')
 SQL_DIR = 'sql'
 

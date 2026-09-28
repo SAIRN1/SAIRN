@@ -86,6 +86,16 @@ function harness(opts) {
     fetch: (url, init) => {
       if (init && init.method === 'POST') { posts.push({ url, body: JSON.parse(init.body) }); }
       else { gets.push({ url }); }
+      // VERDICT 2026-09-27: THE ALIVE LEG IS UNBUILDABLE TODAY, which is a
+      // different thing from untested. tools/ghost_field_read_scan.py flags
+      // `cloudBody` as a knob no caller can turn, and the reason is one line
+      // up: only `cloudDead: true` is ever passed because `api/memory-cloud`
+      // DOES NOT EXIST. So the resolve branch below and `opts.cloudBody` are
+      // both a placeholder for an endpoint nobody has written -- honest
+      // scaffolding, and it stays so the shape is already here when the
+      // endpoint lands. WHAT IS NOT OK IS LEAVING THAT IMPLICIT: a reader
+      // seeing a cloud branch in a passing suite would reasonably believe the
+      // cloud path is covered. It is not covered, because it does not run.
       if (opts.cloudDead !== false) return Promise.reject(new Error('404 — api/memory-cloud does not exist'));
       return Promise.resolve({ json: () => Promise.resolve(opts.cloudBody || { entries: [] }) });
     },
@@ -337,8 +347,22 @@ test('scpData only sends app_id when a caller asks for it', () => {
   // Every other scpData caller relies on the field being absent so
   // api/sd-data.js applies its stonedesk default. Sending it always would
   // change behaviour for resources that never asked.
+  // ── A FIXED-SIZE WINDOW IS NOT A BOUNDARY (repaired 2026-09-27) ───────────
+  // This read `html.slice(at, at + 1200)`. The line it looks for is real and
+  // present -- sairnscape.html:2113 -- but scpData grew a 35-line comment block
+  // on 2026-09-21 and pushed it past character 1200, so THIS ARM HAS BEEN RED ON
+  // `main` ever since, against correct code. A fixed character count is a guess
+  // about how long a function will stay; the function's own closing brace is the
+  // fact. PR 1.3, the anchor that no longer points at the right thing.
   const at = html.indexOf('async function scpData(');
-  const body = html.slice(at, at + 1200);
+  assert.ok(at > 0, 'scpData is gone -- this arm is no longer testing anything');
+  let i = html.indexOf('{', at), depth = 0, end = -1;
+  for (; i < html.length; i++) {
+    if (html[i] === '{') depth++;
+    else if (html[i] === '}') { depth--; if (!depth) { end = i; break; } }
+  }
+  assert.ok(end > at, 'scpData has no balanced body -- refusing to guess a window');
+  const body = html.slice(at, end + 1);
   assert.match(body, /if \(appId\) reqBody\.app_id = appId;/);
 });
 

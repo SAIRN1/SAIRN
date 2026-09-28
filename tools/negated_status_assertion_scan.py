@@ -57,9 +57,7 @@ import re
 import subprocess
 import sys
 
-REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True, encoding='utf-8',
-                      errors='replace').stdout.strip()
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # `!== 401`, `!= 403`, `!== 200` ... inside an assertion, with the code captured.
 NEGATED = re.compile(r'!==?\s*(\d{3})\b')

@@ -5139,3 +5139,192 @@ And `docs/SAIRN-OPEN-WORK-INDEX.md:355` is malformed at 11 cells -- it landed
 with `4a280bb7` carrying an unescaped double pipe, which is PR 2.1's own example
 of the hazard; my two rows check clean and the one pipe of mine that needed it is
 written as an HTML entity.
+
+## 2026-09-27 (continued) -- a third dead probe, a WIP schedule that flattered a losing job, and two checkers pointed at disjoint halves of the same population
+
+Six-item queue. Five done, one blocked and not worked around.
+
+### 2. BLOCKED -- the conflict-marker hook wiring, and I did not fake it
+
+The task was to wire the corrected pre-flight into `.claude/settings.json`.
+**`tools/conflict_marker_preflight.py` does not exist on `origin/main` or in this
+clone.** It is in **fourth's thirteen unpushed local commits** (tip `eef02009`),
+and its own header says so: *"NOT wired: the hook line belongs in
+.claude/settings.json, which cc holds under an active claim."*
+
+`.claude/settings.json` is shared by every clone. A hook line naming a tool that
+exists in one clone of five and on no commit on the branch would fail on **every
+matching tool call in the other four**. So it is not written. Reported to fourth
+in the status registry with the one thing that unblocks it: push the thirteen.
+
+I did not reach into their clone to do it, and I did not wire a hook at a path
+that is not on the branch.
+
+### 3. THE THIRD DEAD PROBE -- and four of the five "findings" were my own tool
+
+`d2813255`. `tools/probe_anchor_freshness.py` reported five AMBIGUOUS anchors
+this morning. **Four were the checker being wrong, and it is the same inversion
+`sabotage_control_check.py` shipped.**
+`tests/sairndesign_sairngrounds_fault_probe.py` writes some edits as a FOUR
+element tuple, `(SUBJECT, old, new, 6)`, and asserts that exact count before
+replacing **every** occurrence. That is **strictly stronger** than the uniqueness
+guard my criteria encoded -- the platform rule is *"know how many you are
+hitting"*, not *"it must be exactly one"* -- so a probe that did the harder thing
+scored worse.
+
+Criteria are now **stamped** (`CRITERIA_VERSION 2026-09-27.2`) and printed on
+every run and in `--json`, because a count from this tool is only comparable to
+another count under the same criteria. A declared count decides which **rule**
+applies; a disagreement with it is its own verdict, **COUNT DISAGREES**, because
+the fixes differ and it drifts both ways. A non-literal count is UNRESOLVED,
+never guessed.
+
+**The fifth was real and the probe was DEAD.**
+`tests/sairnmechanical_fault_probe.py` anchored on a bare
+`if (lb === null || lb < 0) {` that matched ONE place when written and THREE now.
+`once()` refused, **raised**, and the probe died at arm 6 -- arms 6 through 11
+had not run.
+
+**Why it went from one to three is the finding.** Two SIBLING scope functions
+were added after that arm -- `aimScope` (AIM Act) and `carbScope` (California) --
+each with its own copy of the identical unweighed-charge guard, and **neither was
+armed**. With any of the three removed, a unit nobody weighed reports as BELOW
+the leak threshold: the unknown-reported-as-cleared compliance claim the probe
+exists to prevent, under three statutes. The ambiguity was the **only** signal
+that the subject had grown two guarantees while the arm list stayed at one.
+
+One arm per guard now, each on text unique to its own function, verified 1-of-1
+rather than assumed, each mutation replacing only the CONDITION so the block is
+reproduced byte for byte. 13 arms, probe runs to completion.
+
+**Wired, which matters more than the fix.** `probe_anchor_freshness.py` is in
+`report_only_checks.REGISTRY` -- no settings change needed, the registry hook
+already runs -- at 0.4s against MINUTES per probe. **The inventory gate then
+refused the push, correctly:** the tool now had a REGISTRY entry carrying
+`catches` **and** the PURPOSES entry I wrote when it was unwired. Two
+descriptions of one tool is two sources that can disagree. The PURPOSES line is
+**deleted**, not reworded, with a comment so the next promotion does not re-add it.
+
+### 4. Two index rows malformed by a `||` inside a code span
+
+`53738ee4`. Row 355, and row 356 which landed while I was fixing 355. **Neither
+`\|` nor `&#124;` works inside backticks** -- a code span renders its contents
+literally -- which is why both rows were written that way. The only correct fix
+is to take the pipes OUT of the code span, and row 355 now says so in place so
+the next author does not retry the escape that cannot work. 757 of 757 clean.
+
+**Found by a checker already running and already saying so.** `md_table_check.py`
+has been in the registry for some time and reported both rows on every Bash turn.
+That is a report-only tool read as noise, not a wiring gap, and promoting it to
+blocking is a decision about a document four clones edit concurrently -- recorded,
+not taken as a rider.
+
+### 5. The WIP schedule capped percent complete at 100%
+
+`25d1c000`, registered **critical**. Three defects wearing one face, and **every
+one points the reassuring way**, on the one report a surety underwriter and a
+bank read specifically to find profit fade:
+
+1. the denominator was the **original cost budget**, never re-forecast;
+2. `Math.min(1, ...)` **capped it**, so a job at 130% of budget reported 100%
+   complete, `earned` became the **whole contract**, and over/under billing swung
+   to its most UNDER-billed reading -- **the cap did not round an overrun off, it
+   inverted the finding**;
+3. an accepted change order added its **value** to the contract and nothing added
+   its **cost**, because a change-order record in this app carries **no cost
+   field at all**.
+
+**The fix does not invent the change order's cost.** It discloses that the
+forecast cannot include it and **refuses** the derived figures -- `pct` uncapped
+and informative, `earned`/`overUnder` null with the reason named. `forecastFor()`
+is the re-forecast: an optional per-line `forecast` falling back to `budget`, so
+no stored record changes shape.
+
+**Every consumer**, because the last review of this file found FOUR sites carrying
+one piece of arithmetic and the CSV was the one nobody checked. The KPI now counts
+a **position**: it filtered on `overUnder > 0`, and `null > 0` is **false**, so
+every stale-forecast job would have dropped **silently** out of the count -- a
+refusal reading as a clean bill, worse than the cap it replaced.
+
+Same cap fixed in `api/_lib/wip-accounting.js`. **Stated and NOT asserted:**
+`portfolio()` does not pass costs through, so that path is unreachable from the
+roll-up and an arm on it would pass without entering it.
+
+Tests written and run against the unfixed code FIRST: **29 of 33 failed**. 33/33
+after, including the profit-fade arm -- same costs, doubled EAC, earned falls
+50000 to 25000 and a job that looked under-billed by 5000 becomes over-billed by
+30000, which is exactly the movement the cap erased. Live-verified 200.
+
+**Two defects in my own test, recorded rather than quietly fixed:** it looked for
+a literal `w.earned === null` while the fix routes both refusable figures through
+one helper, so a correct implementation failed -- the same over-narrow-criteria
+mistake as the anchor checker, in a test instead of a tool. And a fixed
++1400-character window silently truncated the block once the fix made it longer.
+
+### 6. METHODOLOGY -- the gap was one layer below the question
+
+`e0ac4aac`. Asked: does other freshness tooling share the point-in-time gap --
+periodic calibration of the standard versus recalibration during use.
+
+**Pass A, cadence:** 20 freshness tools, **8 automatic, 12 only when somebody
+remembers** (4 of those correctly, being proposers that must not apply).
+
+**Pass B, in-run re-check:** **exactly ONE of 21** re-reads its subject at the end
+and says if it moved -- `guard_ablation.py`, which has it only because a sweep was
+overlapped by an edit. A pattern search returned four and **three were false**:
+"re-read" in prose meaning *a human should re-read this row*. Runtimes measured:
+in-run drift is a real window for `schema_snapshot_freshness.py` (25.7s) and
+`register_freshness_check.py` (19.8s) and for nothing else -- five clones push
+here and **this session was rebased five times in a few hours**.
+
+**Pass C, coverage -- and this is the finding, and it was not the question.**
+99 probe files, three anchor-declaration conventions:
+
+    MUTATIONS list                85  -> mutation_anchor_check.py  (wired)
+    arm(.., [(SUBJ, old, new)])   10  -> probe_anchor_freshness.py
+    arm(label, suite, old, new)    2  -> NOTHING
+
+**The overlap between the first two is ZERO.** Two anchor-freshness checkers side
+by side, disjoint populations, neither aware of the other -- and **all three
+probes that died silently this week were in the population
+`mutation_anchor_check.py` structurally cannot see**. A wired, running, correct
+checker could not have caught any of them. Nothing was broken and nothing was
+stale: **the number of things being checked was never compared against the number
+of things there are.**
+
+Convention 3 is now read -- 100 to 114 anchors, all agreeing. It is
+`sairnbiz_fault_probe.py` and `sairnvet_fault_probe.py`, the second arming a
+controlled-substance register; both carry the same `once()` guard and both PASS,
+so this closes a blind spot rather than a defect.
+
+**The shape is read off the helper's own declaration, never guessed** -- a
+signature naming `old` and `new` is a mutation helper. **And the obvious
+discriminator is circular and is refused by name:** "treat it as an anchor if the
+subject contains it" can never report VANISHED, because vanishing is exactly the
+case where the subject does not contain it.
+
+**The rule that generalises:** a freshness instrument must publish its
+**denominator** -- how many candidates exist, how many it can read, how many it
+cannot -- and the unreadable ones must be **named, not absent**. Mine now names
+unresolvable anchors and still does **not** publish a denominator. Open, and the
+doc says so.
+
+### Reported, not fixed
+
+`mutation_anchor_check.py` is wired and **exits 2, COULD NOT RUN** today --
+several arms' targets do not resolve. A cadenced checker permanently in
+could-not-run is the third state working as designed and nobody reading it.
+Needs a judgement per arm.
+
+`tests/run_report_only_checks_probe.py` arm **E2 is RED on main and was red
+before my change** -- `register_freshness_check.py`, `log_cluster.py`,
+`allan_deviation_check.py` and `response_shape_check.py` carry no `evidence`
+field. Writing evidence for four tools I did not promote would be inventing a
+real-run record.
+
+`tools/sairn_seam_check.py`: **18 COULD-NOT-TELL, all the `roleSet()` seam** into
+`api/_lib/auth.js`. Pre-existing, no auth file touched by me, and **already
+claimed by fourth**, whose claim names closing those seams.
+
+`tests/sairnbuild_retainage_race.js` still 1 passed / 2 failed -- `c8b5e5b1`'s
+credential pre-gate, verified red at HEAD before my edits, now fourth's.

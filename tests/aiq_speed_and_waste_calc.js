@@ -19,6 +19,13 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 const vm = require('vm');
+// COMMENT STRIPPING COMES FROM THE SHARED LIBRARY, 2026-09-27. This file carried
+// its own greedy `<!--[\s\S]*?-->` regex plus two line filters -- two of the
+// three shapes tests/lib/strip_comments.js exists to replace, and the greedy one
+// is the version that took a real count from two to ZERO in another suite.
+// stripComments() and not stripJs(): the input is a WHOLE HTML file, so the
+// <script> boundaries matter.
+const { stripComments } = require(path.join(__dirname, 'lib', 'strip_comments.js'));
 
 const html = fs.readFileSync(path.join(__dirname, '..', 'stonedesk.html'), 'utf8');
 
@@ -38,9 +45,13 @@ test('THE GUARDIAN ONE: no "N-minute quote" promise is written into markup', () 
   // HTML comment BLOCKS are stripped whole, not filtered line-by-line -- the
   // comment explaining why the claim is measured names the claim, sits
   // mid-block, and a per-line `^\s*<!--` filter missed it on first run.
-  const lines = html.replace(/<!--[\s\S]*?-->/g, '')
+  // MIGRATED 2026-09-27 to tests/lib/strip_comments.js. The local version was a
+  // greedy `<!--[\s\S]*?-->` regex plus two line filters, which is two of the
+  // three shapes that library exists to replace. It also strips `//` and
+  // `/* */` INSIDE <script> now, which the `^\s*(\/\/|\*)` filter could not do
+  // for a trailing comment, so this arm covers more than it did.
+  const lines = stripComments(html)
     .split(/\r?\n/)
-    .filter(l => !/^\s*(\/\/|\*)/.test(l))
     .filter(l => /(\b\d+|three|two|five)[- ]minute\s+(AI\s+)?quote/i.test(l));
   assert.deepStrictEqual(lines, [],
     'a speed promise is hardcoded: ' + JSON.stringify(lines));

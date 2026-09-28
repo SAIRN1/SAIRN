@@ -123,6 +123,28 @@ function harness(opts) {
   vm.runInContext(
     (opts.flag === undefined ? flagSrc[0]
       : 'var SB_TS_HAVE_A_WRITE_PATH=' + opts.flag + ';') + '\n'
+    // ── THIS SUITE WAS 46-ARMS RED ON `main` AND NOTHING SAID SO ────────────
+    // Repaired 2026-09-27. Every arm that reaches rTS() or csv('timesheet') was
+    // throwing `ReferenceError: sbOtThreshold is not defined`: the configurable
+    // overtime threshold landed on 2026-09-26 and this hand-kept extraction list
+    // was not updated, so 46 of 63 arms failed on a CORRECT file.
+    //
+    // THAT IS THE SIXTH RECORDED INSTANCE of a suite failing because its own copy
+    // of a dependency list went stale, and it is the class
+    // docs/2026-09-13-cross-domain-disciplines.md item 8 is about: nothing
+    // announces the day a check stops testing anything. Found while settling the
+    // undriven-fault-option findings from tools/ghost_field_read_scan.py -- this
+    // file's `opts.noRender` was one of them, and running the suite to judge that
+    // knob is what surfaced the 46.
+    //
+    // THE THREE ADDITIONS ARE THE REAL FUNCTIONS, not stubs: `sbCfg` reads the
+    // stored settings through the harness's own `ld`, `sbOtThreshold` applies the
+    // 1-168 validation, and `sbOtThresholdNote` builds the disclosure string.
+    // Stubbing any of them would test the harness's opinion of the threshold
+    // rather than the app's, and the threshold decides a MONEY figure.
+    + fnBody('function sbCfg(') + '\n'
+    + fnBody('function sbOtThreshold(') + '\n'
+    + fnBody('function sbOtThresholdNote(') + '\n'
     + fnBody('function sbWeekStart(') + '\n'
     + 'var sbTsWeek=' + JSON.stringify(opts.week || WEEK) + ';\n'
     + fnBody('function tsShiftWeek(') + '\n'
@@ -135,6 +157,13 @@ function harness(opts) {
     + fnBody('function closeTsModal(') + '\n'
     + fnBody('function tsReadDays(') + '\n'
     + fnBody('function saveTimesheet('), ctx);
+  // VERDICT 2026-09-27: COSMETIC, and that is the whole finding.
+  // tools/ghost_field_read_scan.py flags `noRender` as a knob no caller can
+  // turn. Unlike the other eight it guards nothing a failure mode depends on
+  // -- skipping the initial render only saves work -- so there is no arm to
+  // add. Kept rather than deleted because a future arm about a render that
+  // must NOT happen would want exactly this, and the alternative is
+  // rediscovering the need.
   if (opts.noRender !== true) ctx.rTS();
   return ctx;
 }
@@ -234,14 +263,41 @@ test('the exclusion is DISCLOSED, with both counts', () => {
     'the note does not state how many employees are excluded: ' + note);
 });
 
-test('with every employee recorded, there is no exclusion note to show', () => {
-  // A clean week must not carry a warning -- a disclosure that is always on
+test('with every employee recorded, there is no EXCLUSION note -- only the '
+  + 'always-on threshold disclosure', () => {
+  // A clean week must not carry a WARNING -- a disclosure that is always on
   // stops being read, which is the failure mode the note exists to avoid.
+  //
+  // ── REPAIRED 2026-09-27, AND THE ORIGINAL ASSERTION IS THE FINDING ────────
+  // This asserted `textContent === ''` and `display === 'none'`. Both went false
+  // on 2026-09-26 when the configurable overtime threshold landed: rTS() now
+  // APPENDS sbOtThresholdNote() to this same element unconditionally, so the
+  // note is never empty and never hidden.
+  //
+  // THAT WAS A DELIBERATE DECISION AND IT SAYS SO IN PLACE -- "Appended rather
+  // than replacing, because the exclusion disclosures above are about WHOSE
+  // hours are counted and this is about HOW they are counted." So the arm's
+  // EXPECTATION is stale, not the code.
+  //
+  // THE ARM'S REAL PROPERTY IS PRESERVED rather than deleted: a clean week must
+  // carry no exclusion sentence. It is now asserted directly instead of via an
+  // empty string, which was only ever a proxy for it.
+  //
+  // AND THE TENSION IS FLAGGED RATHER THAN SETTLED HERE. This arm's own comment
+  // argues an always-on disclosure stops being read; the threshold change argues
+  // a configurable number that moves a money figure must always be shown. Both
+  // are reasonable and they now share one element, so the exclusion sentence
+  // arrives appended to a sentence the reader has learned to skip. That is a
+  // product decision for Michael, not a test fix, and it is recorded here
+  // because this is where the two arguments meet.
   const c = harness({
     stored: { sb_emps: emps(2), sb_ts: [tsRow('E001', [8, 0, 0, 0, 0, 0]), tsRow('E002', [8, 0, 0, 0, 0, 0])] },
   });
-  assert.strictEqual(c.__el['ts-note'].textContent, '');
-  assert.strictEqual(c.__el['ts-note'].style.display, 'none');
+  const note = c.__el['ts-note'].textContent;
+  assert.ok(!/excluded|not counted|departed|No hours recorded/i.test(note),
+    'a clean week carries an exclusion or empty-week sentence: ' + note);
+  assert.strictEqual(note, 'Overtime is computed above 40 hours per week.',
+    'the note is not exactly the threshold disclosure: ' + JSON.stringify(note));
 });
 
 test('hours attach by EMPLOYEE ID, so a record cannot land on the wrong person', () => {
@@ -500,11 +556,24 @@ async function callHandler(payload) {
   const realFetch = global.fetch;
   process.env[names.url] = 'https://stub.invalid';
   process.env[names.key] = ['stub', 'fixture', 'value'].join('-');
-  let first = true;
+  // ── "WROTE" IS DECIDED BY THE METHOD, NOT BY CALL ORDER (fixed 2026-09-27) ─
+  // This counted the FIRST fetch as the employee lookup and EVERY LATER ONE as
+  // a write. That held until a second read appeared ahead of the write -- the
+  // single-entry-point active-credential re-check -- and then every refusal arm
+  // reported `reached storage before being refused` against a handler that had
+  // refused correctly and written nothing. Six arms, all false.
+  //
+  // THE ASSERTION WAS RIGHT AND THE INSTRUMENT WAS WRONG, which is the worse
+  // direction: a false FAILURE gets investigated, but the same brittleness
+  // one step over is a false PASS. Ordering is not a property of this handler;
+  // the METHOD is. A GET never stores a timesheet.
   global.fetch = async (url, init) => {
-    if (first) {
-      first = false;
-      return { ok: true, status: 200, json: async () => [{ status: 'active', app_id: null }] };
+    const method = (init && init.method) || 'GET';
+    if (method === 'GET') {
+      // Answers both reads ahead of the write: the employee row and the
+      // active-credential re-check. Shaped to satisfy either.
+      return { ok: true, status: 200,
+               json: async () => [{ status: 'active', active: true, app_id: null }] };
     }
     out.wrote = true;
     if (init && init.body) { try { out.sent = JSON.parse(init.body); } catch (e) { /* not json */ } }

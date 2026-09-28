@@ -26,8 +26,7 @@ import subprocess
 import sys
 import tempfile
 
-MAIN = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
+MAIN = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # ── THE FIXTURE IS PLANTED IN A THROWAWAY WORKTREE (2026-09-11) ────────────
 # THIS FILE WAS NOT ON THE LIST AND HAD THE DEFECT IT TESTS.

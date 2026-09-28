@@ -25,6 +25,18 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+// COMMENT STRIPPING COMES FROM THE SHARED LIBRARY, 2026-09-27. A line filter
+// like the one that used to be here keeps every CONTINUATION line of a block
+// comment and every TRAILING `//` comment, so a suite asserting a string is
+// ABSENT can be satisfied by the comment recording its removal. It also cannot
+// see a regex literal containing `//`, which the shared version handles.
+// tests/lib/strip_comments.js is the single implementation;
+// tests/lib/strip_comments.test.js is its control.
+//
+// stripComments() and NOT stripJs(): the input here is a WHOLE HTML file, so the
+// <script> boundaries matter -- outside them `/*` is not a comment, which is what
+// keeps accept="image/*" from swallowing the rest of the file.
+const { stripComments } = require(path.join(__dirname, 'lib', 'strip_comments.js'));
 const assert = require('assert');
 const vm = require('vm');
 
@@ -196,7 +208,7 @@ test('no licence key means no reads at all', async () => {
 test('it is CALLED at boot, and repaints both panels on a merge', () => {
   // The checker explicitly cannot tell whether a read is ever invoked. A
   // hydrate that exists and is never called reads clean there.
-  const code = html.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+  const code = stripComments(html);
   const at = code.indexOf('senHydrateOrg().then(');
   assert.ok(at > 0, 'senHydrateOrg is never called');
   const after = code.slice(at, at + 260);

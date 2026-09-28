@@ -30,8 +30,7 @@ import os
 import subprocess
 import sys
 
-ROOT = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # suite -> (target source, [(control name, exact text, replacement), ...])
 SUITES = [

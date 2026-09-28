@@ -20,6 +20,11 @@
 const { validateLicenseKey } = require('./_lib/license');
 const { tokenFromRequest, verifySessionToken } = require('./_lib/auth');
 const { writeAuditLog } = require('./_lib/audit');
+// The authoring tier comes from api/law-auth.js, which is where this app's role
+// vocabulary lives. A second copy of the membership in this file is the drift
+// shape the platform keeps paying for -- see that file's RULE_AUTHORING_ROLES
+// comment for why it is a NEW name and not AI_COC_REVIEW_ROLES.
+const { RULE_AUTHORING_ROLES } = require('./law-auth');
 const { sbClient } = require('./_lib/courtlistener');
 const { computeDeadline, COMPUTATION_STANDARDS, SERVICE_EXTENSION_STANDARDS,
   SERVICE_COMPLETION_STANDARDS } = require('./_lib/deadline-engine');
@@ -893,6 +898,44 @@ module.exports = async (req, res) => {
     }
 
     // ── ADD_RULE ──
+    // ── AUTHORING A RULE REQUIRES A PERSON WITH AUTHORITY (2026-09-27) ────
+    // This branch resolved `caller` at the top of the handler and used it for
+    // ONE thing: stamping `verified_by`. There was no 401 and no role check, so
+    // a holder of a valid SAIRNlaw licence key with NO employee session could
+    // author -- or OVERWRITE, both writes are upserts -- a deadline rule, and
+    // the stored row then drives every computed date for that jurisdiction for
+    // every user on that licence. The engine's own header calls a wrong
+    // deadline here malpractice exposure; an unauthenticated write to it is not
+    // one bad request, it is every future computation.
+    //
+    // 401 AND 403 ARE DISTINGUISHED ON PURPOSE. No session at all is "sign in";
+    // a real paralegal session is "this is not your act to perform", and
+    // collapsing them would tell a signed-in paralegal to sign in again.
+    //
+    // WHAT IS DELIBERATELY NOT GATED: `compute`, `rules_status` and
+    // `rules_fingerprint`. Computing a date from a rule somebody else authored
+    // is the product working, and gating the read side would be an
+    // authorisation tier added as a side effect -- which is exactly what
+    // api/law-auth.js warns about at its `roster` branch.
+    if (action === 'add_rule' || action === 'add_holidays') {
+      if (!caller) {
+        res.status(401).json({ ok: false, code: 'NO_SESSION',
+          message: 'Authoring a deadline rule or a holiday calendar needs a '
+            + 'signed-in employee. A licence key identifies the firm, not the '
+            + 'person asserting what a rule of procedure says.' });
+        return;
+      }
+      if (!RULE_AUTHORING_ROLES[caller.role]) {
+        await audit({ action: action, refused: 'NOT_PERMITTED', role: caller.role });
+        res.status(403).json({ ok: false, code: 'NOT_PERMITTED',
+          message: 'Authoring a deadline rule asserts what a rule of procedure '
+            + 'says and cites the authority for it, so it is limited to an '
+            + 'owner or an attorney. Computing a date from an existing rule is '
+            + 'not restricted.' });
+        return;
+      }
+    }
+
     if (action === 'add_rule') {
       const err = validateRulePayload(body.rule);
       if (err) { res.status(400).json({ ok: false, code: 'INVALID_RULE', message: err }); return; }

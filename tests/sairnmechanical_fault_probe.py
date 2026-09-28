@@ -52,8 +52,7 @@ import subprocess
 import sys
 import tempfile
 
-REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 CRED = os.path.join('api', '_lib', 'mech-credentials.js')
 ASSET = os.path.join('api', '_lib', 'mech-assets.js')
@@ -185,8 +184,71 @@ try:
     #    drop the null check instead: `null >= 50` is false, so an unweighed
     #    unit falls straight through to 'below'. Two different edits, one
     #    identical compliance claim -- which is why both are armed.
-    arm('a NULL charge falling through to "below" is caught', ASSET_UNIT,
-        [(ASSET, "  if (lb === null || lb < 0) {", "  if (false) {")])
+    #
+    # ── RE-ANCHORED 2026-09-27, AND THE REASON IS THE WHOLE FINDING ─────────
+    # The anchor was the bare line `  if (lb === null || lb < 0) {`, which
+    # matched ONE place when this arm was written and matches THREE now. It did
+    # not drift onto the wrong line -- `once()` refused, raised, and this probe
+    # DIED HERE, so arms 6 through 11 had not run for as long as that was true.
+    # Found by tools/probe_anchor_freshness.py, which reports AMBIGUOUS (>1)
+    # separately from VANISHED (0) precisely because this is what >1 means when
+    # the probe guards its count.
+    #
+    # WHY IT WENT FROM ONE TO THREE IS THE PART WORTH READING: two SIBLING
+    # scope functions were added after this arm -- `aimScope` (AIM Act) and
+    # `carbScope` (California) -- each with its own copy of the identical
+    # unweighed-charge guard. **NEITHER WAS ARMED.** The ambiguity was the only
+    # signal that the subject had grown two more compliance guarantees while the
+    # arm list stayed at one, which is the staleness shape this platform already
+    # records: a probe whose subject grows a guarantee and whose arms do not is
+    # measuring yesterday's function.
+    #
+    # So this is not "widen the anchor" -- it is one arm per guard, each anchored
+    # on text unique to its own function (verified 1 of 1 each, not assumed), and
+    # each mutation replaces only the CONDITION so the surrounding block is
+    # reproduced byte for byte.
+    arm('EPA 608: a NULL charge falling through to "below" is caught', ASSET_UNIT,
+        [(ASSET,
+          "  if (lb === null || lb < 0) {\n"
+          "    // NEVER 'below'. Nobody weighed it.",
+          "  if (false) {\n"
+          "    // NEVER 'below'. Nobody weighed it.")])
+
+    # 6b. THE AIM ACT SIBLING, UNARMED UNTIL NOW. Its own comment says "CHARGE
+    #     ALONE SETTLES THE NEGATIVE", and with the guard gone `null < 15` is
+    #     true -- so an unweighed unit is reported OUT OF SCOPE of the AIM Act
+    #     leak rule, which is the same unknown-reported-as-cleared failure as
+    #     arm 6 under a different statute and a different threshold.
+    arm('AIM Act: a NULL charge falling through to "below" is caught', ASSET_UNIT,
+        [(ASSET,
+          "  if (lb === null || lb < 0) {\n"
+          "    return Object.assign({\n"
+          "      scope: 'unknown_charge',\n"
+          "      reason: 'no full charge recorded, so the threshold cannot be applied to this unit'\n"
+          "    }, base);\n"
+          "  }\n"
+          "  // CHARGE ALONE SETTLES THE NEGATIVE.",
+          "  if (false) {\n"
+          "    return Object.assign({\n"
+          "      scope: 'unknown_charge',\n"
+          "      reason: 'no full charge recorded, so the threshold cannot be applied to this unit'\n"
+          "    }, base);\n"
+          "  }\n"
+          "  // CHARGE ALONE SETTLES THE NEGATIVE.")])
+
+    # 6c. THE CARB SIBLING, ALSO UNARMED UNTIL NOW -- and its comparison is
+    #     `lb <= t`, not `lb < t`, because the California program does not reach
+    #     50 lb exactly where the federal rule does. `null <= 50` is true, so the
+    #     same missing weight reads as below THIS threshold too. Three guards,
+    #     three statutes, one identical way of being quietly wrong.
+    arm('CARB: a NULL charge falling through to "below" is caught', ASSET_UNIT,
+        [(ASSET,
+          "  if (lb === null || lb < 0) {\n"
+          "    return Object.assign({\n"
+          "      scope: 'unknown_charge', site_state: st,",
+          "  if (false) {\n"
+          "    return Object.assign({\n"
+          "      scope: 'unknown_charge', site_state: st,")])
 
     # 7. ...and from the endpoint, for the same reason as arm 2.
     arm('...and the endpoint does not report it as below either', ASSET_API,

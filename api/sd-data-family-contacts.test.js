@@ -442,6 +442,37 @@ async function main() {
         'the paging loop ran for a contact with no consent');
     });
 
+  // ── THE STATUS HALF OF THE SAME QUESTION (added 2026-09-27) ───────────────
+  // `opts.marStatus` has existed in this harness since it was written and
+  // NOTHING EVER PASSED IT. Found by tools/ghost_field_read_scan.py: it is read
+  // in a gate and is not written, keyed or quoted anywhere in the repo.
+  //
+  // The arm above drives `marNonArray` -- the page PARSED and was the wrong
+  // shape. This is the other way the same read fails: PostgREST ANSWERED WITH A
+  // REFUSAL. Both must refuse rather than serve what had accumulated, and only
+  // one of them was ever driven.
+  await test('...and a REFUSED page is refused too, not just an unparseable one '
+    + '-- a 500 mid-pagination must not serve the pages that already arrived',
+    async () => {
+      const { handler } = loadHandler({ marStatus: 500 });
+      const res = mockRes();
+      await handler(mockReq('family_mar', { contact_id: 'FC1' }), res);
+      assert.notStrictEqual(res.statusCode, 200,
+        'a refused MAR read served a 200: ' + JSON.stringify(res.body).slice(0, 300));
+      assert.ok(!res.body.family_mar,
+        'a partial view was served after the store refused: '
+        + JSON.stringify(res.body).slice(0, 300));
+    });
+
+  await test('CONTROL: with marStatus unset the same request DOES serve a view, '
+    + 'so the arm above distinguishes a refused read from a request that never '
+    + 'worked', async () => {
+      const { handler } = loadHandler({});
+      const res = mockRes();
+      await handler(mockReq('family_mar', { contact_id: 'FC1' }), res);
+      assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body).slice(0, 300));
+    });
+
   console.log('\n' + (process.exitCode
     ? 'FAILURES ABOVE'
     : 'ALL ' + passed + ' FAMILY-CONTACTS ENDPOINT ASSERTIONS PASS'));

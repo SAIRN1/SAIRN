@@ -73,6 +73,95 @@ GATE = os.path.join('tools', 'sairn_push_gate_hook.py')
 # LIVE means it makes a real network or database request, so it cannot be wired
 # into a hook without making every push talk to the outside world.
 PURPOSES = {
+    'conflict_marker_preflight.py': ('UNWIRED',
+        'the half of a bad conflict resolution that leaves NO MARKERS. A blind '
+        '`git checkout --ours` resolves cleanly, parses cleanly, passes the push '
+        'gate and discards everything the other side changed -- which is what put '
+        'six markers into docs/tier-a-reviews.json on 2026-09-27, and the markers '
+        'were only the VISIBLE symptom of a habit whose normal outcome is silent. '
+        'Three checks: A MARKERS is DELEGATED to conflict_marker_check.py, which '
+        'owns that job and does it better (four shapes including diff3, a measured '
+        'zero-false-positive baseline over 2,069 files) -- this tool shipped with a '
+        'weaker second copy and it was removed; the delegate is a REQUIRED '
+        'dependency and its absence is exit 2, never a skip. B PARSE is a '
+        'structurally different mechanism and catches what a marker scan cannot see '
+        'at all, such as a JSON truncated mid-object. C BLIND PICK is the new one: '
+        'a resolution byte-identical to one WHOLE side, on a path where BOTH sides '
+        'changed, read from HEAD and REBASE_HEAD because `git add` clears the index '
+        'stages -- its first cut read the stages and therefore detected nothing at '
+        'the exact moment a pre-flight runs. It also corrects a standing claim in '
+        'conflict_marker_check.py that a wrongly-resolved conflict means "nothing '
+        'mechanical can tell"; what remains genuinely undetectable is a HAND merge '
+        'dropping a line. NOTE THE INVERSION it reports: mid-REBASE `--ours` is the '
+        'branch being rebased ONTO and `--theirs` is your own replayed commit, '
+        'which is half of why the blind form is dangerous -- it reads as "keep '
+        'mine" and does the reverse. UNWIRED: the hook line belongs in '
+        '.claude/settings.json, which another session holds, so nothing invokes it '
+        'and it must be run by hand at the moment of resolution, BEFORE `git rebase '
+        '--continue`. Also anchors itself -- it refuses unless `rev-parse '
+        '--show-toplevel` IS this clone, because C:/Users/marsh/.git exists and git '
+        'discovery otherwise answers about the home repository with exit 0. '
+        'Control: tests/conflict_marker_preflight_probe.py, 24 arms, which found '
+        'four real defects in it including a fail-closed arm that exited 0 and an '
+        'argv-limit failure at 2,655 paths that every one-path arm had missed.'),
+    'git_discovery_anchoring_check.py': ('CHECKER',
+        'which tools shell out to `git` WITHOUT saying which repository they mean. '
+        'C:/Users/marsh/.git EXISTS -- the home directory is itself a git '
+        'repository -- so `rev-parse --show-toplevel` from any scratch directory '
+        'beneath it SUCCEEDS with exit 0 and returns C:/Users/marsh. An unanchored '
+        'call does not fail, it answers about the wrong repository, and '
+        'C:/Users/marsh/tools/ holds a real stale copy of session_lock_check.py for '
+        'a misrouted probe to find and test successfully. Classifies every call '
+        'site ASSERTED (toplevel checked against the intended root -- the strongest '
+        'form, and the only one that catches a WRONG cwd rather than an absent '
+        'one) / ANCHORED / WEAK / UNANCHORED / UNREADABLE, and reports WEAK apart '
+        'rather than folding it into either answer, because `cwd=os.getcwd()` '
+        'credits as a cwd and is not safe. A RATCHET pinned to '
+        'docs/git-discovery-anchoring.json; an absent or unparseable pin is exit 2 '
+        'and so is finding zero git callers, because the call shape moving must not '
+        'read as "everything is anchored". The output says plainly that the '
+        'UNANCHORED list is a list to READ and not a list of defects -- a tool '
+        'reaching its cwd through two indirections reads as unanchored. Call extent '
+        'is paren-matched on a string-and-comment mask, not a fixed window.'),
+    'second_pass_coverage_scan.py': ('CHECKER',
+        'which flows are only ever tested on their FIRST attempt, and never on a '
+        'second attempt following an aborted or refused one. The 737 MAX VNAV '
+        'defect was invisible in steady-state flight and needed a missed approach '
+        'and THEN an altered path; suites have the same blind spot structurally, '
+        'because every arm starts from a clean state and almost nothing attempts, '
+        'gets refused, and attempts again -- which is the state a real user is in '
+        'whenever anything goes wrong. THE HEADLINE IS THE CROSS-REFERENCE, not the '
+        'raw list: code that DOCUMENTS a retry/resume/abort path whose suite has no '
+        'second-pass arm is a claim nobody tested. The raw first-attempt-only list '
+        'is printed too and is labelled a list to READ, because many actions have '
+        'no meaningful second attempt and a second pass driven through a helper is '
+        'invisible here. Arm boundaries are BRACE-MATCHED on masked source -- a '
+        'fixed slice would pull the next arm\'s second drive into this one and '
+        'report coverage that is not there -- and an arm whose extent cannot be '
+        'established is NOT credited. Position is respected: a refusal asserted '
+        'after the last drive is not a second attempt. The no-second-pass-sense '
+        'exemption list is deliberately SHORT, because a long one becomes the '
+        'escape hatch that makes every finding vanish. A RATCHET on '
+        'docs/second-pass-coverage.json.'),
+    'alf_facility_role_gate_live_probe.py': ('LIVE',
+        'does the DEPLOYED alf_facility write gate refuse a non-management role? '
+        'The gate is verified three ways already and none is live: in-process arms '
+        'driving the real handler, an ABLATION proving those arms catch the gate\'s '
+        'deletion, and the gate present on origin/main. CLAUDE.md is explicit that '
+        'a clean push is not proof. Three states and UNVERIFIED is neither of the '
+        'others: 0 every excluded role that ran was refused 403 FORBIDDEN AND '
+        'management was still allowed, 1 the deployed endpoint disagreed with the '
+        'design, 2 credentials absent / licence unknown / transport failure. THE '
+        'MANAGEMENT CONTROL ARM IS LOAD-BEARING -- without it a run where every '
+        'refusal passes cannot tell a working gate from a total lockout, so if that '
+        'arm does not run the result is UNVERIFIED even when every refusal passed. '
+        'It does NOT provision credentials: absent PINs are UNVERIFIED, never a '
+        'skipped section that manufactures a pass. Measured 2026-09-27 with no '
+        'credentials present: an unauthenticated write returns 401 NO_LICENSE and a '
+        'bogus licence 401 INVALID_LICENSE -- real evidence about the LICENCE gate '
+        'and NO evidence about the ROLE gate, which sits below both. Needs '
+        'ALF_LICENSE plus ALF_NURSING_EMP/PIN, ALF_MEDAIDE_EMP/PIN and '
+        'ALF_EMP/ALF_PIN to say anything at all.'),
     'ghost_field_read_scan.py': ('CHECKER',
         'a branch GATED on a field name that is spelled nowhere -- so the '
         'condition cannot be true and the branch cannot run. A property read '
@@ -1010,7 +1099,12 @@ PURPOSES = {
     'hover_eqa_escalation.py': ('CHECKER', 'an independence checkpoint that only the audited role can see, which therefore escalates to nobody. The hover auditor own EQA checkpoint reported OVERDUE for sixteen process passes against a cadence of three, and the tool saying so runs ONLY inside the hover clone -- hover_self_health_shim.py is a deliberate silent no-op in a build clone, which is right for a self-check and wrong for an escalation. A role cannot satisfy its own independence checkpoint by definition, so the report has to reach somewhere that is not that role. Asked from OUTSIDE: it READS the self-log and computes the answer independently rather than running the auditor own grader, so the two can DISAGREE and that disagreement is itself a finding. Writes nothing anywhere, asserted by an arm rather than by the docstring. Caught on its first run that the SECOND auditor instance carries no eqa_checkpoint field at all, so it has never recorded an independent validation and nothing was reporting that. An absent, empty, unparseable or field-less log is COULD NOT TELL and exit 2, never clean -- an escalation that reports current because it could not look has escalated nothing'),
     'hover_self_health_shim.py': ('CHECKER', 'a SessionStart hook registered by ABSOLUTE PATH into ONE clone, so a second instance of the same role self-checks the FIRST clone record on every firing while its own is never checked at all. Measured 2026-09-22: the hover self-health hook resolved its log from the SCRIPT location and its clone gate resolved from the CWD, and those two disagree the moment a second auditor exists -- which it does. This derives the per-clone path from CLAUDE_PROJECT_DIR and runs THAT, with THREE outcomes rather than two: silent in a build clone, the hook own output passed straight through in an auditor clone that has one, and a NAMED refusal in one that does not. There is deliberately NO fallback to a neighbouring clone copy, because the fallback IS the defect'),
     'sabotage_control_check.py': ('CHECKER', 'a negative control that never verifies its sabotage APPLIED -- when the anchor stops matching, str.replace silently does nothing and the control runs the checker against an unmodified file; the loud outcome is an arm failing against a working tool, the quiet one is an expect-no-findings arm passing forever'),
-    'probe_anchor_freshness.py': ('CHECKER', 'a FAULT PROBE whose sabotage anchor no longer matches its subject, in BOTH directions and reported separately because the fixes differ. VANISHED (0 matches) -- the code moved, so once() refuses and the probe dies on that arm, taking every later arm with it; re-derive against what the code became rather than restoring the old text. AMBIGUOUS (>1) -- replace(old, new, 1) silently picks the first, so the probe publishes a verdict about a line nobody chose; widen the anchor. It ast-parses the probe rather than grepping it, so an anchor is read as the literal the arm actually passes. UNDER A SECOND, and that is the whole design argument: the probes take MINUTES each, which is why all 13 are run when somebody remembers and why two of them had been dead for days. tests/sairncash_entitlement_fault_probe.py since a100c078 inserted an scGraceOk() check into the catch block one arm spanned; tests/sairncare_fault_probe.py since dadfedf4 wrapped 48 role maps in roleSet(). NEITHER DRIFTED TO MATCHING THE WRONG THING -- that is the quiet failure and this tool cannot see it. They stopped matching ANYTHING, the loud failure, and it was exactly as quiet, because no fault probe is in report_only_checks.REGISTRY, the push gate, or any hook: a loud failure in a tool nobody invokes is silent. A GREEN REPORT IS NOT A WORKING PROBE and the run prints its own blind spots: an anchor matching once may still point at the wrong thing (PR 1.3, only running the probe catches it); a concatenated or variable anchor is invisible rather than reported unchecked; an unresolvable subject path is a PRINTED skip, never folded into the pass count; and a probe whose BASELINE is red is invisible here because it stops before any mutation'),
+    # NO PURPOSES ENTRY, DELIBERATELY. As of 2026-09-27 this tool is in
+    # report_only_checks.REGISTRY, whose entry already carries `catches`.
+    # The generator REFUSES when both exist, and it is right to: a second
+    # description is a second source that can disagree, which is the
+    # claim-in-two-places failure this document exists to prevent. The
+    # line that was here has been DELETED rather than reworded to match.
     'sairn_session_identity.py': ('LIBRARY', "the ONE answer to 'which session is this clone', read from a per-clone marker in .git/ rather than from the directory name. Hover finding #258, HIGH: session_name() existed byte-for-byte in BOTH tier_a_review_gate.py and sairn_claim.py and both derived identity from os.path.basename(REPO), so a clone renamed SAIRN-cody would DISCHARGE ITS OWN TIER A OBLIGATION and the gate would report an independent review -- and the same string decides who holds a claim, so a rename reassigns work in the other direction too. FAILS CLOSED: a missing marker RAISES and is never guessed, because a fallback would leave the spoofable path live with nothing to say which one answered. NOT A CRYPTOGRAPHIC CONTROL and does not claim to be -- anything that can rename a directory can write a file; what it closes is DRIFT AND ACCIDENT, turning identity from a side effect of a folder name into a deliberate act with a file to point at. Self-check drives all four: missing fails closed, a planted value is actually used from a directory named after nobody, a rename survives, and a marker holding junk is refused rather than returned"),
     'sairn_self_state.py': ('CHECKER', "the three things a session cannot see about ITSELF in a written summary: a CLAIM it made with no worklog entry in the same window (it told four other sessions it was on something and left no record it was), a REVIEW OBLIGATION IT OWES past the register's own 24h deadline, and a STALE blocked_on anywhere in the status registry -- a row whose state is not blocked and which still names a blocker, which happened to fourth on 2026-09-17 and to cc on 2026-09-18 naming a claim that had been released. Derived from git, the claim commit history, docs/tier-a-reviews.json, the session's own worklog DIFF and the live status registry -- never from a summary. REFUSES rather than reporting zero when a source cannot be read. A claim of only stop-words is reported UNCHECKABLE, a third state, because accusing somebody of not logging work on the strength of the tool's own inability to match is worse than silence. IT DOES NOT ATTRIBUTE COMMITS: every clone commits as one git identity, so only commits touching a session's own claim file or worklog are attributable and everything else is UNATTRIBUTED. CARRIES THE BUNDLE the weekly reconciliation reads: --bundle captures EVERY provisioned clone in ONE run, because these clones push to one branch and four readings taken minutes apart are four readings of different repositories. Each row is labelled by HOW it was derived -- SELF (run inside that clone, the only authoritative form), OUTSIDE (--clone <path>, whose identity marker must match --session or it refuses; real, and blind to anything not on disk), or NOT DERIVED, which is what --session X now returns from somebody else's clone instead of silently reporting the git state of whichever clone the caller was standing in. That silent substitution was real and measured: four clones at four different HEADs with one of them dirty, all reported as the caller's own. Clones are counted from disk through nhi_register.sibling_clones, and one with no identity marker is NAMED and not read further, so the auditor clone is excluded by the marker rule rather than by a hardcoded name"),
     'csv_formula_injection_check.py': ('CHECKER', 'a CSV cell built by string concatenation that carries NO guard against a leading =/+/-/@/TAB/CR -- the characters Excel, LibreOffice and Sheets execute as a FORMULA on open, which the surrounding quotes do not prevent because the importer strips them before evaluating. Reports two different failures: a RAW construction outside any helper (an unguarded export path) and a guard HELPER whose body no longer guards (worse -- every call site still reads as covered). Accepts THREE guard shapes, including a stricter split form and one factored into a named constant, because the first version reported the module every app copied as the only unguarded helper on the platform -- the sabotage_control_check inversion, reproduced. Reports a THIRD state since 2026-09-18: a CALL TO A HELPER THAT IS NOT DEFINED, which is worse than either -- the export does not lose its guard, it THROWS. The sweep this file verifies shipped two of them, where replacing the quoted expression after a spaceless `return` glued the keyword to the new call; node --check passed, the raw count correctly went to zero, and this file reported the app GUARDED. A ZERO IS NOT COVERAGE: an export written with a library, a template, or no quoting at all has no .replace to match and is invisible to it'),

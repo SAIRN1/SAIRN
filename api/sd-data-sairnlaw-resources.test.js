@@ -37,6 +37,20 @@ const { wrapFetch: wrapActiveCred } = require('../tests/lib/active_credential_st
 
 const fs = require('fs');
 const path = require('path');
+// COMMENT STRIPPING COMES FROM THE SHARED LIBRARY, 2026-09-27. This file
+// carried its own ad-hoc copy. Copies across the suite were wrong in three
+// different ways -- a line filter that kept every continuation line of a block
+// comment, a greedy regex that ate a real statement, and a state machine that
+// read accept="image/*" as a comment start -- and each produced a green run
+// against a file that should have gone red, or the reverse. The shared version
+// also handles REGEX LITERALS, which a line filter cannot: `var re = /\\/\\//;`
+// read as a line comment HIDES the rest of the line, and hidden code makes an
+// absence assertion pass on code that is present.
+// tests/lib/strip_comments.js is the single implementation;
+// tests/lib/strip_comments.test.js is its control.
+//
+// stripComments() and NOT stripJs(): the input here is a WHOLE HTML file.
+const { stripComments } = require(path.join(__dirname, '..', 'tests', 'lib', 'strip_comments.js'));
 
 const ROOT = __dirname + path.sep + '..';
 const registry = require('./_resources/sairnlaw.js');
@@ -397,7 +411,7 @@ async function main() {
   });
 
   await test('the client actually SENDS the token it has always held', () => {
-    const HTMLSRC = HTML.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+    const HTMLSRC = stripComments(HTML);
     assert.ok(HTMLSRC.indexOf("h['X-SD-Auth']=tok") > 0, 'sdnData() does not send the session header');
     assert.ok(HTMLSRC.indexOf('function lawSessionToken()') > 0, 'no token accessor');
     // SCOPED TO THE FUNCTION BODY, and this arm SURVIVED a mutation probe

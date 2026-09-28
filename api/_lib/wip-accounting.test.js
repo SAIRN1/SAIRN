@@ -456,4 +456,76 @@ test('50c NO EXACT RATIO IS INVENTED where none was computed -- the field '
   // expensive class in the scrubber.
 });
 
+// ── THE CAP THAT INVERTED THE FINDING, removed 2026-09-27 ──────────────────
+// `Math.min(1, costToDate / estTotalCost)`. A job 30% over its estimated cost
+// at completion reported 100% complete, earned the WHOLE contract, and read as
+// maximally UNDER-billed -- the exact opposite of its real position, on the one
+// report a surety underwriter reads to find profit fade. Written and run
+// against the unfixed module first; the cap arm failed at 100 and the earned
+// arm at the full contract value.
+
+test('a job over its estimated cost is NOT reported as 100% complete', () => {
+  const r = w.jobWip({ today: TODAY, job: { job_id: 'J1', contract_value: 200000 },
+    draws: [], cost_to_date: 130000, estimated_total_cost: 100000 });
+  assert.strictEqual(r.basis, 'cost_to_cost');
+  assert.strictEqual(r.pct_complete, 130,
+    'the cap turned a 30% cost overrun into "this job is finished"');
+  assert.strictEqual(r.forecast_stale, true);
+});
+
+test('...and the money derived from that percent is REFUSED, not multiplied out', () => {
+  const r = w.jobWip({ today: TODAY, job: { job_id: 'J1', contract_value: 200000 },
+    draws: [], cost_to_date: 130000, estimated_total_cost: 100000 });
+  assert.strictEqual(r.earned, null,
+    'earned revenue = contract x percent complete is meaningless once the '
+    + 'percent is not a real fraction of a real forecast. Under the cap this '
+    + 'was 200000 -- the entire contract.');
+  assert.strictEqual(r.over_under, null);
+  assert.strictEqual(r.position, 'unknown',
+    'a refused position must not read as "not over-billed" -- a caller '
+    + 'filtering on over_billed would drop the job silently');
+});
+
+test('...and it SAYS SO in problems rather than only in a field', () => {
+  const r = w.jobWip({ today: TODAY, job: { job_id: 'J1', contract_value: 200000 },
+    draws: [], cost_to_date: 130000, estimated_total_cost: 100000 });
+  assert.ok(/that estimate is wrong/.test(r.problems.join(' ')),
+    'problems were ' + JSON.stringify(r.problems) + '. A boolean field nothing '
+    + 'renders is not a disclosure.');
+});
+
+test('CONTROL -- a job AT its estimate is 100%, not stale, and still computes', () => {
+  // The boundary is where a guard like this is likeliest to be wrong by one.
+  const r = w.jobWip({ today: TODAY, job: { job_id: 'J1', contract_value: 200000 },
+    draws: [], cost_to_date: 100000, estimated_total_cost: 100000 });
+  assert.strictEqual(r.pct_complete, 100);
+  assert.strictEqual(r.forecast_stale, undefined);
+  assert.strictEqual(r.earned, 200000);
+  assert.notStrictEqual(r.position, 'unknown');
+});
+
+// NOT ASSERTED, AND THE REASON IS THE SAME ONE THE ARM BELOW THIS FILE'S LAST
+// TEST GIVES: portfolio() does not pass cost_to_date or estimated_total_cost
+// through to jobWip(), so the cost_to_cost branch is UNREACHABLE from the
+// portfolio roll-up and a forecast_stale job cannot arise there today. An arm
+// asserting that such a job lands in `not_computable` would pass without ever
+// entering the path it names.
+//
+// WHAT IS TRUE BY CONSTRUCTION AND WORTH WRITING DOWN: the roll-up splits on
+// `over_under !== null`, and a forecast_stale job has over_under null, so if
+// that branch ever IS reached the job lands in `uncomputable` and therefore in
+// `not_computable` WITH ITS REASONS -- not in over_billed, not in under_billed,
+// and not silently absent. That is the correct destination and it needs no
+// change; it needs a caller that supplies costs before it can be tested.
+
+test('CONTROL -- an UNDER-100% job is untouched by the change', () => {
+  // Without this, removing the cap could have been "always refuse" and every
+  // arm above would still pass.
+  const r = w.jobWip({ today: TODAY, job: { job_id: 'J1', contract_value: 200000 },
+    draws: [], cost_to_date: 30000, estimated_total_cost: 120000 });
+  assert.strictEqual(r.pct_complete, 25);
+  assert.strictEqual(r.earned, 50000);
+  assert.strictEqual(r.forecast_stale, undefined);
+});
+
 console.log(passed + ' passed');

@@ -324,9 +324,33 @@ function jobWip(input) {
     //
     // The exact ratio is kept for the arithmetic; the reported percent stays
     // at one decimal place, which is what a person reads.
-    const ratio = Math.min(1, costToDate / estTotalCost);
+    //
+    // ── THE CAP IS GONE, 2026-09-27, AND IT WAS NOT A ROUNDING CHOICE ──────
+    // This read `Math.min(1, costToDate / estTotalCost)`. A job that had spent
+    // 130% of its estimated cost at completion reported 100% complete, so
+    // `earned` below became the WHOLE contract -- the largest earned figure the
+    // arithmetic can produce -- and over_under swung to its most UNDER-billed
+    // reading. The truth is the opposite: that job is losing money and is
+    // probably over-billed. The cap did not round an overrun off, it INVERTED
+    // the finding, on the one report a surety underwriter reads specifically to
+    // find profit fade.
+    //
+    // COST PASSING THE ESTIMATE IS EVIDENCE THE ESTIMATE IS WRONG, not evidence
+    // the job is finished. So the ratio is reported as it is, and the derived
+    // MONEY is refused -- earned revenue = contract x percent complete is only
+    // meaningful while the percent is a real fraction of a real forecast.
+    // `sairnbuild.html`'s jobWIP() carries the identical correction and the
+    // identical reason; the two were found together and neither is a copy of
+    // the other's arithmetic.
+    const ratio = costToDate / estTotalCost;
     out.pct_complete = Math.round(ratio * 1000) / 10;
     out.pct_complete_exact = ratio;
+    if (ratio > 1) {
+      out.forecast_stale = true;
+      out.problems.push('cost to date is ' + out.pct_complete + '% of the estimated '
+        + 'total cost, so that estimate is wrong -- earned revenue cannot be worked '
+        + 'out from it and is not reported');
+    }
   } else {
     // What the contractor stated on the most recent draw by period end. This
     // is how a roofing draw is really written -- usually off squares installed
@@ -343,7 +367,16 @@ function jobWip(input) {
     }
   }
 
-  if (out.pct_complete !== null && contract !== null) {
+  if (out.forecast_stale) {
+    // REFUSED, NOT COMPUTED. Reported as its own position so a caller that
+    // filters on `over_billed` does not silently drop the job -- `null > 0` is
+    // false, and a refusal that reads as "not over-billed" is worse than the
+    // capped percentage this replaced.
+    out.earned = null;
+    out.billed = out.requested_total;
+    out.over_under = null;
+    out.position = 'unknown';
+  } else if (out.pct_complete !== null && contract !== null) {
     // The exact ratio when the cost-to-cost branch computed one; otherwise the
     // contractor's STATED percent, where the figure itself is the datum and
     // dividing by 100 is not a loss.

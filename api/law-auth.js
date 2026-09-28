@@ -145,6 +145,33 @@ const ACTIONS = [
 // usage gets logged the same way, only the review/attestation actions are
 // role-gated.
 const AI_COC_REVIEW_ROLES = roleSet({ owner: true, attorney: true });
+// ── AUTHORING A DEADLINE RULE IS A DIFFERENT DECISION, SO IT IS A DIFFERENT
+//    NAME (2026-09-27) ──────────────────────────────────────────────────────
+// `add_rule` and `add_holidays` in api/legal-deadlines.js wrote to
+// law_deadline_rules and law_holidays with NO 401 and NO role check: the caller
+// was resolved and used only to stamp `verified_by`, so a holder of a valid
+// licence key with no employee session could author -- or OVERWRITE, both writes
+// are upserts -- a rule that then drives every computed date for that
+// jurisdiction, for every user on that licence.
+//
+// SAME MEMBERSHIP AS AI_COC_REVIEW_ROLES TODAY, AND DELIBERATELY NOT THAT
+// CONSTANT. Two decisions sharing one name is how the next person changes both
+// by changing one; this platform has recorded that shape repeatedly. Nothing
+// about an AI conflict-of-check attestation implies who may assert what a rule
+// of procedure says.
+//
+// OWNER AND ATTORNEY, NOT PARALEGAL, and that is the substantive call rather
+// than a copy: authoring a rule means asserting what a rule of procedure says
+// and citing the authority for it, which is the attorney's professional act. A
+// paralegal COMPUTING a date from an existing rule is untouched -- `compute`,
+// `rules_status` and `rules_fingerprint` are not gated by this.
+//
+// THIS IS NOT THE "MANAGEMENT_ROLES CONCEPT" THIS FILE WARNS AGAINST at the
+// `roster` branch. That warning is about adding an authorisation tier AS A SIDE
+// EFFECT of serving a panel. Here the tier IS the subject of the change, asked
+// for explicitly, and it is named for what it authorises rather than for a
+// seniority level the app does not otherwise have.
+const RULE_AUTHORING_ROLES = roleSet({ owner: true, attorney: true });
 const AI_PROMPT_RESPONSE_CAP = 20000;
 // Separate, smaller cap for LIST-time preview length. AI_PROMPT_RESPONSE_CAP
 // above governs what's stored at INSERT time (ai_generate); this one governs what
@@ -1051,4 +1078,5 @@ function upstream(res, detail) {
 // did. Exported rather than duplicated so the detector cannot drift from the
 // rule it is checking -- the same reason api/sd-auth.js gives.
 module.exports.PROVISIONING_ROLES = PROVISIONING_ROLES;
+module.exports.RULE_AUTHORING_ROLES = RULE_AUTHORING_ROLES;
 module.exports.EMPLOYEE_TABLE = TABLE;

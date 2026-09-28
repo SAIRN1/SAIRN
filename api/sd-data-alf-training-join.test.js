@@ -350,6 +350,56 @@ async function main() {
       assert.strictEqual(res.statusCode, 401, JSON.stringify(res.body));
     });
 
+  // ── THE THIRD TABLE IN THIS BRANCH, NEVER ONCE DRIVEN (added 2026-09-27) ──
+  // `opts.rulesStatus` has existed in this harness since it was written and
+  // NOTHING EVER PASSED IT. Found by tools/ghost_field_read_scan.py: it is read
+  // in a gate and is not written, keyed or quoted anywhere in the repo.
+  //
+  // The two arms above drive `credStatus: 404` and an absent roster and argue
+  // the SAME point for each -- an unreadable table must not read as "nobody has
+  // an obligation". The RULES table is the third read in this branch and the one
+  // whose absence produces the most confident wrong answer: no rules at all
+  // means no requirement to compare against, which is the empty-set defect this
+  // engine has already shipped once (docs/2026-09-27-ghost-field-read-sweep.md
+  // section 4.1, and the empty-applicable-set pass before that).
+  await test('AN UNREADABLE RULES TABLE MUST NOT READ AS "NO OBLIGATION" -- the '
+    + 'third read in this branch, and the one whose absence is most convincing',
+    async () => {
+      const { handler } = loadHandler({ staff: ROSTER, rulesStatus: 404 });
+      const res = mockRes();
+      await handler(mockReq({ state: 'WV', requirement_type: 'training',
+        facility_class: WV[0].facility_class, include_staff: true,
+        annual_window: 'rolling_12_months' }), res);
+      assert.notStrictEqual(res.statusCode, 200,
+        'an unreadable rules table answered 200: ' + JSON.stringify(res.body));
+      assert.ok(!(res.body && res.body.ok === true),
+        'it produced a verdict from a rules table it could not read: '
+        + JSON.stringify(res.body));
+    });
+
+  await test('...and a 500 on that read is refused too, not just a 404 -- "the '
+    + 'table is missing" and "the store broke" are both could-not-tell',
+    async () => {
+      const { handler } = loadHandler({ staff: ROSTER, rulesStatus: 500 });
+      const res = mockRes();
+      await handler(mockReq({ state: 'WV', requirement_type: 'training',
+        facility_class: WV[0].facility_class, include_staff: true,
+        annual_window: 'rolling_12_months' }), res);
+      assert.notStrictEqual(res.statusCode, 200, JSON.stringify(res.body));
+    });
+
+  await test('CONTROL: with rulesStatus unset the same request DOES answer, so '
+    + 'the two arms above distinguish an unreadable table from a request that '
+    + 'never worked',
+    async () => {
+      const { handler } = loadHandler({ staff: ROSTER });
+      const res = mockRes();
+      await handler(mockReq({ state: 'WV', requirement_type: 'training',
+        facility_class: WV[0].facility_class, include_staff: true,
+        annual_window: 'rolling_12_months' }), res);
+      assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
+    });
+
   console.log('\n' + passed + ' assertion(s) passed');
   if (process.exitCode) console.log('SOME ASSERTIONS FAILED');
   else console.log('ALL ALF TRAINING-JOIN ASSERTIONS PASS');

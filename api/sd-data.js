@@ -2087,10 +2087,38 @@ module.exports = async (req, res) => {
       // still report "unknown, and unknown is not carried" for every
       // requirement for ever, because the column it reads was never fetched.
       const INS_DATE_RE = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
-      const insCols = 'policy_key,kind,carrier,policy_no,effective_on,expires_on,' +
+      // ── `policy_no` IS NOT FETCHED FOR `readiness` (2026-09-27) ──────────
+      // docs/CRITICALITY-TIERS.md section 2 records authentication-shaped
+      // material as a gap NEITHER AXIS EXPRESSES, with this exact field as the
+      // live example, and says what the remedy is: *"the fix is not to raise a
+      // row's axis, it is to keep the field out of reads that do not need it."*
+      // This is that fix, on the one read that does not need it.
+      //
+      // MEASURED, NOT ASSUMED: `coverageReadiness` returns per-requirement
+      // lines carrying `policy_id`, never `policy_no` -- so the readiness
+      // response has never contained it. The column was fetched and discarded.
+      //
+      // WHY IT IS WORTH THE TWO LINES. A policy number joined to a carrier is
+      // what a fraudulent claim or a call to the insurer needs; it is not
+      // commercial sensitivity, which is why the row is correctly B on
+      // confidentiality and the axis was the wrong instrument. `readiness` and
+      // `read` are both open to ANY verified sairnmechanical session -- only
+      // `write` is management-gated -- so this narrows what the broader of the
+      // two surfaces carries, without changing a single answer it gives.
+      //
+      // STILL OPEN AND DELIBERATELY NOT DECIDED HERE: `read` returns the RAW
+      // rows, `policy_no` included, to every authenticated role including a
+      // technician, because sairnmechanical.html:3019 renders it in the
+      // insurance table. Whether a technician should see the company's policy
+      // numbers is a product decision, recorded in
+      // docs/2026-09-27-authentication-shaped-fields.md rather than taken.
+      const INS_SHARED_COLS = 'policy_key,kind,carrier,effective_on,expires_on,' +
         'each_occurrence,aggregate_limit,certificate_holder,' +
         'additional_insured,waiver_of_subrogation,primary_noncontributory,' +
         'per_project_aggregate,status,notes,recorded_by,created_at,updated_at';
+      const insCols = action === 'read'
+        ? 'policy_no,' + INS_SHARED_COLS
+        : INS_SHARED_COLS;
 
       // The stored row shape -> the engine's policy shape. One place, so read
       // and readiness cannot drift into describing the same row differently.
@@ -10431,10 +10459,25 @@ module.exports = async (req, res) => {
     if (resource === 'alf_incidents' && action === 'read') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
-      if (!ALF_INCIDENT_READ_ROLES[session.role]) {
-        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'The incident log is not available to your role' } });
-        return;
-      }
+      // ── A CARE ROLE READS BACK ITS OWN FILINGS (2026-09-27) ─────────────
+      // This was a flat 403. A caregiver could file a mandated report and then
+      // not see it, which is a different question from the one the branch
+      // deliberately answers below -- that the filer's WRITE access ends the
+      // moment the report is saved. Ending write access is accountability;
+      // ending read access is just opacity.
+      //
+      // SELF-SCOPE ON recorded_by, WHICH IS SERVER-SET. It is never taken from
+      // the payload (see the write path), so "mine" cannot be claimed. The old
+      // `data.reported_by` is caller-supplied and is NOT used here -- filtering
+      // on it would let any employee read any incident by claiming to have
+      // filed it, which is worse than the flat 403 this replaces.
+      //
+      // LEGACY ROWS HAVE recorded_by NULL and are therefore invisible to this
+      // tier. Michael's decision: no backfill, because the only candidate
+      // source is the forgeable field. Management still reads every row, so
+      // nothing is unreachable -- only the self-service view is empty for rows
+      // filed before the migration.
+      const incBroad = !!ALF_INCIDENT_READ_ROLES[session.role];
       // -- ORDERED BY A COLUMN THE CALLER NEVER RECEIVED (2026-09-23) ------
       // This read has ordered by `created_at` since the append-only ordering
       // pass and did NOT select it, so the client was handed rows in an order
@@ -10459,12 +10502,43 @@ module.exports = async (req, res) => {
       // alf_claim_routes, alf_staff_credentials and alf_op_audits already
       // select created_at, and alf_signals already selects recorded_at, which
       // is the column it orders by. Two reads were missing it, not six.
-      const r = await fetch(rest('alf_incidents?license_hash=eq.' + enc(licHash) + '&select=entry_id,resident_id,data,created_at&order=created_at.desc'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      let incQ = 'alf_incidents?license_hash=eq.' + enc(licHash)
+        + '&select=entry_id,resident_id,data,created_at,recorded_by'
+        + '&order=created_at.desc';
+      if (!incBroad) incQ += '&recorded_by=eq.' + enc(String(session.employee_id));
+      const r = await fetch(rest(incQ), { headers });
+      // ── THREE STATES, NOT TWO (2026-09-27) ──────────────────────────────
+      // `recorded_by` arrives with sql/sairncare_incidents_recorded_by.sql. If
+      // that migration has not been run, PostgREST answers 400 with 42703
+      // (undefined_column) -- and the old code folded EVERY 400 into
+      // `provisioned: false` plus an empty list. On a MIGRATION gap that reads
+      // as "this facility has no incidents", which is a confident wrong answer
+      // about a mandated-reporting log, and it would have been indistinguishable
+      // from a facility that genuinely has none.
+      //
+      // So the column error is separated from the table error and gets its own
+      // state, naming the file to run. A missing TABLE still means not set up;
+      // a missing COLUMN means set up but not migrated; neither is an answer
+      // about incidents.
+      if (r.status === 400) {
+        let why = null;
+        try { why = await r.json(); } catch (e) { why = null; }
+        const msg = JSON.stringify(why || '');
+        if (/42703|recorded_by|undefined_column/i.test(msg)) {
+          res.status(503).json({ error: { code: 'MIGRATION_REQUIRED', message:
+            'The incident log needs one migration before it can be read — run '
+            + 'sql/sairncare_incidents_recorded_by.sql in Supabase. Nothing has '
+            + 'been lost; this is not an empty log.' } });
+          return;
+        }
+        res.status(200).json({ ok: true, data: [], provisioned: false });
+        return;
+      }
+      if (r.status === 404) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
-      const data = (rows || []).map((r) => Object.assign({ id: r.entry_id, resident_id: r.resident_id, created_at: r.created_at }, r.data));
-      res.status(200).json({ ok: true, data, provisioned: true });
+      const data = (rows || []).map((r) => Object.assign({ id: r.entry_id, resident_id: r.resident_id, created_at: r.created_at, recorded_by: r.recorded_by || '' }, r.data));
+      res.status(200).json({ ok: true, data, provisioned: true, scoped_to_self: !incBroad });
       return;
     }
     if (resource === 'alf_incidents' && action === 'write') {
@@ -10485,15 +10559,36 @@ module.exports = async (req, res) => {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management, nursing, or billing can update an incident report after it is filed' } });
         return;
       }
-      // created_at stripped for the same shadow reason as alf_mar above.
-      const incidentData = storedBlob(payload, ['id', 'resident_id', 'created_at']);
+      // ── WHO FILED THIS IS SET HERE, NOT SENT (2026-09-27) ───────────────
+      // `reported_by` was documented in this table's own schema comment as a
+      // field inside `data` -- and `data` is storedBlob(payload, [...]), which
+      // copies the caller's payload and deletes three keys. SO reported_by WAS
+      // WHATEVER THE CALLER SENT. The write is deliberately open to any
+      // authenticated employee (mandated reporting), so ANY EMPLOYEE COULD FILE
+      // AN INCIDENT ATTRIBUTED TO ANYONE ELSE. The category list on this
+      // resource includes abuse, neglect and exploitation allegations.
+      //
+      // TWO HALVES, AND ONE ALONE IS NOT ENOUGH:
+      //   `reported_by` is STRIPPED from the payload, so the forgeable field
+      //   cannot be written at all -- not even as decoration a reader might
+      //   trust. Adding the column without stripping would leave two answers to
+      //   "who reported this", one authoritative and one not, side by side.
+      //   `recorded_by` is a real column set from the VERIFIED SESSION.
+      //
+      // recorded_by IS NOT RE-STAMPED ON UPDATE. Only management may update an
+      // existing report, and the column answers "who filed it", not "who last
+      // touched it" -- overwriting it on a follow-up note would erase the
+      // reporter, which is the one fact this change exists to record.
+      const incidentData = storedBlob(payload, ['id', 'resident_id', 'created_at', 'reported_by']);
+      const incidentRow = {
+        license_hash: licHash, app_id: 'sairncare', entry_id: String(payload.id), resident_id: payload.resident_id ? String(payload.resident_id) : null,
+        data: incidentData, updated_at: nowISO()
+      };
+      if (!alreadyExists) incidentRow.recorded_by = session.employee_id;
       const r = await fetch(rest('alf_incidents?on_conflict=license_hash,entry_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
-        body: JSON.stringify({
-          license_hash: licHash, app_id: 'sairncare', entry_id: String(payload.id), resident_id: payload.resident_id ? String(payload.resident_id) : null,
-          data: incidentData, updated_at: nowISO()
-        })
+        body: JSON.stringify(incidentRow)
       });
       if (r.status === 404 || r.status === 400) {
         res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Incident tracking is not set up yet — run sql/sairncare_incidents_schema.sql in Supabase first.' } });
@@ -11032,32 +11127,96 @@ module.exports = async (req, res) => {
       // resident's family is care work, not administration. med_aide and
       // activities are OUT, which is the gap this closes.
       //
-      // A NARROWER READ FOR A CARE ROLE IS NOT BUILT HERE AND THAT IS
-      // DELIBERATE. If a med_aide genuinely needs a single resident's emergency
-      // number, the right answer is a resident-scoped projection that omits the
-      // consent trail -- a design decision with an owner, not something to
-      // infer from the fact that the gate used to be missing.
+      // ── AND THE NARROWER READ IS NOW BUILT, 2026-09-27 ──────────────────
+      // The paragraph above said a resident-scoped projection omitting the
+      // consent trail was "a design decision with an owner, not something to
+      // infer". Michael is that owner and has decided: a care role reads the
+      // emergency contact for THEIR OWN ASSIGNED residents, never facility-wide.
+      // This is the FOURTH tier of the same four-tier shape alf_clients already
+      // documents at :6650 -- and note that it is implemented as a FALLTHROUGH,
+      // so it covers med_aide (the example that paragraph used) as well as
+      // caregiver, without either being named in a roleSet.
+      //
+      // TWO THINGS NARROW, NOT ONE, AND BOTH ARE REQUIRED:
+      //   ROWS    only residents assigned to this employee. Derived from
+      //           alf_clients.assigned_employee_id, which is the same source
+      //           every other narrow tier in this app uses -- not a second
+      //           notion of "mine".
+      //   COLUMNS the consent trail is REMOVED, not merely unrendered.
+      //           mar_consent, consent_granted_at/by, consent_revoked_at,
+      //           revoked_at and notes never leave the server for this tier.
+      //           Whether a family member may see medication status is the
+      //           disclosure decision the write gate reserves to management;
+      //           handing the ANSWER to a care role would give away the thing
+      //           the gate exists to protect, one step removed.
+      //
+      // AN EMPLOYEE WITH NO ASSIGNED RESIDENTS GETS AN EMPTY LIST, and that is
+      // the correct answer rather than a 403: they are permitted to ask, and
+      // the true answer is that no contact is in their scope. `activities`
+      // lands here and sees nothing, which matches its read-only-broad tier
+      // having no assignment concept at all.
       const ALF_FAMILY_READ_ROLES = roleSet({ owner: true, billing: true, nursing: true });
+      // The consent trail and free-text notes, stripped for the narrow tier.
+      const ALF_FAMILY_NARROW_COLS = 'contact_id,resident_id,name,relationship,'
+        + 'email,phone,active,created_at,updated_at';
 
       if (action === 'read') {
-        if (!ALF_FAMILY_READ_ROLES[session.role]) {
-          res.status(403).json({ error: { code: 'FORBIDDEN', message:
-            'Family contact details -- phone, email and the medication-consent '
-            + 'trail -- are not available to your role. Recording and reading '
-            + 'them is a disclosure decision.' } });
-          return;
+        const famBroad = !!ALF_FAMILY_READ_ROLES[session.role];
+        let famScope = null;
+        if (!famBroad) {
+          // WHOSE RESIDENTS. One query, filtered server-side by assignment, and
+          // it asks ONLY for the id -- a narrow tier resolving its own scope
+          // must not pull resident data it is not about to return.
+          const ar = await fetch(rest('alf_clients?license_hash=eq.' + enc(licHash)
+            + '&assigned_employee_id=eq.' + enc(String(session.employee_id))
+            + '&select=client_id'), { headers });
+          if (ar.status === 404 || ar.status === 400) {
+            res.status(200).json({ ok: true, data: [], provisioned: false });
+            return;
+          }
+          const arows = await ar.json();
+          if (!ar.ok) return upstream(res, arows);
+          famScope = (arows || []).map((x) => String(x.client_id));
+          if (famScope.length === 0) {
+            res.status(200).json({ ok: true, provisioned: true, data: [],
+                                   scoped_to_assigned: true });
+            return;
+          }
+          // A resident_id the caller asked for that is NOT theirs is refused
+          // here rather than silently returning nothing -- "you may not see
+          // that resident" and "that resident has no contacts" are different
+          // answers and collapsing them is an oracle.
+          if (famP.resident_id
+              && famScope.indexOf(String(famP.resident_id)) === -1) {
+            res.status(403).json({ error: { code: 'FORBIDDEN', message:
+              'That resident is not assigned to you.' } });
+            return;
+          }
         }
         let q = 'alf_family_contacts?license_hash=eq.' + enc(licHash)
-          + '&select=' + famCols + '&order=created_at.desc';
+          + '&select=' + (famBroad ? famCols : ALF_FAMILY_NARROW_COLS)
+          + '&order=created_at.desc';
         if (famP.resident_id) q += '&resident_id=eq.' + enc(String(famP.resident_id));
         const fr = await fetch(rest(q), { headers });
         if (fr.status === 404 || fr.status === 400) {
           res.status(200).json({ ok: true, data: [], provisioned: false });
           return;
         }
-        const frows = await fr.json();
+        let frows = await fr.json();
         if (!fr.ok) return upstream(res, frows);
-        res.status(200).json({ ok: true, provisioned: true, data: frows || [] });
+        if (!famBroad) {
+          // BELT AND BRACES, AND DELIBERATELY BOTH. The select above already
+          // omits the consent columns, and this filter re-applies the row scope
+          // in memory. Either alone would be enough today; together, a future
+          // edit that widens the select or drops the resident_id clause cannot
+          // leak, because the other half still holds. The whole reason this
+          // resource needed a gate at all is that one half of it asked and the
+          // other did not.
+          frows = (frows || []).filter(
+            (x) => famScope.indexOf(String(x.resident_id)) !== -1);
+        }
+        res.status(200).json({ ok: true, provisioned: true, data: frows || [],
+                               scoped_to_assigned: !famBroad });
         return;
       }
 
