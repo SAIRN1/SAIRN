@@ -279,6 +279,29 @@ const ADMIN_REFUSALS = [
    + 'selects a state rule set from'],
   ['alf_billing', 'read', null, 'resident billing'],
   ['alf_billing', 'write', { id: 'B-1' }, 'resident billing'],
+  // ── THE GATE NOTHING DROVE (added 2026-09-28) ─────────────────────────
+  // `tools/role_gate_negative_coverage.py --ablate alf_billing` deletes three
+  // ALF_MANAGEMENT_ROLES blocks and reports CAUGHT / *** SILENT *** / CAUGHT
+  // across 411 suites. The two caught are `read` and `write` -- the two rows
+  // directly above. The SILENT one is this action, and it was silent because
+  // no suite anywhere drove `derive_charges` with a role its gate excludes.
+  //
+  // IT IS THE SHARPEST OF THE THREE, NOT THE LEAST. `read` returns stored
+  // invoices; this DERIVES a resident's charges from their MAR
+  // administrations and activities and returns room_board_amount,
+  // care_amount, private_total, hcbs_claim_amount and the care-level
+  // breakdown for a NAMED resident. Deleting its gate would hand a caregiver
+  // the full billing position of any resident they can name -- and the two
+  // gates either side would still have gone red, so the resource would have
+  // looked covered.
+  //
+  // THE ROLE GATE SITS ABOVE THE PAYLOAD CHECK in that branch, so a caregiver
+  // is refused 403 before `resident_id`/`month` are validated. A payload is
+  // sent anyway: an arm that passes only because the request was malformed is
+  // testing the 400, not the gate.
+  ['alf_billing', 'derive_charges', { resident_id: 'C-MINE', month: '2026-09' },
+   'the DERIVED charge breakdown -- room and board, care amount, private total '
+   + 'and HCBS claim amount for a named resident'],
   ['alf_staff', 'write', { id: 'S-1' }, 'the staff roster'],
   ['alf_staff_credentials', 'write', { id: 'CR-1' }, 'staff credentials'],
   ['alf_payer_rules', 'write', { id: 'P-1' }, 'payer rules'],
