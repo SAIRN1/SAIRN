@@ -399,18 +399,44 @@ t('and in OBSERVE mode the envelope errors still come back unchanged, so no '
   assert.match(missing.body.error.message, /Missing request body/);
 });
 
-t('an INACTIVE licence is not treated as absent -- the states are distinguished '
-  + 'because they need different answers', async () => {
+t('an INACTIVE licence is REFUSED in enforce mode, with its own code -- and '
+  + 'this REVERSES a decision recorded here, which is why the old one is kept '
+  + 'in full below rather than deleted', async () => {
   licenceAnswer = { valid: true, active: false, license_hash: 'h' };
   process.env.SAIRN_CLAUDE_AUTH_MODE = 'enforce';
   const r = await callWithAuth({ app_id: 'stonedesk', is_demo: true, messages: MSG }, 'real-key');
   process.env.SAIRN_CLAUDE_AUTH_MODE = 'observe';
   licenceAnswer = { valid: true, active: true, license_hash: 'h' };
-  // Recorded as `inactive`, and deliberately NOT refused by the enforce branch,
-  // which lists only absent and invalid. An inactive licence is a billing
-  // state, and cutting off AI is not this endpoint's call to make -- the app's
-  // own licence gate already handles it. Asserted so the choice is visible.
-  assert.strictEqual(r.status, 200, JSON.stringify(r.body));
+
+  // ── WHAT THIS ARM USED TO ASSERT, AND WHY IT CHANGED (2026-09-28) ──────
+  // It asserted 200 and argued the case:
+  //
+  //   "Recorded as `inactive`, and deliberately NOT refused by the enforce
+  //    branch, which lists only absent and invalid. An inactive licence is a
+  //    billing state, and cutting off AI is not this endpoint's call to make
+  //    -- the app's own licence gate already handles it. Asserted so the
+  //    choice is visible."
+  //
+  // That is a real argument and it was not an oversight. It is reversed on
+  // Michael's direct instruction, and the reversal rests on one clause of it
+  // being checkable and false: "the app's own licence gate already handles
+  // it". The licence key is shipped to the BROWSER, and this endpoint is
+  // callable directly with it. An app's own gate is client-side for that path,
+  // so a revoked customer holding their key keeps AI for as long as the key
+  // exists -- and `status` is the platform's only revocation control.
+  //
+  // The neighbouring precedent now agrees rather than conflicting:
+  // api/bridge.js closed the identical shape on 2026-09-26 by adding
+  // `lic.active`, on a WRITE path. This is a SPEND path on the platform's own
+  // API key, which is the stronger case of the two.
+  //
+  // WHETHER A REVOKED CUSTOMER SHOULD KEEP AI IS A COMMERCIAL QUESTION, not a
+  // code one, and it is recorded as such: the endpoint now refuses, and
+  // reversing it again is a one-line change plus this comment.
+  assert.strictEqual(r.status, 403, JSON.stringify(r.body));
+  assert.strictEqual(r.body.error.code, 'LICENSE_INACTIVE',
+    'refused with the absent-licence code, which tells a customer who HAS a '
+    + 'licence to send one');
 });
 
 (async function () {

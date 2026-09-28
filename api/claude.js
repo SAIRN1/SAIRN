@@ -327,6 +327,33 @@ async function claudeProxyHandler(req, res) {
       message: 'A valid license key is required. Send it as Authorization: Bearer <key>.' } });
     return;
   }
+  // ── A REVOKED LICENCE IS NOT AN ABSENT ONE, AND IT WAS IN NEITHER LIST
+  // ── (2026-09-28) ──────────────────────────────────────────────────────
+  // `inactive` is derived three lines above -- `lic.valid && !lic.active`, a
+  // licence that EXISTS and has been withdrawn -- and the refusal above tested
+  // only `absent` and `invalid`. So a revoked licence fell straight through
+  // and was served. `status` is this platform's ONLY revocation control
+  // (license_keys carries no expiry this code enforces), so that is the whole
+  // mechanism for cutting off a cancelled, refunded or charged-back account.
+  //
+  // LATENT WHEN FOUND, AND THAT IS THE WORST SHAPE RATHER THAN A MITIGATION:
+  // SAIRN_CLAUDE_AUTH_MODE defaults to `observe`, so nothing was refused --
+  // and the change that would have armed it is an ENVIRONMENT VARIABLE, which
+  // nobody reviews as code. The same defect was closed in api/bridge.js on
+  // 2026-09-26, one file over, where it was live.
+  //
+  // 403 AND ITS OWN CODE, not the 401 above. The caller HAS a licence and
+  // sending it again will not help; telling them to supply one would send a
+  // support call in exactly the wrong direction. Same code api/bridge.js
+  // answers, so two endpoints do not describe one state differently.
+  //
+  // BEFORE THE RATE LIMITER AND BEFORE ANTHROPIC, so a revoked account cannot
+  // reach the path that spends this platform's own API key.
+  if (claudeAuthMode === 'enforce' && authState === 'inactive') {
+    res.status(403).json({ error: { code: 'LICENSE_INACTIVE',
+      message: 'This license is not active' } });
+    return;
+  }
 
   // THE DEFERRED ENVELOPE REFUSAL, answered only now that the caller is known.
   // In observe mode this is the same 400 as before and nothing has changed for
@@ -426,8 +453,21 @@ async function claudeProxyHandler(req, res) {
   // licence. Moving them to the anonymous pool would punish a paying customer
   // for our failure, so that path keeps the claimed app -- exactly today's
   // behaviour, and no worse.
+  // ── AND `inactive` IS NOT GROUPED WITH `valid` HERE EITHER (2026-09-28) ──
+  // This read `if (authState === 'valid' || authState === 'inactive')`, so a
+  // REVOKED tenant kept `budgetApp` as the licensed app and drew on the
+  // ceiling that app's PAYING tenants share. Rule 2 directly above reserves
+  // `anon:<app_id>` for callers without a valid licence, and a withdrawn
+  // licence is not a valid entitlement -- it is the one state the platform has
+  // for saying so.
+  //
+  // THIS HALF WAS LIVE IN BOTH MODES, unlike the refusal above: observe mode
+  // serves the request and charged it to the paying pool every time. The
+  // tenant sub-budget bounded the damage and did not remove it -- the app
+  // ceiling is shared across tenants, so a revoked account was spending
+  // against current customers' headroom.
   let budgetApp = app_id;
-  if (authState === 'valid' || authState === 'inactive') {
+  if (authState === 'valid') {
     if (claudeLicenceApp && claudeLicenceApp !== app_id) {
       console.error('api/claude: app_id MISMATCH -- body claimed "' + app_id
         + '" and the verified licence belongs to "' + claudeLicenceApp
