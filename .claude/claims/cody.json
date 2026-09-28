@@ -2547,8 +2547,8 @@
       "task": "x",
       "claimed_at": "2026-09-28T11:17:55Z",
       "claimed_at_epoch": 1790594275.7667327,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-28T11:19:25Z",
       "files": null
     }
   ],
