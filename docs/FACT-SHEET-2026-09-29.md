@@ -16,6 +16,8 @@ person asking.
 > Exit 0 means every number below is still exactly true. Any other exit prints
 > the figure, the old value and the new one.
 
+**Figures refreshed 2026-09-28 07:27 by `python tools/fact_sheet_regenerates.py --update`.**
+
 **No file names, no customer data, no credentials, no methodology detail.**
 Figures that cannot be derived are marked **UNAVAILABLE** with the reason — a
 number nobody can reproduce is worse than an absent one.
@@ -59,12 +61,12 @@ call is not counted.
 
 | Figure | Value | Derived by | Date |
 |---|---|---|---|
-| Commits since 2026-05-15 | **6,890** | `git log --oneline --since=2026-05-15 \| wc -l` | 2026-09-28 |
+| Commits since 2026-05-15 | **6,900** | `git log --oneline --since=2026-05-15 \| wc -l` | 2026-09-28 |
 | First commit in repository | **2026-06-22** | `git log --reverse --format=%ad --date=short \| head -1` | 2026-09-28 |
 | Most recent commit | **2026-09-28** | `git log -1 --format=%ad --date=short` | 2026-09-28 |
 | Elapsed development span | **98 days / 14.0 weeks** | first to most recent commit, above | 2026-09-28 |
-| Commits per week (mean) | **492** | 6,885 ÷ 14.0 | 2026-09-28 |
-| Commits per day (mean) | **70** | 6,885 ÷ 98 | 2026-09-28 |
+| Commits per week (mean) | **493** | 6,900 ÷ 14.0 | 2026-09-28 |
+| Commits per day (mean) | **70** | 6,900 ÷ 98 | 2026-09-28 |
 
 **WHY THE HISTORY STARTS 2026-06-22, AND WHAT THE REAL SPAN IS.** Building began
 before version control, and the repository's own first commit proves it:
@@ -98,15 +100,15 @@ count.
 ## Two lines to say out loud
 
 > **"Roughly 490 commits a week, every week, for fourteen weeks."**
-> 6,885 commits ÷ 14.0 weeks under version control = **492 per week**, 70 per day.
+> 6,900 commits ÷ 14.0 weeks under version control = **493 per week**, 70 per day.
 > Over the full 18.6-week build span the average is **371 per week** — lower, and
 > stated because commits before 2026-06-22 do not exist to be counted, so the
 > higher number is the one with evidence behind it.
 
 > **"About 130 defects caught per week, by our own review and tooling."**
-> 360 defects ÷ 2.71 weeks since the register opened 2026-09-09 = **133 per
-> week**, 19 per day. **This counts defects CAUGHT, not shipped** — and 178 of
-> the 360 were in the tooling and tests rather than in the product.
+> 362 defects ÷ 2.71 weeks since the register opened 2026-09-09 = **134 per
+> week**, 19 per day. **This counts defects CAUGHT, not shipped** — and 180 of
+> the 362 were in the tooling and tests rather than in the product.
 
 ---
 
@@ -130,8 +132,8 @@ count.
 
 **One command in this table was wrong on the first pass and is corrected here**,
 because the whole point of the table is that the command produces the number. A
-bare `git ls-files tools/` returns **282** — it counts 14 data files and one
-configuration file that are not tools. **267** is the count of executable tool
+bare `git ls-files tools/` returns **284** — it counts 14 data files and one
+configuration file that are not tools. **269** is the count of executable tool
 files, deduplicated by name. Both numbers are real; only one answers the
 question, and a fact sheet whose command disagrees with its figure is the exact
 defect it exists to prevent.
@@ -147,13 +149,13 @@ caught, not of defects shipped.**
 
 | Figure | Value |
 |---|---|
-| **Defects registered, total** | **361** |
+| **Defects registered, total** | **362** |
 | By severity — critical | 27 |
 | By severity — high | 171 |
-| By severity — moderate | 133 |
+| By severity — moderate | 134 |
 | By severity — low | 30 |
 | By layer — in product code | 182 |
-| By layer — in tooling | 115 |
+| By layer — in tooling | 116 |
 | By layer — in tests | 64 |
 
 | Detection method | Count |
@@ -171,10 +173,10 @@ caught, not of defects shipped.**
     python tools/defect_register.py          # all of the above
     # first record: 2026-09-09
 
-**What this figure is and is not.** 360 is the count since the register opened on
+**What this figure is and is not.** 362 is the count since the register opened on
 **2026-09-09** — 19 days. It is not a lifetime total and it is not a bug count for
-shipped software: the majority were found before reaching a user, and **178 of
-the 360 are in tooling or tests rather than in the product.**
+shipped software: the majority were found before reaching a user, and **180 of
+the 362 are in tooling or tests rather than in the product.**
 
 ---
 
@@ -182,9 +184,9 @@ the 360 are in tooling or tests rather than in the product.**
 
 | Figure | Value | Derived by | Date |
 |---|---|---|---|
-| Review obligations raised | **189** | `docs/tier-a-reviews.json` record count | 2026-09-28 |
-| **Review obligations discharged** | **159** | same, status `reviewed` | 2026-09-28 |
-| Currently open | **30** | same, status `open` | 2026-09-28 |
+| Review obligations raised | **190** | `docs/tier-a-reviews.json` record count | 2026-09-28 |
+| **Review obligations discharged** | **164** | same, status `reviewed` | 2026-09-28 |
+| Currently open | **26** | same, status `open` | 2026-09-28 |
 | Highest-criticality resources under mandatory review | **267** | `python tools/criticality_tier_check.py` → `TIER_A` | 2026-09-28 |
 
 Every change touching a highest-criticality resource raises an obligation that
@@ -248,7 +250,7 @@ it claims. Three things a reader should press on, because they are the weakest:
 
 1. **Panels — 465 is a floor.** Counted by each application's own convention;
    a sub-view with no navigation call is not counted.
-2. **Defects — 19 days of recording**, and 178 of 360 are in tooling or tests
+2. **Defects — 19 days of recording**, and 180 of 362 are in tooling or tests
    rather than in the product.
 3. **The build span — 18.6 weeks is a lower bound.** The 4.6 weeks before the
    repository existed are bounded by a dated artifact, not measured.
