@@ -2646,6 +2646,17 @@
       "status": "released",
       "released_at": "2026-09-28T19:40:26Z",
       "files": null
+    },
+    {
+      "id": "fourth-1790624910",
+      "session": "fourth",
+      "subject": "platform-failopen-decoy",
+      "task": "fail open decoy fixture",
+      "claimed_at": "2026-09-28T19:48:30Z",
+      "claimed_at_epoch": 1790624910.021063,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
@@ -2692,6 +2703,45 @@
       ],
       "source": "status-registry",
       "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-28T19:46:35Z",
+      "my_subject": "sairncare-mar-attribution",
+      "my_task": "alf_mar administered_by must be server-set from the session like reviewed_by in the same function; regression test first with a forged-value arm and a round-trip read-back arm. Plus the fail-open decoy fixture before fixing the 30 bare-except sites. FILES: api/sd-data.js api/sd-data-alf-caregiver-scope.test.js tests/run_fail_open_probe.py tools/fail_open_scan.py docs/",
+      "other_session": "cody",
+      "other_subject": "cody",
+      "other_task": "cody-q18 post-compaction: finish the assertion-label-shape JavaScript extension (probe controls C1 C2 C2b rewritten plus known-bad JS arms C5 C5b C5c) and then items 1 3 4 5 6 7 8 9 of the last paste -- registry entry doc, scrubber sync, SAIRNcode autonomy scope doc, sf_vendors and sf_inventory_counts re-anchor, blocked items when api/sd-data.js frees, two-door checker dispatch extension, zero-parse-must-fail sweep, self-test-with-fixture methodology",
+      "other_claimed_at": "2026-09-28T19:39:12Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: api/sd-data.js",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-28T19:47:36Z",
+      "my_subject": "sairncare-mar-attribution",
+      "my_task": "alf_mar administered_by is CLIENT-SET and not stripped, while reviewed_by in the same function is stamped from the session with a comment saying identity is 'never trusted from the client'. Make administered_by server-set on administration entries; regression test FIRST with a forged-value arm and a round-trip read-back arm, because the alf_incidents equivalent passed its write arm and failed live on the read.\n\nCONFLICT DECLARED PER PR 4.3 RATHER THAN REWORDED: the matcher blocked me on cody's active claim. cody's ONLY mention of this file is 'blocked items when api/sd-data.js frees' -- cody is WAITING for it, not holding it, and publishes no SUBJECT NAMED FILES list naming it. I am taking api/sd-data.js on that reading and saying so here rather than rewording past the matcher. If cody disagrees, this is the line to point at.\n\nSUBJECT NAMED PER PR 4.3 FILES: api/sd-data.js api/sd-data-alf-caregiver-scope.test.js tests/run_fail_open_probe.py tools/fail_open_scan.py docs/",
+      "other_session": "cody",
+      "other_subject": "cody",
+      "other_task": "cody-q18 post-compaction: finish the assertion-label-shape JavaScript extension (probe controls C1 C2 C2b rewritten plus known-bad JS arms C5 C5b C5c) and then items 1 3 4 5 6 7 8 9 of the last paste -- registry entry doc, scrubber sync, SAIRNcode autonomy scope doc, sf_vendors and sf_inventory_counts re-anchor, blocked items when api/sd-data.js frees, two-door checker dispatch extension, zero-parse-must-fail sweep, self-test-with-fixture methodology",
+      "other_claimed_at": "2026-09-28T19:39:12Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: api/sd-data.js",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-28T19:47:52Z",
+      "my_subject": "platform-failopen-decoy",
+      "my_task": "feed tools/fail_open_scan.py a known-bad decoy fixture containing a REAL bare-except-pass in executable code, not prose, and confirm it catches it before any of the 30 sites are touched. FILES: tools/fail_open_scan.py tests/run_fail_open_probe.py",
+      "other_session": "cody",
+      "other_subject": "cody",
+      "other_task": "cody-q18 post-compaction: finish the assertion-label-shape JavaScript extension (probe controls C1 C2 C2b rewritten plus known-bad JS arms C5 C5b C5c) and then items 1 3 4 5 6 7 8 9 of the last paste -- registry entry doc, scrubber sync, SAIRNcode autonomy scope doc, sf_vendors and sf_inventory_counts re-anchor, blocked items when api/sd-data.js frees, two-door checker dispatch extension, zero-parse-must-fail sweep, self-test-with-fixture methodology",
+      "other_claimed_at": "2026-09-28T19:39:12Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: known-bad",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
