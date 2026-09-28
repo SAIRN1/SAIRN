@@ -2629,8 +2629,8 @@
       "task": "sweep every hook, wrapper, gate and pre-push/pre-commit script for fail-open shapes (|| exit 0, || true, 2>/dev/null ignored, exec blocking later checks, bare except returning success); fix each to fail closed with a known-bad control per fix; confirm core.hooksPath across every clone by reading config only. FILES: tools/fail_open_scan.py tests/run_fail_open_probe.py .githooks/ docs/",
       "claimed_at": "2026-09-28T11:18:06Z",
       "claimed_at_epoch": 1790594286.9074852,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-28T11:59:47Z",
       "files": [
         "tests/run_fail_open_probe.py",
         "tools/fail_open_scan.py"
