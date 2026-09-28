@@ -102,6 +102,11 @@
           },
           {
             "type": "command",
+            "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/rebase_state_guard.py\"",
+            "timeout": 20
+          },
+          {
+            "type": "command",
             "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/sairn_push_gate_hook.py\"",
             "timeout": 150,
             "statusMessage": "Checking seed load state and credential guards..."
