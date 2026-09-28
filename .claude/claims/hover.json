@@ -65,6 +65,17 @@
       "status": "released",
       "released_at": "2026-09-28T00:26:10Z",
       "files": null
+    },
+    {
+      "id": "hover-1790556410",
+      "session": "hover",
+      "subject": "hover",
+      "task": "self-audit SKILL.md tool documentation vs actual tool set; add four new review/tool-building practice rules from direct instruction FILES: .claude/skills/sairn-hover-auditor/",
+      "claimed_at": "2026-09-28T00:46:50Z",
+      "claimed_at_epoch": 1790556410.4514544,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ]
 }
