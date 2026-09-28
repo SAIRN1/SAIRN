@@ -1,0 +1,55 @@
+{
+  "_what_this_is": "Every check, probe or control that is DISABLED, BLOCKED or OUT OF SERVICE, with the reason, an owner, what unblocks it, and the date it went out. A control taken out of service is a COVERAGE GAP, and an undeclared one is indistinguishable from a control that is running and finding nothing.",
+  "_why_it_exists": "On 2026-09-28 four live probes were deliberately taken out of service in one change: tools/audit_licence.py now refuses a non-audit licence, and the audit licences those probes need did not exist. That was the right trade -- a residue risk on a demo-facing licence for a coverage gap -- but it was a trade, and nothing counted it. A guard that silently disables four probes has removed four probes' worth of evidence and reported only that it was installed.",
+  "_how_it_works": "tools/out_of_service_register.py reads this file, counts the entries, and FAILS when the count rises above `ceiling` or when an entry is older than `max_age_days`. An out-of-service probe with NO entry here is also a failure -- that is the known-bad control in tests/run_out_of_service_probe.py.",
+  "_what_it_does_NOT_claim": "It does not claim the list is complete. It can only know about a probe somebody DECLARED out of service, or one its detectors happen to see (today: a VERIFICATION probe whose audit licence does not exist). A control quietly commented out in a suite is invisible here, and that gap is named rather than implied.",
+  "_ceiling_rationale": "The ceiling is 6, which is the 4 entries below plus two. It is NOT a target to fill: it exists so ADDING a fifth and sixth is possible without a process fight while a seventh is a decision somebody has to make out loud. Lower it when entries clear.",
+  "ceiling": 6,
+  "max_age_days": 14,
+  "entries": [
+    {
+      "id": "sc-tier-a-write-gate-no-audit-licence",
+      "subject": "tools/sc_tier_a_write_gate_live_probe.py",
+      "kind": "live-probe",
+      "out_since": "2026-09-28",
+      "owner": "hank",
+      "reason": "THE SHARPEST OF THE FOUR. It drives write, setup, set_active AND delete against Tier A SAIRNcode resources, and SC-AUDIT-2026 does not exist -- measured live, 401 INVALID_LICENSE. Before 2026-09-28 it ran against whatever SC_LICENSE named, which for SAIRNcode is SC-PINNACLE-2026, a demo-facing licence. tools/audit_licence.py now refuses that outright.",
+      "coverage_lost": "Nothing verifies live that SAIRNcode's Tier A write gate refuses a non-management caller. The suite-level arms still run; the DEPLOYED behaviour is unverified.",
+      "unblocked_by": "sql/audit_license_seed_2026-09-28.sql minting SC-AUDIT-2026, then `bootstrap` (creates an ADMIN on SAIRNcode, not an owner) and `setup` for a `coder` account. Both through the product's own endpoints, no human needed after the SQL.",
+      "blocked_on": "Michael running the seed"
+    },
+    {
+      "id": "alf-facility-role-gate-no-audit-licence",
+      "subject": "tools/alf_facility_role_gate_live_probe.py",
+      "kind": "live-probe",
+      "out_since": "2026-09-28",
+      "owner": "hank",
+      "reason": "Upserts alf_facility (id ZZ-GATE-FAC) as its management CONTROL, and ALF-AUDIT-2026 does not exist. ALSO: it has NEVER produced a verdict, for a separate reason fixed the same week -- it sent the session as X-Session-Token where tokenFromRequest reads x-sd-auth only, so every role received the identical no-session refusal. The header is fixed; the licence is not.",
+      "coverage_lost": "Whether a caregiver can rewrite alf_facility.licensing_state -- which selects the state rule set the facility's staffing and training compliance is measured against -- is unverified live, and has been for as long as the probe has existed.",
+      "unblocked_by": "ALF-AUDIT-2026 from the seed, then `bootstrap` for an owner and `setup` for a `caregiver` account. ALF_MANAGEMENT_ROLES is owner + billing, so caregiver is the excluded role the arm needs.",
+      "blocked_on": "Michael running the seed"
+    },
+    {
+      "id": "law-billing-code-trim-no-audit-licence",
+      "subject": "tools/law_billing_code_trim_live_probe.py",
+      "kind": "live-probe",
+      "out_since": "2026-09-28",
+      "owner": "hank",
+      "reason": "Writes a billing-code row per run and LAW-AUDIT-2026 does not exist. Its own usage note named LAW-PINNACLE-2026 -- the demo-facing licence -- and its ids were generated per run, so residue accumulated rather than being overwritten. Both corrected; the licence is not.",
+      "coverage_lost": "Billing-code normalisation below SAIRNlaw's session gate is unverified live.",
+      "unblocked_by": "LAW-AUDIT-2026 from the seed, then `bootstrap` for an owner. This probe needs no second role.",
+      "blocked_on": "Michael running the seed"
+    },
+    {
+      "id": "law-deadline-rule-residue-pending-delete",
+      "subject": "LAW-TEST-2026 / law_deadline_rules entry_id zz-probe-identity-20260928",
+      "kind": "residue",
+      "out_since": "2026-09-28",
+      "owner": "hank",
+      "reason": "Not a disabled control -- a NAMED RESIDUE, recorded here because the same register should answer 'what is outstanding from verification' rather than splitting it across two places. One rule row written to verify that add_rule strips forged identity fields; seeing what an endpoint STORES requires a write. DELETE is revoked platform-wide on law_deadline_rules (2026-08-25), so no automated path can remove it.",
+      "coverage_lost": "None. The row is inert: jurisdiction zz-probe appears in no seed file and rule selection is by (jurisdiction, domain, trigger_event), so nothing reaches it without asking for it by name. It is visible in rules_status, which is the reason to remove it.",
+      "unblocked_by": "sql/zz_probe_residue_delete_2026-09-28.sql -- SELECT first, doubly-scoped delete, verify from the app rather than from the editor.",
+      "blocked_on": "Michael running the SQL"
+    }
+  ]
+}

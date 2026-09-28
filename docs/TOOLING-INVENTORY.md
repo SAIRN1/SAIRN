@@ -19,14 +19,14 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**264 files in `tools/`.** By what actually invokes them:
+**265 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 14 | reachable from something that can refuse a push or a tool call |
 | **REPORT-ONLY** | 69 | runs automatically on every push, never blocks |
 | **ADVISORY** | 4 | session-start or prompt hooks, informational |
-| **DECIDED** | 73 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
+| **DECIDED** | 74 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 48 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 56 | nothing runs these at all |
 
@@ -35,7 +35,7 @@ By what they are, independent of wiring:
 | Kind | Count |
 |---|---:|
 | ADVISORY | 3 |
-| CHECKER | 183 |
+| CHECKER | 184 |
 | GENERATOR | 19 |
 | GUARD | 1 |
 | LIBRARY | 25 |
@@ -45,7 +45,7 @@ By what they are, independent of wiring:
 | TOOL | 3 |
 | UNWIRED | 1 |
 
-**73 tool(s) are DECIDED -- deliberately not promoted, with the reason
+**74 tool(s) are DECIDED -- deliberately not promoted, with the reason
 recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
@@ -242,7 +242,7 @@ And 5 that are PostToolUse hooks in their own right, not registry entries:
 
 ---
 
-## DECIDED -- not promoted, on purpose (73)
+## DECIDED -- not promoted, on purpose (74)
 
 **These are not gaps.** Each carries a recorded reason in
 `tools/report_only_checks.py`'s `NOT_PROMOTED` list -- a read-list whose own
@@ -291,6 +291,7 @@ is how a reader stops believing the number.
 | `missing_dom_target_check.py` | CHECKER | its 137 findings are an OPEN, OWNED row (Fourth). Promoting it now would fire on every push against work already in progress. |
 | `ooda_phases.py` | CHECKER | ITS ANSWER BARELY MOVES. It reports which of the four OODA boundaries the register can actually timestamp -- today ACT alone, with OBSERVE, ORIENT and DECIDE all missing a field -- and that changes only when a new field is added to the register schema, which is a handful of times a year. A push notice repeating the same four lines daily is one people stop reading, and by then it has stopped being able to tell them anything |
 | `optimistic_success_scan.py` | CHECKER | ITS HIT COUNT IS NOT A DEFECT COUNT AND IT SAYS SO: of 14 on the first sweep, three were real, four were an accepted decision recorded at the site, four were its own branch false positive and three were a rule defect. A push notice reporting eight candidates every time, most of them known-fine, is the shape that gets read as noise and then ignored when a real one appears. Promote it when the branch false positive is closed -- which needs a real JS parser rather than brace matching, and is a different tool. |
+| `out_of_service_register.py` | CHECKER | PROMOTED? NOT YET, AND THIS ONE IS A CANDIDATE UNLIKE THE OTHERS HERE -- its subject is a COUNT that should be watched on a cadence, which is exactly what this registry is for. It is held back for one run only: it went in with four entries all dated today, so promoting it now would wire a ratchet to a baseline nobody has lived with. Promote it once an entry has cleared and the count has been seen to FALL, which proves the register is maintained rather than appended to. WHY IT EXISTS: on 2026-09-28 tools/audit_licence.py took FOUR live probes out of service in one change, because the audit licences three of them need do not exist. That was the right trade and it was a trade, and nothing counted it -- a guard that silently disables four probes removes four probes worth of evidence and reports only that it was installed. FAILS when the count rises above a declared ceiling, when an entry ages past max_age_days, when an entry lacks a route out, or when an out-of-service probe has NO entry at all -- the last is the half that cannot be gamed by editing the register. Control: tests/run_out_of_service_probe.py, SIX directions including that an ABSENT register is COULD NOT RUN and never clean. |
 | `pinned_list_drift_check.py` | CHECKER | A READ-LIST WHOSE CORRECT LENGTH IS NOT ZERO, the same shape as accepted_risk_scan.py above and for the same reason. It finds literal lists of resource names that are a PARTIAL cover of an app Tier A set -- the shape that hid sc_denial_events behind a hand-written gate of six while the register said seven. On its first run it produced TWELVE rows and exactly ONE was a defect; the other eleven are partial on purpose with the reason written beside them, and two are already pinned to a BETTER population than Tier A by a test it cannot see. Promoting it would print eleven correct lists on every push forever, which is how a notice stops being read. Its input is the register and the registry rather than the push, so the answer changes when a TIER changes and not when code does. Run it when a tier is assigned or a gate list is written, and read docs/2026-09-15-pinned-list-drift-sweep.md for the triage of the current rows so the next reader does not redo it. |
 | `pra_event_tree.py` | CHECKER | ITEM 84. It is an ANALYSIS, not a check: it enumerates which end state each component failure reaches and has no notion of a finding to report or a pass to give. Wiring it into a runner would print the same 20-row tree on every push, which is how a report stops being read. It is run when the SPOF register or the secrets inventory changes -- both of which ARE checked mechanically -- and its own inputs are what change its answer. Held by tests/run_pra_event_tree_probe.py. |
 | `probe_public_book_guardian.py` | LIVE | live probes needing a real licence and a network; correctly manual. |
@@ -491,12 +492,12 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      264   git ls-files tools/
+  tools on disk                      265   git ls-files tools/
   hook entries                        14   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                65   report_only_checks.REGISTRY
-  tools invoked by tests/            181   tests/**/*.py, *.js
-  recorded NOT-promoted decisions     79   report_only_checks.NOT_PROMOTED
+  tools invoked by tests/            182   tests/**/*.py, *.js
+  recorded NOT-promoted decisions     80   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```
 

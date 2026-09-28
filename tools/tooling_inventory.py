@@ -97,6 +97,8 @@ PURPOSES = {
         '`administered_by` is caller-supplied with nothing to override, which is '
         'a different class this tool is blind to by construction. A RATCHET on '
         'docs/blob-override-coverage.json.'),
+    'out_of_service_register.py': ('CHECKER',
+        'a control that has been disabled or blocked and is not being counted. Reads docs/out-of-service-controls.json and fails when the count rises above a declared ceiling, when an entry ages past max_age_days, when an entry lacks a reason, owner or route out, or -- the half that cannot be gamed by editing the register -- when a guarded VERIFICATION live probe whose audit licence does not exist has NO entry. THE COUNT IS PUBLISHED EVERY RUN, clean or not, because a number only visible on failure is one nobody watches. BUILT AFTER tools/audit_licence.py took FOUR live probes out of service in a single change: the trade was right, and nothing counted it. CANNOT SEE a control commented out inside a suite, or one that runs, fails and is ignored -- that is a different and worse failure. Control: tests/run_out_of_service_probe.py, six directions including an ABSENT register being COULD NOT RUN rather than clean.'),
     'auth_header_name_sweep.py': ('CHECKER',
         'a caller sending the session under a header name the SERVER NEVER '
         'READS. The quietest failure available: nothing 400s, the request is '

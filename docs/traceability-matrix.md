@@ -118,6 +118,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 
 **Deliberately NOT enforced, with the reason recorded** -- a decision, not an oversight:
 
+- `out_of_service_register.py` -- PROMOTED? NOT YET, AND THIS ONE IS A CANDIDATE UNLIKE THE OTHERS HERE -- its subject is a COUNT that should be watched on a cadence, which is exactly what this registry is for. It is held back for one run only: it went in with four entries all dated today, so promoting it now would wire a ratchet to a baseline nobody has lived with. Promote it once an entry has cleared and the count has been seen to FALL, which proves the register is maintained rather than appended to. WHY IT EXISTS: on 2026-09-28 tools/audit_licence.py took FOUR live probes out of service in one change, because the audit licences three of them need do not exist. That was the right trade and it was a trade, and nothing counted it -- a guard that silently disables four probes removes four probes worth of evidence and reports only that it was installed. FAILS when the count rises above a declared ceiling, when an entry ages past max_age_days, when an entry lacks a route out, or when an out-of-service probe has NO entry at all -- the last is the half that cannot be gamed by editing the register. Control: tests/run_out_of_service_probe.py, SIX directions including that an ABSENT register is COULD NOT RUN and never clean.
 - `live_probe_residue_audit.py` -- PROMOTED? NO -- and the reason is that its subject changes only when somebody WRITES a live probe, which is a handful of times a year. A push-time run would report the same seven writers for ever, which is the always-passing checker this registry has a name for. IT IS A PRE-COMMIT QUESTION for whoever adds a live probe, and the convention that invokes it is docs/2026-09-28-verification-residue.md. Built after one probe wrote a rule to LAW-TEST-2026 to verify an identity strip -- seeing what an endpoint STORES needs a write -- and DELETE was revoked platform-wide on that table in August, so the row needs a human in the SQL editor. One probe, one un-deletable row, on a licence a prospect may be shown. The rule it enforces was ALREADY SETTLED in sql/stonedesk_recovery_admin_seed.sql -- THE FIX IS THE LICENCE, NOT THE PIN -- and applied by roofing in September; nothing made the other probes follow because the rule lived in a SQL comment rather than in the code path that writes. Its companion guard tools/audit_licence.py IS in the code path and exits 2 COULD NOT RUN on a non-audit key. CANNOT tell whether the guard is called on the path that actually writes -- presence is necessary, not sufficient. Control pair: tests/run_live_probe_residue_probe.py, FIVE directions including the one that matters most, that a COMPLIANT probe stays silent.
 - `gate_caller_impact.py` -- NOT PROMOTED BECAUSE IT ANSWERS A QUESTION ASKED AT A MOMENT, not on a cadence: "I am about to narrow this gate -- who calls it?" A push-time run would report the same 14 callers on every push forever, which is the always-passing checker this registry already has a name for. IT IS A PRE-CHANGE TOOL and the convention that invokes it is docs/2026-09-28-gate-tightening-caller-impact.md: before narrowing an authorisation gate, enumerate every caller and publish checked/universe. Built after add_rule and add_holidays were gated to a session and tools/load_deadline_seed.py -- the ONLY caller, sending a bearer key alone -- would have broken seeding on all 48 jurisdictions; it was caught by reading the loader, which is luck dressed as diligence. ITS SWEEP FOUND A REAL BUG: tools/alf_facility_role_gate_live_probe.py sent the session as X-Session-Token where tokenFromRequest reads x-sd-auth only, so every request it ever made carried no session and its role differentiation was never exercised. A CALLER OUTSIDE THIS REPO IS INVISIBLE TO IT, which is the largest gap and the second reason it reports rather than gates. Control pair: tests/run_gate_caller_impact_probe.py, both directions plus an arm that a DIFFERENT exempted path does not silence a finding.
 - `ghost_field_read_scan.py` -- NOT PROMOTED ON COST, MEASURED RATHER THAN GUESSED: ~90 seconds. It builds a spelled-field universe over 2,229 tracked files -- comment-stripping every one, including three HTML apps over 1MB -- before it can decide a single gate. Every other tool in this registry is seconds; adding a minute and a half to every push is how a gate gets disabled with SAIRN_SEED_GATE=off and then stays disabled, which costs more than the tool is worth. ITS FINDINGS DO NOT CHANGE QUICKLY, which is the other half of the decision: a ghost gate is created by a typo in a condition and then sits there, so a sweep on demand plus its control in the suite catches the same thing a per-push run would, later. Run it when touching a gate, or when a dispatch asks for the sweep: `python tools/ghost_field_read_scan.py`. Its subject and its three confirmed findings are docs/2026-09-27-ghost-field-read-sweep.md; its control pair is tests/run_ghost_field_read_probe.py. AND ONE REASON IT IS NOT A GATE AT ALL, separate from cost: a field written under a COMPUTED key is invisible to it, so a real field can read as a ghost. That is a false-positive direction a human dismisses in one read and a gate cannot.
@@ -664,11 +665,11 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 131 test files are traced to no stated requirement
+### 132 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 665 of 796 traced, 83.5%.
+For context and not as the headline: 665 of 797 traced, 83.4%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -691,7 +692,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | kind | count | what it means | the fix |
 |---|---|---|---|
 | **bound to a subject, tied to no requirement** | 28 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 103 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **no subject binding either** | 104 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
 **These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 28 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
@@ -776,6 +777,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_live_probe_residue_probe.py`
 - `tests/run_log_cluster_probe.py`
 - `tests/run_mutation_anchor_resolver_probe.py`
+- `tests/run_out_of_service_probe.py`
 - `tests/run_payer_routing_integration_sabotage_probe.py`
 - `tests/run_primitive_obsession_probe.py`
 - `tests/run_python_escape_hygiene_probe.py`
@@ -847,11 +849,11 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 796   tests/**, api/** (both walked)
+  test files on disk                 797   tests/**, api/** (both walked)
   open-work rows citing a test       375   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 10   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                65   report_only_checks.REGISTRY
-  recorded NOT-promoted decisions     74   report_only_checks.NOT_PROMOTED
+  recorded NOT-promoted decisions     75   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   sairn_push_gate_hook.py
 ```
 

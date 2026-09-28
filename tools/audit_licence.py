@@ -53,13 +53,26 @@ import re
 import sys
 
 AUDIT_KEY_RE = re.compile(r'^[A-Z]{2,6}-AUDIT-\d{4}$')
-SEED_FILE = 'sql/audit_license_seed_mech_law_2026-09-28.sql'
+SEED_FILE = 'sql/audit_license_seed_2026-09-28.sql'
 EXIT_COULD_NOT_RUN = 2
 
-# Audit licences that EXIST today, read off the seed files rather than guessed,
-# so a probe pointed at a plausible-but-unminted key is told which.
-KNOWN_AUDIT_KEYS = ('SD-AUDIT-2026', 'RF-AUDIT-2026', 'SV-AUDIT-2026',
-                    'MECH-AUDIT-2026', 'LAW-AUDIT-2026')
+# ── AUDIT LICENCES THAT ACTUALLY EXIST, MEASURED 2026-09-28 ─────────────────
+# One check_license call per key against the deployed platform, not read off a
+# seed file. THE FIRST VERSION OF THIS LIST WAS WRONG IN BOTH DIRECTIONS and the
+# measurement is what caught it: it named SV-AUDIT-2026, which does NOT exist,
+# and MECH/LAW-AUDIT-2026, which did not exist yet either. A list of keys that
+# "exist" containing one that does not is worse than no list, because the
+# not-in-the-list branch below is the only thing that warns -- so a probe pointed
+# at SV-AUDIT-2026 would have been told nothing and then earned 401.
+#
+#   RF-AUDIT-2026   200 EXISTS   (seeded 2026-09-02)
+#   SD-AUDIT-2026   200 EXISTS
+#   ALF / LAW / SC / MECH / SV   401 ABSENT
+#
+# The four that are needed are in sql/audit_license_seed_2026-09-28.sql. SV is
+# deliberately not, because no probe needs it. RE-MEASURE rather than trusting
+# this tuple: it is a snapshot, and its own comment is the reason to distrust it.
+KNOWN_AUDIT_KEYS = ('SD-AUDIT-2026', 'RF-AUDIT-2026')
 
 
 def is_audit_licence(key):
