@@ -1808,6 +1808,43 @@ unmapped-sinks-never-wins. The unweighted-random slice below keeps its
 false-negative-rate job unchanged — it is deliberately OUTSIDE this score,
 because its whole purpose is to catch what any weighting misses.
 
+**HOVER2 LABEL, added 2026-09-27 on direct instruction, self-audit finding
+-- neither of the two passages above describes hover2's own tool, and this
+file's own mostly instance-agnostic voice gives a reader no way to tell.**
+Checked directly, not assumed: hover2's `hover_cold_scan_pool.py` has no
+`defect_density_weighting.py`, no module_density/app-risk signal, no
+lexicographic combined score, and no fail-closed refusal on that tool's
+absence -- because the tool does not exist in this clone. hover2's
+`--weighted N` instead uses a small, static, hand-written regex
+(`SENSITIVITY_RE`, money/PII-adjacent substrings, a flat 3x multiplier);
+`--draw N` is genuinely unweighted. Both of the above passages are correct
+and current for the tool they actually describe -- naming it here rather
+than editing either passage, per instruction.
+
+**HOVER2 LABEL UPDATE, same day: the gap above is closed for hover2, own
+code, one disclosed scoping difference.** Built `defect_density_weighting.py`
+(own attribution: a finding's structured `target` field naming its
+resource(s) directly, resolved to an app via `api/_resources/*.js`, never
+H1's commit-sha/diff-tree method) and wired it into `--weighted N` as the
+real weight source, replacing the static substring heuristic. Sabotage-
+verified before trusting: a planted Safe-Harbor violation (counting `check`
+entries) was caught by the fixture lock; removing the dependency file made
+`--weighted` refuse closed (exit 2, naming the tool, no silent fallback to
+the old heuristic) rather than degrade quietly, confirmed by actually
+deleting and restoring the file. One real defect found and fixed on this
+tool's own FIRST real-data run, not assumed clean: a non-greedy bracket
+regex parsing `api/_resources/*.js` stopped at the first `]`, including one
+written in prose inside a `//` comment ("a [resource, storage-key] PAIR
+list", sairnmechanical.js:59) -- silently truncating several apps' resource
+counts (stonedesk read as 1 resource, not ~36) before a comment-stripping
+fix; a regression fixture now locks it. ONE DELIBERATE SCOPING DIVERGENCE
+from the passages above, disclosed rather than silently under-delivered:
+hover2 keeps weighted-RANDOM sampling, not H1's deterministic sorted-top-N
+mechanic, and does not add a second staleness axis on top of the existing
+cold/warm bucketing (which already implements the platform's "unread
+first" rule at the pool level). Both tools' own docstrings carry the full
+account; not restated here.
+
 - **Vary what triggers attention**, not only freshest-commit / highest-stakes.
   A rotation that always picks the same signal is still a predictable pattern
   even if it never repeats the same agent twice in a row.
