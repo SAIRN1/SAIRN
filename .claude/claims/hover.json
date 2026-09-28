@@ -161,8 +161,8 @@
       "task": "hover round eight: mirror token present -- remote setup, push, from-remote restore drill, token-history check; a per-window app cap on the draw after measuring each app's share of the last thirty draws, tests first; the display-only sweep re-run with an extended synonym list over the B rows; one undirected batch; next rotation draw. My writes stay in hover-audit-log and my own claim file. FILES: .claude/skills/sairn-hover-auditor/",
       "claimed_at": "2026-09-28T05:05:13Z",
       "claimed_at_epoch": 1790571913.8779144,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-28T10:16:54Z",
       "files": null
     }
   ],
