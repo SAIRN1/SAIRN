@@ -197,6 +197,17 @@
       "status": "released",
       "released_at": "2026-09-28T19:40:07Z",
       "files": null
+    },
+    {
+      "id": "hover-1790624645",
+      "session": "hover",
+      "subject": "hover",
+      "task": "hover round twelve: log the drift-measurement methodology correction and re-check other open drift figures for the same heuristic; consolidate the four silent-cell-sweep routable findings with app-ownership corrections; log sv_staff and mech_docs as decision-ready; confirm drill-due configuration and report remaining count; add a watch-list mechanism for leg_memorials.service_details_visible; next rotation draw. My writes stay in hover-audit-log and my own claim record. SCOPE: .claude/skills/sairn-hover-auditor/",
+      "claimed_at": "2026-09-28T19:44:05Z",
+      "claimed_at_epoch": 1790624645.4107523,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
