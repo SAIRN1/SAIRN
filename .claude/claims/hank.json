@@ -3248,6 +3248,26 @@
         "tests/run_fact_sheet_regenerates_probe.py",
         "tools/fact_sheet_regenerates.py"
       ]
+    },
+    {
+      "id": "hank-1790593258",
+      "session": "hank",
+      "subject": "hank",
+      "task": "queue21 item 1 FIRST, Michael prints at 09:00: --update mode on tools/fact_sheet_regenerates.py that rewrites every DERIVABLE figure in the fact sheet from its own command, stamps the run time, and NEVER touches a figure it cannot derive; control asserting a deliberately stale figure is corrected and a BROKEN command leaves the old figure and exits non-zero. Then item 2, the amend guard: a PreToolUse hook refusing git commit --amend, git add -A, git add ., git commit -a whenever a rebase, merge or cherry-pick is in progress, and refusing --amend on any commit already on origin/main -- I broke that prose rule myself yesterday and amended onto fourth's commit, so it becomes mechanical. Then item 3 the four audit licences and the role-gate probe with real sessions, item 4 credential LOCATIONS only, item 5 the obligation backlog, item 6 the patent-count confirmation line, and item 8 the prose-only-rules enumeration. SUBJECT NAMED PER PR 4.3 FILES: tools/fact_sheet_regenerates.py tests/run_fact_sheet_regenerates_probe.py docs/FACT-SHEET-2026-09-29.md tools/rebase_state_guard.py tests/run_rebase_state_guard_probe.py .claude/settings.json docs/2026-09-28-credential-locations.md docs/2026-09-28-prose-only-rules.md",
+      "claimed_at": "2026-09-28T11:00:58Z",
+      "claimed_at_epoch": 1790593258.476991,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        ".claude/settings.json",
+        "docs/2026-09-28-credential-locations.md",
+        "docs/2026-09-28-prose-only-rules.md",
+        "docs/FACT-SHEET-2026-09-29.md",
+        "tests/run_fact_sheet_regenerates_probe.py",
+        "tests/run_rebase_state_guard_probe.py",
+        "tools/fact_sheet_regenerates.py",
+        "tools/rebase_state_guard.py"
+      ]
     }
   ],
   "refusals": [
