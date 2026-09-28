@@ -17220,6 +17220,428 @@
         }
       ],
       "recurrence_open": "THE GENERAL SHAPE IS NOT CLOSED, only this instance. Any checker whose subject is a literal name -- a field, a string anchor, an identifier, a rule id -- can be silenced by its own regression test or by the document describing the defect, and nothing sweeps for that. tools/sabotage_control_check.py measures whether controls verify their own sabotage; nothing measures whether a checker's evidence universe includes the prose that discusses its findings. Also open: the .md exclusion means a field defined only in a markdown spec reads as a ghost, and no arm asserts that trade is still the right one; and the scan's ~90s runtime is the reason it is not in the report-only registry, so nothing runs it on a cadence at all -- it fires when a human asks."
+    },
+    {
+      "commit": "100377234764",
+      "date": "2026-09-27",
+      "subject": "fix(session-lock): the SessionStart warning had no expiry and nothing retracted it, so a true statement kept reading as fact after it stopped being one",
+      "files": [
+        "tests/session_lock_retraction_probe.py",
+        "tools/session_lock_check.py"
+      ],
+      "lines_added": 395,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "user-report",
+      "summary": "tools/session_lock_check.py cmd_start() emitted a SessionStart warning that another session was LIVE and that tool use would be REFUSED. The warned-about process was then ended. The PreToolUse guard did exactly the right thing -- re-checked the pid against its recorded start time, read DEAD, reclaimed the lock, allowed every call -- SILENTLY. So the only statement about the lock anywhere in the session's context was the SessionStart one, now false, and it went on reading as current fact: a block was reported to Michael twice that no longer existed. Nothing malfunctioned. A snapshot with no as-of, no re-validation and no retraction is a true statement that quietly stops being true with no event to mark it.",
+      "rules": [
+        "1.8"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "a744ceb5e0eb",
+        "date": "2026-09-16",
+        "subject": "fix(session-lock): confirmed-live sessions are now REFUSED, not warned",
+        "lag_days": 11
+      },
+      "citation_note": "Nothing announced the day the warning stopped being true. It was correct when emitted and false minutes later, with no event between the two states.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "The warning carried no timestamp and no statement that it was a snapshot, so nothing in the text distinguished true-at-session-start from true-now.",
+          "action": "The warning now stamps its own as-of, says that nothing about it updates itself in text already read, and says explicitly not to re-report it later as current.",
+          "action_status": "done"
+        },
+        {
+          "kind": "technical",
+          "factor": "There was no way to re-validate on demand. A reader who doubted the warning had no command to run.",
+          "action": "A status verb was added: 0 not blocked, 1 blocked, 2 COULD NOT TELL. It takes no lock and writes nothing, so running it cannot change the answer it reports.",
+          "action_status": "done"
+        },
+        {
+          "kind": "detection",
+          "factor": "THE GUARD ALREADY HAD THE FACT IN HAND at the moment of transition and said nothing. cmd_guard()'s DEAD branch reclaimed the lock in silence, which is what let the warning outlive its own truth.",
+          "action": "cmd_start() now records WHAT it warned about; the DEAD branch matches that marker, prints a retraction naming the pid, and clears the marker so it fires once rather than forever. A DEAD lock nobody was warned about stays SILENT, pinned by its own probe arm.",
+          "action_status": "done"
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "This is the standing shape of every SessionStart hook on the platform: a hook emits additionalContext once, it lands in a context window permanently, and nothing can retract it. The lock is the instance that was measured; the dispatch state, the claims list and the shared status registry are all delivered the same way.",
+          "action": "Not addressed beyond the lock. The retraction pattern is reusable and nothing else uses it yet.",
+          "action_status": "planned"
+        }
+      ],
+      "recurrence_open": "THE CLASS IS WIDE OPEN AND ONLY ONE INSTANCE IS CLOSED. Every SessionStart hook on this platform emits additionalContext once into a context window that cannot be revised -- the dispatch state, the active-claims list and the shared status registry all arrive that way, and all three are snapshots of things that change within the hour. Only the lock now carries an as-of, a status verb and a retraction. The other three do not, and a session reading a two-hour-old claims list as current is the same defect with a different subject."
+    },
+    {
+      "commit": "45e21a207093",
+      "date": "2026-09-27",
+      "subject": "fix(tooling): the anchoring ratchet CRASHED on its own OK path -- a %d with no argument, committed one commit ago",
+      "files": [
+        "tools/git_discovery_anchoring_check.py"
+      ],
+      "lines_added": 3,
+      "lines_removed": 3,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "tools/git_discovery_anchoring_check.py raised TypeError and exited 1 on its own OK path: the pass message was split across two print() calls, the first carrying a percent-d with no argument and the second supplying two arguments to one percent-d. So the tool failed EXACTLY WHEN IT PASSED, and worked correctly on every other path -- REGRESSION, COULD-NOT-TELL and --baseline all behaved, which is why the bug survived being run and committed.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "780935273632",
+        "date": "2026-09-27",
+        "subject": "fix(methodology): my conflict pre-flight duplicated an existing push gate, and the sweep for the hazard its probe found says 105 git calls can answer about the wrong repository",
+        "lag_days": 0
+      },
+      "citation_note": "A checker that raises on its PASS path returns a nonzero exit indistinguishable from a real finding, so COULD-NOT-RUN and FOUND-SOMETHING collapse into one number.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "The format mismatch sat on the single branch that writing the tool does not exercise: you run --baseline to create the pin, the next run is the OK path, and the commit happened between those two.",
+          "action": "Message reflowed so each print() carries its own arguments.",
+          "action_status": "done"
+        },
+        {
+          "kind": "detection",
+          "factor": "The line reading ratchet RC=1 was PRINTED IN THE VERIFICATION COMMAND OF THE SAME COMMIT, beside a probe RC=0, and was read as noise. A ratchet returning 1 immediately after being baselined can only mean REGRESSION and was impossible.",
+          "action": "Every exit path is now driven in one command -- OK, --list, pin lowered, pin unparseable, pin missing the integer key -- with the pin restored byte-identical afterwards.",
+          "action_status": "done"
+        },
+        {
+          "kind": "process",
+          "factor": "The tool had no probe at all. It was committed as a sweep whose output a human read once rather than with a control, so no arm existed to exercise the pass path.",
+          "action": "Exit-path driving added inline in the follow-up commit rather than as a committed probe file, which is weaker and is stated as such.",
+          "action_status": "done"
+        }
+      ],
+      "recurrence_open": "OPEN: no tool here is required to drive its own exit paths, and the PASS path is the least exercised during authoring because the author is watching it fail. tools/report_only_checks.py had the same class in its --list KeyError. A convention that every new checker prints each of its exit codes once in its own probe would close it and does not exist."
+    },
+    {
+      "commit": "476cec72122b",
+      "date": "2026-09-27",
+      "subject": "fix(tooling): 78 tools derived their repo root FROM unanchored git discovery -- on a machine where that never fails, it just answers wrongly",
+      "files": [
+        "docs/git-discovery-anchoring.json",
+        "tests/claims/run_matcher_probe.py",
+        "tests/claims/run_released_visibility_probe.py",
+        "tests/criticality_rollup_list_review_probe.py",
+        "tests/dnt_vendor_write_confirmation_probe.py",
+        "tests/entitlement_freshness_control.py",
+        "tests/failsafe/countersign_coverage_probe.py",
+        "tests/faults/run_fault_suite_probe.py",
+        "tests/install_git_hooks_check_probe.py",
+        "tests/law_custody_attribution_probe.py",
+        "tests/license_trial_gate_probe.py",
+        "tests/local_only_probe.py",
+        "tests/push_gate/check11_probe.py",
+        "tests/push_gate/check12_probe.py",
+        "tests/push_gate/check2_and_check5_probe.py",
+        "tests/push_gate/check3_probe.py",
+        "tests/push_gate/check4_probe.py",
+        "tests/push_gate/check7_probe.py",
+        "tests/push_gate/check8_probe.py",
+        "tests/push_gate/check9_probe.py",
+        "tests/push_gate/gate_freshness_probe.py",
+        "tests/push_gate/missing_checker_probe.py",
+        "tests/push_gate/redaction_base_probe.py",
+        "tests/push_gate/refspec_and_override_probe.py",
+        "tests/reachability/live_mode_probe.py",
+        "tests/run_claim_search_probe.py",
+        "tests/run_cleanup_confirm_probe.py",
+        "tests/run_committer_identity_probe.py",
+        "tests/run_control_char_probe.py",
+        "tests/run_criticality_tier_probe.py",
+        "tests/run_defect_register_probe.py",
+        "tests/run_defect_register_vocab_probe.py",
+        "tests/run_githook_install_probe.py",
+        "tests/run_invisible_in_pattern_probe.py",
+        "tests/run_landing_verification_probe.py",
+        "tests/run_new_checker_probe.py",
+        "tests/run_reachability_r5_probe.py",
+        "tests/run_rebase_resolve_probe.py",
+        "tests/run_removal_path_probe.py",
+        "tests/run_report_only_checks_probe.py",
+        "tests/run_semgrep_encoding_probe.py",
+        "tests/run_shape_search_probe.py",
+        "tests/run_soup_register_probe.py",
+        "tests/run_suite_lock_probe.py",
+        "tests/run_tooling_inventory_probe.py",
+        "tests/run_traceability_matrix_probe.py",
+        "tests/run_truthy_sum_probe.py",
+        "tests/run_two_axis_tier_parser_probe.py",
+        "tests/run_verification_plan_staleness_probe.py",
+        "tests/sabotage_harness.py",
+        "tests/sairnbiz_fault_probe.py",
+        "tests/sairnbuild_fault_probe.py",
+        "tests/sairncare_fault_probe.py",
+        "tests/sairncash_entitlement_fault_probe.py",
+        "tests/sairncash_fault_probe.py",
+        "tests/sairndental_outbound_queue_probe.py",
+        "tests/sairndental_write_failure_probe.py",
+        "tests/sairndesign_sairngrounds_fault_probe.py",
+        "tests/sairnfreedom_fault_probe.py",
+        "tests/sairnlegacy_fault_probe.py",
+        "tests/sairnmechanical_fault_probe.py",
+        "tests/sairnroofing_fault_probe.py",
+        "tests/sairnscape_fault_probe.py",
+        "tests/sairnsenior_fault_probe.py",
+        "tests/sairnvet_fault_probe.py",
+        "tests/sd_timesheet_pay_est_probe.py",
+        "tests/seam_check/run_delegation_probe.py",
+        "tests/suite_control_backfill_probe.py",
+        "tests/write_readback_probe.py",
+        "tools/append_only_read_order_scan.py",
+        "tools/claim_search.py",
+        "tools/confidentiality_candidate_flagger.py",
+        "tools/copy_exactly_gate.py",
+        "tools/entitlement_freshness_check.py",
+        "tools/guard_ablation.py",
+        "tools/hover_separation_ci.py",
+        "tools/negated_status_assertion_scan.py",
+        "tools/sairn_rebase_resolve.py",
+        "tools/shape_search.py"
+      ],
+      "lines_added": 116,
+      "lines_removed": 247,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "probe-control",
+      "summary": "78 tools and probes derived their repository root FROM an unanchored git rev-parse --show-toplevel and then built paths on the result. C:/Users/marsh/.git EXISTS -- the machine's home directory is itself a git repository -- so git's upward discovery SUCCEEDS with exit 0 from any directory beneath it and returns C:/Users/marsh. The call never fails, so nothing ever fell back and nothing ever errored. And C:/Users/marsh/tools/ EXISTS too, holding session_lock_check.py: the orphaned pre-2026-09-11 copy CLAUDE.md explicitly warns not to revive. So a probe run from the wrong directory does not fail to find its subject -- for that one it finds a real, stale, KNOWN-BUGGY file and tests THAT, successfully and silently. Two further tools wrapped the call in a fallback documented as existing so a run from outside any repo still has an answer rather than crashing; there is no outside on this machine, so the fallback is unreachable and both returned a confident wrong root. One of the two is tools/hover_separation_ci.py, where the consequence is a SEPARATION tool reading the wrong repository's history and reporting a clean separation it never checked.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tests/conflict_marker_preflight_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Spread across months and dozens of commits -- the shape was copied from probe to probe as each new one was written, so there is no single injecting commit. The earliest instances predate the ratchet by weeks, and the hazard only became REACHABLE when C:/Users/marsh became a git repository, a date recorded nowhere in this repo."
+      },
+      "citation_note": "An unanchored git call does not fail on this machine -- it answers about the WRONG repository with exit 0. COULD-NOT-TELL was silently converted into a confident answer.",
+      "phase_note": "Inferred rather than stated: the shape was copied from probe to probe over weeks, so it was introduced during coding each time, but no single author decision is identifiable and no design document proposed it.",
+      "contributing_factors": [
+        {
+          "kind": "latent-condition",
+          "factor": "C:/Users/marsh/.git exists and C:/Users/marsh/tools/ contains stale orphaned copies of platform tools. Neither is tracked by any clone, so nothing in the repository reveals either, and every tool on the machine inherits the hazard.",
+          "action": "Not removed. The hazard is now measured by a ratchet and named in every tool that was fixed.",
+          "action_status": "declined",
+          "note": "Removing C:/Users/marsh/.git or C:/Users/marsh/tools/ is a change to Michael's home directory, not to this repository, and CLAUDE.md is explicit that a build agent does not reach outside its clone. It is also not clearly the right fix, since the home repo may be deliberate. Flagged for Michael rather than acted on."
+        },
+        {
+          "kind": "technical",
+          "factor": "The root was taken from where the PROCESS was standing rather than from where the FILE lives. This is the identical correction clone_name() in this same file needed on 2026-09-11, when it read the basename of the cwd and returned tools or docs, making four separate clones claim one lock.",
+          "action": "All 78 now derive the root from __file__. The two fallback tools accept the git answer ONLY IF IT CONTAINS THIS FILE, preserving the worktree case while refusing an unrelated repository found by walking up.",
+          "action_status": "done"
+        },
+        {
+          "kind": "detection",
+          "factor": "The hazard was found by an unrelated probe's FAIL-CLOSED ARM: an arm asserting that outside a git repository the tool must exit 2 returned 0, and the reason was not a logic bug but that there is no outside under this home directory. No sweep was looking for it.",
+          "action": "tools/git_discovery_anchoring_check.py, a ratchet over every subprocess git call, classifying ASSERTED / ANCHORED / WEAK / UNANCHORED / UNREADABLE and reporting WEAK apart rather than folding it into either answer.",
+          "action_status": "done"
+        },
+        {
+          "kind": "process",
+          "factor": "The mechanical rewrite of 76 files could itself have been the defect. Its first depth calculation produced one dirname too few, so every path resolved one level short of the repository root.",
+          "action": "The rewriter verified EVERY file individually -- paren-matched call extent, result must parse, and the new expression EVALUATED with __file__ set to that file and asserted equal to the repo root. All 78 were rejected and nothing was written until the arithmetic was fixed.",
+          "action_status": "done"
+        }
+      ],
+      "recurrence_open": "PARTLY OPEN AND MEASURED: 27 unanchored call sites remain plus 33 WEAK ones that pass a cwd nobody derived from __file__, so cwd=os.getcwd() still counts as weak and is not safe. The remaining 27 are one-off git show / git fetch / git clone calls and generic git() wrappers, each needing its own judgement rather than a pattern. The ratchet holds the floor; it does not close the gap. The underlying condition -- a git repository at the home directory with stale tool copies beside it -- is untouched and is Michael's to decide on."
+    },
+    {
+      "commit": "7552917e7512",
+      "date": "2026-09-27",
+      "subject": "fix(tooling): the role-gate screen could not see a role check written as a loop, so real passing arms read as driven-as=owner",
+      "files": [
+        "tests/role_gate_loop_rule_probe.py",
+        "tools/role_gate_negative_coverage.py"
+      ],
+      "lines_added": 543,
+      "lines_removed": 49,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "probe-control",
+      "summary": "tools/role_gate_negative_coverage.py's driven() matched a role only as `role: 'x'` or `tokenFor('x')`, so a role check written as a loop over a declared list -- const ALF_NON_MGMT = ['nursing','med_aide','caregiver','activities']; for (const role of ALF_NON_MGMT) -- was INVISIBLE to it. Four real arms that drive exactly the roles alf_facility's gate excludes, green and ABLATION-CONFIRMED as catching the gate's deletion, left the resource reading driven-as=owner. A FALSE NEGATIVE, not a noisy false alarm: the ratchet could never register the work, so the tool went on demanding an arm that already existed, and any session trusting it would have written a second copy of arms already present.",
+      "rules": [
+        "1.8"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tests/role_gate_loop_rule_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "10ea5cbb9133",
+        "date": "2026-09-26",
+        "subject": "feat(role-gates): 12 of 31 role gates would survive being deleted -- proven by deleting one and watching 385 suites stay green",
+        "lag_days": 1
+      },
+      "citation_note": "A check whose anchor no longer matches the shape it measures has stopped testing anything, and nothing announced the day it stopped -- six real arms landed and the figure did not move.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "The matcher was tightened deliberately after an earlier version over-reported 16 gates for 11 by counting mentions in comments. That tightening was correct for THAT failure and created this one in the opposite direction -- a strict literal rule cannot see a role passed as a loop variable.",
+          "action": "The rule is now BODY-SCOPED rather than file-wide or arm-local: a role list, a for-of or forEach over it, the loop variable used inside, and a refusal plus a resource literal inside the SAME brace-matched body.",
+          "action_status": "done"
+        },
+        {
+          "kind": "technical",
+          "factor": "_role_list required EVERY list member to be a declared role, so one unrecognised member rejected the whole list and credited nothing on the very arm the rule was written for. caregiver is offered in BOTH of sairncare.html's role dropdowns and appears in no roleSet() in api/sd-data.js.",
+          "action": "Credit the INTERSECTION and require it non-empty; fixture P4 pins the mixed list in both directions.",
+          "action_status": "done"
+        },
+        {
+          "kind": "detection",
+          "factor": "Nothing compared the tool's verdict against the arms actually present. The figure not moving after six real arms landed was the only symptom, and a session not watching for it would have read 12-unchanged as 'no progress' rather than 'the tool cannot see it'.",
+          "action": "tests/role_gate_loop_rule_probe.py, 11 synthetic fixtures in both directions, locked BEFORE the rule was believed about the repo.",
+          "action_status": "done"
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "caregiver is absent from every roleSet, so it is absent from all_roles, therefore absent from every excluded set, therefore NO gate can ever be reported uncovered on it. A role the app offers is outside the measurement entirely.",
+          "action": "Recorded in prose in the tool and in the register. A mechanical report was built and DELETED the same hour because every anchor tried reported string, forever, submitted and five app ids as roles.",
+          "action_status": "declined",
+          "note": "Declined MECHANICALLY, not declined as a problem. A report was built to surface undeclared roles and every anchor tried invented findings -- `string` from a type assertion, `forever`, `submitted`, `indefinite`, `user`, `sub`, and five app ids from a list of app names. A long list of findings the tool fabricated is worse than the silence it replaces (the risk-scorer defect, docs/2026-09-13-cross-domain-disciplines.md), so the block was deleted and the finding lives in prose where it is true. Reconciling SAIRNcare's real role vocabulary against the roleSets is a per-app judgement and is Michael's call, not a sweep."
+        }
+      ],
+      "recurrence_open": "THE CLASS IS OPEN. This tool is still blind to a THIRD form of driving a role -- a helper taking the role as an argument, a fixture table, a parameterised runner -- and the module says so: the static pass is a SCREEN and only --ablate is a verdict. More generally every checker whose subject is a source SHAPE inherits this, and the failure direction here was the silent one: a false negative that retires the demand for work genuinely missing elsewhere. Nothing yet compares any checker's verdict against ground truth on a cadence."
+    },
+    {
+      "commit": "780935273632",
+      "date": "2026-09-27",
+      "subject": "fix(methodology): my conflict pre-flight duplicated an existing push gate, and the sweep for the hazard its probe found says 105 git calls can answer about the wrong repository",
+      "files": [
+        "docs/git-discovery-anchoring.json",
+        "tests/conflict_marker_preflight_probe.py",
+        "tools/conflict_marker_check.py",
+        "tools/conflict_marker_preflight.py",
+        "tools/git_discovery_anchoring_check.py"
+      ],
+      "lines_added": 729,
+      "lines_removed": 273,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/conflict_marker_preflight.py shipped with its OWN marker scanner while tools/conflict_marker_check.py had existed since 2026-09-15 as a push gate doing that job BETTER -- four marker shapes including the diff3 style, which the new copy missed entirely, anchored at column zero, with a measured zero-false-positive baseline across 2,069 tracked files, plus --outgoing and --json. A weaker second implementation of a gate already in the pipeline, built because docs/TOOLING-INVENTORY.md was not read first, which is the one step this platform's rules put before building any checker.",
+      "rules": [
+        "1.8"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "800a2213b290",
+        "date": "2026-09-27",
+        "subject": "feat(methodology): a rebase cannot ship an unresolved conflict -- nor a blind --ours, whose normal outcome leaves no markers at all",
+        "lag_days": 0
+      },
+      "citation_note": "A second, weaker copy of an existing gate means the pipeline holds two answers to one question and the weaker one can report CLEAN where the stronger would not.",
+      "contributing_factors": [
+        {
+          "kind": "process",
+          "factor": "docs/TOOLING-INVENTORY.md and docs/2026-09-13-cross-domain-disciplines.md were not read before building the checker, which CLAUDE.md names as the required first step. The tool was written from the incident description rather than from the inventory.",
+          "action": "Check A is now DELEGATED to conflict_marker_check.py, and the delegate is a REQUIRED dependency -- absent means exit 2 with the tool named, never a skip that reports the other checks as a pass.",
+          "action_status": "done"
+        },
+        {
+          "kind": "technical",
+          "factor": "The duplicate was WEAKER in a specific, invisible way: it carried no diff3 marker arm, so a repository configured with conflictStyle=diff3 would produce markers the new tool could not see while it reported CLEAN.",
+          "action": "The delegated implementation carries all four shapes and the measured baseline behind them.",
+          "action_status": "done"
+        },
+        {
+          "kind": "detection",
+          "factor": "Nothing on the platform flags a second tool covering an existing tool's job. The inventory is generated and complete, and nothing compares a NEW checker against it.",
+          "action": "Not built here.",
+          "action_status": "planned"
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "The existing tool's header asserted that a wrongly-resolved conflict means nothing mechanical can tell, which made a new tool look necessary. That clause was too strong: a resolution byte-identical to one whole side IS mechanically detectable.",
+          "action": "The clause is narrowed to what is genuinely undetectable -- a hand merge dropping a line -- and points at the new check C. The duplication was avoidable; check C was not, and is what survives.",
+          "action_status": "done"
+        }
+      ],
+      "recurrence_open": "OPEN AND MECHANICAL: nothing compares a newly added checker against docs/TOOLING-INVENTORY.md, so the next duplicate will be caught the way this one was -- by somebody happening to grep. The inventory is generated and complete, which is exactly what makes the check cheap to build, and it does not exist."
+    },
+    {
+      "commit": "ea93781c1959",
+      "date": "2026-09-27",
+      "subject": "fix(preflight): delegating over the whole working tree blew the Windows argv limit -- the tool failed closed and was still unusable",
+      "files": [
+        "tests/conflict_marker_preflight_probe.py",
+        "tools/conflict_marker_preflight.py"
+      ],
+      "lines_added": 64,
+      "lines_removed": 20,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/conflict_marker_preflight.py delegates its marker check by passing paths as argv. On a clean working tree that is 2,655 paths, which exceeds the Windows 32,768-character command-line limit: WinError 206, the filename or extension is too long. The tool FAILED CLOSED and reported COULD NOT RUN rather than a pass, which is correct, and was therefore unusable for its actual job on any real tree. Invisible to its own 22-arm probe because EVERY ARM PASSED ONE PATH: the first case worked, the real case did not, and nothing in between tested the size.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "780935273632",
+        "date": "2026-09-27",
+        "subject": "fix(methodology): my conflict pre-flight duplicated an existing push gate, and the sweep for the hazard its probe found says 105 git calls can answer about the wrong repository",
+        "lag_days": 0
+      },
+      "citation_note": "The tool reported COULD NOT RUN rather than a pass, which is the rule being honoured -- and it could not run at all on any real tree, so the correct third state was the only state it ever reached.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "The argv limit did not exist in the previous version, which read files in-process. The fix that removed a duplicate implementation introduced a platform limit nothing was watching for -- strictly an improvement in correctness and strictly a regression in capacity.",
+          "action": "Paths are batched to a MEASURED 24,000-character budget taken from actual path lengths, not to a fixed count of files, because a fixed count is the same guess as a fixed window when path lengths vary.",
+          "action_status": "done"
+        },
+        {
+          "kind": "detection",
+          "factor": "All 22 probe arms drove a single path. Scale was never a dimension of the probe, so the delegation was verified for correctness and never for size.",
+          "action": "Two new arms: the tree must be larger than 500 tracked files, so the arm cannot pass vacuously on a small checkout, and then delegation runs over EVERY tracked file.",
+          "action_status": "done"
+        },
+        {
+          "kind": "process",
+          "factor": "The defect was found during final pre-push verification by running the tool on the real tree, not by any arm. Otherwise it would have been found by the first real use.",
+          "action": "None beyond the arms above.",
+          "action_status": "not-actionable",
+          "note": "No corrective action generalises from this one. The honest statement is that a full-scale run before push is what caught it, that this is already required by CLAUDE.md's push protocol, and that the failure was expecting a probe to substitute for it."
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "A partial scan across batches would be indistinguishable from a complete one, which is the truncated-read class this platform records repeatedly.",
+          "action": "A batch that fails to return JSON is COULD NOT RUN with the batch size named, so one dropped batch of 200 files can never read as clean.",
+          "action_status": "done"
+        }
+      ],
+      "recurrence_open": "OPEN AS A CLASS: no probe on this platform asserts anything about SCALE. Every arm in every control drives one file, one row, one path, because that is what makes a fixture readable -- so an argv limit, a query-string limit, a memory ceiling or a timeout is invisible to all of them. This is the same shape as the second-pass gap measured in tools/second_pass_coverage_scan.py one commit earlier: the first instance is exercised and the real operating condition is not."
     }
   ],
   "started": "2026-09-09",
