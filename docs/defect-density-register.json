@@ -19032,7 +19032,7 @@
       "recurrence_open": "PARTLY CLOSED AND MEASURED: hook fail-opens 5 -> 0, but 16 dependency-shaped fail-opens remain in tools/ where exit 0 is not a decision to allow something, and they are unswept. The scanner reads TEXT, so a fail-open through a helper, a trap or a Python default argument is invisible and the universe is a FLOOR. And the distinction the tool rests on -- SCOPE versus DEPENDENCY -- is inferred from what the guard NAMES, so a scope guard whose marker has an unusual name will be miscounted as a finding."
     },
     {
-      "commit": "e96498eb4fbd",
+      "commit": "d211c6293616",
       "date": "2026-09-28",
       "subject": "fix(stonedesk): the Storage KPI was a percentage of a GUESS over a population it did not name -- and the Math.min the scanner flagged was the one part that was right",
       "files": [

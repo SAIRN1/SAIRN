@@ -2992,6 +2992,19 @@
       "source": "status-registry",
       "why": "same app: sairnbiz, sairncode, sairnvet, stonedesk",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-28T19:46:42Z",
+      "my_subject": "sairnmechanical",
+      "my_task": "mech_docs WRITE is reachable on a LICENCE KEY ALONE on the one doc type whose own redactor carries SSN/EIN/card-length patterns -- SD_SESSION_GATED holds 34 resources and not one mech_* entry. Regression suite FIRST, then the registry entry plus SD_GATE_APP so it inherits the active-credential pre-gate rather than growing a bespoke inline gate, then the mech_docs tier row corrected in the same change because the open-work row says correct it together or not at all. LEXICAL BLOCK DECLARED PER PR 4.3 RATHER THAN REWORDED: hover's live round-twelve claim names 'mech_docs' in the phrase 'log sv_staff and mech_docs as decision-ready'. VERIFIED DISJOINT: hover's declared SCOPE is .claude/skills/sairn-hover-auditor/ and nothing else, it is the audit role and does not build, and 'decision-ready' is the hand-off to a build agent rather than work in progress. I touch nothing in that clone and hover touches nothing in api/. NOT TAKEN AND REPORTED: mech_checks carries {num,date,payee,amount,memo} and the branch comment calls it the sharp one, but the open-work row names mech_docs and widening a gate beyond the row that justified it is the scope growth this platform refuses -- raised as its own row instead. SUBJECT NAMED PER PR 4.3 FILES: api/sd-data.js api/sd-data-mech-docs-session.test.js docs/CRITICALITY-TIERS.md docs/SAIRN-OPEN-WORK-INDEX.md",
+      "other_session": "cody",
+      "other_subject": "cody",
+      "other_task": "cody-q18 post-compaction: finish the assertion-label-shape JavaScript extension (probe controls C1 C2 C2b rewritten plus known-bad JS arms C5 C5b C5c) and then items 1 3 4 5 6 7 8 9 of the last paste -- registry entry doc, scrubber sync, SAIRNcode autonomy scope doc, sf_vendors and sf_inventory_counts re-anchor, blocked items when api/sd-data.js frees, two-door checker dispatch extension, zero-parse-must-fail sweep, self-test-with-fixture methodology",
+      "other_claimed_at": "2026-09-28T19:39:12Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: api/sd-data.js",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
 }
