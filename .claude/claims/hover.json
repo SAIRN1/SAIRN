@@ -186,6 +186,17 @@
       "status": "released",
       "released_at": "2026-09-28T11:26:40Z",
       "files": null
+    },
+    {
+      "id": "hover-1790597373",
+      "session": "hover",
+      "subject": "hover",
+      "task": "hover round eleven: log the model/effort change; independent re-derivation of five recent findings against current source; a silent-cell sweep for B cells with no stated enforcement basis at all; sv_staff display-field-vs-live-surface determination; the exact evidence that would close mech_docs; one undirected batch; next rotation draw. Every write of mine lands under hover-audit-log or my own claim record. SCOPE: .claude/skills/sairn-hover-auditor/",
+      "claimed_at": "2026-09-28T12:09:33Z",
+      "claimed_at_epoch": 1790597373.3544965,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
