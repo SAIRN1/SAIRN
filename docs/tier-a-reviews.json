@@ -4372,6 +4372,26 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-28T19:34:37Z",
+      "opened_at_sha": "fff078df83e6ca9acbe87e1b476cdeac3593a1d4",
+      "resources": [
+        "quotes"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tools/fail_open_scan.py"
+      ],
+      "what": "NO TIER A RESOURCE WAS TOUCHED. This obligation exists because the gate matched the WORD 'quotes' inside a docstring about QUOTE CHARACTERS, and I am recording that rather than rewording the comment to slip past it.\n\nWHAT ACTUALLY CHANGED: tools/fail_open_scan.py only. It is a static checker; it serves no resource, reads no request and is not on any request path. The match is in mask_python()'s docstring -- 'a regex for Python strings has to model triple quotes, raw and f prefixes, escapes and nesting; the tokenizer already does' -- where 'quotes' means the character, not the scp_quotes resource.\n\nTHE CHANGE ITSELF, for whoever reads this: the scanner was counting its OWN DOCSTRING. It documents the shapes it hunts (|| exit 0, except: pass), quoted them to explain them, and matched them -- six self-hits, plus two from the tooling_inventory entry describing it. Eight of eighteen reported sites were prose, and the figures I published (21 dependency, then 16) were both inflated. Fixed by masking strings and comments before matching: Python via tokenize, shell via a single left-to-right pass. A file that will not tokenise is COULD NOT TELL, never a raw-text fallback.\n\nAND THE FIX BROKE SOMETHING THE SECOND CHANGE REPAIRS: masking alone dropped SCOPE-shaped guards from 2 to ZERO and reclassified .githooks/pre-commit's hover-auditor marker test as a hook fail-open -- which, acted on, would have demanded every commit in four build clones be refused. What makes a guard a scope test is the NAME it tests for, and that name lives in a string literal the mask blanks. So shape is matched on the masked line and subject on the raw line.\n\nWHAT TO ATTACK: (a) the corrected count is 30, WORSE than anything I published, and all 30 are unfixed bare-except-pass sites in tools/; (b) mask_python raises on an untokenisable file and the caller turns that into COULD NOT TELL -- confirm that path is reachable and not swallowed; (c) the SCOPE-versus-DEPENDENCY split is inferred from what the guard NAMES, so a scope marker with an unusual name is miscounted as a finding, and that is a judgement call I made alone.\n\nTHE GATE'S OWN FINDING, NOT MINE TO FIX: tools/tier_a_review_gate.py attributes a resource from a bare word in prose. That is the fourth instance this session of a text-reading gate matching its own or somebody's documentation -- sairn_sql_preflight, text_gate_literal_sweep, fail_open_scan, and now this. tier_a_review_gate.py is cody's and is NOT edited; reported here rather than reworded past.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-28T19:34:37Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
