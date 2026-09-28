@@ -18372,6 +18372,63 @@
         }
       ],
       "recurrence_open": "NO CLIENT SENDS retrigger_events AT ALL -- sairnlaw.html has no caller, so this whole path is reachable only by a direct API consumer and the input contract is still documented nowhere outside the suite. The endpoint does not validate the element shape before handing it to the engine, so the engine is the only thing refusing. And the wider class is untouched: a field written somewhere and read on the WRONG object clears the ghost scan's third condition by construction, which is the member of this family that has now bitten twice. Also open: `dispositions.sort()` compares raw strings, which is correct for ISO dates and is now guaranteed only because everything non-ISO refuses upstream -- nothing asserts that dependency."
+    },
+    {
+      "commit": "f82d642cbea5",
+      "date": "2026-09-28",
+      "subject": "fix(methodology): the plan's staleness checker read 0 claims from 6 files and reported drift anyway -- plus the SAIRNcode autonomy scoping",
+      "files": [
+        "docs/2026-09-28-cody-self-audit.md",
+        "docs/2026-09-28-sairncode-autonomous-coding-scope.md",
+        "docs/verification-methodology-implementation-plan.md",
+        "tests/run_verification_plan_staleness_probe.py",
+        "tools/verification_plan_staleness_check.py"
+      ],
+      "lines_added": 415,
+      "lines_removed": 10,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "tools/verification_plan_staleness_check.py READ 0 CLAIM RECORDS FROM 6 CLAIM FILES AND REPORTED DRIFT ANYWAY. claims() treated a claim file as a single record and looked for `subject` at the top level; the real shape is {session, claims: [...], refusals: [...]}, so it parsed nothing, returned an empty map, and then EVERY `claim=` marker in the methodology plan resolved to 'no ACTIVE claim of that name exists' and was reported STALE-INFLIGHT. Measured before and after: 0 claim records, then 543. THIS IS RULE 1.11 WITH THE ARROW REVERSED -- not could-not-run folded into passed, but COULD-NOT-PARSE FOLDED INTO FOUND: the tool had read its source successfully, because the directory existed, and produced verdicts from nothing. A false-finding generator is the shape that gets a check switched off. It went unnoticed because the control's claim arm asserted only that STALE-INFLIGHT FIRES for a name nobody holds, with no paired positive, so a detector stuck on one answer satisfied it -- verified by running the control against the pre-fix tool, which exits 0. And the broken path had never run in practice: the tool sat at exit 2 COULD NOT TELL since it was written because no item in the plan carried a verify marker, which is a correct refusal and also a perfect hiding place. Fixed: both shapes read, released claims excluded, and a directory yielding zero records now returns measured=False. The two drifts the tool now reports SURVIVED the fix, which is what makes them real.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The parser has been wrong since claims() was written; the exact commit was not traced because the code path had never executed against real markers and the lag figure would be meaningless."
+      },
+      "contributing_factors": [
+        {
+          "factor": "The tool returned measured=True on the strength of the DIRECTORY EXISTING, not on having parsed anything out of it. Six files were opened, every one parsed to zero usable records, and the function reported success -- so the caller had no way to distinguish an empty claim record from an unreadable one.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A directory of files that yields zero records now returns measured=False, which makes every claim= marker COULD NOT TELL instead of a fabricated STALE-INFLIGHT. Both claim-file shapes are read and released claims are excluded from active."
+        },
+        {
+          "factor": "THE CONTROL PASSED AND WOULD HAVE KEPT PASSING. ARM 5 asserted only that STALE-INFLIGHT FIRES for a claim name nobody holds, which a detector stuck on fire satisfies perfectly. The commit direction had its paired positive; the claim direction never did, so the one arm covering the broken code path could not fail.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "ARM 5b names a claim that IS actively held and demands silence, reading the LIVE claim record rather than a fixture because a fixture would not have exercised the parser that was broken. Ablation-verified: with the old parser restored in a temp copy the arm fails loudly as COULD NOT DRIVE, and the ablation script refuses to report if its own patch did not apply."
+        },
+        {
+          "factor": "NOBODY HAD EVER FED THE TOOL, so the broken path had never run against real markers. It sat at exit 2 COULD NOT TELL from the day it was written -- 10 item lines and not one verify marker -- which is a correct refusal and also a perfect hiding place: the claims() code path was unreachable in practice.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Three markers added for the only three items whose state is verifiable from the repo today; eight remain UNVERIFIABLE and are printed as a third state rather than counted clean. Marking an item whose state has not been checked would convert an unknown into an assertion."
+        },
+        {
+          "factor": "The claim-file shape is read independently by several tools and there is no shared accessor. sairn_claim.py writes it, dispatch_state.py and this tool each parse it again, and a parser that is wrong in one of them is invisible to the others.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "NOT CLOSED. A single shared reader for .claude/claims/*.json would make this class impossible, and it is named rather than built because the writers are spread across sessions' declared files and consolidating them needs an owner for each."
+        }
+      ],
+      "recurrence_open": "No shared reader for .claude/claims/*.json exists. sairn_claim.py writes it and at least two tools parse it again independently, so a parser wrong in one is invisible to the others. Naming it rather than consolidating, because the writers live in several sessions declared files."
     }
   ],
   "started": "2026-09-09",
