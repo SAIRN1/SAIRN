@@ -117,8 +117,8 @@
       "task": "resolved-read staleness signal (ref citations resolved to resources at recorded sha, fixtures first, re-measure); undirected tie-break replacing alphabetical; backup mirror script plus scratch restore test, no push; audit the three floor-measurement resources; resume rotation FILES: .claude/skills/sairn-hover-auditor/",
       "claimed_at": "2026-09-28T02:53:54Z",
       "claimed_at_epoch": 1790564034.7226682,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-28T03:39:34Z",
       "files": null
     }
   ],
