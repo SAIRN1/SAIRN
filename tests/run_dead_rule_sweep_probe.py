@@ -159,11 +159,22 @@ check('D1. it reads a NON-EMPTY rule list -- a zero would make the verdict '
 check('D2. it publishes CHECKED / UNIVERSE and keeps COULD NOT TELL SEPARATE '
       'from clean -- "no evidence to ablate" and "the rule is exercised" are '
       'opposite findings that would otherwise print the same',
-      'CHECKED / UNIVERSE' in out and 'NOT CLEARED' in out
-      and 'COULD NOT TELL' in out, out[:900])
-check('D3. and it reports BOTH numbers, exercised and dead, rather than one '
-      'score', re.search(r'\(\d+ exercised, \d+ dead\)', out) is not None,
-      out[:900])
+      # Matched on a SINGLE-LINE phrase. The first attempt keyed on 'could
+      # not be compared', which the tool wraps across a newline and an indent --
+      # a control failing on its own subject's formatting rather than on its
+      # subject.
+      'CHECKED / UNIVERSE' in out and 'STILL NOT CLEARED' in out
+      and 'no lock, no control' in out, out[:1200])
+check('D3. and it reports the tiers SEPARATELY rather than as one score: '
+      'exercised and dead against SHIPPED evidence, and the weaker real-run '
+      'tier counted apart from both. Folding the two would let a rule defended '
+      'only by the corpus read as one defended by a lock',
+      re.search(r'of which\s+\d+ exercised and \d+ dead', out) is not None
+      and 'REAL RUN ONLY' in out, out[:1200])
+check('D3b. ...and the output SAYS WHY the real-run tier is weaker, in words. A '
+      'reader who cannot see the difference will treat the two as one number',
+      'a lock changes when somebody decides' in out
+      and 'anybody pushes' in out, out[:1200])
 check('D4. exit is 0, 1 or 2 and nothing else', rc in (0, 1, 2), rc)
 check('D5. THE FILE IT ABLATED IS UNCHANGED after the real run',
       subprocess.run(['git', 'diff', '--quiet', '--',

@@ -86,10 +86,58 @@ NEVER = "(?!x)x"
 
 # Flags that run a tool's own fixture lock without touching real data.
 LOCK_FLAGS = ('--fixtures', '--selftest', '--self-check')
+# A bare real run is the third tier's evidence and some tools are slow.
+# A timeout is COULD NOT TELL, never dead.
+# Lowered from 180 after the first full run: the third tier costs TWO bare
+# runs per rule and the sweep has to finish to be worth anything. A timeout
+# is COULD NOT TELL, never dead.
+CORPUS_TIMEOUT = 45
 
 DEAD = 'DEAD TO ITS OWN EVIDENCE -- neutralise it and nothing goes red'
 LIVE = 'exercised'
-NO_EVIDENCE = 'COULD NOT TELL -- the tool ships no fixture lock and no control'
+# ── A THIRD TIER, ADDED 2026-09-29 ──────────────────────────────────────────
+# The first run left 91 of 156 rules as COULD NOT TELL because their tool ships
+# neither a fixture lock nor a declared control. But a tool with no evidence
+# still PRODUCES SOMETHING: if neutralising a rule changes what it prints on the
+# real corpus, something notices.
+#
+# THIS IS WEAKER EVIDENCE AND THE VERDICT SAYS SO. A lock is hand-built and
+# changes only when somebody decides; the corpus changes when anybody pushes. A
+# rule defended only by the corpus is defended by something nobody agreed to,
+# and the day the last matching line is deleted the rule goes dead with no
+# signal. It is real evidence and it is not the same evidence, so it is a
+# separate verdict rather than folded into `exercised`.
+LIVE_CORPUS = 'exercised BY THE REAL RUN ONLY -- no lock, no control'
+DEAD_EVEN_ON_OUTPUT = ('DEAD EVEN ON THE REAL RUN -- no lock, no control, and '
+                       'neutralising it does not change a byte of the output')
+NO_EVIDENCE = ('COULD NOT TELL -- no lock, no control, and the real run could '
+               'not be compared either')
+WRITES = ('COULD NOT TELL -- no lock, no control, and the tool WRITES '
+          'when run, so the real run is not safe to use as evidence')
+# A tool whose bare run rewrites a file cannot be the third tier's
+# evidence: the first full run of that tier left docs/MASTER-PLAN.md,
+# docs/TOOLING-INVENTORY.md and docs/traceability-matrix.md modified in
+# the working tree, because the generators regenerate when run with no
+# arguments. Detected by SHAPE rather than by a name list -- a write to a
+# path built from REPO -- so a new generator is covered on the day it
+# lands rather than on the day somebody remembers to add it.
+WRITE_SHAPES = (
+    "'w'", '"w"', "'wb'", '"wb"', "'a'", "'w+'",
+)
+
+
+def writes_when_run(src):
+    """Does a bare run of this tool open something for writing?"""
+    for ln in src.split('\n'):
+        t = ln.strip()
+        if t.startswith('#'):
+            continue
+        if ('open(' not in t and '.write(' not in t
+                and 'makedirs' not in t and 'replace(' not in t):
+            continue
+        if any(w in t for w in WRITE_SHAPES):
+            return True
+    return False
 
 
 def module_patterns(src):
@@ -156,17 +204,24 @@ def evidence_cmds(tool, src):
     return cmds
 
 
-def run(argv, timeout=240):
+def run(argv, timeout=240, want_output=False):
+    """Exit code, or (exit code, stdout) when the output itself is the signal.
+
+    None means the run could not be compared at all -- a timeout or a crash of
+    the harness rather than of the tool. Kept distinct from a non-zero exit,
+    because "it failed" and "I could not find out" are different answers and
+    this file's whole subject is not confusing the two.
+    """
     try:
         r = subprocess.run(argv, cwd=REPO, capture_output=True, text=True,
                            encoding='utf-8', errors='replace', timeout=timeout,
                            env=dict(os.environ, PYTHONIOENCODING='utf-8',
                                     PYTHONUTF8='1'))
-        return r.returncode
+        return (r.returncode, r.stdout or '') if want_output else r.returncode
     except subprocess.TimeoutExpired:
-        return None
+        return (None, None) if want_output else None
     except Exception:                                          # noqa: BLE001
-        return None
+        return (None, None) if want_output else None
 
 
 # ── THE FIXTURE LOCK (discipline 1), and this tool must pass its own test ────
@@ -251,12 +306,23 @@ def sweep_tool(tool, verbose=False):
     if not pats:
         return []
     cmds = evidence_cmds(tool, orig)
+    bare = None
+    if not cmds and writes_when_run(orig):
+        return [(n, WRITES) for n, _ln in pats]
     if not cmds:
-        return [(n, NO_EVIDENCE) for n, _ln in pats]
+        # THE THIRD TIER. Run the tool bare and compare its OUTPUT, not only its
+        # exit code: a rule can change what a report says without changing
+        # whether it exits 1.
+        bare = [sys.executable, os.path.join(REPO, 'tools', tool)]
 
     base = {}
     for label, argv in cmds:
         base[label] = run(argv)
+    base_bare = run(bare, timeout=CORPUS_TIMEOUT, want_output=True) if bare else None
+    if bare and base_bare[1] is None:
+        # The baseline itself could not be taken, so nothing below is a
+        # comparison. NOT folded into dead.
+        return [(n, NO_EVIDENCE) for n, _ln in pats]
 
     rows = []
     try:
@@ -270,6 +336,15 @@ def sweep_tool(tool, verbose=False):
             # nothing would report every rule as dead.
             if NEVER not in io.open(path, encoding='utf-8').read():
                 rows.append((name, NO_EVIDENCE))
+                continue
+            if bare:
+                got = run(bare, timeout=CORPUS_TIMEOUT, want_output=True)
+                if got[1] is None:
+                    rows.append((name, NO_EVIDENCE))
+                elif got != base_bare:
+                    rows.append((name, LIVE_CORPUS))
+                else:
+                    rows.append((name, DEAD_EVEN_ON_OUTPUT))
                 continue
             moved = False
             for label, argv in cmds:
@@ -326,6 +401,7 @@ def main(argv):
         return EXIT_COULD_NOT_RUN
 
     dead, live, unknown, unreadable = [], 0, [], []
+    live_corpus, dead_output, writes = 0, [], []
     for t in tools:
         try:
             rows = sweep_tool(t, verbose=bool(a.tool) and not a.quiet)
@@ -340,28 +416,49 @@ def main(argv):
                 dead.append((t, name))
             elif verdict == LIVE:
                 live += 1
+            elif verdict == LIVE_CORPUS:
+                live_corpus += 1
+            elif verdict == DEAD_EVEN_ON_OUTPUT:
+                dead_output.append((t, name))
+            elif verdict == WRITES:
+                writes.append((t, name))
             else:
                 unknown.append((t, name))
 
-    total = len(dead) + live + len(unknown)
+    total = (len(dead) + live + len(unknown) + live_corpus
+             + len(dead_output) + len(writes))
     if not a.quiet:
         print('read %d tool(s) from the report-only registry; %d module-level '
               'compiled rule(s)' % (len(tools), total))
         print('\nCHECKED / UNIVERSE: %d of %d rules could be ABLATED against '
-              'evidence the tool\n  itself ships (%d exercised, %d dead). THE '
-              'OTHER %d ARE NOT CLEARED -- they are\n  COULD NOT TELL: the tool '
-              'carries no fixture lock and no declared control, so\n  there is '
-              'nothing to notice the rule vanishing. "No evidence to ablate" '
-              'and\n  "the rule is exercised" are opposite findings and must '
-              'not print the same.'
-              % (live + len(dead), total, live, len(dead), len(unknown)))
+              'SOME evidence.\n  %d of those against evidence the tool SHIPS -- '
+              'a lock or a control -- of which\n  %d exercised and %d dead. '
+              'THE OTHER %d WERE ABLATED AGAINST THE REAL RUN ONLY,\n  which is '
+              'weaker: a lock changes when somebody decides, a corpus changes '
+              'when\n  anybody pushes. %d of those move the output and %d do '
+              'not move a byte of it.\n  AND %d ARE STILL NOT CLEARED -- no '
+              'lock, no control, and the real run could\n  not be compared '
+              'either. "No evidence to ablate" and "the rule is exercised"\n  '
+              'are opposite findings and must not print the same.'
+              % (live + len(dead) + live_corpus + len(dead_output), total,
+                 live + len(dead), live, len(dead),
+                 live_corpus + len(dead_output), live_corpus, len(dead_output),
+                 len(unknown) + len(writes)))
+        if writes:
+            print('  OF THOSE, %d belong to a tool that WRITES when run, so the '
+                  'real run is not\n  safe to use as evidence -- the first '
+                  'attempt at this tier left three generated\n  documents '
+                  'modified in the working tree.' % len(writes))
         if unreadable:
             print('  UNREADABLE: %s' % ', '.join(unreadable))
 
     return finish(
-        ['%s  %s  %s' % (t, n, DEAD) for t, n in dead],
+        ['%s  %s  %s' % (t, n, DEAD) for t, n in dead]
+        + ['%s  %s  %s' % (t, n, DEAD_EVEN_ON_OUTPUT) for t, n in dead_output],
         could_not_run=['%s %s -- no fixture lock and no control to ablate '
-                       'against' % (t, n) for t, n in unknown],
+                       'against' % (t, n) for t, n in unknown]
+        + ['%s %s -- the tool WRITES when run; the real run is not safe '
+           'evidence' % (t, n) for t, n in writes],
         quiet=a.quiet,
         clean_line='\nCLEAN -- every module-level rule whose tool ships '
                    'evidence is exercised by it.')
