@@ -176,7 +176,17 @@ def check_against(their_subject, their_task, my_subject, my_task):
 BOILERPLATE_A = ('FILES: sairnlegacy.html sairndesign.html '
                  'tests/server_wins_hydration.js -- server wins hydration in two apps')
 BOILERPLATE_B = ('FILES: sairnlaw.html tests/sairnlaw_trust_clearance.js -- '
-                 'iolta clearance, html tests for the trust ledger')
+                 'iolta clearance, wins hydration for the trust ledger')
+# PAIR CHANGED 2026-09-29, AND THE OLD ONE WAS RIGHT TO STOP WORKING. It relied
+# on the bigram `html tests`, which sairn_claim now EXEMPTS: that phrase appears
+# in the claims of four different sessions, so the corpus says it is common
+# vocabulary and a lexical block on it was the over-block this whole file
+# documents. The control was therefore asserting an over-block THAT HAS BEEN
+# FIXED one layer up -- a fixture describing a closed gap, not a defect in the
+# change. `wins hydration` is used by two sessions, under the three-session
+# threshold, so it still collides and the arm below still means what it says.
+# If the exemption ever widens to cover this pair too, THIS ARM IS WHERE THAT
+# BECOMES VISIBLE rather than the next arm silently passing for free.
 arm('CONTROL: those two really DO collide lexically, so the next arm is real',
     SC.block_reason('a', BOILERPLATE_A, 'b', BOILERPLATE_B) is not None,
     'no lexical rule fires, so a passing arm below would prove nothing')
@@ -281,11 +291,25 @@ only_file = [(a, b) for a, b in pairs
              and not SC.block_reason(a.get('subject', ''), a.get('task', ''),
                                      b.get('subject', ''), b.get('task', ''))]
 print('    refused by FILES alone      %4d   (no lexical rule fires)' % len(only_file))
-arm('PINNED: the file set currently refuses NOTHING the lexical matcher misses',
-    len(only_file) == 0,
-    'this is now %d. That is not a failure -- it means the two checks have '
-    'stopped agreeing and the file set is load-bearing on its own. Read the '
-    'pairs, then update this arm deliberately.' % len(only_file))
+# ── THE PIN MOVED FROM 0 TO 23 ON 2026-09-29, DELIBERATELY ────────────────
+# The arm above did exactly what it was built for. sairn_claim now exempts
+# COMMON VOCABULARY -- a bigram or hyphenated token used by three or more
+# sessions -- so a pair whose only lexical signal was `tests first` or
+# `known-bad control` no longer blocks lexically. Twenty-three such pairs
+# DECLARE AN INTERSECTING FILE, and for those the file set is now the only
+# thing refusing. THAT IS THE FILE SET BECOMING LOAD-BEARING ON ITS OWN, which
+# this arm's own comment calls fine and says somebody must know about.
+#
+# The number is pinned rather than the arm relaxed to `>= 0`: a floor would stop
+# measuring, and the next movement in either direction is the thing worth
+# seeing. If it FALLS, the exemption has widened past where files can catch it.
+FILE_ONLY_REFUSALS = 23
+arm('PINNED: the file set refuses exactly %d pairs the lexical matcher misses'
+    % FILE_ONLY_REFUSALS,
+    len(only_file) == FILE_ONLY_REFUSALS,
+    'this is now %d, not %d. That is not a failure -- it means the two checks '
+    'have moved apart again. Read the pairs, then update this number '
+    'deliberately.' % (len(only_file), FILE_ONLY_REFUSALS))
 
 print('\n%d failure(s)' % fails)
 sys.exit(1 if fails else 0)
