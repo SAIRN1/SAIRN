@@ -2600,8 +2600,8 @@
       "task": "cody-q19 test",
       "claimed_at": "2026-09-29T10:55:09Z",
       "claimed_at_epoch": 1790679309.2660716,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T10:55:47Z",
       "files": null
     }
   ],
