@@ -2654,8 +2654,8 @@
       "task": "sweep every pattern based checker by neutralising one compiled rule at a time and reporting the ones whose deletion turns nothing red",
       "claimed_at": "2026-09-29T13:08:06Z",
       "claimed_at_epoch": 1790687286.5776563,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T13:53:14Z",
       "files": null
     }
   ],
