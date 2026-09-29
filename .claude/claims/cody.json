@@ -2668,6 +2668,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "cody-1790690697",
+      "session": "cody",
+      "subject": "cody-matcher",
+      "task": "tools/sairn_claim.py tests/run_claim_matcher_probe.py",
+      "claimed_at": "2026-09-29T14:04:57Z",
+      "claimed_at_epoch": 1790690697.0094457,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
@@ -2857,6 +2868,19 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "same file or resource: report-only",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-29T14:04:54Z",
+      "my_subject": "cody-parsegate",
+      "my_task": "tools/sairn_push_gate_hook.py tests/run_staged_parse_probe.py tools/staged_parse_check.py",
+      "other_session": "cc",
+      "other_subject": "platform",
+      "other_task": "record every regfresh branch tip then delete only those proven contained in main; inventory competitive-gap audit docs across main and the cloud PR branches read-only; make the cross tenant isolation stripper string aware with independent derivations tests first; make the role gate screen see table driven suites or print the blind population as its own counted bucket; and the blind-spot-line sweep across every report-only screen with a control per tool. SUBJECT NAMED PER PR 4.3 FILES: docs/2026-09-29-stale-branch-tips.md docs/2026-09-29-competitive-gap-doc-inventory.md tools/cross_tenant_isolation_scope.py tests/run_cross_tenant_isolation_scope_probe.py tools/role_gate_negative_coverage.py docs/role-gate-negative-coverage.json tools/blind_spot_line_check.py tests/run_blind_spot_line_probe.py",
+      "other_claimed_at": "2026-09-29T13:26:31Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"probe tools\"",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
