@@ -19921,6 +19921,58 @@
         }
       ],
       "recurrence_open": "Only THIS suite strips. The fixed-window-substring shape was swept once before and the sweep's finding list is not re-run on new checks, so the next check that greps a raw single-file app for an identifier has the same hole available. tools/gated_resource_direct_fetch_header.js is also still the only check of its class -- nothing verifies that the 900-character window is wide enough in the other direction."
+    },
+    {
+      "commit": "7d7c764cdb0e",
+      "date": "2026-09-29",
+      "subject": "fix(stonedesk): the storage figure is marked as an approximation, and the keys are counted -- there is NO configured quota to divide by, and the search is recorded",
+      "files": [
+        "stonedesk.html",
+        "tests/stonedesk_admin_storage_kpi.js"
+      ],
+      "lines_added": 32,
+      "lines_removed": 2,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "stonedesk.html's Admin Overview storage KPI reported bytes as if they were exact after the invented 5MB percentage was removed earlier the same day. Two things were still wrong with the figure. (1) `.length * 2` assumes two bytes per UTF-16 code unit, which is wrong for an astral character (a surrogate pair is two units) and is not how every engine charges its quota, so the total is an approximation presented as a measurement. (2) THE KEYS WERE NOT COUNTED AT ALL -- only the values -- and keys are stored too, so the figure was biased DOWN, which is the wrong direction for a number somebody reads as 'how full am I'. Keys are now included and the value carries a `~`, a mark on the number rather than a longer label because the card has room for a figure and not a sentence. AND THE QUOTA SEARCH IS RECORDED SO IT IS NOT REPEATED: no storage_quota, storage_limit, quota_bytes or max_storage exists anywhere in the repo's .js, .sql, .json or .html, and vercel.json carries no storage configuration. It would not help if it did -- this KPI counts BROWSER localStorage, which neither Supabase nor Vercel governs, and the browser's own limit varies by engine and origin and is not knowable synchronously. So no percentage is computed and none is invented.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "d211c6293616",
+        "date": "2026-09-28",
+        "subject": "fix(stonedesk): the Storage KPI was a percentage of a GUESS over a population it did not name -- and the Math.min the scanner flagged was the one part that was right",
+        "lag_days": 1
+      },
+      "citation_note": "Not an absent dependency. Cited for the neighbouring principle: the card reported a quantity more precisely than it had established, having just been corrected for reporting one it had not established at all.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "Removing an invented denominator left the numerator reading as exact. The fix for a fabricated figure produced a second, quieter overstatement: a byte count derived from an encoding assumption, with no mark saying so.",
+          "action_status": "done",
+          "action": "The value carries a `~`, and an arm forbids the marker being dropped."
+        },
+        {
+          "kind": "technical",
+          "factor": "The sum walked localStorage keys to READ them and never counted them. The omission is invisible in the code -- the loop looks complete -- and biases the answer in the reassuring direction.",
+          "action_status": "done",
+          "action": "Keys are included in the total; an arm asserts `k.length +` is present."
+        },
+        {
+          "kind": "detection",
+          "factor": "No check anywhere asks whether a displayed quantity is exact or estimated. The fabricated-KPI sweep looks for a number with no function behind it; this had a function behind it and the function was approximate.",
+          "action_status": "not-actionable",
+          "note": "Deciding whether a computed figure is exact needs the units and the consumer, which is a judgement per KPI rather than a pattern. Recorded as a limit rather than promised as a sweep, because a checker that guessed at it would produce a read-list of every arithmetic expression in the platform."
+        }
+      ],
+      "recurrence_open": "Nothing distinguishes an exact displayed quantity from an estimated one anywhere on the platform. This card is now marked; every other computed KPI is unexamined on that axis. The narrower half is closed -- an invented denominator is gone and a quota search is recorded against the file -- but the same `.length * 2` byte estimate appears in other apps' storage displays and none of them is marked."
     }
   ],
   "started": "2026-09-09",
