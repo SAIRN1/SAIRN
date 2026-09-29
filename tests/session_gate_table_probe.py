@@ -110,4 +110,26 @@ if __name__ == '__main__':
         # a suite that already expects the gate, goes red, and plants nothing.
         # A control that can only run after its own fix is pushed is the wrong
         # order -- the control is what says the suite bites.
-        stage=[SUITE, os.path.join('api', 'sd-data.js')]))
+        #
+        # ── AND EVERY SUITE THE SUBJECT *NAMES* IS STAGED, 2026-09-29 ──
+        # The 2026-09-22 reasoning above was right and was applied to one file.
+        # `drivenElsewhere` in the suite makes the suite `require.resolve()` each
+        # named companion, so a NEW companion written in the same session is
+        # absent from the HEAD worktree and the baseline dies on
+        # "Cannot find module" -- the identical failure, one indirection out.
+        # The probe's own diagnostic said so in the run that added this line.
+        #
+        # THIS LIST IS A LOWER BOUND AND NOT THE MAP. It is not derived from
+        # `drivenElsewhere`, deliberately: a derived list would make this probe
+        # read its subject's own map to decide what to stage, and a mutation
+        # that corrupts that map would then quietly change what gets staged.
+        # The cost is that adding a companion suite means adding a line here,
+        # and the probe names the missing file when somebody forgets.
+        stage=[SUITE, os.path.join('api', 'sd-data.js'),
+               os.path.join('api', 'sd-data-mech-session-gate.test.js'),
+               os.path.join('api', 'sd-data-scp-session-gate.test.js'),
+               os.path.join('api', 'sd-data-sdn-session-gate.test.js'),
+               os.path.join('api', 'sd-data-law-phase2-session.test.js'),
+               os.path.join('api', 'sd-data-law-trusttx-session.test.js'),
+               os.path.join('api', 'sd-data-locations.test.js'),
+               os.path.join('api', 'sf-session-gate.test.js')]))
