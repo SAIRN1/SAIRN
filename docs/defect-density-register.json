@@ -19923,7 +19923,7 @@
       "recurrence_open": "Only THIS suite strips. The fixed-window-substring shape was swept once before and the sweep's finding list is not re-run on new checks, so the next check that greps a raw single-file app for an identifier has the same hole available. tools/gated_resource_direct_fetch_header.js is also still the only check of its class -- nothing verifies that the 900-character window is wide enough in the other direction."
     },
     {
-      "commit": "7d7c764cdb0e",
+      "commit": "35fb7d2c85a7",
       "date": "2026-09-29",
       "subject": "fix(stonedesk): the storage figure is marked as an approximation, and the keys are counted -- there is NO configured quota to divide by, and the search is recorded",
       "files": [
