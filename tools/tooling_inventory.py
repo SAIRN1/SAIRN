@@ -1332,7 +1332,7 @@ PURPOSES = {
         'its control passed. For every module-level compiled pattern in every '
         'report-only registry tool it NEUTRALISES that one rule -- (?!x)x, '
         'valid and unmatchable, so the module still imports -- and re-runs the '
-        'tool's OWN evidence: its fixture lock, else its declared control. '
+        'the OWN evidence of that tool: its fixture lock, else its control. '
         'Neither turning red means DEAD TO ITS OWN EVIDENCE. Dead does not mean '
         'wrong: it means nothing the tool ships as proof would notice the rule '
         'vanishing, and the repair is a fixture OR a named limit, which are not '
