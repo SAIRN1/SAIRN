@@ -3895,7 +3895,7 @@
     {
       "author_session": "fourth",
       "opened_at": "2026-09-26T19:12:42Z",
-      "opened_at_sha": "3dc79c53f13ac5759eefdc49bf480610c8d1df25",
+      "opened_at_sha": "84edca20af143b476db3858e61e3542bb67f8242",
       "resources": [
         "alf_mar",
         "alf_staff_credentials"
@@ -3912,7 +3912,9 @@
       "owner_assigned_at": "2026-09-26T19:12:42Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "opened_at_sha_was": "3dc79c53f13ac5759eefdc49bf480610c8d1df25",
+      "opened_at_sha_reseated": true
     },
     {
       "author_session": "hank",
@@ -4124,7 +4126,7 @@
     {
       "author_session": "cody",
       "opened_at": "2026-09-27T03:53:49Z",
-      "opened_at_sha": "bdb899d92235aa8bee3ebce80974c802d2021d17",
+      "opened_at_sha": "f07d8660d731ab7c8a23501bc0eb99033547492f",
       "resources": [
         "alf_compliance_rules",
         "law_trust_reconcile",
@@ -4146,7 +4148,9 @@
       "owner_assigned_at": "2026-09-27T03:53:49Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "opened_at_sha_was": "bdb899d92235aa8bee3ebce80974c802d2021d17",
+      "opened_at_sha_reseated": true
     },
     {
       "author_session": "hank",
@@ -4349,7 +4353,7 @@
     {
       "author_session": "cc",
       "opened_at": "2026-09-28T10:44:30Z",
-      "opened_at_sha": "14958d82d7b958fe50cce2beea46739f4654a211",
+      "opened_at_sha": "1da31d4ceb77eb097c2455a160474a87a29e3bda",
       "resources": [
         "exec_context",
         "law_clecredits",
@@ -4371,7 +4375,9 @@
       "owner_assigned_at": "2026-09-28T10:44:30Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "opened_at_sha_was": "14958d82d7b958fe50cce2beea46739f4654a211",
+      "opened_at_sha_reseated": true
     },
     {
       "author_session": "fourth",
