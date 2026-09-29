@@ -19505,7 +19505,7 @@
       "recurrence_open": "Nothing distinguishes an exact displayed quantity from an estimated one anywhere on the platform. This card is now marked; every other computed KPI is unexamined on that axis. The narrower half is closed -- an invented denominator is gone and a quota search is recorded against the file -- but the same `.length * 2` byte estimate appears in other apps' storage displays and none of them is marked."
     },
     {
-      "commit": "38107845bb6b",
+      "commit": "44e5ab7ee7c3",
       "date": "2026-09-29",
       "subject": "fix(control): the reseat arm pinned the report's PROSE, not the ledger",
       "files": [
