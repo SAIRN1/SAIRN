@@ -4657,6 +4657,30 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-29T17:47:11Z",
+      "opened_at_sha": "4961149b4cdb51ec08038f480f621202f3b5c515",
+      "resources": [
+        "alf_activities",
+        "alf_billing",
+        "alf_clients",
+        "alf_facility",
+        "alf_mar"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/sd-data-derive-charges.test.js"
+      ],
+      "what": "alf_billing derive_charges: a prior-invoice row that EXISTS with a null data blob was reconciled against [], reporting every derived charge as newly added with net_change equal to the whole invoice, beside invoice_exists true. Fixed by deciding the three states on ROW EXISTENCE first and the blob second, with two distinct refusal codes (PRIOR_INVOICE_BLOB_UNREADABLE vs PRIOR_INVOICE_HAS_NO_CHARGE_LINES). REVIEW THIS: whether invoice_exists staying TRUE for an unreadable blob is the right call, and whether any consumer reads reconciliation_vs_invoice without checking reconciliation_unavailable first -- a null there is only safe if every reader looks. alf_mar, alf_clients, alf_activities and alf_facility appear ONLY because the new test file names them as fixture reads; no code path serving them changed in this commit, and the review should confirm that from the diff rather than take it from this sentence. The registered record names an UNRUN sweep as an open recurrence: every other read in api/sd-data.js that decides a downstream branch on blob truthiness rather than row existence has the same shape and was deliberately not touched.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-09-29T17:47:11Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
