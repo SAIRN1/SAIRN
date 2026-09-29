@@ -1,0 +1,29 @@
+[
+ {
+  "added_at": "2026-09-28T19:49:59Z",
+  "added_seq": 999,
+  "field": "flag_y",
+  "note": "looks like a gate, has none yet",
+  "resolved_at": "2026-09-28T19:50:00Z",
+  "resolved_outcome": "a consumer now reads it, filed as finding #999",
+  "resource": "res_x"
+ },
+ {
+  "added_at": "2026-09-28T19:50:00Z",
+  "added_seq": null,
+  "field": "flag_y",
+  "note": "re-opened after the resolution regressed",
+  "resolved_at": null,
+  "resolved_outcome": null,
+  "resource": "res_x"
+ },
+ {
+  "added_at": "2026-09-28T19:54:02Z",
+  "added_seq": "640",
+  "field": "service_details_visible",
+  "note": "looks like a disclosure-control checkbox; no public-facing consumer currently reads it (sairnlegacy.html:3583-3584) -- re-check on every future draw",
+  "resolved_at": null,
+  "resolved_outcome": null,
+  "resource": "leg_memorials"
+ }
+]

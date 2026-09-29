@@ -2712,6 +2712,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "cody-1790693631",
+      "session": "cody",
+      "subject": "cody-parsehist",
+      "task": "docs/2026-09-29-parse-history-sweep-cody.md",
+      "claimed_at": "2026-09-29T14:53:51Z",
+      "claimed_at_epoch": 1790693631.2279036,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [

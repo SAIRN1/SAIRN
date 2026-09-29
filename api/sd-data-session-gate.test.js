@@ -125,6 +125,23 @@ async function main() {
       'profile/read is exempt again -- if that is deliberate, say why in the table');
   });
 
+
+// Parsed once, and the two REs are NAMED so the arm using them can say which
+// one failed rather than reporting an empty set as agreement.
+const GATED_RE = new RegExp('const SD_SESSION_GATED = \\{[\\s\\S]*?\\n    \\};');
+const GATE_APP_RE = new RegExp('const SD_GATE_APP = \\{[\\s\\S]*?\\n    \\};');
+function mapNames(blob) {
+  // The quote characters are built rather than written: a single quote inside
+  // a single-quoted pattern string is how the first draft of this helper
+  // became a numeric literal and failed to parse.
+  const Q = String.fromCharCode(39);
+  const rx = new RegExp('^\\s*' + Q + '([a-z0-9_]+)' + Q + '\\s*:', 'gm');
+  const out = new Set();
+  let mm;
+  while ((mm = rx.exec(blob)) !== null) out.add(mm[1]);
+  return out;
+}
+
   await test('the gate is a table, not scattered checks -- and the pair count is COUNTED, not claimed', () => {
     // This assertion used to be titled "lists exactly seven pairs" and counted
     // nothing -- it matched three entries and stopped. Adding 'locations' on
@@ -257,9 +274,83 @@ async function main() {
     // table name gates nothing and every refusal arm anywhere still passes.
     assert.match(m[0], /'invoices':\s*\['read', 'write'\]/);
     assert.match(m[0], /'scp_quotes':\s*\['read', 'write'\]/);
-    assert.strictEqual(pairs, 70,
+    // 70 -> 74 on 2026-09-29: TWO SAIRNfreedom resources, four pairs, and the
+    // first of them had already moved the count and nobody noticed -- this arm
+    // was RED ON MAIN at 72 before either was addressed, which is what a
+    // tripwire looks like when it is carried rather than read.
+    //
+    // WHY THEY ARE GATED, which is what this tripwire asks for:
+    //   sf_trustee_audits (hank) -- the quarterly financial-controls
+    //     attestation for an ORC Chapter 2915 gaming post, and the fidelity
+    //     bond covering the people who handle gaming receipts. Gated on arrival.
+    //   sf_vehicle_service -- Tier A on INTEGRITY since 2026-09-23 and ungated
+    //     for six days. It is the ONLY thing that advances the odometer
+    //     sf_vehicles computes its service-due flag from. DRIVEN before the
+    //     gate: read with no session answered 200, and the control
+    //     sf_trustee_audits answered 403.
+    assert.match(m[0], /'sf_trustee_audits':\s*\['read', 'write'\]/);
+    assert.match(m[0], /'sf_vehicle_service':\s*\['read', 'write'\]/);
+    assert.strictEqual(pairs, 74,
       'the gate table changed size to ' + pairs + ' pairs -- add the new resource to this test and say why it is gated');
   });
+
+  // ── EVERY GATED RESOURCE HAS AN expectedApp ENTRY (2026-09-29) ───────────
+  // THE DEFECT THIS CLOSES, and it was live for a day: sf_trustee_audits was
+  // added to SD_SESSION_GATED with no SD_GATE_APP entry, so the gate resolved
+  // expectedApp to 'stonedesk' by default and refused EVERY correctly signed-in
+  // SAIRNfreedom officer with FORBIDDEN "sign in first". It fails CLOSED and
+  // CONFUSINGLY, which is the hardest failure to read and the one that gets a
+  // security change reverted as broken rather than fixed.
+  //
+  // THE RULE COULD NOT BE WRITTEN UNTIL TODAY, and that is why it did not exist.
+  // Four StoneDesk-native resources -- locations, memory, profile, slabs --
+  // relied on `SD_GATE_APP[resource] || 'stonedesk'` and resolved CORRECTLY
+  // without an entry, so "gated with no entry" was a state that was sometimes
+  // right, and no arm could demand an entry without failing on four correct
+  // ones. Those four are now explicit (no behaviour change -- the fallback
+  // returned exactly those values), which leaves this rule with NO exemptions.
+  //
+  // PLATFORM-WIDE, not per-app. api/sd-data-sf-session-gate.test.js asserts the
+  // same thing for sf_ names only; the resource that broke was an sf_ one and
+  // the next one will not be.
+  await test('every gated resource has an SD_GATE_APP entry -- nothing relies on the '
+    + 'stonedesk default', () => {
+      const fs = require('fs');
+      const src = fs.readFileSync(require.resolve('./sd-data.js'), 'utf8');
+      const gatedM = src.match(GATED_RE);
+      const appM = src.match(GATE_APP_RE);
+      assert.ok(gatedM && appM,
+        'one of the two maps could not be parsed out of the source, so this arm '
+        + 'checked NOTHING -- a third state, not a pass');
+      const gated = mapNames(gatedM[0]);
+      const mapped = mapNames(appM[0]);
+      // NOT VACUOUS: a regex that stopped matching empties both sets and the
+      // difference with them, which reads exactly like agreement.
+      assert.ok(gated.size >= 30 && mapped.size >= 30,
+        'parsed ' + gated.size + ' gated and ' + mapped.size + ' mapped names -- '
+        + 'a silent zero here looks identical to a clean result');
+      const missing = [...gated].filter((n) => !mapped.has(n)).sort();
+      assert.deepStrictEqual(missing, [],
+        'session-gated with NO SD_GATE_APP entry, so expectedApp resolves to '
+        + 'stonedesk and every correctly signed-in caller of that app is refused '
+        + 'FORBIDDEN "sign in first": ' + missing.join(', '));
+      console.log('       ' + gated.size + ' gated / ' + mapped.size
+        + ' mapped, 0 relying on the default');
+    });
+
+  await test('NEGATIVE CONTROL: that arm CATCHES a gated resource with no entry', () => {
+    // Without this, a broken parse or a difference that always returns empty
+    // passes the arm above for ever. The fixture is the real defect shape:
+    // present in one map, absent from the other.
+    const g = mapNames("const SD_SESSION_GATED = {\n      'zz_one': ['read'],\n"
+      + "      'zz_two': ['read'],\n    };");
+    const a = mapNames("const SD_GATE_APP = {\n      'zz_one': 'zzapp',\n    };");
+    const missing = [...g].filter((n) => !a.has(n));
+    assert.deepStrictEqual(missing, ['zz_two'],
+      'the set difference used by the arm above cannot see a gated resource '
+      + 'with no entry, so that arm proves nothing');
+  });
+
 
   // ── EVERY PAIR IN THE TABLE IS DRIVEN SOMEWHERE, AND IT IS SAID WHERE ─────
   // Added 2026-09-16. The count arm above proves the table has not changed

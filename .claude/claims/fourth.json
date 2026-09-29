@@ -2725,8 +2725,8 @@
       "task": "a report-only demo-credential sign-in checker reading an untracked local file and never printing a PIN, with a pre-commit content-shape guard; diagnose whether the unreachable blob in this clone is new or the earlier check was wrong and make the purge check write a dated result record; find and fix the register re-seat livelock so a re-seat reaches a fixed point, tests first; sweep every session-gated and Tier A resource for a missing expectedApp entry and add a permanent test arm; and map every hook that can rewrite the tree or a commit with a rebase-convergence simulation. FILES: tools/demo_credentials_check.py tests/run_demo_credentials_probe.py tools/staged_credential_check.py .gitignore .githooks/prepare-commit-msg tools/push_retry.py tools/defect_register.py api/sd-data-sf-session-gate.test.js",
       "claimed_at": "2026-09-29T14:12:48Z",
       "claimed_at_epoch": 1790691168.1420293,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T16:35:28Z",
       "files": [
         "api/sd-data-sf-session-gate.test.js",
         "tests/run_demo_credentials_probe.py",
@@ -2734,6 +2734,24 @@
         "tools/demo_credentials_check.py",
         "tools/push_retry.py",
         "tools/staged_credential_check.py"
+      ]
+    },
+    {
+      "id": "fourth-1790699908",
+      "session": "fourth",
+      "subject": "tooling",
+      "task": "discharge cody's 76h leg_merch_units reservation-lock obligation by DRIVING tools/reservation_lock_invariants.js and its model against the real branch, not reading it; fix the mech-redact seven-digit phone and address over-match with tests first; add an evidence-before-prune rule to every tool and hook that prunes or expires reflogs, plus a sweep naming every hit; diagnose whether the two stale demo PINs are wrong in the licence or in the local file and print a restore block; diagnose the pair-count tripwire that has been red on main; the register re-seat livelock; a hook and tool rewrite map with a rebase convergence simulation; an expectedApp arm for newly gated resources; and a sweep of every known-bad control whose failure condition can be satisfied by comment or docstring text instead of behaviour. FILES: api/_lib/mech-redact.js api/_lib/mech-redact.test.js tools/credential_purge_check.py tools/push_retry.py tools/defect_register.py api/sd-data-session-gate.test.js",
+      "claimed_at": "2026-09-29T16:38:28Z",
+      "claimed_at_epoch": 1790699908.6912198,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/_lib/mech-redact.js",
+        "api/_lib/mech-redact.test.js",
+        "api/sd-data-session-gate.test.js",
+        "tools/credential_purge_check.py",
+        "tools/defect_register.py",
+        "tools/push_retry.py"
       ]
     }
   ],

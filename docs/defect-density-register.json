@@ -19401,55 +19401,6 @@
       "recurrence_open": "Six role refusals remain unreachable by --ablate, the only sound measurement in that file: five compound conditions and one with its body on a single line. TWO OF THEM are their resource's ONLY gate -- alf_incidents and alf_op_audits have zero ablatable blocks, so the instrument answers COULD NOT TELL for those resources entirely, and both also sit in the not-driven bucket. Nothing measures whether a resource's gates are individually covered; the bucket counts remain per-resource."
     },
     {
-      "commit": "50def018aa48",
-      "date": "2026-09-29",
-      "subject": "fix(sairnfreedom): sf_vehicle_service was Tier A for six days and ungated the whole time",
-      "files": [
-        "api/sd-data-sf-session-gate.test.js",
-        "api/sd-data.js"
-      ],
-      "lines_added": 73,
-      "lines_removed": 7,
-      "app": "sairnfreedom",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "independent-review",
-      "summary": "sf_vehicle_service was re-tiered Tier A on INTEGRITY on 2026-09-23 and stayed out of SD_SESSION_GATED, so it was readable and writable with the SAIRNfreedom licence key alone -- a key shipped to the browser -- for six days",
-      "rules": [
-        "1.3"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "the resource predates SD_SESSION_GATED; what made it a defect was the tier moving B -> A on 2026-09-23 without the gate list moving with it, and no single commit introduced that gap -- naming one would be a guess about which half was wrong"
-      },
-      "phase_note": "the gate list and the criticality register are two hand-kept lists with nothing comparing them, so a tier change on one side leaves the other correct-looking and unchanged",
-      "contributing_factors": [
-        {
-          "factor": "the gate list in api/sd-data.js and the tier register in docs/CRITICALITY-TIERS.md are two hand-kept lists and nothing compares them, so a resource can move to Tier A on one side and stay ungated on the other with both files looking correct",
-          "kind": "technical",
-          "action_status": "planned",
-          "action": "no checker compares the two today; the sf session-gate suite compares the gate list against its OWN approved list and against the expectedApp map, neither of which is the tier register"
-        },
-        {
-          "factor": "api/sd-data-sf-session-gate.test.js was ALREADY RED ON MAIN when I touched it -- sf_trustee_audits was gated on 2026-09-29 without an expectedApp entry, which refuses every correctly signed-in officer -- so the suite that would have caught my addition was already failing and its signal was being carried rather than read",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "both names added to both lists in the same edit, and the suite is green"
-        },
-        {
-          "factor": "a stale claim in that suite header said a SAIRNfreedom session was IMPOSSIBLE because the auth table was unprovisioned, which is the fact that decides whether adding a gate locks everyone out",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "re-driven -- sf-auth answers 401 INVALID_CREDENTIALS, not 503 -- and the header now carries a dated measurement telling the next reader to re-drive rather than trust it"
-        }
-      ],
-      "recurrence_open": "nothing compares the tier register to the gate list. This instance was found by re-deriving one resource by hand on request; the other 26 Tier A sairnfreedom resources were not re-checked against SD_SESSION_GATED in this pass, and neither were the Tier A resources of any other app."
-    },
-    {
       "commit": "35fb7d2c85a7",
       "date": "2026-09-29",
       "subject": "fix(stonedesk): the storage figure is marked as an approximation, and the keys are counted -- there is NO configured quota to divide by, and the search is recorded",
@@ -19673,6 +19624,55 @@
         }
       ],
       "recurrence_open": "no sweep exists. This was found by reading push_retry.py for an unrelated reason, and the staging-discipline sweep that would have found it -- enumerate every tool, script, hook and retry loop containing git add -A, git add . or git commit -a -- is still an open queue item. A pre-commit check on staged CONTENT exists (tools/staged_credential_check.py) and is the backstop that would catch a credential, but it says nothing about conflict markers or about an unrelated file being folded into somebody elses amended commit."
+    },
+    {
+      "commit": "50def018aa48",
+      "date": "2026-09-29",
+      "subject": "fix(sairnfreedom): sf_vehicle_service was Tier A for six days and ungated the whole time",
+      "files": [
+        "api/sd-data-sf-session-gate.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 73,
+      "lines_removed": 7,
+      "app": "sairnfreedom",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "sf_vehicle_service was re-tiered Tier A on INTEGRITY on 2026-09-23 and stayed out of SD_SESSION_GATED, so it was readable and writable with the SAIRNfreedom licence key alone -- a key shipped to the browser -- for six days",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the resource predates SD_SESSION_GATED; what made it a defect was the tier moving B -> A on 2026-09-23 without the gate list moving with it, and no single commit introduced that gap -- naming one would be a guess about which half was wrong"
+      },
+      "phase_note": "the gate list and the criticality register are two hand-kept lists with nothing comparing them, so a tier change on one side leaves the other correct-looking and unchanged",
+      "contributing_factors": [
+        {
+          "factor": "the gate list in api/sd-data.js and the tier register in docs/CRITICALITY-TIERS.md are two hand-kept lists and nothing compares them, so a resource can move to Tier A on one side and stay ungated on the other with both files looking correct",
+          "kind": "technical",
+          "action_status": "planned",
+          "action": "no checker compares the two today; the sf session-gate suite compares the gate list against its OWN approved list and against the expectedApp map, neither of which is the tier register"
+        },
+        {
+          "factor": "api/sd-data-sf-session-gate.test.js was ALREADY RED ON MAIN when I touched it -- sf_trustee_audits was gated on 2026-09-29 without an expectedApp entry, which refuses every correctly signed-in officer -- so the suite that would have caught my addition was already failing and its signal was being carried rather than read",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "both names added to both lists in the same edit, and the suite is green"
+        },
+        {
+          "factor": "a stale claim in that suite header said a SAIRNfreedom session was IMPOSSIBLE because the auth table was unprovisioned, which is the fact that decides whether adding a gate locks everyone out",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "re-driven -- sf-auth answers 401 INVALID_CREDENTIALS, not 503 -- and the header now carries a dated measurement telling the next reader to re-drive rather than trust it"
+        }
+      ],
+      "recurrence_open": "nothing compares the tier register to the gate list. This instance was found by re-deriving one resource by hand on request; the other 26 Tier A sairnfreedom resources were not re-checked against SD_SESSION_GATED in this pass, and neither were the Tier A resources of any other app."
     },
     {
       "commit": "573571970628",
@@ -20019,6 +20019,109 @@
         }
       ],
       "recurrence_open": "Sabotage anchors are text in a moving file by construction and this platform has measured them decaying repeatedly. The harness now parse-checks its own mutation, so an arm that plants NOTHING is reported -- but an arm whose mutation applies and is caught for the wrong reason is still invisible to it, and that one was settled here by reading rather than by a check."
+    },
+    {
+      "commit": "8230924f8a19",
+      "date": "2026-09-29",
+      "subject": "fix(sairnmechanical): the redaction gate was scoped to a resource NAME, so mech_takeoffs stored raw scan text",
+      "files": [
+        "api/sd-data-mech-redaction-scope.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 306,
+      "lines_removed": 3,
+      "app": "sairnmechanical",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "the SAIRNmechanical redaction gate was scoped to the literal resource name mech_docs, so mech_takeoffs stored and synced model-extracted text from photographed plans with no redaction pass at all",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "f4fc75a9884f",
+        "date": "2026-09-22",
+        "subject": "fix(sairnmechanical): scanned-document text was stored and SYNCED verbatim, names and all, and the toast said it stayed on the device",
+        "lag_days": 7
+      },
+      "phase_note": "the redaction was written as if (resource === 'mech_docs') in the commit that introduced it, scoping a data property to a resource name while mech_takeoffs sat in the same table map twenty lines above storing the same shape",
+      "contributing_factors": [
+        {
+          "factor": "the gate tested a RESOURCE NAME rather than a property of the data, so a second resource with identical provenance was outside it by construction",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "driven by a declared MECH_SCANNED_TEXT map; adding a third scan-derived field is a line in that map, and a known-bad control refuses the name-scoped shape in the source"
+        },
+        {
+          "factor": "the client redacts the doc writer and not the takeoff writer, so neither end covered it and each looked like the others backstop",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "the server side is closed, which is the boundary that counts; the client half at sairnmechanical.html:1784-1794 still calls no redactor and is not changed here"
+        },
+        {
+          "factor": "no test drove mech_takeoffs through the write path with PII in it, so the gap was invisible to every green suite",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/sd-data-mech-redaction-scope.test.js drives both resources with a name, email and phone and asserts what reaches the row"
+        }
+      ],
+      "recurrence_open": "NOT LIVE-VERIFIED, and existing rows are unassessed. Nothing sweeps the other apps for the same shape -- a redaction, gate or filter scoped to one resource name while a sibling resource stores the same kind of content. And a SECOND defect was found in api/_lib/mech-redact.js while driving this one, registered separately."
+    },
+    {
+      "commit": "8230924f8a19",
+      "date": "2026-09-29",
+      "subject": "fix(sairnmechanical): the redaction gate was scoped to a resource NAME, so mech_takeoffs stored raw scan text",
+      "files": [
+        "api/sd-data-mech-redaction-scope.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 306,
+      "lines_removed": 3,
+      "app": "sairnmechanical",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "api/_lib/mech-redact.js does not match a seven-digit local phone number as a PHONE, and its ADDRESS pattern over-matches into the following text -- Phone: 555-0142  Unit: RTU-4 becomes Phone: 555-[ADDRESS REDACTED]: RTU-4, leaving the number half-present and destroying the Unit label",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "f4fc75a9884f",
+        "date": "2026-09-22",
+        "subject": "fix(sairnmechanical): scanned-document text was stored and SYNCED verbatim, names and all, and the toast said it stayed on the device",
+        "lag_days": 7
+      },
+      "citation_note": "no standing rule covers a redaction pattern that over-matches into the content it is documented to preserve; the closest is 1.2 (text read as code) and this is the mirror image -- content read as an address",
+      "phase_note": "inferred rather than stated: the ADDRESS pattern arrived with the redactor and nothing in its history singles out the change that made it greedy, so naming a specific commit would be a guess",
+      "contributing_factors": [
+        {
+          "factor": "the ADDRESS pattern is greedy enough to consume the text after a number, so it can delete the equipment labels the tool documents itself as keeping",
+          "kind": "technical",
+          "action_status": "planned",
+          "action": "not changed here: a pattern that both over-matches and under-matches needs its own fixture set, and widening the phone half risks eating serials, which is the failure the note already warns about"
+        },
+        {
+          "factor": "the redaction note lists phones among what it removes, which reads as covering phones generally while a seven-digit local number survives",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "the note is accurate about complete:false and misleading about coverage; correcting it belongs with the pattern fix rather than ahead of it"
+        },
+        {
+          "factor": "the redactor had no arm driving a seven-digit number or an equipment label adjacent to one, so both halves were invisible",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "an arm in api/sd-data-mech-redaction-scope.test.js pins the observed behaviour in the direction it actually behaves, so a fix turns it red and has to be deliberate"
+        }
+      ],
+      "recurrence_open": "unfixed. No corpus has been run through this redactor, so the rate of either the over-match or the under-match on real scanned documents is unmeasured, and no other app's redactor was checked for the same shape."
     },
     {
       "commit": "d0bb06783104",

@@ -222,3 +222,136 @@ after), or about rows written before `d6d7efd1`. **Every `alf_mar` row written
 before that commit carries an actor field that was supplied by the request**, and
 there is no way to tell which of those values are correct. No backfill is
 possible: the only candidate source is the forgeable field itself.
+
+---
+
+# 2026-09-29 — ALL live-verification residue on ALF-AUDIT-2026, one block
+
+**Enumerated from the live endpoint, not recited from memory** — every id below
+was read back through `action: 'read'` on 2026-09-29 immediately before this was
+written. Counts observed: 4 `alf_family_contacts`, 5 `alf_mar`, 1 `alf_clients`,
+2 `alf_incidents`, 3 credentials.
+
+**Scoped by LICENCE HASH, and the hash is DERIVED rather than copied:**
+`sha256('ALF-AUDIT-2026')` =
+`7b110bcc4441c548b9479aad6610cc4ee6973c747453725dc904626f805fb99c`, confirmed
+against the `license_hash` on a real row returned by the endpoint today. Scoping
+on the hash rather than on `app_id` alone means a paste that lands in the wrong
+database deletes nothing instead of deleting somebody's real facility.
+
+**Nothing here was deleted by me.** `alf_mar`, `alf_clients`,
+`alf_family_contacts` and `alf_incidents` all refuse `delete` and `soft_delete`
+with `400 action must be 'read' or 'write'` — driven in both directions, not
+assumed. These need a human in the SQL editor.
+
+**DELETE ORDER, and it is not cosmetic.** Children before parents:
+
+1. `alf_mar` and `alf_incidents` — both reference `resident_id`
+2. `alf_family_contacts` — also references `resident_id`
+3. `alf_clients` — the resident every row above points at, last
+4. the two deactivated credentials, independent of the rest
+
+```sql
+-- ═══════════════════════════════════════════════════════════════════════
+-- ALF-AUDIT-2026 live-verification residue, 2026-09-29.
+-- SELECT first. DELETE second. CONFIRM third. Run the three in that order.
+-- If any SELECT returns a different count from the one in its comment, STOP
+-- and read -- a delete that matches nothing reports success, and "0 rows" is
+-- indistinguishable from "nothing needed changing".
+-- ═══════════════════════════════════════════════════════════════════════
+
+-- ── 1. SELECT -- expect 4 + 5 + 1 + 2 = 12 rows, and 2 credentials ──────
+select 'alf_family_contacts' as t, contact_id as id, '' as extra
+  from public.alf_family_contacts
+ where license_hash = '7b110bcc4441c548b9479aad6610cc4ee6973c747453725dc904626f805fb99c'
+   and contact_id in ('ZZ-FC-BADCONSENT','ZZ-FC-OK','ZZ-FC-DEFAULT','ZZ-FC-RESTAMP')
+union all
+select 'alf_mar', entry_id, entry_type
+  from public.alf_mar
+ where license_hash = '7b110bcc4441c548b9479aad6610cc4ee6973c747453725dc904626f805fb99c'
+   and entry_id in ('ZZ-MAR-ADMINI','ZZ-MAR-COUNT','ZZ-MAR-RECONC',
+                    'ZZ-MAR-ASSESS','ZZ-MAR-SMUGGLE')
+union all
+select 'alf_incidents', entry_id, coalesce(recorded_by,'(null)')
+  from public.alf_incidents
+ where license_hash = '7b110bcc4441c548b9479aad6610cc4ee6973c747453725dc904626f805fb99c'
+   and entry_id in ('ZZ-AUDIT-INC-CAREGIVER','ZZ-AUDIT-INC-NURSING')
+union all
+select 'alf_clients', client_id, ''
+  from public.alf_clients
+ where license_hash = '7b110bcc4441c548b9479aad6610cc4ee6973c747453725dc904626f805fb99c'
+   and client_id = 'ZZ-MAR-RESIDENT'
+order by 1, 2;
+
+-- The two credentials, separately -- expect 2, both active = false.
+select employee_id, role, active
+  from public.alf_employee_auth
+ where license_hash = '7b110bcc4441c548b9479aad6610cc4ee6973c747453725dc904626f805fb99c'
+   and employee_id in ('zz-audit-caregiver','zz-audit-nursing')
+order by employee_id;
+
+-- ── 2. DELETE -- children first, the resident last ─────────────────────
+delete from public.alf_mar
+ where license_hash = '7b110bcc4441c548b9479aad6610cc4ee6973c747453725dc904626f805fb99c'
+   and entry_id in ('ZZ-MAR-ADMINI','ZZ-MAR-COUNT','ZZ-MAR-RECONC',
+                    'ZZ-MAR-ASSESS','ZZ-MAR-SMUGGLE');
+
+delete from public.alf_incidents
+ where license_hash = '7b110bcc4441c548b9479aad6610cc4ee6973c747453725dc904626f805fb99c'
+   and entry_id in ('ZZ-AUDIT-INC-CAREGIVER','ZZ-AUDIT-INC-NURSING');
+
+delete from public.alf_family_contacts
+ where license_hash = '7b110bcc4441c548b9479aad6610cc4ee6973c747453725dc904626f805fb99c'
+   and contact_id in ('ZZ-FC-BADCONSENT','ZZ-FC-OK','ZZ-FC-DEFAULT','ZZ-FC-RESTAMP');
+
+-- The resident LAST: every row above points at it.
+delete from public.alf_clients
+ where license_hash = '7b110bcc4441c548b9479aad6610cc4ee6973c747453725dc904626f805fb99c'
+   and client_id = 'ZZ-MAR-RESIDENT';
+
+-- The two deactivated probe credentials. zz-audit-owner is NOT here and must
+-- NOT be added: bootstrap only works on a licence with zero credentials, so
+-- deleting the sole owner strands ALF-AUDIT-2026 with no product-level way back
+-- in. It is left active deliberately.
+delete from public.alf_employee_auth
+ where license_hash = '7b110bcc4441c548b9479aad6610cc4ee6973c747453725dc904626f805fb99c'
+   and employee_id in ('zz-audit-caregiver','zz-audit-nursing');
+
+-- ── 3. CONFIRM -- every count must be 0, and the owner must still be 1 ──
+select 'alf_family_contacts' as t, count(*) as remaining from public.alf_family_contacts
+ where license_hash = '7b110bcc4441c548b9479aad6610cc4ee6973c747453725dc904626f805fb99c'
+   and contact_id like 'ZZ-%'
+union all
+select 'alf_mar', count(*) from public.alf_mar
+ where license_hash = '7b110bcc4441c548b9479aad6610cc4ee6973c747453725dc904626f805fb99c'
+   and entry_id like 'ZZ-%'
+union all
+select 'alf_incidents', count(*) from public.alf_incidents
+ where license_hash = '7b110bcc4441c548b9479aad6610cc4ee6973c747453725dc904626f805fb99c'
+   and entry_id like 'ZZ-%'
+union all
+select 'alf_clients', count(*) from public.alf_clients
+ where license_hash = '7b110bcc4441c548b9479aad6610cc4ee6973c747453725dc904626f805fb99c'
+   and client_id like 'ZZ-%'
+union all
+select 'zz credentials', count(*) from public.alf_employee_auth
+ where license_hash = '7b110bcc4441c548b9479aad6610cc4ee6973c747453725dc904626f805fb99c'
+   and employee_id in ('zz-audit-caregiver','zz-audit-nursing')
+union all
+select 'OWNER (must stay 1)', count(*) from public.alf_employee_auth
+ where license_hash = '7b110bcc4441c548b9479aad6610cc4ee6973c747453725dc904626f805fb99c'
+   and employee_id = 'zz-audit-owner'
+order by 1;
+```
+
+**The `LIKE 'ZZ-%'` in the confirm step is deliberate and is wider than the
+delete.** The deletes name exact ids; the confirm asks whether ANY probe row
+remains under that prefix, so a row some later run created and nobody listed
+shows up here rather than staying invisible.
+
+**Still outstanding and NOT in this block:** `ZZ-VERIFY-RECORDEDBY` in
+`alf_incidents` on **ALF-TEST-2026** — a different licence
+(`sha256` = `6dd308f1270f2bd66d5be5f8815c09007390b16e7846bd2b6f27f65f8209c3dd`),
+with its own SQL earlier in this document. It is deliberately not merged into
+this block: one paste that spans two licences is one paste that can go wrong on
+the wrong one.
