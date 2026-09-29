@@ -2993,6 +2993,20 @@
         "api/sd-data-mech-session-gate.test.js",
         "api/sd-data.js"
       ]
+    },
+    {
+      "id": "cc-1790704384",
+      "session": "cc",
+      "subject": "platform",
+      "task": "the mech_docs write reachable on a licence key alone -- add mech_docs to SD_SESSION_GATED and SD_GATE_APP as one registry entry, tests first. SUBJECT NAMED PER PR 4.3 FILES: api/sd-data.js api/sd-data-mech-session-gate.test.js",
+      "claimed_at": "2026-09-29T17:53:04Z",
+      "claimed_at_epoch": 1790704384.2165544,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/sd-data-mech-session-gate.test.js",
+        "api/sd-data.js"
+      ]
     }
   ],
   "refusals": [
