@@ -19353,7 +19353,7 @@
       "recurrence_open": "PARTLY CLOSED AND MEASURED: hook fail-opens 5 -> 0, but 16 dependency-shaped fail-opens remain in tools/ where exit 0 is not a decision to allow something, and they are unswept. The scanner reads TEXT, so a fail-open through a helper, a trap or a Python default argument is invisible and the universe is a FLOOR. And the distinction the tool rests on -- SCOPE versus DEPENDENCY -- is inferred from what the guard NAMES, so a scope guard whose marker has an unusual name will be miscounted as a finding."
     },
     {
-      "commit": "2f0fdf5cf4a0",
+      "commit": "573571970628",
       "date": "2026-09-29",
       "subject": "fix(nhi): the clone count was DERIVED FROM DISK and still wrong -- third instance",
       "files": [
