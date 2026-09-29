@@ -691,9 +691,68 @@ def cmd_fix_rollup_lists():
     return 0
 
 
+# ── THE KNOWN-POSITIVE FIXTURE SET, ADDED 2026-09-29 ────────────────────────
+# This tool had NO fixture set of any kind, so a run printing a clean register
+# was indistinguishable from a run whose two criteria had stopped matching.
+# Found by tools/checker_selftest_check.py.
+#
+# Both criteria are locked, in both directions, and every case below is a shape
+# this file's own comments record as having been got wrong once:
+#   `cells`                    an ESCAPED PIPE is content, not a column boundary
+#                              -- this file's own index row tripped that.
+#   `asserts_access_control`   a QUOTED old sentence is the opposite of a claim,
+#                              and a claim that CITES something is not the
+#                              subject: this is about claims nothing verifies.
+FIXTURE_CASES = (
+    ('cells', r'| `sf_x` | **B** | a stock count is wrong | notes |',
+     4, 'an ordinary four-cell resource row'),
+    ('cells', r'| `sf_x` | **B** | a \| in the text | notes |',
+     4, 'AN ESCAPED PIPE IS CONTENT. Counting it as a boundary splits one row '
+        'into five and every downstream index is off by one -- this file\'s own '
+        'index row tripped exactly that'),
+    ('access', 'This resource is session-gated.',
+     True, 'AN UNCITED ACCESS-CONTROL CLAIM is the finding'),
+    ('access', 'This resource is session-gated (`api/sd-data.js`).',
+     False, 'THE SILENT HALF: the same claim WITH a citation is not the '
+            'subject. This check is about claims nothing verifies'),
+    ('access', 'The row used to say "this resource is session-gated", and that '
+               'was wrong -- it was never gated at all.',
+     False, 'A QUOTED OLD SENTENCE is the opposite of asserting it, and reading '
+            'it as a claim reports the correction instead of the defect'),
+    ('access', 'Bar stock levels and who counted. Operational.',
+     False, 'an ordinary evidence cell makes no access-control claim at all'),
+)
+
+
+def run_fixtures():
+    """[] when every hand-built case classifies correctly."""
+    bad = []
+    for kind, src, want, why in FIXTURE_CASES:
+        got = len(cells(src)) if kind == 'cells' else asserts_access_control(src)
+        if got != want:
+            bad.append('EXPECTED %r, got %r -- %s' % (want, got, why))
+    return bad
+
+
 def main(argv):
     quiet = '--quiet' in argv
     problems = []
+
+    # ── THE LOCK RUNS ON THE REAL RUN AND PRINTS ───────────────────────────
+    # Not behind a flag: a self-test that runs when somebody asks is a control
+    # with a shorter name, and the reader of a clean register is not asking.
+    # A failing lock is exit 2, because a tier verdict derived from criteria
+    # that cannot classify a hand-built row is not a verdict.
+    _bad = run_fixtures()
+    if _bad:
+        print('CRITERIA LOCK FAILED -- %d of %d fixtures misclassified. NOTHING '
+              'REAL WAS JUDGED:' % (len(_bad), len(FIXTURE_CASES)))
+        for b in _bad:
+            print('  ! %s' % b)
+        return 2
+    if not quiet:
+        print('criteria lock: %d/%d fixtures classify correctly, on hand-built '
+              'rows only' % (len(FIXTURE_CASES), len(FIXTURE_CASES)))
 
     if '--fix-rollup-list' in argv:
         if not os.path.isfile(REGISTER):

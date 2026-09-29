@@ -389,7 +389,91 @@ def mutates_repo_path(body):
     return False
 
 
+# ── THE KNOWN-POSITIVE FIXTURE SET, ADDED 2026-09-29 ────────────────────────
+# This tool had NO fixture set of any kind, so a run printing "0 stale anchors,
+# 0 unguarded probes" was indistinguishable from a run whose detector had
+# stopped working -- the exact failure it was written to catch, one level up.
+# Found by tools/checker_selftest_check.py.
+#
+# The two criteria carried here are `mutates_repo_path`, whose THIRD version is
+# the first correct one, and the anchor counting in main(). The fixtures below
+# lock the first in BOTH directions, including the two false positives the
+# earlier versions actually shipped: a probe writing only into a temp worktree,
+# and a probe containing the unsafe pattern as a QUOTED FIXTURE STRING -- which
+# is why this is parsed rather than grepped, and it is worth a permanent arm
+# because it is the third instance of that class in two days.
+FIXTURE_CASES = (
+    ("""
+import io, os
+def go():
+    p = os.path.join(REPO, 'stonedesk.html')
+    open(p, 'wb').write(b'x')
+""", True, 'THE UNSAFE SHAPE: a REPO-derived path opened for binary writing'),
+    ("""
+import io, os
+def go():
+    p = os.path.join(tmp, 'stonedesk.html')
+    open(p, 'wb').write(b'x')
+""", False,
+     'THE SILENT HALF: a TEMP-derived path is the safe pattern and must not '
+     'report. v1 flagged any open(x, "wb") and caught six probes doing this'),
+    ("""
+BAD_EXAMPLE = "p = os.path.join(REPO, 'x'); open(p, 'wb')"
+def go():
+    print(BAD_EXAMPLE)
+""", False,
+     'THE QUOTED EXAMPLE: v2 flagged THIS TOOL\'S OWN PROBE because that probe '
+     'carries the unsafe pattern as a fixture STRING. ast cannot see inside a '
+     'literal, which is why this is parsed -- third instance of that class in '
+     'two days and the reason the arm is permanent'),
+    ("""
+import os
+def go():
+    p = os.path.join(REPO, 'x.html')
+    open(p, 'r').read()
+""", False, 'reading a REPO path is not mutating one'),
+    ("""
+def go():
+    open(os.path.join(REPO, 'x'), 'wb')
+""", False,
+     'AND A LIMIT, LOCKED RATHER THAN DISCOVERED: the path must be bound to a '
+     'NAME first. An inline os.path.join inside the open() call is NOT seen, '
+     'and that is a false negative this fixture makes visible instead of '
+     'leaving for somebody to find'),
+    ("""
+def go():
+    x = 1
+""", False, 'a probe that writes nothing at all'),
+)
+
+
+def run_fixtures():
+    """[] when every hand-built case classifies correctly."""
+    bad = []
+    for src, want, why in FIXTURE_CASES:
+        got = mutates_repo_path(src)
+        if got != want:
+            bad.append('EXPECTED %s, got %s -- %s' % (want, got, why))
+    return bad
+
+
 def main(argv):
+    # ── THE LOCK RUNS ON THE REAL RUN AND PRINTS, not behind a flag ─────────
+    # A self-test that only runs when somebody passes --selftest is a control
+    # with a shorter name, and the person reading a clean line is not passing it.
+    _bad = run_fixtures()
+    if _bad:
+        print('CRITERIA LOCK FAILED -- %d of %d fixtures misclassified. NOTHING '
+              'REAL WAS JUDGED:' % (len(_bad), len(FIXTURE_CASES)))
+        for b in _bad:
+            print('  ! %s' % b)
+        return 2
+    print('criteria lock: %d/%d fixtures classify correctly, on hand-built '
+          'sources only' % (len(FIXTURE_CASES), len(FIXTURE_CASES)))
+    return _main(argv)
+
+
+def _main(argv):
     rows, unreadable, structural = [], [], []
     cache = {}
     for path in sorted(glob.glob(os.path.join(REPO, 'tests', '**', '*_probe.py'), recursive=True)):

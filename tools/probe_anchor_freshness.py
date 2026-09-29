@@ -669,6 +669,25 @@ def main(argv):
         print('  %s' % ('ALL ARMS PASS' if not bad else '%d ARM(S) FAILED' % bad))
         return 1 if bad else 0
 
+    # ── THE SELF-TEST RUNS ON THE REAL RUN TOO, AND PRINTS (2026-09-29) ─────
+    # It existed only behind --selftest, which is a control with a shorter name:
+    # it runs when somebody asks, and the person reading a clean line at 2am is
+    # not asking. Nothing in the real output distinguished "I looked and the
+    # anchors are fresh" from "I stopped being able to read an anchor at all".
+    # Now the known-positive fixtures run first, the count is printed beside the
+    # real result, and a failing lock is EXIT 2 -- because a freshness figure
+    # derived from criteria that cannot classify a hand-built case is not a
+    # measurement, it is a number. Found by tools/checker_selftest_check.py.
+    _sto, _stbad = selftest()
+    if _stbad:
+        print('CRITERIA LOCK FAILED -- %d self-test arm(s) wrong. NOTHING REAL '
+              'WAS JUDGED:\nan anchor-freshness figure from criteria that cannot '
+              'classify a hand-built\ncase is not a measurement. Run --selftest '
+              'for the detail.' % _stbad, file=sys.stderr)
+        return 2
+    print('self-test: %d/%d known-positive arm(s) classify correctly, on '
+          'hand-built sources only' % (len(_sto), len(_sto)))
+
     res = scan()
     if res is None:
         print('COULD NOT RUN: git ls-files failed, so the probe list is '

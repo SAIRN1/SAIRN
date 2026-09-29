@@ -61,6 +61,7 @@ control with a shorter name.
 """
 import argparse
 import ast
+import re
 import io
 import os
 import sys
@@ -79,6 +80,23 @@ CRITERIA_VERSION = '2026-09-29.1'
 # CHECKED / UNIVERSE rather than implied.
 SELFTEST_NAMES = ('run_fixtures', 'self_check', 'selftest', 'run_selftest',
                   'run_selftests', 'run_cases', 'fixtures')
+# ── AND A SHAPE, BECAUSE THE NAME LIST WAS SHORT BY ONE (2026-09-29) ────────
+# The first real run reported tools/metamorphic_check.py as having NO FIXTURE
+# SET. It has one of the best in the repo: `blind_lock()` writes a SENSITIVE and
+# a ROBUST fixture to disk, requires every SAME relation to catch the first and
+# none to catch the second, runs on the default path, prints
+# `blind lock: LOCKED (N fixture comparisons)` beside the real result, and
+# REFUSES the measurement when it is not locked. It was invisible here for one
+# reason: the function is called `blind_lock`, and a hand-kept name list is the
+# weakness this file's own header already admits to.
+#
+# So a runner is ALSO any function that reads a module-level constant whose name
+# says it holds hand-built cases. `LOCK` is deliberately NOT in the pattern --
+# it matches ordinary locking code and would pull half the directory in.
+# Measured before adding it: exactly ONE of the 46 NO-FIXTURE tools carries such
+# a constant, so this widens by one and not by forty.
+FIXTURE_CONST = re.compile(
+    r'(^|_)(FIXTURE|FIXTURES|CASES|GOLDEN|KNOWN_BAD|KNOWN_GOOD)S?(_|$)', re.I)
 # Flags whose branch is the ISOLATED path. A self-test reachable only from here
 # runs when somebody asks, which is a control, not a self-test.
 ISOLATED_FLAGS = ('fixtures', 'selftest', 'self_check', 'self-check')
@@ -155,6 +173,33 @@ def classify(src):
     funcs = {n.name: n for n in ast.walk(tree)
              if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))}
     runners = [n for n in SELFTEST_NAMES if n in funcs]
+    # A module-level constant holding hand-built cases makes any function that
+    # READS it a fixture runner, whatever it is called. The constant must be a
+    # literal collection or string -- a fixture set is DATA, and requiring that
+    # keeps a same-named flag or counter out.
+    fixture_consts = set()
+    for n in tree.body:
+        if not isinstance(n, ast.Assign):
+            continue
+        # A STRING counts (metamorphic writes its fixture source as one);
+        # a NUMBER does not. `CONFIG_CASES = 3` made its whole module read
+        # as having a fixture set on the first fixture run of this widening,
+        # which is the widening turning into a false-clean machine.
+        _v = n.value
+        if not (isinstance(_v, (ast.List, ast.Tuple, ast.Dict))
+                or (isinstance(_v, ast.Constant)
+                    and isinstance(_v.value, str))):
+            continue
+        for tg in n.targets:
+            if isinstance(tg, ast.Name) and FIXTURE_CONST.search(tg.id):
+                fixture_consts.add(tg.id)
+    if fixture_consts:
+        for fname, fnode in funcs.items():
+            if fname == 'main':
+                continue
+            if fixture_consts & set(x.id for x in ast.walk(fnode)
+                                    if isinstance(x, ast.Name)):
+                runners.append(fname)
     main = funcs.get('main')
     if not runners or main is None:
         return NONE
@@ -254,6 +299,34 @@ def main(argv):
      'THE RUNNER OUTSIDE THE FLAG BRANCH AND THE EARLY RETURN INSIDE IT is how '
      'three tools in this repo are written, and it passes: the self-test runs '
      'and prints on BOTH paths, which is the property, not the layout'),
+    ("""
+_FIXTURE_SENSITIVE = "assert bad(x)"
+_FIXTURE_ROBUST = "assert ok(x)"
+def blind_lock():
+    write(_FIXTURE_SENSITIVE)
+    write(_FIXTURE_ROBUST)
+    return True, [], []
+def main(argv):
+    locked, rows, problems = blind_lock()
+    print('blind lock: %s (%d fixture comparisons)' % (locked, len(rows)))
+    if not locked:
+        return 2
+    print('%d violation(s)' % len(measure()))
+""", PUBLISHED,
+     "A RUNNER NAMED NOTHING LIKE A RUNNER. metamorphic_check.py's blind_lock() "
+     "writes a SENSITIVE and a ROBUST fixture, runs on the default path, prints "
+     "its result and REFUSES when unlocked -- and the first real run called it "
+     "NO FIXTURE SET, because the name list did not have `blind_lock` in it"),
+    ("""
+CONFIG_CASES = 3
+def helper():
+    return CONFIG_CASES + 1
+def main(argv):
+    print('%d finding(s)' % len(scan()))
+""", NONE,
+     "A SCALAR IS NOT A FIXTURE SET. The constant has to hold DATA -- a list, "
+     "tuple, dict or string -- or a counter named CASES pulls its whole module "
+     "in and the widening becomes a false-clean machine"),
     ("""
 def selftest():
     print('  ok   a planted case is reported')
