@@ -2624,6 +2624,17 @@
         "tools/entry_point_scope_check.py",
         "tools/parse_zero_third_state_check.py"
       ]
+    },
+    {
+      "id": "cody-1790685622",
+      "session": "cody",
+      "subject": "cody-review",
+      "task": "discharge the 71h sv_audit_log obligation authored by cc on 2026-09-26T13:38:34Z",
+      "claimed_at": "2026-09-29T12:40:22Z",
+      "claimed_at_epoch": 1790685622.865171,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
@@ -2722,6 +2733,19 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "shared phrase: \"rather than\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-29T12:40:11Z",
+      "my_subject": "cody",
+      "my_task": "cody-q20: discharge my most-overdue eligible Tier A review (cc 2026-09-26T13:38:34Z, 71h, sv_audit_log formulary source honesty); publish the fixture-triage routing list by owner and build fixture sets for the never-claimed tools in batches, tests first per tool with a known-bad control each, reporting checked over universe after each batch; register and fix the expired-claim refusal defect in the claim tool; correct the review-gate usage line and add a test that fails when it disagrees with the real argument order; find why the push gate missed a literal backspace byte inside a regex and fix it, known-bad fixture first; build a generated gap ledger piloted on two apps with a --check mode; run the live-migration state gate for every app I am allowed to touch and report tables present and missing per app; land the tier register cells if free; the SAIRNscape licence-key-alone coverage question; two register notes; the SAIRNcode autonomous-coding scope document; and a methodology sweep deleting each pattern rule in turn to find the ones whose deletion changes nothing",
+      "other_session": "fourth",
+      "other_subject": "platform",
+      "other_task": "discharge hank's 71h alf_mar and mech_credentials review obligation into the ledger against the verdict document already written; then: report the credential purge and read-mapper sweep status by item with shas and do whichever is not done; make the family-contact consent timestamp stamp once on the false-to-true transition and never re-stamp, tests first with a known-bad control and a live drive; a scope note for server-side witness verification on controlled-substance counts; a self-correction FLAG on the clock-correction path; the hire-anniversary refusal-to-answer and the leap-day window_from; re-derive sf_vehicle_service's tier and gate it if it is ungated Tier A; a report-only staging sweep; three register cell corrections from the hover auditor; and a sweep of probe and tool headers for stateful claims that are not derived at run time. FILES: docs/tier-a-reviews.json api/sd-data.js api/_lib/compliance-rules.js docs/defect-density-register.json",
+      "other_claimed_at": "2026-09-29T11:44:16Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: known-bad",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
