@@ -14303,11 +14303,38 @@ module.exports = async (req, res) => {
       // named on the row -- because refusing the write would lose the
       // technician's work and teach people to stop scanning, and a feature
       // nobody uses protects nothing.
+      // ── DRIVEN BY A MAP, NOT BY A RESOURCE NAME (2026-09-29) ────────────
+      // This read `if (resource === 'mech_docs')`. A NAME, not a property of
+      // the data -- and mech_takeoffs sits in the MECH_RECORDS map twenty lines
+      // above storing the same shape from the same kind of source:
+      // sairnmechanical.html:1784-1794 takes #bp-out.textContent, the model's
+      // answer to "Analyze for HVAC takeoff" over a PHOTOGRAPHED PLAN (:1906),
+      // and pushes {id, date, text} straight here. The client redacts the doc
+      // writer at :1766 and does not redact this one, so neither end did.
+      //
+      // WHAT EARNS REDACTION IS PROVENANCE: text a model extracted from an
+      // IMAGE, containing whatever was in the photograph, which no human chose
+      // to store. Adding a third such field is now a line in this map.
+      //
+      // mech_quotes AND mech_checks ARE DELIBERATELY ABSENT, and that is a
+      // decision rather than an oversight. mech_quotes.text is generated from
+      // form fields the user filled in (:1442) and redacting the customer out
+      // of the quote the technician is about to send destroys the deliverable;
+      // mech_checks.payee is the payee of a cheque, typed on purpose (:1528),
+      // and a register with the payee redacted is not a register.
+      // OVER-REDACTION IS NOT THE SAFE DIRECTION -- it is a different way to
+      // lose the record, which is the same argument the paragraph above makes
+      // for storing a partially-redacted document rather than refusing it.
+      const MECH_SCANNED_TEXT = {
+        mech_docs: 'text',
+        mech_takeoffs: 'text'
+      };
       let mPayload = payload;
-      if (resource === 'mech_docs') {
-        const red = mechRedact.redactDocumentText(payload.text);
+      if (MECH_SCANNED_TEXT[resource]) {
+        const mField = MECH_SCANNED_TEXT[resource];
+        const red = mechRedact.redactDocumentText(payload[mField]);
         mPayload = Object.assign({}, payload, {
-          text: red.text,
+          [mField]: red.text,
           // Carried ON THE ROW, not just returned, so a reader of the stored
           // record can see what the pass did and what it could not do. A row
           // that looked redacted with no account of its limits is the false
