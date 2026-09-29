@@ -68,6 +68,16 @@ LEDGER = os.path.join(REPO, 'docs', 'claim-provenance.json')
 TIERS = os.path.join(REPO, 'docs', 'CRITICALITY-TIERS.md')
 EXIT_CLEAN, EXIT_REFUSED, EXIT_COULD_NOT_RUN = 0, 1, 2
 
+# ── DECLARED 2026-09-29, AND IT HAD NO CONTROL AT ALL UNTIL THEN ────────────
+# tools/entry_point_scope_check.py reported this file as having ONE real-data
+# entry point. It has FOUR, and not one of them is a flag -- `cmds[argv[0]]`
+# over a table of cmd_ handlers is a door vocabulary a flag-only reader cannot
+# count. Reading it properly raised the larger question: four doors, a ledger of
+# how every Tier A claim on the platform was established, and NOTHING TESTED IT.
+# checker_control_check.py reads this declaration and nothing else, so without
+# the line the pair exists and nothing counts it.
+CONTROLLED_BY = ['tests/run_claim_provenance_probe.py']
+
 ISO = re.compile(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$')
 METHODS = ('measured', 'attested', 'derived')
 
