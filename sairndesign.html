@@ -3068,8 +3068,34 @@ async function saveInvoice(){
       toast(d.error.message,6000);
       return;
     }
+    // ── A1: AN AUTH REFUSAL IS NOT A TRANSPORT FAILURE, AND THE ROW STAYS ──
+    // (2026-09-29, closing the A1 attack on the 2026-09-25 obligation.)
+    // The header fix above stopped the 403s. It left the ERROR PATH saying
+    // "try again with a connection" for every non-2xx -- which, for a 403, tells
+    // the user to do the one thing that cannot work. That sentence is what let
+    // the original defect hide for two days.
+    //
+    // THE ROW IS DELIBERATELY NOT ROLLED BACK ON 403, and the asymmetry with the
+    // 409 above is the whole point: on 409 the server HOLDS a duplicate, so
+    // discarding the local copy loses nothing. On 403 the server holds NOTHING,
+    // and a rollback would DELETE the user's invoice. Same status code, opposite
+    // correct action, because they say opposite things about server state.
+    //
+    // IT ALSO SAYS THE MONEY FIGURE IS AFFECTED, because it is: rInvoicing()
+    // counts this kept row into the outstanding total, so the number on screen
+    // includes an invoice the server refused. Telling the user the row is local
+    // without telling them the total is wrong would be half an answer.
+    if(r.status===401||r.status===403){
+      toast('Invoice saved on THIS DEVICE ONLY -- your sign-in was refused by the '
+        +'server, so it has not synced. This is not a connection problem: sign in '
+        +'again and re-save. The outstanding total on screen includes it.',9000);
+      return;
+    }
     toast((r.ok&&d&&d.ok)?'Invoice created':'Saved on this device only -- server sync failed, try again with a connection',(r.ok&&d&&d.ok)?3000:6000);
   }catch(e){
+    // A THROW REALLY IS A TRANSPORT FAILURE -- fetch rejects on a network error
+    // and resolves on any HTTP status, so this branch cannot be reached by a
+    // 403. The wording is correct HERE and was only wrong above.
     toast('Saved on this device only -- server sync failed, try again with a connection',6000);
   }
 }
