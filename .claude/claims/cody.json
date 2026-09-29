@@ -2720,8 +2720,8 @@
       "task": "docs/2026-09-29-parse-history-sweep-cody.md",
       "claimed_at": "2026-09-29T14:53:51Z",
       "claimed_at_epoch": 1790693631.2279036,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T23:51:49Z",
       "files": null
     },
     {
