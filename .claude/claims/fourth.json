@@ -2679,8 +2679,8 @@
       "task": "queue: register the claim-matcher prose-collision defect with the ownership-negating-position test; write plain-prose restatements of two wording-collided items for the matcher owner; correct my own report that SC-AUDIT-2026 is absent -- it is seeded and answers 200 active -- and drive tools/sc_tier_a_write_gate_live_probe.py end to end on it so the new credential-roster readback is driven rather than source-verified; add the asserted-teardown obligation to tools/live_probe_residue_audit.py so a future writing probe with the same gap is caught by the convention that already invokes it; and discharge hank's 42h alf_staff and sen_visits obligation, driving all five attack points. ONE QUEUE ITEM IS DEFERRED AND NOT TAKEN -- its blocker and the exact path it needs are in THIS session's claim file under refusals, written there by the claim tool itself, because naming it here blocks my own claim on my own declaration. CONFLICT DECLARED PER PR 4.3: cc holds docs/tier-a-reviews.json, so the obligation VERDICT lands as a standalone document rather than in the ledger. FILES: tools/live_probe_residue_audit.py tests/run_live_probe_residue_probe.py SAIRN-ACTIVE-WORK-fourth.md",
       "claimed_at": "2026-09-28T21:32:29Z",
       "claimed_at_epoch": 1790631149.663614,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T10:51:09Z",
       "files": [
         "SAIRN-ACTIVE-WORK-fourth.md",
         "tests/run_live_probe_residue_probe.py",
