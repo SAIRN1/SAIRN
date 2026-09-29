@@ -19532,7 +19532,7 @@
       "recurrence_open": "nothing is fixed and no sweep exists for the class: a two-person or two-role control implemented in one app server-side and in another app client-side only. SAIRNvet has the token, SAIRNcare has a dropdown, and nothing compares them."
     },
     {
-      "commit": "c0b77ce4a951",
+      "commit": "50d16fd4ac2a",
       "date": "2026-09-29",
       "subject": "fix(push): the tool that exists to replace `git add -A` was using it",
       "files": [
