@@ -2611,8 +2611,8 @@
       "task": "cody-q19: discharge my most-overdue eligible Tier A review (cc 2026-09-26T13:13:44Z, 70h, the storedBlob blob-builder migration); triage the 54 checker_selftest_check findings by file owner and fix the ones in files I hold, test first per tool, reporting file, tool and owner for the rest; claim_provenance.py four-subcommand-door coverage or the reason it does not need it; read all 14 NOT JUDGED arms in assertion_label_shape_check.py individually and either cover or register each as a named permanent limit; confirm the sf_trustee_audits obligation record names the real gap; confirm where each of the four doc deliverables has landed in its real target file and name the holder for any still blocked; the skill-mirror sync for the code scrubber; and a methodology pass confirming every checker I built or touched this session carries its own fixture-based known-bad control. SUBJECT NAMED PER PR 4.3 FILES: tools/checker_selftest_check.py tests/run_checker_selftest_probe.py tools/assertion_label_shape_check.py tests/run_assertion_label_shape_probe.py tools/entry_point_scope_check.py tests/run_entry_point_scope_probe.py tools/parse_zero_third_state_check.py tests/run_parse_zero_third_state_probe.py tools/claim_provenance.py",
       "claimed_at": "2026-09-29T10:55:50Z",
       "claimed_at_epoch": 1790679350.086345,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T12:35:21Z",
       "files": [
         "tests/run_assertion_label_shape_probe.py",
         "tests/run_checker_selftest_probe.py",
