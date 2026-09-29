@@ -10541,9 +10541,50 @@ module.exports = async (req, res) => {
       // NO PRIOR INVOICE IS LEFT ALONE, deliberately: with no invoice on file
       // every derived line genuinely IS new, `invoice_exists: false` says so,
       // and reconciling against [] is the right answer there.
+      // ── AND THE SAME DEFECT A THIRD TIME, THROUGH A THIRD DOOR. FIXED
+      // ── 2026-09-29 ──────────────────────────────────────────────────────
+      // The guard above was written as `if (priorRow && !Array.isArray(...))`,
+      // so IT WAS REACHED ONLY WHEN THE BLOB WAS TRUTHY. A row that exists with
+      // `data: null` makes priorRow null, the guard is skipped, the else branch
+      // runs, and this reports every derived line ADDED with net_change = the
+      // ENTIRE amount beside `invoice_exists: true` -- which is, word for word,
+      // the false reading the comment above describes and claims to have closed.
+      //
+      // A NULL BLOB IS UNREADABLE DATA, NOT ABSENT DATA, so it belongs with the
+      // 2026-09-04 case (the read that failed) and not with the 2026-09-11 case
+      // (no invoice on file). The 2026-09-27 fix covered "row present, blob
+      // readable, key absent" and nothing covered "row present, blob not
+      // readable" -- one branch of a three-way distinction, which is why it
+      // looked closed.
+      //
+      // THE THREE STATES ARE NOW DECIDED ON ROW EXISTENCE FIRST, and the blob
+      // second. Deciding on the blob first is what let a missing blob read as a
+      // missing invoice.
+      //
+      // TWO REFUSAL CODES, NOT ONE, and the difference is actionable: no line
+      // detail means the invoice is fine and simply predates per-event storage;
+      // an unreadable blob means the stored row is damaged and somebody has to
+      // look at it. Collapsing them would send a biller to the wrong problem.
+      //
+      // `invoice_exists` STAYS TRUE for both. The row is on file, and saying
+      // otherwise would tell the caller to create an invoice that already
+      // exists -- a second wrong answer in place of the first.
       const priorRow = (invRows[0] && invRows[0].data) || null;
-      derived.invoice_exists = !!(Array.isArray(invRows) && invRows.length);
-      if (priorRow && !Array.isArray(priorRow.charge_lines)) {
+      derived.invoice_exists = invRows.length > 0;
+      const priorBlobReadable = !!priorRow && typeof priorRow === 'object'
+        && !Array.isArray(priorRow);
+      const priorLines = priorBlobReadable && Array.isArray(priorRow.charge_lines)
+        ? priorRow.charge_lines : null;
+      if (derived.invoice_exists && !priorBlobReadable) {
+        derived.reconciliation_vs_invoice = null;
+        derived.reconciliation_unavailable = 'PRIOR_INVOICE_BLOB_UNREADABLE';
+        derived.reconciliation_unavailable_reason = 'An invoice for this month is '
+          + 'on file but the record of what it contains could not be read, so '
+          + 'there is nothing to compare against. No comparison is shown rather '
+          + 'than one computed against nothing, which would report every charge '
+          + 'as newly added and the net change as the whole invoice. The invoice '
+          + 'row itself needs looking at before regenerating.';
+      } else if (derived.invoice_exists && priorLines === null) {
         derived.reconciliation_vs_invoice = null;
         derived.reconciliation_unavailable = 'PRIOR_INVOICE_HAS_NO_CHARGE_LINES';
         derived.reconciliation_unavailable_reason = 'The invoice already on file '
@@ -10553,7 +10594,7 @@ module.exports = async (req, res) => {
           + 'whole invoice, which is a precise figure and a wrong one.';
       } else {
         derived.reconciliation_vs_invoice = careCharges.reconcileAgainstInvoice(
-          derived, (priorRow && priorRow.charge_lines) || []);
+          derived, priorLines || []);
       }
       res.status(200).json(derived);
       return;
