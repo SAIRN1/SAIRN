@@ -1793,6 +1793,50 @@ finally:
 
 
 print()
+# ── THE USAGE LINE IS A SPECIFICATION, AND IT WAS WRONG (2026-09-29) ────────
+# It read `--discharge <author> "<verdict>"` while the parser takes the
+# opened_at SECOND whenever an author has more than one open record. A real call
+# of `--discharge cc <timestamp> --help` therefore dispatched cleanly, wrote
+# `--help` as the verdict, printed DISCHARGED and marked a 70h obligation
+# reviewed. The line was corrected by hand -- and a hand correction leaves
+# NOTHING that would notice the next time the parse moves.
+#
+# So the order is DERIVED FROM THE PARSE and compared against the documented
+# one. Both halves are read out of the file; neither is restated here, because a
+# restatement is a third copy that can drift from both.
+import re                                                        # noqa: E402
+_gate_src = io.open(os.path.join(REPO, 'tools', 'tier_a_review_gate.py'),
+                    encoding='utf-8').read()
+_usage = [l for l in _gate_src.split('\n')[:40] if '--discharge' in l]
+_doc_order = []
+if _usage:
+    _doc_order = re.findall(r'[<\[]([a-z_]+)[>\]]', _usage[0])
+
+# What the parser ACTUALLY does: `rest[1]` is tested against an ISO date, and
+# when it matches it is passed as opened_at with the verdict taken from rest[2:].
+_parses_iso_second = bool(
+    re.search(r"rest\[1\]\)[\s\S]{0,200}?opened_at=rest\[1\]", _gate_src)
+    or re.search(r"re\.match\(r'\^\\d\{4\}[^\n]*rest\[1\]", _gate_src))
+
+check('THE USAGE LINE MATCHES THE REAL ARGUMENT ORDER. It said '
+      '`--discharge <author> "<verdict>"` while the parser reads opened_at '
+      'SECOND, and that gap is how `--help` became the verdict of a 70h '
+      'obligation',
+      bool(_usage) and _doc_order[:2] == ['author', 'opened_at'],
+      (_usage[:1], _doc_order))
+
+check('...and the parse really does take the ISO timestamp SECOND, so the arm '
+      'above is comparing the line against the CODE and not against a second '
+      'copy of the line',
+      _parses_iso_second,
+      'the rest[1]-is-a-timestamp branch is gone; the usage line may now be '
+      'the wrong one')
+
+check('...and the usage line names the VERDICT LAST, which is the argument a '
+      'shifted call silently swallows',
+      bool(_doc_order) and _doc_order[-1] == 'verdict', _doc_order)
+
+
 if fails:
     print('%d ARM(S) FAILED:' % len(fails))
     for f in fails:
