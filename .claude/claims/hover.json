@@ -396,8 +396,8 @@
       "task": "eight-item queue: print the tier-a obligation row for routing; confirm the relocated tools path is invisible to build-agent gates and denominators; six independent cold reads at HEAD on unregistered or misdescribed resources; conditional validation of hover2's updated log mirror; one undirected batch through the linter; the weighted rotation draw; an in-flight/blocked/stale inventory; a stale-path methodology sweep across all relocated tooling with selftests run from two working directories.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hover.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. Each component of this claim checks CLEAR on its own.\n\nFILES: hover_backup_mirror.py hover_cold_scan_pool.py hover_log.py docs/CRITICALITY-TIERS.md",
       "claimed_at": "2026-09-29T17:11:40Z",
       "claimed_at_epoch": 1790701900.8728678,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T17:42:54Z",
       "files": [
         "docs/CRITICALITY-TIERS.md",
         "hover_backup_mirror.py",
