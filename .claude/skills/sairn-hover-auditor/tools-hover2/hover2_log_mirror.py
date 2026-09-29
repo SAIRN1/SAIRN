@@ -1,10 +1,19 @@
 #!/usr/bin/env python
 """hover2_log_mirror.py -- off-disk backup for THIS clone's own hash-chained
 self-log (hover2's hover-audit-log/), designed independently of H1's
-hover_backup_mirror.py per direct instruction 2026-09-28. DESIGN REPORTED TO
-MICHAEL BEFORE ANY PUSH; the repository and credential do not exist yet, and
-every arm that needs them exits 2 COULD NOT RUN until they do -- never a
-silent skip, never folded into a pass.
+hover_backup_mirror.py per direct instruction 2026-09-28.
+
+SCOPE, DECIDED BY MICHAEL 2026-09-29: the mirror carries the LOG
+(hover-audit-log.jsonl), the ANCHORS (.mirror2-anchor-outbox.jsonl) and the
+BEACON (TIP-BEACON.md) ONLY. No tool scripts, no other files -- the tools
+have their own off-disk remote with history (the platform repo, under
+.claude/skills/sairn-hover-auditor/tools-hover2/). Enforced mechanically:
+--push stages exactly MIRROR_ALLOWLIST via a throwaway index on a dedicated
+`mirror` branch, verifies the staged set against the allowlist before
+committing (staged_scope_error -- a staged name outside the list refuses
+the whole push), and the local repo's own branch and index are untouched.
+The one pre-decision full-directory snapshot on the remote stays reachable
+in history; the scope narrowing landed as a normal commit, not a rewrite.
 
 HONEST PROVENANCE DISCLOSURE: this role validated H1's mirror tool earlier
 the same day, so this is not a clean-room design -- it is an independent
@@ -100,6 +109,15 @@ REMOTE_NAME = 'backup2'
 TOKEN_FILE = os.path.join(HERE, '.mirror-token')
 META_FILE = os.path.join(HERE, '.mirror2-token-meta.json')
 ANCHOR_OUTBOX = os.path.join(HERE, '.mirror2-anchor-outbox.jsonl')
+# THE MIRROR'S ENTIRE PUSHED SURFACE, decided by Michael 2026-09-29: the
+# hash-chained log itself, the anchor outbox, and the tip beacon. No tool
+# scripts, no other files -- the tools have their own off-disk remote (the
+# platform repo, .claude/skills/sairn-hover-auditor/tools-hover2/). Staged
+# with -f because the anchor outbox is deliberately gitignored against the
+# LOCAL repo's own snapshots; the mirror carries it per this decision.
+MIRROR_ALLOWLIST = ('hover-audit-log.jsonl',
+                    '.mirror2-anchor-outbox.jsonl',
+                    'TIP-BEACON.md')
 PROPOSED_REPO = 'SAIRN-1/hover2-log-mirror'
 H1_MIRROR_REPO = ('sairn-1', 'hover-log-mirror')
 EXPIRY_WARN_DAYS = 14
@@ -381,6 +399,81 @@ def cmd_status():
     return EXIT_CLEAN
 
 
+def staged_scope_error(staged_names, allowlist=None):
+    """Michael's 2026-09-29 scope decision: the mirror carries the LOG, the
+    ANCHORS and the BEACON only -- no tool scripts, no other files. This is
+    the mechanical half: given the set of staged file names, return a
+    refusal string if ANY staged name is outside the allowlist, else None.
+    Pure and injectable so the selftest can drive it with a known-bad set
+    (a tool file smuggled into the staging) and prove the refusal fires."""
+    allowlist = allowlist if allowlist is not None else MIRROR_ALLOWLIST
+    extra = sorted(set(staged_names) - set(allowlist))
+    if extra:
+        return ('staged set exceeds the mirror scope (log, anchors, beacon '
+                'only -- Michael, 2026-09-29): %s' % ', '.join(extra))
+    return None
+
+
+def _mirror_commit():
+    """(commit_sha, None) or (None, refusal). Builds a commit whose tree is
+    EXACTLY the allowlist files, using a throwaway index (GIT_INDEX_FILE) so
+    the local repo's real index/branch/working tree are untouched. Parent is
+    the previous refs/heads/mirror tip, or -- the first time only -- the
+    current local HEAD, so the remote's pre-decision history stays reachable
+    and the scope narrowing lands as a normal commit, not a rewrite."""
+    tmpidx = os.path.join(HERE, '.mirror2-tmp-index')
+    env = dict(os.environ, GIT_INDEX_FILE=tmpidx)
+
+    def g(cmd):
+        return subprocess.run(['git'] + cmd, cwd=HERE, env=env,
+                              capture_output=True, text=True,
+                              encoding='utf-8', errors='replace')
+    try:
+        r = g(['read-tree', '--empty'])
+        if r.returncode != 0:
+            return None, 'read-tree failed: %s' % r.stderr.strip()[:120]
+        for name in MIRROR_ALLOWLIST:
+            if os.path.isfile(os.path.join(HERE, name)):
+                r = g(['add', '-f', '--', name])
+                if r.returncode != 0:
+                    return None, 'add %s failed: %s' % (name, r.stderr.strip()[:120])
+        r = g(['ls-files'])
+        staged = [l.strip() for l in r.stdout.splitlines() if l.strip()]
+        err = staged_scope_error(staged)
+        if err:
+            return None, err
+        if not staged:
+            return None, 'nothing to mirror -- no allowlist file exists on disk'
+        r = g(['write-tree'])
+        if r.returncode != 0:
+            return None, 'write-tree failed: %s' % r.stderr.strip()[:120]
+        tree = r.stdout.strip()
+        pr = subprocess.run(['git', 'rev-parse', '--verify', '-q',
+                             'refs/heads/mirror'], cwd=HERE,
+                            capture_output=True, text=True)
+        parent = pr.stdout.strip() if pr.returncode == 0 else ''
+        if not parent:
+            hr = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=HERE,
+                                capture_output=True, text=True)
+            parent = hr.stdout.strip() if hr.returncode == 0 else ''
+        cmd = ['commit-tree', tree, '-m',
+               'hover2 mirror snapshot (scope: log, anchors, beacon)']
+        if parent:
+            cmd[2:2] = ['-p', parent]
+        r = g(cmd)
+        if r.returncode != 0:
+            return None, 'commit-tree failed: %s' % r.stderr.strip()[:120]
+        commit = r.stdout.strip()
+        r = subprocess.run(['git', 'update-ref', 'refs/heads/mirror', commit],
+                           cwd=HERE, capture_output=True, text=True)
+        if r.returncode != 0:
+            return None, 'update-ref failed: %s' % r.stderr.strip()[:120]
+        return commit, None
+    finally:
+        if os.path.isfile(tmpidx):
+            os.remove(tmpidx)
+
+
 def cmd_push():
     rc, out = _run_git(['remote', 'get-url', REMOTE_NAME])
     url = out.strip() if rc == 0 else ''
@@ -389,25 +482,35 @@ def cmd_push():
         for e in errs:
             print('REFUSED -- %s' % e)
         return EXIT_COULD_NOT_RUN
-    # snapshot, push with helper reset + real shim
+    # snapshot ONLY the allowlist, on a DEDICATED `mirror` branch built via
+    # a temporary index -- never `add -A` on the shared local branch (the
+    # pre-scope-decision behaviour, which carried this whole directory's
+    # tracked tree to the remote). The local repo's own branch, index and
+    # working tree are untouched, so the tools stay tracked locally while
+    # the remote tip carries the allowlist only. The scope-removal commit
+    # this produces is a NORMAL commit parented on the previous tip -- the
+    # remote's earlier history (including the one pre-decision full
+    # snapshot) is preserved, never rewritten.
     _run_git(['init', '-q', '.'])
-    _run_git(['add', '-A'])
-    _run_git(['commit', '-q', '-m', 'hover2 mirror snapshot'])
+    commit, err = _mirror_commit()
+    if err:
+        print('REFUSED -- %s' % err)
+        return EXIT_COULD_NOT_RUN
     env = dict(os.environ)
     env['GIT_ASKPASS'] = _write_shim(empty=False)
     env['GIT_TERMINAL_PROMPT'] = '0'
     r = subprocess.run(['git', '-c', 'credential.helper=', 'push', '-q',
-                        REMOTE_NAME, 'HEAD:main'], cwd=HERE,
+                        REMOTE_NAME, 'refs/heads/mirror:refs/heads/main'],
+                       cwd=HERE,
                        capture_output=True, text=True, encoding='utf-8',
                        errors='replace', env=env)
     if r.returncode != 0:
         print('COULD NOT RUN: push failed: %s' % r.stderr.strip()[:200])
         return EXIT_COULD_NOT_RUN
     head, n = chain_head()
-    rc, out = _run_git(['rev-parse', 'HEAD'])
     anchor = {'ts': datetime.datetime.now(datetime.timezone.utc)
                         .strftime('%Y-%m-%dT%H:%M:%SZ'),
-              'chain_head': head, 'remote_tip': out.strip(), 'n_entries': n}
+              'chain_head': head, 'remote_tip': commit, 'n_entries': n}
     anchor['sent'] = False
     with io.open(ANCHOR_OUTBOX, 'a', encoding='utf-8') as f:
         f.write(json.dumps(anchor, sort_keys=True) + '\n')
@@ -468,11 +571,27 @@ def cmd_restore_test():
         print('COULD NOT RUN: clone failed: %s' % r.stderr.strip()[:200])
         return EXIT_COULD_NOT_RUN
     head, n = chain_head(os.path.join(scratch, LOG_NAME))
-    ver = subprocess.run([sys.executable,
-                          os.path.join(scratch, 'hover_log.py'), '--verify'],
-                         cwd=scratch, capture_output=True, text=True,
-                         encoding='utf-8')
-    chain_ok = 'INTACT' in (ver.stdout or '')
+    # Verify with the LOCAL hover_log module pointed at the CLONE's file --
+    # not by executing hover_log.py from inside the clone, which stopped
+    # existing there the moment Michael's 2026-09-29 scope decision removed
+    # tool scripts from the mirror. Found live on the first scoped drill
+    # (chain read BROKEN while heads matched -- the verifier subprocess was
+    # failing to start, not the chain failing to verify), which is exactly
+    # the false-alarm shape a missing dependency produces when its absence
+    # is folded into the check's own verdict.
+    try:
+        sys.path.insert(0, HERE)
+        import hover_log as _hl
+        rows, problem = _hl.read_all(os.path.join(scratch, LOG_NAME))
+        if rows is None:
+            chain_ok, chain_why = False, problem
+        else:
+            chain_ok, chain_why = _hl.verify(rows)
+    except Exception as exc:
+        chain_ok, chain_why = False, 'verifier import/run failed: %s' % exc
+    finally:
+        if sys.path and sys.path[0] == HERE:
+            sys.path.pop(0)
     anchor_ok = head == a.get('chain_head') and n == a.get('n_entries')
     print('restore drill: clone ok; chain %s; anchor match %s '
           '(clone head %s vs anchor %s, %d vs %d entries)'
@@ -685,6 +804,27 @@ def selftest():
        not last_anchor(ob) is None and
        (lambda rows: rows)(last_anchor(ob))['sent'] is True and
        last_anchor(ob)['ts'] != 't1')
+
+    # SCOPE ALLOWLIST arms (Michael's 2026-09-29 decision: log, anchors,
+    # beacon only).
+    ck('SC1 a staged set that is exactly the allowlist passes',
+       staged_scope_error(list(MIRROR_ALLOWLIST)) is None)
+    ck('SC2 a staged subset (an allowlist file absent on disk) still passes',
+       staged_scope_error(['hover-audit-log.jsonl']) is None)
+    ck('SC3 KNOWN-BAD CONTROL: a tool file smuggled into the staging '
+       'refuses, and the refusal names the file',
+       (lambda e: e is not None and 'hover_log.py' in e)(
+           staged_scope_error(list(MIRROR_ALLOWLIST) + ['hover_log.py'])))
+    ck('SC4 KNOWN-BAD CONTROL: the pre-decision add -A shape (every tracked '
+       'file staged) refuses rather than silently reverting to the old '
+       'behaviour',
+       staged_scope_error(list(MIRROR_ALLOWLIST) +
+                          ['hover2_log_mirror.py', 'claim_collision_scan.py',
+                           '.gitignore']) is not None)
+    ck('SC5 an empty staged set passes the scope check itself (the '
+       'nothing-to-mirror refusal is a separate, named condition in '
+       '_mirror_commit, not this one)',
+       staged_scope_error([]) is None)
 
     print('%d ok, %d failed' % (total[0] - len(bad), len(bad)))
     return EXIT_CLEAN if not bad else EXIT_BROKEN
