@@ -19353,6 +19353,169 @@
       "recurrence_open": "PARTLY CLOSED AND MEASURED: hook fail-opens 5 -> 0, but 16 dependency-shaped fail-opens remain in tools/ where exit 0 is not a decision to allow something, and they are unswept. The scanner reads TEXT, so a fail-open through a helper, a trap or a Python default argument is invisible and the universe is a FLOOR. And the distinction the tool rests on -- SCOPE versus DEPENDENCY -- is inferred from what the guard NAMES, so a scope guard whose marker has an unusual name will be miscounted as a finding."
     },
     {
+      "commit": "26c92942746d",
+      "date": "2026-09-29",
+      "subject": "test(sairncare): the alf_billing gate nothing drove -- 3 of 3 now CAUGHT, and measuring it showed the screen's third bucket over-reports by at least five",
+      "files": [
+        "api/sd-data-alf-caregiver-scope.test.js"
+      ],
+      "lines_added": 23,
+      "lines_removed": 0,
+      "app": "sairncare",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "mutation-testing",
+      "summary": "api/sd-data.js's alf_billing/derive_charges ALF_MANAGEMENT_ROLES gate was present and correct and NOTHING DROVE IT. Proven by tools/role_gate_negative_coverage.py --ablate alf_billing, which deletes the resource's three gate blocks one at a time across 411 suites: CAUGHT / *** SILENT *** / CAUGHT. The two caught are `read` and `write`, already in api/sd-data-alf-caregiver-scope.test.js's ADMIN_REFUSALS table. The silent one is the sharpest of the three: `read` returns stored invoices, while `derive_charges` DERIVES a named resident's charges from their MAR administrations and activities and returns room_board_amount, care_amount, private_total, hcbs_claim_amount and the care-level breakdown. Deleting its gate would have handed a caregiver the full billing position of any resident they can name, and the gates either side would still have gone red, so the RESOURCE would have looked covered. NO PRODUCT DEFECT SHIPPED -- the gate has always been there; what was absent was any evidence it fires. Closed with one table row; re-ablated 3 of 3 CAUGHT with api/sd-data.js restored byte-identical. AND MEASURING IT EXPOSED A LARGER ONE: after wiring the arm the static screen STILL files alf_billing under 'NOT DRIVEN by any suite at all', because it attributes a suite by finding a role LITERAL near the resource name and ADMIN_REFUSALS drives eleven resources through a table with the role passed as a call argument. FIVE of the sixteen resources in that bucket -- alf_billing, alf_compliance_rules, alf_payer_rules, alf_signals, alf_staff -- are driven by that one table as `caregiver`, a role every one of their gates excludes, so the bucket whose own text reads 'there is no suite to add an arm to' over-reports by at least 31%.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/role_gate_negative_coverage.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The ADMIN_REFUSALS table has gained resources and actions over several commits by several sessions, and derive_charges was never among them. No commit removed an arm; the action simply never had one, so there is no injection to point at."
+      },
+      "citation_note": "Not an absent dependency. Cited for the principle: two covered gates and one uncovered one were reported as one covered resource, so a measurement nobody had performed on the third gate was folded into the verdict on the other two.",
+      "contributing_factors": [
+        {
+          "kind": "detection",
+          "factor": "The coverage verdict is issued per RESOURCE and the property is per GATE. alf_billing carries three gate blocks and got one verdict between them, so two covered gates hid an uncovered third.",
+          "action_status": "done",
+          "action": "tools/checker_denominator.py now carries a row for this tool at the GATE unit -- 45 refusals, 39 reachable by --ablate, 6 not -- so the figure moves when a gate is added in a shape the sound instrument cannot reach."
+        },
+        {
+          "kind": "technical",
+          "factor": "The static screen attributes a driving suite by finding a role LITERAL near the resource name. A suite that drives ten resources through a TABLE, with the role passed as a call argument, is invisible to it -- which is the dominant shape in the very suite that covers these resources.",
+          "action_status": "planned",
+          "action": "Raised as an open-work row with the measurement attached (5 of 16). Not fixed here: the tool is another session's and the fix is a real change to how driven() attributes, not a widening of a regex."
+        },
+        {
+          "kind": "process",
+          "factor": "The ADMIN_REFUSALS table is the natural place to add a resource, and adding a resource there adds the ACTIONS somebody happened to think of. Nothing compares the actions a table drives against the actions the handler gates.",
+          "action_status": "planned",
+          "action": "No check proposed yet. The comparison is derivable -- the gated actions are readable from the branch conditions -- but it belongs with the tool above rather than in a suite."
+        }
+      ],
+      "recurrence_open": "Six role refusals remain unreachable by --ablate, the only sound measurement in that file: five compound conditions and one with its body on a single line. TWO OF THEM are their resource's ONLY gate -- alf_incidents and alf_op_audits have zero ablatable blocks, so the instrument answers COULD NOT TELL for those resources entirely, and both also sit in the not-driven bucket. Nothing measures whether a resource's gates are individually covered; the bucket counts remain per-resource."
+    },
+    {
+      "commit": "49f7ae011063",
+      "date": "2026-09-29",
+      "subject": "fix(sairndesign): A1 -- a 403 is not a connection problem, and the invoice stays",
+      "files": [
+        "docs/FACT-SHEET-2026-09-29.md",
+        "sairndesign.html"
+      ],
+      "lines_added": 79,
+      "lines_removed": 22,
+      "app": "sairndesign",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "sairndesign.html invoice-create rendered 'Saved on this device only -- server sync failed, try again with a connection' for EVERY non-2xx, including 401 and 403. After the 2026-09-25 header fix the 403s stopped, but the sentence remained, and for an auth refusal it tells the user to do the one thing that cannot work. The row is correctly KEPT on 403 -- unlike the 409 path, which rolls back, because on 409 the server holds a duplicate and on 403 it holds nothing, so a rollback would delete the user's invoice -- and rInvoicing() counts the kept row into the outstanding total, so the money figure on screen includes an invoice the server refused. Now branches on 401/403 with its own sentence naming the sign-in and the affected total.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "944f6685235e",
+        "date": "2026-09-23",
+        "subject": "feat(sairndesign): arm the session gate on the five Tier A resources -- and the precondition was the whole job, not the four things the row assumed",
+        "lag_days": 6
+      },
+      "citation_note": "1.5 is the confident line printed after the error. Here the line was not merely confident, it NAMED A CAUSE -- and naming the wrong cause is worse than saying nothing, because it sends the user to retry a connection that was never the problem. It is also what let the underlying 403 hide for two days.",
+      "contributing_factors": [
+        {
+          "factor": "One catch-all message served every non-2xx outcome. A single sentence cannot be true of both a network failure and an authorisation refusal, and the one chosen named the cause the user could act on -- which is the wrong one.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "401 and 403 get their own branch and their own sentence, naming the sign-in as the cause and telling the user to sign in again rather than to retry."
+        },
+        {
+          "factor": "The 2026-09-25 fix attached the header and deliberately stopped there, because changing behaviour on a money path inside a security fix is its own risk. Correct as a scoping decision, and it left the misleading sentence in place for four more days.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The follow-up was recorded in the review verdict rather than in a commit message, and is closed here. The lesson is that a deliberately deferred half needs a ledger entry, not a sentence in a diff."
+        },
+        {
+          "factor": "The message is what a human reads and nothing tests message text against the status that produced it. The suite that exists for this path asserts the HEADER is sent, which is a different question.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "Candidate: assert that no error branch reachable from an HTTP status renders a transport-failure sentence. Not built here -- it needs a way to enumerate status-to-message pairs, and a bad version of it would be a regex over toast strings."
+        },
+        {
+          "factor": "The optimistic local insert is the right design for an offline-capable app and it means every failure path has to decide whether the row survives. Two adjacent statuses need opposite answers, and nothing in the shape of the code makes that obvious.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "The asymmetry is now stated in the code with the reason for each direction. It cannot be removed: 409 means the server holds a duplicate, 403 means it holds nothing."
+        }
+      ],
+      "recurrence_open": "Nothing tests an error message against the status that produced it, anywhere on the platform. The candidate detection above is not built. And the adjacent gap this message now honestly reports is still open: sdnRestoreSession validates asynchronously and its client-side check decodes the token header without verifying a signature, so a revoked token still reaches a Create Invoice click."
+    },
+    {
+      "commit": "50d16fd4ac2a",
+      "date": "2026-09-29",
+      "subject": "fix(push): the tool that exists to replace `git add -A` was using it",
+      "files": [
+        "tools/push_retry.py"
+      ],
+      "lines_added": 47,
+      "lines_removed": 2,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/push_retry.py -- the tool built to replace hand-written git add -A loops -- used git add -A in its own regenerate-after-rebase step, staging whatever happened to be in the tree into an amended commit on every push from every clone",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "ad11ef1c27e4",
+        "date": "2026-09-26",
+        "subject": "feat(methodology): the retry loop refuses to amend mid-rebase, instead of relying on somebody reading the log",
+        "lag_days": 3
+      },
+      "phase_note": "the regenerate step was written with git add -A in the commit that created the tool, forty lines below its own header quoting that exact line as the hazard it replaces",
+      "contributing_factors": [
+        {
+          "factor": "the allowlist already existed in the same file (GENERATED) and was used three lines away to decide which conflicts may be re-derived, so the correct data was present and unused",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the step stages the GENERATED paths by name; anything else unstaged or untracked is printed and left alone, and an already-staged file is deliberately untouched because that is the callers act"
+        },
+        {
+          "factor": "the file documents git add -A as the hazard it exists to prevent, and a reader who has just read that header does not expect to find the call below it -- the documentation made the code look checked",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "this is the shape rather than a fixable cause: a tool whose header argues against a pattern is the last place anybody greps for it"
+        },
+        {
+          "factor": "the same defect one level out -- the tool printed git add -A as an instruction to a human mid-rebase, which no test and no gate reads",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the advice now prints git add -- <documents> built from GENERATED, so it cannot drift from the list it describes"
+        },
+        {
+          "factor": "nothing sweeps for git add -A, git add . or git commit -a in tools, hooks and retry loops even though the staging-discipline item has been on the queue since 2026-09-28",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "the sweep is the standing queue item and is still not built; this instance was found by reading one file, not by any check"
+        }
+      ],
+      "recurrence_open": "no sweep exists. This was found by reading push_retry.py for an unrelated reason, and the staging-discipline sweep that would have found it -- enumerate every tool, script, hook and retry loop containing git add -A, git add . or git commit -a -- is still an open queue item. A pre-commit check on staged CONTENT exists (tools/staged_credential_check.py) and is the backstop that would catch a credential, but it says nothing about conflict markers or about an unrelated file being folded into somebody elses amended commit."
+    },
+    {
       "commit": "573571970628",
       "date": "2026-09-29",
       "subject": "fix(nhi): the clone count was DERIVED FROM DISK and still wrong -- third instance",
@@ -19532,61 +19695,115 @@
       "recurrence_open": "nothing is fixed and no sweep exists for the class: a two-person or two-role control implemented in one app server-side and in another app client-side only. SAIRNvet has the token, SAIRNcare has a dropdown, and nothing compares them."
     },
     {
-      "commit": "50d16fd4ac2a",
+      "commit": "877191ec5d09",
       "date": "2026-09-29",
-      "subject": "fix(push): the tool that exists to replace `git add -A` was using it",
+      "subject": "chore(review): discharge the two oldest obligations assigned to me, 84h and 82h",
       "files": [
-        "tools/push_retry.py"
+        "docs/tier-a-reviews.json"
       ],
-      "lines_added": 47,
-      "lines_removed": 2,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "tools/push_retry.py -- the tool built to replace hand-written git add -A loops -- used git add -A in its own regenerate-after-rebase step, staging whatever happened to be in the tree into an amended commit on every push from every clone",
+      "lines_added": 8,
+      "lines_removed": 8,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "independent-review",
+      "summary": "api/sd-data.js bld_bids: the storedBlob column-list comment said the assigned_employee_id strip prevents a payload copy shadowing the resolved column and handing a PM a bid the VISIBILITY FILTER meant to hide. The filter reads the real column and runs BEFORE any spread, so it cannot be fooled in either direction and that harm cannot happen. The strip IS load-bearing, for a different thing: r.data is spread LAST into the response, so a blob-carried assigned_employee_id would overwrite the server-resolved value in what the client receives -- false ATTRIBUTION on a Tier A bid. Correct code, wrong stated reason, and the projection order makes the strip MORE necessary rather than redundant. The same shape was then found in rf_jobs' response construction in the same review.",
       "rules": [
-        "1.2"
+        "1.3"
       ],
-      "citation_confidence": "clean",
+      "citation_confidence": "arguable",
       "injection_phase": "coding",
-      "phase_confidence": "stated",
+      "phase_confidence": "inferred",
       "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "commit": "ad11ef1c27e4",
-        "date": "2026-09-26",
-        "subject": "feat(methodology): the retry loop refuses to amend mid-rebase, instead of relying on somebody reading the log",
-        "lag_days": 3
+        "commit": "9ff4b87fa038",
+        "date": "2026-09-25",
+        "subject": "refactor(sd-data): six more blob builders onto storedBlob -- and four of the six needed a DIFFERENT column list, which is the argument against the sweep",
+        "lag_days": 4
       },
-      "phase_note": "the regenerate step was written with git add -A in the commit that created the tool, forty lines below its own header quoting that exact line as the hazard it replaces",
+      "citation_note": "1.3 is an anchor that still matches but no longer points at the right thing. Here the ANCHOR is a stated reason rather than a string: it still described a real protection, and it named the wrong one, so a reader auditing the strip would have checked the filter, found it safe, and concluded the strip was redundant.",
       "contributing_factors": [
         {
-          "factor": "the allowlist already existed in the same file (GENERATED) and was used three lines away to decide which conflicts may be re-derived, so the correct data was present and unused",
+          "factor": "The comment named the protection the strip provides and named the wrong one. It said the strip stops a payload copy fooling the bld_bids VISIBILITY FILTER; the filter reads the resolved column and runs before any spread, so it cannot be fooled either way.",
           "kind": "technical",
           "action_status": "done",
-          "action": "the step stages the GENERATED paths by name; anything else unstaged or untracked is printed and left alone, and an already-staged file is deliberately untouched because that is the callers act"
+          "action": "Corrected in the review record: the strip is load-bearing for false ATTRIBUTION in the RESPONSE, because r.data is spread LAST over the four resolved columns."
         },
         {
-          "factor": "the file documents git add -A as the hazard it exists to prevent, and a reader who has just read that header does not expect to find the call below it -- the documentation made the code look checked",
-          "kind": "latent-condition",
-          "action_status": "not-actionable",
-          "note": "this is the shape rather than a fixable cause: a tool whose header argues against a pattern is the last place anybody greps for it"
-        },
-        {
-          "factor": "the same defect one level out -- the tool printed git add -A as an instruction to a human mid-rebase, which no test and no gate reads",
+          "factor": "A wrong stated reason on correct code invites the next reader to delete the code. The conclusion a reader draws from the false version is that the strip is redundant, since the filter protects the case named.",
           "kind": "process",
           "action_status": "done",
-          "action": "the advice now prints git add -- <documents> built from GENERATED, so it cannot drift from the list it describes"
+          "action": "The corrected reason makes the projection order the argument, which points at what would actually break."
         },
         {
-          "factor": "nothing sweeps for git add -A, git add . or git commit -a in tools, hooks and retry loops even though the staging-discipline item has been on the queue since 2026-09-28",
+          "factor": "Nothing checks a comment's claim against the code it describes, and nothing could cheaply. The strip's necessity was established by reasoning about the spread order, which is not something a test can assert about a sentence.",
           "kind": "detection",
-          "action_status": "planned",
-          "action": "the sweep is the standing queue item and is still not built; this instance was found by reading one file, not by any check"
+          "action_status": "not-actionable",
+          "note": "What IS testable is the outcome rather than the reason: an arm asserting a payload-supplied assigned_employee_id does not appear in the response. api/sd-data-stored-blob-scope-keys.test.js already asserts it is absent from the stored blob, which is the same key one step earlier."
+        },
+        {
+          "factor": "This platform converts branches to storedBlob one at a time with a per-branch column list, and every conversion produces a comment justifying its list. The reasoning is the deliverable, so a wrong reason is the characteristic defect of the exercise rather than an unusual one.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "The same shadowing-in-the-response shape was found independently in the rf_jobs branch during this review. Two instances in two branches, both correct code, both with a reason that did not name the projection order."
         }
       ],
-      "recurrence_open": "no sweep exists. This was found by reading push_retry.py for an unrelated reason, and the staging-discipline sweep that would have found it -- enumerate every tool, script, hook and retry loop containing git add -A, git add . or git commit -a -- is still an open queue item. A pre-commit check on staged CONTENT exists (tools/staged_credential_check.py) and is the backstop that would catch a credential, but it says nothing about conflict markers or about an unrelated file being folded into somebody elses amended commit."
+      "recurrence_open": "Nothing checks a comment's claim against the code it describes, and the same shape was found in a SECOND branch (rf_jobs) during the same review -- correct code, a reason that did not name the projection order. Every remaining storedBlob conversion carries a hand-written justification with the same failure available."
+    },
+    {
+      "commit": "877191ec5d09",
+      "date": "2026-09-29",
+      "subject": "chore(review): discharge the two oldest obligations assigned to me, 84h and 82h",
+      "files": [
+        "docs/tier-a-reviews.json"
+      ],
+      "lines_added": 8,
+      "lines_removed": 8,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "probe-control",
+      "summary": "tests/run_sf_session_gate_sabotage_probe.py arm 2 located its mutation target by POSITION -- sf_youth_participants as the last row of SD_GATE_APP -- and a later row plus a trailing comma left the anchor unmatched, so the arm planted no defect and passed for that reason. Armed-looking and testing nothing. Re-anchored by cc on text occurring exactly once; confirmed in review at HEAD that it occurs exactly once AND that the mutation exercises the || 'stonedesk' fallback appearing at TWO sites, so an edit repairing only one still fails the arm -- the arm is stronger than its name.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tests/run_sf_session_gate_sabotage_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The arm was written against SD_GATE_APP when sf_youth_participants happened to be its last row. No single commit broke it -- the row after it was added by ordinary growth, and the arm went ANCHOR-0 at whichever commit that was, which cannot be attributed without guessing."
+      },
+      "citation_note": "1.1 in its exact form: nothing announced the day the arm stopped testing anything. ANCHOR-0 and a correctly-caught mutation both end green, which is why the harness's own parse check was the necessary addition and not an optional nicety.",
+      "contributing_factors": [
+        {
+          "factor": "The sabotage arm located its target by position -- sf_youth_participants as the LAST row of SD_GATE_APP -- and a later edit added a row after it and a trailing comma. The anchor stopped matching and the arm planted nothing.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Re-anchored by cc on text that occurs exactly once rather than on a position, and confirmed in this review to occur exactly once at HEAD."
+        },
+        {
+          "factor": "An arm that plants nothing looks identical to an arm whose mutation was correctly caught: both end green. Nothing in the run distinguished ANCHOR-0 from a working control.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The harness now parse-checks its own mutation, so a mutation that does not apply is reported. cc added that in the same push."
+        },
+        {
+          "factor": "The harness's parse check still cannot see a mutation that APPLIES and is then caught for a reason other than the one its name claims -- a different failure one step along, and the reason the C1 attack was worth asking.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Verified in this review instead: the re-anchored mutation exercises the || 'stonedesk' fallback, which appears at TWO sites, so an edit repairing only one still fails the arm. The arm is stronger than its name."
+        },
+        {
+          "factor": "Sabotage anchors are text in a moving file by construction. This platform has measured them going stale repeatedly -- 6 of 50 unguarded at the last count, down from 23 of 39 -- so an anchor decaying is the expected background rather than a surprise.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "tools/sabotage_control_check.py exists for exactly this and the UNIQUENESS guard (count(anchor) != 1) is the shape that survives a moving file. Recorded rather than actioned because the control is already the answer."
+        }
+      ],
+      "recurrence_open": "Sabotage anchors are text in a moving file by construction and this platform has measured them decaying repeatedly. The harness now parse-checks its own mutation, so an arm that plants NOTHING is reported -- but an arm whose mutation applies and is caught for the wrong reason is still invisible to it, and that one was settled here by reading rather than by a check."
     },
     {
       "commit": "d0bb06783104",
@@ -19704,54 +19921,6 @@
         }
       ],
       "recurrence_open": "Only THIS suite strips. The fixed-window-substring shape was swept once before and the sweep's finding list is not re-run on new checks, so the next check that greps a raw single-file app for an identifier has the same hole available. tools/gated_resource_direct_fetch_header.js is also still the only check of its class -- nothing verifies that the 900-character window is wide enough in the other direction."
-    },
-    {
-      "commit": "26c92942746d",
-      "date": "2026-09-29",
-      "subject": "test(sairncare): the alf_billing gate nothing drove -- 3 of 3 now CAUGHT, and measuring it showed the screen's third bucket over-reports by at least five",
-      "files": [
-        "api/sd-data-alf-caregiver-scope.test.js"
-      ],
-      "lines_added": 23,
-      "lines_removed": 0,
-      "app": "sairncare",
-      "layer": "test",
-      "severity": "moderate",
-      "detection_method": "mutation-testing",
-      "summary": "api/sd-data.js's alf_billing/derive_charges ALF_MANAGEMENT_ROLES gate was present and correct and NOTHING DROVE IT. Proven by tools/role_gate_negative_coverage.py --ablate alf_billing, which deletes the resource's three gate blocks one at a time across 411 suites: CAUGHT / *** SILENT *** / CAUGHT. The two caught are `read` and `write`, already in api/sd-data-alf-caregiver-scope.test.js's ADMIN_REFUSALS table. The silent one is the sharpest of the three: `read` returns stored invoices, while `derive_charges` DERIVES a named resident's charges from their MAR administrations and activities and returns room_board_amount, care_amount, private_total, hcbs_claim_amount and the care-level breakdown. Deleting its gate would have handed a caregiver the full billing position of any resident they can name, and the gates either side would still have gone red, so the RESOURCE would have looked covered. NO PRODUCT DEFECT SHIPPED -- the gate has always been there; what was absent was any evidence it fires. Closed with one table row; re-ablated 3 of 3 CAUGHT with api/sd-data.js restored byte-identical. AND MEASURING IT EXPOSED A LARGER ONE: after wiring the arm the static screen STILL files alf_billing under 'NOT DRIVEN by any suite at all', because it attributes a suite by finding a role LITERAL near the resource name and ADMIN_REFUSALS drives eleven resources through a table with the role passed as a call argument. FIVE of the sixteen resources in that bucket -- alf_billing, alf_compliance_rules, alf_payer_rules, alf_signals, alf_staff -- are driven by that one table as `caregiver`, a role every one of their gates excludes, so the bucket whose own text reads 'there is no suite to add an arm to' over-reports by at least 31%.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": "tools/role_gate_negative_coverage.py",
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The ADMIN_REFUSALS table has gained resources and actions over several commits by several sessions, and derive_charges was never among them. No commit removed an arm; the action simply never had one, so there is no injection to point at."
-      },
-      "citation_note": "Not an absent dependency. Cited for the principle: two covered gates and one uncovered one were reported as one covered resource, so a measurement nobody had performed on the third gate was folded into the verdict on the other two.",
-      "contributing_factors": [
-        {
-          "kind": "detection",
-          "factor": "The coverage verdict is issued per RESOURCE and the property is per GATE. alf_billing carries three gate blocks and got one verdict between them, so two covered gates hid an uncovered third.",
-          "action_status": "done",
-          "action": "tools/checker_denominator.py now carries a row for this tool at the GATE unit -- 45 refusals, 39 reachable by --ablate, 6 not -- so the figure moves when a gate is added in a shape the sound instrument cannot reach."
-        },
-        {
-          "kind": "technical",
-          "factor": "The static screen attributes a driving suite by finding a role LITERAL near the resource name. A suite that drives ten resources through a TABLE, with the role passed as a call argument, is invisible to it -- which is the dominant shape in the very suite that covers these resources.",
-          "action_status": "planned",
-          "action": "Raised as an open-work row with the measurement attached (5 of 16). Not fixed here: the tool is another session's and the fix is a real change to how driven() attributes, not a widening of a regex."
-        },
-        {
-          "kind": "process",
-          "factor": "The ADMIN_REFUSALS table is the natural place to add a resource, and adding a resource there adds the ACTIONS somebody happened to think of. Nothing compares the actions a table drives against the actions the handler gates.",
-          "action_status": "planned",
-          "action": "No check proposed yet. The comparison is derivable -- the gated actions are readable from the branch conditions -- but it belongs with the tool above rather than in a suite."
-        }
-      ],
-      "recurrence_open": "Six role refusals remain unreachable by --ablate, the only sound measurement in that file: five compound conditions and one with its body on a single line. TWO OF THEM are their resource's ONLY gate -- alf_incidents and alf_op_audits have zero ablatable blocks, so the instrument answers COULD NOT TELL for those resources entirely, and both also sit in the not-driven bucket. Nothing measures whether a resource's gates are individually covered; the bucket counts remain per-resource."
     }
   ],
   "started": "2026-09-09",
