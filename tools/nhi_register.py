@@ -544,7 +544,21 @@ class CouldNotTell(Exception):
 # against -- and it was sitting inside the register.
 #
 # So the population is READ FROM DISK rather than typed. Sibling directories of
-# this repo named SAIRN-*, kept when they are git clones of the SAME origin.
+# this repo that are git clones of the SAME origin.
+#
+# ── AND THE THIRD INSTANCE, 2026-09-29: DERIVED IS NOT THE SAME AS RIGHT ────
+# This filter was `name.startswith('SAIRN-')`. `Documents\SAIRN` is a clone of
+# the same remote, on main, able to push, and the hyphen requirement skipped it
+# -- so the row said SIX while SEVEN working copies held the credential. The
+# count was already being derived from disk and was still wrong, because THE
+# PREDICATE WAS A NAMING CONVENTION rather than the question being asked.
+#
+# That is the lesson worth more than the fix: deriving a population does not make
+# it correct if the filter encodes a habit. The question is "is this directory a
+# git clone of the same origin", and nothing about a hyphen answers it. The name
+# filter is gone; every sibling directory holding a `.git` is asked for its
+# origin and kept when it matches. One `git config --get` per repository on disk,
+# eight of them here.
 #
 # IT FAILS CLOSED. If the enumeration cannot run -- no readable parent, no git,
 # no origin on this repo -- it raises rather than falling back to a list, because
@@ -555,8 +569,16 @@ class CouldNotTell(Exception):
 # auditor's clone, which a build agent must not reach into. This reads ONE
 # value, `remote.origin.url`, and writes nothing anywhere; NOT counting that
 # clone is the defect, so leaving it out is not the safe option.
-def sibling_clones():
+def sibling_clones(repo=None):
+    """Names of the sibling working copies that push to the same origin.
+
+    `repo` exists so the control can drive this against a throwaway parent
+    directory of REAL repositories instead of against this machine -- the whole
+    defect was about what the enumeration does with directories on disk, and a
+    mocked listdir would have agreed with whatever the code already did.
+    """
     import subprocess
+    repo = repo or REPO
     # ── encoding= IS PINNED, AND I INTRODUCED THIS DEFECT MYSELF (2026-09-17)
     # `text=True` decodes with the LOCALE DEFAULT, which is cp1252 on this
     # platform. cc recorded the same one-line fail-open in tier_a_review_gate.py
@@ -572,7 +594,7 @@ def sibling_clones():
     # defect is invisible until the bytes happen to be non-ASCII.
     try:
         mine = subprocess.run(
-            ['git', '-C', REPO, 'config', '--get', 'remote.origin.url'],
+            ['git', '-C', repo, 'config', '--get', 'remote.origin.url'],
             capture_output=True, text=True, encoding='utf-8', errors='replace',
             timeout=20).stdout.strip()
     except Exception as e:
@@ -581,17 +603,20 @@ def sibling_clones():
     if not mine:
         raise CouldNotTell('this working copy has no remote.origin.url, so '
                            '"a clone of the same remote" has nothing to mean')
-    parent = os.path.dirname(REPO)
+    parent = os.path.dirname(repo)
     try:
         entries = sorted(os.listdir(parent))
     except OSError as e:
         raise CouldNotTell('could not list %s (%s)' % (parent, e))
     found = []
     for name in entries:
-        if not name.startswith('SAIRN-'):
-            continue
+        # NO NAME FILTER. See the header: requiring `SAIRN-` is what hid the
+        # seventh working copy, and a naming convention is not the question.
         path = os.path.join(parent, name)
-        if not os.path.isdir(os.path.join(path, '.git')):
+        # `.git` is a DIRECTORY in a normal clone and a FILE in a worktree, and
+        # this repo's probes build worktrees constantly -- so isdir() alone would
+        # skip a real working copy that can really push.
+        if not os.path.exists(os.path.join(path, '.git')):
             continue
         try:
             url = subprocess.run(
@@ -617,8 +642,11 @@ def clone_scope():
             'credential manager rather than by anything in this repo. An agent '
             'session acts as this identity whenever it pushes, so every commit '
             'on main was made by it. **COUNTED FROM DISK, not listed here** -- '
-            'this row said FOUR and named four while a fifth was pushing, which '
-            'is the second time that undercount has happened on this platform. '
+            'this row said FOUR and named four while a fifth was pushing, and '
+            'then counted from disk and STILL missed a seventh because the '
+            'filter required the name to start with SAIRN-. Three instances of '
+            'one undercount; the predicate is now "a clone of this origin", not '
+            'a spelling. '
             'Note that the clones are NOT interchangeable: one of them is the '
             'hover auditor, which does not build'
             % (len(names), ', '.join(names)))
