@@ -20029,6 +20029,177 @@
         }
       ],
       "recurrence_open": "Six other working copies exist on this machine and NONE has been checked for an armed hooksPath -- each is local config and has to be checked where it lives, and one of them is the hover auditor's clone. Nothing runs this check on a cadence yet either; it is report-only and unwired."
+    },
+    {
+      "commit": "27dc52050a91",
+      "date": "2026-09-29",
+      "subject": "fix(sairncare): the consent date recorded the last edit, not the consent",
+      "files": [
+        "api/sd-data-alf-consent-timestamps.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 362,
+      "lines_removed": 4,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "live-verification",
+      "summary": "alf_family_contacts re-stamped consent_granted_at and consent_granted_by on EVERY write, so an unrelated edit rewrote the recorded moment a third party was authorised to see a resident medication administration record",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "c0ae9a0a5354",
+        "date": "2026-09-26",
+        "subject": "feat(sairncare): the family record, and MAR access gated to administration STATUS only",
+        "lag_days": 3
+      },
+      "phase_note": "the row literal was written with consent_granted_at: famConsent ? famNow : null in the commit that introduced the family record, alongside a merge-duplicates upsert that rebuilds the whole row on every write",
+      "contributing_factors": [
+        {
+          "factor": "the write is a resolution=merge-duplicates upsert that rebuilds the whole row, so a field computed from the current flag is recomputed on every write whether or not the flag changed",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the prior row is read first and the consent pair, the revocation and revoked_at are stamped only on their transitions"
+        },
+        {
+          "factor": "the same object literal carried three instances of the shape and only one was reported; fixing the reported one would have left two",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "all three pairs fixed together -- mar_consent both directions and active -- because they are one line-shape repeated"
+        },
+        {
+          "factor": "the platform had ALREADY decided this for alf_incidents.recorded_by, with the reason written at the line, and nothing carried that decision across to a second resource with the same question",
+          "kind": "process",
+          "action_status": "declined",
+          "note": "declining to invent a cross-resource propagation mechanism from one instance; the sibling sweep found no third case, so a rule would be written from a sample of two"
+        },
+        {
+          "factor": "every in-process arm asserted the outbound row, and the outbound row is CORRECT on a first write -- the defect only appears on the SECOND write, which no arm made",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the new suite drives an edit against a stored prior row rather than a single write, and an arm asserts the prior-state read is issued and scoped"
+        }
+      ],
+      "recurrence_open": "the FIX is not live-verified yet. And the data question is open and not answerable from the rows: any alf_family_contacts row edited after consent was granted carries a consent_granted_at that may be the date of that edit, with nothing distinguishing it from a real grant date. No backfill is possible."
+    },
+    {
+      "commit": "841f39d6c417",
+      "date": "2026-09-29",
+      "subject": "fix(sairncare): a clock correction of your own visit is marked, and day zero of a training year is not a finding",
+      "files": [
+        "api/_lib/compliance-rules.js",
+        "api/sd-data-sen-self-correction-flag.test.js",
+        "api/sd-data.js",
+        "tests/compliance_training_window_boundary.js"
+      ],
+      "lines_added": 596,
+      "lines_removed": 4,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "sen_visits propose_clock_correction gates on role while its own refusal message argues identity, so an owner who is also the assigned caregiver could correct their own EVV clock time and nothing marked it",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "eac55ad1d3b7",
+        "date": "2026-09-27",
+        "subject": "feat(sairnsenior): the EVV clock module is wired -- all three exports, not one -- and the auth suite's forgery arm was false-failing 1 in 16 runs",
+        "lag_days": 2
+      },
+      "citation_note": "no standing rule covers a gate whose stated rationale is about identity while its implementation is about role; the closest, 3.4's recoverability guard, is about credential rows rather than about a control matching its own reasoning",
+      "phase_note": "the correction branch was gated on SEN_VISIT_SCHEDULER_ROLES in the commit that wired the EVV clock module, with the identity rationale written into the refusal message and no identity comparison anywhere",
+      "contributing_factors": [
+        {
+          "factor": "the gate is a role check and its stated rationale is about identity; owner IS a scheduler role, so the small operation the exclusion worried about locking out is the one that passes it",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the assignee and the session are compared and a self-correction is flagged on the entry, on the row and in the response"
+        },
+        {
+          "factor": "the obvious reading -- refuse it -- would create the lockout for real, because in a one-person agency there is nobody else to file the correction",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "recorded as a declined option with its reason so the next reader does not propose the refusal; a caregiver who mis-typed a clock-in would otherwise have no route at all"
+        },
+        {
+          "factor": "the record already carried the evidence, so nothing was missing except the signal -- which is why no test could have failed",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "nine arms, including one asserting an ordinary correction of somebody elses visit is NOT flagged, because a flag that fires on everything is a flag nobody reads"
+        }
+      ],
+      "recurrence_open": "not driven live, and no sweep exists for the class: a gate whose refusal message states a rationale its implementation does not enforce. This one was found by reading the message next to the code during a review; nothing compares the two systematically."
+    },
+    {
+      "commit": "841f39d6c417",
+      "date": "2026-09-29",
+      "subject": "fix(sairncare): a clock correction of your own visit is marked, and day zero of a training year is not a finding",
+      "files": [
+        "api/_lib/compliance-rules.js",
+        "api/sd-data-sen-self-correction-flag.test.js",
+        "api/sd-data.js",
+        "tests/compliance_training_window_boundary.js"
+      ],
+      "lines_added": 596,
+      "lines_removed": 4,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "evaluateTraining reported meets:false on the FIRST DAY of a hire-anchored training year, so a person who completed a full year of training three weeks earlier read as non-compliant on their anniversary; and a leap-day hire published window_from 2026-02-29, a date that does not exist",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "requirement",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "52c54530dcfb",
+        "date": "2026-09-27",
+        "subject": "feat(sairncare): position lists and a decided annual window -- five of five hour-mandating states answer, and the anchor has no source yet",
+        "lag_days": 2
+      },
+      "phase_note": "the hire-anchored window and the recorded>=required verdict were specified together in the commit that added the anchor; nothing in that specification said what a verdict means before any of the window has elapsed",
+      "contributing_factors": [
+        {
+          "factor": "a window that opens on an anniversary makes the recorded total zero by construction on that day, and the verdict branch had no notion of how much of the window had elapsed",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the false verdict is withheld at zero days elapsed with a reason naming the window; true is still produced, because somebody who front-loads training on their anniversary is determinately compliant"
+        },
+        {
+          "factor": "the module already argues this exact case for NO_HIRE_DATE -- a total of zero would report a fully trained person as non-compliant -- and the argument was not applied to the other route to a zero total",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "the sentence was present and correct in the file; nothing mechanical connects a stated argument to a second place it applies, and a rule saying so would be the sixth restatement of read-your-own-comments"
+        },
+        {
+          "factor": "the window boundary was tested and the VERDICT drawn from it was not, so the arms agreed with the count and never asked what the count meant",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "twelve arms driving the verdict across four dates, with a negative control proving the harness can still produce a false verdict at all"
+        },
+        {
+          "factor": "window_from was assembled by string concatenation from the hire date month-day, which cannot be a calendar operation",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "normalised through a round-trip date check that keeps the 29th in leap years; the first cut of that normalisation silently did nothing because a slice bound dropped a dash, and the arm caught it rather than a reading"
+        }
+      ],
+      "recurrence_open": "NOT LIVE-VERIFIED. And the wider policy question is deliberately NOT answered: at what point in a window a shortfall becomes a finding is a product decision, so the module now publishes window_days_elapsed and window_days_remaining and leaves the threshold to the consumer. Any consumer that ignores those two fields still cannot tell late from early."
     }
   ],
   "started": "2026-09-09",
