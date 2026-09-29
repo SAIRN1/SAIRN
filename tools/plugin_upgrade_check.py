@@ -58,6 +58,9 @@ import re
 import subprocess
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import gh_token  # noqa: E402 -- the ONE place that knows where the token comes from
+
 HOME = os.path.expanduser('~')
 PLUGINS = os.path.join(HOME, '.claude', 'plugins')
 INSTALLED = os.path.join(PLUGINS, 'installed_plugins.json')
@@ -179,14 +182,39 @@ def marketplace_manifest(market):
         return None
 
 
-def github_token():
-    r = subprocess.run(['git', 'credential', 'fill'],
-                       input='protocol=https\nhost=github.com\n\n',
-                       capture_output=True, text=True)
-    for line in (r.stdout or '').splitlines():
-        if line.startswith('password='):
-            return line.split('=', 1)[1]
-    return None
+# -- THE THIRD COPY OF ONE LOOKUP, REMOVED 2026-09-29 ------------------------
+# This was a local github_token() that shelled out to the credential manager and
+# read the password line itself. tools/gh_token.py exists precisely because two
+# tools had already each grown their own copy: both read a file that had been 0
+# BYTES SINCE 2026-08-08, both raised on every invocation for SEVEN WEEKS, and
+# neither could be fixed without finding the other. That file's header states the
+# lesson in one line -- "the deeper defect is the duplication, not the path".
+#
+# This was the third copy, found while enumerating credential read sites for the
+# SAIRN-Session55 rotation. It could not benefit from the ordering that fix
+# established: environment variable, THEN the credential manager, THEN .env.local
+# last, so a stale file can never shadow a live credential.
+#
+# THE FAILURE CONTRACT CHANGED AND THE CALL SITE IS ADAPTED FOR IT, which is the
+# whole risk of this swap. The old local version RETURNED None and the caller did
+# `or ''`. gh_token.github_token() RAISES TokenUnavailable, naming every source
+# it tried. Dropping one in for the other without catching that would turn "no
+# token, so the comparison is COULD NOT RUN" into an uncaught traceback -- so the
+# catch is here, and tests/run_plugin_upgrade_token_probe.py drives it with every
+# source removed at once.
+#
+# IT NEVER RETURNS THE VALUE ANYWHERE IT COULD BE PRINTED. The source LABEL is
+# returned beside the token so a caller can say which of the three answered
+# without quoting a prefix -- a prefix is enough to confirm a guess, which is why
+# gh_token prints a length and never a fragment.
+def resolve_token():
+    """(token or None, source label). Never raises, never prints the token."""
+    try:
+        return gh_token.github_token()
+    except gh_token.TokenUnavailable as exc:
+        # The MESSAGE names every source tried, which is the improvement over the
+        # old `return None`: a caller can say WHY the comparison could not run.
+        return None, str(exc)
 
 
 def fetch_upstream_version(repo, sha, token):
@@ -253,7 +281,13 @@ def run():
                 rows.append(classify(qualified, installed, None, 'checkout unreadable'))
         else:
             if token is None:
-                token = github_token() or ''
+                token, token_source = resolve_token()
+                token = token or ''
+                if not token:
+                    could_not.append(
+                        'no GitHub token from any source, so every '
+                        'pinned-sha comparison below is UNVERIFIED '
+                        'rather than clean: %s' % token_source)
             v = fetch_upstream_version(src[1], src[2], token or None)
             if v is None:
                 could_not.append('%s: the pinned sha %s in %s could not be read '
