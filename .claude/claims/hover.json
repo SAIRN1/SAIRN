@@ -282,8 +282,8 @@
       "task": "hover audit-log housekeeping round seven: confirm two prior notes actually reached a builder-visible queue and route them now if not; check whether an open alcohol-hours finding has been picked up and restate it if not; sample the cold pool once undirected; draw the next weighted rotation pick. FILES: .claude/skills/sairn-hover-auditor/",
       "claimed_at": "2026-09-29T10:48:39Z",
       "claimed_at_epoch": 1790678919.045558,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T10:57:05Z",
       "files": null
     }
   ],
