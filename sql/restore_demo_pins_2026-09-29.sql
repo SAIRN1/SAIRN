@@ -138,9 +138,9 @@ begin
    where license_hash = lh and active = true and role = any (array['owner']);
   if rows > 0 and prov = 0 then
     raise exception
-      'ABORTED: SB-PINNACLE-2026 would be left with % credential row(s) and ZERO active 
-       provisioners. Delete EVERY row for this licence, or leave at least 
-       one active provisioner. Never a subset of the provisioners.', rows;
+      'ABORTED: SB-PINNACLE-2026 would be left with % credential row(s) and 
+       ZERO active provisioners. Delete EVERY row for this licence, or 
+       leave at least one active provisioner. Never a subset.', rows;
   end if;
   raise notice 'SB-PINNACLE-2026 guard passed: % row(s), % active provisioner(s).', rows, prov;
 end $$;
@@ -155,9 +155,9 @@ begin
    where license_hash = lh and active = true and role = any (array['owner']);
   if rows > 0 and prov = 0 then
     raise exception
-      'ABORTED: SV-PINNACLE-2026 would be left with % credential row(s) and ZERO active 
-       provisioners. Delete EVERY row for this licence, or leave at least 
-       one active provisioner. Never a subset of the provisioners.', rows;
+      'ABORTED: SV-PINNACLE-2026 would be left with % credential row(s) and 
+       ZERO active provisioners. Delete EVERY row for this licence, or 
+       leave at least one active provisioner. Never a subset.', rows;
   end if;
   raise notice 'SV-PINNACLE-2026 guard passed: % row(s), % active provisioner(s).', rows, prov;
 end $$;
