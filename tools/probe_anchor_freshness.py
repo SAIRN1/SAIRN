@@ -90,6 +90,13 @@ ARM_CALLS = ('arm', 'mutate', 'sabotage', 'plant')
 #                  rather than to 1, and a disagreement with N is its own
 #                  verdict (COUNT DISAGREES) rather than being folded into
 #                  AMBIGUOUS. Remaining real finding after the change: 1.
+# Declared 2026-09-29. checker_control_check.py listed this tool under NO
+# DECLARED CONTROL and that was accurate: the 20-arm lock lived INSIDE the
+# tool, so nothing independent ever drove it. A fixture lock proves the
+# criteria classify; a control proves the shipped tool still fires and still
+# refuses. A checker whose only witness is itself is the shape this family of
+# tools exists to find.
+CONTROLLED_BY = ['tests/run_probe_anchor_freshness_probe.py']
 CRITERIA_VERSION = '2026-09-27.2'
 
 BLIND_SPOTS = [

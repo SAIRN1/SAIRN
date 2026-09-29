@@ -161,6 +161,13 @@ SKIP_REASONS = (
 # The floor under a verdict. Not a quality bar -- nothing can measure that --
 # but a length no genuine review of a Tier A change comes in under, chosen so
 # that `--help`, `ok`, `looks fine` and a shifted timestamp are all refused.
+# Declared 2026-09-29. Both halves of the pair were undeclared, so the
+# repo's largest control -- 100-plus arms plus a 13-mutation sabotage probe
+# -- registered as ABSENT to the one tool whose job is to notice a checker
+# with no control.
+CONTROLLED_BY = ['tests/run_tier_a_review_gate_probe.py',
+                 'tests/run_tier_a_review_gate_sabotage_probe.py']
+
 MIN_VERDICT_CHARS = 40
 
 def skip_reason(cur):

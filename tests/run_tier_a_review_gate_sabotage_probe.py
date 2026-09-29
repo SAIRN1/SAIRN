@@ -44,6 +44,10 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from sabotage_harness import run_probe                           # noqa: E402
 
+# Declared 2026-09-29 for the same reason as the suite it drives: the pair was
+# invisible to checker_control_check.py, which reads this and nothing else.
+CONTROLS_FOR = ['tier_a_review_gate.py']
+
 SUITE = os.path.join('tests', 'run_tier_a_review_gate_probe.py')
 GATE = os.path.join('tools', 'tier_a_review_gate.py')
 

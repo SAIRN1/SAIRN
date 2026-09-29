@@ -36,6 +36,14 @@ import time
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
+# ── DECLARED 2026-09-29. THIS FILE EXISTED AND NOTHING COUNTED IT ───────────
+# checker_control_check.py finds a tool/control pair from CONTROLS_FOR here or
+# CONTROLLED_BY in the tool, and neither was present -- so the largest control in
+# this repo for one of its most consequential gates registered as ABSENT. The
+# arms all ran; the pair was just invisible to the thing whose job is to notice
+# a checker with no control. A missing one-line declaration and a missing control
+# file are indistinguishable to the tool that reads it.
+CONTROLS_FOR = ['tier_a_review_gate.py']
 import tier_a_review_gate as g                                   # noqa: E402
 
 fails = []
