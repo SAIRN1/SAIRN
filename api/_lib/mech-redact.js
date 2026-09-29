@@ -102,15 +102,49 @@ const RULES = [
     token: '[PHONE REDACTED]',
   },
   {
+    // A SEVEN-DIGIT LOCAL NUMBER, AND ONLY BEHIND A LABEL (added 2026-09-29).
+    // `555-0142` on its own is NOT matched and must not be: `2100-0142` is a
+    // part number, and eating part numbers is the failure the rule above
+    // already refuses a bare ten-digit run to avoid.
+    //
+    // What makes this one decidable is the LABEL -- the same deterministic
+    // device the LABELLED NAME rule uses. The label is matched, the value
+    // after it is removed, and nothing is inferred from context. An
+    // UNLABELLED seven-digit run stays exactly where it is, driven in three
+    // shapes by a known-bad control in api/_lib/mech-redact.test.js.
+    //
+    // THE LABEL IS CONSUMED WITH THE NUMBER rather than left dangling: a
+    // reader seeing `[PHONE REDACTED]` learns more than one seeing
+    // `Phone: [PHONE REDACTED]` learns less -- the token already says what
+    // kind of thing was removed.
+    kind: 'PHONE',
+    re: /\b(?:phone|tel|telephone|cell|mobile|fax)\b\s*:?\s*\d{3}[ .-]\d{4}\b/gi,
+    token: '[PHONE REDACTED]',
+  },
+  {
     // A street line: house number, one to five words, then a street type.
     // Anchored on the TYPE, which is a closed vocabulary, rather than on
     // "looks like an address", which is not.
+    // A SECONDARY DESIGNATOR CANNOT ANCHOR THE MATCH (fixed 2026-09-29).
+    // Suite, Ste, Unit and Apt used to sit in the SAME alternation as the
+    // street types, so `0142  Unit` parsed as house-number-plus-street-type
+    // and `Phone: 555-0142  Unit: RTU-4` came back as
+    // `Phone: 555-[ADDRESS REDACTED]: RTU-4` -- the number half-surviving AND
+    // the equipment label destroyed. `Unit:` is on nearly every work order
+    // this redactor exists to process, and this file's own header says model
+    // numbers and serials are kept deliberately because they are the
+    // document's subject rather than its leak. Here the subject was the
+    // casualty and the leak partly survived.
+    //
+    // They are secondary BY DEFINITION: they follow a street line and never
+    // start one. A primary street type is now required and the designator is
+    // an optional tail, which keeps `1425 Lakeshore Blvd, Suite 200` whole.
     kind: 'ADDRESS',
     re: new RegExp(
       '\\b\\d{1,6}\\s+(?:[A-Za-z0-9.\'-]+\\s+){0,5}'
       + '(?:St|Street|Ave|Avenue|Rd|Road|Blvd|Boulevard|Ln|Lane|Dr|Drive|'
-      + 'Ct|Court|Way|Pl|Place|Ter|Terrace|Cir|Circle|Hwy|Highway|Pkwy|Parkway|'
-      + 'Suite|Ste|Unit|Apt)\\b\\.?', 'gi'),
+      + 'Ct|Court|Way|Pl|Place|Ter|Terrace|Cir|Circle|Hwy|Highway|Pkwy|Parkway)'
+      + '\\b\\.?(?:,?\\s+(?:Suite|Ste|Unit|Apt)\\.?\\s*[A-Za-z0-9-]+)?', 'gi'),
     token: '[ADDRESS REDACTED]',
   },
 ];

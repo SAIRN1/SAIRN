@@ -172,38 +172,32 @@ for (const resource of SCANNED) {
       assert.ok(t.indexOf('RTU-4') !== -1, 'the unit tag was redacted away: ' + t);
       assert.ok(t.indexOf('7.5') !== -1, 'the tonnage was redacted away: ' + t);
     });
-  await test(resource + ': the ADDRESS pattern over-matches and eats the '
-    + 'document subject -- pinned, not fixed', async () => {
-      // FOUND BY DRIVING THIS SUITE, and it is worse than the phone gap it
-      // started as. `Phone: 555-0142  Unit: RTU-4` comes back as
-      // `Phone: 555-[ADDRESS REDACTED]: RTU-4`.
+  await test(resource + ': the labelled local number goes AND the equipment '
+    + 'label survives -- both halves of the 2026-09-29 defect', async () => {
+      // THIS ARM WAS WRITTEN TO DOCUMENT THE BUG AND NOW ASSERTS THE FIX, which
+      // is the transition it existed for. It recorded that
+      // `Phone: 555-0142  Unit: RTU-4` came back as
+      // `Phone: 555-[ADDRESS REDACTED]: RTU-4` -- the number half-surviving AND
+      // the equipment label destroyed, two independent faults in one input.
       //
-      // The seven-digit number is not matched as a PHONE at all. What happens
-      // instead is that the ADDRESS pattern swallows `0142  Unit` -- so the
-      // number is half-left-behind AND the `Unit:` label is destroyed. The
-      // redactor's own note says equipment serials and model numbers are "kept
-      // deliberately, because they are the document's subject rather than its
-      // leak", and here the subject is the casualty while the leak partly
-      // survives.
-      //
-      // ASSERTED IN THE DIRECTION IT ACTUALLY BEHAVES so the day somebody fixes
-      // the pattern this arm goes red and the change has to be deliberate --
-      // and so the fix has to prove it did not start eating serials instead.
-      // Registered against api/_lib/mech-redact.js; NOT changed here, because
-      // this change is about the gate's SCOPE and a pattern that both
-      // over-matches and under-matches needs its own fixtures.
+      // Both are closed in api/_lib/mech-redact.js: `Unit`/`Apt`/`Ste`/`Suite`
+      // can no longer ANCHOR an address match (they are secondary designators
+      // and now only follow a primary street type), and a seven-digit local
+      // number is removed WHEN IT IS LABELLED -- never bare, because
+      // `2100-0142` is a part number.
       const r = await write(resource, { id: 'T-5', date: 'x',
         text: 'Phone: ' + LOCAL_PHONE + '  Unit: RTU-4' });
       const t = String(r.stored.text || '');
-      assert.ok(t.indexOf('ADDRESS REDACTED') !== -1,
-        'the address pattern no longer fires on this shape -- re-derive this '
-        + 'arm: the behaviour it records has changed. got ' + JSON.stringify(t));
-      assert.ok(t.indexOf('Unit:') === -1,
-        'the Unit label now survives, which is an IMPROVEMENT -- record the '
-        + 'decision here and check the pattern did not start eating serials '
-        + 'elsewhere. got ' + JSON.stringify(t));
+      assert.ok(t.indexOf(LOCAL_PHONE) === -1,
+        'the labelled local number still reaches the row: ' + JSON.stringify(t));
+      assert.ok(t.indexOf('ADDRESS REDACTED') === -1,
+        'the address pattern still fires on an equipment label: '
+        + JSON.stringify(t));
+      assert.ok(t.indexOf('Unit: RTU-4') !== -1,
+        'the equipment label is still collateral: ' + JSON.stringify(t));
       assert.strictEqual(r.stored.redaction.complete, false,
-        'the row claims a COMPLETE redaction while this shape is mangled');
+        'complete is now true -- this pass has never been complete and the row '
+        + 'must not claim otherwise');
     });
 }
 

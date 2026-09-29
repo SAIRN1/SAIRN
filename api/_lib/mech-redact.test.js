@@ -67,6 +67,90 @@ t('AMOUNTS ARE KEPT -- the money is the document, not the leak', () => {
   assert.ok(/\$12,480\.00/.test(r.text), r.text);
   assert.ok(/\$3,000/.test(r.text), r.text);
 });
+// ── THE TWO HALVES OF THE 2026-09-29 DEFECT ──────────────────────────────
+// Found by driving api/sd-data-mech-redaction-scope.test.js, not by reading
+// this file. `Phone: 555-0142  Unit: RTU-4` came back as
+// `Phone: 555-[ADDRESS REDACTED]: RTU-4` -- the number half-survived AND the
+// equipment label was destroyed. Two independent faults in one input.
+t('THE OVER-MATCH: `Unit` is HVAC vocabulary, not an address anchor', () => {
+  // `Unit`, `Apt`, `Ste` and `Suite` are SECONDARY designators -- they follow a
+  // street line, they never start one. Anchoring the ADDRESS pattern on them
+  // let `0142  Unit` read as "house number + street type", so a number next to
+  // an equipment label ate the label. `Unit:` is on nearly every work order
+  // this redactor exists to process.
+  const r = redactDocumentText('Phone: 555-0142  Unit: RTU-4');
+  assert.ok(!/ADDRESS REDACTED/.test(r.text),
+    'the address pattern fired on an equipment label: ' + r.text);
+  assert.ok(/Unit: RTU-4/.test(r.text),
+    'the Unit label was destroyed: ' + r.text);
+});
+t('THE OVER-MATCH, ISOLATED FROM THE PHONE FIX', () => {
+  // ABLATION FOUND THIS: re-adding `Unit` to the address alternation left the
+  // suite GREEN, because the PHONE rule now consumes `Phone: 555-0142` before
+  // ADDRESS runs, so no digit run is left for `Unit` to anchor on. The address
+  // half was defended by the phone half and pinned by nothing -- the same
+  // defence-in-depth-with-nothing-pinning-it shape this platform keeps finding.
+  //
+  // This input has a digit run beside an equipment label and NO phone label, so
+  // only the address rule can touch it.
+  const r = redactDocumentText('Qty 12  Unit: RTU-4, filter 16x25x1');
+  assert.strictEqual(r.redacted, false,
+    'a quantity next to an equipment label was redacted: ' + r.text);
+  assert.ok(/Unit: RTU-4/.test(r.text), r.text);
+});
+t('...and a REAL address with a secondary designator still goes', () => {
+  // The narrowing must not cost the case the pattern exists for. A street type
+  // is still required; the secondary designator is now allowed to FOLLOW one
+  // rather than to anchor the match on its own.
+  ['1425 Lakeshore Blvd, Suite 200',
+   '88 Marlowe Road Unit 4',
+   '12 Ash Ct Apt 9'].forEach((a) => {
+    const r = redactDocumentText('Site: ' + a);
+    assert.ok(/ADDRESS REDACTED/.test(r.text), a + ' -> ' + r.text);
+  });
+});
+t('THE UNDER-MATCH: a LABELLED seven-digit local number is removed', () => {
+  // A bare `555-0142` is NOT matched and must not be -- `2100-0142` is a part
+  // number and eating it is the failure that gets a redactor switched off.
+  // What makes this one decidable is the LABEL, which is the same deterministic
+  // device the LABELLED NAME rule already uses: the label is matched, the value
+  // is removed, and nothing is inferred from context.
+  ['Phone: 555-0142', 'Tel: 555-0142', 'Cell 555-0142', 'Fax: 555-0142']
+    .forEach((s) => {
+      const r = redactDocumentText(s + '  Unit: RTU-4');
+      assert.ok(!/555-0142/.test(r.text), s + ' -> ' + r.text);
+      assert.ok(/Unit: RTU-4/.test(r.text),
+        'the equipment label was collateral: ' + r.text);
+    });
+});
+t('KNOWN-BAD CONTROL: an UNLABELLED seven-digit run is still KEPT', () => {
+  // The arm that stops the fix above from becoming the failure it replaced. If
+  // this ever goes red, the pattern has started eating part numbers and the
+  // whole redactor is one step from being switched off.
+  ['Part 2100-0142 ordered.',
+   'Filter 1625-0142 on the shelf.',
+   'Coil 555-0142 per the plate.'].forEach((s) => {
+    const r = redactDocumentText(s);
+    assert.strictEqual(r.redacted, false,
+      'an unlabelled digit run was redacted: ' + s + ' -> ' + r.text);
+  });
+});
+t('KNOWN-BAD CONTROL: the OLD anchoring still reproduces the over-match', () => {
+  // Proves the first arm is measuring the pattern and not a typo. Re-creates
+  // the OLD alternation -- secondary designators sharing the anchor slot with
+  // the street types -- and requires it to eat the label the real one now
+  // leaves alone. If this stops reproducing, the arm above has gone vacuous.
+  //
+  // A REGEX LITERAL, NOT new RegExp WITH ESCAPED STRINGS. The first draft of
+  // this control built the pattern from a string, lost its backslashes, and
+  // reported that the over-match no longer reproduced -- a control failing for
+  // its own reason and blaming the subject.
+  const old = /\b\d{1,6}\s+(?:[A-Za-z0-9.'-]+\s+){0,5}(?:St|Street|Ave|Avenue|Suite|Ste|Unit|Apt)\b\.?/gi;
+  assert.ok(old.test('555-0142  Unit: RTU-4'),
+    'the old anchoring no longer reproduces the over-match, so the arm above '
+    + 'is not measuring what it claims');
+});
+
 t('MODEL NUMBERS AND SHORT CODES ARE KEPT', () => {
   const r = redactDocumentText('Unit Carrier 58MVC080-F-1-20, filter 16x25x1.');
   assert.strictEqual(r.redacted, false, r.text);
