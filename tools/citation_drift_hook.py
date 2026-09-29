@@ -34,6 +34,41 @@ wrapped in `if os.path.isfile(checker):` would not skip one check -- it would
 report a pass it never performed, and nothing downstream could tell that from a
 real one. "Could not run" is a third state and is never folded into "passed".
 
+── THERE IS A FOURTH PATH AND IT DOES EXIT 0. THE PARAGRAPH ABOVE WAS
+   UNQUALIFIED AND THAT WAS WRONG (corrected 2026-09-29, hank) ─────────────
+The sentence above said could-not-run "exits non-zero" with no exception, and
+there are FOUR could-not-* paths in main(), not three. Three return 2: the
+checker could not be imported (twice), and the checker returned zero checkable
+citations. THE FOURTH IS COULD-NOT-ATTRIBUTE, and it returns 0 when nothing in
+the document is drifted. Driven rather than read: a no-baseline report with an
+empty drift list exits 0; the same report with one drifted cite exits 1.
+
+THAT EXIT CODE IS CORRECT AND IS NOT A FOLD, and the reason has to be written
+down or somebody will "fix" it:
+
+  1. WHAT COULD NOT RUN IS ATTRIBUTION, NOT THE DRIFT CHECK. The check ran and
+     its counts are printed -- N OK, M UNVERIFIABLE, 0 DRIFTED, K FROZEN. What
+     is unavailable is the HEAD baseline, which is needed only to SPLIT drift
+     into "yours" and "already there".
+  2. WITH ZERO DRIFT THERE IS NOTHING TO SPLIT. "No citation in this document is
+     drifted" entails "this edit drifted none". The hook's question is answered
+     -- derived rather than measured directly, which is weaker PROVENANCE and
+     the same ANSWER.
+  3. EXITING 2 HERE WOULD FIRE ON A PROVABLY CLEAN DOCUMENT in every ordinary
+     condition where `git show HEAD:<file>` has nothing to give -- a fresh
+     clone, a detached head, a document not yet in HEAD. A could-not-run state
+     that fires on clean input under normal conditions is a hook somebody turns
+     off, which is the same argument this file already makes for being advisory
+     per item rather than blocking.
+
+WHAT WAS ACTUALLY WRONG ON THAT PATH, and it is fixed: it printed the
+could-not-attribute note, then the line "Listing ALL drift in the document", and
+then nothing at all, and exited 0. A COULD-NOT banner followed by an empty list
+and no verdict is this file's own documented defect one step along -- "exit 0
+with no output is indistinguishable from a hook that never ran". The verdict is
+now stated explicitly, together with the fact that its basis is weaker than a
+before/after comparison. THE EXIT CODE DID NOT CHANGE; THE SILENCE DID.
+
 ── ADVISORY, NOT BLOCKING, AND NOT BY ACCIDENT ─────────────────────────────
 PostToolUse cannot block a tool call at all, so the only honest options are
 "say something" and "say nothing". But the underlying tool is also advisory
@@ -435,6 +470,89 @@ def selftest():
                     os.unlink(p)
                 except OSError:
                     pass
+
+    # ── THE FOURTH COULD-NOT PATH, DRIVEN IN BOTH SUB-CASES ──────────────
+    # Added 2026-09-29 (hank). Every arm above tests ROUTING or the COMPARISON;
+    # none of them ever reached main()'s no-baseline branch, which is how its
+    # silence survived. These arms call main() with drift_report stubbed to the
+    # two shapes that branch can see, and assert on the EXIT CODE and on the
+    # PRESENCE of a verdict -- never on the wording of one.
+    #
+    # THE KNOWN-BAD DIRECTION IS BUILT IN: the empty-drift arm fails if the
+    # output carries no verdict line, which is exactly what this file printed
+    # before the fix. Run these arms against the previous revision and two fail.
+    import io as _io2
+    _saved = {'drift_report': globals().get('drift_report'),
+              'covered_paths': globals().get('covered_paths'),
+              'is_covered': globals().get('is_covered')}
+    _saved_argv = sys.argv
+    _real_out, _real_err = sys.stdout, sys.stderr
+
+    def _drive(report):
+        """Run main() over a covered path with this report, capturing output."""
+        globals()['drift_report'] = lambda a, r: report
+        globals()['covered_paths'] = lambda: [os.path.abspath(
+            os.path.join(REPO, 'docs', 'CRITICALITY-TIERS.md'))]
+        globals()['is_covered'] = lambda pth, paths: True
+        sys.argv = ['citation_drift_hook.py',
+                    os.path.join('docs', 'CRITICALITY-TIERS.md')]
+        buf = _io2.StringIO()
+        sys.stdout = buf
+        sys.stderr = buf
+        try:
+            rc = main()
+        finally:
+            sys.stdout, sys.stderr = _real_out, _real_err
+        return rc, buf.getvalue()
+
+    try:
+        clean = {'ok': 12, 'unverifiable': ['u'], 'frozen': [], 'drifted': [],
+                 'introduced': None,
+                 'baseline_note': 'no HEAD copy of this file in this clone'}
+        rc, txt = _drive(clean)
+        arm('COULD-NOT-ATTRIBUTE with an EMPTY drift list exits 0', rc == 0,
+            'exit was %r. If this is now 2, read the fourth-path block in this '
+            'file\'s header: ATTRIBUTION is what could not run, and a zero-drift '
+            'document entails zero drift from this edit. Exiting 2 here fires on '
+            'a provably clean document in a fresh clone.' % rc)
+        arm('...and it STATES A VERDICT instead of printing an empty list',
+            'NO CITATION IN THIS DOCUMENT IS DRIFTED' in txt,
+            'the no-baseline path printed no verdict. THIS IS THE DEFECT THIS '
+            'ARM EXISTS FOR: a COULD-NOT banner, then nothing, then exit 0 -- '
+            'indistinguishable from a hook that never ran. Output was:\n' + txt)
+        arm('...and it names its basis as WEAKER rather than claiming a '
+            'comparison it did not make',
+            'whole-document answer' in txt and 'not a ' in txt,
+            'the verdict is stated with no account of what it rests on, which is '
+            'the over-claim in the other direction. Output was:\n' + txt)
+        arm('...and it does NOT print the "Listing ALL drift" header with '
+            'nothing under it',
+            'Listing ALL drift' not in txt,
+            'a listing header with no list beneath it is the shape being '
+            'removed. Output was:\n' + txt)
+
+        dirty = {'ok': 12, 'unverifiable': [], 'frozen': [],
+                 'drifted': ['sd_x cites :99, real :140'],
+                 'introduced': None,
+                 'baseline_note': 'no HEAD copy of this file in this clone'}
+        rc2, txt2 = _drive(dirty)
+        arm('CONTROL -- the SAME path with drift present still exits 1 and lists '
+            'it, so the arms above cannot be satisfied by a branch that always '
+            'returns 0',
+            rc2 == 1 and 'sd_x cites :99' in txt2 and 'Listing ALL drift' in txt2,
+            'exit was %r and the drifted cite was %sin the output'
+            % (rc2, '' if 'sd_x cites :99' in txt2 else 'NOT '))
+        arm('CONTROL -- with drift present it does NOT claim the document is '
+            'clean',
+            'NO CITATION IN THIS DOCUMENT IS DRIFTED' not in txt2,
+            'the clean verdict was printed over a drifted document, which is the '
+            'same fold in the other direction')
+    finally:
+        for k, v in _saved.items():
+            if v is not None:
+                globals()[k] = v
+        sys.argv = _saved_argv
+
     return out, bad
 
 
@@ -536,10 +654,28 @@ def main():
         # missed finding. Neither is available, so both are refused and the
         # reader is told which.
         print('  COULD NOT ATTRIBUTE: %s' % note)
+        if not drifted:
+            # THE VERDICT IS STATED RATHER THAN LEFT AS AN EMPTY LIST. This
+            # path used to print the listing header below, list nothing, and
+            # exit 0 -- so a reader saw a COULD-NOT banner followed by
+            # silence and could not tell a clean document from a listing
+            # that failed. The exit code was and is 0, and the header block
+            # at the top of this file says why; what was missing was the
+            # sentence.
+            print('  NO CITATION IN THIS DOCUMENT IS DRIFTED, so nothing '
+                  'needed attributing and this edit drifted none.')
+            print('  AND THE BASIS IS WEAKER THAN USUAL, WHICH IS THE POINT '
+                  'OF SAYING SO: this is the whole-document answer, not a '
+                  'before/after comparison. It entails what you asked (no '
+                  'drift at all means none from you), but it cannot tell '
+                  'you about a cite this edit FIXED, and it would not '
+                  'separate drift introduced and then removed inside one '
+                  'write.')
+            return 0
         print('  Listing ALL drift in the document, not just this edit\'s:')
         for d in drifted:
             print('    DRIFTED  %s' % d)
-        return 1 if drifted else 0
+        return 1
 
     pre = len(drifted) - len(introduced)
     if introduced:
