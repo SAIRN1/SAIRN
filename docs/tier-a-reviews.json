@@ -4625,6 +4625,38 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-29T16:58:39Z",
+      "opened_at_sha": "15843e311da8d3d186b539d191628a00546fb94f",
+      "resources": [
+        "alf_billing",
+        "alf_signals",
+        "alf_staff",
+        "dnt_ar",
+        "leg_plots",
+        "mech_quotes",
+        "rf_jobs",
+        "sen_clients",
+        "sf_accounts",
+        "sv_labresults"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tests/run_cross_tenant_isolation_scope_probe.py",
+        "tests/run_role_gate_table_rule_probe.py",
+        "tools/cross_tenant_isolation_scope.py",
+        "tools/role_gate_negative_coverage.py"
+      ],
+      "what": "Two report-only screens changed, both about what the screen can SEE rather than about any gate. (1) role_gate_negative_coverage.py gained a third rule (table_driven) that reads a for-of over a [resource, action, ...] table with a fixed role, and now prints blind_population()/render_blind_line() on every run so the NOT-DRIVEN bucket stops being read as a claim about the world. The pin rose 12 -> 17 uncovered while not_driven fell 16 -> 11 -- a rule widening, not a gate regression. REVIEW THIS: whether the five body-scoped conditions can credit a resource the loop does not actually drive, and whether the pin rise is genuinely a rule change and not a real gate that got worse in the same commit. (2) cross_tenant_isolation_scope.py: the dead _COMMENTS regex removed, and tests/run_cross_tenant_isolation_scope_probe.py added to SELF_EXCLUDED because it IMPORTS the grader. Measured over 273 Tier A resources: five (dnt_ar, leg_plots, rf_jobs, sf_accounts, sv_labresults) lose that one citation and gain nothing; it grades NONE and declares nothing so no coverage is lost. REVIEW THIS: whether the exclusion hides anything real, and whether the eighth hand-maintained entry should finally be replaced by the computation the importer arm already performs. NO api/ SOURCE CHANGED -- the Tier A resources above are named by the TOOLS and the FIXTURES, not served by them.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-29T16:58:39Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

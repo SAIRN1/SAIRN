@@ -243,6 +243,63 @@ def regenerate():
     return done
 
 
+# ── THE REGISTER RE-SEAT, AND THE LIVELOCK IT CAUSED ──────────────────────
+# ROOT CAUSE, found 2026-09-29 after NINE consecutive commits in one branch did
+# nothing but this:
+#
+#   1. this loop rebases;
+#   2. .githooks/post-rewrite re-seats the register's cited shas onto the ones
+#      the rebase just rewrote, writes the file, and CORRECTLY refuses to commit
+#      on anybody's behalf -- leaving the tree dirty;
+#   3. the regenerate step below stages only GENERATED, so the register stays
+#      dirty, and amend_safety() is right to refuse a dirty tree;
+#   4. the push loses the race, the loop rebases again, and step 2 repeats.
+#
+# NOTHING IN THE CHAIN IS WRONG ON ITS OWN. The hook is right not to commit, the
+# allowlist is right not to sweep, and the amend guard is right to refuse. What
+# was missing is that a re-seat is an EXPECTED, SELF-CONTAINED artefact of the
+# rebase this loop just performed -- so this loop is the thing that has to fold
+# it in, and until it did there was no fixed point.
+#
+# FOLDED IN ONLY WHEN IT IS PROVABLY A RE-SEAT. Two independent conditions, and
+# both must hold: the file still parses and passes its own --check, AND every
+# changed line in the diff is a `"commit":` line. Anything else -- a new record,
+# an edited summary, a merge artefact -- is left exactly where it is and named,
+# because folding an unknown change into somebody's amended commit is the
+# `git add -A` failure this tool exists to prevent, arriving by a different door.
+LEDGER = 'docs/defect-density-register.json'
+
+
+def reseat_only():
+    """(True, '') if the ledger's working-tree change is nothing but shas.
+
+    Returns (False, reason) otherwise -- including when it cannot tell, because
+    could-not-tell is not permission to stage somebody's unreviewed edit.
+    """
+    rc, porc, _ = git('status', '--porcelain', '--', LEDGER)
+    if rc != 0:
+        return False, 'git status could not read %s' % LEDGER
+    if not porc.strip():
+        return False, 'no change to fold'
+    rc2, diff, _ = git('diff', '--unified=0', '--', LEDGER)
+    if rc2 != 0 or not diff.strip():
+        return False, 'the change is staged or unreadable as a diff, not a '                      'plain working-tree edit'
+    for line in diff.split(chr(10)):
+        if not line or line[0] not in '+-':
+            continue
+        if line[:3] in ('+++', '---'):
+            continue
+        if '"commit"' not in line:
+            return False, ('a changed line is not a commit citation, so this is '
+                           'not a re-seat: ' + line.strip()[:90])
+    chk = subprocess.run([sys.executable,
+                          os.path.join(REPO, 'tools', 'defect_register.py'),
+                          '--check'], cwd=REPO, capture_output=True)
+    if chk.returncode != 0:
+        return False, 'defect_register.py --check does not pass on the edited file'
+    return True, ''
+
+
 def selftest():
     out, bad = [], 0
 
@@ -462,6 +519,15 @@ def cmd_loop(attempts):
                 # would make this a silent narrowing.
                 for _doc, _gen in GENERATED:
                     git('add', '--', _doc)
+                # THE RE-SEAT, FOLDED IN -- see reseat_only() above for why this
+                # is the step that has to do it and why it is conditional.
+                _rs, _why = reseat_only()
+                if _rs:
+                    git('add', '--', LEDGER)
+                    print('  re-seated register citations folded in '
+                          '(commit fields only, --check passes)')
+                elif _why not in ('no change to fold',):
+                    print('  %s NOT folded in: %s' % (LEDGER, _why))
                 rc3, porc3, _ = git('status', '--porcelain')
                 _left = [ln for ln in (porc3 or '').split('\n')
                          if ln.strip() and ln[:2] != '  '

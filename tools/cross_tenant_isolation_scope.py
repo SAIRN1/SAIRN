@@ -549,6 +549,27 @@ SELF_EXCLUDED = (
     # computation the importer arm already performs is still open; this entry
     # is more evidence for it.
     'tests/run_cross_tenant_untabled_declaration_probe.py',
+    # THE EIGHTH (2026-09-29), AND IT IS THE SECOND ONE THE TOOL CAUGHT ON ITS
+    # OWN AUTHOR MID-EDIT. This probe was written the same day to cross-check
+    # the string-aware stripper, so it necessarily carries FIXTURE TABLES of
+    # resource names -- and the importer arm of
+    # tests/run_self_exclusion_guard_sabotage_probe.py went red naming it, in
+    # the first run after the probe existed. A probe that IMPORTS the grader
+    # can be tuned to the grader, which is the whole premise of this list.
+    #
+    # MEASURED BEFORE ADDING, the test every entry above is held to: over the
+    # 273 Tier A resources, excluding it changes the citation set for FIVE --
+    # dnt_ar, leg_plots, rf_jobs, sf_accounts and sv_labresults each lose this
+    # one file and gain nothing. It grades NONE and declares nothing, so no
+    # resource loses coverage; five resources stop listing a stripper probe as
+    # a test that names them. A false citation removed, not coverage lost.
+    #
+    # AND IT IS THE EIGHTH, which is the note at the fifth entry arriving on
+    # schedule for the fourth time. The open-work row for replacing this tuple
+    # with the computation the importer arm ALREADY PERFORMS is still open --
+    # the arm can compute the correct list, and the tool still reads a
+    # hand-maintained one, which is why it keeps being one short.
+    'tests/run_cross_tenant_isolation_scope_probe.py',
 )
 
 # ── WHICH RESOURCES A GENUINE FILE COVERS IS DECLARED, NOT GUESSED ──────────
@@ -667,16 +688,115 @@ _ROW_NAME = re.compile(r"\[\s*'([a-z][a-z0-9_]*)'")
 # PLACE: three files change, every one a REMOVAL, and no file gains a name --
 # the phantom `read` here, the phantom `bootstrap` in
 # api/_lib/employee-lifecycle-wiring.test.js, and nothing else.
-_COMMENTS = re.compile(r'/\*.*?\*/|//[^\n]*', re.S)
+#
+# ── AND THE "ACCEPTED" OVER-STRIP WAS COSTING 21 NAMES IN ONE FILE
+#    (made string-aware 2026-09-29) ──────────────────────────────────────────
+# The paragraph above accepted `//` inside a string literal dropping the rest of
+# its line, on the grounds that under-counting `driven` is the fail-closed
+# direction. That reasoning is right about SAFETY and wrong about MEASUREMENT.
+# A grader that silently discards half a line whenever a URL appears is not
+# reporting the coverage it claims to report, and an error being in the safe
+# direction is not the same as the error being acceptable. `//` inside a string
+# is not a comment in any reading of JavaScript.
+#
+# MEASURED, not argued: a string-aware stripper run against the regex-only one
+# over the whole scanned corpus (784 files) disagrees on TWO, and in
+# stonedesk.html it recovers TWENTY-ONE names the regex was dropping --
+# including `sd_customers`, `sd_slab_history`, `sd_blocks` and `sd_bundles`,
+# which are real resources. Those were being reported UNDECLARED on a technicality
+# about a URL.
+#
+# THE SCANNER TRACKS QUOTE STATE. tests/run_cross_tenant_isolation_scope_probe.py
+# carries a SECOND implementation by a DIFFERENT mechanism -- a regex whose
+# alternation matches strings FIRST and replaces only the comment alternatives,
+# the way a lexer resolves the same ambiguity -- and an arm requires the two to
+# agree on every file. They are independent on purpose: the 2026-09-26 history
+# above is two copies of one decision where only one got the fix, and unifying
+# them removed the drift and the cross-check together. A second copy is not a
+# second opinion; a different method is.
+#
+# THE REGEX THAT USED TO DO THIS IS GONE RATHER THAN LEFT BESIDE IT. A dead
+# `_COMMENTS` pattern sat here after the rewrite, referenced by nothing -- the
+# exact shape the next reader copies because it looks like the live one.
 
 
 def strip_comments(fragment):
     """JS comments out of a table body, both syntaxes, before rows are read.
 
+    STRING-AWARE: a comment marker inside a string literal is part of the
+    string, not a comment. Scanned character by character, tracking quote state
+    and backslash escapes, for `'`, `"` and backtick.
+
     Comments become `\\x00` rather than '' so that `_ROW_NAME`'s `\\s*` cannot
     close over the hole and read a flat array's first string as a row.
     """
-    return _COMMENTS.sub('\x00', fragment)
+    out = []
+    i, n = 0, len(fragment)
+    while i < n:
+        c = fragment[i]
+        if c in '"\'`':
+            # ── AN UNMATCHED QUOTE IS NOT A STRING, AND THE FIRST DRAFT OF
+            # ── THIS SCANNER GOT THAT WRONG ────────────────────────────────
+            # A JS string literal cannot contain a raw newline; `'` and `"`
+            # must close on their own line. The first version scanned forward
+            # to the next matching quote wherever it was, so an APOSTROPHE IN
+            # HTML PROSE -- "don't" in a paragraph -- opened a string that ran
+            # until the next apostrophe, many lines later, swallowing real
+            # table rows on the way. Driven by the cross-check against the
+            # independent implementation: it diverged on sairnmechanical.html
+            # and sairnscape.html, losing `mech_docs`, `mech_quotes`, every
+            # `scp_*` and more. Those are real resources, dropped by a
+            # typographic apostrophe.
+            #
+            # So `'` and `"` are only a string when they CLOSE ON THE SAME
+            # LINE. A backtick may legitimately span lines and keeps the
+            # scan-to-close behaviour.
+            if c == '`':
+                out.append(c)
+                i += 1
+                while i < n:
+                    if fragment[i] == '\\':
+                        out.append(fragment[i:i + 2])
+                        i += 2
+                        continue
+                    out.append(fragment[i])
+                    closed = fragment[i] == c
+                    i += 1
+                    if closed:
+                        break
+                continue
+            eol = fragment.find('\n', i)
+            eol = n if eol < 0 else eol
+            j, closed_at = i + 1, -1
+            while j < eol:
+                if fragment[j] == '\\':
+                    j += 2
+                    continue
+                if fragment[j] == c:
+                    closed_at = j
+                    break
+                j += 1
+            if closed_at < 0:
+                # a lone quote character, not a string opener
+                out.append(c)
+                i += 1
+                continue
+            out.append(fragment[i:closed_at + 1])
+            i = closed_at + 1
+            continue
+        if c == '/' and i + 1 < n and fragment[i + 1] == '/':
+            end = fragment.find('\n', i)
+            out.append('\x00')
+            i = n if end < 0 else end
+            continue
+        if c == '/' and i + 1 < n and fragment[i + 1] == '*':
+            end = fragment.find('*/', i)
+            out.append('\x00')
+            i = n if end < 0 else end + 2
+            continue
+        out.append(c)
+        i += 1
+    return ''.join(out)
 
 
 def driven_resources(body):
