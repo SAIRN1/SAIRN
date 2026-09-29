@@ -4522,6 +4522,31 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-29T14:00:49Z",
+      "opened_at_sha": "e4b3f21a2ceb371e7364613665f004be58645749",
+      "resources": [
+        "quotes",
+        "sf_trustee_audits",
+        "sf_vehicle_service",
+        "sf_vehicles"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/sd-data-sf-session-gate.test.js",
+        "api/sd-data.js",
+        "tools/staging_discipline_scan.py"
+      ],
+      "what": "sf_vehicle_service IS NOW SESSION-GATED IN api/sd-data.js, and the resource has been Tier A on INTEGRITY since 2026-09-23 while sitting outside SD_SESSION_GATED the whole time. ATTACK IN THIS ORDER.\n\n(a) I ADDED A GATE TO A LIVE RESOURCE AND HAVE NOT DRIVEN THE ALLOW SIDE. The refuse side is trivially right -- no session, 403. What I did NOT drive is a real SAIRNfreedom session PASSING the gate, because I hold no SF credential. The two lists that decide that are SD_SESSION_GATED and the expectedApp map, and a name in the first with no entry in the second resolves expectedApp to 'stonedesk' and refuses EVERY correctly signed-in officer with FORBIDDEN \"sign in first\". I added both entries in the same edit and the suite asserts set equality -- but set equality is a source read, not a live call. If the app's vehicle-service panel is now dead for real users, this is where it happened.\n\n(b) sf_trustee_audits WAS ALREADY BROKEN THE SAME WAY AND I FIXED IT IN PASSING, which means I changed somebody else's resource. hank gated it on 2026-09-29 with no expectedApp entry and no approved-list entry, so api/sd-data-sf-session-gate.test.js was RED ON MAIN on two arms before I touched anything. Check that my addition of 'sf_trustee_audits': 'sairnfreedom' is what hank intended and not a guess that papers over a deliberate omission.\n\n(c) THE READ GATE IS THE HALF I AM LEAST SURE OF. The integrity argument for Tier A is entirely about the WRITE -- this row is the only thing that advances the odometer sf_vehicles computes its service-due flag from. I gated read as well, on the ground that sixteen siblings are gated on both verbs and leaving read open on a Tier A resource is the asymmetry that let this one sit out. That is an argument from consistency, not from the row. If the vehicle panel renders a service list before sign-in, read-gating it is a product change nobody asked for.\n\n(d) THE TIER WAS RE-DERIVED FROM THE REGISTER, NOT FROM THE CODE. I read docs/CRITICALITY-TIERS.md's existing cell and verified its central code claim (sairnfreedom.html:6220 writes the odometer back onto the vehicle, and there are exactly two writers). I did NOT re-derive the tier from scratch, and I did not re-check the other 26 Tier A sairnfreedom resources against SD_SESSION_GATED -- so a reviewer should assume that sweep has not been done.\n\nNOT VERIFIED LIVE. Pre-deploy state is recorded in the commit: read with no session answered 200 before the change.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-29T14:00:49Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
