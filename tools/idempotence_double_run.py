@@ -104,7 +104,25 @@ ARG_GATED = {
     'hook_integrity_check.py': '--regenerate',
 }
 
-TIMEOUT = 180
+# ── 30s, AND THE CEILING IS A FINDING RATHER THAN A CONVENIENCE ─────────────
+# 72 candidates x 2 runs at 180s is over seven hours in the worst case, and a sweep
+# nobody can run is not a sweep -- the same lesson --reseat-shas learned when its
+# first draft spawned 7,000 subprocesses. 30s is generous for a tool that writes a
+# document: the slowest generator in this repo finishes in about seven.
+#
+# AND A TOOL THAT EXCEEDS IT IS REPORTED AS COULD-NOT-TELL, never as clean. A
+# mutating tool that needs half a minute twice is either doing something this sweep
+# should not be doing to it, or is itself worth a look. Either way the answer is
+# "not examined", which is the third state.
+TIMEOUT = 30
+
+# ── PUSHES, NETWORK AND INTERACTIVE TOOLS, EXCLUDED BY WHAT THEY DO ─────────
+# Derived from the source rather than listed by name: a tool that pushes, fetches
+# over the network, or blocks on input cannot be double-run in a scratch repo, and
+# running one would time out 72 times over rather than telling anybody anything.
+SIDE_EFFECT = re.compile(
+    r"['\"]push['\"]|urllib|requests\.|input\s*\(|getpass|webbrowser|"
+    r"sairn_http|smtplib")
 
 
 def rmtree(path):
@@ -189,6 +207,9 @@ def double_run(d, tool_rel, argv=()):
     return changed, None
 
 
+SKIPPED_SIDE_EFFECT = []
+
+
 def candidates():
     out = []
     for f in sorted(os.listdir(TOOLS)):
@@ -199,8 +220,12 @@ def candidates():
                            errors='replace').read()
         except OSError:
             continue
-        if WRITES.search(body):
-            out.append(f)
+        if not WRITES.search(body):
+            continue
+        if SIDE_EFFECT.search(body):
+            SKIPPED_SIDE_EFFECT.append(f)
+            continue
+        out.append(f)
     return out
 
 
@@ -302,6 +327,12 @@ def main(argv=None):
 
     print()
     print('  candidates (a tool that writes a file, DERIVED): %d' % len(todo))
+    print('  skipped for a NETWORK, PUSH or INTERACTIVE side effect, DERIVED from')
+    print('  the source rather than listed: %d' % len(SKIPPED_SIDE_EFFECT))
+    for n in SKIPPED_SIDE_EFFECT[:12]:
+        print('    %s' % n)
+    if len(SKIPPED_SIDE_EFFECT) > 12:
+        print('    ... and %d more' % (len(SKIPPED_SIDE_EFFECT) - 12))
     print('  excluded with a reason: %d' % len(EXCLUDE))
     for name, why in sorted(EXCLUDE.items()):
         print('    %-34s %s' % (name, why[:96]))

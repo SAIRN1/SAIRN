@@ -129,7 +129,13 @@ async function write(resource, payload) {
   return { res: res, stored: post ? JSON.parse(post.opts.body).data : null };
 }
 
-const SCANNED = ['mech_docs', 'mech_takeoffs'];
+// mech_quotes JOINED THIS LIST on 2026-09-29, correcting my own exclusion of
+// it. I had it down as "generated from form fields the user filled in"; re-
+// reading the app showed sairnmechanical.html:1416-1417 seeds the conversation
+// with a BASE64 IMAGE and :1435 generates the quote from it. Same provenance as
+// the other two. My objection -- that redacting destroys the deliverable -- does
+// not hold either: :1441 shares fqQuoteTxt FROM MEMORY, never from the row.
+const SCANNED = ['mech_docs', 'mech_takeoffs', 'mech_quotes'];
 
 (async () => {
 
@@ -172,38 +178,32 @@ for (const resource of SCANNED) {
       assert.ok(t.indexOf('RTU-4') !== -1, 'the unit tag was redacted away: ' + t);
       assert.ok(t.indexOf('7.5') !== -1, 'the tonnage was redacted away: ' + t);
     });
-  await test(resource + ': the ADDRESS pattern over-matches and eats the '
-    + 'document subject -- pinned, not fixed', async () => {
-      // FOUND BY DRIVING THIS SUITE, and it is worse than the phone gap it
-      // started as. `Phone: 555-0142  Unit: RTU-4` comes back as
-      // `Phone: 555-[ADDRESS REDACTED]: RTU-4`.
+  await test(resource + ': the labelled local number goes AND the equipment '
+    + 'label survives -- both halves of the 2026-09-29 defect', async () => {
+      // THIS ARM WAS WRITTEN TO DOCUMENT THE BUG AND NOW ASSERTS THE FIX, which
+      // is the transition it existed for. It recorded that
+      // `Phone: 555-0142  Unit: RTU-4` came back as
+      // `Phone: 555-[ADDRESS REDACTED]: RTU-4` -- the number half-surviving AND
+      // the equipment label destroyed, two independent faults in one input.
       //
-      // The seven-digit number is not matched as a PHONE at all. What happens
-      // instead is that the ADDRESS pattern swallows `0142  Unit` -- so the
-      // number is half-left-behind AND the `Unit:` label is destroyed. The
-      // redactor's own note says equipment serials and model numbers are "kept
-      // deliberately, because they are the document's subject rather than its
-      // leak", and here the subject is the casualty while the leak partly
-      // survives.
-      //
-      // ASSERTED IN THE DIRECTION IT ACTUALLY BEHAVES so the day somebody fixes
-      // the pattern this arm goes red and the change has to be deliberate --
-      // and so the fix has to prove it did not start eating serials instead.
-      // Registered against api/_lib/mech-redact.js; NOT changed here, because
-      // this change is about the gate's SCOPE and a pattern that both
-      // over-matches and under-matches needs its own fixtures.
+      // Both are closed in api/_lib/mech-redact.js: `Unit`/`Apt`/`Ste`/`Suite`
+      // can no longer ANCHOR an address match (they are secondary designators
+      // and now only follow a primary street type), and a seven-digit local
+      // number is removed WHEN IT IS LABELLED -- never bare, because
+      // `2100-0142` is a part number.
       const r = await write(resource, { id: 'T-5', date: 'x',
         text: 'Phone: ' + LOCAL_PHONE + '  Unit: RTU-4' });
       const t = String(r.stored.text || '');
-      assert.ok(t.indexOf('ADDRESS REDACTED') !== -1,
-        'the address pattern no longer fires on this shape -- re-derive this '
-        + 'arm: the behaviour it records has changed. got ' + JSON.stringify(t));
-      assert.ok(t.indexOf('Unit:') === -1,
-        'the Unit label now survives, which is an IMPROVEMENT -- record the '
-        + 'decision here and check the pattern did not start eating serials '
-        + 'elsewhere. got ' + JSON.stringify(t));
+      assert.ok(t.indexOf(LOCAL_PHONE) === -1,
+        'the labelled local number still reaches the row: ' + JSON.stringify(t));
+      assert.ok(t.indexOf('ADDRESS REDACTED') === -1,
+        'the address pattern still fires on an equipment label: '
+        + JSON.stringify(t));
+      assert.ok(t.indexOf('Unit: RTU-4') !== -1,
+        'the equipment label is still collateral: ' + JSON.stringify(t));
       assert.strictEqual(r.stored.redaction.complete, false,
-        'the row claims a COMPLETE redaction while this shape is mangled');
+        'complete is now true -- this pass has never been complete and the row '
+        + 'must not claim otherwise');
     });
 }
 
@@ -218,11 +218,19 @@ await test('mech_checks.payee is UNTOUCHED -- it is typed, not extracted',
       + JSON.stringify(r.stored.payee));
   });
 
-await test('mech_quotes.text is UNTOUCHED -- it is the deliverable', async () => {
+await test('mech_quotes.text IS redacted -- and the deliverable is untouched',
+  async () => {
+    // FLIPPED from asserting the opposite. The arm that pinned mech_quotes as
+    // out of scope was pinning MY WRONG READING, which is the risk a pinning
+    // arm carries: it makes a decision durable whether or not it was right.
     const r = await write('mech_quotes', { id: 'Q-1', date: 'x', trade: 'hvac',
-      text: 'Quote for ' + NAME + ': RTU replacement, 7.5 tons' });
-    assert.ok(String(r.stored.text).indexOf(NAME) !== -1,
-      'the customer name was redacted out of the quote the technician sends');
+      text: 'Customer: ' + NAME + chr10() + 'Quote: RTU replacement, 7.5 tons' });
+    assert.ok(String(r.stored.text).indexOf(NAME) === -1,
+      'the labelled customer name still reaches the stored quote: '
+      + JSON.stringify(r.stored.text));
+    assert.ok(String(r.stored.text).indexOf('7.5 tons') !== -1,
+      'the priced scope was redacted away: ' + JSON.stringify(r.stored.text));
+    assert.ok(r.stored.redaction, 'no redaction account on the stored quote');
   });
 
 section('3. THE GATE IS DRIVEN BY A MAP, NOT A RESOURCE NAME');
@@ -258,14 +266,28 @@ await test('...and the control can SEE that shape when it is present', () => {
 await test('the scan-derived field map is DECLARED and covers both resources',
   () => {
     const src = fs.readFileSync(require.resolve('./sd-data.js'), 'utf8');
-    const m = src.match(/const MECH_SCANNED_TEXT[\s\S]{0,400}?\};/);
+    // A REAL BOUNDARY, NOT A FIXED WINDOW. This was
+    // /const MECH_SCANNED_TEXT[\s\S]{0,400}?\};/ and it stopped matching the
+    // moment the map gained a comment longer than 400 characters -- reporting
+    // "no declared map found" about a map that was right there. That is the
+    // magic-window shape this platform has now named four times, in the test
+    // written to police a gate that was itself scoped by a fixed window.
+    const start = src.indexOf('const MECH_SCANNED_TEXT');
+    assert.ok(start !== -1, 'no declared scan-derived field map found in api/sd-data.js');
+    let depth = 0, end = start;
+    for (let k = src.indexOf('{', start); k < src.length; k++) {
+      if (src[k] === '{') depth++;
+      else if (src[k] === '}') { depth--; if (depth === 0) { end = k; break; } }
+    }
+    const m = [src.slice(start, end + 1)];
     assert.ok(m, 'no declared scan-derived field map found in api/sd-data.js');
     SCANNED.forEach(function (r) {
       assert.ok(m[0].indexOf(r) !== -1, r + ' is not in the map');
     });
-    assert.ok(m[0].indexOf('mech_quotes') === -1
-      && m[0].indexOf('mech_checks') === -1,
-      'a typed-by-the-user resource is in the scan-derived map');
+    assert.ok(m[0].indexOf('mech_checks') === -1,
+      'mech_checks is in the scan-derived map -- its payee and memo come from '
+      + 'typed form fields (sairnmechanical.html:1528-1530), with no model and '
+      + 'no image anywhere in their provenance');
   });
 
 console.log('\n' + (fail === 0

@@ -14327,7 +14327,21 @@ module.exports = async (req, res) => {
       // for storing a partially-redacted document rather than refusing it.
       const MECH_SCANNED_TEXT = {
         mech_docs: 'text',
-        mech_takeoffs: 'text'
+        mech_takeoffs: 'text',
+        // ── ADDED 2026-09-29, CORRECTING MY OWN EXCLUSION OF IT ────────────
+        // I left mech_quotes out yesterday on the ground that its text is
+        // "generated from form fields the user filled in". THAT IS WRONG, and
+        // re-reading the app is what found it: sairnmechanical.html:1416-1417
+        // seeds fqConvo with a BASE64 IMAGE and "Analyze for <trade> quote",
+        // and :1435 generates the quote from that same conversation. The quote
+        // is model output over a PHOTOGRAPH -- identical provenance to
+        // mech_docs and mech_takeoffs.
+        //
+        // AND MY OBJECTION DOES NOT HOLD EITHER. I argued redacting would
+        // destroy the deliverable; it does not. :1441 shares and copies
+        // fqQuoteTxt FROM MEMORY, never from the stored row, so what the
+        // technician sends is untouched and only the synced copy is reduced.
+        mech_quotes: 'text'
       };
       let mPayload = payload;
       if (MECH_SCANNED_TEXT[resource]) {

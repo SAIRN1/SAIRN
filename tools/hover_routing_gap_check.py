@@ -166,7 +166,13 @@ def routable_names(entry):
         return [x.strip() for x in r.split(',') if x.strip()], 'structured'
 
     # ── THE FALLBACK, AND ITS WEAKNESS IS THE POINT ────────────────────────
-    # 681 of 683 entries were written before the field existed. Skipping them
+    # MOST entries were written before the field existed -- the exact ratio is
+    # PRINTED BY THIS TOOL on every run and is deliberately not written here.
+    # The first version of this comment said "681 of 683"; H1 has kept adding the
+    # field and it is 11 of 710 structured as of the last run. A MEASUREMENT IN A
+    # COMMENT IS THE SHAPE I HAVE CORRECTED IN THREE OTHER FILES TODAY, including
+    # install_git_hooks.py's "four clones" and the register's own headline count.
+    # Skipping the pre-field entries
     # would make this tool silent about exactly the period the three missed
     # findings came from. So their `ref` is read for resource-shaped tokens --
     # which is a guess about a free-text field, and every finding derived this
