@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+.mirror-token
+.mirror-askpass.py
+.mirror-askpass.bat
