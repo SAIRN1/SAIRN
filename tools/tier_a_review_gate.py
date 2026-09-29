@@ -12,6 +12,7 @@
         refused at write time; the usage line is corrected here so the refusal is
         the second line of defence rather than the only one.
     python tools/tier_a_review_gate.py --auto-discharge [--write]
+    python tools/tier_a_review_gate.py --reseat-shas [--write]  # a DANGLING sha
 
 Exit 0 clean, 1 a finding, 2 COULD NOT TELL -- never folded into either of the
 other two (PR 1.11).
@@ -2578,6 +2579,8 @@ def main(argv):
         return 1
     if '--backfill-shas' in argv:
         return backfill_shas('--write' in argv)
+    if '--reseat-shas' in argv:
+        return reseat_shas('--write' in argv)
     if '--rules' in argv:
         return cmd_rules()
     if '--validate' in argv:
@@ -2664,6 +2667,230 @@ def _guarded(argv):
             'NOT a finding either:\n  %s: %s\n' % (type(e).__name__, e))
         traceback.print_exc(file=sys.stderr)
         return 2
+
+
+
+# ── PRESENT-AND-DANGLING IS A THIRD STATE, AND NEITHER COMMAND OWNED IT ──────
+# `--list` reports a record whose recorded sha no longer resolves as
+# "COULD-NOT-TELL -- rebased away without a reseat", and there was no reseat.
+# `backfill_shas` does not cover it: it fills a sha that is MISSING and prints
+# "0 with no sha" while a record sits there present-and-dangling.
+#
+# HIT BY HAND TWICE BEFORE THIS EXISTED. The 2026-09-26T01:43:54Z record pointed
+# at 59e85d77 and the real commit was 9ff4b87f; the 2026-09-27T02:17:49Z record
+# pointed at 191d2dce and the real commit was c123a925. Both were found by
+# matching the record's FILE LIST and its opening sentence against the log --
+# which is the algorithm below, and which nobody should perform by hand a third
+# time.
+#
+# THE DURABLE KEY IS THE FILE LIST, not the subject. `defect_register.py --reseat`
+# matches on subject because its records store one; a review record stores
+# `files`, `resources`, `what` and `opened_at`. A rebase rewrites the hash and
+# preserves the tree, so the set of paths a commit touched is what survives.
+#
+# RESOLVABLE IS NOT REACHABLE, and that distinction is inherited deliberately
+# rather than rediscovered: a rebase leaves the original commit behind as a
+# dangling object that still `rev-parse`s for as long as the reflog holds it. The
+# test is ancestry against origin/main, which is what another clone will fetch.
+#
+# IT REFUSES RATHER THAN GUESSES, in three named ways: no candidate, more than
+# one candidate, or no readable base ref. A ledger an auditor follows is the last
+# place to write a best guess, and picking one of two matches is a guess.
+def _reseat_base():
+    """The ref reachability is measured against. (ref, None) or (None, why)."""
+    for ref in ('origin/main', 'HEAD'):
+        try:
+            if git('rev-parse', '--verify', '--quiet', ref).strip():
+                return ref, None
+        except CouldNotTell:
+            continue
+    return None, ('neither origin/main nor HEAD could be read, so EVERY record '
+                  'would look unreachable and this would reseat the whole '
+                  'ledger on the strength of not being able to look')
+
+
+def _is_reachable(sha, base):
+    """True / False / None(could not tell)."""
+    if not sha:
+        return None
+    try:
+        git('merge-base', '--is-ancestor', sha, base)
+        return True
+    except CouldNotTell:
+        pass
+    try:
+        # Distinguish "not an ancestor" from "git could not answer at all": a
+        # sha that does not even resolve is not an ancestor, which is the answer
+        # this function needs rather than an error.
+        git('rev-parse', '--verify', '--quiet', sha + '^{commit}')
+        return False
+    except CouldNotTell:
+        return False
+
+
+def _file_set_index(since=None):
+    """{frozenset(paths): [(sha, subject)]} from ONE git log pass.
+
+    ── ONE PASS, AND THE FIRST VERSION WAS UNUSABLE ────────────────────────
+    The first draft ran `git show --name-only` per commit. Against ~7,000 commits
+    that is 7,000 subprocesses and it did not finish inside two minutes -- a
+    repair command nobody can run is not a repair. `git log --name-only` emits
+    every commit and its paths in a single stream; the parse below is the whole
+    cost.
+
+    `since` narrows the walk. A review record is opened in the same push as the
+    commit it describes, so a window around `opened_at` is generous rather than
+    tight -- and it is a WINDOW rather than a cutoff, because an early baseline
+    is the error direction backfill_shas already argues for.
+    """
+    args = ['log', '--format=' + chr(30) + '%H' + chr(31) + '%s', '--name-only']
+    if since:
+        args.append('--since=' + since)
+    try:
+        out = git(*args)
+    except CouldNotTell as e:
+        return None, str(e)
+    idx = {}
+    for chunk in out.split(chr(30)):
+        chunk = chunk.strip(chr(10))
+        if not chunk or chr(31) not in chunk:
+            continue
+        head, _, rest = chunk.partition(chr(10))
+        sha, subj = head.split(chr(31), 1)
+        paths = frozenset(x.strip().replace(chr(92), '/')
+                          for x in rest.split(chr(10)) if x.strip())
+        if paths:
+            idx.setdefault(paths, []).append((sha, subj))
+    return idx, None
+
+
+def _candidates_by_files(idx, files, want_subject=None):
+    """Commits whose CHANGED FILE SET equals `files`.
+
+    Equality, not containment. A commit that touched the record's files AND ten
+    others is a different change, and matching it would reseat a record onto
+    somebody else's push -- worse than leaving it dangling, because a dangling
+    sha is visibly broken and a wrong one is not.
+    """
+    want = frozenset(x.replace(chr(92), '/') for x in (files or []))
+    if not want:
+        return [], 'the record names no files, so there is nothing to match on'
+    hits = list(idx.get(want) or [])
+    # THE SUBJECT IS A TIE-BREAK, NEVER THE PRIMARY KEY. When two commits touched
+    # the same file set, a record whose `what` text opens with the commit's own
+    # subject identifies which -- which is exactly how both real cases were
+    # resolved by hand. It only ever NARROWS; it never admits a commit the file
+    # set rejected.
+    if len(hits) > 1 and want_subject:
+        first = (want_subject or '').strip().split(chr(10))[0].strip()
+        if first:
+            narrowed = [h for h in hits if h[1].strip() == first]
+            if len(narrowed) == 1:
+                return narrowed, None
+    return hits, None
+
+
+def reseat_shas(write=False):
+    """Repoint a review record whose recorded sha is dangling. DRY RUN default."""
+    try:
+        data = load_reviews()
+    except CouldNotTell as e:
+        sys.stderr.write('COULD NOT TELL: %s\n' % e)
+        return 2
+    base, why = _reseat_base()
+    if base is None:
+        print('COULD NOT RESEAT: %s.' % why)
+        return 2
+
+    rows = [r for r in (data.get('records') or []) if r.get('status') == 'open']
+    # The oldest open record's date, minus a margin, bounds the walk. Computed
+    # rather than hardcoded: a fixed "--since=30 days" would silently stop
+    # covering the ledger as it ages, which is exactly the shape PR 1.1 names.
+    dates = sorted(r.get('opened_at') or '' for r in rows if r.get('opened_at'))
+    since = (dates[0][:10] if dates else None)
+    idx, err = _file_set_index(since)
+    if idx is None:
+        print('COULD NOT RESEAT: the log could not be read (%s), so no record '
+              'was examined. That is a third state, not "nothing to reseat".'
+              % err)
+        return 2
+    print('RESEAT DANGLING REVIEW-RECORD SHAS')
+    print('  reachability measured against: %s' % base)
+    print('  log walked from              : %s (the oldest open record, computed)'
+          % (since or 'the beginning'))
+    print('  distinct file sets indexed   : %d' % len(idx))
+    print('  open records: %d' % len(rows))
+
+    healthy, fixable, refused = [], [], []
+    for r in rows:
+        sha = r.get('opened_at_sha')
+        if not sha:
+            refused.append((r, 'no sha at all -- that is --backfill-shas\'s job, '
+                               'not this one'))
+            continue
+        if _is_reachable(sha, base) is True:
+            healthy.append(r)
+            continue
+        hits, err = _candidates_by_files(idx, r.get('files'), r.get('what'))
+        if err:
+            refused.append((r, err))
+        elif not hits:
+            refused.append((r, 'NO commit on %s changed exactly %s -- left '
+                               'dangling rather than pointed at an approximation'
+                            % (base, sorted(set(r.get('files') or [])))))
+        elif len(hits) > 1:
+            refused.append((r, 'AMBIGUOUS: %d commits changed exactly that file '
+                               'set (%s) and the record\'s own text does not '
+                               'single one out. Picking one would be a guess '
+                               'written into a ledger an auditor follows'
+                            % (len(hits), ', '.join(h[0][:12] for h in hits[:4]))))
+        else:
+            fixable.append((r, hits[0][0], hits[0][1]))
+
+    print('  reachable already   : %d -- not touched' % len(healthy))
+    print('  reseatable          : %d' % len(fixable))
+    print('  REFUSED             : %d -- named below, never silently skipped'
+          % len(refused))
+    print()
+    for r, sha, subj in fixable:
+        print('  %-8s %s  %s -> %s' % (r.get('author_session'),
+                                       r.get('opened_at'),
+                                       (r.get('opened_at_sha') or '')[:12],
+                                       sha[:12]))
+        print('           matched on the file set %s'
+              % sorted(set(r.get('files') or []))[:4])
+        print('           commit subject: %s' % subj[:88])
+    for r, whynot in refused:
+        print('  %-8s %s  REFUSED -- %s'
+              % (r.get('author_session'), r.get('opened_at'), whynot[:220]))
+
+    if not fixable:
+        print()
+        print('Nothing to reseat.' if not refused else
+              'Nothing reseatable. Every dangling record above was REFUSED, '
+              'which is the honest outcome: a record still naming a commit that '
+              'is not on the branch is visibly broken, and a record naming the '
+              'WRONG commit is not.')
+        return 1 if refused else 0
+
+    if not write:
+        print()
+        print('DRY RUN -- nothing was written. Add --write to repoint them.')
+        print('Every repointed record will carry opened_at_sha_reseated: true, so')
+        print('a reseated sha and one stamped at open time are never')
+        print('indistinguishable -- the same rule backfill_shas follows for its')
+        print('own reconstruction.')
+        return 0
+
+    for r, sha, _subj in fixable:
+        r['opened_at_sha_was'] = r.get('opened_at_sha')
+        r['opened_at_sha'] = sha
+        r['opened_at_sha_reseated'] = True
+    save_reviews(data)
+    print()
+    print('RESEATED %d record(s), %d refused. Commit docs/tier-a-reviews.json.'
+          % (len(fixable), len(refused)))
+    return 0
 
 
 if __name__ == '__main__':
