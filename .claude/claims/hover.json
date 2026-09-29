@@ -357,6 +357,22 @@
         "hover_log.py",
         "hover_tip_beacon.py"
       ]
+    },
+    {
+      "id": "hover-1790690436",
+      "session": "hover",
+      "subject": "hover",
+      "task": "seven-item queue: log the leg_guestbook contradiction against hover2's B/B verdict with an independent deciding test; log routable citation-drift findings for sd_customers, sd_business_snapshots and sf_honor_details; scan the private mirror repo for non-log files and credentials; independently validate hover2_validation_freshness_check.py on an isolated copy; conditionally validate hover2_log_mirror.py; one undirected batch; resume the weighted-rotation cold-scan draw.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hover.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. One earlier attempt was refused on shared incidental vocabulary rather than a shared subject or file. Each component of this claim checks CLEAR on its own.\n\nFILES: hover_log.py hover_cold_scan_pool.py hover_backup_mirror.py docs/CRITICALITY-TIERS.md",
+      "claimed_at": "2026-09-29T14:00:36Z",
+      "claimed_at_epoch": 1790690436.5916593,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/CRITICALITY-TIERS.md",
+        "hover_backup_mirror.py",
+        "hover_cold_scan_pool.py",
+        "hover_log.py"
+      ]
     }
   ],
   "refusals": [
