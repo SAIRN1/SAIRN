@@ -5,8 +5,20 @@ WHY A SEPARATE INSTALL STEP EXISTS AND CANNOT BE AVOIDED. Git hooks live in
 .git/hooks/, which is not versioned, so a hook committed to the repo does
 nothing until each clone opts in. `core.hooksPath` is the supported way to
 point git at a tracked directory instead. That config is per-clone, so this
-must be run once in each of the four clones (SAIRN-hank, SAIRN-cc,
-SAIRN-cody, SAIRN-fourth).
+must be run once in EVERY working copy.
+
+**THE COUNT IS NOT WRITTEN HERE, AND THAT IS THE CORRECTION.** This line said
+"the four clones" and named four. There are SEVEN working copies of this remote on
+this machine as of 2026-09-29, and the fourth instance of that undercount was
+found on the same day -- `nhi_register.sibling_clones()` derived its count from
+disk and still missed one, because the filter was a naming convention rather than
+the predicate. Count them with `python tools/nhi_register.py --check`, which asks
+git for each sibling's `remote.origin.url` and has no name filter.
+
+**AND A CLONE THAT HAS NEVER RUN THIS ARMS NOTHING, silently.** Every hook file is
+present and byte-perfect; git reads none of them; nothing in any diff shows it.
+`python tools/hook_integrity_check.py` reports that as a FAILURE naming this
+command, and is wired into SessionStart so a new clone is told on its first turn.
 
 WHAT IT GUARDS. tools/sairn_push_gate_hook.py used to fire only as a Claude
 Code PreToolUse hook matching the Bash command text \\bgit\\s+push\\b.

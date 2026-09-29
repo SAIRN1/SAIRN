@@ -18,11 +18,12 @@
   "dispatch_state.py": "645e56055c5d10c9e71e54f15c0916789779ded4d239964a8ad8f58de9e15b95",
   "first_article_check.py": "b37312d0b7105421e56d1df089d76a7989639c52060935e40dbd0cea8ad43b5b",
   "git_push_master_guard.py": "995f76533473c289fbd029a84366b4a2e01de47e60e677edd9ac1c610232c032",
+  "hook_integrity_check.py": "bfb8b4db3b26d69189d094661f232f9ff0e89abde6714dbd0e3d58c6b28237d6",
   "hover_auditor_scope_gate.py": "ce4eddd1a298823cc220cd83bb95f42826dd5f96ba2deb15dfa3264f4290965c",
   "hover_self_health_shim.py": "9134a18861555b599b732ff7ff5dcbc5309a717f58732b210fef12e5466ad22f",
   "html_script_check.py": "a62d9c6b33d87bedd6e97b175987f5d2bd2cd010181af28855b2caf0db1950be",
   "index_duplicate_hook.py": "41868ea235351d261d820e0d57dd9eaa13bd2239a721ec5e320876fc7b549aa8",
-  "install_git_hooks.py": "432cbc3aaeb668b0614a68acd8f31f2366138e008ec9efd91fe38e8b2a7fd5fe",
+  "install_git_hooks.py": "a1f35410aa59a95e35072da8e63f11dd5b80f2b7cb098528848de99e74d93575",
   "live_probe_residue_audit.py": "def6a279a6d85b3e574569a8f4d392670fbc1c5febb254856a896d246f3a5269",
   "rebase_state_guard.py": "8564768fd8cce297965ff5d7bf87c4b591faae12e9d1af6041a5ac40da7a8bd8",
   "redaction_check.py": "1085f7d5975608a835974f40af31fb67670bed570030c9063ffaa910b89afe24",
@@ -39,7 +40,7 @@
  "wiring": {
   "PostToolUse": "102d0a2714aafa53b7838c4d025a3c436bb6a7fb60389b5853de0ec65638f44d",
   "PreToolUse": "d30bef0dcfec8f6a819db06f010010f483a5603b9abf23f245076fae899af853",
-  "SessionStart": "eb279a4b261ce4bde9bb9a3251307b4a28178e34dfe59392b553a96283d4f6c0",
+  "SessionStart": "26431b926f50cf20c968b2f51250b4cd2efb54ece119ee87a1f77ad0d4e8b358",
   "UserPromptSubmit": "10456869da1f912cfbc8d4aa28f6855ccd325295be8401705bdebd77762daac1"
  },
  "wiring_rows": {
@@ -60,6 +61,7 @@
   ],
   "SessionStart": [
    "* :: python \"${CLAUDE_PROJECT_DIR:-.}/tools/dispatch_state.py\" --hook",
+   "* :: python \"${CLAUDE_PROJECT_DIR:-.}/tools/hook_integrity_check.py\"",
    "* :: python \"${CLAUDE_PROJECT_DIR:-.}/tools/hover_self_health_shim.py\"",
    "* :: python \"${CLAUDE_PROJECT_DIR:-.}/tools/sairn_claim_hook.py\"",
    "* :: python \"${CLAUDE_PROJECT_DIR:-.}/tools/sairn_status.py\" --hook",

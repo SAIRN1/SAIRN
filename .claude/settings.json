@@ -165,6 +165,12 @@
             "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/hover_self_health_shim.py\"",
             "timeout": 30,
             "statusMessage": "Running THIS clone's hover self-health check (silent no-op in a build clone; says so by name if this auditor clone has no hook installed)..."
+          },
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/hook_integrity_check.py\"",
+            "timeout": 60,
+            "statusMessage": "Checking that this clone's enforcement hooks are armed and unaltered..."
           }
         ]
       }

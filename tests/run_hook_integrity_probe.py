@@ -234,6 +234,37 @@ try:
 finally:
     rmtree(d)
 
+# ══ KNOWN-BAD 3a -- A FRESH CLONE, WHICH ARMS NOTHING ══════════════════════
+# THE STATE EVERY CLONE OF THIS REPOSITORY STARTS IN. core.hooksPath is local git
+# config, not tracked content, so cloning installs all four hook files
+# byte-perfect and git reads NONE of them. Found on 2026-09-29 by pointing this
+# check at a real clone of origin/main. The fixture below is that clone: every
+# file present, every hash matching, nothing armed.
+print(NL + 'KNOWN-BAD 3a -- a FRESH CLONE arms nothing and must FAIL')
+d = armed_fixture()
+try:
+    g(d, 'config', '--unset', 'core.hooksPath')
+    rc, out = run(d)
+    ok(rc == EXIT_FINDING,
+       'an UNARMED clone is a FAILURE, not a pass (exit %d). Every hook file is '
+       'present and every hash matches -- they are simply not armed, which is '
+       'the failure with the least evidence on it' % rc, out[-700:])
+    ok('NOT SET' in out.upper() and 'NO HOOKS AT ALL' in out.upper(),
+       'and it says GIT IS RUNNING NO HOOKS AT ALL rather than reporting a path '
+       'mismatch, which is a different cause with a different fix', out[-700:])
+    ok('install_git_hooks.py' in out,
+       'and it names the exact command that arms them -- the first version of '
+       'this finding printed the REPOINTED sentence for both causes and would '
+       'have sent a reader hunting a malicious change when nobody had run the '
+       'installer', out[-700:])
+    # AND THE CONTENT HALF MUST STILL BE CLEAN, so the finding is the arming and
+    # nothing else. A dozen mismatches would bury the one that matters.
+    ok(out.count('!') <= 3,
+       'and it is the ONLY finding -- the content half stays clean, so the '
+       'signal is the arming rather than noise around it', out[-700:])
+finally:
+    rmtree(d)
+
 # ══ KNOWN-BAD 3 -- core.hooksPath POINTED ELSEWHERE ════════════════════════
 print(NL + 'KNOWN-BAD 3 -- core.hooksPath pointed somewhere else')
 d = armed_fixture()
