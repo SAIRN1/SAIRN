@@ -147,3 +147,78 @@ It does not claim the deployment is correct for any role other than the three
 driven, on any resource other than `alf_incidents`, or for a licence other than
 `ALF-AUDIT-2026`. And it does not claim the legacy-NULL behaviour has been seen
 live — it has not.
+
+---
+
+# 2026-09-29 — `alf_mar` actor identity, live-verified, and its residue
+
+Same licence (`ALF-AUDIT-2026`), same session (`zz-audit-owner`, role `owner`),
+driven against the deployed endpoint after `d6d7efd1` reached `origin/main`.
+
+**Observed values. Every write sent a forged actor naming `emp-someone-else`:**
+
+```
+                     write   WRITE-ECHO                        READ-BACK
+administration       200     administered_by='zz-audit-owner'  administered_by='zz-audit-owner'
+count                200     counted_by='zz-audit-owner'       counted_by='zz-audit-owner'
+reconciliation       200     reconciled_by='zz-audit-owner'    reconciled_by='zz-audit-owner'
+assessment_refusal   200     documented_by='zz-audit-owner'    documented_by='zz-audit-owner'
+```
+
+**Both hops, deliberately.** The write echo and a separate read are reported as
+two columns because they are two claims. On 2026-09-28 `alf_incidents` stored a
+correct column and served a blob spread over it, so the echo and the read
+disagreed and only the read was wrong.
+
+**The cross-type arm, live.** A `count` carrying a forged `administered_by`,
+`reconciled_by` *and* `documented_by`:
+
+```
+ZZ-MAR-SMUGGLE   {'counted_by': 'zz-audit-owner', 'witness_id': 'zz-witness'}
+```
+
+None of the three foreign actor keys is stored. Only the one belonging to a
+`count` is, and it comes from the session.
+
+**`witness_id` survives, as designed** — `'zz-witness'` is present on both count
+rows. It names a second person who is by definition not the caller. **SAIRNcare
+still has no server-side witness verification of any kind**; that is registered
+as its own HIGH finding and is *not* addressed by this change.
+
+## Residue — `alf_mar` and `alf_clients` are APPEND-ONLY
+
+Both refuse `soft_delete` and `delete` with `400 action must be 'read' or
+'write'`, driven in both directions rather than assumed. Six rows need a human in
+the SQL editor.
+
+```sql
+-- VERIFY FIRST. Expect one alf_clients row and five alf_mar rows.
+select 'alf_clients' as t, client_id as id from public.alf_clients
+ where app_id = 'sairncare' and client_id = 'ZZ-MAR-RESIDENT'
+union all
+select 'alf_mar', entry_id from public.alf_mar
+ where app_id = 'sairncare'
+   and entry_id in ('ZZ-MAR-ADMINI','ZZ-MAR-COUNT','ZZ-MAR-RECONC',
+                    'ZZ-MAR-ASSESS','ZZ-MAR-SMUGGLE');
+
+delete from public.alf_mar
+ where app_id = 'sairncare'
+   and entry_id in ('ZZ-MAR-ADMINI','ZZ-MAR-COUNT','ZZ-MAR-RECONC',
+                    'ZZ-MAR-ASSESS','ZZ-MAR-SMUGGLE');
+
+delete from public.alf_clients
+ where app_id = 'sairncare' and client_id = 'ZZ-MAR-RESIDENT';
+```
+
+**Order matters and is not cosmetic:** the MAR rows reference the resident, so
+the resident goes last. If the `select` returns fewer rows than named, stop and
+read — a delete matching nothing reports success.
+
+## What this does not claim
+
+It does not claim anything about a role other than `owner`, about the offline
+replay path in `sairncare.html` (which writes to local storage first and syncs
+after), or about rows written before `d6d7efd1`. **Every `alf_mar` row written
+before that commit carries an actor field that was supplied by the request**, and
+there is no way to tell which of those values are correct. No backfill is
+possible: the only candidate source is the forgeable field itself.
