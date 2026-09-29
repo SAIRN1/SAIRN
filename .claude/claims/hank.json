@@ -3256,8 +3256,8 @@
       "task": "queue21 item 1 FIRST, Michael prints at 09:00: --update mode on tools/fact_sheet_regenerates.py that rewrites every DERIVABLE figure in the fact sheet from its own command, stamps the run time, and NEVER touches a figure it cannot derive; control asserting a deliberately stale figure is corrected and a BROKEN command leaves the old figure and exits non-zero. Then item 2, the amend guard: a PreToolUse hook refusing git commit --amend, git add -A, git add ., git commit -a whenever a rebase, merge or cherry-pick is in progress, and refusing --amend on any commit already on origin/main -- I broke that prose rule myself yesterday and amended onto fourth's commit, so it becomes mechanical. Then item 3 the four audit licences and the role-gate probe with real sessions, item 4 credential LOCATIONS only, item 5 the obligation backlog, item 6 the patent-count confirmation line, and item 8 the prose-only-rules enumeration. SUBJECT NAMED PER PR 4.3 FILES: tools/fact_sheet_regenerates.py tests/run_fact_sheet_regenerates_probe.py docs/FACT-SHEET-2026-09-29.md tools/rebase_state_guard.py tests/run_rebase_state_guard_probe.py .claude/settings.json docs/2026-09-28-credential-locations.md docs/2026-09-28-prose-only-rules.md",
       "claimed_at": "2026-09-28T11:00:58Z",
       "claimed_at_epoch": 1790593258.476991,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T11:29:30Z",
       "files": [
         ".claude/settings.json",
         "docs/2026-09-28-credential-locations.md",
@@ -3276,8 +3276,8 @@
       "task": "queue22 item 1 the AMEND GUARD: a PreToolUse Bash hook refusing git commit --amend, blanket staging and commit -a while a rebase, merge or cherry-pick is in progress, and refusing --amend on any commit already on origin/main. Michael broke that prose rule himself on 2026-09-27 and amended onto another session's commit, so it becomes mechanical. The control drives it against a REAL stopped rebase in a throwaway repo. Wired into .claude/settings.json for every clone. Then the credential-LOCATIONS enumeration -- paths, environment variable names and credential stores only, never a value or a fragment -- so Michael can rotate SAIRN-Session55. Then the reporting rule that a stated start is not a start.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hank.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. Two earlier attempts were refused on shared methodology vocabulary rather than a shared subject, and naming the other session's subjects here to declare the disjointness made the overlap larger each time -- a text-reading gate matching a disclosure instead of a claim. Same shape cc recorded earlier today and same resolution. Each component of this claim checks CLEAR on its own.\n\nSUBJECT NAMED PER PR 4.3 FILES: tools/rebase_state_guard.py tests/run_rebase_state_guard_probe.py .claude/settings.json docs/2026-09-28-credential-locations.md docs/2026-09-28-reporting-rules.md",
       "claimed_at": "2026-09-28T20:41:59Z",
       "claimed_at_epoch": 1790628119.0820224,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T11:29:30Z",
       "files": [
         ".claude/settings.json",
         "docs/2026-09-28-credential-locations.md",
@@ -3293,8 +3293,8 @@
       "task": "queue22 item 6: the routed criticality-tier findings on the register-owner side -- msb_sale_hours integrity B to A, real field lists for sv_mobilevet and sdn_samples, the false no-PII basis on leg_monuments and leg_obituaries, the money-limb Tier A question on sv_financials dnt_vendor_orders leg_insurance and msb_food_waste, sv_wildliferehab as a possible state-reportable record, and the SAIRNgrounds citation offset of 25 lines at and after 1711 from dc074e59. Plus the credential-locations enumeration already landed and the reporting rule that a stated start is not a start. SUBJECT NAMED PER PR 4.3 FILES: docs/CRITICALITY-TIERS.md docs/2026-09-28-reporting-rules.md",
       "claimed_at": "2026-09-29T10:54:19Z",
       "claimed_at_epoch": 1790679259.732436,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T11:29:30Z",
       "files": [
         "docs/2026-09-28-reporting-rules.md",
         "docs/CRITICALITY-TIERS.md"
