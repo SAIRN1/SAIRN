@@ -19401,6 +19401,58 @@
       "recurrence_open": "Six role refusals remain unreachable by --ablate, the only sound measurement in that file: five compound conditions and one with its body on a single line. TWO OF THEM are their resource's ONLY gate -- alf_incidents and alf_op_audits have zero ablatable blocks, so the instrument answers COULD NOT TELL for those resources entirely, and both also sit in the not-driven bucket. Nothing measures whether a resource's gates are individually covered; the bucket counts remain per-resource."
     },
     {
+      "commit": "35fb7d2c85a7",
+      "date": "2026-09-29",
+      "subject": "fix(stonedesk): the storage figure is marked as an approximation, and the keys are counted -- there is NO configured quota to divide by, and the search is recorded",
+      "files": [
+        "stonedesk.html",
+        "tests/stonedesk_admin_storage_kpi.js"
+      ],
+      "lines_added": 32,
+      "lines_removed": 2,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "stonedesk.html's Admin Overview storage KPI reported bytes as if they were exact after the invented 5MB percentage was removed earlier the same day. Two things were still wrong with the figure. (1) `.length * 2` assumes two bytes per UTF-16 code unit, which is wrong for an astral character (a surrogate pair is two units) and is not how every engine charges its quota, so the total is an approximation presented as a measurement. (2) THE KEYS WERE NOT COUNTED AT ALL -- only the values -- and keys are stored too, so the figure was biased DOWN, which is the wrong direction for a number somebody reads as 'how full am I'. Keys are now included and the value carries a `~`, a mark on the number rather than a longer label because the card has room for a figure and not a sentence. AND THE QUOTA SEARCH IS RECORDED SO IT IS NOT REPEATED: no storage_quota, storage_limit, quota_bytes or max_storage exists anywhere in the repo's .js, .sql, .json or .html, and vercel.json carries no storage configuration. It would not help if it did -- this KPI counts BROWSER localStorage, which neither Supabase nor Vercel governs, and the browser's own limit varies by engine and origin and is not knowable synchronously. So no percentage is computed and none is invented.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "d211c6293616",
+        "date": "2026-09-28",
+        "subject": "fix(stonedesk): the Storage KPI was a percentage of a GUESS over a population it did not name -- and the Math.min the scanner flagged was the one part that was right",
+        "lag_days": 1
+      },
+      "citation_note": "Not an absent dependency. Cited for the neighbouring principle: the card reported a quantity more precisely than it had established, having just been corrected for reporting one it had not established at all.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "Removing an invented denominator left the numerator reading as exact. The fix for a fabricated figure produced a second, quieter overstatement: a byte count derived from an encoding assumption, with no mark saying so.",
+          "action_status": "done",
+          "action": "The value carries a `~`, and an arm forbids the marker being dropped."
+        },
+        {
+          "kind": "technical",
+          "factor": "The sum walked localStorage keys to READ them and never counted them. The omission is invisible in the code -- the loop looks complete -- and biases the answer in the reassuring direction.",
+          "action_status": "done",
+          "action": "Keys are included in the total; an arm asserts `k.length +` is present."
+        },
+        {
+          "kind": "detection",
+          "factor": "No check anywhere asks whether a displayed quantity is exact or estimated. The fabricated-KPI sweep looks for a number with no function behind it; this had a function behind it and the function was approximate.",
+          "action_status": "not-actionable",
+          "note": "Deciding whether a computed figure is exact needs the units and the consumer, which is a judgement per KPI rather than a pattern. Recorded as a limit rather than promised as a sweep, because a checker that guessed at it would produce a read-list of every arithmetic expression in the platform."
+        }
+      ],
+      "recurrence_open": "Nothing distinguishes an exact displayed quantity from an estimated one anywhere on the platform. This card is now marked; every other computed KPI is unexamined on that axis. The narrower half is closed -- an invented denominator is gone and a quota search is recorded against the file -- but the same `.length * 2` byte estimate appears in other apps' storage displays and none of them is marked."
+    },
+    {
       "commit": "49f7ae011063",
       "date": "2026-09-29",
       "subject": "fix(sairndesign): A1 -- a 403 is not a connection problem, and the invoice stays",
@@ -19923,56 +19975,60 @@
       "recurrence_open": "Only THIS suite strips. The fixed-window-substring shape was swept once before and the sweep's finding list is not re-run on new checks, so the next check that greps a raw single-file app for an identifier has the same hole available. tools/gated_resource_direct_fetch_header.js is also still the only check of its class -- nothing verifies that the 900-character window is wide enough in the other direction."
     },
     {
-      "commit": "35fb7d2c85a7",
+      "commit": "f093d5da27b8",
       "date": "2026-09-29",
-      "subject": "fix(stonedesk): the storage figure is marked as an approximation, and the keys are counted -- there is NO configured quota to divide by, and the search is recorded",
+      "subject": "fix(hooks): a FRESH CLONE of this repository runs no hooks at all",
       "files": [
-        "stonedesk.html",
-        "tests/stonedesk_admin_storage_kpi.js"
+        "docs/2026-09-29-hook-manifest-fresh-clone.md",
+        "docs/hook-manifest.json",
+        "tools/hook_integrity_check.py"
       ],
-      "lines_added": 32,
-      "lines_removed": 2,
-      "app": "stonedesk",
-      "layer": "product",
-      "severity": "low",
+      "lines_added": 134,
+      "lines_removed": 7,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
       "detection_method": "code-review",
-      "summary": "stonedesk.html's Admin Overview storage KPI reported bytes as if they were exact after the invented 5MB percentage was removed earlier the same day. Two things were still wrong with the figure. (1) `.length * 2` assumes two bytes per UTF-16 code unit, which is wrong for an astral character (a surrogate pair is two units) and is not how every engine charges its quota, so the total is an approximation presented as a measurement. (2) THE KEYS WERE NOT COUNTED AT ALL -- only the values -- and keys are stored too, so the figure was biased DOWN, which is the wrong direction for a number somebody reads as 'how full am I'. Keys are now included and the value carries a `~`, a mark on the number rather than a longer label because the card has room for a figure and not a sentence. AND THE QUOTA SEARCH IS RECORDED SO IT IS NOT REPEATED: no storage_quota, storage_limit, quota_bytes or max_storage exists anywhere in the repo's .js, .sql, .json or .html, and vercel.json carries no storage configuration. It would not help if it did -- this KPI counts BROWSER localStorage, which neither Supabase nor Vercel governs, and the browser's own limit varies by engine and origin and is not knowable synchronously. So no percentage is computed and none is invented.",
+      "summary": "A fresh clone of SAIRN1/SAIRN arms NO git hooks. core.hooksPath is local git config rather than tracked content, so cloning installs all four .githooks files byte-perfect and git reads none of them: no pre-commit credential scan, no conflict-marker check, no push gate, no post-rewrite sha reseat, until somebody runs tools/install_git_hooks.py. Every hook file is present and every hash matches, so nothing in any diff shows it. Found by running the new tools/hook_integrity_check.py against a real fresh clone of origin/main at 7441c19, and confirmed in both directions: arming the clone with one command returns the check to exit 0.",
       "rules": [
         "1.11"
       ],
       "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
+      "injection_phase": "config",
+      "phase_confidence": "inferred",
       "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "commit": "d211c6293616",
-        "date": "2026-09-28",
-        "subject": "fix(stonedesk): the Storage KPI was a percentage of a GUESS over a population it did not name -- and the Math.min the scanner flagged was the one part that was right",
-        "lag_days": 1
+        "unknown_reason": "core.hooksPath has always been local config; there is no commit where a clone was armed by cloning and then stopped being. The gap is the absence of a check, which existed from the day the hooks did."
       },
-      "citation_note": "Not an absent dependency. Cited for the neighbouring principle: the card reported a quantity more precisely than it had established, having just been corrected for reporting one it had not established at all.",
+      "citation_note": "1.11 is a check that must fail CLOSED when the tool it depends on is absent. This is that rule about the HOOK SYSTEM rather than about one checker: every gate depended on core.hooksPath being set, nothing verified it, and an unset path made every gate skip silently -- reporting a pass it never performed, in the exact words of the rule.",
       "contributing_factors": [
         {
-          "kind": "technical",
-          "factor": "Removing an invented denominator left the numerator reading as exact. The fix for a fabricated figure produced a second, quieter overstatement: a byte count derived from an encoding assumption, with no mark saying so.",
-          "action_status": "done",
-          "action": "The value carries a `~`, and an arm forbids the marker being dropped."
-        },
-        {
-          "kind": "technical",
-          "factor": "The sum walked localStorage keys to READ them and never counted them. The omission is invisible in the code -- the loop looks complete -- and biases the answer in the reassuring direction.",
-          "action_status": "done",
-          "action": "Keys are included in the total; an arm asserts `k.length +` is present."
-        },
-        {
-          "kind": "detection",
-          "factor": "No check anywhere asks whether a displayed quantity is exact or estimated. The fabricated-KPI sweep looks for a number with no function behind it; this had a function behind it and the function was approximate.",
+          "factor": "core.hooksPath is LOCAL GIT CONFIG, not tracked content, so the arming of the hooks is the one part of the control that cannot travel with the repository. Every hook file is versioned, reviewed and hashed; the switch that makes git read them is not.",
+          "kind": "latent-condition",
           "action_status": "not-actionable",
-          "note": "Deciding whether a computed figure is exact needs the units and the consumer, which is a judgement per KPI rather than a pattern. Recorded as a limit rather than promised as a sweep, because a checker that guessed at it would produce a read-list of every arithmetic expression in the platform."
+          "note": "git offers no way to make hooksPath repo-controlled -- that is the whole reason it is local, since a repository able to arm its own hooks on clone would be arbitrary code execution on checkout. The answer has to be a check, not a setting."
+        },
+        {
+          "factor": "Nothing verified that any clone had run tools/install_git_hooks.py. The installer existed and its invocation was a step somebody remembered, exactly like the routing between the auditor's log and the index.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tools/hook_integrity_check.py reports an unset core.hooksPath as a finding naming the installer, and --repo lets it be run against any working copy including a fresh clone."
+        },
+        {
+          "factor": "The failure is invisible in the direction people look. A hook edit shows in a diff; an unarmed hook shows nowhere, because nothing in the repository is wrong. Every file is byte-perfect.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The check compares the CONFIG as well as the content, and its message says why this case has the least evidence on it."
+        },
+        {
+          "factor": "The first version of the finding printed one sentence for both causes -- unset and repointed -- which would have sent a reader hunting a malicious change when the answer was that nobody had run the installer.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Two causes, two sentences, and the unset one names the exact command."
         }
       ],
-      "recurrence_open": "Nothing distinguishes an exact displayed quantity from an estimated one anywhere on the platform. This card is now marked; every other computed KPI is unexamined on that axis. The narrower half is closed -- an invented denominator is gone and a quota search is recorded against the file -- but the same `.length * 2` byte estimate appears in other apps' storage displays and none of them is marked."
+      "recurrence_open": "Six other working copies exist on this machine and NONE has been checked for an armed hooksPath -- each is local config and has to be checked where it lives, and one of them is the hover auditor's clone. Nothing runs this check on a cadence yet either; it is report-only and unwired."
     }
   ],
   "started": "2026-09-09",
