@@ -271,8 +271,8 @@
       "task": "hover audit-log housekeeping round six: draft a paste-ready corrected evidence cell for a pet-service row; refile a standing GPS-tracking finding on a funeral-procession row with full urgency, naming that a delegated survey nearly buried it twice; sample the cold pool once undirected; draw the next weighted rotation pick. FILES: .claude/skills/sairn-hover-auditor/",
       "claimed_at": "2026-09-29T10:39:39Z",
       "claimed_at_epoch": 1790678379.727785,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T10:47:08Z",
       "files": null
     }
   ],
