@@ -10129,6 +10129,50 @@ module.exports = async (req, res) => {
       // spreads this blob after it -- a payload created_at would shadow the
       // real one (the 2026-09-23T18:54:03Z review's point 1, now closed).
       const marData = storedBlob(payload, ['id', 'resident_id', 'entry_type', 'assigned_employee_id', 'created_at']);
+      // ── WHO DID IT IS THE SESSION'S ANSWER, NOT THE PAYLOAD'S ─────────────
+      // storedBlob is a DENY-LIST: it copies the payload and deletes only the
+      // keys named above. `reviewed_by` twenty lines down is stamped from the
+      // session; the field naming who ADMINISTERED the medication was not, so it
+      // was whatever the request said. sairncare.html sends the signed-in
+      // employee -- but that is a property of the client, and the client is the
+      // thing an attacker replaces. Any authenticated employee could record a
+      // medication administration against a colleague's name, on the record a
+      // state surveyor reads and a licence depends on.
+      //
+      // FOUR FIELDS, NOT ONE. Every MAR writer in sairncare.html carries its own
+      // actor key and all four were `alfSession.employee_id` from the client:
+      // administration/administered_by, count/counted_by,
+      // reconciliation/reconciled_by, assessment_refusal/documented_by. Fixing
+      // only the one that was reported would have left three identical holes on
+      // the same resource, so the server owns the MAP.
+      //
+      // ALL FOUR ARE STRIPPED FROM EVERY ENTRY, then the one that belongs to
+      // this entry_type is stamped. Stripping only the matching key would let a
+      // `count` carry a forged `administered_by` onto the MAR -- an
+      // administration attribution on a row that is not an administration.
+      //
+      // `witness_id` IS DELIBERATELY NOT HERE. It names a SECOND person who is
+      // by definition not the caller, so it cannot come from the session.
+      // SAIRNcare has no server-side witness verification at all, where
+      // SAIRNvet has api/sv-witness.js and a witness token -- that is a real and
+      // separate finding, registered rather than quietly folded into this one.
+      // An arm in api/sd-data-alf-mar-actor-identity.test.js pins that
+      // witness_id survives, so this change cannot be mistaken for closing it.
+      const MAR_ACTOR_BY_ENTRY_TYPE = {
+        administration: 'administered_by',
+        count: 'counted_by',
+        reconciliation: 'reconciled_by',
+        assessment_refusal: 'documented_by'
+      };
+      Object.keys(MAR_ACTOR_BY_ENTRY_TYPE).forEach(function (t) {
+        delete marData[MAR_ACTOR_BY_ENTRY_TYPE[t]];
+      });
+      // `medication_order` has no actor key and gets none: an order is not
+      // performed by anybody, and inventing a field here would put a name on a
+      // record that never had one.
+      if (Object.prototype.hasOwnProperty.call(MAR_ACTOR_BY_ENTRY_TYPE, payload.entry_type)) {
+        marData[MAR_ACTOR_BY_ENTRY_TYPE[payload.entry_type]] = session.employee_id;
+      }
       // ── PHARMACY-ORDER REVIEW GATE (2026-08-22, Phase 3 item 1) ────────────────────────
       // A pharmacy-sourced order arrives via api/alf-pharmacy.js as pending_review and is
       // NOT active on the MAR until a clinician accepts it. Removing manual transcription
