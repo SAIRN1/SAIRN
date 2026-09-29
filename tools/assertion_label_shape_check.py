@@ -879,6 +879,39 @@ def js_classify(label, ops):
 
 
 # ── THE JS FIXTURE LOCK, held to the same standard as the Python one ────────
+# ── THE REGISTERED-LIMIT COUNTER HAS ITS OWN FIXTURES NOW ───────────────────
+# JS_BARE_CALL feeds the "1811 bare-truthiness calls, of which 0 carry an
+# exhaustive label" line, and that second figure is the ONLY thing separating a
+# registered limit from an unreported gap. It was DEAD to this lock: neutralise
+# it and the counter silently returns (0, 0), which reads as "the limit costs
+# nothing" -- the most reassuring possible wrong answer.
+BARE_COUNT_FIXTURES = (
+    ("assert.ok(rows, 'every row is present');", (1, 1),
+     'a bare truthiness with an EXHAUSTIVE label is the case that would end the '
+     'limit, and it must be counted in BOTH figures'),
+    ("assert.ok(rows, 'at least one row');", (1, 0),
+     'a bare truthiness with an honest label counts in the first figure only'),
+    ("assert.ok(rows.length >= 3, 'every row is present');", (0, 0),
+     'a call WITH an operator is not bare and must not be counted at all, or '
+     'the limit figure inflates with arms the tool already judges'),
+    ("var s = 'assert.ok(x, \\'every row\\')';", (0, 0),
+     'and nothing at all when there is no call -- with JS_BARE_CALL neutralised '
+     'every case here returns (0, 0), which is why the third arm alone could '
+     'not have caught it'),
+)
+
+
+def run_bare_count_fixtures(verbose=False):
+    bad = []
+    for src, want, why in BARE_COUNT_FIXTURES:
+        got = js_bare_unjudged(src)
+        if got != want:
+            bad.append('BARE COUNT: expected %r, got %r -- %s' % (want, got, why))
+        elif verbose:
+            print('  ok   %-38s %s' % (str(want), why))
+    return bad
+
+
 JS_FIXTURES = (
     # ── THE ONE ASYMMETRY BETWEEN THE TWO PATHS, MEASURED AND NAMED ────────
     # The Python path judges a BARE TRUTHINESS -- `assert rows, 'every row is
@@ -1090,6 +1123,36 @@ FIXTURES = (
 # Each is a label classify() already calls FINDING. What is under test here is
 # only whether the exhaustive word is the CLAIM or the RATIONALE.
 TIER_FIXTURES = (
+    # ── THREE RULES WERE DEAD TO THIS LOCK UNTIL 2026-09-29 ────────────────
+    # tools/dead_rule_sweep.py neutralised each module-level pattern in turn and
+    # found that CLAUSE_MARKER, PARTITIVE_OF and JS_BARE_CALL could all be
+    # replaced with a pattern matching NOTHING and every fixture here still
+    # passed. All three are load-bearing, so the repair is a fixture apiece
+    # rather than a named limit -- and each one below goes RED if its rule is
+    # removed, which is the only property that makes it a repair.
+    # BOTH EXPECTATIONS BELOW WERE WRONG ON THE FIRST RUN AND WERE CORRECTED
+    # TO WHAT THE RULE CORRECTLY DOES -- discipline 1's FIRST kind of
+    # correction, not the second. I had the direction of the split backwards:
+    # CLAUSE_MARKER keeps the text BEFORE the first marker as the claim, so the
+    # demotion fires when the exhaustive word lands AFTER it. The rule was
+    # right; the fixtures were.
+    ('the loader is correct -- so every row is present', ADVISORY,
+     'CLAUSE_MARKER: the exhaustive word sits AFTER the marker, in the rationale '
+     'rather than the claim. Neutralise the rule and the whole sentence becomes '
+     'the claim half, so this comes back CONFIRMED and the lock goes red'),
+    ('every row is present -- because the loader would otherwise drop one',
+     CONFIRMED,
+     '...and the SILENT HALF of the same rule: the exhaustive word BEFORE the '
+     'marker is still inside the claim and the demotion must NOT fire. Without '
+     'this arm the rule could be widened until it demoted everything'),
+    ('only 3 of the 14 rows are stale', ADVISORY,
+     'PARTITIVE_OF: `only N of M` is a PARTITIVE -- it counts a subset, it does '
+     'not claim the population. With the rule gone this reads as a universal '
+     'and comes back CONFIRMED'),
+    ('only the owner may write', CONFIRMED,
+     '...and its silent half: `only` with no partitive after it IS a universal '
+     'claim about who may write, and must stay CONFIRMED'),
+
     ('every promoted checker is scored', CONFIRMED,
      'the plain shape: the universal word is the subject of the claim'),
     ('it does NOT report every one as unguarded', ADVISORY,
@@ -1243,8 +1306,10 @@ def main(argv):
     # ── the lock runs FIRST and ALONE. Nothing real is read until it holds. ──
     verbose = a.fixtures and not a.quiet
     bad = (run_fixtures(verbose=verbose) + run_tier_fixtures(verbose=verbose)
-           + run_js_fixtures(verbose=verbose))
-    total_fx = len(FIXTURES) + len(TIER_FIXTURES) + len(JS_FIXTURES)
+           + run_js_fixtures(verbose=verbose)
+           + run_bare_count_fixtures(verbose=verbose))
+    total_fx = (len(FIXTURES) + len(TIER_FIXTURES) + len(JS_FIXTURES)
+                + len(BARE_COUNT_FIXTURES))
     if bad:
         if not a.quiet:
             print('\nCRITERIA LOCK FAILED -- %d of %d fixtures misclassified.'
