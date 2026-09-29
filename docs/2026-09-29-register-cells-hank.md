@@ -292,3 +292,385 @@ consumers enumerated and the deciding test named: `sv_compliance` exists, carrie
 * **I did not read the 32 rows** that `tools/citation_no_source_report.py` now
   flags as claiming a read with no line and no group stamp behind them. That is the
   next pass on this register and it is nobody's yet.
+
+---
+
+# Queue25 — item 2. Delivered as TEXT for the same reason, and the refusal is newer
+
+**2026-09-29 (Hank), second pass.** `docs/CRITICALITY-TIERS.md` is **still held by
+`hover`** — a *different, later* claim than the one quoted at the top of this file.
+Re-checked at the start of this pass:
+
+```
+BLOCKED -- another session already claimed overlapping work:
+
+  session   : hover
+  subject   : hover
+  task      : eight-item queue: print the tier-a obligation row for routing; confirm the relocated tools path is invisible to build-agent gates and denominators; six independent cold reads at HEAD on unregistered or misdescribed resources; conditional validation of hover2's updated log mirror; one undirected batch through the linter; the weighted rotation draw; an in-flight/blocked/stale inventory; a stale-path methodology sweep across all relocated tooling with selftests run from two working directories.
+
+THE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hover.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. Each component of this claim checks CLEAR on its own.
+
+FILES: hover_backup_mirror.py hover_cold_scan_pool.py hover_log.py docs/CRITICALITY-TIERS.md
+  claimed   : 2026-09-29T17:11:40Z (0.5h ago)
+  blocked by: same file or resource: docs/criticality-tiers.md
+  also share: criticality, docs, tiers
+
+DO NOT start this. Flag it back to the coordinating chat session and let it decide who runs it.
+If you believe that claim is dead, confirm with the other session first -- do not just wait 4 hours for it to expire.
+```
+
+**hover's own queue names "six independent cold reads at HEAD on unregistered or
+misdescribed resources", which is the same population as item 2 below.** Read my
+verdicts against theirs rather than instead of them.
+
+---
+
+## 2a — the reused B sentence, swept across the whole register
+
+### The denominator, and which half of it is trustworthy
+
+| figure | value | how stable |
+|---|---|---|
+| Register rows containing *"neither money nor a regulated record"* or a near variant | **77** | **Exact and stable.** A literal + 5-variant regex over `docs/CRITICALITY-TIERS.md` at HEAD. |
+| Of those, rows that ALSO still say *"Classified by the stated B rule rather than individually read"* | **48**, of which **47** are real | **Stable.** The one false positive is `mech_site_assets` (L496), where both phrases appear inside a **quotation of the wording the cell already corrected** on 2026-09-17. |
+| Splitting the other 29 into "live justification" vs "quoted as already corrected" | **NOT reported as a number** | **Unstable, and that is the honest answer.** Three successive tunings of the same regex returned 8, 14 and 17 "quoted". A sentence inside quotation entities 160 characters after a `RE-TIERED` verb is not separable by pattern. The nine A-tier rows the splitter disagreed about were each read by hand instead: `sd_email_threats`, `leg_processions`, `law_optx`, `grd_boq_rates`, `bld_change_orders`, `bld_draws`, `rf_draws`, `law_pimedical`, `mech_site_assets` — **all nine are quotations or correctly-qualified live uses. None is false.** |
+
+**The real population is therefore the 47**, and that is the right population on
+its own terms: a cell that says out loud it was never individually read is exactly
+the cell the sentence can be false on.
+
+### Method, and why it is not "read the cell again"
+
+The independence discipline asks for a **structurally different** method, so the
+verdicts below come from the resource's own **write shape**, never from the cell:
+
+1. For each of the 47, extract the field list actually persisted — the object
+   literal passed to the app's own write helper (`sdnData('write',…)`, `senData`,
+   `scData`, `mechPushRecord`, `dntPushOne`, `st('<key>', …)`), or the
+   `CREATE TABLE` column list, whichever exists.
+2. Screen those field names against a money pattern and a regulated-record pattern.
+3. **Read every flagged resource individually.** Nothing below is reported off the
+   screen alone.
+
+**AND THE FIRST VERSION OF THAT SCREEN WAS WRONG IN THE DIRECTION THAT MATTERS.**
+A plus/minus 4000-character window around each resource name flagged **62 of 69** —
+every `leg_*` row came back with the identical field set, because SAIRNlegacy's
+writers sit next to each other in one file. A screen that flags 90% of its
+population has found nothing. The window was replaced with a real extraction
+(nearest preceding assignment to the variable actually passed to the write call,
+brace-matched), which flags **10 of 47**. The 62-row version is recorded here
+because it is the shape a reader would otherwise have to take on trust.
+
+**A SECOND HEURISTIC IS STILL DECLARED AS A COULD-NOT-TELL.** For twelve SAIRNvet
+resources the `.push({…})` fallback returned demonstrably wrong objects —
+`sv_documents` came back with patient-chart fields, `sv_staff` with report fields.
+Those twelve were re-extracted from the precise `getItem` to `return st(...)`
+window instead, and the `.push` results discarded. No verdict below rests on them.
+
+### FALSE — by name
+
+#### 1. `mech_checks` (L491) — **FALSE on the money limb. This one changes a tier.**
+
+Current cell: `B` / `B`, *"Operational data lost or wrong: neither money nor a
+regulated record. Classified by the stated B rule rather than individually read."*
+
+**It is a cheque register.** `saveCheck()` at `sairnmechanical.html:1527` builds
+`{id, num, date, payee, amount, memo}` and `:1541` pushes it to `mech_checks`.
+
+**The app's own registry already says so and the register never read it:**
+`api/_resources/sairnmechanical.js:51-56` —
+*"THE CHECK REGISTER IS THE SHARP ONE. saveCheck() stores {num, date, payee, amount, memo} — a business's record of money it paid out … losing the register loses the audit trail for every cheque written."*
+
+**Deciding test, both ways.** FAILS the B rule: a field literally named `amount`
+holding the value of a cheque written, with `payee` naming who it was written to.
+Would PASS the B rule if the row carried only `{num, date}` and the amount lived on
+an invoice — the argument that correctly keeps `leg_keepsakeorders` at B.
+
+**Replacement cell text:**
+
+| `mech_checks` | **A** | **B** | **A cheque the business wrote is lost, or its amount or payee is wrong — and the cheque number is reused.** `saveCheck()` (`sairnmechanical.html:1527`) stores `{id, num, date, payee, amount, memo}`; `:1541` syncs it. This is the outbound-payment record, which the A rule's money limb covers directly. **THE NUMBER IS THE SECOND HALF:** `crNum` is incremented when the entry is built and put back only if the local write fails (`:1537`), and `mech_crnum` is a separate write that can fail on its own (`:1542`) — so a lost row or a lost counter is how two cheques come to share a number, which the app says in its own comment | A cheque's **payee and amount** — a named third party and what the business paid them. Commercially sensitive and third-party-identifying, but **not an elevated class**: no PHI, no privileged communication, and no bank-account or routing detail sits on this row. Held at **B** on the class, the same reading `invoices` and `grd_boq_rates` already carry | **RE-TIERED B → A on INTEGRITY, 2026-09-29 (hank). THE SIXTH ROW THIS ONE SENTENCE HAS BEEN FOUND FALSE ON.** Derived from the write shape at HEAD, not from this cell. **`mech_checks` IS DELIBERATELY EXCLUDED FROM THE `mech_docs` REDACTION MAP** (`api/sd-data.js:14323`) — *"and a register with the payee redacted is not a register"* — so the `payee` this cell denied the existence of was already named, in the same file, as a field that must NOT be removed. The integrity promotion is the money limb read plainly; the confidentiality axis stays B and is stated separately so it can be disagreed with on its own |
+
+#### 2. `dnt_vendor_contacts` (L318) — **FALSE on the "no PII" clause. Tier holds at B/B.**
+
+`vEditContact()` at `sairndental.html:6607` stores
+`contacts[vendor] = {rep_name, phone, email}` — a **named person's direct phone and
+email**, keyed by vendor.
+
+**The money clause is TRUE and must not be swept up with it:** the negotiated
+discounts live in a *different* resource, `dnt_vendor_pricing_rules`
+(`sairndental.html:6411`), which is what the file's own comment at `:6113` means by
+*"a negotiated vendor discount is money"*.
+
+**Deciding test, both ways.** FAILS "no PII": `rep_name` + `phone` + `email` is one
+identifiable individual. Held at **B** on the CLASS — business-side contact detail
+for a supplier's representative, the identical shape already correctly at B for
+`bld_suppliers`, `sf_vendors`, `leg_clergy` and (corrected 2026-09-24 for this exact
+reason) `sen_applicants`.
+
+**Replacement cell text:**
+
+| `dnt_vendor_contacts` | **B** | **B** | A vendor rep's contact detail is lost or wrong, and an order goes to the wrong person. Operational: **neither money nor a regulated record, and that clause is TRUE here** — the negotiated discounts are a separate resource (`dnt_vendor_pricing_rules`, `sairndental.html:6411`), checked rather than assumed | **A NAMED INDIVIDUAL's direct phone number and email address.** `vEditContact()` (`sairndental.html:6607`) stores `{rep_name, phone, email}` per vendor. **The "no PII" clause was false on its face and is corrected 2026-09-29 (hank).** Held at **B** on the CLASS, not on absence: business-side contact detail for a supplier's representative — the same shape already at B for `bld_suppliers`, `sf_vendors` and `sen_applicants` (itself corrected 2026-09-24 for the identical stale clause) | **BASIS CORRECTED 2026-09-29 (hank), TIER UNCHANGED, INDIVIDUALLY READ.** A single-object resource replaced wholesale on hydrate (`:6124`), which is why the unconfirmed-write hold at `:6119` exists. Both stale clauses named: the "no PII" claim and the "never individually read" claim |
+
+#### 3. `sv_staff` (L607) — **FALSE on the "no PII" clause. Tier holds at B/B.**
+
+`getStaff()` / `saveStaff()` at `sairnvet.html:7509` / `:7524` hold
+`{id, name, role, credential, nextShift}` — named veterinarians and technicians
+(`'Dr. Sarah Mitchell', role:'Owner/DVM', credential:'Current'`).
+
+**The regulated-record clause is TRUE:** `credential` holds a currency *flag*
+(`'Current'`), not a licence number, issuer or expiry. The app's regulated records
+live in `sv_compliance` — the same deciding test that settled `sv_wildliferehab`.
+
+**Deciding test, both ways.** FAILS "no PII": employee name + role. Held at **B** on
+the staff-side convention — employment identity, not client PHI, not money. Would go
+to A if `credential` ever held a licence number or an expiry the app computed a
+clearance from, which is what `mech_credentials` does one app over.
+
+**Replacement cell text:**
+
+| `sv_staff` | **B** | **B** | A staff roster row is lost or a shift is wrong. Operational: **neither money nor a regulated record, and both clauses are TRUE here** — `credential` holds a currency FLAG (`'Current'`), not a licence number, issuer or expiry, and nothing computes a clearance from it. The app's regulated obligations live in `sv_compliance`, which is the same deciding test that settled `sv_wildliferehab` | **A NAMED EMPLOYEE's identity and professional role** — `getStaff()` (`sairnvet.html:7509`) holds `{id, name, role, credential, nextShift}`, e.g. *Dr. Sarah Mitchell / Owner-DVM*. **The "no PII" clause was false and is corrected 2026-09-29 (hank).** Held at **B** on the staff-side convention: employment identity, the same class as `sen_` and `alf_` roster rows — not client PHI, not money | **BASIS CORRECTED 2026-09-29 (hank), TIER UNCHANGED, INDIVIDUALLY READ** from the write shape at HEAD. **WHAT WOULD MOVE IT:** if `credential` ever carried a licence number or an expiry the app gated dispatch on, this becomes `mech_credentials`' shape and takes A on the regulated limb. Stated so the next reader checks the field rather than the tier |
+
+### TRUE but stale in its own basis — one row
+
+#### `sv_herdhealth` (L587) — the sentence is TRUE; the "never individually read" clause is not.
+
+`getHerds()` / `saveHerds()` (`sairnvet.html:6326` / `:6340`) hold
+`{id, herd, species, headCount, lastVisit, status, vaccinationCompliance, scc}`.
+**All consumers enumerated:** `renderHerdHealth` (`:6344`), two further readers
+(`:6375`, `:6406`), the table at `:6395`, and one CSV export button (`:1180`).
+Nothing files, nothing computes against a permit or a reporting window.
+`vaccinationCompliance` is a percentage and is `null` in the seed. `herd` is a
+**business** name (*Miller Dairy Farm*), not a person.
+
+**Verdict: B/B stands on both axes.** The clause to strike is *"Classified by the
+stated B rule rather than individually read"* — it has now been read, and the
+deciding test is the app's own `sv_compliance` resource, exactly as for
+`sv_wildliferehab`.
+
+### `customers` (L535) — found by this sweep, not on the original list
+
+Not one of the eight named, and reported because the sweep turned it up:
+SAIRNscape's `customers` row is `B`/`B` with *"No elevated confidentiality class —
+no PII … Classified by the stated B rule rather than individually read"*, while
+`sairnscape.html` writes `{id, name, service, recurring, phone, email, address,
+notes}` — **a customer's name, phone, email AND street address.** Same false clause,
+same class-based B verdict as `dnt_vendor_contacts`. **Not written up as replacement
+text here**, because it is outside the eight and I will not extend a held file's
+diff by one more row than the item asked for; it belongs to whoever takes the next
+pass and is recorded above so it is not lost.
+
+### Clear — flagged by the screen, read, and the sentence holds
+
+`grd_boq_rates` (already A on money, 2026-09-22 — the sentence is quoted as the
+corrected wording), `sv_financials` (already A, 2026-09-28, same), `law_optx`,
+`law_pimedical`, `law_timeentries`, `bld_draws`, `bld_lien_waivers`,
+`leg_deathrecords` (all already A on the relevant axis), `dnt_supplies`
+(`unit_cost` is a purchase-price reference on a supply row, not a payment),
+`leg_keepsakeorders` (`quantity`, no price field — the charge is on the invoice),
+`leg_petcases` (basis already corrected 2026-09-29; the decedent is a pet),
+`sb_hire` (`rate` is a POSTED RANGE on a job advert, already public).
+
+---
+
+## 2b — the eight "no register row" resources. **Seven of the eight are not register rows at all, and one does not exist.**
+
+**THE ITEM ASKED FOR EIGHT ROWS AND I AM DELIVERING ONE PLUS FOUR ROUTED FINDINGS,
+so the disagreement is stated first rather than buried.** The register says what its
+unit is in its own header: *"**The unit is `api/_resources/<app>.js`** — the same
+unit the SOUP register and the traceability matrix already operate on, reused rather
+than invented."* Checked at HEAD: **none of the eight names appears in any app's
+`resources` array.** They are `localStorage` keys. Writing eight rows for them would
+silently redefine the register's unit to "any key the app writes" — which is the
+same class of mistake the header already records and corrected once (*"The first
+version tiered whole apps, and measuring it is what proved that wrong"*). A register
+whose unit moves without saying so stops being comparable across apps.
+
+So each is resolved to what it actually is, with the deciding test, and the ones that
+carry a real risk are routed to the place that already owns them.
+
+| named | what it actually is, at HEAD | deciding test | where it belongs |
+|---|---|---|---|
+| `scp_customers` | **A local storage key for an ALREADY-REGISTERED resource.** `sairnscape.html:2734` maps `['customers','scp_customers']` — the server resource is `customers`, which has a row at L535 | Is the name in `api/_resources/sairnscape.js`'s `resources` array? **No** — `'customers'` is | Nowhere new. **But L535's own "no PII" clause is FALSE** (name, phone, email, address) — see 2a |
+| `scp_invoices` | Same shape: `['invoices','scp_invoices']`, and `invoices` has a row at L536 (**A/B**, "Money") | Same test, same answer | Nowhere new. Already correctly A |
+| `sen_evv_config` | **A LEGACY KEY NOTHING WRITES ANY MORE.** Three occurrences in `sairnsenior.html`: a comment (`:1754`), the `SEN_UNSCOPED_CACHES` list (`:1761`), and a **one-way migration read** at `:5732` that lifts it into `sen_settings.evv_config` | `grep -n sen_evv_config sairnsenior.html` returns no `st(` or `setItem` — **no writer exists.** The live resource is `sen_settings`, whose registry comment at `api/_resources/sairnsenior.js:58` already says it *"holds 'agency_profile' and 'evv_config'"* | Nowhere new. **Finding (3) below:** `SEN_UNSCOPED_CACHES` declares a key nothing writes |
+| `sen_evv_queue` | **An offline outbox, not a record store.** `SEN_EVV_QUEUE_KEY` (`:3015`), capped at 200 (`:3017`), FIFO stop-on-first-failure flush (`senFlushEvvQueue`, `:3037`). Entries are `{queued_at, payload}` and are **deleted on successful send** | Does it hold anything after a successful sync? **No** — it is a transport buffer for `sen_visits`, which is registered | Nowhere new. It is upstream of a registered resource, not a resource |
+| `law_strike_log` | A local-only jury-strike log: `juryStrikeLog`/`juryStrikeSave` (`sairnlaw.html:7156`/`:7157`), three consumers, `{juror_id, reason, juror_statement, case_relevance, recorded_at, recorded_by}` | In `api/_resources/sairnlaw.js`? **No.** Nor in its `notSynced` list, which holds only `law_billingcodes` | **Finding (2) below.** Not a register row — a missing `notSynced` declaration, which `tools/local_only_collection_check.py` is the existing owner of |
+| `sd_owner_pin` | **A DEAD KEY. One occurrence in the entire repository** — inside `itaClearData`'s keep-list at `stonedesk.html:42280`. Nothing writes it, nothing reads it | `grep -rn "owner_pin\|ownerPin\|OWNER_PIN" --include=*.html --include=*.js --include=*.sql .` → **one hit, the keep-list itself** | **Finding (1) below.** A register row here would register a resource that does not exist |
+| `sf_district_keypair` | **An ECDSA P-256 PRIVATE key JWK in `localStorage`, in the clear.** `sfEnsureKeypair()` (`sairnfreedom.html:7215`) generates it with `extractable: true`, exports both JWKs and stores `{privateJwk, publicJwk, created}` at `:7224` | In the `resources` array? **No.** It is in `api/_resources/sairnfreedom.js`'s **declared exclusion block** (`:85-86`): *"SIGNING KEY MATERIAL. It must not leave the device, and a backup is the opposite of that"* | **Finding (4) below.** The exclusion is a real, reasoned declaration and `tests/sairnfreedom_key_reconciliation.js` already executes it. What is missing is a **criticality statement**, not a sync row |
+| `sf_known_keys` | **DOES NOT EXIST UNDER THAT NAME.** Zero occurrences repo-wide. The real key is **`sf_district_known_keys`** (`sairnfreedom.html:7163`, `K_KNOWNKEYS`) — the trust-on-first-use fingerprint map, also in the declared exclusion block | `grep -rn sf_known_keys .` → **nothing** | **The name is the finding.** Corrected here; nothing to write |
+
+### The four findings this resolves into
+
+**(1) `sd_owner_pin` is preserved by a demo wipe and written by nothing.** `itaClearData`
+(`stonedesk.html:42280`) deletes every `sd_`-prefixed key except
+`['sd_owner_pin','sd_license_key','sd_plan', ITA_USERS_KEY, ITA_AUDIT_KEY]`. Four of
+those five are live. `sd_owner_pin` is the fifth and has no writer and no reader
+anywhere in the repo. **Two readings and both need action:** either an owner-PIN
+feature was removed and its guard was not, in which case the keep-list is stale; or
+one was planned and the guard was written first, in which case the guard is a promise
+about a field that will be stored under a different name and will therefore be wiped.
+**Severity MODERATE**, not high — nothing is broken today, and that is exactly why it
+will still be there when it does matter. **Deciding test:** set
+`localStorage['sd_owner_pin']`, run `itaClearData()`, confirm it survives — it will,
+proving the guard works and protects nothing.
+
+**(2) `law_strike_log` is a local-only collection with no declaration.** Every
+`sairnlaw` key is meant to be in the `resources` array or in `notSynced`, which is
+what `tools/local_only_collection_check.py` reads and what
+`tests/sairnfreedom_key_reconciliation.js` does mechanically for SAIRNfreedom. This
+one is in neither, so *"a peremptory-strike record lives in one browser"* is currently
+**news rather than a decision** — the exact distinction `sairnmechanical.js` states
+above its own `notSynced` list (*"A declaration is NOT coverage … What it changes is
+whether that is news"*). **Severity MODERATE.** The record matters: a Batson challenge
+is answered from the contemporaneous reason recorded at the time of the strike, and one
+cache clear removes it. **Deciding test:** add `'law_strike_log'` to `notSynced` with
+its reason; `local_only_collection_check.py` should go from silent to accounted-for on
+that key.
+
+**(3) `SEN_UNSCOPED_CACHES` declares a key nothing writes.** `sen_evv_config` is in
+the unscoped list at `sairnsenior.html:1761` with a reason — *"editable offline —
+purging it on a shift change would throw away an unsynced settings edit"* — that is
+**no longer true**, because there is no writer: the settings edit now lands in
+`sen_settings`. The migration read at `:5732` is one-way. **Severity LOW**, and it is
+recorded because `tests/phi_cache_scoped_to_user.js` fails if a key is in *neither*
+list and passes if it is in *either* — so a dead key sitting in the unscoped list is
+invisible to the very test that governs the list. That is the item-8 shape (*nothing
+announces the day a check stops testing anything*) in a two-line list. **Deciding
+test:** the test should also require that every listed key has a writer; it would then
+fail on this one.
+
+**(4) `sf_district_keypair` — the criticality statement that is missing, written here.**
+Not as a register row, because it is not a register unit. As a paragraph for whoever
+next edits `docs/CRITICALITY-TIERS.md`, in the section on local-only keys:
+
+> **`sf_district_keypair` (SAIRNfreedom, local-only, NOT an `api/_resources` unit).**
+> Would be **A on confidentiality** if it were a register unit. `sfEnsureKeypair()`
+> (`sairnfreedom.html:7215`) generates an ECDSA P-256 key pair with
+> `generateKey(KEY_ALG, true, ['sign','verify'])` — `extractable: true` — exports
+> **both** JWKs and stores `{privateJwk, publicJwk, created}` in `localStorage` at
+> `:7224`. Any script running in that origin can read the private key and sign a
+> district report indistinguishable from a genuine one. **The mitigations are real and
+> bound the statement without defeating it:** it is deliberately excluded from backup
+> (`api/_resources/sairnfreedom.js:85`), the exclusion is executed rather than asserted
+> by `tests/sairnfreedom_key_reconciliation.js`, and import is verify-first with
+> trust-on-first-use fingerprinting that flags a changed key loudly. Those defend the
+> key against LEAVING the device. They do nothing about a reader ON it.
+> **`extractable: true` is the load-bearing choice** and it is forced by the design —
+> a non-extractable `CryptoKey` cannot be `JSON.stringify`d into `localStorage`, so
+> persisting the identity across reloads at all requires extractability. The honest
+> statement is therefore *"this is the cost of a device-local signing identity in a
+> browser"*, not *"this is a defect"* — and it should be written down as a cost rather
+> than left unstated, which is the only part that is wrong today.
+
+---
+
+## 2c — raw model output persisted with no redaction, in four more places. **Pasteable text for `fourth`.**
+
+`api/sd-data.js` is fourth's. **Nothing below is applied.**
+
+### The precedent is already in that file, which is what makes this a line rather than a design
+
+`api/sd-data.js:14288-14360` redacts model-extracted text **at the boundary**, driven
+by a map rather than a resource name, with the reason written out:
+
+> *"WHAT EARNS REDACTION IS PROVENANCE: text a model extracted from an IMAGE,
+> containing whatever was in the photograph, which no human chose to store. Adding a
+> third such field is now a line in this map."*
+
+All four resources below are that exact provenance, and none of them goes through it.
+`api/_lib/mech-redact.js` and the `mechRedact` require at `:83` already exist.
+
+### The four, with the field and the insertion point
+
+| resource | field(s) carrying model output over a photograph | written at | server write branch |
+|---|---|---|---|
+| `rf_photos` | `ai_analysis` (from `pendingAiRawText`) | `sairnroofing.html:5348` | `api/sd-data.js:7190` (`resource === 'rf_photos'`, read+write) |
+| `scp_progress_photos` | `ai_analysis` | `sairnscape.html:3425` | `api/sd-data.js:4987` (`scp_progress_photos` write) |
+| `grd_progress_photos` | `ai_analysis` | `sairngrounds.html:3490` | `api/sd-data.js:4106` (`grd_progress_photos` write) |
+| `bld_photo_analyses` | **`full` AND `summary`** — `summary` is `full.slice(0,140)`, so redacting only one leaves the identifiers in the other | `sairnbuild.html:3665` | `api/sd-data.js:12260` (the generic `BLD_RESOURCES[resource] && action === 'write'` branch) |
+
+### The change, in the same shape the file already uses
+
+Add one map beside the existing `MECH_SCANNED_TEXT`, near the top of the handler so
+all four branches can reach it:
+
+```js
+// ── MODEL OUTPUT OVER A PHOTOGRAPH, REDACTED AT THIS BOUNDARY ─────────────
+// Same rule and same reason as MECH_SCANNED_TEXT below: what earns redaction is
+// PROVENANCE -- text a model extracted from an IMAGE, containing whatever was in
+// the frame, which no human chose to store. Four resources, one list, so adding a
+// fifth is a line rather than a fifth copy of this comment.
+//
+// THE VALUE IS AN ARRAY, NOT A STRING, and bld_photo_analyses is why: fpSave()
+// (sairnbuild.html:3665) stores BOTH `full` and `summary`, where summary is
+// full.slice(0,140). Redacting one and not the other leaves the identifiers in
+// the first 140 characters -- which is the half the list view renders.
+const PHOTO_MODEL_TEXT = {
+  rf_photos:            ['ai_analysis'],
+  scp_progress_photos:  ['ai_analysis'],
+  grd_progress_photos:  ['ai_analysis'],
+  bld_photo_analyses:   ['full', 'summary']
+};
+function redactPhotoModelText(resource, payload) {
+  const fields = PHOTO_MODEL_TEXT[resource];
+  if (!fields || !payload) return payload;
+  let out = payload, applied = 0, complete = true, notes = [];
+  for (const f of fields) {
+    if (payload[f] === undefined || payload[f] === null) continue;
+    const red = mechRedact.redactDocumentText(payload[f]);
+    out = Object.assign({}, out, { [f]: red.text });
+    applied += red.redactions;
+    if (!red.complete) complete = false;
+    if (red.note && notes.indexOf(red.note) === -1) notes.push(red.note);
+  }
+  if (out === payload) return payload;
+  // Carried ON THE ROW, not just returned -- a row that looked redacted with no
+  // account of its limits is the false confidence this exists to avoid. Same
+  // decision, same wording, as the mech_docs block.
+  return Object.assign({}, out, {
+    redaction: {
+      applied_at: nowISO(),
+      redactions: applied,
+      complete: complete,
+      note: notes.join(' ')
+    }
+  });
+}
+```
+
+Then **one line** in each of the four write branches, immediately after the existing
+`payload.id` validation and **before** the `fetch(rest(...))` that sends it:
+
+```js
+      payload = redactPhotoModelText(resource, payload);
+```
+
+For the `BLD_RESOURCES` branch, `payload` is used twice in the body it sends
+(`[idCol]: String(payload.id)` and `data: payload`), so assigning back to `payload`
+covers both. In the three dedicated branches the same assignment is enough.
+
+### Three things this deliberately does NOT do, each with the reason
+
+* **It does not refuse the write.** A photo whose analysis still contains something
+  after the pass is stored, redacted as far as the pass can and with the residue named
+  on the row — because refusing loses the field worker's capture and teaches people to
+  stop photographing, and a feature nobody uses protects nothing. Verbatim the
+  argument already in the `mech_docs` block.
+* **It does not touch `photo_b64`.** The image itself is the record. Redacting the
+  photograph is the over-redaction failure the same block names — *"a different way to
+  lose the record"*.
+* **It does not redact the local copy.** The client-side redactor is a convenience and
+  never a boundary. This is the boundary, and it applies regardless of what the caller
+  sent, including a caller that is not the app.
+
+### What must be true before this lands, and it is not true yet
+
+**`api/_lib/mech-redact.js` was written for SCANNED WORK ORDERS, and three of these
+four are OUTDOOR SITE PHOTOS.** Its pattern set has not been re-qualified against a
+progress-photo analysis, and byte-identical is not safe-in-context. Before this lands,
+somebody should drive `redactDocumentText` over a real `ai_analysis` string from each
+of the four and confirm (a) it removes what it should and (b) it does **not** remove
+the quantities `parsed_quantities` is derived from in `rf_photos`, which would silently
+break the takeoff. **Stated as a precondition rather than done here**, because
+`api/sd-data.js` and its suite are fourth's and a fixture proving this is part of the
+same change.
