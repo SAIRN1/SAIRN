@@ -2735,6 +2735,24 @@
         "tools/push_retry.py",
         "tools/staged_credential_check.py"
       ]
+    },
+    {
+      "id": "fourth-1790699908",
+      "session": "fourth",
+      "subject": "tooling",
+      "task": "discharge cody's 76h leg_merch_units reservation-lock obligation by DRIVING tools/reservation_lock_invariants.js and its model against the real branch, not reading it; fix the mech-redact seven-digit phone and address over-match with tests first; add an evidence-before-prune rule to every tool and hook that prunes or expires reflogs, plus a sweep naming every hit; diagnose whether the two stale demo PINs are wrong in the licence or in the local file and print a restore block; diagnose the pair-count tripwire that has been red on main; the register re-seat livelock; a hook and tool rewrite map with a rebase convergence simulation; an expectedApp arm for newly gated resources; and a sweep of every known-bad control whose failure condition can be satisfied by comment or docstring text instead of behaviour. FILES: api/_lib/mech-redact.js api/_lib/mech-redact.test.js tools/credential_purge_check.py tools/push_retry.py tools/defect_register.py api/sd-data-session-gate.test.js",
+      "claimed_at": "2026-09-29T16:38:28Z",
+      "claimed_at_epoch": 1790699908.6912198,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/_lib/mech-redact.js",
+        "api/_lib/mech-redact.test.js",
+        "api/sd-data-session-gate.test.js",
+        "tools/credential_purge_check.py",
+        "tools/defect_register.py",
+        "tools/push_retry.py"
+      ]
     }
   ],
   "refusals": [
