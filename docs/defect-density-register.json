@@ -19421,6 +19421,63 @@
         }
       ],
       "recurrence_open": "Nothing checks any OTHER derived population in this repo for a filter that encodes a convention rather than the predicate. This was found by enumerating credential read sites for a rotation, not by a sweep. And tools/plugin_upgrade_check.py still carries a second copy of the credential-manager lookup that gh_token.py exists to centralise."
+    },
+    {
+      "commit": "b22500de4403",
+      "date": "2026-09-29",
+      "subject": "docs(claims): the matcher blocks on prose position, not ownership -- filed, unassigned",
+      "files": [
+        "docs/2026-09-29-claim-matcher-prose-collisions.md"
+      ],
+      "lines_added": 129,
+      "lines_removed": 0,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "sairn_claim.py reads a token inside a BLOCKER CLAUSE (waiting for X, when X frees, NOT TOUCHING X, X is hank's) as evidence of ownership, so the conflict declaration PR 4.3 requires makes the declaring session a blocker for everyone else",
+      "rules": [
+        "4.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "0a1eed7327c6",
+        "date": "2026-09-04",
+        "subject": "fix(claims): the matcher blocks on a phrase or a real name, never on one English word",
+        "lag_days": 25
+      },
+      "phase_note": "the bigram and identifier signals were introduced without any notion of the POSITION a token occupies, so a token inside a blocker clause has always contributed exactly as much as one inside an assertion of ownership",
+      "contributing_factors": [
+        {
+          "factor": "the matcher scores a token by presence, not by the grammatical position it occupies, so a sentence disclaiming a file scores identically to one claiming it",
+          "kind": "technical",
+          "action_status": "planned",
+          "action": "candidate written down and labelled a hypothesis: a token occurring ONLY inside a blocker clause contributes no identifier and no bigram, to be measured against the existing corpus in both directions before it goes near the matcher"
+        },
+        {
+          "factor": "PR 4.3 requires the declaration that triggers it, so the rule and the tool that enforces coordination pull in opposite directions",
+          "kind": "process",
+          "action_status": "not-actionable",
+          "note": "cannot be closed from this side -- either the rule stops requiring the declaration or the matcher stops reading it as a claim, and both are the owners call, not mine"
+        },
+        {
+          "factor": "nothing counts how often a check is refused on a phrase that names no file and no resource, so the rate is invisible and the evidence is anecdotes",
+          "kind": "detection",
+          "action_status": "declined",
+          "note": "a counter belongs in the tool, which I deliberately did not touch; adding instrumentation would be the same unilateral edit as the fix"
+        },
+        {
+          "factor": "the cheapest response to being blocked on prose is to stop declaring conflicts, which is the behaviour the rule exists to produce",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "cc independently reached the workaround of moving two undeclarable items into its claim files refusals block; two sessions arriving at the same workaround is the signal"
+        }
+      ],
+      "recurrence_open": "nothing is fixed. The matcher is unchanged, the two blocked items are still blocked, and no measurement of the misfire rate exists. This is the FOURTH text-reading gate this week to match documentation or disclosure as if it were code -- the SQL preflight, the Tier A gate on the word quotes, the fail-open scanner counting its own docstring, and now the claim matcher -- and nothing sweeps for the class across the gates that read prose"
     }
   ],
   "started": "2026-09-09",
