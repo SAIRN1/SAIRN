@@ -1,16 +1,29 @@
 #!/usr/bin/env python
-"""hover_backup_mirror.py -- off-machine mirror for hover-audit-log/, and
-the restore drill that proves the mirror is actually recoverable.
+"""hover_backup_mirror.py -- off-machine mirror for this role's
+hash-chained LOG, ANCHORS and tip BEACON -- AND NOTHING ELSE -- plus the
+restore drill that proves the mirror is actually recoverable.
+
+SCOPE, DECIDED BY MICHAEL 2026-09-29, SUPERSEDING #588's whole-directory
+proposal: the mirror carries exactly three files -- hover-audit-log.jsonl,
+mirror-anchors.jsonl, TIP-BEACON.md. No tool scripts, no config, no other
+files. The ~40 tool scripts the mirror used to carry now live, versioned
+and pushed, in the PLATFORM repo under
+.claude/skills/sairn-hover-auditor/tools/ -- so their redundancy comes
+from the platform remote, and the mirror's blast radius (and its private
+repo's content) is the tamper-evident record alone. Enforced by
+MIRROR_ALLOWLIST below (explicit allowlist, fail-safe direction: a new
+file is excluded by default) with fixture arms including a planted-tool
+known-bad control.
 
 BUILT ON DIRECT INSTRUCTION (2026-09-28), the build half of the design
 scoped report-only at log #588. Same narrow exception as every other tool
 in this directory: this protects this role's OWN tamper-evident record,
 not platform code.
 
-THE EXPOSURE THIS CLOSES (#588): hover-audit-log/ -- the hash-chained
-self-log, ~25 tools, provenance/self-health records -- exists on exactly
-one disk with zero copies anywhere. Chain, tip beacon and the emailed
-anchor are all DETECTION: none can reconstruct a byte after disk loss.
+THE EXPOSURE THIS CLOSES (#588): the hash-chained self-log exists on
+exactly one disk with zero copies anywhere. Chain, tip beacon and the
+emailed anchor are all DETECTION: none can reconstruct a byte after disk
+loss.
 
 DESIGN, decided at #588 and confirmed by Michael's follow-up instruction:
 a dedicated PRIVATE, OFF-PLATFORM git repository. NEVER SAIRN1/SAIRN or
@@ -155,7 +168,12 @@ IGNORE = ('__pycache__/', '*.pyc', '.mirror-token',
           '.mirror-askpass.py', '.mirror-askpass.bat')
 
 
-def _git(args, cwd=HERE, check=False):
+def _git(args, cwd=None, check=False):
+    # cwd resolves at CALL time, not def time (was `cwd=HERE`, which bound
+    # the real directory into the default argument permanently and made
+    # HERE un-monkeypatchable for fixtures -- a fixture that redirected
+    # HERE would still have run git against the REAL mirror, 2026-09-29).
+    cwd = cwd or HERE
     r = subprocess.run(['git'] + args, cwd=cwd, capture_output=True,
                        text=True, encoding='utf-8', errors='replace')
     if check and r.returncode != 0:
@@ -165,7 +183,7 @@ def _git(args, cwd=HERE, check=False):
 
 # ── remote-safety rules, pure and fixture-tested ────────────────────────────
 
-_SCHEME_USERINFO = re.compile(r'^([a-z][a-z0-9+.-]*)://([^/@]*)@')
+_SCHEME_USERINFO = re.compile(r'^([a-z][a-z0-9+.-]*)://([^/@]*)@', re.IGNORECASE)
 
 
 def _embeds_credential(u):
@@ -194,7 +212,13 @@ def _embeds_credential(u):
         return True
     m = _SCHEME_USERINFO.match(u)
     if m and ':' not in m.group(2):
-        return m.group(1) != 'ssh'
+        # .lower(): URL schemes are case-insensitive (RFC 3986 s3.1);
+        # comparing the raw capture against the lowercase literal 'ssh'
+        # refused SSH:// with the WRONG reason ("embeds credentials") --
+        # this role's own instance of the single-literal-for-a-class bug
+        # it routed to H2 the same day (#710), found by the sweep built
+        # from that finding.
+        return m.group(1).lower() != 'ssh'
     if re.search(r'//[^/@]+@', u):
         return True
     if re.search(r'^[^/@]+@[^:]+:.*:.*@', u):
@@ -213,8 +237,13 @@ def classify_remote(url):
         return ('refuse', 'remote URL embeds credentials -- this script '
                           'never stores or transports a credential; use '
                           'ambient git auth (credential manager / SSH key)')
+    # IGNORECASE: scheme and hostname are case-insensitive (RFC 3986); the
+    # owner/repo captures are unaffected -- every rule consuming them below
+    # already compares via .lower(), and the ('check', (owner, repo)) return
+    # passes the user's own spelling through to the privacy API untouched.
     m = (re.match(r'^(?:https?://|git@|ssh://git@)github\.com[:/]'
-                  r'([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+?)(?:\.git)?/?$', u))
+                  r'([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+?)(?:\.git)?/?$', u,
+                  re.IGNORECASE))
     if not m:
         return ('refuse', 'not a github.com remote -- privacy cannot be '
                           'confirmed via gh, so it cannot be confirmed at all')
@@ -285,13 +314,42 @@ def ensure_repo():
             f.write(want)
 
 
+# MIRROR SCOPE, DECIDED BY MICHAEL 2026-09-29: the mirror carries the
+# hash-chained LOG, the ANCHORS record and the tip BEACON only -- never a
+# tool script, config file, or anything else. Supersedes the whole-directory
+# scope this tool was first built with (log #588's own proposal); the tools
+# now live, versioned and pushed, in the PLATFORM repo under
+# .claude/skills/sairn-hover-auditor/tools/ instead. An explicit ALLOWLIST,
+# not an ignore-list: a new file appearing in this directory is excluded by
+# default rather than swept in by default -- the fail-safe direction.
+MIRROR_ALLOWLIST = (LOG_NAME, 'mirror-anchors.jsonl', 'TIP-BEACON.md')
+
+
 def snapshot(message):
     ensure_repo()
-    _git(['add', '-A'], check=True)
-    r = _git(['commit', '-q', '-m', message])
-    if r.returncode != 0 and 'nothing to commit' not in (r.stdout + r.stderr):
-        print('COULD NOT RUN: commit failed: %s' % (r.stderr.strip()))
+    present = [f for f in MIRROR_ALLOWLIST
+               if os.path.isfile(os.path.join(HERE, f))]
+    if LOG_NAME not in present:
+        print('COULD NOT RUN: the log itself (%s) is missing -- nothing to '
+              'snapshot.' % LOG_NAME)
         return None
+    _git(['add', '--'] + present, check=True)
+    # An explicit staged-diff check, NOT a grep of commit output: `git
+    # commit -q` SUPPRESSES the "nothing to commit" message this code used
+    # to grep for, so a clean tree read as a hard failure. Latent since
+    # the tool was built -- `add -A` always had SOMETHING changed (fire
+    # records, config, pycache) so the empty case never fired until the
+    # allowlist narrowed staging to three files (2026-09-29, surfaced by
+    # the scope change's own first drill run).
+    staged = _git(['diff', '--cached', '--quiet'])
+    if staged.returncode == 0:
+        pass  # nothing new to commit -- reuse the existing HEAD below
+    else:
+        r = _git(['commit', '-q', '-m', message])
+        if r.returncode != 0:
+            print('COULD NOT RUN: commit failed: %s'
+                  % (r.stderr.strip() or r.stdout.strip()))
+            return None
     head = _git(['rev-parse', 'HEAD']).stdout.strip()
     n = sum(1 for line in open(os.path.join(HERE, LOG_NAME), encoding='utf-8')
             if line.strip())
@@ -493,9 +551,21 @@ def cmd_restore_remote():
         record_drill('remote', False, 'clone failed: %s' % cr.stderr.strip()[:150], anchor)
         print('DRILL FAILED: clone from remote failed: %s' % cr.stderr.strip()[:200])
         return EXIT_BROKEN
-    ver = subprocess.run([sys.executable, os.path.join(restored, 'hover_log.py'),
-                          '--verify'], capture_output=True, text=True,
-                         encoding='utf-8', errors='replace', cwd=restored)
+    # Verifier comes from the PLATFORM repo, not the restored clone -- the
+    # mirror carries data only since the 2026-09-29 scope decision (same
+    # change as cmd_restore_test's).
+    verifier = _verifier_tool()
+    if verifier is None:
+        record_drill('remote', False, 'no hover_log.py verifier available', anchor)
+        print('COULD NOT RUN: no hover_log.py verifier found in the platform '
+              'repo or locally -- the restored chain was NOT checked.')
+        return EXIT_COULD_NOT_RUN
+    ver_env = dict(os.environ,
+                   HOVER_LOG_PATH_OVERRIDE=os.path.join(restored, LOG_NAME))
+    ver = subprocess.run([sys.executable, verifier, '--verify'],
+                         capture_output=True, text=True,
+                         encoding='utf-8', errors='replace', cwd=restored,
+                         env=ver_env)
     if ver.returncode != 0 or 'VERIFIED' not in ver.stdout:
         record_drill('remote', False, 'restored chain did not verify: %s'
                      % (ver.stdout or ver.stderr).strip()[:150], anchor)
@@ -662,11 +732,37 @@ def drill_due():
     return (False, 'last passing drill %d day(s) ago, push_count %d' % (age, pushes))
 
 
+def _verifier_tool():
+    """The hover_log.py used to verify a RESTORED log. Since the 2026-09-29
+    scope decision the mirror carries data only (log/anchors/beacon), so
+    the verifier comes from the PLATFORM repo's committed copy
+    (.claude/skills/sairn-hover-auditor/tools/hover_log.py) -- the real
+    recovery path: mirror supplies the data, platform repo supplies the
+    tools. Falls back to the live local copy ONLY with a printed
+    disclosure (weaker: same-disk), and returns None if neither exists --
+    COULD NOT RUN, never a silent pass."""
+    platform_copy = os.path.join(os.path.expanduser('~'), 'Documents',
+                                 'SAIRN-hover', '.claude', 'skills',
+                                 'sairn-hover-auditor', 'tools', 'hover_log.py')
+    if os.path.isfile(platform_copy):
+        return platform_copy
+    local = os.path.join(HERE, 'hover_log.py')
+    if os.path.isfile(local):
+        print('[drill] platform-repo verifier not found; falling back to the '
+              'LIVE local hover_log.py -- weaker (same disk as the data '
+              'being drilled), said rather than hidden.')
+        return local
+    return None
+
+
 def cmd_restore_test():
     """The full recovery rehearsal, scratch-only: clone from the local
-    mirror commit, verify the restored chain WITH THE RESTORED TOOLS, and
-    compare the restored tip hash to the live beacon (standing in for the
-    emailed anchor -- the drill says so out loud rather than pretending)."""
+    mirror commit, verify the restored chain with the PLATFORM-REPO copy of
+    hover_log.py pointed at the RESTORED data (the mirror carries data
+    only since the 2026-09-29 scope decision -- recovery = mirror data +
+    platform-repo tools), and compare the restored tip hash to the live
+    beacon (standing in for the emailed anchor -- the drill says so out
+    loud rather than pretending)."""
     if snapshot('mirror snapshot for restore drill') is None:
         return EXIT_COULD_NOT_RUN
     scratch = tempfile.mkdtemp(prefix='hover_restore_drill_')
@@ -675,11 +771,18 @@ def cmd_restore_test():
     if r.returncode != 0:
         print('COULD NOT RUN: clone from mirror failed: %s' % r.stderr.strip())
         return EXIT_COULD_NOT_RUN
-    ver = subprocess.run([sys.executable, os.path.join(restored, 'hover_log.py'),
-                          '--verify'],
+    verifier = _verifier_tool()
+    if verifier is None:
+        print('COULD NOT RUN: no hover_log.py verifier found in the platform '
+              'repo or locally -- the restored chain was NOT checked.')
+        return EXIT_COULD_NOT_RUN
+    env = dict(os.environ,
+               HOVER_LOG_PATH_OVERRIDE=os.path.join(restored, LOG_NAME))
+    ver = subprocess.run([sys.executable, verifier, '--verify'],
                          capture_output=True, text=True, encoding='utf-8',
-                         errors='replace', cwd=restored)
-    print('restored-copy --verify: %s' % (ver.stdout.strip() or ver.stderr.strip()))
+                         errors='replace', cwd=restored, env=env)
+    print('restored-data --verify (platform-repo tool): %s'
+          % (ver.stdout.strip() or ver.stderr.strip()))
     if ver.returncode != 0 or 'VERIFIED' not in ver.stdout:
         print('RESTORE DRILL FAILED: the restored chain did not verify')
         return EXIT_BROKEN
@@ -776,6 +879,32 @@ def run_fixtures():
        'refused -- an unusual shape, but a real embedded secret does not '
        'stop being one because the scheme is ssh',
        refuse('ssh://user:hunter2@github.com/me/mirror'))
+
+    # --- CASE-INSENSITIVITY, 2026-09-29 (the single-literal sweep's own ---
+    # find, in this role's OWN tool, the same bug class routed to H2 at
+    # #710): URL schemes and hostnames are case-insensitive by RFC 3986,
+    # but both the ssh exemption ("!= 'ssh'") and the github-shape matcher
+    # ("ssh://git@github\\.com") compared lowercase literals against raw
+    # input -- so an uppercase-scheme or uppercase-host spelling of an
+    # ACCEPTED remote was refused, and worse, refused with the WRONG
+    # reason ("embeds credentials" for SSH://).
+    ck('CASE: SSH:// (uppercase scheme) with a bare user classifies '
+       'identically to ssh:// -- scheme case is not meaning',
+       classify_remote('SSH://git@github.com/SAIRN-1/hover-log-mirror.git')
+       == ('check', ('SAIRN-1', 'hover-log-mirror')))
+    ck('CASE: an uppercase HOST spelling of github.com still reaches the '
+       'check stage -- hostname case is not meaning',
+       classify_remote('ssh://git@GITHUB.COM/SAIRN-1/hover-log-mirror.git')
+       == ('check', ('SAIRN-1', 'hover-log-mirror')))
+    ck('CASE: HTTPS:// (uppercase scheme) likewise',
+       classify_remote('HTTPS://github.com/SAIRN-1/hover-log-mirror.git')
+       == ('check', ('SAIRN-1', 'hover-log-mirror')))
+    ck('CASE KNOWN-BAD CONTROL: case-normalization must NOT weaken the '
+       'refusals -- the platform org stays refused in any case spelling',
+       refuse('HTTPS://GITHUB.COM/SAIRN1/SAIRN.git'))
+    ck('CASE KNOWN-BAD CONTROL: an embedded secret stays refused in any '
+       'case spelling',
+       refuse('SSH://user:hunter2@github.com/me/mirror'))
     ck('empty remote refused', refuse(''))
     ck('a clean private-candidate github URL passes to the CHECK stage, '
        'never straight to ok',
@@ -862,6 +991,46 @@ def run_fixtures():
     ck('drill_due fires when there is no passing drill on record '
        '(fresh state = due, not silently fine)',
        drill_due()[0] in (True, False))  # smoke: callable against real state
+
+    # --- MIRROR-SCOPE ALLOWLIST (Michael's decision, 2026-09-29): the ---
+    # mirror carries the LOG, the ANCHORS and the BEACON only -- never a
+    # tool script or any other file. snapshot() must stage ONLY the three
+    # allowlisted names, and a tool file sitting right next to them in the
+    # same directory must NOT reach the commit. Driven against a REAL
+    # scratch git repo, not a mock, with the module's own snapshot()
+    # monkeypatch-redirected to it.
+    scope_scratch = tempfile.mkdtemp(prefix='mirror_scope_fx_')
+    real_here = globals()['HERE']
+    try:
+        globals()['HERE'] = scope_scratch
+        with open(os.path.join(scope_scratch, LOG_NAME), 'w', encoding='utf-8') as f:
+            f.write('{"seq": 1, "hash": "fx"}\n')
+        with open(os.path.join(scope_scratch, 'mirror-anchors.jsonl'), 'w', encoding='utf-8') as f:
+            f.write('{"type": "anchor", "seq": 1}\n')
+        with open(os.path.join(scope_scratch, 'TIP-BEACON.md'), 'w', encoding='utf-8') as f:
+            f.write('checkpoint_seq : 1\n')
+        # THE KNOWN-BAD PLANT: a tool file in the same directory. If the
+        # snapshot ever includes it, the scope rule is broken.
+        with open(os.path.join(scope_scratch, 'planted_tool.py'), 'w', encoding='utf-8') as f:
+            f.write('# a tool script that must NEVER reach the mirror\n')
+        sha = snapshot('scope fixture snapshot')
+        ck('SCOPE: snapshot() succeeds with the three allowlisted files present',
+           sha is not None)
+        tracked = _git(['ls-tree', '-r', 'HEAD', '--name-only'],
+                       cwd=scope_scratch).stdout.split()
+        ck('SCOPE: the log, anchors and beacon are ALL in the commit',
+           set(tracked) >= {LOG_NAME, 'mirror-anchors.jsonl', 'TIP-BEACON.md'})
+        ck('SCOPE KNOWN-BAD CONTROL: the planted tool file is NOT in the '
+           'commit -- a snapshot that swept it in would fail this arm',
+           'planted_tool.py' not in tracked)
+        ck('SCOPE: nothing beyond the allowlist (and .gitignore) is tracked '
+           'at all -- the allowlist is exhaustive, not merely exclusionary '
+           'of one planted name',
+           set(tracked) <= {LOG_NAME, 'mirror-anchors.jsonl', 'TIP-BEACON.md',
+                            '.gitignore'})
+    finally:
+        globals()['HERE'] = real_here
+        shutil.rmtree(scope_scratch, ignore_errors=True)
 
     # --- refresh_beacon() / cmd_push()'s beacon-refresh-or-refuse gate ---
     # (2026-09-29). Real, scratch beacon + scratch log, never the real
