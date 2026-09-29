@@ -19453,6 +19453,62 @@
       "recurrence_open": "Six role refusals remain unreachable by --ablate, the only sound measurement in that file: five compound conditions and one with its body on a single line. TWO OF THEM are their resource's ONLY gate -- alf_incidents and alf_op_audits have zero ablatable blocks, so the instrument answers COULD NOT TELL for those resources entirely, and both also sit in the not-driven bucket. Nothing measures whether a resource's gates are individually covered; the bucket counts remain per-resource."
     },
     {
+      "commit": "2b39b9e245e6",
+      "date": "2026-09-29",
+      "subject": "fix(sairncare): a prior invoice whose blob is NULL was reconciled against nothing -- the same false figure, through a third door",
+      "files": [
+        "api/sd-data-derive-charges.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 393,
+      "lines_removed": 3,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "alf_billing derive_charges: a prior-invoice row that EXISTS with a null data blob made priorRow null, so the 2026-09-27 no-charge_lines guard was skipped entirely, the else branch reconciled against [] and the response reported EVERY derived charge as newly added with net_change equal to the whole invoice, beside invoice_exists true. That is the identical false reading the 2026-09-27 comment in that branch describes and claims to have closed -- the third door into one defect in one function, after the unreadable read (2026-09-04) and the absent charge_lines key (2026-09-27).",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "2b39b9e245e6",
+        "date": "2026-09-29",
+        "subject": "fix(sairncare): a prior invoice whose blob is NULL was reconciled against nothing -- the same false figure, through a third door",
+        "lag_days": 0
+      },
+      "citation_note": "The nearest standing rule is PR 1.11 fail-closed-on-absent-dependency, which is about a tool that cannot run; this is a data state folded into a different data state, so the shape is adjacent but not the same rule.",
+      "contributing_factors": [
+        {
+          "factor": "The guard was written as if (priorRow && ...) so it was reachable only when the blob was truthy; a null blob is unreadable data and was being treated as absent data",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The three states are decided on ROW EXISTENCE first and the blob second, and a row present with an unreadable blob now refuses to reconcile with its own code PRIOR_INVOICE_BLOB_UNREADABLE, distinct from PRIOR_INVOICE_HAS_NO_CHARGE_LINES."
+        },
+        {
+          "factor": "Two earlier fixes to this same branch each closed one branch of a three-way distinction nobody had enumerated, and each left a comment reading as if the class were closed",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The new comment enumerates all three states by name and says which earlier fix covered which, so the next reader sees a closed set rather than two anecdotes."
+        },
+        {
+          "factor": "No suite drove derive_charges at all -- the reconciliation path had never been exercised by a test in either direction",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/sd-data-derive-charges.test.js, 10 arms: the null blob, the string blob, the null-vs-empty code distinction, the three must-not-change cases, and a KNOWN-BAD control that replays the pre-fix expression verbatim on the same fixture and shows it produces net_change equal to the whole invoice."
+        },
+        {
+          "factor": "A stored JSONB blob can be null and nothing in the schema or the write path prevents it, so every read in this file that does rows[0] && rows[0].data or a default carries the same latent shape",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Sweep api/sd-data.js for reads that decide a downstream branch on the truthiness of a blob rather than on row existence. NOT DONE in this change -- it is a different scope and would be the widening this platform refuses."
+        }
+      ],
+      "recurrence_open": "The sweep named in factor 4 is not run. Every other read in this file that decides on blob truthiness instead of row existence still has the same shape, and only this one branch was fixed."
+    },
+    {
       "commit": "2c5c621d544c",
       "date": "2026-09-29",
       "subject": "fix(tools): the cross-tenant stripper is string-aware, and its two derivations are independent again -- the cross-check found two bugs in one session",
@@ -19555,60 +19611,6 @@
       "recurrence_open": "Nothing distinguishes an exact displayed quantity from an estimated one anywhere on the platform. This card is now marked; every other computed KPI is unexamined on that axis. The narrower half is closed -- an invented denominator is gone and a quota search is recorded against the file -- but the same `.length * 2` byte estimate appears in other apps' storage displays and none of them is marked."
     },
     {
-      "commit": "44e5ab7ee7c3",
-      "date": "2026-09-29",
-      "subject": "fix(control): the reseat arm pinned the report's PROSE, not the ledger",
-      "files": [
-        "tests/run_tier_a_reseat_probe.py"
-      ],
-      "lines_added": 19,
-      "lines_removed": 2,
-      "app": "tooling",
-      "layer": "test",
-      "severity": "low",
-      "detection_method": "probe-control",
-      "summary": "tests/run_tier_a_reseat_probe.py asserted that the real dry run printed the string 'DRY RUN' or 'Nothing to reseat'. The tool has a THIRD message -- printed when there are refusals but nothing reseatable -- which is more informative and matches neither, so the arm failed on a correct tool. The obvious repair would have been to WEAKEN the message so the string reappeared, which punishes a report for explaining itself better. It now reads the ledger before and after a no---write run and requires byte-identical.",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": "tests/run_tier_a_reseat_probe.py",
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The arm was written with the wording assertion in the same commit that added --reseat-shas, so there is no commit where it asserted the behaviour and then stopped."
-      },
-      "citation_note": "1.1's shape applied to a control's own assertion: the arm stopped testing the property the moment the report gained a third message, and a green run and a wording-pinned run look identical until the wording moves.",
-      "contributing_factors": [
-        {
-          "factor": "The assertion was aimed at the report's PROSE rather than at the behaviour. It searched the output for 'DRY RUN' or 'Nothing to reseat', which are two of three possible messages -- the third, printed when there are refusals but nothing reseatable, is a BETTER message and matches neither.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The arm now reads docs/tier-a-reviews.json before and after a no---write run and requires byte-identical. That is the property; the wording is not."
-        },
-        {
-          "factor": "The obvious repair for a wording-pinned arm is to WEAKEN THE MESSAGE so the string reappears. A control that punishes a report for explaining itself better pushes the subject in the wrong direction.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Recorded in the arm's own comment as the third instance this session, so the next reader sees the pattern rather than the instance."
-        },
-        {
-          "factor": "Three separate arms this session asserted on text instead of behaviour: this one, one forbidding a tool from NAMING the register it deliberately does not use, and one searching for a phrase that is an argument list in source. Nothing flags an assertion whose subject is a string the subject controls.",
-          "kind": "detection",
-          "action_status": "planned",
-          "action": "Candidate: flag an assert whose expected value is a literal that also appears in the subject's own output-formatting code. Not built -- it needs a way to tell a contract string from an incidental one, and a bad version would fire on every message assertion."
-        },
-        {
-          "factor": "A report-only tool's output is prose by design, because a human is the consumer. Anything asserting on that prose inherits its instability, and the alternative -- asserting on state -- is only available when the tool has observable state to assert on.",
-          "kind": "latent-condition",
-          "action_status": "not-actionable",
-          "note": "Here the ledger file was available. For a tool whose only output IS the report, a wording assertion may be the only option; the answer then is to assert on a SHORT invariant substring rather than on a whole sentence."
-        }
-      ],
-      "recurrence_open": "Nothing flags an assertion whose expected value is a string the subject itself formats. THREE arms this session asserted on text rather than behaviour and all three were caught by running them, not by review."
-    },
-    {
       "commit": "41c0cf783851",
       "date": "2026-09-29",
       "subject": "fix(sairncare): the consent date recorded the last edit, not the consent",
@@ -19665,6 +19667,60 @@
         }
       ],
       "recurrence_open": "the FIX is not live-verified yet. And the data question is open and not answerable from the rows: any alf_family_contacts row edited after consent was granted carries a consent_granted_at that may be the date of that edit, with nothing distinguishing it from a real grant date. No backfill is possible."
+    },
+    {
+      "commit": "44e5ab7ee7c3",
+      "date": "2026-09-29",
+      "subject": "fix(control): the reseat arm pinned the report's PROSE, not the ledger",
+      "files": [
+        "tests/run_tier_a_reseat_probe.py"
+      ],
+      "lines_added": 19,
+      "lines_removed": 2,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "probe-control",
+      "summary": "tests/run_tier_a_reseat_probe.py asserted that the real dry run printed the string 'DRY RUN' or 'Nothing to reseat'. The tool has a THIRD message -- printed when there are refusals but nothing reseatable -- which is more informative and matches neither, so the arm failed on a correct tool. The obvious repair would have been to WEAKEN the message so the string reappeared, which punishes a report for explaining itself better. It now reads the ledger before and after a no---write run and requires byte-identical.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tests/run_tier_a_reseat_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The arm was written with the wording assertion in the same commit that added --reseat-shas, so there is no commit where it asserted the behaviour and then stopped."
+      },
+      "citation_note": "1.1's shape applied to a control's own assertion: the arm stopped testing the property the moment the report gained a third message, and a green run and a wording-pinned run look identical until the wording moves.",
+      "contributing_factors": [
+        {
+          "factor": "The assertion was aimed at the report's PROSE rather than at the behaviour. It searched the output for 'DRY RUN' or 'Nothing to reseat', which are two of three possible messages -- the third, printed when there are refusals but nothing reseatable, is a BETTER message and matches neither.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The arm now reads docs/tier-a-reviews.json before and after a no---write run and requires byte-identical. That is the property; the wording is not."
+        },
+        {
+          "factor": "The obvious repair for a wording-pinned arm is to WEAKEN THE MESSAGE so the string reappears. A control that punishes a report for explaining itself better pushes the subject in the wrong direction.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Recorded in the arm's own comment as the third instance this session, so the next reader sees the pattern rather than the instance."
+        },
+        {
+          "factor": "Three separate arms this session asserted on text instead of behaviour: this one, one forbidding a tool from NAMING the register it deliberately does not use, and one searching for a phrase that is an argument list in source. Nothing flags an assertion whose subject is a string the subject controls.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "Candidate: flag an assert whose expected value is a literal that also appears in the subject's own output-formatting code. Not built -- it needs a way to tell a contract string from an incidental one, and a bad version would fire on every message assertion."
+        },
+        {
+          "factor": "A report-only tool's output is prose by design, because a human is the consumer. Anything asserting on that prose inherits its instability, and the alternative -- asserting on state -- is only available when the tool has observable state to assert on.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "Here the ledger file was available. For a tool whose only output IS the report, a wording assertion may be the only option; the answer then is to assert on a SHORT invariant substring rather than on a whole sentence."
+        }
+      ],
+      "recurrence_open": "Nothing flags an assertion whose expected value is a string the subject itself formats. THREE arms this session asserted on text rather than behaviour and all three were caught by running them, not by review."
     },
     {
       "commit": "49f7ae011063",
