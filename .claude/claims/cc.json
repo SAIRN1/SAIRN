@@ -3007,6 +3007,19 @@
         "api/sd-data-mech-session-gate.test.js",
         "api/sd-data.js"
       ]
+    },
+    {
+      "id": "cc-1790726010",
+      "session": "cc",
+      "subject": "branches",
+      "task": "delete the regfresh branches already proven contained in main, local and remote, after recording every tip. SUBJECT NAMED PER PR 4.3 FILES: docs/2026-09-29-stale-branch-tips.md",
+      "claimed_at": "2026-09-29T23:53:30Z",
+      "claimed_at_epoch": 1790726010.4301531,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/2026-09-29-stale-branch-tips.md"
+      ]
     }
   ],
   "refusals": [
