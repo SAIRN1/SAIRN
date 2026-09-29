@@ -961,6 +961,9 @@ PURPOSES = {
     # corrected count goes stale again on the next check.
     'sairn_push_gate_hook.py': ('CHECKER', 'the numbered push checks; the only tool that calls deny()'),
     'git_push_master_guard.py': ('CHECKER', 'a push aimed at `master`, which is stale'),
+    'pattern_enumeration_sweep.py': ('CHECKER', 'a population decided by a NAME '
+                                     'with no second, independent derivation of '
+                                     'membership behind it'),
     'hook_integrity_check.py': ('CHECKER', 'an enforcement hook, a tool it '
                                'invokes, the settings wiring or core.hooksPath '
                                'drifting from the committed manifest'),
