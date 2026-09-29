@@ -304,6 +304,36 @@ def confirm_private(owner, repo):
 
 def ensure_repo():
     if not os.path.isdir(os.path.join(HERE, '.git')):
+        # FOREIGN-WORKTREE GUARD (2026-09-29): refuse to init when HERE sits
+        # inside SOMEBODY ELSE'S git worktree. Paid for live: --selftest run
+        # from the platform-repo COPY of this tool git-inited a nested repo
+        # inside the platform tree. A copy in the wrong place must fail
+        # loudly, never contaminate its surroundings. A standalone directory
+        # (no surrounding repo -- the real mirror home's own fresh state,
+        # and every scratch fixture) still initializes normally.
+        probe = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
+                               cwd=HERE, capture_output=True, text=True,
+                               encoding='utf-8', errors='replace')
+        if probe.returncode == 0:
+            top = os.path.normcase(os.path.abspath(probe.stdout.strip()))
+            here_n = os.path.normcase(os.path.abspath(HERE))
+            # EXEMPTION, MEASURED NOT ASSUMED: a stray, commitless git repo
+            # sits at the HOME DIRECTORY itself on this machine (remote
+            # sairn-tech/sairn-skills, zero commits on main) -- discovered
+            # by this guard's own control fixture, since EVERYTHING under
+            # C:\Users\marsh is technically "inside" it, including the real
+            # mirror home and every temp fixture. That enclosure is inert
+            # (no commits, nothing staged by an init inside it) and
+            # exempting it is what keeps this guard meaningful for the
+            # enclosures that matter: the SAIRN platform clones.
+            home_n = os.path.normcase(os.path.abspath(os.path.expanduser('~')))
+            if top != here_n and top != home_n:
+                raise RuntimeError(
+                    'REFUSED: %s sits inside another repository (%s) -- '
+                    'initializing a nested mirror repo here would contaminate '
+                    'that worktree. This is almost certainly a COPY of the '
+                    'tool run from the wrong directory; the real mirror home '
+                    'is its own repository root.' % (HERE, probe.stdout.strip()))
         _git(['init', '-q'], check=True)
         _git(['config', 'user.email', 'hover-auditor@localhost'], check=True)
         _git(['config', 'user.name', 'hover-auditor-mirror'], check=True)
@@ -991,6 +1021,42 @@ def run_fixtures():
     ck('drill_due fires when there is no passing drill on record '
        '(fresh state = due, not silently fine)',
        drill_due()[0] in (True, False))  # smoke: callable against real state
+
+    # --- FOREIGN-WORKTREE GUARD (2026-09-29, the stale-path sweep's own ---
+    # find, paid for live): running --selftest from the PLATFORM-REPO copy
+    # of this tool git-inited a nested repository inside the platform
+    # worktree (.claude/skills/sairn-hover-auditor/tools/.git) --
+    # ensure_repo() initialized wherever HERE was, unconditionally. A copy
+    # of this tool must FAIL LOUDLY from the wrong directory, never
+    # contaminate it.
+    fw_scratch = tempfile.mkdtemp(prefix='mirror_fw_fx_')
+    fw_real_here = globals()['HERE']
+    try:
+        outer = os.path.join(fw_scratch, 'outer')
+        inner = os.path.join(outer, 'sub', 'tools')
+        os.makedirs(inner)
+        subprocess.run(['git', 'init', '-q', outer], check=True)
+        globals()['HERE'] = inner
+        try:
+            ensure_repo()
+            fw_refused = False
+        except RuntimeError as e:
+            fw_refused = 'inside another repository' in str(e)
+        ck('KNOWN-BAD CONTROL: ensure_repo() inside a FOREIGN git worktree '
+           'REFUSES loudly instead of git-initing a nested repo there',
+           fw_refused)
+        ck('...and it created no nested .git in the foreign tree',
+           not os.path.isdir(os.path.join(inner, '.git')))
+        standalone = os.path.join(fw_scratch, 'standalone')
+        os.makedirs(standalone)
+        globals()['HERE'] = standalone
+        ensure_repo()
+        ck('CONTROL: a standalone directory (no surrounding repo) still '
+           'initializes normally -- the guard blocks only foreign worktrees',
+           os.path.isdir(os.path.join(standalone, '.git')))
+    finally:
+        globals()['HERE'] = fw_real_here
+        shutil.rmtree(fw_scratch, ignore_errors=True)
 
     # --- MIRROR-SCOPE ALLOWLIST (Michael's decision, 2026-09-29): the ---
     # mirror carries the LOG, the ANCHORS and the BEACON only -- never a
