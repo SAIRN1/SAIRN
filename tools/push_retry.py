@@ -411,8 +411,17 @@ def cmd_loop(attempts):
                         if d in um:
                             print('    git checkout --ours -- %s && python %s'
                                   % (d, g), file=sys.stderr)
-                    print('  then: git add -A && git rebase --continue',
+                    # BY NAME, NOT `git add -A`. This tool refuses to run a
+                    # loop that stages everything and then printed an
+                    # instruction to do exactly that -- to a human, mid-rebase,
+                    # which is the one moment the tree holds things nobody
+                    # meant to commit.
+                    print('  then, staging ONLY those documents by name:',
                           file=sys.stderr)
+                    print('    git add -- %s'
+                          % ' '.join(d for d, _ in GENERATED if d in um),
+                          file=sys.stderr)
+                    print('    git rebase --continue', file=sys.stderr)
                 else:
                     print('  At least one conflict is NOT a generated '
                           'document. That is a human read, not a loop.',
@@ -431,7 +440,43 @@ def cmd_loop(attempts):
                     for r in reasons:
                         print('  - %s' % r, file=sys.stderr)
                     return 3
-                git('add', '-A')
+                # ── THE ALLOWLIST, BECAUSE THIS LINE WAS `git add -A` ────────
+                # This tool exists to replace the hand-written loop whose own
+                # header, forty lines up, records `git add -A` staging conflict
+                # markers on a conflicted tree. It then did the same thing here.
+                # The regenerate step has NO business staging anything except
+                # the documents it just regenerated, and it already knows their
+                # names: GENERATED is right there.
+                #
+                # `git add -A` at this moment folds whatever happens to be in
+                # the tree into somebody's amended commit. On 2026-09-28 that
+                # shape swept a GitHub PAT into a commit in this repo; the push
+                # gate caught it, which is luck rather than design. Conflict
+                # markers twice and a credential once, all from the same
+                # one-liner.
+                #
+                # ANYTHING ELSE IS NAMED AND NOT STAGED, rather than refused.
+                # A refusal here strands a push mid-rebase, and the whole point
+                # of an allowlist is that the unexpected file simply does not
+                # get committed -- saying nothing about it is the part that
+                # would make this a silent narrowing.
+                for _doc, _gen in GENERATED:
+                    git('add', '--', _doc)
+                rc3, porc3, _ = git('status', '--porcelain')
+                _left = [ln for ln in (porc3 or '').split('\n')
+                         if ln.strip() and ln[:2] != '  '
+                         and not any(ln.endswith(_d) for _d, _g in GENERATED)]
+                # Only report paths that are still UNSTAGED or UNTRACKED. A file
+                # already in the index is the caller's deliberate act -- often
+                # tools/sairn_rebase_resolve.py's merged ledger -- and belongs in
+                # the commit being amended.
+                _unstaged = [ln for ln in _left
+                             if ln[1:2] in ('M', 'D', '?') or ln[:2] == '??']
+                if _unstaged:
+                    print('  NOT STAGED by the regenerate step -- this step '
+                          'stages only the documents it regenerates:')
+                    for ln in _unstaged:
+                        print('    %s' % ln)
                 arc, _, aerr = git('commit', '--amend', '--no-edit')
                 if arc != 0:
                     print('amend failed: %s' % aerr, file=sys.stderr)
