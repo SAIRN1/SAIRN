@@ -112,14 +112,94 @@ GRANDFATHERED = {
 }
 
 
+def strip_sql_comments(src):
+    """Blank -- line comments and /* */ blocks, PRESERVING LENGTH and newlines.
+
+    Quote-aware in a single left-to-right pass, because a `--` INSIDE a string
+    literal is not a comment. sql/sairn_circuit_breaker_schema.sql:54 is a
+    literal beginning with `--`, and a four-regex stripper once blanked ~140
+    lines after it -- including a `create or replace function` -- while
+    reporting clean.
+    """
+    out, i, n = [], 0, len(src)
+    quote = None
+    SP, NL = " ", chr(10)
+    while i < n:
+        c = src[i]
+        if quote:
+            if c == quote:
+                if quote == "'" and i + 1 < n and src[i + 1] == "'":
+                    out.append(src[i:i + 2]); i += 2; continue
+                quote = None
+            out.append(c); i += 1; continue
+        if c in ("'", '"'):
+            quote = c; out.append(c); i += 1; continue
+        if c == "-" and i + 1 < n and src[i + 1] == "-":
+            j = src.find(NL, i)
+            end = n if j < 0 else j
+            out.append(SP * (end - i)); i = end; continue
+        if c == "/" and i + 1 < n and src[i + 1] == "*":
+            j = src.find("*/", i + 2)
+            end = n if j < 0 else j + 2
+            out.append("".join(ch if ch == NL else SP for ch in src[i:end]))
+            i = end; continue
+        out.append(c); i += 1
+    return "".join(out)
+
+
+def guard_blocks(code):
+    """Every `do $$ ... $$;` block in comment-stripped SQL, as text."""
+    out, i = [], 0
+    while True:
+        a = code.lower().find("do $$", i)
+        if a < 0:
+            return out
+        b = code.find("$$", a + 5)
+        if b < 0:
+            return out
+        out.append(code[a:b + 2])
+        i = b + 2
+
+
 def classify(path):
+    """Is this a credential writer, and is its guard REAL?
+
+    ── WHY THIS IS NOT A SUBSTRING TEST ANY MORE (2026-09-29) ────────────────
+    `guarded` was `MARKER in src`: the sentence "ZERO active provisioners"
+    ANYWHERE in the file, including in a comment explaining what a guard is for.
+    A file carrying that sentence in prose and no `do $$` block at all passed.
+    It also failed the other way -- a real guard whose message WRAPPED between
+    "active" and "provisioners" was invisible, which is how this tool refused a
+    correct file on 2026-09-29.
+    THREE CONDITIONS NOW, and all three are about structure rather than words:
+      * the marker appears in CODE, not in a comment;
+      * it is inside an actual `do $$ ... $$;` block, so a sentence is not a guard;
+      * that block sits inside the SAME transaction as the write -- a guard
+        after `commit;` reports a problem it has already allowed.
+    """
     src = io.open(path, encoding="utf-8", newline="").read()
     if not WRITE_RE.search(src):
         return None
+    code = strip_sql_comments(src)
+    blocks = [b for b in guard_blocks(code) if MARKER in b]
+    txn = bool(COMMIT_RE.search(code))
+    # IN THE SAME TRANSACTION AS THE WRITE. The write must come after a `begin;`
+    # and the guard must come before the `commit;` that closes it. Measured by
+    # position rather than asserted, and only when a transaction exists at all.
+    in_txn = False
+    if blocks and txn:
+        wm = WRITE_RE.search(code)
+        bg = re.search(r"^\s*begin\s*;", code, re.I | re.M)
+        cm = COMMIT_RE.search(code)
+        gpos = code.find(blocks[0])
+        if bg and cm and wm:
+            in_txn = (bg.start() < wm.start() < cm.start()
+                      and bg.start() < gpos < cm.start())
     return {
         "name": os.path.basename(path),
-        "guarded": MARKER in src,
-        "txn": bool(COMMIT_RE.search(src)),
+        "guarded": bool(blocks) and in_txn,
+        "txn": txn,
+        "marker_in_prose_only": (MARKER in src) and not blocks,
     }
 
 
