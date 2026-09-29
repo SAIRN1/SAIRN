@@ -38,7 +38,7 @@ Every column names the tool that produced it. `res` = resources owned in `api/_r
 | `sairndental-book` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 | `sairndental-complaint` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 | `sairndesign` | 18 | ✅ | 1 | 1 | 1 | — |
-| `sairnfreedom` | 36 | ⚠ | 6 | 4 | 2 | **tier: NO TIER      sairnfreedom/sf_trustee_audits is registered and has no row.** |
+| `sairnfreedom` | 36 | ✅ | 6 | 4 | 2 | — |
 | `sairngrounds` | 30 | ✅ | 2 | 2 | 2 | — |
 | `sairnlaw` | 20 | ✅ | 36 | 27 | 7 | — |
 | `sairnlegacy` | 36 | ✅ | 5 | 4 | 2 | — |
