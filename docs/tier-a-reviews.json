@@ -4681,6 +4681,32 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-29T18:05:01Z",
+      "opened_at_sha": "c66a32854e5ae53f22ee1ea49129cdd426580257",
+      "resources": [
+        "invoices",
+        "mech_quotes",
+        "scp_quotes",
+        "sf_accounts",
+        "sf_trustee_audits"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/sd-data-mech-session-gate.test.js",
+        "api/sd-data-session-gate.test.js",
+        "api/sd-data.js"
+      ],
+      "what": "mech_docs WRITE was reachable on the licence key alone and is now gated by one entry in each of SD_SESSION_GATED and SD_GATE_APP. REVIEW THIS, in this order: (1) that the READ and the three sibling mech_ writes are genuinely unchanged -- four arms assert it, confirm from the diff that nothing else moved; (2) whether ['write'] alone is the right scope, or whether the READ of a table holding model-extracted work-order text should also be gated, which is a DECISION and not a defect; (3) that api/sd-data-mech-redaction-scope.test.js signing in is a restoration of its own subject and not a weakening -- it drove mech_docs on the key alone and went red, and the gate question now lives in exactly one file; (4) the pair-count bump 74 to 75 and the first write-only entry in that table. mech_quotes, mech_checks and mech_takeoffs appear on this obligation only because they are named by the new suite and by MECH_RECORDS in the changed hunk; no code path serving them changed.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-29T18:05:01Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

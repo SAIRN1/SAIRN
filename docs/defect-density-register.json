@@ -19453,62 +19453,6 @@
       "recurrence_open": "Six role refusals remain unreachable by --ablate, the only sound measurement in that file: five compound conditions and one with its body on a single line. TWO OF THEM are their resource's ONLY gate -- alf_incidents and alf_op_audits have zero ablatable blocks, so the instrument answers COULD NOT TELL for those resources entirely, and both also sit in the not-driven bucket. Nothing measures whether a resource's gates are individually covered; the bucket counts remain per-resource."
     },
     {
-      "commit": "937bd6e858e3",
-      "date": "2026-09-29",
-      "subject": "fix(sairncare): a prior invoice whose blob is NULL was reconciled against nothing -- the same false figure, through a third door",
-      "files": [
-        "api/sd-data-derive-charges.test.js",
-        "api/sd-data.js"
-      ],
-      "lines_added": 393,
-      "lines_removed": 3,
-      "app": "sairncare",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "alf_billing derive_charges: a prior-invoice row that EXISTS with a null data blob made priorRow null, so the 2026-09-27 no-charge_lines guard was skipped entirely, the else branch reconciled against [] and the response reported EVERY derived charge as newly added with net_change equal to the whole invoice, beside invoice_exists true. That is the identical false reading the 2026-09-27 comment in that branch describes and claims to have closed -- the third door into one defect in one function, after the unreadable read (2026-09-04) and the absent charge_lines key (2026-09-27).",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "2b39b9e245e6",
-        "date": "2026-09-29",
-        "subject": "fix(sairncare): a prior invoice whose blob is NULL was reconciled against nothing -- the same false figure, through a third door",
-        "lag_days": 0
-      },
-      "citation_note": "The nearest standing rule is PR 1.11 fail-closed-on-absent-dependency, which is about a tool that cannot run; this is a data state folded into a different data state, so the shape is adjacent but not the same rule.",
-      "contributing_factors": [
-        {
-          "factor": "The guard was written as if (priorRow && ...) so it was reachable only when the blob was truthy; a null blob is unreadable data and was being treated as absent data",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The three states are decided on ROW EXISTENCE first and the blob second, and a row present with an unreadable blob now refuses to reconcile with its own code PRIOR_INVOICE_BLOB_UNREADABLE, distinct from PRIOR_INVOICE_HAS_NO_CHARGE_LINES."
-        },
-        {
-          "factor": "Two earlier fixes to this same branch each closed one branch of a three-way distinction nobody had enumerated, and each left a comment reading as if the class were closed",
-          "kind": "process",
-          "action_status": "done",
-          "action": "The new comment enumerates all three states by name and says which earlier fix covered which, so the next reader sees a closed set rather than two anecdotes."
-        },
-        {
-          "factor": "No suite drove derive_charges at all -- the reconciliation path had never been exercised by a test in either direction",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "api/sd-data-derive-charges.test.js, 10 arms: the null blob, the string blob, the null-vs-empty code distinction, the three must-not-change cases, and a KNOWN-BAD control that replays the pre-fix expression verbatim on the same fixture and shows it produces net_change equal to the whole invoice."
-        },
-        {
-          "factor": "A stored JSONB blob can be null and nothing in the schema or the write path prevents it, so every read in this file that does rows[0] && rows[0].data or a default carries the same latent shape",
-          "kind": "latent-condition",
-          "action_status": "planned",
-          "action": "Sweep api/sd-data.js for reads that decide a downstream branch on the truthiness of a blob rather than on row existence. NOT DONE in this change -- it is a different scope and would be the widening this platform refuses."
-        }
-      ],
-      "recurrence_open": "The sweep named in factor 4 is not run. Every other read in this file that decides on blob truthiness instead of row existence still has the same shape, and only this one branch was fixed."
-    },
-    {
       "commit": "2c5c621d544c",
       "date": "2026-09-29",
       "subject": "fix(tools): the cross-tenant stripper is string-aware, and its two derivations are independent again -- the cross-check found two bugs in one session",
@@ -20498,6 +20442,118 @@
         }
       ],
       "recurrence_open": "Sabotage anchors are text in a moving file by construction and this platform has measured them decaying repeatedly. The harness now parse-checks its own mutation, so an arm that plants NOTHING is reported -- but an arm whose mutation applies and is caught for the wrong reason is still invisible to it, and that one was settled here by reading rather than by a check."
+    },
+    {
+      "commit": "937bd6e858e3",
+      "date": "2026-09-29",
+      "subject": "fix(sairncare): a prior invoice whose blob is NULL was reconciled against nothing -- the same false figure, through a third door",
+      "files": [
+        "api/sd-data-derive-charges.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 393,
+      "lines_removed": 3,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "alf_billing derive_charges: a prior-invoice row that EXISTS with a null data blob made priorRow null, so the 2026-09-27 no-charge_lines guard was skipped entirely, the else branch reconciled against [] and the response reported EVERY derived charge as newly added with net_change equal to the whole invoice, beside invoice_exists true. That is the identical false reading the 2026-09-27 comment in that branch describes and claims to have closed -- the third door into one defect in one function, after the unreadable read (2026-09-04) and the absent charge_lines key (2026-09-27).",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "2b39b9e245e6",
+        "date": "2026-09-29",
+        "subject": "fix(sairncare): a prior invoice whose blob is NULL was reconciled against nothing -- the same false figure, through a third door",
+        "lag_days": 0
+      },
+      "citation_note": "The nearest standing rule is PR 1.11 fail-closed-on-absent-dependency, which is about a tool that cannot run; this is a data state folded into a different data state, so the shape is adjacent but not the same rule.",
+      "contributing_factors": [
+        {
+          "factor": "The guard was written as if (priorRow && ...) so it was reachable only when the blob was truthy; a null blob is unreadable data and was being treated as absent data",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The three states are decided on ROW EXISTENCE first and the blob second, and a row present with an unreadable blob now refuses to reconcile with its own code PRIOR_INVOICE_BLOB_UNREADABLE, distinct from PRIOR_INVOICE_HAS_NO_CHARGE_LINES."
+        },
+        {
+          "factor": "Two earlier fixes to this same branch each closed one branch of a three-way distinction nobody had enumerated, and each left a comment reading as if the class were closed",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The new comment enumerates all three states by name and says which earlier fix covered which, so the next reader sees a closed set rather than two anecdotes."
+        },
+        {
+          "factor": "No suite drove derive_charges at all -- the reconciliation path had never been exercised by a test in either direction",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/sd-data-derive-charges.test.js, 10 arms: the null blob, the string blob, the null-vs-empty code distinction, the three must-not-change cases, and a KNOWN-BAD control that replays the pre-fix expression verbatim on the same fixture and shows it produces net_change equal to the whole invoice."
+        },
+        {
+          "factor": "A stored JSONB blob can be null and nothing in the schema or the write path prevents it, so every read in this file that does rows[0] && rows[0].data or a default carries the same latent shape",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Sweep api/sd-data.js for reads that decide a downstream branch on the truthiness of a blob rather than on row existence. NOT DONE in this change -- it is a different scope and would be the widening this platform refuses."
+        }
+      ],
+      "recurrence_open": "The sweep named in factor 4 is not run. Every other read in this file that decides on blob truthiness instead of row existence still has the same shape, and only this one branch was fixed."
+    },
+    {
+      "commit": "c66a32854e5a",
+      "date": "2026-09-29",
+      "subject": "fix(sairnmechanical): mech_docs WRITE was reachable on a licence key alone, on the one mech_ table whose own redactor has SSN, EIN and card patterns",
+      "files": [
+        "api/sd-data-mech-redaction-scope.test.js",
+        "api/sd-data-mech-session-gate.test.js",
+        "api/sd-data-session-gate.test.js",
+        "api/sd-data.js",
+        "tests/session_gate_table_probe.py"
+      ],
+      "lines_added": 381,
+      "lines_removed": 5,
+      "app": "sairnmechanical",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "mech_docs WRITE was authorised by the licence key alone -- a key shipped to the browser and readable by anyone who can open sairnmechanical.html. It is the one of the four MECH_RECORDS tables whose own server-side redactor carries patterns for SSN, EIN and card-length digit runs, because scanDoc() asks a model to extract every field off work orders, contracts, permits and invoices and the answer is stored on the row. api/_lib/mech-redact.js reduces that text and never refuses a write, deliberately, so it was not the gate and there was no other one. Fixed as one registry entry in each of SD_SESSION_GATED and SD_GATE_APP.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The MECH_RECORDS branch was licence-only from the commit that created it; there is no commit where a session requirement was removed."
+      },
+      "citation_note": "The closest standing rule is the licence-key-is-not-authentication argument api/sd-data.js makes repeatedly in its own comments, but it is not a numbered item in SAIRN-PROCESS-RULES.md.",
+      "contributing_factors": [
+        {
+          "factor": "MECH_RECORDS gates four tables as one group and the justification written above it was about CREDENTIALS, which is a different question from what the tables actually hold",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "mech_docs is now gated individually by registry entry, and the comment enumerates why the other three are NOT -- each is its own open-work row, and mech_checks is explicitly a decision nobody has been asked to make."
+        },
+        {
+          "factor": "A server-side redactor was in place on this exact table, which makes the table look defended; the redactor reduces text and never refuses a write and its own header says so",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The gate is now upstream of the redactor. The redactor keeps its deliberate never-refuse behaviour; it was never the authorisation boundary and nothing now reads as if it were."
+        },
+        {
+          "factor": "No suite drove any mech_ resource without a session, so the absence of a gate produced no signal in either direction",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/sd-data-mech-session-gate.test.js drives the keyless write, the cross-app token, the correct session, and the four surfaces deliberately left licence-only. api/sd-data-session-gate.test.js now names it in drivenElsewhere, so the platform gate table knows it is exercised."
+        },
+        {
+          "factor": "The platform-level probe that guards the gate table staged only api/sd-data.js, so a companion suite written in the same session made its baseline die on Cannot find module rather than measure anything",
+          "kind": "process",
+          "action_status": "done",
+          "action": "tests/session_gate_table_probe.py now stages every companion suite the subject names, and the list is a deliberate lower bound rather than derived from the map it is meant to protect."
+        }
+      ],
+      "recurrence_open": "The READ is still licence-only, and mech_quotes, mech_checks and mech_takeoffs are still licence-only. Those are open questions, not closed ones -- mech_checks in particular is a cheque register writable on a browser-readable key, and nobody has been asked whether that is intended. The tier row for mech_docs in docs/CRITICALITY-TIERS.md still says no PII in the same sentence that says nobody read the row; that file is held by another session and was not corrected here."
     },
     {
       "commit": "d0bb06783104",
