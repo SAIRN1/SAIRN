@@ -2687,8 +2687,8 @@
       "task": "tools/dead_rule_sweep.py tests/run_dead_rule_sweep_probe.py",
       "claimed_at": "2026-09-29T14:07:07Z",
       "claimed_at_epoch": 1790690827.6279962,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T23:51:45Z",
       "files": null
     },
     {
