@@ -465,12 +465,17 @@ SECOND = {'author_session': 'somebody-else', 'opened_at': '2026-01-02T00:00:00Z'
 try:
     fresh(author=g.session_name())
     check('a session CANNOT discharge its own obligation',
-          g.cmd_discharge(g.session_name(), 'looks fine to me') == 1,
+          g.cmd_discharge(g.session_name(), 'read the diff, re-derived both column lists against the callers, two findings, both fixed') == 1,
+          # A FULL-LENGTH VERDICT ON PURPOSE. With a short one this arm would go
+          # green off the MIN_VERDICT_CHARS floor added 2026-09-29 and stop
+          # testing the self-review refusal at all -- a control passing for a
+          # reason that is not the one in its name.
+
           'self-discharge was allowed')
 
     p2 = fresh()
     check("...but it CAN discharge another session's",
-          g.cmd_discharge('somebody-else', 'read it, two findings, both fixed') == 0)
+          g.cmd_discharge('somebody-else', 'read the diff, re-derived both column lists against the callers, two findings, both fixed') == 0)
     rec = json.load(io.open(p2, encoding='utf-8'))['records'][0]
     check('...and the record names the REVIEWER, not the author',
           rec['reviewer_session'] == g.session_name() and rec['status'] == 'reviewed', rec)
@@ -481,14 +486,59 @@ try:
     check('an EMPTY verdict is refused -- "reviewed" with no content is a tick',
           g.cmd_discharge('somebody-else', '   ') == 1)
 
+    # ── A SHIFTED ARGUMENT SILENTLY BECAME A VERDICT (2026-09-29) ──────────
+    # The usage line read `--discharge <author> "<verdict>"` while the parser
+    # wants the opened_at SECOND, so a real call of
+    #     --discharge cc 2026-09-26T13:13:44Z --help
+    # dispatched cleanly, wrote `--help` as the verdict, printed DISCHARGED and
+    # marked a 70h Tier A obligation reviewed. The dispatch was not wrong; what
+    # was wrong is that a flag was accepted as the artefact the register exists
+    # to hold. An obligation closed with a meaningless verdict is WORSE than one
+    # left open: the queue shortens and the next session has no reason to look.
+    fresh()
+    check('A VERDICT THAT IS A FLAG is refused -- this is the exact `--help` that '
+          'closed a 70h obligation, and nothing may be written',
+          g.cmd_discharge('somebody-else', '--help') == 1,
+          'a bare flag was accepted as a review')
+    _pf = fresh()
+    g.cmd_discharge('somebody-else', '--takeover --write')
+    check('...AND NOTHING WAS WRITTEN by that refusal -- a refusal that still '
+          'marks the record reviewed is the defect with a message in front of it',
+          json.load(io.open(_pf, encoding='utf-8'))['records'][0]['status'] == 'open',
+          'the record moved off open despite the refusal')
+
+    fresh()
+    check('A TICK-LENGTH VERDICT is refused: a review of a Tier A change that '
+          'fits in under MIN_VERDICT_CHARS is a tick, not a review',
+          g.cmd_discharge('somebody-else', 'looks fine') == 1,
+          'a two-word grunt was accepted as a review')
+    check('...and MIN_VERDICT_CHARS is a NAMED constant above 0, so the floor is '
+          'readable and a change to it is visible rather than buried in a literal',
+          isinstance(getattr(g, 'MIN_VERDICT_CHARS', None), int)
+          and g.MIN_VERDICT_CHARS > 0, getattr(g, 'MIN_VERDICT_CHARS', None))
+
+    # THE SILENT HALF. Without this the two arms above are satisfied by a gate
+    # that refuses every discharge, which would be a queue nobody can ever close.
+    _pg = fresh()
+    check('THE SILENT HALF: a real, full-length verdict from another session is '
+          'still ACCEPTED, so the two refusals above are not satisfied by a gate '
+          'that refuses everything',
+          g.cmd_discharge('somebody-else', 'read the diff, re-derived both column lists against the callers, two findings, both fixed') == 0,
+          'the length floor now blocks a legitimate discharge')
+    check('...and that one really did land', json.load(
+          io.open(_pg, encoding='utf-8'))['records'][0]['status'] == 'reviewed')
+
     fresh(extra=dict(SECOND))
     check('with TWO open by one author it REFUSES TO GUESS which',
-          g.cmd_discharge('somebody-else', 'a verdict') == 1,
+          g.cmd_discharge('somebody-else', 'read the diff, re-derived both column lists against the callers, two findings, both fixed') == 1,
+          # Full length here too, so the REFUSES-TO-GUESS arm is not satisfied
+          # by the length floor.
+
           'it closed one of two without being told which')
 
     p3 = fresh(extra=dict(SECOND))
     check('...and closes the RIGHT one when told',
-          g.cmd_discharge('somebody-else', 'the second one',
+          g.cmd_discharge('somebody-else', 'the second one -- ' + 'read the diff, re-derived both column lists against the callers, two findings, both fixed',
                           opened_at='2026-01-02T00:00:00Z') == 0)
     by = {r['opened_at']: r['status']
           for r in json.load(io.open(p3, encoding='utf-8'))['records']}
@@ -498,7 +548,7 @@ try:
 
     fresh()
     check('discharging an author with NO open obligation is refused',
-          g.cmd_discharge('nobody-at-all', 'a verdict') == 1)
+          g.cmd_discharge('nobody-at-all', 'read the diff, re-derived both column lists against the callers, two findings, both fixed') == 1)
 finally:
     g.REVIEWS = real_reviews2
     try:
@@ -1148,7 +1198,7 @@ check('...and the fixture AUTHOR is neither this clone nor the owner, so the '
 _fresh_owner = _orec(author=_AUTHOR, owner=_OWNER,
                      assigned=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()))
 _fp = _ostage([_fresh_owner])
-_rc = g.cmd_discharge(_AUTHOR, 'v', opened_at='2026-05-01T00:00:00Z',
+_rc = g.cmd_discharge(_AUTHOR, 'read the diff, re-derived both column lists against the callers, two findings, both fixed', opened_at='2026-05-01T00:00:00Z',
                       takeover=True)
 _fresh_w = json.load(io.open(_fp, encoding='utf-8'))['records'][0]
 check('a takeover is REFUSED while the owner is still inside the window -- '
@@ -1157,7 +1207,7 @@ check('a takeover is REFUSED while the owner is still inside the window -- '
       (_rc, _fresh_w.get('reviewer_session')))
 _stale = _orec(author=_AUTHOR, owner=_OWNER, assigned='2020-01-01T00:00:00Z')
 _sp = _ostage([_stale])
-_rc = g.cmd_discharge(_AUTHOR, 'a real verdict',
+_rc = g.cmd_discharge(_AUTHOR, 'read the diff, re-derived both column lists against the callers, two findings, both fixed',
                       opened_at='2026-05-01T00:00:00Z', takeover=True)
 # READ THE FILE BACK, not the dict handed to _ostage. cmd_discharge loads the
 # register from disk and mutates ITS OWN copy, so asserting on the local dict
@@ -1188,7 +1238,7 @@ check('...and the ASSIGNED OWNER is left in the record beside the takeover, so '
 _nostamp = _orec(author=_AUTHOR, owner=_OWNER)
 _nostamp['owner_assigned_at'] = None
 _np = _ostage([_nostamp])
-_rc = g.cmd_discharge(_AUTHOR, 'v', opened_at='2026-05-01T00:00:00Z',
+_rc = g.cmd_discharge(_AUTHOR, 'read the diff, re-derived both column lists against the callers, two findings, both fixed', opened_at='2026-05-01T00:00:00Z',
                       takeover=True)
 check('an UNREADABLE assignment time is COULD NOT TELL (exit 2), not a free '
       'takeover -- a takeover on an unknown age is a takeover on a guess',
@@ -1196,7 +1246,7 @@ check('an UNREADABLE assignment time is COULD NOT TELL (exit 2), not a free '
       .get('reviewer_session') is None, _rc)
 _unowned = _orec(author=_AUTHOR, owner=None)
 _ostage([_unowned])
-_rc = g.cmd_discharge(_AUTHOR, 'v', opened_at='2026-05-01T00:00:00Z',
+_rc = g.cmd_discharge(_AUTHOR, 'read the diff, re-derived both column lists against the callers, two findings, both fixed', opened_at='2026-05-01T00:00:00Z',
                       takeover=True)
 check('--takeover on an UNOWNED record is refused with the right reason: '
       'there is nothing to take over',

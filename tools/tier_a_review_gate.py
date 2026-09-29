@@ -5,7 +5,12 @@
     python tools/tier_a_review_gate.py --diff-range A..B   # check a commit range
     python tools/tier_a_review_gate.py --open "why"    # record this session's obligation
     python tools/tier_a_review_gate.py --list          # what is open, and whose
-    python tools/tier_a_review_gate.py --discharge <author> "<verdict>"
+    python tools/tier_a_review_gate.py --discharge <author> [opened_at] "<verdict>"
+        THE opened_at IS SECOND, NOT LAST. This line said `<author> "<verdict>"`
+        and a real call passing the timestamp then a flag wrote `--help` as the
+        verdict of a 70h obligation and printed DISCHARGED. Both shapes are now
+        refused at write time; the usage line is corrected here so the refusal is
+        the second line of defence rather than the only one.
     python tools/tier_a_review_gate.py --auto-discharge [--write]
 
 Exit 0 clean, 1 a finding, 2 COULD NOT TELL -- never folded into either of the
@@ -152,6 +157,11 @@ SKIP_REASONS = (
      'lives at the repo root by convention'),
 )
 
+
+# The floor under a verdict. Not a quality bar -- nothing can measure that --
+# but a length no genuine review of a Tier A change comes in under, chosen so
+# that `--help`, `ok`, `looks fine` and a shifted timestamp are all refused.
+MIN_VERDICT_CHARS = 40
 
 def skip_reason(cur):
     """The REASON this path cannot create an obligation, or None if it can.
@@ -2371,6 +2381,39 @@ def cmd_discharge(author, verdict, opened_at=None, takeover=False):
     if not verdict.strip():
         sys.stderr.write('--discharge needs a verdict sentence. "reviewed" with '
                          'no content is a tick, not a review.\n')
+        return 1
+    # ── A SHIFTED ARGUMENT SILENTLY BECAME A VERDICT, 2026-09-29 ────────────
+    # The usage line at the top of this file reads
+    #     --discharge <author> "<verdict>"
+    # and the parser wants the opened_at SECOND when there is more than one open
+    # record for that author. A real call of
+    #     --discharge cc 2026-09-26T13:13:44Z --help
+    # therefore dispatched cleanly, wrote `--help` as the verdict, printed
+    # DISCHARGED, and marked a 70h Tier A obligation `reviewed`. Nothing was
+    # wrong with the dispatch; the defect is that a flag and a two-word grunt
+    # were both accepted as the artefact the whole register exists to hold.
+    #
+    # An obligation closed with a meaningless verdict is WORSE than one left
+    # open: the queue shortens, the record reads as satisfied, and the next
+    # session has no reason to look. So the two shapes that cannot be a review
+    # are refused at WRITE time, where --takeover and --body-file are already
+    # stripped, rather than trusted to the caller getting the order right.
+    _v = verdict.strip()
+    if _v.startswith('--'):
+        sys.stderr.write(
+            'REFUSED: the verdict starts with %r, which is a FLAG and not a '
+            'review.\nThe argument order is:  --discharge <author> [opened_at] '
+            '"<verdict>"\nand a shifted call is how a flag becomes a verdict. '
+            'Nothing was written.\n' % _v.split()[0])
+        return 1
+    if len(_v) < MIN_VERDICT_CHARS:
+        sys.stderr.write(
+            'REFUSED: the verdict is %d characters. A review of a Tier A change '
+            'that fits\nin under %d is a tick, and an obligation closed with a '
+            'tick is worse than one\nleft open -- the queue shortens and the '
+            'next session has no reason to look.\nNothing was written. Use '
+            '--body-file <path> for anything long.\n'
+            % (len(_v), MIN_VERDICT_CHARS))
         return 1
     data = load_reviews()
     hit = open_records(data, author)
