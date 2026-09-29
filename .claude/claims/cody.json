@@ -2709,8 +2709,8 @@
       "task": "docs/2026-09-29-unreachable-tables-cody.md",
       "claimed_at": "2026-09-29T14:08:54Z",
       "claimed_at_epoch": 1790690934.0745296,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T23:51:42Z",
       "files": null
     },
     {
