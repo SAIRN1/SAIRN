@@ -2788,8 +2788,8 @@
       "task": "tools/push_retry.py tests/run_reseat_fixed_point_probe.py",
       "claimed_at": "2026-09-29T17:36:02Z",
       "claimed_at_epoch": 1790703362.035507,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T17:46:42Z",
       "files": null
     },
     {
