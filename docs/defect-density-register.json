@@ -19453,7 +19453,7 @@
       "recurrence_open": "Six role refusals remain unreachable by --ablate, the only sound measurement in that file: five compound conditions and one with its body on a single line. TWO OF THEM are their resource's ONLY gate -- alf_incidents and alf_op_audits have zero ablatable blocks, so the instrument answers COULD NOT TELL for those resources entirely, and both also sit in the not-driven bucket. Nothing measures whether a resource's gates are individually covered; the bucket counts remain per-resource."
     },
     {
-      "commit": "2b39b9e245e6",
+      "commit": "937bd6e858e3",
       "date": "2026-09-29",
       "subject": "fix(sairncare): a prior invoice whose blob is NULL was reconciled against nothing -- the same false figure, through a third door",
       "files": [
