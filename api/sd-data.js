@@ -1233,7 +1233,30 @@ module.exports = async (req, res) => {
       // whatever they do. `invoices` is the bare name the dispatch uses; there
       // is no 'scp_invoices' resource to pin.
       'invoices': 'sairnscape',
-      'scp_quotes': 'sairnscape'
+      'scp_quotes': 'sairnscape',
+      // ── THE FOUR THAT RELIED ON THE DEFAULT, MADE EXPLICIT (2026-09-29) ──
+      // `SD_GATE_APP[resource] || 'stonedesk'` meant these four resolved
+      // correctly WITHOUT an entry, because they really are StoneDesk's. That
+      // is true and it is also the loophole: it makes "gated with no entry
+      // here" a state that is sometimes right, so no test can simply require an
+      // entry, and sf_trustee_audits sat gated-and-unmapped for a day refusing
+      // every signed-in officer while the rule that would have caught it could
+      // not be written.
+      //
+      // NO BEHAVIOUR CHANGES. `|| 'stonedesk'` returned exactly these values
+      // already. What changes is that the fallback is now UNREACHABLE for every
+      // gated resource, so "every gated resource has an entry" is a rule with
+      // no exemptions to argue about -- which is the arm added to
+      // api/sd-data-session-gate.test.js in the same change.
+      //
+      // The fallback is LEFT IN PLACE rather than deleted: removing it is a
+      // separate decision about what should happen to a resource somebody gates
+      // in future without reading this, and the honest answer to that is the
+      // test, not a crash.
+      'locations': 'stonedesk',
+      'memory': 'stonedesk',
+      'profile': 'stonedesk',
+      'slabs': 'stonedesk'
     };
     // -- MEMORY IS APP-SCOPED (2026-09-03) --------------------------------
     // Both legs previously hardcoded app_id 'stonedesk' on write and filtered
