@@ -1318,6 +1318,22 @@ PURPOSES = {
         'beat dependency list is READ FROM heartbeat.js and returns None on a read '
         'failure, never an empty set. 5 locked fixtures, 23-arm control whose '
         'ablation restores the REAL pre-fix shape in memory. REPORT ONLY'),
+    'checker_selftest_check.py': ('CHECKER',
+        'A CHECKER WHOSE CLEAN LINE CANNOT BE DISTINGUISHED FROM "it stopped '
+        'being able to see the thing it looks for". This repo has shipped the '
+        'second more than once -- a regex with a literal backspace that could '
+        'never match, a criteria lock that could not classify the shape its own '
+        'tool was built for -- and each was found by accident. Asks every tool '
+        'in the report-only REGISTRY whether it demonstrates a known-positive '
+        'ON THE RUN THAT REPORTS CLEAN, and splits the answer four ways rather '
+        'than two: PRINTED on every real run, RUNS BUT SILENT when it passes, '
+        'FLAG-ONLY (a control with a shorter name -- the reader of a clean line '
+        'at 2am is not passing --selftest), and NO FIXTURE SET AT ALL. First '
+        'run: 13 / 0 / 8 / 46 of 67. It does NOT judge whether the fixtures are '
+        'any good -- that is sabotage_control_check\'s question -- and it '
+        'answers its own question, printing its criteria lock beside its '
+        'finding count, which its control asserts. 8 fixtures, 23-arm control. '
+        'REPORT ONLY'),
     'parse_zero_third_state_check.py': ('CHECKER',
         'A CHECKER THAT REPORTS A CLEAN SWEEP BECAUSE IT READ NOTHING. It '
         'enumerates a corpus, finds nothing, prints "read 0 file(s) / CLEAN", and '
