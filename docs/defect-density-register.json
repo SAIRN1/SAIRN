@@ -19353,6 +19353,58 @@
       "recurrence_open": "PARTLY CLOSED AND MEASURED: hook fail-opens 5 -> 0, but 16 dependency-shaped fail-opens remain in tools/ where exit 0 is not a decision to allow something, and they are unswept. The scanner reads TEXT, so a fail-open through a helper, a trap or a Python default argument is invisible and the universe is a FLOOR. And the distinction the tool rests on -- SCOPE versus DEPENDENCY -- is inferred from what the guard NAMES, so a scope guard whose marker has an unusual name will be miscounted as a finding."
     },
     {
+      "commit": "0bfa86a8564d",
+      "date": "2026-09-29",
+      "subject": "fix(sairnmechanical): mech_quotes IS scan-derived -- correcting my own exclusion of it",
+      "files": [
+        "api/sd-data-mech-redaction-scope.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 52,
+      "lines_removed": 10,
+      "app": "sairnmechanical",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "mech_quotes.text is model output generated over a base64 IMAGE (sairnmechanical.html:1416-1417, :1435) and was excluded from the redaction gate on my own false premise that it was generated from typed form fields, with an arm pinning that exclusion",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "f4fc75a9884f",
+        "date": "2026-09-22",
+        "subject": "fix(sairnmechanical): scanned-document text was stored and SYNCED verbatim, names and all, and the toast said it stayed on the device",
+        "lag_days": 7
+      },
+      "phase_note": "mech_quotes has stored model-output-over-a-photograph since the redaction gate was introduced for mech_docs only; the exclusion I wrote on 2026-09-29 did not create the gap, it recorded a wrong reason for it and pinned that reason in a test",
+      "contributing_factors": [
+        {
+          "factor": "I read saveQuote() at :1442 and stopped there, where the text arrives already assembled -- the image is seeded twenty lines earlier at :1416 and the generation is at :1435, so the provenance is three hops from the write",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the deciding test is now written down as a CODE FACT rather than a judgement: is the value derived from a callClaude conversation carrying an image"
+        },
+        {
+          "factor": "the exclusion was PINNED BY AN ARM, which made a wrong decision durable and would have defended it against the next reader",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "this is the cost of pinning rather than a fixable cause -- an arm records a decision whether or not it was right, and the remedy is the deciding test beside it, not the absence of the arm"
+        },
+        {
+          "factor": "the arm reading the field map used a fixed 400-character window and silently stopped matching when the map grew a longer comment, reporting no map found about a map that was present",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "replaced with a real brace boundary; fourth instance of the magic-window shape on this platform"
+        }
+      ],
+      "recurrence_open": "NOT LIVE-VERIFIED and existing rows unassessed, for quotes as for takeoffs. The client-side redactor still runs for docs only. And nothing sweeps the other apps for a field whose value comes from a model conversation carrying an image -- the deciding test now exists in prose and is enforced by no checker."
+    },
+    {
       "commit": "26c92942746d",
       "date": "2026-09-29",
       "subject": "test(sairncare): the alf_billing gate nothing drove -- 3 of 3 now CAUGHT, and measuring it showed the screen's third bucket over-reports by at least five",
@@ -19399,6 +19451,56 @@
         }
       ],
       "recurrence_open": "Six role refusals remain unreachable by --ablate, the only sound measurement in that file: five compound conditions and one with its body on a single line. TWO OF THEM are their resource's ONLY gate -- alf_incidents and alf_op_audits have zero ablatable blocks, so the instrument answers COULD NOT TELL for those resources entirely, and both also sit in the not-driven bucket. Nothing measures whether a resource's gates are individually covered; the bucket counts remain per-resource."
+    },
+    {
+      "commit": "2c5c621d544c",
+      "date": "2026-09-29",
+      "subject": "fix(tools): the cross-tenant stripper is string-aware, and its two derivations are independent again -- the cross-check found two bugs in one session",
+      "files": [
+        "docs/MASTER-PLAN.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/traceability-matrix.md",
+        "tests/run_cross_tenant_isolation_scope_probe.py",
+        "tools/cross_tenant_isolation_scope.py"
+      ],
+      "lines_added": 398,
+      "lines_removed": 12,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "probe-control",
+      "summary": "cross_tenant_isolation_scope.py stripped JS comments with a regex that was not string-aware, so a '//' inside a string literal read as a comment and swallowed the rest of the line: 21 real resource names lost in stonedesk.html alone, including sd_customers, sd_slab_history, sd_blocks and sd_bundles, each then reported UNDECLARED on a technicality about a URL. The fix had also gone into ONE of the TWO places that derive DRIVEN, so the shared grader was still crediting a comment two days later.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tests/run_cross_tenant_isolation_scope_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The regex-only stripper predates the split into two derivations, and the apostrophe half was introduced by the first draft of the string-aware replacement inside this same session -- two different origins in one fix, so naming one commit would be false precision."
+      },
+      "citation_note": "No standing rule in SAIRN-PROCESS-RULES.md names 'a comment stripper must track string state'; the nearest is PR 1.11 fail-closed, which is about a missing dependency rather than a mis-parse.",
+      "contributing_factors": [
+        {
+          "factor": "A regex cannot decide whether a // is inside a string literal; the grammar needs quote state and the tool used a pattern",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Replaced with a character scanner that tracks quote state and backslash escapes, and treats a single or double quote as a string opener ONLY when it closes on the same line."
+        },
+        {
+          "factor": "The same decision was written twice, in the tool and in the probe, and only one copy got the earlier fix",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The two are now INDEPENDENT ON PURPOSE -- the probe derives the same answer by a different mechanism (an alternation matching strings first), and a cross-check arm requires them to agree on every file. Unifying them would have removed the drift and the cross-check together."
+        },
+        {
+          "factor": "Nothing compared the stripper output against a second derivation, so a wrong answer looked exactly like a right one",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Arm D2 runs both strippers over all 785 files and fails on any disagreement; E1/E2/E3 are known-bad controls proving the fixture arms discriminate."
+        }
+      ],
+      "recurrence_open": "The cross-check proves the two implementations AGREE, not that either is RIGHT. Both could share a misreading of a JS construct neither models -- a regex literal containing a quote is the obvious next one, and no arm covers it."
     },
     {
       "commit": "35fb7d2c85a7",
@@ -19745,62 +19847,55 @@
       "recurrence_open": "Nothing checks any OTHER derived population in this repo for a filter that encodes a convention rather than the predicate. This was found by enumerating credential read sites for a rotation, not by a sweep. And tools/plugin_upgrade_check.py still carries a second copy of the credential-manager lookup that gh_token.py exists to centralise."
     },
     {
-      "commit": "85ce0f01a298",
+      "commit": "5e84f1ae69b6",
       "date": "2026-09-29",
-      "subject": "fix(sairnmechanical): the redactor ate the equipment label and left half the phone number",
+      "subject": "fix(screen): the note about a literal backspace byte was itself written with two of them, and the review obligation for both screen changes",
       "files": [
-        "api/_lib/mech-redact.js",
-        "api/_lib/mech-redact.test.js",
-        "api/sd-data-mech-redaction-scope.test.js"
+        "docs/TOOLING-INVENTORY.md",
+        "docs/tier-a-reviews.json",
+        "tools/role_gate_negative_coverage.py"
       ],
-      "lines_added": 141,
-      "lines_removed": 29,
-      "app": "sairnmechanical",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "independent-review",
-      "summary": "the mech redactor ate equipment labels and left half a phone number -- Phone: 555-0142  Unit: RTU-4 became Phone: 555-[ADDRESS REDACTED]: RTU-4, because Unit could anchor the ADDRESS pattern and a seven-digit local number matched no phone rule",
+      "lines_added": 46,
+      "lines_removed": 8,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "static-checker",
+      "summary": "The comment in role_gate_negative_coverage.py that WARNS about a literal 0x08 backspace byte shipping in place of the two characters backslash-b was itself written with two raw 0x08 bytes on that line. A reader sees nothing there at all. Caught by the control-character push gate on the very next push, not by review.",
       "rules": [],
       "citation_confidence": "not-citable",
       "injection_phase": "coding",
       "phase_confidence": "stated",
-      "found_by_tool": null,
+      "found_by_tool": "tools/control_char_check.py",
       "found_by_session": null,
       "injection": {
-        "commit": "f4fc75a9884f",
-        "date": "2026-09-22",
-        "subject": "fix(sairnmechanical): scanned-document text was stored and SYNCED verbatim, names and all, and the toast said it stayed on the device",
-        "lag_days": 7
+        "commit": "819cc2e44a76",
+        "date": "2026-09-29",
+        "subject": "fix(screens): the role-gate screen prints its own blind population, and the stripper probe was crediting five Tier A resources it exists to test",
+        "lag_days": 0
       },
-      "citation_note": "no standing rule covers a redaction pattern that over-matches into the content it is documented to preserve; 1.2 is text read as code and this is its mirror -- content read as an address",
-      "phase_note": "Suite, Ste, Unit and Apt were placed in the same alternation as the primary street types in the commit that introduced the redactor, so a secondary designator could anchor a match on its own",
+      "citation_note": "No standing rule names 'a comment describing an invisible byte must not contain one'; the closest is the control_char_check docstring itself, which is a tool, not a process rule.",
       "contributing_factors": [
         {
-          "factor": "secondary address designators shared the anchor slot with primary street types, so a bare number beside any of them parsed as house-number-plus-street-type",
+          "factor": "A shell heredoc ate the backslash when the comment was written, exactly as it had when the regex one line below was written",
           "kind": "technical",
           "action_status": "done",
-          "action": "a primary street type is now required and the designator is an optional tail; three real address shapes are pinned as still removed"
+          "action": "Replaced both bytes with the escape and reworded the sentence, which had become self-contradictory once the bytes were visible: it read backslash-b where backslash-b was meant."
         },
         {
-          "factor": "a seven-digit local number matched no rule, because the phone pattern requires NANP structure to avoid eating part numbers",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "a label-gated rule -- phone, tel, cell, fax -- removes the value after the label and never a bare run, with a known-bad control driving three unlabelled shapes that must survive"
+          "factor": "The same heredoc route produced the same byte twice in one file in one session, so the tool used to write the file is a standing contributor and not a slip",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Build any line carrying a backslash escape with chr(92) rather than typing it through a heredoc, as control_char_check.py already advises. NOT YET a mechanical guard at write time -- only at push time, which is why this is planned and not done."
         },
         {
-          "factor": "the two faults MASKED each other: once the phone rule consumed the labelled number, no digit run was left for the address rule to over-match on, so re-introducing the address bug left the suite green",
+          "factor": "Nothing a human does makes a 0x08 byte visible; review cannot catch this class at all",
           "kind": "detection",
           "action_status": "done",
-          "action": "an isolating arm with a digit run beside an equipment label and NO phone label pins the address half alone; ablation now reddens each half independently"
-        },
-        {
-          "factor": "my own known-bad control built the old pattern with new RegExp from an escaped string, lost its backslashes, and reported that the defect no longer reproduced",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "rewritten as a regex literal with the reason at the line"
+          "action": "control_char_check.py runs as a push gate and caught it on the first push attempt. That is the only layer that can."
         }
       ],
-      "recurrence_open": "no corpus has been run through this redactor, so neither fault rate is measured on real documents. The label-only seven-digit rule leaves an unlabelled local number in prose untouched by design. And the client-side redactor in sairnmechanical.html is unchanged and still runs for documents only."
+      "recurrence_open": "The gate is at PUSH time, so the byte still reaches the commit and the working tree. Nothing prevents it at write time, and the repo has now produced this byte in three separate sessions."
     },
     {
       "commit": "7743faa963e0",
@@ -19968,56 +20063,59 @@
       "recurrence_open": "Six other working copies exist on this machine and NONE has been checked for an armed hooksPath -- each is local config and has to be checked where it lives, and one of them is the hover auditor's clone. Nothing runs this check on a cadence yet either; it is report-only and unwired."
     },
     {
-      "commit": "0bfa86a8564d",
+      "commit": "819cc2e44a76",
       "date": "2026-09-29",
-      "subject": "fix(sairnmechanical): mech_quotes IS scan-derived -- correcting my own exclusion of it",
+      "subject": "fix(screens): the role-gate screen prints its own blind population, and the stripper probe was crediting five Tier A resources it exists to test",
       "files": [
-        "api/sd-data-mech-redaction-scope.test.js",
-        "api/sd-data.js"
+        "docs/role-gate-negative-coverage.json",
+        "tests/run_role_gate_table_rule_probe.py",
+        "tools/cross_tenant_isolation_scope.py",
+        "tools/role_gate_negative_coverage.py"
       ],
-      "lines_added": 52,
-      "lines_removed": 10,
-      "app": "sairnmechanical",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "independent-review",
-      "summary": "mech_quotes.text is model output generated over a base64 IMAGE (sairnmechanical.html:1416-1417, :1435) and was excluded from the redaction gate on my own false premise that it was generated from typed form fields, with an arm pinning that exclusion",
-      "rules": [
-        "1.3"
-      ],
-      "citation_confidence": "clean",
+      "lines_added": 424,
+      "lines_removed": 9,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "fault-injection",
+      "summary": "role_gate_negative_coverage.py printed a bucket labelled 'NOT DRIVEN by any suite at all' whose inline comment asserted 'there is no suite to add an arm to'. It could not see a table-driven suite -- a for-of over an array of [resource, action, ...] rows with a fixed role -- so FIVE of sixteen resources were driven by exactly that shape and reported as driven by nothing. --ablate alf_billing then reported 3 of 3 gate blocks CAUGHT by that very suite. The bucket over-reported by at least 31 percent, and the tool was stating a fact about the WORLD using a fact about ITSELF.",
+      "rules": [],
+      "citation_confidence": "not-citable",
       "injection_phase": "design",
       "phase_confidence": "stated",
-      "found_by_tool": null,
+      "found_by_tool": "tools/role_gate_negative_coverage.py --ablate",
       "found_by_session": null,
       "injection": {
-        "commit": "f4fc75a9884f",
-        "date": "2026-09-22",
-        "subject": "fix(sairnmechanical): scanned-document text was stored and SYNCED verbatim, names and all, and the toast said it stayed on the device",
-        "lag_days": 7
+        "unknown_reason": "The bucket carried this label from the tool's first commit; there is no commit where a correct label became wrong."
       },
-      "phase_note": "mech_quotes has stored model-output-over-a-photograph since the redaction gate was introduced for mech_docs only; the exclusion I wrote on 2026-09-29 did not create the gap, it recorded a wrong reason for it and pinned that reason in a test",
+      "citation_note": "The nearest standing item is cross-domain-disciplines 8 (nothing announces the day a check stops testing anything), but this check never tested it: the bucket was mislabelled from its first run, so this is a wrong label rather than a decayed one.",
       "contributing_factors": [
         {
-          "factor": "I read saveQuote() at :1442 and stopped there, where the text arrives already assembled -- the image is seeded twenty lines earlier at :1416 and the generation is at :1435, so the provenance is three hops from the write",
-          "kind": "process",
-          "action_status": "done",
-          "action": "the deciding test is now written down as a CODE FACT rather than a judgement: is the value derived from a callClaude conversation carrying an image"
-        },
-        {
-          "factor": "the exclusion was PINNED BY AN ARM, which made a wrong decision durable and would have defended it against the next reader",
-          "kind": "latent-condition",
-          "action_status": "not-actionable",
-          "note": "this is the cost of pinning rather than a fixable cause -- an arm records a decision whether or not it was right, and the remedy is the deciding test beside it, not the absence of the arm"
-        },
-        {
-          "factor": "the arm reading the field map used a fixed 400-character window and silently stopped matching when the map grew a longer comment, reporting no map found about a map that was present",
+          "factor": "The screen had two static rules and the mirror shape matched neither: the array members are arrays rather than role names, and no resource: key appears",
           "kind": "technical",
           "action_status": "done",
-          "action": "replaced with a real brace boundary; fourth instance of the magic-window shape on this platform"
+          "action": "Added table_driven(), body-scoped and requiring all five conditions at once, locked against N1-N6 synthetic negatives before it was believed about this repo."
+        },
+        {
+          "factor": "A bucket meaning I-could-not-see-it was labelled nothing-drives-it, which is a stronger claim than the instrument can make",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "blind_population()/render_blind_line() print the count on every run as a claim about the RULES, and the analyse() comment that asserted the stronger thing is corrected in place. Arm B2 fails if the real run stops printing it."
+        },
+        {
+          "factor": "Attempt 1 at the same rule credited a bare role literal anywhere in a file that asserted a refusal anywhere -- file-wide attribution -- and two of the five it newly credited were still SILENT under ablation",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The rule is body-scoped with the loop body found by BRACE MATCHING on masked code, never end-of-file; N5 and N6 are the arms that hold it there."
+        },
+        {
+          "factor": "Nothing compared the screens buckets against the only sound measurement it already owned",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "C1/C2 in tests/run_role_gate_table_rule_probe.py drive the real file and assert the two facts APART -- the table is attributed with owner only, and caregiver is credited only when added to the role universe -- so the rule cannot be confirmed by a fixture that suits it."
         }
       ],
-      "recurrence_open": "NOT LIVE-VERIFIED and existing rows unassessed, for quotes as for takeoffs. The client-side redactor still runs for docs only. And nothing sweeps the other apps for a field whose value comes from a model conversation carrying an image -- the deciding test now exists in prose and is enforced by no checker."
+      "recurrence_open": "The three rules are still a SCREEN. A suite driving a resource through a variable, or through any fourth shape nobody has met, is still invisible and will still land in the blind bucket -- which is now counted and printed, but not smaller. --ablate remains the only sound measurement."
     },
     {
       "commit": "8230924f8a19",
@@ -20121,6 +20219,64 @@
         }
       ],
       "recurrence_open": "unfixed. No corpus has been run through this redactor, so the rate of either the over-match or the under-match on real scanned documents is unmeasured, and no other app's redactor was checked for the same shape."
+    },
+    {
+      "commit": "85ce0f01a298",
+      "date": "2026-09-29",
+      "subject": "fix(sairnmechanical): the redactor ate the equipment label and left half the phone number",
+      "files": [
+        "api/_lib/mech-redact.js",
+        "api/_lib/mech-redact.test.js",
+        "api/sd-data-mech-redaction-scope.test.js"
+      ],
+      "lines_added": 141,
+      "lines_removed": 29,
+      "app": "sairnmechanical",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "the mech redactor ate equipment labels and left half a phone number -- Phone: 555-0142  Unit: RTU-4 became Phone: 555-[ADDRESS REDACTED]: RTU-4, because Unit could anchor the ADDRESS pattern and a seven-digit local number matched no phone rule",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "f4fc75a9884f",
+        "date": "2026-09-22",
+        "subject": "fix(sairnmechanical): scanned-document text was stored and SYNCED verbatim, names and all, and the toast said it stayed on the device",
+        "lag_days": 7
+      },
+      "citation_note": "no standing rule covers a redaction pattern that over-matches into the content it is documented to preserve; 1.2 is text read as code and this is its mirror -- content read as an address",
+      "phase_note": "Suite, Ste, Unit and Apt were placed in the same alternation as the primary street types in the commit that introduced the redactor, so a secondary designator could anchor a match on its own",
+      "contributing_factors": [
+        {
+          "factor": "secondary address designators shared the anchor slot with primary street types, so a bare number beside any of them parsed as house-number-plus-street-type",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "a primary street type is now required and the designator is an optional tail; three real address shapes are pinned as still removed"
+        },
+        {
+          "factor": "a seven-digit local number matched no rule, because the phone pattern requires NANP structure to avoid eating part numbers",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "a label-gated rule -- phone, tel, cell, fax -- removes the value after the label and never a bare run, with a known-bad control driving three unlabelled shapes that must survive"
+        },
+        {
+          "factor": "the two faults MASKED each other: once the phone rule consumed the labelled number, no digit run was left for the address rule to over-match on, so re-introducing the address bug left the suite green",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "an isolating arm with a digit run beside an equipment label and NO phone label pins the address half alone; ablation now reddens each half independently"
+        },
+        {
+          "factor": "my own known-bad control built the old pattern with new RegExp from an escaped string, lost its backslashes, and reported that the defect no longer reproduced",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "rewritten as a regex literal with the reason at the line"
+        }
+      ],
+      "recurrence_open": "no corpus has been run through this redactor, so neither fault rate is measured on real documents. The label-only seven-digit rule leaves an unlabelled local number in prose untouched by design. And the client-side redactor in sairnmechanical.html is unchanged and still runs for documents only."
     },
     {
       "commit": "877191ec5d09",

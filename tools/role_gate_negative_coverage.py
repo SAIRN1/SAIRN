@@ -56,8 +56,11 @@ all 400 suites, and reports CAUGHT or SILENT: the property itself rather than a
 pattern correlated with it. Settle any individual gate that way before believing
 the screen about it, and never lower the pin on the strength of the screen alone.
 
-A RATCHET, pinned to docs/role-gate-negative-coverage.json. The honest state is 12
-of 31 by the screen and a check that simply failed would sit permanently red. An absent,
+A RATCHET, pinned to docs/role-gate-negative-coverage.json. The honest state is well
+short of clean by the screen and a check that simply failed would sit permanently red.
+**DO NOT WRITE THE CURRENT COUNT HERE** -- a figure in this docstring was `12 of 31`
+after the table rule took it to 17, within the same commit that added the rule. The pin
+file is the one place it lives; read it. An absent,
 unparseable or `uncovered`-less pin is exit 2 COULD NOT TELL, never 0 -- and so is
 finding zero role gates at all, because the gate shape moving must not read as
 "everything is covered".
