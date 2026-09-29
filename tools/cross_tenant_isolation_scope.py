@@ -549,6 +549,27 @@ SELF_EXCLUDED = (
     # computation the importer arm already performs is still open; this entry
     # is more evidence for it.
     'tests/run_cross_tenant_untabled_declaration_probe.py',
+    # THE EIGHTH (2026-09-29), AND IT IS THE SECOND ONE THE TOOL CAUGHT ON ITS
+    # OWN AUTHOR MID-EDIT. This probe was written the same day to cross-check
+    # the string-aware stripper, so it necessarily carries FIXTURE TABLES of
+    # resource names -- and the importer arm of
+    # tests/run_self_exclusion_guard_sabotage_probe.py went red naming it, in
+    # the first run after the probe existed. A probe that IMPORTS the grader
+    # can be tuned to the grader, which is the whole premise of this list.
+    #
+    # MEASURED BEFORE ADDING, the test every entry above is held to: over the
+    # 273 Tier A resources, excluding it changes the citation set for FIVE --
+    # dnt_ar, leg_plots, rf_jobs, sf_accounts and sv_labresults each lose this
+    # one file and gain nothing. It grades NONE and declares nothing, so no
+    # resource loses coverage; five resources stop listing a stripper probe as
+    # a test that names them. A false citation removed, not coverage lost.
+    #
+    # AND IT IS THE EIGHTH, which is the note at the fifth entry arriving on
+    # schedule for the fourth time. The open-work row for replacing this tuple
+    # with the computation the importer arm ALREADY PERFORMS is still open --
+    # the arm can compute the correct list, and the tool still reads a
+    # hand-maintained one, which is why it keeps being one short.
+    'tests/run_cross_tenant_isolation_scope_probe.py',
 )
 
 # ── WHICH RESOURCES A GENUINE FILE COVERS IS DECLARED, NOT GUESSED ──────────
@@ -693,7 +714,10 @@ _ROW_NAME = re.compile(r"\[\s*'([a-z][a-z0-9_]*)'")
 # above is two copies of one decision where only one got the fix, and unifying
 # them removed the drift and the cross-check together. A second copy is not a
 # second opinion; a different method is.
-_COMMENTS = re.compile(r'/\*.*?\*/|//[^\n]*', re.S)
+#
+# THE REGEX THAT USED TO DO THIS IS GONE RATHER THAN LEFT BESIDE IT. A dead
+# `_COMMENTS` pattern sat here after the rewrite, referenced by nothing -- the
+# exact shape the next reader copies because it looks like the live one.
 
 
 def strip_comments(fragment):

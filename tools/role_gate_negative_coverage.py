@@ -401,15 +401,157 @@ def literal_driven(src, all_roles):
     return out
 
 
+_TABLE_DECL = re.compile(r"""const\s+([A-Za-z_$][\w$]*)\s*=\s*\[([\s\S]*?)\]\s*;""")
+_TABLE_ROW = re.compile(r"""\[\s*['"]([a-z][a-z0-9_]*)['"]""")
+_DESTRUCTURED = re.compile(r"""for\s*\(\s*(?:const|let|var)\s*\[\s*([A-Za-z_$][\w$]*)"""
+                           r"""[^\]]*\]\s+of\s+([A-Za-z_$][\w$]*)\s*\)\s*\{""")
+_ROLE_CALL = re.compile(r"""\(\s*['"]([a-z][a-z0-9_]*)['"]""")
+
+
+def table_driven(src, all_roles, gated_names):
+    """{resource: {roles}} from a loop over a RESOURCE TABLE with a fixed role.
+
+    ── THE FALSE NEGATIVE THIS CLOSES (2026-09-29) ───────────────────────────
+    `loop_driven` above reads a loop over a ROLE list with the resource named
+    inside. The MIRROR shape was invisible to both existing rules:
+
+        const ADMIN_REFUSALS = [
+          ['alf_billing', 'read',  null, 'resident billing'],
+          ['alf_staff',   'write', {id}, 'the staff roster'],
+        ];
+        for (const [resource, action, payload, why] of ADMIN_REFUSALS) {
+          const { res } = await call('caregiver', { action, resource });
+          assert.strictEqual(code(res), 'FORBIDDEN');
+        }
+
+    There is no `resource: 'alf_billing'` and no `tokenFor('caregiver')` in
+    that, so `literal_driven` sees nothing; the array members are arrays rather
+    than role names, so `loop_driven` sees nothing either.
+
+    MEASURED 2026-09-28: api/sd-data-alf-caregiver-scope.test.js drives ELEVEN
+    resources through exactly that table as `caregiver` -- a role every one of
+    their gates excludes -- and FIVE of them sat in the NOT-DRIVEN bucket,
+    whose own text reads "there is no suite to add an arm to". `--ablate
+    alf_billing` then reported 3 of 3 gate blocks CAUGHT, by that very suite.
+    The bucket was over-reporting by at least 31%.
+
+    ── WHY THIS IS NOT ATTEMPT 1 AGAIN ───────────────────────────────────────
+    Attempt 1 (module docstring) credited a bare role literal in any file that
+    asserted a refusal anywhere; two of the five it newly credited were still
+    SILENT under ablation. FILE-WIDE ATTRIBUTION was the defect. So this rule is
+    BODY-SCOPED and needs all five at once, mirroring loop_driven:
+
+      1. an array literal whose members are ARRAYS whose FIRST element is a
+         KNOWN GATED RESOURCE -- a table of something else contributes nothing;
+      2. a for-of over it with a DESTRUCTURED head, body boundary found by
+         BRACE MATCHING on masked code, never end-of-file;
+      3. the destructured resource variable used as an identifier in that body;
+      4. a role refusal asserted inside that same body;
+      5. a role LITERAL in a call position inside that same body.
+
+    Locked against synthetic fixtures in both directions BEFORE it was believed
+    about this repo: tests/run_role_gate_table_rule_probe.py, N1-N6.
+
+    STILL A SCREEN, NOT A VERDICT. `--ablate` remains the only sound
+    measurement and the pin is only ever lowered on an ablation-CONFIRMED
+    result.
+    """
+    brace, code = masks(src)
+    tables = {}
+    for m in _TABLE_DECL.finditer(code):
+        names = [n for n in _TABLE_ROW.findall(m.group(2)) if n in gated_names]
+        if names:
+            tables[m.group(1)] = set(names)
+    if not tables:
+        return {}
+
+    out = {}
+    for m in _DESTRUCTURED.finditer(code):
+        var, table = m.group(1), m.group(2)
+        names = tables.get(table)
+        if not names:
+            continue
+        end = body_end(brace, m.end() - 1)
+        if end is None:
+            continue
+        body_code = code[m.end() - 1:end]
+        body_brace = brace[m.end() - 1:end]
+        # NOT AS AN OBJECT KEY. `{ resource: 'alf_billing' }` contains the
+        # word `resource` and drives nothing; the first draft accepted it and
+        # arm N4 said so. The variable must appear in a VALUE position.
+        #
+        # AND THIS LINE SHIPPED WITH A LITERAL BACKSPACE ON ITS FIRST
+        # WRITE -- `` where `` was meant -- which made it match
+        # nothing and silently zeroed the whole rule on the real file
+        # while every synthetic fixture still passed. That is the exact
+        # defect this repo already records once, reproduced here by a
+        # shell heredoc eating one backslash. Found by the real-corpus
+        # arm returning [] when a hand trace of the same five conditions
+        # returned all eight.
+        if not re.search(r'\b' + re.escape(var) + r'\b(?!\s*:)', body_brace):
+            continue
+        if not ROLE_REFUSAL.search(body_code):
+            continue
+        roles = {r for r in _ROLE_CALL.findall(body_code) if r in all_roles}
+        if not roles:
+            continue
+        for res in names:
+            out.setdefault(res, set()).update(roles)
+    return out
+
+
+def blind_population():
+    """Gated resources NO rule could attribute a role to, as its own count.
+
+    THE THIRD BUCKET IS NOT THE BLIND ONE, AND CONFLATING THEM IS HOW THIS
+    TOOL OVERSTATED ITSELF. "NOT DRIVEN by any suite at all" is a claim about
+    the WORLD -- nothing exercises this resource. What the screen can actually
+    establish is a claim about ITSELF: no rule it owns could attribute a role.
+    Those were the same number until 2026-09-29, and they were not the same
+    fact: five of sixteen were driven by a table rule that did not exist yet.
+
+    So the blind population is counted and PRINTED on every run, beside the
+    buckets rather than inside them, and it shrinks when a rule is added rather
+    than when the world changes.
+    """
+    src = _read(SD, 'the role gates')
+    sets = role_sets(src)
+    gated = gated_branches(src)
+    all_roles = set()
+    for v in sets.values():
+        all_roles |= v
+    drv = driven(all_roles)
+    return {r for r in gated if not drv.get(r)}
+
+
+def render_blind_line(blind):
+    """The one-line disclosure printed on every run."""
+    return ('BLIND TO THIS SCREEN: %d gated resource(s) that NO rule here could '
+            'attribute a role to. That is a fact about the rules, not about the '
+            'world -- `--ablate <resource>` is the only thing that settles it.'
+            % len(blind))
+
+
 def file_driven(src, all_roles):
     """{resource: {roles}} for ONE suite's source text -- both rules, unioned.
 
     Separate from driven() so the fixture probe can drive it on synthetic text.
     A rule that can only be exercised against the real repo cannot distinguish
     "the rule is right" from "the repo happens to suit it".
+
+    THREE RULES NOW: the strict literal one, the role-LIST loop, and the
+    resource-TABLE loop (table_driven). The third needs the gated-name set to
+    decide whether an array is a resource table at all, which is why it is
+    passed separately rather than inferred.
     """
     out = {}
-    for part in (literal_driven(src, all_roles), loop_driven(src, all_roles)):
+    try:
+        gated_names = set(gated_branches(_read(SD, 'the role gates')))
+    except CouldNotTell:
+        gated_names = set()
+    parts = (literal_driven(src, all_roles), loop_driven(src, all_roles),
+             table_driven(src, all_roles, gated_names))
+    for part in parts:
         for res, roles in part.items():
             out.setdefault(res, set()).update(roles)
     return out
@@ -444,9 +586,14 @@ def analyse():
         excluded = all_roles - allowed
         got = drv.get(res)
         if not got:
-            # NOT the same finding. Nothing drives this resource at all, so there is
-            # no suite to add an arm to -- that is a coverage gap of a different
-            # kind and is counted apart rather than folded in.
+            # NOT the same finding, and the label is weaker than it reads. What
+            # is established here is that NO RULE THIS TOOL OWNS could attribute
+            # a role -- which is a fact about the rules, not about the world.
+            # It is counted apart rather than folded in, and the blind line in
+            # main() says out loud that this same set is the screen's blind
+            # spot. The old comment here asserted "there is no suite to add an
+            # arm to", and on 2026-09-29 a table rule that did not exist yet
+            # found suites for five of sixteen.
             undriven.append((res, sorted(gated[res])))
             continue
         if got & excluded:
@@ -578,6 +725,17 @@ def main(argv=None):
           % len(covered))
     print('NOT DRIVEN by any suite at all (a different gap, counted apart):     %d'
           % len(undriven))
+
+    # ── THE BLIND POPULATION, COUNTED AND PRINTED ON EVERY RUN ──────
+    # The three buckets above are claims about the WORLD. This one is a
+    # claim about the SCREEN ITSELF, and they were conflated until
+    # 2026-09-29: five resources sat under "NOT DRIVEN by any suite at
+    # all" because no RULE here could attribute a role to them, and a
+    # table rule that did not exist yet found all five. A bucket that
+    # cannot tell "nothing drives it" from "I cannot see what drives
+    # it" overstates the world using a fact about itself.
+    print('')
+    print('  ' + render_blind_line(set(r for r, _g in undriven)))
     print('')
     if args.list or uncovered:
         for res, gs, got in uncovered:
@@ -600,7 +758,15 @@ def main(argv=None):
             '_what': 'Pinned role-gate negative coverage. Written by '
                      'tools/role_gate_negative_coverage.py --baseline. A ratchet: '
                      '`uncovered` must never rise. Lower it by adding an arm that '
-                     'drives the resource with a role its gate excludes.',
+                     'drives the resource with a role its gate excludes. '
+                     'BUT A RISE IS NOT ALWAYS A REGRESSION: adding a RULE moves '
+                     'resources out of not_driven and into uncovered without the '
+                     'world changing, because the screen could not see them '
+                     'before. That happened on 2026-09-29 -- the resource-table '
+                     'rule took uncovered 12 -> 17 and not_driven 16 -> 11 in one '
+                     'commit, and nothing about the gates changed. Across a rule '
+                     'change the two pins are not comparable; the commit that '
+                     're-pins has to say which it was.',
             'uncovered': len(uncovered),
             'covered': len(covered),
             'not_driven': len(undriven),
