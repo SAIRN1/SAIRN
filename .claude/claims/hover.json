@@ -315,8 +315,8 @@
       "task": "six-item queue: CRITERIA_VERSION 3 bare-colon implied-file citation checker for hover_editor_review_criteria.py, tests written first; reproduce and repair cross-clone misdirection in hover_self_health_hook.py, a fixture built first; reproduce and repair a false-positive ssh remote refusal in the mirror push routine, a fixture built first; confirm sd_inventory carries a routable pairing note beside dnt_supplies; one undirected sample batch; resume the weighted-rotation cold-scan draw.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hover.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. Three earlier attempts were refused on shared incidental vocabulary rather than a shared subject or file. Each component of this claim checks CLEAR on its own.\n\nFILES: hover_editor_review_criteria.py hover_self_health_hook.py hover_backup_mirror.py hover_cold_scan_pool.py",
       "claimed_at": "2026-09-29T11:46:01Z",
       "claimed_at_epoch": 1790682361.3445787,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T12:19:10Z",
       "files": [
         "hover_backup_mirror.py",
         "hover_cold_scan_pool.py",
