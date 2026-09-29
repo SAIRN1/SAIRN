@@ -65,14 +65,36 @@ EXIT_COULD_NOT_RUN = 2
 # not-in-the-list branch below is the only thing that warns -- so a probe pointed
 # at SV-AUDIT-2026 would have been told nothing and then earned 401.
 #
-#   RF-AUDIT-2026   200 EXISTS   (seeded 2026-09-02)
-#   SD-AUDIT-2026   200 EXISTS
-#   ALF / LAW / SC / MECH / SV   401 ABSENT
+# ── RE-MEASURED 2026-09-29, AND FOUR OF THE SIX HAD CHANGED ────────────────
+# This block said "ALF / LAW / SC / MECH / SV  401 ABSENT" and the tuple below
+# named two keys. Michael ran sql/audit_license_seed_2026-09-28.sql in between,
+# and NOTHING HERE MOVED -- so every probe using one of the four newly-minted
+# licences was told it was "audit-SHAPED but not one this file knows about",
+# which is a warning that means nothing and trains a reader to ignore the one
+# case that does matter.
 #
-# The four that are needed are in sql/audit_license_seed_2026-09-28.sql. SV is
-# deliberately not, because no probe needs it. RE-MEASURE rather than trusting
-# this tuple: it is a snapshot, and its own comment is the reason to distrust it.
-KNOWN_AUDIT_KEYS = ('SD-AUDIT-2026', 'RF-AUDIT-2026')
+# ONE check_license CALL PER KEY against the deployed platform, 2026-09-29:
+#
+#   RF-AUDIT-2026    200 EXISTS   (seeded 2026-09-02)
+#   SD-AUDIT-2026    200 EXISTS
+#   ALF-AUDIT-2026   200 EXISTS   (seeded 2026-09-28)
+#   LAW-AUDIT-2026   200 EXISTS   (seeded 2026-09-28)
+#   MECH-AUDIT-2026  200 EXISTS   (seeded 2026-09-28)
+#   SC-AUDIT-2026    200 EXISTS   (seeded 2026-09-28)
+#   SV-AUDIT-2026    401 ABSENT   -- still, and deliberately: no probe needs it
+#
+# THIS TUPLE IS A SNAPSHOT AND CANNOT BE ANYTHING ELSE. Deriving it at run time
+# means a network call inside a guard whose whole job is to run before anything
+# touches the network, and deriving it from the seed FILE would read a key named
+# in that file's prose as one it mints -- SV-AUDIT-2026 appears there in a
+# sentence explaining why it is NOT seeded. So it is a dated measurement, and
+# the date is here so the next reader can see how old it is rather than trusting
+# the sentence around it.
+#
+# THE FAILURE MODE IS NOISE, NOT A BYPASS: an absent key still earns its 401
+# from the platform. What a stale list costs is the NOTE below meaning nothing.
+KNOWN_AUDIT_KEYS = ('SD-AUDIT-2026', 'RF-AUDIT-2026', 'ALF-AUDIT-2026',
+                    'LAW-AUDIT-2026', 'MECH-AUDIT-2026', 'SC-AUDIT-2026')
 
 
 def is_audit_licence(key):
