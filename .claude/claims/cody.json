@@ -2742,8 +2742,8 @@
       "task": "docs/defect-density-register.json",
       "claimed_at": "2026-09-29T17:57:57Z",
       "claimed_at_epoch": 1790704677.7669418,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T23:51:53Z",
       "files": null
     }
   ],
