@@ -19453,62 +19453,6 @@
       "recurrence_open": "Six role refusals remain unreachable by --ablate, the only sound measurement in that file: five compound conditions and one with its body on a single line. TWO OF THEM are their resource's ONLY gate -- alf_incidents and alf_op_audits have zero ablatable blocks, so the instrument answers COULD NOT TELL for those resources entirely, and both also sit in the not-driven bucket. Nothing measures whether a resource's gates are individually covered; the bucket counts remain per-resource."
     },
     {
-      "commit": "937bd6e858e3",
-      "date": "2026-09-29",
-      "subject": "fix(sairncare): a prior invoice whose blob is NULL was reconciled against nothing -- the same false figure, through a third door",
-      "files": [
-        "api/sd-data-derive-charges.test.js",
-        "api/sd-data.js"
-      ],
-      "lines_added": 393,
-      "lines_removed": 3,
-      "app": "sairncare",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "alf_billing derive_charges: a prior-invoice row that EXISTS with a null data blob made priorRow null, so the 2026-09-27 no-charge_lines guard was skipped entirely, the else branch reconciled against [] and the response reported EVERY derived charge as newly added with net_change equal to the whole invoice, beside invoice_exists true. That is the identical false reading the 2026-09-27 comment in that branch describes and claims to have closed -- the third door into one defect in one function, after the unreadable read (2026-09-04) and the absent charge_lines key (2026-09-27).",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "2b39b9e245e6",
-        "date": "2026-09-29",
-        "subject": "fix(sairncare): a prior invoice whose blob is NULL was reconciled against nothing -- the same false figure, through a third door",
-        "lag_days": 0
-      },
-      "citation_note": "The nearest standing rule is PR 1.11 fail-closed-on-absent-dependency, which is about a tool that cannot run; this is a data state folded into a different data state, so the shape is adjacent but not the same rule.",
-      "contributing_factors": [
-        {
-          "factor": "The guard was written as if (priorRow && ...) so it was reachable only when the blob was truthy; a null blob is unreadable data and was being treated as absent data",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The three states are decided on ROW EXISTENCE first and the blob second, and a row present with an unreadable blob now refuses to reconcile with its own code PRIOR_INVOICE_BLOB_UNREADABLE, distinct from PRIOR_INVOICE_HAS_NO_CHARGE_LINES."
-        },
-        {
-          "factor": "Two earlier fixes to this same branch each closed one branch of a three-way distinction nobody had enumerated, and each left a comment reading as if the class were closed",
-          "kind": "process",
-          "action_status": "done",
-          "action": "The new comment enumerates all three states by name and says which earlier fix covered which, so the next reader sees a closed set rather than two anecdotes."
-        },
-        {
-          "factor": "No suite drove derive_charges at all -- the reconciliation path had never been exercised by a test in either direction",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "api/sd-data-derive-charges.test.js, 10 arms: the null blob, the string blob, the null-vs-empty code distinction, the three must-not-change cases, and a KNOWN-BAD control that replays the pre-fix expression verbatim on the same fixture and shows it produces net_change equal to the whole invoice."
-        },
-        {
-          "factor": "A stored JSONB blob can be null and nothing in the schema or the write path prevents it, so every read in this file that does rows[0] && rows[0].data or a default carries the same latent shape",
-          "kind": "latent-condition",
-          "action_status": "planned",
-          "action": "Sweep api/sd-data.js for reads that decide a downstream branch on the truthiness of a blob rather than on row existence. NOT DONE in this change -- it is a different scope and would be the widening this platform refuses."
-        }
-      ],
-      "recurrence_open": "The sweep named in factor 4 is not run. Every other read in this file that decides on blob truthiness instead of row existence still has the same shape, and only this one branch was fixed."
-    },
-    {
       "commit": "2c5c621d544c",
       "date": "2026-09-29",
       "subject": "fix(tools): the cross-tenant stripper is string-aware, and its two derivations are independent again -- the cross-check found two bugs in one session",
@@ -20500,6 +20444,62 @@
       "recurrence_open": "Sabotage anchors are text in a moving file by construction and this platform has measured them decaying repeatedly. The harness now parse-checks its own mutation, so an arm that plants NOTHING is reported -- but an arm whose mutation applies and is caught for the wrong reason is still invisible to it, and that one was settled here by reading rather than by a check."
     },
     {
+      "commit": "937bd6e858e3",
+      "date": "2026-09-29",
+      "subject": "fix(sairncare): a prior invoice whose blob is NULL was reconciled against nothing -- the same false figure, through a third door",
+      "files": [
+        "api/sd-data-derive-charges.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 393,
+      "lines_removed": 3,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "alf_billing derive_charges: a prior-invoice row that EXISTS with a null data blob made priorRow null, so the 2026-09-27 no-charge_lines guard was skipped entirely, the else branch reconciled against [] and the response reported EVERY derived charge as newly added with net_change equal to the whole invoice, beside invoice_exists true. That is the identical false reading the 2026-09-27 comment in that branch describes and claims to have closed -- the third door into one defect in one function, after the unreadable read (2026-09-04) and the absent charge_lines key (2026-09-27).",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "2b39b9e245e6",
+        "date": "2026-09-29",
+        "subject": "fix(sairncare): a prior invoice whose blob is NULL was reconciled against nothing -- the same false figure, through a third door",
+        "lag_days": 0
+      },
+      "citation_note": "The nearest standing rule is PR 1.11 fail-closed-on-absent-dependency, which is about a tool that cannot run; this is a data state folded into a different data state, so the shape is adjacent but not the same rule.",
+      "contributing_factors": [
+        {
+          "factor": "The guard was written as if (priorRow && ...) so it was reachable only when the blob was truthy; a null blob is unreadable data and was being treated as absent data",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The three states are decided on ROW EXISTENCE first and the blob second, and a row present with an unreadable blob now refuses to reconcile with its own code PRIOR_INVOICE_BLOB_UNREADABLE, distinct from PRIOR_INVOICE_HAS_NO_CHARGE_LINES."
+        },
+        {
+          "factor": "Two earlier fixes to this same branch each closed one branch of a three-way distinction nobody had enumerated, and each left a comment reading as if the class were closed",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The new comment enumerates all three states by name and says which earlier fix covered which, so the next reader sees a closed set rather than two anecdotes."
+        },
+        {
+          "factor": "No suite drove derive_charges at all -- the reconciliation path had never been exercised by a test in either direction",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/sd-data-derive-charges.test.js, 10 arms: the null blob, the string blob, the null-vs-empty code distinction, the three must-not-change cases, and a KNOWN-BAD control that replays the pre-fix expression verbatim on the same fixture and shows it produces net_change equal to the whole invoice."
+        },
+        {
+          "factor": "A stored JSONB blob can be null and nothing in the schema or the write path prevents it, so every read in this file that does rows[0] && rows[0].data or a default carries the same latent shape",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Sweep api/sd-data.js for reads that decide a downstream branch on the truthiness of a blob rather than on row existence. NOT DONE in this change -- it is a different scope and would be the widening this platform refuses."
+        }
+      ],
+      "recurrence_open": "The sweep named in factor 4 is not run. Every other read in this file that decides on blob truthiness instead of row existence still has the same shape, and only this one branch was fixed."
+    },
+    {
       "commit": "d0bb06783104",
       "date": "2026-09-29",
       "subject": "docs(claims): the matcher blocks on prose position, not ownership -- filed, unassigned",
@@ -20615,6 +20615,58 @@
         }
       ],
       "recurrence_open": "Only THIS suite strips. The fixed-window-substring shape was swept once before and the sweep's finding list is not re-run on new checks, so the next check that greps a raw single-file app for an identifier has the same hole available. tools/gated_resource_direct_fetch_header.js is also still the only check of its class -- nothing verifies that the 900-character window is wide enough in the other direction."
+    },
+    {
+      "commit": "e4971ae04901",
+      "date": "2026-09-29",
+      "subject": "fix(sairnbiz): a typed overtime threshold of 0 was swallowed before validation could see it",
+      "files": [
+        "sairnbiz.html",
+        "tests/sairnbiz_ot_threshold_coalesce.js"
+      ],
+      "lines_added": 233,
+      "lines_removed": 1,
+      "app": "sairnbiz",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "sbCfg() coalesced the overtime threshold on FALSINESS, so a typed 0 was replaced by the default 40 before sbOtThreshold could see it -- making the n<=0 branch unreachable and leaving the rejection note with nothing to report",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "2c43d98b3dd2",
+        "date": "2026-09-04",
+        "subject": "fix(sairnbiz): all five System Settings were write-only, and two of them had become wrong to wire",
+        "lag_days": 25
+      },
+      "phase_note": "sbCfg was written with c.ot||d.ot in the commit that made the settings readable; the overtime threshold became a validated input later, and nothing revisited the getter that feeds it",
+      "contributing_factors": [
+        {
+          "factor": "a getter substituted a default on falsiness, so the two values the validator most needed to see -- 0 and empty -- were the two it could never receive",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "ot substitutes on ABSENT via hasOwnProperty; fy and terms keep the falsy coalesce deliberately, being strings whose only falsy value genuinely means unset"
+        },
+        {
+          "factor": "every existing arm drove sbOtThreshold with a RAW value, so the layer that decides what raw ever is was untested",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the new suite drives from stored config through the real chain, and extracts the three functions by name from the page rather than re-typing them"
+        },
+        {
+          "factor": "I overstated the finding first -- my own arm demanded a cleared field be reported as rejected, which contradicts the authors stated rule that an absent setting is not a typo",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the arm now asserts the rule rather than my reading of it, with the correction recorded at the line"
+        }
+      ],
+      "recurrence_open": "not driven live and no stored config inspected. The same-shape sweep covered sairnbiz.html only: 13 numeric falsy-coalesce sites there, 12 coalescing to 0 and therefore harmless, 1 a toast duration. No other app was swept, and nothing checks for a getter that substitutes a default ahead of its own validator."
     },
     {
       "commit": "eb2f92fac84f",
