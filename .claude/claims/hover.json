@@ -373,6 +373,21 @@
         "hover_cold_scan_pool.py",
         "hover_log.py"
       ]
+    },
+    {
+      "id": "hover-1790693173",
+      "session": "hover",
+      "subject": "hover",
+      "task": "seven-item queue: log hover2_log_mirror.py's ssh bug routable; restrict the mirror to log/anchors/beacon only per Michael's decision, remove the 42 non-log files, verify every tool is committed and pushed to the platform repo first, update log 588 and the docstring, confirm the restore drill; two independent cold reads at HEAD (sb_emps/sb_co tier gap, mech_takeoffs redaction-gate scope); backfill item 6's findings if the register owner cannot act from them alone; one undirected batch through the linter; resume the weighted-rotation cold-scan draw; a methodology sweep of my own tools for single-literal exemptions with known-bad fixtures.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hover.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. One earlier attempt was refused on shared incidental vocabulary rather than a shared subject or file. Each component of this claim checks CLEAR on its own.\n\nFILES: hover_backup_mirror.py docs/CRITICALITY-TIERS.md api/sd-data.js",
+      "claimed_at": "2026-09-29T14:46:13Z",
+      "claimed_at_epoch": 1790693173.3514924,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/sd-data.js",
+        "docs/CRITICALITY-TIERS.md",
+        "hover_backup_mirror.py"
+      ]
     }
   ],
   "refusals": [
