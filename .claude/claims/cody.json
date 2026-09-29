@@ -2646,6 +2646,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "cody-1790687286",
+      "session": "cody",
+      "subject": "cody-deadrule",
+      "task": "sweep every pattern based checker by neutralising one compiled rule at a time and reporting the ones whose deletion turns nothing red",
+      "claimed_at": "2026-09-29T13:08:06Z",
+      "claimed_at_epoch": 1790687286.5776563,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
@@ -2770,6 +2781,19 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "shared phrase: \"first tests\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-29T13:02:39Z",
+      "my_subject": "cody-ctrlchar",
+      "my_task": "the control-character check did not catch a literal backspace inside a regex in a python tool -- find why and fix it, known-bad fixture first",
+      "other_session": "fourth",
+      "other_subject": "platform",
+      "other_task": "discharge hank's 71h alf_mar and mech_credentials review obligation into the ledger against the verdict document already written; then: report the credential purge and read-mapper sweep status by item with shas and do whichever is not done; make the family-contact consent timestamp stamp once on the false-to-true transition and never re-stamp, tests first with a known-bad control and a live drive; a scope note for server-side witness verification on controlled-substance counts; a self-correction FLAG on the clock-correction path; the hire-anniversary refusal-to-answer and the leap-day window_from; re-derive sf_vehicle_service's tier and gate it if it is ungated Tier A; a report-only staging sweep; three register cell corrections from the hover auditor; and a sweep of probe and tool headers for stateful claims that are not derived at run time. FILES: docs/tier-a-reviews.json api/sd-data.js api/_lib/compliance-rules.js docs/defect-density-register.json",
+      "other_claimed_at": "2026-09-29T11:44:16Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: known-bad",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
