@@ -2717,6 +2717,24 @@
         "docs/defect-density-register.json",
         "docs/tier-a-reviews.json"
       ]
+    },
+    {
+      "id": "fourth-1790691168",
+      "session": "fourth",
+      "subject": "tooling",
+      "task": "a report-only demo-credential sign-in checker reading an untracked local file and never printing a PIN, with a pre-commit content-shape guard; diagnose whether the unreachable blob in this clone is new or the earlier check was wrong and make the purge check write a dated result record; find and fix the register re-seat livelock so a re-seat reaches a fixed point, tests first; sweep every session-gated and Tier A resource for a missing expectedApp entry and add a permanent test arm; and map every hook that can rewrite the tree or a commit with a rebase-convergence simulation. FILES: tools/demo_credentials_check.py tests/run_demo_credentials_probe.py tools/staged_credential_check.py .gitignore .githooks/prepare-commit-msg tools/push_retry.py tools/defect_register.py api/sd-data-sf-session-gate.test.js",
+      "claimed_at": "2026-09-29T14:12:48Z",
+      "claimed_at_epoch": 1790691168.1420293,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/sd-data-sf-session-gate.test.js",
+        "tests/run_demo_credentials_probe.py",
+        "tools/defect_register.py",
+        "tools/demo_credentials_check.py",
+        "tools/push_retry.py",
+        "tools/staged_credential_check.py"
+      ]
     }
   ],
   "refusals": [
