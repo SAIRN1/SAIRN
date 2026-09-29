@@ -2592,6 +2592,17 @@
       "status": "released",
       "released_at": "2026-09-29T10:51:32Z",
       "files": null
+    },
+    {
+      "id": "cody-1790679309",
+      "session": "cody",
+      "subject": "cody",
+      "task": "cody-q19 test",
+      "claimed_at": "2026-09-29T10:55:09Z",
+      "claimed_at_epoch": 1790679309.2660716,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
@@ -2636,6 +2647,34 @@
       ],
       "source": "status-registry",
       "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-29T10:54:39Z",
+      "my_subject": "cody",
+      "my_task": "cody-q19: discharge my most-overdue eligible Tier A review (cc 2026-09-26T13:13:44Z, 70h, the storedBlob blob-builder migration); triage the 54 checker_selftest_check findings by file owner and fix the ones in files I hold, test first per tool, reporting file/tool/owner for the rest; claim_provenance.py four-subcommand-door coverage or the reason it does not need it; read all 14 NOT JUDGED arms in assertion_label_shape_check.py individually and either cover or register each as a named permanent limit; confirm the sf_trustee_audits obligation record names the real gap; confirm where each of the four doc deliverables has landed in its real target file and name the holder for any still blocked; the skill-mirror sync for sairn-code-scrubber; and a methodology pass confirming every checker I built or touched this session carries its own fixture-based known-bad control. SUBJECT NAMED PER PR 4.3 FILES: tools/checker_selftest_check.py tests/run_checker_selftest_probe.py tools/assertion_label_shape_check.py tests/run_assertion_label_shape_probe.py tools/entry_point_scope_check.py tests/run_entry_point_scope_probe.py tools/parse_zero_third_state_check.py tests/run_parse_zero_third_state_probe.py tools/claim_provenance.py docs/tier-a-reviews.json .claude/skills/sairn-code-scrubber/SKILL.md docs/2026-09-29-selftest-triage-cody.md docs/2026-09-29-not-judged-arms-cody.md",
+      "other_session": "cc",
+      "other_subject": "platform",
+      "other_task": "discharge the two review obligations currently assigned to me, identified by author and opened_at in the ledger; measure which findings this week rested on the claim-activity checker while it called expired claims active; drive the revoked-licence enforce-mode path in the AI proxy LIVE against a scratch env and fix the refusal, regression first, both env states; read the alf_billing SILENT arm and decide wire-a-suite versus register-a-gap with a severity; confirm each of the six unreachable role-gate refusals is genuinely unreachable and not a second silent gap; merge or flag the 27 regfresh proposal branches without gh; the StoneDesk storage KPI label; and record the severity correction on the trust-ledger probe finding. TWO QUEUE ITEMS ARE DEFERRED AND NOT TAKEN. Their blocker and the exact path they need are recorded in THIS session's claim file under refusals, written there by the claim tool itself, because naming either in this string blocks my own claim on my own declaration -- the third instance today of a text-reading gate matching a disclosure instead of a claim. Both are rechecked before this session ends. SUBJECT NAMED PER PR 4.3 FILES: docs/tier-a-reviews.json api/claude.js api/claude-licence-enforce.test.js tools/role_gate_negative_coverage.py docs/role-gate-negative-coverage.json stonedesk.html tests/stonedesk_admin_storage_kpi.js docs/defect-density-register.json docs/SAIRN-OPEN-WORK-INDEX.md docs/checker-coverage-baseline.json tools/checker_denominator.py",
+      "other_claimed_at": "2026-09-28T20:00:58Z",
+      "shared_files": [
+        "docs/tier-a-reviews.json"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-29T10:54:39Z",
+      "my_subject": "cody",
+      "my_task": "cody-q19: discharge my most-overdue eligible Tier A review (cc 2026-09-26T13:13:44Z, 70h, the storedBlob blob-builder migration); triage the 54 checker_selftest_check findings by file owner and fix the ones in files I hold, test first per tool, reporting file/tool/owner for the rest; claim_provenance.py four-subcommand-door coverage or the reason it does not need it; read all 14 NOT JUDGED arms in assertion_label_shape_check.py individually and either cover or register each as a named permanent limit; confirm the sf_trustee_audits obligation record names the real gap; confirm where each of the four doc deliverables has landed in its real target file and name the holder for any still blocked; the skill-mirror sync for sairn-code-scrubber; and a methodology pass confirming every checker I built or touched this session carries its own fixture-based known-bad control. SUBJECT NAMED PER PR 4.3 FILES: tools/checker_selftest_check.py tests/run_checker_selftest_probe.py tools/assertion_label_shape_check.py tests/run_assertion_label_shape_probe.py tools/entry_point_scope_check.py tests/run_entry_point_scope_probe.py tools/parse_zero_third_state_check.py tests/run_parse_zero_third_state_probe.py tools/claim_provenance.py docs/tier-a-reviews.json .claude/skills/sairn-code-scrubber/SKILL.md docs/2026-09-29-selftest-triage-cody.md docs/2026-09-29-not-judged-arms-cody.md",
+      "other_session": "hover",
+      "other_subject": "hover",
+      "other_task": "hover audit-log housekeeping round seven: confirm two prior notes actually reached a builder-visible queue and route them now if not; check whether an open alcohol-hours finding has been picked up and restate it if not; sample the cold pool once undirected; draw the next weighted rotation pick. FILES: .claude/skills/sairn-hover-auditor/",
+      "other_claimed_at": "2026-09-29T10:48:39Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"claude skills\"",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
