@@ -199,7 +199,132 @@ empty; worth not leaving that way.
 - Points 1, 2 and 5 are read from source. Only points 3 and 6 are driven
   against live behaviour, and point 6 is the one that makes the rest
   provisional.
+
+  **SUPERSEDED 2026-09-29 — see the re-drive at the end of this document.**
+  `sairncare_family_contacts_schema.sql` has been run. Point 6 is CLOSED and the
+  provisional marking on points 1 and 2 is LIFTED. Point 4 stays unreviewed for
+  the unchanged reason: I wrote it. Read that section before acting on this
+  line.
 - I am **not independent of the class** in point 1's finding: I fixed the same
   caller-supplied-identity defect in `alf_incidents` the day before, so I came
   to this looking for it. That is why the `administered_by` finding is stated
   with its line numbers rather than argued.
+
+---
+
+# RE-DRIVE, 2026-09-29 — the table exists, and driving it found something the source read could not
+
+The document above was written while
+`sql/sairncare_family_contacts_schema.sql` had not been run, and said so: *"the
+single most important line in this verdict"*. Michael has since run it. Every
+claim that rested on the table's absence is re-driven here against the deployed
+endpoint on `ALF-AUDIT-2026`, session `zz-audit-owner` (`owner`).
+
+## Point 6 — **CLOSED**
+
+```
+read alf_family_contacts -> 200  provisioned=True  scoped_to_assigned=False  rows=0
+```
+
+**And the small finding in point 6 is moot on this path.** The un-provisioned
+branch returned before `scoped_to_assigned` was set; on the provisioned path the
+field is present in the response keys, value `false` for a broad-tier caller. The
+un-provisioned branch is unchanged and would still omit it — worth fixing, no
+longer reachable here.
+
+## Points 1 and 2 — provisional marking LIFTED
+
+Both reasoned about a table that did not exist. It exists. Neither verdict
+changes: point 1's `FAMILY_FIELDS = ['date','time','status']` is still complete by
+construction, and point 2's mislabelled-row exposure is still integrity rather
+than disclosure. What changes is that they are now statements about a real table.
+
+## Point 4 — **STILL NOT REVIEWED, and the reason is unchanged**
+
+I wrote that fix. The table existing does not make me independent of it. It must
+be discharged by **cc, cody or hank** — not by me, and not by the author of the
+resource.
+
+## The check constraint: present, and UNREACHABLE THROUGH THE API
+
+Point 6 said the `alffam_consent_has_a_date` constraint was *"asserted in a file
+and verified by nothing"*. It is now in the database. Driven through the endpoint
+it still verifies nothing, and the reason is worth writing down rather than
+recording a pass:
+
+```
+write mar_consent=true with NO consent_granted_at -> 200 ACCEPTED
+  stored: mar_consent=true  consent_granted_at=2026-09-29T11:22:21.621+00:00
+                            consent_granted_by=zz-audit-owner
+```
+
+`api/sd-data.js` sets `consent_granted_at: famConsent ? famNow : null` — from the
+server clock, never from the body — so a `true` flag always arrives with a
+timestamp and the constraint **cannot fire on this path by construction**. That is
+the right call for the field (*"who authorised a disclosure is not something the
+caller gets to state"*) and it means the constraint is defence against a DIRECT
+database write — a SQL editor, a migration, a future writer — and not against the
+endpoint.
+
+So: the constraint is real, it is doing a real job, and **an API-level test of it
+would be a test that cannot fail.** Recorded that way instead of as a pass.
+
+Also driven: `mar_consent` omitted stores `false`; `active` defaults `true`.
+
+## NEW FINDING — an unrelated edit rewrites the consent date
+
+Driven, twice, seventy-nine seconds apart:
+
+```
+BEFORE  consent_granted_at = 2026-09-29T11:22:22.530+00:00   phone = null
+        write: change the PHONE only, mar_consent unchanged at true
+AFTER   consent_granted_at = 2026-09-29T11:23:41.867+00:00   phone = 555-0101
+```
+
+The write is an upsert with `resolution=merge-duplicates` and rebuilds the whole
+row, so `consent_granted_at: famConsent ? famNow : null` **re-stamps on every
+update**. Correcting a family member's phone number moves the recorded moment of
+consent forward.
+
+**Why this matters more than it looks.** `consent_granted_at` is the auditable
+fact about when a third party was authorised to see a resident's medication
+administration record. It is the field a surveyor reads to settle whether consent
+was in place on the date a disclosure happened — and it now answers with the date
+of the last unrelated edit. `consent_granted_by` moves with it, so the row can
+also name the wrong authoriser.
+
+**The platform has already made this exact decision the other way, deliberately.**
+`alf_incidents.recorded_by` is explicitly not re-stamped on update, with the
+reason written at the line: *"the column answers who filed it, not who last
+touched it, and a management follow-up would otherwise erase the reporter."* The
+same sentence applies here word for word, and the opposite was done.
+
+**The fix is not to trust the caller.** It is to stamp the consent pair only on a
+TRANSITION — when `mar_consent` goes from false or absent to true — and to leave
+it untouched when the flag is already true. That keeps the server as the only
+author of the value and stops an edit rewriting it. `consent_revoked_at` has the
+mirror problem in the other direction.
+
+**Severity:** hank's resource and hank's decision; not changed here. I would rate
+it above point 2 — point 2 is an integrity error a reader can spot, and this one
+is a plausible, precise, wrong date.
+
+## Residue on `ALF-AUDIT-2026`
+
+Three `alf_family_contacts` rows, plus the `alf_mar` and `alf_clients` rows
+recorded in `docs/2026-09-29-alf-incidents-live-verification-and-residue.md`. The
+resource accepts only `read` and `write` — no delete verb — so these need the SQL
+editor.
+
+```sql
+-- VERIFY FIRST. Expect exactly three rows.
+select contact_id, mar_consent, active from public.alf_family_contacts
+ where app_id = 'sairncare'
+   and contact_id in ('ZZ-FC-BADCONSENT', 'ZZ-FC-OK', 'ZZ-FC-DEFAULT');
+
+delete from public.alf_family_contacts
+ where app_id = 'sairncare'
+   and contact_id in ('ZZ-FC-BADCONSENT', 'ZZ-FC-OK', 'ZZ-FC-DEFAULT');
+```
+
+Delete these **before** the `alf_clients` row `ZZ-MAR-RESIDENT` they reference.
