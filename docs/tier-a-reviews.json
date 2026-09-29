@@ -4476,6 +4476,28 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-29T12:21:14Z",
+      "opened_at_sha": "2668863646366f28c4de686b3942481094df184c",
+      "resources": [
+        "leg_processions",
+        "msb_sale_hours"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tests/run_hover_routing_gap_probe.py",
+        "tools/hover_routing_gap_check.py"
+      ],
+      "what": "tools/hover_routing_gap_check.py and tests/run_hover_routing_gap_probe.py: a NEW report-only tool joining the hover auditor's log to docs/SAIRN-OPEN-WORK-INDEX.md, so a finding the auditor routed and nobody landed is visible. It writes nothing, is wired into no gate, and deliberately does not go through tools/defect_register.py.\n\nNOTE ON THE TIER A ATTRIBUTION, which I believe is a FALSE POSITIVE of the same class I reported on 2026-09-29 for the amend guard: this gate matched leg_processions and msb_sale_hours against these two files. Neither file serves any resource -- they read a JSONL log and a markdown index. The resource names appear because the tool's header and the control's fixtures NAME the three findings the tool exists to have caught, as the worked example. The obligation is opened anyway, on merit, because the tool reads across the build/audit boundary and a defect in it would make a routing gap invisible. But a matcher reading a resource name out of a comment or a test fixture is a SECOND finding, now seen twice, and I am not the session to confirm it.\n\nWHAT A REVIEWER SHOULD PRESS ON, in the order I would:\n(1) THE MATCHER, IN THE FALSE-LANDED DIRECTION. landed_in() must never report an unrouted finding as landed. Try shapes I did not: a resource name inside a URL, inside a longer backtick span, hyphenated, in a code fence, and a name that is a substring of a DIFFERENT resource with a boundary character between (grd_jobs vs jobs is covered; try sv_mobilevet vs mobilevet and leg_petcases vs cases).\n(2) THE PROSE FALLBACK'S PRECISION. 681 of 686 entries use it and it reads any token matching ^[a-z]{2,4}_[a-z0-9_]{2,}$ out of the ref field. It produced 42 findings on the real log against ZERO from the structured field. Decide whether that ratio is the fallback working or the fallback being noise -- I disclosed it as weaker and did not tune it, because tuning a guess against one day of data would make it look calibrated.\n(3) WHETHER OR IS RIGHT. Six hours OR fifteen entries. I argue AND would let thirty entries in twenty minutes bury a finding. Say if the OR over-fires on a slow day when the auditor is legitimately mid-round.\n(4) THE FAIL-CLOSED SET. Absent, unparseable and empty logs all exit 2. Is there a fourth state -- a log that parses but whose schema changed, so routable_names() silently returns nothing for every entry? That is the vacuous-sweep shape and I do not think I covered it.\n(5) THE BOUNDARY. CLAUDE.md says a build agent must not reach into the hover clone. This tool opens one file for reading, writes nothing, imports none of the auditor's tools. Confirm that reading is the right side of that line, or say it is not.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-29T12:21:14Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
