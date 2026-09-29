@@ -5950,6 +5950,34 @@ module.exports = async (req, res) => {
         return;
       }
       const corrected = Object.assign({}, crRow.data || {});
+      // ── A SELF-CORRECTION IS MARKED, NOT REFUSED (2026-09-29) ────────────
+      // The role gate above states its own reasoning -- "a caregiver correcting
+      // their own clock time with nobody else involved is the unverified
+      // self-assertion EVV exists to stop" -- and does not implement it. It is a
+      // ROLE check, and `owner` IS a scheduler role. So in a one-person agency
+      // the person who is both the owner and the assigned caregiver passes it,
+      // and until this line nothing compared the two ids at all. The operation
+      // that gate was worried about locking out is exactly the one that got an
+      // unmarked self-correction on a federal EVV record.
+      //
+      // A FLAG AND NOT A REFUSAL, deliberately. Refusing would create that
+      // lockout for real: in a one-person agency there is nobody else to file
+      // it, and a caregiver who mis-typed a clock-in would have no route at all.
+      // The evidence already survives -- `proposed_by` is on every entry and the
+      // trail is append-only -- so what was missing is the SIGNAL, not the
+      // record. An auditor reading a hundred visits should not have to join two
+      // fields by eye to find the self-corrected ones.
+      //
+      // ON THE ROW AS WELL AS THE ENTRY, and STICKY. A list view must be able to
+      // see it without opening the array, and a later ordinary correction must
+      // not clear a flag whose entry is still sitting in the trail.
+      const crSelf = !!(crRow.assigned_employee_id
+        && session.employee_id
+        && String(crRow.assigned_employee_id) === String(session.employee_id));
+      if (crSelf) {
+        verdict.entry.self_correction = true;
+        corrected.has_self_correction = true;
+      }
       corrected.clock_corrections = (Array.isArray(corrected.clock_corrections)
         ? corrected.clock_corrections : []).concat([verdict.entry]);
       const cw = await fetch(rest('sen_visits?on_conflict=license_hash,visit_id'), {
@@ -5964,6 +5992,10 @@ module.exports = async (req, res) => {
       const cwRows = await cw.json();
       if (!cw.ok) return upstream(res, cwRows);
       res.status(200).json({ ok: true, entry: verdict.entry,
+        // TOLD AT THE TIME, not only recorded. The filer is usually the person
+        // who can explain it, and a flag they only meet at audit is one nobody
+        // had the chance to annotate.
+        self_correction: crSelf,
         corrections: corrected.clock_corrections.length });
       return;
     }

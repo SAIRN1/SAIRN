@@ -476,9 +476,30 @@ function matchAudience(req, staff) {
 // -> the recorded hours that fall inside the declared window.
 // SERVER-SUPPLIED ONLY -- see the endpoint. The window is reported on every
 // finding so a reader never has to assume which of the three was used.
+// A YYYY-MM-DD that round-trips through the calendar. `new Date('2026-02-29')`
+// does not throw -- it rolls forward to 1 March -- so the round-trip IS the
+// test, not a try/catch.
+function isRealDate(ymd) {
+  if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(String(ymd || ''))) return false;
+  const d = new Date(ymd + 'T00:00:00Z');
+  return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === ymd;
+}
+
+function daysBetween(fromYmd, toYmd) {
+  if (!isRealDate(fromYmd) || !isRealDate(toYmd)) return null;
+  const a = new Date(fromYmd + 'T00:00:00Z').getTime();
+  const b = new Date(toYmd + 'T00:00:00Z').getTime();
+  return Math.round((b - a) / 86400000);
+}
+
 function hoursInWindow(records, window, onDate, trainingYearStart, hireDate) {
+  // HOW FAR THROUGH THE WINDOW THIS EVALUATION FALLS. NULL, never 0, when the
+  // window could not be computed -- 0 is a real answer (day one) and a
+  // could-not-tell must not be able to impersonate it, which is the same rule
+  // window_error already follows.
   const out = { total: 0, by_category: {}, counted: 0, skipped_no_date: 0,
-                window_from: null, window_error: null };
+                window_from: null, window_error: null,
+                window_days_elapsed: null, window_days_remaining: null };
   const on = String(onDate || '');
   let from = null;
   if (window === 'rolling_12_months_from_hire') {
@@ -501,6 +522,27 @@ function hoursInWindow(records, window, onDate, trainingYearStart, hireDate) {
     let year = Number(on.slice(0, 4));
     if (on.slice(4) < mmdd) year -= 1;     // this year's anniversary has not arrived
     from = String(year) + mmdd;
+    // ── A LEAP-DAY HIRE PUBLISHED A DATE THAT DOES NOT EXIST (2026-09-29) ──
+    // `from` is assembled from the hire date's month-day, so a 29 February hire
+    // evaluated in a common year produced `window_from: '2026-02-29'`. The
+    // COUNTING was never wrong -- `from` is only ever string-compared and
+    // '2026-02-29' sorts between the 28th and the 1st -- but window_from is
+    // printed on a compliance finding a surveyor reads, and it reads as a real
+    // date. A wrong date on a regulated report is not cosmetic.
+    //
+    // NORMALISED, NOT CLAMPED BLINDLY: the 29th is kept in years that have one,
+    // and an arm drives that. Falling back to 28 February is the common-law
+    // reading of an anniversary that does not occur -- and it moves the window
+    // one day EARLIER, which counts MORE training rather than less.
+    if (!isRealDate(from)) {
+      // mmdd is '-MM-DD'; slice(0, 4) keeps '-MM-' INCLUDING the second dash.
+      // slice(0, 3) dropped it and built '2026-0228', which isRealDate then
+      // refused -- so the normalisation silently did nothing and the arm stayed
+      // red. Caught by the arm, not by reading.
+      const norm = String(year) + mmdd.slice(0, 4)
+        + String(Number(mmdd.slice(4)) - 1).padStart(2, '0');
+      from = isRealDate(norm) ? norm : from;
+    }
   } else if (window === 'rolling_12_months') {
     const d = new Date(on + 'T00:00:00Z');
     if (!isNaN(d.getTime())) {
@@ -543,6 +585,18 @@ function hoursInWindow(records, window, onDate, trainingYearStart, hireDate) {
     from = start;
   }
   out.window_from = from;
+  // Elapsed is measured from the window's OWN start, not from a fixed 365, so a
+  // window whose length differs (a calendar year, a facility training year) is
+  // reported against itself rather than against an assumed twelve months.
+  const elapsed = daysBetween(from, on);
+  if (elapsed !== null && elapsed >= 0) {
+    out.window_days_elapsed = elapsed;
+    const next = new Date(from + 'T00:00:00Z');
+    next.setUTCFullYear(next.getUTCFullYear() + 1);
+    const nextYmd = next.toISOString().slice(0, 10);
+    const rem = daysBetween(on, nextYmd);
+    out.window_days_remaining = rem === null ? null : rem;
+  }
   (records || []).forEach(function (rec) {
     const when = rec && rec.completed_on;
     if (!when) { out.skipped_no_date += 1; return; }
@@ -786,10 +840,40 @@ function evaluateTraining(rules, opts) {
       // is the same shape as the empty-applicable-set pass one direction over.
       const windowUnknown = hasRecords && !!win.window_error;
       const unattributable = unresolved.length > 0 || windowUnknown;
+      // ── DAY ZERO OF A WINDOW IS NOT A NON-COMPLIANCE FINDING ────────────
+      // 2026-09-29. A hire-anchored window opens on the anniversary, so on that
+      // day the recorded total is 0 by construction -- and this branch turned
+      // that into `meets: false`. Driven: hire 2024-11-03, eight hours completed
+      // 2026-10-15, evaluated 2026-11-02 -> compliant; evaluated 2026-11-03 ->
+      // NON-COMPLIANT. That person is not late. They have twelve months.
+      //
+      // THE MODULE ALREADY MAKES THIS ARGUMENT ONE DOOR ALONG. NO_HIRE_DATE
+      // returns a null verdict because "a total of zero would report a fully
+      // trained person as non-compliant from a missing field". Substitute "from
+      // a window that reset this morning" and the sentence is unchanged.
+      //
+      // ONLY DAY ZERO, and the narrowness is the point. A shortfall on any later
+      // day is still `false`, because widening this to a fraction of the window
+      // would be a POLICY -- at what point in a year a shortfall becomes a
+      // finding is a product decision, and picking one here would mean whoever
+      // edited this file chose it. What the module does instead is hand every
+      // consumer `window_days_elapsed` and `window_days_remaining` so late and
+      // early are distinguishable without it guessing.
+      //
+      // MEETING THE REQUIREMENT ON DAY ZERO IS STILL `true`: somebody who
+      // front-loads their training is determinately compliant, and a blanket
+      // "day zero is unknowable" would have hidden that. Only the FALSE half is
+      // withheld.
+      const windowJustOpened = hasRecords && win && !win.window_error
+        && win.window_days_elapsed === 0;
       let verdict = null;
+      let dayZeroWithheld = false;
       if (!unattributable && applicable.length > 0) {
         if (recorded >= poolSum) verdict = true;
-        else if (recorded < poolMax) verdict = false;
+        else if (recorded < poolMax) {
+          if (windowJustOpened) dayZeroWithheld = true;
+          else verdict = false;
+        }
       }
       const emptyApplicable = applicable.length === 0;
       // ── COMPUTED, NOT READ OFF A FIELD NOBODY SETS (2026-09-26) ──────────
@@ -804,7 +888,7 @@ function evaluateTraining(rules, opts) {
       const anyUnmapped = normRows.some(function (r) {
         return matchAudience(r, { position: s.position || null }).applies === null;
       });
-      const singlePool = !unattributable && !emptyApplicable
+      const singlePool = !unattributable && !emptyApplicable && !dayZeroWithheld
         && (poolCount <= 1 || verdict !== null);
       return {
         staff_id: s.staff_id, name: s.name || '',
@@ -830,7 +914,19 @@ function evaluateTraining(rules, opts) {
         no_applicable_requirement: emptyApplicable,
         meets: singlePool ? verdict : null,
         meets_unknown_reason: !singlePool
-          ? (windowUnknown
+          // DAY ZERO IS CHECKED FIRST, because it is a different question from
+          // every reason below it: the data is fine, the window is fine, and the
+          // verdict is withheld because nothing could yet have been recorded.
+          ? (dayZeroWithheld
+             ? ('This training window opened today -- it is anchored to this '
+                + 'the hire date of this person, and the anniversary is the '
+                + 'evaluation date. Nothing could have been recorded in it yet, '
+                + 'so a shortfall here is not a finding: reporting one would '
+                + 'call a fully trained person non-compliant on the morning '
+                + 'their year reset. They have the full window, and '
+                + 'hours_window_days_remaining says how much of it is left. '
+                + 'Evaluate on a later date for an answer.')
+             : windowUnknown
              ? (win.window_error === 'NO_HIRE_DATE'
                 ? ('This person has no recorded hire date, and the annual window '
                    + 'is anchored to it. Recorded hours cannot be placed in a '
