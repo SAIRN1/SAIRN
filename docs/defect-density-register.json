@@ -19555,6 +19555,60 @@
       "recurrence_open": "Nothing distinguishes an exact displayed quantity from an estimated one anywhere on the platform. This card is now marked; every other computed KPI is unexamined on that axis. The narrower half is closed -- an invented denominator is gone and a quota search is recorded against the file -- but the same `.length * 2` byte estimate appears in other apps' storage displays and none of them is marked."
     },
     {
+      "commit": "44e5ab7ee7c3",
+      "date": "2026-09-29",
+      "subject": "fix(control): the reseat arm pinned the report's PROSE, not the ledger",
+      "files": [
+        "tests/run_tier_a_reseat_probe.py"
+      ],
+      "lines_added": 19,
+      "lines_removed": 2,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "probe-control",
+      "summary": "tests/run_tier_a_reseat_probe.py asserted that the real dry run printed the string 'DRY RUN' or 'Nothing to reseat'. The tool has a THIRD message -- printed when there are refusals but nothing reseatable -- which is more informative and matches neither, so the arm failed on a correct tool. The obvious repair would have been to WEAKEN the message so the string reappeared, which punishes a report for explaining itself better. It now reads the ledger before and after a no---write run and requires byte-identical.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tests/run_tier_a_reseat_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The arm was written with the wording assertion in the same commit that added --reseat-shas, so there is no commit where it asserted the behaviour and then stopped."
+      },
+      "citation_note": "1.1's shape applied to a control's own assertion: the arm stopped testing the property the moment the report gained a third message, and a green run and a wording-pinned run look identical until the wording moves.",
+      "contributing_factors": [
+        {
+          "factor": "The assertion was aimed at the report's PROSE rather than at the behaviour. It searched the output for 'DRY RUN' or 'Nothing to reseat', which are two of three possible messages -- the third, printed when there are refusals but nothing reseatable, is a BETTER message and matches neither.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The arm now reads docs/tier-a-reviews.json before and after a no---write run and requires byte-identical. That is the property; the wording is not."
+        },
+        {
+          "factor": "The obvious repair for a wording-pinned arm is to WEAKEN THE MESSAGE so the string reappears. A control that punishes a report for explaining itself better pushes the subject in the wrong direction.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Recorded in the arm's own comment as the third instance this session, so the next reader sees the pattern rather than the instance."
+        },
+        {
+          "factor": "Three separate arms this session asserted on text instead of behaviour: this one, one forbidding a tool from NAMING the register it deliberately does not use, and one searching for a phrase that is an argument list in source. Nothing flags an assertion whose subject is a string the subject controls.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "Candidate: flag an assert whose expected value is a literal that also appears in the subject's own output-formatting code. Not built -- it needs a way to tell a contract string from an incidental one, and a bad version would fire on every message assertion."
+        },
+        {
+          "factor": "A report-only tool's output is prose by design, because a human is the consumer. Anything asserting on that prose inherits its instability, and the alternative -- asserting on state -- is only available when the tool has observable state to assert on.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "Here the ledger file was available. For a tool whose only output IS the report, a wording assertion may be the only option; the answer then is to assert on a SHORT invariant substring rather than on a whole sentence."
+        }
+      ],
+      "recurrence_open": "Nothing flags an assertion whose expected value is a string the subject itself formats. THREE arms this session asserted on text rather than behaviour and all three were caught by running them, not by review."
+    },
+    {
       "commit": "41c0cf783851",
       "date": "2026-09-29",
       "subject": "fix(sairncare): the consent date recorded the last edit, not the consent",

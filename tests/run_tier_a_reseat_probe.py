@@ -301,8 +301,25 @@ print('  --   against the real ledger: exit %d. NOT AN ASSERTION -- how many '
       'of this command.' % p.returncode)
 ok(p.returncode in (0, 1, 2), 'it exits one of the three defined codes (got %d)'
    % p.returncode, body[-400:])
-ok('DRY RUN' in body.upper() or 'Nothing to reseat' in body,
-   'and the real run without --write is a dry run', body[-500:])
+# ASSERTED ON THE LEDGER, NOT ON THE WORDING. The first version of this arm
+# looked for the phrase 'DRY RUN' or 'Nothing to reseat', and FAILED the moment the
+# real ledger reached a state with refusals but nothing reseatable -- where the tool
+# correctly prints 'Nothing reseatable. Every dangling record above was REFUSED'.
+# An arm that pins a report's PROSE breaks when the report gets better at
+# explaining itself, and the fix would have been to weaken the message. The
+# property that matters is that the file did not change.
+_before = io.open(os.path.join(REPO, 'docs', 'tier-a-reviews.json'),
+                  encoding='utf-8', newline='').read()
+subprocess.run([sys.executable, TOOL, '--reseat-shas'], cwd=REPO,
+               capture_output=True, text=True, encoding='utf-8',
+               errors='replace',
+               env=dict(os.environ, PYTHONIOENCODING='utf-8'))
+_after = io.open(os.path.join(REPO, 'docs', 'tier-a-reviews.json'),
+                 encoding='utf-8', newline='').read()
+ok(_after == _before,
+   'and the real run WITHOUT --write left the ledger byte-identical -- asserted on '
+   'the file rather than on the report text, so the arm survives the report being '
+   'reworded', 'the ledger changed during a dry run')
 
 print(NL + '%d passed, %d failed' % (passed, failed))
 sys.exit(EXIT_FINDING if failed else EXIT_CLEAN)
