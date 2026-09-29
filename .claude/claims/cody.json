@@ -2690,6 +2690,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "cody-1790690881",
+      "session": "cody",
+      "subject": "cody-scpiso",
+      "task": "tests/sd-data-scp-licence-only.test.js",
+      "claimed_at": "2026-09-29T14:08:01Z",
+      "claimed_at_epoch": 1790690881.9259627,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
