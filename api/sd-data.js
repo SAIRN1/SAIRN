@@ -972,6 +972,34 @@ module.exports = async (req, res) => {
       // are both gated, and the licence key on its own is shipped to the
       // browser and readable by anyone who can open the app.
       'sf_trustee_audits':      ['read', 'write'],
+      // ── sf_vehicle_service, 2026-09-29. TIER A SINCE 2026-09-23 AND UNGATED
+      //    THE WHOLE TIME ─────────────────────────────────────────────────
+      // Unlike sf_trustee_audits directly above, this one HAS an ungated period
+      // to close. docs/CRITICALITY-TIERS.md re-tiered it B -> A on INTEGRITY on
+      // 2026-09-23, and it stayed out of this map: it is in the id-column map at
+      // :12546, in sql/sairnfreedom_data_schema.sql, in
+      // api/_resources/sairnfreedom.js, and in sairnfreedom.html, and in this
+      // map it was not.
+      //
+      // DRIVEN LIVE BEFORE THE GATE, not inferred from the absence:
+      //     read sf_vehicle_service, SF-PINNACLE-2026, NO session -> 200
+      //     read sf_trustee_audits,  SF-PINNACLE-2026, NO session -> 403
+      // The licence key is shipped to the browser, so the first line means
+      // anyone who can open the app could read it.
+      //
+      // WHY IT IS A, in the register's own words: this row is the ONLY thing
+      // that ever advances the odometer `sf_vehicles` computes its service-due
+      // flag from -- `sairnfreedom.html:6220` writes the reading back onto the
+      // vehicle, and after creation there is no other writer. A flag computed
+      // from a number only this row maintains cannot be more reliable than this
+      // row. The write path already treats it as more than a display field: it
+      // REFUSES a reading below the one on record.
+      //
+      // READ AND WRITE BOTH, like every other sf_ entry here. A read gate is
+      // not the interesting half -- the write is what advances the number --
+      // but leaving read open on a Tier A resource while sixteen siblings are
+      // closed is the asymmetry that let this one sit out for six days.
+      'sf_vehicle_service':     ['read', 'write'],
       'sf_vendor_prices':       ['read', 'write'],
       'sf_waivers':             ['read', 'write'],
       'sf_youth_participants':  ['read', 'write'],
@@ -1182,6 +1210,18 @@ module.exports = async (req, res) => {
       // 'stonedesk' and refuses every correctly signed-in officer.
       'sf_signatures': 'sairnfreedom',
       'sf_staff': 'sairnfreedom',
+      // ── TWO ADDED 2026-09-29, AND ONE OF THEM WAS ALREADY RED ON MAIN ───
+      // api/sd-data-sf-session-gate.test.js was FAILING BEFORE THIS CHANGE:
+      // `sf_trustee_audits` was gated on 2026-09-29 without an entry here, so
+      // it resolved expectedApp to 'stonedesk' and refused EVERY correctly
+      // signed-in SAIRNfreedom officer with FORBIDDEN "sign in first" -- the
+      // fails-closed-and-confusingly case this table's own comment names, and
+      // the one that gets a security change reverted as broken rather than
+      // fixed. Adding `sf_vehicle_service` beside it in the same edit, which is
+      // the rule this pair of lists has carried since 2026-09-24: never grown
+      // one half at a time.
+      'sf_trustee_audits': 'sairnfreedom',
+      'sf_vehicle_service': 'sairnfreedom',
       'sf_vendor_prices': 'sairnfreedom',
       'sf_waivers': 'sairnfreedom',
       'sf_youth_participants': 'sairnfreedom',

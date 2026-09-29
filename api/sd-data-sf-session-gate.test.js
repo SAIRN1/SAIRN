@@ -37,13 +37,23 @@
 // forgotten -- which is the actual defect.
 //
 // ── WHAT THIS SUITE CANNOT TELL YOU, said here rather than left to be assumed
-// It reads SOURCE. It does not prove a live call is refused. As of 2026-09-22
-// sql/sairnfreedom_employee_auth_schema.sql has NOT been run against the live
-// database -- /api/sf-auth login answers 503 NOT_PROVISIONED -- so NO real
-// caller can hold a session, every gated resource answers 403, and the other
-// half of live verification (a real session PASSING the gate) is not merely
-// unrun, it is IMPOSSIBLE until that file is run. A suite that said "gated,
-// verified" today would be claiming the half nobody can drive.
+// It reads SOURCE. It does not prove a live call is refused.
+//
+// THE PARAGRAPH THAT STOOD HERE WENT STALE AND NOTHING SAID SO. It read: "As of
+// 2026-09-22 sql/sairnfreedom_employee_auth_schema.sql has NOT been run against
+// the live database -- /api/sf-auth login answers 503 NOT_PROVISIONED -- so NO
+// real caller can hold a session ... it is IMPOSSIBLE until that file is run."
+//
+// RE-DRIVEN 2026-09-29: /api/sf-auth login on SF-PINNACLE-2026 answers
+// 401 INVALID_CREDENTIALS, not 503 NOT_PROVISIONED. The auth table exists. A
+// real session IS now possible, so the half that could not be driven can be --
+// and, more to the point, adding a gate here no longer locks every caller out,
+// which is the question that paragraph was really answering for whoever read it
+// next. That is exactly what it was relied on for in this change.
+//
+// The claim is left as a DATED MEASUREMENT rather than deleted, because the
+// answer matters to the next person who adds a gate. Re-drive it; do not trust
+// this line either.
 
 'use strict';
 const assert = require('assert');
@@ -104,6 +114,22 @@ const APPROVED = [
   // {docId, docTitle, version, hash, signer, typed, signed} -- a named person,
   // their typed signature, and the governance document it binds them to.
   'sf_signatures',
+  // 2026-09-29, TWO -- and the first of them was RED ON MAIN before this edit.
+  //
+  // `sf_trustee_audits` was gated on arrival (hank) and appeared in NEITHER
+  // this list NOR the expectedApp map, so this suite was failing on main on two
+  // arms at once. That is the shape this file exists to catch, caught.
+  //
+  // `sf_vehicle_service` is the one with an ungated period to close:
+  // docs/CRITICALITY-TIERS.md re-tiered it B -> A on INTEGRITY on 2026-09-23 --
+  // it is the ONLY thing that advances the odometer `sf_vehicles` computes its
+  // service-due flag from -- and it stayed out of SD_SESSION_GATED for six
+  // days. DRIVEN LIVE BEFORE THE GATE rather than inferred from the absence:
+  //     read sf_vehicle_service, SF-PINNACLE-2026, NO session -> 200
+  //     read sf_trustee_audits,  SF-PINNACLE-2026, NO session -> 403
+  // The licence key is shipped to the browser.
+  'sf_trustee_audits',
+  'sf_vehicle_service',
 ];
 
 function gatedSet() {
