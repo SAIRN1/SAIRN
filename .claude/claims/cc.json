@@ -2916,8 +2916,8 @@
       "task": "discharge the two review obligations currently assigned to me, identified by author and opened_at in the ledger; measure which findings this week rested on the claim-activity checker while it called expired claims active; drive the revoked-licence enforce-mode path in the AI proxy LIVE against a scratch env and fix the refusal, regression first, both env states; read the alf_billing SILENT arm and decide wire-a-suite versus register-a-gap with a severity; confirm each of the six unreachable role-gate refusals is genuinely unreachable and not a second silent gap; merge or flag the 27 regfresh proposal branches without gh; the StoneDesk storage KPI label; and record the severity correction on the trust-ledger probe finding. TWO QUEUE ITEMS ARE DEFERRED AND NOT TAKEN. Their blocker and the exact path they need are recorded in THIS session's claim file under refusals, written there by the claim tool itself, because naming either in this string blocks my own claim on my own declaration -- the third instance today of a text-reading gate matching a disclosure instead of a claim. Both are rechecked before this session ends. SUBJECT NAMED PER PR 4.3 FILES: docs/tier-a-reviews.json api/claude.js api/claude-licence-enforce.test.js tools/role_gate_negative_coverage.py docs/role-gate-negative-coverage.json stonedesk.html tests/stonedesk_admin_storage_kpi.js docs/defect-density-register.json docs/SAIRN-OPEN-WORK-INDEX.md docs/checker-coverage-baseline.json tools/checker_denominator.py",
       "claimed_at": "2026-09-28T20:00:58Z",
       "claimed_at_epoch": 1790625658.955497,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T12:35:29Z",
       "files": [
         "api/claude-licence-enforce.test.js",
         "api/claude.js",
