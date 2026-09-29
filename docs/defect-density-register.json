@@ -19353,67 +19353,6 @@
       "recurrence_open": "PARTLY CLOSED AND MEASURED: hook fail-opens 5 -> 0, but 16 dependency-shaped fail-opens remain in tools/ where exit 0 is not a decision to allow something, and they are unswept. The scanner reads TEXT, so a fail-open through a helper, a trap or a Python default argument is invisible and the universe is a FLOOR. And the distinction the tool rests on -- SCOPE versus DEPENDENCY -- is inferred from what the guard NAMES, so a scope guard whose marker has an unusual name will be miscounted as a finding."
     },
     {
-      "commit": "ff6279ea74b0",
-      "date": "2026-09-29",
-      "subject": "fix(tools): the third copy of one credential lookup, removed",
-      "files": [
-        "tests/run_plugin_upgrade_token_probe.py",
-        "tools/plugin_upgrade_check.py"
-      ],
-      "lines_added": 244,
-      "lines_removed": 9,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "tools/plugin_upgrade_check.py carried its own github_token() that shelled out to git credential fill and read the password line itself, rather than importing tools/gh_token.py -- the module created specifically to end that duplication after two other tools each carried a copy, both read a file 0 bytes since 2026-08-08, and both raised on every invocation for seven weeks with nothing saying so. The third copy could not benefit from the ordering that fix established: env var, then credential manager, then .env.local LAST so a stale file cannot shadow a live credential. Found while enumerating credential read sites for the SAIRN-Session55 rotation.",
-      "rules": [
-        "1.8"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The local lookup was in tools/plugin_upgrade_check.py from the commit that added the upstream-version comparison; there is no commit where it used the shared module and then stopped. gh_token.py was created LATER, to end this duplication, and this copy was never migrated."
-      },
-      "citation_note": "1.8 is about a generated artefact being safe while a generated GATE is not. The related shape here is a SHARED DECISION with private copies: gh_token.py centralised where the token comes from, and a copy outside it silently keeps the old ordering -- so a stale .env.local could shadow a live credential in one tool and not in the others, with nothing saying which.",
-      "contributing_factors": [
-        {
-          "factor": "The tool needed a GitHub token and the shortest way to get one was four lines of subprocess. Writing those four lines is easier than discovering that a module already exists to do it, so the duplication is the path of least resistance rather than an oversight.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The tool imports gh_token.github_token() through a thin resolve_token() wrapper that adapts the failure contract."
-        },
-        {
-          "factor": "gh_token.py was created to end exactly this duplication, and nothing measured whether it had. Its header claims to be 'the ONE place that knows where the GitHub token comes from' -- a claim, unchecked, while a third copy existed.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "tests/run_plugin_upgrade_token_probe.py sweeps every tool with comments stripped and asserts gh_token.py is the only caller, so the header's claim is now measured."
-        },
-        {
-          "factor": "The two lookups differ in FAILURE behaviour, not in success behaviour: the local one returned None and the shared one raises. A swap that only checked the happy path would have turned a third state into an uncaught traceback at the exact moment no token was available.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The call site catches TokenUnavailable and appends a could-not-run line naming every source tried -- strictly better than the old silent `or ''`, which compared against an unauthenticated API and reported whatever it got."
-        },
-        {
-          "factor": "The first two detectors written for the sweep were both wrong, in opposite directions: the phrase 'git credential fill' never appears because the call is an argument list, and the bare word 'credential' matched twenty tools that legitimately discuss credentials. Either would have shipped a meaningless sweep.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "The detector matches the two adjacent list elements, which is what actually identifies the call. Both wrong versions are recorded in the control's comments so the next person does not retry either."
-        },
-        {
-          "factor": "This platform has many tools and any of them may need a credential. There is no mechanism that makes importing the shared lookup easier than writing a new one, so a fourth copy remains available to anybody in a hurry.",
-          "kind": "latent-condition",
-          "action_status": "planned",
-          "action": "The sweep in the control now fails if a fourth appears -- but only when that control is run. Wiring it into the recurring report-only set would close the gap; not done here."
-        }
-      ],
-      "recurrence_open": "Nothing makes importing the shared lookup easier than writing a new one, so a fourth copy is available to anybody in a hurry. The sweep that would catch it lives in a control that is not in the recurring report-only set."
-    },
-    {
       "commit": "26c92942746d",
       "date": "2026-09-29",
       "subject": "test(sairncare): the alf_billing gate nothing drove -- 3 of 3 now CAUGHT, and measuring it showed the screen's third bucket over-reports by at least five",
@@ -19460,6 +19399,55 @@
         }
       ],
       "recurrence_open": "Six role refusals remain unreachable by --ablate, the only sound measurement in that file: five compound conditions and one with its body on a single line. TWO OF THEM are their resource's ONLY gate -- alf_incidents and alf_op_audits have zero ablatable blocks, so the instrument answers COULD NOT TELL for those resources entirely, and both also sit in the not-driven bucket. Nothing measures whether a resource's gates are individually covered; the bucket counts remain per-resource."
+    },
+    {
+      "commit": "30c9f4997779",
+      "date": "2026-09-29",
+      "subject": "fix(sairnfreedom): sf_vehicle_service was Tier A for six days and ungated the whole time",
+      "files": [
+        "api/sd-data-sf-session-gate.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 73,
+      "lines_removed": 7,
+      "app": "sairnfreedom",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "sf_vehicle_service was re-tiered Tier A on INTEGRITY on 2026-09-23 and stayed out of SD_SESSION_GATED, so it was readable and writable with the SAIRNfreedom licence key alone -- a key shipped to the browser -- for six days",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the resource predates SD_SESSION_GATED; what made it a defect was the tier moving B -> A on 2026-09-23 without the gate list moving with it, and no single commit introduced that gap -- naming one would be a guess about which half was wrong"
+      },
+      "phase_note": "the gate list and the criticality register are two hand-kept lists with nothing comparing them, so a tier change on one side leaves the other correct-looking and unchanged",
+      "contributing_factors": [
+        {
+          "factor": "the gate list in api/sd-data.js and the tier register in docs/CRITICALITY-TIERS.md are two hand-kept lists and nothing compares them, so a resource can move to Tier A on one side and stay ungated on the other with both files looking correct",
+          "kind": "technical",
+          "action_status": "planned",
+          "action": "no checker compares the two today; the sf session-gate suite compares the gate list against its OWN approved list and against the expectedApp map, neither of which is the tier register"
+        },
+        {
+          "factor": "api/sd-data-sf-session-gate.test.js was ALREADY RED ON MAIN when I touched it -- sf_trustee_audits was gated on 2026-09-29 without an expectedApp entry, which refuses every correctly signed-in officer -- so the suite that would have caught my addition was already failing and its signal was being carried rather than read",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "both names added to both lists in the same edit, and the suite is green"
+        },
+        {
+          "factor": "a stale claim in that suite header said a SAIRNfreedom session was IMPOSSIBLE because the auth table was unprovisioned, which is the fact that decides whether adding a gate locks everyone out",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "re-driven -- sf-auth answers 401 INVALID_CREDENTIALS, not 503 -- and the header now carries a dated measurement telling the next reader to re-drive rather than trust it"
+        }
+      ],
+      "recurrence_open": "nothing compares the tier register to the gate list. This instance was found by re-deriving one resource by hand on request; the other 26 Tier A sairnfreedom resources were not re-checked against SD_SESSION_GATED in this pass, and neither were the Tier A resources of any other app."
     },
     {
       "commit": "35fb7d2c85a7",
@@ -20261,6 +20249,67 @@
         }
       ],
       "recurrence_open": "NOT LIVE-VERIFIED. And the wider policy question is deliberately NOT answered: at what point in a window a shortfall becomes a finding is a product decision, so the module now publishes window_days_elapsed and window_days_remaining and leaves the threshold to the consumer. Any consumer that ignores those two fields still cannot tell late from early."
+    },
+    {
+      "commit": "ff6279ea74b0",
+      "date": "2026-09-29",
+      "subject": "fix(tools): the third copy of one credential lookup, removed",
+      "files": [
+        "tests/run_plugin_upgrade_token_probe.py",
+        "tools/plugin_upgrade_check.py"
+      ],
+      "lines_added": 244,
+      "lines_removed": 9,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/plugin_upgrade_check.py carried its own github_token() that shelled out to git credential fill and read the password line itself, rather than importing tools/gh_token.py -- the module created specifically to end that duplication after two other tools each carried a copy, both read a file 0 bytes since 2026-08-08, and both raised on every invocation for seven weeks with nothing saying so. The third copy could not benefit from the ordering that fix established: env var, then credential manager, then .env.local LAST so a stale file cannot shadow a live credential. Found while enumerating credential read sites for the SAIRN-Session55 rotation.",
+      "rules": [
+        "1.8"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The local lookup was in tools/plugin_upgrade_check.py from the commit that added the upstream-version comparison; there is no commit where it used the shared module and then stopped. gh_token.py was created LATER, to end this duplication, and this copy was never migrated."
+      },
+      "citation_note": "1.8 is about a generated artefact being safe while a generated GATE is not. The related shape here is a SHARED DECISION with private copies: gh_token.py centralised where the token comes from, and a copy outside it silently keeps the old ordering -- so a stale .env.local could shadow a live credential in one tool and not in the others, with nothing saying which.",
+      "contributing_factors": [
+        {
+          "factor": "The tool needed a GitHub token and the shortest way to get one was four lines of subprocess. Writing those four lines is easier than discovering that a module already exists to do it, so the duplication is the path of least resistance rather than an oversight.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The tool imports gh_token.github_token() through a thin resolve_token() wrapper that adapts the failure contract."
+        },
+        {
+          "factor": "gh_token.py was created to end exactly this duplication, and nothing measured whether it had. Its header claims to be 'the ONE place that knows where the GitHub token comes from' -- a claim, unchecked, while a third copy existed.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/run_plugin_upgrade_token_probe.py sweeps every tool with comments stripped and asserts gh_token.py is the only caller, so the header's claim is now measured."
+        },
+        {
+          "factor": "The two lookups differ in FAILURE behaviour, not in success behaviour: the local one returned None and the shared one raises. A swap that only checked the happy path would have turned a third state into an uncaught traceback at the exact moment no token was available.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The call site catches TokenUnavailable and appends a could-not-run line naming every source tried -- strictly better than the old silent `or ''`, which compared against an unauthenticated API and reported whatever it got."
+        },
+        {
+          "factor": "The first two detectors written for the sweep were both wrong, in opposite directions: the phrase 'git credential fill' never appears because the call is an argument list, and the bare word 'credential' matched twenty tools that legitimately discuss credentials. Either would have shipped a meaningless sweep.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The detector matches the two adjacent list elements, which is what actually identifies the call. Both wrong versions are recorded in the control's comments so the next person does not retry either."
+        },
+        {
+          "factor": "This platform has many tools and any of them may need a credential. There is no mechanism that makes importing the shared lookup easier than writing a new one, so a fourth copy remains available to anybody in a hurry.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "The sweep in the control now fails if a fourth appears -- but only when that control is run. Wiring it into the recurring report-only set would close the gap; not done here."
+        }
+      ],
+      "recurrence_open": "Nothing makes importing the shared lookup easier than writing a new one, so a fourth copy is available to anybody in a hurry. The sweep that would catch it lives in a control that is not in the recurring report-only set."
     }
   ],
   "started": "2026-09-09",
