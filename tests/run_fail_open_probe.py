@@ -77,6 +77,15 @@ def sandbox(hook, with_tools=(), marker=False):
     return root
 
 
+def stage(root, rel, body):
+    """Write a file in the sandbox and `git add` it, so the hook's
+    `git diff --cached` actually sees something."""
+    full = os.path.join(root, rel.replace('/', os.sep))
+    os.makedirs(os.path.dirname(full), exist_ok=True)
+    io.open(full, 'w', encoding='utf-8', newline=chr(10)).write(body)
+    subprocess.run(['git', 'add', rel], cwd=root, capture_output=True)
+
+
 def run_hook(root, hook):
     r = subprocess.run(['sh', os.path.join(root, '.githooks', hook)],
                        cwd=root, capture_output=True, timeout=120)
@@ -138,6 +147,84 @@ def main():
     try:
         rc, _ = run_hook(root, 'pre-commit')
         expect('  THE CONTROL: marker AND tool present -> runs and allows', rc, 0)
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+    # ── pre-commit, the LIVE-PROBE OBLIGATION block (2026-09-29) ─────────
+    # Four directions, and the first two are the ones that keep it usable: a
+    # block that fires on every commit is a block somebody turns off. The host
+    # string is assembled at runtime -- a literal here would make this fixture a
+    # finding in the audit's own scan of tests/.
+    print('')
+    print('2b. pre-commit: the live-probe obligations, scoped to the commit')
+    HOST = 'sairn' + '.vercel.' + 'app'
+    NL = chr(10)
+    PROBE_SRC = (('import json' + NL +
+                  'ENDPOINT = "https://%s/api/sd-data"' + NL +
+                  'def go():' + NL +
+                  '    return json.dumps({"action": "write"})' + NL) % HOST)
+    ORDINARY_SRC = 'def f():' + NL + '    return 1' + NL
+
+    root = sandbox('pre-commit', with_tools=[], marker=False)
+    try:
+        rc, out = run_hook(root, 'pre-commit')
+        expect('  NOTHING staged -> exit 0, the block never runs', rc, 0)
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+    root = sandbox('pre-commit', with_tools=[], marker=False)
+    try:
+        stage(root, 'tools/zz_ordinary.py', ORDINARY_SRC)
+        rc, out = run_hook(root, 'pre-commit')
+        expect('  a staged tools/ file that does NOT address the platform -> '
+               'exit 0', rc, 0)
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+    root = sandbox('pre-commit', with_tools=[], marker=False)
+    try:
+        stage(root, 'tools/zz_live_probe.py', PROBE_SRC)
+        rc, out = run_hook(root, 'pre-commit')
+        expect('  a staged file that DOES address it, audit tool ABSENT -> '
+               'refuses', rc != 0, True)
+        expect('    ... and names live_probe_residue_audit.py',
+               'live_probe_residue_audit.py' in out, True)
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+    root = sandbox('pre-commit', with_tools=['live_probe_residue_audit.py'],
+                   marker=False)
+    try:
+        stage(root, 'tools/zz_live_probe.py', PROBE_SRC)
+        rc, out = run_hook(root, 'pre-commit')
+        expect('  THE CONTROL: audit tool present and CLEAN -> runs and allows',
+               rc, 0)
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+    root = sandbox('pre-commit', with_tools=[], marker=False)
+    try:
+        # A stub that FINDS something. Without this arm the block could reach
+        # the audit, ignore its verdict, and every arm above would still pass.
+        io.open(os.path.join(root, 'tools', 'live_probe_residue_audit.py'), 'w',
+                encoding='utf-8', newline=NL).write('import sys' + NL + 'sys.exit(1)' + NL)
+        stage(root, 'tools/zz_live_probe.py', PROBE_SRC)
+        rc, out = run_hook(root, 'pre-commit')
+        expect('  audit present and REPORTING A FINDING -> the hook refuses',
+               rc != 0, True)
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+    root = sandbox('pre-commit', with_tools=[], marker=False)
+    try:
+        # COULD NOT RUN is exit 2 from the audit and must also stop the commit
+        # -- PR 1.11, the two are printed differently and folded into neither.
+        io.open(os.path.join(root, 'tools', 'live_probe_residue_audit.py'), 'w',
+                encoding='utf-8', newline=NL).write('import sys' + NL + 'sys.exit(2)' + NL)
+        stage(root, 'tools/zz_live_probe.py', PROBE_SRC)
+        rc, out = run_hook(root, 'pre-commit')
+        expect('  audit exiting 2 COULD NOT RUN -> the hook also refuses',
+               rc != 0, True)
     finally:
         shutil.rmtree(root, ignore_errors=True)
 

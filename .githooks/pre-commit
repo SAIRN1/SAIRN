@@ -47,6 +47,57 @@ if [ -z "$ROOT" ] || [ -z "$GITDIR" ]; then
   exit 1
 fi
 
+# ── LIVE-PROBE OBLIGATIONS, ON THE COMMIT THAT ADDS ONE (2026-09-29) ───────
+# tools/live_probe_residue_audit.py is recorded NOT-PROMOTED in
+# report_only_checks.py, and the reason is right: its subject changes only when
+# somebody WRITES a live probe, so a run on every push would report the same
+# seven writers for ever -- the always-passing checker that registry has a name
+# for. That entry says what it should be instead, in its own words: *"IT IS A
+# PRE-COMMIT QUESTION for whoever adds a live probe."* Nothing implemented that
+# sentence, so the obligations lived in a convention document, which is exactly
+# where THE RULE IT ENFORCES had already failed to live once -- a SQL comment
+# saying "the fix is the licence, not the pin" that four probes never met.
+#
+# SCOPED TO THE COMMIT, TWICE OVER, so this stays free on the commits it has
+# nothing to say about: the staged set must contain a .py/.js under
+# tools/ tests/ scripts/, AND one of those staged files must actually name the
+# live host. An ordinary commit pays one `git diff --cached` and one grep.
+# Measured 0.40s for the audit itself when it does run.
+#
+# THIS BLOCK IS BEFORE THE HOVER SCOPE TEST DELIBERATELY. That test exits 0 in
+# all four build clones, and the build clones are the ones that write probes.
+STAGED_PROBES=$(git diff --cached --name-only --diff-filter=ACM \
+  | grep -E '^(tools|tests|scripts)/.*\.(py|js)$' || true)
+if [ -n "$STAGED_PROBES" ]; then
+  HITS=""
+  for f in $STAGED_PROBES; do
+    [ -f "$ROOT/$f" ] || continue
+    if grep -q 'sairn\.vercel\.app' "$ROOT/$f"; then HITS="yes"; break; fi
+  done
+  if [ -n "$HITS" ]; then
+    command -v python >/dev/null 2>&1 && PYP=python || PYP=python3
+    if ! command -v "$PYP" >/dev/null 2>&1; then
+      echo "pre-commit: REFUSED -- this commit stages a file that addresses the" >&2
+      echo "  live platform and no python is on PATH, so the live-probe" >&2
+      echo "  obligations were not checked. Could-not-run is not a pass." >&2
+      exit 1
+    fi
+    if [ ! -f "$ROOT/tools/live_probe_residue_audit.py" ]; then
+      echo "pre-commit: REFUSED -- this commit stages a file that addresses the" >&2
+      echo "  live platform and tools/live_probe_residue_audit.py is MISSING," >&2
+      echo "  so nothing checked its class, residue or teardown." >&2
+      exit 1
+    fi
+    "$PYP" "$ROOT/tools/live_probe_residue_audit.py" || {
+      echo "" >&2
+      echo "pre-commit: REFUSED -- a live-probe obligation is unmet in this" >&2
+      echo "  commit. Exit 1 is a finding, exit 2 is COULD NOT RUN; both stop" >&2
+      echo "  the commit and the output above says which." >&2
+      exit 1
+    }
+  fi
+fi
+
 # SCOPE, NOT DEPENDENCY. Absent marker = this is not the auditor's clone.
 [ -f "$GITDIR/sairn-hover-auditor-clone" ] || exit 0
 
