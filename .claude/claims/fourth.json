@@ -2799,8 +2799,8 @@
       "task": "db/schema_snapshot.json",
       "claimed_at": "2026-09-29T17:36:55Z",
       "claimed_at_epoch": 1790703415.4266276,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T17:47:18Z",
       "files": null
     },
     {
