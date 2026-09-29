@@ -19975,7 +19975,7 @@
       "recurrence_open": "Only THIS suite strips. The fixed-window-substring shape was swept once before and the sweep's finding list is not re-run on new checks, so the next check that greps a raw single-file app for an identifier has the same hole available. tools/gated_resource_direct_fetch_header.js is also still the only check of its class -- nothing verifies that the 900-character window is wide enough in the other direction."
     },
     {
-      "commit": "f093d5da27b8",
+      "commit": "7f6f41a97fa3",
       "date": "2026-09-29",
       "subject": "fix(hooks): a FRESH CLONE of this repository runs no hooks at all",
       "files": [
