@@ -19478,6 +19478,115 @@
         }
       ],
       "recurrence_open": "nothing is fixed. The matcher is unchanged, the two blocked items are still blocked, and no measurement of the misfire rate exists. This is the FOURTH text-reading gate this week to match documentation or disclosure as if it were code -- the SQL preflight, the Tier A gate on the word quotes, the fail-open scanner counting its own docstring, and now the claim matcher -- and nothing sweeps for the class across the gates that read prose"
+    },
+    {
+      "commit": "7743faa963e0",
+      "date": "2026-09-29",
+      "subject": "fix(sairncare): who administered the medication came from the request, not the session",
+      "files": [
+        "api/sd-data-alf-mar-actor-identity.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 351,
+      "lines_removed": 0,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "alf_mar stored the employee who performed each entry from the request payload rather than the session, so any authenticated SAIRNcare employee could record a medication administration, controlled-substance count, reconciliation or assessment refusal against another employee name",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "4bcdd21c01c8",
+        "date": "2026-08-20",
+        "subject": "feat: sairncare.html + api/sd-data.js -- MAR (Medication Administration Record)",
+        "lag_days": 40
+      },
+      "phase_note": "the MAR feature commit introduced storedBlob(payload, [...]) with the actor keys absent from the strip list and no server-side stamp, in the same commit as the client code that sends them",
+      "contributing_factors": [
+        {
+          "factor": "storedBlob is a deny-list, so any payload key not named in the strip list is stored verbatim -- and an actor-identity key looks like ordinary data to a reader scanning that list",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the server owns a map from entry_type to actor key, strips all four from every entry, and stamps the one that belongs to this entry type from session.employee_id"
+        },
+        {
+          "factor": "reviewed_by on the SAME BLOB in the SAME FUNCTION was already stamped server-side, so the file contained both the correct pattern and the defect twenty lines apart and the inconsistency was never read as one",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "a control arm pins that reviewed_by is still stamped, so the correct half cannot be displaced by the new map without a suite going red"
+        },
+        {
+          "factor": "the client always sends the signed-in employee id, which makes the stored value correct in every honest run and invisible to any test written from the UI",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "forged-value arms per entry type assert BOTH the outbound RPC body and the response the client receives back, the return hop that the alf_incidents defect proved an outbound-only arm cannot see"
+        },
+        {
+          "factor": "the defect was reported as one field and was four; the other three were found only by reading all four MAR writers in sairncare.html rather than the one named",
+          "kind": "process",
+          "action_status": "done",
+          "action": "recorded here as the finding shape: an identity-from-payload report names the instance somebody noticed, and the unit to sweep is the RESOURCE, not the field"
+        }
+      ],
+      "recurrence_open": "NOT VERIFIED LIVE -- the deployed behaviour is unchanged until this is pushed and driven, and the same evidence class missed the alf_incidents read-path override on 2026-09-28. And the wider class is open: witness_id on a controlled-substance count is still caller-supplied with NO server-side witness verification anywhere in SAIRNcare, where SAIRNvet has api/sv-witness.js and a witness token -- registered separately. The remaining named-but-unchecked identity sites from the 2026-09-28 sweep are the SAIRNvet DEA witness fields and legal-deadlines.js authority.verified_by, which is hank's."
+    },
+    {
+      "commit": "7743faa963e0",
+      "date": "2026-09-29",
+      "subject": "fix(sairncare): who administered the medication came from the request, not the session",
+      "files": [
+        "api/sd-data-alf-mar-actor-identity.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 351,
+      "lines_removed": 0,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "SAIRNcare controlled-substance counts have NO server-side witness verification: witness_id is a caller-supplied string, so one employee alone can record a two-person count naming any colleague as the second signature",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "requirement",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "4bcdd21c01c8",
+        "date": "2026-08-20",
+        "subject": "feat: sairncare.html + api/sd-data.js -- MAR (Medication Administration Record)",
+        "lag_days": 40
+      },
+      "citation_note": "no standing rule covers a two-person control that exists in the UI and nowhere on the server; the closest is the recoverability guard in 3.4, which is about credential rows rather than about a second signature being real",
+      "phase_note": "the controlled-substance count was specified with a witness selector in the browser and no server-side counterpart, in the commit that introduced it",
+      "contributing_factors": [
+        {
+          "factor": "witness_id is a plain payload string with no verification that the named employee exists, is active, consented, or is a different person from the counter",
+          "kind": "technical",
+          "action_status": "planned",
+          "action": "SAIRNvet already solved this shape in api/sv-witness.js with a witness token verified server-side; the SAIRNcare counterpart does not exist and needs the same treatment rather than a second design"
+        },
+        {
+          "factor": "the two-person control lives entirely in the browser -- sairncare.html refuses to save a count without a witness selection, which makes it look enforced to anybody reading the feature",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "cannot be closed by a code change alone: whether a self-witnessed count must be REFUSED or merely flagged is a regulatory reading and a product decision, and guessing it in an unclaimed commit would be the wrong direction for a licensure control"
+        },
+        {
+          "factor": "the platform had already built the correct mechanism for another app and nothing connected the two -- the same shape as the fix-is-the-licence rule that four probes never met because it lived in a SQL comment",
+          "kind": "process",
+          "action_status": "declined",
+          "note": "declining to propagate it silently: cross-app propagation of a proven pattern needs the target re-qualified for scale, input range and criticality tier, which is discipline 7 and Ariane 5"
+        }
+      ],
+      "recurrence_open": "nothing is fixed and no sweep exists for the class: a two-person or two-role control implemented in one app server-side and in another app client-side only. SAIRNvet has the token, SAIRNcare has a dropdown, and nothing compares them."
     }
   ],
   "started": "2026-09-09",
