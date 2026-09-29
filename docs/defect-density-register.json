@@ -20673,6 +20673,58 @@
       "recurrence_open": "Only THIS suite strips. The fixed-window-substring shape was swept once before and the sweep's finding list is not re-run on new checks, so the next check that greps a raw single-file app for an identifier has the same hole available. tools/gated_resource_direct_fetch_header.js is also still the only check of its class -- nothing verifies that the 900-character window is wide enough in the other direction."
     },
     {
+      "commit": "e4971ae04901",
+      "date": "2026-09-29",
+      "subject": "fix(sairnbiz): a typed overtime threshold of 0 was swallowed before validation could see it",
+      "files": [
+        "sairnbiz.html",
+        "tests/sairnbiz_ot_threshold_coalesce.js"
+      ],
+      "lines_added": 233,
+      "lines_removed": 1,
+      "app": "sairnbiz",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "sbCfg() coalesced the overtime threshold on FALSINESS, so a typed 0 was replaced by the default 40 before sbOtThreshold could see it -- making the n<=0 branch unreachable and leaving the rejection note with nothing to report",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "2c43d98b3dd2",
+        "date": "2026-09-04",
+        "subject": "fix(sairnbiz): all five System Settings were write-only, and two of them had become wrong to wire",
+        "lag_days": 25
+      },
+      "phase_note": "sbCfg was written with c.ot||d.ot in the commit that made the settings readable; the overtime threshold became a validated input later, and nothing revisited the getter that feeds it",
+      "contributing_factors": [
+        {
+          "factor": "a getter substituted a default on falsiness, so the two values the validator most needed to see -- 0 and empty -- were the two it could never receive",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "ot substitutes on ABSENT via hasOwnProperty; fy and terms keep the falsy coalesce deliberately, being strings whose only falsy value genuinely means unset"
+        },
+        {
+          "factor": "every existing arm drove sbOtThreshold with a RAW value, so the layer that decides what raw ever is was untested",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the new suite drives from stored config through the real chain, and extracts the three functions by name from the page rather than re-typing them"
+        },
+        {
+          "factor": "I overstated the finding first -- my own arm demanded a cleared field be reported as rejected, which contradicts the authors stated rule that an absent setting is not a typo",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the arm now asserts the rule rather than my reading of it, with the correction recorded at the line"
+        }
+      ],
+      "recurrence_open": "not driven live and no stored config inspected. The same-shape sweep covered sairnbiz.html only: 13 numeric falsy-coalesce sites there, 12 coalescing to 0 and therefore harmless, 1 a toast duration. No other app was swept, and nothing checks for a getter that substitutes a default ahead of its own validator."
+    },
+    {
       "commit": "eb2f92fac84f",
       "date": "2026-09-29",
       "subject": "fix(sairncare): a clock correction of your own visit is marked, and day zero of a training year is not a finding",
