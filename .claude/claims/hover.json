@@ -404,6 +404,22 @@
         "hover_cold_scan_pool.py",
         "hover_log.py"
       ]
+    },
+    {
+      "id": "hover-1790703990",
+      "session": "hover",
+      "subject": "hover",
+      "task": "nine-item queue: two routable H2 findings (the non-github ssh mislabel and the tools-hover2 store divergence); a read-only forensic report on the stray home-directory git repository; run the routing-gap checker and print every unrouted routable finding grouped by owner; the sd_owner_pin trigger statement; one undirected batch through the linter; the weighted rotation draw; conditional validation of H2's structured routable field; a selftest-writes-outside-temp methodology sweep with before/after tree snapshots and known-bad controls.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hover.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. Each component of this claim checks CLEAR on its own.\n\nFILES: hover_backup_mirror.py hover_log.py hover_cold_scan_pool.py tools/hover_routing_gap_check.py",
+      "claimed_at": "2026-09-29T17:46:30Z",
+      "claimed_at_epoch": 1790703990.0321028,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "hover_backup_mirror.py",
+        "hover_cold_scan_pool.py",
+        "hover_log.py",
+        "tools/hover_routing_gap_check.py"
+      ]
     }
   ],
   "refusals": [
