@@ -2632,8 +2632,8 @@
       "task": "discharge the 71h sv_audit_log obligation authored by cc on 2026-09-26T13:38:34Z",
       "claimed_at": "2026-09-29T12:40:22Z",
       "claimed_at_epoch": 1790685622.865171,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T13:53:11Z",
       "files": null
     },
     {
@@ -2794,6 +2794,58 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "same file or resource: known-bad",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-29T13:51:40Z",
+      "my_subject": "cody-gapledger",
+      "my_task": "build a generated competitive gap ledger piloted on the legal and medical-coding apps with a check mode",
+      "other_session": "cc",
+      "other_subject": "platform",
+      "other_task": "record every regfresh branch tip then delete only those proven contained in main; inventory competitive-gap audit docs across main and the cloud PR branches read-only; make the cross tenant isolation stripper string aware with independent derivations tests first; make the role gate screen see table driven suites or print the blind population as its own counted bucket; and the blind-spot-line sweep across every report-only screen with a control per tool. SUBJECT NAMED PER PR 4.3 FILES: docs/2026-09-29-stale-branch-tips.md docs/2026-09-29-competitive-gap-doc-inventory.md tools/cross_tenant_isolation_scope.py tests/run_cross_tenant_isolation_scope_probe.py tools/role_gate_negative_coverage.py docs/role-gate-negative-coverage.json tools/blind_spot_line_check.py tests/run_blind_spot_line_probe.py",
+      "other_claimed_at": "2026-09-29T13:26:31Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"competitive gap\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-29T13:51:54Z",
+      "my_subject": "cody-fixtures",
+      "my_task": "write known-positive fixture sets for the checkers that have none, blocking gates first then the report-only ones, one control arm per tool",
+      "other_session": "cc",
+      "other_subject": "platform",
+      "other_task": "record every regfresh branch tip then delete only those proven contained in main; inventory competitive-gap audit docs across main and the cloud PR branches read-only; make the cross tenant isolation stripper string aware with independent derivations tests first; make the role gate screen see table driven suites or print the blind population as its own counted bucket; and the blind-spot-line sweep across every report-only screen with a control per tool. SUBJECT NAMED PER PR 4.3 FILES: docs/2026-09-29-stale-branch-tips.md docs/2026-09-29-competitive-gap-doc-inventory.md tools/cross_tenant_isolation_scope.py tests/run_cross_tenant_isolation_scope_probe.py tools/role_gate_negative_coverage.py docs/role-gate-negative-coverage.json tools/blind_spot_line_check.py tests/run_blind_spot_line_probe.py",
+      "other_claimed_at": "2026-09-29T13:26:31Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: report-only",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-29T13:51:54Z",
+      "my_subject": "cody-fixtures",
+      "my_task": "write known-positive fixture sets for the checkers that have none, blocking gates first then the report-only ones, one control arm per tool",
+      "other_session": "fourth",
+      "other_subject": "platform",
+      "other_task": "discharge hank's 71h alf_mar and mech_credentials review obligation into the ledger against the verdict document already written; then: report the credential purge and read-mapper sweep status by item with shas and do whichever is not done; make the family-contact consent timestamp stamp once on the false-to-true transition and never re-stamp, tests first with a known-bad control and a live drive; a scope note for server-side witness verification on controlled-substance counts; a self-correction FLAG on the clock-correction path; the hire-anniversary refusal-to-answer and the leap-day window_from; re-derive sf_vehicle_service's tier and gate it if it is ungated Tier A; a report-only staging sweep; three register cell corrections from the hover auditor; and a sweep of probe and tool headers for stateful claims that are not derived at run time. FILES: docs/tier-a-reviews.json api/sd-data.js api/_lib/compliance-rules.js docs/defect-density-register.json",
+      "other_claimed_at": "2026-09-29T11:44:16Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: report-only",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-29T13:51:54Z",
+      "my_subject": "cody-fixtures",
+      "my_task": "write known-positive fixture sets for the checkers that have none, blocking gates first then the report-only ones, one control arm per tool",
+      "other_session": "hank",
+      "other_subject": "hank",
+      "other_task": "queue23: the patent confirmation line in the fact sheet; the SAIRNdesign invoice A1 403 error-path fix distinguishing an auth refusal from a transport failure without rolling back the local row; recording the B1 and C1 review findings; the leg_petcases and leg_processions auditor findings into the open-work index plus an msb_sale_hours row of its own; tools/hover_routing_gap_check.py and tools/hook_integrity_check.py both report-only with fixtures first; the plugin_upgrade_check credential-lookup de-duplication onto gh_token; sv_mobilevet sdn_samples leg_monuments leg_obituaries sv_wildliferehab cell reads; the full SAIRNgrounds citation repoint; the SAIRNbuild cloud-audit doc; and the directory-and-filename-pattern enumeration sweep. SUBJECT NAMED PER PR 4.3 FILES: docs/FACT-SHEET-2026-09-29.md sairndesign.html docs/SAIRN-OPEN-WORK-INDEX.md docs/CRITICALITY-TIERS.md tools/hover_routing_gap_check.py tests/run_hover_routing_gap_probe.py tools/hook_integrity_check.py tests/run_hook_integrity_probe.py docs/hook-manifest.json tools/plugin_upgrade_check.py tests/run_plugin_upgrade_token_probe.py tools/pattern_enumeration_sweep.py tests/run_pattern_enumeration_probe.py docs/2026-09-29-sairnbuild-cloud-audit.md docs/2026-09-29-gray-error-check-scope.md docs/2026-09-29-write-site-basis-rule-scope.md",
+      "other_claimed_at": "2026-09-29T11:52:16Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: report-only",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
