@@ -445,6 +445,117 @@ def file_verdict(mine_task, their_task):
     return ('refuse' if shared else 'clear'), shared
 
 
+# ── A DISCLOSURE OF DISJOINTNESS IS NOT A CLAIM (2026-09-29) ────────────────
+# PR 4.3 REQUIRES a session to NAME the file it is deliberately NOT touching --
+# "api/sd-data.js is fourth's and is NOT taken here" -- and until today the
+# matcher read that sentence as evidence that both claims want the file. So
+# following the rule made the rule refuse you: the honest session is the one
+# that gets blocked, which is the worst possible shape for a disclosure
+# convention and was measured four times in two days on this clone alone.
+#
+# SCOPED TO THE CLAUSE, not the whole string. A path is a disclosure only when a
+# disjointness marker sits in the SAME clause -- otherwise a claim that takes
+# one file and disowns another would have both exempted, which is the same
+# defect pointing the other way.
+DISJOINT_MARKERS = (
+    'not taken', 'not touch', 'not touched', 'not edit', 'not edited',
+    'deliberately excluded', 'do not edit', 'does not touch', 'is not mine',
+    'only read', 'read only', 'read-only', 'not landed by me', 'left alone',
+    'not in this claim', 'not being done by me', 'blocked', 'is held by',
+)
+# A BARE `.` CANNOT BE THE SPLIT, and the first run of this is why: every path
+# this rule exists to find contains one, so `api/sd-data.js is NOT taken` was
+# cut into three clauses and the marker never sat beside the path. The sentence
+# boundary is a dot FOLLOWED BY SPACE, which `.js ` is not.
+_CLAUSE_SPLIT = re.compile(r'\.\s+|;|\s--\s|\n')
+
+
+def disclosed_files(task):
+    """Paths a claim names in order to say it is NOT taking them."""
+    out = set()
+    for clause in _CLAUSE_SPLIT.split(task or ''):
+        low = clause.lower()
+        if not any(m in low for m in DISJOINT_MARKERS):
+            continue
+        for f in FILE_TOKEN.findall(clause):
+            out.add(f.replace('\\\\', '/'))
+    return out
+
+
+# ── COMMON VOCABULARY IS MEASURED, NOT LISTED (2026-09-29) ─────────────────
+# "tests first", "known-bad control", "fixture set", "silent half" describe HOW
+# work is done on this platform, not WHAT it is done to. Every well-written
+# claim carries them, so one of those as the sole signal blocks any two careful
+# sessions.
+#
+# AND IT IS NOT ANOTHER WORD LIST. GENERIC_TOKENS above is this file's own
+# record of a blocklist against the English language that LOST SIX TIMES and
+# carries the instruction that it must not be added to. So the exemption is
+# derived from the claim corpus instead: a phrase or identifier appearing in the
+# claims of at least COMMON_PHRASE_SESSIONS DIFFERENT sessions is common by
+# measurement. Nobody curates it, it grows as the platform's vocabulary grows,
+# and a phrase that stops being common stops being exempt the same day.
+COMMON_PHRASE_SESSIONS = 3
+_COMMON_CACHE = {}
+
+
+def _all_claim_tasks():
+    """[(session, task)] over every claim record this clone can read."""
+    out = []
+    d = os.path.join(REPO, '.claude', 'claims')
+    try:
+        names = sorted(os.listdir(d))
+    except OSError:
+        return out
+    for n in names:
+        if not n.endswith('.json'):
+            continue
+        try:
+            with open(os.path.join(d, n), encoding='utf-8') as fh:
+                doc = json.load(fh)
+        except Exception:                                      # noqa: BLE001
+            continue
+        sess = os.path.splitext(n)[0]
+        for c in (doc.get('claims') or []):
+            out.append((sess, '%s %s' % (c.get('subject') or '',
+                                         c.get('task') or '')))
+    return out
+
+
+def common_phrases():
+    """Bigrams and identifiers used by >= COMMON_PHRASE_SESSIONS sessions.
+
+    FAILS OPEN TO THE EMPTY SET. An unreadable claim directory yields no
+    exemptions and the matcher behaves exactly as it did before -- the safe
+    direction, because a missing measurement must not quietly clear a block.
+    """
+    if 'v' in _COMMON_CACHE:
+        return _COMMON_CACHE['v']
+    seen = {}
+    for sess, task in _all_claim_tasks():
+        for g in bigrams(task):
+            seen.setdefault(g, set()).add(sess)
+        for i in idents(task):
+            seen.setdefault(i, set()).add(sess)
+    out = {k for k, v in seen.items() if len(v) >= COMMON_PHRASE_SESSIONS}
+    _COMMON_CACHE['v'] = out
+    return out
+
+
+def corpus_phrase_count():
+    """How many distinct phrases/identifiers the corpus holds at all.
+
+    Published so the exemption's SIZE is auditable: if most of the corpus
+    counted as common the matcher would have stopped blocking on wording, which
+    is one step from not blocking at all.
+    """
+    seen = set()
+    for _sess, task in _all_claim_tasks():
+        seen |= set(bigrams(task))
+        seen |= set(idents(task))
+    return len(seen) or 1
+
+
 def block_reason(mine_subj, mine_task, their_subj, their_task):
     """Why these two claims collide, or None if they only share vocabulary.
 
@@ -487,10 +598,46 @@ def block_reason(mine_subj, mine_task, their_subj, their_task):
     shared_apps = apps_in(mine_subj, mine_task) & apps_in(their_subj, their_task)
     if shared_apps:
         return 'same app: ' + ', '.join(sorted(shared_apps))
+    # A path either side DISCLOSES rather than claims is not evidence that both
+    # want it. Dropped from both sides: a disclosure is disjointness whoever
+    # wrote it.
+    _disc = disclosed_files(mine_task) | disclosed_files(their_task)
+    _common = common_phrases()
     shared_ids = idents(mine_subj, mine_task) & idents(their_subj, their_task)
+    # AN IDENTIFIER IS NEVER EXEMPTED BY COMMONNESS, and two existing controls
+    # caught this before it shipped. api/sd-data.js is named by four sessions
+    # and sv_controlled by three, so the common-vocabulary rule marked both
+    # common and cleared genuine collisions on the busiest file and a Tier A
+    # resource. AN IDENTIFIER NAMES ONE THING: frequency across sessions says it
+    # is a BUSY thing, not a generic one, which is the opposite of the inference
+    # the exemption makes about wording. Only a DISCLOSURE can excuse an
+    # identifier, and that is a sentence somebody wrote on purpose rather than a
+    # frequency.
+    # AN IDENTIFIER IS EXEMPTED ONLY WHEN ITS SHAPE SAYS IT IS NOT ONE.
+    # idents() treats `known-bad` as an identifier because it is hyphenated, and
+    # it is a hyphenated ENGLISH PHRASE. A real identifier on this platform
+    # carries a path separator, a dot, or an underscore -- api/sd-data.js,
+    # sv_controlled -- and for those, frequency across sessions means BUSY, not
+    # generic, which is the opposite of the inference the exemption makes. Two
+    # existing controls caught that before it shipped: exempting them cleared a
+    # genuine collision on the busiest file on the platform and on a Tier A
+    # resource.
+    shared_ids = {i for i in shared_ids
+                  if i not in _disc
+                  and not (i in _common and not re.search(r'[/._]', i))}
     if shared_ids:
         return 'same file or resource: ' + ', '.join(sorted(shared_ids))
+    # THE PHRASE LAYER IS EXEMPTED THE SAME WAY, and one existing control had to
+    # move for it. `html tests` is used by three sessions, so it is common by
+    # measurement -- and it is the exact pair
+    # tests/claims/run_fileset_matcher_probe.py used as its CONTROL to prove the
+    # file-set matcher catches what the lexical one misses. That control was
+    # asserting a lexical over-block THAT THIS CHANGE REMOVES, which is a
+    # fixture describing a gap that has closed rather than a defect in the
+    # change. Its pair was replaced with one that still collides and is not
+    # common; the file-set matcher's value is untouched.
     shared_phrase = bigrams(mine_subj, mine_task) & bigrams(their_subj, their_task)
+    shared_phrase = {p for p in shared_phrase if p not in _common}
     if shared_phrase:
         pair = sorted(sorted(shared_phrase, key=lambda p: sorted(p))[0])
         return 'shared phrase: "%s"' % ' '.join(pair)
