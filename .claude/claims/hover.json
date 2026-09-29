@@ -304,8 +304,8 @@
       "task": "hover own-tooling round: add a new structured flag to my own logging script with tests first, and tag a few of tonight's entries with it after the fact; log one supplier reference resource as routable with its deciding test spelled out; sample the cold pool once undirected; draw the next weighted rotation pick. FILES: .claude/skills/sairn-hover-auditor/",
       "claimed_at": "2026-09-29T11:21:26Z",
       "claimed_at_epoch": 1790680886.6234488,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T11:43:05Z",
       "files": null
     }
   ],
