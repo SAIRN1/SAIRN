@@ -127,8 +127,15 @@ EXIT_CLEAN, EXIT_BROKEN, EXIT_COULD_NOT_RUN = 0, 1, 2
 # -- remote classification: pure, fixture-locked ---------------------------
 
 _CRED_IN_URL = re.compile(r'://[^/@]*:[^/@]*@|://[^/:@]+@')
+# https:// must be followed DIRECTLY by github.com -- userinfo on an https
+# URL is a credential and falls through to the refusal. ssh:// and scp-style
+# forms accept ANY bare username (no colon -- a password is a credential
+# regardless of transport): the 2026-09-29 cold-read fix, generalizing the
+# seq-289 lesson from the literal 'git' to the transport-user class it
+# belongs to. The username charclass has no ':' by construction, so
+# user:pass@ never matches here and reaches the credential refusal.
 _GITHUB = re.compile(
-    r'^(?:https://|git@|ssh://git@)github\.com[:/]'
+    r'^(?:https://|(?:ssh://)?[A-Za-z0-9._-]+@)github\.com[:/]'
     r'([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+?)(?:\.git)?/?$')
 
 
@@ -655,6 +662,23 @@ def selftest():
        == ('check', ('SAIRN-1', 'hover2-log-mirror')))
     ck('A3 ...and scp form passes',
        classify_remote('git@github.com:SAIRN-1/hover2-log-mirror.git')[0] == 'check')
+    # A4/A5: reproduced 2026-09-29 from another agent's cold-read report
+    # (description only, his log not read): the ssh:// exemption was
+    # hardcoded to the literal 'git', so any OTHER bare ssh username was
+    # mislabeled "embeds a credential". A bare username on an ssh transport
+    # is a transport user, not a credential -- the credential is the ssh
+    # KEY, which never appears in the URL. The seq-289 lesson generalized
+    # from the one username git happens to use to the class it belongs to.
+    ck('A4 a NON-git bare ssh username is a transport user, not a '
+       'credential (the reported cold-read bug, reproduced then fixed)',
+       classify_remote('ssh://deploy@github.com/SAIRN-1/hover2-log-mirror')
+       == ('check', ('SAIRN-1', 'hover2-log-mirror')))
+    ck('A5 ...and the scp-style form with a non-git user passes too',
+       classify_remote('builder@github.com:SAIRN-1/hover2-log-mirror.git')[0]
+       == 'check')
+    ck('A-CONTROL known-bad: ssh WITH a password (user:pass@) must STILL '
+       'refuse -- a password is a credential regardless of transport',
+       refuse('ssh://deploy:hunter2@github.com/SAIRN-1/hover2-log-mirror'))
     # KNOWN-BAD CONTROL per refusal class: a waved-through classifier must fail these
     broken = lambda u: ('check', ('x', 'y'))
     def arms(fn):
