@@ -2734,6 +2734,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "cody-1790704677",
+      "session": "cody",
+      "subject": "cody-regnotes",
+      "task": "docs/defect-density-register.json",
+      "claimed_at": "2026-09-29T17:57:57Z",
+      "claimed_at_epoch": 1790704677.7669418,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
