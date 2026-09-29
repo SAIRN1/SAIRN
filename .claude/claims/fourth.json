@@ -2791,6 +2791,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "fourth-1790703415",
+      "session": "fourth",
+      "subject": "snapwork",
+      "task": "db/schema_snapshot.json",
+      "claimed_at": "2026-09-29T17:36:55Z",
+      "claimed_at_epoch": 1790703415.4266276,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
