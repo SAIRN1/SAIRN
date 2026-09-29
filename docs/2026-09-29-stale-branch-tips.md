@@ -82,6 +82,66 @@ file). Their content is in main, so nothing is lost by removing them.
 | `regfresh/2026-09-28-sd-data` | `5b3579a312484e9a6f617187c83103e89a4e96b0` | 2026-09-28 | no | no (4 of 4 lines absent) | KEPT |
 | `regfresh/2026-09-28-stonedesk` | `04269b8a4c6808166c61893041c9c174a8151fa5` | 2026-09-28 | no | **yes** (3/3 lines) | **DELETED** |
 
+## WHAT WAS ACTUALLY DELETED, AND WHEN — the column above was a PLAN
+
+**The `DELETED` verdict above was written BEFORE any deletion ran**, which is
+the order this document argues for and is also a thing a later reader can
+misread as history. The deletion ran afterwards, and this section is the
+record of it. The two are separated on purpose: a table that says DELETED
+while the branch is still on the remote is the same class of claim as a status
+report nobody checked.
+
+**RE-VERIFIED AGAINST `origin/main` AS IT EXISTED AT DELETION TIME, not against
+the read behind the table.** Main had moved by several commits in between. All
+27 rows were re-derived by the same CONTENT test:
+
+| | count |
+|---|---|
+| rows re-derived | **27** |
+| verdicts that CHANGED on re-verification | **0** |
+| in main by content — deletable | **12** |
+| not in main by content — kept | **15** |
+
+**A zero there is the interesting number, not a formality.** It says the
+proposals whose content had reached main had not been re-broken by the
+intervening commits, and it is the only thing that licensed acting on a table
+written hours earlier.
+
+### What the deletion found
+
+| | count |
+|---|---|
+| local branches deleted | **5** |
+| local branches already absent | **7** |
+| remote branches deleted | **0** |
+| remote branches already absent | **12** |
+
+**THE REMOTE SIDE WAS ALREADY CLEAN AND THAT IS NOT A NO-OP RESULT.** The 15
+branches still on `origin` are **exactly** the 15 the CONTENT test says to KEEP —
+checked name by name, not by count. Every one of the 12 deletable branches was
+already gone from the remote, so nothing of theirs was on `origin` to remove.
+Seven of those twelve were also already gone locally. The exercise removed five
+local refs; what it mainly established is that the remote and the content test
+already agreed.
+
+The five deleted locally: `regfresh/2026-09-28-sairnbiz`,
+`-sairnbuild`, `-sairncare`, `-sairnfreedom`, `-sairnsenior`.
+
+### Recoverability was CHECKED after the deletion, not assumed
+
+All twelve tip shas were confirmed still resolvable in this clone
+(`git cat-file -t <tip>` → `commit`) **after** the branch refs were removed.
+Deleting a ref does not delete the commit; it makes it unreachable, and it stays
+in the object store until a `gc` prunes it. So the recreate recipe at the top of
+this file works today, and stops working at some future `git gc --prune`.
+
+**THE FIRST VERSION OF THAT CHECK REPORTED ALL TWELVE AS `GONE` AND WAS WRONG.**
+It ran `git cat-file` inside a `while read` loop fed from a file, and git
+consumed the loop's stdin; the direct one-at-a-time check answered `commit` for
+every one. Recorded because a false alarm about data loss, believed, is how a
+deletion gets reverted and re-run — and because it is the same shape as every
+other check in this repo that was measuring its own harness.
+
 ## What the KEPT branches still hold
 
 Fifteen branches carry proposals whose lines are not in main. Thirteen are the
