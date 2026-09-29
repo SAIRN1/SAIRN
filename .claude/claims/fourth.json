@@ -2777,8 +2777,8 @@
       "task": "docs/tier-a-reviews.json",
       "claimed_at": "2026-09-29T17:33:27Z",
       "claimed_at_epoch": 1790703207.7257872,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T17:46:08Z",
       "files": null
     },
     {
@@ -2788,8 +2788,8 @@
       "task": "tools/push_retry.py tests/run_reseat_fixed_point_probe.py",
       "claimed_at": "2026-09-29T17:36:02Z",
       "claimed_at_epoch": 1790703362.035507,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T17:46:42Z",
       "files": null
     },
     {
@@ -2799,8 +2799,8 @@
       "task": "db/schema_snapshot.json",
       "claimed_at": "2026-09-29T17:36:55Z",
       "claimed_at_epoch": 1790703415.4266276,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T17:47:18Z",
       "files": null
     },
     {
