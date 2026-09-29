@@ -112,6 +112,20 @@ test('THE LABEL NAMES THE POPULATION IT SUMS -- every SAIRN app in this '
       + 'tells the user those are different things.');
   });
 
+test('THE FIGURE IS MARKED AS AN APPROXIMATION -- removing the invented '
+  + 'percentage left a number that reads as exact and is not', () => {
+    // `.length * 2` assumes two bytes per UTF-16 code unit, which is wrong for
+    // a surrogate pair and is not how every engine charges quota. A reader
+    // must not take this for a measured total to the byte, and the card has
+    // room for a mark rather than a sentence.
+    assert.ok(/'~'\s*\+/.test(BODY) || /~\$\{/.test(BODY),
+      'the storage figure is presented without an approximation marker');
+    assert.ok(/k\.length\s*\+/.test(BODY),
+      'the KEYS are not counted. They are stored too, and leaving them out '
+      + 'biases the figure DOWN -- the wrong direction for a number somebody '
+      + 'reads as "how full am I".');
+  });
+
 test('CONTROL: the card still exists and is still written to, so the arms '
   + 'above are not passing over a deleted feature', () => {
     assert.ok(/id="adm-storage"/.test(HTML), 'the KPI card is gone');

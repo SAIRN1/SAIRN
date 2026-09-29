@@ -6416,10 +6416,26 @@ function sdCsvCell(v){var s=v==null?'':String(v);if(/^[=+\-@\t\r]/.test(s)&&!(s!
     // browser's real limit is not knowable synchronously and this app does not
     // guess at it -- a percentage returns the day navigator.storage.estimate()
     // is wired, with its own quota rather than a constant.
-    var totalBytes=0; for(var i=0;i<localStorage.length;i++){ try{ var k=localStorage.key(i); totalBytes+=(localStorage.getItem(k)||'').length*2; }catch(e){} }
+    // ── AND THE BYTES ARE AN APPROXIMATION, SO THE CARD SAYS SO (2026-09-29)
+    // Removing the invented percentage left a figure that reads as exact and
+    // is not. `.length * 2` assumes two bytes per UTF-16 code unit, which is
+    // wrong for astral characters (a surrogate pair is two units) and is not
+    // how every engine charges its quota. The KEYS were also not counted at
+    // all, and they are stored too -- they are counted below, which moves the
+    // figure up slightly and is the more honest direction.
+    //
+    // A `~` ON THE VALUE RATHER THAN A LONGER LABEL. The card has room for a
+    // number, not a sentence, and the one thing a reader must not conclude is
+    // that this is a measured total to the byte. There is no quota to divide
+    // it by: searched for a configured one -- storage_quota, storage_limit,
+    // quota_bytes, max_storage across every .js, .sql, .json and .html, and
+    // vercel.json -- and there is none, because this counts BROWSER
+    // localStorage, which neither Supabase nor Vercel governs. The browser's
+    // own limit is not knowable synchronously, so no percentage is computed.
+    var totalBytes=0; for(var i=0;i<localStorage.length;i++){ try{ var k=localStorage.key(i)||''; totalBytes+=(k.length+(localStorage.getItem(k)||'').length)*2; }catch(e){} }
     var kb=totalBytes/1024;
     var sEl=document.getElementById('adm-storage');
-    if(sEl) sEl.textContent = kb>=1024 ? (kb/1024).toFixed(1)+' MB' : Math.round(kb)+' KB';
+    if(sEl) sEl.textContent = '~' + (kb>=1024 ? (kb/1024).toFixed(1)+' MB' : Math.round(kb)+' KB');
     var lastBackup=localStorage.getItem('sd_last_backup');
     var bEl=document.getElementById('adm-backup'); if(bEl) bEl.textContent=lastBackup?new Date(lastBackup).toLocaleDateString():'--';
   }
