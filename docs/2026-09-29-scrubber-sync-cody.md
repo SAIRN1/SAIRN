@@ -107,3 +107,38 @@ about both rows above while one is a safe copy and the other is a data loss. It
 must fail COULD NOT RUN when the user store is absent rather than reporting every
 skill as diverged, and it cannot be a push gate: the store is outside the repo,
 so its state is not a property of any commit.
+
+---
+
+## LANDED 2026-09-29 — the scrubber half only
+
+**`sairn-code-scrubber` is synced.** The direction check was re-run immediately
+before the copy, exactly as this document said it must be: **70 repo-only lines,
+0 store-only**, so the copy could not destroy anything. After:
+
+    repo-only 0, store-only 0
+    sections repo/store: 27 / 27
+
+Section 27 — cc's ratio cap that turned a 130% cost overrun into 100% complete
+and inverted over/under billing on the report a surety underwriter reads — is now
+in the copy a session actually loads. **It was not retyped**: the repo file was
+copied whole, which is the only form of this fix that cannot create a second
+divergent version of one rule.
+
+The previous store copy is kept as a backup in this session's scratchpad. The
+repo file is unchanged — it was already the superset.
+
+**A full re-check of all 34 mirrored skills after the copy leaves exactly one
+divergence:**
+
+    sairn-hover-auditor: repo-only 241, store-only 2
+
+**Still routed, still not touched.** It is out of scope for every build agent,
+its divergence is NOT one-directional, and a copy either way would destroy
+content. Owner: the hover auditor.
+
+**This is a config file outside every clone, so nothing here is in the diff.**
+Re-run the direction check rather than trusting this section:
+
+    diff <(tr -d '\r' < .claude/skills/sairn-code-scrubber/SKILL.md) \
+         <(tr -d '\r' < ~/.claude/skills/sairn-code-scrubber/SKILL.md)
