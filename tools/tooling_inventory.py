@@ -961,6 +961,10 @@ PURPOSES = {
     # corrected count goes stale again on the next check.
     'sairn_push_gate_hook.py': ('CHECKER', 'the numbered push checks; the only tool that calls deny()'),
     'git_push_master_guard.py': ('CHECKER', 'a push aimed at `master`, which is stale'),
+    'citation_no_source_report.py': ('CHECKER', 'a register row that asserts a '
+                                     'basis and cites no line of code'),
+    'hedge_carry_check.py': ('CHECKER', 'a hedge in a dispatched item that no '
+                             'commit message carried forward or resolved'),
     'pattern_enumeration_sweep.py': ('CHECKER', 'a population decided by a NAME '
                                      'with no second, independent derivation of '
                                      'membership behind it'),
