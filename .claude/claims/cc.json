@@ -2965,6 +2965,20 @@
         "tools/cross_tenant_isolation_scope.py",
         "tools/role_gate_negative_coverage.py"
       ]
+    },
+    {
+      "id": "cc-1790702578",
+      "session": "cc",
+      "subject": "platform",
+      "task": "derive_charges must not report invoice_exists true for a row whose data blob is null, regression test first with the exact null-blob shape; and the mech_docs session gate. SUBJECT NAMED PER PR 4.3 FILES: api/sd-data.js api/sd-data-derive-charges.test.js",
+      "claimed_at": "2026-09-29T17:22:58Z",
+      "claimed_at_epoch": 1790702578.9871824,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/sd-data-derive-charges.test.js",
+        "api/sd-data.js"
+      ]
     }
   ],
   "refusals": [
