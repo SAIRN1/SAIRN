@@ -323,6 +323,23 @@
         "hover_editor_review_criteria.py",
         "hover_self_health_hook.py"
       ]
+    },
+    {
+      "id": "hover-1790684513",
+      "session": "hover",
+      "subject": "hover",
+      "task": "six-item queue: independently validate hover2's citation linter and mistake-class tooling with a credential-free holdout; log two routable citation-drift findings with measured per-resource offsets; resolve the two editor-pass tool limitations with a fixture+control or a named permanent limit; run the session-end mirror push, restore drill and anchor verification; one undirected batch; resume the weighted-rotation cold-scan draw with the per-window cap.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hover.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. One earlier attempt was refused on shared incidental vocabulary rather than a shared subject or file. Each component of this claim checks CLEAR on its own.\n\nFILES: hover_citation_linter.py hover_log.py hover_backup_mirror.py hover_cold_scan_pool.py hover_editor_review_criteria.py",
+      "claimed_at": "2026-09-29T12:21:53Z",
+      "claimed_at_epoch": 1790684513.5326557,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "hover_backup_mirror.py",
+        "hover_citation_linter.py",
+        "hover_cold_scan_pool.py",
+        "hover_editor_review_criteria.py",
+        "hover_log.py"
+      ]
     }
   ],
   "refusals": [
@@ -519,6 +536,32 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "shared phrase: \"refusals under\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-29T12:21:36Z",
+      "my_subject": "hover",
+      "my_task": "six-item queue: independently validate hover2's citation linter and mistake-class tooling with a credential-free holdout; log two routable citation-drift findings with measured per-resource offsets; resolve the two editor-pass tool limitations with a fixture+control or a named permanent limit; run the session-end mirror push, restore drill and anchor verification; one undirected batch; resume the weighted-rotation cold-scan draw with the per-window cap FILES: .claude/skills/sairn-hover-auditor/",
+      "other_session": "cody",
+      "other_subject": "cody",
+      "other_task": "cody-q19: discharge my most-overdue eligible Tier A review (cc 2026-09-26T13:13:44Z, 70h, the storedBlob blob-builder migration); triage the 54 checker_selftest_check findings by file owner and fix the ones in files I hold, test first per tool, reporting file, tool and owner for the rest; claim_provenance.py four-subcommand-door coverage or the reason it does not need it; read all 14 NOT JUDGED arms in assertion_label_shape_check.py individually and either cover or register each as a named permanent limit; confirm the sf_trustee_audits obligation record names the real gap; confirm where each of the four doc deliverables has landed in its real target file and name the holder for any still blocked; the skill-mirror sync for the code scrubber; and a methodology pass confirming every checker I built or touched this session carries its own fixture-based known-bad control. SUBJECT NAMED PER PR 4.3 FILES: tools/checker_selftest_check.py tests/run_checker_selftest_probe.py tools/assertion_label_shape_check.py tests/run_assertion_label_shape_probe.py tools/entry_point_scope_check.py tests/run_entry_point_scope_probe.py tools/parse_zero_third_state_check.py tests/run_parse_zero_third_state_probe.py tools/claim_provenance.py",
+      "other_claimed_at": "2026-09-29T10:55:50Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"limit permanent\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-29T12:21:36Z",
+      "my_subject": "hover",
+      "my_task": "six-item queue: independently validate hover2's citation linter and mistake-class tooling with a credential-free holdout; log two routable citation-drift findings with measured per-resource offsets; resolve the two editor-pass tool limitations with a fixture+control or a named permanent limit; run the session-end mirror push, restore drill and anchor verification; one undirected batch; resume the weighted-rotation cold-scan draw with the per-window cap FILES: .claude/skills/sairn-hover-auditor/",
+      "other_session": "fourth",
+      "other_subject": "platform",
+      "other_task": "discharge hank's 71h alf_mar and mech_credentials review obligation into the ledger against the verdict document already written; then: report the credential purge and read-mapper sweep status by item with shas and do whichever is not done; make the family-contact consent timestamp stamp once on the false-to-true transition and never re-stamp, tests first with a known-bad control and a live drive; a scope note for server-side witness verification on controlled-substance counts; a self-correction FLAG on the clock-correction path; the hire-anniversary refusal-to-answer and the leap-day window_from; re-derive sf_vehicle_service's tier and gate it if it is ungated Tier A; a report-only staging sweep; three register cell corrections from the hover auditor; and a sweep of probe and tool headers for stateful claims that are not derived at run time. FILES: docs/tier-a-reviews.json api/sd-data.js api/_lib/compliance-rules.js docs/defect-density-register.json",
+      "other_claimed_at": "2026-09-29T11:44:16Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"auditor hover\"",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
