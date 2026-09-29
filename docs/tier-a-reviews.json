@@ -4599,6 +4599,32 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-29T14:46:23Z",
+      "opened_at_sha": "c4dd292fd8a8ee8ad78ce3ab177511494e9b09ae",
+      "resources": [
+        "mech_quotes",
+        "scp_quotes",
+        "sf_trustee_audits",
+        "sf_vehicle_service",
+        "sf_vehicles"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/sd-data-mech-redaction-scope.test.js",
+        "api/sd-data-session-gate.test.js",
+        "api/sd-data.js"
+      ],
+      "what": "THREE CHANGES, ATTACK IN THIS ORDER.\n\n(a) THE REDACTION GATE NOW COVERS mech_takeoffs, AND EXISTING ROWS ARE UNASSESSED. api/sd-data.js's MECH_SCANNED_TEXT map replaces `if (resource === 'mech_docs')`. The half I cannot close from here: mech_takeoffs rows written before today went through NEITHER pass -- the client writer at sairnmechanical.html:1784-1794 calls no redactor either, unlike the doc writer at :1766. Decide whether those rows need a migration pass or a named residue entry. I inspected no stored row.\n\n(b) I DECLINED TO COVER TWO RESOURCES AND THAT IS THE DECISION MOST WORTH DISAGREEING WITH. mech_quotes.text and mech_checks.payee/memo are deliberately outside the map: the quote is generated from form fields the user filled and the payee is typed on purpose, so redacting either destroys the record rather than protecting it. If you think a quote's customer name is a leak rather than a deliverable, that is a product decision and my arms currently PIN the opposite -- they fail if either is swept in.\n\n(c) A DEFECT IN api/_lib/mech-redact.js THAT I PINNED RATHER THAN FIXED. `Phone: 555-0142  Unit: RTU-4` becomes `Phone: 555-[ADDRESS REDACTED]: RTU-4`: the seven-digit number is not matched as a PHONE and the ADDRESS pattern eats the equipment label the tool documents itself as keeping. The arm asserts the CURRENT behaviour so a fix goes red deliberately. Check my reasoning for not fixing it -- I argued a pattern that both over- and under-matches needs its own fixtures, and that widening the phone half risks eating serials. If that is wrong, this is a leak left in place for a week.\n\nALSO, and it is not part of this change: the SD_SESSION_GATED / SD_GATE_APP arm added in the same push makes four StoneDesk-native entries explicit. No behaviour changes, but a reviewer should confirm the fallback really did return exactly those four values.\n\nNOT VERIFIED LIVE.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-29T14:46:23Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
