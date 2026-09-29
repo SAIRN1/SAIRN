@@ -26,7 +26,7 @@ person asking.
 > commits figure is stale again the moment anything is committed, including this
 > refresh itself** — so run it last, immediately before printing.
 
-**Figures refreshed 2026-09-29 06:39 by `python tools/fact_sheet_regenerates.py --update`.**
+**Figures refreshed 2026-09-29 06:44 by `python tools/fact_sheet_regenerates.py --update`.**
 
 **No file names, no customer data, no credentials, no methodology detail.**
 Figures that cannot be derived are marked **UNAVAILABLE** with the reason — a
@@ -71,12 +71,12 @@ call is not counted.
 
 | Figure | Value | Derived by | Date |
 |---|---|---|---|
-| Commits since 2026-05-15 | **6,987** | `git log --oneline --since=2026-05-15 \| wc -l` | 2026-09-28 |
+| Commits since 2026-05-15 | **6,994** | `git log --oneline --since=2026-05-15 \| wc -l` | 2026-09-28 |
 | First commit in repository | **2026-06-22** | `git log --reverse --format=%ad --date=short \| head -1` | 2026-09-28 |
 | Most recent commit | **2026-09-28** | `git log -1 --format=%ad --date=short` | 2026-09-28 |
 | Elapsed development span | **98 days / 14.0 weeks** | first to most recent commit, above | 2026-09-28 |
-| Commits per week (mean) | **499** | 6,987 ÷ 14.0 | 2026-09-28 |
-| Commits per day (mean) | **71** | 6,987 ÷ 98 | 2026-09-28 |
+| Commits per week (mean) | **500** | 6,994 ÷ 14.0 | 2026-09-28 |
+| Commits per day (mean) | **71** | 6,994 ÷ 98 | 2026-09-28 |
 
 **WHY THE HISTORY STARTS 2026-06-22, AND WHAT THE REAL SPAN IS.** Building began
 before version control, and the repository's own first commit proves it:
@@ -110,15 +110,15 @@ count.
 ## Two lines to say out loud
 
 > **"Roughly 500 commits a week, every week, for fourteen weeks."**
-> 6,987 commits ÷ 14.0 weeks under version control = **499 per week**, 71 per day.
+> 6,994 commits ÷ 14.0 weeks under version control = **500 per week**, 71 per day.
 > Over the full 18.6-week build span the average is **376 per week** — lower, and
 > stated because commits before 2026-06-22 do not exist to be counted, so the
 > higher number is the one with evidence behind it.
 
 > **"About 140 defects caught per week, by our own review and tooling."**
-> 374 defects ÷ 2.71 weeks since the register opened 2026-09-09 = **138 per
-> week**, 20 per day. **This counts defects CAUGHT, not shipped** — and 189 of
-> the 374 were in the tooling and tests rather than in the product.
+> 375 defects ÷ 2.71 weeks since the register opened 2026-09-09 = **138 per
+> week**, 20 per day. **This counts defects CAUGHT, not shipped** — and 190 of
+> the 375 were in the tooling and tests rather than in the product.
 
 ---
 
@@ -126,10 +126,10 @@ count.
 
 | Figure | Value | Derived by | Date |
 |---|---|---|---|
-| Automated test suites, total | **807** | sum of the three rows below | 2026-09-28 |
+| Automated test suites, total | **808** | sum of the three rows below | 2026-09-28 |
 | — JavaScript suites | **228** | `git ls-files 'tests/*.js' 'tests/**/*.js' \| wc -l` | 2026-09-28 |
 | — Endpoint suites | **238** | `git ls-files 'api/*.test.js' 'api/_lib/*.test.js' \| wc -l` | 2026-09-28 |
-| — Python probes | **341** | `git ls-files 'tests/*.py' 'tests/**/*.py' \| wc -l` | 2026-09-28 |
+| — Python probes | **342** | `git ls-files 'tests/*.py' 'tests/**/*.py' \| wc -l` | 2026-09-28 |
 | Verification tools and checkers | **272** | `git ls-files tools/ \| grep -E '\.(py\|js\|cjs\|sh)$' \| xargs -n1 basename \| sort -u \| wc -l` | 2026-09-28 |
 | — of which classified as checkers | **185** | `python tools/tooling_inventory.py --check` | 2026-09-28 |
 | — generators | **19** | same | 2026-09-28 |
@@ -159,18 +159,18 @@ caught, not of defects shipped.**
 
 | Figure | Value |
 |---|---|
-| **Defects registered, total** | **374** |
+| **Defects registered, total** | **375** |
 | By severity — critical | 27 |
-| By severity — high | 176 |
+| By severity — high | 177 |
 | By severity — moderate | 138 |
 | By severity — low | 33 |
 | By layer — in product code | 185 |
-| By layer — in tooling | 123 |
+| By layer — in tooling | 124 |
 | By layer — in tests | 66 |
 
 | Detection method | Count |
 |---|---|
-| Code review | 161 |
+| Code review | 162 |
 | Independent review by a second engineer | 83 |
 | Static checkers | 55 |
 | Live verification against deployed software | 16 |
@@ -183,10 +183,10 @@ caught, not of defects shipped.**
     python tools/defect_register.py          # all of the above
     # first record: 2026-09-09
 
-**What this figure is and is not.** 374 is the count since the register opened on
+**What this figure is and is not.** 375 is the count since the register opened on
 **2026-09-09** — 19 days. It is not a lifetime total and it is not a bug count for
-shipped software: the majority were found before reaching a user, and **189 of
-the 374 are in tooling or tests rather than in the product.**
+shipped software: the majority were found before reaching a user, and **190 of
+the 375 are in tooling or tests rather than in the product.**
 
 ---
 
@@ -260,7 +260,7 @@ it claims. Three things a reader should press on, because they are the weakest:
 
 1. **Panels — 465 is a floor.** Counted by each application's own convention;
    a sub-view with no navigation call is not counted.
-2. **Defects — 19 days of recording**, and 189 of 374 are in tooling or tests
+2. **Defects — 19 days of recording**, and 190 of 375 are in tooling or tests
    rather than in the product.
 3. **The build span — 18.6 weeks is a lower bound.** The 4.6 weeks before the
    repository existed are bounded by a dated artifact, not measured.

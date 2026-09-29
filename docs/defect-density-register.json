@@ -19351,6 +19351,76 @@
         }
       ],
       "recurrence_open": "PARTLY CLOSED AND MEASURED: hook fail-opens 5 -> 0, but 16 dependency-shaped fail-opens remain in tools/ where exit 0 is not a decision to allow something, and they are unswept. The scanner reads TEXT, so a fail-open through a helper, a trap or a Python default argument is invisible and the universe is a FLOOR. And the distinction the tool rests on -- SCOPE versus DEPENDENCY -- is inferred from what the guard NAMES, so a scope guard whose marker has an unusual name will be miscounted as a finding."
+    },
+    {
+      "commit": "2f0fdf5cf4a0",
+      "date": "2026-09-29",
+      "subject": "fix(nhi): the clone count was DERIVED FROM DISK and still wrong -- third instance",
+      "files": [
+        "docs/2026-09-28-credential-locations.md",
+        "docs/FACT-SHEET-2026-09-29.md",
+        "docs/MASTER-PLAN.md",
+        "docs/NHI-REGISTER.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/traceability-matrix.md",
+        "tests/run_nhi_clone_enumeration_probe.py",
+        "tools/nhi_register.py"
+      ],
+      "lines_added": 445,
+      "lines_removed": 54,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "docs/NHI-REGISTER.md's clone-push-access row -- the rotation blast radius for the GitHub push credential -- reported SIX working copies while SEVEN held it. nhi_register.sibling_clones() filtered siblings on name.startswith('SAIRN-') and C:\\Users\\marsh\\Documents\\SAIRN is a clone of the same remote, on main, able to push. THIRD INSTANCE: CLAUDE.md said four while five pushed (2026-09-16), the register said four for the same reason (2026-09-17) and was fixed by counting from disk, and now the count was derived from disk and was STILL wrong because the predicate was a naming convention. A second way to be skipped sat in the same line: .git was tested with isdir() and a worktree's .git is a file.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "2f4400abed36",
+        "date": "2026-09-17",
+        "subject": "fix(nhi): the identity that says who can push named four clones and there are five",
+        "lag_days": 12
+      },
+      "citation_note": "The row derived its population from disk and the derivation still selected the wrong set, so nothing announced that the count had been wrong since the day a seventh clone appeared. 1.1's shape with a filter in place of a stale anchor.",
+      "contributing_factors": [
+        {
+          "factor": "The population filter was a NAMING CONVENTION rather than the predicate being asked. sibling_clones() kept directories starting with 'SAIRN-', and the question is whether a directory is a git clone of the same origin.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The name filter is removed. Every sibling directory holding a .git is asked for its remote.origin.url and kept when it matches this clone's."
+        },
+        {
+          "factor": "A second, independent way to be skipped sat in the same line: `.git` was tested with isdir(), and a git worktree's .git is a FILE. This repo's probes build worktrees constantly.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "exists() instead of isdir()."
+        },
+        {
+          "factor": "The previous fix for this same undercount replaced a typed list with a derivation and was treated as closing the class. A derivation reads as correct, so nobody re-examined what it actually selected.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The tool header and the control both state the distinction now: derived is not the same as right when the filter encodes a habit. The control includes a same-origin clone whose name matches no convention at all."
+        },
+        {
+          "factor": "There was no control on sibling_clones() at all. The derivation carried a long explanatory header and nothing that would fail if it selected the wrong set.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/run_nhi_clone_enumeration_probe.py drives real repositories in a throwaway parent, including the exact missed shape, plus a fail-closed arm."
+        },
+        {
+          "factor": "Working copies are created ad hoc by one person on one machine and nothing constrains what they are called. Any enumeration keyed on a name drifts the moment somebody clones into a differently-named directory, which is what happened.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "Naming cannot be enforced here and should not be -- the fix is to stop asking about names. Recorded so a later reader does not re-add a convention filter as a speed-up."
+        }
+      ],
+      "recurrence_open": "Nothing checks any OTHER derived population in this repo for a filter that encodes a convention rather than the predicate. This was found by enumerating credential read sites for a rotation, not by a sweep. And tools/plugin_upgrade_check.py still carries a second copy of the credential-manager lookup that gh_token.py exists to centralise."
     }
   ],
   "started": "2026-09-09",
