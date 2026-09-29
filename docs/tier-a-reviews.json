@@ -4575,6 +4575,30 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-29T14:52:53Z",
+      "opened_at_sha": "a5a713b8d2ebb8811949613ae9e0533f8d5c6387",
+      "resources": [
+        "dnt_vendor_orders",
+        "leg_insurance",
+        "msb_sale_hours",
+        "sv_financials"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tools/citation_no_source_report.py",
+        "tools/hedge_carry_check.py"
+      ],
+      "what": "tools/citation_no_source_report.py and tools/hedge_carry_check.py, both NEW, both report-only, both writing nothing anywhere, plus their two controls. Neither serves any resource: one parses register rows, one compares a dispatch string to commit messages.\n\nTHE TIER A ATTRIBUTION IS A FALSE POSITIVE AND THIS IS THE FOURTH IN THREE DAYS, which makes it a measured pattern. The gate matched dnt_vendor_orders, leg_insurance, sv_financials and msb_sale_hours against tools/hedge_carry_check.py because its WORKED EXAMPLE and its selftest FIXTURE quote the queue22 dispatch sentence verbatim -- that sentence IS the real instance the whole check is built around. Previously the same gate matched the word for a quotation mark against a shlex comment about unbalanced ones in rebase_state_guard.py, matched leg_processions and msb_sale_hours against test fixtures in hover_routing_gap_check.py, and matched sc_anesthesia_base_units against a docstring in citation_drift_hook.py -- where cc's own record predicted it. A resource name inside a comment, a docstring or a test fixture is PR 1.2 INSIDE THE REVIEW GATE ITSELF. I am not the session to confirm that; it is reported here for the fourth time.\n\nThe obligation is opened on merit anyway, because both tools produce NUMBERS a reader will quote.\n\nWHAT A REVIEWER SHOULD PRESS ON, hardest first:\n\n(1) THE CRITERIA IN citation_no_source_report.py, WHICH I GOT WRONG ONCE AND FIXED BEFORE REPORTING. The first version counted 138 rows as CONTRADICTORY; 106 of those carry a 3.2-pass GROUP STAMP, which the register's own header describes as deliberate evidence. ATTACK THE CORRECTED VERSION IN THE OTHER DIRECTION: GROUP_STAMP now matches any parenthesised ALL-CAPS word of five or more characters. I chose the general form over the twelve known names so a NEW group name is not silently accused. Decide whether that trades the right way, or whether it now lets a row escape the contradiction bucket on an unrelated acronym.\n\n(2) CLAIMS_READ's CLOSURE. Six phrases, one of which is re-derived -- common prose. A row saying a FIGURE was re-derived, about something other than the resource read, would count as claiming a read. Look for a row where that misfires.\n\n(3) THE HEDGE LIST's CLOSURE, in the other direction. Nineteen words. Emphasis words are deliberately excluded with an arm asserting it. Find a real hedge the list misses, or a listed word that is not one.\n\n(4) THE RESOLVED REGEX. It accepts thirteen alternatives including confirmed, verified, measured and checked. Broad on purpose -- any commit saying something about the uncertainty passes. Decide whether it is SO broad that the DROPPED verdict is unreachable in practice. The known-bad arm drives a real plain docs commit and does get DROPPED, so it is not unreachable, but one arm is not a measurement.\n\n(5) WHETHER THE 32 CONTRADICTORY ROWS ARE REALLY CONTRADICTORY. I did not read them. The report names them and I have verified none by hand, which is the honest limit of this pass.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-29T14:52:53Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
