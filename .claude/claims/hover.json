@@ -293,8 +293,8 @@
       "task": "hover audit-log housekeeping round eight: format three items for a shared index; write a design note for a checker somebody else would build; sample the cold pool once undirected; draw the next weighted rotation pick. FILES: .claude/skills/sairn-hover-auditor/",
       "claimed_at": "2026-09-29T11:06:47Z",
       "claimed_at_epoch": 1790680007.6151128,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T11:19:23Z",
       "files": null
     }
   ],
