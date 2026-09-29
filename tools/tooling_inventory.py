@@ -1323,6 +1323,24 @@ PURPOSES = {
         'beat dependency list is READ FROM heartbeat.js and returns None on a read '
         'failure, never an empty set. 5 locked fixtures, 23-arm control whose '
         'ablation restores the REAL pre-fix shape in memory. REPORT ONLY'),
+    'dead_rule_sweep.py': ('CHECKER',
+        'A CRITERIA RULE THAT NOTHING EXERCISES, which is indistinguishable '
+        'from a rule that works and stays that way through every green light. '
+        'The named instance: a FAILURE_DESCRIPTION pattern shipped with a '
+        'literal backspace where every word-boundary escape should have been, '
+        'matched nothing ever, and the tool ran, its fixture lock passed and '
+        'its control passed. For every module-level compiled pattern in every '
+        'report-only registry tool it NEUTRALISES that one rule -- (?!x)x, '
+        'valid and unmatchable, so the module still imports -- and re-runs the '
+        'tool's OWN evidence: its fixture lock, else its declared control. '
+        'Neither turning red means DEAD TO ITS OWN EVIDENCE. Dead does not mean '
+        'wrong: it means nothing the tool ships as proof would notice the rule '
+        'vanishing, and the repair is a fixture OR a named limit, which are not '
+        'the same answer. The rewrite goes through ast because a regex that '
+        'edits regexes by regex is how this class is born. COULD NOT TELL is '
+        'counted separately from clean. 6 fixtures, 22-arm control whose '
+        'central arm is that the mutation lands BEFORE the restore is asserted '
+        'byte-identical. REPORT ONLY'),
     'checker_selftest_check.py': ('CHECKER',
         'A CHECKER WHOSE CLEAN LINE CANNOT BE DISTINGUISHED FROM "it stopped '
         'being able to see the thing it looks for". This repo has shipped the '
