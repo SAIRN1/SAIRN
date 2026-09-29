@@ -331,8 +331,8 @@
       "task": "six-item queue: independently validate hover2's citation linter and mistake-class tooling with a credential-free holdout; log two routable citation-drift findings with measured per-resource offsets; resolve the two editor-pass tool limitations with a fixture+control or a named permanent limit; run the session-end mirror push, restore drill and anchor verification; one undirected batch; resume the weighted-rotation cold-scan draw with the per-window cap.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hover.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. One earlier attempt was refused on shared incidental vocabulary rather than a shared subject or file. Each component of this claim checks CLEAR on its own.\n\nFILES: hover_citation_linter.py hover_log.py hover_backup_mirror.py hover_cold_scan_pool.py hover_editor_review_criteria.py",
       "claimed_at": "2026-09-29T12:21:53Z",
       "claimed_at_epoch": 1790684513.5326557,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T12:58:10Z",
       "files": [
         "hover_backup_mirror.py",
         "hover_citation_linter.py",
