@@ -4456,6 +4456,26 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-29T12:07:45Z",
+      "opened_at_sha": "347b49ad43215de684faf2f7397e745083fa3943",
+      "resources": [
+        "sv_controlled"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tests/run_claim_provenance_probe.py"
+      ],
+      "what": "Three checker changes, none of which touches product code -- the sv_controlled hit is a FIXTURE STRING inside tests/run_claim_provenance_probe.py, where a hand-built two-row register uses sv_controlled as its Tier A example. A reviewer should confirm exactly that and nothing more, then close it. WHAT IS ACTUALLY WORTH ATTACKING: (1) assertion_label_shape_check.py now judges a BARE TRUTHINESS under a universal label as a FINDING and demotes a FAILURE DESCRIPTION, and the failure-description rule is deliberately SCOPED to the no-operator branch -- applied globally it demoted 74 arms, several of them real claims. Re-derive that scoping, because if it is wrong the checker got weaker and the counts would not show it: 24 CONFIRMED / 41 ADVISORY before and after. (2) Its FAILURE_DESCRIPTION regex shipped with chr(8) in place of every backslash-b and matched nothing; probe arm E1 now scans four criteria patterns for control characters -- check that list is the right four rather than the four I happened to think of. (3) The registered JS limit publishes 1811 bare-truthiness calls of which 0 carry an exhaustive label; the 0 is what makes it a limit rather than a gap, so re-derive the regex behind it. (4) tests/run_claim_provenance_probe.py rebinds P.TIERS and P.LEDGER to temp files -- confirm nothing leaks into the real docs/claim-provenance.json on a failing run. (5) criticality_tier_check.py and mutation_anchor_check.py gained criteria locks that now EXIT 2 on failure; confirm neither can refuse on a legitimate register.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-29T12:07:45Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
