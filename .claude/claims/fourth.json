@@ -2694,8 +2694,8 @@
       "task": "alf_mar administered_by is client-set and never stripped while reviewed_by on the same blob is server-set -- strip it from the payload and set it from the verified session, regression test first with a forged-value arm and ablation; then re-drive points 1, 2 and 4 of hank's tier A review now that alf_family_contacts exists live, and remove the provisional marking from the verdict document. api/sd-data.js is FREE -- cc's and cody's claims both lapsed and no active claim names it, rechecked with the original wording rather than a reworded one. FILES: api/sd-data.js api/sd-data-alf-isolation.test.js docs/2026-09-29-tier-a-review-verdicts-fourth.md",
       "claimed_at": "2026-09-29T10:51:32Z",
       "claimed_at_epoch": 1790679092.9472778,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T11:35:19Z",
       "files": [
         "api/sd-data-alf-isolation.test.js",
         "api/sd-data.js",
