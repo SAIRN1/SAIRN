@@ -20031,7 +20031,7 @@
       "recurrence_open": "Six other working copies exist on this machine and NONE has been checked for an armed hooksPath -- each is local config and has to be checked where it lives, and one of them is the hover auditor's clone. Nothing runs this check on a cadence yet either; it is report-only and unwired."
     },
     {
-      "commit": "27dc52050a91",
+      "commit": "41c0cf783851",
       "date": "2026-09-29",
       "subject": "fix(sairncare): the consent date recorded the last edit, not the consent",
       "files": [
@@ -20089,7 +20089,7 @@
       "recurrence_open": "the FIX is not live-verified yet. And the data question is open and not answerable from the rows: any alf_family_contacts row edited after consent was granted carries a consent_granted_at that may be the date of that edit, with nothing distinguishing it from a real grant date. No backfill is possible."
     },
     {
-      "commit": "841f39d6c417",
+      "commit": "eb2f92fac84f",
       "date": "2026-09-29",
       "subject": "fix(sairncare): a clock correction of your own visit is marked, and day zero of a training year is not a finding",
       "files": [
@@ -20142,7 +20142,7 @@
       "recurrence_open": "not driven live, and no sweep exists for the class: a gate whose refusal message states a rationale its implementation does not enforce. This one was found by reading the message next to the code during a review; nothing compares the two systematically."
     },
     {
-      "commit": "841f39d6c417",
+      "commit": "eb2f92fac84f",
       "date": "2026-09-29",
       "subject": "fix(sairncare): a clock correction of your own visit is marked, and day zero of a training year is not a finding",
       "files": [
