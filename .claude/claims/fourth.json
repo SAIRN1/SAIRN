@@ -2761,8 +2761,8 @@
       "task": "print the complete PIN restore block with real derived hashes and an insert-if-missing path and commit it to sql/; an evidence-before-prune rule recording git fsck unreachable output and object mtimes to a dated record before any prune gc or reflog expire; the SAIRNcare witness migration and the refuse-a-self-witnessed-count code; find and fix the register re-seat livelock so it reaches a fixed point. FILES: sql/sairncare_witness_schema.sql sql/restore_demo_pins_2026-09-29.sql tools/credential_purge_check.py tools/push_retry.py",
       "claimed_at": "2026-09-29T17:05:29Z",
       "claimed_at_epoch": 1790701529.0878396,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T17:25:59Z",
       "files": [
         "sql/restore_demo_pins_2026-09-29.sql",
         "sql/sairncare_witness_schema.sql",
