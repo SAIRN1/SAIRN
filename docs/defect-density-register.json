@@ -20021,7 +20021,7 @@
       "recurrence_open": "Sabotage anchors are text in a moving file by construction and this platform has measured them decaying repeatedly. The harness now parse-checks its own mutation, so an arm that plants NOTHING is reported -- but an arm whose mutation applies and is caught for the wrong reason is still invisible to it, and that one was settled here by reading rather than by a check."
     },
     {
-      "commit": "342744ce89fa",
+      "commit": "a95a35da7ca5",
       "date": "2026-09-29",
       "subject": "fix(sairnmechanical): the redaction gate was scoped to a resource NAME, so mech_takeoffs stored raw scan text",
       "files": [
@@ -20073,7 +20073,7 @@
       "recurrence_open": "NOT LIVE-VERIFIED, and existing rows are unassessed. Nothing sweeps the other apps for the same shape -- a redaction, gate or filter scoped to one resource name while a sibling resource stores the same kind of content. And a SECOND defect was found in api/_lib/mech-redact.js while driving this one, registered separately."
     },
     {
-      "commit": "342744ce89fa",
+      "commit": "a95a35da7ca5",
       "date": "2026-09-29",
       "subject": "fix(sairnmechanical): the redaction gate was scoped to a resource NAME, so mech_takeoffs stored raw scan text",
       "files": [
