@@ -2698,8 +2698,8 @@
       "task": "tests/sd-data-scp-licence-only.test.js",
       "claimed_at": "2026-09-29T14:08:01Z",
       "claimed_at_epoch": 1790690881.9259627,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T23:51:40Z",
       "files": null
     },
     {
