@@ -4296,6 +4296,46 @@ tool's own flaw plainly when found, the same as any other finding -- but
 as a fact recorded, not as grounds to discard a result the flawed tool
 still correctly produced.
 
+## Cross-instance tool validation: isolated copy only, never his real directory
+
+STANDING PROCEDURE, set 2026-09-29 after a real incident: validating the
+other auditor's (H2's) tools happens ONLY against an isolated copy --
+every file the tool under test needs (the script itself, and any log it
+reads or writes) copied into a scratch directory FIRST, with the log path
+effectively redirected there by virtue of running the copy from that
+directory. A --lint / --list / any read-only, report-only flag may still
+be run directly against his real directory when a genuine denominator
+(entry count, pool size) needs to resolve against real data and no write
+flag is anywhere on the command line -- but the MOMENT a command could
+append, record, or otherwise mutate state, it runs on the isolated copy,
+full stop, never on his real files.
+
+THE CAUSE, NAMED PLAINLY: a `hover_log.py --append --mistake-class ...`
+probe, run directly in H2's real directory (to make an entry-count
+denominator resolve against his live data rather than an empty scratch
+copy), had no dry-run flag and no warning that it was a genuine mutating
+write -- it succeeded and appended a real, permanent, hash-chained entry
+(seq 351, summary "probe", mistake-class "bogus-class-xyz") to his live
+tamper-evident log. Chain verified INTACT afterward -- no structural
+corruption, but real, permanent, unremovable noise content in an
+append-only ledger that is not this role's to write into at all. This is
+the SAME class of separation violation the build-vs-audit boundary exists
+to prevent (`docs/2026-09-15-hover-auditor-separation-enforcement.md`),
+one level over: auditor-vs-auditor rather than build-vs-audit. Full
+account, self-reported rather than hidden: log #688.
+
+THE FIX IS PROCEDURAL, NOT A CODE GATE, because the gate to enforce lives
+in H2's own tooling, not this role's -- the only enforceable control on
+this side of the boundary is never issuing the command against his real
+directory in the first place. Before any command that could write is run
+against another instance's tooling: (1) copy the script AND any log file
+it needs into a scratch directory; (2) run every write-capable probe
+there; (3) reserve real-directory execution for flags that are provably
+read-only by the tool's own printed contract (an advisory `--lint`, a
+`--class-counts` summary, a plain `--verify`), and even then, prefer the
+isolated copy once a faithful denominator no longer requires the real
+file.
+
 ## A named limit on what this role can actually promise
 
 Held here deliberately, not papered over, because it is the sharpest and
