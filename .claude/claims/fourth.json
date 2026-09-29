@@ -2701,6 +2701,22 @@
         "api/sd-data.js",
         "docs/2026-09-29-tier-a-review-verdicts-fourth.md"
       ]
+    },
+    {
+      "id": "fourth-1790682256",
+      "session": "fourth",
+      "subject": "platform",
+      "task": "discharge hank's 71h alf_mar and mech_credentials review obligation into the ledger against the verdict document already written; then: report the credential purge and read-mapper sweep status by item with shas and do whichever is not done; make the family-contact consent timestamp stamp once on the false-to-true transition and never re-stamp, tests first with a known-bad control and a live drive; a scope note for server-side witness verification on controlled-substance counts; a self-correction FLAG on the clock-correction path; the hire-anniversary refusal-to-answer and the leap-day window_from; re-derive sf_vehicle_service's tier and gate it if it is ungated Tier A; a report-only staging sweep; three register cell corrections from the hover auditor; and a sweep of probe and tool headers for stateful claims that are not derived at run time. FILES: docs/tier-a-reviews.json api/sd-data.js api/_lib/compliance-rules.js docs/defect-density-register.json",
+      "claimed_at": "2026-09-29T11:44:16Z",
+      "claimed_at_epoch": 1790682256.7001593,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/_lib/compliance-rules.js",
+        "api/sd-data.js",
+        "docs/defect-density-register.json",
+        "docs/tier-a-reviews.json"
+      ]
     }
   ],
   "refusals": [
