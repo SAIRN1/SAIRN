@@ -19353,7 +19353,7 @@
       "recurrence_open": "PARTLY CLOSED AND MEASURED: hook fail-opens 5 -> 0, but 16 dependency-shaped fail-opens remain in tools/ where exit 0 is not a decision to allow something, and they are unswept. The scanner reads TEXT, so a fail-open through a helper, a trap or a Python default argument is invisible and the universe is a FLOOR. And the distinction the tool rests on -- SCOPE versus DEPENDENCY -- is inferred from what the guard NAMES, so a scope guard whose marker has an unusual name will be miscounted as a finding."
     },
     {
-      "commit": "1b1f8d278eb3",
+      "commit": "ff6279ea74b0",
       "date": "2026-09-29",
       "subject": "fix(tools): the third copy of one credential lookup, removed",
       "files": [
