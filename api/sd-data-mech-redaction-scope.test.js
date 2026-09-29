@@ -129,7 +129,13 @@ async function write(resource, payload) {
   return { res: res, stored: post ? JSON.parse(post.opts.body).data : null };
 }
 
-const SCANNED = ['mech_docs', 'mech_takeoffs'];
+// mech_quotes JOINED THIS LIST on 2026-09-29, correcting my own exclusion of
+// it. I had it down as "generated from form fields the user filled in"; re-
+// reading the app showed sairnmechanical.html:1416-1417 seeds the conversation
+// with a BASE64 IMAGE and :1435 generates the quote from it. Same provenance as
+// the other two. My objection -- that redacting destroys the deliverable -- does
+// not hold either: :1441 shares fqQuoteTxt FROM MEMORY, never from the row.
+const SCANNED = ['mech_docs', 'mech_takeoffs', 'mech_quotes'];
 
 (async () => {
 
@@ -212,11 +218,19 @@ await test('mech_checks.payee is UNTOUCHED -- it is typed, not extracted',
       + JSON.stringify(r.stored.payee));
   });
 
-await test('mech_quotes.text is UNTOUCHED -- it is the deliverable', async () => {
+await test('mech_quotes.text IS redacted -- and the deliverable is untouched',
+  async () => {
+    // FLIPPED from asserting the opposite. The arm that pinned mech_quotes as
+    // out of scope was pinning MY WRONG READING, which is the risk a pinning
+    // arm carries: it makes a decision durable whether or not it was right.
     const r = await write('mech_quotes', { id: 'Q-1', date: 'x', trade: 'hvac',
-      text: 'Quote for ' + NAME + ': RTU replacement, 7.5 tons' });
-    assert.ok(String(r.stored.text).indexOf(NAME) !== -1,
-      'the customer name was redacted out of the quote the technician sends');
+      text: 'Customer: ' + NAME + chr10() + 'Quote: RTU replacement, 7.5 tons' });
+    assert.ok(String(r.stored.text).indexOf(NAME) === -1,
+      'the labelled customer name still reaches the stored quote: '
+      + JSON.stringify(r.stored.text));
+    assert.ok(String(r.stored.text).indexOf('7.5 tons') !== -1,
+      'the priced scope was redacted away: ' + JSON.stringify(r.stored.text));
+    assert.ok(r.stored.redaction, 'no redaction account on the stored quote');
   });
 
 section('3. THE GATE IS DRIVEN BY A MAP, NOT A RESOURCE NAME');
@@ -252,14 +266,28 @@ await test('...and the control can SEE that shape when it is present', () => {
 await test('the scan-derived field map is DECLARED and covers both resources',
   () => {
     const src = fs.readFileSync(require.resolve('./sd-data.js'), 'utf8');
-    const m = src.match(/const MECH_SCANNED_TEXT[\s\S]{0,400}?\};/);
+    // A REAL BOUNDARY, NOT A FIXED WINDOW. This was
+    // /const MECH_SCANNED_TEXT[\s\S]{0,400}?\};/ and it stopped matching the
+    // moment the map gained a comment longer than 400 characters -- reporting
+    // "no declared map found" about a map that was right there. That is the
+    // magic-window shape this platform has now named four times, in the test
+    // written to police a gate that was itself scoped by a fixed window.
+    const start = src.indexOf('const MECH_SCANNED_TEXT');
+    assert.ok(start !== -1, 'no declared scan-derived field map found in api/sd-data.js');
+    let depth = 0, end = start;
+    for (let k = src.indexOf('{', start); k < src.length; k++) {
+      if (src[k] === '{') depth++;
+      else if (src[k] === '}') { depth--; if (depth === 0) { end = k; break; } }
+    }
+    const m = [src.slice(start, end + 1)];
     assert.ok(m, 'no declared scan-derived field map found in api/sd-data.js');
     SCANNED.forEach(function (r) {
       assert.ok(m[0].indexOf(r) !== -1, r + ' is not in the map');
     });
-    assert.ok(m[0].indexOf('mech_quotes') === -1
-      && m[0].indexOf('mech_checks') === -1,
-      'a typed-by-the-user resource is in the scan-derived map');
+    assert.ok(m[0].indexOf('mech_checks') === -1,
+      'mech_checks is in the scan-derived map -- its payee and memo come from '
+      + 'typed form fields (sairnmechanical.html:1528-1530), with no model and '
+      + 'no image anywhere in their provenance');
   });
 
 console.log('\n' + (fail === 0
