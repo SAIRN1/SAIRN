@@ -2665,8 +2665,8 @@
       "task": "discharge the 68h obligation authored by hank on 2026-09-26T17:36:42Z",
       "claimed_at": "2026-09-29T13:58:08Z",
       "claimed_at_epoch": 1790690288.0322647,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T23:51:38Z",
       "files": null
     },
     {
