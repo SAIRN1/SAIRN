@@ -340,12 +340,30 @@ def compare(repo, obs, man):
         could_not.append('the manifest records no core.hooksPath, so whether git '
                          'is reading .githooks/ was NOT checked.')
     elif obs['hooks_path'] != expected_path:
-        findings.append(
-            'core.hooksPath IS %r AND THE MANIFEST EXPECTS %r. This is the '
-            'failure with the least evidence on it: every hook file can be '
-            'byte-perfect while git reads a different directory, so nothing in '
-            'any diff shows it and every gate is off at once.'
-            % (obs['hooks_path'], expected_path))
+        # ── TWO CAUSES, AND THEY NEED DIFFERENT SENTENCES ──────────────────
+        # UNSET is the default state of a FRESH CLONE: core.hooksPath is local
+        # git config, not tracked content, so cloning this repository installs
+        # every hook file and arms NONE of them. Found by running this check
+        # against a fresh clone of origin/main on 2026-09-29 -- the content half
+        # matched byte-for-byte and the arming half was simply absent.
+        # REPOINTED is the other cause and is a deliberate act.
+        # A message naming the wrong one sends the reader to the wrong fix.
+        if not (obs['hooks_path'] or '').strip():
+            findings.append(
+                'core.hooksPath IS NOT SET AND THE MANIFEST EXPECTS %r, so GIT IS '
+                'RUNNING NO HOOKS AT ALL IN THIS CLONE. Every hook file is '
+                'present and every hash matches -- they are simply not armed. '
+                'THIS IS THE DEFAULT STATE OF A FRESH CLONE, because '
+                'core.hooksPath is local config rather than tracked content: '
+                'cloning installs the files and arms none of them. Fix: python '
+                'tools/install_git_hooks.py' % expected_path)
+        else:
+            findings.append(
+                'core.hooksPath IS %r AND THE MANIFEST EXPECTS %r -- it has been '
+                'REPOINTED. This is the failure with the least evidence on it: '
+                'every hook file can be byte-perfect while git reads a different '
+                'directory, so nothing in any diff shows it and every gate is '
+                'off at once.' % (obs['hooks_path'], expected_path))
 
     if obs['missing_tools']:
         findings.append(
