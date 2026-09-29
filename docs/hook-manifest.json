@@ -35,7 +35,7 @@
   "sairn_status.py": "5bcc8db522bd85e19f4f43abf53e74dae6bb0c327d50bb53410d2d8f00387b8e",
   "session_lock_check.py": "ea7665f11adb74643c978ba40167d76d80be49c27c9cccd7e2ccf51c40900797",
   "staged_conflict_marker_check.py": "559600420d0804fadd90cb8f69dc4483d6b044728138226928bd1f0a77de1b89",
-  "staged_credential_check.py": "510ae895ecb7a8f8daa3a9febbe7c8befb5c86d4d37e6ac70994a33e2e92dfa8"
+  "staged_credential_check.py": "3692620ae35983d344caab587a6f69a97874f46f1008159fcee97aa4e7f358a5"
  },
  "wiring": {
   "PostToolUse": "102d0a2714aafa53b7838c4d025a3c436bb6a7fb60389b5853de0ec65638f44d",

@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**282 files in `tools/`.** By what actually invokes them:
+**283 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -28,14 +28,14 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 5 | session-start or prompt hooks, informational |
 | **DECIDED** | 74 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 61 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 53 | nothing runs these at all |
+| **UNWIRED** | 54 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
 | ADVISORY | 3 |
-| CHECKER | 201 |
+| CHECKER | 202 |
 | GENERATOR | 19 |
 | GUARD | 1 |
 | LIBRARY | 25 |
@@ -50,13 +50,13 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 49 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 17 wired nowhere at all, and 32
+**The number to act on: 50 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 18 wired nowhere at all, and 32
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 49, by name, so this is actionable rather than a statistic:
+The 50, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
@@ -81,6 +81,7 @@ The 49, by name, so this is actionable rather than a statistic:
 | `hedge_carry_check.py` | SUITE-ONLY | a hedge in a dispatched item that no commit message carried forward or resolved |
 | `hover_eqa_escalation.py` | SUITE-ONLY | an independence checkpoint that only the audited role can see, which therefore escalates to nobody. The hover auditor own EQA checkpoint reported OVERDUE for sixteen process passes against a cadence of three, and the tool saying so runs ONLY inside the hover clone -- hover_self_health_shim.py is a deliberate silent no-op in a build clone, which is right for a self-check and wrong for an escalation. A role cannot satisfy its own independence checkpoint by definition, so the report has to reach somewhere that is not that role. Asked from OUTSIDE: it READS the self-log and computes the answer independently rather than running the auditor own grader, so the two can DISAGREE and that disagreement is itself a finding. Writes nothing anywhere, asserted by an arm rather than by the docstring. Caught on its first run that the SECOND auditor instance carries no eqa_checkpoint field at all, so it has never recorded an independent validation and nothing was reporting that. An absent, empty, unparseable or field-less log is COULD NOT TELL and exit 2, never clean -- an escalation that reports current because it could not look has escalated nothing |
 | `hover_routing_gap_check.py` | SUITE-ONLY | a hover finding marked routable that never reached the open-work index |
+| `idempotence_double_run.py` | UNWIRED | a mutating tool that changes the tree again on its SECOND run, driven in a scratch copy |
 | `invariant_registry.js` | SUITE-ONLY | not a checker itself: the LOCKED hand-derived classification of which invariant applies to which engine, the evidence it was read from, and the synthetic fixtures invariant_runner.js must satisfy before touching a real engine |
 | `invariant_runner.js` | SUITE-ONLY | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality |
 | `known_red_check.py` | SUITE-ONLY | a test suite that has gone red and is NOT already recorded as known-red -- the one failure a reader cannot otherwise find. 33 of 390 files were red on origin/main with nothing recording which 33, so a genuinely new regression was indistinguishable from the existing set and "some suites are just red" became the reading. Reports four answers rather than two: NEW, KNOWN, CHANGED (recorded as red but now failing on a DIFFERENT arm, so a second defect is hiding inside an entry that says the file is expected to fail) and RECOVERED (recorded and now green -- reported as loudly as NEW, because a stale entry SWALLOWS the next real failure of that file). Refuses a truncated run log rather than reading it as a clean platform |
@@ -429,7 +430,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (53)
+## UNWIRED (54)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -464,6 +465,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `gen_va_seed.py` | GENERATOR | a court-holiday calendar or deadline seed for one state | &mdash; |
 | `gh_verify.py` | LIBRARY | whether a commit is really on the remote | &mdash; |
 | `git_discovery_anchoring_check.py` | CHECKER | which tools shell out to `git` WITHOUT saying which repository they mean. C:/Users/marsh/.git EXISTS -- the home directory is itself a git repository -- so `rev-parse --show-toplevel` from any scratch directory beneath it SUCCEEDS with exit 0 and returns C:/Users/marsh. An unanchored call does not fail, it answers about the wrong repository, and C:/Users/marsh/tools/ holds a real stale copy of session_lock_check.py for a misrouted probe to find and test successfully. Classifies every call site ASSERTED (toplevel checked against the intended root -- the strongest form, and the only one that catches a WRONG cwd rather than an absent one) / ANCHORED / WEAK / UNANCHORED / UNREADABLE, and reports WEAK apart rather than folding it into either answer, because `cwd=os.getcwd()` credits as a cwd and is not safe. A RATCHET pinned to docs/git-discovery-anchoring.json; an absent or unparseable pin is exit 2 and so is finding zero git callers, because the call shape moving must not read as "everything is anchored". The output says plainly that the UNANCHORED list is a list to READ and not a list of defects -- a tool reaching its cwd through two indirections reads as unanchored. Call extent is paren-matched on a string-and-comment mask, not a fixed window. | &mdash; |
+| `idempotence_double_run.py` | CHECKER | a mutating tool that changes the tree again on its SECOND run, driven in a scratch copy | &mdash; |
 | `js_code_only_diff.py` | LIBRARY | a diff with comment-only changes removed | &mdash; |
 | `law_billing_code_trim_live_probe.py` | LIVE | a SAIRNlaw time entry whose UTBMS billing_code is STORED with padding the validator already removed -- read back from the DATABASE rather than from the write's echo, because a server that normalised only its reply would pass a response-only check; the sharp arm sends a code that is over MAX_BILLING_CODE_CHARS by padding alone, which the gate judges trimmed and would have refused had it been asked about the thing being written. Reports an unprovisioned table, a dead PIN or a bot challenge as UNVERIFIED rather than as a pass, and DISCLOSES the one row it writes and cannot delete -- SAIRNlaw declares no delete verb | &mdash; |
 | `leg_session_gate_live_probe.py` | LIVE | a SAIRNlegacy leg_ resource -- the death record and the chain-of-custody log for human remains -- answering a caller who holds the licence key and NO employee session, on the DEPLOYED function rather than the handler in this clone; it asserts the gate's own NO_SESSION code rather than merely a non-200 (a dead licence also refuses), reads an ungated resource alongside so four refusals are a SPLIT rather than a lockout, and reports an absent licence row or a bot challenge as UNVERIFIED rather than as a pass | &mdash; |
@@ -519,7 +521,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      282   git ls-files tools/
+  tools on disk                      283   git ls-files tools/
   hook entries                        16   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                70   report_only_checks.REGISTRY
