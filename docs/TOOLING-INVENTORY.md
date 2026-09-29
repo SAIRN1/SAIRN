@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**273 files in `tools/`.** By what actually invokes them:
+**274 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,7 +27,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 74 | runs automatically on every push, never blocks |
 | **ADVISORY** | 4 | session-start or prompt hooks, informational |
 | **DECIDED** | 74 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 51 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 52 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 55 | nothing runs these at all |
 
 By what they are, independent of wiring:
@@ -35,7 +35,7 @@ By what they are, independent of wiring:
 | Kind | Count |
 |---|---:|
 | ADVISORY | 3 |
-| CHECKER | 192 |
+| CHECKER | 193 |
 | GENERATOR | 19 |
 | GUARD | 1 |
 | LIBRARY | 25 |
@@ -50,13 +50,13 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 41 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 16 wired nowhere at all, and 25
+**The number to act on: 42 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 16 wired nowhere at all, and 26
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 41, by name, so this is actionable rather than a statistic:
+The 42, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
@@ -75,6 +75,7 @@ The 41, by name, so this is actionable rather than a statistic:
 | `fail_open_scan.py` | SUITE-ONLY | a gate that reports SUCCESS when it could not run. FROM A GIT HOOK `exit 0` MEANS ALLOW, so `ROOT=$(git rev-parse ...) || exit 0` and `[ -f tools/x.py ] || exit 0` are not graceful skips -- they are passes nobody performed, and on 2026-09-28 a GitHub token was staged and reached a commit with no commit-time content check looking at it. THE DISCRIMINATOR IS WHAT THE GUARD ASKS, and without it this tool invents findings: a SCOPE test (does this gate apply HERE -- absent means not applicable) is correct to exit 0, and .githooks/pre-commit tests for a hover-auditor clone marker exactly that way, so flagging it would have demanded that every commit in four build clones be refused. A DEPENDENCY test (can I check at all) must refuse. Four shapes: exit-0-on-failure, swallowed-error, exec-blocks-rest (an `exec` in a hook means no later check can ever be added), and bare-except-pass. CANNOT SEE a fail-open expressed through a helper, a trap or a Python default argument, so the universe is a FLOOR; and it cannot judge whether a dependency guard protects something that matters, which is why the output is a list to READ. A RATCHET on docs/fail-open-coverage.json. Control: tests/run_fail_open_probe.py, which copies each real hook into a sandbox repo, takes its dependency away and runs it with sh -- and asserts a DIFFERENT correct answer per hook, because post-rewrite must NOT fail the rebase and must warn instead. |
 | `git_discovery_anchoring_check.py` | UNWIRED | which tools shell out to `git` WITHOUT saying which repository they mean. C:/Users/marsh/.git EXISTS -- the home directory is itself a git repository -- so `rev-parse --show-toplevel` from any scratch directory beneath it SUCCEEDS with exit 0 and returns C:/Users/marsh. An unanchored call does not fail, it answers about the wrong repository, and C:/Users/marsh/tools/ holds a real stale copy of session_lock_check.py for a misrouted probe to find and test successfully. Classifies every call site ASSERTED (toplevel checked against the intended root -- the strongest form, and the only one that catches a WRONG cwd rather than an absent one) / ANCHORED / WEAK / UNANCHORED / UNREADABLE, and reports WEAK apart rather than folding it into either answer, because `cwd=os.getcwd()` credits as a cwd and is not safe. A RATCHET pinned to docs/git-discovery-anchoring.json; an absent or unparseable pin is exit 2 and so is finding zero git callers, because the call shape moving must not read as "everything is anchored". The output says plainly that the UNANCHORED list is a list to READ and not a list of defects -- a tool reaching its cwd through two indirections reads as unanchored. Call extent is paren-matched on a string-and-comment mask, not a fixed window. |
 | `hover_eqa_escalation.py` | SUITE-ONLY | an independence checkpoint that only the audited role can see, which therefore escalates to nobody. The hover auditor own EQA checkpoint reported OVERDUE for sixteen process passes against a cadence of three, and the tool saying so runs ONLY inside the hover clone -- hover_self_health_shim.py is a deliberate silent no-op in a build clone, which is right for a self-check and wrong for an escalation. A role cannot satisfy its own independence checkpoint by definition, so the report has to reach somewhere that is not that role. Asked from OUTSIDE: it READS the self-log and computes the answer independently rather than running the auditor own grader, so the two can DISAGREE and that disagreement is itself a finding. Writes nothing anywhere, asserted by an arm rather than by the docstring. Caught on its first run that the SECOND auditor instance carries no eqa_checkpoint field at all, so it has never recorded an independent validation and nothing was reporting that. An absent, empty, unparseable or field-less log is COULD NOT TELL and exit 2, never clean -- an escalation that reports current because it could not look has escalated nothing |
+| `hover_routing_gap_check.py` | SUITE-ONLY | a hover finding marked routable that never reached the open-work index |
 | `invariant_registry.js` | SUITE-ONLY | not a checker itself: the LOCKED hand-derived classification of which invariant applies to which engine, the evidence it was read from, and the synthetic fixtures invariant_runner.js must satisfy before touching a real engine |
 | `invariant_runner.js` | SUITE-ONLY | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality |
 | `known_red_check.py` | SUITE-ONLY | a test suite that has gone red and is NOT already recorded as known-red -- the one failure a reader cannot otherwise find. 33 of 390 files were red on origin/main with nothing recording which 33, so a genuinely new regression was indistinguishable from the existing set and "some suites are just red" became the reading. Reports four answers rather than two: NEW, KNOWN, CHANGED (recorded as red but now failing on a DIFFERENT arm, so a second defect is hiding inside an entry that says the file is expected to fail) and RECOVERED (recorded and now green -- reported as loudly as NEW, because a stale entry SWALLOWS the next real failure of that file). Refuses a truncated run log rather than reading it as a clean platform |
@@ -349,7 +350,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (51)
+## SUITE-ONLY (52)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -374,6 +375,7 @@ fixtures. Nothing points them at the real codebase.
 | `fail_open_scan.py` | CHECKER | a gate that reports SUCCESS when it could not run. FROM A GIT HOOK `exit 0` MEANS ALLOW, so `ROOT=$(git rev-parse ...) || exit 0` and `[ -f tools/x.py ] || exit 0` are not graceful skips -- they are passes nobody performed, and on 2026-09-28 a GitHub token was staged and reached a commit with no commit-time content check looking at it. THE DISCRIMINATOR IS WHAT THE GUARD ASKS, and without it this tool invents findings: a SCOPE test (does this gate apply HERE -- absent means not applicable) is correct to exit 0, and .githooks/pre-commit tests for a hover-auditor clone marker exactly that way, so flagging it would have demanded that every commit in four build clones be refused. A DEPENDENCY test (can I check at all) must refuse. Four shapes: exit-0-on-failure, swallowed-error, exec-blocks-rest (an `exec` in a hook means no later check can ever be added), and bare-except-pass. CANNOT SEE a fail-open expressed through a helper, a trap or a Python default argument, so the universe is a FLOOR; and it cannot judge whether a dependency guard protects something that matters, which is why the output is a list to READ. A RATCHET on docs/fail-open-coverage.json. Control: tests/run_fail_open_probe.py, which copies each real hook into a sandbox repo, takes its dependency away and runs it with sh -- and asserts a DIFFERENT correct answer per hook, because post-rewrite must NOT fail the rebase and must warn instead. | `run_fail_open_probe.py` |
 | `gh_push.py` | LIBRARY | a push that reaches origin/main having passed NO gate, and content that existed in no commit. It pushes through the GitHub REST API, so git is never invoked and .githooks/pre-push never fires -- the seed gate, the Tier A review gate, the generated-document check and every other check in sairn_push_gate_hook.py had no effect on this path at all. Audited 2026-09-26: nothing ran before the REST call, so the git hook was never decorative and removing it would have disabled the gate for the main path. It now INVOKES the hook rather than copying its fourteen checks, because a second copy of the enumeration is item 94 on the largest gate on the platform. AND IT CATCHES THE HOLE UNDERNEATH: a REST push sends WORKING-TREE bytes, so it could publish content in no local commit -- nothing to gate even if the gate had run. Files must now be committed and clean and HEAD must descend from the remote tip, which makes `remote..HEAD` a real range. Held by tests/run_gh_push_gate_probe.py | `run_gh_push_gate_probe.py` |
 | `hover_eqa_escalation.py` | CHECKER | an independence checkpoint that only the audited role can see, which therefore escalates to nobody. The hover auditor own EQA checkpoint reported OVERDUE for sixteen process passes against a cadence of three, and the tool saying so runs ONLY inside the hover clone -- hover_self_health_shim.py is a deliberate silent no-op in a build clone, which is right for a self-check and wrong for an escalation. A role cannot satisfy its own independence checkpoint by definition, so the report has to reach somewhere that is not that role. Asked from OUTSIDE: it READS the self-log and computes the answer independently rather than running the auditor own grader, so the two can DISAGREE and that disagreement is itself a finding. Writes nothing anywhere, asserted by an arm rather than by the docstring. Caught on its first run that the SECOND auditor instance carries no eqa_checkpoint field at all, so it has never recorded an independent validation and nothing was reporting that. An absent, empty, unparseable or field-less log is COULD NOT TELL and exit 2, never clean -- an escalation that reports current because it could not look has escalated nothing | `run_hover_eqa_escalation_probe.py` |
+| `hover_routing_gap_check.py` | CHECKER | a hover finding marked routable that never reached the open-work index | `run_hover_routing_gap_probe.py` |
 | `invariant_registry.js` | CHECKER | not a checker itself: the LOCKED hand-derived classification of which invariant applies to which engine, the evidence it was read from, and the synthetic fixtures invariant_runner.js must satisfy before touching a real engine | `run_financial_invariant_probe.py` |
 | `invariant_runner.js` | CHECKER | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality | `run_financial_invariant_probe.py` |
 | `jscomments.py` | LIBRARY | the one comment stripper every scanner should use | `run_bypassed_constant_probe.py`, `run_citator_freshness_probe.py`, `run_jscomments_probe.py`, `run_retry_policy_probe.py`, `run_temporary_state_probe.py` |
@@ -502,11 +504,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      273   git ls-files tools/
+  tools on disk                      274   git ls-files tools/
   hook entries                        15   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                70   report_only_checks.REGISTRY
-  tools invoked by tests/            192   tests/**/*.py, *.js
+  tools invoked by tests/            193   tests/**/*.py, *.js
   recorded NOT-promoted decisions     80   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```

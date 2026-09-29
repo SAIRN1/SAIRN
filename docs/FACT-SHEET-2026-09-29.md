@@ -26,7 +26,7 @@ person asking.
 > commits figure is stale again the moment anything is committed, including this
 > refresh itself** — so run it last, immediately before printing.
 
-**Figures refreshed 2026-09-29 08:10 by `python tools/fact_sheet_regenerates.py --update`.**
+**Figures refreshed 2026-09-29 08:20 by `python tools/fact_sheet_regenerates.py --update`.**
 
 **No file names, no customer data, no credentials, no methodology detail.**
 Figures that cannot be derived are marked **UNAVAILABLE** with the reason — a
@@ -71,12 +71,12 @@ call is not counted.
 
 | Figure | Value | Derived by | Date |
 |---|---|---|---|
-| Commits since 2026-05-15 | **7,052** | `git log --oneline --since=2026-05-15 \| wc -l` | 2026-09-28 |
+| Commits since 2026-05-15 | **7,057** | `git log --oneline --since=2026-05-15 \| wc -l` | 2026-09-28 |
 | First commit in repository | **2026-06-22** | `git log --reverse --format=%ad --date=short \| head -1` | 2026-09-28 |
 | Most recent commit | **2026-09-28** | `git log -1 --format=%ad --date=short` | 2026-09-28 |
 | Elapsed development span | **98 days / 14.0 weeks** | first to most recent commit, above | 2026-09-28 |
-| Commits per week (mean) | **504** | 7,052 ÷ 14.0 | 2026-09-28 |
-| Commits per day (mean) | **72** | 7,052 ÷ 98 | 2026-09-28 |
+| Commits per week (mean) | **504** | 7,057 ÷ 14.0 | 2026-09-28 |
+| Commits per day (mean) | **72** | 7,057 ÷ 98 | 2026-09-28 |
 
 **WHY THE HISTORY STARTS 2026-06-22, AND WHAT THE REAL SPAN IS.** Building began
 before version control, and the repository's own first commit proves it:
@@ -110,7 +110,7 @@ count.
 ## Two lines to say out loud
 
 > **"Roughly 500 commits a week, every week, for fourteen weeks."**
-> 7,052 commits ÷ 14.0 weeks under version control = **504 per week**, 72 per day.
+> 7,057 commits ÷ 14.0 weeks under version control = **504 per week**, 72 per day.
 > Over the full 18.6-week build span the average is **379 per week** — lower, and
 > stated because commits before 2026-06-22 do not exist to be counted, so the
 > higher number is the one with evidence behind it.
@@ -126,11 +126,11 @@ count.
 
 | Figure | Value | Derived by | Date |
 |---|---|---|---|
-| Automated test suites, total | **811** | sum of the three rows below | 2026-09-28 |
+| Automated test suites, total | **813** | sum of the three rows below | 2026-09-28 |
 | — JavaScript suites | **229** | `git ls-files 'tests/*.js' 'tests/**/*.js' \| wc -l` | 2026-09-28 |
 | — Endpoint suites | **239** | `git ls-files 'api/*.test.js' 'api/_lib/*.test.js' \| wc -l` | 2026-09-28 |
-| — Python probes | **343** | `git ls-files 'tests/*.py' 'tests/**/*.py' \| wc -l` | 2026-09-28 |
-| Verification tools and checkers | **273** | `git ls-files tools/ \| grep -E '\.(py\|js\|cjs\|sh)$' \| xargs -n1 basename \| sort -u \| wc -l` | 2026-09-28 |
+| — Python probes | **345** | `git ls-files 'tests/*.py' 'tests/**/*.py' \| wc -l` | 2026-09-28 |
+| Verification tools and checkers | **274** | `git ls-files tools/ \| grep -E '\.(py\|js\|cjs\|sh)$' \| xargs -n1 basename \| sort -u \| wc -l` | 2026-09-28 |
 | — of which classified as checkers | **185** | `python tools/tooling_inventory.py --check` | 2026-09-28 |
 | — generators | **19** | same | 2026-09-28 |
 | Checks on a recurring schedule | **66** | report-only registry count, same command | 2026-09-28 |
@@ -142,8 +142,8 @@ count.
 
 **One command in this table was wrong on the first pass and is corrected here**,
 because the whole point of the table is that the command produces the number. A
-bare `git ls-files tools/` returns **288** — it counts 14 data files and one
-configuration file that are not tools. **273** is the count of executable tool
+bare `git ls-files tools/` returns **289** — it counts 14 data files and one
+configuration file that are not tools. **274** is the count of executable tool
 files, deduplicated by name. Both numbers are real; only one answers the
 question, and a fact sheet whose command disagrees with its figure is the exact
 defect it exists to prevent.
@@ -194,9 +194,9 @@ the 384 are in tooling or tests rather than in the product.**
 
 | Figure | Value | Derived by | Date |
 |---|---|---|---|
-| Review obligations raised | **194** | `docs/tier-a-reviews.json` record count | 2026-09-28 |
+| Review obligations raised | **195** | `docs/tier-a-reviews.json` record count | 2026-09-28 |
 | **Review obligations discharged** | **171** | same, status `reviewed` | 2026-09-28 |
-| Currently open | **23** | same, status `open` | 2026-09-28 |
+| Currently open | **24** | same, status `open` | 2026-09-28 |
 | Highest-criticality resources under mandatory review | **273** | `python tools/criticality_tier_check.py` → `TIER_A` | 2026-09-28 |
 
 Every change touching a highest-criticality resource raises an obligation that
