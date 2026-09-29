@@ -2723,6 +2723,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "cody-1790704647",
+      "session": "cody",
+      "subject": "cody-tiercells",
+      "task": "docs/CRITICALITY-TIERS.md",
+      "claimed_at": "2026-09-29T17:57:27Z",
+      "claimed_at_epoch": 1790704647.135068,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
