@@ -4296,6 +4296,35 @@ tool's own flaw plainly when found, the same as any other finding -- but
 as a fact recorded, not as grounds to discard a result the flawed tool
 still correctly produced.
 
+## Where the tooling lives now, and three corrections to older claims in this file
+
+DATED 2026-09-29, after Michael's mirror-scope decision. The tools this
+file cites as `hover-audit-log/<name>.py` still RUN from that per-clone
+local directory -- it remains the live working home -- but they now ALSO
+have a versioned home in the platform repo at
+`.claude/skills/sairn-hover-auditor/tools/` (and mirrored to the user
+skill store), landed on direct instruction when the private mirror repo
+was restricted to the log, anchors and beacon only. The platform copies
+are ARCHIVAL: several selftests legitimately fail there (the self-health
+hook's owner-derivation is location-bound by design), and
+`hover_backup_mirror.py` now REFUSES outright when run from inside a
+foreign worktree -- paid for live, its selftest run from the platform
+copy git-inited a nested repo into the platform tree before that guard
+existed. Run tools from `hover-audit-log/`; treat the repo copies as the
+recoverable record.
+
+THREE OLDER CLAIMS IN THIS FILE ARE STALE AND CORRECTED HERE rather than
+edited in place (their original wording is part of the dated record):
+(1) "DESIGNED, not built: hover-audit-log/sabotage_benchmark/" -- BUILT
+2026-09-18 (fixtures.py + run_benchmark.py, now also in the repo tools
+dir). (2) "DESIGNED, not built: hover-audit-log/seed_corpus.md" -- BUILT
+2026-09-18, same note in the file's own header. (3) The 2026-09-27 H1
+CONFIRMATION that hover-audit-log/ is "outside this git repo, so the
+paragraph above cannot name a single shared file" -- true when written,
+HALF-superseded: the tools now have shared, versioned copies in the repo
+(H2's under tools-hover2/), though each instance's LOG remains strictly
+per-clone and unshared.
+
 ## Cross-instance tool validation: isolated copy only, never his real directory
 
 STANDING PROCEDURE, set 2026-09-29 after a real incident: validating the
