@@ -121,3 +121,57 @@ select 'SV-PINNACLE-2026' as licence, employee_id, role, active, failed_attempts
 --   python tools/demo_credentials_check.py
 -- Both must move from WRONG-PIN to OK. The SQL above only proves the row
 -- changed; only a sign-in proves the credential works.
+
+-- ═══ 4. RECOVERABILITY GUARD (PR 3.4) ═══════════════════════════════════
+-- REQUIRED BY THE PUSH GATE ON ANY SQL THAT WRITES CREDENTIAL ROWS, and it
+-- refused this file until the guard was here. Two end states are safe and
+-- only two: zero rows for a licence (which re-arms bootstrap and is
+-- RECOVERY, not lockout), or at least one ACTIVE row holding the role that
+-- licence cannot lose.
+--
+-- THE ROLE IS EACH APP'S OWN, read out of its endpoint rather than assumed:
+--   sairnbiz  api/sb-auth.js:52   PROVISIONING_ROLES = [owner, hr]
+--   sairnvet  api/sv-auth.js:110  PROVISIONING_ROLES = [owner]
+-- sairnbiz's SOLE_ROLE is owner and NOT the full provisioning list: hr
+-- provisions too, so counting over both would let a licence reach zero
+-- owners with the guard never firing (api/sb-auth.js:55-62). The guard below
+-- counts OWNERS on both apps for that reason.
+--
+-- THIS FILE CAN ONLY ADD AN ACTIVE OWNER -- the upsert sets role owner and
+-- active true and removes nothing -- so the guard should never fire here.
+-- It is present because a guard that is only written when somebody expects
+-- it to fire is a guard nobody has when they are wrong.
+
+do $$
+declare
+  lh   text := '05c4e1e1fa05d6a1daeb294a5b2625c8d13929e017e2f504885cb48e9bc6cc4a';   -- sha256(SB-PINNACLE-2026)
+  rows int; prov int;
+begin
+  select count(*) into rows from public.sb_employee_auth where license_hash = lh;
+  select count(*) into prov from public.sb_employee_auth
+   where license_hash = lh and active = true and role = any (array['owner']);
+  if rows > 0 and prov = 0 then
+    raise exception
+      'ABORTED: SB-PINNACLE-2026 would be left with % credential row(s) and ZERO active 
+       provisioners. Delete EVERY row for this licence, or leave at least 
+       one active provisioner. Never a subset of the provisioners.', rows;
+  end if;
+  raise notice 'SB-PINNACLE-2026 guard passed: % row(s), % active provisioner(s).', rows, prov;
+end $$;
+
+do $$
+declare
+  lh   text := '25413f81bcd80cce36e57a0d72c6547e5368a3f84a2aee2bf34bd90af533c740';   -- sha256(SV-PINNACLE-2026)
+  rows int; prov int;
+begin
+  select count(*) into rows from public.sairnvet_employee_auth where license_hash = lh;
+  select count(*) into prov from public.sairnvet_employee_auth
+   where license_hash = lh and active = true and role = any (array['owner']);
+  if rows > 0 and prov = 0 then
+    raise exception
+      'ABORTED: SV-PINNACLE-2026 would be left with % credential row(s) and ZERO active 
+       provisioners. Delete EVERY row for this licence, or leave at least 
+       one active provisioner. Never a subset of the provisioners.', rows;
+  end if;
+  raise notice 'SV-PINNACLE-2026 guard passed: % row(s), % active provisioner(s).', rows, prov;
+end $$;
