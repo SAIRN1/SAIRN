@@ -19423,7 +19423,7 @@
       "recurrence_open": "Nothing checks any OTHER derived population in this repo for a filter that encodes a convention rather than the predicate. This was found by enumerating credential read sites for a rotation, not by a sweep. And tools/plugin_upgrade_check.py still carries a second copy of the credential-manager lookup that gh_token.py exists to centralise."
     },
     {
-      "commit": "b22500de4403",
+      "commit": "d0bb06783104",
       "date": "2026-09-29",
       "subject": "docs(claims): the matcher blocks on prose position, not ownership -- filed, unassigned",
       "files": [
