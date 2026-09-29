@@ -481,13 +481,19 @@ def table_driven(src, all_roles, gated_names):
         # arm N4 said so. The variable must appear in a VALUE position.
         #
         # AND THIS LINE SHIPPED WITH A LITERAL BACKSPACE ON ITS FIRST
-        # WRITE -- `` where `` was meant -- which made it match
-        # nothing and silently zeroed the whole rule on the real file
-        # while every synthetic fixture still passed. That is the exact
-        # defect this repo already records once, reproduced here by a
-        # shell heredoc eating one backslash. Found by the real-corpus
-        # arm returning [] when a hand trace of the same five conditions
-        # returned all eight.
+        # WRITE -- the raw 0x08 byte where the two characters `\b` were
+        # meant -- which made it match nothing and silently zeroed the
+        # whole rule on the real file while every synthetic fixture still
+        # passed. That is the exact defect this repo already records once,
+        # reproduced here by a shell heredoc eating one backslash. Found
+        # by the real-corpus arm returning [] when a hand trace of the
+        # same five conditions returned all eight.
+        #
+        # AND THE NOTE ITSELF THEN CARRIED THE BYTE. Writing this comment
+        # put two more raw 0x08 bytes on this very line, where the reader
+        # sees nothing at all; the control-character push gate caught them
+        # on 2026-09-29. A description of an invisible defect written in
+        # the invisible defect is the same bug one layer up.
         if not re.search(r'\b' + re.escape(var) + r'\b(?!\s*:)', body_brace):
             continue
         if not ROLE_REFUSAL.search(body_code):
