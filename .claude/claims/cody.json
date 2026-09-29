@@ -2915,6 +2915,32 @@
       "source": "status-registry",
       "why": "shared phrase: \"probe tools\"",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-29T14:20:27Z",
+      "my_subject": "cody-provcheck",
+      "my_task": "tools/schema_provisioning_check.py tests/run_schema_provisioning_probe.py",
+      "other_session": "cc",
+      "other_subject": "platform",
+      "other_task": "record every regfresh branch tip then delete only those proven contained in main; inventory competitive-gap audit docs across main and the cloud PR branches read-only; make the cross tenant isolation stripper string aware with independent derivations tests first; make the role gate screen see table driven suites or print the blind population as its own counted bucket; and the blind-spot-line sweep across every report-only screen with a control per tool. SUBJECT NAMED PER PR 4.3 FILES: docs/2026-09-29-stale-branch-tips.md docs/2026-09-29-competitive-gap-doc-inventory.md tools/cross_tenant_isolation_scope.py tests/run_cross_tenant_isolation_scope_probe.py tools/role_gate_negative_coverage.py docs/role-gate-negative-coverage.json tools/blind_spot_line_check.py tests/run_blind_spot_line_probe.py",
+      "other_claimed_at": "2026-09-29T13:26:31Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"check tests\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-29T14:20:27Z",
+      "my_subject": "cody-provcheck",
+      "my_task": "tools/schema_provisioning_check.py tests/run_schema_provisioning_probe.py",
+      "other_session": "hank",
+      "other_subject": "hank",
+      "other_task": "queue24: --reseat for a dangling review-record sha in tools/tier_a_review_gate.py, tests first with a known-bad control; the leg_processions isolation arm and a direct re-read of the sibling leg_ resources a delegated pass cleared; hook_integrity_check.py reporting an unarmed clone as a failure, plus the SessionStart wiring and the install-hooks registry; the no-citation report and the hedge-carry-forward check from the two accepted scoping docs; the H1 and H2 routing-gap runs; and a double-run idempotence check over every batch and mutating tool on a scratch copy. Register cells that need a file another session holds are delivered as replacement TEXT in a doc I own; the holder and the verbatim refusal are in my report.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hank.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. Earlier attempts were refused on shared incidental vocabulary and on my own naming of a held file inside a disclosure. Each component checks CLEAR on its own.\n\nSUBJECT NAMED PER PR 4.3 FILES: tools/tier_a_review_gate.py tests/run_tier_a_reseat_probe.py docs/tier-a-reviews.json tools/hook_integrity_check.py tests/run_hook_integrity_probe.py .claude/settings.json tools/install_git_hooks.py tools/citation_no_source_report.py tests/run_citation_no_source_probe.py tools/hedge_carry_check.py tests/run_hedge_carry_probe.py tools/idempotence_double_run.py tests/run_idempotence_double_run_probe.py tests/sairnlegacy_processions_isolation.js docs/2026-09-29-register-cells-hank.md docs/2026-09-29-inventory-hank.md",
+      "other_claimed_at": "2026-09-29T14:12:58Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"check tests\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
 }
