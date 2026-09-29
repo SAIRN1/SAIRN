@@ -197,16 +197,21 @@ DATA = 'https://sairn.vercel.app/api/sd-data'
 
 # ── LIVE-PROBE CLASS AND RESIDUE, DECLARED (2026-09-28) ─────────────────────
 # VERIFICATION, and the SHARPEST case on the platform: it drives `write`,
-# `setup`, `set_active` AND `delete` against Tier A SAIRNcode resources. There is
-# no SC-AUDIT-2026 yet, so today this runs against whatever SC_LICENSE names --
-# which for SAIRNcode is SC-PINNACLE-2026, a demo-facing licence.
+# `setup`, `set_active` AND `delete` against Tier A SAIRNcode resources.
 #
-# THE GUARD BELOW WILL REFUSE THAT, DELIBERATELY, and that is the point: this
-# probe should not run again until an audit licence exists for it. Minting one is
-# a line in sql/audit_license_seed_mech_law_2026-09-28.sql's successor and is
-# named in docs/2026-09-28-verification-residue.md as the outstanding item.
+# SC-AUDIT-2026 NOW EXISTS AND THIS PROBE HAS RUN ON IT (2026-09-29). The
+# paragraph that stood here said there was no SC-AUDIT-2026 and that the probe
+# must not run again until one existed. That stopped being true when Michael ran
+# sql/audit_license_seed_2026-09-28.sql, which mints all four audit licences --
+# and NOTHING HERE SAID SO, so the file went on refusing on its own stale account
+# of the world. Checked rather than assumed: `check_license` on SC-AUDIT-2026
+# answers 200 ok/active/sairncode. Full run LIVE-VERIFIED on it, exit 0.
+#
+# The guard below still refuses a non-audit key, which is the half that was
+# always right.
 LIVE_PROBE_CLASS = 'VERIFICATION'
-LIVE_PROBE_RESIDUE = 'sql/zz_probe_residue_delete_2026-09-28.sql -- and see the doc: this probe needs SC-AUDIT-2026 before it is run again'
+LIVE_PROBE_RESIDUE = 'sql/zz_probe_residue_delete_2026-09-28.sql -- three ZZ-GATE-* rows soft-deleted or deleted by section 6 on SC-AUDIT-2026; the two zz-gate-* credentials are deactivated in the same section and the zz-audit-admin bootstrap credential is left ACTIVE deliberately, because bootstrap only works on a licence with zero credentials and retiring the sole admin strands the licence'
+LIVE_PROBE_TEARDOWN = 'section 6 reads BOTH halves back: each deleted row must no longer appear in a read of its resource, and one roster call must show both credential subjects active == false. An empty or unreadable roster FAILS -- could-not-tell is not cleaned-up. Ablation driven live 2026-09-29: re-activating one subject reports it, restoring clears it, and a roster read without a token (403) fails rather than passing'
 
 LICENSE = os.environ.get('SC_LICENSE', '')
 # THIS WILL REFUSE TODAY AND THAT IS INTENDED. No SC-AUDIT-2026 exists, and

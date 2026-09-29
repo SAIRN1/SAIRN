@@ -19,7 +19,7 @@ use RF-AUDIT-2026 today. Nothing made the others do the same, because the rule
 lived in a comment in a SQL file rather than anywhere a writing probe would meet
 it.
 
-── THE THREE OBLIGATIONS ON A WRITING LIVE PROBE ───────────────────────────
+── THE FOUR OBLIGATIONS ON A WRITING LIVE PROBE ────────────────────────────
   1. It writes only to an AUDIT licence -- enforced in code by
      tools/audit_licence.py, not by a convention in a header.
   2. It CLEANS UP what it wrote, or records a NAMED residue with the exact path
@@ -27,12 +27,16 @@ it.
   3. It FAILS ITS OWN RUN when residue remains -- because a probe that writes,
      notices, and still exits 0 has told you the subject is fine and said
      nothing about the mess.
+  4. If it TEARS DOWN (set_active / delete / soft_delete) it says HOW IT CHECKED
+     that the teardown happened, in LIVE_PROBE_TEARDOWN -- because asserting the
+     reply is a different claim from asserting the state, and a cleanup that
+     cannot fail loudly is a cleanup that does not happen.
 
 ── WHAT THIS TOOL DECIDES, AND WHAT IT REFUSES TO GUESS ────────────────────
 It finds every file under `tools/ tests/ scripts/` that addresses
 `sairn.vercel.app` and sends a WRITE action, then checks each DECLARES its class:
 
-    LIVE_PROBE_CLASS = 'VERIFICATION'   # must obey all three obligations
+    LIVE_PROBE_CLASS = 'VERIFICATION'   # must obey all four obligations
     LIVE_PROBE_CLASS = 'LOADER'         # writes to REAL licences by design
     LIVE_PROBE_CLASS = 'FIXTURE'        # the write is a string, not a request
 
@@ -57,6 +61,10 @@ because nobody has said which it is.
 * Whether `require_audit_licence` is called on the path that actually writes, as
   opposed to somewhere in the file. Presence is necessary, not sufficient, and
   that is the honest limit of a source scan.
+* Whether a declared LIVE_PROBE_TEARDOWN is TRUE. It checks that the question was
+  answered, not that the answer is right -- the same limit as the class field,
+  and for the same reason: no source scan can tell a real read-back from a
+  variable named `roster`.
 """
 import argparse
 import io
@@ -70,7 +78,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from checker_kit import (EXIT_CLEAN, EXIT_FINDING, EXIT_COULD_NOT_RUN,  # noqa: E402
                          REPO, read, finish)
 
-CRITERIA_VERSION = '2026-09-28.1'
+CRITERIA_VERSION = '2026-09-29.1'   # obligation 4: an asserted teardown
 
 SCAN_DIRS = ('tools/', 'tests/', 'scripts/')
 SCAN_EXT = ('.py', '.js')
@@ -94,6 +102,28 @@ WRITE_ACTIONS = frozenset((
 CLASSES = ('VERIFICATION', 'LOADER', 'FIXTURE')
 CLASS_RE = re.compile(r'''LIVE_PROBE_CLASS\s*=\s*["']([A-Z]+)["']''')
 RESIDUE_RE = re.compile(r'''LIVE_PROBE_RESIDUE\s*=\s*["']([^"']*)["']''')
+TEARDOWN_RE = re.compile(r'''LIVE_PROBE_TEARDOWN\s*=\s*["']([^"']*)["']''')
+
+# ── OBLIGATION 4 (2026-09-29): A TEARDOWN IS ASSERTED, NOT INFERRED ─────────
+# The three obligations above answer "where does what you left behind go". None
+# of them asks whether a probe that CLEANS UP checked that the cleanup happened.
+#
+# tools/sc_tier_a_write_gate_live_probe.py read its deleted ROWS back and did not
+# read its deactivated CREDENTIALS back: it asserted `set_active -> 200` and
+# stopped. A 200 is the endpoint's account of itself, and asserting the RESPONSE
+# is a different claim from asserting the STATE. On 2026-09-28 a cleanup on a
+# different licence answered 400 and printed OK, because it read `error.code` and
+# a 400 without that field rendered as success -- one notch worse, same class.
+#
+# A CREDENTIAL LEFT LIVE IS THE WORSE RESIDUE OF THE TWO. A row is a record
+# somebody has to delete; a credential is a way in, on a licence that outlives
+# the run and that a prospect may be shown.
+#
+# THE TRIGGER IS THE ACTION, NOT THE CLASS. A probe that writes and never cleans
+# up is not asked this question -- it is answered by LIVE_PROBE_RESIDUE, which
+# already exists. Only a probe that performs one of these verbs has a teardown to
+# assert.
+TEARDOWN_ACTIONS = frozenset(('set_active', 'delete', 'soft_delete'))
 AUDIT_GUARD_RE = re.compile(r'require_audit_licence\s*\(')
 DEMO_KEY_RE = re.compile(r'\b[A-Z]{2,6}-(?:PINNACLE|TEST|DEMO|PARTNER)-\d{4}\b')
 
@@ -181,6 +211,7 @@ def main(argv=None):
             continue
         cm = CLASS_RE.search(src)
         rm = RESIDUE_RE.search(src)
+        tm = TEARDOWN_RE.search(src)
         # ── THE DEMO-KEY CHECK READS CODE, NOT PROSE ──────────────────────────
         # Its first run flagged three probes for "hardcoding a demo-facing
         # licence" -- and every hit was MY OWN COMMENT explaining which licence
@@ -195,6 +226,8 @@ def main(argv=None):
             'file': f, 'writes': writes,
             'declared': cm.group(1) if cm else None,
             'residue': rm.group(1) if rm else None,
+            'teardown': tm.group(1) if tm else None,
+            'tears_down': sorted(set(writes) & TEARDOWN_ACTIONS),
             'guarded': bool(AUDIT_GUARD_RE.search(src)),
             'demo_keys': sorted(set(DEMO_KEY_RE.findall(code))),
         })
@@ -231,6 +264,17 @@ def main(argv=None):
                                 'exist -- a deletion path nobody can run is a '
                                 'named residue with no way out.'
                                 % (f, w['residue']))
+            if w['tears_down'] and not w['teardown']:
+                findings.append('%s is VERIFICATION and performs a TEARDOWN (%s) '
+                                'but declares no LIVE_PROBE_TEARDOWN. Say how the '
+                                'teardown is CHECKED -- what state is read back '
+                                'afterwards, and what makes the arm fail. '
+                                'Asserting the reply is a different claim from '
+                                'asserting the state: a set_active that answers '
+                                '200 and does nothing leaves a live credential on '
+                                'a licence that outlives the run, and the run '
+                                'reports clean.'
+                                % (f, ', '.join(w['tears_down'])))
             if w['demo_keys']:
                 findings.append('%s is VERIFICATION, writes, and hardcodes a '
                                 'DEMO-FACING licence: %s. That is the licence a '
@@ -250,6 +294,10 @@ def main(argv=None):
         if w['declared'] == 'VERIFICATION':
             print('              guard=%s  residue=%s'
                   % ('yes' if w['guarded'] else 'NO', w['residue'] or 'NONE DECLARED'))
+            if w['tears_down']:
+                print('              teardown(%s)=%s'
+                      % (', '.join(w['tears_down']),
+                         w['teardown'] or 'NOT DECLARED'))
     print()
     print('  A PROBE OUTSIDE THIS REPO IS INVISIBLE HERE, and so is a write reached')
     print('  through a dynamically built action name. Presence of the guard is')

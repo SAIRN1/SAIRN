@@ -68,15 +68,15 @@ def git(*a):
 
 # A live probe that WRITES. The host string and the action literal are what the
 # checker reads; nothing here makes a request.
-def fixture(declaration):
+def fixture(declaration, action='write'):
     return (
         '"""A planted live probe for tests/run_live_probe_residue_probe.py."""\n'
         'import json\n'
         + declaration +
         'ENDPOINT = "https://sairn.vercel.app/api/sd-data"\n'
         'def go(key):\n'
-        '    return json.dumps({"action": "write", "resource": "zz_probe",\n'
-        '                       "payload": {}})\n')
+        '    return json.dumps({"action": "%s", "resource": "zz_probe",\n'
+        '                       "payload": {}})\n' % action)
 
 
 CASES = [
@@ -107,6 +107,32 @@ COMPLIANT = (
     "def _g(k):\n"
     "    from audit_licence import require_audit_licence\n"
     "    return require_audit_licence(k)\n")
+
+# ── OBLIGATION 4: A TEARDOWN MUST BE ASSERTED, NOT INFERRED FROM ITS REPLY ───
+# The residue obligations answer "where does what you left go". They do not ask
+# whether a probe that CLEANS UP checked that the cleanup happened.
+# tools/sc_tier_a_write_gate_live_probe.py read its deleted ROWS back and did not
+# read its deactivated CREDENTIALS back -- it asserted `set_active -> 200` and
+# stopped, and a 200 is the endpoint's account of itself. On 2026-09-28 a
+# different cleanup on a different licence answered 400 and printed OK. A
+# credential left live is the worse residue of the two: it is a way in, on a
+# licence that outlives the run.
+#
+# DECLARED, NEVER INFERRED -- the same decision the class field already makes and
+# argues for. No source scan can tell a real read-back from a variable named
+# `roster`, and the three inference models tried for the equivalent question
+# elsewhere were all wrong within an hour.
+TEARDOWN_UNDECLARED = (
+    "LIVE_PROBE_CLASS = 'VERIFICATION'\n"
+    "LIVE_PROBE_RESIDUE = 'none -- the subject is deactivated at the end of the run'\n"
+    "def _g(k):\n"
+    "    from audit_licence import require_audit_licence\n"
+    "    return require_audit_licence(k)\n")
+
+TEARDOWN_DECLARED = (
+    TEARDOWN_UNDECLARED +
+    "LIVE_PROBE_TEARDOWN = 'the roster is read back after the loop and both "
+    "subjects must show active == false; an unreadable roster fails'\n")
 
 if not os.path.isfile(TOOL):
     print('COULD NOT RUN: tools/live_probe_residue_audit.py is not on disk. This '
@@ -141,6 +167,39 @@ try:
            '\n'.join(l for l in out.split('\n') if 'zz_planted' in l)[:300])
         ok(expect in out, 'and says WHY: %r' % expect,
            '\n'.join(l for l in out.split('\n') if 'zz_planted' in l)[:300])
+
+    print('\nDIRECTION -- a VERIFICATION probe that TEARS DOWN and does not say '
+          'how it checked')
+    with io.open(PLANT, 'w', encoding='utf-8', newline='\n') as fh:
+        fh.write(fixture(TEARDOWN_UNDECLARED, action='set_active'))
+    git('add', '-N', PLANT_REL)
+    rc, out = run()
+    ok(rc == EXIT_FINDING, 'the tool exits 1 (got %d)' % rc, out[-400:])
+    ok('LIVE_PROBE_TEARDOWN' in out and PLANT_REL in out,
+       'and names the file and the missing declaration',
+       '\n'.join(l for l in out.split('\n') if 'zz_planted' in l)[:300])
+
+    print('\nDIRECTION -- the SAME probe with the declaration must be SILENT')
+    with io.open(PLANT, 'w', encoding='utf-8', newline='\n') as fh:
+        fh.write(fixture(TEARDOWN_DECLARED, action='set_active'))
+    git('add', '-N', PLANT_REL)
+    rc, out = run()
+    ok(rc == EXIT_CLEAN,
+       'declaring how the teardown is checked clears it (exit %d) -- without this '
+       'arm the obligation would be a checker that flags every cleanup there is'
+       % rc,
+       '\n'.join(l for l in out.split('\n') if 'zz_planted' in l)[:400])
+
+    print('\nDIRECTION -- a probe that writes but NEVER tears down is not asked')
+    with io.open(PLANT, 'w', encoding='utf-8', newline='\n') as fh:
+        fh.write(fixture(TEARDOWN_UNDECLARED, action='write'))
+    git('add', '-N', PLANT_REL)
+    rc, out = run()
+    ok(rc == EXIT_CLEAN,
+       'the obligation fires on the TEARDOWN action, not on writing at all '
+       '(exit %d). The same declaration text is missing in both directions, so '
+       'this separates the trigger from the text' % rc,
+       '\n'.join(l for l in out.split('\n') if 'zz_planted' in l)[:400])
 
     print('\nDIRECTION -- a FULLY COMPLIANT writing probe must be SILENT')
     with io.open(PLANT, 'w', encoding='utf-8', newline='\n') as fh:
