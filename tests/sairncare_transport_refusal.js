@@ -346,17 +346,257 @@ const REFUSALS = [
     };
   });
 
-  await t('NO CALLER STILL READS THE OLD SHAPE -- asserted on the file, because '
-    + 'a fourth caller added tomorrow is how this comes back', () => {
+  // ── THE ARM BELOW REPLACES ONE THAT CHECKED THE CALL AND NOT THE READ ────
+  // WHAT THE OLD ARM ASSERTED, and it is worth keeping the words because the
+  // assertion was not wrong, it was INSUFFICIENT:
+  //
+  //     no `alfData('<action>','alf_family_contacts'` anywhere in the file, and
+  //     at least 4 occurrences of `alfFamilyData(`
+  //
+  // Both are true of a caller that calls alfFamilyData and then reads the OLD
+  // alfData shape off the result -- treating the returned envelope as if it
+  // WERE the data array. That caller is exactly the defect this suite exists
+  // for, and it passed both assertions, because the old arm asked WHICH
+  // FUNCTION IS CALLED and the defect is WHAT IS READ OFF IT.
+  //
+  // THE CONTROL IS RUN FIRST AND ON PURPOSE. `familyCallerContract()` is driven
+  // over two synthetic sources whose only difference from the real callers is
+  // the shape they read, and the arm asserts the checker REJECTS them -- before
+  // it asserts anything about sairncare.html. An arm that only ever sees code
+  // that passes cannot tell you it would catch anything.
+  //
+  // IT IS ASSERTED ON BEHAVIOUR, NOT ON A MESSAGE. Nothing below matches on a
+  // toast string, a note, or a comment: the criteria are (a) does the callback
+  // read at least one field of the documented envelope, and (b) does it treat
+  // the envelope as an array. Change every user-facing sentence in all three
+  // callers and this arm still passes; change what they read off `res` and it
+  // fails.
+
+  // Brace/paren matching, because a regex cannot find the end of a callback and
+  // a callback that spans 40 lines is the normal case here.
+  function matchFrom(src, open, closeCh, openCh) {
+    let depth = 0;
+    for (let i = open; i < src.length; i++) {
+      const c = src[i];
+      if (c === openCh) depth += 1;
+      else if (c === closeCh) { depth -= 1; if (depth === 0) return i; }
+    }
+    return -1;
+  }
+
+  // The four fields alfFamilyData's own return statements actually produce.
+  // Taken from the function, not from a wish: {ok, status, body, error}.
+  const ENVELOPE = ['ok', 'status', 'body', 'error'];
+
+  // The ways a caller would consume alfData's OLD contract -- the result being
+  // the data array itself. Any one of these on the callback parameter means the
+  // caller is reading the shape alfFamilyData does not return.
+  const ARRAY_SHAPED = [
+    'length', 'forEach', 'map', 'filter', 'slice', 'concat',
+    'some', 'every', 'find', 'reduce', 'push', 'sort', 'join', 'indexOf'
+  ];
+
+  function familyCallerContract(src) {
+    const callers = [];
+    const problems = [];
+    const re = /alfFamilyData\s*\(/g;
+    let m;
+    while ((m = re.exec(src)) !== null) {
+      // The definition is `function alfFamilyData(action,payload){` -- skip it
+      // by looking at what precedes the name rather than by matching its body.
+      const before = src.slice(Math.max(0, m.index - 20), m.index);
+      if (/function\s+$/.test(before)) continue;
+
+      const openParen = src.indexOf('(', m.index);
+      const closeParen = matchFrom(src, openParen, ')', '(');
+      if (closeParen === -1) { problems.push('unbalanced call at ' + m.index); continue; }
+
+      const tail = src.slice(closeParen + 1, closeParen + 400);
+      // `.then(function(res){` or `.then(function (res) {` or `.then(res=>{`
+      const thenM = tail.match(/^\s*\.then\(\s*(?:function\s*\(\s*([A-Za-z_$][\w$]*)\s*\)\s*|\(?\s*([A-Za-z_$][\w$]*)\s*\)?\s*=>\s*)\{/);
+      if (!thenM) {
+        problems.push('a call whose result is never consumed by a .then callback '
+          + '-- a discarded envelope is the same defect one step earlier: '
+          + JSON.stringify(tail.slice(0, 60)));
+        continue;
+      }
+      const param = thenM[1] || thenM[2];
+      const bodyOpen = closeParen + 1 + thenM[0].length - 1;   // index of the '{'
+      const bodyClose = matchFrom(src, bodyOpen, '}', '{');
+      if (bodyClose === -1) { problems.push('unbalanced callback for ' + param); continue; }
+      const body = src.slice(bodyOpen, bodyClose + 1);
+
+      const p = param.replace(/[$]/g, '\\$');
+      const readsEnvelope = ENVELOPE.filter(function (f) {
+        return new RegExp('\\b' + p + '\\s*\\.\\s*' + f + '\\b').test(body);
+      });
+      const arrayUses = ARRAY_SHAPED.filter(function (f) {
+        return new RegExp('\\b' + p + '\\s*\\.\\s*' + f + '\\b').test(body);
+      });
+      const isArrayCheck = new RegExp('Array\\s*\\.\\s*isArray\\s*\\(\\s*' + p + '\\s*\\)').test(body);
+
+      callers.push({ param: param, readsEnvelope: readsEnvelope,
+                     arrayUses: arrayUses, isArrayCheck: isArrayCheck,
+                     at: m.index });
+
+      if (readsEnvelope.length === 0) {
+        problems.push('a caller reads NO field of the envelope off `' + param
+          + '` -- alfFamilyData returns {ok,status,body,error} and this caller '
+          + 'uses the result as a value, which is alfData\'s contract');
+      }
+      if (arrayUses.length) {
+        problems.push('a caller uses `' + param + '.' + arrayUses.join('`, `' + param + '.')
+          + '` -- that is the OLD alfData shape, where the result WAS the data '
+          + 'array. alfFamilyData never returns an array');
+      }
+      if (isArrayCheck) {
+        problems.push('a caller tests `Array.isArray(' + param + ')` -- it is '
+          + 'always false against this envelope, so the caller takes its failure '
+          + 'branch on every success, which is the original defect verbatim');
+      }
+    }
+    return { callers: callers, problems: problems };
+  }
+
+  // ── CONTROL 1, KNOWN BAD: the shape the old arm could not see ─────────────
+  await t('CONTROL (must FAIL the checker): a caller that calls alfFamilyData '
+    + 'and reads the OLD alfData shape -- and the OLD ARM PASSES IT, shown here',
+    () => {
+      const bad = [
+        "function alfFamilyData(action,payload){ return null; }",
+        "function alfFamilyRefresh(){",
+        "  return alfFamilyData('read',{}).then(function(res){",
+        "    if(!Array.isArray(res)){",
+        "      if(note) note.textContent='Could not load family contacts';",
+        "      ALF_FAM=[]; alfFamilyRender(); return;",
+        "    }",
+        "    ALF_FAM=res; alfFamilyRender();",
+        "  });",
+        "}",
+        "alfFamilyData('write',p).then(function(res){ if(res.ok&&res.body){} });",
+        "alfFamilyData('family_mar',{}).then(function(res){ if(!res.ok||!res.body){} });"
+      ].join('\n');
+
+      // FIRST: the old arm's two criteria, run against this source, to show
+      // what was being relied on. Both pass. This is the blindness, measured
+      // rather than asserted.
+      const staleOld = (bad.match(/alfData\(\s*'[a-z_]+'\s*,\s*'alf_family_contacts'/g) || []);
+      const viaOld = (bad.match(/alfFamilyData\(/g) || []).length;
+      assert.strictEqual(staleOld.length, 0,
+        'the old arm would have caught this by its first criterion, so it is the '
+        + 'wrong control -- pick one it really passes');
+      assert.ok(viaOld >= 4,
+        'the old arm would have caught this by its second criterion (' + viaOld
+        + ' < 4), so it is the wrong control');
+
+      // NOW: the new checker must reject it.
+      const r = familyCallerContract(bad);
+      assert.ok(r.problems.length > 0,
+        'THE REWRITTEN ARM STILL CANNOT SEE THE OLD SHAPE. It found '
+        + r.callers.length + ' caller(s) and no problem, on a source whose first '
+        + 'caller does Array.isArray(res) and then assigns res to a list');
+      assert.ok(r.problems.some(function (s) { return /Array\.isArray/.test(s); }),
+        'the problem reported was not the Array.isArray one: '
+        + JSON.stringify(r.problems));
+    });
+
+  // ── CONTROL 2, KNOWN BAD AND SUBTLER: reads .ok, then indexes the array ───
+  await t('CONTROL (must FAIL the checker): a caller that reads `res.ok` -- so '
+    + 'it satisfies the envelope criterion -- and then reads `res.length`', () => {
+      const bad = [
+        "alfFamilyData('read',{}).then(function(res){",
+        "  if(!res.ok){ return; }",
+        "  for(var i=0;i<res.length;i++){ ALF_FAM.push(res[i]); }",
+        "});"
+      ].join('\n');
+      const r = familyCallerContract(bad);
+      assert.strictEqual(r.callers.length, 1, JSON.stringify(r));
+      assert.ok(r.callers[0].readsEnvelope.indexOf('ok') !== -1,
+        'this control is meant to SATISFY the envelope criterion, and does not');
+      assert.ok(r.problems.some(function (s) { return /res\.length/.test(s); }),
+        'the length read was not caught -- the envelope criterion alone is not '
+        + 'enough, which is the whole point of this control: '
+        + JSON.stringify(r.problems));
+    });
+
+  // ── CONTROL 3, KNOWN BAD: the envelope is thrown away entirely ────────────
+  await t('CONTROL (must FAIL the checker): a caller that consumes the result '
+    + 'as a value and reads no field at all', () => {
+      const bad = "alfFamilyData('read',{}).then(function(res){ ALF_FAM=res; alfFamilyRender(); });";
+      const r = familyCallerContract(bad);
+      assert.ok(r.problems.some(function (s) { return /NO field of the envelope/.test(s); }),
+        JSON.stringify(r.problems));
+    });
+
+  // ── CONTROL 4, MUST PASS: a correct caller, so the checker is not just "no" ──
+  await t('CONTROL (must PASS the checker): a correct caller reading '
+    + '{ok,status,body,error} and nothing array-shaped', () => {
+      const good = [
+        "alfFamilyData('read',{}).then(function(res){",
+        "  if(res.status===401){ return; }",
+        "  if(!res.ok||!res.body){ return; }",
+        "  ALF_FAM=res.body.data||[];",
+        "});"
+      ].join('\n');
+      const r = familyCallerContract(good);
+      assert.strictEqual(r.callers.length, 1, JSON.stringify(r));
+      assert.deepStrictEqual(r.problems, [],
+        'a correct caller was reported as a problem, which would make this arm '
+        + 'unusable and get it deleted: ' + JSON.stringify(r.problems));
+    });
+
+  // ── CONTROL 5, MUST PASS: only the MESSAGES change ────────────────────────
+  await t('CONTROL (must PASS the checker): the same correct caller with every '
+    + 'user-facing sentence rewritten -- this arm must not be a string test', () => {
+      const reworded = [
+        "alfFamilyData('read',{}).then(function(res){",
+        "  if(res.status===401){ note.textContent='ANY OTHER WORDS ENTIRELY'; return; }",
+        "  if(!res.ok||!res.body){ note.textContent='different sentence, same behaviour'; return; }",
+        "  ALF_FAM=res.body.data||[];",
+        "});"
+      ].join('\n');
+      const r = familyCallerContract(reworded);
+      assert.deepStrictEqual(r.problems, [],
+        'rewording a message broke this arm, which means it is asserting on text: '
+        + JSON.stringify(r.problems));
+    });
+
+  // ── AND NOW THE REAL FILE ────────────────────────────────────────────────
+  await t('EVERY family-contact caller in sairncare.html READS THE ENVELOPE and '
+    + 'none of them reads the old array shape', () => {
       const src = LINES.join('\n');
-      // Every family-contact call must go through alfFamilyData. An alfData call
-      // naming this resource is the defect by construction.
+      const r = familyCallerContract(src);
+      assert.strictEqual(r.callers.length, 3,
+        'expected exactly 3 callers of alfFamilyData, found ' + r.callers.length
+        + ' -- a fourth caller is how this defect comes back, and an arm that '
+        + 'does not notice the count is how it stays. Read the new one, then '
+        + 'raise this number deliberately');
+      assert.deepStrictEqual(r.problems, [],
+        'a family-contact caller is reading a shape alfFamilyData does not '
+        + 'return:\n       - ' + r.problems.join('\n       - '));
+      // Each caller must read at least TWO envelope fields. Measured from the
+      // three real callers, which read 3, 3 and 3 -- not chosen to fit: a
+      // caller reading only one of {ok,status,body,error} cannot both detect a
+      // refusal and use the payload, so one field is a caller that handles
+      // exactly one of the two outcomes.
+      r.callers.forEach(function (c, i) {
+        assert.ok(c.readsEnvelope.length >= 2,
+          'caller ' + (i + 1) + ' reads only ' + JSON.stringify(c.readsEnvelope)
+          + ' -- one field cannot both detect a refusal and use the payload');
+      });
+    });
+
+  // The two original criteria are KEPT. They were insufficient, not wrong, and
+  // they catch a shape the contract check cannot see: a caller that goes back
+  // to alfData entirely, where there is no alfFamilyData call site to inspect.
+  await t('NO CALLER USES alfData FOR THIS RESOURCE -- kept from the arm this '
+    + 'replaced, because the contract check above only sees alfFamilyData sites',
+    () => {
+      const src = LINES.join('\n');
       const stale = (src.match(/alfData\(\s*'[a-z_]+'\s*,\s*'alf_family_contacts'/g) || []);
       assert.strictEqual(stale.length, 0,
         stale.length + ' family-contact call(s) still use alfData, whose result has '
         + 'no .status and no .body: ' + JSON.stringify(stale));
-      const viaNew = (src.match(/alfFamilyData\(/g) || []).length;
-      assert.ok(viaNew >= 4, 'expected the definition plus 3 callers, found ' + viaNew);
     });
 
   console.log('\n' + (fail ? 'FAILED' : 'ok') + '  sairncare transport refusal: ' +
