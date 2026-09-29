@@ -159,10 +159,10 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
 
 from checker_kit import (EXIT_COULD_NOT_RUN, finish,               # noqa: E402
-                         tracked)
+                         strip_comments, tracked)
 
 CONTROLLED_BY = ['tests/run_assertion_label_shape_probe.py']
-CRITERIA_VERSION = '2026-09-27.1'
+CRITERIA_VERSION = '2026-09-29.2'
 
 # ── THE CRITERIA ─────────────────────────────────────────────────────────────
 # An EXHAUSTIVE claim: the label says the arm covers a whole population.
@@ -223,6 +223,37 @@ ONE_SIDED_DECLARED = re.compile(
 ONE_SIDED_OPS = (ast.Gt, ast.GtE, ast.Lt, ast.LtE)
 EXACT_OPS = (ast.Eq, ast.NotEq, ast.Is, ast.IsNot, ast.In, ast.NotIn)
 
+# ── A FAILURE DESCRIPTION IS NOT A CLAIM (2026-09-29) ──────────────────────
+# `assert other, 'fixture invalid: no rf_ Tier A row to borrow'` -- the label
+# describes THE STATE THAT WOULD BE WRONG, which is the exact opposite of
+# asserting it. Two of the fourteen unjudged arms carried `every` inside such a
+# sentence and tier() called them CONFIRMED, because "every" sat in what looks
+# like the claim half. The prefix is the marker, and it is a small closed set:
+# this repo writes failure messages, not essays.
+# AND IT SHIPPED WITH A LITERAL BACKSPACE THE FIRST TIME, 2026-09-29. The
+# pattern below was first written through a shell heredoc and every `\b` in it
+# became chr(8) -- `'fixture invalid\x08|could not\x08|...'` -- which matches
+# nothing, ever. It read as a working rule: the tool ran, the count went to zero,
+# and the demotion it was added for silently did not happen. This repo's own
+# skill notes name that exact failure ("a regex that shipped with a literal
+# backspace and could never match") and it has now happened here. Caught only
+# because the ablation counted the demotions and got 0 instead of 2.
+# tests/run_assertion_label_shape_probe.py now asserts the pattern contains no
+# control character, because a regex cannot report that it is unreachable.
+FAILURE_DESCRIPTION = re.compile(
+    r'^\s*(fixture invalid|could not|cannot|unable to|failed to'
+    r'|no \w+ found|nothing )'
+    r'|failed\s*$', re.I)
+
+CLEAN_FAILURE_DESC = ('the label is a FAILURE DESCRIPTION -- it names the state '
+                      'that would be wrong, not a claim being made')
+# ── AND A BARE TRUTHINESS IS A COMPARISON, THE WEAKEST ONE THERE IS ────────
+# `assert rows, 'every row is present'` has NO operator at the call site, so the
+# first version counted it NOT JUDGED. But a universal label checked by "is this
+# non-empty" is a WEAKER check than the `>= 4` this tool was built to report --
+# one row satisfies it. Treating the absence of an operator as unjudgeable put
+# the worst instance of the defect in the one bucket nobody reads.
+FINDING_BARE = 'FINDING_BARE'   # a finding, with an accurate message of its own
 CLEAN_NO_EXHAUSTIVE = 'label makes no exhaustive claim'
 CLEAN_DECLARED = 'label declares its own one-sidedness'
 CLEAN_EXACT = 'the condition carries an exact comparison'
@@ -238,7 +269,26 @@ def classify(label, ops):
     second run of the same pipeline over different bytes.
     """
     if not ops:
-        return CLEAN_NO_COMPARE
+        # A BARE TRUTHINESS UNDER A UNIVERSAL LABEL IS THE DEFECT, not an
+        # unjudgeable arm. `assert rows, 'every row is present'` is satisfied by
+        # ONE row -- a weaker check than the `>= 4` this tool exists to report.
+        #
+        # THE FAILURE-DESCRIPTION TEST LIVES HERE AND NOT AT THE TOP, and the
+        # first real run is why. Applied to every arm it demoted SEVENTY-FOUR,
+        # and several were real claims -- 'nothing was unreadable', 'nothing was
+        # dropped on an over-budget history', 'COULD NOT TELL with no soft
+        # attempt -> FAIL, never a pass'. Each carries an exhaustive word in a
+        # genuine claim, and suppressing them makes this checker WEAKER, which
+        # is the one direction a criteria change must never go. Confined to this
+        # branch it can only reach arms that were NOT JUDGED before, so no
+        # previously-judged verdict can move.
+        if FAILURE_DESCRIPTION.search(label or ''):
+            return CLEAN_FAILURE_DESC
+        if not EXHAUSTIVE.search(label or ''):
+            return CLEAN_NO_EXHAUSTIVE
+        if ONE_SIDED_DECLARED.search(label or ''):
+            return CLEAN_DECLARED
+        return FINDING_BARE
     if any(isinstance(o, EXACT_OPS) for o in ops):
         return CLEAN_EXACT
     if not any(isinstance(o, ONE_SIDED_OPS) for o in ops):
@@ -772,6 +822,31 @@ def js_arms(src):
     return out
 
 
+# ── THE REGISTERED LIMIT, RE-MEASURED ON EVERY RUN ──────────────────────────
+# A limit stated in a comment goes stale the day it stops being true and nothing
+# announces it (discipline 8). These two numbers are derived from the same files
+# the real run reads and printed in the coverage block, so "0 of them carry an
+# exhaustive label" is a CURRENT measurement rather than a claim from the day it
+# was written.
+JS_BARE_CALL = re.compile(
+    r'\b(?:assert\.\w+|assert|ok|check|eq)\s*\(\s*([^,()]{1,120}?)\s*,\s*'
+    r'([\'"`])((?:[^\\\n]|\\.)*?)\2', re.M)
+JS_OPERATOR_TEXT = ('===', '!==', '==', '!=', '>=', '<=', '>', '<')
+
+
+def js_bare_unjudged(stripped):
+    """(bare-truthiness calls, how many carry an exhaustive label)."""
+    bare = exhaustive = 0
+    for m in JS_BARE_CALL.finditer(stripped):
+        cond, label = m.group(1), m.group(3)
+        if any(o in cond for o in JS_OPERATOR_TEXT):
+            continue
+        bare += 1
+        if EXHAUSTIVE.search(label or ''):
+            exhaustive += 1
+    return bare, exhaustive
+
+
 def js_classify(label, ops):
     """classify() for JS operator STRINGS rather than ast nodes.
 
@@ -779,8 +854,19 @@ def js_classify(label, ops):
     then one-sided, then the label tests. Anything else would let the two
     languages disagree about identical code.
     """
+    # THE SAME TWO RULES AS THE PYTHON PATH, in the same order. A failure
+    # description is not a claim, and a bare truthiness under a universal label
+    # is the defect rather than an unjudgeable arm -- if only one language
+    # learned them the two would disagree about identical code, which is the one
+    # thing this shared classifier exists to prevent.
     if not ops:
-        return CLEAN_NO_COMPARE
+        if FAILURE_DESCRIPTION.search(label or ''):
+            return CLEAN_FAILURE_DESC
+        if not EXHAUSTIVE.search(label or ''):
+            return CLEAN_NO_EXHAUSTIVE
+        if ONE_SIDED_DECLARED.search(label or ''):
+            return CLEAN_DECLARED
+        return FINDING_BARE
     if any(o in JS_EXACT_OPS for o in ops):
         return CLEAN_EXACT
     if not any(o in JS_ONE_SIDED_OPS for o in ops):
@@ -794,6 +880,22 @@ def js_classify(label, ops):
 
 # ── THE JS FIXTURE LOCK, held to the same standard as the Python one ────────
 JS_FIXTURES = (
+    # ── THE ONE ASYMMETRY BETWEEN THE TWO PATHS, MEASURED AND NAMED ────────
+    # The Python path judges a BARE TRUTHINESS -- `assert rows, 'every row is
+    # present'` -- because `ast` hands it the label whatever the condition looks
+    # like. The JS extractor requires an operator-bearing argument, so a bare
+    # truthiness yields NO ARM AT ALL and js_classify is never reached.
+    #
+    # MEASURED BEFORE DECIDING NOT TO CLOSE IT: 1,811 bare-truthiness assert
+    # calls across 468 JS suite files, of which ZERO carry an exhaustive label.
+    # Extending the extractor would add 1,811 arms and find nothing today. So
+    # this is a REGISTERED LIMIT rather than a gap, and the two figures are
+    # RE-MEASURED AND PRINTED on every real run -- if that zero ever moves, the
+    # header says so instead of this comment quietly going stale.
+    ("assert.ok(rows, 'every row is present');", None,
+     'A BARE TRUTHINESS IN JS YIELDS NO ARM. Locked as the tool BEHAVES rather '
+     'than as one might wish, so the day the extractor changes this fixture is '
+     'what moves'),
     ("assert.ok(rows.length >= 12, 'every section yields requirements');",
      FINDING, 'the named shape, in JS: a universal label behind a floor'),
     ("assert.ok(rows.length === 12, 'every section yields requirements');",
@@ -871,6 +973,35 @@ def run_js_fixtures(verbose=False):
 # the run. Written from the register record's description of the two known
 # instances before this tool was pointed at tests/.
 FIXTURES = (
+    # ── THE 2026-09-29 RULES. The fourteen NOT-JUDGED arms were read one at a
+    #    time and every one turned out to be decidable, so the bucket is gone
+    #    rather than explained. ────────────────────────────────────────────
+    ("assert rows, 'every row is present'", FINDING_BARE,
+     'A BARE TRUTHINESS UNDER A UNIVERSAL LABEL IS THE DEFECT, and a worse '
+     'instance of it than the floor this tool was built for: ONE row satisfies '
+     'it. The first version counted this NOT JUDGED, which put the worst case '
+     'in the one bucket nobody reads'),
+    ("assert rows, 'at least one row is present'", CLEAN_NO_EXHAUSTIVE,
+     'THE SILENT HALF: a bare truthiness under an HONEST label is the correct '
+     'shape and must not report, or the rule is "has no operator"'),
+    ("assert rows, 'no fewer than one row is present'", CLEAN_NO_EXHAUSTIVE,
+     'and a declared floor with no universal word clears one test earlier, the '
+     'same way it does on the operator path'),
+    ("assert other, 'fixture invalid: no rf_ Tier A row to borrow'",
+     CLEAN_FAILURE_DESC,
+     'A FAILURE DESCRIPTION IS NOT A CLAIM. The label names the state that '
+     'would be WRONG, which is the opposite of asserting it -- and tier() '
+     'called two of these CONFIRMED because `every` sat in what looks like the '
+     'claim half'),
+    ("assert clean(EP), 'ARM 1 restore failed'", CLEAN_FAILURE_DESC,
+     'the trailing-`failed` spelling of the same thing'),
+    ("assert len(rows) >= 4, 'fixture invalid: every row must be present'",
+     FINDING,
+     'AND THE SCOPE OF THAT RULE, LOCKED: the failure-description test applies '
+     'ONLY where there is no operator. Applied to every arm it demoted 74, '
+     'several of them real claims -- "nothing was unreadable", "nothing was '
+     'dropped on an over-budget history" -- which makes the checker WEAKER, '
+     'the one direction a criteria change must never go'),
     # the real instance the register recorded, reduced
     ("check('every section of the matrix yields requirements', "
      "len(reqs) >= 12)", FINDING,
@@ -1033,6 +1164,7 @@ def scan(paths, js_paths=()):
     only in the extractor, so a finding means the same thing in both languages.
     """
     confirmed, advisory, not_judged, clean_rows, unparsed = [], [], 0, [], []
+    js_bare = js_bare_exhaustive = 0
     for rel in js_paths:
         full = os.path.join(REPO, rel)
         try:
@@ -1042,6 +1174,13 @@ def scan(paths, js_paths=()):
             unparsed.append('%s -- could not read: %s' % (rel, e))
             continue
         got = js_arms(src)
+        # THE REGISTERED LIMIT, COUNTED ON THE SAME BYTES THE RUN READS.
+        try:
+            _b, _e = js_bare_unjudged(strip_comments(src, rel))
+        except Exception:                                      # noqa: BLE001
+            _b, _e = 0, 0
+        js_bare += _b
+        js_bare_exhaustive += _e
         if got is None:
             # THE OFFSET REFUSAL. Not folded into clean: a file whose two
             # stripped copies disagree in length was NOT read, and reading it
@@ -1051,10 +1190,10 @@ def scan(paths, js_paths=()):
             continue
         for line, label, ops, kind in got:
             verdict = js_classify(label, ops)
-            if verdict == FINDING:
+            if verdict in (FINDING, FINDING_BARE):
                 t, why = tier(label)
                 (confirmed if t == CONFIRMED else advisory).append(
-                    (rel, line, kind, label, why))
+                    (rel, line, kind, label, why, verdict))
             elif verdict == CLEAN_NO_COMPARE:
                 not_judged += 1
             else:
@@ -1074,15 +1213,16 @@ def scan(paths, js_paths=()):
             continue
         for line, label, ops, kind in got:
             verdict = classify(label, ops)
-            if verdict == FINDING:
+            if verdict in (FINDING, FINDING_BARE):
                 t, why = tier(label)
                 (confirmed if t == CONFIRMED else advisory).append(
-                    (rel, line, kind, label, why))
+                    (rel, line, kind, label, why, verdict))
             elif verdict == CLEAN_NO_COMPARE:
                 not_judged += 1
             else:
                 clean_rows.append((rel, line, kind, label, verdict))
-    return confirmed, advisory, not_judged, clean_rows, unparsed
+    return (confirmed, advisory, not_judged, clean_rows, unparsed,
+            js_bare, js_bare_exhaustive)
 
 
 def main(argv):
@@ -1141,8 +1281,8 @@ def main(argv):
                   'failed, not that the repo is clean.')
         return EXIT_COULD_NOT_RUN
 
-    confirmed, advisory, not_judged, clean_rows, unparsed = scan(
-        paths, js_paths=js_paths)
+    (confirmed, advisory, not_judged, clean_rows, unparsed,
+     js_bare, js_bare_exhaustive) = scan(paths, js_paths=js_paths)
 
     if not a.quiet:
         print('read %d Python and %d JavaScript suite file(s); %d arm(s) '
@@ -1174,6 +1314,21 @@ def main(argv):
               'COULD NOT RUN rather than counted\n  clean, and an assertion whose '
               'label is built from variables yields no arm at all.\n  Both figures '
               'come from `git ls-files`, so the denominator moves with the repo.')
+        # ── THE ONE REGISTERED LIMIT, RE-MEASURED RATHER THAN RESTATED ─────
+        # The Python path judges a BARE TRUTHINESS -- `assert rows, 'every row
+        # is present'`, which ONE row satisfies. The JS extractor needs an
+        # operator-bearing argument, so those yield no arm at all. That is a
+        # LIMIT and not a gap only for as long as the second number stays zero,
+        # so both are derived from the same bytes this run read.
+        print('  ONE REGISTERED LIMIT, re-measured every run: %d JavaScript '
+              'bare-truthiness\n  assert call(s) yield no arm (the Python path '
+              'judges that shape), OF WHICH %d\n  carry an exhaustive label. %s'
+              % (js_bare, js_bare_exhaustive,
+                 'While that is 0 the limit costs nothing; the day it moves, '
+                 'this line\n  says so instead of a comment going quietly '
+                 'stale.' if js_bare_exhaustive == 0 else
+                 'THAT IS NO LONGER ZERO -- the limit now hides real arms and '
+                 'the JS\n  extractor needs the bare-truthiness shape.'))
         for n in notes:
             print('  excluded: %s' % n)
         # TWO NUMBERS, NEVER SUMMED. Printed BEFORE the findings so a reader
@@ -1186,7 +1341,7 @@ def main(argv):
         if advisory:
             print('\nADVISORY (%d) -- listed so the demotion is auditable '
                   'rather than silent:' % len(advisory))
-            for rel, line, _k, label, why in advisory:
+            for rel, line, _k, label, why, _v in advisory:
                 print('  ~ %s:%d  %s\n      %s' % (rel, line, why, label[:140]))
         if a.all:
             print('\nCLEARED (%d) -- with the reason each was cleared, so a '
@@ -1195,9 +1350,13 @@ def main(argv):
                 print('  - %s:%d  %s\n      %s' % (rel, line, verdict, label[:120]))
 
     return finish(
-        ['%s:%d  %s label claims a universal, comparison is one-sided only\n'
-         '      %s' % (rel, line, kind, label[:160])
-         for rel, line, kind, label, _w in confirmed],
+        ['%s:%d  %s label claims a universal, %s\n'
+         '      %s'
+         % (rel, line, kind,
+            'and the check is a BARE TRUTHINESS -- ONE item satisfies it'
+            if _v == FINDING_BARE else 'comparison is one-sided only',
+            label[:160])
+         for rel, line, kind, label, _w, _v in confirmed],
         could_not_run=unparsed, quiet=a.quiet,
         # NAMES BOTH LANGUAGES. It said "no Python arm" while the JavaScript
         # half of the run was already feeding the same classify(), so a clean

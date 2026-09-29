@@ -274,6 +274,80 @@ for _p in (_bad_js, _good_js, _cmt_js):
     except OSError:
         pass
 
+# ── E. THE 2026-09-29 RULES, AND THE REGEX THAT COULD NEVER MATCH ──────────
+# The fourteen NOT-JUDGED arms were read one at a time. Every one was decidable,
+# so the bucket is gone rather than explained -- but the rule that removed it
+# shipped, in its first version, with a LITERAL BACKSPACE in its pattern:
+#
+#     'fixture invalid\x08|could not\x08|...'
+#
+# written through a shell heredoc that turned every `\b` into chr(8). It matched
+# nothing, ever, and it READ AS A WORKING RULE: the tool ran, the NOT-JUDGED
+# count went to zero by the other branch, and the demotion the rule existed for
+# silently did not happen. This repo's own skill notes name that exact failure
+# and it has now happened here. E1 is the arm that would have caught it in one
+# second, because a regex cannot report that it is unreachable.
+section('E. the 2026-09-29 rules')
+
+check('E1. NO CONTROL CHARACTER IN ANY CRITERIA PATTERN. The first '
+      'FAILURE_DESCRIPTION shipped with chr(8) where every `\\b` should have '
+      'been -- it matched nothing, for ever, and the tool looked fine doing it',
+      all(not any(ord(c) < 32 for c in getattr(A, n).pattern)
+          for n in ('FAILURE_DESCRIPTION', 'EXHAUSTIVE', 'ONE_SIDED_DECLARED',
+                    'JS_BARE_CALL')),
+      [(n, [hex(ord(c)) for c in getattr(A, n).pattern if ord(c) < 32])
+       for n in ('FAILURE_DESCRIPTION', 'EXHAUSTIVE', 'ONE_SIDED_DECLARED',
+                 'JS_BARE_CALL')])
+
+check('E2. A BARE TRUTHINESS UNDER A UNIVERSAL LABEL IS A FINDING. It is a '
+      'WORSE instance than the floor this tool was built for -- ONE row '
+      'satisfies "every row is present" -- and v1 counted it NOT JUDGED',
+      A.classify('every row is present', []) == A.FINDING_BARE,
+      A.classify('every row is present', []))
+
+check('E2b. ...AND THE SILENT HALF: the same bare truthiness under an HONEST '
+      'label is clean, or the rule is just "has no operator"',
+      A.classify('at least one row is present', []) == A.CLEAN_NO_EXHAUSTIVE,
+      A.classify('at least one row is present', []))
+
+check('E3. A FAILURE DESCRIPTION IS NOT A CLAIM -- it names the state that '
+      'would be WRONG. Two of the fourteen carried `every` inside one and '
+      'tier() called them CONFIRMED',
+      A.classify('fixture invalid: every listed name appears more than once',
+                 []) == A.CLEAN_FAILURE_DESC,
+      A.classify('fixture invalid: every listed name appears more than once', []))
+
+check('E3b. ...AND THAT RULE IS SCOPED TO THE NO-OPERATOR BRANCH. Applied to '
+      'every arm it demoted SEVENTY-FOUR, several of them real claims, which '
+      'makes this checker WEAKER -- the one direction a criteria change must '
+      'never go. With an operator present the same label is still a FINDING',
+      A.classify('fixture invalid: every row must be present',
+                 [__import__('ast').GtE()]) == A.FINDING,
+      A.classify('fixture invalid: every row must be present',
+                 [__import__('ast').GtE()]))
+
+check('E4. THE REAL RUN REPORTS ZERO NOT JUDGED. The bucket was 14 and every '
+      'one was read individually; if it is ever non-zero again the number is '
+      'unexplained and that is the thing this arm exists to stop',
+      re.search(r'(\d+) NOT JUDGED', out) is not None
+      and int(re.search(r'(\d+) NOT JUDGED', out).group(1)) == 0,
+      re.search(r'(\d+) NOT JUDGED', out).group(0)
+      if re.search(r'(\d+) NOT JUDGED', out) else out[:300])
+
+check('E5. THE ONE REGISTERED LIMIT IS PRINTED WITH BOTH ITS FIGURES, and the '
+      'second one is what decides whether it is a limit or a gap. A limit '
+      'stated only in a comment goes stale the day it stops being true',
+      'ONE REGISTERED LIMIT' in out
+      and re.search(r'(\d+) JavaScript bare-truthiness', out) is not None
+      and re.search(r'OF WHICH (\d+)', out) is not None,
+      out[:1400])
+_ex = re.search(r'OF WHICH (\d+)', out)
+check('E5b. ...and while that second figure is 0 the limit costs nothing. If '
+      'this goes red the JS extractor needs the bare-truthiness shape, and the '
+      'output says so rather than this control quietly passing',
+      _ex is not None and int(_ex.group(1)) == 0,
+      _ex.group(0) if _ex else 'no registered-limit line at all')
+
 # ── D. ANCHOR ARMS -- what tells us the day this control stops testing ──────
 section('D. the anchors this control depends on (discipline 8)')
 _src = io.open(TOOL, encoding='utf-8').read()
