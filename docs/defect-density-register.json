@@ -19745,7 +19745,7 @@
       "recurrence_open": "Nothing checks any OTHER derived population in this repo for a filter that encodes a convention rather than the predicate. This was found by enumerating credential read sites for a rotation, not by a sweep. And tools/plugin_upgrade_check.py still carries a second copy of the credential-manager lookup that gh_token.py exists to centralise."
     },
     {
-      "commit": "6f993afbf7a6",
+      "commit": "85ce0f01a298",
       "date": "2026-09-29",
       "subject": "fix(sairnmechanical): the redactor ate the equipment label and left half the phone number",
       "files": [
@@ -19968,7 +19968,7 @@
       "recurrence_open": "Six other working copies exist on this machine and NONE has been checked for an armed hooksPath -- each is local config and has to be checked where it lives, and one of them is the hover auditor's clone. Nothing runs this check on a cadence yet either; it is report-only and unwired."
     },
     {
-      "commit": "7f885c5c04da",
+      "commit": "0bfa86a8564d",
       "date": "2026-09-29",
       "subject": "fix(sairnmechanical): mech_quotes IS scan-derived -- correcting my own exclusion of it",
       "files": [
