@@ -11425,6 +11425,65 @@ module.exports = async (req, res) => {
       let famActive = true;
       if (typeof famP.active === 'boolean') famActive = famP.active;
       const famNow = nowISO();
+      // ── THE PRIOR ROW, READ BEFORE THE TIMESTAMPS ARE DECIDED ────────────
+      // Needed because these are TRANSITION stamps now (see below) and a
+      // transition is a fact about two states. A missing row is the first-ever
+      // write and both flags transition from absent.
+      //
+      // FAIL-CLOSED ON AN UNREADABLE PRIOR STATE. If this read errors we cannot
+      // tell a transition from a no-op, and guessing would either re-stamp a
+      // consent date or silently keep a stale one -- PR 1.11, could-not-tell is
+      // a third state.
+      const famPriorR = await fetch(rest('alf_family_contacts?license_hash=eq.' + enc(licHash)
+        + '&contact_id=eq.' + enc(String(famP.contact_id))
+        + '&select=mar_consent,consent_granted_at,consent_granted_by,consent_revoked_at,active,revoked_at'), { headers });
+      if (famPriorR.status === 404 || famPriorR.status === 400) {
+        res.status(200).json({ ok: true, provisioned: false, data: null });
+        return;
+      }
+      const famPriorRows = await famPriorR.json();
+      if (!famPriorR.ok) return upstream(res, famPriorRows);
+      const famPrior = (Array.isArray(famPriorRows) && famPriorRows[0]) || null;
+      // ── STAMPED ON THE TRANSITION, NOT ON EVERY WRITE (2026-09-29) ───────
+      // These four fields were `famConsent ? famNow : null` and friends, and the
+      // write is a `resolution=merge-duplicates` upsert that rebuilds the whole
+      // row -- so EVERY write re-stamped them. Driven live: changing a family
+      // member's PHONE moved consent_granted_at forward by 79 seconds and took
+      // consent_granted_by with it.
+      //
+      // consent_granted_at is what a state surveyor reads to settle whether
+      // consent was in place on the date a disclosure happened. After an
+      // unrelated edit it answered with the date of that edit: a plausible,
+      // precise, wrong date, which is worse than an absent one.
+      //
+      // THE PLATFORM ALREADY DECIDED THIS SHAPE. alf_incidents.recorded_by is
+      // explicitly not re-stamped on update -- "the column answers who filed it,
+      // not who last touched it, and a management follow-up would otherwise
+      // erase the reporter." The same sentence applies here word for word.
+      //
+      // STILL SERVER-AUTHORED. What changed is WHEN, never WHO decides: the
+      // caller has never been able to supply these and still cannot. A re-grant
+      // after a revocation DOES take a new timestamp, because the old grant date
+      // is not the answer to "when did the current consent begin".
+      //
+      // THREE PAIRS, ONE LINE-SHAPE. `revoked_at`/`active` had the identical
+      // defect in the same object literal; fixing only the reported one would
+      // have left it.
+      const famWasConsent = famPrior ? famPrior.mar_consent === true : false;
+      const famWasActive = famPrior ? famPrior.active !== false : true;
+      const famGrantedAt = famConsent
+        ? (famWasConsent ? (famPrior.consent_granted_at || famNow) : famNow)
+        : null;
+      const famGrantedBy = famConsent
+        ? (famWasConsent ? (famPrior.consent_granted_by || session.employee_id || null)
+                         : (session.employee_id || null))
+        : null;
+      const famRevokedAt = famConsent
+        ? null
+        : (famWasConsent || !famPrior ? famNow : (famPrior.consent_revoked_at || famNow));
+      const famDeactivatedAt = famActive
+        ? null
+        : (famWasActive || !famPrior ? famNow : (famPrior.revoked_at || famNow));
       const famRow = {
         license_hash: licHash, app_id: 'sairncare',
         contact_id: String(famP.contact_id), resident_id: String(famP.resident_id),
@@ -11434,11 +11493,11 @@ module.exports = async (req, res) => {
         mar_consent: famConsent,
         // GRANTED BY THE VERIFIED SESSION, NEVER THE BODY. Who authorised a
         // disclosure is not something the caller gets to state.
-        consent_granted_at: famConsent ? famNow : null,
-        consent_granted_by: famConsent ? (session.employee_id || null) : null,
-        consent_revoked_at: famConsent ? null : famNow,
+        consent_granted_at: famGrantedAt,
+        consent_granted_by: famGrantedBy,
+        consent_revoked_at: famRevokedAt,
         active: famActive,
-        revoked_at: famActive ? null : famNow,
+        revoked_at: famDeactivatedAt,
         notes: famP.notes == null ? null : String(famP.notes),
         recorded_by: session.employee_id || null,
         updated_at: famNow
