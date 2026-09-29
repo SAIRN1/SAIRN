@@ -2753,6 +2753,22 @@
         "tools/defect_register.py",
         "tools/push_retry.py"
       ]
+    },
+    {
+      "id": "fourth-1790701529",
+      "session": "fourth",
+      "subject": "tooling",
+      "task": "print the complete PIN restore block with real derived hashes and an insert-if-missing path and commit it to sql/; an evidence-before-prune rule recording git fsck unreachable output and object mtimes to a dated record before any prune gc or reflog expire; the SAIRNcare witness migration and the refuse-a-self-witnessed-count code; find and fix the register re-seat livelock so it reaches a fixed point. FILES: sql/sairncare_witness_schema.sql sql/restore_demo_pins_2026-09-29.sql tools/credential_purge_check.py tools/push_retry.py",
+      "claimed_at": "2026-09-29T17:05:29Z",
+      "claimed_at_epoch": 1790701529.0878396,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "sql/restore_demo_pins_2026-09-29.sql",
+        "sql/sairncare_witness_schema.sql",
+        "tools/credential_purge_check.py",
+        "tools/push_retry.py"
+      ]
     }
   ],
   "refusals": [
@@ -2851,6 +2867,19 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "same file or resource: api/sd-data.js",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-29T17:04:13Z",
+      "my_subject": "tooling",
+      "my_task": "discharge cody's 62h sb_ts configurable-overtime-threshold obligation by driving it; print the complete PIN restore block with real derived hashes and an insert-if-missing path and commit it to sql/; an evidence-before-prune rule recording git fsck unreachable and object mtimes to a dated record before any prune gc or reflog expire, with a sweep naming every hit; the SAIRNcare witness migration and the refuse-a-self-witnessed-count code; re-derive the sv_herdhealth and locations register cells from HEAD; find and fix the register re-seat livelock so it reaches a fixed point; print a non-author review obligation for the sen_visits self-correction flag; print ready-to-paste replacement predicates for cody's reservation-lock evidence gate; and sweep every gate probe and sweep for whole-file substring matching and fixed-size windows. FILES: sql/sairncare_witness_schema.sql sql/restore_demo_pins_2026-09-29.sql tools/credential_purge_check.py tools/defect_register.py tools/push_retry.py docs/CRITICALITY-TIERS.md",
+      "other_session": "cody",
+      "other_subject": "cody-sweep2",
+      "other_task": "tools/dead_rule_sweep.py tests/run_dead_rule_sweep_probe.py",
+      "other_claimed_at": "2026-09-29T14:07:07Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"probe sweep\"",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
