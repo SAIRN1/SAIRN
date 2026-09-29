@@ -2802,6 +2802,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "fourth-1790703489",
+      "session": "fourth",
+      "subject": "purgework",
+      "task": "tools/credential_purge_check.py",
+      "claimed_at": "2026-09-29T17:38:09Z",
+      "claimed_at_epoch": 1790703489.0650752,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
