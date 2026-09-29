@@ -67,6 +67,23 @@ SHAPES = [
     ('aws_access_key', re.compile(rb'AKIA[0-9A-Z]{16}')),
     ('private_key', re.compile(rb'-----BEGIN [A-Z ]*PRIVATE KEY-----')),
     ('slack_token', re.compile(rb'xox[baprs]-[A-Za-z0-9-]{20,}')),
+    # ── A DEMO-CREDENTIAL FILE, BY SHAPE AND NOT BY NAME (2026-09-29) ──────
+    # tools/demo_credentials_check.py reads PINs from an untracked local file.
+    # That file is gitignored, which stops the ACCIDENT and not the RENAME: a
+    # copy saved as notes.json is staged without a murmur, and the ignore rule
+    # is the only thing that was protecting it.
+    #
+    # THE SHAPE IS A PIN BESIDE A LICENCE KEY, which is what makes it a
+    # credential rather than a number. A bare eight-digit string is a date, an
+    # id, a row count and a thousand other things; `"pin":` next to
+    # `"license_key":` in the same blob is a sign-in pair and nothing else. Both
+    # orders, because JSON key order is not promised by anything.
+    #
+    # NOT ANCHORED TO A FILENAME. That is the whole point -- the ignore rule
+    # already covers the name.
+    ('demo_credential_file',
+     re.compile(rb'"pin"\s*:\s*"[0-9]{4,12}"[\s\S]{0,400}?"license_key"\s*:'
+                rb'|"license_key"\s*:[\s\S]{0,400}?"pin"\s*:\s*"[0-9]{4,12}"')),
 ]
 
 # A blob that SAYS it is about credential shapes. Travels with the file.

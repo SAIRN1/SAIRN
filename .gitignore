@@ -36,3 +36,8 @@ tools/vendor/
 .claude/github_pat*
 .claude/*token*
 .claude/*secret*
+
+# Demo credentials, read by tools/demo_credentials_check.py. NEVER COMMITTED.
+# The tool has no fallback and no default: if this file is absent it exits 2
+# COULD NOT RUN rather than reporting a clean sweep of nothing.
+.demo-credentials.local.json
