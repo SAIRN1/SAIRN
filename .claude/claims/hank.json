@@ -3307,8 +3307,8 @@
       "task": "queue23: the patent confirmation line in the fact sheet; the SAIRNdesign invoice A1 403 error-path fix distinguishing an auth refusal from a transport failure without rolling back the local row; recording the B1 and C1 review findings; the leg_petcases and leg_processions auditor findings into the open-work index plus an msb_sale_hours row of its own; tools/hover_routing_gap_check.py and tools/hook_integrity_check.py both report-only with fixtures first; the plugin_upgrade_check credential-lookup de-duplication onto gh_token; sv_mobilevet sdn_samples leg_monuments leg_obituaries sv_wildliferehab cell reads; the full SAIRNgrounds citation repoint; the SAIRNbuild cloud-audit doc; and the directory-and-filename-pattern enumeration sweep. SUBJECT NAMED PER PR 4.3 FILES: docs/FACT-SHEET-2026-09-29.md sairndesign.html docs/SAIRN-OPEN-WORK-INDEX.md docs/CRITICALITY-TIERS.md tools/hover_routing_gap_check.py tests/run_hover_routing_gap_probe.py tools/hook_integrity_check.py tests/run_hook_integrity_probe.py docs/hook-manifest.json tools/plugin_upgrade_check.py tests/run_plugin_upgrade_token_probe.py tools/pattern_enumeration_sweep.py tests/run_pattern_enumeration_probe.py docs/2026-09-29-sairnbuild-cloud-audit.md docs/2026-09-29-gray-error-check-scope.md docs/2026-09-29-write-site-basis-rule-scope.md",
       "claimed_at": "2026-09-29T11:52:16Z",
       "claimed_at_epoch": 1790682736.4041667,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T13:56:10Z",
       "files": [
         "docs/2026-09-29-gray-error-check-scope.md",
         "docs/2026-09-29-sairnbuild-cloud-audit.md",
