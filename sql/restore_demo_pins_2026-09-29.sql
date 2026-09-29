@@ -61,6 +61,15 @@ select 'SV-PINNACLE-2026' as licence, employee_id, role, active,
 -- failed_attempts and locked_until are RESET as part of the restore: a PIN
 -- that is right but a counter that is not still refuses, and leaving them
 -- would make this fix look like it had not worked.
+-- ── ONE TRANSACTION, AND THE GUARD IS INSIDE IT ─────────────────────
+-- The push gate refused this file twice: once with no guard, and once
+-- with a guard but NO TRANSACTION -- "a guard here could not roll back".
+-- That is not a formality. Without begin/commit the upsert lands, THEN
+-- the guard raises, and the write it was meant to prevent is already
+-- durable. Inside a transaction, a raising guard rolls the whole thing
+-- back and NOTHING was written.
+begin;
+
 -- SB-PINNACLE-2026 (sairnbiz)
 insert into public.sb_employee_auth
   (license_hash, employee_id, display_name, role, pin_hash, pin_salt,
@@ -98,29 +107,6 @@ on conflict (license_hash, employee_id) do update
        failed_attempts = 0,
        locked_until    = null,
        updated_at      = now();
-
--- ═══ 3. CONFIRM -- one row per licence, active, counters clear ═══════════
--- Expect exactly one row from each, active = true, failed_attempts = 0,
--- locked_until null, and updated_just_now = true. A missing row here means
--- the insert did not run -- do not assume it did.
-select 'SB-PINNACLE-2026' as licence, employee_id, role, active, failed_attempts,
-       locked_until,
-       (updated_at > now() - interval '10 minutes') as updated_just_now
-  from public.sb_employee_auth
- where license_hash = '05c4e1e1fa05d6a1daeb294a5b2625c8d13929e017e2f504885cb48e9bc6cc4a'
-   and employee_id  = 'sairn-demo-owner';
-
-select 'SV-PINNACLE-2026' as licence, employee_id, role, active, failed_attempts,
-       locked_until,
-       (updated_at > now() - interval '10 minutes') as updated_just_now
-  from public.sairnvet_employee_auth
- where license_hash = '25413f81bcd80cce36e57a0d72c6547e5368a3f84a2aee2bf34bd90af533c740'
-   and employee_id  = 'sairn-demo-owner';
-
--- ═══ THEN, AND THIS IS THE REAL CONFIRMATION ════════════════════════════
---   python tools/demo_credentials_check.py
--- Both must move from WRONG-PIN to OK. The SQL above only proves the row
--- changed; only a sign-in proves the credential works.
 
 -- ═══ 4. RECOVERABILITY GUARD (PR 3.4) ═══════════════════════════════════
 -- REQUIRED BY THE PUSH GATE ON ANY SQL THAT WRITES CREDENTIAL ROWS, and it
@@ -175,3 +161,32 @@ begin
   end if;
   raise notice 'SV-PINNACLE-2026 guard passed: % row(s), % active provisioner(s).', rows, prov;
 end $$;
+
+commit;
+
+-- If either guard raised, NOTHING above was written -- the whole
+-- transaction rolled back, and the CONFIRM below will show the old
+-- state rather than a half-applied one.
+
+-- ═══ 3. CONFIRM -- one row per licence, active, counters clear ═══════════
+-- Expect exactly one row from each, active = true, failed_attempts = 0,
+-- locked_until null, and updated_just_now = true. A missing row here means
+-- the insert did not run -- do not assume it did.
+select 'SB-PINNACLE-2026' as licence, employee_id, role, active, failed_attempts,
+       locked_until,
+       (updated_at > now() - interval '10 minutes') as updated_just_now
+  from public.sb_employee_auth
+ where license_hash = '05c4e1e1fa05d6a1daeb294a5b2625c8d13929e017e2f504885cb48e9bc6cc4a'
+   and employee_id  = 'sairn-demo-owner';
+
+select 'SV-PINNACLE-2026' as licence, employee_id, role, active, failed_attempts,
+       locked_until,
+       (updated_at > now() - interval '10 minutes') as updated_just_now
+  from public.sairnvet_employee_auth
+ where license_hash = '25413f81bcd80cce36e57a0d72c6547e5368a3f84a2aee2bf34bd90af533c740'
+   and employee_id  = 'sairn-demo-owner';
+
+-- ═══ THEN, AND THIS IS THE REAL CONFIRMATION ════════════════════════════
+--   python tools/demo_credentials_check.py
+-- Both must move from WRONG-PIN to OK. The SQL above only proves the row
+-- changed; only a sign-in proves the credential works.
