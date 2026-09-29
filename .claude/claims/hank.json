@@ -3285,6 +3285,20 @@
         "tests/run_rebase_state_guard_probe.py",
         "tools/rebase_state_guard.py"
       ]
+    },
+    {
+      "id": "hank-1790679259",
+      "session": "hank",
+      "subject": "hank",
+      "task": "queue22 item 6: the routed criticality-tier findings on the register-owner side -- msb_sale_hours integrity B to A, real field lists for sv_mobilevet and sdn_samples, the false no-PII basis on leg_monuments and leg_obituaries, the money-limb Tier A question on sv_financials dnt_vendor_orders leg_insurance and msb_food_waste, sv_wildliferehab as a possible state-reportable record, and the SAIRNgrounds citation offset of 25 lines at and after 1711 from dc074e59. Plus the credential-locations enumeration already landed and the reporting rule that a stated start is not a start. SUBJECT NAMED PER PR 4.3 FILES: docs/CRITICALITY-TIERS.md docs/2026-09-28-reporting-rules.md",
+      "claimed_at": "2026-09-29T10:54:19Z",
+      "claimed_at_epoch": 1790679259.732436,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/2026-09-28-reporting-rules.md",
+        "docs/CRITICALITY-TIERS.md"
+      ]
     }
   ],
   "refusals": [
