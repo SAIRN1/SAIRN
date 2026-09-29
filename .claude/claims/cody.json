@@ -2635,6 +2635,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "cody-1790686747",
+      "session": "cody",
+      "subject": "cody-usageline",
+      "task": "make the review gate usage line and its real argument order testable against each other",
+      "claimed_at": "2026-09-29T12:59:07Z",
+      "claimed_at_epoch": 1790686747.1468976,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
@@ -2746,6 +2757,19 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "same file or resource: known-bad",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-29T12:58:28Z",
+      "my_subject": "cody-claimtool",
+      "my_task": "sairn_claim.py refuses against EXPIRED claims and against DISCLOSURE text -- register the defect and fix it, tests first",
+      "other_session": "fourth",
+      "other_subject": "platform",
+      "other_task": "discharge hank's 71h alf_mar and mech_credentials review obligation into the ledger against the verdict document already written; then: report the credential purge and read-mapper sweep status by item with shas and do whichever is not done; make the family-contact consent timestamp stamp once on the false-to-true transition and never re-stamp, tests first with a known-bad control and a live drive; a scope note for server-side witness verification on controlled-substance counts; a self-correction FLAG on the clock-correction path; the hire-anniversary refusal-to-answer and the leap-day window_from; re-derive sf_vehicle_service's tier and gate it if it is ungated Tier A; a report-only staging sweep; three register cell corrections from the hover auditor; and a sweep of probe and tool headers for stateful claims that are not derived at run time. FILES: docs/tier-a-reviews.json api/sd-data.js api/_lib/compliance-rules.js docs/defect-density-register.json",
+      "other_claimed_at": "2026-09-29T11:44:16Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"first tests\"",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
