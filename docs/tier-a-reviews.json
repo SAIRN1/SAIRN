@@ -4412,6 +4412,29 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-29T10:40:18Z",
+      "opened_at_sha": "d81e71cf3cbe6700a1022bb7eb51821569b25f8f",
+      "resources": [
+        "sf_accounts",
+        "sf_ledger",
+        "sf_tickets",
+        "sf_vehicle_service"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/sd-data.js"
+      ],
+      "what": "sf_trustee_audits wired into api/sd-data.js for the first time: SD_SESSION_GATED ['read','write'] and an SF_RESOURCES key-column mapping, plus registration in api/_resources/sairnfreedom.js, SF_SYNCED in sairnfreedom.html, and a new table with RLS and a select/insert/update-only grant in sql/sairnfreedom_data_schema.sql. It was the 43rd storage key and was on NONE of the lists -- 1 of 36 collections with no route to a server -- so the quarterly trustee audit (auditor name, fidelity bond, bond expiry, the ORC 2915 financial-controls attestation) lived in one browser. WHAT A REVIEWER SHOULD ATTACK: (1) the gate decision -- is read AND write correct for this resource, or should read be open like the ungated 20; (2) SF_RESOURCES 'trustee_audit_id' against the schema column, since a mismatch is a 400 from PostgREST on every write; (3) whether adding a resource to SD_SESSION_GATED can break any EXISTING caller of api/sd-data.js that does not attach X-SD-Auth; (4) tests/sairnfreedom_key_reconciliation.js A1 -- the seven exclusions are RESTATED in the test rather than parsed out of the registry comment, and a reviewer should check that duplication is the right call rather than a second source of truth.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-29T10:40:18Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
