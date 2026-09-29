@@ -2939,8 +2939,8 @@
       "task": "live preview check on the demo licence before an outside HR and accounting professional uses the app tonight: probe every sb_ resource for provisioning, drive the app with real clicks through employee, timesheet, payroll, purchase order, goods receipt, matched bill, unmatched bill, vendor, invoice, expense and the dashboard KPIs, reload after each step to prove server persistence, check empty states for invented numbers, fix what is in files I can claim, and write the result plus a pasteable licence-scoped reset block. SUBJECT NAMED PER PR 4.3 FILES: docs/2026-09-29-sairnbiz-preview-check.md sairnbiz.html",
       "claimed_at": "2026-09-29T12:44:48Z",
       "claimed_at_epoch": 1790685888.75012,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T13:22:37Z",
       "files": [
         "docs/2026-09-29-sairnbiz-preview-check.md",
         "sairnbiz.html"
