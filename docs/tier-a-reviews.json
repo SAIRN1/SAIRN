@@ -4435,6 +4435,27 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-29T10:44:09Z",
+      "opened_at_sha": "4cc70be8999950f0da44e50f302e433a37ab7f06",
+      "resources": [
+        "alf_billing",
+        "invoices"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/sd-data-alf-caregiver-scope.test.js"
+      ],
+      "what": "api/sd-data-alf-caregiver-scope.test.js gains ONE ROW in its ADMIN_REFUSALS table: alf_billing / derive_charges, driven as `caregiver`. No api/ handler is changed by this commit -- the gate it drives has been there all along and is correct. What was absent was any evidence it fires.\n\nHOW IT WAS FOUND, because that matters more than the row: `python tools/role_gate_negative_coverage.py --ablate alf_billing` deletes the resource's three ALF_MANAGEMENT_ROLES blocks one at a time and runs all 411 suites against each deletion. It reported CAUGHT / *** SILENT *** / CAUGHT. The two caught are `read` and `write`, already in the table. The silent one was `derive_charges`.\n\nTHE SILENT ONE IS THE SHARPEST OF THE THREE. `read` returns stored invoices; `derive_charges` DERIVES a named resident's charges from their MAR administrations and activities and returns room_board_amount, care_amount, private_total, hcbs_claim_amount and the care-level breakdown. Deleting its gate would have handed a caregiver the full billing position of any resident they can name -- and the two gates either side would still have gone red, so the RESOURCE would have looked covered while a third of it was not.\n\nRE-ABLATED AFTER THE ROW: 3 of 3 CAUGHT, api/sd-data.js restored byte-identical, 47 arms pass.\n\nATTACK THESE FOUR:\n\n(1) THE ARM ASSERTS 403 FORBIDDEN AND NOT MUCH ELSE, which is what the loop it joins does for the other ten rows. `derive_charges` is a READ-shaped action, so the loop's `firstPost(calls) === undefined` assertion -- which only runs for `action === 'write'` -- does not apply and nothing checks that no upstream read was issued before the refusal. Decide whether a refused derive_charges should also be asserted to have queried nothing. I did not add it because the gate is above every fetch in that branch and asserting it would be asserting the line order rather than the property, but the same argument would excuse it for `read` too and that row has been there longer than I have.\n\n(2) I SENT A PAYLOAD I DID NOT NEED TO. The role gate sits ABOVE the `resident_id`/`month` validation, so a caregiver is refused 403 with no payload at all. I send `{resident_id: 'C-MINE', month: '2026-09'}` anyway, because an arm that passes on a malformed request is testing the 400 rather than the gate -- but that reasoning depends on the line ORDER I just said I would not assert in (1). If the gate ever moves below the validation, this arm goes on passing and starts measuring the 400. Say if that wants an explicit ordering arm rather than a comment.\n\n(3) THE BUCKET FINDING IS THE ONE I AM LEAST SURE OF. After wiring this arm the static screen STILL files alf_billing under \"NOT DRIVEN by any suite at all\", because `driven()` needs a role LITERAL near the resource name and ADMIN_REFUSALS passes the role as a call argument. I measured five of sixteen not-driven resources as driven by that one table -- alf_billing, alf_compliance_rules, alf_payer_rules, alf_signals, alf_staff -- but I only ABLATED alf_billing. The other four are inferred from the table, not proven by deletion, and inferring coverage is the exact error the screen is making. Check whether that five should be stated as \"at least one proven, four inferred\" rather than as five.\n\n(4) I DID NOT TOUCH THE TOOL, and that is a judgement. `role_gate_negative_coverage.py` is another session's and its `driven()` needs a real change rather than a widened regex. So the screen still reports a resource as undriven that the ablation proves is covered, and will go on doing so. Decide whether leaving a tool knowingly wrong for a cycle is right here, or whether the row I opened is doing less work than a fix.\n\nTier A resources the gate matched: alf_billing and invoices. `invoices` is matched from the word inside this suite's other rows, not from anything this change touches.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-29T10:44:09Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
