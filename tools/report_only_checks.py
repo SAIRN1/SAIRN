@@ -154,6 +154,104 @@ def by_section(rc, out):
 
 
 REGISTRY = [
+    # ── THREE ENTRIES LANDED 2026-09-29 (cody) ─────────────────────────────
+    # All three checkers existed with controls declared on both ends and NONE
+    # was in this registry, so nothing ran them on a cadence and
+    # checker_control_check.promoted() -- which reads this list and nothing else
+    # -- did not count their pairs. They were written up as paste-ready text in
+    # docs/2026-09-29-registry-entries-cody.md first; this is that text landed
+    # in its real target rather than left for somebody to paste.
+    {
+        'tool': 'assertion_label_shape_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-29, report-only and it must STAY report-only. It '
+                    'reports a TEST ARM whose label claims a universal while '
+                    'its comparison is one-sided, and the repair is to tighten '
+                    'the assertion -- but A GATE HERE WOULD BE CLEARED BY '
+                    'REWORDING THE LABEL, which makes the honest fix the '
+                    'expensive one and the dishonest fix a two-word edit. '
+                    'Control: tests/run_assertion_label_shape_probe.py.',
+        'catches': 'a test arm labelled "every / all / no X" that is actually '
+                   'asserting a floor, or a bare truthiness -- `>= 4`, or `if '
+                   'rows`, under a label claiming every answer carries the '
+                   'limits',
+        'why_it_matters': 'ITS FIRST LIVE JAVASCRIPT RUN FOUND ONE IN THE '
+                          'AUTHOR\'S OWN SUITE. api/_lib/sc-denial-reconcile.'
+                          'test.js asserted `limits.length >= 4` under the '
+                          'label "the limits travel with EVERY answer"; the '
+                          'module publishes five, so one could be dropped -- '
+                          'including the limit saying no probability is '
+                          'computed, the single claim that app has explicitly '
+                          'refused elsewhere -- and the arm stayed green. The '
+                          'two tiers are printed SEPARATELY and the output says '
+                          'they are not added together: CONFIRMED is a finding, '
+                          'ADVISORY is the exhaustive word sitting in the '
+                          'rationale rather than the claim. Python goes through '
+                          '`ast`, JavaScript through a balanced scan over a '
+                          'comment-stripped, string-blanked copy, and a file '
+                          'whose two copies differ in length is REFUSED under '
+                          'COULD NOT RUN rather than counted clean',
+    },
+    {
+        'tool': 'entry_point_scope_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-29, report-only. Static, seconds, and its '
+                    'population moves the moment a tool grows a flag or a '
+                    'subcommand -- exactly the change nobody announces. '
+                    'Control: tests/run_entry_point_scope_probe.py, which '
+                    'reconstructs the REAL pre-fix shape of tier_a_review_gate '
+                    'in memory and demands the tool report it, so a clean sweep '
+                    'is evidence rather than decoration.',
+        'catches': 'a tool whose several real-data entry points enumerate '
+                   'DIFFERENT MEMBERS OF ONE POPULATION FAMILY -- the copy a '
+                   'human invokes is not the copy that enforces',
+        'why_it_matters': 'THE NAMED INSTANCE COST A REAL SESSION A REAL PUSH. '
+                          'tier_a_review_gate.py answered from the WORKING TREE '
+                          'on a bare run and from a merge-base commit range in '
+                          'the push hook; a session was told "No file in this '
+                          'change names a Tier A resource" and was then DENIED '
+                          'by the same tool naming seven. Both answers were '
+                          'true about what they read and neither was about the '
+                          'question asked. The criterion is NOT "two doors '
+                          'differ" -- a door reading no scope accessor is '
+                          'answering a different question and is allowed to, '
+                          'which is why the FIXED tool must stay silent. It '
+                          'reads dispatch tables as well as flags and ABLATES '
+                          'that layer on every run rather than claiming it: '
+                          'claim_provenance.py has four subcommand doors and no '
+                          'flag anywhere, and was reported as having one',
+    },
+    {
+        'tool': 'parse_zero_third_state_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-29, report-only, and it PROPOSES rather than '
+                    'applies (discipline 11 -- a detector that blesses its own '
+                    'fix is the fail-open one step later). SOME OF THE CORPORA '
+                    'IT NAMES ARE ALLOWED TO BE EMPTY: an outgoing-file list is '
+                    'empty on a clean push and must not fail, so every proposed '
+                    'guard needs a human decision before it lands. Control: '
+                    'tests/run_parse_zero_third_state_probe.py.',
+        'catches': 'a checker whose corpus enumeration returns nothing, which '
+                   'it then reports as a clean sweep -- "read 0 file(s) / CLEAN"',
+        'why_it_matters': 'IT IS THE COVERAGE "0 of 0 is not 100%" FAILURE '
+                          'MOVED DOWN A LEVEL, and it is silent in every '
+                          'direction: the git ls-files pattern stops matching '
+                          'after a directory move, the subprocess fails and '
+                          'returns an empty string, an extension changes. None '
+                          'of those is a repo with nothing wrong in it and none '
+                          'prints an error. Five real sites on the day it was '
+                          'built, all fixed, including one that printed COULD '
+                          'NOT MEASURE and returned exit 0 -- so every reader '
+                          'of the exit code saw a pass and the only reader that '
+                          'mattered never read the text. THE COULD-NOT-TELL '
+                          'FIGURE IS PUBLISHED RATHER THAN FOLDED INTO CLEARED: '
+                          'it judges a small minority of tools/, and "no corpus '
+                          'variable I could find" and "safe" are different '
+                          'statements',
+    },
     {
         'tool': 'fact_sheet_regenerates.py',
         'mode': 'once',

@@ -1,5 +1,41 @@
 # SAIRNcode against CodaMetrix and Nym Health — the scoped build list
 
+> ## ⚠ CORRECTED 2026-09-29 — READ THIS BEFORE THE LIST
+>
+> **§0's autonomy measurement below is WRONG, and item 1 is already built.**
+>
+> §0 says `routing` appears **0 times** in `sairncode.html` and that "there is a
+> review queue and there is a derived confidence, and **nothing connects them**".
+> Re-measured on `origin/main`: `routing` appears **20 times**, and the
+> connection is three lines inside `scDeriveCodedItemConfidence()` —
+>
+> ```js
+> review_status: basis.length ? 'needs_human_review' : 'auto_assigned',
+> ```
+>
+> — consumed by `scRouteCodedItems()`, which splits the queue so auto-assigned
+> items stop consuming a coder's attention. Both landed in **`f9a3b381`,
+> 2026-08-20**, five and a half weeks before this document called them missing.
+>
+> **How a word count produced a wrong answer about built code:** the feature is
+> spelled `scRouteCodedItems`, `review_status`, `auto_assigned`,
+> `needs_human_review`. A vocabulary drawn from a *competitor audit* was used to
+> measure *this app*, and the absence of the competitor's words was read as the
+> absence of the capability.
+>
+> **So item 1 — "Route on the confidence that already exists" — is DONE, not
+> small.** Strike it rather than re-scope it.
+>
+> §0's *other* claim was re-checked the same day and HOLDS: SAIRNcode's
+> explainability is span-level and independently verified, which is a stronger
+> claim than any vendor in either audit makes. The autonomy measurement was
+> wrong in the same direction — it understated what this app already does.
+>
+> What is actually open is the **SCOPE** of the autonomy that edge already
+> grants, and the binary confidence behind it, where `high` means the ABSENCE OF
+> A RED FLAG rather than evidence the code is right. Full account:
+> **`docs/2026-09-29-sairncode-autonomy-scope-cody.md`**.
+
 **2026-09-28 (Cody). SCOPING ONLY. Nothing here is built, and nothing here should
 be built from this document alone — items 3 and 6 need a decision that is not an
 engineering decision.**
@@ -50,7 +86,15 @@ below a tunable threshold — and Nym's is the same with a more aggressive defau
 
 ## 1. The scoped list, in dependency order
 
-### Item 1 — Route on the confidence that already exists · **S** · no new judgement
+### ~~Item 1 — Route on the confidence that already exists~~ · **ALREADY BUILT, 2026-08-20 (`f9a3b381`)**
+
+> **STRUCK 2026-09-29.** `scDeriveCodedItemConfidence()` sets
+> `review_status` from the derived band and `scRouteCodedItems()`
+> splits the queue on it. The paragraph below describes work that
+> was finished five and a half weeks before this document was
+> written; it is kept, struck, rather than deleted, because the
+> reason it was wrong is worth more than the space it takes.
+
 `scDeriveCodedItemConfidence()` computes a band and nothing acts on it. Add a
 configured threshold and a routing decision per coded item: below it, the item
 waits for a human (which is today's behaviour for everything); at or above it, the

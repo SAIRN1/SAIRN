@@ -50,6 +50,9 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 
 | Requirement (what it catches) | Tool | Evidence at promotion |
 |---|---|---|
+| a test arm labelled "every / all / no X" that is actually asserting a floor, or a bare truthiness -- `>= 4`, or `if rows`, under a label claiming every answer carries the limits | `assertion_label_shape_check.py` |  |
+| a tool whose several real-data entry points enumerate DIFFERENT MEMBERS OF ONE POPULATION FAMILY -- the copy a human invokes is not the copy that enforces | `entry_point_scope_check.py` |  |
+| a checker whose corpus enumeration returns nothing, which it then reports as a clean sweep -- "read 0 file(s) / CLEAN" | `parse_zero_third_state_check.py` |  |
 | a figure published in docs/FACT-SHEET-2026-09-29.md that the command beside it no longer produces | `fact_sheet_regenerates.py` |  |
 |  | `verification_owed_report.py` |  |
 | a handler that receives a model answer and WRITES it with no human approval step between | `ai_action_approval_audit.py` | REAL RUN 2026-09-16: 74 AI call sites across 17 app files. 14 WRITES_UNGATED, 0 GATED_IN_BODY, 39 RENDER_ONLY, 21 NO_WRITE. The zero is the striking figure -- not one call site on this platform has an explicit confirm between the model answer and the write -- and the 39 are safe for a structural reason rather than a checked one. Named rows include sairnbuild.html aiAsk and two sairngrounds handlers |
@@ -869,7 +872,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
   test files on disk                 812   tests/**, api/** (both walked)
   open-work rows citing a test       378   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 10   sairn_push_gate_hook.GUARD_TESTS
-  report-only registry                67   report_only_checks.REGISTRY
+  report-only registry                70   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     75   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   sairn_push_gate_hook.py
 ```
