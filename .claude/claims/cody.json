@@ -2643,8 +2643,8 @@
       "task": "make the review gate usage line and its real argument order testable against each other",
       "claimed_at": "2026-09-29T12:59:07Z",
       "claimed_at_epoch": 1790686747.1468976,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T13:53:13Z",
       "files": null
     },
     {
