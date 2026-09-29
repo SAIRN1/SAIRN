@@ -2780,6 +2780,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "fourth-1790703362",
+      "session": "fourth",
+      "subject": "pushwork",
+      "task": "tools/push_retry.py tests/run_reseat_fixed_point_probe.py",
+      "claimed_at": "2026-09-29T17:36:02Z",
+      "claimed_at_epoch": 1790703362.035507,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
@@ -2930,6 +2941,32 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "same app: sairncare",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-29T17:33:56Z",
+      "my_subject": "guardwork",
+      "my_task": "tools/employee_auth_guard_check.py tests/run_employee_auth_guard_probe.py tools/push_retry.py tests/run_reseat_fixed_point_probe.py tools/credential_purge_check.py sql/sairncare_witness_schema.sql db/schema_snapshot.json docs/2026-09-29-register-cell-replacements-fourth.md",
+      "other_session": "hank",
+      "other_subject": "hank",
+      "other_task": "queue25: the fourth-transport arm rewritten so the synthetic old-shape caller fails it, known-bad control first; the citation-drift-hook fourth path decided under the could-not-run rule; the 32 and 6 uncited register claims re-read or downgraded; the hedge-carry false DROPPED root-caused and fixed; the 16 refused and 12 could-not-tell reseat rows each given their reason, and the tool extended where it can be made to tell; the five idempotence timeouts rerun with a longer bound; a read-only confirmation that the relocated auditor tool path is invisible to every build-agent gate, glob, denominator and defect count; and an audit of every arm that asserts on a MESSAGE rather than on behaviour, each mutated in both directions.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hank.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. Register cells needing a file another session holds are delivered as replacement TEXT in a doc I own; the holder and the verbatim refusal go in my report.\n\nSUBJECT NAMED PER PR 4.3 FILES: tests/sairncare_transport_refusal.js tools/citation_no_source_report.py tools/hedge_carry_check.py tests/run_hedge_carry_probe.py tools/tier_a_review_gate.py tests/run_tier_a_reseat_probe.py tools/idempotence_double_run.py tools/message_assertion_audit.py tests/run_message_assertion_probe.py docs/2026-09-29-register-cells-hank.md docs/SAIRN-OPEN-WORK-INDEX.md docs/2026-09-29-hover-path-visibility.md",
+      "other_claimed_at": "2026-09-29T17:21:49Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same app: sairncare",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-29T17:35:38Z",
+      "my_subject": "guardwork",
+      "my_task": "tools/push_retry.py tests/run_reseat_fixed_point_probe.py tools/credential_purge_check.py db/schema_snapshot.json",
+      "other_session": "hank",
+      "other_subject": "hank",
+      "other_task": "queue25: the fourth-transport arm rewritten so the synthetic old-shape caller fails it, known-bad control first; the citation-drift-hook fourth path decided under the could-not-run rule; the 32 and 6 uncited register claims re-read or downgraded; the hedge-carry false DROPPED root-caused and fixed; the 16 refused and 12 could-not-tell reseat rows each given their reason, and the tool extended where it can be made to tell; the five idempotence timeouts rerun with a longer bound; a read-only confirmation that the relocated auditor tool path is invisible to every build-agent gate, glob, denominator and defect count; and an audit of every arm that asserts on a MESSAGE rather than on behaviour, each mutated in both directions.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hank.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. Register cells needing a file another session holds are delivered as replacement TEXT in a doc I own; the holder and the verbatim refusal go in my report.\n\nSUBJECT NAMED PER PR 4.3 FILES: tests/sairncare_transport_refusal.js tools/citation_no_source_report.py tools/hedge_carry_check.py tests/run_hedge_carry_probe.py tools/tier_a_review_gate.py tests/run_tier_a_reseat_probe.py tools/idempotence_double_run.py tools/message_assertion_audit.py tests/run_message_assertion_probe.py docs/2026-09-29-register-cells-hank.md docs/SAIRN-OPEN-WORK-INDEX.md docs/2026-09-29-hover-path-visibility.md",
+      "other_claimed_at": "2026-09-29T17:21:49Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"probe tools\"",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
