@@ -19532,6 +19532,63 @@
       "recurrence_open": "nothing is fixed and no sweep exists for the class: a two-person or two-role control implemented in one app server-side and in another app client-side only. SAIRNvet has the token, SAIRNcare has a dropdown, and nothing compares them."
     },
     {
+      "commit": "c0b77ce4a951",
+      "date": "2026-09-29",
+      "subject": "fix(push): the tool that exists to replace `git add -A` was using it",
+      "files": [
+        "tools/push_retry.py"
+      ],
+      "lines_added": 47,
+      "lines_removed": 2,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/push_retry.py -- the tool built to replace hand-written git add -A loops -- used git add -A in its own regenerate-after-rebase step, staging whatever happened to be in the tree into an amended commit on every push from every clone",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "ad11ef1c27e4",
+        "date": "2026-09-26",
+        "subject": "feat(methodology): the retry loop refuses to amend mid-rebase, instead of relying on somebody reading the log",
+        "lag_days": 3
+      },
+      "phase_note": "the regenerate step was written with git add -A in the commit that created the tool, forty lines below its own header quoting that exact line as the hazard it replaces",
+      "contributing_factors": [
+        {
+          "factor": "the allowlist already existed in the same file (GENERATED) and was used three lines away to decide which conflicts may be re-derived, so the correct data was present and unused",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the step stages the GENERATED paths by name; anything else unstaged or untracked is printed and left alone, and an already-staged file is deliberately untouched because that is the callers act"
+        },
+        {
+          "factor": "the file documents git add -A as the hazard it exists to prevent, and a reader who has just read that header does not expect to find the call below it -- the documentation made the code look checked",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "this is the shape rather than a fixable cause: a tool whose header argues against a pattern is the last place anybody greps for it"
+        },
+        {
+          "factor": "the same defect one level out -- the tool printed git add -A as an instruction to a human mid-rebase, which no test and no gate reads",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the advice now prints git add -- <documents> built from GENERATED, so it cannot drift from the list it describes"
+        },
+        {
+          "factor": "nothing sweeps for git add -A, git add . or git commit -a in tools, hooks and retry loops even though the staging-discipline item has been on the queue since 2026-09-28",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "the sweep is the standing queue item and is still not built; this instance was found by reading one file, not by any check"
+        }
+      ],
+      "recurrence_open": "no sweep exists. This was found by reading push_retry.py for an unrelated reason, and the staging-discipline sweep that would have found it -- enumerate every tool, script, hook and retry loop containing git add -A, git add . or git commit -a -- is still an open queue item. A pre-commit check on staged CONTENT exists (tools/staged_credential_check.py) and is the backstop that would catch a credential, but it says nothing about conflict markers or about an unrelated file being folded into somebody elses amended commit."
+    },
+    {
       "commit": "d0bb06783104",
       "date": "2026-09-29",
       "subject": "docs(claims): the matcher blocks on prose position, not ownership -- filed, unassigned",
