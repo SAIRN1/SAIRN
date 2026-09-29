@@ -2701,6 +2701,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "cody-1790690934",
+      "session": "cody",
+      "subject": "cody-orphan",
+      "task": "docs/2026-09-29-unreachable-tables-cody.md",
+      "claimed_at": "2026-09-29T14:08:54Z",
+      "claimed_at_epoch": 1790690934.0745296,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
