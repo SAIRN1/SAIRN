@@ -4498,6 +4498,30 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-29T12:46:19Z",
+      "opened_at_sha": "7d15d0a27af0fcee8be982dd49f26d541d2d06ba",
+      "resources": [
+        "alf_family_contacts",
+        "alf_incidents",
+        "sen_visits"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/sd-data-alf-consent-timestamps.test.js",
+        "api/sd-data-sen-self-correction-flag.test.js",
+        "api/sd-data.js"
+      ],
+      "what": "THREE CHANGES ACROSS TWO FILES, all of them acting on findings from the 71h and 42h Tier A reviews I discharged today. Attack in this order.\n\n(a) THE CONSENT TIMESTAMP IS NOW READ-THEN-DECIDE, AND THAT IS A NEW READ ON THE WRITE PATH. api/sd-data.js's alf_family_contacts write now fetches the prior row before building the upsert body, so it can stamp consent_granted_at/by, consent_revoked_at and revoked_at only on their transitions. ATTACK THE FAILURE MODES OF THAT READ: I return 200 provisioned:false on a 404/400 from it, which is the same shape the read path uses -- but a write that answers \"not provisioned\" when the table DOES exist and the read merely failed would silently drop a disclosure decision and tell the caller nothing was wrong. Decide whether that should be a 503 instead. Also: the read is not inside a transaction with the upsert, so two concurrent writes can both see mar_consent=false and both stamp a grant. Same check-then-write shape closed elsewhere in this file with a database RPC.\n\n(b) THE DAY-ZERO VERDICT WITHHOLDING IS A REGULATED OUTPUT CHANGE. api/_lib/compliance-rules.js no longer returns meets:false when window_days_elapsed === 0. I argue it from the module's own NO_HIRE_DATE reasoning, and the narrowness (exactly one day) is deliberate because any wider rule is a policy I should not be choosing. ATTACK THE OTHER DIRECTION: a facility evaluating on a fixed reporting date could have several people whose anniversary IS that date, and they now all read as unknown rather than non-compliant. If a state report counts nulls as passes, I have moved people out of a finding. I did not read any consumer of meets other than the module's own callers.\n\n(c) THE LEAP-DAY NORMALISATION CHANGES A PUBLISHED WINDOW BOUNDARY. A 29 February hire evaluated in a common year now anchors to 28 February instead of publishing a date that does not exist. That moves the window one day EARLIER, so it counts MORE training. I chose that direction deliberately, but it is a substantive change to a compliance boundary made from first principles and NOT from a cited authority -- nothing in the seed says what an anniversary that does not occur means. If the correct reading is 1 March, every leap-day hire's window is one day wrong in the permissive direction.\n\nALSO NOT VERIFIED LIVE. None of the three is driven against the deployment. The consent half's DEFECT was driven live; the FIX is not.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-29T12:46:19Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
