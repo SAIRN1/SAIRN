@@ -348,8 +348,8 @@
       "task": "six-item queue: self-correct and set a standing isolated-copy validation procedure after seq 351; audit every command run in H2's directory and classify read vs write; make the mirror push routine refresh TIP-BEACON.md with tests and a known-bad control; conditionally revalidate H2's two tools on an isolated copy if his commit landed; one undirected batch; resume the weighted-rotation cold-scan draw.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hover.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. One earlier attempt was refused on shared incidental vocabulary rather than a shared subject or file. Each component of this claim checks CLEAR on its own.\n\nFILES: hover_backup_mirror.py hover_tip_beacon.py hover_citation_linter.py hover_log.py hover_cold_scan_pool.py",
       "claimed_at": "2026-09-29T13:26:39Z",
       "claimed_at_epoch": 1790688399.9088428,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T13:54:39Z",
       "files": [
         "hover_backup_mirror.py",
         "hover_citation_linter.py",
