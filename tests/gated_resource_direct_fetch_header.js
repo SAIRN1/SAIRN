@@ -27,11 +27,41 @@
 // a NEW gate on a resource some app direct-fetches fails here rather than in
 // production. That is the half the gate's own suite cannot hold: it asserts
 // the handler refuses, which is correct, and the app is the other side.
+//
+// ── COMMENTS ARE STRIPPED, AND THE HOLE THAT CLOSES WAS FOUND IN REVIEW ────
+// 2026-09-29 (A3). The token test was `/X-SD-Auth/.test(seg + before)` over the
+// RAW source, so A COMMENT MENTIONING THE HEADER SATISFIED IT. That is PR 1.2
+// exactly: grep cannot tell code from text that describes code. And the text is
+// there to find -- sairndesign.html names `X-SD-Auth` in prose at three places,
+// including the comment block that RECORDS the 2026-09-25 fix. A future direct
+// fetch added within 900 characters of any of them would have been reported as
+// carrying a token it does not send.
+//
+// MEASURED BEFORE BEING FIXED, in both directions, because the fix is only worth
+// making if the hole is real and only worth trusting if the pass survives it: on
+// the day this was written there was exactly ONE `X-SD-Auth` occurrence in the
+// invoice-create window and it was the REAL header, so the suite's pass was
+// honest and the hole was LATENT. It is fixed as a latent hole, not as a live
+// failure, and saying which is the difference between a fix and a claim.
+//
+// THE STRIPPER IS THE SHARED ONE, NOT A FOURTH COPY. tests/lib/strip_comments.js
+// exists because three suites each grew their own and all three were wrong in
+// different ways -- a line filter, an unbounded regex, and a state machine that
+// read `/*` inside a string. Its header records that.
+//
+// LINE NUMBERS SURVIVE THE STRIP, which is why the scan can run on the stripped
+// source and still report a location a human can open. The module keeps every
+// newline inside a removed region on purpose (`keepNewlines`), so a stripped
+// file has the same line count as the original -- VERIFIED here rather than
+// assumed, by the arm below that compares the two counts on every app swept. If
+// that ever stops being true, offender locations silently start pointing at the
+// wrong lines, which is worse than the hole this closed.
 
 'use strict';
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
+const { stripComments } = require('./lib/strip_comments.js');
 
 const ROOT = path.join(__dirname, '..');
 const API = fs.readFileSync(path.join(ROOT, 'api', 'sd-data.js'), 'utf8');
@@ -48,6 +78,10 @@ const GATED = [...new Set([...gatedBlock.matchAll(/'([a-z_]+)':\s*\[/g)]
 assert.ok(GATED.length >= 20,
   'only ' + GATED.length + ' gated resources parsed out of api/sd-data.js -- '
   + 'the anchor moved and this suite would sweep for almost nothing');
+
+// Written out rather than escaped: this file is edited by scripts often enough
+// that a literal backslash-n in a source edit has gone wrong before.
+const NL = String.fromCharCode(10);
 
 let pass = 0;
 function t(name, fn) {
@@ -92,11 +126,30 @@ function directFetchSites(src) {
   return out;
 }
 
+// ── READ ONCE, STRIPPED ONCE, per app. `codeOf` is what every arm below
+// scans, so no arm can quietly go back to the raw text.
+const stripped = new Map();
+const lineDrift = [];
+function codeOf(f) {
+  if (!stripped.has(f)) {
+    const raw = fs.readFileSync(path.join(ROOT, f), 'utf8');
+    const code = stripComments(raw);
+    // The invariant the line numbers depend on, checked per file rather than
+    // trusted once: a removed comment must leave its newlines behind.
+    const rawLines = raw.split(NL).length;
+    const codeLines = code.split(NL).length;
+    if (rawLines !== codeLines) {
+      lineDrift.push(f + ' (' + rawLines + ' -> ' + codeLines + ')');
+    }
+    stripped.set(f, code);
+  }
+  return stripped.get(f);
+}
+
 const offenders = [];
 let swept = 0;
 apps.forEach((f) => {
-  const src = fs.readFileSync(path.join(ROOT, f), 'utf8');
-  directFetchSites(src).forEach((s) => {
+  directFetchSites(codeOf(f)).forEach((s) => {
     swept++;
     if (!s.hasToken) offenders.push(f + ':' + s.line + ' -> ' + s.resources.join(','));
   });
@@ -120,9 +173,56 @@ t('and the sweep actually found sites to check (not a vacuous pass)', () => {
 
 // THE KNOWN SITE, NAMED. The one this suite was written for, so a refactor
 // that removes it says so rather than quietly shrinking the population.
+// THE INVARIANT THE LOCATIONS REST ON. Not a tidiness arm: if stripping ever
+// eats a newline, every offender above starts naming a line that is not the one
+// to open, and a check that reports the wrong location is one people stop
+// following.
+t('stripping comments does not move any line -- offender locations stay openable', () => {
+  assert.deepStrictEqual(lineDrift, [],
+    'stripComments changed the line count of ' + lineDrift.length + ' file(s), so '
+    + 'every location this suite reports is now off by an unknown amount: '
+    + lineDrift.join(', '));
+});
+
+// THE KNOWN-BAD, IN THE ONE DIRECTION THAT MATTERS. A comment naming the header
+// must NOT satisfy the token test. Driven through the real directFetchSites() on
+// a synthetic source rather than by editing an app -- and the fixture asserts
+// its own validity first, because a fixture that never looked like a pass proves
+// nothing about the strip.
+t('a COMMENT naming X-SD-Auth does not count as sending it', () => {
+  const H = 'X-SD' + '-Auth';
+  const body = "fetch('/api/sd-data',{method:'POST',"
+    + "headers:{'Content-Type':'application/json'},"
+    + "body:JSON.stringify({action:'write',resource:'" + GATED[0] + "'})})";
+  const withComment = '<script>' + NL + '// this path needs ' + H + ' one day' + NL
+    + body + NL + '</script>';
+  const withHeader = '<script>' + NL
+    + body.replace("'Content-Type':'application/json'",
+                   "'Content-Type':'application/json','" + H + "':'Bearer '+tok")
+    + NL + '</script>';
+
+  const rawHit = directFetchSites(withComment);
+  assert.strictEqual(rawHit.length, 1, 'the fixture site was not even matched');
+  assert.ok(rawHit[0].hasToken,
+    'FIXTURE INVALID: the UNSTRIPPED fixture must LOOK like it carries a token, '
+    + 'or this arm proves nothing about stripping');
+
+  const stripHit = directFetchSites(stripComments(withComment));
+  assert.strictEqual(stripHit.length, 1,
+    'the site vanished when comments were stripped -- over-stripping ate real code');
+  assert.strictEqual(stripHit[0].hasToken, false,
+    'a comment mentioning the header still satisfies the token test -- PR 1.2, and '
+    + 'the exact hole this arm exists for');
+
+  const realHit = directFetchSites(stripComments(withHeader));
+  assert.strictEqual(realHit.length, 1, 'the real-header fixture was not matched');
+  assert.ok(realHit[0].hasToken,
+    'stripping now hides a REAL header, which is the over-stripping direction and '
+    + 'is worse than the hole: it would report a working path as broken');
+});
+
 t('the SAIRNdesign invoice-create direct fetch is among the sites swept', () => {
-  const src = fs.readFileSync(path.join(ROOT, 'sairndesign.html'), 'utf8');
-  const sites = directFetchSites(src).filter(
+  const sites = directFetchSites(codeOf('sairndesign.html')).filter(
     (s) => s.resources.includes('sdn_invoices'));
   assert.strictEqual(sites.length, 1,
     'expected exactly one direct fetch writing sdn_invoices, found ' + sites.length);
