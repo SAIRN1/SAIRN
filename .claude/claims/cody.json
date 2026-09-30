@@ -2855,6 +2855,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "cody-1790764578",
+      "session": "cody",
+      "subject": "cody-quotefix",
+      "task": "tools/sairn_claim.py tests/run_printed_command_paste_probe.py",
+      "claimed_at": "2026-09-30T10:36:18Z",
+      "claimed_at_epoch": 1790764578.8343167,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
