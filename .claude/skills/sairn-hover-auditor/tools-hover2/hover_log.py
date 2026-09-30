@@ -56,6 +56,10 @@ import time
 GENESIS = 'genesis:hover-auditor-self-log:v1'
 LOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                         'hover-audit-log.jsonl')
+# A routable resource name must be able to match a register/resource row:
+# lowercase letters, digits and underscore only. Uppercase, spaces and empty
+# tokens are refused at write time rather than stored (H1-found, 2026-09-30).
+_ROUTABLE_TOKEN_RE = re.compile(r'^[a-z0-9_]+$')
 
 # The platform repo this clone audits -- not this directory, which is the
 # private self-log. Overridable for testing (see selftest_staleness_guard(),
@@ -425,11 +429,33 @@ def append_entry(entry_type, summary, ref='', target='self', severity='',
     # as one of the comma-split target tokens, so a caller cannot route a
     # resource this entry's own target field never named.
     routable_list = []
-    if routable is not None:
-        if isinstance(routable, str):
-            routable_list = [x.strip() for x in routable.split(',') if x.strip()]
-        else:
-            routable_list = [str(x).strip() for x in routable if str(x).strip()]
+    # An absent routing field is None or -- from the CLI default -- an empty
+    # or whitespace-only string; that is ABSENCE, not a malformed token, and
+    # carries no routable_list. Only a string with real content is validated,
+    # and THEN an internal empty token (a stray comma between two real names)
+    # is a refusal rather than a silent drop.
+    if routable is not None and not (isinstance(routable, str) and routable.strip() == ''):
+        raw = routable.split(',') if isinstance(routable, str) else list(routable)
+        # Refuse a MALFORMED token rather than silently dropping or storing it:
+        # an empty token (a stray comma) and a non-lowercase or oddly-shaped
+        # name both reach tools/hover_routing_gap_check.py unusable -- an empty
+        # one as a phantom, an uppercase one as a name no register row can ever
+        # match. Do NOT normalise silently; name the offending token and refuse
+        # (H1-found, 2026-09-30). Shape: lowercase letters, digits, underscore.
+        for tok in raw:
+            tok = str(tok).strip()
+            if tok == '':
+                raise ValueError(
+                    'refusing: --routable %r contains an empty token (a stray '
+                    'or trailing comma) -- name the resources, do not leave a '
+                    'gap the router would read as a phantom' % (routable,))
+            if not _ROUTABLE_TOKEN_RE.match(tok):
+                raise ValueError(
+                    'refusing: --routable token %r is not a valid resource '
+                    'name -- lowercase letters, digits and underscore only, '
+                    'so it can match a register row. Not normalised silently, '
+                    'because a silent fix hides a caller typo.' % (tok,))
+            routable_list.append(tok)
     if routable_list and entry_type != 'finding':
         raise ValueError(
             'refusing: --routable marks a resource that needs a build '
@@ -960,6 +986,27 @@ def selftest():
     ck('a finding with NO --routable carries no routable key at all -- '
        'absence is absence, not an empty list sitting in every row',
        'routable' not in rt3)
+    # ROUTABLE TOKEN-VALIDATION fixtures, 2026-09-30 (H1-found gaps, my fix):
+    # a free-text routing field silently accepting a malformed token is a
+    # finding that reaches the routing checker unusable. Each fixture below
+    # FAILED against the pre-fix code (empty token dropped, uppercase stored
+    # verbatim, space stored verbatim) and passes only with the shape gate.
+    ck('--routable with a STRAY-COMMA EMPTY TOKEN is refused, not silently '
+       'dropped (leg_petcases,,msb_bottle_scans shape)',
+       _raises(ValueError, append_entry, 'finding', 'stray comma in routable',
+               target='rt_fixture_2,rt_fixture_3', vector='T:B/EX:NA/IM:M/SC:C',
+               source_exempt_reason='fixture',
+               routable='rt_fixture_2,,rt_fixture_3', path=path))
+    ck('--routable with an UPPERCASE token is refused, not silently '
+       'normalised (a non-lowercase name can never match a register row)',
+       _raises(ValueError, append_entry, 'finding', 'uppercase routable',
+               target='RT_UP', vector='T:B/EX:NA/IM:M/SC:C',
+               source_exempt_reason='fixture', routable='RT_UP', path=path))
+    ck('--routable with a SPACE inside a token is refused (shape: lowercase '
+       'letters, digits, underscore only)',
+       _raises(ValueError, append_entry, 'finding', 'space in routable',
+               target='rt bad', vector='T:B/EX:NA/IM:M/SC:C',
+               source_exempt_reason='fixture', routable='rt bad', path=path))
     # KNOWN-BAD CONTROL: the exact shape tools/hover_routing_gap_check.py
     # itself distinguishes -- a routable list vs. the weaker prose-fallback
     # guess out of `ref`. Prove OUR entries actually classify structured
