@@ -2764,8 +2764,8 @@
       "task": "stonedesk.html tests/stonedesk_sync_null_blob.js",
       "claimed_at": "2026-09-30T00:12:48Z",
       "claimed_at_epoch": 1790727168.028539,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T12:33:53Z",
       "files": null
     },
     {
