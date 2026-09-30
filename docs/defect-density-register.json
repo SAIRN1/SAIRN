@@ -21640,6 +21640,64 @@
       "recurrence_open": "The guard is still blind to 13 wrapper and substitution shapes -- command substitution, backticks, sh -c, env, xargs, eval, a subshell, a brace group -- and to a NAME=VALUE environment prefix, which is the ordinary way to write a non-interactive amend. All were driven and all were allowed. The header names git add -u, :/, stash and reset --hard as deliberate exclusions and says nothing about any of these, so a reader finishes that list believing it is complete. Reported in the discharge of hank's 2026-09-28T21:33:14Z obligation and NOT fixed here."
     },
     {
+      "commit": "41f0689295fb",
+      "date": "2026-09-30",
+      "subject": "fix(citation): the drift detector credited a line that names every resource at once",
+      "files": [
+        "docs/MASTER-PLAN.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/traceability-matrix.md",
+        "tests/run_citation_line_drift_probe.py",
+        "tools/citation_line_drift_check.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 524,
+      "lines_removed": 19,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "The citation-drift detector credited a line that names every resource at once. It\nasked whether a resource name appeared within 40 lines of a cited `:NNNN`, and\nsairnfreedom.html carries two blocks -- `var SF_SYNCED=[...]` at 1919-1928 and the\n`K_ACCOUNTS='sf_accounts', ...` storage-constant block at 2340-2344 -- each listing\nEVERY sf_ resource. A citation into either therefore read as sound for all 36\nresources simultaneously, and the \"corrected\" offsets were computed from the first\ntextual occurrence of the name, which is inside the sync list, so all 40 offsets\nwere measured from the same line. The app has no per-resource writer at all -- one\ngeneric sfData('write', key, r) serves them -- so the real per-resource write is\nst(K_<CONST>, ...), and the checker now resolves resource to constant to st() call\nsite and excludes any line naming two or more prefixed resources. Re-run: 41\ncitations over 28 resources, 8 SOUND, 33 DRIFTED, 0 INCONCLUSIVE. The earlier\nfigure of 40 wrong was itself wrong in both directions.",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The detector was a throwaway script in a session scratchpad and was never committed, so there is no commit that introduced it. The scratchpad copy is at 9d3f5b9f-.../scratchpad/sfdrift.py; that path is not in any repository and will not survive."
+      },
+      "contributing_factors": [
+        {
+          "factor": "The proximity heuristic was chosen because it is cheap and it looked right on the first few rows. What makes it wrong is a property of the FILE rather than of the heuristic: a line that names every resource makes any citation near it sound for all of them, and no amount of care in reading individual results would surface that -- the results all look plausible.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The checker resolves resource -> K_ constant -> st() call site, and excludes any line naming two or more prefixed resources. The exclusion is DERIVED from the line rather than a hardcoded range, so a third declaration block costs nothing."
+        },
+        {
+          "factor": "The detector was a throwaway script in a session scratchpad with no control of any kind. It produced 40 numbers that were reported as a measurement, and nothing in the repo could have contradicted them. A one-off script that produces a figure somebody will act on is a tool, whatever directory it lives in.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "It is now tools/citation_line_drift_check.py with tests/run_citation_line_drift_probe.py, 13 arms, and the known-bad arm reproduces the declaration-block match exactly."
+        },
+        {
+          "factor": "Two arms of the new control could never have passed, and the first run caught it rather than a reviewer: B1 and C1 tested `'DRIFTED' not in output`, and the summary block always prints `DRIFTED : 0`. An assertion whose negative branch is unreachable is the same class as the heuristic it was written to check.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Both parse the summary counts through one counts() helper, which records the mistake in its own docstring."
+        },
+        {
+          "factor": "The verification of the 33 corrections uses very nearly the predicate that produced them. Arm E2 re-reads each target line from the file and requires an st(K_..., ...) write for that resource, which is a genuine re-read rather than trusting the tool's output, but it cannot catch the case where st() is the wrong notion of a write site.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "Named as attack point (d) on the review obligation. A structurally different method -- reading the panel the resource renders in -- would be independent and was not done."
+        }
+      ],
+      "recurrence_open": "Only sairnfreedom was swept. Every other app on this platform has the same\ntwo-block shape -- a SYNCED list and a K_ constant block -- so the same citations\nin the same document for sv_, grd_, scp_, leg_ and the rest have never been\nchecked with a detector that excludes them. The count for those apps is unknown\nand this fix does not touch them."
+    },
+    {
       "commit": "9643cb4c3f6e",
       "date": "2026-09-30",
       "subject": "fix(probe): my own mutation arms had no baseline gate, and arm 8 had been passing VACUOUSLY",
