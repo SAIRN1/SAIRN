@@ -350,7 +350,11 @@ textarea{resize:vertical;min-height:80px;}
   <div class="ph"><div><div class="ptitle">Business Dashboard</div><div class="psub">Real-time overview &middot; Pinnacle Stone &amp; Design</div></div>
   <div class="pa"><button class="btn bo bs" onclick="csv('dashboard')">Export CSV</button><button class="btn bp bs" onclick="window.print()">Print</button></div></div>
   <div class="krow">
-    <div class="kpi"><div class="klbl">Monthly Revenue</div><div class="kval" id="k-rev">$0</div><div class="kt">vs last month</div></div>
+    <!-- NOT "Monthly Revenue / vs last month" (corrected 2026-09-30). The value
+         is invs.reduce(i.paid) over EVERY invoice on record: it is neither
+         monthly nor a comparison, and no last-month figure is computed anywhere
+         for it to be "vs". The label now says what the number is. -->
+    <div class="kpi"><div class="klbl">Cash Collected</div><div class="kval" id="k-rev">$0</div><div class="kt">All invoices, to date</div></div>
     <div class="kpi"><div class="klbl">Active Employees</div><div class="kval" id="k-emp">0</div><div class="kt">Full + Part time</div></div>
     <div class="kpi"><div class="klbl">Payroll / Month</div><div class="kval" id="k-pay">$0</div><div class="kt">All staff</div></div>
     <div class="kpi"><div class="klbl">Open Invoices</div><div class="kval" id="k-inv">0</div><div class="kt d" id="k-invamt">$0 outstanding</div></div>
@@ -358,7 +362,14 @@ textarea{resize:vertical;min-height:80px;}
   </div>
   <div class="g2">
     <div class="card"><div class="ch"><span class="ct">Headcount by Department</span></div><div class="cb" id="d-dept"></div></div>
-    <div class="card"><div class="ch"><span class="ct">Revenue Trend YTD</span></div><div class="cb" id="d-rev"></div></div>
+    <!-- RELABELLED RATHER THAN RE-SUMMED (2026-09-30, preview-check finding 7).
+         This chart sums i.paid -- money actually received in the month. The
+         accrual view (what was invoiced) is the P&L's "Invoiced Revenue by
+         Month", which sums i.amt. Changing this one's math to i.amt would have
+         made it disagree with the Cash Collected KPI directly above it, which
+         is the same cash basis, and would have duplicated a chart the P&L
+         already carries. Two charts, two named bases, one of each. -->
+    <div class="card"><div class="ch"><span class="ct">Cash Collected by Month</span></div><div class="cb" id="d-rev"></div></div>
     <div class="card"><div class="ch"><span class="ct">Recent Activity</span></div><div class="cb" id="d-activity"></div></div>
     <div class="card"><div class="ch"><span class="ct">Action Items</span></div><div class="cb" id="d-actions"></div></div>
   </div>
@@ -840,7 +851,11 @@ textarea{resize:vertical;min-height:80px;}
   <div class="g2">
     <div class="card"><div class="ch"><span class="ct">Revenue Breakdown</span></div><div class="cb" id="pl-revbk"></div></div>
     <div class="card"><div class="ch"><span class="ct">Expense Breakdown</span></div><div class="cb" id="pl-expbk"></div></div>
-    <div class="card"><div class="ch"><span class="ct">Monthly Revenue Trend</span></div><div class="cb" id="pl-monthly"></div></div>
+    <!-- Sums i.amt: what was INVOICED in the month, regardless of what was
+         collected. The dashboard's "Cash Collected by Month" is the other
+         basis. Both were titled with the word Revenue and gave different
+         figures for the same month (2026-09-30, preview-check finding 7). -->
+    <div class="card"><div class="ch"><span class="ct">Invoiced Revenue by Month</span></div><div class="cb" id="pl-monthly"></div></div>
     <div class="card"><div class="ch"><span class="ct">Margin Analysis</span></div><div class="cb" id="pl-margin"></div></div>
   </div>
 </div>
@@ -893,7 +908,10 @@ textarea{resize:vertical;min-height:80px;}
     <div class="kpi"><div class="klbl">Due This Week</div><div class="kval" id="ap-week">$0</div><div class="kt d">Pay now</div></div>
     <div class="kpi"><div class="klbl">Overdue Bills</div><div class="kval" id="ap-over">0</div><div class="kt d">Past due</div></div>
     <div class="kpi"><div class="klbl">Paid This Month</div><div class="kval" id="ap-paid">$0</div><div class="kt">Cleared</div></div>
-    <div class="kpi"><div class="klbl">Largest Vendor</div><div class="kval" id="ap-top">--</div><div class="kt">By balance</div></div>
+    <!-- "By balance" and the Vendors panel's "By spend" were two unqualified
+         phrases giving two different vendors, and a reader had no way to tell
+         they were different questions (2026-09-30, preview-check finding 11). -->
+    <div class="kpi"><div class="klbl">Largest Vendor</div><div class="kval" id="ap-top">--</div><div class="kt">Most owed right now</div></div>
   </div>
   <div class="card"><div class="cb">
     <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Vendor</th><th>Invoice #</th><th>Date</th><th>Due Date</th><th>Amount</th><th>Balance</th><th>Status</th><th>Actions</th></tr></thead>
@@ -1027,7 +1045,10 @@ textarea{resize:vertical;min-height:80px;}
   <div class="krow">
     <div class="kpi"><div class="klbl">Total Vendors</div><div class="kval" id="vn-total">0</div><div class="kt">Active</div></div>
     <div class="kpi"><div class="klbl">YTD Spend</div><div class="kval" id="vn-spend">$0</div><div class="kt">All vendors</div></div>
-    <div class="kpi"><div class="klbl">Top Vendor</div><div class="kval" id="vn-top">--</div><div class="kt">By spend</div></div>
+    <!-- sbVendorPaidYTD() counts bills with status Paid whose payment date
+         falls in THIS calendar year. Different question from AP's "most owed
+         right now", so a different answer is correct, not a contradiction. -->
+    <div class="kpi"><div class="klbl">Top Vendor</div><div class="kval" id="vn-top">--</div><div class="kt">Most paid this year</div></div>
     <div class="kpi"><div class="klbl">W-9 on File</div><div class="kval" id="vn-w9">0</div><div class="kt">Tax compliance</div></div>
     <div class="kpi"><div class="klbl">1099 Required</div><div class="kval" id="vn-1099">0</div><div class="kt" id="vn-1099-sub">--</div></div>
   </div>
@@ -1633,6 +1654,30 @@ sbRegisterTool(
 function $(s){return document.getElementById(s);}
 function fmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
 function fdate(d){if(!d)return'--';try{return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch(e){return d;}}
+// A 'YYYY-MM' key is a LOCAL month, not an instant. `new Date('2026-06-01')`
+// is a DATE-ONLY form and ECMA-262 21.4.3.2 parses those as UTC midnight;
+// toLocaleDateString then renders in the local zone, so America/New_York (-4)
+// showed 2026-05-31 20:00 and labelled June as "May". Confirmed live in the
+// deployed app 2026-09-30: ['2026-05','2026-06','2026-09'] rendered as
+// ['Apr 2026','May 2026','Aug 2026'], and the preview check read those missing
+// months as MISSING DATA rather than as mislabelled rows.
+//
+// SILENT AND DIRECTIONAL: every zone west of Greenwich is one month behind and
+// every zone at or east of it is correct, so the defect cannot be reproduced by
+// a reader in Europe and never raises an error -- the value beside the label is
+// right, which is what leaves no reason to doubt the row.
+//
+// Built from the PARTS so the Date is local from the start. fdate() above
+// already does the same thing by appending 'T00:00:00'; this is that rule
+// applied to the month keys, which were the one place it was missed.
+function sbMonthLabel(m){
+  var p=String(m==null?'':m).split('-');
+  var y=Number(p[0]),mo=Number(p[1]);
+  // A key that is not a month is returned UNCHANGED. Coercing it would print a
+  // confident wrong month, which is the defect above in a second form.
+  if(!y||!mo||mo<1||mo>12)return String(m==null?'':m);
+  return new Date(y,mo-1,1).toLocaleDateString('en-US',{month:'short',year:'numeric'});
+}
 
 function toast(m,d){var t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on');},d||3000);}
 
@@ -1862,6 +1907,71 @@ function sbDoLogin(){
   }).catch(function(){if(errEl)errEl.textContent='Network error — check your connection and try again';});
 }
 window.sbDoLogin=sbDoLogin;
+
+// ── A SURVIVING SESSION IS RESTORED, AND ONLY THE SERVER MAY SAY SO ─────────
+// Preview-check finding 8, 2026-09-30: "reloading forces a full re-login with
+// an 8-digit PIN. Defensible security, but she should be told." DRIVEN, and it
+// was not security at all. After a reload of the live app:
+//
+//   the PIN gate ............. shown
+//   sb_session_token ......... STILL THERE, 339 chars
+//   sb_session_role .......... STILL "owner"
+//   that same token posted to /api/sd-data ... HTTP 200, 5 rows
+//
+// sessionStorage is cleared when the TAB closes, not when the page reloads, so
+// nothing was ever discarded. sbApplyLoggedIn() was simply unreachable from
+// boot -- only sbDoLogin() and sbDoBootstrap() call it -- so the app asked for
+// a PIN to mint a SECOND session for a user who already held a live one.
+//
+// AND THE TWO HALVES DISAGREED. sbBackupFetch() reads that same token straight
+// out of sessionStorage, so the sync layer went on using the credential while
+// the screen said signed out.
+//
+// FIXED BY RESTORING, NOT BY CLEARING. The token is a signed 12h bearer
+// (api/_lib/auth.js SESSION_TTL_MS) -- deleting the browser's copy does not
+// revoke it, so clearing would buy the appearance of security and none of the
+// substance, at the price of a PIN on every reload.
+//
+// THE SERVER DECIDES. A local token is attacker-writable, so this asks
+// /api/sd-data and believes only the answer. Driven on the same session:
+// real token 200; garbage, empty and signature-tampered tokens all 401
+// NO_SESSION. The probe discriminates, so it is a check and not a rubber stamp.
+//
+// THREE ANSWERS, NOT TWO -- and the third is why this is not four lines:
+//
+//   401 / 403 ...... REFUSED. Clear the dead keys and leave the gate up.
+//   2xx or 503 ..... ACCEPTED. The auth check runs BEFORE the provisioning
+//                    check (a garbage token against an unprovisioned resource
+//                    still answers 401, driven), so a NOT_PROVISIONED 503
+//                    proves the session passed.
+//   anything else .. COULD NOT TELL. Gate stays up and NOTHING IS CLEARED.
+//                    Folding a 500 or an offline moment into "refused" would
+//                    sign a user out of a perfectly good session and destroy
+//                    the token that would have proved it.
+function sbRestoreSession(){
+  var tok=null;try{tok=sessionStorage.getItem(SB_SESSION_KEY);}catch(e){}
+  var lic=ld('sb_lic',null)||'';
+  if(!tok||!lic)return Promise.resolve(false);
+  return fetch(DATA_API,{method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+lic,'X-SD-Auth':tok},
+    body:JSON.stringify({action:'read',resource:'sb_bud',app_id:'sairnbiz'})})
+    .then(function(r){
+      if(r.status===401||r.status===403){
+        try{sessionStorage.removeItem(SB_SESSION_KEY);sessionStorage.removeItem(SB_ROLE_KEY);
+            sessionStorage.removeItem(SB_EMPLOYEE_KEY);}catch(e){}
+        return false;
+      }
+      if(!(r.status>=200&&r.status<300)&&r.status!==503)return false;
+      var role='';try{role=sessionStorage.getItem(SB_ROLE_KEY)||'';}catch(e){}
+      // No role means the three keys are out of step with each other. Applying
+      // a blank role would open the app with no idea what the user may do.
+      if(!role)return false;
+      sbApplyLoggedIn(role);
+      return true;
+    })
+    .catch(function(){return false;});
+}
+window.sbRestoreSession=sbRestoreSession;
 
 function sbShowBootstrap(){
   var lv=$('sb-login-view'),bv=$('sb-bootstrap-view');
@@ -2261,7 +2371,7 @@ function rDash(){
   var byMonth={};invs.forEach(function(i){var mo=(i.date||'').slice(0,7);if(!mo)return;byMonth[mo]=(byMonth[mo]||0)+(i.paid||0);});
   var months=Object.keys(byMonth).sort();
   var maxRev=Math.max.apply(null,months.map(function(m){return byMonth[m];}).concat([1]));
-  $('d-rev').innerHTML=months.length?months.map(function(m){var v=byMonth[m];var lbl=new Date(m+'-01').toLocaleDateString('en-US',{month:'short',year:'numeric'});return'<div class="srow"><span class="slbl">'+lbl+'</span><span class="sval">'+fmt(v)+'</span></div>'+pbar(Math.round(v/maxRev*100),'var(--ok)');}).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No invoice history recorded yet</div>';
+  $('d-rev').innerHTML=months.length?months.map(function(m){var v=byMonth[m];var lbl=H(sbMonthLabel(m));return'<div class="srow"><span class="slbl">'+lbl+'</span><span class="sval">'+fmt(v)+'</span></div>'+pbar(Math.round(v/maxRev*100),'var(--ok)');}).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No invoice history recorded yet</div>';
   var acts=[];
   invs.forEach(function(i){if(i.paid>0)acts.push({t:H(i.id)+' - '+H(i.cust)+' - '+fmt(i.paid)+(i.status==='Paid'?' paid in full':' received'),d:i.paidDate||i.date});});
   exps.forEach(function(e){acts.push({t:H(e.desc)+' - '+fmt(e.amt)+' ('+H(e.vendor)+')',d:e.date});});
@@ -3636,7 +3746,7 @@ function rPay(){
   var byMonth={};invs.forEach(function(i){var mo=(i.date||'').slice(0,7);if(!mo)return;byMonth[mo]=(byMonth[mo]||0)+i.amt;});
   var months=Object.keys(byMonth).sort();
   var maxM=Math.max.apply(null,months.map(function(m){return byMonth[m];}).concat([1]));
-  $('pl-monthly').innerHTML=months.length?months.map(function(m){var v=byMonth[m];var lbl=new Date(m+'-01').toLocaleDateString('en-US',{month:'short',year:'numeric'});return'<div class="srow"><span class="slbl">'+lbl+'</span><span class="sval">'+fmt(v)+'</span></div>'+pbar(Math.round(v/maxM*100),'var(--ok)');}).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No invoice history recorded yet</div>';
+  $('pl-monthly').innerHTML=months.length?months.map(function(m){var v=byMonth[m];var lbl=H(sbMonthLabel(m));return'<div class="srow"><span class="slbl">'+lbl+'</span><span class="sval">'+fmt(v)+'</span></div>'+pbar(Math.round(v/maxM*100),'var(--ok)');}).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No invoice history recorded yet</div>';
   var gpm=rev>0?Math.round(gp/rev*100):0,npm=rev>0?Math.round(net/rev*100):0;
   $('pl-margin').innerHTML=[{l:'Gross Margin',v:gpm+'%'},{l:'Operating Margin',v:npm+'%'},{l:'Industry Avg Gross',v:'45%'},{l:'Industry Avg Net',v:'18%'},{l:'Your Net vs Industry',v:(npm-18)+'pp'}].map(function(r){return'<div class="srow"><span class="slbl">'+r.l+'</span><span class="sval"><strong>'+r.v+'</strong></span></div>';}).join('');
 }
@@ -3821,13 +3931,57 @@ function sbNormalizeBills(bills){
   return bills;
 }
 
+// LARGEST VENDOR MEANS THE VENDOR, NOT THE VENDOR ON THE LARGEST BILL.
+// Corrected 2026-09-30 (preview-check finding 11). As shipped this panel sorted
+// BILLS by balance and took the top row's vendor, so a vendor owed three
+// $1,000 bills lost to a vendor owed one $2,500 bill -- under a label reading
+// "Largest Vendor". The figure was not a different metric from the Vendors
+// panel's; it was a wrong answer to its own question, and it got quieter the
+// more bills a real vendor had.
+//
+// Names are matched case- and padding-insensitively, the same normalisation
+// sbVendorPaidYTD() uses, so "ALPHA STONE" and " Alpha Stone " are one vendor
+// in both panels rather than one in each. A tie is broken by name so two
+// renders of the same data cannot print two different vendors.
+function sbTopVendorByBalance(bills){
+  var by={},names={};
+  (Array.isArray(bills)?bills:[]).forEach(function(b){
+    var bal=Number(b&&b.bal)||0;if(bal<=0)return;
+    var k=String((b&&b.vendor)||'').trim().toLowerCase();
+    // An unnamed vendor is DROPPED, not bucketed: a blank key would otherwise
+    // pool every anonymous bill into one entry that can win the KPI and print
+    // an empty name as the largest vendor.
+    if(!k)return;
+    by[k]=(by[k]||0)+bal;if(!names[k])names[k]=String(b.vendor).trim();
+  });
+  var keys=Object.keys(by);
+  if(!keys.length)return null;
+  keys.sort(function(a,b){return by[b]-by[a]||(names[a]<names[b]?-1:names[a]>names[b]?1:0);});
+  return {name:names[keys[0]],bal:by[keys[0]]};
+}
+
+// THE REFUSAL IS DECIDED AT PAINT TIME, BY THE SAME TWO CONDITIONS sbPayBill
+// USES. Corrected 2026-09-30 (preview-check finding 10): a Held bill rendered a
+// fully enabled Pay button and the refusal -- which is well written -- was only
+// reachable by clicking it. This is a SECOND evaluation of the question for the
+// row's benefit, not a replacement for the gate: sbPayBill still re-checks, so
+// a bill that becomes unpayable between paint and click is still refused.
+function sbBillAction(b,live){
+  if(b&&b.status==='Paid')return {payable:false,paid:true,reason:''};
+  if(b&&b.matched&&live&&live.ok)return {payable:true,paid:false,reason:''};
+  var src=(live&&!live.ok)?(live.reasons||[]):((b&&b.match_reasons)||[]);
+  // Never blank. A disabled button with no stated reason is the click-only
+  // refusal again, one step quieter.
+  return {payable:false,paid:false,reason:src[0]||'the three documents do not agree'};
+}
+
 function rAP(){
   var bills=sbNormalizeBills(ld('sb_ap',[]));
   var tot=bills.reduce(function(s,b){return s+b.bal;},0);
   var wk=bills.filter(function(b){return b.status==='Open';}).reduce(function(s,b){return s+b.bal;},0);
   var ov=bills.filter(function(b){return b.status==='Overdue';}).length;
   var pd=bills.filter(function(b){return b.status==='Paid';}).reduce(function(s,b){return s+b.amt;},0);
-  var top=bills.filter(function(b){return b.bal>0;}).sort(function(a,b){return b.bal-a.bal;})[0];
+  var top=sbTopVendorByBalance(bills);
   // THE SELECTS ARE FILLED WHENEVER THE PANEL IS PAINTED, 2026-09-30. A
   // vendor added after this page loaded has to appear in the PO and receipt
   // dropdowns too, or the fix that made them selects would be a NEW way to
@@ -3835,8 +3989,18 @@ function rAP(){
   // the bill can.
   sbFillVendorSelects();
   sbRenderPOs();
-  $('ap-total').textContent=fmt(tot);$('ap-week').textContent=fmt(wk);$('ap-over').textContent=ov;$('ap-paid').textContent=fmt(pd);$('ap-top').textContent=top?top.vendor:'--';
-  $('aptbody').innerHTML=bills.map(function(b){var sc={Open:'bb',Paid:'bg',Overdue:'br'}[b.status]||'bx';return'<tr><td><strong>'+H(b.vendor)+'</strong></td><td>'+H(b.inv)+'</td><td>'+fdate(b.date)+'</td><td>'+fdate(b.due)+'</td><td>'+fmt(b.amt)+'</td><td><strong>'+fmt(b.bal)+'</strong></td><td><span class="badge '+sc+'">'+H(b.status)+'</span></td><td>'+(b.status==='Paid'?'<span class="kt">Paid '+fdate(b.paidDate)+'</span>':'<button class="btn bo bs" onclick="sbPayBill(\''+H(b.id)+'\')">Pay</button>')+'</td></tr>';}).join('');
+  $('ap-total').textContent=fmt(tot);$('ap-week').textContent=fmt(wk);$('ap-over').textContent=ov;$('ap-paid').textContent=fmt(pd);$('ap-top').textContent=top?top.name:'--';
+  $('aptbody').innerHTML=bills.map(function(b){var sc={Open:'bb',Paid:'bg',Overdue:'br'}[b.status]||'bx';
+    var act=sbBillAction(b,sbThreeWayMatch(b.po_num,b.vendor,b.amt));
+    // A refusing row renders a DISABLED button carrying the reason, so the
+    // "why not" is on screen before anyone clicks. The reason is printed under
+    // it as well as in the title, because a title attribute is invisible on a
+    // touch screen and this panel is used on tablets.
+    var cell=act.paid?'<span class="kt">Paid '+fdate(b.paidDate)+'</span>'
+      :act.payable?'<button class="btn bo bs" onclick="sbPayBill(\''+H(b.id)+'\')">Pay</button>'
+      :'<button class="btn bo bs" disabled title="'+H(act.reason)+'" style="opacity:.5;cursor:not-allowed">Pay</button>'
+        +'<div class="kt d" style="max-width:220px">'+H(act.reason)+'</div>';
+    return'<tr><td><strong>'+H(b.vendor)+'</strong></td><td>'+H(b.inv)+'</td><td>'+fdate(b.date)+'</td><td>'+fdate(b.due)+'</td><td>'+fmt(b.amt)+'</td><td><strong>'+fmt(b.bal)+'</strong></td><td><span class="badge '+sc+'">'+H(b.status)+'</span></td><td>'+cell+'</td></tr>';}).join('');
 }
 
 // Replaces onclick="toast('Marked paid')" -- a button whose entire action was
@@ -5961,7 +6125,15 @@ function sbReportHydrate(r,appAlreadyPainted){
 window.sbHydrateAll=sbHydrateAll;
 
 (function(){
-  var k=ld('sb_lic',null);if(k){$('gate').style.display='none';$('pin').classList.add('on');}
+  var k=ld('sb_lic',null);
+  if(k){
+    $('gate').style.display='none';$('pin').classList.add('on');
+    // The gate is raised FIRST and lowered only if the server confirms the
+    // session (finding 8, see sbRestoreSession). Raising it after the check
+    // would flash the PIN screen over an app the user is entitled to; showing
+    // the app first and hiding it on a refusal would flash the opposite way.
+    sbRestoreSession();
+  }
   rBenKPIs();
 })();
 </script>

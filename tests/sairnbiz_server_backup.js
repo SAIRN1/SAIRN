@@ -432,20 +432,63 @@ test('the alarm fires once per key, not once per repaint', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 section('an unprovisioned backup goes quiet after one failure, not 300');
 
-test('NOT_PROVISIONED latches, so a ten-collection save is one warning', async () => {
+// RE-AIMED 2026-09-30, and it had been RED on main since the per-resource latch
+// landed. As written this asserted the OLD design -- one global boolean, and one
+// collection's NOT_PROVISIONED silencing every other collection. THAT WAS THE
+// DEFECT the latch was split to fix (docs/2026-09-29-sairnbiz-preview-check.md,
+// blocker 2), so the check was pinning the bug in place: had the fix been
+// reverted, this arm would have gone green.
+//
+// The invariant is now two-sided and both sides matter: one warning PER
+// RESOURCE, and the other collections are still attempted.
+test('NOT_PROVISIONED latches per resource, and does not silence the others', async () => {
   const c = harness({ notProvisioned: true });
   c.st('sb_invs', [INV_A, INV_B]);
   await flush();
   c.st('sb_payruns', [RUN_A]);
   c.st('sb_vends', [{ id: 'V001', name: 'Midwest Stone' }]);
   await flush();
-  assert.strictEqual(c.sbBackupUnavailable, true, 'the unavailable flag did not latch');
-  assert.strictEqual(c.__warns.filter((w) => /not exist|not available|unavailable/i.test(w)).length, 1,
-    'more than one alarm for a single cause');
-  // The first save's two records were both in flight before the latch, which is
-  // expected; nothing after the latch should reach the network.
+  // Two records, ONE warning: the burst this suppresses is a collection's own.
+  assert.strictEqual(c.__warns.filter((w) => /sb_invs/.test(w)).length, 1,
+    'more than one alarm for one collection');
+  // THE HALF THAT WAS BROKEN. sb_invs failing must not stop these two.
   const after = c.__calls.filter((x) => x.resource === 'sb_payruns' || x.resource === 'sb_vends');
-  assert.strictEqual(after.length, 0, 'writes continued after the backup was known unavailable');
+  assert.strictEqual(after.length, 2,
+    'one unprovisioned collection silenced the others again');
+  assert.strictEqual(c.__warns.filter((w) => /sb_payruns/.test(w)).length, 1);
+  assert.strictEqual(c.__warns.filter((w) => /sb_vends/.test(w)).length, 1);
+  // The global flag is the fresh-database case ONLY -- nothing provisioned at
+  // all -- and three of thirteen is not that.
+  assert.strictEqual(c.sbBackupUnavailable, false,
+    'the global latch fired on a partial gap, which is the original defect');
+});
+
+test('a repeat save of the same collection does NOT warn twice', async () => {
+  const c = harness({ notProvisioned: true });
+  c.st('sb_invs', [INV_A]);
+  await flush();
+  c.st('sb_invs', [INV_A, INV_B]);
+  await flush();
+  assert.strictEqual(c.__warns.filter((w) => /sb_invs/.test(w)).length, 1,
+    'the per-resource latch is not holding across saves');
+});
+
+// ADDED 2026-09-30 because a mutation control found nothing was checking it:
+// deleting `||sbUnprovisioned[key]` from the write guard SURVIVED the whole
+// suite. The warning latch and the write guard are two different latches, and
+// only the warning one was covered -- so a known-missing table went on being
+// written to on every save, silently, and the suite called that a pass.
+test('a collection known to be unprovisioned stops being written to', async () => {
+  const c = harness({ notProvisioned: true });
+  c.st('sb_invs', [INV_A]);
+  await flush();
+  const before = c.__calls.filter((x) => x.resource === 'sb_invs' && x.action === 'write').length;
+  assert.ok(before > 0, 'the first save never tried, so this proves nothing');
+  c.st('sb_invs', [INV_A, INV_B]);
+  await flush();
+  const after = c.__calls.filter((x) => x.resource === 'sb_invs' && x.action === 'write').length;
+  assert.strictEqual(after, before,
+    'writes kept going to a table already known not to exist (' + before + ' -> ' + after + ')');
 });
 
 test('a real write failure is reported per record, not swallowed', async () => {
@@ -534,10 +577,26 @@ test('an unprovisioned backup warns the operator and does NOT alarm the user', (
   // A shop owner cannot run a SQL file. An alarm with no available action is
   // noise; the console line is for whoever deploys.
   const c = harness();
-  c.sbReportHydrate({ merged: 0, failed: 0, notProvisioned: 10 }, true);
+  c.sbReportHydrate({ merged: 0, failed: 0, notProvisioned: 10, missing: ['sb_incidents'] }, true);
   assert.strictEqual(c.__toasts.length, 0);
   assert.ok(c.__warns.some((w) => /sairnbiz_data_schema\.sql/.test(w)), 'the operator was not told which file to run');
-  assert.strictEqual(c.sbBackupUnavailable, true, 'reads did not latch the flag, so writes will keep retrying');
+  // RE-AIMED 2026-09-30: this asserted sbBackupUnavailable === true on a
+  // PARTIAL gap, which is the one-table-silences-twelve defect. The read path
+  // now latches the named tables and leaves the global flag alone.
+  assert.strictEqual(c.sbBackupUnavailable, false,
+    'a partial gap set the global flag, so writes to provisioned tables stop');
+  assert.strictEqual(c.sbUnprovisioned.sb_incidents, true,
+    'the named missing table was not latched, so writes to it will keep retrying');
+});
+
+test('nothing provisioned at all IS the global case, and still latches', () => {
+  // The burst suppression was written for a fresh database. That case is real
+  // and must not have been lost in narrowing the latch.
+  const c = harness();
+  const all = c.SB_SYNCED.slice();
+  c.sbReportHydrate({ merged: 0, failed: 0, notProvisioned: all.length, missing: all }, true);
+  assert.strictEqual(c.sbBackupUnavailable, true,
+    'an empty database no longer latches, so every record will retry');
 });
 
 test('a restore repaints the app so the records are actually visible', () => {
@@ -619,8 +678,16 @@ const probes = [
       await flush();
       assert.strictEqual(writesOf(c).length, 2);
     }],
+  // ANCHORED ON THE ONE TOKEN BEING REMOVED, NOT ON THE WHOLE CONDITION
+  // (2026-09-30). This probe had been RED on main since the per-resource latch
+  // landed: it matched the literal 'if(sbSyncPaused||sbBackupUnavailable)return;'
+  // and the guard had grown a third term (||sbUnprovisioned[key]), so the
+  // replace was a no-op and the probe refused rather than pretending to bite.
+  // It failed CLOSED, which is right -- but it stopped testing anything the
+  // moment an unrelated correct change was made to the line it was reading.
+  // 'if(sbSyncPaused||' survives any further term being added after it.
   ['pause ignored -> seeding pushes demo rows to a customer table',
-    (s) => s.replace('if(sbSyncPaused||sbBackupUnavailable)return;', 'if(sbBackupUnavailable)return;'),
+    (s) => s.replace('if(sbSyncPaused||', 'if('),
     async () => {
       const c = harness({}, probeSrc);
       c.sbSyncPaused = true;
@@ -628,18 +695,28 @@ const probes = [
       await flush();
       assert.strictEqual(writesOf(c).length, 0);
     }],
-  ['NOT_PROVISIONED no longer latches -> one cause, many alarms',
-    (s) => s.replace('sbBackupUnavailable=true;\n          console.warn(\'SAIRNbiz server backup is unavailable', 'console.warn(\'SAIRNbiz server backup is unavailable'),
+  // RE-AIMED 2026-09-30. As written, this probe removed the GLOBAL latch and
+  // then asserted that sb_payruns never reached the network -- i.e. it required
+  // one collection's missing table to silence another, which is the defect the
+  // per-resource latch removed. Its anchor had also gone stale, so it refused
+  // (fail CLOSED) rather than reporting a bite it never had.
+  // It now removes the PER-RESOURCE latch and checks the burst comes back.
+  ['per-resource NOT_PROVISIONED latch removed -> one cause, one alarm per record',
+    (s) => s.replace('if(!sbUnprovisioned[key]){', 'if(true){'),
     async () => {
       const c = harness({ notProvisioned: true }, probeSrc);
       c.st('sb_invs', [INV_A, INV_B]);
       await flush();
-      c.st('sb_payruns', [RUN_A]);
-      await flush();
-      assert.strictEqual(c.__calls.filter((x) => x.resource === 'sb_payruns').length, 0);
+      assert.strictEqual(c.__warns.filter((w) => /sb_invs/.test(w)).length, 1);
     }],
   ['failed read counted as not-provisioned -> "you have nothing" returns',
-    (s) => s.replace("if(res.reason==='not_provisioned')notProvisioned++;else failed++;", 'notProvisioned++;'),
+    // RE-ANCHORED 2026-09-30: the accounting gained `missing.push(key)` when the
+    // warning was made to name the tables, so the old one-line anchor stopped
+    // matching and this probe silently never ran. Anchored on the `else failed++`
+    // half, which is the branch whose loss is the defect: a read that FAILED
+    // being counted as not-provisioned reads as "you have no backup" instead of
+    // "we could not tell".
+    (s) => s.replace('else failed++;', ''),
     async () => {
       const c = harness({ readFails: true }, probeSrc);
       const r = await c.sbHydrateAll();
@@ -700,7 +777,15 @@ let probeSrc = SYNC_SRC;
     let threw = false;
     if (mutate) {
       probeSrc = mutate(SYNC_SRC);
-      assert.ok(probeSrc !== SYNC_SRC, 'probe did not change the source: ' + name);
+      // A STALE ANCHOR IS REPORTED AND THE RUN CONTINUES (2026-09-30). This was
+      // an assert, so the first stale anchor threw out of the loop and the
+      // remaining probes were never reached -- four had gone stale together and
+      // one run showed one. Still a FAIL, never folded into a pass: a probe
+      // that changed nothing bit nothing.
+      if (probeSrc === SYNC_SRC) {
+        console.log('  FAIL STALE ANCHOR, probe never ran: ' + name);
+        fail++; probeSrc = SYNC_SRC; continue;
+      }
     }
     try { await check(); } catch (e) { threw = true; }
     probeSrc = SYNC_SRC;
