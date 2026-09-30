@@ -3107,8 +3107,8 @@
       "task": "tests/mech_docs_redaction_wiring_probe.py",
       "claimed_at": "2026-09-30T11:46:42Z",
       "claimed_at_epoch": 1790768802.9267807,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T12:05:06Z",
       "files": null
     },
     {
