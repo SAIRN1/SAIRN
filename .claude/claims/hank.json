@@ -3431,8 +3431,8 @@
       "task": "tools/hover_auditor_scope_gate.py tools/hover_separation_audit.py tests/run_hover_scope_own_claim_probe.py tests/run_hover_separation_probe.py tools/tier_a_review_gate.py tests/run_tier_a_review_gate_probe.py tools/sairn_claim.py tools/required_write_permission_check.py tests/run_required_write_permission_probe.py tests/run_claim_file_token_probe.py",
       "claimed_at": "2026-09-30T14:50:51Z",
       "claimed_at_epoch": 1790779851.0348597,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T15:55:05Z",
       "files": null
     },
     {
@@ -3442,8 +3442,8 @@
       "task": "docs/tier-a-reviews.json",
       "claimed_at": "2026-09-30T15:45:35Z",
       "claimed_at_epoch": 1790783135.405842,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T15:55:05Z",
       "files": null
     }
   ],
