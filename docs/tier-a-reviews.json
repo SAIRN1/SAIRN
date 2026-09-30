@@ -4879,6 +4879,26 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-30T12:08:26Z",
+      "opened_at_sha": "5a32fa3c4de00a92662c094d36ef57429952cee1",
+      "resources": [
+        "sv_audit_log"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "docs/CRITICALITY-TIERS.md"
+      ],
+      "what": "SEVERITY HIGH, AND IT IS HIGH BECAUSE THE STRING IS CLINICAL. Four Betadine\n(Povidone-Iodine) rows in sairnvet.html's VET_DRUGS told a clinician a dilution\nthe cited source does not give. A vet reads this off the Drug Database screen and\nmixes it.\n\nFILES AND LINES\n  sairnvet.html:2043  -- VET_DRUGS, the single-line array. The eight rows at\n                         issue are the `\"class\":\"Topical Antiseptic\"` objects:\n                         four `Betadine (Povidone-Iodine)` (dog, cat, horse,\n                         other/exotic/zoo species) and four\n                         `Chlorhexidine Solution` on the same species.\n  tests/sairnvet_povidone_range.js -- the 20-arm control, all four sections.\n  landed in commit d537709f (fix) and 2a8d9a7c (generated docs).\n\nTHE SOURCE, quoted verbatim on the rows themselves and retrieved 2026-09-26:\n  Mickelson MA, Mans C, Colopy SA. Principles of Wound Management and Wound\n  Healing in the Exotic Pets. Vet Clin North Am Exot Anim Pract. 2016\n  Jan;19(1):33-53. doi:10.1016/j.cvex.2015.08.002. PMID 26611923.\n  \"If antiseptic solutions are chosen, 0.05% chlorhexidine and 0.5 or 1%\n   povidone-iodine would be considered appropriate.\"\n\nWHAT WAS WRONG, THREE THINGS, AND THE WORST WAS ON THE ROW THAT CITED THE SOURCE\n  1. other/exotic/zoo species read \"Dilute to 1% for lavage (1:10 from 10%\n     stock)\" -- a RANGE NARROWED TO ITS UPPER BOUND, presented as sourced. That\n     row was the only povidone row carrying the citation.\n  2. dog, cat and horse read \"Dilute 1:10 for lavage\" -- a RATIO, not a\n     concentration. It is 1% only if the stock is 10%, and povidone-iodine scrub\n     ships at 5%, 7.5% and 10%.\n  3. Two rows read \"generally safe across species at this dilution\". The quote\n     says the concentration \"would be considered appropriate\" in one\n     wound-management context. Safety across species is a stronger and different\n     claim.\n\nWHAT IT NOW SAYS\n  all four povidone: \"0.5-1% for lavage -- dilute from 10% stock\", doseUnit\n  \"0.5-1%\"; the citation on all eight Topical Antiseptic rows; the cross-species\n  safety wording replaced with \"the source gives this concentration with no\n  species restriction\".\n\nWHAT TO ATTACK\n\n(a) THE WORDING I CHOSE IS NOT THE SOURCE'S WORDING. The source says \"0.5 or 1%\";\n    I wrote \"0.5-1%\", which reads as a continuous range and the source gives two\n    discrete concentrations. I judged a range safer to act on than an either/or a\n    clinician might read as \"pick one, they are equivalent\", but that IS an\n    interpretation I added. Decide whether \"0.5% or 1%\" is the more honest\n    rendering. This is the point I would attack first.\n\n(b) \"dilute from 10% stock\" IS ARITHMETIC I SUPPLIED. The source says nothing\n    about stock concentration. It is true for 10% povidone-iodine and it is the\n    common presentation, but it is my addition and the citation does not cover\n    it. Arm B2 checks the CONCENTRATION against the quote and does not check this\n    clause against anything.\n\n(c) THE CHLORHEXIDINE ROWS NOW CARRY A CITATION THEY DID NOT ASK FOR. Three of\n    the four had no reference before. I added the same Mickelson quote because it\n    covers 0.05% chlorhexidine verbatim and the same species-neutrality argument\n    applies. Check that this is not citation inflation -- a row that was silent\n    about its basis now asserts one, and if the quote is the wrong basis for\n    dog/cat/horse chlorhexidine specifically, I have made three rows worse.\n\n(d) THE SOURCE IS AN EXOTIC-PETS WOUND-MANAGEMENT REVIEW AND I APPLIED IT TO DOG,\n    CAT AND HORSE. My argument is that the sentence places no species restriction\n    on the concentration. The counter-argument is that the ARTICLE's scope does,\n    and a sentence inside a paper about exotics may be assuming that population\n    even where it does not say so. This is the judgement the whole change rests\n    on and one person made it.\n\n(e) ONLY 21 OF 485 ROWS CARRY ANY REFERENCE. The other 464 have nothing a static\n    arm can read a dose against, and the existing sourcing-honesty suite is by\n    design silent about a row that makes no claim. So this fix is correct and its\n    coverage is 8 rows. Do not read it as a formulary review.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-09-30T12:08:26Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
