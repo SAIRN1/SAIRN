@@ -2665,8 +2665,8 @@
       "task": "discharge the 68h obligation authored by hank on 2026-09-26T17:36:42Z",
       "claimed_at": "2026-09-29T13:58:08Z",
       "claimed_at_epoch": 1790690288.0322647,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T23:51:38Z",
       "files": null
     },
     {
@@ -2676,8 +2676,8 @@
       "task": "tools/sairn_claim.py tests/run_claim_matcher_probe.py",
       "claimed_at": "2026-09-29T14:04:57Z",
       "claimed_at_epoch": 1790690697.0094457,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T23:51:47Z",
       "files": null
     },
     {
@@ -2687,8 +2687,8 @@
       "task": "tools/dead_rule_sweep.py tests/run_dead_rule_sweep_probe.py",
       "claimed_at": "2026-09-29T14:07:07Z",
       "claimed_at_epoch": 1790690827.6279962,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T23:51:45Z",
       "files": null
     },
     {
@@ -2698,8 +2698,8 @@
       "task": "tests/sd-data-scp-licence-only.test.js",
       "claimed_at": "2026-09-29T14:08:01Z",
       "claimed_at_epoch": 1790690881.9259627,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T23:51:40Z",
       "files": null
     },
     {
@@ -2709,8 +2709,8 @@
       "task": "docs/2026-09-29-unreachable-tables-cody.md",
       "claimed_at": "2026-09-29T14:08:54Z",
       "claimed_at_epoch": 1790690934.0745296,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T23:51:42Z",
       "files": null
     },
     {
@@ -2720,8 +2720,8 @@
       "task": "docs/2026-09-29-parse-history-sweep-cody.md",
       "claimed_at": "2026-09-29T14:53:51Z",
       "claimed_at_epoch": 1790693631.2279036,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T23:51:49Z",
       "files": null
     },
     {
@@ -2731,8 +2731,8 @@
       "task": "docs/CRITICALITY-TIERS.md",
       "claimed_at": "2026-09-29T17:57:27Z",
       "claimed_at_epoch": 1790704647.135068,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T23:51:51Z",
       "files": null
     },
     {
@@ -2742,8 +2742,8 @@
       "task": "docs/defect-density-register.json",
       "claimed_at": "2026-09-29T17:57:57Z",
       "claimed_at_epoch": 1790704677.7669418,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T23:51:53Z",
       "files": null
     }
   ],

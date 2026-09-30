@@ -420,6 +420,23 @@
         "hover_log.py",
         "tools/hover_routing_gap_check.py"
       ]
+    },
+    {
+      "id": "hover-1790726327",
+      "session": "hover",
+      "subject": "hover",
+      "task": "eight-item queue: stray-repo containment map (which SAIRN folders resolve into Documents git) plus a grep for tools running git from non-clone cwds plus printed deletion commands; the leg_guestbook resolution against 702; re-derive the grouped routing list at HEAD; conditional H2 routable-field validation; independent verification of every register row hank landed since the cold reads; one undirected batch through the linter; the weighted rotation draw; a freshness-stamp and re-derivation methodology sweep over every report-style tool output with known-bad controls.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hover.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. Each component of this claim checks CLEAR on its own.\n\nFILES: hover_backup_mirror.py hover_log.py hover_cold_scan_pool.py hover_coverage_ledger.py tools/hover_routing_gap_check.py",
+      "claimed_at": "2026-09-29T23:58:47Z",
+      "claimed_at_epoch": 1790726327.8956547,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "hover_backup_mirror.py",
+        "hover_cold_scan_pool.py",
+        "hover_coverage_ledger.py",
+        "hover_log.py",
+        "tools/hover_routing_gap_check.py"
+      ]
     }
   ],
   "refusals": [
