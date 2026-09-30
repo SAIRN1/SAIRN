@@ -2844,6 +2844,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "cody-1790731272",
+      "session": "cody",
+      "subject": "cody-gendocs",
+      "task": "docs/MASTER-PLAN.md docs/traceability-matrix.md",
+      "claimed_at": "2026-09-30T01:21:12Z",
+      "claimed_at_epoch": 1790731272.8922205,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
