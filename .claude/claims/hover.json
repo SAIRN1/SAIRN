@@ -551,8 +551,8 @@
       "task": "queue6: individually read the 27 remaining register-citation rows lacking a mechanical anchor and produce corrected cell wording for each; assemble every previously-derived correction from this citation-audit series into one routed report for hank to apply; deliver a verified summary of hover's own current state.\n\nFILES: hover-owned tooling only",
       "claimed_at": "2026-09-30T14:37:04Z",
       "claimed_at_epoch": 1790779024.3333924,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T14:50:05Z",
       "files": null
     }
   ],
