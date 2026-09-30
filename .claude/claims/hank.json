@@ -3390,6 +3390,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "hank-1790767841",
+      "session": "hank",
+      "subject": "hank",
+      "task": "tools/dead_rule_sweep.py tests/run_dead_rule_sweep_probe.py docs/STORED-DATA-CRITICALITY.md tools/stored_data_criticality_check.py tests/run_stored_data_criticality_probe.py",
+      "claimed_at": "2026-09-30T11:30:41Z",
+      "claimed_at_epoch": 1790767841.5927563,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
