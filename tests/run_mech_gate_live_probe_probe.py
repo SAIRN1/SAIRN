@@ -43,6 +43,11 @@ if not os.path.isfile(TOOL):
 
 import mech_gate_live_probe as P                                # noqa: E402
 
+# ── THE SUBJECT, DECLARED RATHER THAN INFERRED ──────────────────────────────
+# same reason as the sibling: the link between a control and its subject is a
+# fact the author knows and a scanner guesses at. Declared, not inferred.
+CONTROLS_FOR = ['mech_gate_live_probe.py']
+
 passed = failed = 0
 
 

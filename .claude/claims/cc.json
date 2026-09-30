@@ -3140,6 +3140,39 @@
       "task": "tests/run_sql_column_exists_probe.py tests/run_mech_gate_live_probe_probe.py",
       "claimed_at": "2026-09-30T12:39:29Z",
       "claimed_at_epoch": 1790771969.6580741,
+      "status": "released",
+      "released_at": "2026-09-30T13:31:52Z",
+      "files": null
+    },
+    {
+      "id": "cc-1790775273",
+      "session": "cc",
+      "subject": "decllint",
+      "task": "tools/live_probe_declaration_check.py tests/run_live_probe_declaration_probe.py",
+      "claimed_at": "2026-09-30T13:34:33Z",
+      "claimed_at_epoch": 1790775273.4353654,
+      "status": "released",
+      "released_at": "2026-09-30T13:48:08Z",
+      "files": null
+    },
+    {
+      "id": "cc-1790776237",
+      "session": "cc",
+      "subject": "blindlines",
+      "task": "tools/checkblocks.py tools/install_git_hooks.py tools/key_collision_check.py tools/div_balance_check.py tools/criticality_tier_check.py tools/tooling_inventory.py tools/mutation_anchor_check.py tools/duplicate_global_check.py tools/nav_panel_check.py tools/hover_separation_audit.py",
+      "claimed_at": "2026-09-30T13:50:37Z",
+      "claimed_at_epoch": 1790776237.315236,
+      "status": "released",
+      "released_at": "2026-09-30T13:52:20Z",
+      "files": null
+    },
+    {
+      "id": "cc-1790776562",
+      "session": "cc",
+      "subject": "sairnbizfix",
+      "task": "sairnbiz.html",
+      "claimed_at": "2026-09-30T13:56:02Z",
+      "claimed_at_epoch": 1790776562.1044915,
       "status": "active",
       "released_at": null,
       "files": null
@@ -3343,6 +3376,19 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "shared phrase: \"schema sql\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-30T13:50:05Z",
+      "my_subject": "baselinegates",
+      "my_task": "tests/run_criticality_tier_probe.py tests/sairncode_gates_mutation_control.js tests/sairnlaw_billing_codes_mutation_control.js tests/sairnvet_dose_audit_reader_mutation_control.js tools/dead_rule_sweep.py tools/metamorphic_check.py tests/run_app_attribution_mutation_control.py tests/run_defect_register_probe.py tests/run_dependency_graph_probe.py tests/run_sairn_status_probe.py",
+      "other_session": "hank",
+      "other_subject": "hank",
+      "other_task": "docs/CRITICALITY-TIERS.md tools/hover_auditor_scope_gate.py tests/run_hover_scope_own_claim_probe.py tools/sairn_claim.py tests/run_claim_bare_basename_probe.py tools/tier_a_review_gate.py tests/run_tier_a_review_gate_probe.py docs/tier-a-reviews.json tests/run_dead_rule_sweep_probe.py",
+      "other_claimed_at": "2026-09-30T13:26:35Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"dead rule\"",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]

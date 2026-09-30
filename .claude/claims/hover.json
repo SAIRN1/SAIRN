@@ -523,11 +523,37 @@
       "task": "weekly cleanup: route two defects to hank; wire row-name fallback into the repoint generator with fixture; hand-verify 25 unresolvable register citations; deliver apply-ready replacement text for 7 unrepointable rows; propose a fix for the ts-approximation-limit gap; confirm 737/738 log integrity; tool-idle inventory; claim inventory; state of the union.\n\nFILES: regenerate_repoint_list.py",
       "claimed_at": "2026-09-30T13:15:40Z",
       "claimed_at_epoch": 1790774140.0596964,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T13:39:47Z",
       "files": [
         "regenerate_repoint_list.py"
       ]
+    },
+    {
+      "id": "hover-1790775948",
+      "session": "hover",
+      "subject": "hover",
+      "task": "queue5: fix resource_app_map's sairncode ordering bug with fixture, rerun register check; build TS-DERIVED-RANGE-MOVED with fixture; apply alf_clients corrected citation and close the 6 verified rows; replacement text for the remaining ~98 register citations; state of the union.\n\nFILES: hover_cold_scan_pool.py citation_class_check.py register_citation_check.py",
+      "claimed_at": "2026-09-30T13:45:48Z",
+      "claimed_at_epoch": 1790775948.538282,
+      "status": "released",
+      "released_at": "2026-09-30T14:02:52Z",
+      "files": [
+        "citation_class_check.py",
+        "hover_cold_scan_pool.py",
+        "register_citation_check.py"
+      ]
+    },
+    {
+      "id": "hover-1790779024",
+      "session": "hover",
+      "subject": "hover",
+      "task": "queue6: individually read the 27 remaining register-citation rows lacking a mechanical anchor and produce corrected cell wording for each; assemble every previously-derived correction from this citation-audit series into one routed report for hank to apply; deliver a verified summary of hover's own current state.\n\nFILES: hover-owned tooling only",
+      "claimed_at": "2026-09-30T14:37:04Z",
+      "claimed_at_epoch": 1790779024.3333924,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
@@ -750,6 +776,32 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "shared phrase: \"auditor hover\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-30T14:36:33Z",
+      "my_subject": "hover",
+      "my_task": "queue6: hand-read the 27 NONE rows for apply-ready text; route the full 151-row register citation package to hank; state of the union.\n\nFILES: docs/CRITICALITY-TIERS.md",
+      "other_session": "hank",
+      "other_subject": "hank",
+      "other_task": "docs/CRITICALITY-TIERS.md tools/hover_auditor_scope_gate.py tests/run_hover_scope_own_claim_probe.py tools/sairn_claim.py tests/run_claim_bare_basename_probe.py tools/tier_a_review_gate.py tests/run_tier_a_review_gate_probe.py docs/tier-a-reviews.json tests/run_dead_rule_sweep_probe.py",
+      "other_claimed_at": "2026-09-30T13:26:35Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: docs/criticality-tiers.md",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-30T14:36:55Z",
+      "my_subject": "hover",
+      "my_task": "queue6: hand-read the 27 NONE (not-mechanically-repointable) register citation rows for apply-ready replacement text; route the full 151-row register citation package to hank, text only, no file held.\n\nFILES: hover-owned tooling only, no platform file claimed -- delivering text for docs/CRITICALITY-TIERS.md, which hank is actively holding",
+      "other_session": "hank",
+      "other_subject": "hank",
+      "other_task": "docs/CRITICALITY-TIERS.md tools/hover_auditor_scope_gate.py tests/run_hover_scope_own_claim_probe.py tools/sairn_claim.py tests/run_claim_bare_basename_probe.py tools/tier_a_review_gate.py tests/run_tier_a_review_gate_probe.py docs/tier-a-reviews.json tests/run_dead_rule_sweep_probe.py",
+      "other_claimed_at": "2026-09-30T13:26:35Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: docs/criticality-tiers.md",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]

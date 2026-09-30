@@ -37,6 +37,15 @@ if not os.path.isfile(TOOL):
 
 import sql_column_exists_check as C                              # noqa: E402
 
+# ── THE SUBJECT, DECLARED RATHER THAN INFERRED ──────────────────────────────
+# the inventory and tools/checker_control_check.py both read CONTROLS_FOR to
+# decide whether a checker HAS a control. This file drives the tool through its
+# module API for most arms and through subprocess for the last three, and a
+# subprocess-only scan would have found it either way -- but the declaration is
+# what makes the link readable rather than inferred, and the inference is what
+# goes wrong when an arm is refactored to an import.
+CONTROLS_FOR = ['sql_column_exists_check.py']
+
 passed = failed = 0
 
 
