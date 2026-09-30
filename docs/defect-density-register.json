@@ -19775,68 +19775,6 @@
    "recurrence_open": "Nothing prevents the next server-side rule change from landing without the client copy, and nothing makes the case list grow when a rule is added. The parity arm now has a control proving it can see a divergence, which is not the same as proving it can see EVERY divergence -- a rule added with no matching case is still invisible to it."
   },
   {
-   "commit": "4dc17346ccb5",
-   "date": "2026-09-29",
-   "subject": "fix(sync): a landed slab write was reported as LOST, because the guard read the payload instead of the envelope",
-   "files": [
-    "stonedesk.html",
-    "tests/customer_delete_does_not_resurrect.js",
-    "tests/public_catalog_no_false_empty.js",
-    "tests/quote_request_soft_delete_panel.js",
-    "tests/refusal_not_empty.js",
-    "tests/stonedesk_sync_null_blob.js",
-    "tests/stonedesk_write_result_consumption.js"
-   ],
-   "lines_added": 519,
-   "lines_removed": 24,
-   "app": "stonedesk",
-   "layer": "product",
-   "severity": "moderate",
-   "detection_method": "code-review",
-   "summary": "slabSyncOne and sdLineageSyncOne reported a LANDED write as lost. Both decided\nwhether the write reached the server by testing sdData()'s return value against\nnull, and that value is the unwrapped `data` key. api/sd-data.js answers\n`data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload` on 69 write\nbranches -- the guard is on the ROW existing, not on its jsonb blob being\nnon-null -- so a stored row whose `data` column is null comes back as 200 /\nok:true / data:null, sdData unwraps it to null, and both functions fall through\nto `return false` and warn that the yard copy and the server copy now disagree\nabout a record that is sitting on the server. The fix reads the envelope instead:\n_sdWriteOk[resource] is set false on sdData's first line and true only after the\nj.ok test passes, and sdWriteLanded(resource) returns it with a strict === true\nso a call that never happened is false rather than undefined.",
-   "rules": [
-    "1.11"
-   ],
-   "citation_confidence": "clean",
-   "injection_phase": "coding",
-   "phase_confidence": "inferred",
-   "found_by_tool": null,
-   "found_by_session": null,
-   "injection": {
-    "commit": "f764f90eb99e",
-    "date": "2026-09-26",
-    "subject": "fix(stonedesk): the two unread-result writes -- and the fix for the third was itself broken in three places",
-    "lag_days": 3
-   },
-   "contributing_factors": [
-    {
-     "factor": "The soundness argument was written down and never checked against the file it described. hank's 2026-09-26 review recorded that the boolean was safe because the slabs write branch answers `data: rows[0].data || payload`, and sdLineageSyncOne's own header made the same claim about the three lineage writes. Neither matched api/sd-data.js, which answers a row-exists ternary on all of them. A reviewer and an author independently asserted the same wrong fact about another file, which is what a cross-file claim with no mechanical check costs.",
-     "kind": "process",
-     "action_status": "done",
-     "action": "Arms C4 and C5 re-read api/sd-data.js on every run: C4 asserts the two EXEMPT resources still answer through flat(), and C5 asserts the row-exists ternary is still present, so the day the endpoint is fixed the arm goes red and prompts retiring the client workaround instead of quietly outliving it."
-    },
-    {
-     "factor": "A nullable jsonb column and a response shape that folds null into the failure signal. `data` is `jsonb not null default '{}'` on newer tables but nullable on the older ones, and the endpoint's write reply uses the same `rows[0] ? rows[0].data : payload` idiom 69 times, so one absent blob is indistinguishable from a refused write for every caller that tests the unwrapped value.",
-     "kind": "technical",
-     "action_status": "planned",
-     "action": "The endpoint half is api/sd-data.js, which is fourth's file and is not touched here. The change text -- coalesce the blob rather than guard the row -- is in the review verdict and in this session's report for fourth to land."
-    },
-    {
-     "factor": "The first version of the control failed for a reason that had nothing to do with the defect and would have been reported as a successful red. The sandbox stubbed sdLicKey while sdData calls sdLicenseKey, so sdData threw a ReferenceError that slabSyncOne's own catch converted into the same `false` the defect produces. A harness that can forge the red it is measuring is not a control.",
-     "kind": "process",
-     "action_status": "done",
-     "action": "Arm A0 runs first and asserts the transport was reached once and the 200 body parsed once before any other arm is allowed to mean anything; A1b was moved off sdDataFailed onto console.warn, the channel the defect actually uses."
-    },
-    {
-     "factor": "Five other suites hand-listed this file's `var _sd* = {};` declarations as a mirror, and two of them carry a comment saying a hand-listed mirror goes stale -- one records that five suites broke this way in one afternoon. Adding _sdWriteOk broke them for the sixth time, and invisibly: the ReferenceError lands inside sdData's own catch, so every arm fails for a reason about the sandbox rather than the transport.",
-     "kind": "technical",
-     "action_status": "done",
-     "action": "All five now derive the list with a regex over the page plus a floor assertion that refuses if fewer than four state maps are found, so a changed declaration style fails loudly instead of dropping maps silently."
-    }
-   ],
-   "recurrence_open": "Nothing on the client can tell, from a response, whether an empty `data` means\nan empty record or a failure -- the endpoint's 69 write branches all answer the\nsame ambiguous shape, and the two client callers that remain safe are safe only\nbecause their branches happen to route through flat(). Until the endpoint half\nlands, the next caller written the obvious way reintroduces this, and arm C2 is\nthe only thing that would catch it."
-  },
-  {
    "commit": "50d16fd4ac2a",
    "date": "2026-09-29",
    "subject": "fix(push): the tool that exists to replace `git add -A` was using it",
@@ -20714,114 +20652,66 @@
    "recurrence_open": "The sweep named in factor 4 is not run. Every other read in this file that decides on blob truthiness instead of row existence still has the same shape, and only this one branch was fixed. CORRECTED 2026-09-30, SEVERITY high -> low, BY THE SWEEP THIS RECORD ASKED FOR. Every `data jsonb` column declared in sql/ is NOT NULL -- 353 of 353 -- so the database cannot store the input this record is about. 398 resources were driven through the real api/sd-data.js read with data: null and ZERO returned 500 or threw. The fix is defensive code on a state the declared schema forbids, not a live product defect, and recording it as HIGH overstated it. THE DEPLOYED NULLABILITY IS NOT KNOWN from anything in this repo: db/schema_snapshot.json carries column names only and sql/schema_snapshot_query.sql does not select is_nullable, so this correction rests on the DECLARED schema, which is a weaker thing than the live one and is stated that way rather than as a clean bill."
   },
   {
-   "commit": "98a97bf59bea",
+   "commit": "4dc17346ccb5",
    "date": "2026-09-29",
-   "subject": "fix(hook): queue25 item 5 -- the fourth could-not path keeps its exit 0 and loses its silence",
+   "subject": "fix(sync): a landed slab write was reported as LOST, because the guard read the payload instead of the envelope",
    "files": [
-    "tools/citation_drift_hook.py"
+    "stonedesk.html",
+    "tests/customer_delete_does_not_resurrect.js",
+    "tests/public_catalog_no_false_empty.js",
+    "tests/quote_request_soft_delete_panel.js",
+    "tests/refusal_not_empty.js",
+    "tests/stonedesk_sync_null_blob.js",
+    "tests/stonedesk_write_result_consumption.js"
    ],
-   "lines_added": 137,
-   "lines_removed": 1,
-   "app": "tooling",
-   "layer": "tooling",
+   "lines_added": 519,
+   "lines_removed": 24,
+   "app": "stonedesk",
+   "layer": "product",
    "severity": "moderate",
    "detection_method": "code-review",
-   "summary": "tools/citation_drift_hook.py -- main() has FOUR could-not-* paths, not the three its header implied, and the fourth exits 0. The header said could-not-run 'exits non-zero' with no exception; COULD-NOT-ATTRIBUTE (no HEAD baseline, so drift cannot be split into this-edit's and pre-existing) returns 1 if any drift exists and 0 if none does. DRIVEN in both sub-cases rather than read off the source. THE EXIT CODE IS CORRECT AND IS NOT A FOLD: what could not run is ATTRIBUTION, not the drift check, whose counts are printed; a zero-drift document entails zero drift from this edit; and exiting 2 would fire on a provably clean document in every ordinary condition where git show HEAD:<file> has nothing to give -- a fresh clone, a detached head, a file not yet in HEAD -- which is a hook somebody switches off. WHAT WAS WRONG IS THE OUTPUT: it printed the could-not-attribute note, then the line 'Listing ALL drift in the document', then NOTHING, and exited 0. It now states the verdict, names its basis as the whole-document answer rather than a before/after comparison, says what that basis cannot tell (a cite this edit FIXED; drift introduced and removed inside one write), and no longer prints a listing header with nothing under it.",
+   "summary": "slabSyncOne and sdLineageSyncOne reported a LANDED write as lost. Both decided\nwhether the write reached the server by testing sdData()'s return value against\nnull, and that value is the unwrapped `data` key. api/sd-data.js answers\n`data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload` on 69 write\nbranches -- the guard is on the ROW existing, not on its jsonb blob being\nnon-null -- so a stored row whose `data` column is null comes back as 200 /\nok:true / data:null, sdData unwraps it to null, and both functions fall through\nto `return false` and warn that the yard copy and the server copy now disagree\nabout a record that is sitting on the server. The fix reads the envelope instead:\n_sdWriteOk[resource] is set false on sdData's first line and true only after the\nj.ok test passes, and sdWriteLanded(resource) returns it with a strict === true\nso a call that never happened is false rather than undefined.",
    "rules": [
-    "1.1"
+    "1.11"
    ],
-   "citation_confidence": "arguable",
+   "citation_confidence": "clean",
    "injection_phase": "coding",
-   "phase_confidence": "stated",
+   "phase_confidence": "inferred",
    "found_by_tool": null,
    "found_by_session": null,
    "injection": {
-    "commit": "e6f5ca5267fb",
+    "commit": "f764f90eb99e",
     "date": "2026-09-26",
-    "subject": "feat(methodology): the citation checker now fires on the edit, and a sweep for every other check whose trigger cannot reach its subject",
+    "subject": "fix(stonedesk): the two unread-result writes -- and the fix for the third was itself broken in three places",
     "lag_days": 3
    },
-   "citation_note": "1.1 A CHECK THAT STOPPED CHECKING, in the narrow form this file's own docstring already names about something else: 'Every exit path prints. Exit 0 with no output is indistinguishable from a hook that never ran.' The fourth path printed a COULD-NOT banner and then nothing, which is the same defect one step along.",
    "contributing_factors": [
     {
-     "factor": "THE HEADER SENTENCE WAS UNQUALIFIED AND THE CODE HAD AN EXCEPTION TO IT. Could-not-run exits non-zero was written as a rule with no carve-out, and one path legitimately needs the carve-out, so the file described itself wrongly rather than behaving wrongly.",
+     "factor": "The soundness argument was written down and never checked against the file it described. hank's 2026-09-26 review recorded that the boolean was safe because the slabs write branch answers `data: rows[0].data || payload`, and sdLineageSyncOne's own header made the same claim about the three lineage writes. Neither matched api/sd-data.js, which answers a row-exists ternary on all of them. A reviewer and an author independently asserted the same wrong fact about another file, which is what a cross-file claim with no mechanical check costs.",
      "kind": "process",
      "action_status": "done",
-     "action": "the header now names the fourth path, prints all four, and gives the three reasons exit 0 is right there -- so nobody FIXES it into a 2"
+     "action": "Arms C4 and C5 re-read api/sd-data.js on every run: C4 asserts the two EXEMPT resources still answer through flat(), and C5 asserts the row-exists ternary is still present, so the day the endpoint is fixed the arm goes red and prompts retiring the client workaround instead of quietly outliving it."
     },
     {
-     "factor": "NO SELFTEST ARM HAD EVER REACHED main(). Every existing arm tested path ROUTING or the drift COMPARISON; none called main(), which is how the silence survived from the file being written until now.",
-     "kind": "detection",
-     "action_status": "done",
-     "action": "six arms that drive main() with drift_report stubbed to both shapes the branch can see, asserting on the EXIT CODE and on the PRESENCE of a verdict, never on its wording"
-    },
-    {
-     "factor": "THE SILENCE WAS INVISIBLE FROM THE OUTSIDE. A hook printing a banner and an empty list looks like a hook that ran and found nothing, which is the reading a hook author most wants to avoid and the hardest to notice.",
+     "factor": "A nullable jsonb column and a response shape that folds null into the failure signal. `data` is `jsonb not null default '{}'` on newer tables but nullable on the older ones, and the endpoint's write reply uses the same `rows[0] ? rows[0].data : payload` idiom 69 times, so one absent blob is indistinguishable from a refused write for every caller that tests the unwrapped value.",
      "kind": "technical",
-     "action_status": "done",
-     "action": "the empty-drift path states the verdict explicitly and the listing header is suppressed when there is nothing to list"
-    }
-   ],
-   "recurrence_open": "The three genuine could-not-run paths still exit 2 and are UNTESTED by the new arms -- they were untested before and are untested now. And nothing checks that a FIFTH path added later is either exit 2 or documented as an exception; the header names four because four exist today."
-  },
-  {
-   "commit": "a0d9b68d53c4",
-   "date": "2026-09-29",
-   "subject": "fix(tools): queue25 item 6 -- the contradiction bucket was 32 and is 0, and not one register row was edited",
-   "files": [
-    "docs/2026-09-29-register-cells-hank.md",
-    "tests/run_citation_no_source_probe.py",
-    "tools/citation_no_source_report.py"
-   ],
-   "lines_added": 410,
-   "lines_removed": 20,
-   "app": "tooling",
-   "layer": "tooling",
-   "severity": "high",
-   "detection_method": "code-review",
-   "summary": "tools/citation_no_source_report.py -- the CONTRADICTORY bucket read 32 and the honest count is ZERO, with no register row edited. Reading all 32 by hand, which is what the number was for, found 31 carrying real disclosed evidence in a form the tool did not recognise and 1 that was a pure regex false positive. THREE CRITERIA CORRECTIONS: 27 rows carry 'Confidentiality individually read 2026-09-22', the 3.2 pass's per-row stamp WITHOUT a group label -- the same disclosure GROUP_STAMP already accepted, one degree less labelled, and THIS IS THE SAME MISTAKE THE TOOL ALREADY CORRECTED ONCE when the bucket went 138 to 32; 4 rows carry a field list lifted out of the source (READ OUT OF THE APP / HANDLER plus a brace list), and a rule keyed on the word APP would have missed both HANDLER rows; 1 row, law_mattermilestones, matched the bare word re-derived inside its own sentence 'the matter survives it and the stage can be re-derived'. SEPARATELY, measured at exactly 2 of 391 so it is not overstated: CITE was ':\\d{3,5}' and could not see a line number under 100, so api/_resources/stonedesk.js:27 and api/_resources/sairnroofing.js:56 were both counted as citing nothing -- api/_resources declarations live at the TOP of their files. The zero is now printed WITH its history (138, then 32, then 0, no row edited) and beside the figure that has not moved: 207 of 391 rows point at no LINE, 142 of them Tier A.",
-   "rules": [
-    "1.2"
-   ],
-   "citation_confidence": "arguable",
-   "injection_phase": "coding",
-   "phase_confidence": "stated",
-   "found_by_tool": null,
-   "found_by_session": null,
-   "injection": {
-    "commit": "2e00f064c09e",
-    "date": "2026-09-29",
-    "subject": "feat(checks): the two smaller things the scoping docs named, built instead of the gates",
-    "lag_days": 0
-   },
-   "citation_note": "1.2 GREP CANNOT TELL CODE FROM TEXT THAT DESCRIBES CODE, applied to prose rather than to code: the tool read register cells and could not tell a DISCLOSED dated read stamp from an unsupported claim, nor the word re-derived used about DATA from the same word used about a READ.",
-   "contributing_factors": [
+     "action_status": "planned",
+     "action": "The endpoint half is api/sd-data.js, which is fourth's file and is not touched here. The change text -- coalesce the blob rather than guard the row -- is in the review verdict and in this session's report for fourth to land."
+    },
     {
-     "factor": "THE OVER-ACCUSING DIRECTION WAS ALREADY KNOWN AND THE FIX STOPPED ONE SHAPE SHORT. The group-stamp correction took the bucket from 138 to 32 and its own comment says over-accusing is the direction that gets a report ignored -- then accepted one form of dated disclosure and not the other.",
+     "factor": "The first version of the control failed for a reason that had nothing to do with the defect and would have been reported as a successful red. The sandbox stubbed sdLicKey while sdData calls sdLicenseKey, so sdData threw a ReferenceError that slabSyncOne's own catch converted into the same `false` the defect produces. A harness that can forge the red it is measuring is not a control.",
      "kind": "process",
      "action_status": "done",
-     "action": "a fourth evidence category with three shapes taken from the register's own wording (axis-dated read, CONFIRMED BY INDIVIDUAL READ, field list), checked AFTER the group stamp so a row carrying both is reported under the stronger named disclosure"
+     "action": "Arm A0 runs first and asserts the transport was reached once and the 200 body parsed once before any other arm is allowed to mean anything; A1b was moved off sdDataFailed onto console.warn, the channel the defect actually uses."
     },
     {
-     "factor": "THE 32 WERE NEVER READ. The number was reported and acted on as a population without anybody opening the rows, which is the only way a 31-of-32 false-positive rate survives.",
-     "kind": "detection",
-     "action_status": "done",
-     "action": "all 32 read by hand, and the probe grew from 12 to 29 arms with a known-bad twin for every new shape"
-    },
-    {
-     "factor": "A CLAIM-PHRASE LIST CONTAINED A WORD WITH TWO MEANINGS. `re-derived` is a claim of a read in one sentence and a statement about reconstructible DATA in another, and a bare-word alternation cannot tell them apart.",
+     "factor": "Five other suites hand-listed this file's `var _sd* = {};` declarations as a mirror, and two of them carry a comment saying a hand-listed mirror goes stale -- one records that five suites broke this way in one afternoon. Adding _sdWriteOk broke them for the sixth time, and invisibly: the ReferenceError lands inside sdData's own catch, so every arm fails for a reason about the sandbox rather than the transport.",
      "kind": "technical",
      "action_status": "done",
-     "action": "the alternative now requires the object -- re-derived AT HEAD, FROM the code, OUT OF the app"
-    },
-    {
-     "factor": "LATENT: the citation rule needed three digits for a bare `:NN` in prose, which is right, and applied the same floor to a citation ATTACHED TO A PATH, which excluded the first 99 lines of every file.",
-     "kind": "latent-condition",
-     "action_status": "done",
-     "action": "a path-anchored alternative accepting 1-5 digits, with a control that a bare two-digit `:45` with no path is still NOT a citation"
+     "action": "All five now derive the list with a regex over the page plus a floor assertion that refuses if fewer than four state maps are found, so a changed declaration style fails loudly instead of dropping maps silently."
     }
    ],
-   "recurrence_open": "The criteria may now UNDER-accuse, and that is a judgement rather than a measurement: 31 rows moved out on MY reading of what counts as disclosed evidence, and nothing independent has checked that reading. The obligation opened this push names it as the second thing a reviewer should look at. Also unaddressed: 207 rows still point at no LINE, which is the real coverage gap and has not moved."
+   "recurrence_open": "Nothing on the client can tell, from a response, whether an empty `data` means\nan empty record or a failure -- the endpoint's 69 write branches all answer the\nsame ambiguous shape, and the two client callers that remain safe are safe only\nbecause their branches happen to route through flat(). Until the endpoint half\nlands, the next caller written the obvious way reintroduces this, and arm C2 is\nthe only thing that would catch it."
   },
   {
    "commit": "bc89bf345b3c",
@@ -20874,63 +20764,6 @@
     }
    ],
    "recurrence_open": "not driven live and no stored config inspected. The same-shape sweep covered sairnbiz.html only: 13 numeric falsy-coalesce sites there, 12 coalescing to 0 and therefore harmless, 1 a toast duration. No other app was swept, and nothing checks for a getter that substitutes a default ahead of its own validator."
-  },
-  {
-   "commit": "c4598430a425",
-   "date": "2026-09-29",
-   "subject": "fix(test): queue25 item 4 -- the transport arm now asserts what the caller READS, not which function it calls",
-   "files": [
-    "tests/sairncare_transport_refusal.js"
-   ],
-   "lines_added": 246,
-   "lines_removed": 6,
-   "app": "sairncare",
-   "layer": "test",
-   "severity": "high",
-   "detection_method": "code-review",
-   "summary": "tests/sairncare_transport_refusal.js -- the family-contact arm asserted WHICH FUNCTION a caller called (no alfData call naming alf_family_contacts, and at least 4 alfFamilyData occurrences) and never what the caller READ off the result. Both criteria are TRUE of a caller that calls alfFamilyData and then reads the OLD alfData shape -- treating the returned {ok,status,body,error} envelope as if it WERE the data array -- which is exactly the defect the suite exists for. Driven: a synthetic caller doing Array.isArray(res) and then assigning res to the contact list PASSES both of the old criteria. The arm is rewritten to brace-match each call site and its .then callback and ask two behavioural questions -- does it read any envelope field, and does it treat the result as an array -- and the known-bad control runs FIRST, asserting that the OLD criteria pass the synthetic caller, so the blindness is measured in the suite rather than claimed in a commit message. Mutation-tested against the real sairncare.html in memory: each of the three real callers rewritten into the old shape one at a time, all three caught, caller count held at 3 so the arm cannot pass on the count; then every user-facing sentence in all three reworded and nothing else, still clean.",
-   "rules": [
-    "1.1"
-   ],
-   "citation_confidence": "arguable",
-   "injection_phase": "coding",
-   "phase_confidence": "stated",
-   "found_by_tool": null,
-   "found_by_session": null,
-   "injection": {
-    "commit": "c123a9250021",
-    "date": "2026-09-26",
-    "subject": "fix(sairncare): the family-contact panel never worked -- all three callers read a shape the transport has never returned",
-    "lag_days": 3
-   },
-   "citation_note": "1.1 A CHECK THAT STOPPED CHECKING is the closest standing section and it is exact here: the arm ran, printed ok, and tested nothing about the defect it names. The platform words for this class are assertions aimed at text rather than at behaviour -- three of my own criteria were wrong that way in one session and none was caught by review",
-   "contributing_factors": [
-    {
-     "factor": "THE CRITERION WAS AVAILABLE AND EASIER THAN THE RIGHT ONE. Counting occurrences of a function name is one regex; parsing each call site and its callback body needs brace matching. The cheap check was written and it looked like coverage.",
-     "kind": "technical",
-     "action_status": "done",
-     "action": "familyCallerContract() brace-matches the call and the .then callback, and classifies what the callback READS off the parameter"
-    },
-    {
-     "factor": "NO CONTROL EVER FED THE ARM A KNOWN-BAD INPUT. The arm was written against code that was already correct, so it could not distinguish catching the defect from never meeting it.",
-     "kind": "detection",
-     "action_status": "done",
-     "action": "five controls, three that must FAIL the checker and two that must PASS, plus an in-suite assertion that the OLD criteria pass the known-bad caller"
-    },
-    {
-     "factor": "A REWORD-DIRECTION CONTROL WAS MISSING TOO, so an arm that had become a string test would have looked identical to one that had not.",
-     "kind": "detection",
-     "action_status": "done",
-     "action": "a control rewriting every user-facing sentence in a correct caller, which must still pass"
-    },
-    {
-     "factor": "LATENT: the transport contract had MOVED under one caller group before (alfData resolves to d.data on success and null on failure, and three callers read res.status/res.body), so this suite was already guarding a contract-drift defect and was written in the shape most likely to miss the next one.",
-     "kind": "latent-condition",
-     "action_status": "done",
-     "action": "tools/message_assertion_audit.py and its control pair, built in this same push: 589 test files and 10718 assertions classified, naming 43 files whose evidence is mostly words as the population to mutate. It names the population and does NOT mutate it, which is stated in its own output."
-    }
-   ],
-   "recurrence_open": "The new arm can only inspect alfFamilyData CALL SITES. A caller that goes back to alfData entirely leaves no call site to inspect, which is why the original alfData criterion is KEPT alongside -- and a FIFTH transport added tomorrow with its own helper is covered by neither."
   },
   {
    "commit": "c66a32854e5a",
@@ -21219,64 +21052,6 @@
    "recurrence_open": "NOT LIVE-VERIFIED. And the wider policy question is deliberately NOT answered: at what point in a window a shortfall becomes a finding is a product decision, so the module now publishes window_days_elapsed and window_days_remaining and leaves the threshold to the consumer. Any consumer that ignores those two fields still cannot tell late from early."
   },
   {
-   "commit": "fdd7068a6085",
-   "date": "2026-09-29",
-   "subject": "fix(tools): queue25 item 7 -- the false DROPPED root-caused to three polysemous words, and the SAME line caused a false negative",
-   "files": [
-    "tests/run_hedge_carry_probe.py",
-    "tools/hedge_carry_check.py"
-   ],
-   "lines_added": 222,
-   "lines_removed": 22,
-   "app": "tooling",
-   "layer": "tooling",
-   "severity": "high",
-   "detection_method": "code-review",
-   "summary": "tools/hedge_carry_check.py -- a REAL PLAIN COMMIT was reported DROPPED, a false finding on a check about honesty. Root cause is one line: every hedge was matched as a bare word with nothing but word boundaries, and three of the nineteen entries are polysemous. `appears` in 'the resource name APPEARS IN citation_drift_hook.py\\u0027s docstring' means OCCURS and hedges nothing; `possible` in 'confirm the only POSSIBLE VALUES are A and B' enumerates; `suspect` in 'the named SUSPECT is the matcher' is a noun. Each produced DROPPED against a commit with nothing to answer for. AND THE SAME LINE CAUSED A FALSE NEGATIVE: the loop broke after the first occurrence of each word, so a non-hedging 'appears in' EARLIER in a dispatch SHADOWED a real 'appears to be' later -- one bug, both directions. A FOURTH DEFECT FOUND WHILE REPRODUCING: the context sentence was cut at the first bare '.', so a dispatch naming citation_drift_hook.py reported 'The resource name appears in citation_drift_hook.' -- a reader could not see what was hedged, on a report whose entire value is showing them.",
-   "rules": [
-    "1.2"
-   ],
-   "citation_confidence": "arguable",
-   "injection_phase": "coding",
-   "phase_confidence": "stated",
-   "found_by_tool": null,
-   "found_by_session": null,
-   "injection": {
-    "commit": "2e00f064c09e",
-    "date": "2026-09-29",
-    "subject": "feat(checks): the two smaller things the scoping docs named, built instead of the gates",
-    "lag_days": 0
-   },
-   "citation_note": "1.2 GREP CANNOT TELL CODE FROM TEXT THAT DESCRIBES CODE, in its purest form: three of nineteen hedge words are polysemous, and a word-boundary match cannot tell  meaning SEEMS from  meaning OCCURS.",
-   "contributing_factors": [
-    {
-     "factor": "A CLOSED WORD LIST WAS TREATED AS A CLOSED MEANING LIST. The header argues carefully for keeping the list small so the check is not switched off, and never asks whether a word in it has more than one sense.",
-     "kind": "technical",
-     "action_status": "done",
-     "action": "HEDGE_PATTERNS is now (label, pattern) pairs with the three polysemous entries disambiguated -- appears only before to/that, possible excluding enumerating determiners, suspect only as a verb -- and HEDGES is DERIVED from them so the two cannot drift"
-    },
-    {
-     "factor": "THE BREAK-AFTER-FIRST-MATCH WAS A PERFORMANCE SHAPE WITH A CORRECTNESS CONSEQUENCE, and its comment described it as report tidiness (one report per hedge word, not per occurrence) rather than as a decision to only ever look once.",
-     "kind": "technical",
-     "action_status": "done",
-     "action": "every occurrence is judged, bounded at MAX_CONTEXTS per word so the report stays readable"
-    },
-    {
-     "factor": "NO CONTROL FED IT A NON-HEDGING USE OF A HEDGE WORD. The selftest had a known-bad in the other direction -- emphasis is not a hedge -- and nothing testing the same word used two ways.",
-     "kind": "detection",
-     "action_status": "done",
-     "action": "three false-DROPPED arms with the real sentences, each paired with a twin proving the REAL form still fires, in both the selftest and the probe; the probe runs them through the CLI against a real plain commit because a tool asserting its own fix works is the shape this class is about"
-    },
-    {
-     "factor": "PROCESS: the tool was built the same day it was run on real input, so its first real dispatch WAS its first adversarial input.",
-     "kind": "process",
-     "action_status": "declined",
-     "note": "declining to add a soak period. The defect was found on the first real run and fixed inside a day, which is the outcome a soak is for; the actionable half is the missing control, which is done above."
-    }
-   ],
-   "recurrence_open": "The remaining sixteen hedge entries have NOT been checked for a second sense -- three were found by reading one real dispatch, not by enumerating the list. And the check still cannot see a hedge that was never written: a dispatch stating a false premise flatly is invisible to it by construction, which its own header says and which the restatement gate that would cover it is deliberately not built."
-  },
-  {
    "commit": "ff6279ea74b0",
    "date": "2026-09-29",
    "subject": "fix(tools): the third copy of one credential lookup, removed",
@@ -21336,6 +21111,285 @@
     }
    ],
    "recurrence_open": "Nothing makes importing the shared lookup easier than writing a new one, so a fourth copy is available to anybody in a hurry. The sweep that would catch it lives in a control that is not in the recurring report-only set."
+  },
+  {
+   "commit": "98a97bf59bea",
+   "date": "2026-09-29",
+   "subject": "fix(hook): queue25 item 5 -- the fourth could-not path keeps its exit 0 and loses its silence",
+   "files": [
+    "tools/citation_drift_hook.py"
+   ],
+   "lines_added": 137,
+   "lines_removed": 1,
+   "app": "tooling",
+   "layer": "tooling",
+   "severity": "moderate",
+   "detection_method": "code-review",
+   "summary": "tools/citation_drift_hook.py -- main() has FOUR could-not-* paths, not the three its header implied, and the fourth exits 0. The header said could-not-run 'exits non-zero' with no exception; COULD-NOT-ATTRIBUTE (no HEAD baseline, so drift cannot be split into this-edit's and pre-existing) returns 1 if any drift exists and 0 if none does. DRIVEN in both sub-cases rather than read off the source. THE EXIT CODE IS CORRECT AND IS NOT A FOLD: what could not run is ATTRIBUTION, not the drift check, whose counts are printed; a zero-drift document entails zero drift from this edit; and exiting 2 would fire on a provably clean document in every ordinary condition where git show HEAD:<file> has nothing to give -- a fresh clone, a detached head, a file not yet in HEAD -- which is a hook somebody switches off. WHAT WAS WRONG IS THE OUTPUT: it printed the could-not-attribute note, then the line 'Listing ALL drift in the document', then NOTHING, and exited 0. It now states the verdict, names its basis as the whole-document answer rather than a before/after comparison, says what that basis cannot tell (a cite this edit FIXED; drift introduced and removed inside one write), and no longer prints a listing header with nothing under it.",
+   "rules": [
+    "1.1"
+   ],
+   "citation_confidence": "arguable",
+   "injection_phase": "coding",
+   "phase_confidence": "stated",
+   "found_by_tool": null,
+   "found_by_session": null,
+   "injection": {
+    "commit": "e6f5ca5267fb",
+    "date": "2026-09-26",
+    "subject": "feat(methodology): the citation checker now fires on the edit, and a sweep for every other check whose trigger cannot reach its subject",
+    "lag_days": 3
+   },
+   "citation_note": "1.1 A CHECK THAT STOPPED CHECKING, in the narrow form this file's own docstring already names about something else: 'Every exit path prints. Exit 0 with no output is indistinguishable from a hook that never ran.' The fourth path printed a COULD-NOT banner and then nothing, which is the same defect one step along.",
+   "contributing_factors": [
+    {
+     "factor": "THE HEADER SENTENCE WAS UNQUALIFIED AND THE CODE HAD AN EXCEPTION TO IT. Could-not-run exits non-zero was written as a rule with no carve-out, and one path legitimately needs the carve-out, so the file described itself wrongly rather than behaving wrongly.",
+     "kind": "process",
+     "action_status": "done",
+     "action": "the header now names the fourth path, prints all four, and gives the three reasons exit 0 is right there -- so nobody FIXES it into a 2"
+    },
+    {
+     "factor": "NO SELFTEST ARM HAD EVER REACHED main(). Every existing arm tested path ROUTING or the drift COMPARISON; none called main(), which is how the silence survived from the file being written until now.",
+     "kind": "detection",
+     "action_status": "done",
+     "action": "six arms that drive main() with drift_report stubbed to both shapes the branch can see, asserting on the EXIT CODE and on the PRESENCE of a verdict, never on its wording"
+    },
+    {
+     "factor": "THE SILENCE WAS INVISIBLE FROM THE OUTSIDE. A hook printing a banner and an empty list looks like a hook that ran and found nothing, which is the reading a hook author most wants to avoid and the hardest to notice.",
+     "kind": "technical",
+     "action_status": "done",
+     "action": "the empty-drift path states the verdict explicitly and the listing header is suppressed when there is nothing to list"
+    }
+   ],
+   "recurrence_open": "The three genuine could-not-run paths still exit 2 and are UNTESTED by the new arms -- they were untested before and are untested now. And nothing checks that a FIFTH path added later is either exit 2 or documented as an exception; the header names four because four exist today."
+  },
+  {
+   "commit": "a0d9b68d53c4",
+   "date": "2026-09-29",
+   "subject": "fix(tools): queue25 item 6 -- the contradiction bucket was 32 and is 0, and not one register row was edited",
+   "files": [
+    "docs/2026-09-29-register-cells-hank.md",
+    "tests/run_citation_no_source_probe.py",
+    "tools/citation_no_source_report.py"
+   ],
+   "lines_added": 410,
+   "lines_removed": 20,
+   "app": "tooling",
+   "layer": "tooling",
+   "severity": "high",
+   "detection_method": "code-review",
+   "summary": "tools/citation_no_source_report.py -- the CONTRADICTORY bucket read 32 and the honest count is ZERO, with no register row edited. Reading all 32 by hand, which is what the number was for, found 31 carrying real disclosed evidence in a form the tool did not recognise and 1 that was a pure regex false positive. THREE CRITERIA CORRECTIONS: 27 rows carry 'Confidentiality individually read 2026-09-22', the 3.2 pass's per-row stamp WITHOUT a group label -- the same disclosure GROUP_STAMP already accepted, one degree less labelled, and THIS IS THE SAME MISTAKE THE TOOL ALREADY CORRECTED ONCE when the bucket went 138 to 32; 4 rows carry a field list lifted out of the source (READ OUT OF THE APP / HANDLER plus a brace list), and a rule keyed on the word APP would have missed both HANDLER rows; 1 row, law_mattermilestones, matched the bare word re-derived inside its own sentence 'the matter survives it and the stage can be re-derived'. SEPARATELY, measured at exactly 2 of 391 so it is not overstated: CITE was ':\\d{3,5}' and could not see a line number under 100, so api/_resources/stonedesk.js:27 and api/_resources/sairnroofing.js:56 were both counted as citing nothing -- api/_resources declarations live at the TOP of their files. The zero is now printed WITH its history (138, then 32, then 0, no row edited) and beside the figure that has not moved: 207 of 391 rows point at no LINE, 142 of them Tier A.",
+   "rules": [
+    "1.2"
+   ],
+   "citation_confidence": "arguable",
+   "injection_phase": "coding",
+   "phase_confidence": "stated",
+   "found_by_tool": null,
+   "found_by_session": null,
+   "injection": {
+    "commit": "2e00f064c09e",
+    "date": "2026-09-29",
+    "subject": "feat(checks): the two smaller things the scoping docs named, built instead of the gates",
+    "lag_days": 0
+   },
+   "citation_note": "1.2 GREP CANNOT TELL CODE FROM TEXT THAT DESCRIBES CODE, applied to prose rather than to code: the tool read register cells and could not tell a DISCLOSED dated read stamp from an unsupported claim, nor the word re-derived used about DATA from the same word used about a READ.",
+   "contributing_factors": [
+    {
+     "factor": "THE OVER-ACCUSING DIRECTION WAS ALREADY KNOWN AND THE FIX STOPPED ONE SHAPE SHORT. The group-stamp correction took the bucket from 138 to 32 and its own comment says over-accusing is the direction that gets a report ignored -- then accepted one form of dated disclosure and not the other.",
+     "kind": "process",
+     "action_status": "done",
+     "action": "a fourth evidence category with three shapes taken from the register's own wording (axis-dated read, CONFIRMED BY INDIVIDUAL READ, field list), checked AFTER the group stamp so a row carrying both is reported under the stronger named disclosure"
+    },
+    {
+     "factor": "THE 32 WERE NEVER READ. The number was reported and acted on as a population without anybody opening the rows, which is the only way a 31-of-32 false-positive rate survives.",
+     "kind": "detection",
+     "action_status": "done",
+     "action": "all 32 read by hand, and the probe grew from 12 to 29 arms with a known-bad twin for every new shape"
+    },
+    {
+     "factor": "A CLAIM-PHRASE LIST CONTAINED A WORD WITH TWO MEANINGS. `re-derived` is a claim of a read in one sentence and a statement about reconstructible DATA in another, and a bare-word alternation cannot tell them apart.",
+     "kind": "technical",
+     "action_status": "done",
+     "action": "the alternative now requires the object -- re-derived AT HEAD, FROM the code, OUT OF the app"
+    },
+    {
+     "factor": "LATENT: the citation rule needed three digits for a bare `:NN` in prose, which is right, and applied the same floor to a citation ATTACHED TO A PATH, which excluded the first 99 lines of every file.",
+     "kind": "latent-condition",
+     "action_status": "done",
+     "action": "a path-anchored alternative accepting 1-5 digits, with a control that a bare two-digit `:45` with no path is still NOT a citation"
+    }
+   ],
+   "recurrence_open": "The criteria may now UNDER-accuse, and that is a judgement rather than a measurement: 31 rows moved out on MY reading of what counts as disclosed evidence, and nothing independent has checked that reading. The obligation opened this push names it as the second thing a reviewer should look at. Also unaddressed: 207 rows still point at no LINE, which is the real coverage gap and has not moved."
+  },
+  {
+   "commit": "c4598430a425",
+   "date": "2026-09-29",
+   "subject": "fix(test): queue25 item 4 -- the transport arm now asserts what the caller READS, not which function it calls",
+   "files": [
+    "tests/sairncare_transport_refusal.js"
+   ],
+   "lines_added": 246,
+   "lines_removed": 6,
+   "app": "sairncare",
+   "layer": "test",
+   "severity": "high",
+   "detection_method": "code-review",
+   "summary": "tests/sairncare_transport_refusal.js -- the family-contact arm asserted WHICH FUNCTION a caller called (no alfData call naming alf_family_contacts, and at least 4 alfFamilyData occurrences) and never what the caller READ off the result. Both criteria are TRUE of a caller that calls alfFamilyData and then reads the OLD alfData shape -- treating the returned {ok,status,body,error} envelope as if it WERE the data array -- which is exactly the defect the suite exists for. Driven: a synthetic caller doing Array.isArray(res) and then assigning res to the contact list PASSES both of the old criteria. The arm is rewritten to brace-match each call site and its .then callback and ask two behavioural questions -- does it read any envelope field, and does it treat the result as an array -- and the known-bad control runs FIRST, asserting that the OLD criteria pass the synthetic caller, so the blindness is measured in the suite rather than claimed in a commit message. Mutation-tested against the real sairncare.html in memory: each of the three real callers rewritten into the old shape one at a time, all three caught, caller count held at 3 so the arm cannot pass on the count; then every user-facing sentence in all three reworded and nothing else, still clean.",
+   "rules": [
+    "1.1"
+   ],
+   "citation_confidence": "arguable",
+   "injection_phase": "coding",
+   "phase_confidence": "stated",
+   "found_by_tool": null,
+   "found_by_session": null,
+   "injection": {
+    "commit": "c123a9250021",
+    "date": "2026-09-26",
+    "subject": "fix(sairncare): the family-contact panel never worked -- all three callers read a shape the transport has never returned",
+    "lag_days": 3
+   },
+   "citation_note": "1.1 A CHECK THAT STOPPED CHECKING is the closest standing section and it is exact here: the arm ran, printed ok, and tested nothing about the defect it names. The platform words for this class are assertions aimed at text rather than at behaviour -- three of my own criteria were wrong that way in one session and none was caught by review",
+   "contributing_factors": [
+    {
+     "factor": "THE CRITERION WAS AVAILABLE AND EASIER THAN THE RIGHT ONE. Counting occurrences of a function name is one regex; parsing each call site and its callback body needs brace matching. The cheap check was written and it looked like coverage.",
+     "kind": "technical",
+     "action_status": "done",
+     "action": "familyCallerContract() brace-matches the call and the .then callback, and classifies what the callback READS off the parameter"
+    },
+    {
+     "factor": "NO CONTROL EVER FED THE ARM A KNOWN-BAD INPUT. The arm was written against code that was already correct, so it could not distinguish catching the defect from never meeting it.",
+     "kind": "detection",
+     "action_status": "done",
+     "action": "five controls, three that must FAIL the checker and two that must PASS, plus an in-suite assertion that the OLD criteria pass the known-bad caller"
+    },
+    {
+     "factor": "A REWORD-DIRECTION CONTROL WAS MISSING TOO, so an arm that had become a string test would have looked identical to one that had not.",
+     "kind": "detection",
+     "action_status": "done",
+     "action": "a control rewriting every user-facing sentence in a correct caller, which must still pass"
+    },
+    {
+     "factor": "LATENT: the transport contract had MOVED under one caller group before (alfData resolves to d.data on success and null on failure, and three callers read res.status/res.body), so this suite was already guarding a contract-drift defect and was written in the shape most likely to miss the next one.",
+     "kind": "latent-condition",
+     "action_status": "done",
+     "action": "tools/message_assertion_audit.py and its control pair, built in this same push: 589 test files and 10718 assertions classified, naming 43 files whose evidence is mostly words as the population to mutate. It names the population and does NOT mutate it, which is stated in its own output."
+    }
+   ],
+   "recurrence_open": "The new arm can only inspect alfFamilyData CALL SITES. A caller that goes back to alfData entirely leaves no call site to inspect, which is why the original alfData criterion is KEPT alongside -- and a FIFTH transport added tomorrow with its own helper is covered by neither."
+  },
+  {
+   "commit": "fdd7068a6085",
+   "date": "2026-09-29",
+   "subject": "fix(tools): queue25 item 7 -- the false DROPPED root-caused to three polysemous words, and the SAME line caused a false negative",
+   "files": [
+    "tests/run_hedge_carry_probe.py",
+    "tools/hedge_carry_check.py"
+   ],
+   "lines_added": 222,
+   "lines_removed": 22,
+   "app": "tooling",
+   "layer": "tooling",
+   "severity": "high",
+   "detection_method": "code-review",
+   "summary": "tools/hedge_carry_check.py -- a REAL PLAIN COMMIT was reported DROPPED, a false finding on a check about honesty. Root cause is one line: every hedge was matched as a bare word with nothing but word boundaries, and three of the nineteen entries are polysemous. `appears` in 'the resource name APPEARS IN citation_drift_hook.py\\u0027s docstring' means OCCURS and hedges nothing; `possible` in 'confirm the only POSSIBLE VALUES are A and B' enumerates; `suspect` in 'the named SUSPECT is the matcher' is a noun. Each produced DROPPED against a commit with nothing to answer for. AND THE SAME LINE CAUSED A FALSE NEGATIVE: the loop broke after the first occurrence of each word, so a non-hedging 'appears in' EARLIER in a dispatch SHADOWED a real 'appears to be' later -- one bug, both directions. A FOURTH DEFECT FOUND WHILE REPRODUCING: the context sentence was cut at the first bare '.', so a dispatch naming citation_drift_hook.py reported 'The resource name appears in citation_drift_hook.' -- a reader could not see what was hedged, on a report whose entire value is showing them.",
+   "rules": [
+    "1.2"
+   ],
+   "citation_confidence": "arguable",
+   "injection_phase": "coding",
+   "phase_confidence": "stated",
+   "found_by_tool": null,
+   "found_by_session": null,
+   "injection": {
+    "commit": "2e00f064c09e",
+    "date": "2026-09-29",
+    "subject": "feat(checks): the two smaller things the scoping docs named, built instead of the gates",
+    "lag_days": 0
+   },
+   "citation_note": "1.2 GREP CANNOT TELL CODE FROM TEXT THAT DESCRIBES CODE, in its purest form: three of nineteen hedge words are polysemous, and a word-boundary match cannot tell  meaning SEEMS from  meaning OCCURS.",
+   "contributing_factors": [
+    {
+     "factor": "A CLOSED WORD LIST WAS TREATED AS A CLOSED MEANING LIST. The header argues carefully for keeping the list small so the check is not switched off, and never asks whether a word in it has more than one sense.",
+     "kind": "technical",
+     "action_status": "done",
+     "action": "HEDGE_PATTERNS is now (label, pattern) pairs with the three polysemous entries disambiguated -- appears only before to/that, possible excluding enumerating determiners, suspect only as a verb -- and HEDGES is DERIVED from them so the two cannot drift"
+    },
+    {
+     "factor": "THE BREAK-AFTER-FIRST-MATCH WAS A PERFORMANCE SHAPE WITH A CORRECTNESS CONSEQUENCE, and its comment described it as report tidiness (one report per hedge word, not per occurrence) rather than as a decision to only ever look once.",
+     "kind": "technical",
+     "action_status": "done",
+     "action": "every occurrence is judged, bounded at MAX_CONTEXTS per word so the report stays readable"
+    },
+    {
+     "factor": "NO CONTROL FED IT A NON-HEDGING USE OF A HEDGE WORD. The selftest had a known-bad in the other direction -- emphasis is not a hedge -- and nothing testing the same word used two ways.",
+     "kind": "detection",
+     "action_status": "done",
+     "action": "three false-DROPPED arms with the real sentences, each paired with a twin proving the REAL form still fires, in both the selftest and the probe; the probe runs them through the CLI against a real plain commit because a tool asserting its own fix works is the shape this class is about"
+    },
+    {
+     "factor": "PROCESS: the tool was built the same day it was run on real input, so its first real dispatch WAS its first adversarial input.",
+     "kind": "process",
+     "action_status": "declined",
+     "note": "declining to add a soak period. The defect was found on the first real run and fixed inside a day, which is the outcome a soak is for; the actionable half is the missing control, which is done above."
+    }
+   ],
+   "recurrence_open": "The remaining sixteen hedge entries have NOT been checked for a second sense -- three were found by reading one real dispatch, not by enumerating the list. And the check still cannot see a hedge that was never written: a dispatch stating a false premise flatly is invisible to it by construction, which its own header says and which the restatement gate that would cover it is deliberately not built."
+  },
+  {
+   "commit": "d537709f63e4",
+   "date": "2026-09-30",
+   "subject": "fix(sairnvet): the povidone-iodine rows stated a concentration the cited source does not give",
+   "files": [
+    "sairnvet.html",
+    "tests/sairnvet_povidone_range.js"
+   ],
+   "lines_added": 244,
+   "lines_removed": 1,
+   "app": "sairnvet",
+   "layer": "product",
+   "severity": "high",
+   "detection_method": "code-review",
+   "summary": "Four Betadine (Povidone-Iodine) rows in sairnvet.html's VET_DRUGS stated a\nconcentration the cited source does not give. Mickelson 2016 (PMID 26611923),\nquoted verbatim on the row itself, says \"0.05% chlorhexidine and 0.5 or 1%\npovidone-iodine would be considered appropriate\". The exotic/zoo row read \"Dilute\nto 1% for lavage (1:10 from 10% stock)\" -- the range narrowed to its upper bound,\non the one row that carried the citation -- and dog, cat and horse read \"Dilute\n1:10 for lavage\", a ratio that is 1% only if the stock is 10%, which a clinician\nholding a 5% or 7.5% scrub cannot rely on. Two rows also read \"generally safe\nacross species at this dilution\", a safety claim the quote does not make; it says\nthe concentration would be \"considered appropriate\" in one wound-management\ncontext. All four povidone rows now read 0.5-1%, the citation is on all eight\nTopical Antiseptic rows, and the unsupported safety wording is replaced with what\nthe quote supports.",
+   "rules": [
+    "2.3"
+   ],
+   "citation_confidence": "clean",
+   "injection_phase": "requirement",
+   "phase_confidence": "inferred",
+   "found_by_tool": null,
+   "found_by_session": null,
+   "injection": {
+    "unknown_reason": "The four rows predate the sourcing pass and git log -S on the dose strings returns the bulk VET_DRUGS seed commit, which introduced 485 rows at once -- that is the commit the string first appears in, not a commit that made a decision about this figure. The citation was added later, in the 2026-09-26 sourcing pass, and that is where the narrowing to 1% entered; attributing the whole defect to either commit alone would be wrong."
+   },
+   "contributing_factors": [
+    {
+     "factor": "The narrowing happened DURING the act of sourcing. The row that disagreed with the source most specifically was the row that had just been given the citation -- somebody read a range and wrote down one end of it while adding the reference that contradicts it. Adding a citation felt like the verification step, so nothing after it compared the two.",
+     "kind": "process",
+     "action_status": "done",
+     "action": "Arm B2 asserts the verbatim quote STORED ON THE ROW still contains both concentrations the rows state, so the dose and its evidence are checked against each other on every run rather than at the moment the citation is pasted."
+    },
+    {
+     "factor": "A ratio and a concentration were treated as the same instruction. `1:10` is only 1% at a 10% stock, and povidone-iodine scrub ships at 5%, 7.5% and 10%. The doseUnit field carried \"1:10\" so even the structured half of the row recorded the ratio rather than the figure the source gives.",
+     "kind": "technical",
+     "action_status": "done",
+     "action": "doseUnit is now \"0.5-1%\" on all four rows, and the arm's predicate rejects a bare ratio as a statement of concentration -- the known-bad arm drives that with the exact string the table shipped."
+    },
+    {
+     "factor": "Three rows carried no citation at all while a fourth carried one, so the file's own honesty suite (sairnvet_formulary_source_honesty.js) could see nothing wrong with the three: its subject is whether the app CLAIMS a verification it did not do, and an uncited row makes no claim. A dose that is wrong and silent about its basis passes a sourcing-honesty check.",
+     "kind": "process",
+     "action_status": "done",
+     "action": "The citation is on all eight rows, and this file's B1 arm requires the PMID and the verbatim quote on every Topical Antiseptic row rather than only on the ones that volunteer a reference."
+    },
+    {
+     "factor": "The clinical review obligation could not be recorded with the fix. docs/tier-a-reviews.json is held by another session, so the HIGH-severity non-author review for a clinical dose string is delivered as report text rather than as a ledger row, which is weaker: a row is queued and chased, and text is read once.",
+     "kind": "process",
+     "action_status": "planned",
+     "action": "The obligation text and the verbatim claim refusal are in this session's report for the ledger holder to land."
+    }
+   ],
+   "recurrence_open": "21 of 485 rows carry any reference at all, so for the other 464 there is nothing\na static arm can read a dose against. This control covers the 8 Topical\nAntiseptic rows; the same defect in an uncited row would be invisible, and the\nexisting sourcing-honesty suite is by design silent about rows that make no\nclaim."
   }
  ],
  "started": "2026-09-09",
