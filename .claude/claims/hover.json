@@ -483,6 +483,22 @@
         "hover_log.py",
         "run_memory_vs_derived_sweep.py"
       ]
+    },
+    {
+      "id": "hover-1790765624",
+      "session": "hover",
+      "subject": "hover",
+      "task": "nine-item queue: independent 15-row repoint re-derivation; seq 498 content-changed adjudication; TS-DERIVED class in the citation classifier with fixture; four tool-noise anchor fixes with fixtures; near-miss and quoted-claim row adjudication; log-append-time classifier gate patch with failing-first fixture; register-scoped citation anchor check; sf_national_categories replacement verification; mutation-test extension to twenty plants across the two new checks.\n\nFILES: citation_class_check.py hover_log.py run_citation_class_mutation_test.py register_citation_check.py",
+      "claimed_at": "2026-09-30T10:53:44Z",
+      "claimed_at_epoch": 1790765624.5211594,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "citation_class_check.py",
+        "hover_log.py",
+        "register_citation_check.py",
+        "run_citation_class_mutation_test.py"
+      ]
     }
   ],
   "refusals": [
