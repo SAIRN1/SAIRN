@@ -4762,6 +4762,26 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-30T01:19:56Z",
+      "opened_at_sha": "af1aeb9c52b8aac94db4aaa62e3d6ac3d2f8a431",
+      "resources": [
+        "mech_quotes"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tests/mech_docs_redaction_wiring_probe.py"
+      ],
+      "what": "TWO SEPARATE DEFECTS, and they want attacking in opposite directions.\n\n(a) sairnmechanical.html mechRedactLocal was a day behind api/_lib/mech-redact.js. Ted's 85ce0f01 fixed the server on 2026-09-29 -- Suite/Ste/Unit/Apt demoted from the address alternation to an optional tail, plus a labelled seven-digit local number -- and this copy was not fixed with it. The client is now brought into line verbatim, in the server's order.\n\nREVIEW THIS, in the UNDER-redacting direction first: whether the client and server patterns are now genuinely identical in behaviour and not merely similar in text. They are written differently at the two ends -- the server builds its address pattern with new RegExp from concatenated strings, this copy is a regex literal -- so a transcription slip is invisible to a diff. The parity arm compares behaviour on 17 cases; find an input where they disagree that is not in that list. The address designator tail `(?:,?\\s+(?:Suite|Ste|Unit|Apt)\\.?\\s*[A-Za-z0-9-]+)?` is the piece I would attack: a comma-less form, a designator at end of line with no value after it, and `Ste.` with the period are all shapes I did not drive.\n\nThen in the OVER-redacting direction: the labelled-phone rule now consumes the label with the number, so `Fax: 555-0142` becomes a bare token. Check that no legitimate document content matches `(?:phone|tel|telephone|cell|mobile|fax)` followed by a seven-digit run -- `Model 2100-0142` is safe because there is no label, but a line reading `Cell 555-0142` on a parts list is not obviously a phone number.\n\n(b) Arm 1 of tests/mech_docs_redaction_wiring_probe.py was a STALE ANCHOR. It required the literal `resource === 'mech_docs'` in the handler, and that string now exists only inside the comment recording its own removal -- the handler moved to a MECH_SCANNED_TEXT map lookup on 2026-09-29 so a third and fourth table could join. The probe strips comments, correctly, so the anchor resolved to nothing while the redaction worked.\n\nREVIEW THIS: whether anchoring on `MECH_SCANNED_TEXT[resource]` plus the map keys is any less likely to go stale than the string it replaced. My argument is that it is, because it names the mechanism rather than one of its cases, and because arm 1b is a known-bad control that removes mech_docs from the map and requires the arm to catch it. Press on whether 1b actually discriminates -- it mutates the source text in memory and re-parses, and a mutation that fails to apply would leave the arm passing for the wrong reason.\n\n(c) THE WIDTH PROBLEM IS ONLY HALF CLOSED, and I would rather a reviewer said so than let it read as finished. Arms 4b and 4c now prove the parity harness CAN see a divergence. That is not the same as proving it can see every divergence: a rule added at either end with no matching case in the list is still invisible. Nothing makes the case list grow when a rule is added, and I did not build that.\n\nNO api/ SOURCE CHANGED in this commit. The Tier A resources on this obligation are named by the changed files -- the probe's fixtures and the app's own data-entry surfaces -- not served by code this commit touched, and the diff will show that faster than this sentence.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-30T01:19:56Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
