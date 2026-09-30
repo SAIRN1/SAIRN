@@ -1973,7 +1973,15 @@ def _warn_unresolvable(args):
     overridden into uselessness, which this file already records happening to a
     gate that had to be talked past routinely.
     """
-    ghosts = unresolvable_file_tokens(' '.join(args[1:]) if len(args) > 1 else '')
+    # `args` is the argparse Namespace every other command reads the same way
+    # (`' '.join(args.task)`, three places above). The first version of this
+    # line indexed it as a list and raised TypeError on the real claim path --
+    # caught by USING the tool, not by the probe, whose E1 arm only grepped for
+    # the call. A control that greps for a call site cannot tell a wired
+    # function from a broken one, which is the eighth cross-domain discipline
+    # arriving inside the check written for the same family. The probe now
+    # DRIVES a real claim in a throwaway clone instead.
+    ghosts = unresolvable_file_tokens(' '.join(getattr(args, 'task', None) or []))
     if not ghosts:
         return
     print('\nNOTE -- %d name(s) in this task string look like files and match '

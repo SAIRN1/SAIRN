@@ -129,6 +129,36 @@ check('E1. the claim path calls it, so the author sees it while they are still '
       'in the room', 'unresolvable_file_tokens(' in src
       and src.count('unresolvable_file_tokens(') >= 2,
       src.count('unresolvable_file_tokens('))
+
+# ── E1b. AND THE GREP ARM ABOVE IS NOT ENOUGH, WHICH THIS FILE FOUND THE HARD
+# ── WAY. E1 was green while the wiring raised TypeError on every real claim:
+# ── `args` is an argparse Namespace and the first version indexed it as a list.
+# ── A control that greps for a call site cannot tell a wired function from a
+# ── broken one. So the warning path is DRIVEN, on a real argv, and the only
+# ── thing asserted is that it does not explode and does print the name.
+class _NS(object):
+    def __init__(self, task):
+        self.subject = 'probe'
+        self.task = task
+
+
+_printed = []
+_real_print = print
+try:
+    import builtins
+    builtins.print = lambda *a, **k: _printed.append(' '.join(str(x) for x in a))
+    sc._warn_unresolvable(_NS(['rewrite', 'frobnicator.py', 'today']))
+    sc._warn_unresolvable(_NS([]))
+    sc._warn_unresolvable(_NS(None))
+finally:
+    builtins.print = _real_print
+_joined = '\n'.join(_printed)
+check('E1b. _warn_unresolvable survives a REAL Namespace and names the ghost -- '
+      'driven, not grepped, because the grep arm above was green while this '
+      'path raised TypeError on every claim',
+      'frobnicator.py' in _joined, _joined[:300])
+check('E1c. ...and an empty or absent task list is silent rather than a crash',
+      _joined.count('NOT A REFUSAL') == 1, _printed)
 # AND IT MUST NOT BLOCK. Driven rather than grepped: a real claim carrying a
 # phantom token still succeeds, in a throwaway clone so this repo's claim record
 # is untouched.
