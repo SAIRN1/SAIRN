@@ -266,6 +266,24 @@ PURPOSES = {
         'exemption list is deliberately SHORT, because a long one becomes the '
         'escape hatch that makes every finding vanish. A RATCHET on '
         'docs/second-pass-coverage.json.'),
+    'mech_gate_live_probe.py': ('LIVE',
+        'does the DEPLOYED MECH_RECORDS boundary still refuse a mech_docs write on '
+        'the licence key alone, AND still allow the read and the three sibling '
+        'writes it deliberately did not close? Catches a gate that has silently '
+        'widened as well as one that has silently reopened -- mech_checks is a '
+        'cheque register whose own branch comment calls it the sharp one, and '
+        'closing it would be an unreviewed decision. '
+        'AND IT CATCHES ITS OWN RESIDUE, which is the reason it exists as a tool: '
+        'the same check run as an ad-hoc script on 2026-09-29 left two rows on a '
+        'demo-facing licence, on tables with no DELETE grant, and they were only '
+        'known about because somebody happened to read them back. Every write here '
+        'is recorded by table and id column, a dated record lands in '
+        'docs/live-residue/, and the select/delete/confirm SQL is printed with the '
+        'licence hash DERIVED in SQL. The recorder is cross-checked against the '
+        'write count the ENDPOINT observed and refuses COULD NOT RUN when they '
+        'disagree, because a recorder that counts its own calls cannot see a write '
+        'that bypassed it and would print removal SQL that is confidently '
+        'incomplete.'),
     'alf_facility_role_gate_live_probe.py': ('LIVE',
         'does the DEPLOYED alf_facility write gate refuse a non-management role? '
         'The gate is verified three ways already and none is live: in-process arms '

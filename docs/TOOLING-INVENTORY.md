@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**288 files in `tools/`.** By what actually invokes them:
+**289 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,7 +27,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 74 | runs automatically on every push, never blocks |
 | **ADVISORY** | 5 | session-start or prompt hooks, informational |
 | **DECIDED** | 74 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 66 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 67 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 54 | nothing runs these at all |
 
 By what they are, independent of wiring:
@@ -40,7 +40,7 @@ By what they are, independent of wiring:
 | GENERATOR | 19 |
 | GUARD | 1 |
 | LIBRARY | 25 |
-| LIVE | 26 |
+| LIVE | 27 |
 | PUSH-GATE | 1 |
 | REPORTER | 2 |
 | TOOL | 3 |
@@ -116,7 +116,7 @@ The 54, by name, so this is actionable rather than a statistic:
 | `verification_plan_staleness_check.py` | SUITE-ONLY | a verification-methodology plan that DISAGREES with the repo: an item marked unclaimed whose commit has already landed, one marked in flight with no live claim of that name, and one marked DONE that nothing in the history matches -- the direction that flatters. Derives the answer from git log, the claim files and the agent self-logs, in that order of authority, and never lets a self-log contradict a commit. It CANNOT catch an item the plan does not mark with a `<!-- verify: -->` comment, and reports those as UNVERIFIABLE in their own column rather than as clean -- an unmarked item is where drift hides. Exits 2 COULD NOT TELL when the plan is absent, which is its state today. |
 | `wait_for.py` | UNWIRED | a watcher that outlives its subject -- it catches the case where the thing being waited on DIES and the wait continues for ever. Measured cost: on 2026-09-25 an inline `until grep` loop polled for FOURTEEN HOURS after the process producing its sentinel was killed, because the loop's only terminal state was the happy path. Exits 3 WATCHED PID GONE -- explicitly NOT 0 -- when the pid exits without the condition being met, 4 on timeout, 2 on bad arguments, and re-checks the condition once after seeing the pid gone so a subject's final write is not discarded as a failure. An unreadable process table is UNKNOWN rather than dead, counted and reported |
 
-**Separately, 12 tool(s) make a LIVE network or database request.** Those are
+**Separately, 13 tool(s) make a LIVE network or database request.** Those are
 correctly manual: wiring one into a hook would make every push talk to the
 outside world. Unwired is the right state for them and is not a finding.
 
@@ -364,7 +364,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (66)
+## SUITE-ONLY (67)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -402,6 +402,7 @@ fixtures. Nothing points them at the real codebase.
 | `known_red_check.py` | CHECKER | a test suite that has gone red and is NOT already recorded as known-red -- the one failure a reader cannot otherwise find. 33 of 390 files were red on origin/main with nothing recording which 33, so a genuinely new regression was indistinguishable from the existing set and "some suites are just red" became the reading. Reports four answers rather than two: NEW, KNOWN, CHANGED (recorded as red but now failing on a DIFFERENT arm, so a second defect is hiding inside an entry that says the file is expected to fail) and RECOVERED (recorded and now green -- reported as loudly as NEW, because a stale entry SWALLOWS the next real failure of that file). Refuses a truncated run log rather than reading it as a clean platform | `run_known_red_probe.py` |
 | `line_endings.py` | LIBRARY | the CRLF-vs-LF recombination: 52 files here handle line endings independently and most are RIGHT, because they had already converged on `newline=''` for round-tripping. What none of them wrote down is that COMPARING is a different job with THREE answers -- IDENTICAL, ENDINGS_ONLY and DIFFERS -- and that collapsing the first two is what produced the false "files differ" alarms four times in one session. Validated against the real case: repo vs user-store skills, a bare byte compare reports 11 diverged, the true answer is 0. Does NOT migrate the 52 -- it exists so the next one is not a 53rd implementation | `run_selftest_independence_probe.py` |
 | `load_compliance_seed.py` | LIVE | a SAIRNcare compliance seed that is committed and INERT -- it loads the rules to a licence and proves it by driving the engine on IDENTICAL inputs before and after, failing when the answer did not move, because a loader exit code is not evidence | `run_compliance_loader_probe.py` |
+| `mech_gate_live_probe.py` | LIVE | does the DEPLOYED MECH_RECORDS boundary still refuse a mech_docs write on the licence key alone, AND still allow the read and the three sibling writes it deliberately did not close? Catches a gate that has silently widened as well as one that has silently reopened -- mech_checks is a cheque register whose own branch comment calls it the sharp one, and closing it would be an unreviewed decision. AND IT CATCHES ITS OWN RESIDUE, which is the reason it exists as a tool: the same check run as an ad-hoc script on 2026-09-29 left two rows on a demo-facing licence, on tables with no DELETE grant, and they were only known about because somebody happened to read them back. Every write here is recorded by table and id column, a dated record lands in docs/live-residue/, and the select/delete/confirm SQL is printed with the licence hash DERIVED in SQL. The recorder is cross-checked against the write count the ENDPOINT observed and refuses COULD NOT RUN when they disagree, because a recorder that counts its own calls cannot see a write that bypassed it and would print removal SQL that is confidently incomplete. | `run_mech_gate_live_probe_probe.py` |
 | `message_assertion_audit.py` | CHECKER | a test file whose evidence is mostly WORDS -- an arm that checks a string appears in captured output or in a source read, and therefore passes when the behaviour it names is gone. Three of my own criteria were wrong that way in one session (a transport arm that checked WHICH function a caller called and not what it READ; a hedge matcher that fired on "appears" meaning OCCURS; a citation rule that could not see a line number under 100), and none was caught by review. The criterion is CONTAINMENT, not "a string is involved": an equality against a literal is an assertion about a VALUE, and calling it text is what made v1 report NINE mutation controls -- whole-file byte comparisons against a saved baseline -- as message-only. Reports the UNCLASSIFIED bucket as its own number (6,499 of 10,718) and excludes it from the ratio denominator, because folding it either way decides the answer by how much the tool failed to parse. Keeps the JavaScript regex estimate separate from the ast-parsed Python figure. CANNOT tell whether an arm survives its behaviour being removed -- only a mutation answers that, and this names the population to mutate. CANNOT see one fragile message check inside a file with forty value assertions, because the unit is the file: guessing arm boundaries across four label conventions mis-attributes findings | `run_message_assertion_probe.py` |
 | `new_checker.py` | GENERATOR | scaffolds a checker and its control pair, wired through checker_kit -- and what it emits REFUSES (exit 2) until its rule is written, so a fresh checker can never report clean | `run_new_checker_probe.py` |
 | `nhi_register.py` | GENERATOR | every NON-HUMAN IDENTITY with a named OWNER and a real SCOPE, because an env-var scan structurally cannot answer that -- a GitHub PAT, a Postgres LOGIN role and four clones credentialed by the Windows credential manager are not `process.env` reads. REFUSES when a credential secrets_inventory calls a CREDENTIAL belongs to no identity, or when sql/ creates a role with no entry. Its first run found ELEVEN credentials with no recorded owner. Complements docs/SECRETS-INVENTORY.md rather than replacing it: that one answers what a variable unlocks, this one answers who owns it | `run_first_article_inspection_probe.py`, `run_nhi_clone_enumeration_probe.py`, `run_selftest_independence_probe.py` |
@@ -531,11 +532,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      288   git ls-files tools/
+  tools on disk                      289   git ls-files tools/
   hook entries                        16   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                70   report_only_checks.REGISTRY
-  tools invoked by tests/            209   tests/**/*.py, *.js
+  tools invoked by tests/            210   tests/**/*.py, *.js
   recorded NOT-promoted decisions     80   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```
