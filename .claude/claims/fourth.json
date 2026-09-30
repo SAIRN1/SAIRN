@@ -2835,6 +2835,17 @@
       "status": "released",
       "released_at": "2026-09-29T23:46:05Z",
       "files": null
+    },
+    {
+      "id": "fourth-1790726658",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "tools/purge_evidence_gate.py tools/credential_purge_check.py tests/run_purge_evidence_probe.py tools/rewrite_convergence_map.py tests/run_rewrite_convergence_probe.py docs/2026-09-29-rewrite-map-fourth.md tools/numeric_default_coalesce_scan.py tests/run_numeric_coalesce_probe.py docs/2026-09-29-cells-fourth.md docs/2026-09-29-inventory-fourth.md",
+      "claimed_at": "2026-09-30T00:04:18Z",
+      "claimed_at_epoch": 1790726658.5893552,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
