@@ -3028,8 +3028,8 @@
       "task": "the live verification record for the mech_docs write gate on the deployed endpoint, and the removal SQL for two rows it left on the demo licence. SUBJECT NAMED PER PR 4.3 FILES: docs/2026-09-29-mech-docs-gate-live-verification.md",
       "claimed_at": "2026-09-30T00:07:58Z",
       "claimed_at_epoch": 1790726878.6285617,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T00:12:40Z",
       "files": [
         "docs/2026-09-29-mech-docs-gate-live-verification.md"
       ]
