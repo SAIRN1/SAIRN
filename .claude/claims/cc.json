@@ -3165,6 +3165,17 @@
       "status": "released",
       "released_at": "2026-09-30T13:52:20Z",
       "files": null
+    },
+    {
+      "id": "cc-1790776562",
+      "session": "cc",
+      "subject": "sairnbizfix",
+      "task": "sairnbiz.html",
+      "claimed_at": "2026-09-30T13:56:02Z",
+      "claimed_at_epoch": 1790776562.1044915,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
