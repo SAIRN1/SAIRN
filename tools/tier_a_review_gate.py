@@ -158,6 +158,38 @@ SKIP_REASONS = (
     (lambda c: c.lower().endswith('.md'),
      'markdown is prose, never a request handler -- and every session worklog '
      'lives at the repo root by convention'),
+    # ── THE HOVER AUDITOR'S OWN TOOLING (H2 seq 425, added 2026-09-30) ──────
+    # This gate tripped TWICE in one session on a resource NAME appearing as a
+    # bare token in auditor tooling -- "leg_insurance" in the citation linter's
+    # fixtures (seq 416), "quotes" in stale_basis_check.py's prose (seq 422) --
+    # and each trip demanded an obligation the auditor STRUCTURALLY CANNOT
+    # COMMIT, because tools/hover_auditor_scope_gate.py refuses
+    # docs/tier-a-reviews.json from that clone. A gate that requires a record
+    # its subject is forbidden to write is a deadlock, not a gate.
+    #
+    # NO STRING ANALYSIS CAN FIX THIS AND THIS FILE ALREADY SAID SO.
+    # strip_diff_noise() blanks PROSE and keeps SHORT tokens, because a resource
+    # token in real serving code IS a short literal ('sb_ts') -- so a fixture
+    # token is "character-for-character what a handler writes", in this file's
+    # own words, and the dead end was left "for whoever owns this gate".
+    #
+    # SO THE PREDICATE IS ABOUT WHAT THE FILE IS, the axis every clause above
+    # already uses. The auditor's core rule FORBIDS it writing platform code, so
+    # a resource name in its rotation pool, its fixtures or a regex example is a
+    # MENTION and can never be a handler. Same "naming is not serving" logic as
+    # docs/ and sql/.
+    #
+    # SCOPED TO THE AUDITOR TREE ALONE, trailing slash included: a sibling skill
+    # directory and a directory merely PREFIXED with this name are both still in
+    # scope, and the probe holds all three directions.
+    (lambda c: c.replace(os.sep, '/').startswith(
+        '.claude/skills/sairn-hover-auditor/'),
+     "the hover auditor's own tooling serves no platform resource by "
+     'definition -- its core rule forbids writing platform code, so a resource '
+     'NAME in a rotation-pool list, a fixture or a regex example is a mention, '
+     "not a handler. Same 'naming is not serving' logic as docs/ and sql/, and "
+     'the obligation it would otherwise force is one the auditor is refused '
+     'permission to commit (H2 seq 416/422/425)'),
 )
 
 
