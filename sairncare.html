@@ -534,7 +534,22 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div class="fg"><label>Medication</label><select id="cs-medication"></select></div>
     <div class="fg"><label>Date</label><input id="cs-date" type="date"></div>
     <div class="fg"><label>Count Value</label><input id="cs-count-value" type="number"></div>
-    <div class="fg"><label>Witness (second signature)</label><select id="cs-witness"></select></div>
+    <div class="fg"><label>Witness (second signature)</label><select id="cs-witness" onchange="csResetWitness()"></select></div>
+    <!-- THE SECOND SIGNATURE IS A SECOND SIGN-IN, not a name picked from a
+         list. The witness enters their own PIN here; the server reads WHO they
+         are from their own verified session and binds the confirmation to a
+         hash of this exact count. Nothing typed by the person recording the
+         count decides who witnessed it.
+         The PIN is sent once, cleared immediately, and never stored. -->
+    <div class="fg" style="border:1px solid var(--line);border-radius:8px;padding:10px">
+      <label>Witness confirms, with their own PIN</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="cs-witness-pin" type="password" inputmode="numeric" autocomplete="off"
+               placeholder="Witness PIN" style="flex:1">
+        <button class="btn bo" type="button" onclick="csConfirmWitness()">Confirm</button>
+      </div>
+      <div class="note" id="cs-witness-state" style="margin-top:8px">Not confirmed yet.</div>
+    </div>
     <div class="fg"><label><input type="checkbox" id="cs-discrepancy" style="width:auto;display:inline-block;margin-right:6px" onchange="csToggleDiscrepancy()"> Discrepancy found</label></div>
     <div class="fg" id="cs-discrepancy-row" style="display:none"><label>Discrepancy Notes</label><textarea id="cs-discrepancy-notes" rows="2"></textarea></div>
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
@@ -1175,6 +1190,9 @@ var APP_ID='sairncare';
 var DATA_API='https://sairn.vercel.app/api/sd-data';
 var PROXY='https://sairn.vercel.app/api/claude';
 var AUTH_API='https://sairn.vercel.app/api/alf-auth';
+// The witness lock for controlled-substance counts. See
+// api/sairncare-witness.js and sql/sairncare_witness_schema.sql.
+var WITNESS_API='https://sairn.vercel.app/api/sairncare-witness';
 
 function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 // ── A REFUSED WRITE RETURNED false TO NOBODY (2026-09-04) ─────────────────
@@ -1414,7 +1432,10 @@ function alfNotProvisioned(resource){
   var e=alfLastOutcome[resource];
   return !!e&&e.provisioned===false;
 }
-function alfData(action,resource,payload,withSession){
+// `extra` is merged into the REQUEST ENVELOPE, not into the payload -- the
+// witness token is an authorisation for the write, not a field of the record,
+// and putting it in the payload would change the content hash it is bound to.
+function alfData(action,resource,payload,withSession,extra){
   var lic=alfLicenseKey();
   if(!lic){alfNote(resource,'MISSED',{code:'NO_LICENCE',message:'No licence key in this browser — nothing was sent.'});return Promise.resolve(null);}
   var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};
@@ -1423,7 +1444,7 @@ function alfData(action,resource,payload,withSession){
     signal: alfFetchTimeoutSignal(),
     method:'POST',
     headers:h,
-    body:JSON.stringify({action:action,resource:resource,app_id:APP_ID,payload:payload||{}})
+    body:JSON.stringify(Object.assign({action:action,resource:resource,app_id:APP_ID,payload:payload||{}},extra||{}))
   }).then(function(r){
     return r.json().then(function(d){
       if(!r.ok||!d||!d.ok){
@@ -2726,10 +2747,20 @@ function rMar(){
   }
   view.innerHTML=html;
 }
-async function marWrite(entryType,rec){
-  var rid=marSelectedResidentId();
-  var payload=Object.assign({},rec,{resident_id:rid,entry_type:entryType});
-  return alfData('write','alf_mar',payload,true);
+// ── THE PAYLOAD IS BUILT ONCE AND SHARED WITH THE WITNESS STEP ───────────
+// api/sairncare-witness.js binds a confirmation to a HASH OF THE EXACT RECORD.
+// If the bytes the witness confirmed and the bytes the write sends differ by
+// one field, the server refuses with WITNESS_CONTENT_MISMATCH -- which is the
+// binding working. So the payload is constructed HERE, by one function, and
+// both the witness request and the write use the object it returns. Building
+// it twice is how a content binding turns into a mystery refusal.
+function marPayload(entryType,rec){
+  return Object.assign({},rec,{resident_id:marSelectedResidentId(),entry_type:entryType});
+}
+async function marWrite(entryType,rec,witnessToken){
+  var payload=marPayload(entryType,rec);
+  return alfData('write','alf_mar',payload,true,
+                 witnessToken?{witness_token:witnessToken}:null);
 }
 // ── Medication order (mutable-in-place, owner/nursing only) ──────────────
 var moEditId=null;
@@ -3123,6 +3154,11 @@ function openCsCountModal(){
   $('cs-count-value').value='';$('cs-discrepancy').checked=false;$('cs-discrepancy-notes').value='';
   csToggleDiscrepancy();
   $('cs-policy-note').textContent='Active policy: '+csPolicyLabel(facility().cs_policy)+'. A second signature (witness) is required regardless of which policy is active -- the one converged best practice found in research.';
+  // A CONFIRMATION IS FOR ONE COUNT. Clearing it here means the next count
+  // starts unconfirmed rather than inheriting the last one's token -- which
+  // the server would refuse anyway on the content hash, but refusing in a
+  // modal the user did not expect reads as a bug rather than as the lock.
+  csPendingId=null; csResetWitness();
   $('csCountModal').classList.add('on');
   if(alfIsManagement()&&!_alfRoster)alfRefreshRoster(function(){
     witnessSel.innerHTML='<option value="">Select witness…</option>'+alfAssignable().map(function(e){
@@ -3132,22 +3168,135 @@ function openCsCountModal(){
 }
 function csToggleDiscrepancy(){$('cs-discrepancy-row').style.display=$('cs-discrepancy').checked?'block':'none';}
 function closeCsCountModal(){$('csCountModal').classList.remove('on');}
+// -- THE WITNESS STEP (2026-09-30) ----------------------------------------
+// The dropdown used to be the whole control: the browser refused to save
+// without a name selected, and the server believed whatever name arrived. The
+// client is what an attacker replaces, so the name was decorative.
+//
+// A REAL SECOND SIGNATURE MEANS A SECOND SIGN-IN. The witness authenticates as
+// themselves, on this device, and api/sairncare-witness.js mints a token bound
+// to a hash of THIS EXACT COUNT, carrying THEIR employee id read from THEIR
+// verified session. Nothing the counter types decides who witnessed.
+//
+// THE PIN IS NEVER STORED AND NEVER LEAVES THIS FUNCTION. It is sent once to
+// the auth endpoint, the field is cleared immediately whether the sign-in
+// succeeded or not, and only the resulting session token is used -- in a local
+// variable, for the length of one count.
+var csWitnessToken=null, csWitnessWho=null, csPendingId=null;
+function csResetWitness(){
+  csWitnessToken=null; csWitnessWho=null;
+  var el=$('cs-witness-state'); if(el) el.textContent='Not confirmed yet.';
+  var pin=$('cs-witness-pin'); if(pin) pin.value='';
+}
+// The count as it will be WRITTEN. The id is generated ONCE and held, because
+// the witness confirms a hash of these exact bytes -- a fresh id at save time
+// would change them and the server would refuse with WITNESS_CONTENT_MISMATCH,
+// which is the binding working and would read as a bug.
+function csBuildRec(){
+  if(!csPendingId) csPendingId=newId('CNT');
+  return {
+    id:csPendingId,
+    medication_id:$('cs-medication').value,
+    date:$('cs-date').value||alfLocalToday(),
+    count_value:Number($('cs-count-value').value)||0,
+    counted_by:(alfSession&&alfSession.employee_id)||'',
+    witness_id:$('cs-witness').value,
+    discrepancy:$('cs-discrepancy').checked,
+    discrepancy_notes:$('cs-discrepancy-notes').value.trim()
+  };
+}
+async function csConfirmWitness(){
+  var who=$('cs-witness').value;
+  var pinEl=$('cs-witness-pin');
+  var pin=(pinEl&&pinEl.value)||'';
+  var state=$('cs-witness-state');
+  if(!$('cs-medication').value){toast('Select a medication first');return;}
+  if(!who){toast('Select who is witnessing');return;}
+  if(!pin){toast('The witness enters their own PIN');return;}
+  if(alfSession&&who===alfSession.employee_id){
+    // REFUSED HERE AND AGAIN ON THE SERVER. The server is the control; this is
+    // only so the person finds out before typing a PIN.
+    if(state)state.textContent='You cannot witness your own count. A controlled-substance count needs a second person.';
+    return;
+  }
+  if(state)state.textContent='Confirming...';
+  var login=await alfAuth('login',{employee_id:who,pin:pin});
+  if(pinEl)pinEl.value='';
+  if(!login.ok||!login.data||!login.data.token){
+    if(state)state.textContent='That sign-in was not accepted'+(login.msg?' -- '+login.msg:'')+'. Nothing was confirmed.';
+    return;
+  }
+  var payload=marPayload('count',csBuildRec());
+  var r=await fetch(WITNESS_API,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+alfLicenseKey(),'X-SD-Auth':login.data.token},
+    body:JSON.stringify({action:'request',resource:'alf_mar',payload:payload})
+  }).then(function(x){
+    return x.json().catch(function(){return {};}).then(function(d){return {status:x.status,d:d};});
+  }).catch(function(e){
+    return {status:0,d:{error:{message:'Network error -- '+e.message}}};
+  });
+  if(r.status===200&&r.d&&r.d.token){
+    csWitnessToken=r.d.token; csWitnessWho=who;
+    if(state)state.textContent='Confirmed by '+(alfEmployeeName(who)||who)
+      +(r.d.require_two_person?' -- this facility also requires a countersignature.':'.');
+    return;
+  }
+  csWitnessToken=null; csWitnessWho=null;
+  // NAMES THE REASON. A bare "could not confirm" on a controlled-substance
+  // count sends somebody to guess at a PIN that was fine.
+  var code=(r.d&&r.d.error&&r.d.error.code)||'';
+  var msg=(r.d&&r.d.error&&r.d.error.message)||'';
+  if(state)state.textContent=(code==='NOT_A_WITNESS_ROLE')
+    ? 'That employee cannot witness a controlled-substance count -- only an Owner or Nurse can.'
+    : (code==='NOT_PROVISIONED')
+      ? 'Witnessing is not set up on this facility yet -- run sql/sairncare_witness_schema.sql. Nothing was confirmed.'
+      : 'Not confirmed'+(msg?' -- '+msg:'')+'.';
+}
 async function saveCsCount(){
   var medId=$('cs-medication').value;
   var witness=$('cs-witness').value;
   if(!medId){toast('Select a medication');return;}
   if(!witness){toast('A witness (second signature) is required for a controlled-substance count');return;}
-  var rec={
-    id:newId('CNT'),medication_id:medId,date:$('cs-date').value||alfLocalToday(),
-    count_value:Number($('cs-count-value').value)||0,counted_by:(alfSession&&alfSession.employee_id)||'',
-    witness_id:witness,discrepancy:$('cs-discrepancy').checked,discrepancy_notes:$('cs-discrepancy-notes').value.trim()
-  };
-  var list=marEntries();
-  list.push(Object.assign({resident_id:marSelectedResidentId(),entry_type:'count'},rec));
-  st('alf_mar',list);
-  closeCsCountModal();rMar();
-  var syncResult=await marWrite('count',rec);
-  toast(syncResult?'Count logged':'Saved on this device only -- server sync failed, try again with a connection');
+  if(!csWitnessToken||csWitnessWho!==witness){
+    toast('The witness must confirm this count first -- their sign-in is the second signature');
+    return;
+  }
+  var rec=csBuildRec();
+  // -- NOT SAVED LOCALLY UNTIL THE SERVER ACCEPTS IT (2026-09-30) ---------
+  // This used to push to localStorage and render BEFORE syncing, so a count
+  // the server refused sat on screen looking logged. On a controlled-substance
+  // record that is worse than losing it: the facility believes a two-person
+  // count happened. Same reasoning as StoneDesk's sdLocAdd -- a refusal and an
+  // outage are not the same answer, and only one of them will ever land on a
+  // retry.
+  var syncResult=await marWrite('count',rec,csWitnessToken);
+  if(syncResult){
+    var list=marEntries();
+    list.push(marPayload('count',rec));
+    st('alf_mar',list);
+    csPendingId=null; csResetWitness();
+    closeCsCountModal(); rMar();
+    toast('Count logged');
+    return;
+  }
+  var code=alfLastErrText('alf_mar');
+  if(alfWriteVerdict('alf_mar')==='MISSED'){
+    // The server said NO. Nothing is saved anywhere and the modal stays open,
+    // so the count can be corrected or deferred rather than silently lost.
+    csWitnessToken=null; csWitnessWho=null;
+    var st2=$('cs-witness-state');
+    if(st2)st2.textContent='Refused: '+(code||'the server did not accept this count')+'. Confirm again.';
+    toast('Not saved -- '+(code||'the server refused this count'));
+    return;
+  }
+  // Could not reach the server at all. The count is kept locally, because a
+  // retry can still land -- which is exactly what a refusal cannot.
+  var list2=marEntries();
+  list2.push(marPayload('count',rec));
+  st('alf_mar',list2);
+  closeCsCountModal(); rMar();
+  toast('Saved on this device only -- server sync failed, try again with a connection');
 }
 // ── Reconciliation (append-only, owner/nursing only) ──────────────────────
 function openReconModal(){
