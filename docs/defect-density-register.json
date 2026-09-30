@@ -20002,6 +20002,58 @@
       "recurrence_open": "The gate is at PUSH time, so the byte still reaches the commit and the working tree. Nothing prevents it at write time, and the repo has now produced this byte in three separate sessions."
     },
     {
+      "commit": "76885c1bd14b",
+      "date": "2026-09-29",
+      "subject": "fix(test): the read-order matcher could only see ONE spelling of the call, so a refactor read as a regression",
+      "files": [
+        "api/alf-append-only-read-order.test.js"
+      ],
+      "lines_added": 187,
+      "lines_removed": 5,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "api/alf-append-only-read-order.test.js matched each PostgREST trail read by requiring the whole query inside one inline rest('...') literal. When the alf_incidents read was refactored into a query built up in a variable -- with its order=created_at.desc still present -- the matcher found ZERO reads and the suite went RED on main with 'expected exactly 1 ... found 0'. The check reported on the SPELLING of the call rather than on the ordering it exists to verify, so every refactor of a covered read reads as a regression.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "api/alf-append-only-read-order.test.js",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The matcher was written against the only spelling that existed at the time; the refactor that broke it is a separate commit by another session and neither introduced the defect alone."
+      },
+      "citation_note": "The shape is cross-domain-disciplines item 8 -- nothing announces the day a check stops testing anything -- which is a standing convention in docs/2026-09-13-cross-domain-disciplines.md rather than a numbered rule in SAIRN-PROCESS-RULES.md.",
+      "contributing_factors": [
+        {
+          "factor": "The matcher required one inline literal, so it could see one spelling of a call that has several",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "It now resolves the variable to its definition -- finds the declaration whose literal opens with the table prefix, requires the identifier to actually reach rest(), and concatenates every single-quoted literal from the declaration and every later += . Expressions are deliberately not evaluated, because an expression contributes a value and never a query parameter name."
+        },
+        {
+          "factor": "A check whose anchor is a literal string in somebody elses file has no way to notice the day that literal moves",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Six control arms against synthetic source: the inline shape still seen, the variable shape seen, and known-bad arms for a variable read with no order, an order present only in a trailing comment, and a query variable never handed to rest()."
+        },
+        {
+          "factor": "The failure surfaced only because somebody happened to run the suite while working on an unrelated change in the same file",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "Sweep the other source-reading tests for the same pinning and report each. DONE for this sweep -- three latent hits named -- but nothing runs that sweep on a cadence, so a fourth appearing later is still found by accident."
+        },
+        {
+          "factor": "Comment stripping was per-line, which does not cover a claim parked after a real statement",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Trailing // comments are now stripped per statement across every line of a multi-line concatenation, and the known-bad control drives exactly that fixture."
+        }
+      ],
+      "recurrence_open": "THREE OTHER TESTS PIN THE SAME SPELLING AND ARE STILL LATENT: api/_lib/dental-gfe.test.js:186-187, api/law-auth-custody-matter-attribution.test.js:66, tests/cron_schedules_do_not_collide.js:167. All three are green today because their target reads are still inline; each goes red the day its read is refactored. Not fixed here."
+    },
+    {
       "commit": "7743faa963e0",
       "date": "2026-09-29",
       "subject": "fix(sairncare): who administered the medication came from the request, not the session",
