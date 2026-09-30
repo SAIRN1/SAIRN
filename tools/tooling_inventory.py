@@ -266,6 +266,28 @@ PURPOSES = {
         'exemption list is deliberately SHORT, because a long one becomes the '
         'escape hatch that makes every finding vanish. A RATCHET on '
         'docs/second-pass-coverage.json.'),
+    'live_probe_declaration_check.py': ('REPORT',
+        'can tools/live_probe_residue_audit.py PARSE what a live tool declares? '
+        'Catches the case the auditor itself cannot report: a declaration that is '
+        'PRESENT and UNREADABLE. tools/mech_gate_live_probe.py was written to be '
+        'judged by that auditor, declared everything it asks for, and was invisible '
+        'to it three ways -- a positional write action (absent from the '
+        'writing-probe list entirely, 9 writers reported where there were 10), a '
+        'multi-line residue concatenation (reported as declares-no-residue), and a '
+        'residue declaration not STARTING with a real path. EVERY ONE LOOKS '
+        'IDENTICAL TO NOT DECLARING AT ALL, so the auditors own finding cannot '
+        'tell an author who said nothing from one who said it in a form the regex '
+        'rejects -- and the second author has no reason to suspect anything. '
+        'IMPORTS THE AUDITORS REGEXES rather than copying them, and exits 2 '
+        'COULD NOT RUN if any is gone, because a second copy would drift and then '
+        'bless a declaration the auditor still cannot read. --staged reads the '
+        'INDEX for pre-commit use. CANNOT see a genuinely absent declaration (the '
+        'auditors job, and two tools on one fact can disagree) or a dynamically '
+        'built action name -- it inherits every blind spot the auditor has, on '
+        'purpose. Control: tests/run_live_probe_declaration_probe.py, 21 arms, '
+        'whose sharpest are the PROSE arms: its own first real run produced four '
+        'findings and all four were docstrings describing the contract, including '
+        'the auditors own.'),
     'sql_column_exists_check.py': ('REPORT',
         'does a sql/ file FILTER on a column the table does not have? Catches the '
         'defect that reached origin/main on 2026-09-29: a residue-removal block '
