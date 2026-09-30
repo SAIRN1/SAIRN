@@ -10351,6 +10351,35 @@ module.exports = async (req, res) => {
           marData.reviewed_at = nowISO();
         }
       }
+      // ── THE WITNESS LOCK, FOR entry_type 'count' ONLY (2026-09-30) ────
+      // Closes the finding this branch's own comment registered forty lines
+      // above: "`witness_id` IS DELIBERATELY NOT HERE... SAIRNcare has no
+      // server-side witness verification at all, where SAIRNvet has
+      // api/sv-witness.js and a witness token -- that is a real and separate
+      // finding." This is that finding, closed.
+      //
+      // IT IS A REFUSAL, NOT A FLAG. requireWitness returns a refusal object or
+      // null -- deliberately not a boolean, because a boolean invites
+      // `if (!ok) { log(); }` and this has to be the thing that stops the
+      // write. Every could-not-tell inside it refuses too: alf_mar is
+      // append-only with no delete verb, so a correction is a SECOND row and
+      // the wrong one stands forever.
+      //
+      // ONLY THE COUNT. requireWitness returns null immediately for every other
+      // entry_type -- an administration has one actor by definition, and
+      // locking it would be a gate in front of a door nobody meant to shut.
+      //
+      // callerEmployeeId IS THE COUNTER. `counted_by` is stamped from this same
+      // session twenty lines above, so passing it here is what lets the lock
+      // REFUSE a self-witnessed count rather than record it as a two-person one.
+      const alfWitness = require('./sairncare-witness');
+      const alfRefusal = await alfWitness.requireWitness({
+        resource: resource, payload: payload, licHash: licHash,
+        rest: rest, headers: headers,
+        token: req.headers['x-alf-witness'] || (body && body.witness_token) || '',
+        callerEmployeeId: session.employee_id
+      });
+      if (alfRefusal) { res.status(alfRefusal.status).json(alfRefusal.body); return; }
       // ── ATOMIC CHECK-AND-INSERT (2026-09-21) ──────────────────────────
       // Was a plain SELECT-for-409-then-POST-with-merge-duplicates, which had
       // a real TOCTOU gap: two callers racing the SAME entry_id could each

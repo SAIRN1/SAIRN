@@ -36,11 +36,18 @@
 // ── WHAT IS DELIBERATELY NOT CHANGED HERE ─────────────────────────────────
 // `witness_id` on a controlled-substance count names a SECOND person who is BY
 // DEFINITION not the caller, so it cannot be stamped from the session and is
-// still caller-supplied. That SAIRNcare has no server-side witness verification
-// at all -- SAIRNvet has one, api/sv-witness.js, with a witness token -- is a
-// real and separate finding, registered rather than folded in here. An arm below
-// pins that witness_id SURVIVES, so this change cannot be mistaken for having
-// addressed it.
+// still caller-supplied on the blob. An arm below pins that it SURVIVES, so
+// this file's actor-stamping change is not mistaken for having addressed it.
+//
+// ── THAT SEPARATE FINDING IS NOW CLOSED (2026-09-30), AND THIS PARAGRAPH IS
+// THE CORRECTION. It used to read "SAIRNcare has no server-side witness
+// verification at all". That is FALSE as of api/sairncare-witness.js: a COUNT
+// cannot be written until a DIFFERENT, currently-active Owner or Nurse has
+// witnessed that exact record on the server, and a self-witnessed count is
+// REFUSED rather than flagged. The blob field is still decorative; the lock is
+// not on the blob. Saying otherwise here would be the stale-disclosure defect
+// this repo keeps paying for -- a note that was true when written, read as
+// current by everybody after.
 //
 // ── THE ARMS ASSERT BOTH HOPS ─────────────────────────────────────────────
 // Every write arm checks the RPC body that goes to PostgREST *and* the JSON the
@@ -61,6 +68,12 @@ const { signSessionToken } = require('./_lib/auth');
 const HASH = 'alf-mar-actor-hash';
 const APP = 'sairncare';
 const ME = 'emp-nurse-1';
+// A DIFFERENT person. A self-witnessed count is refused, so the witness on
+// these fixtures cannot be ME -- which is the lock working, not a fixture
+// convenience.
+const WITNESS_EMP = 'emp-nurse-witness';
+const alfWitness = require('./sairncare-witness');
+const witnessState = { payload: null, spent: false };
 const VICTIM = 'emp-someone-else';
 const RESIDENT = 'res-1';
 
@@ -99,8 +112,47 @@ function postgrestMock(role, calls) {
       if (m) eqs.push([m[1], decodeURIComponent(m[2])]);
     });
     if (/_employee_auth\?/.test(u)) {
+      // ANSWERS FOR THE WITNESS TOO, as of 2026-09-30. requireWitness re-reads
+      // the attester at write time -- the settling step -- so a mock that knew
+      // only ME would fail every count arm with WITNESS_NO_LONGER_ACTIVE and
+      // the failure would look like the gate working.
+      const forId = (eqs.filter(function (kv) { return kv[0] === 'employee_id'; })[0] || [])[1];
+      if (forId === WITNESS_EMP) {
+        return { ok: true, status: 200, json: async function () {
+          return [{ license_hash: HASH, employee_id: WITNESS_EMP, role: 'nursing', active: true }]; } };
+      }
       return { ok: true, status: 200, json: async function () {
         return [{ license_hash: HASH, employee_id: ME, role: role, active: true }]; } };
+    }
+    // ── THE WITNESS LOCK'S STORE (2026-09-30) ────────────────────────────
+    // A controlled-substance COUNT is now gated by api/sairncare-witness.js.
+    // These arms are about ACTOR IDENTITY, not about witnessing, so the store
+    // supplies a VALID token and the arms go on testing what they were written
+    // to test. api/sairncare-witness.test.js owns the lock's own behaviour and
+    // drives every refusal in both directions.
+    //
+    // THE content_hash IS COMPUTED BY THE REAL FUNCTION, imported rather than
+    // re-implemented: a hand-rolled canonical form here would make these arms
+    // pass against a binding the endpoint does not actually use.
+    if (/sairncare_witness_policy/.test(u)) {
+      return { ok: true, status: 200, json: async function () { return []; } };
+    }
+    if (/sairncare_witness_tokens/.test(u)) {
+      if (opts && opts.method === 'PATCH') {
+        if (witnessState.spent) return { ok: true, status: 200, json: async function () { return []; } };
+        witnessState.spent = true;
+        return { ok: true, status: 200, json: async function () { return [{ id: 'tok-1' }]; } };
+      }
+      if (!witnessState.payload) return { ok: true, status: 200, json: async function () { return []; } };
+      return { ok: true, status: 200, json: async function () {
+        return [{
+          id: 'tok-1',
+          content_hash: alfWitness.contentHash('alf_mar', witnessState.payload),
+          witness_employee_id: WITNESS_EMP,
+          countersign_employee_id: null,
+          spent_at: witnessState.spent ? '2026-09-30T00:00:00Z' : null,
+          expires_at: new Date(Date.now() + 600000).toISOString()
+        }]; } };
     }
     if (/rpc\/alf_check_and_insert_mar_entry/.test(u)) {
       const sent = JSON.parse(opts.body);
@@ -145,8 +197,13 @@ function loadHandler(fetchImpl) {
   return require('./sd-data.js');
 }
 
-async function write(role, payload) {
+async function write(role, payload, opts) {
+  opts = opts || {};
   const calls = [];
+  // Prime the witness store for THIS payload. `withoutWitness: true` leaves it
+  // empty, which is how the arm below proves the lock is really there.
+  witnessState.payload = opts.withoutWitness ? null : payload;
+  witnessState.spent = false;
   const h = loadHandler(postgrestMock(role, calls));
   const res = mockRes();
   await h({
@@ -156,7 +213,10 @@ async function write(role, payload) {
       'x-sd-auth': signSessionToken({ app: APP, employee_id: ME,
                                       role: role, license_hash: HASH })
     },
-    body: { action: 'write', resource: 'alf_mar', app_id: APP, payload: payload }
+    body: {
+      action: 'write', resource: 'alf_mar', app_id: APP, payload: payload,
+      witness_token: opts.withoutWitness ? '' : 'FIXTURE-WITNESS-TOKEN'
+    }
   }, res);
   const rpc = calls.filter(function (c) {
     return /rpc\/alf_check_and_insert_mar_entry/.test(c.url);
@@ -257,9 +317,13 @@ await test('ordinary clinical fields are untouched', async () => {
 
 await test('witness_id SURVIVES -- it names a second person, not the caller',
   async () => {
-    // Deliberate, and pinned so this change is not mistaken for having closed
-    // the witness question. SAIRNcare has NO server-side witness verification;
-    // SAIRNvet has one (api/sv-witness.js). Registered separately.
+    // Deliberate, and still pinned: the blob field is NOT stamped from the
+    // session, because it names somebody who is by definition not the caller.
+    //
+    // WHAT CHANGED ON 2026-09-30 is that the blob field is no longer the only
+    // thing. api/sairncare-witness.js verifies a real second signature on the
+    // server before the row can be written at all -- see the arm below, which
+    // removes the token and requires the write to be REFUSED.
     const r = await write('nursing', {
       id: 'W-1', resident_id: RESIDENT, entry_type: 'count',
       medication_id: 'M1', count_value: 5, witness_id: 'emp-witness-2'
@@ -268,6 +332,37 @@ await test('witness_id SURVIVES -- it names a second person, not the caller',
       'witness_id was stripped -- a controlled-substance count lost its second '
       + 'signature entirely, which is worse than the forgeable one');
     assert.strictEqual(r.stored.counted_by, ME);
+  });
+
+await test('A COUNT WITH NO WITNESS IS REFUSED -- the lock is really there',
+  async () => {
+    // THE CONTROL FOR EVERY COUNT ARM ABOVE. They all pass a fixture witness
+    // token, so on their own they prove only that a witnessed count works. This
+    // removes it and requires a 403: without this arm, deleting the whole
+    // witness lock would leave this file entirely green.
+    const r = await write('nursing', {
+      id: 'NOWIT-1', resident_id: RESIDENT, entry_type: 'count',
+      medication_id: 'M1', count_value: 3, witness_id: 'emp-witness-2'
+    }, { withoutWitness: true });
+    assert.strictEqual(r.res.statusCode, 403,
+      'a controlled-substance count was written with NO server-side witness: '
+      + JSON.stringify(r.res.body));
+    assert.strictEqual(r.res.body.error.code, 'WITNESS_REQUIRED');
+    assert.ok(!r.rpc, 'the insert was attempted despite the refusal');
+  });
+
+await test('an ADMINISTRATION with no witness is still written -- the lock is narrow',
+  async () => {
+    // The other direction. An administration has ONE actor by definition;
+    // gating it would be a gate in front of a door nobody meant to shut, and
+    // that narrowing has to be asserted or it will be widened by accident.
+    const r = await write('nursing', {
+      id: 'NOWIT-2', resident_id: RESIDENT, entry_type: 'administration',
+      medication_id: 'M1', status: 'given'
+    }, { withoutWitness: true });
+    assert.strictEqual(r.res.statusCode, 200,
+      'an administration was gated by the count lock: ' + JSON.stringify(r.res.body));
+    assert.strictEqual(r.stored.administered_by, ME);
   });
 
 await test('reviewed_by is still stamped on a pharmacy-order acceptance',
