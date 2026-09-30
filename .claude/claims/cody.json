@@ -2786,8 +2786,8 @@
       "task": "tools/schema_provisioning_check.py tests/run_schema_provisioning_probe.py",
       "claimed_at": "2026-09-30T00:14:14Z",
       "claimed_at_epoch": 1790727254.4944248,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T12:34:55Z",
       "files": null
     },
     {
