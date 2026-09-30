@@ -2811,6 +2811,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "cody-1790727332",
+      "session": "cody",
+      "subject": "cody-batch8",
+      "task": "tests/stonedesk_bare_envelope_actions.js",
+      "claimed_at": "2026-09-30T00:15:32Z",
+      "claimed_at_epoch": 1790727332.5916383,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
