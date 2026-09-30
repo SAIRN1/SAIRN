@@ -43,6 +43,8 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
+const { stripComments } = require(require('path')
+  .join(__dirname, 'lib', 'strip_comments.js'));
 const vm = require('vm');
 
 const ROOT = path.join(__dirname, '..');
@@ -85,7 +87,21 @@ async function main() {
   section('the premise: #userInput really is gone');
 
   await test('no element in the file carries id="userInput"', () => {
-    assert.ok(html.indexOf('id="userInput"') === -1, 'the element is back -- re-check this suite');
+    // COMMENT-STRIPPED, AND THAT IS THE WHOLE POINT OF THIS ARM (2026-09-30).
+    // It failed on the RAW html for weeks, reporting "the element is back",
+    // while the element was still gone: stonedesk.html:4812 is a COMMENT
+    // explaining the absence, and it spells the literal `id="userInput"` to do
+    // so. The check tripped on the note written about it, which is the same
+    // class as PR 1.2 -- grep cannot tell code from text that describes code --
+    // and a suite failing for a stale reason is a suite nobody reads.
+    assert.ok(stripComments(html).indexOf('id="userInput"') === -1,
+              'the element is back -- re-check this suite');
+    // ...and the comment really is there, or this arm has quietly become the
+    // raw check again and the next edit that re-adds the element passes.
+    assert.ok(html.indexOf('id="userInput"') !== -1,
+              'no comment in stonedesk.html mentions id="userInput" any more, so '
+              + 'stripping comments is no longer doing anything here -- re-derive '
+              + 'whether this arm still needs it');
   });
 
   await test('...and its CSS rule survives, which is why a grep looks reassuring', () => {

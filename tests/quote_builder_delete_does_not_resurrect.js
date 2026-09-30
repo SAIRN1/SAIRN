@@ -75,10 +75,20 @@ function grabLine(sig) {
 const QB_LOAD = grab('function qbLoad(){');
 const QB_DELETE = grab('window.sdQBDelete=function(id){');
 // The saveQuote write step, taken VERBATIM from the shipped file rather than
-// modelled: these two lines are the whole mechanism by which the stale array
+// modelled: these two lines are the whole mechanism by which the new state
 // reaches storage, and re-typing them would test this file instead of that one.
-const SAVE_UNSHIFT = grabLine('  quoteHistory.unshift(q);');
-const SAVE_WRITE = grabLine("  if(!st('stonedesk_quote_history', quoteHistory)){");
+//
+// RE-ANCHORED 2026-09-30, and the old anchors are recorded because they are the
+// finding. They were `quoteHistory.unshift(q);` and
+// `if(!st('stonedesk_quote_history', quoteHistory)){` -- the MUTATE-THEN-UNDO
+// shape that item 92 removed. saveQuote now builds the next state purely and
+// commits it, so nothing is mutated ahead of the store and there is no rollback
+// to miss a path. grabLine THREW on the stale anchor rather than reporting, so
+// this suite has been dying on line 80 instead of running its arms; both old
+// strings survive only inside the comment at stonedesk.html:13908 that explains
+// their removal.
+const SAVE_UNSHIFT = grabLine('  var nextHistory = [q].concat(quoteHistory);');
+const SAVE_WRITE = grabLine("  if(!st('stonedesk_quote_history', nextHistory)){");
 
 // The pre-fix delete body: everything the shipped one does EXCEPT keeping the
 // module-level array in step. Derived from the shipped source by removing the
