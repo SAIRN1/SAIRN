@@ -841,3 +841,137 @@ Append to the evidence cell:
 > anything."* That refusal is the reason `typed` and `signer` are both stored rather
 > than one being derived from the other, and a reader of this row should know the
 > check exists before judging the tier.
+
+---
+
+# The finding from the discharged review, routed — `sc-denial-reconcile.js`
+
+**2026-09-29 (Hank).** Discharging cody's `2026-09-27T03:53:49Z` obligation
+(committed `0786c19a`) produced one finding. **The code is correct on all three
+named worries; what is wrong is one reason string that names a cause it does not
+know.**
+
+**WHO HOLDS THE FILE: nobody.** `python tools/sairn_claim.py check hank
+"api/_lib/sc-denial-reconcile.js negative aggregate count reason wording"` returns
+**CLEAR**. cc's live claim is `api/sd-data.js` and a derive-charges test; cody's
+`cody-review20` is a discharge obligation, not this file. It is printed here rather
+than applied because `api/_lib/sc-denial-reconcile.js` is **not in hank's queue25
+claim file list**, and the author of record is **cody** (the obligation's
+`author_session`). Cody or whoever claims it next should paste it.
+
+## The finding
+
+`api/_lib/sc-denial-reconcile.js:166-170`:
+
+```js
+    } else if (r.aggregate_count === null) {
+      state = 'no_aggregate_count';
+      reason = 'The aggregate row carries no usable count, so the two cannot be '
+        + 'compared. This is NOT a count of zero -- nobody has entered one.';
+```
+
+**A NEGATIVE count reaches this branch, and somebody did enter one — they entered
+`-1`.** Driven, not read:
+
+| entered | state reached |
+|---|---|
+| `0`, no events | `aggregate_only` — *"An aggregate count of 0 with no logged events"* |
+| `0`, 3 events | `events_higher` |
+| `''` or `null` | `no_aggregate_count` |
+| **`-1`** | **`no_aggregate_count`** |
+
+The first three are exactly right. **The module's INTENT is already right too:**
+arm `A2` at `api/_lib/sc-denial-reconcile.test.js:72` asserts
+`countOf(-1) === null` **deliberately**, under the assertion message *"a count of
+zero IS entered data and must survive"*. So the refusal is intended; only the
+reported REASON collapses two different facts.
+
+**Why it matters on this resource rather than being pedantry: an empty count is an
+unfinished row, and a negative denial count is a data-entry fault or a sign error
+somebody should look at today.** Both arrive at the reader as the same sentence, and
+the sentence asserts the one that is false.
+
+## The change — a sentence, not a redesign
+
+**Do NOT add a fourth state.** A `unusable_aggregate_count` state would have to be
+counted in `totals`, which changes the partition every caller reads, for a
+distinction the reader can be told in words. Replace lines `:168-170` with:
+
+```js
+    } else if (r.aggregate_count === null) {
+      state = 'no_aggregate_count';
+      // ── THE REASON USED TO SAY "nobody has entered one" AND THAT IS A CAUSE
+      // THIS BRANCH CANNOT KNOW (corrected 2026-09-29, routed by hank while
+      // discharging the 2026-09-27T03:53:49Z review). countOf() returns null for
+      // an EMPTY field and for a value that is not a non-negative whole number
+      // alike, so a hand-typed `-1` landed here wearing "nobody has entered one".
+      // On a denial register those are different problems: an empty count is an
+      // unfinished row, and a negative count is a sign error somebody should see
+      // today. THE REFUSAL IS CORRECT AND STAYS -- test arm A2 pins
+      // countOf(-1) === null on purpose. Only the sentence was wrong.
+      reason = 'The aggregate row carries no usable count, so the two cannot be '
+        + 'compared. This is NOT a count of zero: the field is either empty or '
+        + 'holds a value that is not a non-negative whole number.';
+```
+
+**And one more arm, so the sentence cannot drift back.** In
+`api/_lib/sc-denial-reconcile.test.js`, beside `A2`:
+
+```js
+test('A2b. the no_aggregate_count REASON does not name a cause it cannot know',
+  () => {
+    const empty = reconcile([{ code: 'A', count: '', amount: 100 }],
+                            [{ code: 'A', amount: 100 }]);
+    const negative = reconcile([{ code: 'A', count: -1, amount: 100 }],
+                               [{ code: 'A', amount: 100 }]);
+    assert.strictEqual(empty.rows[0].state, 'no_aggregate_count');
+    assert.strictEqual(negative.rows[0].state, 'no_aggregate_count',
+      'a negative count must still be refused -- A2 pins countOf(-1) === null');
+    // THE ARM IS ON THE CLAIM, NOT ON THE WORDING. It does not require any
+    // particular sentence; it requires that the sentence does not assert the
+    // ONE thing this branch cannot distinguish.
+    for (const r of [empty.rows[0], negative.rows[0]]) {
+      assert.ok(!/nobody has entered one/i.test(r.reason),
+        'the reason claims the field is empty, and it cannot tell: ' + r.reason);
+    }
+  });
+```
+
+## The header note — the denominator, if a headline ratio is ever added
+
+**`totals` deliberately has no single headline figure, and that is why it cannot
+flatter anything.** Driven with a code present only in the aggregates and a
+different code present only in the events: `codes 2, agrees 0, aggregate_only 1,
+events_only 1, not_comparable 0`. `byCode` is built from **both** sides, so `codes`
+counts the **union**, `agrees` is reachable only where both sides exist and match,
+and every non-comparable state has its own bucket.
+
+**If a headline ratio is ever added, `agrees / codes` is the WRONG denominator.**
+Add this to the `MONEY IS COMPARED IN CENTS` header block:
+
+> ── IF A HEADLINE RATIO IS EVER ADDED, THE DENOMINATOR IS NOT `codes` ────────
+> `totals` has no single figure on purpose, which is why it cannot flatter the
+> result. Should one be wanted, **`agrees / codes` is wrong**: `codes` is the
+> UNION of both stores, so every row that could not be compared at all —
+> `aggregate_only`, `events_only`, `no_aggregate_count` — pushes the ratio down
+> and makes a reconciliation of two stores that barely overlap look like a
+> reconciliation that disagrees. **The honest figure is `agrees` over the codes
+> that were actually COMPARABLE:**
+>
+>     agrees / (agrees + aggregate_higher + events_higher)
+>
+> with the other four buckets printed beside it rather than folded in, because a
+> ratio whose denominator hides the unmatched rows is the fabricated-KPI shape
+> this module's own header already refuses.
+
+## What this does NOT claim
+
+* **The code is correct.** All three of cody's named worries were driven against
+  the real module: the third state is right, the cents arithmetic is sound (both
+  sides go through the same `Math.round(n*100)`, so a rounding artefact can only
+  shift both halves identically), and `agrees` does not flatter the total.
+* **The module is still UNWIRED**, confirmed independently: grepping the whole repo
+  for `sc-denial-reconcile` outside the module and its own suite returns nothing.
+  That is declared loudly in its header and in three test arms, which is the right
+  treatment for the SAIRNmechanical G3 defect — not something to fix quietly.
+* **Nothing above is applied.** The file is not in my claim.
