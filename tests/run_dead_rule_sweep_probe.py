@@ -192,6 +192,189 @@ check('E2. CRITERIA_VERSION is present and appears in the real output',
 check('E3. the tool declares this file as its control',
       'run_dead_rule_sweep_probe.py' in _orig, 'CONTROLLED_BY is stale')
 
+# ── F. NO TRACKED FILE IS EVER WRITTEN, INCLUDING WHEN THE SWEEP IS KILLED ─
+# D5 asserts the file is unchanged AFTER a run that finished. That is the easy
+# half and it passed for as long as the sweep mutated tracked files, because the
+# `finally` restored them. THE FINALLY IS NOT REACHED WHEN THE PROCESS DIES --
+# SIGKILL, a 240s harness bound, a closed laptop -- and the measured first full
+# run left TWENTY tracked tool sources written, each carrying a rule replaced by
+# a never-matching pattern, in a clone four other sessions push from.
+#
+# So this section drives the case D5 cannot see: start a real sweep, kill it
+# while it is working, and require the tree to be clean anyway. That is only
+# possible if the mutation never touched a tracked file in the first place.
+#
+# EVERY ARM HERE RUNS IN A THROWAWAY WORKTREE. A control for "does this write
+# the clone" must not write the clone to find out.
+section('F. the sweep works on a COPY -- killing it mid-run leaves nothing behind')
+
+import shutil                                                    # noqa: E402
+import time                                                      # noqa: E402
+
+_wt = tempfile.mkdtemp(prefix='drs-kill-')
+shutil.rmtree(_wt, ignore_errors=True)
+_add = subprocess.run(['git', '-C', REPO, 'worktree', 'add', '-q', '--detach',
+                       _wt, 'HEAD'], capture_output=True, text=True,
+                      encoding='utf-8', errors='replace')
+if _add.returncode != 0:
+    check('F0. a worktree could be created -- without one nothing below ran',
+          False, _add.stderr.strip()[:300])
+else:
+    try:
+        # THE SUBJECT IS THE WORKING TREE, NOT HEAD. Copied over, and the copy
+        # asserted, so this section can be written BEFORE the fix is committed
+        # and go red against the version actually on disk.
+        shutil.copyfile(TOOL, os.path.join(_wt, 'tools', 'dead_rule_sweep.py'))
+        check('F0. the working-tree sweep was copied into the worktree',
+              io.open(os.path.join(_wt, 'tools', 'dead_rule_sweep.py'),
+                      encoding='utf-8').read() == _orig, '')
+
+        # THE ONE EXCLUSION, NAMED: this probe itself copied the working-tree
+        # sweep over the worktree's copy in F0, so that path is dirt THIS FILE
+        # put there. Excluding it by name keeps the arm about the subject --
+        # without it F1 went red and the poll below broke at t=0 on the probe's
+        # own edit, killing the sweep before it had printed a line, so F2 failed
+        # too. Three red arms, one of them the control, none about the sweep.
+        _MINE = 'tools/dead_rule_sweep.py'
+
+        def _dirty():
+            r = subprocess.run(['git', '-C', _wt, 'status', '--porcelain'],
+                               capture_output=True, text=True,
+                               encoding='utf-8', errors='replace')
+            return [l for l in (r.stdout or '').split('\n')
+                    if l.strip() and _MINE not in l]
+
+        check('F1. CONTROL: the worktree is clean before the sweep starts -- '
+              'without this every arm below could be measuring pre-existing dirt',
+              not _dirty(), _dirty()[:5])
+
+        _logp = os.path.join(_wt, '..', 'drs-kill.log')
+        _log = io.open(_logp, 'w', encoding='utf-8', errors='replace')
+        _p = subprocess.Popen(
+            [sys.executable, os.path.join(_wt, 'tools', 'dead_rule_sweep.py'),
+             '--tool', 'assertion_label_shape_check.py'],
+            cwd=_wt, stdout=_log, stderr=subprocess.STDOUT,
+            # UNBUFFERED, because this process is going to be KILLED. A buffered
+            # child loses everything it printed, and F2 -- the paired positive
+            # that proves the sweep started at all -- would fail on the plumbing
+            # rather than on the subject.
+            env=dict(os.environ, PYTHONIOENCODING='utf-8', PYTHONUTF8='1',
+                     PYTHONUNBUFFERED='1'))
+        # Poll for dirt rather than sleeping a fixed time: against a sweep that
+        # mutates tracked files the very first neutralisation shows up here
+        # within a second or two, so a hit is fast and a miss costs the bound.
+        _seen, _deadline = [], time.time() + 30
+        while time.time() < _deadline and _p.poll() is None:
+            _seen = _dirty()
+            if _seen:
+                break
+            time.sleep(0.5)
+        _ran_to_completion = _p.poll() is not None
+        if _p.poll() is None:
+            _p.kill()
+        try:
+            _p.wait(timeout=30)
+        except Exception:                                        # noqa: BLE001
+            pass
+        _log.close()
+        _out = io.open(_logp, encoding='utf-8', errors='replace').read()
+
+        check('F2. THE SWEEP REALLY STARTED -- the paired positive, without '
+              'which a clean tree only proves the process died at import',
+              'criteria lock' in _out or 'DEAD RULE SWEEP' in _out,
+              _out[:400] or '(no output at all)')
+        check('F3. NO TRACKED FILE WAS MODIFIED WHILE THE SWEEP WAS WORKING. '
+              'This is the arm the restore-in-finally cannot satisfy: the '
+              'finally is not reached when the process is killed, and the first '
+              'full run left 20 tool sources written in a shared clone',
+              not _seen,
+              'modified DURING the run: %s' % (_seen[:6],))
+        check('F4. ...and the tree is clean after the kill too%s'
+              % ('' if not _ran_to_completion else ' (it finished on its own)'),
+              not _dirty(), _dirty()[:6])
+        check('F5. the sweep NAMES the copy it worked in, so a reader can tell '
+              'an isolated run from an in-place one without reading the source',
+              'sandbox:' in _out, _out[:600])
+    finally:
+        subprocess.run(['git', '-C', REPO, 'worktree', 'remove', '--force', _wt],
+                       capture_output=True, text=True)
+        shutil.rmtree(_wt, ignore_errors=True)
+
+# ── F6. THE SANDBOX IS REMOVED, AND A SANDBOX THAT CANNOT BE MADE IS EXIT 2 ─
+# Not a fallback to the real clone. A tool that quietly works in place when its
+# copy fails is the original defect wearing a new branch (PR 1.11): "could not
+# isolate" is a third state and is never folded into "ran".
+rc, out = run('--fixtures')
+_m = __import__('re').search(r'sandbox:\s*(\S.*?)\s*$', out, __import__('re').M)
+check('F6. --fixtures needs no sandbox and makes none, so the criteria lock '
+      'stays runnable with no disk to copy 90MB onto', _m is None, out[:300])
+
+# THE FIRST ATTEMPT AT THIS ARM WAS VACUOUS, AND IS RECORDED RATHER THAN
+# QUIETLY REPLACED: it set TMPDIR/TEMP/TMP to a nonexistent path and expected
+# mkdtemp to fail. IT DOES NOT -- tempfile walks its candidate list and falls
+# through to a real directory, so the sweep ran completely normally and the arm
+# was asserting nothing while reading like a refusal test. The tool now honours
+# an explicit sandbox-parent override for exactly this purpose, the same way
+# criticality_tier_check.py takes SAIRN_TIER_REGISTER so its parser can be
+# DRIVEN rather than only observed.
+def _tools_state():
+    r = subprocess.run(['git', '-C', REPO, 'status', '--porcelain', '--', 'tools/'],
+                       capture_output=True, text=True, encoding='utf-8',
+                       errors='replace')
+    return sorted(l for l in (r.stdout or '').split('\n') if l.strip())
+
+
+# BEFORE/AFTER, NOT ABSOLUTE CLEANLINESS. The first version of F8 asserted
+# `git diff --quiet -- tools/` and went red on the author's own uncommitted
+# edit to the sweep -- an arm measuring the session rather than the subject,
+# which is the shape this repo keeps paying for in probe anchors.
+_tools_before = _tools_state()
+
+_badtmp = os.path.join(REPO, 'no', 'such', 'dir', 'anywhere')
+_r = subprocess.run([sys.executable, TOOL, '--tool',
+                     'assertion_label_shape_check.py'], cwd=REPO,
+                    capture_output=True, text=True, encoding='utf-8',
+                    errors='replace',
+                    env=dict(os.environ, PYTHONIOENCODING='utf-8',
+                             PYTHONUTF8='1',
+                             SAIRN_DRS_SANDBOX_PARENT=_badtmp))
+check('F7. with no writable temp directory the sweep exits 2 COULD NOT RUN and '
+      'does NOT fall back to mutating the clone -- "could not isolate" is a '
+      'third state, never folded into "ran"',
+      _r.returncode == 2 and 'COULD NOT RUN' in (_r.stdout or '') + (_r.stderr or ''),
+      'exit=%s out=%s' % (_r.returncode,
+                          ((_r.stdout or '') + (_r.stderr or ''))[-400:]))
+check('F8. ...and the refusal path changed NOTHING under tools/ in this clone',
+      _tools_state() == _tools_before,
+      'before=%s after=%s' % (_tools_before, _tools_state()))
+
+
+# ── F9. THE SANDBOX DOES NOT ACCUMULATE ────────────────────────────────────
+# The honest trade this fix makes is a leftover directory OUTSIDE the clone in
+# place of a neutralised rule INSIDE it -- a killed sweep cannot run its own
+# cleanup, and F3 above kills one every time this control runs. `git worktree
+# prune` does NOT collect those: it only forgets entries whose directory is
+# already gone. So the sweep reaps its own by NAME on the way in and on the way
+# out, and this arm is what stops that from silently regressing into a clone
+# carrying one stale worktree per probe run.
+def _sandboxes():
+    r = subprocess.run(['git', '-C', REPO, 'worktree', 'list', '--porcelain'],
+                       capture_output=True, text=True, encoding='utf-8',
+                       errors='replace')
+    return [l[len('worktree '):].strip()
+            for l in (r.stdout or '').split('\n')
+            if l.startswith('worktree ')
+            and os.path.basename(l.strip().rstrip('/\\')).startswith('drs-sandbox-')]
+
+
+rc, out = run('--tool', 'assertion_label_shape_check.py')
+check('F9a. a normal run finishes and names a sandbox',
+      rc in (0, 1) and 'sandbox:' in out, (rc, out[:300]))
+check('F9b. ...and leaves NO drs-sandbox- worktree registered afterwards, '
+      'including the one F3 killed above -- otherwise every run of this '
+      'control adds one to the clone forever',
+      not _sandboxes(), _sandboxes())
+
 print('\n%s -- %d passed, %d failed' % ('FAIL' if _fail else 'ALL ARMS PASS',
                                         _pass, _fail))
 sys.exit(1 if _fail else 0)
