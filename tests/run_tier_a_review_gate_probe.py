@@ -248,6 +248,62 @@ check('CONTROL: a directory whose name merely STARTS WITH the auditor\'s is '
       _claims == {'sc_claims': ['.claude/skills/sairn-hover-auditor-notreally/x.py']},
       _claims)
 
+# ── THE NARROWING, AND IT IS MEASURED RATHER THAN ARGUED ───────────────────
+# The clause first landed as the WHOLE auditor tree, which made it the widest
+# entry in SKIP_REASONS. Measured over all 79 tracked files there, 13 carry a
+# Tier A name and every one is inside a `tools*/` subdirectory -- so the clause
+# now covers those and nothing else. These arms are what stops it widening back.
+check('the clause survives a THIRD auditor instance -- tools-hover3/ is covered '
+      'without anybody editing this file, the same reason AuditorScope replaced '
+      'a hardcoded pair',
+      isinstance(g.skip_reason(
+          '.claude/skills/sairn-hover-auditor/tools-hover3/x.py'), str))
+check('...and a nested path inside a tools dir is covered too (the real tree '
+      'has tools/sabotage_benchmark/fixtures.py, which carries a Tier A name)',
+      isinstance(g.skip_reason(
+          '.claude/skills/sairn-hover-auditor/tools/sabotage_benchmark/fixtures.py'),
+          str))
+check('...and a DATA file beside the tools is covered, not just .py -- '
+      'hover-watchlist.json is the shape that will name resources one day, and '
+      'narrowing to .py would re-open the deadlock for exactly it',
+      isinstance(g.skip_reason(
+          '.claude/skills/sairn-hover-auditor/tools/hover-watchlist.json'), str))
+
+_root = g.touched_tier_a(
+    diff_for('.claude/skills/sairn-hover-auditor/config.json', "'sc_claims'"), RES)
+check('NARROWED: a file directly under the auditor ROOT is back IN SCOPE -- a '
+      'new file shape outside the tool directories is a decision, not a default',
+      _root == {'sc_claims': ['.claude/skills/sairn-hover-auditor/config.json']},
+      _root)
+_sub = g.touched_tier_a(
+    diff_for('.claude/skills/sairn-hover-auditor/handlers/x.py', "'sc_claims'"), RES)
+check('NARROWED: a NEW non-tools subdirectory is back IN SCOPE -- the same "a '
+      'new directory must be a decision" rule this file already enforces for '
+      'top-level directories, applied one level down',
+      _sub == {'sc_claims': ['.claude/skills/sairn-hover-auditor/handlers/x.py']},
+      _sub)
+
+# THE MEASUREMENT ITSELF, RE-RUN HERE. The narrowing is only correct while
+# every name-carrying file is inside a tools dir; the day one is not, this arm
+# goes red instead of the gate silently deadlocking the auditor again.
+_tree = [f for f in subprocess.run(
+    ['git', '-C', REPO, 'ls-files', '.claude/skills/sairn-hover-auditor/'],
+    capture_output=True, encoding='utf-8', errors='replace').stdout.split('\n')
+    if f.strip()]
+check('the auditor tree is readable and non-trivial', len(_tree) > 40, len(_tree))
+_uncovered = []
+for _f in _tree:
+    if g.skip_reason(_f):
+        continue
+    _body = io.open(os.path.join(REPO, _f.replace('/', os.sep)),
+                    encoding='utf-8', errors='replace').read()
+    if g.touched_tier_a(diff_for(_f, *_body.split('\n')), RES):
+        _uncovered.append(_f)
+check('EVERY name-carrying file in the auditor tree is still covered by the '
+      'narrowed clause -- if one ever sits outside a tools dir, this arm is '
+      'what says so rather than the auditor discovering it at push',
+      _uncovered == [], _uncovered)
+
 # THE OTHER DIRECTION, and it is the one that matters. Excluding prose must not
 # start excluding code: a file whose NAME merely contains ".md" is not markdown,
 # and a real handler must still count.

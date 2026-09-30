@@ -41,6 +41,12 @@ import re
 import subprocess
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+try:
+    import bare_run_writers as _allow           # noqa: E402
+except Exception:                               # noqa: BLE001
+    _allow = None
+
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # A path that looks like one of the working clones. Refused outright: this tool
@@ -156,11 +162,47 @@ def main(argv):
         'never "did not write")' % timeout)
     out('')
 
-    writes_bare, writes_help, could_not = [], [], []
+    # THE ALLOWLIST, AND IT FAILS CLOSED (2026-09-30). tools/bare_run_writers.py
+    # names the tools whose bare run is SUPPOSED to write, with the path and the
+    # reason for each. If that module cannot be imported, nothing is exempted --
+    # the sweep reports every writer as before and says the list was unreadable,
+    # because an allowlist that silently becomes empty is safe and one that
+    # silently becomes universal is not.
+    if _allow is None:
+        out('  ALLOWLIST         : UNREADABLE -- tools/bare_run_writers.py could '
+            'not be')
+        out('                      imported, so NOTHING is exempted and every '
+            'writer below is')
+        out('                      reported. This is the safe direction and it is '
+            'said out loud.')
+    else:
+        out('  ALLOWLIST         : %d tool(s) declared as intended writers in '
+            'tools/bare_run_writers.py' % len(_allow.WRITERS))
+        out('                      Each names the path it writes and why. They are '
+            'listed as')
+        out('                      INTENDED below rather than omitted -- an '
+            'exemption nobody can')
+        out('                      see is indistinguishable from a check that '
+            'stopped running.')
+    out('')
+
+    writes_bare, writes_help, could_not, intended = [], [], [], []
     for n in names:
         rel = os.path.join('tools', n)
         code, wrote = run_tool(repo, rel, [], timeout)
-        if wrote:
+        if wrote and _allow is not None and _allow.is_intended(n):
+            # DECLARED. Reported, and the paths are CHECKED against what it said
+            # it would write: a declared writer that starts writing something
+            # ELSE is exactly the case an allowlist must not cover.
+            said = set(_allow.writes(n))
+            got = set(w[3:].strip().strip('"') for w in wrote)
+            extra = sorted(got - said)
+            intended.append((n, sorted(got), extra))
+            out('  INTENDED      %-46s exit=%s  %s%s' % (
+                n, code, ', '.join(sorted(got)[:3]),
+                '   ** ALSO WROTE UNDECLARED: %s **' % ', '.join(extra)
+                if extra else ''))
+        elif wrote:
             writes_bare.append((n, wrote))
             out('  WRITES(bare)  %-46s exit=%s  %s' % (
                 n, code, ', '.join(w[3:] for w in wrote[:4])
@@ -179,7 +221,9 @@ def main(argv):
             return 2
 
         code, wrote = run_tool(repo, rel, ['--help'], timeout)
-        if wrote:
+        if wrote and _allow is not None and _allow.is_intended(n):
+            pass                      # a declared writer writing on --help too
+        elif wrote:
             writes_help.append((n, wrote))
             out('  WRITES(--help) %-45s exit=%s  %s' % (
                 n, code, ', '.join(w[3:] for w in wrote[:4])))
@@ -192,6 +236,15 @@ def main(argv):
 
     out('')
     out('  swept                     : %d tool(s)' % len(names))
+    out('  INTENDED writers          : %d -- declared, with a reason, and their '
+        'written paths' % len(intended))
+    out('                              checked against what they declared')
+    _undeclared = [(n, x) for n, _g, x in intended if x]
+    if _undeclared:
+        out('  !! DECLARED WRITERS THAT WROTE SOMETHING ELSE: %d'
+            % len(_undeclared))
+        for n, x in _undeclared:
+            out('      %-46s undeclared: %s' % (n, ', '.join(x)))
     out('  WROTE on a bare run       : %d' % len(writes_bare))
     out('  WROTE on --help           : %d' % len(writes_help))
     out('  COULD NOT RUN (no verdict): %d -- these are NOT reported as clean'
@@ -199,6 +252,11 @@ def main(argv):
     for n, why in could_not:
         out('      %-46s %s' % (n, why))
     out('')
+    if _undeclared:
+        out('A DECLARED WRITER THAT WRITES AN UNDECLARED PATH IS NOT COVERED BY')
+        out('THE ALLOWLIST. Update tools/bare_run_writers.py, or find out why the')
+        out('path changed.')
+        return 1
     if writes_bare or writes_help:
         out('A BARE RUN MUST BE REPORT-ONLY. Each tool above needs an explicit')
         out('write flag, with its bare path printing what it WOULD do.')

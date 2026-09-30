@@ -2219,6 +2219,84 @@ def main():
                 "escape, and build the line with chr(92) if a heredoc keeps eating it.",
                 OVERRIDE_HINT,
             ]))
+    # ── CHECK: A NEW tools/*.py MUST DECLARE AN OWNER (2026-09-30) ─────────
+    # 22 tools were found mutating the repo on a bare run, and 21 of them could
+    # not be routed to anybody: one git identity authors every commit here, and
+    # the claim record only knows a file if somebody named it in a claim string.
+    # "Register the rest by owner" was the instruction and it could not be
+    # carried out. A NEW file is the one moment the answer is free.
+    #
+    # ADDED FILES ONLY. The 282 that already exist are grandfathered -- a gate
+    # refusing every push that touches any tool would be switched off within the
+    # hour, and those need routing from the claim history rather than a header
+    # invented by whoever next edits them. The checker PRINTS the backlog count
+    # on every run so it cannot quietly become the normal state.
+    _oh = os.path.join(repo, 'tools', 'tool_owner_header_check.py')
+    # DERIVED FROM `changed`, THE SAME LIST EVERY OTHER CHECK READS, rather than
+    # from a second `git diff --diff-filter=A` spelling. The first version used
+    # its own diff and did not fire in a worktree fixture -- a check with its own
+    # private notion of what the push contains can disagree with the gate it is
+    # part of, and that disagreement is silent. "Added" is then decided per file
+    # by asking git whether it EXISTS AT BASE, which is the actual question.
+    _oh_files = []
+    for q in changed:
+        qq = q.replace(chr(92), '/')
+        if not (qq.startswith('tools/') and qq.endswith('.py')):
+            continue
+        if not os.path.isfile(os.path.join(repo, qq)):
+            continue
+        _at_base = subprocess.run(
+            ['git', 'cat-file', '-e', (base or 'origin/main') + ':' + qq],
+            cwd=repo, capture_output=True, text=True, encoding='utf-8',
+            errors='replace')
+        if _at_base.returncode != 0:
+            _oh_files.append(qq)
+    if _oh_files:
+        # A MISSING CHECKER IS NOT A CLEAN PUSH -- PR 1.11.
+        if not os.path.isfile(_oh):
+            deny(chr(10).join([
+                "Blocked: this push ADDS %d tools/*.py file(s) and the owner-header"
+                % len(_oh_files),
+                "checker is not in this clone, so nothing looked at them.",
+                "",
+                "  expected: %s" % _oh,
+                OVERRIDE_HINT,
+            ]))
+        try:
+            _ohr = subprocess.run([sys.executable, _oh]
+                                  + [os.path.join(repo, q) for q in _oh_files],
+                                  capture_output=True, text=True,
+                                  encoding='utf-8', errors='replace',
+                                  timeout=120, cwd=repo)
+        except Exception as _e:
+            deny(chr(10).join([
+                "Blocked: the owner-header check could not be run, so this push is",
+                "unchecked.",
+                "",
+                "  %s: %s" % (type(_e).__name__, _e),
+                OVERRIDE_HINT,
+            ]))
+        if _ohr.returncode == 1:
+            deny(chr(10).join([
+                "Blocked: this push adds a tools/*.py file that does not say who",
+                "owns it.",
+                "",
+                (_ohr.stdout or '').strip(),
+                "",
+                "This is the gap that made 21 of 22 bare-run writers unroutable on",
+                "2026-09-30: one git identity authors every commit here, so nothing",
+                "else can answer the question later.",
+                OVERRIDE_HINT,
+            ]))
+        if _ohr.returncode not in (0, 1):
+            deny(chr(10).join([
+                "Blocked: the owner-header check answered COULD NOT RUN (exit %d),"
+                % _ohr.returncode,
+                "which is a third state and is not a pass.",
+                "",
+                (_ohr.stdout or _ohr.stderr or '').strip()[:800],
+                OVERRIDE_HINT,
+            ]))
     # ── CHECK: DOES EVERY SOURCE FILE THIS PUSH SHIPS PARSE? (2026-09-30) ──
     # This gate syntax-checked stonedesk.html's script blocks and api/, and did
     # NOT check tools/ at all -- so a tools/tooling_inventory.py that does not

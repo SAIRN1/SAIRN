@@ -21529,6 +21529,65 @@
       "recurrence_open": "NOT CLOSED as a class. The G2 arm greps THIS file for writes to the tracked tool; nothing does that for any other control in tests/, and there are dozens. The shape is now written down and driven in one place, which is where a standing check would start rather than where it ends. Note also that the trade is debris in temp for a neutralised rule in a shared repo -- the scratch tree is removed at the end of a normal run and leaks on a kill, same as the sweep's own sandbox."
     },
     {
+      "commit": "2918287762b6",
+      "date": "2026-09-30",
+      "subject": "fix(tier-gate): narrow the auditor-tree skip to tools*/ subdirectories, measured rather than argued",
+      "files": [
+        "tests/run_tier_a_review_gate_probe.py",
+        "tools/tier_a_review_gate.py"
+      ],
+      "lines_added": 76,
+      "lines_removed": 2,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "The auditor-tree clause in tools/tier_a_review_gate.py's SKIP_REASONS landed as the WHOLE directory tree, making it the widest exclusion in the file and fenced only at its prefix -- 66 of 79 tracked files exempted to cover the 13 that carry a Tier A name. Narrowed to tools*/ subdirectories, measured over every file in the tree rather than argued, with the measurement itself kept as a probe arm so it cannot go stale silently. Not narrowed further to .py, because hover-watchlist.json sits beside the tools and is the shape that will name resources one day.",
+      "rules": [
+        "1.7"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "9b2735faba06",
+        "date": "2026-09-30",
+        "subject": "fix(tier-gate): the hover auditor's own tooling cannot serve a Tier A resource, so it no longer forces an obligation it is forbidden to commit (H2 seq 425)",
+        "lag_days": 0
+      },
+      "citation_note": "1.7 is 'a sampling window silently exempts what it does not reach'. Here the window is an EXCLUSION rather than a sample and the sign is inverted -- it exempted 66 files where 13 needed it -- but the shape is the same: a boundary drawn wider than the evidence, where everything inside it stops being examined and nothing says which of them ever needed to be.",
+      "phase_note": "Stated, not inferred: the clause was written the previous day by this author and its own commit message records the directory-level choice being made without a measurement behind it.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "The exclusion was written as a whole directory tree because the trigger that prompted it was a directory-shaped problem. Nothing in the clause was scoped to the files that actually carry resource names, so it covered 66 files to protect 13.",
+          "action_status": "done",
+          "action": "Scoped to tools*/ subdirectories, measured over all 79 tracked files in the tree. A file directly under the auditor root or in a new non-tools subdirectory is back in scope."
+        },
+        {
+          "kind": "process",
+          "factor": "THE WIDENING WAS LANDED THE SAME DAY IT WAS FOUND, with three controls fencing only the prefix and nothing measuring what the clause actually needed to cover. The measurement took ten minutes and was not done before the clause shipped.",
+          "action_status": "done",
+          "action": "The measurement is now an ARM: it re-runs the sweep over the real tree every time the probe runs and goes red if any name-carrying file sits outside a tools dir. A measurement that only happened once is a fact with an expiry date nobody wrote down."
+        },
+        {
+          "kind": "detection",
+          "factor": "SKIP_REASONS has a control that every tracked path CLASS is either in scope or excluded with a reason, and it is keyed on the TOP-LEVEL directory. A clause covering a deep subtree is invisible to it -- the class is `.claude/`, which was already accounted for, so widening inside that class could not go red.",
+          "action_status": "not-actionable",
+          "note": "Not actionable as a general rule here. Extending the exhaustiveness arm to every subdirectory depth would make it fire on ordinary tree growth, which is the noise that gets a control ignored. The specific gap -- this clause, at this depth -- is now covered by its own measured arm, which is the narrower and more durable answer."
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "The auditor tooling lives in the platform repo under a content-to-resource map that reads plain English words as resource names, so a tool naming `quotes` in its prose trips a gate about a billing resource. The tree will keep acquiring files that name resources, because naming resources is what auditor tooling does.",
+          "action_status": "declined",
+          "note": "Declined as a target: moving the auditor tooling out of the platform repo was settled the other way on 2026-09-29 (Michael's mirror-scope decision), and the tools need to be version-controlled somewhere the build agents can read. What follows is that this clause is load-bearing rather than a convenience, which is why it is now measured rather than asserted."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED in one respect that is worth naming: the narrowing is correct only while every name-carrying file sits inside a tools*/ subdirectory, and the arm that checks this runs when somebody runs the probe. Nothing runs it on a cadence, so the window between a file landing outside a tools dir and the probe next running is a window in which the auditor can be deadlocked again with no signal. Also unaddressed: the clause makes the whole tools tree invisible to this gate, so anything genuinely serving a Tier A resource placed there would never be reviewed -- the auditor's core rule forbids that, and this gate no longer independently checks it."
+    },
+    {
       "commit": "2ea91d84b482",
       "date": "2026-09-30",
       "subject": "fix(platform): raw model output is redacted server-side in six apps, not one",
@@ -21754,6 +21813,64 @@
         }
       ],
       "recurrence_open": "The guard is still blind to 13 wrapper and substitution shapes -- command substitution, backticks, sh -c, env, xargs, eval, a subshell, a brace group -- and to a NAME=VALUE environment prefix, which is the ordinary way to write a non-interactive amend. All were driven and all were allowed. The header names git add -u, :/, stash and reset --hard as deliberate exclusions and says nothing about any of these, so a reader finishes that list believing it is complete. Reported in the discharge of hank's 2026-09-28T21:33:14Z obligation and NOT fixed here."
+    },
+    {
+      "commit": "7bc3a5a25bb5",
+      "date": "2026-09-30",
+      "subject": "fix(hover-scope): AuditorScope is a class keyed by session identity, so any number of auditor clones each get their own scope",
+      "files": [
+        "tests/run_hover_scope_own_claim_probe.py",
+        "tests/run_hover_separation_probe.py",
+        "tools/hover_auditor_scope_gate.py",
+        "tools/hover_separation_audit.py"
+      ],
+      "lines_added": 386,
+      "lines_removed": 33,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "tools/hover_auditor_scope_gate.py hardcoded OWN_CLAIM = '.claude/claims/hover.json', so a SECOND auditor instance (hover2) could not commit its own claim file and structurally could not satisfy the claim-before-work commit half of PR 2.2. Second location of one assumption -- hover #205 fixed the same single-instance hardcoding in eligible_reviewers. Fixed with AuditorScope, a class keyed by session name, in both the gate and the history audit; the first attempt patched the gate alone and broke six arms of the paired control, because the two tools ask different questions (this clone's own vs any instance's) and were conflated.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "unknown_reason": "The 2026-09-18 ALLOW entry is where the string was introduced, but git log -S on the constant spans a file rename and several reflows, and pinning one sha would be a guess dressed as a derivation. The entry's own comment dates itself, which is the honest anchor."
+      },
+      "citation_note": "1.1 is 'a check that stopped checking'. The fit is on the CONSEQUENCE rather than the mechanism: the scope gate did not stop running, but for a hover2 clone it enforced a rule that could never be satisfied, so the claim-before-work half of PR 2.2 was structurally unreachable for that session -- a control present and incapable of passing. Stated as inexact rather than left to look exact.",
+      "phase_note": "Inferred. The OWN_CLAIM entry landed 2026-09-18 (its own comment dates it) as a single string, at a time when exactly one auditor instance existed. Correct then; the design carried an assumption that nothing recorded and nothing re-checked when a second instance was provisioned.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "The scope was ONE hardcoded string, so it could only ever be right for one instance. `OWN_CLAIM = '.claude/claims/hover.json'` made the auditor's identity a property of the file rather than of the clone reading it.",
+          "action_status": "done",
+          "action": "AuditorScope, a class keyed by session name, with auditor sessions identified by a NAME pattern (^hover[0-9]*$) stated out loud. A third instance needs no edit anywhere."
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "SECOND LOCATION OF ONE ASSUMPTION. Hover finding #205 had already fixed eligible_reviewers hardcoding HOVER_SESSION='hover'. Single-instance assumptions were spread across the auditor tooling by imitation, so fixing one location did not find the others.",
+          "action_status": "planned",
+          "action": "Not swept. #205 and this one are the two known locations; nothing has enumerated the rest of the auditor tooling for the same shape. The name pattern now exists as a single place to express it, which is what such a sweep would key on."
+        },
+        {
+          "kind": "detection",
+          "factor": "The gate and the history audit keep SEPARATE copies of the scope by design, and the only control on their agreement compared one flat tuple against another. That arm could not survive the scope becoming per-instance -- it went red on the first attempt at this fix and the change was reverted rather than landed half-done, which is the control working, but it had to be rewritten before the fix could land at all.",
+          "action_status": "done",
+          "action": "The agreement arm now derives BOTH modules' scope for four session names and asserts they match, plus eight non-auditor names that must fail closed in both. A pair of copies can agree on one name by coincidence; not on twelve."
+        },
+        {
+          "kind": "process",
+          "factor": "THE FIRST ATTEMPT WAS A PAIR, not a class -- hover.json and hover2.json -- which is the same defect with a larger N and would have been right until a third instance existed. The generalisation was Michael's call, not the author's.",
+          "action_status": "declined",
+          "note": "Nothing to action. Recorded because the reasoning is the transferable part: when a hardcoded value is found to be wrong for a second case, the repair that enumerates both cases looks complete and is a slower version of the same bug. The question to ask is what DERIVES the value, not which values are missing."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED as a class. The name pattern ^hover[0-9]*$ is now the single place clone identity is expressed for the auditor, but nothing has swept the rest of the auditor tooling for other single-instance assumptions -- #205 and this are two known locations and the count is not known to be two. The pattern also encodes a NAMING CONVENTION as a security boundary: a session provisioned as hover9 would be treated as an auditor by both tools, and nothing verifies that a session claiming an auditor name is actually an auditor clone. That is acceptable while provisioning is manual and is not a property anything checks."
     },
     {
       "commit": "80c5984c6cd5",
@@ -21982,6 +22099,63 @@
       "recurrence_open": "A SWEEP FOUND 35 HAND-ROLLED MUTATION RUNNERS WITH NO BASELINE PRECONDITION AT ALL and they are not fixed here -- they do not use the shared harness, so this change does not reach them. 41 more have baseline language that was not read one by one. The detector is a screen: it requires a subprocess run, a textual mutation of source, and a caught/missed verdict, so a runner that mutates through a helper or reports in other words is invisible to it."
     },
     {
+      "commit": "a468b4b89d68",
+      "date": "2026-09-30",
+      "subject": "fix(tools): the mutation tester wrote a production engine, and the sibling scan did 1865 git launches",
+      "files": [
+        "tests/run_condition_coverage_sandbox_probe.py",
+        "tests/run_nhi_selftest_scope_probe.py",
+        "tools/condition_coverage.py",
+        "tools/nhi_register.py",
+        "tools/schema_provisioning_check.py"
+      ],
+      "lines_added": 721,
+      "lines_removed": 24,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "tools/condition_coverage.py mutated api/_lib/ledger.js -- a production financial\nengine -- in place. It is a mutation tester: it flips an && to || , runs the\nengine's suite, and restores. Every guard around that was correct and none of them\nmattered. On 2026-09-30 a bare-run sweep launched it with no arguments under a\n15-second timeout, it was KILLED mid-mutation, and the scratch clone was left with\na mutated engine that `git status --porcelain` named. A `finally` does not run in a\nkilled process, and neither does the tool's three-stage restore verification. The\nfix is that the real tree is no longer the thing mutated: sweeps now run in a\ndetached git worktree at HEAD, chosen over a file copy because the suites resolve\nby path. A --report option was added and REFUSES any path under api/ sql/ tools/\ntests/ scripts/ or with a source extension, so no output of the tool can land in\nsrc through the front door either.",
+      "rules": [
+        "1.4"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/bare_run_write_check.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The in-place mutation is the tool's original design, present from its first commit, so no commit introduced it as a regression. What made it reachable was the combination with an external timeout, a property of the CALLER rather than of any commit here."
+      },
+      "contributing_factors": [
+        {
+          "factor": "The safety argument was entirely about ORDERLY failure. A finally, a restore, a three-stage verification with a git checkout as the last resort, and a refusal to run on a dirty tree -- every one of those is correct and every one assumes the process gets to run more code. A kill is the one failure mode none of them address, and it is the ordinary way a tool dies inside a timeout.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The mutation happens in a detached worktree at HEAD. A killed run now leaves a temp directory behind rather than a source file, and arm A2 polls the real engine's hash every 200ms during a real killed run to prove it never changes at any point."
+        },
+        {
+          "factor": "It was found by another tool rather than by review, and only because that tool ran it with no arguments. Nothing in the repo would otherwise have exercised the bare-run path: the tool is normally invoked with --engine, and the defect needed the combination of a bare run and an external timeout.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "tools/bare_run_write_check.py is that tool and now runs in CI-able form with an allowlist; this tool is deliberately NOT on the allowlist, because a tool writing a SOURCE file on a bare run is never an intended writer."
+        },
+        {
+          "factor": "The repo-wide dirty-tree refusal made the tool undevelopable once the worktree change landed -- it fired on an edit to the tool itself. A guard that blocks its own maintenance gets routed around, which is how the original guard would eventually have been weakened rather than fixed.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The refusal is scoped to the four engines and their four suites. It still refuses on a modified ENGINE, for the remaining real reason: that edit would not be measured, and a verdict about a different file than the one on disk is worse than a refusal."
+        },
+        {
+          "factor": "The first version of the control could not have caught this. It slept 14 seconds and then killed the process; the ledger sweep finished first, so nothing was interrupted, and the arm reported that rather than passing -- but only because it checked whether the process was still alive. An arm that had not checked would have reported a clean kill-test on a run that was never killed.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "A2 polls rather than sleeps, records whether the engine changed at ANY point during the run, and fails explicitly if the process exited before the kill."
+        }
+      ],
+      "recurrence_open": "Three other tools in this repo mutate a real file and restore it -- the sabotage\nharness, the guard-ablation tool and the idempotence double-run -- and none was\nexamined for the same kill-window. They are not covered by this fix and were not\nswept for it here; guard_ablation.py in particular was still running when a 95s\nbound expired on 2026-09-30, which is exactly the condition that produced this\ndefect."
+    },
+    {
       "commit": "abb17d4d96e5",
       "date": "2026-09-30",
       "subject": "fix(sairnbiz): ONE MISSING TABLE was silencing the backup for twelve that exist -- and three more preview findings",
@@ -22087,6 +22261,61 @@
         }
       ],
       "recurrence_open": "21 of 485 rows carry any reference at all, so for the other 464 there is nothing\na static arm can read a dose against. This control covers the 8 Topical\nAntiseptic rows; the same defect in an uncited row would be invisible, and the\nexisting sourcing-honesty suite is by design silent about rows that make no\nclaim."
+    },
+    {
+      "commit": "d9083b93265d",
+      "date": "2026-09-30",
+      "subject": "fix(tests): three StoneDesk suites failed on stale expectations, and none of them was an app defect",
+      "files": [
+        "tests/ai_analysis_logs_delete.js",
+        "tests/ai_shortcuts_reach_the_chat.js",
+        "tests/quote_builder_delete_does_not_resurrect.js"
+      ],
+      "lines_added": 73,
+      "lines_removed": 7,
+      "app": "stonedesk",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "Three StoneDesk suites were RED at HEAD and none of the three causes was an app\ndefect -- every one was a stale expectation inside the test. A suite that fails for\na stale reason is a suite nobody reads, so the coverage it represented was already\ngone. quote_builder_delete_does_not_resurrect.js was not running AT ALL: grabLine()\nthrew on `  quoteHistory.unshift(q);`, a line item 92 removed when saveQuote stopped\nmutating ahead of its store, so the file died on line 80 before any arm ran.\nai_shortcuts_reach_the_chat.js asserted `id=\"userInput\"` is absent from the raw HTML\nand failed on the COMMENT at stonedesk.html:4812 that documents the absence and\nspells the literal to do so. ai_analysis_logs_delete.js failed seven arms with\n`seamRemakeLog is not defined` -- a function that exists at :34452 and was simply\nnot in the suite's hand-listed lift set -- and one arm required exactly two\nsdEnsureRowIds calls in sdVeinAnalyze, which was refactored so both paths call a\nshared record() helper that assigns the id once.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Each of the three went stale at a DIFFERENT commit -- the one that removed quoteHistory.unshift, the one that added the explanatory comment at :4812, and the one that refactored sdVeinAnalyze into record(). No single commit introduced the defect, and attributing it to any one of them would be wrong."
+      },
+      "contributing_factors": [
+        {
+          "factor": "All three tests encode the SHAPE of the code rather than the requirement. A verbatim lifted line, a raw-text absence check and a count of call sites are each exact, which is why they were chosen -- and exactness against a shape is what goes stale the first time the shape changes for a good reason.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Each was rewritten to assert the requirement instead: the current two lines are lifted, the absence check strips comments, and the id check is a RATIO of one ensure per save, which survives any refactor that keeps the guarantee."
+        },
+        {
+          "factor": "Two of the three failed in a way that reads like an app defect. `seamRemakeLog is not defined` and `the element is back -- re-check this suite` both point at stonedesk.html, and both were about the test. A failure message that accuses the wrong file costs more than a silent gap, because somebody goes and looks.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The comment-stripped arm now also asserts the comment is STILL there, so if it goes the arm says the stripping has stopped doing anything rather than silently reverting to the raw check; and the lift list is resolved transitively with the reason recorded."
+        },
+        {
+          "factor": "The hand-listed lift set is the sixth instance of this exact shape in this repo in one day. Five other suites broke the same way when sdData gained one global, and two of those carry comments predicting it.",
+          "kind": "technical",
+          "action_status": "planned",
+          "action": "The five were fixed by DERIVING the list; this one uses a per-module `extra` list because the symbols it needs are not derivable from a pattern. A general fix -- lifting a function's transitive dependencies automatically -- is not built and is named here as the remaining gap."
+        },
+        {
+          "factor": "Nothing reported that three suites were red. They were found by running every test that reads stonedesk.html while baselining an unrelated change, and they had been failing long enough that the 'is this from my change' question needed a stash to answer.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "No standing check reports the red set for an app. tools/run_all_tests.py exists but did not finish inside a 95-second bound today."
+        }
+      ],
+      "recurrence_open": "Nothing reports the red set for an app on a cadence. These three were found while\nbaselining something else, and a fourth could be red now without anybody knowing --\nthe only reason the count is 3 rather than unknown is that 78 suites were run by\nhand today. tools/run_all_tests.py did not finish inside 95 seconds."
     },
     {
       "commit": "f70a69be600b",

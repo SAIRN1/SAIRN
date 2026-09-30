@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+# OWNER-INTENDED BARE-RUN WRITER. A bare run of this tool WRITES, and that is
+# its interface rather than a defect: see tools/bare_run_writers.py for the
+# path it writes and why. tools/bare_run_write_check.py reads that list and
+# does not flag the tools on it. If this tool stops being a generator, take it
+# off the list in the same change -- an allowlist nobody re-derives is how a
+# real defect hides inside a convention.
 """SUPERSEDED 2026-08-29 -- DO NOT BUILD ON THIS. Use tools/sairn_load_state_check.py.
 
 >>> CC / anyone extending load-state checking: read this before adding an app. <<<

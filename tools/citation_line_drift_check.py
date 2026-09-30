@@ -96,14 +96,35 @@ def const_map(lines, prefix):
     return m
 
 
-def write_sites(lines, consts):
-    """1-indexed lines where one of `consts` is written to local storage."""
+def write_sites(lines, consts, resource=None):
+    """1-indexed lines where this resource is written to local storage.
+
+    TWO SHAPES, because one model did not generalise (measured 2026-09-30). The
+    constant form -- `st(K_FOO, ...)` after `K_FOO='res'` -- is sairnfreedom's,
+    which declares 42 such constants. Swept across all fourteen apps, 178 of 230
+    citations came back INCONCLUSIVE on that model alone: sairnvet declares 6
+    constants for 23 cited resources and sairncode declares 2 for 23, because
+    those apps write through a LITERAL key instead --
+    `setItem('sc_x', ...)` or `st('sc_x', ...)`, 34 of them in sairncode.
+
+    Both are counted. Neither is guessed at: a citation with no write site under
+    EITHER shape stays INCONCLUSIVE, which is what the 178 were telling us.
+    """
     hits = []
     for i, l in enumerate(lines, 1):
+        got = False
         for c in consts:
             if re.search(r'\bst\(\s*%s\b' % re.escape(c), l):
-                hits.append(i)
+                got = True
                 break
+        if not got and resource:
+            # The literal-key form. `setItem` and this repo's `st()` wrapper are
+            # the same act; a READ (`getItem`) is not a write site and must not
+            # count, so the two are matched by NAME rather than by the key alone.
+            if re.search(r"(?:setItem|\bst)\(\s*'%s'" % re.escape(resource), l):
+                got = True
+        if got:
+            hits.append(i)
     return hits
 
 
@@ -149,7 +170,10 @@ def main(argv):
 
     spans = declaration_spans(lines, prefix)
     cmap = const_map(lines, prefix)
-    if not cmap:
+    literal_any = any(
+        re.search(r"(?:setItem|\bst)\(\s*'%s[a-z_]+'" % re.escape(prefix), l)
+        for l in lines)
+    if not cmap and not literal_any:
         sys.stderr.write(
             'COULD NOT RUN -- no `K_FOO=\'%sbar\'` storage constants found in '
             '%s, so a resource cannot be resolved to a write site and every '
@@ -169,11 +193,13 @@ def main(argv):
     sound, drift, incon = [], [], []
     for name, n in rows:
         consts = cmap.get(name) or []
-        sites = write_sites(lines, consts) if consts else []
+        sites = write_sites(lines, consts, resource=name)
         if not sites:
-            why = ('no storage constant declared for it'
+            why = ('no storage constant declared for it, and no literal '
+                   "setItem('%s') or st('%s') write either" % (name, name)
                    if not consts else
-                   'constants %s are declared but never written with st()'
+                   'constants %s are declared but never written with st(), '
+                   'and there is no literal-key write either'
                    % ','.join(consts))
             incon.append((name, n, why))
             continue

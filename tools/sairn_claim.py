@@ -438,6 +438,78 @@ FILES_DECL = re.compile(r'FILES:\s*(.*?)(?:\s+--\s|$)', re.I | re.S)
 # guessing at it would put the file check back into the proxy business.
 FILE_TOKEN = re.compile(r'[A-Za-z0-9_./\\-]+\.[A-Za-z0-9]{1,5}')
 
+# ── A NAME THAT RESOLVES TO NOTHING, CAUGHT AT CLAIM TIME (2026-09-30) ──────
+# A weekly idle-tool survey reported `items.md` as a tool untouched for 14 days
+# and asked whether it was safe to retire. There is no such file and there never
+# was -- `git log --all` has never tracked one. It entered the claim record
+# inside a queue2 task string, *"...items.md item 45..."*, as shorthand for an
+# item in a queue document, and FILE_TOKEN above read it as a filename.
+#
+# The cost was not the typo. It was that nothing looked at the string WHEN IT
+# WAS WRITTEN, while the author was still in the room and could have said what
+# they meant. A fortnight later it was a retirement question about a file nobody
+# could find.
+#
+# Only a KNOWN EXTENSION counts, because the general shape `word.word` is most
+# of English prose with a full stop in it -- "item 45. the next one" and a
+# version number both parse as filenames otherwise.
+KNOWN_EXT = ('py', 'js', 'md', 'json', 'html', 'sql', 'sh', 'yml', 'yaml',
+             'txt', 'css', 'jsonl', 'ts', 'tsx', 'toml', 'cfg', 'ini')
+BARE_NAME = re.compile(
+    r'(?<![A-Za-z0-9_./\\-])([A-Za-z0-9_-]+\.(?:%s))(?![A-Za-z0-9])'
+    % '|'.join(KNOWN_EXT))
+
+_TRACKED_BASENAMES = None
+
+
+def tracked_basenames():
+    """Every tracked file's basename, once per process.
+
+    Basenames rather than paths on purpose: the question is whether a bare name
+    denotes anything at all, not where it lives. Empty when git cannot answer,
+    and the caller treats empty as "cannot tell" rather than as "nothing exists"
+    -- an empty index would flag every token in every claim.
+    """
+    global _TRACKED_BASENAMES
+    if _TRACKED_BASENAMES is None:
+        try:
+            out = subprocess.run(['git', '-C', REPO, 'ls-files'],
+                                 capture_output=True, text=True,
+                                 encoding='utf-8', errors='replace').stdout or ''
+            _TRACKED_BASENAMES = {p.rsplit('/', 1)[-1]
+                                  for p in out.split('\n') if p.strip()}
+        except Exception:                                      # noqa: BLE001
+            _TRACKED_BASENAMES = set()
+    return _TRACKED_BASENAMES
+
+
+def unresolvable_file_tokens(task):
+    """Bare filenames in `task` that no tracked file carries.
+
+    WHAT IS DELIBERATELY NOT FLAGGED, because the exemption is what keeps this
+    worth reading:
+
+      A PATH-SHAPED token that does not exist. Claiming a file before creating
+      it is the correct order of work under PR 2.2 -- this tool's own new
+      checkers were claimed before they were written -- so warning on those
+      would fire on every honest new-tool claim and be ignored within the week.
+
+      A bare basename that DOES match a tracked file. That is a different
+      finding with a different answer (the per-clone ambiguity, H2 seq 418), and
+      putting two answers behind one message helps nobody.
+    """
+    known = tracked_basenames()
+    if not known:
+        return []          # cannot tell; never guess that nothing exists
+    seen, out = set(), []
+    for m in BARE_NAME.finditer(task or ''):
+        tok = m.group(1)
+        if tok in seen or tok in known:
+            continue
+        seen.add(tok)
+        out.append(tok)
+    return out
+
 
 def declared_files(task):
     """The file set a claim's task DECLARES, or None when it declares none.
@@ -1891,8 +1963,43 @@ def _report_recent_releases(claims, me, subj, task):
           'times; this note is so it does not depend on remembering.')
 
 
+def _warn_unresolvable(args):
+    """Say it now, while the author is still in the room.
+
+    NOT A REFUSAL, and that is the whole design. A claim naming a file that does
+    not exist YET is the correct order of work (PR 2.2) and is the common case
+    for a new tool -- so this warns, names what it means, and gets out of the
+    way. A blocking version would be wrong more often than right and would be
+    overridden into uselessness, which this file already records happening to a
+    gate that had to be talked past routinely.
+    """
+    # `args` is the argparse Namespace every other command reads the same way
+    # (`' '.join(args.task)`, three places above). The first version of this
+    # line indexed it as a list and raised TypeError on the real claim path --
+    # caught by USING the tool, not by the probe, whose E1 arm only grepped for
+    # the call. A control that greps for a call site cannot tell a wired
+    # function from a broken one, which is the eighth cross-domain discipline
+    # arriving inside the check written for the same family. The probe now
+    # DRIVES a real claim in a throwaway clone instead.
+    ghosts = unresolvable_file_tokens(' '.join(getattr(args, 'task', None) or []))
+    if not ghosts:
+        return
+    print('\nNOTE -- %d name(s) in this task string look like files and match '
+          'no tracked file anywhere in the repo:' % len(ghosts))
+    for t in ghosts:
+        print('    %s' % t)
+    print('  NOT A REFUSAL and the claim proceeds. A PATH (tools/x.py) that '
+          'does not exist yet is normal and is never reported here -- only a '
+          'BARE name that resolves to nothing.')
+    print('  Said now rather than later because the last one was not: '
+          '`items.md` sat in a claim string as shorthand for a queue item, was '
+          'read as a filename, and surfaced FOURTEEN DAYS on as a retirement '
+          'question about a file that has never existed.')
+
+
 def cmd_claim(args):
     rc = cmd_check(args)
+    _warn_unresolvable(args)
     stale_check = rc == STALE_RC
     if stale_check:
         # STALE DOES NOT ABORT, and that is a decision rather than an oversight.

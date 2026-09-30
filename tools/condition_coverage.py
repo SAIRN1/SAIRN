@@ -62,16 +62,28 @@ rather than printing a meaningless column.
   * whether the surviving operand MATTERS. This reports evidence, not severity.
 
 Exit 0 when every operand is killed, 1 when any survives or any mutation could
-not be applied, 2 when the fixtures fail or the tree is dirty -- neither of
-which is a pass.
+not be applied, 2 when the fixtures fail, the tree is dirty, no throwaway
+worktree can be made, or --report names a source path -- none of which is a
+pass.
+
+    python tools/condition_coverage.py --engine ledger
+    python tools/condition_coverage.py --report docs/coverage/cc.json
+
+IT MUTATES A DETACHED WORKTREE AT HEAD, never api/_lib/. It used to mutate the
+real files, and on 2026-09-30 a bare run under a 15-second timeout was killed
+mid-mutation and left a mutated production engine on disk. The `finally` and
+the three-stage restore verification are both still here and both were always
+irrelevant to that failure: a killed process runs neither.
 """
 import hashlib
 import io
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import time
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -177,9 +189,9 @@ def write(path, text):
         os.fsync(fh.fileno())
 
 
-def run_suite(suite):
-    p = subprocess.run(['node', os.path.join(REPO, suite)], capture_output=True,
-                       text=True, encoding='utf-8', errors='replace', cwd=REPO,
+def run_suite(suite, root):
+    p = subprocess.run(['node', os.path.join(root, suite)], capture_output=True,
+                       text=True, encoding='utf-8', errors='replace', cwd=root,
                        timeout=120)
     out = (p.stdout or '') + (p.stderr or '')
     red = p.returncode != 0 or 'FAIL' in out or re.search(r'\b[1-9]\d* failed', out)
@@ -220,8 +232,50 @@ def run_fixtures():
     return bad
 
 
-def sweep(key, engine, suite, limit=None):
-    path = os.path.join(REPO, engine)
+# ── THE MUTATION HAPPENS IN A THROWAWAY WORKTREE (2026-09-30) ────────────────
+# It used to happen in `api/_lib/`. Every guard around that was correct and none
+# of them mattered: on 2026-09-30 this tool was launched bare under a 15-second
+# timeout, was KILLED mid-mutation, and left a mutated production engine on disk.
+# A `finally` does not run in a killed process, and neither does a three-stage
+# restore verification. The only way for an interrupted run to leave the real
+# tree untouched is for the real tree never to be the thing mutated.
+#
+# A WORKTREE RATHER THAN A FILE COPY, because the suites resolve by path:
+# api/_lib/ledger.test.js does `require('./ledger')` and reads
+# `__dirname + '/ledger.js'`, and tests/sairncare/test-care-charges.js reaches up
+# two directories. A worktree reproduces the layout exactly and costs one git
+# call. It is removed in a finally -- and if that finally does not run either,
+# what is left behind is a temp directory, not a source file.
+def sandbox():
+    """(path, cleanup) -- a detached worktree at HEAD, or (None, reason)."""
+    d = os.path.join(tempfile.gettempdir(),
+                     'condcov-%d' % os.getpid())
+    if os.path.isdir(d):
+        subprocess.run(['git', 'worktree', 'remove', '--force', d], cwd=REPO,
+                       capture_output=True, text=True, encoding='utf-8',
+                       errors='replace')
+    r = subprocess.run(['git', 'worktree', 'add', '-q', '--detach', d, 'HEAD'],
+                       cwd=REPO, capture_output=True, text=True,
+                       encoding='utf-8', errors='replace')
+    if r.returncode != 0 or not os.path.isdir(d):
+        return None, ((r.stderr or r.stdout) or 'git worktree add failed').strip()
+    return d, None
+
+
+def drop_sandbox(d):
+    subprocess.run(['git', 'worktree', 'remove', '--force', d], cwd=REPO,
+                   capture_output=True, text=True, encoding='utf-8',
+                   errors='replace')
+    shutil.rmtree(d, ignore_errors=True)
+
+
+def sweep(key, engine, suite, limit=None, root=None):
+    # `root` is the SANDBOX, not REPO. Passing REPO here would restore the
+    # previous behaviour exactly, so it is required rather than defaulted.
+    if root is None:
+        raise ValueError('sweep() needs the sandbox root -- defaulting it to '
+                         'REPO is the defect this parameter exists to prevent')
+    path = os.path.join(root, engine)
     before_hash = sha(path)
     src = io.open(path, encoding='utf-8').read()
     ops = operands(src)
@@ -237,7 +291,7 @@ def sweep(key, engine, suite, limit=None):
             # mutation that never applied would report a tested operand as
             # untested -- the worst output this tool could produce.
             really = sha(path) != before_hash
-            red = run_suite(suite) if really else None
+            red = run_suite(suite, root) if really else None
             if not (applied and really):
                 not_applied += 1
                 verdict = 'NOT-APPLIED'
@@ -266,7 +320,7 @@ def sweep(key, engine, suite, limit=None):
     if not restored:
         # Last resort, and LOUD: take the file back from git rather than leave
         # a mutated engine on disk because a hash check was inconclusive.
-        subprocess.run(['git', 'checkout', '--', engine], cwd=REPO,
+        subprocess.run(['git', 'checkout', '--', engine], cwd=root,
                        capture_output=True, text=True, encoding='utf-8', errors='replace')
         restored = sha(path) == before_hash
         how = 'git checkout -- (the write-back could not be confirmed)'
@@ -300,15 +354,32 @@ def main(argv):
     # in the clone: measured 2026-09-15, one stray `piac.html` was enough to
     # report COULD NOT RUN on the whole platform. A refusal that fires on
     # something it is not protecting against is a refusal people route around.
+    # SCOPED TO THE ENGINES AND THEIR SUITES, not the whole tree. Before the
+    # worktree change the refusal had to be repo-wide, because the tool wrote to
+    # real files and any uncommitted edit anywhere was part of a baseline it
+    # might disturb. It writes to a worktree now, so the only thing an
+    # uncommitted edit can do is make the ANSWER wrong -- and that is only true
+    # for the files actually being measured. Repo-wide, the refusal fired on an
+    # edit to this tool itself and made it undevelopable.
+    measured = []
+    for _k, _engine, _suite in ENGINES:
+        measured += [_engine, _suite]
     dirty = subprocess.run(['git', 'status', '--porcelain',
-                            '--untracked-files=no'], capture_output=True,
+                            '--untracked-files=no', '--'] + measured,
+                           capture_output=True,
                            text=True, encoding='utf-8', errors='replace',
                            cwd=REPO).stdout.strip()
     if dirty:
-        print('  !! TRACKED FILES ARE MODIFIED. This tool WRITES to real source')
-        print('     files and verifies the restore against a baseline; it will')
-        print('     not run when that baseline is already modified. Commit or')
-        print('     stash first. Modified:')
+        # STILL REFUSED, FOR A DIFFERENT REASON. The mutation now happens in a
+        # worktree at HEAD, so uncommitted work is not at risk -- it is simply
+        # NOT MEASURED. Reporting an engine as fully covered while the version on
+        # your disk differs from the one that was mutated is a worse answer than
+        # refusing.
+        print('  !! AN ENGINE OR ITS SUITE IS MODIFIED. The mutation runs in a')
+        print('     worktree at HEAD, so your edits are safe and would NOT be')
+        print('     measured -- which would report a verdict about a different')
+        print('     file than the one on your disk. Commit or stash first.')
+        print('     Modified:')
         for line in dirty.split('\n')[:10]:
             print('       %s' % line.strip())
         return 2
@@ -322,11 +393,55 @@ def main(argv):
         i = argv.index('--limit')
         limit = int(argv[i + 1])
 
+    report = None
+    if '--report' in argv:
+        i = argv.index('--report')
+        report = argv[i + 1] if i + 1 < len(argv) else None
+        if not report:
+            print('  !! --report needs a path.')
+            return 2
+        rp = report if os.path.isabs(report) else os.path.join(REPO, report)
+        rp = os.path.abspath(rp)
+        # NO OUTPUT OF THIS TOOL MAY LAND IN SOURCE. That is the whole point of
+        # the 2026-09-30 change, and a --report that could overwrite an engine
+        # would reintroduce it through the front door.
+        rel = os.path.relpath(rp, REPO).replace(chr(92), '/')
+        src_dir = rel.split('/')[0] in ('api', 'sql', 'tools', 'tests', 'scripts')
+        src_ext = rp.lower().endswith(('.js', '.mjs', '.cjs', '.py', '.html',
+                                       '.sql', '.ts'))
+        if src_dir or src_ext:
+            print('  !! REFUSED: --report %s is a source path.' % report)
+            print('     This tool exists because its output used to land in')
+            print('     api/_lib/. A report that can overwrite a source file is')
+            print('     the same defect with a flag in front of it. Use')
+            print('     docs/coverage/ or a path outside the repo.')
+            return 2
+
+    root, why = sandbox()
+    if root is None:
+        print('  !! COULD NOT RUN: no throwaway worktree, so there is nowhere')
+        print('     safe to mutate. NOT a pass -- nothing was measured.')
+        print('     %s' % why)
+        return 2
     out = []
-    for key, engine, suite in ENGINES:
-        if want and key != want:
-            continue
-        out.append(sweep(key, engine, suite, limit))
+    try:
+        for key, engine, suite in ENGINES:
+            if want and key != want:
+                continue
+            out.append(sweep(key, engine, suite, limit, root=root))
+    finally:
+        drop_sandbox(root)
+
+    if report:
+        rp = report if os.path.isabs(report) else os.path.join(REPO, report)
+        rp = os.path.abspath(rp)
+        d = os.path.dirname(rp)
+        if d and not os.path.isdir(d):
+            os.makedirs(d)
+        with io.open(rp, 'w', encoding='utf-8', newline=chr(10)) as fh:
+            json.dump({'criteria_version': CRITERIA_VERSION, 'engines': out},
+                      fh, indent=1)
+        print('  report written: %s' % report)
 
     if '--json' in argv:
         print(json.dumps({'criteria_version': CRITERIA_VERSION, 'engines': out}, indent=1))
