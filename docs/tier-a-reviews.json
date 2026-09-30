@@ -4899,6 +4899,28 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-30T12:22:31Z",
+      "opened_at_sha": "3f4da4a78d24d96a2c24bbf03540622bf3cc5b2c",
+      "resources": [
+        "sf_accounts",
+        "sf_sessions"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tests/run_citation_line_drift_probe.py",
+        "tools/citation_line_drift_check.py"
+      ],
+      "what": "TOOLING AND A CONTROL ONLY. NO CODE SERVING sf_accounts OR sf_sessions WAS\nCHANGED. Both names appear because the new checker's DOCSTRING and its probe quote\nthe two declaration blocks verbatim -- `K_ACCOUNTS='sf_accounts',\nK_SESSIONS='sf_sessions', ...` is the literal line that caused the defect, and\nquoting it is the explanation. PR 1.2: grep cannot tell code from text that\ndescribes code. Recorded rather than argued with.\n\nWHAT CHANGED\n  tools/citation_line_drift_check.py       NEW, 213 lines, read-only\n  tests/run_citation_line_drift_probe.py   NEW, 13 arms\n  tools/tooling_inventory.py               one PURPOSES entry\n  the three generated documents            regenerated\n\nWHAT IT DOES. For each `:NNNN` citation on a prefixed row of\ndocs/CRITICALITY-TIERS.md, decide whether the cited line is near a real WRITE site\nfor that resource. It resolves resource -> `K_FOO='res'` constant -> `st(K_FOO,\n...)` call sites, and EXCLUDES any line naming two or more prefixed resources.\nThree verdicts: SOUND, DRIFTED with a signed correction, INCONCLUSIVE.\n\nREAL RUN: 41 citations over 28 sf_ resources -- 8 SOUND, 33 DRIFTED, 0\nINCONCLUSIVE. Nothing was written to any document; hank holds\ndocs/CRITICALITY-TIERS.md.\n\nWHAT TO ATTACK\n\n(a) THE DECLARATION-BLOCK RULE IS \"TWO OR MORE NAMES ON ONE LINE\" AND THAT IS MY\n    INVENTION. It is derived rather than hardcoded, which I argued is better than\n    a line range that goes stale. But it will exclude a legitimate line that\n    happens to mention two resources -- a comment contrasting them, or a genuine\n    two-resource write. On sairnfreedom it reported spans 1919-1925, 1927-1928,\n    2340-2344, 2414, 4435-4438, 5453-5454, 6326-6329 and 7162; the last five are\n    SHORT and I did not individually confirm that each is really a declaration\n    rather than a use. That is the weakest point and it is where I would start.\n\n(b) `st(K_FOO, ...)` IS THE ONLY WRITE SHAPE IT KNOWS. A write through a computed\n    constant, an alias, or a helper that wraps st() is invisible, and those are\n    reported INCONCLUSIVE rather than missed silently -- but on this app the\n    INCONCLUSIVE count was ZERO, which could mean the mapping is complete or\n    could mean the shape is over-fitted to what I happened to look at. Check\n    whether any sf_ resource is written some other way.\n\n(c) THE WINDOW IS 40 LINES AND I INHERITED THAT NUMBER. It came from the\n    throwaway detector and I did not re-derive it. A citation 41 lines from its\n    write site is DRIFTED and one 39 lines away is SOUND, and nothing measured\n    which distance actually corresponds to \"still points at the right thing\".\n    Arm B3 proves the window is honoured; nothing proves 40 is the right value.\n\n(d) I VERIFIED THE 33 CORRECTIONS WITH A RULE VERY CLOSE TO THE ONE THAT PRODUCED\n    THEM. Arm E2 re-reads each target line and requires it to match\n    `st(K_..., ...)` for that resource. That is a genuine re-read of the file\n    rather than trusting the tool's output, but it is the SAME PREDICATE, so it\n    cannot catch the case where the predicate itself is the wrong notion of a\n    write site. A structurally different method -- reading the panel the resource\n    renders in, say -- would be independent and I did not do it.\n\n(e) 8 OF 41 WERE ALREADY SOUND AND MY EARLIER REPORT SAID 40 WERE WRONG. That\n    number is now retracted in both directions: it missed the 8 and it counted a\n    41st. Treat any count I gave for this batch before today as void.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-30T12:22:31Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
