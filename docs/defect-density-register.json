@@ -19775,49 +19775,6 @@
       "recurrence_open": "Nothing prevents the next server-side rule change from landing without the client copy, and nothing makes the case list grow when a rule is added. The parity arm now has a control proving it can see a divergence, which is not the same as proving it can see EVERY divergence -- a rule added with no matching case is still invisible to it."
     },
     {
-      "commit": "4d5f3deb557d",
-      "date": "2026-09-29",
-      "subject": "fix(hover2): hover_log.py live selftest arm disclosed per the closed-system convention; the checker's def-line-as-call-site false positive fixed with a 12th fixture (failed first against unfixed code); hover_editor_review.py gains the --selftest alias -- 0 UNDISCLOSED-live, 26/26 tools answer --selftest",
-      "files": [
-        ".claude/skills/sairn-hover-auditor/tools-hover2/hover_editor_review.py",
-        ".claude/skills/sairn-hover-auditor/tools-hover2/hover_log.py",
-        ".claude/skills/sairn-hover-auditor/tools-hover2/sabotage_closed_system_check.py"
-      ],
-      "lines_added": 51,
-      "lines_removed": 13,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "low",
-      "detection_method": "hover-audit",
-      "summary": "hover2 auditor tooling, two defects in one commit, both found by the closed-system checker's own report this session: (1) hover_log.py's seq-273 CLI-integration selftest arm reads the REAL self-log (line-count before/after a must-refuse append) with no disclosure marker, reported UNDISCLOSED_LIVE by sabotage_closed_system_check.py -- the arm was honest but undisclosed, violating the checker's own convention; disclosure comment added in the arm's own words. (2) The checker itself had a def-line-as-call-site false positive: a selftest whose own body touches LOG_PATH lands in indirect_callees and its own 'def selftest():' line matches the zero-arg call regex -- fixture FIXTURE_SELF_NAMED_DEF confirmed FAILING against unfixed code (1 of 12) before the one-guard fix, 12/12 after. Report now 0 UNDISCLOSED-live. Auditor-internal tooling; no platform code path served.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "unknown",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover2",
-      "injection": {
-        "unknown_reason": "both defects were injected in the per-clone hover-audit-log working directory before these tools ever entered platform git; the platform-repo landing commit carries them but did not create them"
-      },
-      "citation_note": "closed-system disclosure convention lives in the auditor's own tool contract, no platform standing rule names this shape",
-      "phase_note": "auditor-internal tooling has no product phase; found during a resume-queue selftest drive",
-      "contributing_factors": [
-        {
-          "factor": "the live selftest arm was written before the disclosure convention existed and never re-swept against it",
-          "kind": "process",
-          "action_status": "done",
-          "action": "disclosure comment added; checker rerun reports 0 UNDISCLOSED-live"
-        },
-        {
-          "factor": "the checker indirect-callee loop lacked the def-line guard its own network branch already had",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "guard added; FIXTURE_SELF_NAMED_DEF locks it, confirmed failing-first"
-        }
-      ],
-      "recurrence_open": "a future live arm written without re-running the checker would recur silently until the next selftest drive; the checker is not a pre-commit gate on the tooling directory"
-    },
-    {
       "commit": "4dc17346ccb5",
       "date": "2026-09-29",
       "subject": "fix(sync): a landed slab write was reported as LOST, because the guard read the payload instead of the envelope",
@@ -20701,6 +20658,55 @@
       "recurrence_open": "Sabotage anchors are text in a moving file by construction and this platform has measured them decaying repeatedly. The harness now parse-checks its own mutation, so an arm that plants NOTHING is reported -- but an arm whose mutation applies and is caught for the wrong reason is still invisible to it, and that one was settled here by reading rather than by a check."
     },
     {
+      "commit": "8c09948c5d95",
+      "date": "2026-09-29",
+      "subject": "fix(fixture): the baseline fixture was red at every baseline, for its own reasons",
+      "files": [
+        "tests/fixtures/baseline_gate_fixture.py"
+      ],
+      "lines_added": 15,
+      "lines_removed": 14,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "probe-control",
+      "summary": "tests/fixtures/baseline_gate_fixture.py counted occurrences of its own anchor literal in its own source and required three; the literal occurs once. So the fixture was RED at every baseline, and the control that uses it could never pass its GREEN arm -- a fixture failing for its own reasons, which is precisely the condition the harness precondition exists to refuse, arriving one level down.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tests/run_sabotage_harness_baseline_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "8c09948c5d95",
+        "date": "2026-09-29",
+        "subject": "fix(fixture): the baseline fixture was red at every baseline, for its own reasons",
+        "lag_days": 0
+      },
+      "citation_note": "A fixture failing for its own reasons is the shape cross-domain-disciplines item 8 describes, but that item is about a check going stale over TIME; this one was wrong from its first line.",
+      "contributing_factors": [
+        {
+          "factor": "The self-check counted a literal in its own source and the expected count was wrong, so the fixture could never be green",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "It now compares the anchor assignment against a SECOND, SPLIT spelling of the same literal, so the mutation is detected and the same edit cannot rewrite the expectation with it."
+        },
+        {
+          "factor": "The GREEN arm of the control was written and run in the same breath as the RED arm, so a fixture that is always red looks like a subject that is always red",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The control now runs the GREEN direction FIRST and says at its own arm that a could-not-run on the red arm is not evidence about the gate unless the green arm passed."
+        },
+        {
+          "factor": "A fixture is code nobody reviews, because it exists to be trivial",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The fixture carries the account of its own defect at the line, so the next reader meets it rather than re-deriving it."
+        }
+      ],
+      "recurrence_open": "Nothing checks that a fixture is green before a control depends on it, beyond the control's own arm ordering. A second fixture written the same way would fail the same way and the only thing that would catch it is a human reading the arm order."
+    },
+    {
       "commit": "937bd6e858e3",
       "date": "2026-09-29",
       "subject": "fix(sairncare): a prior invoice whose blob is NULL was reconciled against nothing -- the same false figure, through a third door",
@@ -20757,157 +20763,6 @@
       "recurrence_open": "The sweep named in factor 4 is not run. Every other read in this file that decides on blob truthiness instead of row existence still has the same shape, and only this one branch was fixed. CORRECTED 2026-09-30, SEVERITY high -> low, BY THE SWEEP THIS RECORD ASKED FOR. Every `data jsonb` column declared in sql/ is NOT NULL -- 353 of 353 -- so the database cannot store the input this record is about. 398 resources were driven through the real api/sd-data.js read with data: null and ZERO returned 500 or threw. The fix is defensive code on a state the declared schema forbids, not a live product defect, and recording it as HIGH overstated it. THE DEPLOYED NULLABILITY IS NOT KNOWN from anything in this repo: db/schema_snapshot.json carries column names only and sql/schema_snapshot_query.sql does not select is_nullable, so this correction rests on the DECLARED schema, which is a weaker thing than the live one and is stated that way rather than as a clean bill."
     },
     {
-      "commit": "98a97bf59bea",
-      "date": "2026-09-29",
-      "subject": "fix(hook): queue25 item 5 -- the fourth could-not path keeps its exit 0 and loses its silence",
-      "files": [
-        "tools/citation_drift_hook.py"
-      ],
-      "lines_added": 137,
-      "lines_removed": 1,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "tools/citation_drift_hook.py -- main() has FOUR could-not-* paths, not the three its header implied, and the fourth exits 0. The header said could-not-run 'exits non-zero' with no exception; COULD-NOT-ATTRIBUTE (no HEAD baseline, so drift cannot be split into this-edit's and pre-existing) returns 1 if any drift exists and 0 if none does. DRIVEN in both sub-cases rather than read off the source. THE EXIT CODE IS CORRECT AND IS NOT A FOLD: what could not run is ATTRIBUTION, not the drift check, whose counts are printed; a zero-drift document entails zero drift from this edit; and exiting 2 would fire on a provably clean document in every ordinary condition where git show HEAD:<file> has nothing to give -- a fresh clone, a detached head, a file not yet in HEAD -- which is a hook somebody switches off. WHAT WAS WRONG IS THE OUTPUT: it printed the could-not-attribute note, then the line 'Listing ALL drift in the document', then NOTHING, and exited 0. It now states the verdict, names its basis as the whole-document answer rather than a before/after comparison, says what that basis cannot tell (a cite this edit FIXED; drift introduced and removed inside one write), and no longer prints a listing header with nothing under it.",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "e6f5ca5267fb",
-        "date": "2026-09-26",
-        "subject": "feat(methodology): the citation checker now fires on the edit, and a sweep for every other check whose trigger cannot reach its subject",
-        "lag_days": 3
-      },
-      "citation_note": "1.1 A CHECK THAT STOPPED CHECKING, in the narrow form this file's own docstring already names about something else: 'Every exit path prints. Exit 0 with no output is indistinguishable from a hook that never ran.' The fourth path printed a COULD-NOT banner and then nothing, which is the same defect one step along.",
-      "contributing_factors": [
-        {
-          "factor": "THE HEADER SENTENCE WAS UNQUALIFIED AND THE CODE HAD AN EXCEPTION TO IT. Could-not-run exits non-zero was written as a rule with no carve-out, and one path legitimately needs the carve-out, so the file described itself wrongly rather than behaving wrongly.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "the header now names the fourth path, prints all four, and gives the three reasons exit 0 is right there -- so nobody FIXES it into a 2"
-        },
-        {
-          "factor": "NO SELFTEST ARM HAD EVER REACHED main(). Every existing arm tested path ROUTING or the drift COMPARISON; none called main(), which is how the silence survived from the file being written until now.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "six arms that drive main() with drift_report stubbed to both shapes the branch can see, asserting on the EXIT CODE and on the PRESENCE of a verdict, never on its wording"
-        },
-        {
-          "factor": "THE SILENCE WAS INVISIBLE FROM THE OUTSIDE. A hook printing a banner and an empty list looks like a hook that ran and found nothing, which is the reading a hook author most wants to avoid and the hardest to notice.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "the empty-drift path states the verdict explicitly and the listing header is suppressed when there is nothing to list"
-        }
-      ],
-      "recurrence_open": "The three genuine could-not-run paths still exit 2 and are UNTESTED by the new arms -- they were untested before and are untested now. And nothing checks that a FIFTH path added later is either exit 2 or documented as an exception; the header names four because four exist today."
-    },
-    {
-      "commit": "a0d9b68d53c4",
-      "date": "2026-09-29",
-      "subject": "fix(tools): queue25 item 6 -- the contradiction bucket was 32 and is 0, and not one register row was edited",
-      "files": [
-        "docs/2026-09-29-register-cells-hank.md",
-        "tests/run_citation_no_source_probe.py",
-        "tools/citation_no_source_report.py"
-      ],
-      "lines_added": 410,
-      "lines_removed": 20,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "tools/citation_no_source_report.py -- the CONTRADICTORY bucket read 32 and the honest count is ZERO, with no register row edited. Reading all 32 by hand, which is what the number was for, found 31 carrying real disclosed evidence in a form the tool did not recognise and 1 that was a pure regex false positive. THREE CRITERIA CORRECTIONS: 27 rows carry 'Confidentiality individually read 2026-09-22', the 3.2 pass's per-row stamp WITHOUT a group label -- the same disclosure GROUP_STAMP already accepted, one degree less labelled, and THIS IS THE SAME MISTAKE THE TOOL ALREADY CORRECTED ONCE when the bucket went 138 to 32; 4 rows carry a field list lifted out of the source (READ OUT OF THE APP / HANDLER plus a brace list), and a rule keyed on the word APP would have missed both HANDLER rows; 1 row, law_mattermilestones, matched the bare word re-derived inside its own sentence 'the matter survives it and the stage can be re-derived'. SEPARATELY, measured at exactly 2 of 391 so it is not overstated: CITE was ':\\d{3,5}' and could not see a line number under 100, so api/_resources/stonedesk.js:27 and api/_resources/sairnroofing.js:56 were both counted as citing nothing -- api/_resources declarations live at the TOP of their files. The zero is now printed WITH its history (138, then 32, then 0, no row edited) and beside the figure that has not moved: 207 of 391 rows point at no LINE, 142 of them Tier A.",
-      "rules": [
-        "1.2"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "2e00f064c09e",
-        "date": "2026-09-29",
-        "subject": "feat(checks): the two smaller things the scoping docs named, built instead of the gates",
-        "lag_days": 0
-      },
-      "citation_note": "1.2 GREP CANNOT TELL CODE FROM TEXT THAT DESCRIBES CODE, applied to prose rather than to code: the tool read register cells and could not tell a DISCLOSED dated read stamp from an unsupported claim, nor the word re-derived used about DATA from the same word used about a READ.",
-      "contributing_factors": [
-        {
-          "factor": "THE OVER-ACCUSING DIRECTION WAS ALREADY KNOWN AND THE FIX STOPPED ONE SHAPE SHORT. The group-stamp correction took the bucket from 138 to 32 and its own comment says over-accusing is the direction that gets a report ignored -- then accepted one form of dated disclosure and not the other.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "a fourth evidence category with three shapes taken from the register's own wording (axis-dated read, CONFIRMED BY INDIVIDUAL READ, field list), checked AFTER the group stamp so a row carrying both is reported under the stronger named disclosure"
-        },
-        {
-          "factor": "THE 32 WERE NEVER READ. The number was reported and acted on as a population without anybody opening the rows, which is the only way a 31-of-32 false-positive rate survives.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "all 32 read by hand, and the probe grew from 12 to 29 arms with a known-bad twin for every new shape"
-        },
-        {
-          "factor": "A CLAIM-PHRASE LIST CONTAINED A WORD WITH TWO MEANINGS. `re-derived` is a claim of a read in one sentence and a statement about reconstructible DATA in another, and a bare-word alternation cannot tell them apart.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "the alternative now requires the object -- re-derived AT HEAD, FROM the code, OUT OF the app"
-        },
-        {
-          "factor": "LATENT: the citation rule needed three digits for a bare `:NN` in prose, which is right, and applied the same floor to a citation ATTACHED TO A PATH, which excluded the first 99 lines of every file.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "a path-anchored alternative accepting 1-5 digits, with a control that a bare two-digit `:45` with no path is still NOT a citation"
-        }
-      ],
-      "recurrence_open": "The criteria may now UNDER-accuse, and that is a judgement rather than a measurement: 31 rows moved out on MY reading of what counts as disclosed evidence, and nothing independent has checked that reading. The obligation opened this push names it as the second thing a reviewer should look at. Also unaddressed: 207 rows still point at no LINE, which is the real coverage gap and has not moved."
-    },
-    {
-      "commit": "a3c0b23793c1",
-      "date": "2026-09-29",
-      "subject": "fix(hover2): classify_remote credential reason scoped to github.com hosts only -- cold-read bug reproduced from description, tests-first (R7 plus R8 known-bad control), 52/52",
-      "files": [
-        ".claude/skills/sairn-hover-auditor/tools-hover2/hover2_log_mirror.py"
-      ],
-      "lines_added": 32,
-      "lines_removed": 1,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "low",
-      "detection_method": "hover-audit",
-      "summary": "hover2_log_mirror.py classify_remote(): a non-github ssh URL carrying userinfo (ssh://deploy@gitlab.com/...) was refused with the WRONG REASON -- the credential/userinfo wording instead of the non-github wording -- because the userinfo regex ran before the host check and fired on any scheme://user@ shape regardless of host. Not a security gap: the URL was refused under either reason; the defect is a misleading refusal message. Found by the OTHER auditor instance (H1) from black-box description, reproduced here exactly, fixed tests-first: R7 (the reported URL must get the non-github reason) confirmed failing before the fix; R8 known-bad control (a real github.com URL WITH a credential must STILL get the credential reason) passing before and after, proving the fix narrows scope rather than deleting the check. 52/52 after.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "unknown",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover",
-      "injection": {
-        "unknown_reason": "injected when classify_remote was first written in the per-clone hover-audit-log directory, before the tool entered platform git"
-      },
-      "citation_note": "refusal-reason accuracy in auditor-internal tooling; no platform standing rule names wrong-reason-right-refusal",
-      "phase_note": "auditor-internal mirror tooling, no product phase; found by cross-instance review",
-      "contributing_factors": [
-        {
-          "factor": "branch ordering: the credential check ran before the host check, so the more specific refusal shadowed the more accurate one for non-github hosts",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "credential branch now requires github.com in the URL; R7+R8 lock both directions"
-        },
-        {
-          "factor": "the original selftest had no non-github-with-userinfo arm, so the shadowing was never exercised",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "R7 added as a permanent arm"
-        }
-      ],
-      "recurrence_open": "other refusal-reason orderings in the same classifier were not exhaustively cross-checked; a new refusal branch added ahead of the host check could reintroduce the shadow"
-    },
-    {
       "commit": "bc89bf345b3c",
       "date": "2026-09-29",
       "subject": "fix(sairnbiz): a typed overtime threshold of 0 was swallowed before validation could see it",
@@ -20958,63 +20813,6 @@
         }
       ],
       "recurrence_open": "not driven live and no stored config inspected. The same-shape sweep covered sairnbiz.html only: 13 numeric falsy-coalesce sites there, 12 coalescing to 0 and therefore harmless, 1 a toast duration. No other app was swept, and nothing checks for a getter that substitutes a default ahead of its own validator."
-    },
-    {
-      "commit": "c4598430a425",
-      "date": "2026-09-29",
-      "subject": "fix(test): queue25 item 4 -- the transport arm now asserts what the caller READS, not which function it calls",
-      "files": [
-        "tests/sairncare_transport_refusal.js"
-      ],
-      "lines_added": 246,
-      "lines_removed": 6,
-      "app": "sairncare",
-      "layer": "test",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "tests/sairncare_transport_refusal.js -- the family-contact arm asserted WHICH FUNCTION a caller called (no alfData call naming alf_family_contacts, and at least 4 alfFamilyData occurrences) and never what the caller READ off the result. Both criteria are TRUE of a caller that calls alfFamilyData and then reads the OLD alfData shape -- treating the returned {ok,status,body,error} envelope as if it WERE the data array -- which is exactly the defect the suite exists for. Driven: a synthetic caller doing Array.isArray(res) and then assigning res to the contact list PASSES both of the old criteria. The arm is rewritten to brace-match each call site and its .then callback and ask two behavioural questions -- does it read any envelope field, and does it treat the result as an array -- and the known-bad control runs FIRST, asserting that the OLD criteria pass the synthetic caller, so the blindness is measured in the suite rather than claimed in a commit message. Mutation-tested against the real sairncare.html in memory: each of the three real callers rewritten into the old shape one at a time, all three caught, caller count held at 3 so the arm cannot pass on the count; then every user-facing sentence in all three reworded and nothing else, still clean.",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "c123a9250021",
-        "date": "2026-09-26",
-        "subject": "fix(sairncare): the family-contact panel never worked -- all three callers read a shape the transport has never returned",
-        "lag_days": 3
-      },
-      "citation_note": "1.1 A CHECK THAT STOPPED CHECKING is the closest standing section and it is exact here: the arm ran, printed ok, and tested nothing about the defect it names. The platform words for this class are assertions aimed at text rather than at behaviour -- three of my own criteria were wrong that way in one session and none was caught by review",
-      "contributing_factors": [
-        {
-          "factor": "THE CRITERION WAS AVAILABLE AND EASIER THAN THE RIGHT ONE. Counting occurrences of a function name is one regex; parsing each call site and its callback body needs brace matching. The cheap check was written and it looked like coverage.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "familyCallerContract() brace-matches the call and the .then callback, and classifies what the callback READS off the parameter"
-        },
-        {
-          "factor": "NO CONTROL EVER FED THE ARM A KNOWN-BAD INPUT. The arm was written against code that was already correct, so it could not distinguish catching the defect from never meeting it.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "five controls, three that must FAIL the checker and two that must PASS, plus an in-suite assertion that the OLD criteria pass the known-bad caller"
-        },
-        {
-          "factor": "A REWORD-DIRECTION CONTROL WAS MISSING TOO, so an arm that had become a string test would have looked identical to one that had not.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "a control rewriting every user-facing sentence in a correct caller, which must still pass"
-        },
-        {
-          "factor": "LATENT: the transport contract had MOVED under one caller group before (alfData resolves to d.data on success and null on failure, and three callers read res.status/res.body), so this suite was already guarding a contract-drift defect and was written in the shape most likely to miss the next one.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "tools/message_assertion_audit.py and its control pair, built in this same push: 589 test files and 10718 assertions classified, naming 43 files whose evidence is mostly words as the population to mutate. It names the population and does NOT mutate it, which is stated in its own output."
-        }
-      ],
-      "recurrence_open": "The new arm can only inspect alfFamilyData CALL SITES. A caller that goes back to alfData entirely leaves no call site to inspect, which is why the original alfData criterion is KEPT alongside -- and a FIFTH transport added tomorrow with its own helper is covered by neither."
     },
     {
       "commit": "c66a32854e5a",
@@ -21303,64 +21101,6 @@
       "recurrence_open": "NOT LIVE-VERIFIED. And the wider policy question is deliberately NOT answered: at what point in a window a shortfall becomes a finding is a product decision, so the module now publishes window_days_elapsed and window_days_remaining and leaves the threshold to the consumer. Any consumer that ignores those two fields still cannot tell late from early."
     },
     {
-      "commit": "fdd7068a6085",
-      "date": "2026-09-29",
-      "subject": "fix(tools): queue25 item 7 -- the false DROPPED root-caused to three polysemous words, and the SAME line caused a false negative",
-      "files": [
-        "tests/run_hedge_carry_probe.py",
-        "tools/hedge_carry_check.py"
-      ],
-      "lines_added": 222,
-      "lines_removed": 22,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "tools/hedge_carry_check.py -- a REAL PLAIN COMMIT was reported DROPPED, a false finding on a check about honesty. Root cause is one line: every hedge was matched as a bare word with nothing but word boundaries, and three of the nineteen entries are polysemous. `appears` in 'the resource name APPEARS IN citation_drift_hook.py\\u0027s docstring' means OCCURS and hedges nothing; `possible` in 'confirm the only POSSIBLE VALUES are A and B' enumerates; `suspect` in 'the named SUSPECT is the matcher' is a noun. Each produced DROPPED against a commit with nothing to answer for. AND THE SAME LINE CAUSED A FALSE NEGATIVE: the loop broke after the first occurrence of each word, so a non-hedging 'appears in' EARLIER in a dispatch SHADOWED a real 'appears to be' later -- one bug, both directions. A FOURTH DEFECT FOUND WHILE REPRODUCING: the context sentence was cut at the first bare '.', so a dispatch naming citation_drift_hook.py reported 'The resource name appears in citation_drift_hook.' -- a reader could not see what was hedged, on a report whose entire value is showing them.",
-      "rules": [
-        "1.2"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "2e00f064c09e",
-        "date": "2026-09-29",
-        "subject": "feat(checks): the two smaller things the scoping docs named, built instead of the gates",
-        "lag_days": 0
-      },
-      "citation_note": "1.2 GREP CANNOT TELL CODE FROM TEXT THAT DESCRIBES CODE, in its purest form: three of nineteen hedge words are polysemous, and a word-boundary match cannot tell  meaning SEEMS from  meaning OCCURS.",
-      "contributing_factors": [
-        {
-          "factor": "A CLOSED WORD LIST WAS TREATED AS A CLOSED MEANING LIST. The header argues carefully for keeping the list small so the check is not switched off, and never asks whether a word in it has more than one sense.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "HEDGE_PATTERNS is now (label, pattern) pairs with the three polysemous entries disambiguated -- appears only before to/that, possible excluding enumerating determiners, suspect only as a verb -- and HEDGES is DERIVED from them so the two cannot drift"
-        },
-        {
-          "factor": "THE BREAK-AFTER-FIRST-MATCH WAS A PERFORMANCE SHAPE WITH A CORRECTNESS CONSEQUENCE, and its comment described it as report tidiness (one report per hedge word, not per occurrence) rather than as a decision to only ever look once.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "every occurrence is judged, bounded at MAX_CONTEXTS per word so the report stays readable"
-        },
-        {
-          "factor": "NO CONTROL FED IT A NON-HEDGING USE OF A HEDGE WORD. The selftest had a known-bad in the other direction -- emphasis is not a hedge -- and nothing testing the same word used two ways.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "three false-DROPPED arms with the real sentences, each paired with a twin proving the REAL form still fires, in both the selftest and the probe; the probe runs them through the CLI against a real plain commit because a tool asserting its own fix works is the shape this class is about"
-        },
-        {
-          "factor": "PROCESS: the tool was built the same day it was run on real input, so its first real dispatch WAS its first adversarial input.",
-          "kind": "process",
-          "action_status": "declined",
-          "note": "declining to add a soak period. The defect was found on the first real run and fixed inside a day, which is the outcome a soak is for; the actionable half is the missing control, which is done above."
-        }
-      ],
-      "recurrence_open": "The remaining sixteen hedge entries have NOT been checked for a second sense -- three were found by reading one real dispatch, not by enumerating the list. And the check still cannot see a hedge that was never written: a dispatch stating a false premise flatly is invisible to it by construction, which its own header says and which the restatement gate that would cover it is deliberately not built."
-    },
-    {
       "commit": "ff6279ea74b0",
       "date": "2026-09-29",
       "subject": "fix(tools): the third copy of one credential lookup, removed",
@@ -21422,6 +21162,59 @@
       "recurrence_open": "Nothing makes importing the shared lookup easier than writing a new one, so a fourth copy is available to anybody in a hurry. The sweep that would catch it lives in a control that is not in the recurring report-only set."
     },
     {
+      "commit": "a1247a2e063f",
+      "date": "2026-09-30",
+      "subject": "fix(harness): a red baseline answered 1 -- the same number as a mutation that was MISSED",
+      "files": [
+        "tests/run_sabotage_harness_baseline_probe.py",
+        "tests/sabotage_harness.py"
+      ],
+      "lines_added": 80,
+      "lines_removed": 12,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "probe-control",
+      "summary": "tests/sabotage_harness.py returned exit 1 when the subject suite was RED AT ITS OWN BASELINE -- the same code it returns when a planted defect was NOT refused. A run that planted nothing and verified nothing was therefore indistinguishable, by exit code, from a run that found a real hole in the subject. 68 probes take this gate from the shared harness. Found when run_self_exclusion_guard_sabotage_probe.py went red at its baseline and every mutation under it was meaningless while the exit code claimed a finding.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tests/run_sabotage_harness_baseline_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The return has been 1 since the harness was written; there is no commit where a correct code became wrong."
+      },
+      "citation_note": "The shape is PR 1.11 fail-closed-on-a-third-state, but PR 1.11 is written about a check whose DEPENDENCY is absent and folds could-not-run into a PASS. This folds it into a FINDING, which is the mirror and is not the case PR 1.11 states.",
+      "contributing_factors": [
+        {
+          "factor": "The baseline gate was correct and its return value was not: one number served two meanings",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The red-baseline path returns 2. The gate, its message and its unstaged-suspects diagnostic are untouched -- only the code changed."
+        },
+        {
+          "factor": "Nothing compared the harness output against the harness exit code, so a run whose text said could-not-run and whose number said finding looked consistent to a reader of either one alone",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/run_sabotage_harness_baseline_probe.py drives a tracked fixture with a switchable baseline colour in three states and observes BOTH the could-not-run code and a genuine finding code, then asserts they differ. It landed red at 2 arms and is green at 8."
+        },
+        {
+          "factor": "This repo carries two could-not-run conventions, 2 and 3, and the same function uses both",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "Unifying them touches every caller of every path in the harness and every consumer of the three setup-failure returns. Declined as a separate change with its own blast radius, and disclosed at the line and in the docstring rather than widened silently. What matters for this defect is that neither code is 1."
+        },
+        {
+          "factor": "The control and its fixture each failed for their own reasons first, and both failures were the same shape as the subject",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Both are recorded at their lines: the fixture required three occurrences of a literal that occurs once, so it was red at every baseline; and arm 3 first compared CLEAN against the red code, which already differed, so it passed while the real conflation went unmeasured."
+        }
+      ],
+      "recurrence_open": "A SWEEP FOUND 35 HAND-ROLLED MUTATION RUNNERS WITH NO BASELINE PRECONDITION AT ALL and they are not fixed here -- they do not use the shared harness, so this change does not reach them. 41 more have baseline language that was not read one by one. The detector is a screen: it requires a subprocess run, a textual mutation of source, and a caught/missed verdict, so a runner that mutates through a helper or reports in other words is invisible to it."
+    },
+    {
       "commit": "d537709f63e4",
       "date": "2026-09-30",
       "subject": "fix(sairnvet): the povidone-iodine rows stated a concentration the cited source does not give",
@@ -21474,6 +21267,231 @@
         }
       ],
       "recurrence_open": "21 of 485 rows carry any reference at all, so for the other 464 there is nothing\na static arm can read a dose against. This control covers the 8 Topical\nAntiseptic rows; the same defect in an uncited row would be invisible, and the\nexisting sourcing-honesty suite is by design silent about rows that make no\nclaim."
+    },
+    {
+      "commit": "98a97bf59bea",
+      "date": "2026-09-29",
+      "subject": "fix(hook): queue25 item 5 -- the fourth could-not path keeps its exit 0 and loses its silence",
+      "files": [
+        "tools/citation_drift_hook.py"
+      ],
+      "lines_added": 137,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/citation_drift_hook.py -- main() has FOUR could-not-* paths, not the three its header implied, and the fourth exits 0. The header said could-not-run 'exits non-zero' with no exception; COULD-NOT-ATTRIBUTE (no HEAD baseline, so drift cannot be split into this-edit's and pre-existing) returns 1 if any drift exists and 0 if none does. DRIVEN in both sub-cases rather than read off the source. THE EXIT CODE IS CORRECT AND IS NOT A FOLD: what could not run is ATTRIBUTION, not the drift check, whose counts are printed; a zero-drift document entails zero drift from this edit; and exiting 2 would fire on a provably clean document in every ordinary condition where git show HEAD:<file> has nothing to give -- a fresh clone, a detached head, a file not yet in HEAD -- which is a hook somebody switches off. WHAT WAS WRONG IS THE OUTPUT: it printed the could-not-attribute note, then the line 'Listing ALL drift in the document', then NOTHING, and exited 0. It now states the verdict, names its basis as the whole-document answer rather than a before/after comparison, says what that basis cannot tell (a cite this edit FIXED; drift introduced and removed inside one write), and no longer prints a listing header with nothing under it.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "e6f5ca5267fb",
+        "date": "2026-09-26",
+        "subject": "feat(methodology): the citation checker now fires on the edit, and a sweep for every other check whose trigger cannot reach its subject",
+        "lag_days": 3
+      },
+      "citation_note": "1.1 A CHECK THAT STOPPED CHECKING, in the narrow form this file's own docstring already names about something else: 'Every exit path prints. Exit 0 with no output is indistinguishable from a hook that never ran.' The fourth path printed a COULD-NOT banner and then nothing, which is the same defect one step along.",
+      "contributing_factors": [
+        {
+          "factor": "THE HEADER SENTENCE WAS UNQUALIFIED AND THE CODE HAD AN EXCEPTION TO IT. Could-not-run exits non-zero was written as a rule with no carve-out, and one path legitimately needs the carve-out, so the file described itself wrongly rather than behaving wrongly.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the header now names the fourth path, prints all four, and gives the three reasons exit 0 is right there -- so nobody FIXES it into a 2"
+        },
+        {
+          "factor": "NO SELFTEST ARM HAD EVER REACHED main(). Every existing arm tested path ROUTING or the drift COMPARISON; none called main(), which is how the silence survived from the file being written until now.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "six arms that drive main() with drift_report stubbed to both shapes the branch can see, asserting on the EXIT CODE and on the PRESENCE of a verdict, never on its wording"
+        },
+        {
+          "factor": "THE SILENCE WAS INVISIBLE FROM THE OUTSIDE. A hook printing a banner and an empty list looks like a hook that ran and found nothing, which is the reading a hook author most wants to avoid and the hardest to notice.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the empty-drift path states the verdict explicitly and the listing header is suppressed when there is nothing to list"
+        }
+      ],
+      "recurrence_open": "The three genuine could-not-run paths still exit 2 and are UNTESTED by the new arms -- they were untested before and are untested now. And nothing checks that a FIFTH path added later is either exit 2 or documented as an exception; the header names four because four exist today."
+    },
+    {
+      "commit": "a0d9b68d53c4",
+      "date": "2026-09-29",
+      "subject": "fix(tools): queue25 item 6 -- the contradiction bucket was 32 and is 0, and not one register row was edited",
+      "files": [
+        "docs/2026-09-29-register-cells-hank.md",
+        "tests/run_citation_no_source_probe.py",
+        "tools/citation_no_source_report.py"
+      ],
+      "lines_added": 410,
+      "lines_removed": 20,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/citation_no_source_report.py -- the CONTRADICTORY bucket read 32 and the honest count is ZERO, with no register row edited. Reading all 32 by hand, which is what the number was for, found 31 carrying real disclosed evidence in a form the tool did not recognise and 1 that was a pure regex false positive. THREE CRITERIA CORRECTIONS: 27 rows carry 'Confidentiality individually read 2026-09-22', the 3.2 pass's per-row stamp WITHOUT a group label -- the same disclosure GROUP_STAMP already accepted, one degree less labelled, and THIS IS THE SAME MISTAKE THE TOOL ALREADY CORRECTED ONCE when the bucket went 138 to 32; 4 rows carry a field list lifted out of the source (READ OUT OF THE APP / HANDLER plus a brace list), and a rule keyed on the word APP would have missed both HANDLER rows; 1 row, law_mattermilestones, matched the bare word re-derived inside its own sentence 'the matter survives it and the stage can be re-derived'. SEPARATELY, measured at exactly 2 of 391 so it is not overstated: CITE was ':\\d{3,5}' and could not see a line number under 100, so api/_resources/stonedesk.js:27 and api/_resources/sairnroofing.js:56 were both counted as citing nothing -- api/_resources declarations live at the TOP of their files. The zero is now printed WITH its history (138, then 32, then 0, no row edited) and beside the figure that has not moved: 207 of 391 rows point at no LINE, 142 of them Tier A.",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "2e00f064c09e",
+        "date": "2026-09-29",
+        "subject": "feat(checks): the two smaller things the scoping docs named, built instead of the gates",
+        "lag_days": 0
+      },
+      "citation_note": "1.2 GREP CANNOT TELL CODE FROM TEXT THAT DESCRIBES CODE, applied to prose rather than to code: the tool read register cells and could not tell a DISCLOSED dated read stamp from an unsupported claim, nor the word re-derived used about DATA from the same word used about a READ.",
+      "contributing_factors": [
+        {
+          "factor": "THE OVER-ACCUSING DIRECTION WAS ALREADY KNOWN AND THE FIX STOPPED ONE SHAPE SHORT. The group-stamp correction took the bucket from 138 to 32 and its own comment says over-accusing is the direction that gets a report ignored -- then accepted one form of dated disclosure and not the other.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "a fourth evidence category with three shapes taken from the register's own wording (axis-dated read, CONFIRMED BY INDIVIDUAL READ, field list), checked AFTER the group stamp so a row carrying both is reported under the stronger named disclosure"
+        },
+        {
+          "factor": "THE 32 WERE NEVER READ. The number was reported and acted on as a population without anybody opening the rows, which is the only way a 31-of-32 false-positive rate survives.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "all 32 read by hand, and the probe grew from 12 to 29 arms with a known-bad twin for every new shape"
+        },
+        {
+          "factor": "A CLAIM-PHRASE LIST CONTAINED A WORD WITH TWO MEANINGS. `re-derived` is a claim of a read in one sentence and a statement about reconstructible DATA in another, and a bare-word alternation cannot tell them apart.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the alternative now requires the object -- re-derived AT HEAD, FROM the code, OUT OF the app"
+        },
+        {
+          "factor": "LATENT: the citation rule needed three digits for a bare `:NN` in prose, which is right, and applied the same floor to a citation ATTACHED TO A PATH, which excluded the first 99 lines of every file.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "a path-anchored alternative accepting 1-5 digits, with a control that a bare two-digit `:45` with no path is still NOT a citation"
+        }
+      ],
+      "recurrence_open": "The criteria may now UNDER-accuse, and that is a judgement rather than a measurement: 31 rows moved out on MY reading of what counts as disclosed evidence, and nothing independent has checked that reading. The obligation opened this push names it as the second thing a reviewer should look at. Also unaddressed: 207 rows still point at no LINE, which is the real coverage gap and has not moved."
+    },
+    {
+      "commit": "c4598430a425",
+      "date": "2026-09-29",
+      "subject": "fix(test): queue25 item 4 -- the transport arm now asserts what the caller READS, not which function it calls",
+      "files": [
+        "tests/sairncare_transport_refusal.js"
+      ],
+      "lines_added": 246,
+      "lines_removed": 6,
+      "app": "sairncare",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tests/sairncare_transport_refusal.js -- the family-contact arm asserted WHICH FUNCTION a caller called (no alfData call naming alf_family_contacts, and at least 4 alfFamilyData occurrences) and never what the caller READ off the result. Both criteria are TRUE of a caller that calls alfFamilyData and then reads the OLD alfData shape -- treating the returned {ok,status,body,error} envelope as if it WERE the data array -- which is exactly the defect the suite exists for. Driven: a synthetic caller doing Array.isArray(res) and then assigning res to the contact list PASSES both of the old criteria. The arm is rewritten to brace-match each call site and its .then callback and ask two behavioural questions -- does it read any envelope field, and does it treat the result as an array -- and the known-bad control runs FIRST, asserting that the OLD criteria pass the synthetic caller, so the blindness is measured in the suite rather than claimed in a commit message. Mutation-tested against the real sairncare.html in memory: each of the three real callers rewritten into the old shape one at a time, all three caught, caller count held at 3 so the arm cannot pass on the count; then every user-facing sentence in all three reworded and nothing else, still clean.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "c123a9250021",
+        "date": "2026-09-26",
+        "subject": "fix(sairncare): the family-contact panel never worked -- all three callers read a shape the transport has never returned",
+        "lag_days": 3
+      },
+      "citation_note": "1.1 A CHECK THAT STOPPED CHECKING is the closest standing section and it is exact here: the arm ran, printed ok, and tested nothing about the defect it names. The platform words for this class are assertions aimed at text rather than at behaviour -- three of my own criteria were wrong that way in one session and none was caught by review",
+      "contributing_factors": [
+        {
+          "factor": "THE CRITERION WAS AVAILABLE AND EASIER THAN THE RIGHT ONE. Counting occurrences of a function name is one regex; parsing each call site and its callback body needs brace matching. The cheap check was written and it looked like coverage.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "familyCallerContract() brace-matches the call and the .then callback, and classifies what the callback READS off the parameter"
+        },
+        {
+          "factor": "NO CONTROL EVER FED THE ARM A KNOWN-BAD INPUT. The arm was written against code that was already correct, so it could not distinguish catching the defect from never meeting it.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "five controls, three that must FAIL the checker and two that must PASS, plus an in-suite assertion that the OLD criteria pass the known-bad caller"
+        },
+        {
+          "factor": "A REWORD-DIRECTION CONTROL WAS MISSING TOO, so an arm that had become a string test would have looked identical to one that had not.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "a control rewriting every user-facing sentence in a correct caller, which must still pass"
+        },
+        {
+          "factor": "LATENT: the transport contract had MOVED under one caller group before (alfData resolves to d.data on success and null on failure, and three callers read res.status/res.body), so this suite was already guarding a contract-drift defect and was written in the shape most likely to miss the next one.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "tools/message_assertion_audit.py and its control pair, built in this same push: 589 test files and 10718 assertions classified, naming 43 files whose evidence is mostly words as the population to mutate. It names the population and does NOT mutate it, which is stated in its own output."
+        }
+      ],
+      "recurrence_open": "The new arm can only inspect alfFamilyData CALL SITES. A caller that goes back to alfData entirely leaves no call site to inspect, which is why the original alfData criterion is KEPT alongside -- and a FIFTH transport added tomorrow with its own helper is covered by neither."
+    },
+    {
+      "commit": "fdd7068a6085",
+      "date": "2026-09-29",
+      "subject": "fix(tools): queue25 item 7 -- the false DROPPED root-caused to three polysemous words, and the SAME line caused a false negative",
+      "files": [
+        "tests/run_hedge_carry_probe.py",
+        "tools/hedge_carry_check.py"
+      ],
+      "lines_added": 222,
+      "lines_removed": 22,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/hedge_carry_check.py -- a REAL PLAIN COMMIT was reported DROPPED, a false finding on a check about honesty. Root cause is one line: every hedge was matched as a bare word with nothing but word boundaries, and three of the nineteen entries are polysemous. `appears` in 'the resource name APPEARS IN citation_drift_hook.py\\u0027s docstring' means OCCURS and hedges nothing; `possible` in 'confirm the only POSSIBLE VALUES are A and B' enumerates; `suspect` in 'the named SUSPECT is the matcher' is a noun. Each produced DROPPED against a commit with nothing to answer for. AND THE SAME LINE CAUSED A FALSE NEGATIVE: the loop broke after the first occurrence of each word, so a non-hedging 'appears in' EARLIER in a dispatch SHADOWED a real 'appears to be' later -- one bug, both directions. A FOURTH DEFECT FOUND WHILE REPRODUCING: the context sentence was cut at the first bare '.', so a dispatch naming citation_drift_hook.py reported 'The resource name appears in citation_drift_hook.' -- a reader could not see what was hedged, on a report whose entire value is showing them.",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "2e00f064c09e",
+        "date": "2026-09-29",
+        "subject": "feat(checks): the two smaller things the scoping docs named, built instead of the gates",
+        "lag_days": 0
+      },
+      "citation_note": "1.2 GREP CANNOT TELL CODE FROM TEXT THAT DESCRIBES CODE, in its purest form: three of nineteen hedge words are polysemous, and a word-boundary match cannot tell  meaning SEEMS from  meaning OCCURS.",
+      "contributing_factors": [
+        {
+          "factor": "A CLOSED WORD LIST WAS TREATED AS A CLOSED MEANING LIST. The header argues carefully for keeping the list small so the check is not switched off, and never asks whether a word in it has more than one sense.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "HEDGE_PATTERNS is now (label, pattern) pairs with the three polysemous entries disambiguated -- appears only before to/that, possible excluding enumerating determiners, suspect only as a verb -- and HEDGES is DERIVED from them so the two cannot drift"
+        },
+        {
+          "factor": "THE BREAK-AFTER-FIRST-MATCH WAS A PERFORMANCE SHAPE WITH A CORRECTNESS CONSEQUENCE, and its comment described it as report tidiness (one report per hedge word, not per occurrence) rather than as a decision to only ever look once.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "every occurrence is judged, bounded at MAX_CONTEXTS per word so the report stays readable"
+        },
+        {
+          "factor": "NO CONTROL FED IT A NON-HEDGING USE OF A HEDGE WORD. The selftest had a known-bad in the other direction -- emphasis is not a hedge -- and nothing testing the same word used two ways.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "three false-DROPPED arms with the real sentences, each paired with a twin proving the REAL form still fires, in both the selftest and the probe; the probe runs them through the CLI against a real plain commit because a tool asserting its own fix works is the shape this class is about"
+        },
+        {
+          "factor": "PROCESS: the tool was built the same day it was run on real input, so its first real dispatch WAS its first adversarial input.",
+          "kind": "process",
+          "action_status": "declined",
+          "note": "declining to add a soak period. The defect was found on the first real run and fixed inside a day, which is the outcome a soak is for; the actionable half is the missing control, which is done above."
+        }
+      ],
+      "recurrence_open": "The remaining sixteen hedge entries have NOT been checked for a second sense -- three were found by reading one real dispatch, not by enumerating the list. And the check still cannot see a hedge that was never written: a dispatch stating a false premise flatly is invisible to it by construction, which its own header says and which the restatement gate that would cover it is deliberately not built."
     }
   ],
   "started": "2026-09-09",

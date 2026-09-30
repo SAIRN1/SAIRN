@@ -63,3 +63,83 @@ scored that as the handler crashing. Recorded because a sweep that blames its
 subject for a defect in itself is how a false finding gets 64 rows, and because
 the fix is the same one this repo keeps writing down: take the vocabulary from
 the module's own export, not from a copy.
+
+---
+
+## Item 8's sweep — mutation/sabotage/ablation runners and their baseline precondition
+
+**ONE FIX COVERED 68 OF THEM.** `tests/sabotage_harness.py` already refused to
+plant anything on a red baseline and already printed the right sentence; it
+returned **1**, which is its own code for *"a planted defect was NOT refused"*.
+So a run that verified nothing and a run that found a real hole answered the same
+number. Fixed in `a1247a2e`, driven by
+`tests/run_sabotage_harness_baseline_probe.py` (8 arms, landed red at 2).
+
+| population | count | baseline precondition |
+|---|---|---|
+| use the shared `sabotage_harness` | **68** | **yes — and now exits 2, not 1** |
+| hand-rolled, baseline language present | 41 | **not read one by one — see the blind spot below** |
+| hand-rolled, **no baseline language at all** | **35** | **NO** |
+
+### The 35 with no baseline precondition, for registering by owner
+
+`tests/cross_tenant_scope_grader_review_probe.py`,
+`tests/dnt_vendor_write_confirmation_probe.py`,
+`tests/faults/run_fault_suite_probe.py`,
+`tests/functional_core_is_pure.js`,
+`tests/law_phase2_control_review_probe.py`,
+`tests/ld_reports_unreadable.js`,
+`tests/license_trial_gate_probe.py`,
+`tests/mech_docs_redaction_wiring_probe.py`,
+`tests/push_gate/check4_probe.py`,
+`tests/python_escape_hygiene_scope_review_probe.py`,
+`tests/run_advisory_lock_isolation_probe.py`,
+`tests/run_ai_prompt_refusal_probe.py`,
+`tests/run_check_precedence_probe.py`,
+`tests/run_compliance_loader_probe.py`,
+`tests/run_concurrency_retry_probe.py`,
+`tests/run_copy_exactly_gate_probe.py`,
+`tests/run_cron_liveness_probe.py`,
+`tests/run_dispatch_state_probe.py`,
+`tests/run_eaten_substitution_probe.py`,
+`tests/run_financial_invariant_probe.py`,
+`tests/run_hover_separation_probe.py`,
+`tests/run_invisible_in_pattern_probe.py`,
+`tests/run_literal_drift_determinism_probe.py`,
+`tests/run_mutation_anchor_probe.py`,
+`tests/run_register_feed_gate_probe.py`,
+`tests/run_register_freshness_probe.py`,
+`tests/run_sabotage_control_probe.py`,
+`tests/run_service_role_gate_probe.py`,
+`tests/run_temporary_state_probe.py`,
+`tests/run_three_way_match_probe.py`,
+`tests/sairnbiz_fault_probe.py`,
+`tests/sairncash_entitlement_fault_probe.py`,
+`tests/stale_row_sweep_control.py`,
+`tools/master_plan.py`,
+`tools/nhi_register.py`
+
+**`tests/mech_docs_redaction_wiring_probe.py` is MINE and is on that list.** Its
+arms 8, 9 and 10 plant mutations and require refusals, and nothing asserts the
+unmutated baseline first. It is not fixed in this session and it is named here
+rather than quietly excluded from a list I produced.
+
+**`tools/master_plan.py` and `tools/nhi_register.py` are almost certainly false
+positives** — they are generators, and the detector matched a `.replace()` on
+source text plus the word "refused" in their prose. Named as probable
+false positives rather than dropped, because a sweep that silently discards its
+own uncertain hits is reporting a rate over the subset it liked.
+
+### WHAT THIS SWEEP CANNOT SEE — its own blind population, counted
+
+- **41 hand-rolled runners have baseline LANGUAGE and were not read one by one.**
+  The word "baseline" appearing in a file is not the same fact as a precondition
+  that gates the arms below it. That is 41 unverified, not 41 clean.
+- **The detector requires all three of: a subprocess run, a textual mutation of
+  source, and a caught/missed verdict.** A runner that mutates through a helper,
+  mutates a data file rather than source, or words its verdict differently is
+  invisible to it. No count is available for how many that is.
+- **A red baseline exiting 2 is not the same as a runner ASSERTING its baseline.**
+  The 68 get the gate; they do not each carry an arm that proves the gate bit.
+  One control now proves it for the shared harness, which is one control for 68
+  callers and is weaker than 68 controls.

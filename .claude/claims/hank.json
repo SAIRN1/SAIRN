@@ -2363,8 +2363,8 @@
       "task": "build the employee auth chain schema roles endpoint client header and the resource gate",
       "claimed_at": "2026-09-21T14:13:54Z",
       "claimed_at_epoch": 1790000034.2610545,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-30T10:27:28Z"
     },
     {
       "id": "hank-1790017876",
@@ -3379,6 +3379,17 @@
         "tools/message_assertion_audit.py",
         "tools/tier_a_review_gate.py"
       ]
+    },
+    {
+      "id": "hank-1790764555",
+      "session": "hank",
+      "subject": "hank",
+      "task": "docs/CRITICALITY-TIERS.md docs/2026-09-29-register-cells-hank.md docs/SAIRN-OPEN-WORK-INDEX.md tools/tier_sentence_gate.py tests/run_tier_sentence_gate_probe.py",
+      "claimed_at": "2026-09-30T10:35:55Z",
+      "claimed_at_epoch": 1790764555.2326164,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
