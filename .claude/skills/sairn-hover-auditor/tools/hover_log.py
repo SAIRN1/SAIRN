@@ -598,6 +598,29 @@ def cmd_add(argv):
     source_shas = {}
     if source_raw.strip():
         source_shas = capture_read_time_shas(repo, parse_source_arg(source_raw))
+    # ── UNDERIVED-CITATION WARNING, 2026-09-29 ──────────────────────────────
+    # The memory-vs-derived sweep found the failure mode: a line number or
+    # sha QUOTED from an earlier entry (or from memory) instead of derived
+    # in the writing turn, which reads exactly like a derived one forever.
+    # --source IS the derivation stamp; a summary carrying citation shapes
+    # without one gets a WARNING -- not a refusal, because checks and notes
+    # legitimately restate history (a supersession note QUOTING an old
+    # number is correct) -- so the choice to quote is visible at write
+    # time instead of silent. Shapes: path:NNNN, bare :NNNN (the register's
+    # implied form), and 7-40 char hex with >=1 digit and >=1 a-f.
+    if not source_shas:
+        _cite_shapes = (
+            re.search(r'[\w.-]+\.(?:py|js|html|md|sql|json):\d{2,6}\b', summary)
+            or re.search(r'(?<![\w./:])\:\d{3,6}\b', summary)
+            or any(any(c.isdigit() for c in t) and any(c in 'abcdef' for c in t)
+                   for t in re.findall(r'\b[0-9a-f]{7,40}\b', summary)))
+        if _cite_shapes:
+            print('WARNING -- UNDERIVED CITATION: this summary carries a line '
+                  'number or sha but no --source derivation stamp. If the '
+                  'citation was derived THIS turn, add --source so the '
+                  'staleness guard covers it; if it is deliberately QUOTED '
+                  'history (a supersession or restatement), this warning is '
+                  'the visible record of that choice. Logged either way.')
     vector_raw = opt('--vector', required=False, default='')
     vector = ''
     if vector_raw:
@@ -1025,6 +1048,30 @@ def run_staleness_fixtures():
                            '--summary', 'a self-tooling finding, exempt from --source'])
         ck('a target=self finding with NO --source still logs (self-tooling '
            'is exempt from a guard that cannot apply to it)', rc6 == EXIT_FINDING_OR_BROKEN)
+
+        # --- UNDERIVED-CITATION WARNING, 2026-09-29 (the memory-vs-derived
+        # sweep's own requirement): an entry whose SUMMARY carries a line
+        # number or sha with NO --source (no derivation stamp) gets a
+        # printed WARNING -- a warning, not a refusal, because checks and
+        # notes legitimately restate history; the point is that quoting a
+        # citation without deriving it is VISIBLE at write time, never
+        # silent. Both directions locked.
+        LOG_PATH = os.path.join(tmpdir, 'test-log-5b.jsonl')
+        buf6b = io.StringIO()
+        with contextlib.redirect_stdout(buf6b):
+            rc6b = cmd_add(['--add', '--type', 'check', '--target', 'hank',
+                            '--summary',
+                            'restating that saveThing() sits at app.html:1234'])
+        ck('WARN: a check whose summary carries a line-number citation with '
+           'no --source logs BUT prints the underived-citation warning',
+           rc6b == EXIT_CLEAN and 'UNDERIVED CITATION' in buf6b.getvalue())
+        buf6c = io.StringIO()
+        with contextlib.redirect_stdout(buf6c):
+            rc6c = cmd_add(['--add', '--type', 'check', '--target', 'cody',
+                            '--summary',
+                            'a plain sentence with no citation shapes at all'])
+        ck('CONTROL: a summary with no line/sha shapes prints NO warning',
+           rc6c == EXIT_CLEAN and 'UNDERIVED CITATION' not in buf6c.getvalue())
 
         # --- --contradicts: locked in both directions, 2026-09-28 ---
         LOG_PATH = os.path.join(tmpdir, 'test-log-6.jsonl')
