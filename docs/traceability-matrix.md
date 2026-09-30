@@ -682,16 +682,16 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 684 of 851 traced, 80.4%.
+For context and not as the headline: 685 of 852 traced, 80.4%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 685 citations come from
+### Where the 686 citations come from
 
 | source | citations |
 |---|---|
 | `index` | 322 |
-| `declared` | 287 |
+| `declared` | 288 |
 | `declared+index` | 66 |
 | `GUARD_TESTS+index` | 6 |
 | `GUARD_TESTS` | 2 |
@@ -704,10 +704,10 @@ An untraced test is not a bad test. It means no source in this repo states what 
 
 | kind | count | what it means | the fix |
 |---|---|---|---|
-| **bound to a subject, tied to no requirement** | 34 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 133 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **bound to a subject, tied to no requirement** | 33 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
+| **no subject binding either** | 134 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
-**These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 34 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
+**These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 33 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
 - `api/_lib/alf-family-mar.test.js`
 - `api/_lib/compliance-rules-staff-join.test.js`
@@ -768,6 +768,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/role_gate_loop_rule_probe.py`
 - `tests/run_accepted_risk_expiry_control.py`
 - `tests/run_ai_action_approval_control.py`
+- `tests/run_ai_output_resource_probe.py`
 - `tests/run_all_tests_pinned_probe.py`
 - `tests/run_allan_deviation_probe.py`
 - `tests/run_auth_header_name_probe.py`
@@ -805,7 +806,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_law_phase2_session_sabotage_probe.py`
 - `tests/run_live_probe_residue_probe.py`
 - `tests/run_log_cluster_probe.py`
-- `tests/run_mech_gate_live_probe_probe.py`
 - `tests/run_message_assertion_probe.py`
 - `tests/run_mutation_anchor_resolver_probe.py`
 - `tests/run_nhi_clone_enumeration_probe.py`
@@ -897,7 +897,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 851   tests/**, api/** (both walked)
+  test files on disk                 852   tests/**, api/** (both walked)
   open-work rows citing a test       383   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 10   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                70   report_only_checks.REGISTRY
