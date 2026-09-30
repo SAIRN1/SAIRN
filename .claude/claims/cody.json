@@ -2888,6 +2888,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "cody-1790766714",
+      "session": "cody",
+      "subject": "cody-nhi",
+      "task": "tools/nhi_register.py tests/run_nhi_register_write_flag_probe.py",
+      "claimed_at": "2026-09-30T11:11:54Z",
+      "claimed_at_epoch": 1790766714.5171564,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
