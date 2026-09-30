@@ -182,8 +182,26 @@ SKIP_REASONS = (
     # SCOPED TO THE AUDITOR TREE ALONE, trailing slash included: a sibling skill
     # directory and a directory merely PREFIXED with this name are both still in
     # scope, and the probe holds all three directions.
-    (lambda c: c.replace(os.sep, '/').startswith(
-        '.claude/skills/sairn-hover-auditor/'),
+    # ── NARROWED 2026-09-30, AND THE NARROWING IS MEASURED ─────────────────
+    # It landed as the whole directory tree, which was the widest clause here.
+    # Measured over all 79 tracked files in that tree: 13 carry a Tier A name
+    # and EVERY ONE of them is inside a `tools*/` subdirectory. So the clause is
+    # scoped to those, and a file directly under the auditor root or in some new
+    # non-tools subdirectory stays IN SCOPE -- the same "a new directory must be
+    # a decision, not a default" rule this gate's own probe already enforces for
+    # top-level directories, applied one level down.
+    #
+    # NOT NARROWED FURTHER TO `.py`, though all 13 carriers are .py today. That
+    # would re-open the deadlock for the data files beside them --
+    # hover-watchlist.json is precisely the shape that will name resources one
+    # day, and the obligation it would force is one the auditor cannot commit.
+    # Trading a real future deadlock for 6 files of extra precision is the wrong
+    # side of that bargain.
+    #
+    # `tools*` rather than the two names, for the same reason AuditorScope
+    # replaced a hardcoded pair: a third auditor instance brings tools-hover3/.
+    (lambda c: re.match(r'^\.claude/skills/sairn-hover-auditor/tools[^/]*/',
+                        c.replace(os.sep, '/')) is not None,
      "the hover auditor's own tooling serves no platform resource by "
      'definition -- its core rule forbids writing platform code, so a resource '
      'NAME in a rotation-pool list, a fixture or a regex example is a mention, '
