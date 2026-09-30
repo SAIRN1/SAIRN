@@ -3052,8 +3052,8 @@
       "task": "api/alf-append-only-read-order.test.js",
       "claimed_at": "2026-09-30T00:32:06Z",
       "claimed_at_epoch": 1790728326.7031388,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T00:40:56Z",
       "files": null
     }
   ],
