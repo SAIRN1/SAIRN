@@ -2877,6 +2877,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "cody-1790766041",
+      "session": "cody",
+      "subject": "cody-inv",
+      "task": "tools/tooling_inventory.py docs/TOOLING-INVENTORY.md",
+      "claimed_at": "2026-09-30T11:00:41Z",
+      "claimed_at_epoch": 1790766041.766765,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
