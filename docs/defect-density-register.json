@@ -21529,6 +21529,65 @@
       "recurrence_open": "NOT CLOSED as a class. The G2 arm greps THIS file for writes to the tracked tool; nothing does that for any other control in tests/, and there are dozens. The shape is now written down and driven in one place, which is where a standing check would start rather than where it ends. Note also that the trade is debris in temp for a neutralised rule in a shared repo -- the scratch tree is removed at the end of a normal run and leaks on a kill, same as the sweep's own sandbox."
     },
     {
+      "commit": "25814d5521fa",
+      "date": "2026-09-30",
+      "subject": "docs(sairnbiz): the second re-run -- twelve findings re-driven, and a THIRTEENTH that is not fixed",
+      "files": [
+        "docs/2026-09-29-sairnbiz-preview-check.md",
+        "docs/live-residue/2026-09-30-sairnbiz-ledger-probe.json"
+      ],
+      "lines_added": 245,
+      "lines_removed": 0,
+      "app": "sairnbiz",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "live-verification",
+      "summary": "SAIRNbiz: a record entered while the server-backup latch was armed is stranded on that device permanently and nothing will ever push it. sbSyncCollection diffs the new value against the value immediately before that one save, so a record whose change already happened is never offered again -- re-saving the whole collection pushes nothing. Driven on production 2026-09-30: the two bills entered on 2026-09-29 were on the device and not on the server; sb_synced_ids correctly listed the five that were and not those two, so the app KNOWS they were never pushed and nothing reads that to decide what to send; a full re-save left the server at 5 rows; they landed only when this session called sbBackupFetch write on them by hand, after which the server read 7. Meanwhile sb_sync_stale reads false. This is the original blocker-2 symptom surviving its own fix, for the back catalogue. NOT FIXED.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The diff-against-prev shape is original to sbSyncCollection and is correct for its own job; it became a data-loss path only once a latch could suppress a write, and the latch and the sync were introduced separately. There is no single commit that injected this."
+      },
+      "citation_note": "No standing rule names a recovery path that depends on state the suppressing code never recorded. 1.13 (a waiter whose only terminal state is success) is nearest in spirit and is about waiting, not about a suppressed write leaving no queue. Recorded as not-citable with the reason rather than forced into 1.13, so the FMEA scorer does not match on manufactured agreement.",
+      "contributing_factors": [
+        {
+          "factor": "sbSyncCollection decides what to push by diffing the new value against the value immediately before that ONE save, so a record whose change already happened -- while the latch was armed -- is never offered again",
+          "kind": "technical",
+          "action_status": "planned",
+          "action": "On hydrate, push any local record whose id is absent from sb_synced_ids, once, and mark it. NOT DONE: it is a new change to the sync layer and belongs in its own reviewed diff rather than folded into a findings sweep."
+        },
+        {
+          "factor": "sb_synced_ids already records exactly which ids reached the server and is CORRECT -- it listed the five synced bills and not the two stranded ones -- but nothing reads it to decide what to send; it is used only for the hydrate overwrite carve-out",
+          "kind": "technical",
+          "action_status": "planned",
+          "action": "Make the reconcile pass read sb_synced_ids as the authority for what is owed, which is the thing it already knows and is never asked."
+        },
+        {
+          "factor": "sb_sync_stale reads false and the sync timestamp looks current while records sit on the device only, so the one indicator a user could check says everything is fine",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "Once the reconcile pass exists, surface a COUNT of records not yet on the server rather than a boolean, so a stranded backlog is visible instead of being indistinguishable from a clean one."
+        },
+        {
+          "factor": "The per-resource latch fix was verified by proving that NEW writes land, which is the forward direction only; nothing in that verification asked what happened to records written while the latch was armed",
+          "kind": "process",
+          "action_status": "done",
+          "action": "This re-run asked it explicitly and drove it: a full re-save of sb_ap left the server at 5 rows, and the two stranded bills landed only when sbBackupFetch was called on them directly."
+        },
+        {
+          "factor": "A latch that suppresses writes leaves no queue and no marker of what it suppressed, so recovery depends on a record the suppressing code never wrote",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Any future write suppression on this platform records what it suppressed, so recovery does not depend on reconstructing it afterwards. Named as owed; no sweep of existing suppressions has been run."
+        }
+      ],
+      "recurrence_open": "The count of stranded records is unknown. It was measured on sb_ap only, on one device; the other twelve collections and every other device were not counted, and no tool would count them. Until the reconcile pass exists the only way to recover a stranded record is to edit it so the diff sees a change."
+    },
+    {
       "commit": "28e0297966c1",
       "date": "2026-09-30",
       "subject": "fix(sairnbiz): findings 7, 8, 10, 11 -- and finding 7 was NOT the defect that was written down",
