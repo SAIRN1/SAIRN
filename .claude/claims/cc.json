@@ -3074,8 +3074,8 @@
       "task": "tools/rebase_state_guard.py tests/run_rebase_state_guard_probe.py",
       "claimed_at": "2026-09-30T10:37:11Z",
       "claimed_at_epoch": 1790764631.4546292,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T10:40:26Z",
       "files": null
     }
   ],
