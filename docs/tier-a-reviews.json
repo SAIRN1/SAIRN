@@ -4949,6 +4949,102 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hover2",
+      "opened_at": "2026-09-30T13:59:29Z",
+      "opened_at_sha": "82b69588a125e9b730cfafeb5a95e29aee55f5a1",
+      "resources": [
+        "alf_staff",
+        "alf_staff_credentials",
+        "leg_insurance",
+        "sc_auth",
+        "sc_auth_requests",
+        "sd_comms",
+        "sd_negotiated_prices",
+        "sen_clients",
+        "stonedesk_quote_history",
+        "sv_financials",
+        "sv_soapnotes"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools-hover2/hover_citation_linter.py",
+        ".claude/skills/sairn-hover-auditor/tools-hover2/hover_cold_scan_pool.py",
+        ".claude/skills/sairn-hover-auditor/tools-hover2/hover_tier1_live.py"
+      ],
+      "what": "RETROSPECTIVE, OPENED BY hank ON hover2's BEHALF 2026-09-30. AUTHOR OF THE CHANGE IS hover2, NOT hank -- the author_session field below is corrected to hover2 in the same commit, because this gate's whole self-review refusal depends on that field naming the party that wrote the code.\n\nWHY IT WAS NOT OPENED BY ITS AUTHOR: tools/hover_auditor_scope_gate.py correctly refuses docs/tier-a-reviews.json from the auditor's clone, so the auditor structurally cannot commit the record this gate demands. H2 logged the exact entry and the verbatim refusal at seq 416 and routed it here. That deadlock is fixed forward in the same push (the auditor-tree clause in SKIP_REASONS, H2 seq 425); this record is the backward half, for a landing that happened before the clause existed.\n\nWHAT CHANGED: commit 5807c3d1 landed hover2's auditor tools at .claude/skills/sairn-hover-auditor/tools-hover2/ per Michael's 2026-09-29 mirror-scope decision (the mirror now carries log/anchors/beacon only, so the tools needed an off-disk remote). THE RESOURCE LIST BELOW IS DERIVED, NOT COPIED: it was recomputed at HEAD by running the gate's own tier_a_resources() and touched_tier_a() over `git show 5807c3d1` with today's auditor-tree skip clause bypassed by reason text, so it is what the gate would have said on the day. It reproduces H2's seq-416 list exactly -- eleven resources, three files.\n\nEvery hit is a resource NAME appearing as a short string token inside auditor tool text: hover_cold_scan_pool.py's rotation-pool list, hover_citation_linter.py's fixtures, hover_tier1_live.py's probe example. No code serving any Tier A resource changed.\n\nREVIEWER, NAMED BY ROLE AND NOT BY AGENT: ANY BUILD SESSION OTHER THAN THE AUTHOR of the change, holding no claim on .claude/skills/sairn-hover-auditor/ at the time of review. The role is the point rather than a formality -- an obligation addressed to a name survives only as long as that name maps to a session, while one addressed to a non-author build session survives a rename, a clone being retired and the 48h takeover window. THE HOVER AUDITOR IS EXPLICITLY NOT ELIGIBLE, either instance: it does not build, and using the one independent role as reviewer of record would make it a participant in the thing it audits.\n\nWHAT THE REVIEW MUST DRIVE, NOT READ, and it is the premise the SKIP_REASONS clause landed today rests on: confirm these three files are auditor tooling only, READ-ONLY toward platform data, and that none of them constructs a write to any Tier A resource. The clause now asserts that auditor tooling can never serve a platform resource; these records are what checks that assertion against the files that landed before it. A verdict of \"reviewed, no findings\" is refused unless it names which of the three files it opened and what it looked for.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-30T13:59:29Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    {
+      "author_session": "hover2",
+      "opened_at": "2026-09-30T13:59:56Z",
+      "opened_at_sha": "82b69588a125e9b730cfafeb5a95e29aee55f5a1",
+      "resources": [
+        "leg_insurance",
+        "mech_checks"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools-hover2/hover_citation_linter.py"
+      ],
+      "what": "RETROSPECTIVE, OPENED BY hank ON hover2's BEHALF 2026-09-30. AUTHOR OF THE CHANGE IS hover2, NOT hank -- author_session is corrected to hover2 in the same commit, because this gate's self-review refusal depends on that field naming the party that wrote the code.\n\nWHY IT WAS NOT OPENED BY ITS AUTHOR: the same structural deadlock as the 5807c3d1 record -- tools/hover_auditor_scope_gate.py refuses docs/tier-a-reviews.json from the auditor's clone, so the auditor cannot commit the record this gate demands. H2 named this one as BLOCKED at seq 408, with the gate's auto-assignment recorded as fourth.\n\nWHAT CHANGED: commit c78b545b, \"sync 6 fixed tools to the platform-repo backup\". THE RESOURCE LIST IS DERIVED AND WAS NOT IN THE AUDITOR'S LOG: seq 408 recorded that this obligation existed and was blocked, and did NOT record which resources it named. Rather than guess, it was recomputed at HEAD by running the gate's own tier_a_resources() and touched_tier_a() over `git show c78b545b` with today's auditor-tree skip clause bypassed by reason text. Two resources, one file: leg_insurance and mech_checks, both appearing as short string tokens inside hover_citation_linter.py's fixtures.\n\nREVIEWER, NAMED BY ROLE AND NOT BY AGENT: ANY BUILD SESSION OTHER THAN THE AUTHOR of the change, holding no claim on .claude/skills/sairn-hover-auditor/ at the time of review. THE HOVER AUDITOR IS EXPLICITLY NOT ELIGIBLE, either instance -- it does not build, and using the one independent role as reviewer of record would make it a participant in the thing it audits.\n\nWHAT THE REVIEW MUST DRIVE, NOT READ: confirm hover_citation_linter.py is auditor tooling only, READ-ONLY toward platform data, and constructs no write to leg_insurance or mech_checks. This is the same premise the SKIP_REASONS auditor-tree clause landed today rests on, checked against a file that landed before the clause existed. A verdict of \"reviewed, no findings\" is refused unless it names what it opened and what it looked for.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-09-30T13:59:56Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    {
+      "author_session": "hover2",
+      "opened_at": "2026-09-30T14:00:26Z",
+      "opened_at_sha": "82b69588a125e9b730cfafeb5a95e29aee55f5a1",
+      "resources": [
+        "quotes"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools-hover2/stale_basis_check.py"
+      ],
+      "what": "RETROSPECTIVE, OPENED BY hank ON hover2's BEHALF 2026-09-30. AUTHOR OF THE CHANGE IS hover2, NOT hank -- author_session is corrected to hover2 in the same commit.\n\nWHY IT WAS NOT OPENED BY ITS AUTHOR, and this one is the sharpest instance: H2 recorded at seq 422 that the gate DID open this obligation and write it to docs/tier-a-reviews.json ON DISK, which is what let the push of e3758d37 proceed -- and then the record had to be RESET from the working tree, because tools/hover_auditor_scope_gate.py refuses that path from the auditor's clone. So the push was permitted by a record that was then deleted to keep future pulls clean. The gate was satisfied by something that did not persist, which is worse than either outcome on its own.\n\nWHAT CHANGED: commit e3758d37 landed stale_basis_check.py, a report-only detector for a register row still claiming the not-individually-read boilerplate after it was read. THE RESOURCE LIST IS DERIVED, NOT COPIED: recomputed at HEAD with the gate's own tier_a_resources() and touched_tier_a() over `git show e3758d37`, today's auditor-tree skip clause bypassed by reason text. One resource: quotes, appearing as a short token in the tool's own prose and fixtures -- which is the plain English word, not a handler.\n\nREVIEWER, NAMED BY ROLE AND NOT BY AGENT: ANY BUILD SESSION OTHER THAN THE AUTHOR of the change, holding no claim on .claude/skills/sairn-hover-auditor/ at the time of review. THE HOVER AUDITOR IS EXPLICITLY NOT ELIGIBLE, either instance.\n\nWHAT THE REVIEW MUST DRIVE, NOT READ: confirm stale_basis_check.py is report-only and READ-ONLY toward platform data -- it reads docs/CRITICALITY-TIERS.md and writes nothing -- and constructs no write to the quotes resource. A verdict of \"reviewed, no findings\" is refused unless it names what it opened and what it looked for.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-30T14:00:26Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    {
+      "author_session": "hover2",
+      "opened_at": "2026-09-30T14:00:26Z",
+      "opened_at_sha": "82b69588a125e9b730cfafeb5a95e29aee55f5a1",
+      "resources": [
+        "leg_insurance",
+        "quotes",
+        "sv_soapnotes"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools-hover2/presync_tier_a_dryrun.py",
+        ".claude/skills/sairn-hover-auditor/tools-hover2/routing_field_shape_audit.py"
+      ],
+      "what": "RETROSPECTIVE, OPENED BY hank ON hover2's BEHALF 2026-09-30, AND THIS ONE WAS NOT ON THE LIST -- IT WAS FOUND BY DERIVING RATHER THAN BY COPYING. AUTHOR OF THE CHANGE IS hover2, NOT hank -- author_session is corrected to hover2 in the same commit.\n\nHOW IT SURFACED: the queue named three blocked obligations for the tools-hover2 landing. Recomputing every tools-hover2 landing commit's diff through the gate's own tier_a_resources() and touched_tier_a(), with today's auditor-tree skip clause bypassed by reason text, found FOUR that carry a Tier A name and one that does not (a5365fb8 is clean, which is the control that says this derivation is not simply flagging everything). This is the fourth. Reported rather than quietly opened as if it had always been on the list.\n\nWHAT CHANGED: commit 29203c25 synced routing_field_shape_audit.py and landed presync_tier_a_dryrun.py. THREE RESOURCES: leg_insurance, quotes, sv_soapnotes -- all three appearing as EXAMPLE TOKENS in presync_tier_a_dryrun.py's own docstring. H2 predicted exactly this at seq 429, using that tool against itself: it \"would trip on leg_insurance/quotes/sv_soapnotes (they appear as example tokens in its docstring)\". The independent derivation here agrees with that prediction on all three, which is the useful part -- two methods, one answer.\n\nREVIEWER, NAMED BY ROLE AND NOT BY AGENT: ANY BUILD SESSION OTHER THAN THE AUTHOR of the change, holding no claim on .claude/skills/sairn-hover-auditor/ at the time of review. THE HOVER AUDITOR IS EXPLICITLY NOT ELIGIBLE, either instance.\n\nWHAT THE REVIEW MUST DRIVE, NOT READ: confirm presync_tier_a_dryrun.py and routing_field_shape_audit.py are report-only and READ-ONLY toward platform data, and construct no write to any of the three resources. Note that presync_tier_a_dryrun.py IMPORTS the real gate module to predict its behaviour -- confirm that import is read-only and that it cannot cause the gate to record anything as a side effect. A verdict of \"reviewed, no findings\" is refused unless it names what it opened and what it looked for.",
+      "status": "open",
+      "reviewer_owner": "cloud",
+      "owner_assigned_at": "2026-09-30T14:00:26Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
