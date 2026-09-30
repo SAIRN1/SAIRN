@@ -356,3 +356,83 @@ Stated so nobody reads a clean line as a clean app.
   exactly; row counts and demo content do not.
 * The browser console was not swept for errors beyond the network layer.
 * No mobile or narrow-viewport check was done.
+
+
+---
+
+# RE-RUN 2026-09-30 (CC) — THREE OF THE FOUR BLOCKERS' CAUSES WERE FIXED, AND **BLOCKER 2'S ROOT CAUSE ABOVE IS WRONG**
+
+**VERDICT: NOT CLEAN, but no longer blocked on the app.** The two remaining
+blockers are both SQL runs only Michael can do, and the four anchored code
+findings are fixed, deployed and verified on the live build.
+
+## The correction that matters
+
+**Blocker 2 above says the save path issues `POST /api/ledger` and concluded
+nothing reaches the server. That diagnosis was wrong.**
+
+`sbBackupFetch()` has always posted to `DATA_API = /api/sd-data`. What actually
+happened: `sbHydrateAll()` reads all **thirteen** `SB_SYNCED` resources at
+sign-in; `sb_incidents` answers `provisioned: false` because its table was never
+created; `sbReportHydrate()` set **one global boolean** (`sbBackupUnavailable`);
+and `sbSyncCollection()` then returned early on it **for every resource for the
+rest of the session.**
+
+**One missing table silenced twelve present ones, before the user typed
+anything** — which is why every record was accepted, confirmed on screen, survived
+a reload, and existed only in that browser while `sb_sync_stale` read `false`.
+`/api/ledger`'s 503 is a separate second-order GL posting and is orthogonal to it.
+
+**PROVED BY A WRITE, which is the only thing that could settle it.** Driven
+2026-09-30 on `SB-TEST-2026` with a real owner session:
+
+```
+sb_po         BEFORE 0 rows  ->  WRITE 200  ->  AFTER 1 row
+sb_incidents  BEFORE 0 rows  ->  WRITE 503 NOT_PROVISIONED  ->  AFTER 0 rows
+```
+
+The endpoint was never the problem. One residue row was created and is enumerated
+with its removal SQL in `docs/live-residue/2026-09-30-sairnbiz-sync-proof.json`.
+
+## What is fixed, deployed and verified
+
+All four anchored findings, in `sairnbiz.html`, with
+`tests/sairnbiz_preview_fixes.js` (23 arms, landed at 14 failed / 5 passed).
+Every marker confirmed present in the build `https://sairn.vercel.app/sairnbiz.html`
+actually serves:
+
+| # | was | now |
+|---|---|---|
+| **2 / 4** | one global latch disabled all 13 collections | per-resource latch; the global flag means *every* resource unprovisioned; the warning names the affected tables and the total |
+| **5** | `sbWeeklyHours` returned a flat 40/16 — Marcus 80 h after a 44 h timesheet | reads the **most recent recorded week**; a recorded zero stands; the payroll row renders **(scheduled)** when the figure is assumed |
+| **6** | PO and receipt vendors free text, bill vendor a restricted select | all three are the same select, filled by **one** function, refreshed on AP paint, vendor change and bill-modal open |
+| **9** | Expenses `THIS MONTH` `$0` beside `LARGEST CATEGORY` `--` | one `sbEmptyOr`/`SB_NO_DATA` helper, and the **shipped markup** changed too — it read `$0` before any code ran |
+
+## Still not clean, and neither is mine to fix
+
+| what | evidence | who |
+|---|---|---|
+| **`sb_incidents` is still unprovisioned** | re-read 2026-09-30: `provisioned: false`; a write answers 503 | **Michael** — re-run `sql/sairnbiz_data_schema.sql`, `create table if not exists` throughout |
+| **`/api/ledger` still 503s on every save** | unchanged | **Michael** — run `sql/ledger_schema.sql` |
+
+**This clone cannot do either.** No `SUPABASE_URL`, no service-role key, no
+`DATABASE_URL`, no `psql`, and `/api/sd-data` has no DDL path — checked, not
+assumed. Until `sb_incidents` exists, the OSHA incident panel has no server table;
+every other collection now backs up normally, which it did not before.
+
+## Credentials, re-verified 2026-09-30
+
+`SB-TEST-2026` / `sairn-demo-owner` / `84350271` → **200, role owner, token
+issued.** `SB-PINNACLE-2026` was not touched — its PIN is Michael's to restore.
+
+## What this re-run did NOT do
+
+**It did not re-drive the click-through.** The verification above is a live
+credential check, a live per-resource read of all thirteen, a live write in both
+directions, and a byte check of the deployed file. **Nobody clicked through the
+panels again**, so findings 7, 8, 10 and 11 — the revenue-trend chart, the
+re-login on reload, the Pay button on a held bill, the two biggest-vendor answers
+— are **unretested since 2026-09-29** and are not claimed fixed. Finding 7's
+mechanism was confirmed by reading `sairnbiz.html:2261`: the chart sums `i.paid`,
+so it is a **cash-received** chart under a *Revenue* label. That is a sharper
+statement than the original and it is still not a driven one.
