@@ -162,11 +162,67 @@ def build_fixture():
     g(d, 'add', 'app.html', 'tests/app_arm.js')
     g(d, 'commit', '-q', '-m', 'the same two files again, later')
 
+    # ── A COMMIT WITH A DISTINCT SUBJECT, REBASED AWAY, WHOSE DIFF TOUCHES
+    #    FILES NO RECORD WILL NAME. This is the cross-check fixture: a record
+    #    stamped with THIS sha but naming other files must be REFUSED, because
+    #    following it to its rebased twin would preserve a mis-stamp.
+    g(d, 'checkout', '-q', '-b', 'side2')
+    write(os.path.join(d, 'docs_note.md'), 'a note' + NL)
+    g(d, 'add', 'docs_note.md')
+    g(d, 'commit', '-q', '-m', 'a documentation note and nothing else')
+    disjoint_pre = g(d, 'rev-parse', 'HEAD').stdout.strip()
+    g(d, 'checkout', '-q', 'main')
+    write(os.path.join(d, 'unrelated2.txt'), 'yet another session' + NL)
+    g(d, 'add', 'unrelated2.txt')
+    g(d, 'commit', '-q', '-m', 'a third session pushed in between')
+    g(d, 'checkout', '-q', 'side2')
+    g(d, 'rebase', '-q', 'main')
+    disjoint_post = g(d, 'rev-parse', 'HEAD').stdout.strip()
+    g(d, 'checkout', '-q', 'main')
+    g(d, 'merge', '-q', '--ff-only', 'side2')
+
+    # ── A COMMIT THAT TOUCHED THREE FILES, one of which a record will name
+    #    alone -- the FILE-SET SUBSET basis, which must not be applied by
+    #    --write on its own.
+    write(os.path.join(d, 'widget.py'), 'w' + NL)
+    write(os.path.join(d, 'widget_probe.py'), 'p' + NL)
+    write(os.path.join(d, 'widget_doc.md'), 'd' + NL)
+    g(d, 'add', 'widget.py', 'widget_probe.py', 'widget_doc.md')
+    g(d, 'commit', '-q', '-m', 'a three-file change a record will under-name')
+    subset_target = g(d, 'rev-parse', 'HEAD').stdout.strip()
+    subset_when = g(d, 'log', '-1', '--format=%cI').stdout.strip()
+
     reachable = g(d, 'rev-parse', 'HEAD').stdout.strip()
-    return d, pre, post, reachable
+    return (d, pre, post, reachable, disjoint_pre, disjoint_post,
+            subset_target, subset_when)
 
 
-def ledger(pre, reachable):
+def ledger(pre, reachable, disjoint_pre=None, subset_when=None):
+    extra = []
+    if disjoint_pre:
+        # 4. THE CROSS-CHECK RECORD. Its sha resolves and has a unique subject
+        #    twin on main, and that twin's diff touches NONE of the files named
+        #    here. Subject-twin matching ALONE would reseat this onto the wrong
+        #    commit -- which is what it did to two real records before the
+        #    cross-check existed.
+        extra.append(
+            {'author_session': 'cc', 'opened_at': '2026-09-27T00:00:00Z',
+             'opened_at_sha': disjoint_pre, 'status': 'open',
+             'resources': ['mis_stamped'],
+             'files': ['app.html', 'tests/app_arm.js'],
+             'what': 'stamped with whatever HEAD was, not with the work',
+             'reviewer_owner': 'hank', 'reviewer_session': None,
+             'reviewed_at': None, 'verdict': None, 'rules': []})
+    if subset_when:
+        # 5. THE SUBSET RECORD. It under-names a three-file commit and its sha
+        #    does not resolve, so only containment can find it.
+        extra.append(
+            {'author_session': 'cc', 'opened_at': subset_when, 'status': 'open',
+             'opened_at_sha': 'f' * 40,
+             'resources': ['widget'], 'files': ['widget.py'],
+             'what': 'named one file out of three',
+             'reviewer_owner': 'hank', 'reviewer_session': None,
+             'reviewed_at': None, 'verdict': None, 'rules': []})
     return {
         'records': [
             # 1. DANGLING, one match by file set -> reseatable
@@ -191,7 +247,7 @@ def ledger(pre, reachable):
              'what': 'no such commit', 'reviewer_owner': 'hank',
              'reviewer_session': None, 'reviewed_at': None, 'verdict': None,
              'rules': []},
-        ]
+        ] + extra
     }
 
 
@@ -206,13 +262,22 @@ def run(d, *args):
 
 print('CONTROL PAIR -- tier_a_review_gate.py --reseat-shas' + NL)
 
-d, pre, post, reachable = build_fixture()
+(d, pre, post, reachable, disjoint_pre, disjoint_post, subset_target,
+ subset_when) = build_fixture()
 LEDGER = os.path.join(d, 'docs', 'tier-a-reviews.json')
 try:
+    # ── NO ARM LABEL CARRIES A SHA, AND THAT IS NOT COSMETIC (2026-09-29).
+    # Three labels here used to interpolate the fixture's shas, which are NEW ON
+    # EVERY RUN. A both-ways mutation harness pairs arms BY LABEL, so three
+    # value-only arms -- including this one, which compares two shas and cannot
+    # depend on any wording -- were uncomparable across runs and came back as
+    # "did not run". An arm nobody can pair across two runs cannot be
+    # mutation-tested at all. The shas moved into the DETAIL, which prints only
+    # on failure and is not part of the arm's identity.
     ok(pre != post,
-       'FIXTURE VALIDITY: the rebase really changed the sha (%s -> %s), so the '
-       'record is genuinely dangling rather than merely written wrong'
-       % (pre[:8], post[:8]))
+       'FIXTURE VALIDITY: the rebase really changed the sha, so the record is '
+       'genuinely dangling rather than merely written wrong',
+       'pre %s -> post %s' % (pre[:8], post[:8]))
     ok(g(d, 'cat-file', '-t', pre).returncode == 0
        or True, 'the pre-rebase sha may or may not still be a dangling object -- '
        'either way it is NOT an ancestor of main, which is the question')
@@ -236,8 +301,8 @@ try:
     # ── THE THREE OUTCOMES, NAMED ──────────────────────────────────────────
     print(NL + 'DIRECTION -- one reseatable, one reachable, one refused')
     ok(post[:12] in out,
-       'the reseatable record is matched to the REWRITTEN commit %s' % post[:12],
-       out[-700:])
+       'the reseatable record is matched to the REWRITTEN commit',
+       'expected %s in the output; tail: %s' % (post[:12], out[-600:]))
     ok('never_existed.html' in out or 'ghost' in out,
        'the record whose file set matches NOTHING is named, not skipped in '
        'silence', out[-700:])
@@ -252,12 +317,43 @@ try:
     # Both app.html-and-arm commits match this file set, so the answer is two.
     amb['records'][0]['files'] = ['app.html', 'tests/app_arm.js']
     amb['records'][0]['what'] = 'ambiguous on purpose'
+    # ── AND THE SHA MUST NOT RESOLVE, OR THIS ARM STOPS TESTING AMBIGUITY.
+    # When the subject-twin basis landed, this fixture's dangling-but-resolvable
+    # sha let a STRONGER basis answer first and the arm went green while
+    # asserting nothing about ambiguity. A control that a later, correct change
+    # silently disarms is exactly the item-8 shape, caught here by the arm
+    # failing rather than by anybody noticing.
+    amb['records'][0]['opened_at_sha'] = 'a' * 40
     write(LEDGER, json.dumps(amb, indent=1))
     rc, out = run(d, '--reseat-shas', '--write')
     doc = json.loads(io.open(LEDGER, encoding='utf-8').read())
     ok('AMBIGUOUS' in out.upper() or 'more than one' in out.lower(),
        'it says the match is ambiguous', out[-700:])
-    ok(doc['records'][0]['opened_at_sha'] == pre,
+    # ── AND THE SAME THING WITHOUT PINNING A SENTENCE (2026-09-29).
+    # A both-ways mutation removed the ambiguity refusal and exactly ONE arm
+    # caught it -- the one above, which asserts on the WORD "ambiguous". The
+    # behavioural arm below it could not: with that branch gone the record fell
+    # through to the SUBSET refusal, which refused it too, so the sha was
+    # unchanged and the behaviour arm still passed. The only difference was the
+    # REASON, and the reason lived in prose. `--json` now emits a stable reason
+    # CODE per refusal, so this arm survives any rewording of the sentence and
+    # still fails if a different refusal fires.
+    rcj, outj = run(d, '--reseat-shas', '--json')
+    i = outj.find('{')
+    codes = []
+    if i >= 0:
+        try:
+            payload = json.loads(outj[i:outj.rindex('}') + 1])
+            codes = [x.get('code') for x in payload.get('refused', [])]
+        except Exception as exc:
+            codes = ['PARSE FAILED: %s' % exc]
+    ok('AMBIGUOUS_EXACT_SET' in codes,
+       'THE SAME FACT AS A CODE RATHER THAN A SENTENCE: --json reports the '
+       'refusal as AMBIGUOUS_EXACT_SET, so this arm cannot be broken by '
+       'rewording the message and cannot be satisfied by a DIFFERENT refusal '
+       'firing -- which is exactly what a mutation showed the prose arm could '
+       'not distinguish', codes)
+    ok(doc['records'][0]['opened_at_sha'] == 'a' * 40,
        'AND THE SHA IS UNCHANGED -- picking one of two candidates would be a '
        'guess written into a ledger an auditor follows', out[-500:])
 
@@ -282,6 +378,74 @@ try:
     else:
         ok(False, 'the reseatable record was NOT reseated even with --write',
            out[-900:])
+
+    # ══ THE SUBJECT TWIN, AND THE CROSS-CHECK THAT STOPS IT BEING WRONG ══
+    print(NL + 'SUBJECT TWIN -- the strongest basis, and the check that bounds it')
+    lg = ledger(pre, reachable, disjoint_pre, subset_when)
+    write(LEDGER, json.dumps(lg, indent=1))
+    rc, out = run(d, '--reseat-shas')
+    ok('SUBJECT TWIN' in out,
+       'the subject-twin basis is used and NAMED in the output, so a reader can '
+       'tell which evidence moved a sha', out[-1200:])
+
+    print(NL + 'KNOWN-BAD -- a subject twin whose DIFF TOUCHES NONE of the '
+          "record's files must be REFUSED")
+    rc, out = run(d, '--reseat-shas', '--write')
+    doc = json.loads(io.open(LEDGER, encoding='utf-8').read())
+    mis = [r for r in doc['records'] if r.get('resources') == ['mis_stamped']]
+    ok(len(mis) == 1, 'the cross-check fixture record is present', doc)
+    if mis:
+        ok(mis[0]['opened_at_sha'] == disjoint_pre,
+           'THE ARM THAT MATTERS: its sha is UNCHANGED. Its subject twin exists '
+           'and is unique, and following it would have written a sha for a '
+           'commit that touched none of this record\'s files -- which is what '
+           'subject-twin matching did to two real records before this check '
+           'existed',
+           'twin was %s; record is now %r' % (disjoint_post[:12], mis[0]))
+        ok('ALREADY WRONG FOR THIS RECORD' in out.upper(),
+           'and the refusal says the RECORD is what is wrong, not the sha -- a '
+           'mis-stamp and a rebase casualty need different repairs', out[-1400:])
+        ok(disjoint_post[:12] not in (mis[0].get('opened_at_sha') or ''),
+           'and the twin sha is nowhere in the record', mis[0])
+
+    # ══ THE WEAK BASIS NEEDS ITS OWN FLAG ══════════════════════════════════
+    print(NL + 'KNOWN-BAD -- the FILE-SET SUBSET basis is not applied by --write '
+          'alone')
+    write(LEDGER, json.dumps(ledger(pre, reachable, disjoint_pre, subset_when),
+                             indent=1))
+    rc, out = run(d, '--reseat-shas', '--write')
+    doc = json.loads(io.open(LEDGER, encoding='utf-8').read())
+    sub = [r for r in doc['records'] if r.get('resources') == ['widget']]
+    ok(len(sub) == 1, 'the subset fixture record is present', doc)
+    if sub:
+        ok(sub[0]['opened_at_sha'] == 'f' * 40,
+           'THE ARM THAT MATTERS: --write alone left it alone. Containment is a '
+           'different claim from equality and must not ride along on one '
+           'keystroke', sub[0])
+        ok('WEAK' in out.upper(),
+           'and the report names the weak basis and the flag it needs',
+           out[-1000:])
+
+    print(NL + 'DIRECTION -- --write-weak-basis DOES apply it, and stamps which '
+          'basis')
+    write(LEDGER, json.dumps(ledger(pre, reachable, disjoint_pre, subset_when),
+                             indent=1))
+    rc, out = run(d, '--reseat-shas', '--write', '--write-weak-basis')
+    doc = json.loads(io.open(LEDGER, encoding='utf-8').read())
+    sub = [r for r in doc['records'] if r.get('resources') == ['widget']]
+    if sub:
+        ok(sub[0]['opened_at_sha'] == subset_target,
+           'with both flags the subset match IS applied, onto the three-file '
+           'commit the record under-named', sub[0])
+        ok(sub[0].get('opened_at_sha_reseat_basis') == 'FILE-SET SUBSET',
+           'and the record records WHICH basis, so a weak reseat and a strong '
+           'one are never indistinguishable', sub[0])
+    strong = [r for r in doc['records'] if r.get('resources') == ['app_thing']]
+    if strong and strong[0].get('opened_at_sha_reseated'):
+        ok(strong[0].get('opened_at_sha_reseat_basis') in
+           ('SUBJECT TWIN', 'EXACT FILE SET'),
+           'and a strong reseat stamps its own basis too, not a blank marker',
+           strong[0])
 finally:
     rmtree(d)
 

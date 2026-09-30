@@ -13,6 +13,8 @@
         the second line of defence rather than the only one.
     python tools/tier_a_review_gate.py --auto-discharge [--write]
     python tools/tier_a_review_gate.py --reseat-shas [--write]  # a DANGLING sha
+    python tools/tier_a_review_gate.py --reseat-shas --write --write-weak-basis
+    python tools/tier_a_review_gate.py --reseat-shas --json  # machine-readable reason CODES
 
 Exit 0 clean, 1 a finding, 2 COULD NOT TELL -- never folded into either of the
 other two (PR 1.11).
@@ -2580,7 +2582,7 @@ def main(argv):
     if '--backfill-shas' in argv:
         return backfill_shas('--write' in argv)
     if '--reseat-shas' in argv:
-        return reseat_shas('--write' in argv)
+        return reseat_shas('--write' in argv, '--write-weak-basis' in argv, '--json' in argv)
     if '--rules' in argv:
         return cmd_rules()
     if '--validate' in argv:
@@ -2743,7 +2745,8 @@ def _file_set_index(since=None):
     tight -- and it is a WINDOW rather than a cutoff, because an early baseline
     is the error direction backfill_shas already argues for.
     """
-    args = ['log', '--format=' + chr(30) + '%H' + chr(31) + '%s', '--name-only']
+    args = ['log', '--format=' + chr(30) + '%H' + chr(31) + '%s'
+            + chr(31) + '%cI', '--name-only']
     if since:
         args.append('--since=' + since)
     try:
@@ -2756,12 +2759,189 @@ def _file_set_index(since=None):
         if not chunk or chr(31) not in chunk:
             continue
         head, _, rest = chunk.partition(chr(10))
-        sha, subj = head.split(chr(31), 1)
+        parts = head.split(chr(31))
+        sha, subj = parts[0], parts[1]
+        when = parts[2] if len(parts) > 2 else ''
         paths = frozenset(x.strip().replace(chr(92), '/')
                           for x in rest.split(chr(10)) if x.strip())
         if paths:
             idx.setdefault(paths, []).append((sha, subj))
+            _PER_SHA[sha] = (paths, subj, when)
     return idx, None
+
+
+# Filled by _file_set_index: {sha: (frozenset(paths), subject, committer-ISO)}.
+# A module-level cache rather than a return value, so the extra bases below can
+# ask about a sha the file-set index already walked past without a second git log.
+_PER_SHA = {}
+
+# ── THE WINDOW FOR A WEAK BASIS. REASONED, NOT CALIBRATED, AND SAID SO.
+# A review record is opened in the same working session as the commit it
+# describes -- the real pair measured while writing this was SIX MINUTES apart
+# (record 2026-09-28T03:34:57Z, commit bb840eeccb3c at 2026-09-28T03:40:40Z). Six
+# hours is generous against that and still refuses a commit from another day.
+# WIDENING THIS IS HOW A WRONG RESEAT HAPPENS and it should not be widened to make
+# a stubborn record match.
+WEAK_BASIS_WINDOW_HOURS = 6
+
+
+def _iso_hours_apart(a, b):
+    """Absolute hours between two ISO timestamps, or None if either is unreadable."""
+    import datetime
+    def _p(x):
+        x = (x or '').strip()
+        if not x:
+            return None
+        x = x.replace('Z', '+00:00')
+        try:
+            d = datetime.datetime.fromisoformat(x)
+        except ValueError:
+            return None
+        if d.tzinfo is None:
+            d = d.replace(tzinfo=datetime.timezone.utc)
+        return d
+    da, db = _p(a), _p(b)
+    if da is None or db is None:
+        return None
+    return abs((da - db).total_seconds()) / 3600.0
+
+
+def _subject_twin(sha, base):
+    """The commit on `base` whose FULL SUBJECT matches this dangling sha's.
+
+    ── THIS IS THE STRONGEST BASIS OF THE THREE AND IT WAS NOT BEING USED.
+    This file's own header says "THE DURABLE KEY IS THE FILE LIST, NOT THE
+    SUBJECT", on the ground that a review record does not store a subject. TRUE
+    ABOUT THE RECORD AND FALSE ABOUT THE COMMIT: when the recorded sha still
+    RESOLVES in this clone -- which it does whenever the rebase that orphaned it
+    happened here -- its own subject can be read out of the object store, and a
+    rebase preserves the subject exactly. That is the rebase's identity, not an
+    inference from it.
+
+    Measured over the 17 dangling records on 2026-09-29: FIVE had a unique
+    subject twin on origin/main, and all five were this clone's own commits. The
+    other twelve had no object to read a subject from -- which is the structural
+    answer to why they cannot be told from here, and is reported as such.
+
+    Returns (twin_sha, subject, None) or (None, None, why).
+    """
+    try:
+        head = git('log', '-1', '--format=%s', sha)
+    except CouldNotTell:
+        return None, None, ('the recorded sha is not in this clone\'s object '
+                            'store, so its subject cannot be read. A dangling '
+                            'sha is reseatable by subject only from the clone '
+                            'whose rebase orphaned it -- run this there, or '
+                            'fetch the object in first')
+    subj = (head or '').strip().split(chr(10))[0].strip()
+    if not subj:
+        return None, None, 'the recorded sha resolves but carries no subject line'
+    try:
+        out = git('log', base, '--format=%H', '--fixed-strings', '--grep=' + subj,
+                  '-n', '5')
+    except CouldNotTell as e:
+        return None, None, 'git log could not search %s for that subject (%s)' % (base, e)
+    hits = [l.strip() for l in (out or '').split(chr(10)) if l.strip()]
+    if not hits:
+        return None, subj, ('the recorded sha resolves and its subject appears '
+                            'nowhere on %s, so the commit was not rebased -- it '
+                            'was dropped, or its message was rewritten' % base)
+    if len(hits) > 1:
+        return None, subj, ('%d commits on %s share that subject, so the twin is '
+                            'ambiguous. Picking one would be a guess written into '
+                            'a ledger an auditor follows' % (len(hits), base))
+    return hits[0], subj, None
+
+
+def _twin_file_agreement(twin_sha, files):
+    """Does the subject twin's own diff account for the record's files?
+
+    ── THIS CHECK EXISTS BECAUSE SUBJECT-TWIN ALONE WROTE TWO WRONG SHAS, and it
+    was caught by hand-verifying all five matches before applying any of them --
+    which is the "the real costly thing earns exhaustive verification" rule doing
+    exactly what it is for. Measured 2026-09-29 over the five twins found:
+
+      record 2026-09-27T01:22:40Z  files stonedesk_server_backup.js,
+                                   mech_panels_live_check.py
+                     twin 873e72d8  touched NEITHER -- DISJOINT
+      record 2026-09-27T02:31:54Z  files api/_lib/compliance-rules*.js, sd-data.js
+                     twin 4bb4d29e  touched two DOCS -- DISJOINT
+      record 2026-09-27T03:42:29Z  twin 52c54530 covers 2 of its 4 -- PARTIAL
+      record 2026-09-28T21:33:14Z  twin cc956d9e is a SUPERSET -- agrees
+      record 2026-09-29T12:21:14Z  twin 8fd013e3 is a SUPERSET -- agrees
+
+    A DISJOINT TWIN IS NOT A RESEAT TARGET AND THE REASON IS NOT A ROUNDING
+    ERROR: it means the RECORDED SHA WAS ALREADY WRONG FOR THIS RECORD when it was
+    written -- somebody stamped whatever HEAD happened to be rather than the
+    commit carrying the work. Following that sha to its rebased twin preserves the
+    error faithfully, which is worse than leaving it dangling, because a dangling
+    sha is visibly broken and a wrong one is not. That is this command's own
+    founding sentence, and subject-twin matching would have violated it.
+
+    Returns 'SUPERSET' | 'PARTIAL' | 'DISJOINT' | 'UNKNOWN'.
+    """
+    want = frozenset(x.replace(chr(92), '/') for x in (files or []))
+    if not want:
+        return 'UNKNOWN'
+    got = _PER_SHA.get(twin_sha, (None, None, None))[0]
+    if got is None:
+        try:
+            out = git('show', '--name-only', '--format=', twin_sha)
+        except CouldNotTell:
+            return 'UNKNOWN'
+        got = frozenset(x.strip().replace(chr(92), '/')
+                        for x in (out or '').split(chr(10)) if x.strip())
+    if not got:
+        return 'UNKNOWN'
+    if want <= got:
+        return 'SUPERSET'
+    if want & got:
+        return 'PARTIAL'
+    return 'DISJOINT'
+
+
+def _subset_candidate(files, opened_at):
+    """The single commit whose changed set CONTAINS `files` and lands in the window.
+
+    ── A WEAKER BASIS, WITH ITS OWN FLAG AND ITS OWN STAMP.
+    `_candidates_by_files` requires EQUALITY and says why: a commit that touched
+    the record's files and ten others is a different change. That is right as the
+    DEFAULT and wrong as the only rule, because a record whose file list is
+    partial -- a session naming the four files it cared about out of a six-file
+    commit -- can never match anything.
+
+    So containment is admitted only when ALL of these hold:
+      * exactly ONE commit anywhere contains the set,
+      * NO commit matches the set exactly (equality always wins),
+      * and the commit lands within WEAK_BASIS_WINDOW_HOURS of `opened_at`.
+
+    It is never applied by --write alone; it needs --write-weak-basis, and it
+    stamps `opened_at_sha_reseat_basis: 'file-set-subset'` so the weaker basis
+    is never indistinguishable from the stronger one.
+    """
+    want = frozenset(x.replace(chr(92), '/') for x in (files or []))
+    if not want:
+        return None, None, 'the record names no files'
+    hits = [(sha, subj, when) for sha, (paths, subj, when) in _PER_SHA.items()
+            if want <= paths and paths != want]
+    if not hits:
+        return None, None, 'no commit anywhere contains that file set either'
+    in_window = []
+    for sha, subj, when in hits:
+        gap = _iso_hours_apart(when, opened_at)
+        if gap is not None and gap <= WEAK_BASIS_WINDOW_HOURS:
+            in_window.append((sha, subj, when, gap))
+    if not in_window:
+        return None, None, ('%d commit(s) contain that file set but none lands '
+                            'within %dh of the record, so none of them is the '
+                            'commit it was opened against'
+                            % (len(hits), WEAK_BASIS_WINDOW_HOURS))
+    if len(in_window) > 1:
+        return None, None, ('%d commits contain that file set within the window, '
+                            'so containment does not single one out'
+                            % len(in_window))
+    sha, subj, when, gap = in_window[0]
+    return sha, (subj, when, gap), None
 
 
 def _candidates_by_files(idx, files, want_subject=None):
@@ -2790,7 +2970,7 @@ def _candidates_by_files(idx, files, want_subject=None):
     return hits, None
 
 
-def reseat_shas(write=False):
+def reseat_shas(write=False, weak_ok=False, as_json=False):
     """Repoint a review record whose recorded sha is dangling. DRY RUN default."""
     try:
         data = load_reviews()
@@ -2821,50 +3001,191 @@ def reseat_shas(write=False):
     print('  distinct file sets indexed   : %d' % len(idx))
     print('  open records: %d' % len(rows))
 
-    healthy, fixable, refused = [], [], []
+    # ── THREE BASES, IN STRENGTH ORDER, AND EVERY OUTCOME CARRIES WHICH ──
+    # 1. SUBJECT TWIN -- the dangling sha resolves here and exactly one commit on
+    #    the base shares its full subject. That IS the rebase identity.
+    # 2. EXACT FILE SET -- one commit changed precisely the record's files.
+    # 3. FILE-SET SUBSET within a time window -- weaker, own flag, own stamp.
+    # A refusal names which of the six reasons it is, so "could not tell" is a
+    # diagnosis rather than a shrug.
+    healthy, fixable, weak, refused = [], [], [], []
     for r in rows:
         sha = r.get('opened_at_sha')
         if not sha:
-            refused.append((r, 'no sha at all -- that is --backfill-shas\'s job, '
-                               'not this one'))
+            refused.append((r, 'NO_SHA_AT_ALL',
+                            'NO SHA AT ALL -- that is --backfill-shas\'s job, '
+                            'not this one'))
             continue
         if _is_reachable(sha, base) is True:
             healthy.append(r)
             continue
+
+        twin, twin_subj, twin_why = _subject_twin(sha, base)
+        if twin:
+            agree = _twin_file_agreement(twin, r.get('files'))
+            if agree == 'SUPERSET':
+                fixable.append((r, twin, 'SUBJECT TWIN', twin_subj or ''))
+                continue
+            if agree == 'PARTIAL':
+                weak.append((r, twin, 'SUBJECT TWIN, FILES PARTIAL',
+                             (twin_subj or '', '', 0.0)))
+                continue
+            if agree == 'DISJOINT':
+                refused.append((r, 'SHA_WRONG_WHEN_WRITTEN',
+                                'THE RECORDED SHA WAS ALREADY WRONG FOR THIS '
+                                'RECORD, and that is a different fault from a '
+                                'rebase. Its subject twin on %s is %s (%r), '
+                                'whose diff touches NONE of the files this '
+                                'record names (%s). Following the sha to its '
+                                'twin would preserve the original mis-stamp '
+                                'faithfully -- a wrong sha is worse than a '
+                                'dangling one, because a dangling one is '
+                                'visibly broken. FIX THE RECORD, not the sha'
+                                % (base, twin[:12], (twin_subj or '')[:70],
+                                   sorted(set(r.get('files') or []))[:4])))
+                continue
+            refused.append((r, 'TWIN_CROSSCHECK_UNREADABLE',
+                            'a subject twin exists on %s (%s) but neither its '
+                            'diff nor the record\'s file list could be read, '
+                            'so the two could not be cross-checked. A twin '
+                            'accepted without that check wrote two wrong shas '
+                            'in testing' % (base, twin[:12])))
+            continue
+
         hits, err = _candidates_by_files(idx, r.get('files'), r.get('what'))
+        if hits and len(hits) == 1:
+            fixable.append((r, hits[0][0], 'EXACT FILE SET', hits[0][1]))
+            continue
+        if len(hits) > 1:
+            # SAY WHETHER ANY CANDIDATE PRE-DATES THE RECORD. When every one
+            # post-dates it, that is positive evidence that NONE of them is the
+            # commit it was opened against -- a stronger statement than
+            # "ambiguous", and it stops the next reader re-deriving it.
+            opened = r.get('opened_at') or ''
+            after = [h for h in hits
+                     if (_PER_SHA.get(h[0], ('', '', ''))[2] or '') > opened]
+            tail = ''
+            if len(after) == len(hits):
+                tail = ('. AND EVERY ONE OF THEM POST-DATES THE RECORD, so none '
+                        'of them is the commit it was opened against -- the '
+                        'original is gone, not mis-recorded')
+            refused.append((r, 'AMBIGUOUS_EXACT_SET',
+                            'AMBIGUOUS EXACT FILE SET: %d commits changed '
+                            'exactly that set (%s) and the record\'s own text '
+                            'does not single one out%s'
+                            % (len(hits), ', '.join(h[0][:12] for h in hits[:4]),
+                               tail)))
+            continue
         if err:
-            refused.append((r, err))
-        elif not hits:
-            refused.append((r, 'NO commit on %s changed exactly %s -- left '
-                               'dangling rather than pointed at an approximation'
-                            % (base, sorted(set(r.get('files') or [])))))
-        elif len(hits) > 1:
-            refused.append((r, 'AMBIGUOUS: %d commits changed exactly that file '
-                               'set (%s) and the record\'s own text does not '
-                               'single one out. Picking one would be a guess '
-                               'written into a ledger an auditor follows'
-                            % (len(hits), ', '.join(h[0][:12] for h in hits[:4]))))
-        else:
-            fixable.append((r, hits[0][0], hits[0][1]))
+            refused.append((r, 'NO_FILES_ON_RECORD', err))
+            continue
+
+        sub, meta, sub_why = _subset_candidate(r.get('files'), r.get('opened_at'))
+        if sub:
+            weak.append((r, sub, 'FILE-SET SUBSET', meta))
+            continue
+
+        # Nothing worked. The reason is the FIRST one that applies, and the
+        # subject-twin reason is the most informative when there is no object.
+        # THE FILE SET IS NAMED IN EVERY REFUSAL. The first version of this
+        # rewrite dropped it, and the probe arm asserting that a record matching
+        # NOTHING is "named, not skipped in silence" went red -- correctly. A
+        # refusal that does not say what it looked for is one a reader cannot act
+        # on, and the old single-reason message did say.
+        # THE CODE IS DERIVED FROM WHICH FACT BLOCKED IT, not from the prose.
+        code = ('NO_OBJECT_IN_CLONE' if 'object store' in (twin_why or '')
+                else 'TWIN_SUBJECT_ABSENT' if 'appears' in (twin_why or '')
+                else 'TWIN_SUBJECT_AMBIGUOUS' if 'share that subject' in (twin_why or '')
+                else 'NO_MATCH_ANYWHERE')
+        if 'contain that file set within the window' in (sub_why or ''):
+            code = code + '+SUBSET_AMBIGUOUS'
+        refused.append((r, code, '%s; and %s. FILES SOUGHT: %s'
+                        % (twin_why or 'no subject twin',
+                           sub_why or 'no subset match',
+                           sorted(set(r.get('files') or [])))))
 
     print('  reachable already   : %d -- not touched' % len(healthy))
-    print('  reseatable          : %d' % len(fixable))
-    print('  REFUSED             : %d -- named below, never silently skipped'
-          % len(refused))
+    print('  reseatable          : %d  (subject twin or exact file set)'
+          % len(fixable))
+    print('  reseatable, WEAK    : %d  (file-set subset in a %dh window -- needs '
+          '--write-weak-basis)' % (len(weak), WEAK_BASIS_WINDOW_HOURS))
+    print('  REFUSED             : %d -- named below with the reason, never '
+          'silently skipped' % len(refused))
     print()
-    for r, sha, subj in fixable:
-        print('  %-8s %s  %s -> %s' % (r.get('author_session'),
-                                       r.get('opened_at'),
-                                       (r.get('opened_at_sha') or '')[:12],
-                                       sha[:12]))
-        print('           matched on the file set %s'
-              % sorted(set(r.get('files') or []))[:4])
-        print('           commit subject: %s' % subj[:88])
-    for r, whynot in refused:
-        print('  %-8s %s  REFUSED -- %s'
-              % (r.get('author_session'), r.get('opened_at'), whynot[:220]))
+    for r, newsha, basis, extra in fixable:
+        print('  %-8s %s  %s -> %s   [%s]'
+              % (r.get('author_session'), r.get('opened_at'),
+                 (r.get('opened_at_sha') or '')[:12], newsha[:12], basis))
+        if basis == 'SUBJECT TWIN':
+            print('           the dangling commit\'s own subject, matched once on %s:'
+                  % base)
+            print('           %s' % (extra or '')[:96])
+        else:
+            print('           matched on the file set %s'
+                  % sorted(set(r.get('files') or []))[:4])
+            print('           commit subject: %s' % (extra or '')[:88])
+    for r, newsha, basis, meta in weak:
+        subj, when, gap = meta
+        tail = (', %.1fh apart' % gap) if gap else ''
+        print('  %-8s %s  %s -> %s   [%s%s]'
+              % (r.get('author_session'), r.get('opened_at'),
+                 (r.get('opened_at_sha') or '')[:12], newsha[:12], basis, tail))
+        if basis.startswith('SUBJECT TWIN'):
+            print('           the twin\'s diff covers SOME of the record\'s files '
+                  'and not all of them: %s'
+                  % sorted(set(r.get('files') or []))[:4])
+            print('           a partial overlap is not a match and is not a '
+                  'refusal either -- it is the third state, and the record may '
+                  'name files from more than one commit')
+        else:
+            print('           the record names %s; that commit changed those AND '
+                  'more' % sorted(set(r.get('files') or []))[:4])
+        print('           commit subject: %s' % (subj or '')[:88])
+        print('           WEAKER BASIS. --write alone will NOT apply this.')
+    # NOT TRUNCATED. The first version cut the reason at 300 characters and the
+    # probe caught it: the arm asserting that a record matching NOTHING is
+    # "named, not skipped in silence" went red because the file list it looks for
+    # was past the cut. A refusal truncated mid-diagnosis is the same defect as a
+    # refusal with no diagnosis -- so these wrap instead.
+    import textwrap as _tw
+    for r, code, whynot in refused:
+        # ── THE CODE IS PRINTED AND IS A CONTRACT; THE PROSE IS NOT.
+        # A both-ways mutation on 2026-09-29 removed the ambiguity refusal and
+        # exactly ONE arm caught it -- an arm asserting on the SENTENCE "it says
+        # the match is ambiguous". The behavioural arm could not: with the
+        # ambiguity branch gone the record fell through to the subset branch,
+        # which refused it too, so the sha was unchanged and the behaviour arm
+        # still passed. THE ONLY DIFFERENCE WAS THE REASON, and the reason lived
+        # in prose. A stable code is the handle that makes "refused for the right
+        # reason" observable without pinning a sentence.
+        print('  %-8s %s  REFUSED [%s]'
+              % (r.get('author_session'), r.get('opened_at'), code))
+        for line in _tw.wrap(whynot, 96):
+            print('           %s' % line)
 
-    if not fixable:
+    if as_json:
+        # MACHINE-READABLE, so a control can assert on WHICH refusal fired
+        # without asserting on a sentence.
+        #
+        # EMITTED BEFORE THE "nothing to reseat" EARLY RETURN, and the probe is
+        # why: with the JSON printed after it, a ledger whose only dangling
+        # records are all REFUSED returned before printing anything, so the arm
+        # asserting on a refusal code got an empty list and failed. A
+        # machine-readable report that disappears exactly when every record is
+        # refused is useless for the case it exists to serve.
+        print(json.dumps({
+            'base': base,
+            'reachable': [r.get('opened_at') for r in healthy],
+            'reseatable': [{'opened_at': r.get('opened_at'), 'to': sha,
+                            'basis': basis} for r, sha, basis, _e in fixable],
+            'reseatable_weak': [{'opened_at': r.get('opened_at'), 'to': sha,
+                                 'basis': basis} for r, sha, basis, _m in weak],
+            'refused': [{'opened_at': r.get('opened_at'),
+                         'session': r.get('author_session'),
+                         'code': code} for r, code, _w in refused],
+        }, indent=2))
+
+    if not fixable and not weak:
         print()
         print('Nothing to reseat.' if not refused else
               'Nothing reseatable. Every dangling record above was REFUSED, '
@@ -2875,21 +3196,44 @@ def reseat_shas(write=False):
 
     if not write:
         print()
-        print('DRY RUN -- nothing was written. Add --write to repoint them.')
-        print('Every repointed record will carry opened_at_sha_reseated: true, so')
-        print('a reseated sha and one stamped at open time are never')
-        print('indistinguishable -- the same rule backfill_shas follows for its')
-        print('own reconstruction.')
+        print('DRY RUN -- nothing was written. Add --write to repoint the %d '
+              'strong-basis record(s).' % len(fixable))
+        if weak:
+            print('The %d WEAK-basis record(s) need --write --write-weak-basis as '
+                  'well. Two flags on purpose: containment is a different claim '
+                  'from equality and must not ride along on one keystroke.'
+                  % len(weak))
+        print('Every repointed record will carry opened_at_sha_reseated: true and')
+        print('an opened_at_sha_reseat_basis naming WHICH basis was used, so a')
+        print('reseated sha, a weakly reseated one and one stamped at open time')
+        print('are never indistinguishable -- the same rule backfill_shas follows')
+        print('for its own reconstruction.')
         return 0
 
-    for r, sha, _subj in fixable:
+    applied = 0
+    for r, sha, basis, _extra in fixable:
         r['opened_at_sha_was'] = r.get('opened_at_sha')
         r['opened_at_sha'] = sha
         r['opened_at_sha_reseated'] = True
+        r['opened_at_sha_reseat_basis'] = basis
+        applied += 1
+    weak_applied = 0
+    if weak_ok:
+        for r, sha, basis, _meta in weak:
+            r['opened_at_sha_was'] = r.get('opened_at_sha')
+            r['opened_at_sha'] = sha
+            r['opened_at_sha_reseated'] = True
+            r['opened_at_sha_reseat_basis'] = basis
+            weak_applied += 1
     save_reviews(data)
     print()
-    print('RESEATED %d record(s), %d refused. Commit docs/tier-a-reviews.json.'
-          % (len(fixable), len(refused)))
+    print('RESEATED %d record(s) on a strong basis, %d on the WEAK basis, %d '
+          'refused. Commit docs/tier-a-reviews.json.'
+          % (applied, weak_applied, len(refused)))
+    if weak and not weak_ok:
+        print('The %d weak-basis record(s) were NOT written -- pass '
+              '--write-weak-basis if containment is the claim you want in the '
+              'ledger.' % len(weak))
     return 0
 
 
