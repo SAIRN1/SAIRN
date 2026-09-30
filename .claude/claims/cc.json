@@ -3033,6 +3033,17 @@
       "files": [
         "docs/2026-09-29-mech-docs-gate-live-verification.md"
       ]
+    },
+    {
+      "id": "cc-1790727917",
+      "session": "cc",
+      "subject": "reviewledger",
+      "task": "docs/tier-a-reviews.json",
+      "claimed_at": "2026-09-30T00:25:17Z",
+      "claimed_at_epoch": 1790727917.4004807,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
