@@ -288,21 +288,13 @@ PURPOSES = {
         'whose sharpest are the PROSE arms: its own first real run produced four '
         'findings and all four were docstrings describing the contract, including '
         'the auditors own.'),
-    'sql_column_exists_check.py': ('REPORT',
-        'does a sql/ file FILTER on a column the table does not have? Catches the '
-        'defect that reached origin/main on 2026-09-29: a residue-removal block '
-        'naming entry_id on mech_checks and mech_takeoffs, which use check_id and '
-        'takeoff_id. EVERY statement in that block would error 42703 '
-        'undefined_column -- including the CONFIRM step, so it could not print the '
-        '0 it existed to prove, and in any runner reporting the last successful '
-        'statement it would read as a clean sweep. A column name is the one part of '
-        'hand-written SQL nothing checked: a wrong TABLE fails loudly at the first '
-        'read, a wrong COLUMN fails just as loudly only if somebody is watching. '
-        'Validates against TWO sources -- the declared create-table and '
-        'alter-table-add-column shape across sql/, and the deployed column list in '
-        'db/schema_snapshot.json -- and reports a name present in one and absent '
-        'from the other as a DISAGREEMENT rather than as clean, which is where a '
-        'migration nobody ran lands.'),
+    # sql_column_exists_check.py has NO PURPOSES ENTRY ON PURPOSE. It is a
+    # REGISTERED report-only check, so its `catches` comes from
+    # tools/report_only_checks.py REGISTRY, and a second description here
+    # would be a second source that can disagree -- the claim-in-two-places
+    # failure this document exists to prevent. The generator REFUSES (exit 2)
+    # rather than emitting both, which is how this was found: a PURPOSES entry
+    # was written first, the REGISTRY entry second, and the push stopped.
     'mech_gate_live_probe.py': ('LIVE',
         'does the DEPLOYED MECH_RECORDS boundary still refuse a mech_docs write on '
         'the licence key alone, AND still allow the read and the three sibling '

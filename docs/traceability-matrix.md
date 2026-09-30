@@ -50,6 +50,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 
 | Requirement (what it catches) | Tool | Evidence at promotion |
 |---|---|---|
+| a sql/ statement that FILTERS on a column the table does not have, in either the declared create-table and alter-table-add-column shape or the deployed snapshot -- and, separately, a column present in one source and absent from the other, which is where an unrun migration and a stale snapshot both land. | `sql_column_exists_check.py` | docs/2026-09-29-mech-docs-gate-live-verification.md shipped a removal block naming entry_id on mech_checks and mech_takeoffs, which use check_id and takeoff_id. Reached origin/main. Every statement would error 42703 undefined_column, including the confirm step, so it could not print the 0 it existed to prove. Current run: 0 bad-column findings, 21 declared/deployed disagreements, 270 statements declared BLIND and counted. |
 | a test arm labelled "every / all / no X" that is actually asserting a floor, or a bare truthiness -- `>= 4`, or `if rows`, under a label claiming every answer carries the limits | `assertion_label_shape_check.py` |  |
 | a tool whose several real-data entry points enumerate DIFFERENT MEMBERS OF ONE POPULATION FAMILY -- the copy a human invokes is not the copy that enforces | `entry_point_scope_check.py` |  |
 | a checker whose corpus enumeration returns nothing, which it then reports as a clean sweep -- "read 0 file(s) / CLEAN" | `parse_zero_third_state_check.py` |  |
@@ -680,11 +681,11 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 170 test files are traced to no stated requirement
+### 171 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 690 of 860 traced, 80.2%.
+For context and not as the headline: 690 of 861 traced, 80.1%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -707,7 +708,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | kind | count | what it means | the fix |
 |---|---|---|---|
 | **bound to a subject, tied to no requirement** | 35 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 135 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **no subject binding either** | 136 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
 **These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 35 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
@@ -806,6 +807,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_irreversible_class_probe.py`
 - `tests/run_known_red_probe.py`
 - `tests/run_law_phase2_session_sabotage_probe.py`
+- `tests/run_live_probe_declaration_probe.py`
 - `tests/run_live_probe_residue_probe.py`
 - `tests/run_log_cluster_probe.py`
 - `tests/run_mech_gate_live_probe_probe.py`
@@ -902,10 +904,10 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 860   tests/**, api/** (both walked)
+  test files on disk                 861   tests/**, api/** (both walked)
   open-work rows citing a test       385   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 10   sairn_push_gate_hook.GUARD_TESTS
-  report-only registry                70   report_only_checks.REGISTRY
+  report-only registry                71   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     75   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   sairn_push_gate_hook.py
 ```
