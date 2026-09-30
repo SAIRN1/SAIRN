@@ -57,6 +57,61 @@ are both wrong for a gate:
 
 So the third state is printed per resource and the check stays REPORT-ONLY. The
 threshold at which it could block is stated in the output and is not met.
+
+── THE UNCOVERED 30%, GROUPED BY SHAPE (measured 2026-09-30) ───────────────────
+35 of 50 asserting rows resolve. The other 15 are THREE shapes, not fifteen
+problems, and every one of them is the `list`/`arr`/`rows`/`all` skip in
+write_shape() doing its job: a store that is handed a COLLECTION would yield the
+ARRAY's shape, and a CLEAR verdict derived from the wrong field set is worse than
+a named COULD-NOT-TELL. The 30% is the price of a conservative extractor.
+
+  SHAPE 1 -- MUTATED-IN-PLACE RECORD. 2 rows: leg_memorials, leg_obituaries.
+    `var rec=existing||{id,case_id,created_at}` then `rec.photo_urls=...` on the
+    following lines. The write call IS matched and `rec` IS captured; the
+    backward search `\brec\s*=\s*\{` cannot match `rec=existing||{`, and even if
+    it did the literal holds 3 of 6 fields -- the rest arrive by property
+    assignment. A brace-matched literal is STRUCTURALLY incapable here.
+    A REPORT-ONLY CI RUN CAN COVER THIS COMPLETELY: accept `name = <expr> || {`
+    and union the literal's keys with every `name.<field> =` in the same
+    function. Every field is a literal assignment in one place.
+
+  SHAPE 2 -- SEED-PLUS-SAVER. 10 rows, all SAIRNvet: sv_comms, sv_conservation,
+    sv_documents, sv_examrooms, sv_herdhealth, sv_reports, sv_scheduling,
+    sv_speciesref, sv_staff, sv_whiteboard. `function saveX(list){ return
+    st('sv_x', list); }` -- the store gets the whole collection. The record shape
+    exists only in `var seed = [{...}]` inside the GETTER, passed on through
+    `svSeedStore(saveX, seed)`, so the resource name and the literal are never
+    adjacent and the existing seed/literal-array branch cannot see it.
+    CI CAN DO THE EXTRACTION AND CANNOT DO THE JUDGEMENT. Following
+    `localStorage.getItem('sv_x')` to its enclosing function's seed literal is
+    mechanical. Whether a SEED may clear a money-clause assertion is not: seed
+    data is DEMO data, so a field a real record gains later is absent from it and
+    a field only the demo carries is present. A human decides whether
+    seed-derived evidence counts. NEEDS A HUMAN.
+
+  SHAPE 3 -- INDEXED COLLECTION ELEMENT. 3 rows: mech_docs, mech_takeoffs,
+    sc_specialty_checklists. `mechPushRecord('mech_docs', arr[0])` and
+    `scData('write','sc_specialty_checklists', list[list.length-1])`. The
+    captured identifier is `arr` / `list`, straight into the skip list -- while
+    the record literal sits one line above in `arr.unshift({...})` /
+    `list.push({...})`.
+    A REPORT-ONLY CI RUN CAN COVER THIS COMPLETELY, and it is the cheapest of the
+    three: resolve `x[0]` / `x[x.length-1]` to the nearest preceding
+    `x.unshift({` / `x.push({` in the same function.
+
+── AND THE MEASUREMENT THAT SETTLES WHETHER THIS CAN EVER BLOCK ───────────────
+Shapes 1 and 3 are 5 rows. Covering both takes the extractor to 40 of 50 = 80%.
+95% of 50 is 48, so 13 of the 15 are needed. Only shape 2 has that many.
+
+**THE BLOCK THRESHOLD IS THEREFORE UNREACHABLE BY MECHANICAL WORK ALONE.** Any
+route to 95% runs through accepting seed literals as evidence about real records,
+which is a decision with an owner and not a widening of a regex. That is worth
+more than the 70% figure on its own: it says the gap is not a backlog.
+
+And 100% extraction still would not license blocking, because the extractor is
+not the limb. This gate screens MONEY. The regulated limb and the "no PII" clause
+are not screened at all, and four of the six rows this check exists for failed on
+something no field name can see.
 """
 import argparse
 import glob
