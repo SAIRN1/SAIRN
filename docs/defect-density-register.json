@@ -21529,6 +21529,122 @@
       "recurrence_open": "NOT CLOSED as a class. The G2 arm greps THIS file for writes to the tracked tool; nothing does that for any other control in tests/, and there are dozens. The shape is now written down and driven in one place, which is where a standing check would start rather than where it ends. Note also that the trade is debris in temp for a neutralised rule in a shared repo -- the scratch tree is removed at the end of a normal run and leaks on a kill, same as the sweep's own sandbox."
     },
     {
+      "commit": "28e0297966c1",
+      "date": "2026-09-30",
+      "subject": "fix(sairnbiz): findings 7, 8, 10, 11 -- and finding 7 was NOT the defect that was written down",
+      "files": [
+        "sairnbiz.html",
+        "tests/sairnbiz_preview_residual.js",
+        "tests/sairnbiz_server_backup.js"
+      ],
+      "lines_added": 809,
+      "lines_removed": 28,
+      "app": "sairnbiz",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "live-verification",
+      "summary": "sairnbiz.html rendered every month of both revenue charts ONE MONTH BEHIND in any timezone west of Greenwich. The label came from new Date(m+'-01').toLocaleDateString(...); a date-only string parses as UTC midnight per ECMA-262 21.4.3.2 while the render is local, so America/New_York (-4) showed 2026-05-31 20:00 for the key '2026-06' and printed 'May 2026'. Driven live: ['2026-05','2026-06','2026-09'] rendered ['Apr 2026','May 2026','Aug 2026']. The VALUE beside each label was correct, so the row gave no reason for doubt, and the preview check read the shifted months as MISSING DATA ('June and July are missing from a chart labelled YTD') rather than as mislabelled rows. Same expression written twice, dashboard and P&L. Fixed as one named sbMonthLabel() built from local parts.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The expression new Date(m+'-01') is present in the earliest commit that carries either chart; git log -S on the literal returns the chart's own introduction, so there is no later commit that introduced it and no bisect target."
+      },
+      "citation_note": "No standing rule in SAIRN-PROCESS-RULES.md names a locale/timezone parse whose output is confidently wrong rather than absent. The nearest are 1.1 and 1.3, which are about checks going stale, not about a render silently disagreeing with its own data. Recorded as not-citable rather than forced into 1.x, so the FMEA scorer does not match on manufactured agreement.",
+      "contributing_factors": [
+        {
+          "factor": "A YYYY-MM key was treated as an instant rather than as a local month; the date-only form of the Date constructor is specified as UTC and the render is local, so the two halves disagreed by the zone offset",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "sbMonthLabel() constructs new Date(y, mo-1, 1) from the parsed parts, the same local-parse rule fdate() already applied by appending T00:00:00"
+        },
+        {
+          "factor": "The derivation was written twice, inline, in two renderers, so neither site was a place a reader would look for a shared rule and a fix to one would not reach the other",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "One named function, called from both #d-rev and #pl-monthly, with an arm asserting neither line still builds a Date from a date-only string"
+        },
+        {
+          "factor": "The defect is invisible in UTC and in every positive-offset zone, so it cannot be reproduced by a reader east of Greenwich and no CI run in UTC would ever show it",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The suite sets process.env.TZ across America/New_York, Pacific/Honolulu, UTC and Asia/Tokyo and asserts all twelve months plus the January year boundary in each"
+        },
+        {
+          "factor": "Nothing renders wrong and nothing errors -- the figure beside the label is right -- so both code review and a rendered-screenshot pass see a plausible chart",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Sweep the other sixteen app files for new Date(<date-only string>) used as a label, and add a static check for the shape if any are found. NOT DONE in this change and named as owed: only sairnbiz was looked at."
+        }
+      ],
+      "recurrence_open": "The arms cover sairnbiz only. Nothing on this platform greps for new Date(<yyyy-mm-string>) across the other sixteen app files, so an identical month-label defect in any of them is still unmeasured; and nothing prevents the next inline month label from being written the same way in a third place in this file."
+    },
+    {
+      "commit": "28e0297966c1",
+      "date": "2026-09-30",
+      "subject": "fix(sairnbiz): findings 7, 8, 10, 11 -- and finding 7 was NOT the defect that was written down",
+      "files": [
+        "sairnbiz.html",
+        "tests/sairnbiz_preview_residual.js",
+        "tests/sairnbiz_server_backup.js"
+      ],
+      "lines_added": 809,
+      "lines_removed": 28,
+      "app": "sairnbiz",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "mutation-testing",
+      "summary": "tests/sairnbiz_server_backup.js was RED on origin/main and nothing reported it. FOUR checks went stale when the per-resource sync latch replaced the global one, and TWO OF THEM WERE PINNING THE FIXED BUG IN PLACE: they asserted that one collection's NOT_PROVISIONED silences writes to every other collection, which IS preview-check blocker 2 -- reverting the fix would have turned those arms green. Two more were mutation probes whose anchor strings no longer matched, so each replaced nothing, and the loop's assert threw out on the first of them: four stale anchors, one reported. A hand-run mutation control then found the WRITE GUARD was covered by nothing at all -- deleting the sbUnprovisioned term from it survived all 44 arms, so a table already known not to exist went on being written to on every save.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "the suite's own mutation-probe loop in tests/sairnbiz_server_backup.js, plus a hand-run mutation control reverting the per-resource latch",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The arms went stale when the per-resource sync latch replaced the global one; that latch landed across the 2026-09-30 preview-fix wave and no single commit in it is the point the arms stopped matching."
+      },
+      "citation_note": "1.1 exactly: four arms had stopped checking. 1.3 also applies to the two mutation anchors that still matched a string which no longer meant what the probe assumed.",
+      "contributing_factors": [
+        {
+          "factor": "The arms encoded the OLD design as the invariant, so the correct fix made them fail and a revert would have made them pass -- a regression suite pointing backwards",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Re-aimed at the two-sided invariant the code now has: one warning per resource, AND the other collections still attempted; plus an arm that the global flag fires only when nothing at all is provisioned"
+        },
+        {
+          "factor": "Two mutation anchors were whole literal conditions, so an unrelated correct change to the same line silently made the replace a no-op",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Anchored on the single token being removed (the sbSyncPaused disjunct, and the else-failed++ half) rather than the whole condition, so a further term added to either survives"
+        },
+        {
+          "factor": "The probe loop asserted on a stale anchor, which threw out of the loop and hid every later probe -- so a run with four stale anchors printed one",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "A stale anchor now prints FAIL STALE ANCHOR and continues; still counted as a failure, never folded into a pass"
+        },
+        {
+          "factor": "Nothing runs this suite on a schedule or on push, so a suite going red on main is visible only to whoever happens to run it",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Wire the sairnbiz suites into the push gate or a scheduled run so a red suite on main announces itself. NOT DONE in this change and named as owed -- this one was found by running it by hand while fixing something else."
+        },
+        {
+          "factor": "The warning latch and the write guard are two separate latches and only the warning one was ever covered, so the more expensive half was untested",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Arm added asserting a collection known to be unprovisioned stops being written to; verified to bite by deleting the guard term"
+        }
+      ],
+      "recurrence_open": "Nothing runs any sairnbiz suite automatically, so the next arm to go stale is found the way this one was -- by accident while doing something else. And the continue-and-report stale-anchor loop exists in this one suite only: an assert-out on the first stale anchor is still the default in every other probe loop on the platform."
+    },
+    {
       "commit": "2918287762b6",
       "date": "2026-09-30",
       "subject": "fix(tier-gate): narrow the auditor-tree skip to tools*/ subdirectories, measured rather than argued",
