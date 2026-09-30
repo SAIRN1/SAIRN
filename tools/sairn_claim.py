@@ -87,6 +87,7 @@ import glob
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 import time
@@ -101,6 +102,27 @@ STALE_HOURS = float(os.environ.get('SAIRN_CLAIM_STALE_HOURS', '4'))
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
 import sairn_session_identity as _identity            # noqa: E402
+
+
+# ── A SUGGESTED COMMAND MUST SURVIVE BEING PASTED (2026-09-30) ───────────────
+# Two places printed `python tools/sairn_claim.py <verb> <subj> %s` with a
+# free-text task interpolated raw, and EVERY task this repo writes contains
+# spaces -- so the line was wrong for all of them, always: bash split the task
+# into one argv entry per word and the tool re-read a different task than the
+# one it printed.
+#
+# Driven, six shapes, 2026-09-30: an apostrophe makes bash exit 2 on an
+# unterminated quote; a backslash is eaten; a newline splits the line so the
+# second half runs as its own command; and `a && rm -rf x; b $(id)` EXECUTES.
+# That last one matters more than the others because the string at one of the
+# two sites is ANOTHER SESSION'S claim text, so the line a human is being told
+# to paste is built from text this session did not write.
+#
+# shlex.quote, not a hand-rolled wrapper: the quoting rules are the shell's and
+# this repo's shell is Git Bash.
+def pasteable(s):
+    """One shell word, whatever is in it. Empty string stays visibly empty."""
+    return shlex.quote(s if s else '')
 CLAIM_DIR = os.path.join(REPO, '.claude', 'claims')
 
 # Words that carry no matching signal. Deliberately short: over-flagging costs a
@@ -2009,7 +2031,8 @@ def cmd_claim(args):
         print('IF THIS IS THE SAME WORK -- clear whatever blocked the push (a dirty')
         print('tree is the usual cause; `git status` names it), then re-run the')
         print('EARLIER wording, which publishes the entry already written:')
-        print('  python tools/sairn_claim.py claim %s %s' % (subj, earlier.get('task') or ''))
+        print('  python tools/sairn_claim.py claim %s %s'
+              % (subj, pasteable(earlier.get('task'))))
         print('')
         print('IF IT IS GENUINELY DIFFERENT WORK -- publish or release the one above')
         print('first, then claim this. Two claims on one subject is fine; two')
@@ -2137,7 +2160,8 @@ def cmd_claim(args):
         # half. Saying it here rather than leaving the session to infer it.
         print('\nThe collision check ran before the remote was readable. It is '
               'readable now (the claim landed), so re-run it:')
-        print('  python tools/sairn_claim.py check %s %s' % (subj, task))
+        print('  python tools/sairn_claim.py check %s %s'
+              % (subj, pasteable(task)))
     return 0
 
 
