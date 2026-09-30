@@ -83,6 +83,21 @@ than by a special case:** `sbCfg()` uses `hasOwnProperty`, so an absent `ot`
 yields the *number* 40, which equals the threshold and is therefore not
 rejected. Only a value somebody saved can be empty.
 
+
+### Re-verified LIVE after the fix deployed
+
+`f8acd128` on `origin/main`, `sbOtThresholdNote.toString()` on the deployed page
+confirmed to contain `SAVED EMPTY` before anything was driven. Same licence,
+same path through the app's own `saveSettings()`:
+
+| Typed | Threshold | Note |
+|---|---|---|
+| *(cleared)* | 40 | `— the overtime threshold was SAVED EMPTY, so the federal 40 is being used; the Shop Settings box will look blank until a number is entered` ✅ |
+| `0` | 40 | `— the recorded setting "0" is outside 1–168 and was NOT used` ✅ |
+| `45` (control) | 45 | `(set in Shop Settings, not the federal 40)` ✅ |
+
+`sb_cfg` restored to `null` and re-read. Still no residue.
+
 ---
 
 ## 2. SAIRNbuild — 0% markup and retainage. **PASSED, with a live ablation.**
