@@ -20652,7 +20652,7 @@
       "recurrence_open": "The sweep named in factor 4 is not run. Every other read in this file that decides on blob truthiness instead of row existence still has the same shape, and only this one branch was fixed. CORRECTED 2026-09-30, SEVERITY high -> low, BY THE SWEEP THIS RECORD ASKED FOR. Every `data jsonb` column declared in sql/ is NOT NULL -- 353 of 353 -- so the database cannot store the input this record is about. 398 resources were driven through the real api/sd-data.js read with data: null and ZERO returned 500 or threw. The fix is defensive code on a state the declared schema forbids, not a live product defect, and recording it as HIGH overstated it. THE DEPLOYED NULLABILITY IS NOT KNOWN from anything in this repo: db/schema_snapshot.json carries column names only and sql/schema_snapshot_query.sql does not select is_nullable, so this correction rests on the DECLARED schema, which is a weaker thing than the live one and is stated that way rather than as a clean bill."
     },
     {
-      "commit": "94b446e17361",
+      "commit": "4dc17346ccb5",
       "date": "2026-09-29",
       "subject": "fix(sync): a landed slab write was reported as LOST, because the guard read the payload instead of the envelope",
       "files": [
