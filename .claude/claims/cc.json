@@ -3088,6 +3088,17 @@
       "status": "released",
       "released_at": "2026-09-30T11:00:55Z",
       "files": null
+    },
+    {
+      "id": "cc-1790766253",
+      "session": "cc",
+      "subject": "residuetool",
+      "task": "tools/mech_gate_live_probe.py tests/run_mech_gate_live_probe_probe.py",
+      "claimed_at": "2026-09-30T11:04:13Z",
+      "claimed_at_epoch": 1790766253.7320328,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
