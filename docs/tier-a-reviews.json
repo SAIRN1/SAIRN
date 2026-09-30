@@ -4829,6 +4829,32 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-30T11:14:21Z",
+      "opened_at_sha": "6628bff3bbd20c738b169da2a09b1bf8be6cd497",
+      "resources": [
+        "alf_facility",
+        "dnt_appointments",
+        "dnt_patients",
+        "dnt_settings",
+        "law_matters"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/_lib/dental-gfe.test.js",
+        "api/law-auth-custody-matter-attribution.test.js",
+        "tests/cron_schedules_do_not_collide.js"
+      ],
+      "what": "THREE TEST FILES ONLY -- no product code changed, and the diff shows that faster than this sentence. The Tier A resources on this obligation are named by the matchers in those tests, not served by anything this commit touches.\n\nEach of four matcher sites required a PostgREST read to sit inside one inline rest('...') literal. api/alf-append-only-read-order.test.js was RED on main for exactly that shape after an equivalent read was refactored into a query variable with its clause intact, and these were found by the sweep that followed. The anchors now match the QUERY FRAGMENT rather than the call site, and each file gains a separate CANARY arm that goes red when the read leaves inline -- so the substantive arm stops reading as a requirement regression while the shape change is still reported.\n\nREVIEW THIS, in this order:\n\n(1) THE SUBSTANTIVE ARMS MUST NOT HAVE BEEN WEAKENED. Each one dropped part of its pattern to become spelling-agnostic, and that is exactly how a security arm quietly stops asserting anything. Specifically:\n  - api/law-auth-custody-matter-attribution.test.js no longer requires the full `+ enc(licHash)` concatenation in the first arm, only the fragment plus a separate `enc(licHash)` presence check anywhere in CODE. Those are not the same claim. Ask whether a read that is licence-scoped through some OTHER query, while THIS lookup is unscoped, now passes.\n  - The same file's licence-scoping arm now windows from the fragment to the next semicolon. Ask what happens when the lookup legitimately contains a semicolon -- a template literal, an arrow body, an inline object -- because the window would then cut before the matter_id filter and the ordering assertion would be comparing a real index against a found-but-truncated one. I added an arm requiring matter_id to be FOUND before the comparison uses its index, which turns that case into a loud failure rather than a false pass, but a reviewer should confirm that is the only way it can go wrong.\n  - api/_lib/dental-gfe.test.js matches the fragment inside a 1600-character block slice. Ask whether the slice can now START in a different place, because the block anchor `resource === 'dnt_gfe' &&` is itself a pinned literal that this change did not touch.\n\n(2) THE CANARIES MUST NOT BE LOAD-BEARING. Each is labelled as a fact about the test's anchor, not the product. Ask whether any of them could be the ONLY thing asserting something real -- if so, it is a requirement wearing a canary's label, and the labelling would then teach the next reader to ignore a genuine failure.\n\n(3) THE FOURTH SITE, which the sweep that found the other three could not see. tests/cron_schedules_do_not_collide.js carries the same pin one table over on the alf_facility sweep, and it was invisible because that sweep matched on `license_hash=eq.` and this query does not carry it. It is fixed in the same edit. Ask whether there are others with the same property -- a query with no licence filter, so no `license_hash=eq.` to match on -- because my sweep cannot answer that and I did not build one that can.\n\n(4) THE VERIFICATION METHOD, because it is the part I would trust least. I rewrote each target read into a query variable in a throwaway worktree and required only the canary to redden. My FIRST driver used an IIFE, which embeds a semicolon inside the expression, and the law-auth window stopped early -- so the arm looked un-fixable when the driver was the problem. Re-driven with the shape api/sd-data.js was actually refactored into. Ask whether the realistic shape I chose is the only realistic one; a read moved into a helper function, or built from an object, would be a third shape neither driver covers.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-30T11:14:21Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
