@@ -183,11 +183,51 @@ test('THE PATIENT AND PRACTICE DETAILS ARE READ SERVER-SIDE, not taken from the 
   const code = data.replace(/\/\/[^\n]*/g, '');
   const i = code.indexOf("resource === 'dnt_gfe' &&");
   const block = code.slice(i, i + 1600);
-  assert.match(block, /rest\('dnt_patients\?license_hash=eq\./);
-  assert.match(block, /rest\('dnt_settings\?license_hash=eq\./);
+  // ── MOVE-PROOF, 2026-09-30 ────────────────────────────────────────────
+  // These two used to require `rest('dnt_patients?license_hash=eq.` -- the
+  // whole query inside one inline rest() literal. That pins the SPELLING of
+  // the call, not the read. api/alf-append-only-read-order.test.js was red on
+  // main for exactly that reason after an equivalent read was refactored into
+  // a query variable with its clause intact, and this arm was one of three
+  // found carrying the same pin.
+  //
+  // THE ANCHOR IS NOW THE QUERY FRAGMENT AND NOT ITS CALL SITE. A read written
+  // as `rest('dnt_patients?license_hash=eq.' + enc(h) + ...)` and one written
+  // as `let q = 'dnt_patients?license_hash=eq.' + enc(h); ... rest(q)` both
+  // satisfy it, because the fragment is what carries the licence scope and the
+  // licence scope is what this arm is about.
+  assert.match(block, /'dnt_patients\?license_hash=eq\./,
+    'no licence-scoped dnt_patients read in the gfe block, in either the '
+    + 'inline or the query-variable spelling');
+  assert.match(block, /'dnt_settings\?license_hash=eq\./,
+    'no licence-scoped dnt_settings read in the gfe block, in either the '
+    + 'inline or the query-variable spelling');
   assert.ok(!/payload\.gfe_npi|payload\.settings/.test(block),
     'practice identifiers are being taken from the payload');
 });
+
+// ── THE CANARY: it goes red when the READ LEAVES INLINE ────────────────────
+// SEPARATE ARM ON PURPOSE, and the separation is the whole design. The arm above
+// no longer cares which spelling is used, so a legitimate refactor does not read
+// as a requirement regression. This one says the spelling CHANGED, which is a
+// fact about this test file's anchor and not about the product -- so when it goes
+// red the action is "read the matcher above and confirm it still reaches the
+// read", never "revert the refactor".
+//
+// A silent shape change is what made three separate arms latent on this platform.
+// Naming the change costs one red arm on the day of the refactor and saves the
+// next reader from a requirement arm failing for a reason it does not mention.
+test('CANARY: the gfe reads are still written INLINE inside rest() -- if this is '
+  + 'the only red arm, the read moved and the matcher above already covers it',
+  () => {
+    const code = data.replace(/\/\/[^\n]*/g, '');
+    const i = code.indexOf("resource === 'dnt_gfe' &&");
+    const block = code.slice(i, i + 1600);
+    assert.match(block, /rest\('dnt_patients\?license_hash=eq\./,
+      'the dnt_patients read is no longer an inline rest() literal');
+    assert.match(block, /rest\('dnt_settings\?license_hash=eq\./,
+      'the dnt_settings read is no longer an inline rest() literal');
+  });
 
 test('AN UNREADABLE CHECK REFUSES -- it does not read as "nothing missing"', () => {
   const code = data.replace(/\/\/[^\n]*/g, '');

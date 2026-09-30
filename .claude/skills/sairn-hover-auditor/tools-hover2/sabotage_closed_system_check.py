@@ -266,17 +266,22 @@ def analyze_body(body_lines, has_log_path_const, indirect_callees=frozenset()):
             pass  # a method/function DEFINITION is not a live call site
         elif re.search(r'\bfetch_json\(|requests\.(get|post)\(|urllib', line) and not is_tempfile_guarded(body_lines, i):
             real_ref = True
-        for callee in indirect_callees:
-            # ONLY a bare, zero-argument, CODE (not prose) call actually
-            # exercises the LOG_PATH default. append_entry(..., path=path)
-            # and read_all(path) pass an explicit override; ck('read_all()
-            # report a problem...') just NAMES the function in a test
-            # description string. Caught live, both false-positive shapes:
-            # 5 hits from the first (hover_log.py) and 2 from the second
-            # (hover_self_health.py's own ck() prose).
-            for m in re.finditer(r'\b' + re.escape(callee) + r'\s*\(\s*\)', line):
-                if not _in_string_literal(line, m.start()) and not is_tempfile_guarded(body_lines, i):
-                    real_ref = True
+        if not re.match(r'\s*def\s', line):
+            # a def line is never a call site here either -- without this
+            # guard, a selftest whose OWN body touches LOG_PATH lands in
+            # indirect_callees and 'def selftest():' matches its own name
+            # (the real hover_log.py line-760 false positive, 2026-09-30)
+            for callee in indirect_callees:
+                # ONLY a bare, zero-argument, CODE (not prose) call actually
+                # exercises the LOG_PATH default. append_entry(..., path=path)
+                # and read_all(path) pass an explicit override; ck('read_all()
+                # report a problem...') just NAMES the function in a test
+                # description string. Caught live, both false-positive shapes:
+                # 5 hits from the first (hover_log.py) and 2 from the second
+                # (hover_self_health.py's own ck() prose).
+                for m in re.finditer(r'\b' + re.escape(callee) + r'\s*\(\s*\)', line):
+                    if not _in_string_literal(line, m.start()) and not is_tempfile_guarded(body_lines, i):
+                        real_ref = True
         if real_ref:
             touches.append((i, stripped, has_disclosure(body_lines, i)))
     return touches
@@ -424,6 +429,22 @@ def selftest():
     return True
 '''.strip('\n')
 
+# real shape, caught live 2026-09-30 on hover_log.py: a selftest whose OWN
+# body touches LOG_PATH puts its own name into indirect_callees, and its own
+# 'def selftest():' line then matches the zero-arg call regex -- a function
+# DEFINITION self-flagged as a live call site, the same def-vs-call mistake
+# the network branch already guards against but the callee loop did not.
+FIXTURE_SELF_NAMED_DEF = '''
+LOG_PATH = "/real/self-log.jsonl"
+
+
+def selftest():
+    # LIVE ARM, not a fixture: reads the real self-log line count
+    with open(LOG_PATH) as f:
+        n = sum(1 for _ in f)
+    return True
+'''.strip('\n')
+
 # real shape: the disclosure comment sits AFTER the call, on the ck() line
 # describing it, not before -- hover_self_health.py's own honestly
 # disclosed arm is written this way.
@@ -493,6 +514,14 @@ def run_fixtures():
        'excluded -- exactly one real touch, not three',
        len(touches) == 1 and touches[0][2] is True)
 
+    indirect_self = find_indirect_log_path_callees(FIXTURE_SELF_NAMED_DEF)
+    start, body = extract_selftest_body(FIXTURE_SELF_NAMED_DEF)
+    touches = analyze_body(body, has_log_path_const=True, indirect_callees=indirect_self)
+    ck('a selftest whose own name lands in indirect_callees does NOT flag '
+       'its own def line as a call site (the real hover_log.py line-760 '
+       'false positive) -- exactly one touch, the disclosed LOG_PATH read',
+       len(touches) == 1 and touches[0][2] is True)
+
     indirect_fwd = find_indirect_log_path_callees(FIXTURE_FORWARD_DISCLOSURE)
     start, body = extract_selftest_body(FIXTURE_FORWARD_DISCLOSURE)
     touches = analyze_body(body, has_log_path_const=True, indirect_callees=indirect_fwd)
@@ -513,9 +542,9 @@ def run_fixtures():
        not detect_selftest_flag("def main(argv):\n    return 0\n"))
 
     if bad:
-        print('%d of 11 fixture(s) failed -- refusing to judge real tools' % len(bad))
+        print('%d of 12 fixture(s) failed -- refusing to judge real tools' % len(bad))
         return 2
-    print('OK -- 11/11 fixtures passed')
+    print('OK -- 12/12 fixtures passed')
     return 0
 
 

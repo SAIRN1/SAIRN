@@ -1059,12 +1059,17 @@ def selftest():
     ck('KNOWN-BAD CONTROL: the regression predicate FAILS a gate that waves '
        'inline finding summaries through', not _regression_predicate(_broken_gate))
 
+    # LIVE ARM, not a fixture: this reads the real self-log's line count so
+    # the refusal below can be proven against real data -- the append MUST be
+    # refused (rc 2) and the real self-log left byte-identical, live, not
+    # simulated. Read-only in effect only because that refusal holds.
     n_before = 0
     if os.path.isfile(LOG_PATH):
         with io.open(LOG_PATH, encoding='utf-8') as f:
             n_before = sum(1 for _ in f)
     rc_gate = main(['--append', '--type', 'finding', '--target', 'selftest-gate',
                     '--summary', 'inline finding summary must be refused'])
+    # same live arm: re-count the real self-log to assert it is untouched
     n_after = 0
     if os.path.isfile(LOG_PATH):
         with io.open(LOG_PATH, encoding='utf-8') as f:

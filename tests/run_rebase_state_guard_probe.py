@@ -305,6 +305,93 @@ ok(bad == 0,
    'different rule nobody agreed')
 
 
+# ══ PART 3b -- THE OPERATION QUESTION HAS A THIRD STATE TOO ════════════════
+# ADDED 2026-09-30, from the review of hank's 2026-09-28T21:33:14Z obligation.
+# git_dir() returns None for a missing git, a non-zero rev-parse, an exception
+# OR A 10-SECOND TIMEOUT, and operation_in_progress(None) used to return the same
+# None it returns for "nothing is running". For `git add -A`, `git add .` and
+# `git commit -am x` there is no second question to fall through to, so decide()
+# answered (False, '') and the command was ALLOWED -- a blanket stage into a live
+# stopped rebase, silently.
+#
+# THIS FILE'S SUBJECT ALREADY HAD THE ARGUMENT AND APPLIED IT TO ONE QUESTION.
+# The arm above about head_pushed=None is the same shape; this is the other
+# question, which had no arm at all.
+print('\nPART 3b -- a git_dir() that cannot answer is NOT "no operation"')
+
+ok(guard.operation_in_progress(None) == guard.UNKNOWN,
+   'operation_in_progress() returns the UNKNOWN sentinel when git_dir() could '
+   'not answer, rather than the None it returns for a clean tree -- the two are '
+   'different facts and used to be the same value')
+
+bad = 0
+for cmd in DENY:
+    deny, reason = guard.decide(cmd, guard.UNKNOWN, head_pushed=False)
+    if not deny:
+        bad += 1
+        print('  FAIL allowed with the operation state UNKNOWN: %r' % cmd)
+    elif 'NOT KNOWN' not in reason:
+        bad += 1
+        print('  FAIL denied but did not say it could not tell: %r' % cmd)
+ok(bad == 0,
+   'THE FIX: all %d forbidden forms are REFUSED when the operation state could '
+   'not be read, and each refusal says it could not tell rather than naming an '
+   'operation it never saw' % len(DENY), '%d wrong' % bad)
+
+ok('unknown' not in guard.decide(DENY[0], guard.UNKNOWN, False)[1].lower()
+   .split('not known')[0],
+   'and the sentinel string is not formatted into the message as though it were '
+   'an operation called "unknown" -- a refusal for the right reason with the '
+   'wrong sentence is how a guard gets read as broken')
+
+bad = 0
+for cmd in ALLOW:
+    deny, _ = guard.decide(cmd, guard.UNKNOWN, head_pushed=False)
+    if deny:
+        bad += 1
+        print('  FAIL refused a legitimate command on an UNKNOWN state: %r' % cmd)
+ok(bad == 0,
+   'and the %d legitimate commands are still allowed when the state is unknown '
+   '-- the third state closes the four forbidden forms, it does not close the '
+   'shell' % len(ALLOW), '%d wrong' % bad)
+
+# ── THE TIMEOUT, DRIVEN RATHER THAN REASONED ABOUT ──────────────────────────
+# The realistic trigger is not a missing git, it is `rev-parse --git-dir` timing
+# out under load: five clones push to one branch here and single git invocations
+# have exceeded 120 seconds. git_dir() passes timeout=10 and catches every
+# exception, so a TimeoutExpired becomes None. This replaces subprocess.run
+# inside the module with one that raises exactly that, and requires the whole
+# chain -- git_dir -> operation_in_progress -> decide -> deny.
+_real_run = guard.subprocess.run
+
+
+def _timeout_run(*a, **kw):
+    raise guard.subprocess.TimeoutExpired(cmd=(a[0] if a else 'git'), timeout=10)
+
+
+try:
+    guard.subprocess.run = _timeout_run
+    gd_timeout = guard.git_dir()
+    op_timeout = guard.operation_in_progress(gd_timeout)
+    deny_timeout, reason_timeout = guard.decide('git add -A', op_timeout, False)
+finally:
+    guard.subprocess.run = _real_run
+
+ok(gd_timeout is None,
+   'a 10s TimeoutExpired out of `rev-parse --git-dir` makes git_dir() answer '
+   'None -- driven by replacing subprocess.run, not assumed from reading the '
+   'except clause')
+ok(op_timeout == guard.UNKNOWN,
+   'and that None becomes UNKNOWN rather than "no operation"')
+ok(deny_timeout and 'NOT KNOWN' in reason_timeout,
+   'and `git add -A` is REFUSED on a timed-out state lookup, which is the '
+   'realistic form of this defect on a machine where git calls have exceeded '
+   '120 seconds')
+ok(guard.subprocess.run is _real_run,
+   'and this arm put subprocess.run back, so nothing below it is measuring a '
+   'patched module')
+
+
 # ══ PART 4 -- THE HOOK ITSELF, over the real payload shape ═════════════════
 print('\nPART 4 -- the hook contract, driven end to end')
 

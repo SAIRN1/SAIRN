@@ -635,26 +635,63 @@ def selftest():
            'silently skipped, since an undriven regression proves nothing)',
            False)
 
-    # -- REAL HISTORICAL DATA: seq 274/275, the underlying shape behind the
-    # real seq-276 correction (a backward reference, not the narrower
+    # -- FROZEN REAL-SHAPE DATA: seq 274/275, the underlying shape behind
+    # the real seq-276 correction (a backward reference, not the narrower
     # forward self-reference the docstring discloses as out of scope).
-    real_rows = load_rows()
-    by_seq = {r.get('seq'): r for r in real_rows}
-    if 274 in by_seq and 275 in by_seq:
-        seq275_target = by_seq[275].get('target', '')
-        result = check_seq_refs([275], 'leg_insurance', real_rows)
-        ck('REAL DATA (seq 274/275): citing seq 275 while discussing '
-           'leg_insurance is TARGET-MISMATCH against the real log -- '
-           'seq 275\'s real target is %r, which does not contain '
-           '"leg_insurance"' % seq275_target,
+    # LOCATION-INDEPENDENT since 2026-09-29 (item 2, the stonedesk-era
+    # paste): this used to call load_rows() with no path, which defaults to
+    # LOG_PATH = HERE-relative -- correct only from this tool's ORIGINAL
+    # directory, empty from the platform-repo backup copy (confirmed live:
+    # the backup copy read seq 274/275 as absent and this arm FAILED there,
+    # not because the shape stopped being real, but because the file it
+    # was looking for does not exist beside that copy). FIXED: the real
+    # target strings captured from the live log the day this arm was
+    # written are frozen here as a synthetic fixture, written to a real
+    # temp file and read via load_rows(path=...) explicitly -- never the
+    # default, never any real log, from any location.
+    import tempfile as _tf2
+    import json as _json2
+    _fixture_rows = [
+        {'seq': 274, 'target': 'leg_insurance'},
+        {'seq': 275, 'target': 'upstream-of-money-sweep,mech_checks,'
+                               'leg_keepsakeorders,supplier_lead_times,'
+                               'sd_business_snapshots,sb_hire,rf_buildings'},
+    ]
+    _fd, _fixpath = _tf2.mkstemp(suffix='.jsonl', prefix='citelint_2745_')
+    try:
+        with os.fdopen(_fd, 'w', encoding='utf-8') as _f:
+            for _r in _fixture_rows:
+                _f.write(_json2.dumps(_r) + '\n')
+        frozen_rows = load_rows(path=_fixpath)
+        by_seq = {r.get('seq'): r for r in (frozen_rows or [])}
+        seq275_target = by_seq.get(275, {}).get('target', '')
+        result = check_seq_refs([275], 'leg_insurance', frozen_rows)
+        ck('FROZEN REAL-SHAPE DATA (seq 274/275): citing seq 275 while '
+           'discussing leg_insurance is TARGET-MISMATCH -- seq 275\'s '
+           'frozen target is %r, which does not contain "leg_insurance"'
+           % seq275_target,
            result[0][1] == 'TARGET-MISMATCH')
-        result2 = check_seq_refs([274], 'leg_insurance', real_rows)
-        ck('REAL DATA (seq 274/275): citing the REAL correct seq (274) for '
-           'leg_insurance is OK against the real log',
+        result2 = check_seq_refs([274], 'leg_insurance', frozen_rows)
+        ck('FROZEN REAL-SHAPE DATA (seq 274/275): citing the correct seq '
+           '(274) for leg_insurance is OK',
            result2[0][1] == 'OK')
-    else:
-        ck('REAL DATA (seq 274/275): (seq 274 or 275 not present in this '
-           'log -- counted as FAIL rather than silently skipped)', False)
+        # KNOWN-BAD CONTROL: a genuinely WRONG/MISSING fixture path (the
+        # exact shape of the original bug -- this tool run from a location
+        # with no log beside it) must not silently pass as OK. load_rows()
+        # on a nonexistent path returns [] by its own documented contract;
+        # driving check_seq_refs against that empty row set must NOT read
+        # as OK for either seq, proving this arm would visibly fail loudly
+        # rather than vacuously pass if the fixture ever failed to load.
+        broken_rows = load_rows(path=_fixpath + '.does-not-exist')
+        broken_result = check_seq_refs([274], 'leg_insurance', broken_rows)
+        ck('KNOWN-BAD CONTROL: a missing/wrong-location fixture path '
+           'produces empty rows, and citing seq 274 against them does '
+           'NOT read as OK (proves the real assertions above are not '
+           'vacuously true)',
+           broken_rows == [] and broken_result[0][1] != 'OK')
+    finally:
+        if os.path.isfile(_fixpath):
+            os.remove(_fixpath)
 
     print('%d ok, %d failed' % (total[0] - len(bad), len(bad)))
     return 0 if not bad else 1

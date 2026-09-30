@@ -41,7 +41,8 @@ from datetime import datetime, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 HEALTH = os.path.join(HERE, 'hover_self_health.py')
-FIRES = os.path.join(HERE, 'hover_self_health_fires.jsonl')
+FIRES = os.environ.get('HOVER_FIRES_LOG_OVERRIDE') or os.path.join(
+    HERE, 'hover_self_health_fires.jsonl')
 MARKER = 'sairn-hover-auditor-clone'
 
 
@@ -179,23 +180,67 @@ def _selftest():
     # slug-derivation fixtures (path -> slug, the lossless direction; an
     # un-slug attempt failed its own fixture on this clone's real
     # hyphen-carrying name and was replaced by this)
+    # LOCATION-INDEPENDENT since 2026-09-29 (item 2): own_project_slug()
+    # ALREADY accepted an injectable `here` param, but this arm called it
+    # with no argument, so it silently used the real module HERE -- correct
+    # only from this file's ORIGINAL invocation location (two levels under
+    # .claude/projects/<slug>/hover-audit-log/), and genuinely wrong from
+    # the platform-repo backup copy under .claude/skills/sairn-hover-
+    # auditor/tools-hover2/ (confirmed live: this exact arm failed there).
+    # FIXED: inject the real, intended HERE value explicitly, so the
+    # ASSERTION exercises the real logic against a KNOWN path regardless
+    # of where this file actually happens to be sitting when run.
+    _real_here = (r'C:\Users\marsh\.claude\projects\C--Users-marsh-'
+                 r'Documents-SAIRN-hover2\hover-audit-log')
     chk('slug_for() on this clone\'s real path equals this hook\'s own '
-        'project-dir name',
+        'project-dir name (location-independent: HERE injected, not read '
+        'from this file\'s own actual location)',
         slug_for(r'C:\Users\marsh\Documents\SAIRN-hover2').lower()
-        == own_project_slug().lower())
+        == own_project_slug(here=_real_here).lower())
     chk('slug_for() on H1\'s clone path does NOT equal this hook\'s slug '
-        '(the discriminating case)',
+        '(the discriminating case, same injected HERE)',
         slug_for(r'C:\Users\marsh\Documents\SAIRN-hover').lower()
-        != own_project_slug().lower())
+        != own_project_slug(here=_real_here).lower())
+    # KNOWN-BAD CONTROL, location-independent (deliberately does NOT read
+    # actual runtime location, since that would make the control's own
+    # truth value depend on where THIS run happens to sit): a WRONG here=
+    # (the platform-repo backup-copy path, a genuinely different directory
+    # from the real invocation location) must NOT produce the same slug as
+    # the real one. Proves own_project_slug() actually discriminates on
+    # its input rather than the two assertions above passing for any here=
+    # value regardless of correctness.
+    _wrong_here = (r'C:\Users\marsh\Documents\SAIRN-hover2\.claude\skills'
+                  r'\sairn-hover-auditor\tools-hover2')
+    chk('KNOWN-BAD CONTROL: a WRONG here= (the platform-repo backup-copy '
+        'path) does NOT produce the same slug as the real invocation '
+        'location -- proves the injected-HERE assertions above actually '
+        'discriminate, not vacuously true for any input',
+        own_project_slug(here=_wrong_here) != own_project_slug(here=_real_here))
 
     # REGRESSION TEST, the seq-267 shape: invoked with cwd inside a
     # DIFFERENT hover-auditor clone, the full hook must emit COULD NOT RUN
     # naming the foreign-clone condition -- never this clone's own report.
     other = r'C:\Users\marsh\Documents\SAIRN-hover'
     if os.path.isdir(os.path.join(other, '.git')):
-        r = subprocess.run([sys.executable, os.path.abspath(__file__)],
-                           capture_output=True, text=True, cwd=other,
-                           timeout=30)
+        # FIXED 2026-09-29 (item 2): this spawns a REAL subprocess running
+        # main(), which calls record_fire() and appended a real line to the
+        # REAL hover_self_health_fires.jsonl beside this file on every
+        # --selftest run -- confirmed live via a git-status/file-listing
+        # snapshot before and after. HOVER_FIRES_LOG_OVERRIDE redirects the
+        # subprocess's own write to a real temp file instead, cleaned up
+        # in the finally block below; the real fires log is never touched
+        # by a test run again.
+        import tempfile as _tf3
+        _fires_fd, _fires_tmp = _tf3.mkstemp(suffix='.jsonl', prefix='selftest_fires_')
+        os.close(_fires_fd)
+        _env = dict(os.environ, HOVER_FIRES_LOG_OVERRIDE=_fires_tmp)
+        try:
+            r = subprocess.run([sys.executable, os.path.abspath(__file__)],
+                               capture_output=True, text=True, cwd=other,
+                               timeout=30, env=_env)
+        finally:
+            if os.path.isfile(_fires_tmp):
+                os.remove(_fires_tmp)
         out = r.stdout
         chk('REGRESSION: invoked from H1\'s clone cwd, the hook refuses '
             'with COULD NOT RUN (foreign clone), never reports hover2 data',

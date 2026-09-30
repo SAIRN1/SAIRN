@@ -238,15 +238,46 @@ def git_dir(repo=None):
     return d if os.path.isabs(d) else os.path.join(repo or REPO, d)
 
 
+# ── THE THIRD STATE FOR THE *OPERATION* QUESTION (added 2026-09-30) ─────────
+# `git_dir()` returns None for a missing git, a non-zero rev-parse, an exception
+# OR A 10-SECOND TIMEOUT, and `operation_in_progress(None)` used to return the
+# same None it returns for "nothing is running". For `git add -A`, `git add .`
+# and `git commit -am x` there is no second question to fall through to, so
+# decide() returned (False, '') and the command was ALLOWED -- a blanket stage
+# into a live stopped rebase, silently, which is the 2026-09-27 incident this
+# file was written for.
+#
+# FOUND BY REVIEW AND DRIVEN, NOT ARGUED: a real repository, a real conflicting
+# rebase stopped on disk, all four forms correctly refused -- and then the same
+# call with the op value a failed git_dir() produces came back deny=False for
+# three of them.
+#
+# THE HEADER ALREADY DECIDED THIS. It says a hook bug fails OPEN and an
+# unanswerable question fails CLOSED, and there are TWO questions. "Is HEAD
+# published?" got the three-state treatment from the start; "is an operation in
+# progress?" did not. Same paragraph, same argument, second question.
+#
+# THE TIMEOUT IS THE REALISTIC TRIGGER, not a missing git. Five clones push to
+# one branch on this machine and single git invocations have exceeded 120
+# seconds; a 10s timeout on `rev-parse --git-dir` under that load is ordinary,
+# and it is most likely exactly when a rebase is stopped.
+UNKNOWN = 'unknown'
+
+
 def operation_in_progress(gd):
-    """Which operation is stopped, or None. The markers git itself writes.
+    """Which operation is stopped, None when none is, UNKNOWN when it cannot tell.
+
+    THREE STATES, and the third is the fix. `gd` is None whenever git_dir()
+    could not answer, and that is NOT evidence that no operation is running --
+    it is the absence of evidence either way. Returning None there made a
+    failed lookup indistinguishable from a clean tree.
 
     `revert` is included even though the stated rule names three: it stops in
     the same place, the same commands do the same damage there, and leaving it
     out would be a gap with no reason behind it.
     """
     if not gd:
-        return None
+        return UNKNOWN
     for d in ('rebase-merge', 'rebase-apply'):
         if os.path.isdir(os.path.join(gd, d)):
             return 'rebase'
@@ -290,6 +321,27 @@ def decide(cmd, op, head_pushed):
     forms = forbidden_forms(cmd)
     if not forms:
         return False, ''
+
+    # ── COULD NOT TELL WHETHER AN OPERATION IS RUNNING: REFUSE ──────────────
+    # Checked BEFORE the `if op:` branch, because UNKNOWN is truthy and would
+    # otherwise be formatted into the message as though it were an operation
+    # named "unknown" -- a refusal for the right reason with the wrong sentence,
+    # which is how a guard gets read as broken.
+    if op == UNKNOWN:
+        return True, (
+            'Blocked: it is NOT KNOWN whether a rebase, merge, cherry-pick or '
+            'revert is in progress, so this command was not judged -- it was '
+            'refused.\n\n'
+            'Reading the repository state failed: `git rev-parse --git-dir` did '
+            'not answer, which on this machine is most often a TIMEOUT under '
+            'load rather than a broken repository. That is a THIRD STATE, not a '
+            'pass. Mid-operation %s stages another session\'s conflicted hunks '
+            'as if they were yours, or rewrites the commit being replayed onto, '
+            'and both succeed silently.\n\n'
+            'Re-run the command -- a timeout usually clears. If it does not, '
+            'check `git status` by hand and stage the files you have resolved by '
+            'name: `git add <path>`.'
+            % (' and '.join(forms)))
 
     if op:
         return True, (
