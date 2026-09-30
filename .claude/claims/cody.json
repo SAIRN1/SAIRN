@@ -2874,8 +2874,8 @@
       "task": "docs/tier-a-reviews.json",
       "claimed_at": "2026-09-30T10:55:49Z",
       "claimed_at_epoch": 1790765749.7191966,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T12:39:59Z",
       "files": null
     },
     {
