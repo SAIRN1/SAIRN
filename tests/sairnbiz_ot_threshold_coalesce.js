@@ -116,9 +116,37 @@ test('...and the validator SEES the typed value, not a substitute', () => {
   assert.strictEqual(chain({ ot: 0 }).rawSeen, 0,
     'sbCfg replaced the typed 0 before validation could see it');
   assert.strictEqual(chain({ ot: '' }).rawSeen, '',
-    'sbCfg replaced the cleared field before validation could see it -- '
-    + 'harmless for the verdict, but it means the note can no longer tell a '
-    + 'blank from a default, and that distinction is for the next reader');
+    'sbCfg replaced the cleared field before validation could see it');
+});
+
+// ── A CLEARED FIELD IS REPORTED TOO (2026-09-30) ─────────────────────────
+// THIS ARM EXISTS BECAUSE THE LIVE RUN FOUND WHAT THIS SUITE HAD EXCUSED.
+// Driven on the deployed URL against SB-TEST-2026: typing 0 and saving
+// reported correctly; CLEARING the box and saving said only "Overtime is
+// computed above 40 hours per week." An earlier version of this file called
+// that "harmless for the verdict", and it is not.
+//
+// saveSettings() stores `$('ss-ot').value`, so a cleared box PERSISTS as the
+// empty string, and loadSettings() puts it straight back -- the Shop Settings
+// screen shows an EMPTY overtime box while payroll computes at 40. One stored
+// setting, two answers on two screens. Same shape as SAIRNbuild's 0% markup
+// rendering as 18% on the bid form.
+test('a SAVED-EMPTY threshold falls back to 40 AND SAYS SO', () => {
+  const r = chain({ ot: '' });
+  assert.strictEqual(r.threshold, 40, 'a cleared field must land on 40');
+  assert.ok(/SAVED EMPTY/.test(r.note),
+    'a user who cleared the box is told nothing about it. The Shop Settings '
+    + 'screen will show an empty field while payroll uses 40. Note was: '
+    + r.note);
+});
+
+test('a saved-empty note does NOT claim the value was out of range', () => {
+  // '' is not "outside 1-168" -- it is absent from a setting somebody saved.
+  // Reusing the out-of-range sentence would be a true refusal with a false
+  // reason, which is worse than silence because it sends the reader to check
+  // a number they never typed.
+  const r = chain({ ot: '' });
+  assert.ok(!/outside/.test(r.note), 'wrong reason given: ' + r.note);
 });
 
 section('2. WHAT MUST NOT CHANGE');
@@ -164,6 +192,42 @@ test('the OTHER two config keys keep their defaults when absent', () => {
 });
 
 section('3. THE KNOWN-BAD CONTROL');
+
+test('KNOWN-BAD CONTROL: the PRE-FIX note is caught if reintroduced', () => {
+  // The note before 2026-09-30, written out rather than regex-patched onto the
+  // new one. It excluded a blank from `rejected` explicitly, which is what the
+  // live run on the deployed URL exposed.
+  //
+  // Without this control the two SAVED-EMPTY arms above prove only that the
+  // current note happens to contain the phrase -- not that the phrase is
+  // produced BY the branch that was added, and not that its absence is
+  // detectable.
+  const OLD_NOTE = "function sbOtThresholdNote(){"
+    + "  var n=sbOtThreshold();"
+    + "  var raw=sbCfg().ot;"
+    + "  var rejected=(String(raw).trim()!=='' && Number(raw)!==n);"
+    + "  return 'Overtime is computed above '+n+' hours per week'+"
+    + "    (n!==40?' (set in Shop Settings, not the federal 40)':'')+"
+    + "    (rejected?' -- the recorded setting '+JSON.stringify(String(raw))"
+    + "      +' is outside 1-168 and was NOT used':'')+'.';"
+    + "}";
+  const patched = [extract('sbCfg'), extract('sbOtThreshold'), OLD_NOTE]
+    .join(String.fromCharCode(10));
+  const old = (stored) => new Function('ld', patched
+    + String.fromCharCode(10)
+    + 'return { threshold: sbOtThreshold(), note: sbOtThresholdNote() };')(
+      function () { return stored; });
+
+  const blank = old({ ot: '' });
+  assert.ok(!/SAVED EMPTY/.test(blank.note),
+    'the OLD note already reported a saved-empty threshold, so the arms above '
+    + 'are not testing the new branch. Note was: ' + blank.note);
+  // And the old note must still be RIGHT about everything it did cover --
+  // otherwise this control is failing for its own reason.
+  assert.ok(/NOT used/.test(old({ ot: 0 }).note),
+    'the reconstructed OLD note does not even report a typed 0, so it is not '
+    + 'the code that shipped and this control proves nothing');
+});
 
 test('KNOWN-BAD CONTROL: the || coalesce is CAUGHT if reintroduced', () => {
   // The OLD sbCfg, written out rather than regex-patched onto the new one: a
