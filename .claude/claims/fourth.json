@@ -2868,6 +2868,17 @@
       "status": "released",
       "released_at": "2026-09-30T01:45:34Z",
       "files": null
+    },
+    {
+      "id": "fourth-1790732742",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "docs/tier-a-reviews.json api/sd-data.js api/sd-data-ai-scan-redaction.test.js api/_lib/ai-scan-redaction.js tools/ai_output_resource_scan.py tests/run_ai_output_resource_probe.py tools/rewrite_convergence_map.py tests/run_rewrite_convergence_probe.py tools/purge_evidence_gate.py tools/tooling_inventory.py docs/2026-09-29-live-verification-residue-fourth.md docs/2026-09-29-actor-derivation-fourth.md docs/2026-09-29-sf-district-keypair-scope-fourth.md",
+      "claimed_at": "2026-09-30T01:45:42Z",
+      "claimed_at_epoch": 1790732742.3908043,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
