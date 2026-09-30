@@ -3055,6 +3055,17 @@
       "status": "released",
       "released_at": "2026-09-30T00:40:56Z",
       "files": null
+    },
+    {
+      "id": "cc-1790728876",
+      "session": "cc",
+      "subject": "mechredact",
+      "task": "tests/mech_docs_redaction_wiring_probe.py sairnmechanical.html",
+      "claimed_at": "2026-09-30T00:41:16Z",
+      "claimed_at_epoch": 1790728876.286119,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
