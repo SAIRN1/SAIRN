@@ -2775,8 +2775,8 @@
       "task": "sairnvet.html tests/sairnvet_povidone_range.js",
       "claimed_at": "2026-09-30T00:13:47Z",
       "claimed_at_epoch": 1790727227.6899178,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T12:34:26Z",
       "files": null
     },
     {
