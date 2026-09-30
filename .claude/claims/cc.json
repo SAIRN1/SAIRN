@@ -3085,8 +3085,8 @@
       "task": "api/_lib/dental-gfe.test.js api/law-auth-custody-matter-attribution.test.js tests/cron_schedules_do_not_collide.js",
       "claimed_at": "2026-09-30T10:40:51Z",
       "claimed_at_epoch": 1790764851.1422067,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T11:00:55Z",
       "files": null
     }
   ],
