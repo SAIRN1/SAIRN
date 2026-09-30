@@ -21982,6 +21982,59 @@
       "recurrence_open": "A SWEEP FOUND 35 HAND-ROLLED MUTATION RUNNERS WITH NO BASELINE PRECONDITION AT ALL and they are not fixed here -- they do not use the shared harness, so this change does not reach them. 41 more have baseline language that was not read one by one. The detector is a screen: it requires a subprocess run, a textual mutation of source, and a caught/missed verdict, so a runner that mutates through a helper or reports in other words is invisible to it."
     },
     {
+      "commit": "abb17d4d96e5",
+      "date": "2026-09-30",
+      "subject": "fix(sairnbiz): ONE MISSING TABLE was silencing the backup for twelve that exist -- and three more preview findings",
+      "files": [
+        "sairnbiz.html",
+        "tests/sairnbiz_preview_fixes.js"
+      ],
+      "lines_added": 551,
+      "lines_removed": 19,
+      "app": "sairnbiz",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "live-verification",
+      "summary": "sairnbiz.html: one unprovisioned table silenced the server backup for twelve provisioned ones. sbHydrateAll reads all 13 SB_SYNCED resources at sign-in; sb_incidents answers provisioned:false because its table was never created; sbReportHydrate set the single global sbBackupUnavailable; and sbSyncCollection then returned early on it for EVERY resource for the rest of the session. Every record entered was accepted, confirmed on screen and survived a reload while existing only in that browser, and the app own sync indicator read sb_sync_stale false. An outside HR and accounting professional was due to enter clients, employees and numbers on this app the next day.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The global latch has been a single boolean since the backup loop was written; there is no commit where a per-resource latch became global."
+      },
+      "citation_note": "The nearest standing rule is PR 1.11 fail-closed-on-an-absent-dependency, but this is the mirror: a dependency WAS absent, the code noticed, and it then disabled a feature that did not depend on it.",
+      "contributing_factors": [
+        {
+          "factor": "The burst-suppression latch was a single global boolean when the condition it suppresses is per-table",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A per-resource map carries the unprovisioned state and the global flag now means EVERY synced resource is unprovisioned -- the fresh-database case the suppression was written for. Both the read path and the write path populate the map."
+        },
+        {
+          "factor": "The warning said the server backup is not set up, which was true of one table and read as true of thirteen",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "It now names the affected tables and states the total, and says the other collections are backed up normally. That sentence is how this was misdiagnosed as a broken save path for a whole day."
+        },
+        {
+          "factor": "The apps own freshness indicator reported the backup as current while nothing was reaching it",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "sb_sync_stale and sb_synced_ids are written by the local bookkeeping rather than derived from a server acknowledgement, so they cannot see a suppressed write. NOT fixed here -- it is a separate change and would need its own review."
+        },
+        {
+          "factor": "The preview check that found the symptom attributed it to the wrong cause -- an unrelated 503 on api/ledger -- and that attribution was written down and pushed",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The root cause is recorded at the line in sairnbiz.html and in tests/sairnbiz_preview_fixes.js, and arm A5 pins that the writer posts to api/sd-data so the routing theory cannot be revived."
+        }
+      ],
+      "recurrence_open": "sb_incidents is STILL unprovisioned and api/ledger STILL answers 503, because both need sql files run in the Supabase editor and this clone has no SUPABASE_URL, no service-role key, no DATABASE_URL and no psql. So the fix means the other twelve collections now sync; it does not mean the app is whole. And the local freshness indicator can still report a backup as current when a write was suppressed, which is factor 3 and is not fixed."
+    },
+    {
       "commit": "d537709f63e4",
       "date": "2026-09-30",
       "subject": "fix(sairnvet): the povidone-iodine rows stated a concentration the cited source does not give",
