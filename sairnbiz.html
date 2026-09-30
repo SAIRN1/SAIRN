@@ -872,8 +872,8 @@ textarea{resize:vertical;min-height:80px;}
   <div class="ph"><div><div class="ptitle">Expenses</div><div class="psub">Business expense tracking and categorization</div></div>
   <div class="pa"><button class="btn bo bs" onclick="csv('expenses')">Export CSV</button><button class="btn bp bs" onclick="openExpModal()">+ Add Expense</button></div></div>
   <div class="krow">
-    <div class="kpi"><div class="klbl">This Month</div><div class="kval" id="ex-month">$0</div><div class="kt">All categories</div></div>
-    <div class="kpi"><div class="klbl">Total Recorded</div><div class="kval" id="ex-ytd">$0</div><div class="kt">Running total</div></div>
+    <div class="kpi"><div class="klbl">This Month</div><div class="kval" id="ex-month">--</div><div class="kt">All categories</div></div>
+    <div class="kpi"><div class="klbl">Total Recorded</div><div class="kval" id="ex-ytd">--</div><div class="kt">Running total</div></div>
     <div class="kpi"><div class="klbl">Largest Category</div><div class="kval" id="ex-top">--</div><div class="kt">This month</div></div>
     <div class="kpi"><div class="klbl">Pending Receipts</div><div class="kval" id="ex-pend">0</div><div class="kt d">Needs review</div></div>
     <div class="kpi"><div class="klbl">Tax Deductible</div><div class="kval" id="ex-ded">$0</div><div class="kt">Recorded to date</div></div>
@@ -907,7 +907,7 @@ textarea{resize:vertical;min-height:80px;}
   <div class="card"><div class="cb">
     <div style="font-weight:700;margin-bottom:8px">Purchase Orders</div>
     <div class="fr">
-      <div class="fg"><label>Vendor</label><input id="popvendor" placeholder="Vendor name"></div>
+      <div class="fg"><label>Vendor</label><select id="popvendor"></select></div>
       <div class="fg"><label>Description</label><input id="popdesc" placeholder="What was ordered"></div>
       <div class="fg"><label>Amount ($)</label><input id="popamt" type="number" placeholder="1200.00"></div>
       <div class="fg"><label style="visibility:hidden">.</label><button class="btn bp bs" style="width:100%" onclick="sbPOCreate()">Raise PO</button></div>
@@ -920,7 +920,7 @@ textarea{resize:vertical;min-height:80px;}
     <div style="font-weight:700;margin-bottom:8px">Goods Received</div>
     <div class="fr">
       <div class="fg"><label>PO #</label><input id="rcvpo" placeholder="PO-2026-001"></div>
-      <div class="fg"><label>Vendor</label><input id="rcvvendor" placeholder="Vendor name"></div>
+      <div class="fg"><label>Vendor</label><select id="rcvvendor"></select></div>
       <div class="fg"><label>Value received ($)</label><input id="rcvval" type="number" placeholder="1200.00"></div>
       <div class="fg"><label style="visibility:hidden">.</label><button class="btn bp bs" style="width:100%" onclick="sbRecvLog()">Log Receipt</button></div>
     </div>
@@ -2581,9 +2581,30 @@ function saveExp(){
   }
 }
 
-function openBillModal(){
+// ── ONE VENDOR LIST FOR ALL THREE, 2026-09-30 ──────────────────────────────
+// THE DEFECT: the PO vendor and the goods-receipt vendor were FREE-TEXT inputs
+// and the bill vendor was this select, restricted to registered vendors. So a PO
+// could be raised against a vendor who is not on the vendor list, a receipt could
+// be logged against it -- and the matching bill COULD NOT BE ENTERED AT ALL,
+// because its vendor field has no such option. The three-way match, which is the
+// whole control, became unreachable for that PO with nothing on screen saying so.
+//
+// ONE FUNCTION FILLS ALL THREE, and that is the part that matters as much as the
+// control type. Three selects populated in three places is three lists that come
+// to disagree about which vendors exist, which is the same defect one level up.
+function sbFillVendorSelects(){
   var v=ld('sb_vends',[]);
-  $('blvendor').innerHTML=v.map(function(x){return'<option value="'+H(x.name)+'">'+H(x.name)+'</option>';}).join('')||'<option value="">No vendors on file</option>';
+  var opts=v.map(function(x){return'<option value="'+H(x.name)+'">'+H(x.name)+'</option>';}).join('')
+    // The empty case SAYS SO rather than offering a blank dropdown. A user who
+    // opens an empty list learns nothing; this tells them what to do first.
+    ||'<option value="">No vendors on file</option>';
+  ['blvendor','popvendor','rcvvendor'].forEach(function(id){
+    var el=$(id);
+    if(el)el.innerHTML=opts;
+  });
+}
+function openBillModal(){
+  sbFillVendorSelects();
   $('blinv').value='';$('blamt').value='';$('bldate').value=sbLocalToday();$('bldue').value='';$('blstatus').value='Open';
   $('billmodal').classList.add('on');
 }
@@ -3426,7 +3447,52 @@ function sbPayFreqIsDefault(e){ return !(e && e.pay_freq && SB_PAY_FREQ[e.pay_fr
 function sbPeriodsPerYear(e){ return SB_PAY_FREQ[sbPayFreq(e)].periods; }
 // 40h/week full time, 16h/week otherwise -- the same ratio the old 80/32 pair
 // encoded, restated per week so it can be divided into any cycle.
-function sbWeeklyHours(e){ return (e && e.type === 'Full Time') ? 40 : 16; }
+// ── RECORDED HOURS BEAT THE SCHEDULE (2026-09-30) ──────────────────────────
+// THE DEFECT: this returned a flat 40 or 16 from employment_type and nothing
+// else, so payroll showed Marcus Thompson 80 hours for the period IMMEDIATELY
+// AFTER a timesheet recording 44 -- and the disclosure paragraph, which is
+// otherwise unusually candid about what this app does not compute, did not say
+// hours were assumed. An accountant enters timesheets, runs payroll, and
+// reasonably expects the two to be connected.
+//
+// THE MOST RECENT RECORDED WEEK, NOT A SUM. Two weeks on record must not add
+// together -- that would overstate every roster that has been used for more than
+// one week, which is worse than the flat figure it replaces.
+//
+// A RECORDED ZERO IS A NUMBER AND THE SCHEDULE IS NOT. If somebody has written
+// down a zero-hours week, that is a fact and it stands; the fallback is for an
+// employee nobody has recorded AT ALL. This is the same distinction the
+// timesheet panel already makes on screen -- "the figures above stay -- rather
+// than 0, because nobody has said anyone worked zero" -- applied to the money.
+function sbRecordedWeeklyHours(e){
+  var id=e&&e.id;
+  if(id===undefined||id===null||id==='')return null;
+  var rows=sbTsRows(),best=null;
+  for(var i=0;i<rows.length;i++){
+    var r=rows[i];
+    if(!r||r.emp!==id||!Array.isArray(r.hours))continue;
+    // Lexicographic on YYYY-MM-DD is chronological, which is why sbWeekStart()
+    // formats it that way.
+    if(best===null||String(r.week)>String(best.week))best=r;
+  }
+  if(best===null)return null;
+  var t=0;
+  for(var j=0;j<best.hours.length;j++){
+    var h=Number(best.hours[j]);
+    if(isFinite(h))t+=h;
+  }
+  return t;
+}
+// Whether the hours figure is the SCHEDULE rather than a record. The payroll row
+// renders it, the same way it already renders an assumed pay frequency: a number
+// that came from an assumption and one that came from a timesheet must not look
+// identical on a page somebody bills from.
+function sbWeeklyHoursIsAssumed(e){ return sbRecordedWeeklyHours(e)===null; }
+function sbWeeklyHours(e){
+  var rec=sbRecordedWeeklyHours(e);
+  if(rec!==null)return rec;
+  return (e && e.type === 'Full Time') ? 40 : 16;
+}
 // Two hour functions on purpose, and the split matters. sbHoursPerPeriod() is
 // ROUNDED for display -- a semi-monthly employee reads 86.67, not
 // 86.66666666666667. sbHoursPerPeriodExact() is what the money uses, because
@@ -3523,9 +3589,14 @@ function rPay(){
     // assumed. Hours and gross are meaningless without it once a roster runs
     // more than one cycle.
     var fl=sbPayFreq(e)+(sbPayFreqIsDefault(e)?' <span style="color:var(--muted)">(default)</span>':'');
+    // THE HOURS FIGURE SAYS WHERE IT CAME FROM (2026-09-30), the same way the
+    // frequency beside it already does. Before this, a period derived from a
+    // recorded 44-hour week and one derived from the 40-hour schedule rendered
+    // as the same bare number on a page an accountant bills from.
+    var hl=hrs+(sbWeeklyHoursIsAssumed(e)?' <span style="color:var(--muted)" title="No timesheet on record for this employee, so the hours are the scheduled figure rather than recorded work.">(scheduled)</span>':'');
     // The "Ready" badge went with the net-pay figure. It asserted this row was
     // ready to pay, which is precisely what the app cannot know without a W-4.
-    return'<tr><td><strong>'+H(e.fn+' '+e.ln)+'</strong></td><td>'+H(e.role||'')+'</td><td>'+fl+'</td><td style="text-align:center;">'+hrs+'</td><td>$'+Number(e.rate).toFixed(2)+'</td><td><strong>'+fmt(g)+'</strong></td><td>'+fmt(fi)+'</td><td><span style="color:var(--muted,#666)">needs a W-4</span></td><td><span style="color:var(--muted,#666)">needs a W-4</span></td><td><span class="badge bx">Gross only</span></td></tr>';
+    return'<tr><td><strong>'+H(e.fn+' '+e.ln)+'</strong></td><td>'+H(e.role||'')+'</td><td>'+fl+'</td><td style="text-align:center;">'+hl+'</td><td>$'+Number(e.rate).toFixed(2)+'</td><td><strong>'+fmt(g)+'</strong></td><td>'+fmt(fi)+'</td><td><span style="color:var(--muted,#666)">needs a W-4</span></td><td><span style="color:var(--muted,#666)">needs a W-4</span></td><td><span class="badge bx">Gross only</span></td></tr>';
   }).join('');
   $('py-gross').textContent=fmt(gross);$('py-tax').textContent=fmt(taxes);$('py-ben').textContent=fmt(bens);
   // YTD was gross x 13, which contradicted the 26 periods 80h implied and broke
@@ -3701,6 +3772,21 @@ function filterInv(){
 
 function rExps(){
   var exps=ld('sb_exps',[]);
+  // ── ONE EMPTY MONTH, ONE ANSWER (2026-09-30) ─────────────────────────────
+  // THE DEFECT: THIS MONTH rendered fmt(0) = "$0" while LARGEST CATEGORY, a few
+  // pixels away and describing the SAME empty month, rendered "--". Two cards
+  // disagreeing about whether an empty month is zero or unknown.
+  //
+  // "--" IS THE ONE THE APP ALREADY ARGUES FOR, and the argument is on screen in
+  // the timesheet panel: "the figures above stay -- rather than 0, because nobody
+  // has said anyone worked zero." A month with no expense records is a month
+  // nobody has recorded, not a month that cost nothing -- and $0 is a claim about
+  // the business that this app cannot make.
+  //
+  // BOTH FIGURES NOW GO THROUGH THIS, so they cannot drift apart again: a later
+  // change to the empty rendering has one place to make it.
+  var SB_NO_DATA='--';
+  var sbEmptyOr=function(hasAny,rendered){return hasAny?rendered:SB_NO_DATA;};
   var now=new Date();var curYM=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
   var monthExps=exps.filter(function(e){return(e.date||'').slice(0,7)===curYM;});
   var thisMonth=monthExps.reduce(function(s,e){return s+e.amt;},0);
@@ -3709,7 +3795,7 @@ function rExps(){
   var pend=exps.filter(function(e){return e.status==='Pending';}).length;
   var cats={};monthExps.forEach(function(e){cats[e.cat]=(cats[e.cat]||0)+e.amt;});
   var top=Object.keys(cats).sort(function(a,b){return cats[b]-cats[a];})[0]||'--';
-  $('ex-month').textContent=fmt(thisMonth);$('ex-ytd').textContent=fmt(allTime);$('ex-top').textContent=top;$('ex-pend').textContent=pend;$('ex-ded').textContent=fmt(ded);
+  $('ex-month').textContent=sbEmptyOr(monthExps.length>0,fmt(thisMonth));$('ex-ytd').textContent=sbEmptyOr(exps.length>0,fmt(allTime));$('ex-top').textContent=sbEmptyOr(monthExps.length>0,top);$('ex-pend').textContent=pend;$('ex-ded').textContent=fmt(ded);
   $('extbody').innerHTML=exps.map(function(e){var sc=e.status==='Approved'?'bg':'bw';return'<tr><td>'+fdate(e.date)+'</td><td>'+H(e.desc)+'</td><td>'+H(e.cat)+'</td><td>'+H(e.vendor)+'</td><td><strong>'+fmt(e.amt)+'</strong></td><td><span class="badge '+(e.ded==='Yes'?'bg':'bx')+'">'+H(e.ded)+'</span></td><td><span class="badge '+(e.receipt==='Yes'?'bg':'bw')+'">'+H(e.receipt)+'</span></td><td><span class="badge '+sc+'">'+H(e.status)+'</span></td></tr>';}).join('');
 }
 
@@ -3742,6 +3828,12 @@ function rAP(){
   var ov=bills.filter(function(b){return b.status==='Overdue';}).length;
   var pd=bills.filter(function(b){return b.status==='Paid';}).reduce(function(s,b){return s+b.amt;},0);
   var top=bills.filter(function(b){return b.bal>0;}).sort(function(a,b){return b.bal-a.bal;})[0];
+  // THE SELECTS ARE FILLED WHENEVER THE PANEL IS PAINTED, 2026-09-30. A
+  // vendor added after this page loaded has to appear in the PO and receipt
+  // dropdowns too, or the fix that made them selects would be a NEW way to
+  // make the three-way match unreachable -- the PO could not name a vendor
+  // the bill can.
+  sbFillVendorSelects();
   sbRenderPOs();
   $('ap-total').textContent=fmt(tot);$('ap-week').textContent=fmt(wk);$('ap-over').textContent=ov;$('ap-paid').textContent=fmt(pd);$('ap-top').textContent=top?top.vendor:'--';
   $('aptbody').innerHTML=bills.map(function(b){var sc={Open:'bb',Paid:'bg',Overdue:'br'}[b.status]||'bx';return'<tr><td><strong>'+H(b.vendor)+'</strong></td><td>'+H(b.inv)+'</td><td>'+fdate(b.date)+'</td><td>'+fdate(b.due)+'</td><td>'+fmt(b.amt)+'</td><td><strong>'+fmt(b.bal)+'</strong></td><td><span class="badge '+sc+'">'+H(b.status)+'</span></td><td>'+(b.status==='Paid'?'<span class="kt">Paid '+fdate(b.paidDate)+'</span>':'<button class="btn bo bs" onclick="sbPayBill(\''+H(b.id)+'\')">Pay</button>')+'</td></tr>';}).join('');
@@ -3916,6 +4008,9 @@ function sbVendorPaidUndatedPriorYear(){
 }
 function rVends(){
   var v=ld('sb_vends',[]);
+  // Adding a vendor repaints this panel; the three dropdowns that offer
+  // vendors have to learn about it in the same breath.
+  sbFillVendorSelects();
   var paid=sbVendorPaidYTD();
   var spendOf=function(x){return paid[String(x.name||'').trim().toLowerCase()]||0;};
   var sp=v.reduce(function(s,x){return s+spendOf(x);},0);
@@ -5430,6 +5525,30 @@ SB_SYNCED.forEach(function(k){_sbSyncOn[k]=true;});
 var sbSyncPaused=false;
 // Latched once the server says the tables do not exist. Nine collections times
 // every record would otherwise be a burst of identical failures for one cause.
+//
+// ── AND THAT LATCH WAS GLOBAL, WHICH WAS THE WHOLE OF BLOCKER 2 (2026-09-30) ─
+// THE PREVIEW CHECK'S ROOT CAUSE WAS WRONG AND THIS IS THE RIGHT ONE. It
+// reported "every save hits /api/ledger and 503s" and concluded nothing reaches
+// the server. The 503 is real and it is a SEPARATE, second-order GL posting.
+// sbBackupFetch() has always posted to DATA_API = /api/sd-data, and twelve of
+// the thirteen collections are provisioned and were the whole time.
+//
+// What actually happened: sbHydrateAll() reads all THIRTEEN SB_SYNCED resources
+// at sign-in. `sb_incidents` answers provisioned:false -- its table was never
+// created -- sbReportHydrate() set THIS ONE BOOLEAN, and sbSyncCollection()
+// then returned early on it for EVERY resource for the rest of the session.
+//
+// SO ONE MISSING TABLE SILENCED TWELVE PRESENT ONES, at sign-in, before the user
+// typed anything. Every record was accepted, confirmed on screen, survived a
+// reload, and existed only in that browser -- while `sb_sync_stale` read false.
+//
+// THE LATCH'S REASON IS SOUND AND ITS GRANULARITY WAS NOT. Per resource, a
+// missing table still costs exactly one failure and one warning; globally, it
+// cost the backup.
+var sbUnprovisioned={};
+// Kept, and now means something narrower: EVERY synced resource is unprovisioned,
+// which is the fresh-database case the original burst-suppression was written
+// for. Set only by sbReportHydrate(), and only when the count matches.
 var sbBackupUnavailable=false;
 
 // A dedicated reader/writer rather than sbData() above, which collapses every
@@ -5539,7 +5658,9 @@ function sbSyncCollection(key,next,prev){
   // falsy check here (not a property access) is what keeps an early-boot st()
   // from throwing inside the hook.
   if(!_sbSyncOn||!_sbSyncOn[key])return;
-  if(sbSyncPaused||sbBackupUnavailable)return;
+  // PER RESOURCE, not globally -- see the note at sbUnprovisioned. A table that
+  // does not exist stops its OWN collection and nothing else.
+  if(sbSyncPaused||sbBackupUnavailable||sbUnprovisioned[key])return;
   if(!Array.isArray(next))return;
   if(!ld('sb_lic',null))return;
   sbEnsureIds(key,next);
@@ -5555,9 +5676,12 @@ function sbSyncCollection(key,next,prev){
     sbBackupFetch('write',key,r).then(function(res){
       if(res.ok)return;
       if(res.reason==='not_provisioned'){
-        if(!sbBackupUnavailable){
-          sbBackupUnavailable=true;
-          console.warn('SAIRNbiz server backup is unavailable: the data tables do not exist. Run sql/sairnbiz_data_schema.sql in Supabase. Records are being kept on this device only.');
+        // ONE WARNING PER RESOURCE, not one per record and not one for all
+        // thirteen. The burst this suppresses is a collection's own records;
+        // suppressing the OTHER collections is what disabled the backup.
+        if(!sbUnprovisioned[key]){
+          sbUnprovisioned[key]=true;
+          console.warn('SAIRNbiz server backup is unavailable for '+key+': that table does not exist. Run sql/sairnbiz_data_schema.sql in Supabase. '+key+' records are being kept on this device only; the other collections are unaffected.');
         }
         return;
       }
@@ -5779,17 +5903,22 @@ function sbHydrateAll(){
   // BEFORE the reads. No network, no record written.
   sbSyncedBootstrap(SB_SYNCED);
   var merged=0,failed=0,notProvisioned=0;
+  // WHICH resources, not just how many. The count alone is what let one missing
+  // table be reported as "the backup is not set up" -- see sbUnprovisioned.
+  var missing=[];
   return Promise.all(SB_SYNCED.map(function(key){
     return sbBackupFetch('read',key,null).then(function(res){
       if(!res.ok){
-        if(res.reason==='not_provisioned')notProvisioned++;else failed++;
+        if(res.reason==='not_provisioned'){notProvisioned++;missing.push(key);}
+        else failed++;
         return;
       }
-      if(res.provisioned===false){notProvisioned++;return;}
+      if(res.provisioned===false){notProvisioned++;missing.push(key);return;}
       var changed=sbServerWinsMerge(key,res.data);
       if(changed)merged+=changed;
     });
-  })).then(function(){return{merged:merged,failed:failed,notProvisioned:notProvisioned};});
+  })).then(function(){return{merged:merged,failed:failed,
+                             notProvisioned:notProvisioned,missing:missing};});
 }
 
 // The voice on the read side. Three outcomes and they are NOT the same thing:
@@ -5808,13 +5937,22 @@ function sbReportHydrate(r,appAlreadyPainted){
   }
   if(r.notProvisioned){
     // Latched here as well as on the write path, so a session that only reads
-    // does not then spend the rest of its life retrying writes.
-    sbBackupUnavailable=true;
+    // does not then spend the rest of its life retrying writes -- but PER
+    // RESOURCE. Setting one global boolean here is what made sb_incidents'
+    // missing table stop the backup for twelve collections that exist.
+    (r.missing||[]).forEach(function(k){sbUnprovisioned[k]=true;});
+    // The global latch is now the FRESH-DATABASE case only: nothing at all is
+    // provisioned, which is what the burst suppression was written for.
+    if(r.notProvisioned>=SB_SYNCED.length)sbBackupUnavailable=true;
     // Console, not a toast. The person using this app cannot run a SQL file,
     // and telling them their records are unprotected while offering no action
     // is alarm without remedy. The gap is in the index row and in this file's
     // header; the operator is the audience for it, not the shop owner.
-    console.warn('SAIRNbiz server backup is not set up: run sql/sairnbiz_data_schema.sql in Supabase. Records are being kept on this device only.');
+    //
+    // AND IT NAMES THE TABLES. "the server backup is not set up" was true of one
+    // table and read as true of all thirteen, which is how a one-table gap was
+    // diagnosed as a broken save path.
+    console.warn('SAIRNbiz server backup is not set up for '+r.notProvisioned+' of '+SB_SYNCED.length+' record types ('+(r.missing||[]).join(', ')+'): run sql/sairnbiz_data_schema.sql in Supabase. Those records are being kept on this device only; the other '+(SB_SYNCED.length-r.notProvisioned)+' are backed up normally.');
   }
   if(r.failed){
     toast('Could not read your server backup ('+r.failed+' of '+SB_SYNCED.length+' record types). Anything on this device is still here — but records saved on another device are not being shown.',8000);
