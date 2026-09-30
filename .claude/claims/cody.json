@@ -2830,8 +2830,8 @@
       "task": "docs/defect-density-register.json",
       "claimed_at": "2026-09-30T00:28:10Z",
       "claimed_at_epoch": 1790728090.5478108,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T12:38:14Z",
       "files": null
     },
     {
