@@ -7,15 +7,15 @@ this file assert a check that did not happen.
 | | |
 |---|---|
 | **State** | **OK** |
-| Last run | 2026-09-30 19:39:04Z |
+| Last run | 2026-09-30 23:13:06Z |
 | Endpoint | `https://sairn.vercel.app/api/cron-watchdog` |
 
 | Job | Status | Last run | Age (s) | Headroom (s) |
 |---|---|---|---|---|
-| `/api/alf-alerts` | **ok** | 2026-09-30T19:37:51.194+00:00 | 72 | 7428 |
-| `/api/audit-checkpoint` | **ok** | 2026-09-30T03:30:11.69+00:00 | 58132 | 114968 |
-| `/api/cron-watchdog` | **ok** | 2026-09-30T19:15:29.079+00:00 | 1415 | 6085 |
-| `/api/sairndental/send-reminder` | **ok** | 2026-09-30T19:07:44.172+00:00 | 1879 | 5621 |
+| `/api/alf-alerts` | **ok** | 2026-09-30T22:37:51.354+00:00 | 2115 | 5385 |
+| `/api/audit-checkpoint` | **ok** | 2026-09-30T03:30:11.69+00:00 | 70974 | 102126 |
+| `/api/cron-watchdog` | **ok** | 2026-09-30T22:15:28.919+00:00 | 3457 | 4043 |
+| `/api/sairndental/send-reminder` | **ok** | 2026-09-30T23:07:47.346+00:00 | 319 | 7181 |
 
 ---
 
@@ -54,11 +54,11 @@ implied by the word "automated".
   "jobs": [
     {
       "job": "/api/alf-alerts",
-      "last_run_at": "2026-09-30T19:37:51.194+00:00",
-      "age_seconds": 72,
+      "last_run_at": "2026-09-30T22:37:51.354+00:00",
+      "age_seconds": 2115,
       "expected_interval_seconds": 3600,
       "last_outcome": "ok",
-      "seconds_until_late": 7428,
+      "seconds_until_late": 5385,
       "detail": {
         "emailed": 0,
         "skipped": 0,
@@ -70,10 +70,10 @@ implied by the word "automated".
     {
       "job": "/api/audit-checkpoint",
       "last_run_at": "2026-09-30T03:30:11.69+00:00",
-      "age_seconds": 58132,
+      "age_seconds": 70974,
       "expected_interval_seconds": 86400,
       "last_outcome": "ok",
-      "seconds_until_late": 114968,
+      "seconds_until_late": 102126,
       "detail": {
         "action": "checkpoint",
         "written": 3,
@@ -83,11 +83,11 @@ implied by the word "automated".
     },
     {
       "job": "/api/cron-watchdog",
-      "last_run_at": "2026-09-30T19:15:29.079+00:00",
-      "age_seconds": 1415,
+      "last_run_at": "2026-09-30T22:15:28.919+00:00",
+      "age_seconds": 3457,
       "expected_interval_seconds": 3600,
       "last_outcome": "ok",
-      "seconds_until_late": 6085,
+      "seconds_until_late": 4043,
       "detail": {
         "not_ok": [],
         "checked": 4,
@@ -113,11 +113,11 @@ implied by the word "automated".
     },
     {
       "job": "/api/sairndental/send-reminder",
-      "last_run_at": "2026-09-30T19:07:44.172+00:00",
-      "age_seconds": 1879,
+      "last_run_at": "2026-09-30T23:07:47.346+00:00",
+      "age_seconds": 319,
       "expected_interval_seconds": 3600,
       "last_outcome": "ok",
-      "seconds_until_late": 5621,
+      "seconds_until_late": 7181,
       "detail": {
         "sent": 0,
         "failed": 0,
