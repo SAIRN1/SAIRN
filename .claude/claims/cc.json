@@ -3143,6 +3143,17 @@
       "status": "released",
       "released_at": "2026-09-30T13:31:52Z",
       "files": null
+    },
+    {
+      "id": "cc-1790775273",
+      "session": "cc",
+      "subject": "decllint",
+      "task": "tools/live_probe_declaration_check.py tests/run_live_probe_declaration_probe.py",
+      "claimed_at": "2026-09-30T13:34:33Z",
+      "claimed_at_epoch": 1790775273.4353654,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
