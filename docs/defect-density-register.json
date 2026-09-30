@@ -19831,6 +19831,56 @@
       "recurrence_open": "nothing compares the tier register to the gate list. This instance was found by re-deriving one resource by hand on request; the other 26 Tier A sairnfreedom resources were not re-checked against SD_SESSION_GATED in this pass, and neither were the Tier A resources of any other app."
     },
     {
+      "commit": "543e087dbe51",
+      "date": "2026-09-29",
+      "subject": "fix(provisioning): the registry reader knew one spelling and printed 0 checkable, then derived a 15-table finding from it",
+      "files": [
+        "docs/MASTER-PLAN.md",
+        "docs/traceability-matrix.md",
+        "tests/run_schema_provisioning_probe.py",
+        "tools/schema_provisioning_check.py"
+      ],
+      "lines_added": 268,
+      "lines_removed": 16,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/schema_provisioning_check.py derived a confident finding from a read that returned nothing. Its registry reader searched for one literal spelling of the resource list; api/_resources/sairncode.js declares a const array and exports it under the resources key, so that spelling never matched and the reader returned an EMPTY SET rather than a could-not-read. The tool then printed \"registered: 0 checkable\" immediately followed by \"NOT REGISTERED: 15 (the schema builds these and no code can ask for them)\" -- for an app with twenty-eight registered resources, every one of the fifteen live and routed through SC_RESOURCES in api/sd-data.js. The two halves of that output contradict each other and neither was flagged: the first is a could-not-read presented as a measurement and the second was DERIVED FROM IT. A second, independent defect in the same function compared SCHEMA TABLE names against REGISTRY RESOURCE names, which SAIRNgrounds and SAIRNscape deliberately map between -- resource `properties` reaches table `grd_properties` -- so seven further live tables were reported as unreachable while code reaches them on every page load. Twenty-two tables were reported as unreachable in total and all twenty-two were false; a re-run after the fix shows all twenty-two resolve, are checkable, and exist.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The literal-spelling reader and the const-plus-module.exports registry shape were both present before this fix; which moved first cannot be established without reading every intervening revision of both files."
+      },
+      "contributing_factors": [
+        {
+          "factor": "The reader was written against the one registry spelling in front of it, and nothing compared its answer to the number of names the endpoint actually admits. An empty read and a real zero were therefore the same value, and no caller could tell them apart.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "registered() now returns None for an unreadable registry and an empty set for one that really admits nothing, and main() exits 2 COULD NOT RUN on None. Two probe arms pin both directions, because folding them would make the could-not-read arm unfalsifiable."
+        },
+        {
+          "factor": "The NOT-REGISTERED verdict was derived from that value inside the same function that produced it, with no step in between that could ask whether the read had succeeded. A finding and its own precondition were computed together.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The refusal is now a separate guard ahead of the comparison, so the finding cannot be reached from a failed read at all."
+        },
+        {
+          "factor": "The table-to-resource mapping exists only as a PostgREST path string built inside api/sd-data.js. Nothing outside that file states it, so a second tool that needed the mapping had to infer it, and inferred identity.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "Not fixed here. The mapping is still stated nowhere outside the handler, so the next tool that needs it will infer it again. Publishing it from api/_resources would remove the class; that file set is inside another session's claim."
+        }
+      ],
+      "recurrence_open": "Nothing outside api/sd-data.js states the table-to-resource mapping, so the next tool that needs it will infer it again."
+    },
+    {
       "commit": "573571970628",
       "date": "2026-09-29",
       "subject": "fix(nhi): the clone count was DERIVED FROM DISK and still wrong -- third instance",
@@ -20500,6 +20550,58 @@
       "recurrence_open": "The sweep named in factor 4 is not run. Every other read in this file that decides on blob truthiness instead of row existence still has the same shape, and only this one branch was fixed."
     },
     {
+      "commit": "bc89bf345b3c",
+      "date": "2026-09-29",
+      "subject": "fix(sairnbiz): a typed overtime threshold of 0 was swallowed before validation could see it",
+      "files": [
+        "sairnbiz.html",
+        "tests/sairnbiz_ot_threshold_coalesce.js"
+      ],
+      "lines_added": 233,
+      "lines_removed": 1,
+      "app": "sairnbiz",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "sbCfg() coalesced the overtime threshold on FALSINESS, so a typed 0 was replaced by the default 40 before sbOtThreshold could see it -- making the n<=0 branch unreachable and leaving the rejection note with nothing to report",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "2c43d98b3dd2",
+        "date": "2026-09-04",
+        "subject": "fix(sairnbiz): all five System Settings were write-only, and two of them had become wrong to wire",
+        "lag_days": 25
+      },
+      "phase_note": "sbCfg was written with c.ot||d.ot in the commit that made the settings readable; the overtime threshold became a validated input later, and nothing revisited the getter that feeds it",
+      "contributing_factors": [
+        {
+          "factor": "a getter substituted a default on falsiness, so the two values the validator most needed to see -- 0 and empty -- were the two it could never receive",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "ot substitutes on ABSENT via hasOwnProperty; fy and terms keep the falsy coalesce deliberately, being strings whose only falsy value genuinely means unset"
+        },
+        {
+          "factor": "every existing arm drove sbOtThreshold with a RAW value, so the layer that decides what raw ever is was untested",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the new suite drives from stored config through the real chain, and extracts the three functions by name from the page rather than re-typing them"
+        },
+        {
+          "factor": "I overstated the finding first -- my own arm demanded a cleared field be reported as rejected, which contradicts the authors stated rule that an absent setting is not a typo",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the arm now asserts the rule rather than my reading of it, with the correction recorded at the line"
+        }
+      ],
+      "recurrence_open": "not driven live and no stored config inspected. The same-shape sweep covered sairnbiz.html only: 13 numeric falsy-coalesce sites there, 12 coalescing to 0 and therefore harmless, 1 a toast duration. No other app was swept, and nothing checks for a getter that substitutes a default ahead of its own validator."
+    },
+    {
       "commit": "c66a32854e5a",
       "date": "2026-09-29",
       "subject": "fix(sairnmechanical): mech_docs WRITE was reachable on a licence key alone, on the one mech_ table whose own redactor has SSN, EIN and card patterns",
@@ -20671,58 +20773,6 @@
         }
       ],
       "recurrence_open": "Only THIS suite strips. The fixed-window-substring shape was swept once before and the sweep's finding list is not re-run on new checks, so the next check that greps a raw single-file app for an identifier has the same hole available. tools/gated_resource_direct_fetch_header.js is also still the only check of its class -- nothing verifies that the 900-character window is wide enough in the other direction."
-    },
-    {
-      "commit": "bc89bf345b3c",
-      "date": "2026-09-29",
-      "subject": "fix(sairnbiz): a typed overtime threshold of 0 was swallowed before validation could see it",
-      "files": [
-        "sairnbiz.html",
-        "tests/sairnbiz_ot_threshold_coalesce.js"
-      ],
-      "lines_added": 233,
-      "lines_removed": 1,
-      "app": "sairnbiz",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "independent-review",
-      "summary": "sbCfg() coalesced the overtime threshold on FALSINESS, so a typed 0 was replaced by the default 40 before sbOtThreshold could see it -- making the n<=0 branch unreachable and leaving the rejection note with nothing to report",
-      "rules": [
-        "1.3"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "2c43d98b3dd2",
-        "date": "2026-09-04",
-        "subject": "fix(sairnbiz): all five System Settings were write-only, and two of them had become wrong to wire",
-        "lag_days": 25
-      },
-      "phase_note": "sbCfg was written with c.ot||d.ot in the commit that made the settings readable; the overtime threshold became a validated input later, and nothing revisited the getter that feeds it",
-      "contributing_factors": [
-        {
-          "factor": "a getter substituted a default on falsiness, so the two values the validator most needed to see -- 0 and empty -- were the two it could never receive",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "ot substitutes on ABSENT via hasOwnProperty; fy and terms keep the falsy coalesce deliberately, being strings whose only falsy value genuinely means unset"
-        },
-        {
-          "factor": "every existing arm drove sbOtThreshold with a RAW value, so the layer that decides what raw ever is was untested",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "the new suite drives from stored config through the real chain, and extracts the three functions by name from the page rather than re-typing them"
-        },
-        {
-          "factor": "I overstated the finding first -- my own arm demanded a cleared field be reported as rejected, which contradicts the authors stated rule that an absent setting is not a typo",
-          "kind": "process",
-          "action_status": "done",
-          "action": "the arm now asserts the rule rather than my reading of it, with the correction recorded at the line"
-        }
-      ],
-      "recurrence_open": "not driven live and no stored config inspected. The same-shape sweep covered sairnbiz.html only: 13 numeric falsy-coalesce sites there, 12 coalescing to 0 and therefore harmless, 1 a toast duration. No other app was swept, and nothing checks for a getter that substitutes a default ahead of its own validator."
     },
     {
       "commit": "eb2f92fac84f",
