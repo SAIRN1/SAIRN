@@ -19725,6 +19725,56 @@
       "recurrence_open": "Nothing tests an error message against the status that produced it, anywhere on the platform. The candidate detection above is not built. And the adjacent gap this message now honestly reports is still open: sdnRestoreSession validates asynchronously and its client-side check decodes the token header without verifying a signature, so a revoked token still reaches a Create Invoice click."
     },
     {
+      "commit": "4c918208f810",
+      "date": "2026-09-29",
+      "subject": "fix(sairnmechanical): the client redactor was a day behind the server, and the parity arm could only see one of the four divergences",
+      "files": [
+        "sairnmechanical.html",
+        "tests/mech_docs_redaction_wiring_probe.py"
+      ],
+      "lines_added": 123,
+      "lines_removed": 4,
+      "app": "sairnmechanical",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "probe-control",
+      "summary": "sairnmechanical.html's mechRedactLocal was left a day behind api/_lib/mech-redact.js after the 2026-09-29 server fix. Four divergences, client wrong in all four: a suite number left beside the address token; a labelled phone giving Phone: 555-[ADDRESS REDACTED]: RTU-4 with the number half-leaked AND the equipment label destroyed; Qty 12 Unit: RTU-4 destroyed on a non-address; and a labelled seven-digit local number left intact. The parity arm that exists to catch exactly this saw only ONE of the four, because its case list had not grown when the rules did.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tests/mech_docs_redaction_wiring_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "85ce0f01a298",
+        "date": "2026-09-29",
+        "subject": "fix(sairnmechanical): the redactor ate the equipment label and left half the phone number",
+        "lag_days": 0
+      },
+      "citation_note": "The nearest standing item is cross-domain-disciplines 7, byte-identical is not safe-in-context, but that is about propagating a pattern to a new target; this is two copies of one pattern where only one was fixed, which is the drift the parity arm exists for.",
+      "contributing_factors": [
+        {
+          "factor": "One rule set exists in two places -- a CommonJS module and an inline function in a single-file HTML app -- and one commit fixed only the module",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The client copy now mirrors the server rules verbatim, in the server order, with the reason at the line. The two-copies-plus-agreement-test shape is kept deliberately rather than replaced by a generated shared source: a generator plus a --check plus a push gate for one regex would replace a working detector with a mechanism that itself needs a control."
+        },
+        {
+          "factor": "The parity arm compares a fixed list of inputs, so it is only as wide as that list, and the list did not change when the rules changed",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Five cases added covering both halves of the server fix in both directions, including an isolating case with no phone label -- because the server ablation found the address half was being defended by the phone half with nothing pinning it."
+        },
+        {
+          "factor": "A green parity arm had two possible meanings, the copies agree or the harness compared nothing, and nothing distinguished them",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Arms 4b and 4c delete the client labelled-phone rule in memory and require the parity arm to report a disagreement, with 4b first asserting the planted line was really found so 4c cannot pass by comparing the app with itself."
+        }
+      ],
+      "recurrence_open": "Nothing prevents the next server-side rule change from landing without the client copy, and nothing makes the case list grow when a rule is added. The parity arm now has a control proving it can see a divergence, which is not the same as proving it can see EVERY divergence -- a rule added with no matching case is still invisible to it."
+    },
+    {
       "commit": "50d16fd4ac2a",
       "date": "2026-09-29",
       "subject": "fix(push): the tool that exists to replace `git add -A` was using it",
