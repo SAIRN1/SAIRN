@@ -159,7 +159,16 @@ def load_density_weighter(here=None):
         _repo_for_density())
     if rerr:
         return None, 'defect_density_weighting.py could not derive apps (%s)' % rerr
-    entries = read_self_log()
+    # FIXED 2026-09-29 (item 2): this call used to be read_self_log() with
+    # no path, defaulting to SELF_LOG_PATH -- HERE-relative to THIS file's
+    # own module-level constant, not to the `here` this function was
+    # actually given. Correct only when `here` happened to equal this
+    # module's real location; silently wrong (self-log unreadable) from
+    # any injected `here` that points elsewhere, including the platform-
+    # repo backup copy. Now honors the SAME `here` the caller passed in,
+    # consistently with where defect_density_weighting.py itself was just
+    # loaded from two lines above.
+    entries = read_self_log(path=os.path.join(here, 'hover-audit-log.jsonl'))
     if entries is None:
         return None, 'self-log unreadable -- cannot compute real density'
     result = mod.density(entries, resource_to_app, app_density_count)
@@ -595,11 +604,40 @@ def run_fixtures():
        'when defect_density_weighting.py is absent from the given directory',
        empty_dir_fn is None and empty_dir_err)
 
-    real_here = os.path.dirname(os.path.abspath(__file__))
-    real_fn, real_err = load_density_weighter(here=real_here)
-    ck('load_density_weighter() against the REAL directory succeeds and '
-       'returns a callable that never raises on an unmapped name',
-       real_err is None and callable(real_fn) and real_fn('not_a_real_resource_xyz') == 1)
+    # LOCATION-INDEPENDENT since 2026-09-29 (item 2): this used to inject
+    # `here=os.path.dirname(os.path.abspath(__file__))` -- THIS file's own
+    # real location, which happens to have both defect_density_weighting.py
+    # and a real hover-audit-log.jsonl beside it from the ORIGINAL
+    # invocation directory, but neither from the platform-repo backup copy
+    # (confirmed live: "self-log unreadable" there). FIXED, on two levels:
+    # (1) load_density_weighter() itself now threads `here` through to its
+    # OWN read_self_log() call rather than defaulting to this module's real
+    # location regardless of what `here` was passed (a genuine bug, not
+    # only a test problem). (2) this arm builds a REAL, synthetic temp
+    # directory -- a copy of defect_density_weighting.py plus a minimal
+    # synthetic log -- so the assertion below exercises the real
+    # integration path against KNOWN data, never a real log, from any
+    # location this tool is ever run from.
+    synth_dir = tempfile.mkdtemp(prefix='cold_scan_density_')
+    try:
+        import shutil as _sh3
+        _real_ddw = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                 'defect_density_weighting.py')
+        _sh3.copy2(_real_ddw, os.path.join(synth_dir, 'defect_density_weighting.py'))
+        with io.open(os.path.join(synth_dir, 'hover-audit-log.jsonl'), 'w',
+                     encoding='utf-8') as _f:
+            _f.write(json.dumps({'seq': 1, 'type': 'check', 'target': 'self',
+                                 'summary': 'synthetic fixture entry',
+                                 'ts': '2026-01-01T00:00:00Z'}) + '\n')
+        synth_fn, synth_err = load_density_weighter(here=synth_dir)
+        ck('load_density_weighter() against a SYNTHETIC directory (own '
+           'defect_density_weighting.py copy + a minimal fixture log, '
+           'never the real log or the real location) succeeds and returns '
+           'a callable that never raises on an unmapped name',
+           synth_err is None and callable(synth_fn) and
+           synth_fn('not_a_real_resource_xyz') == 1)
+    finally:
+        _sh3.rmtree(synth_dir, ignore_errors=True)
 
     # FRESHNESS FLOOR fixtures, 2026-09-27, driven against a REAL throwaway
     # git repo (not a mock) -- same "drive it, don't mock it" discipline as
