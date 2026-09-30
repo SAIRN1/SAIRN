@@ -75,20 +75,35 @@ function grabLine(sig) {
   return html.slice(s, e);
 }
 
+// EVERY `var _sd* = {};` STATE MAP IN THE PAGE, DERIVED RATHER THAN LISTED
+// (2026-09-29). The comment below this has been predicting its own breakage
+// since 2026-09-12 -- "a hand-listed mirror of the layer's declarations is a
+// mirror that goes stale" -- and it went stale again today when sdData() gained
+// `_sdWriteOk` for the write-landed verdict. The omission does NOT surface as a
+// missing stub: the ReferenceError lands inside sdData's own catch, which
+// returns null, so every arm in the suite fails for a reason about this sandbox
+// and none of them about the transport. Derived, it cannot happen a sixth time.
+function stateMaps() {
+  const found = html.match(/^var _sd\w+ *= *\{\};.*$/gm) || [];
+  assert.ok(found.length >= 4, 'fewer than four `var _sd* = {};` state maps found '
+    + 'in stonedesk.html (' + found.length + ') -- the declaration style changed '
+    + 'and this sandbox is now silently missing some or all of them');
+  return found;
+}
+
 // The shared data layer, at top level (closing brace in column 0). The two
 // state maps are taken by line and asserted present -- they are the whole
 // mechanism, and a rename that left the functions intact would otherwise make
 // this suite pass while testing a different variable.
 const LAYER = [
-  grabLine('var _sdAuthRefused = {};'),
-  grabLine('var _sdReadFailed  = {};'),
+  ...stateMaps(),
   // ADDED 2026-09-12 WITH THE MAP ITSELF. sdData() sets _sdLastStatus on
   // every path, so leaving it out of this list makes the real transport
   // throw ReferenceError inside the vm -- and the catch turns that into a
   // null return, i.e. every call in this suite silently 'failing'. A
   // hand-listed mirror of the layer's declarations is a mirror that goes
   // stale; this is the third suite this week to be broken by one.
-  grabLine('var _sdLastStatus  = {};')
+
 ].join('\n') + '\n\n' + [
   'function sdAuthWasRefused(resource) {',
   'function sdReadFailed(resource) {',

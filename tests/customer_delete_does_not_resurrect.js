@@ -61,6 +61,22 @@ function grabLine(sig) {
   assert.ok(s > 0, 'not found in stonedesk.html: ' + sig);
   return html.slice(s, html.indexOf('\n', s));
 }
+
+// EVERY `var _sd* = {};` STATE MAP IN THE PAGE, DERIVED RATHER THAN LISTED
+// (2026-09-29). The comment below this has been predicting its own breakage
+// since 2026-09-12 -- "a hand-listed mirror of the layer's declarations is a
+// mirror that goes stale" -- and it went stale again today when sdData() gained
+// `_sdWriteOk` for the write-landed verdict. The omission does NOT surface as a
+// missing stub: the ReferenceError lands inside sdData's own catch, which
+// returns null, so every arm in the suite fails for a reason about this sandbox
+// and none of them about the transport. Derived, it cannot happen a sixth time.
+function stateMaps() {
+  const found = html.match(/^var _sd\w+ *= *\{\};.*$/gm) || [];
+  assert.ok(found.length >= 4, 'fewer than four `var _sd* = {};` state maps found '
+    + 'in stonedesk.html (' + found.length + ') -- the declaration style changed '
+    + 'and this sandbox is now silently missing some or all of them');
+  return found;
+}
 // For a multi-line declaration that is not a function body, so grabAt's `};`
 // terminator does not apply -- SD_SYNCED is an array literal over six lines.
 function grabUntil(sig, end) {
@@ -75,9 +91,7 @@ function grabUntil(sig, end) {
 // reads. Taken from the file rather than re-declared, for the reason this week
 // keeps producing: a hand-written copy of a declaration goes stale silently.
 const LAYER = [
-  grabLine('var _sdAuthRefused = {};'),
-  grabLine('var _sdReadFailed  = {};'),
-  grabLine('var _sdLastStatus  = {};')
+  ...stateMaps()
 ].join('\n') + '\n\n' + [
   'function sdAuthWasRefused(resource) {',
   'function sdReadFailed(resource) {',

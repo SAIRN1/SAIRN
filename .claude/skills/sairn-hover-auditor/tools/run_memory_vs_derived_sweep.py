@@ -76,6 +76,17 @@ def main():
               'Nothing below can be trusted.')
         return 2
     print('control: planted drifted line number IS flagged -- sweep has teeth')
+    # Three-class header (2026-09-29): the classes live in
+    # citation_class_check.py; its stamp line prints here so every
+    # flagged row below is read against the class split, never as a
+    # flat defect list.
+    try:
+        import citation_class_check as _ccc
+        print('[citation-classes] see citation_class_check.py -- only '
+              'WRONG-AT-DERIVATION rows are defects in this record; '
+              'MOVED-SINCE is honest history; NOT-A-REPO-PATH is tool scope.')
+    except Exception as _e:
+        print('[citation-classes] classifier unavailable: %s' % _e)
 
     hits = {}
     checked = 0
