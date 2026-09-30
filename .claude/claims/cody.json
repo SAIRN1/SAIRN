@@ -2797,8 +2797,8 @@
       "task": "tools/bare_run_write_check.py tests/run_bare_run_write_probe.py",
       "claimed_at": "2026-09-30T00:14:37Z",
       "claimed_at_epoch": 1790727277.4313102,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T12:35:22Z",
       "files": null
     },
     {
