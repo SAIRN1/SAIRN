@@ -436,3 +436,211 @@ re-login on reload, the Pay button on a held bill, the two biggest-vendor answer
 mechanism was confirmed by reading `sairnbiz.html:2261`: the chart sums `i.paid`,
 so it is a **cash-received** chart under a *Revenue* label. That is a sharper
 statement than the original and it is still not a driven one.
+
+---
+
+# RE-RUN 2026-09-30, SECOND PASS (CC) — EVERY FINDING RE-DRIVEN, AND ONE NEW ONE
+
+**VERDICT: NOT CLEAN — but for one newly-found reason, not for any of the
+twelve above.** All four residual findings (7, 8, 10, 11) are fixed, deployed
+and driven. Both SQL blockers are gone: `sb_incidents` is provisioned and
+`/api/ledger` accepts a post. What is left is a **13th finding, found by this
+re-run**, and it is not fixed.
+
+Everything below happened on screen or came back from an HTTP request against
+`https://sairn.vercel.app` on `SB-TEST-2026`. The deployed file was confirmed
+byte-identical to `main` before anything was driven.
+
+## The four residual findings, each driven
+
+### 7 — the mechanism in the original row is WRONG, and the correction matters
+
+The row says *"June and July are missing from a chart labelled YTD."*
+**June was never missing. It was labelled "May".**
+
+`new Date(m+'-01')` is a **date-only** string, parsed as **UTC midnight** by
+ECMA-262 21.4.3.2, then rendered in the **local** zone. In America/New_York
+(-4) that instant is 20:00 on the last day of the previous month, so every
+month drew one behind. Driven before the fix: `['2026-05','2026-06','2026-09']`
+rendered `['Apr 2026','May 2026','Aug 2026']`.
+
+**It is silent and it is directional.** Every zone west of Greenwich is wrong;
+UTC and everything east is right. Nothing errors. And the **value beside the
+label was correct the whole time**, which is why the original read the shifted
+months as missing data rather than as mislabelled rows — there was no reason to
+doubt a row whose number was right.
+
+**Driven after the fix, same zone (America/New_York, offset 240):**
+
+| chart | before | after | the invoices behind it |
+|---|---|---|---|
+| dashboard | Apr $0 / **May $18,520** / Aug $0 | May 2026 $0 / **Jun 2026 $18,520** / Sep 2026 $0 | June collected 8,420+6,000+4,100 = **18,520** |
+| P&L | — | May 2026 $5,200 / **Jun 2026 $38,800** / Sep 2026 $7,250 | June invoiced 8,420+3,890+12,750+4,100+9,640 = **38,800** |
+
+Both now agree with the invoice dates exactly.
+
+**And the two charts were summing different things under near-identical
+titles.** The dashboard summed `i.paid` under *"Revenue Trend YTD"*; the P&L
+summed `i.amt` under *"Monthly Revenue Trend"*. **Relabelled, not re-summed:**
+*"Cash Collected by Month"* and *"Invoiced Revenue by Month"*. Changing the
+dashboard's math to invoice value would have made it disagree with the cash KPI
+directly above it and duplicated a chart the P&L already carries. The KPI
+itself read *"Monthly Revenue / vs last month"* over every invoice ever paid —
+neither monthly nor a comparison — and now reads *"Cash Collected / All
+invoices, to date"*.
+
+### 8 — it was never security, and this doc's "defensible" is withdrawn
+
+Driven: signed in, reloaded. **The PIN gate came up while the session was still
+live in every respect.**
+
+```
+sb_session_token   still present, 339 chars
+sb_session_role    still "owner"
+that same token on POST /api/sd-data   ->  HTTP 200, 5 rows
+```
+
+`sessionStorage` is cleared when the **tab** closes, not when the page reloads.
+Nothing had been discarded, `sbBackupFetch()` went on using the credential
+while the screen said signed out, and retyping the PIN minted a **second**
+session for a user who already held one. `sbApplyLoggedIn()` was simply
+unreachable from boot.
+
+**Fixed by restoring, server-checked.** Clearing would have been theatre — the
+token is a signed 12-hour bearer, so deleting the browser's copy does not
+revoke it. `sbRestoreSession()` asks `/api/sd-data` and believes only the
+answer. The probe was checked in both directions before being relied on:
+
+```
+real token         -> 200
+garbage token      -> 401 NO_SESSION
+empty token        -> 401 NO_SESSION
+tampered signature -> 401 NO_SESSION
+```
+
+**Driven end to end on the deployed build:**
+
+| | result |
+|---|---|
+| reload with a valid session | app opens on the dashboard, header reads **Owner**, no PIN |
+| reload with a tampered signature | **PIN gate**, and all three session keys cleared |
+
+**Three answers, not two.** 401/403 refuses and clears; 2xx or 503 accepts (the
+auth check runs before the provisioning check — driven); **anything else is
+could-not-tell**, so the gate stays up and nothing is cleared. Folding a 500 or
+an offline moment into "refused" would sign a user out of a good session and
+destroy the token that would have proved it.
+
+### 10 — the held bill says why before it is clicked
+
+The refusal text was already good; what was wrong is that the row gave no sign
+the button would refuse. The same two conditions `sbPayBill` uses are now
+evaluated at paint time.
+
+**Driven, every row of the AP table on the live build:**
+
+```
+Midwest Stone Supply   Open      Pay DISABLED   no purchase order number on this bill
+Surface Solutions Inc  Open      Pay DISABLED   no purchase order number on this bill
+Erie Insurance         Paid      no button      Paid --
+Tooling Pros           Overdue   Pay DISABLED   no purchase order number on this bill
+Eagle Plumbing Co      Open      Pay DISABLED   no purchase order number on this bill
+Midwest Stone Supply   Held      Pay DISABLED   no purchase order number on this bill
+Cleveland Stone Supply Paid      no button      Paid Sep 29, 2026
+```
+
+**SAY THIS OUT LOUD BEFORE THE DEMO: five of seven rows now show a disabled Pay
+button.** That is not a regression — every one of those bills would have been
+refused on click, because the seed bills carry no PO number. The screen now
+says so instead of the user finding out. It is a visible change and it makes
+the demo data look more blocked than it did.
+
+**The enabled path is reachable and was proved, not assumed.** The one bill
+with a real PO and receipt (CSS-7788 against PO-2026-001) returns `{ok:true}`
+from a live three-way match and `{payable:true}` when its status is put back to
+Open — so the gate has not locked everything out.
+
+### 11 — they are different questions, AND one of them was also wrong on its own terms
+
+Both panels were driven. They answer genuinely different questions and the
+sub-labels now say which:
+
+| | was | now | live answer |
+|---|---|---|---|
+| AP | Largest Vendor / *By balance* | Largest Vendor / **Most owed right now** | Midwest Stone Supply |
+| Vendors | Top Vendor / *By spend* | Top Vendor / **Most paid this year** | Cleveland Stone Supply |
+
+The sets are near-disjoint by construction: a paid bill has zero balance and
+cannot appear in the first; an unpaid bill contributes nothing to the second.
+Live data — balances Midwest 13,040 / Surface 8,200 / Eagle 1,850 / Tooling
+380; paid-this-year Cleveland 4,800 / Erie 1,140. Two different answers is
+correct.
+
+**But AP's was also wrong on its own terms.** It sorted **bills** and took the
+top row's vendor, so a vendor owed three $1,000 bills lost to a vendor owed one
+$2,500 bill, under a label reading *vendor*. On today's data the same vendor
+wins either way ($12,400 largest single bill, $13,040 largest total), which is
+why only a fixture found it. Now aggregated by vendor, with the same name
+normalisation the Vendors panel uses, unnamed vendors dropped rather than
+pooled into a blank bucket that can win the card, and ties broken by name so
+two renders cannot disagree.
+
+## The rest of the twelve, re-checked against production
+
+| # | state | evidence, 2026-09-30 |
+|---|---|---|
+| 1 | **STANDS — Michael's** | `SB-PINNACLE-2026` login **401 INVALID_CREDENTIALS**, bootstrap **409 ALREADY_PROVISIONED**. Unchanged. `SB-TEST-2026` / `sairn-demo-owner` / `84350271` gives **200, owner, token issued**. |
+| 2 | **RESOLVED** | All 13 resources **HTTP 200, `provisioned: true`**. In the live page `sbBackupUnavailable=false`, `sbUnprovisioned={}`. A write through the app's own `sbBackupFetch` landed: server `sb_ap` **5 rows to 7**. See finding 13 for the half that is not resolved. |
+| 3 | **RESOLVED** | `sb_incidents` reads **200, `provisioned: true`** (was `false`). |
+| 4 | **RESOLVED** | `/api/ledger` `post` gives **200**, and the identical entry re-posted gives **409 ALREADY_POSTED** naming it, which is the read-back. `chart` and `validate` are NOT evidence — neither touches the store, so both answer 200 whether or not the table exists. One probe entry is enumerated with its removal SQL in `docs/live-residue/2026-09-30-sairnbiz-ledger-probe.json`. |
+| 5 | **RESOLVED** | `sbWeeklyHours(Marcus Thompson)` returns **44** against the recorded timesheet (was a flat 80). |
+| 6 | **RESOLVED** | `#popvendor`, `#rcvvendor` and `#blvendor` are all **SELECT, 7 options each** (two were free text). |
+| 7 | **RESOLVED** | above |
+| 8 | **RESOLVED** | above |
+| 9 | **RESOLVED** | Driven on a genuinely empty month: THIS MONTH `--`, TOTAL RECORDED `--`, LARGEST CATEGORY `--`. The shipped markup defaults to `--` too, so it is right before any code runs. |
+| 10 | **RESOLVED** | above |
+| 11 | **RESOLVED** | above |
+| 12 | **still not a defect** | The login screen came up pre-filled with `owner` on this machine. Chrome's saved-password autofill; there is no `value` attribute on either field. |
+
+## 13 — NEW, NOT FIXED: a record entered while the sync was latched is stranded forever
+
+**Found by this re-run, and it is the unfinished half of blocker 2.**
+
+`sbSyncCollection(key, next, prev)` decides what to push by diffing `next`
+against **`prev` — the value as it was immediately before that one save**. A
+record whose change already happened, while the latch was armed, is never
+offered again. Re-saving the collection pushes **nothing**, because nothing
+about it changed.
+
+Driven: the two bills entered on 2026-09-29 (`MSS-9001`, `CSS-7788`) were on
+the device and **not** on the server. `sb_synced_ids.sb_ap` listed exactly the
+five that were, and correctly did not list those two — **so the app knows they
+were never pushed, and nothing reads that to decide what to send.** A full
+re-save left the server at 5 rows. They only landed when this session called
+`sbBackupFetch('write', ...)` on them by hand, after which the server read 7.
+
+**Consequence.** Every record entered on any device during the latched window
+is on that device only, permanently, while `sb_sync_stale` reads `false`. That
+is the original blocker-2 symptom surviving its own fix, for the back
+catalogue. Records entered **from now on** sync normally — that half is fixed
+and proved above.
+
+**The fix is not made here** because it is a new change to the sync layer that
+needs its own review rather than being folded into a findings sweep. The shape:
+on hydrate, push any local record whose id is absent from `sb_synced_ids`,
+once, and mark it. Recorded in the defect register with that as a planned
+action.
+
+## What this re-run did NOT do
+
+* **Benefits, Performance, Training, Hiring, Budget, Tax & Compliance, Reports,
+  Accounts Receivable, AI Assistant and Settings were still not driven.** The
+  original check did not cover them and neither does this one.
+* **Export CSV and Print were still not exercised.**
+* Everything ran on **`SB-TEST-2026`**. `SB-PINNACLE-2026` was not signed into
+  and not touched.
+* No mobile or narrow-viewport check.
+* The console was not swept beyond what the driven steps produced.
+* **How many other records are stranded by finding 13 is not known.** It was
+  measured on `sb_ap` only, on one device. The other twelve collections, and
+  any other device, were not counted.

@@ -1,0 +1,37 @@
+{
+  "_what": "One ledger ENTRY and its TWO LINES created on SB-TEST-2026 by CC's re-run of the SAIRNbiz preview check, 2026-09-30. Recorded here BY THE RUN THAT CREATED IT rather than discovered later -- the contract in docs/live-residue/README.md.",
+  "tool": "sairnbiz-ledger-probe (ad-hoc, driven from the session; NOT a tracked tool, and that is itself recorded below)",
+  "licence_key": "SB-TEST-2026",
+  "licence_note": "The TEST licence, not the demo one. SB-PINNACLE-2026 was not touched -- its PIN is Michael's to restore and nothing here authenticates against it.",
+  "date": "2026-09-30",
+  "why": "Finding 4 of docs/2026-09-29-sairnbiz-preview-check.md -- '/api/ledger answers 503 on every save' -- could ONLY be settled by a post. api/ledger.js exposes three actions: chart and validate never touch the store, so both answer 200 whether or not the table exists, and neither is evidence. The provisioning refusal is raised inside the POST path, by the idempotence SELECT at api/ledger.js:173: a 404 or 400 from that select means the table is absent and notProvisioned() returns 503 BEFORE anything is written. So a post against a missing table writes nothing; a post against a present table writes one entry. There is no third shape and no dry-run action.",
+  "result": "1st post -> HTTP 200 ok, entry ZZ-PREVIEW-PROBE-20260930. 2nd post of the IDENTICAL entry -> HTTP 409 ALREADY_POSTED naming that entry_id, which is the read-back: the row is really there, not merely reported. ledger_entries EXISTS and accepts a post. Finding 4 is RESOLVED, not worked around.",
+  "rows": [
+    {
+      "table": "ledger_entries",
+      "id_column": "entry_id",
+      "id": "ZZ-PREVIEW-PROBE-20260930",
+      "accumulates": false,
+      "accumulates_note": "unique (license_hash, entry_id) at sql/ledger_schema.sql:85, and the endpoint's own idempotence check on (source_kind, source_id) refuses a second post with 409. Re-running the probe adds nothing."
+    },
+    {
+      "table": "ledger_lines",
+      "id_column": "entry_id",
+      "id": "ZZ-PREVIEW-PROBE-20260930",
+      "row_count": 2,
+      "accumulates": false,
+      "accumulates_note": "unique (license_hash, entry_id, line_no) at sql/ledger_schema.sql:118. Two lines: 1010 debit 1.00, 2010 credit 1.00 -- a balanced $1 entry, the smallest thing the validator will accept."
+    }
+  ],
+  "removal_sql": [
+    "create extension if not exists pgcrypto;",
+    "-- Expect 87e7f2ee131c924eaa3bd282c9c207962d499dff151a00990d83482d291288fc. If it differs, STOP.\nselect encode(digest('SB-TEST-2026', 'sha256'), 'hex') as derived_license_hash;",
+    "-- SELECT FIRST, BOTH TABLES. Expect 1 entry and 2 lines. Anything else means something other than this probe wrote here and the deletes below are wrong.\nselect 'ledger_entries' as tbl, entry_id as row_key, entry_date, memo, source_kind, source_id, status\n  from public.ledger_entries\n where license_hash = encode(digest('SB-TEST-2026', 'sha256'), 'hex')\n   and entry_id = 'ZZ-PREVIEW-PROBE-20260930'\nunion all\nselect 'ledger_lines', entry_id, null, memo, account_code, line_no::text, null\n  from public.ledger_lines\n where license_hash = encode(digest('SB-TEST-2026', 'sha256'), 'hex')\n   and entry_id = 'ZZ-PREVIEW-PROBE-20260930';",
+    "-- AND THE BLAST RADIUS: how much does this licence hold altogether? A larger total means real ledger content sits alongside, and the predicate above is what you delete, never a broader one.\nselect (select count(*) from public.ledger_entries where license_hash = encode(digest('SB-TEST-2026','sha256'),'hex')) as entries_for_this_licence,\n       (select count(*) from public.ledger_lines   where license_hash = encode(digest('SB-TEST-2026','sha256'),'hex')) as lines_for_this_licence;",
+    "-- LINES FIRST, THEN THE ENTRY. Deleting the header first would leave two orphan lines keyed to an entry_id that no longer exists, and ledger_lines references it as plain text (sql/ledger_schema.sql:102) so nothing would stop it.\n-- Run as the table OWNER, not as service_role: the schema grants service_role select/insert/update and NO delete (line 144), which is why no API path can remove this.\ndelete from public.ledger_lines\n where license_hash = encode(digest('SB-TEST-2026', 'sha256'), 'hex')\n   and entry_id = 'ZZ-PREVIEW-PROBE-20260930';",
+    "delete from public.ledger_entries\n where license_hash = encode(digest('SB-TEST-2026', 'sha256'), 'hex')\n   and entry_id = 'ZZ-PREVIEW-PROBE-20260930';",
+    "-- CONFIRM. Both must be 0. A delete that reports success and leaves the rows is what this step exists for.\nselect (select count(*) from public.ledger_entries where license_hash = encode(digest('SB-TEST-2026','sha256'),'hex') and entry_id = 'ZZ-PREVIEW-PROBE-20260930') as entries_remaining,\n       (select count(*) from public.ledger_lines   where license_hash = encode(digest('SB-TEST-2026','sha256'),'hex') and entry_id = 'ZZ-PREVIEW-PROBE-20260930') as lines_remaining;"
+  ],
+  "leaving_it_is_also_defensible_and_here_is_the_judgement": "This is a balanced $1 entry on the TEST licence, memo'd as a probe and prefixed ZZ. It contributes $1 to both sides of a trial balance that nobody bills from. Removing it is tidy; leaving it is not a correctness problem. The SQL is written out because the decision is Michael's and a residue record whose removal has to be worked out later is the thing this directory exists to prevent.",
+  "and_this_run_was_not_a_tracked_tool": "Same gap recorded on 2026-09-29 and 2026-09-30: an ad-hoc script that writes is invisible to tools/live_probe_residue_audit.py, whose universe is tracked files under tools/ tests/ scripts/. The difference is that the residue is enumerated here, with the real id column and the real row counts, before anybody had to go looking for it. This one SHOULD become a tool if the ledger's provisioning has to be checked again -- it is a repeatable yes/no, unlike the 2026-09-30 sync proof it sits beside."
+}
