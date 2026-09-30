@@ -2745,6 +2745,17 @@
       "status": "released",
       "released_at": "2026-09-29T23:51:53Z",
       "files": null
+    },
+    {
+      "id": "cody-1790726581",
+      "session": "cody",
+      "subject": "cody-rev21",
+      "task": "discharge the 47h obligation authored by fourth on 2026-09-28T01:24:38Z",
+      "claimed_at": "2026-09-30T00:03:01Z",
+      "claimed_at_epoch": 1790726581.2345226,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
