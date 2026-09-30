@@ -218,6 +218,8 @@ def main(argv):
     if '--list' in argv:
         items = load()
         open_items = [w for w in items if not w.get('resolved_at')]
+        import freshness_stamp as _fs
+        print(_fs.stamp())
         print('%d open watch item(s) of %d total:' % (len(open_items), len(items)))
         for w in open_items:
             print('  %s.%s -- %s (added #%s, %s)' % (
