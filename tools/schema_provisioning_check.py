@@ -66,13 +66,35 @@ def declared_tables(schema):
     return sorted(set(re.findall(r'create table if not exists public\.(\w+)', src)))
 
 
-def registered(app):
-    src = open(os.path.join(REPO, 'api', '_resources', app + '.js'),
-               encoding='utf-8', errors='replace').read()
+CONTROLLED_BY = ['tests/run_schema_provisioning_probe.py']
+
+
+def registered_from_source(src):
+    """The resource names a registry module EXPORTS, or None if it declares none.
+
+    ── NONE AND EMPTY ARE DIFFERENT AND THE DIFFERENCE WAS THE DEFECT ────────
+    The first version searched for the literal `resources: [` and returned an
+    EMPTY SET when it found nothing. api/_resources/sairncode.js declares
+    `const RESOURCES = [...]` and exports it as
+    `module.exports = { resources: RESOURCES }`, so that spelling never matched
+    -- and the tool printed "registered: 0 checkable" followed by
+    "NOT REGISTERED: 15 (no code can ask for them)" FOR AN APP WITH TWENTY-EIGHT
+    REGISTERED RESOURCES. The two halves contradicted each other, neither was
+    flagged, and the 15-table finding was DERIVED FROM THE EMPTY READ.
+
+    So: None means COULD NOT READ and the caller must refuse. An empty set means
+    the registry really admits nothing, which is a different fact.
+    """
     src = '\n'.join(l for l in src.split('\n') if not l.strip().startswith('//'))
+    # Either spelling: `resources: [ ... ]`, or `NAME = [ ... ]` exported as
+    # `resources: NAME`.
     m = re.search(r'resources\s*:\s*\[', src)
     if not m:
-        return set()
+        ex = re.search(r'resources\s*:\s*([A-Z_][A-Z0-9_]*)', src)
+        if ex:
+            m = re.search(r'\b%s\s*=\s*\[' % re.escape(ex.group(1)), src)
+    if not m:
+        return None
     i = src.index('[', m.start())
     depth = 0
     for j in range(i, len(src)):
@@ -83,6 +105,42 @@ def registered(app):
             if depth == 0:
                 break
     return set(re.findall(r"'([\w.-]+)'", src[i:j + 1]))
+
+
+def registered(app):
+    """registered_from_source for one app, or None when the file is unreadable."""
+    p = os.path.join(REPO, 'api', '_resources', app + '.js')
+    try:
+        src = open(p, encoding='utf-8', errors='replace').read()
+    except OSError:
+        return None
+    return registered_from_source(src)
+
+
+# ── A TABLE NAME IS NOT A RESOURCE NAME, AND SEVEN LIVE TABLES PAID FOR IT ───
+# SAIRNgrounds and SAIRNscape map one to the other ON PURPOSE: resource
+# `properties` reaches table `grd_properties`, `customers` reaches
+# `scp_customers`, and five more. The handler builds the PostgREST path from the
+# prefixed name while the registry admits the bare one. Comparing the two sets
+# directly reported every one of those tables as something "no code can ask
+# for", while code asks for them on every page load.
+#
+# The prefix is taken from the table itself rather than from a per-app list: a
+# leading `<letters>_` is stripped and the remainder tried. That is narrow
+# enough to keep an orphan table orphaned -- `zz_orphan_table` does not resolve
+# against a registry of `properties` -- which is the half that keeps the finding
+# able to fire at all.
+_PREFIX = re.compile(r'^[a-z]{2,6}_')
+
+
+def resolves(table, reg):
+    """Is `table` reachable through some resource name in `reg`?"""
+    if not reg:
+        return False
+    if table in reg:
+        return True
+    bare = _PREFIX.sub('', table, count=1)
+    return bare != table and bare in reg
 
 
 def probe(resource, key, app):
@@ -147,15 +205,29 @@ def main(argv):
 
     tables = declared_tables(schema)
     reg = registered(app)
+    # AN UNREADABLE REGISTRY IS COULD NOT RUN, NEVER ZERO. Deriving a
+    # NOT-REGISTERED finding from a read that returned nothing is the
+    # zero-item-corpus failure, and this tool shipped it.
+    if reg is None:
+        sys.stderr.write(
+            'COULD NOT READ the resource registry for %r. api/_resources/%s.js\n'
+            'exists but no resource list could be parsed out of it, so NOTHING\n'
+            'below could be judged -- and a NOT-REGISTERED finding derived from\n'
+            'an empty read is exactly the defect this tool looks for. Exit 2.\n'
+            % (app, app))
+        return 2
     # A table the schema creates but the registry does not name can never be
     # reached through the endpoint, so a live probe cannot see it either. That
     # is a finding about the REPO, reported separately from the migration.
-    unreachable = [t for t in tables if t not in reg]
-    checkable = [t for t in tables if t in reg]
+    unreachable = [t for t in tables if not resolves(t, reg)]
+    checkable = [t for t in tables if resolves(t, reg)]
 
     results = {}
     for t in checkable:
-        results[t] = probe(t, key, app)
+        # ASK FOR THE RESOURCE, NOT THE TABLE. `grd_properties` is not a
+        # resource the dispatch has ever seen; `properties` is.
+        asked = t if t in reg else _PREFIX.sub('', t, count=1)
+        results[t] = probe(asked, key, app)
 
     missing = sorted(t for t, (s, _) in results.items() if s == 'MISSING')
     refused = sorted(t for t, (s, _) in results.items() if s in ('REFUSED', 'UNREADABLE'))
