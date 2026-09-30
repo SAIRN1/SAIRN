@@ -5048,29 +5048,6 @@
       "verdict": null
     },
     {
-      "author_session": "hover2",
-      "opened_at": "2026-09-30T14:00:26Z",
-      "opened_at_sha": "82b69588a125e9b730cfafeb5a95e29aee55f5a1",
-      "resources": [
-        "leg_insurance",
-        "quotes",
-        "sv_soapnotes"
-      ],
-      "rules": [],
-      "irreversible": [],
-      "files": [
-        ".claude/skills/sairn-hover-auditor/tools-hover2/presync_tier_a_dryrun.py",
-        ".claude/skills/sairn-hover-auditor/tools-hover2/routing_field_shape_audit.py"
-      ],
-      "what": "RETROSPECTIVE, OPENED BY hank ON hover2's BEHALF 2026-09-30, AND THIS ONE WAS NOT ON THE LIST -- IT WAS FOUND BY DERIVING RATHER THAN BY COPYING. AUTHOR OF THE CHANGE IS hover2, NOT hank -- author_session is corrected to hover2 in the same commit.\n\nHOW IT SURFACED: the queue named three blocked obligations for the tools-hover2 landing. Recomputing every tools-hover2 landing commit's diff through the gate's own tier_a_resources() and touched_tier_a(), with today's auditor-tree skip clause bypassed by reason text, found FOUR that carry a Tier A name and one that does not (a5365fb8 is clean, which is the control that says this derivation is not simply flagging everything). This is the fourth. Reported rather than quietly opened as if it had always been on the list.\n\nWHAT CHANGED: commit 29203c25 synced routing_field_shape_audit.py and landed presync_tier_a_dryrun.py. THREE RESOURCES: leg_insurance, quotes, sv_soapnotes -- all three appearing as EXAMPLE TOKENS in presync_tier_a_dryrun.py's own docstring. H2 predicted exactly this at seq 429, using that tool against itself: it \"would trip on leg_insurance/quotes/sv_soapnotes (they appear as example tokens in its docstring)\". The independent derivation here agrees with that prediction on all three, which is the useful part -- two methods, one answer.\n\nREVIEWER, NAMED BY ROLE AND NOT BY AGENT: ANY BUILD SESSION OTHER THAN THE AUTHOR of the change, holding no claim on .claude/skills/sairn-hover-auditor/ at the time of review. THE HOVER AUDITOR IS EXPLICITLY NOT ELIGIBLE, either instance.\n\nWHAT THE REVIEW MUST DRIVE, NOT READ: confirm presync_tier_a_dryrun.py and routing_field_shape_audit.py are report-only and READ-ONLY toward platform data, and construct no write to any of the three resources. Note that presync_tier_a_dryrun.py IMPORTS the real gate module to predict its behaviour -- confirm that import is read-only and that it cannot cause the gate to record anything as a side effect. A verdict of \"reviewed, no findings\" is refused unless it names what it opened and what it looked for.",
-      "status": "open",
-      "reviewer_owner": "cloud",
-      "owner_assigned_at": "2026-09-30T14:00:26Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
-    },
-    {
       "author_session": "cody",
       "opened_at": "2026-09-30T15:15:56Z",
       "opened_at_sha": "2d61bc91eb85b9c569cdea6661fb2b5ecddd8db5",

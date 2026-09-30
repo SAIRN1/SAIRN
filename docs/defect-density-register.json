@@ -21815,7 +21815,7 @@
       "recurrence_open": "NOT CLOSED BY THESE ACTIONS, and two things stay open. (1) The fix trades a tracked-file mutation for a leftover WORKTREE when a run is killed -- reaped by name on the way in and out, with an arm on it, but that is a mitigation of the new cost rather than its absence. (2) The same defect is still live ONE LAYER UP, inside the control for it: tests/run_dead_rule_sweep_probe.py section A2 sabotages tools/dead_rule_sweep.py in the clone and restores it in a finally. Named in the fix commit and deliberately not fixed there. Nothing in the repo yet ASKS, of a new checker, where its writes land -- so the class recurs by default and this record is the only thing that says so."
     },
     {
-      "commit": "89217357a077",
+      "commit": "9698606eb5d3",
       "date": "2026-09-30",
       "subject": "fix(tools): the mutation tester wrote a production engine, and the sibling scan did 1865 git launches",
       "files": [
