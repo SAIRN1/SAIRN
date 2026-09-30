@@ -3132,6 +3132,17 @@
       "status": "released",
       "released_at": "2026-09-30T12:04:18Z",
       "files": null
+    },
+    {
+      "id": "cc-1790771969",
+      "session": "cc",
+      "subject": "sqlcolctl",
+      "task": "tests/run_sql_column_exists_probe.py tests/run_mech_gate_live_probe_probe.py",
+      "claimed_at": "2026-09-30T12:39:29Z",
+      "claimed_at_epoch": 1790771969.6580741,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
@@ -3319,6 +3330,19 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "shared phrase: \"docs live\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-30T12:35:39Z",
+      "my_subject": "snapshotquery",
+      "my_task": "sql/schema_snapshot_query.sql",
+      "other_session": "fourth",
+      "other_subject": "fourth",
+      "other_task": "sql/sairncare_witness_schema.sql api/sairncare-witness.js api/sairncare-witness.test.js api/sd-data.js api/sd-data-alf-mar-actor-identity.test.js",
+      "other_claimed_at": "2026-09-30T12:27:49Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"schema sql\"",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
