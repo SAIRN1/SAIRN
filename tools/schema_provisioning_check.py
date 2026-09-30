@@ -167,7 +167,20 @@ def probe(resource, key, app):
     if status == 200 and d.get('ok'):
         return ('PROVISIONED' if d.get('provisioned') else 'MISSING'), ''
     err = (d.get('error') or {})
-    return 'REFUSED', '%s %s' % (status, err.get('code') or err.get('message') or '')
+    code = err.get('code') or ''
+    msg = err.get('message') or ''
+    # SAY WHICH KIND OF REFUSAL (2026-09-30). `403 FORBIDDEN` alone cannot be
+    # acted on: it reads the same whether the resource is deliberately behind an
+    # employee sign-in or the licence has lost its access. Diagnosed 2026-09-30
+    # for scp_invoices and scp_quotes -- both are in SD_SESSION_GATED at
+    # api/sd-data.js:817, so an unauthenticated run CANNOT complete the check for
+    # them and the honest report says so rather than implying something is broken.
+    why = code or msg
+    if status == 403 and ('sign in' in msg.lower() or 'session' in msg.lower()):
+        why = ('%s -- SESSION-GATED, not broken. This resource requires an '
+               'employee sign-in; an unauthenticated run cannot check it. Re-run '
+               'with a session.' % (code or 'FORBIDDEN'))
+    return 'REFUSED', '%s %s' % (status, why)
 
 
 def opt(argv, name):
@@ -223,11 +236,19 @@ def main(argv):
     checkable = [t for t in tables if resolves(t, reg)]
 
     results = {}
+    asked_as = {}
     for t in checkable:
         # ASK FOR THE RESOURCE, NOT THE TABLE. `grd_properties` is not a
         # resource the dispatch has ever seen; `properties` is.
         asked = t if t in reg else _PREFIX.sub('', t, count=1)
         results[t] = probe(asked, key, app)
+        # RECORD WHAT WAS ACTUALLY ASKED FOR when it differs from the table.
+        # A verdict about `scp_invoices` that came from asking for `invoices`
+        # cannot be reconciled with the endpoint's own answer unless the report
+        # says so -- and a reader chasing a 403 on scp_invoices will look for a
+        # branch that does not exist under that name.
+        if asked != t:
+            asked_as[t] = asked
 
     missing = sorted(t for t, (s, _) in results.items() if s == 'MISSING')
     refused = sorted(t for t, (s, _) in results.items() if s in ('REFUSED', 'UNREADABLE'))
@@ -256,6 +277,9 @@ def main(argv):
             print('  REFUSED         : %d -- NOT a pass, the check did not run for these' % len(refused))
             for t in refused:
                 print('      %-28s %s' % (t, results[t][1]))
+                if t in asked_as:
+                    print('        (asked for the RESOURCE %r, not the table name)'
+                          % asked_as[t])
         if blocked:
             print('  CHALLENGED      : %d -- bot mitigation, UNVERIFIED not verified-good' % len(blocked))
         if not missing and not refused and not blocked and not unreachable:
