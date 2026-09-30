@@ -3241,6 +3241,19 @@
       "source": "status-registry",
       "why": "shared phrase: \"docs write\"",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-30T01:42:14Z",
+      "my_subject": "liveresidue",
+      "my_task": "tools/audit_licence.py tests/run_live_residue_record_probe.py tools/mech_docs_gate_live_probe.py",
+      "other_session": "fourth",
+      "other_subject": "fourth",
+      "other_task": "docs/tier-a-reviews.json api/sd-data.js api/sd-data-ai-scan-redaction.test.js tools/rewrite_convergence_map.py tests/run_rewrite_convergence_probe.py tools/purge_evidence_gate.py docs/2026-09-29-live-verification-residue-fourth.md docs/2026-09-29-actor-derivation-fourth.md",
+      "other_claimed_at": "2026-09-30T01:37:24Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"docs live\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
 }
