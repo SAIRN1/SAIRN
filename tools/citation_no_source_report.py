@@ -50,7 +50,7 @@ REPO = os.path.dirname(TOOLS)
 sys.path.insert(0, TOOLS)
 from checker_kit import EXIT_CLEAN, EXIT_FINDING, EXIT_COULD_NOT_RUN  # noqa: E402
 
-CRITERIA_VERSION = '2026-09-29.1'
+CRITERIA_VERSION = '2026-09-29.2'
 DEFAULT_DOC = os.path.join('docs', 'CRITICALITY-TIERS.md')
 
 # A two-axis resource row: `| `name` | **T** | **C** | ...`
@@ -58,13 +58,34 @@ ROW = re.compile(r'^\| `([a-z0-9_]+)` \| \*\*([ABC])\*\* \| \*\*([ABC])\*\* \|')
 # A line citation. `:1234` after a path, or a bare `:1234` in a cell that named
 # a file earlier. Either is a citation for this report's purpose -- the question
 # is whether the cell points at ANY line, not whether the pointer is good.
-CITE = re.compile(r':\d{3,5}')
+#
+# -- AND `:\d{3,5}` COULD NOT SEE A LINE NUMBER UNDER 100 (fixed 2026-09-29,
+#    hank). The bare form needs three digits, because a two-digit `:NN` floating
+#    in prose is as likely to be a time or a fragment as a citation. But a
+#    citation ATTACHED TO A PATH needs no such guard, and `api/_resources/*.js`
+#    declarations live near the TOP of their files -- so `api/_resources/
+#    stonedesk.js:27` and `api/_resources/sairnroofing.js:56` were both counted
+#    as citing nothing. MEASURED, not assumed: exactly 2 of 391 rows, which is
+#    why this is a correction and not a headline. Reported anyway, because a
+#    citation rule that silently excludes the first 99 lines of every file is
+#    wrong about a shape it will keep meeting.
+CITE = re.compile(
+    r':\d{3,5}|'
+    r'[\w./\\-]+\.(?:js|html|py|sql|md|json|ts|jsx|tsx|css)`?\s*`?:\d{1,5}')
 # A row claiming it was read individually. Deliberately a small closed set of the
 # phrases this register actually uses, because inventing synonyms would make the
 # strict half of the report fire on cells that never claimed anything.
+# -- `re-derived` WAS TOO BROAD AND FIRED ON PROSE ABOUT THE DATA (fixed
+#    2026-09-29, hank). `law_mattermilestones` reads "the matter survives it and
+#    the stage can be re-derived" -- a sentence about whether a LOST MILESTONE
+#    can be reconstructed, not a claim that anybody read the row. It was the
+#    only row in the whole register whose contradiction rested on that word, and
+#    it was a false accusation. The alternative now requires the object:
+#    re-derived AT HEAD, FROM the code, OUT OF the app.
 CLAIMS_READ = re.compile(
     r'read individually|individually read|READ OUT OF THE APP|'
-    r'read at HEAD|re-derived|verified by direct read', re.I)
+    r'read at HEAD|re-derived (?:at HEAD|from the|out of)|'
+    r'verified by direct read', re.I)
 # A row saying in terms that it was NOT read. The honest form.
 ADMITS_DEFAULT = re.compile(
     r'Classified by the stated B rule rather than individually read|'
@@ -92,10 +113,57 @@ ADMITS_DEFAULT = re.compile(
 # ALL-CAPS-in-parentheses fallback so a new group name is not silently accused.
 GROUP_STAMP = re.compile(r'\((?:[A-Z][A-Z_]{4,})\)')
 
+# -- A DATED INDIVIDUAL READ IS ALSO EVIDENCE, AND CALLING IT A CONTRADICTION
+#    WAS THE SAME MISTAKE ONE STEP SMALLER (fixed 2026-09-29, hank).
+#
+# The group-stamp correction above took CONTRADICTORY from 138 to 32 and stopped
+# there. Reading all 32 by hand -- which is what the number was for -- found that
+# 31 of them carry real, disclosed evidence in a form this file did not
+# recognise, and the 32nd was the `re-derived` false positive above. THE HONEST
+# CONTRADICTION COUNT IS ZERO, and the bucket had been over-accusing since it
+# was written.
+#
+# Three shapes, all taken from the register's own wording rather than invented:
+#
+#   AXIS_DATED_READ  "**Confidentiality individually read 2026-09-22**", and
+#                    "confidentiality individually read and left at B,
+#                    2026-09-23". An AXIS, the read, and a DATE. That is the
+#                    3.2 pass's per-row stamp without a group label -- the same
+#                    evidence as GROUP_STAMP, one degree less labelled. 27 rows.
+#   CONFIRMED_READ   "CONFIRMED B/B BY INDIVIDUAL READ", which the three rows
+#                    carrying it follow with an auditor log reference. 3 rows.
+#   FIELD_LIST       "READ OUT OF THE APP: `{id, cat, patient, value, status}`"
+#                    and the same with HANDLER. A field list lifted out of the
+#                    source IS the evidence; it just has no line number. 1 row.
+#
+# IT IS WEAKER THAN A LINE AND IT IS NOT AN UNSUPPORTED CLAIM. Same sentence the
+# group-stamp block above already makes, and the same reason: over-accusing is
+# the direction that gets a report ignored, and this report has now done it
+# twice in one week on the same bucket.
+#
+# THE DATE MUST FOLLOW THE READ, NOT PRECEDE IT. "2026-09-23 re-audit, read
+# individually" is a claim with a date nearby; "confidentiality individually read
+# 2026-09-22" is a stamp. The probe drives both, in both directions.
+AXIS_DATED_READ = re.compile(
+    r'\b(?:confidentiality|integrity|both axes)\b[^|]{0,30}?'
+    r'(?:individually read|read individually)[^|]{0,60}?\b20\d\d-\d\d-\d\d',
+    re.I)
+CONFIRMED_READ = re.compile(
+    r'CONFIRMED\s+[ABC]\s*/\s*[ABC]\s+BY\s+INDIVIDUAL\s+READ', re.I)
+FIELD_LIST_READ = re.compile(
+    r'READ OUT OF THE [A-Z][A-Z ]{2,22}?:[^|]{0,240}?\{[^}]{6,}\}')
+
+
+def read_disclosed(line):
+    """True when the cell shows a dated or field-list individual read with no
+    line number. Evidence, weaker than a citation, NOT a bare claim."""
+    return bool(AXIS_DATED_READ.search(line) or CONFIRMED_READ.search(line)
+                or FIELD_LIST_READ.search(line))
+
 
 def scan(text):
-    rows, no_cite, contradictory, disclosed, cited, grouped = (
-        [], [], [], [], [], [])
+    rows, no_cite, contradictory, disclosed, cited, grouped, read_disc = (
+        [], [], [], [], [], [], [])
     for line in text.split('\n'):
         m = ROW.match(line)
         if not m:
@@ -114,9 +182,14 @@ def scan(text):
             disclosed.append(entry)
         elif GROUP_STAMP.search(line) and CLAIMS_READ.search(line):
             grouped.append(entry)
+        elif read_disclosed(line):
+            # AFTER the group stamp on purpose: a row carrying BOTH is reported
+            # under the stronger, NAMED disclosure, because a reader can
+            # disagree with a named group and cannot disagree with a date.
+            read_disc.append(entry)
         elif CLAIMS_READ.search(line):
             contradictory.append(entry)
-    return rows, cited, no_cite, contradictory, disclosed, grouped
+    return rows, cited, no_cite, contradictory, disclosed, grouped, read_disc
 
 
 def main(argv=None):
@@ -134,7 +207,7 @@ def main(argv=None):
               % args.doc)
         return EXIT_COULD_NOT_RUN
     text = io.open(path, encoding='utf-8', errors='replace').read()
-    rows, cited, no_cite, contradictory, disclosed, grouped = scan(text)
+    rows, cited, no_cite, contradictory, disclosed, grouped, read_disc = scan(text)
 
     if not rows:
         print('COULD NOT RUN: no two-axis resource row matched in %s. Either the '
@@ -152,19 +225,46 @@ def main(argv=None):
           % len(disclosed))
     print('    of those, carry a 3.2 GROUP STAMP               : %d  -- '
           'weaker than a line, NOT an unsupported claim' % len(grouped))
-    print('    of those, CLAIM a read with NEITHER             : %d  <- the '
+    print('    of those, show a DATED or FIELD-LIST read       : %d  -- '
+          'also weaker than a line, also NOT a bare claim' % len(read_disc))
+    print('    of those, CLAIM a read with NONE of the above   : %d  <- the '
           'contradiction' % len(contradictory))
     print('    neither stated                                  : %d'
-          % (len(no_cite) - len(disclosed) - len(contradictory) - len(grouped)))
+          % (len(no_cite) - len(disclosed) - len(contradictory) - len(grouped)
+             - len(read_disc)))
     print()
     if contradictory:
-        print('CONTRADICTORY (%d) -- claims an individual read with NEITHER a '
-              'line NOR a group stamp behind it. Read these first: the other '
-              'groups are disclosed or group-backed; this one asserts evidence '
-              'it does not show.' % len(contradictory))
+        print('CONTRADICTORY (%d) -- claims an individual read with NO line, NO '
+              'group stamp, NO date and NO field list behind it. Read these '
+              'first: every other group shows evidence of some kind; this one '
+              'asserts evidence it does not show.' % len(contradictory))
         for e in contradictory:
             print('  ! %-30s Tier %s / Conf %s'
                   % (e['resource'], e['tier'], e['confidentiality']))
+        print()
+    else:
+        print('CONTRADICTORY (0) -- no row claims an individual read with '
+              'nothing at all behind it.')
+        print('  READ THAT WITH ITS HISTORY RATHER THAN AS A CLEAN BILL. This '
+              'bucket read 138, then 32, and is now 0 -- and NOT ONE ROW WAS '
+              'EDITED to get there. Each drop was a criterion of this tool '
+              'being wrong: first it treated a 3.2 group stamp as no evidence '
+              '(106 rows), then a dated per-row read stamp and a field list '
+              'lifted out of the source (31 rows), then the word "re-derived" '
+              'used about DATA rather than about a read (1 row).')
+        print('  WHAT IS STILL TRUE, and it is the figure to carry forward: %d '
+              'rows point at no LINE. That is a real coverage gap and it has '
+              'not moved.' % len(no_cite))
+        print()
+    if read_disc:
+        print('DATED OR FIELD-LIST READ (%d) -- evidence without a line number. '
+              'Weaker than a citation, and not a contradiction.'
+              % len(read_disc))
+        for e in read_disc[:12]:
+            print('    %-30s Tier %s / Conf %s'
+                  % (e['resource'], e['tier'], e['confidentiality']))
+        if len(read_disc) > 12:
+            print('    ... and %d more' % (len(read_disc) - 12))
         print()
     tier_a = [e for e in no_cite if e['tier'] == 'A']
     print('  UNCITED AND TIER A: %d -- a wrong basis on an A row is the '
@@ -193,6 +293,7 @@ def main(argv=None):
                           'no_citation': no_cite,
                           'contradictory': contradictory,
                           'group_stamped': grouped,
+                          'read_disclosed': read_disc,
                           'disclosed': disclosed}, indent=2))
 
     return EXIT_FINDING if no_cite else EXIT_CLEAN

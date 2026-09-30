@@ -115,6 +115,60 @@ if plain:
 else:
     ok(False, 'no plain commit found to drive the known-bad against')
 
+# ══ PART 3b -- THE FALSE DROPPED, DRIVEN THROUGH THE CLI ═══════════════════
+# The tool's own selftest locks these too, and that is not enough on its own: a
+# tool asserting that its own fix works is the shape item 11 is about. This runs
+# the fix through the REAL command line against a REAL plain commit -- the exact
+# configuration that produced the false finding.
+print(NL + 'PART 3b -- the false DROPPED, through the CLI, against a real plain commit')
+if plain:
+    NOT_HEDGES = [
+        ("The resource name appears in citation_drift_hook.py's DOCSTRING and in "
+         "invocation_path_scan.py's docstring, as the worked example.",
+         '`appears` meaning OCCURS'),
+        ('Strip comments and block comments, then confirm the only possible '
+         'values are A and B.',
+         '`possible` ENUMERATING a closed set'),
+        ('The named suspect is the matcher, not the tool.',
+         '`suspect` as a NOUN'),
+    ]
+    for text, label in NOT_HEDGES:
+        rc, out = run('--item', text, '--range', plain + '~1..' + plain)
+        ok(rc == EXIT_CLEAN and 'DROPPED' not in out,
+           'FALSE DROPPED, FIXED: %s is not a hedge, so a real plain commit no '
+           'longer answers for it (exit %d)' % (label, rc), out[-500:])
+        ok('NOTHING TO CHECK' in out.upper(),
+           '   ...and it says it checked nothing rather than printing a clean '
+           'line -- the same distinction as an unhedged dispatch', out[-400:])
+
+    REAL_HEDGES = [
+        ('This appears to be a Tier A resource on the money limb.', '`appears to`'),
+        ('It is possible that the register is right about this row.', '`possible that`'),
+        ('I suspect the matcher is reading the wrong column.', '`I suspect`'),
+    ]
+    for text, label in REAL_HEDGES:
+        rc, out = run('--item', text, '--range', plain + '~1..' + plain)
+        ok(rc == EXIT_FINDING and 'DROPPED' in out,
+           'and %s STILL fires (exit %d) -- the fix DISAMBIGUATES the three '
+           'polysemous entries, it does not delete them, and a fix that deleted '
+           'them would pass every arm above' % (label, rc), out[-500:])
+
+    # THE SHADOWING, end to end. One dispatch, a non-hedging use first and a real
+    # hedge second. The bare-word version reported the first and stopped.
+    rc, out = run('--item', 'The name appears in the docstring. Separately, the '
+                  'row appears to be Tier A on the money limb.',
+                  '--range', plain + '~1..' + plain)
+    ok(rc == EXIT_FINDING and 'appears to' in out,
+       'and the real hedge is no longer SHADOWED by a non-hedging use of the '
+       'same word earlier in the dispatch -- reported under its own label '
+       '`appears to` (exit %d)' % rc, out[-600:])
+    ok('appears to be Tier A' in out,
+       '   ...with the sentence that actually carried the hedge as its context, '
+       'not the first sentence in the dispatch', out[-600:])
+else:
+    ok(False, 'no plain commit found, so the false-DROPPED arms did not run -- '
+              'that is a could-not-run and is reported as a failure, not skipped')
+
 # ══ FAIL CLOSED ════════════════════════════════════════════════════════════
 print(NL + 'PART 4 -- fail closed, three ways')
 rc, out = run('--item', ITEM)
