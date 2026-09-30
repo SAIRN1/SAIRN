@@ -8,13 +8,13 @@ residue it creates RECORDED AND PRINTED rather than discovered afterwards.
 ── WHY THIS EXISTS AS A TOOL AND NOT AS A SCRATCHPAD SCRIPT ────────────────
 On 2026-09-29 the mech_docs write gate was verified live by an ad-hoc script in a
 temp directory. It worked -- 403 on the keyless write, 200 on the read and on the
-three sibling writes -- and it left TWO ROWS on MECH-PINNACLE-2026, a
-DEMO-FACING licence, on tables whose `service_role` has no DELETE grant. They
+three sibling writes -- and it left TWO ROWS on the SAIRNmechanical
+DEMO licence -- the key is deliberately not spelled in this file, see below, on tables whose `service_role` has no DELETE grant. They
 needed Michael in the SQL editor.
 
 THE GUARD THAT WOULD HAVE STOPPED IT ALREADY EXISTED AND WAS NOT IMPORTED.
 `tools/audit_licence.py:require_audit_licence` refuses a non-audit key outright,
-and MECH-AUDIT-2026 is in its known list. An uncommitted script imports nothing
+and the SAIRNmechanical audit key is in its known list. An uncommitted script imports nothing
 and is invisible to `tools/live_probe_residue_audit.py`, whose universe is tracked
 files under tools/ tests/ scripts/ -- so the one mechanism that enforces the rule
 could not see the one run that broke it.
@@ -62,12 +62,13 @@ EXIT_FINDING = 1
 EXIT_COULD_NOT_RUN = 2
 
 LIVE_PROBE_CLASS = 'VERIFICATION'
-LIVE_PROBE_RESIDUE = ('one row per sibling table written (mech_checks, '
-                      'mech_takeoffs), id ZZ-MECH-GATE-<run>, on the audit '
-                      'licence only; enumerated by table and id in '
-                      'docs/live-residue/<date>-mech_gate_live_probe.json and '
-                      'removable with the SQL this tool prints at the end of '
-                      'every run')
+# ── ONE SINGLE-QUOTED STRING, ON ONE LINE, AND THAT IS NOT A STYLE CHOICE ──
+# tools/live_probe_residue_audit.py matches this declaration with
+# LIVE_PROBE_RESIDUE\s*=\s*["'](...)["'] -- a SINGLE quoted literal. The first
+# version of this line was a parenthesised multi-line concatenation, which reads
+# better and matched nothing, so the auditor listed this tool as VERIFICATION that
+# WRITES and DECLARES NO RESIDUE. The declaration existed and did not count.
+LIVE_PROBE_RESIDUE = 'docs/live-residue/README.md -- one row per sibling table written (mech_checks, mech_takeoffs), id ZZ-MECH-GATE-<run>, on the audit licence only. EVERY RUN writes docs/live-residue/<date>-mech_gate_live_probe.json enumerating each row by table and id column, and prints the select/delete/confirm SQL that removes it with the licence hash DERIVED in SQL. The path named first is the standing contract, not one run: a per-run file cannot exist before the run and the auditor checks the FIRST token of this declaration is a real file.'
 
 # The id column each MECH_RECORDS table actually uses. NOT entry_id -- the rest of
 # this platform's blob tables use entry_id and these four do not, which is the
@@ -244,8 +245,20 @@ def main(argv):
         return r
 
     def write_sibling(resource):
+        # ── THE ACTION IS A NAMED LITERAL SO THE PLATFORM AUDITOR CAN SEE IT ──
+        # tools/live_probe_residue_audit.py finds writing live probes by matching
+        # `'action': 'write'` or `action = 'write'` as LITERALS, and its own
+        # limitations note says a dynamically built action name is invisible to
+        # it. The first version of this file passed 'write' positionally into a
+        # helper, so every declaration in it was correct and the auditor still
+        # listed 9 writing probes and not 10 -- a tool that declares itself and
+        # cannot be found declares itself to nobody.
+        #
+        # This is not a trick to satisfy a regex: the action IS write, said in the
+        # form the one tool that polices this rule reads.
+        action = 'write'
         rid = 'ZZ-MECH-GATE-%s' % run_id
-        r = call('write', resource, {'id': rid, 'text': 'gate boundary check'})
+        r = call(action, resource, {'id': rid, 'text': 'gate boundary check'})
         if r.status == 200:
             res.created(resource, rid)
         return r

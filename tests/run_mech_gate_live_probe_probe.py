@@ -177,5 +177,43 @@ ck('5. THE 2026-09-29 KEY ITSELF: --key MECH-PINNACLE-2026 is REFUSED with '
    and 'not an audit licence' in (p.stderr or ''),
    (p.stdout or '') + (p.stderr or ''))
 
+# ── 6. THE PLATFORM AUDITOR CAN ACTUALLY SEE THIS TOOL ──────────────────────
+# THREE SEPARATE WAYS THIS TOOL DECLARED ITSELF CORRECTLY AND WAS STILL NOT
+# JUDGED, each found by RUNNING the auditor rather than by reading it:
+#   * the write action was passed positionally into a helper, so
+#     action_literals() saw no `action = 'write'` and the tool was absent from
+#     the writing-probe list entirely -- the audit said 9 writers, not 10;
+#   * LIVE_PROBE_RESIDUE was a parenthesised multi-line concatenation, and
+#     RESIDUE_RE matches ONE quoted literal, so the declaration existed and
+#     counted as absent;
+#   * the residue declaration did not START with a real path, and the audit takes
+#     residue.split()[0] and requires that file to exist.
+#
+# A TOOL THAT DECLARES ITSELF TO A CHECKER THAT CANNOT FIND IT DECLARES ITSELF TO
+# NOBODY, which is the same failure as the 2026-09-29 script being untracked, one
+# level in. So this arm asserts the AUDITOR'S VERDICT, not the presence of the
+# declarations -- the declarations were present all three times.
+p = subprocess.run([sys.executable,
+                    os.path.join(REPO, 'tools', 'live_probe_residue_audit.py')],
+                   cwd=REPO, capture_output=True, text=True, encoding='utf-8',
+                   errors='replace',
+                   env=dict(os.environ, PYTHONIOENCODING='utf-8'))
+audit_out = (p.stdout or '') + (p.stderr or '')
+ck('6. the residue auditor LISTS this tool as a VERIFICATION writer, rather than '
+   'not seeing it at all',
+   'mech_gate_live_probe.py' in audit_out
+   and 'VERIFICATION tools/mech_gate_live_probe.py' in audit_out,
+   audit_out[-700:])
+ck('6b. ...with guard=yes and a residue declaration it ACCEPTS',
+   'guard=yes  residue=docs/live-residue/README.md' in audit_out,
+   audit_out[-700:])
+_mine = [l for l in audit_out.split('\n')
+         if l.strip().startswith('!') and 'mech_gate_live_probe' in l]
+ck('6c. ...and the auditor raises NO finding about this tool', not _mine,
+   '\n'.join(_mine))
+ck('6d. and the standing residue path the declaration names FIRST is a real '
+   'file, because that is the token the auditor checks',
+   os.path.isfile(os.path.join(REPO, 'docs', 'live-residue', 'README.md')))
+
 print('\n%d passed, %d failed' % (passed, failed))
 sys.exit(EXIT_FINDING if failed else EXIT_CLEAN)
