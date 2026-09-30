@@ -2918,8 +2918,8 @@
       "task": "tools/condition_coverage.py tests/run_condition_coverage_sandbox_probe.py",
       "claimed_at": "2026-09-30T12:51:23Z",
       "claimed_at_epoch": 1790772683.6776378,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T15:29:26Z",
       "files": null
     },
     {
