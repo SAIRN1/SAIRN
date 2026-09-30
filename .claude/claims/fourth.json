@@ -2879,6 +2879,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "fourth-1790769758",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "sairnbiz.html tests/sairnbiz_ot_threshold_coalesce.js docs/2026-09-29-live-verification-residue-fourth.md",
+      "claimed_at": "2026-09-30T12:02:38Z",
+      "claimed_at_epoch": 1790769758.9799821,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
