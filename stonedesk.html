@@ -29998,8 +29998,28 @@ var _sdReadFailed  = {};   // resource -> true if the LAST call did not return d
 // until a migration is run.
 var _sdLastStatus  = {};
 
+// ── A FOURTH FACT, AND IT IS A WRITE FACT (2026-09-29) ──────────────────────
+// Whether the last write LANDED. Not derivable from what sdData() returns:
+// api/sd-data.js answers `data: (Array.isArray(rows) && rows[0]) ? rows[0].data
+// : payload` on 69 write branches, and `data` is a nullable jsonb column -- so a
+// stored row whose blob is null comes back as 200 / ok:true / data:null, sdData
+// unwraps it to null, and every caller testing the RETURN VALUE against null
+// reports a write that is sitting on the server as lost. slabSyncOne and
+// sdLineageSyncOne both did, and sdLineageSyncOne's own header argued it could
+// not happen.
+//
+// A POSITIVE RECORD, NOT THE ABSENCE OF A FAILURE. `!_sdReadFailed[resource]`
+// would read `!undefined` for a call that never happened -- so a write that
+// never left the browser (no licence, an early return) would report as landed.
+// This is set false on entry and true only after the envelope's `ok` passed, so
+// every path that does not get there is false by construction.
+var _sdWriteOk = {};       // resource -> the LAST call's envelope said ok
+
 function sdAuthWasRefused(resource) { return !!_sdAuthRefused[resource]; }
 function sdReadFailed(resource) { return !!_sdReadFailed[resource]; }
+// Strict === true, so a resource never written reads false rather than
+// undefined. A caller asking "did it land" must never get a maybe.
+function sdWriteLanded(resource) { return _sdWriteOk[resource] === true; }
 // undefined means this resource has not been called yet -- which is NOT the
 // same as 0, and neither is the same as a status. Returned as-is.
 function sdLastStatus(resource) { return _sdLastStatus[resource]; }
@@ -30049,6 +30069,9 @@ function sdFetchTimeoutSignal(){
   return undefined;
 }
 async function sdData(action, resource, payload) {
+  // FIRST LINE, ahead of the licence check, so no early return can leave a
+  // stale `true` from an earlier call standing as this call's verdict.
+  _sdWriteOk[resource] = false;
   const licKey = sdLicenseKey();
   if (!licKey) return null;
   try {
@@ -30085,6 +30108,10 @@ async function sdData(action, resource, payload) {
       return null;
     }
     _sdReadFailed[resource] = false;
+    // The envelope said ok. THIS is the only place it is set true, and it is
+    // after the `j.ok` test rather than after the HTTP status, because a 200
+    // carrying ok:false is a refused write.
+    _sdWriteOk[resource] = true;
     // ONE LINE IN THE TRANSPORT (2026-09-21): a write past the guards above is
     // a write the server accepted, and the server-wins carve-out needs to know
     // which ids those are.
@@ -39292,15 +39319,28 @@ async function sdReleaseSlab(slab, forWho){
 // non-null object -- the two are distinguishable, which is what makes a boolean
 // honest here rather than a guess.
 async function slabSyncOne(slab){
-  if(typeof sdData!=='function') return false;
+  // sdWriteLanded IS IN THE GUARD, not tested mid-body. If the accessor is
+  // absent this function must answer false -- "it did not reach the server" is
+  // the only safe answer when the thing that knows is missing.
+  if(typeof sdData!=='function' || typeof sdWriteLanded!=='function') return false;
   // No licence is not a failure to report -- there is nothing to sync to. It is
   // still FALSE rather than undefined, because "it did not reach the server" is
   // the true answer and pcToggleSlab's warning is the right thing to show.
   var lic=slabLicKey(); if(!lic) return false;
   try{
     // Endpoint upserts by slab.id within this license and stamps app_id server-side.
-    var saved=await sdData('write','slabs',slab);
-    if(saved!==null && saved!==undefined) return true;
+    //
+    // THE ENVELOPE, NOT THE PAYLOAD (2026-09-29). This used to be
+    // `var saved=await sdData(...); if(saved!==null && saved!==undefined)`, and
+    // the return value cannot answer the question: the slabs write branch
+    // answers `data: rows[0] ? rows[0].data : payload` and `data` is a nullable
+    // jsonb column, so a stored row with a null blob came back as 200/ok:true/
+    // data:null and this function logged a slab that IS on the server as one the
+    // yard and the server disagree about. hank's 2026-09-26 review said the old
+    // boolean was sound because the branch answers `rows[0].data || payload`.
+    // It does not, on any of the 69 branches written that way.
+    await sdData('write','slabs',slab);
+    if(sdWriteLanded('slabs')) return true;
     // NAMED AT THIS SITE, not left to the transport. sdData() already warns, but
     // it names the RESOURCE ('slabs') and six of this function's seven callers
     // ignore the return value -- so without this the log cannot tell you WHICH
@@ -39405,15 +39445,21 @@ async function sdLineageSync(){
 // still looks right, and the record that would have contradicted it is simply
 // absent. There is nothing later to notice from.
 //
-// All three lineage writes answer `data: wrows[0].data || payload`, so a landed
-// write is a non-null object and sdData()'s null-on-any-failure is
-// distinguishable from it.
+// THAT PARAGRAPH USED TO SAY the three lineage writes answer
+// `data: wrows[0].data || payload`, so a landed write is a non-null object and
+// sdData()'s null-on-any-failure is distinguishable from it. IT WAS FALSE, and
+// it was the argument for the boolean below. api/sd-data.js:3303 and :3362
+// answer `data: (Array.isArray(wrows) && wrows[0]) ? wrows[0].data : payload` --
+// the row-exists ternary, not the `|| payload` fallback -- so a lineage row
+// whose jsonb blob is null came back as data:null and this function reported a
+// landed write as lost. Checked against the endpoint on 2026-09-29 rather than
+// re-read off this comment.
 async function sdLineageSyncOne(resource, rec){
-  if(typeof sdData!=='function') return false;
+  if(typeof sdData!=='function' || typeof sdWriteLanded!=='function') return false;
   if(typeof sdLicenseKey==='function' && !sdLicenseKey()) return false;
   try{
-    var saved=await sdData('write', resource, rec);
-    if(saved!==null && saved!==undefined) return true;
+    await sdData('write', resource, rec);
+    if(sdWriteLanded(resource)) return true;
     // The 503 path is the live one, not a hypothetical: the endpoint answers
     // NOT_PROVISIONED until sql/sd_slab_lineage_schema.sql has been run, and
     // the old body made that indistinguishable from a working sync.
