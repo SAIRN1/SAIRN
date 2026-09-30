@@ -48,6 +48,15 @@ _GUARD_RE = re.compile(
     r"\.lower\(\)|\.upper\(\)|_RE\b")
 WINDOW = 20  # lines around the split searched for a guard (a raise can sit
              # well below the split, as hover_log.py's own fix does)
+# Signals the split's TOKENS become STORED data (a write-time routing field) --
+# the only shape whose malformed token actually persists. A split that feeds a
+# lookup or a comparison (.get(), ` in `, ==, a local counter) is READ-SIDE and
+# is NOT this tool's subject: a bad token there just fails to match, it is not
+# stored. defect_density_weighting.py:186 (target.split(',') -> resource_to_app
+# .get(tok)) is the read-side case this distinction clears.
+_WRITE_RE = re.compile(
+    r"append_entry|\broutable|body\s*\[|entry\s*\[|setItem|localStorage|"
+    r"json\.dump|\bst\(|\bsave\w*\(|\.store\b|\.append\(\s*tok")
 
 
 def _funcname(lines, idx):
@@ -71,8 +80,10 @@ def scan_source(src):
         lo, hi = max(0, i - WINDOW), min(len(lines), i + WINDOW + 1)
         window = '\n'.join(lines[lo:hi])
         guarded = bool(_GUARD_RE.search(window))
+        write_side = bool(_WRITE_RE.search(window))
         hits.append({'line': i + 1, 'func': _funcname(lines, i),
-                     'text': line.strip()[:100], 'guarded': guarded})
+                     'text': line.strip()[:100], 'guarded': guarded,
+                     'write_side': write_side})
     return hits
 
 
@@ -87,26 +98,48 @@ def scan_dir(here=HERE):
         except OSError:
             continue
         for h in scan_source(src):
-            if not h['guarded']:
+            # Only an UNGUARDED, WRITE-SIDE split is this tool's subject: a
+            # read-side split (lookup/compare) storing nothing is not a
+            # write-time routing field, so a bad token there cannot persist.
+            if not h['guarded'] and h['write_side']:
                 findings.append(dict(file=fn, **h))
     return findings
 
 
 # ── FIXTURES, blind-locked: written and asserted before the real scan ──────
+# A WRITE-side unguarded split: the tokens are STORED (body['routable']), so a
+# malformed one persists. This is the tool's true positive.
 _VULN = '''
-def parse(routable):
+def append_entry(routable):
     names = [x.strip() for x in routable.split(',') if x.strip()]
-    return names
+    body = {}
+    body['routable'] = names
+    return body
+'''
+# A READ-side split: the tokens feed a lookup and a local counter, nothing is
+# stored. A bad token just fails to map. This is defect_density_weighting.py:186
+# and it must NOT be flagged.
+_READ_LOOKUP = '''
+def density(entries, resource_to_app):
+    finding_count = {}
+    for e in entries:
+        for tok in (p.strip() for p in e['target'].split(',')):
+            app = resource_to_app.get(tok)
+            if app:
+                finding_count[app] = finding_count.get(app, 0) + 1
+    return finding_count
 '''
 _GUARDED = '''
-def parse(routable):
+def append_entry(routable):
     out = []
     for tok in routable.split(','):
         tok = tok.strip()
         if not TOKEN_RE.match(tok):
             raise ValueError('bad token %r' % tok)
         out.append(tok)
-    return out
+    body = {}
+    body['routable'] = out
+    return body
 '''
 
 
@@ -119,11 +152,18 @@ def selftest():
             bad.append(name)
 
     vuln = scan_source(_VULN)
-    ck('the VULNERABLE shape (split + strip-filter, no validator) is flagged '
-       'as unguarded', len(vuln) == 1 and vuln[0]['guarded'] is False)
+    ck('the VULNERABLE shape (unguarded split whose tokens are STORED) is '
+       'flagged -- unguarded and write-side',
+       len(vuln) == 1 and vuln[0]['guarded'] is False
+       and vuln[0]['write_side'] is True)
+    read = scan_source(_READ_LOOKUP)
+    ck('KNOWN-BAD CONTROL: a READ-SIDE split (feeds a .get() lookup and a '
+       'local counter, stores nothing) is detected as read-side and NOT '
+       'reported (the defect_density_weighting.py:186 shape)',
+       len(read) == 1 and read[0]['write_side'] is False)
     guarded = scan_source(_GUARDED)
-    ck('KNOWN-BAD CONTROL: the GUARDED shape (a TOKEN_RE.match + raise near '
-       'the split) is NOT flagged -- guarded is True',
+    ck('KNOWN-BAD CONTROL: the GUARDED write-side shape (a TOKEN_RE.match + '
+       'raise near the split) is guarded True',
        len(guarded) == 1 and guarded[0]['guarded'] is True)
     ck('a source with no comma-split at all yields nothing',
        scan_source('def f():\n    return 1\n') == [])
@@ -134,9 +174,9 @@ def selftest():
     ck('the now-fixed hover_log.py --routable parse site is NOT reported '
        '(the fix clears this scanner)', hl == [])
     if bad:
-        print('%d of 4 selftest arm(s) failed' % len(bad))
+        print('%d of 5 selftest arm(s) failed' % len(bad))
         return 1
-    print('OK -- 4 arms passed')
+    print('OK -- 5 arms passed')
     return 0
 
 
