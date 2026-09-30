@@ -71,6 +71,16 @@ def slug_for(path):
 
 
 def own_project_slug(here=None):
+    """LOCATION-DEPENDENT, found live 2026-09-29 (item 4/5, stonedesk-era
+    paste): correct ONLY when this file lives two levels under
+    .claude/projects/<slugged-path>/hover-audit-log/, where
+    dirname(HERE) is the slugged project directory. The platform-repo
+    backup copy under .claude/skills/sairn-hover-auditor/tools-hover2/
+    computes the WRONG slug (its own selftest catches this: 'slug_for()
+    on this clone's real path equals this hook's own project-dir name'
+    fails there) -- that copy is a source backup, never meant to run
+    in-place as the SessionStart hook itself. Only the ORIGINAL copy in
+    this real projects-directory location is ever actually invoked."""
     return os.path.basename(os.path.dirname(here or HERE))
 
 
