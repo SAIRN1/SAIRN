@@ -445,8 +445,8 @@
       "task": "eight-item queue: paste-ready leg_guestbook cell text for hank; read-only inventory and credential-shape scan of the deploy folder inside the stray repo's capture surface; three cold reads (mech_docs gate split, derive_charges null guard, expectedApp completeness); re-verify the 18 open register findings against origin/main with the freshness stamp; conditional H2 routable-field validation; one undirected batch through the linter; the weighted rotation draw; a memory-vs-derived sweep of log entries 600-onward with a planted-drift control and a derivation-flag warning in the logging tool.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hover.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. Each component checks CLEAR on its own.\n\nFILES: hover_log.py hover_cold_scan_pool.py freshness_stamp.py",
       "claimed_at": "2026-09-30T00:25:43Z",
       "claimed_at_epoch": 1790727943.3664753,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T00:55:09Z",
       "files": [
         "freshness_stamp.py",
         "hover_cold_scan_pool.py",
