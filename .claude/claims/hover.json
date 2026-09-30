@@ -468,6 +468,21 @@
         "hover_log.py",
         "run_memory_vs_derived_sweep.py"
       ]
+    },
+    {
+      "id": "hover-1790732866",
+      "session": "hover",
+      "subject": "hover",
+      "task": "eight-item queue: individually adjudicate all 54 wrong-at-derivation citations with per-seq labels and routed corrections; extend the citation classifier with near-miss and quoted-claim classes plus fixtures and rerun; mutation-test the classifier with twenty injected citations across five classes; emit the moved-since repoint list with content-changed marking; the corrected sf_national_categories citation; a thirty-entry no-sha derivability sample; confirm H2's empty-token and uppercase routable fixes; the commit-time-check feasibility writeup.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hover.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. Each component checks CLEAR on its own.\n\nFILES: citation_class_check.py hover_log.py run_memory_vs_derived_sweep.py",
+      "claimed_at": "2026-09-30T01:47:46Z",
+      "claimed_at_epoch": 1790732866.1922805,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "citation_class_check.py",
+        "hover_log.py",
+        "run_memory_vs_derived_sweep.py"
+      ]
     }
   ],
   "refusals": [
