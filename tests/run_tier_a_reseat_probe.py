@@ -266,10 +266,18 @@ print('CONTROL PAIR -- tier_a_review_gate.py --reseat-shas' + NL)
  subset_when) = build_fixture()
 LEDGER = os.path.join(d, 'docs', 'tier-a-reviews.json')
 try:
+    # ── NO ARM LABEL CARRIES A SHA, AND THAT IS NOT COSMETIC (2026-09-29).
+    # Three labels here used to interpolate the fixture's shas, which are NEW ON
+    # EVERY RUN. A both-ways mutation harness pairs arms BY LABEL, so three
+    # value-only arms -- including this one, which compares two shas and cannot
+    # depend on any wording -- were uncomparable across runs and came back as
+    # "did not run". An arm nobody can pair across two runs cannot be
+    # mutation-tested at all. The shas moved into the DETAIL, which prints only
+    # on failure and is not part of the arm's identity.
     ok(pre != post,
-       'FIXTURE VALIDITY: the rebase really changed the sha (%s -> %s), so the '
-       'record is genuinely dangling rather than merely written wrong'
-       % (pre[:8], post[:8]))
+       'FIXTURE VALIDITY: the rebase really changed the sha, so the record is '
+       'genuinely dangling rather than merely written wrong',
+       'pre %s -> post %s' % (pre[:8], post[:8]))
     ok(g(d, 'cat-file', '-t', pre).returncode == 0
        or True, 'the pre-rebase sha may or may not still be a dangling object -- '
        'either way it is NOT an ancestor of main, which is the question')
@@ -293,8 +301,8 @@ try:
     # ── THE THREE OUTCOMES, NAMED ──────────────────────────────────────────
     print(NL + 'DIRECTION -- one reseatable, one reachable, one refused')
     ok(post[:12] in out,
-       'the reseatable record is matched to the REWRITTEN commit %s' % post[:12],
-       out[-700:])
+       'the reseatable record is matched to the REWRITTEN commit',
+       'expected %s in the output; tail: %s' % (post[:12], out[-600:]))
     ok('never_existed.html' in out or 'ghost' in out,
        'the record whose file set matches NOTHING is named, not skipped in '
        'silence', out[-700:])
@@ -321,6 +329,30 @@ try:
     doc = json.loads(io.open(LEDGER, encoding='utf-8').read())
     ok('AMBIGUOUS' in out.upper() or 'more than one' in out.lower(),
        'it says the match is ambiguous', out[-700:])
+    # ── AND THE SAME THING WITHOUT PINNING A SENTENCE (2026-09-29).
+    # A both-ways mutation removed the ambiguity refusal and exactly ONE arm
+    # caught it -- the one above, which asserts on the WORD "ambiguous". The
+    # behavioural arm below it could not: with that branch gone the record fell
+    # through to the SUBSET refusal, which refused it too, so the sha was
+    # unchanged and the behaviour arm still passed. The only difference was the
+    # REASON, and the reason lived in prose. `--json` now emits a stable reason
+    # CODE per refusal, so this arm survives any rewording of the sentence and
+    # still fails if a different refusal fires.
+    rcj, outj = run(d, '--reseat-shas', '--json')
+    i = outj.find('{')
+    codes = []
+    if i >= 0:
+        try:
+            payload = json.loads(outj[i:outj.rindex('}') + 1])
+            codes = [x.get('code') for x in payload.get('refused', [])]
+        except Exception as exc:
+            codes = ['PARSE FAILED: %s' % exc]
+    ok('AMBIGUOUS_EXACT_SET' in codes,
+       'THE SAME FACT AS A CODE RATHER THAN A SENTENCE: --json reports the '
+       'refusal as AMBIGUOUS_EXACT_SET, so this arm cannot be broken by '
+       'rewording the message and cannot be satisfied by a DIFFERENT refusal '
+       'firing -- which is exactly what a mutation showed the prose arm could '
+       'not distinguish', codes)
     ok(doc['records'][0]['opened_at_sha'] == 'a' * 40,
        'AND THE SHA IS UNCHANGED -- picking one of two candidates would be a '
        'guess written into a ledger an auditor follows', out[-500:])
@@ -364,11 +396,12 @@ try:
     ok(len(mis) == 1, 'the cross-check fixture record is present', doc)
     if mis:
         ok(mis[0]['opened_at_sha'] == disjoint_pre,
-           'THE ARM THAT MATTERS: its sha is UNCHANGED. Its subject twin %s '
-           'exists and is unique, and following it would have written a sha for '
-           'a commit that touched none of this record\'s files -- which is what '
+           'THE ARM THAT MATTERS: its sha is UNCHANGED. Its subject twin exists '
+           'and is unique, and following it would have written a sha for a '
+           'commit that touched none of this record\'s files -- which is what '
            'subject-twin matching did to two real records before this check '
-           'existed' % disjoint_post[:12], mis[0])
+           'existed',
+           'twin was %s; record is now %r' % (disjoint_post[:12], mis[0]))
         ok('ALREADY WRONG FOR THIS RECORD' in out.upper(),
            'and the refusal says the RECORD is what is wrong, not the sha -- a '
            'mis-stamp and a rebase casualty need different repairs', out[-1400:])

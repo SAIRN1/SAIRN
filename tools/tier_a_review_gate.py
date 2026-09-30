@@ -14,6 +14,7 @@
     python tools/tier_a_review_gate.py --auto-discharge [--write]
     python tools/tier_a_review_gate.py --reseat-shas [--write]  # a DANGLING sha
     python tools/tier_a_review_gate.py --reseat-shas --write --write-weak-basis
+    python tools/tier_a_review_gate.py --reseat-shas --json  # machine-readable reason CODES
 
 Exit 0 clean, 1 a finding, 2 COULD NOT TELL -- never folded into either of the
 other two (PR 1.11).
@@ -2581,7 +2582,7 @@ def main(argv):
     if '--backfill-shas' in argv:
         return backfill_shas('--write' in argv)
     if '--reseat-shas' in argv:
-        return reseat_shas('--write' in argv, '--write-weak-basis' in argv)
+        return reseat_shas('--write' in argv, '--write-weak-basis' in argv, '--json' in argv)
     if '--rules' in argv:
         return cmd_rules()
     if '--validate' in argv:
@@ -2969,7 +2970,7 @@ def _candidates_by_files(idx, files, want_subject=None):
     return hits, None
 
 
-def reseat_shas(write=False, weak_ok=False):
+def reseat_shas(write=False, weak_ok=False, as_json=False):
     """Repoint a review record whose recorded sha is dangling. DRY RUN default."""
     try:
         data = load_reviews()
@@ -3011,8 +3012,9 @@ def reseat_shas(write=False, weak_ok=False):
     for r in rows:
         sha = r.get('opened_at_sha')
         if not sha:
-            refused.append((r, 'NO SHA AT ALL -- that is --backfill-shas\'s job, '
-                               'not this one'))
+            refused.append((r, 'NO_SHA_AT_ALL',
+                            'NO SHA AT ALL -- that is --backfill-shas\'s job, '
+                            'not this one'))
             continue
         if _is_reachable(sha, base) is True:
             healthy.append(r)
@@ -3029,23 +3031,25 @@ def reseat_shas(write=False, weak_ok=False):
                              (twin_subj or '', '', 0.0)))
                 continue
             if agree == 'DISJOINT':
-                refused.append((r, 'THE RECORDED SHA WAS ALREADY WRONG FOR THIS '
-                                   'RECORD, and that is a different fault from a '
-                                   'rebase. Its subject twin on %s is %s (%r), '
-                                   'whose diff touches NONE of the files this '
-                                   'record names (%s). Following the sha to its '
-                                   'twin would preserve the original mis-stamp '
-                                   'faithfully -- a wrong sha is worse than a '
-                                   'dangling one, because a dangling one is '
-                                   'visibly broken. FIX THE RECORD, not the sha'
+                refused.append((r, 'SHA_WRONG_WHEN_WRITTEN',
+                                'THE RECORDED SHA WAS ALREADY WRONG FOR THIS '
+                                'RECORD, and that is a different fault from a '
+                                'rebase. Its subject twin on %s is %s (%r), '
+                                'whose diff touches NONE of the files this '
+                                'record names (%s). Following the sha to its '
+                                'twin would preserve the original mis-stamp '
+                                'faithfully -- a wrong sha is worse than a '
+                                'dangling one, because a dangling one is '
+                                'visibly broken. FIX THE RECORD, not the sha'
                                 % (base, twin[:12], (twin_subj or '')[:70],
                                    sorted(set(r.get('files') or []))[:4])))
                 continue
-            refused.append((r, 'a subject twin exists on %s (%s) but neither its '
-                               'diff nor the record\'s file list could be read, '
-                               'so the two could not be cross-checked. A twin '
-                               'accepted without that check wrote two wrong shas '
-                               'in testing' % (base, twin[:12])))
+            refused.append((r, 'TWIN_CROSSCHECK_UNREADABLE',
+                            'a subject twin exists on %s (%s) but neither its '
+                            'diff nor the record\'s file list could be read, '
+                            'so the two could not be cross-checked. A twin '
+                            'accepted without that check wrote two wrong shas '
+                            'in testing' % (base, twin[:12])))
             continue
 
         hits, err = _candidates_by_files(idx, r.get('files'), r.get('what'))
@@ -3065,14 +3069,15 @@ def reseat_shas(write=False, weak_ok=False):
                 tail = ('. AND EVERY ONE OF THEM POST-DATES THE RECORD, so none '
                         'of them is the commit it was opened against -- the '
                         'original is gone, not mis-recorded')
-            refused.append((r, 'AMBIGUOUS EXACT FILE SET: %d commits changed '
-                               'exactly that set (%s) and the record\'s own text '
-                               'does not single one out%s'
+            refused.append((r, 'AMBIGUOUS_EXACT_SET',
+                            'AMBIGUOUS EXACT FILE SET: %d commits changed '
+                            'exactly that set (%s) and the record\'s own text '
+                            'does not single one out%s'
                             % (len(hits), ', '.join(h[0][:12] for h in hits[:4]),
                                tail)))
             continue
         if err:
-            refused.append((r, err))
+            refused.append((r, 'NO_FILES_ON_RECORD', err))
             continue
 
         sub, meta, sub_why = _subset_candidate(r.get('files'), r.get('opened_at'))
@@ -3087,7 +3092,14 @@ def reseat_shas(write=False, weak_ok=False):
         # NOTHING is "named, not skipped in silence" went red -- correctly. A
         # refusal that does not say what it looked for is one a reader cannot act
         # on, and the old single-reason message did say.
-        refused.append((r, '%s; and %s. FILES SOUGHT: %s'
+        # THE CODE IS DERIVED FROM WHICH FACT BLOCKED IT, not from the prose.
+        code = ('NO_OBJECT_IN_CLONE' if 'object store' in (twin_why or '')
+                else 'TWIN_SUBJECT_ABSENT' if 'appears' in (twin_why or '')
+                else 'TWIN_SUBJECT_AMBIGUOUS' if 'share that subject' in (twin_why or '')
+                else 'NO_MATCH_ANYWHERE')
+        if 'contain that file set within the window' in (sub_why or ''):
+            code = code + '+SUBSET_AMBIGUOUS'
+        refused.append((r, code, '%s; and %s. FILES SOUGHT: %s'
                         % (twin_why or 'no subject twin',
                            sub_why or 'no subset match',
                            sorted(set(r.get('files') or [])))))
@@ -3136,11 +3148,42 @@ def reseat_shas(write=False, weak_ok=False):
     # was past the cut. A refusal truncated mid-diagnosis is the same defect as a
     # refusal with no diagnosis -- so these wrap instead.
     import textwrap as _tw
-    for r, whynot in refused:
-        print('  %-8s %s  REFUSED'
-              % (r.get('author_session'), r.get('opened_at')))
+    for r, code, whynot in refused:
+        # ── THE CODE IS PRINTED AND IS A CONTRACT; THE PROSE IS NOT.
+        # A both-ways mutation on 2026-09-29 removed the ambiguity refusal and
+        # exactly ONE arm caught it -- an arm asserting on the SENTENCE "it says
+        # the match is ambiguous". The behavioural arm could not: with the
+        # ambiguity branch gone the record fell through to the subset branch,
+        # which refused it too, so the sha was unchanged and the behaviour arm
+        # still passed. THE ONLY DIFFERENCE WAS THE REASON, and the reason lived
+        # in prose. A stable code is the handle that makes "refused for the right
+        # reason" observable without pinning a sentence.
+        print('  %-8s %s  REFUSED [%s]'
+              % (r.get('author_session'), r.get('opened_at'), code))
         for line in _tw.wrap(whynot, 96):
             print('           %s' % line)
+
+    if as_json:
+        # MACHINE-READABLE, so a control can assert on WHICH refusal fired
+        # without asserting on a sentence.
+        #
+        # EMITTED BEFORE THE "nothing to reseat" EARLY RETURN, and the probe is
+        # why: with the JSON printed after it, a ledger whose only dangling
+        # records are all REFUSED returned before printing anything, so the arm
+        # asserting on a refusal code got an empty list and failed. A
+        # machine-readable report that disappears exactly when every record is
+        # refused is useless for the case it exists to serve.
+        print(json.dumps({
+            'base': base,
+            'reachable': [r.get('opened_at') for r in healthy],
+            'reseatable': [{'opened_at': r.get('opened_at'), 'to': sha,
+                            'basis': basis} for r, sha, basis, _e in fixable],
+            'reseatable_weak': [{'opened_at': r.get('opened_at'), 'to': sha,
+                                 'basis': basis} for r, sha, basis, _m in weak],
+            'refused': [{'opened_at': r.get('opened_at'),
+                         'session': r.get('author_session'),
+                         'code': code} for r, code, _w in refused],
+        }, indent=2))
 
     if not fixable and not weak:
         print()

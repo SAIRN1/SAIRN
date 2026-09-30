@@ -60,7 +60,7 @@ REPO = os.path.dirname(TOOLS)
 sys.path.insert(0, TOOLS)
 from checker_kit import EXIT_CLEAN, EXIT_FINDING, EXIT_COULD_NOT_RUN  # noqa: E402
 
-CRITERIA_VERSION = '2026-09-29.1'
+CRITERIA_VERSION = '2026-09-29.2'
 
 # ── THE CANDIDATES, DERIVED. A tool that writes a tracked file is a candidate;
 # the shape is an `io.open(..., 'w')` or an `open(..., 'w')` on a path under the
@@ -116,6 +116,19 @@ ARG_GATED = {
 # "not examined", which is the third state.
 TIMEOUT = 30
 
+# ── AND IT IS OVERRIDABLE, BECAUSE A COULD-NOT-TELL HAS TO BE RE-RUNNABLE
+#    (added 2026-09-29, hank). The first full sweep left FIVE tools at
+#    "timed out after 30s", and the only honest next step is to run those five
+#    at a longer bound and see whether they are slow or non-idempotent. With the
+#    bound hardcoded there was no way to do that short of editing the tool,
+#    which is how a third state quietly becomes permanent.
+#
+#    THE DEFAULT DOES NOT MOVE. Raising it for everything would make the sweep
+#    take minutes on tools that finish in seconds, and 30s is still the right
+#    answer for a document generator. What changes is that the five can be
+#    re-asked, and the report now says at WHICH bound each verdict was reached
+#    so two runs at different bounds are never indistinguishable.
+
 # ── PUSHES, NETWORK AND INTERACTIVE TOOLS, EXCLUDED BY WHAT THEY DO ─────────
 # Derived from the source rather than listed by name: a tool that pushes, fetches
 # over the network, or blocks on input cannot be double-run in a scratch repo, and
@@ -123,6 +136,42 @@ TIMEOUT = 30
 SIDE_EFFECT = re.compile(
     r"['\"]push['\"]|urllib|requests\.|input\s*\(|getpass|webbrowser|"
     r"sairn_http|smtplib")
+
+
+# ── A DERIVED "WRITES ONLY TO SCRATCH" EXCLUSION WAS BUILT, MEASURED AND
+#    REJECTED (2026-09-29, hank). The measurement is kept because the next
+#    person to have this idea should not have to pay for it twice.
+#
+# THE PROBLEM IT WAS FOR: four tools sit at "timed out", and re-running them at
+# 240s instead of 30s resolved exactly ONE (comment_sensitivity_check.py, clean).
+# The other three plus run_all_tests.py still time out, and a permanent
+# could-not-tell is the shape this repo names most often. Two of them look like
+# they should not be candidates at all: metamorphic_check.py writes only under a
+# `tempfile.mkdtemp()` root, and run_all_tests.py writes a lock under
+# `tempfile.gettempdir()`, a session identity into the worktree git dir, and a
+# report only to an explicit `--out <path>`.
+#
+# SO THE RULE WAS: trace every write target to its assignment; exclude a tool
+# when all of them root at a temp directory or at argv. Claimed to fail towards
+# inclusion, on the ground that a mis-exclusion means nobody ever checks a tool.
+#
+# RUN AGAINST THE REAL 65 TOOLS IT DID THE OPPOSITE OF WHAT IT SAID:
+#   * it excluded 5 tools -- comment_sensitivity_check, first_article_check,
+#     guard_ablation, message_assertion_audit, weakness_combination
+#   * and it left metamorphic_check.py AND run_all_tests.py as candidates -- the
+#     two it was written for -- because their write calls use shapes the target
+#     regex does not match (`os.write(fd, ...)`, `with io.open(...) as fh`).
+#   * worse, it judged guard_ablation.py on `jsonout` alone and NEVER SAW its
+#     `io.open(os.path.join(wt, SUBJECT), 'w')`. The verdict happens to be right
+#     -- `wt` is a worktree it builds itself -- but it was reached BY NOT
+#     LOOKING, which is not the same as being right.
+#
+# A classifier that misses write targets cannot claim "all targets are scratch",
+# and one that fails to exclude the two cases it was built for has not been
+# validated. Four diagnosed could-not-tells are better than an exclusion that
+# reaches its answers by overlooking the evidence. NOT BUILT. If somebody wants
+# this, the target enumeration has to come from `ast`, not from a regex over
+# call shapes.
 
 
 def rmtree(path):
@@ -185,13 +234,15 @@ def snapshot(d):
     return out
 
 
-def double_run(d, tool_rel, argv=()):
+def double_run(d, tool_rel, argv=(), timeout=None):
     """(changed_files, why) -- files whose content differs between run 1 and 2."""
+    bound = TIMEOUT if timeout is None else timeout
+
     def run():
         return subprocess.run([sys.executable, os.path.join(d, tool_rel)]
                               + list(argv), cwd=d, capture_output=True,
                               text=True, encoding='utf-8', errors='replace',
-                              timeout=TIMEOUT,
+                              timeout=bound,
                               env=dict(os.environ, PYTHONIOENCODING='utf-8'))
     try:
         run()
@@ -199,7 +250,7 @@ def double_run(d, tool_rel, argv=()):
         run()
         second = snapshot(d)
     except subprocess.TimeoutExpired:
-        return None, 'timed out after %ds' % TIMEOUT
+        return None, 'timed out after %ds' % bound
     except Exception as exc:
         return None, 'raised %s' % type(exc).__name__
     changed = sorted(k for k in set(first) | set(second)
@@ -293,6 +344,12 @@ def main(argv=None):
     ap.add_argument('--tool', default=None)
     ap.add_argument('--json', action='store_true')
     ap.add_argument('--selftest', action='store_true')
+    ap.add_argument('--timeout', type=int, default=TIMEOUT,
+                    help='per-run bound in seconds. The DEFAULT DOES NOT '
+                         'MOVE; this exists so a tool reported as '
+                         'timed-out -- a could-not-tell -- can be asked '
+                         'again at a longer bound instead of staying a '
+                         'permanent third state.')
     args = ap.parse_args(argv)
 
     if args.selftest:
@@ -301,6 +358,12 @@ def main(argv=None):
 
     print('IDEMPOTENCE DOUBLE RUN -- a mutating tool must change nothing twice')
     print('  criteria : %s' % CRITERIA_VERSION)
+    # THE BOUND IS PRINTED. Two runs at different bounds produce different
+    # could-not-tell sets, and a verdict with no bound beside it cannot be
+    # compared with the previous one.
+    print('  per-run bound : %ds%s' % (args.timeout,
+          '' if args.timeout == TIMEOUT else '   <- RAISED from the %ds default'
+          % TIMEOUT))
 
     # THE FIXTURES RUN FIRST, ALWAYS. A corpus result from a comparison that
     # cannot fire is the vacuous pass this repo names most often.
@@ -356,7 +419,7 @@ def main(argv=None):
                 could_not.append((name, 'not in the scratch copy'))
                 continue
             git(d, 'checkout', '-q', '--', '.')
-            changed, err = double_run(d, rel)
+            changed, err = double_run(d, rel, timeout=args.timeout)
             if err:
                 could_not.append((name, err))
             elif changed:
