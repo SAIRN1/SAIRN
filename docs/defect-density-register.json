@@ -21049,6 +21049,59 @@
         }
       ],
       "recurrence_open": "Nothing makes importing the shared lookup easier than writing a new one, so a fourth copy is available to anybody in a hurry. The sweep that would catch it lives in a control that is not in the recurring report-only set."
+    },
+    {
+      "commit": "a1247a2e063f",
+      "date": "2026-09-30",
+      "subject": "fix(harness): a red baseline answered 1 -- the same number as a mutation that was MISSED",
+      "files": [
+        "tests/run_sabotage_harness_baseline_probe.py",
+        "tests/sabotage_harness.py"
+      ],
+      "lines_added": 80,
+      "lines_removed": 12,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "probe-control",
+      "summary": "tests/sabotage_harness.py returned exit 1 when the subject suite was RED AT ITS OWN BASELINE -- the same code it returns when a planted defect was NOT refused. A run that planted nothing and verified nothing was therefore indistinguishable, by exit code, from a run that found a real hole in the subject. 68 probes take this gate from the shared harness. Found when run_self_exclusion_guard_sabotage_probe.py went red at its baseline and every mutation under it was meaningless while the exit code claimed a finding.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tests/run_sabotage_harness_baseline_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The return has been 1 since the harness was written; there is no commit where a correct code became wrong."
+      },
+      "citation_note": "The shape is PR 1.11 fail-closed-on-a-third-state, but PR 1.11 is written about a check whose DEPENDENCY is absent and folds could-not-run into a PASS. This folds it into a FINDING, which is the mirror and is not the case PR 1.11 states.",
+      "contributing_factors": [
+        {
+          "factor": "The baseline gate was correct and its return value was not: one number served two meanings",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The red-baseline path returns 2. The gate, its message and its unstaged-suspects diagnostic are untouched -- only the code changed."
+        },
+        {
+          "factor": "Nothing compared the harness output against the harness exit code, so a run whose text said could-not-run and whose number said finding looked consistent to a reader of either one alone",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/run_sabotage_harness_baseline_probe.py drives a tracked fixture with a switchable baseline colour in three states and observes BOTH the could-not-run code and a genuine finding code, then asserts they differ. It landed red at 2 arms and is green at 8."
+        },
+        {
+          "factor": "This repo carries two could-not-run conventions, 2 and 3, and the same function uses both",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "Unifying them touches every caller of every path in the harness and every consumer of the three setup-failure returns. Declined as a separate change with its own blast radius, and disclosed at the line and in the docstring rather than widened silently. What matters for this defect is that neither code is 1."
+        },
+        {
+          "factor": "The control and its fixture each failed for their own reasons first, and both failures were the same shape as the subject",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Both are recorded at their lines: the fixture required three occurrences of a literal that occurs once, so it was red at every baseline; and arm 3 first compared CLEAN against the red code, which already differed, so it passed while the real conflation went unmeasured."
+        }
+      ],
+      "recurrence_open": "A SWEEP FOUND 35 HAND-ROLLED MUTATION RUNNERS WITH NO BASELINE PRECONDITION AT ALL and they are not fixed here -- they do not use the shared harness, so this change does not reach them. 41 more have baseline language that was not read one by one. The detector is a screen: it requires a subprocess run, a textual mutation of source, and a caught/missed verdict, so a runner that mutates through a helper or reports in other words is invisible to it."
     }
   ],
   "started": "2026-09-09",
