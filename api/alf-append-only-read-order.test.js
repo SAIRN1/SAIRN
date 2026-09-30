@@ -129,18 +129,118 @@ const ORDER_COLUMN = {
   alf_op_audits: 'created_at',
 };
 
+// ── THIS ARM WENT RED ON main WITHOUT THE SUBJECT CHANGING (2026-09-29) ─────
+// The alf_incidents read was refactored from one inline `rest('...')` call into
+// a query built up in a variable:
+//
+//     let incQ = 'alf_incidents?license_hash=eq.' + enc(licHash)
+//       + '&select=entry_id,resident_id,data,created_at,recorded_by'
+//       + '&order=created_at.desc';
+//     if (!incBroad) incQ += '&recorded_by=eq.' + enc(String(session.employee_id));
+//     const r = await fetch(rest(incQ), { headers });
+//
+// `&order=created_at.desc` IS THERE. The matcher below required the whole query
+// to sit inside one `rest('...')` literal, so it found ZERO reads and the arm
+// failed with "expected exactly 1 ... found 0".
+//
+// THE ARM WAS RIGHT TO GO RED AND THAT IS THE PART TO KEEP. Its own comment
+// already says zero hits is not a pass, and it refused to call an unfindable
+// read a clean one. The defect is the MATCHER'S REACH, not its verdict: a check
+// that can only see one spelling of a call reports on the spelling, and every
+// refactor then looks like a regression. That is the eighth cross-domain
+// discipline -- nothing announces the day a check stops testing anything -- and
+// here it announced itself only because the author happened to be running it.
+//
+// SO THE MATCHER RESOLVES THE VARIABLE TO ITS DEFINITION. Two shapes, and the
+// union of what each finds:
+//
+//   INLINE     rest('<table>?license_hash=eq.' + enc(licHash) + '<tail>')
+//   VARIABLE   <id> = '<table>?license_hash=eq.' ... ; [<id> += ...] ; rest(<id>)
+//
+// FOR THE VARIABLE SHAPE IT CONCATENATES EVERY SINGLE-QUOTED LITERAL in the
+// declaration and in every later `<id> +=` statement, which is exactly what the
+// runtime does to those fragments. It does NOT try to evaluate `enc(...)` or any
+// other expression -- those contribute a value, never a query PARAMETER NAME, so
+// an `&order=` can only ever arrive as a literal.
+//
+// AND IT REQUIRES THE VARIABLE TO REACH rest(). A variable assigned a query
+// string and never passed to rest() is dead code, and crediting it would be the
+// matcher inventing a read. `rest(<id>)` is asserted before the literals are
+// collected.
+//
+// TRAILING COMMENTS ARE STRIPPED PER STATEMENT, not just per line. CODE above
+// drops comment-ONLY lines, which is not enough here: `... '&select=a'; //
+// &order=created_at.desc` is a code line carrying a claim in a comment, and a
+// matcher that scored it would pass an unordered read. The control section
+// drives exactly that fixture and requires a FAIL.
+function _statementsFor(src, ident) {
+  // The declaration plus every augmenting assignment, each cut at its
+  // terminating `;` and stripped of any trailing `//` comment.
+  const out = [];
+  const pats = [
+    new RegExp('(?:const|let|var)\\s+' + ident + '\\s*=', 'g'),
+    new RegExp('(?:^|[^\\w.])' + ident + '\\s*\\+=', 'g'),
+  ];
+  pats.forEach((re) => {
+    let m;
+    while ((m = re.exec(src)) !== null) {
+      const start = m.index;
+      const semi = src.indexOf(';', re.lastIndex);
+      const stmt = src.slice(start, semi < 0 ? src.length : semi);
+      // Strip a trailing line comment from EVERY line of the statement. A
+      // multi-line concatenation can carry one on any of its lines.
+      out.push(stmt.split('\n').map((l) => l.replace(/\/\/.*$/, '')).join('\n'));
+    }
+  });
+  return out;
+}
+
+function _literals(stmt) {
+  // Single-quoted literals only -- every query fragment in api/sd-data.js is
+  // single-quoted, and accepting double quotes would start scoring JSON keys.
+  return (stmt.match(/'(?:[^'\\]|\\.)*'/g) || []).map((s) => s.slice(1, -1));
+}
+
 // The facility-wide LIST read for a trail: filtered by license_hash only, with
 // a multi-column select. Deliberately NOT the `&entry_id=eq.` existence probes
 // (one row by unique key -- ordering is meaningless there) and not the
 // resident-filtered compute reads.
-function listReadFor(table) {
-  const re = new RegExp(
-    "rest\\('" + table + "\\?license_hash=eq\\.' \\+ enc\\(licHash\\) \\+ '&select=([^']*)'\\)",
-    'g');
+//
+// Returns one entry per read found, each being the query text with the literal
+// fragments joined -- so the caller's `&order=<col>.desc` check is unchanged and
+// does not need to know which shape the read was written in.
+function listReadIn(src, table) {
   const hits = [];
+
+  const inline = new RegExp(
+    "rest\\('" + table + "\\?license_hash=eq\\.' \\+ enc\\(licHash\\) \\+ '([^']*)'\\)",
+    'g');
   let m;
-  while ((m = re.exec(CODE)) !== null) hits.push(m[1]);
+  while ((m = inline.exec(src)) !== null) hits.push(m[1]);
+
+  // VARIABLE SHAPE. The declaration must open with this table's own prefix, so
+  // a query for a different table cannot be attributed here.
+  const decl = new RegExp(
+    "(?:const|let|var)\\s+([A-Za-z_$][\\w$]*)\\s*=\\s*'" + table
+    + "\\?license_hash=eq\\.'", 'g');
+  const seen = {};
+  while ((m = decl.exec(src)) !== null) {
+    const ident = m[1];
+    if (seen[ident]) continue;
+    seen[ident] = true;
+    // Must actually be handed to rest(), or it is a string nobody queries with.
+    if (!new RegExp('rest\\(\\s*' + ident + '\\s*[,)]').test(src)) continue;
+    const parts = [];
+    _statementsFor(src, ident).forEach((stmt) => {
+      _literals(stmt).forEach((lit) => parts.push(lit));
+    });
+    if (parts.length) hits.push(parts.join(''));
+  }
   return hits;
+}
+
+function listReadFor(table) {
+  return listReadIn(CODE, table);
 }
 
 function main() {
@@ -204,6 +304,88 @@ function main() {
         'in whatever order the planner produced. Query was: ' + hits[0]);
     });
   });
+
+  // ── KNOWN-BAD CONTROLS FOR THE MATCHER ITSELF ────────────────────────────
+  // Driven against SYNTHETIC source, never against sd-data.js. A control that
+  // can only be exercised by breaking the real file is a control nobody runs,
+  // and one that passes because the real file happens to suit it is not a
+  // control at all. Each fixture is the smallest thing that discriminates.
+  const FX_INLINE_OK =
+    "const r = await fetch(rest('alf_fx?license_hash=eq.' + enc(licHash) + "
+    + "'&select=entry_id,data&order=created_at.desc'), { headers });";
+  const FX_VAR_OK =
+    "let q = 'alf_fx?license_hash=eq.' + enc(licHash)\n"
+    + "  + '&select=entry_id,data,created_at'\n"
+    + "  + '&order=created_at.desc';\n"
+    + "if (!broad) q += '&recorded_by=eq.' + enc(String(session.employee_id));\n"
+    + "const r = await fetch(rest(q), { headers });";
+  const FX_VAR_NO_ORDER =
+    "let q = 'alf_fx?license_hash=eq.' + enc(licHash)\n"
+    + "  + '&select=entry_id,data,created_at';\n"
+    + "const r = await fetch(rest(q), { headers });";
+  const FX_VAR_ORDER_IN_COMMENT =
+    "let q = 'alf_fx?license_hash=eq.' + enc(licHash)\n"
+    + "  + '&select=entry_id,data,created_at'; // &order=created_at.desc\n"
+    + "const r = await fetch(rest(q), { headers });";
+  const FX_VAR_NEVER_QUERIED =
+    "let q = 'alf_fx?license_hash=eq.' + enc(licHash)\n"
+    + "  + '&select=entry_id,data&order=created_at.desc';\n"
+    + "console.log(q);";
+
+  function ordered(src) {
+    const hits = listReadIn(src, 'alf_fx');
+    return hits.length === 1
+      && hits[0].indexOf('&order=created_at.desc') !== -1;
+  }
+
+  test('CONTROL: the matcher still sees the INLINE shape and its order clause',
+    () => {
+      assert.strictEqual(ordered(FX_INLINE_OK), true,
+        'the inline shape stopped being recognised, so widening the matcher ' +
+        'traded one blindness for another');
+    });
+
+  test('THE REFACTOR THIS ARM WENT RED ON: a VARIABLE-built read with an ' +
+    'order clause is seen', () => {
+      assert.strictEqual(listReadIn(FX_VAR_OK, 'alf_fx').length, 1,
+        'a query built in a variable and passed to rest() is still invisible; ' +
+        'this is the exact shape the alf_incidents read was refactored into');
+      assert.strictEqual(ordered(FX_VAR_OK), true,
+        'the variable-built read was found but its &order= was not resolved ' +
+        'out of the concatenated fragments');
+    });
+
+  test('KNOWN-BAD: a VARIABLE-built read with NO order clause FAILS', () => {
+    assert.strictEqual(listReadIn(FX_VAR_NO_ORDER, 'alf_fx').length, 1,
+      'the fixture was not even found, so this control proves nothing about ' +
+      'the order check -- it would pass for a matcher that sees nothing');
+    assert.strictEqual(ordered(FX_VAR_NO_ORDER), false,
+      'an unordered variable-built read was reported as ordered. Resolving the ' +
+      'variable is only useful if the resolved text is then actually checked.');
+  });
+
+  test('KNOWN-BAD: an order clause that exists ONLY IN A TRAILING COMMENT FAILS',
+    () => {
+      assert.strictEqual(listReadIn(FX_VAR_ORDER_IN_COMMENT, 'alf_fx').length, 1,
+        'the fixture was not found, so this control is vacuous');
+      assert.strictEqual(ordered(FX_VAR_ORDER_IN_COMMENT), false,
+        'an `&order=` written in a trailing // comment was scored as the code ' +
+        'being present. CODE above strips comment-ONLY lines, which does not ' +
+        'cover a claim parked at the end of a real statement.');
+    });
+
+  test('KNOWN-BAD: a query variable never handed to rest() is NOT a read', () => {
+    assert.deepStrictEqual(listReadIn(FX_VAR_NEVER_QUERIED, 'alf_fx'), [],
+      'a string that looks like a query but is never passed to rest() was ' +
+      'counted as a read. That is the matcher inventing coverage.');
+  });
+
+  test('CONTROL: the matcher does not attribute another table\'s query here',
+    () => {
+      assert.deepStrictEqual(
+        listReadIn(FX_VAR_OK.replace(/alf_fx/g, 'alf_other'), 'alf_fx'), [],
+        'a read for a different table was attributed to alf_fx');
+    });
 
   test('the entry_id existence probes were NOT given an order= clause', () => {
     // Scope discipline in the arm, not just in the diff. The five
