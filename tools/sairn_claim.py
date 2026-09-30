@@ -464,7 +464,29 @@ def file_verdict(mine_task, their_task):
     if a is None or b is None:
         return 'unknown', set()
     shared = a & b
-    return ('refuse' if shared else 'clear'), shared
+    if not shared:
+        return 'clear', shared
+    # ── A BARE BASENAME IS NOT A FILE IDENTITY (H2 seq 418, 2026-09-30) ─────
+    # A path WITH a separator names one file across every clone. A LONE
+    # BASENAME does not: the two hover auditors each keep a `hover_log.py` in
+    # their own `hover-audit-log/` directory, neither in this repo, and this
+    # matcher hard-blocked them against each other on the filename alone --
+    #   hover  "FILES: citation_class_check.py hover_log.py register_citation_check.py"
+    #   hover2 "FILES: hover_log.py"           -> ('refuse', {'hover_log.py'})
+    # Two sessions refused a shared subject they did not share.
+    #
+    # THE SAME JUDGEMENT THIS FILE ALREADY MAKES ONE CASE OVER: a bare `docs/`
+    # is rejected as "a directory claim this tool cannot reason about". Too
+    # weak to refuse on is a verdict this matcher already knows how to reach.
+    #
+    # THE WEAK OVERLAP IS RETURNED, NOT DISCARDED. Falling through to 'unknown'
+    # sends the caller to the lexical matcher, which still weighs the words and
+    # can still block -- what stops is the HARD file-collision refusal on a name
+    # that means two different files. Narrowed, not removed.
+    strong = {p for p in shared if '/' in p}
+    if strong:
+        return 'refuse', strong
+    return 'unknown', shared
 
 
 # ── A DISCLOSURE OF DISJOINTNESS IS NOT A CLAIM (2026-09-29) ────────────────
