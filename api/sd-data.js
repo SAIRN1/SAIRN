@@ -81,6 +81,14 @@ const senPayroll = require('./_lib/sen-payroll');
 // BECAUSE THE CLIENT COPY IS A CONVENIENCE: sairnmechanical.html calls the same
 // function so the local row is redacted too, but this call is the boundary.
 const mechRedact = require('./_lib/mech-redact');
+// ── ONE DECLARED MAP FOR EVERY RESOURCE THAT PERSISTS RAW MODEL OUTPUT ────
+// MECH_SCANNED_TEXT below was the same idea scoped to one app and inlined in
+// one branch. The shape it fixed -- a gate keyed on a resource NAME rather
+// than on a property of the data -- was live in five other apps at the same
+// time. api/_lib/ai-scan-redaction.js carries the map, the per-resource
+// deciding test, and the list of resources deliberately EXCLUDED with the
+// reason for each, so widening it means reading the refusals too.
+const aiScan = require('./_lib/ai-scan-redaction');
 // SAIRNsenior EVV aggregators (2026-08-27). Must stay in sync with the selector in
 // sairnsenior.html's Settings panel -- these are the four real state EVV aggregators
 // plus an honest 'other', because several states run their own and forcing a wrong
@@ -1530,7 +1538,7 @@ module.exports = async (req, res) => {
       const r = await fetch(rest('ai_memories'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
-        body: JSON.stringify({ license_hash: licHash, app_id: memApp, shop_id: shopId, data: payload })
+        body: JSON.stringify({ license_hash: licHash, app_id: memApp, shop_id: shopId, data: aiScan.redactAiFields(resource, payload, nowISO) })
       });
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
@@ -4182,7 +4190,7 @@ module.exports = async (req, res) => {
       const r = await fetch(rest('grd_progress_photos?on_conflict=license_hash,photo_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
-        body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', photo_id: String(payload.id), schedule_id: String(payload.schedule_id), data: payload, updated_at: nowISO() })
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', photo_id: String(payload.id), schedule_id: String(payload.schedule_id), data: aiScan.redactAiFields(resource, payload, nowISO), updated_at: nowISO() })
       });
       if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema.sql in Supabase first.' } }); return; }
       const rows = await r.json();
@@ -4289,7 +4297,7 @@ module.exports = async (req, res) => {
       const r = await fetch(rest('grd_ecosystem_reports?on_conflict=license_hash,report_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
-        body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', report_id: String(payload.id), property_id: String(payload.property_id), data: payload, updated_at: nowISO() })
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', report_id: String(payload.id), property_id: String(payload.property_id), data: aiScan.redactAiFields(resource, payload, nowISO), updated_at: nowISO() })
       });
       if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.' } }); return; }
       const rows = await r.json();
@@ -4672,7 +4680,7 @@ module.exports = async (req, res) => {
       const r = await fetch(rest('msb_food_scans?on_conflict=license_hash,foodscan_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
-        body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', foodscan_id: String(payload.id), data: payload, updated_at: nowISO() })
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', foodscan_id: String(payload.id), data: aiScan.redactAiFields(resource, payload, nowISO), updated_at: nowISO() })
       });
       if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema_phase2.sql in Supabase first.' } }); return; }
       const rows = await r.json();
@@ -5055,7 +5063,7 @@ module.exports = async (req, res) => {
       const r = await fetch(rest('scp_progress_photos?on_conflict=license_hash,photo_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
-        body: JSON.stringify({ license_hash: licHash, app_id: 'sairnscape', photo_id: String(payload.id), schedule_id: String(payload.schedule_id), data: payload, updated_at: nowISO() })
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairnscape', photo_id: String(payload.id), schedule_id: String(payload.schedule_id), data: aiScan.redactAiFields(resource, payload, nowISO), updated_at: nowISO() })
       });
       if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema.sql in Supabase first.' } }); return; }
       const rows = await r.json();
@@ -7275,7 +7283,11 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
         body: JSON.stringify({
           license_hash: licHash, app_id: 'sairnroofing', job_id: jobId,
-          captured_by: session.employee_id, data: photoData
+          // photoData, not payload: this branch builds its own record above and
+          // clamps ai_analysis to 20,000 chars. The redaction runs on the
+          // record that is actually stored, after the clamp, so what lands in
+          // the row is what was checked.
+          captured_by: session.employee_id, data: aiScan.redactAiFields(resource, photoData, nowISO)
         })
       });
       const rows = await r.json();
@@ -12353,7 +12365,7 @@ module.exports = async (req, res) => {
       const r = await fetch(rest(resource + '?on_conflict=license_hash,' + idCol), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
-        body: JSON.stringify({ license_hash: licHash, app_id: 'sairnbuild', [idCol]: String(payload.id), data: payload, updated_at: nowISO() })
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairnbuild', [idCol]: String(payload.id), data: aiScan.redactAiFields(resource, payload, nowISO), updated_at: nowISO() })
       });
       if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNbuild data tables are not set up yet — run sql/sairnbuild_data_schema.sql in Supabase first.' } }); return; }
       const rows = await r.json();

@@ -4855,6 +4855,30 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-30T11:08:08Z",
+      "opened_at_sha": "00030f2d11b7b1e426724f90d1a3fb69c3cfcf6b",
+      "resources": [
+        "bld_jobs",
+        "bld_photo_analyses",
+        "grd_progress_photos",
+        "rf_jobs",
+        "sd_negotiated_prices"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "docs/CRITICALITY-TIERS.md"
+      ],
+      "what": "Raw model output is now redacted server-side across six apps, not one. api/_lib/ai-scan-redaction.js holds a single declared per-field map; api/sd-data.js calls redactAiFields() at seven write branches (memory, grd_progress_photos, grd_ecosystem_reports, msb_food_scans, scp_progress_photos, the SAIRNbuild generic BLD_RESOURCES loop, and rf_photos -- the last on the record the branch BUILDS, photoData, after its 20,000-char clamp, so what is checked is what is stored).\n\nREVIEW THE UNIVERSE FIRST, because that is where a later edit will cut a corner. It was derived TWICE, in opposite directions, by tools/ai_output_resource_scan.py: FORWARD from a model response parse to any store reached from it, BACKWARD from every store site to a module-level identifier assigned from a response parse. They answer 11 and 12, agree on 5, and EACH FINDS RESOURCES THE OTHER CANNOT SEE. An auditor had already proved that asymmetry by hand -- bld_ai_chat and grd_ecosystem_reports were reachable only backward. Please check whether you agree that one direction would have been reported as a universe, because the tool's whole justification rests on it.\n\nSECOND, THE EXCLUSIONS, and there are eleven. DELIBERATELY_EXCLUDED in that module names each with its reason, and three classes are mixed together on purpose so the next person to widen the map reads the refusals at the same time as the entries: (a) NEVER REACHES A SERVER -- bld_ai_chat and sd_stonehead_history are excluded from sync by api/_resources/*.js as conversation transcripts, so the raw text sits in localStorage and NO server gate can reach it; that is a standing exposure, not a closed one. (b) THE MODEL TEXT IS THE DELIVERABLE -- grd_quotes and `quotes` store design text split into quote LINE ITEMS the customer signs; redacting a line description corrupts the quote. (c) FALSE POSITIVES OF THE NARROWER, seven of them, each confirmed by reading the store site: rf_jobs stores numeric quantities and a hardcoded reason string, sd_negotiated_prices is a pasted CSV whose local `raw` collided with a module-level `raw` holding model output, sd_ai_counts is two integers. Please re-read at least two of the seven yourself -- a false positive I dismissed is the failure mode with no test.\n\nTHIRD, THE DELIVERABLE DIRECTION IS ASSERTED AND NOT ASSUMED. Section 3 of the suite requires rf_photos.parsed_quantities to keep every digit and msb_food_scans.items to keep the product names, and section 4 requires an ungated resource in the same app (bld_jobs) to pass through with no redaction block at all. Over-redaction is not the safe failure here; it is a different way to lose the record, which is the reasoning mech_checks already carries for its payee field.\n\nFOURTH, THE CONTROLS. 24 arms. There is a KNOWN-BAD CONTROL PER RESOURCE that deletes that resource's map entry and requires the arm to go red -- without it an arm proves only that the text arrived clean, which would also be true if the fixture were wrong or if something else were sanitising it. Every arm reads the body the handler sent to PostgREST, not the response, because a server that redacted only its reply would pass a response-only check. Please confirm the control genuinely mutates: it restores the entry in a finally block, so a control that silently failed to delete would look identical.\n\nWHAT IS IN recurrence_open AND NOT CLOSED: nothing yet FORCES the two-direction derivation to be re-run when a new AI-writing resource is added, which is exactly how MECH_SCANNED_TEXT went stale the moment a second app needed it. A push-gate arm comparing the derivation against the declared map would close it and is planned, not built. And shared_knowledge stores up to 60 lowercased words taken from model text, so a surname CAN survive; it is registered rather than half-gated, because redactDocumentText() works on prose and a per-word filter is a different change.\n\nFOUR DEFECTS IN MY OWN DERIVATION TOOL WERE FOUND BY DRIVING IT, and all four failed silent, short and plausible -- a flat per-file provenance set that matched every function using a variable called `text` (114 resources), a regex that took PROPERTY names so every DOM write read as provenance, a module-var regex capturing only the first declarator so the canonical case went missing, and a two-pass comment/string stripper that opened a 321,923-character phantom string on the regex literal /[&<>\"']/g and lost whole FUNCTIONS from the span map. The last one reported a resource a human had already confirmed as absent, with no error. If any figure in this change looks too clean, that is the direction to push on.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-30T11:08:08Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
