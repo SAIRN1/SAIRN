@@ -207,6 +207,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#128993; 43 test files where STRING CHECKS ARE AT LEAST HALF the classified assertions &mdash; a registered population, not a completed sweep** <!-- QUEUE25-ITEM9-11-HANK-2026-09-29 --> | **MEASURED 2026-09-29 (hank) by `tools/message_assertion_audit.py` (NEW, report-only). 589 files, 10,718 assertions: 1,464 string-only, 2,755 value, 6,499 UNCLASSIFIED. Full account in `docs/2026-09-2 | `tests/lib/strip_comments.test.js`, `tests/run_master_plan_probe.py`, `tests/sairndental_rollup_panel.js`, `tests/sairnscape_memory.js`, `tests/sairnvet_formulary_source_honesty.js` |
 | **&#9989; THREE probe arms read SILENT &mdash; and the diagnosis in this row was WRONG ABOUT TWO OF ITS THREE CLAIMS, which is why the old text is quoted below rather than replaced** | **FIXED 2026-09-28 (CC). All three arms now catch; the severity stated here was TOO HIGH and is corrected.** | `api/sd-data-active-credential.test.js` |
 | **&#128993; The role-gate screen&rsquo;s NOT-DRIVEN bucket over-reports by at least 31% &mdash; it cannot see a suite that drives through a TABLE** | **MEASURED 2026-09-28 (CC), and proven against the ablation on one of them** | `api/sd-data-alf-caregiver-scope.test.js` |
 | **&#9989; DECIDED: a REVOKED licence does not get AI. The cutoff stays as built** | **DECIDED 2026-09-29 by Michael. Raised 2026-09-28 (CC) after reversing it on instruction; now closed as a standing decision rather than an open question** | `api/claude-cost-controls.test.js` |
@@ -490,6 +491,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#128993; `sc-denial-reconcile.js` reports a NEGATIVE aggregate count under a reason saying &ldquo;nobody has entered one&rdquo; &mdash; somebody did, they entered `-1`** <!-- QUEUE25-SCDENIAL-HANK-2026-09-29 --> | **FOUND 2026-09-29 (hank) while discharging cody&rsquo;s `2026-09-27T03:53:49Z` obligation (`0786c19a`). THE CODE IS CORRECT ON ALL THREE NAMED WORRIES; this is one reason string. Pasteable change, a  | `api/_lib/sc-denial-reconcile.test.js` |
 | **&#128993; The GP therapy-discipline modifier rule now exists, and NOTHING ON THIS PLATFORM CAN HOLD AN INDEPENDENT REVIEW OBLIGATION FOR IT** | **BUILT 2026-09-24 (CC) in `982b093c`; REVIEW OWED AND UNASSIGNABLE BY THE GATE.** `tools/tier_a_review_gate.py --open` refused it in as many words: *"Nothing in this change names a Tier A resource, s | `tests/sairncode_pt_gp_modifier.js` |
 | **The WROTE/MISSED/UNKNOWN credential fix ships with NO negative control &mdash; and two of its three guards are individually unpinned, measured** | **FOUND 2026-09-21 (Cody), NOT FIXED** &mdash; from the Tier A review of cc's `sc_credential_scope` obligation (opened 2026-09-18T16:20:00Z, discharged 2026-09-21; full verdict in `docs/tier-a-reviews | `api/sc-credentials.test.js`, `tests/sc_credentials_probe.py` |
 | **A Tier A medical-billing record took a write from the LICENCE KEY ALONE &mdash; `sc_denial_events` was the seventh, and the gate was a hand-written list of six** | **FIXED 2026-09-15 (CC), measured LIVE first** &mdash; `SC_TIER_A_WRITE_GATED` is now DERIVED from the pinned Tier A list; `tests/sairncode_gates.js` 120/120, mutation control 155/155 with all 29 caug | `tests/sairncode_gates.js` |
@@ -520,6 +522,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#128993; `sf_district_keypair` holds an EXTRACTABLE ECDSA P-256 PRIVATE key JWK in `localStorage`, and the platform has no criticality statement about its only stored private key** <!-- QUEUE25-ITEM3-HANK-2026-09-29 --> | **FOUND 2026-09-29 (hank), CORROBORATED INDEPENDENTLY by hover log #718(g), which proposes A-confidentiality / B-integrity. The proposed statement is written out in `docs/2026-09-29-register-cells-han | `tests/sairnfreedom_key_reconciliation.js` |
 | **&#128993; Resources gated in four batches, the last on 2026-09-24 &mdash; count them in `SD_SESSION_GATED`, never here &mdash; a FELONY and gambling disqualification flag on a named volunteer, MINORS&rsquo; names, and an ORC 2915 payee record were all reachable on a browser-shipped licence key. The ones still ungated are still a decision NOBODY HAS MADE** | **CODE LANDED AND HALF LIVE-VERIFIED 2026-09-22** (`20d82277`). Audited by **hover2** across all 35; approved by **Michael**; built by **Hank**. **AMBER not green: the gates refuse, but the half that  | `api/sd-data-sf-session-gate.test.js`, `tests/run_sf_session_gate_sabotage_probe.py` |
 | **A recorded NEGATIVE with an expiry measured in hours, being set by its own author &mdash; `sf_resources_session_gate_probe.py` says SAIRNfreedom has no session plumbing, and hank is building it now** | **NOTED 2026-09-21 (Cody), NOTHING TO FIX YET** &mdash; from the Tier A review of hank&rsquo;s 14:06:04Z obligation (discharged, no finding against the work) | `tests/sf_resources_session_gate_probe.py` |
 | **&#9989; The general ledger, the chart of accounts and vendor pricing were authorised by the LICENCE KEY ALONE &mdash; the app now has per-employee credentials and those three are gated** | **BUILT 2026-09-21 (Hank)** &mdash; `sql/sairnfreedom_employee_auth_schema.sql`, `ROLES_BY_APP` + `AUTH_TABLE_BY_APP` in `api/_lib/auth.js`, `api/sf-auth.js` (NEW), `X-SD-Auth` in `sairnfreedom.html`& | `api/_lib/employee-lifecycle-wiring.test.js` |
@@ -540,6 +543,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#128993; `law_strike_log` is a local-only collection with NO declaration &mdash; so &ldquo;a peremptory-strike record lives in one browser&rdquo; is currently news rather than a decision** <!-- QUEUE25-ITEM3-HANK-2026-09-29 --> | **FOUND 2026-09-29 (hank). hover log #718(e) reached the same resource by a different method and proposed an A/A register row instead &mdash; see the unit-disagreement row above. Severity MODERATE** | `tests/sairnfreedom_key_reconciliation.js` |
 | **&#9989; An ABSENT period count became a legal deadline ON THE TRIGGER DATE &mdash; and the obvious guard refused a real Maryland rule** | **FIXED 2026-09-22 (Hank)** &mdash; `api/_lib/deadline-engine.js` `periodCount()`; new `api/_lib/deadline-period-count.test.js` **17 arms**; all 38 deadline suites green | `api/_lib/deadline-period-count.test.js` |
 | **&#9989; FIFTEEN of SAIRNlaw&rsquo;s eighteen server resources have NEVER EXISTED on the deployed database &mdash; every gate written for them has been running against a table that is not there** | **LIVE NOW, MEASURED 2026-09-21 (cc)** while trying to close the live half of the `billing_code` trim fix. Not a code defect &mdash; the same deploy-ordering gap as the SAIRNcare/SAIRNbuild row above, | `tests/app_session_isolation.js` |
 | **&#9888; `grab()` in the sairnlaw review probe asserts the anchor and the terminator and NOTHING about what lies between &mdash; and a brace-balance check provably does not close it** | **FOUND AND DRIVEN 2026-09-21 (Hank), NOT FIXED** &mdash; the finding from my Tier A review of fourth&rsquo;s `2026-09-21T19:02:10Z` obligation | `tests/sairnlaw_trust_clearance_review_probe.js` |
@@ -611,6 +615,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#128993; `SEN_UNSCOPED_CACHES` declares `sen_evv_config`, which nothing writes &mdash; and the test that governs that list cannot see a dead entry** <!-- QUEUE25-ITEM3-HANK-2026-09-29 --> | **FOUND 2026-09-29 (hank), CORROBORATED INDEPENDENTLY by hover log #718(c). Severity LOW, recorded for the SHAPE rather than the size** | `tests/phi_cache_scoped_to_user.js` |
 | **Independent review of the hydrate-delegation probe (Cody) &mdash; the comparator and the walk it judges share one blind spot, so &ldquo;IDENTICAL&rdquo; is unearned on one input in seven** | **REVIEWED 2026-09-22 (Fourth)** &mdash; `tests/sen_hydrate_comparator_review_probe.js`, report-only, exit 0. **1 finding, LOW, and my first draft of it was WRONG** | `tests/sen_hydrate_comparator_review_probe.js` |
 | **&#9888; The delegation probe&rsquo;s comparator misses regex literals, and so does the walk it judges &mdash; one shape in seven makes them agree on a wrong span** | **OPEN 2026-09-22, NOT FIXED (LOW)** &mdash; Finding 1 of Fourth&rsquo;s review of cody&rsquo;s `2026-09-22T10:05:29Z`. cody disclosed the blind spot; this measures which inputs actually reach it | `tests/sairnsenior_hydrate_delegation_review_probe.js` |
 | **&#128993; `api/sd-data-law-phase2-session.test.js` asserts the deactivated case with `notStrictEqual(status, 200)`, which cannot tell a DEACTIVATED credential from NO SESSION** | **FOUND 2026-09-22 (Cody), reviewing fourth&rsquo;s `08:48:28Z` obligation &mdash; the author flagged the arm as weak and asked; this is the measured answer** &mdash; driven against the real handler w | `api/sd-data-law-phase2-session.test.js` |
@@ -673,21 +678,21 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 159 test files are traced to no stated requirement
+### 158 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 673 of 832 traced, 80.9%.
+For context and not as the headline: 675 of 833 traced, 81.0%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 674 citations come from
+### Where the 676 citations come from
 
 | source | citations |
 |---|---|
-| `index` | 320 |
-| `declared` | 282 |
-| `declared+index` | 62 |
+| `index` | 322 |
+| `declared` | 278 |
+| `declared+index` | 66 |
 | `GUARD_TESTS+index` | 6 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
@@ -699,10 +704,10 @@ An untraced test is not a bad test. It means no source in this repo states what 
 
 | kind | count | what it means | the fix |
 |---|---|---|---|
-| **bound to a subject, tied to no requirement** | 34 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
+| **bound to a subject, tied to no requirement** | 33 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
 | **no subject binding either** | 125 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
-**These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 34 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
+**These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 33 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
 - `api/_lib/alf-family-mar.test.js`
 - `api/_lib/compliance-rules-staff-join.test.js`
@@ -753,7 +758,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/law_trust_reconcile_wiring_probe.py`
 - `tests/lib/active_credential_stub.js`
 - `tests/lib/strip_comments.js`
-- `tests/lib/strip_comments.test.js`
 - `tests/licence_rekey_isolation_probe.py`
 - `tests/mech_docs_redaction_wiring_probe.py`
 - `tests/python_escape_hygiene.py`
@@ -798,6 +802,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_law_phase2_session_sabotage_probe.py`
 - `tests/run_live_probe_residue_probe.py`
 - `tests/run_log_cluster_probe.py`
+- `tests/run_message_assertion_probe.py`
 - `tests/run_mutation_anchor_resolver_probe.py`
 - `tests/run_nhi_clone_enumeration_probe.py`
 - `tests/run_out_of_service_probe.py`
@@ -839,7 +844,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/sairncash_entitlement_gate_probe.py`
 - `tests/sairncode_eligibility_coding_edge.js`
 - `tests/sairncode_kx_accumulator_wiring_probe.py`
-- `tests/sairnfreedom_key_reconciliation.js`
 - `tests/sairnfreedom_server_backup_probe.py`
 - `tests/sairnlaw_citation_rule_probe.py`
 - `tests/sairnlaw_trust_clearance.js`
@@ -884,8 +888,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 832   tests/**, api/** (both walked)
-  open-work rows citing a test       378   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 833   tests/**, api/** (both walked)
+  open-work rows citing a test       383   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 10   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                70   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     75   report_only_checks.NOT_PROMOTED

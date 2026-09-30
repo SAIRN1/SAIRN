@@ -4663,6 +4663,28 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-30T01:38:12Z",
+      "opened_at_sha": "3897262f3ed6433ba5d712dff43e0091815937c8",
+      "resources": [
+        "alf_family_contacts",
+        "law_mattermilestones"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tests/sairncare_transport_refusal.js",
+        "tools/citation_no_source_report.py"
+      ],
+      "what": "queue25 (hank), items 1-11. NO TIER A RESOURCE WAS TOUCHED, and both attributions on this push are FALSE POSITIVES OF THE GATE'S OWN MATCHER -- recorded here rather than reworded to slip past it (PR 4.3), and they are instances SIX and SEVEN of the class I made an index row for in this same push.\n\n(a) alf_family_contacts matched tests/sairncare_transport_refusal.js. That suite serves no resource: it lifts three functions out of sairncare.html by anchor and drives them against a fake fetch. The resource name appears because the rewritten arm's own comments and its five synthetic control strings NAME the family-contact transport the arm exists to guard -- `alfData('read','alf_family_contacts'` appears inside a regex literal that the arm uses to FORBID that call shape.\n\n(b) law_mattermilestones matched tools/citation_no_source_report.py. That tool parses docs/CRITICALITY-TIERS.md rows and writes nothing anywhere. The resource name appears only in a comment recording that `re-derived` was too broad and fired on that row's own sentence \"the stage can be re-derived\" -- the worked example of the defect this change fixes.\n\nTHE PATTERN IS NOT RANDOM, and the index row I opened this push says so: four of the five earlier instances were a tool whose SUBJECT is a resource-naming defect, so the tool cannot document what it catches without tripping the matcher. These two make it six and seven.\n\nWHAT ACTUALLY CHANGED -- 12 commits, no app HTML, no api/, no sql/:\n\n1. tests/sairncare_transport_refusal.js -- the fourth-transport arm rewritten to assert what a caller READS off alfFamilyData's result rather than which function it calls. Known-bad control runs FIRST and proves the OLD arm passes the synthetic old-shape caller. Mutation-tested against the real file in both directions: three mutations caught, reword-only unaffected. 31 arms.\n\n2. tools/citation_drift_hook.py -- the fourth could-not path KEEPS its exit 0 (attribution is what could not run, not the drift check) and loses its silence: it now states the verdict and names its basis as weaker. Six new selftest arms drive main() on both sub-cases; a hybrid carrying them over the old output path fails exactly three.\n\n3. tools/citation_no_source_report.py + probe -- the CONTRADICTORY bucket goes 32 -> 0 with NOT ONE REGISTER ROW EDITED. Three criteria corrections (a dated per-row read stamp, a field list read out of the source, `re-derived` used about data) plus a CITE regex that could not see a line number under 100, measured at exactly 2 rows. 29 arms.\n\n4. tools/hedge_carry_check.py + probe -- the false DROPPED root-caused to three polysemous hedge words, and the SAME line caused a false negative by shadowing. 16 selftest arms, 24 probe arms, 6 fail on the old logic.\n\n5. tools/tier_a_review_gate.py + probe -- three reseat bases instead of one (subject twin, exact file set, containment in a window), and the cross-check that stopped the strongest one writing two wrong shas. Refusals now carry stable reason CODES and --json emits them. 2 records reseated. 27 arms.\n\n6. tools/idempotence_double_run.py -- a --timeout so a could-not-tell can be re-asked; the default did not move. A derived scratch-only exclusion was built, measured and REJECTED, with the measurement in the header.\n\n7. tools/message_assertion_audit.py + probe, both NEW, report-only. 27 arms.\n\n8. docs/ -- the register-cells doc (item 2 cells, the item 6 citations, the sc-denial-reconcile routing), the hover path visibility read, the message-assertion sweep, and 24 open-work index rows.\n\nWHAT A REVIEWER SHOULD CHECK FIRST: the reseat gate's subject-twin basis. It is the strongest evidence available and it wrote two WRONG shas before the file cross-check existed, on records whose sha was already wrong when written. Confirm the DISJOINT refusal is right and that SUPERSET is the correct bar rather than PARTIAL. Second: whether the citation_no_source criteria now UNDER-accuse -- 31 rows moved out of the contradiction bucket on my reading of what counts as disclosed evidence, and that reading is a judgement.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-30T01:38:12Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**283 files in `tools/`.** By what actually invokes them:
+**284 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,7 +27,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 74 | runs automatically on every push, never blocks |
 | **ADVISORY** | 5 | session-start or prompt hooks, informational |
 | **DECIDED** | 74 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 61 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 62 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 54 | nothing runs these at all |
 
 By what they are, independent of wiring:
@@ -35,7 +35,7 @@ By what they are, independent of wiring:
 | Kind | Count |
 |---|---:|
 | ADVISORY | 3 |
-| CHECKER | 202 |
+| CHECKER | 203 |
 | GENERATOR | 19 |
 | GUARD | 1 |
 | LIBRARY | 25 |
@@ -50,13 +50,13 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 50 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 18 wired nowhere at all, and 32
+**The number to act on: 51 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 18 wired nowhere at all, and 33
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 50, by name, so this is actionable rather than a statistic:
+The 51, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
@@ -85,6 +85,7 @@ The 50, by name, so this is actionable rather than a statistic:
 | `invariant_registry.js` | SUITE-ONLY | not a checker itself: the LOCKED hand-derived classification of which invariant applies to which engine, the evidence it was read from, and the synthetic fixtures invariant_runner.js must satisfy before touching a real engine |
 | `invariant_runner.js` | SUITE-ONLY | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality |
 | `known_red_check.py` | SUITE-ONLY | a test suite that has gone red and is NOT already recorded as known-red -- the one failure a reader cannot otherwise find. 33 of 390 files were red on origin/main with nothing recording which 33, so a genuinely new regression was indistinguishable from the existing set and "some suites are just red" became the reading. Reports four answers rather than two: NEW, KNOWN, CHANGED (recorded as red but now failing on a DIFFERENT arm, so a second defect is hiding inside an entry that says the file is expected to fail) and RECOVERED (recorded and now green -- reported as loudly as NEW, because a stale entry SWALLOWS the next real failure of that file). Refuses a truncated run log rather than reading it as a clean platform |
+| `message_assertion_audit.py` | SUITE-ONLY | a test file whose evidence is mostly WORDS -- an arm that checks a string appears in captured output or in a source read, and therefore passes when the behaviour it names is gone. Three of my own criteria were wrong that way in one session (a transport arm that checked WHICH function a caller called and not what it READ; a hedge matcher that fired on "appears" meaning OCCURS; a citation rule that could not see a line number under 100), and none was caught by review. The criterion is CONTAINMENT, not "a string is involved": an equality against a literal is an assertion about a VALUE, and calling it text is what made v1 report NINE mutation controls -- whole-file byte comparisons against a saved baseline -- as message-only. Reports the UNCLASSIFIED bucket as its own number (6,499 of 10,718) and excludes it from the ratio denominator, because folding it either way decides the answer by how much the tool failed to parse. Keeps the JavaScript regex estimate separate from the ast-parsed Python figure. CANNOT tell whether an arm survives its behaviour being removed -- only a mutation answers that, and this names the population to mutate. CANNOT see one fragile message check inside a file with forty value assertions, because the unit is the file: guessing arm boundaries across four label conventions mis-attributes findings |
 | `negated_status_assertion_scan.py` | UNWIRED | a READ-LIST of assertions that express "the caller got through" as the NEGATION of one status code. `!== 401` is satisfied by a 403, by a 500 and by the harness throwing -- and on 2026-09-16 exactly that arm, in tests/app_session_isolation.js, printed "law_trusttx is reachable with the LICENCE ALONE -- no session -- and answers 403" IN GREEN, over a gate that had just been put in front of attorney IOLTA trust money. DELIBERATELY NOT A VERDICT: `!== <code>` is CORRECT when the claim is "some OTHER lock answered first", and nothing mechanical can tell that from "it got through" -- so every row is printed with its assertion and its message for a human, and the tool says so in its own output. It does NOT classify by message text, because keyword-matching "reaches" would be wrong in both directions, which this platform has paid for twice. Reads comment-stripped source, since the repo now contains several comments DISCUSSING the defect. FOUND A SECOND INSTANCE ON ITS FIRST REAL RUN: api/sairndental/public-book.test.js asserted a three-way disjunction for "reaches the network stage" and was green while the request 502ed before reaching anything |
 | `panel_depth.py` | UNWIRED | a panel that looks built because its vocabulary is present. Nine signals per panel, four SHALLOW (a panel div, a nav route, a registered resource, a client write) and five DEEP (a real SQL table, the resource NAMED in executable endpoint code, a verb beyond generic CRUD, that verb actually SENT, a test file naming it). Built because two documents recorded the same debt and neither paid it: the 2026-09-23 internal SAIRNcode audit says "breadth of panel is not depth of function ... a direct depth check on those eight panels is owed before pitching a large hospital system", and the 2026-09-26 cloud audit deferred it again in its own words. FIRST RESULT: of SAIRNcode's eight enterprise RCM panels, claims scores 9/9 and the other seven score 6/9 missing the SAME three deep signals -- and every mention of sc_denial/sc_ar/sc_revenue in api/sd-data.js is inside a COMMENT, so all seven ride the generic handler with no per-resource rule. Reports PRESENT and COULD-NOT-TELL as TWO numbers that are never added, carries NO threshold on purpose because a threshold would manufacture a pass/fail out of a design question, and names what it cannot see: sufficiency at scale, whether a test that mentions a resource asserts anything about it, and a capability served by its own endpoint rather than by sd-data (sc_eligibility is the live example). Criteria are stamped and locked against 12 synthetic fixtures that run BEFORE any real judgement -- the lock refused version .1 for matching a commented-out panel id, and the first real run exposed a domain_verb that credited five sibling resource names as verbs off one list line. |
 | `pattern_enumeration_sweep.py` | SUITE-ONLY | a population decided by a NAME with no second, independent derivation of membership behind it |
@@ -359,7 +360,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (61)
+## SUITE-ONLY (62)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -396,6 +397,7 @@ fixtures. Nothing points them at the real codebase.
 | `known_red_check.py` | CHECKER | a test suite that has gone red and is NOT already recorded as known-red -- the one failure a reader cannot otherwise find. 33 of 390 files were red on origin/main with nothing recording which 33, so a genuinely new regression was indistinguishable from the existing set and "some suites are just red" became the reading. Reports four answers rather than two: NEW, KNOWN, CHANGED (recorded as red but now failing on a DIFFERENT arm, so a second defect is hiding inside an entry that says the file is expected to fail) and RECOVERED (recorded and now green -- reported as loudly as NEW, because a stale entry SWALLOWS the next real failure of that file). Refuses a truncated run log rather than reading it as a clean platform | `run_known_red_probe.py` |
 | `line_endings.py` | LIBRARY | the CRLF-vs-LF recombination: 52 files here handle line endings independently and most are RIGHT, because they had already converged on `newline=''` for round-tripping. What none of them wrote down is that COMPARING is a different job with THREE answers -- IDENTICAL, ENDINGS_ONLY and DIFFERS -- and that collapsing the first two is what produced the false "files differ" alarms four times in one session. Validated against the real case: repo vs user-store skills, a bare byte compare reports 11 diverged, the true answer is 0. Does NOT migrate the 52 -- it exists so the next one is not a 53rd implementation | `run_selftest_independence_probe.py` |
 | `load_compliance_seed.py` | LIVE | a SAIRNcare compliance seed that is committed and INERT -- it loads the rules to a licence and proves it by driving the engine on IDENTICAL inputs before and after, failing when the answer did not move, because a loader exit code is not evidence | `run_compliance_loader_probe.py` |
+| `message_assertion_audit.py` | CHECKER | a test file whose evidence is mostly WORDS -- an arm that checks a string appears in captured output or in a source read, and therefore passes when the behaviour it names is gone. Three of my own criteria were wrong that way in one session (a transport arm that checked WHICH function a caller called and not what it READ; a hedge matcher that fired on "appears" meaning OCCURS; a citation rule that could not see a line number under 100), and none was caught by review. The criterion is CONTAINMENT, not "a string is involved": an equality against a literal is an assertion about a VALUE, and calling it text is what made v1 report NINE mutation controls -- whole-file byte comparisons against a saved baseline -- as message-only. Reports the UNCLASSIFIED bucket as its own number (6,499 of 10,718) and excludes it from the ratio denominator, because folding it either way decides the answer by how much the tool failed to parse. Keeps the JavaScript regex estimate separate from the ast-parsed Python figure. CANNOT tell whether an arm survives its behaviour being removed -- only a mutation answers that, and this names the population to mutate. CANNOT see one fragile message check inside a file with forty value assertions, because the unit is the file: guessing arm boundaries across four label conventions mis-attributes findings | `run_message_assertion_probe.py` |
 | `new_checker.py` | GENERATOR | scaffolds a checker and its control pair, wired through checker_kit -- and what it emits REFUSES (exit 2) until its rule is written, so a fresh checker can never report clean | `run_new_checker_probe.py` |
 | `nhi_register.py` | GENERATOR | every NON-HUMAN IDENTITY with a named OWNER and a real SCOPE, because an env-var scan structurally cannot answer that -- a GitHub PAT, a Postgres LOGIN role and four clones credentialed by the Windows credential manager are not `process.env` reads. REFUSES when a credential secrets_inventory calls a CREDENTIAL belongs to no identity, or when sql/ creates a role with no entry. Its first run found ELEVEN credentials with no recorded owner. Complements docs/SECRETS-INVENTORY.md rather than replacing it: that one answers what a variable unlocks, this one answers who owns it | `run_first_article_inspection_probe.py`, `run_nhi_clone_enumeration_probe.py`, `run_selftest_independence_probe.py` |
 | `pattern_enumeration_sweep.py` | CHECKER | a population decided by a NAME with no second, independent derivation of membership behind it | `run_pattern_enumeration_probe.py` |
@@ -521,11 +523,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      283   git ls-files tools/
+  tools on disk                      284   git ls-files tools/
   hook entries                        16   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                70   report_only_checks.REGISTRY
-  tools invoked by tests/            204   tests/**/*.py, *.js
+  tools invoked by tests/            205   tests/**/*.py, *.js
   recorded NOT-promoted decisions     80   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```
