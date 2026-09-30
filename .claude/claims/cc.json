@@ -3118,8 +3118,8 @@
       "task": "tools/blind_spot_line_check.py tests/run_blind_spot_line_probe.py",
       "claimed_at": "2026-09-30T11:47:39Z",
       "claimed_at_epoch": 1790768859.7120712,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T11:48:29Z",
       "files": null
     }
   ],
