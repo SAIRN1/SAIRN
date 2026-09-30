@@ -2951,8 +2951,8 @@
       "task": "tools/tool_owner_header_check.py tests/run_tool_owner_header_probe.py",
       "claimed_at": "2026-09-30T13:39:16Z",
       "claimed_at_epoch": 1790775556.5052207,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T15:30:56Z",
       "files": null
     },
     {
