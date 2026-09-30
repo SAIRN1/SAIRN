@@ -29,7 +29,7 @@ Every column names the tool that produced it. `res` = resources owned in `api/_r
 
 | Vertical | res | tiered | suites | traced | fault | Gaps |
 |---|---|---|---|---|---|---|
-| `sairnbiz` | 13 | ✅ | 18 | 16 | 5 | — |
+| `sairnbiz` | 13 | ✅ | 19 | 16 | 5 | — |
 | `sairnbuild` | 32 | ✅ | 11 | 10 | 3 | — |
 | `sairncare` | 14 | ✅ | 32 | 30 | 6 | — |
 | `sairncash` | 0 | ✅ | 12 | 7 | 2 | — |
@@ -52,7 +52,7 @@ Every column names the tool that produced it. `res` = resources owned in `api/_r
 | `stonedesk-hr` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 | `stonedesk-intake` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 
-**Platform totals: 391 resources owned by an app, 284 test files attributed to one, 243 of those traced, 63 fault probes.**
+**Platform totals: 391 resources owned by an app, 285 test files attributed to one, 243 of those traced, 63 fault probes.**
 
 **And the denominators that are NOT the same thing**, stated because conflating them is what went wrong: there are **863** test files on disk in total and **690** of them are traced — most are not attributed to any single app, so the per-app `traced` column above sums to less. A rate over the subset you looked at is not a rate.
 
@@ -80,12 +80,12 @@ The table above names every contributor, which is necessary and is not enough: a
 
 | Contributor | Could be understating by | Direction | What that figure counts |
 |---|---|---|---|
-| `suites` | 579 | UNDER-counts | test files on disk attributed to no single app by path |
+| `suites` | 578 | UNDER-counts | test files on disk attributed to no single app by path |
 | `traced` | 173 | UNDER-counts | test files no source ties to a stated requirement |
 | `fault` | 40 | UNDER-counts | test files that write to a tracked app file and declare neither a MUTATIONS block nor a *_fault_probe.py name |
 | `tiered` | 0 | no contribution | binary and complete -- criticality_tier_check either raised something for an app or did not |
 
-**WORST CASE: 792.** RSS for context: 606.
+**WORST CASE: 791.** RSS for context: 605.
 
 **All three contributors err in the SAME direction — they UNDER-count — so this document understates coverage and cannot overstate it.** A budget on a status page that flattered the platform would be worth very little; this one can only ever say "at least this good".
 

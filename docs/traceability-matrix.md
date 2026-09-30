@@ -805,7 +805,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_hook_integrity_probe.py`
 - `tests/run_hover_eqa_escalation_probe.py`
 - `tests/run_hover_routing_gap_probe.py`
-- `tests/run_hover_scope_own_claim_probe.py`
 - `tests/run_irreversible_class_probe.py`
 - `tests/run_known_red_probe.py`
 - `tests/run_law_phase2_session_sabotage_probe.py`
@@ -857,6 +856,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_verification_plan_staleness_probe.py`
 - `tests/sairnbiz_1099_threshold.js`
 - `tests/sairnbiz_benefits_and_overtime.js`
+- `tests/sairnbiz_preview_fixes.js`
 - `tests/sairnbuild_server_wins.js`
 - `tests/sairncare_payer_routing_integration.js`
 - `tests/sairncash_entitlement_gate_probe.py`
