@@ -50,10 +50,12 @@ that only knows what it already knows is the eighth discipline's exact failure:
 nothing announces the day it stopped describing the repo.
 """
 import argparse
+import ast
 import io
 import json
 import os
 import re
+import subprocess
 import sys
 
 EXIT_CLEAN = 0
@@ -181,6 +183,44 @@ ACTORS = [
                           'accept a DANGLING commit as a good sha and skip the '
                           'records a rebase had orphaned.',
     },
+    # ── THE TWO THE DECLARATION MISSED, FOUND BY --derive ──────────────────
+    # Both are squarely in the convergence chain and neither was in the
+    # twelve-entry map I wrote. They are here because the repository was asked
+    # instead of the author.
+    {
+        'name': 'claim_commit_push',
+        'kind': 'tool',
+        'file': 'tools/sairn_claim.py',
+        'anchor': "'git', 'push', 'origin', 'HEAD:main'",
+        'trigger': 'every `claim` and every `release` -- so several times a '
+                   'session, from any session',
+        'writes': '.claude/claims/<session>.json, then COMMITS it and PUSHES, '
+                  'rebasing onto origin/main first when it is behind.',
+        'self_retrigger': 'NO by itself -- the claim file it writes is the one '
+                          'it then commits, and a second claim writes different '
+                          'content rather than the same content again. BUT ITS '
+                          'REBASE FIRES post_rewrite_hook exactly as the push '
+                          'loop does, so it can enter the livelock from a '
+                          'completely different door. It refuses outright on an '
+                          'unstaged change rather than staging by breadth, '
+                          'which is what keeps it out.',
+    },
+    {
+        'name': 'rebase_resolve',
+        'kind': 'tool',
+        'file': 'tools/sairn_rebase_resolve.py',
+        'anchor': "if pol.get('strategy') != STRATEGY:",
+        'trigger': 'by hand during a conflicted rebase, on a ledger whose '
+                   'merge_policy it reads from the COMMON ANCESTOR',
+        'writes': 'the merged ledger, and STAGES it -- never commits. Stages '
+                  'nothing unless the ledger\'s own validator passes.',
+        'self_retrigger': 'NO -- a union of a set with itself is that set, so a '
+                          'second run on the merged file finds nothing to '
+                          'merge. It REFUSES on a deleted record or on one both '
+                          'sides changed differently, which is the case where a '
+                          'union would be a different wrong answer rather than '
+                          'a safer one.',
+    },
     {
         'name': 'regen_master_plan',
         'kind': 'regenerator',
@@ -211,6 +251,250 @@ ACTORS = [
 ]
 
 BY_NAME = dict((a['name'], a) for a in ACTORS)
+
+
+# ── THE DERIVED SET, AND WHY A DECLARATION IS NOT A MEASUREMENT ────────────
+# Everything above is the AUTHOR'S CLAIM. `--derive` answers the same question
+# from the repository instead, by three clauses that never consult ACTORS:
+#
+#   1. every file under the directory `core.hooksPath` ACTUALLY names;
+#   2. every file that calls git with a MUTATING verb -- commit, add, push,
+#      rebase, reset, merge, amend, checkout -- ON THIS TREE rather than on a
+#      sandbox it created itself;
+#   3. every file that opens a GIT-TRACKED path for writing.
+#
+# DRIVING IT FOUND TWO ACTORS THE DECLARED MAP HAD MISSED, both squarely in
+# the convergence chain: tools/sairn_claim.py (add, commit, push and REBASE --
+# it rebases and pushes on every claim and every release) and
+# tools/sairn_rebase_resolve.py (stages the merged ledger). A twelve-entry map
+# written by the session that built the chain missed two of its own members.
+# That is the whole argument for deriving rather than declaring.
+#
+# AND THE DERIVATION IS BLIND WHERE THE MAP IS NOT. Clause 2 cannot see
+# .githooks/post-rewrite, which shells out to defect_register.py and calls no
+# git verb of its own; it cannot see the three regenerators, which only write
+# files; and it cannot resolve push_retry.py into four separate actors,
+# because it is file-granular and they are not. So both sets are printed with
+# their symmetric difference and NEITHER is treated as the answer.
+MUTATING_VERBS = ('commit', 'add', 'push', 'rebase', 'reset', 'merge',
+                  'amend', 'checkout')
+SUBPROC_NAMES = ('run', 'call', 'check_call', 'check_output', 'Popen', 'system',
+                 'getoutput', 'getstatusoutput', 'spawn', 'git', 'run_git', 'sh')
+SANDBOX = re.compile('mkdtemp|mkstemp|TemporaryDirectory|worktree'
+                     "|git[^\n]{0,24}['\"]init['\"]")
+WRITE_MODE = re.compile("open\\s*\\([^)]{0,200}['\"](?:w|w\\+|wb)['\"]")
+TRACKED_LIT = re.compile("['\"]([A-Za-z0-9_./-]+\\.(?:md|json|js|py|html|sql))['\"]")
+
+# Files the derivation finds that are deliberately OUTSIDE the convergence
+# chain. Each really does mutate the tree or the index, so clause 2 is right
+# to find them; none participates in the rebase/regenerate/amend/push loop
+# whose fixed point --simulate is about. Named here rather than filtered by a
+# pattern, so the exemption is auditable and a new one has to be argued for.
+OUT_OF_SCOPE = {
+    'tools/bare_run_write_check.py':
+        'restores the working tree with `git checkout -- .` after its own '
+        'sweep. Mutates the tree; runs nowhere near the push loop.',
+    'tools/condition_coverage.py':
+        'restores ONE engine file with `git checkout -- <path>` after mutating '
+        'it for coverage. Same shape, same reason.',
+    'tests/seam_check/run_probe.py':
+        'restores the endpoint it mutated with a targeted `git checkout --`; '
+        'its own header says never a reset.',
+    'tests/seam_check/run_delegation_probe.py':
+        'same as run_probe.py, for the delegation seam.',
+    'tests/run_gate_caller_impact_probe.py':
+        '`git add -N <planted>` so a planted file is visible to the gate under '
+        'test. Touches the INDEX only and never commits.',
+    'tests/run_live_probe_residue_probe.py':
+        'the same `git add -N` plant-and-check shape.',
+    'tests/run_out_of_service_probe.py':
+        'the same `git add -N` plant-and-check shape.',
+    'tests/run_register_freshness_propose_probe.py':
+        'stages a scratch file to drive the freshness gate. Index only.',
+}
+
+
+def _hooks_dir(root):
+    """The directory core.hooksPath REALLY names -- not .githooks by faith."""
+    try:
+        p = subprocess.run(['git', 'config', '--get', 'core.hooksPath'],
+                           cwd=root, capture_output=True, text=True)
+        return (p.stdout or '').strip() or None
+    except OSError:
+        return None
+
+
+def _tracked(root):
+    try:
+        p = subprocess.run(['git', 'ls-files'], cwd=root,
+                           capture_output=True, text=True)
+        return set(x.strip() for x in (p.stdout or '').split('\n') if x.strip())
+    except OSError:
+        return set()
+
+
+def _git_verbs(src, ext, rel, notes):
+    verbs = set()
+    if ext == '.py':
+        try:
+            tree = ast.parse(src)
+        except SyntaxError:
+            notes.append('%s DOES NOT PARSE -- not scanned, and not a clean '
+                         'answer' % rel)
+            return verbs
+        for n in ast.walk(tree):
+            if not isinstance(n, ast.Call):
+                continue
+            f = n.func
+            nm = (f.attr if isinstance(f, ast.Attribute)
+                  else (f.id if isinstance(f, ast.Name) else ''))
+            if nm not in SUBPROC_NAMES:
+                continue
+            toks = []
+            for sub in ast.walk(n):
+                if isinstance(sub, ast.Constant) and isinstance(sub.value, str):
+                    toks.extend(sub.value.split())
+            tl = [t.lower() for t in toks]
+            if nm in ('git', 'run_git') or 'git' in tl:
+                for v in MUTATING_VERBS:
+                    if v in tl or ('--' + v) in tl:
+                        verbs.add(v)
+        return verbs
+    for line in src.split('\n'):
+        st = line.strip()
+        if st.startswith('#') or st.startswith('//') or 'git' not in line:
+            continue
+        for v in MUTATING_VERBS:
+            if re.search(r'\b' + v + r'\b', line):
+                verbs.add(v)
+    return verbs
+
+
+def _tracked_writes(src, ext, tracked):
+    """Tracked paths this file opens FOR WRITING, read off the AST.
+
+    THE FIRST VERSION ASKED TWO SEPARATE QUESTIONS AND AND-ed THEM: does the
+    file contain a write-mode open anywhere, and does it mention a tracked path
+    anywhere. Every probe in tests/ satisfies both -- it names its SUBJECT (a
+    tracked file, which it only reads) and writes to a tempdir. That produced
+    122 unaccounted files, which is not a finding, it is a broken clause: a
+    gate that flags 122 correct files is a gate somebody deletes.
+    The tracked path has to be the ARGUMENT of the write, so the two facts are
+    joined at the call rather than in the file.
+    """
+    out = []
+    if ext != '.py':
+        return out
+    try:
+        tree = ast.parse(src)
+    except SyntaxError:
+        return out
+    for n in ast.walk(tree):
+        if not isinstance(n, ast.Call):
+            continue
+        f = n.func
+        nm = (f.attr if isinstance(f, ast.Attribute)
+              else (f.id if isinstance(f, ast.Name) else ''))
+        if nm != 'open':
+            continue
+        strs = [a.value for a in list(n.args) + [k.value for k in n.keywords]
+                if isinstance(a, ast.Constant) and isinstance(a.value, str)]
+        if not any(m in ('w', 'w+', 'wb', 'a', 'a+') for m in strs):
+            continue
+        for s in strs:
+            if s in tracked:
+                out.append(s)
+    return out
+
+
+def derive(root):
+    hooks = _hooks_dir(root)
+    tracked = _tracked(root)
+    derived, notes = {}, []
+
+    if not hooks:
+        notes.append('core.hooksPath is NOT SET in this clone, so clause 1 '
+                     'found nothing. That is a could-not-tell, not an empty '
+                     'answer -- run python tools/install_git_hooks.py.')
+    else:
+        hd = os.path.join(root, hooks.replace('/', os.sep))
+        if not os.path.isdir(hd):
+            notes.append('core.hooksPath names %r and that directory does not '
+                         'exist, so NO hook runs in this clone.' % hooks)
+        else:
+            for fn in sorted(os.listdir(hd)):
+                if fn.startswith('.') or fn.endswith('.md'):
+                    continue
+                derived.setdefault(hooks + '/' + fn, set()).add('clause1-hook')
+
+    for d in ('tools', 'tests', 'scripts'):
+        base = os.path.join(root, d)
+        if not os.path.isdir(base):
+            continue
+        for dp, dn, fns in os.walk(base):
+            dn[:] = [x for x in dn if x != '__pycache__']
+            for fn in sorted(fns):
+                ext = os.path.splitext(fn)[1].lower()
+                if ext not in ('.py', '.js', '.sh', ''):
+                    continue
+                path = os.path.join(dp, fn)
+                rel = os.path.relpath(path, root).replace(os.sep, '/')
+                try:
+                    src = io.open(path, encoding='utf-8', errors='replace').read()
+                except OSError:
+                    notes.append('%s UNREADABLE -- not scanned' % rel)
+                    continue
+                verbs = _git_verbs(src, ext, rel, notes)
+                if verbs and not SANDBOX.search(src):
+                    derived.setdefault(rel, set()).add(
+                        'clause2-mutates-this-tree(%s)' % ','.join(sorted(verbs)))
+                for lit in _tracked_writes(src, ext, tracked):
+                    derived.setdefault(rel, set()).add(
+                        'clause3-writes-tracked(%s)' % lit)
+                    break
+    return derived, notes, hooks
+
+
+def cmd_derive(root):
+    derived, notes, hooks = derive(root)
+    declared_files = {}
+    for a in ACTORS:
+        declared_files.setdefault(a['file'], []).append(a['name'])
+
+    dset, fset = set(derived), set(declared_files)
+    unaccounted = sorted(dset - fset - set(OUT_OF_SCOPE))
+    exempted = sorted(dset & set(OUT_OF_SCOPE))
+    declared_only = sorted(fset - dset)
+
+    print('ACTOR DERIVATION -- declared vs measured')
+    print('core.hooksPath           : %s' % (hooks or 'NOT SET'))
+    print('declared actors          : %d in %d file(s)'
+          % (len(ACTORS), len(declared_files)))
+    print('derived files            : %d' % len(dset))
+    print('  also declared          : %d' % len(dset & fset))
+    print('  named in OUT_OF_SCOPE  : %d' % len(exempted))
+    print('  UNACCOUNTED FOR        : %d' % len(unaccounted))
+    for n in notes:
+        print('  NOTE: %s' % n)
+    print('')
+    if unaccounted:
+        print('DERIVED, NEITHER DECLARED NOR EXEMPTED -- this is what blocks:')
+        for rel in unaccounted:
+            print('  %-46s %s' % (rel, ', '.join(sorted(derived[rel]))))
+        print('')
+    print('DECLARED BUT NOT DERIVED -- %d, and NOT a finding.' % len(declared_only))
+    print('Clause 2 only sees a MUTATING GIT VERB, so a hook that shells out to')
+    print('another tool, a regenerator that only writes a file, and several')
+    print('sub-actors sharing one file are all invisible to it. A file-granular')
+    print('scan cannot resolve push_retry.py into four actors.')
+    for rel in declared_only:
+        print('  %-46s %s' % (rel, ', '.join(declared_files[rel])))
+    print('')
+    if unaccounted:
+        return EXIT_FINDING
+    print('OK -- every derived file is either a declared actor or named in')
+    print('OUT_OF_SCOPE with the reason it is not in the convergence chain.')
+    return EXIT_CLEAN
 
 
 # ── verification ────────────────────────────────────────────────────────────
@@ -453,6 +737,9 @@ def main(argv):
     g.add_argument('--map', action='store_true')
     g.add_argument('--verify', action='store_true')
     g.add_argument('--simulate', action='store_true')
+    g.add_argument('--derive', action='store_true',
+                   help='derive the actor set from the repo by three clauses '
+                        'and compare it to the declaration')
     ap.add_argument('--json', action='store_true')
     ap.add_argument('--root', default=REPO)
     ap.add_argument('--steps', type=int, default=12)
@@ -466,6 +753,8 @@ def main(argv):
         return print_map(a.json)
     if a.verify:
         return verify(a.root)
+    if a.derive:
+        return cmd_derive(a.root)
     for w in a.without:
         if w not in BY_NAME:
             print('COULD NOT RUN -- no actor named %r. Known: %s'

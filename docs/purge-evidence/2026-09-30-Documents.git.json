@@ -1,0 +1,12 @@
+{
+ "clone": "Documents.git",
+ "fsck_exit": 0,
+ "note": "Written BEFORE any prune/gc/reflog expire. No object contents, no values, no fragments -- object ids, kinds and mtimes only.",
+ "object_mtimes": {},
+ "packfile_mtimes": {},
+ "recorded_at": "2026-09-30T11:31:16.610982Z",
+ "recorded_from": "SAIRN-fourth",
+ "subject_path": "C:\\Users\\marsh\\Documents\\.git",
+ "unreachable": [],
+ "unreachable_count": 0
+}
