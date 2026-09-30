@@ -2808,8 +2808,8 @@
       "task": "tools/sairn_push_gate_hook.py tools/staged_parse_check.py",
       "claimed_at": "2026-09-30T00:14:59Z",
       "claimed_at_epoch": 1790727299.026617,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T12:37:29Z",
       "files": null
     },
     {
