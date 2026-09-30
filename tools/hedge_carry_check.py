@@ -61,17 +61,80 @@ REPO = os.path.dirname(TOOLS)
 sys.path.insert(0, TOOLS)
 from checker_kit import EXIT_CLEAN, EXIT_FINDING, EXIT_COULD_NOT_RUN  # noqa: E402
 
-CRITERIA_VERSION = '2026-09-29.1'
+CRITERIA_VERSION = '2026-09-29.2'
 
 # ── THE HEDGES. A small closed set, and the closure is the criterion.
 # Every entry is a word that makes a claim WEAKER than its unhedged form, and
 # nothing else. "likely" belongs; "important" does not, because it is emphasis
 # rather than uncertainty. A wide list would fire on every dispatch and the check
 # would be switched off in a day.
-HEDGES = ('likely', 'possible', 'possibly', 'probably', 'probable', 'may be',
-          'might be', 'appears', 'appear to', 'seems', 'i think', 'i believe',
-          'unclear', 'not sure', 'suspect', 'perhaps', 'arguably',
-          'could be', 'looks like')
+#
+# ── THREE OF THEM WERE MATCHED AS BARE WORDS AND THREE OF THEM ARE POLYSEMOUS.
+#    FIXED 2026-09-29 (hank), and the false DROPPED is reproduced in the probe.
+#
+# The first version matched each entry with nothing but word boundaries around
+# it. Driven against a real dispatch, three entries fired on sentences that make
+# a FLAT factual claim and hedge nothing at all:
+#
+#   `appears`   "The resource name APPEARS IN citation_drift_hook.py's docstring"
+#               -- `appears` here means OCCURS. It is a hedge only in
+#               "appears to <verb>" and "appears that".
+#   `possible`  "confirm the only POSSIBLE VALUES are A and B" -- enumerative,
+#               not uncertain. It IS a hedge in "possible Tier A" and "it is
+#               possible that", which is why the word stays and only the
+#               enumerating determiners are excluded.
+#   `suspect`   "The named SUSPECT is the matcher, not the tool" -- a NOUN. It is
+#               a hedge only as a verb: "I suspect", "we suspect that".
+#
+# Each of those produced a DROPPED verdict against a commit that had nothing to
+# answer for, which is a FALSE FINDING -- and a false finding on a check about
+# honesty is the worst possible defect for it to have.
+#
+# AND THE SAME LINE CAUSED A FALSE NEGATIVE, which is the half worth naming: the
+# loop `break`s after the first occurrence of each word, so a non-hedging
+# "appears in" EARLIER in a dispatch SHADOWED a real "appears to be" later. One
+# bug, both directions. The break is gone; every distinct occurrence is judged,
+# bounded at MAX_CONTEXTS per word so the report stays readable.
+#
+# The entries are now (label, pattern) pairs. The fourteen unambiguous ones keep
+# a plain escaped-word pattern so nothing changes for them.
+MAX_CONTEXTS = 3
+
+def _word(w):
+    return r'(?<![a-z])' + w.replace(' ', r'\s+') + r'(?![a-z])'
+
+HEDGE_PATTERNS = (
+    ('likely',     _word('likely')),
+    ('possibly',   _word('possibly')),
+    ('probably',   _word('probably')),
+    ('probable',   _word('probable')),
+    ('may be',     _word('may be')),
+    ('might be',   _word('might be')),
+    ('seems',      _word('seems')),
+    ('i think',    _word('i think')),
+    ('i believe',  _word('i believe')),
+    ('unclear',    _word('unclear')),
+    ('not sure',   _word('not sure')),
+    ('perhaps',    _word('perhaps')),
+    ('arguably',   _word('arguably')),
+    ('could be',   _word('could be')),
+    ('looks like', _word('looks like')),
+    # ── the three disambiguated ones ──────────────────────────────────────
+    # `appears`/`appear` hedge only before `to` or `that`.
+    ('appears to', r'(?<![a-z])appears?\s+(?:to|that)(?![a-z])'),
+    # `possible` is not a hedge when it enumerates. The excluded determiners are
+    # the ones that make it a completeness claim rather than an uncertain one.
+    ('possible',   r'(?<!\bonly\s)(?<!\ball\s)(?<!\bevery\s)(?<!\beach\s)'
+                   r'(?<!\bany\s)(?<!\bno\s)(?<!\bthe\s)'
+                   r'(?<![a-z])possible(?![a-z])'),
+    # `suspect` hedges only as a verb: a pronoun before it, or `that` after it.
+    ('suspect',    r'(?:(?<![a-z])(?:i|we|they|you)\s+suspect(?:s|ed)?(?![a-z])'
+                   r'|(?<![a-z])suspects?(?:ed)?\s+that(?![a-z]))'),
+)
+
+# Kept as a name for anything that imported it, and derived rather than
+# restated, so the two can no longer disagree.
+HEDGES = tuple(label for label, _ in HEDGE_PATTERNS)
 
 # ── WHAT COUNTS AS CARRYING IT FORWARD OR RESOLVING IT.
 # Either the hedge word itself survives into the message -- the claim stayed
@@ -84,19 +147,41 @@ RESOLVED = re.compile(
     r'\bnot supported\b|\bre-derived\b', re.I)
 
 
+# A SENTENCE END IS A DOT FOLLOWED BY WHITESPACE OR THE END OF THE TEXT.
+# The first version used a bare `.`, so the context for a dispatch naming
+# `citation_drift_hook.py` was cut to "The resource name appears in
+# citation_drift_hook." -- a reader could not see what was hedged, on a report
+# whose whole value is showing them.
+_SENT_END = re.compile(r'\.(?=\s|$)')
+
+
+def _sentence_around(text, lo_i, hi_i):
+    low = text.lower()
+    lo = 0
+    for m in _SENT_END.finditer(low, 0, lo_i):
+        lo = m.end()
+    m = _SENT_END.search(low, hi_i)
+    hi = len(text) if not m else m.end()
+    return ' '.join(text[lo:hi].split())[:220]
+
+
 def hedges_in(text):
-    """Every hedge present, with the sentence it sits in."""
-    low = (text or '').lower()
+    """Every hedge occurrence, with the sentence it sits in.
+
+    EVERY OCCURRENCE, not the first. The first version broke after one match per
+    word, so a non-hedging use earlier in a dispatch hid a real hedge later.
+    """
+    src = text or ''
+    low = src.lower()
     out = []
-    for h in HEDGES:
-        for m in re.finditer(r'(?<![a-z])' + re.escape(h) + r'(?![a-z])', low):
-            # The sentence around it, so a reader can see WHAT was hedged rather
-            # than only that something was. A bare word list would be unusable.
-            lo = max(0, low.rfind('.', 0, m.start()) + 1)
-            hi = low.find('.', m.end())
-            hi = len(text) if hi == -1 else hi + 1
-            out.append({'hedge': h, 'context': ' '.join(text[lo:hi].split())[:220]})
-            break     # one report per hedge word, not per occurrence
+    for label, pat in HEDGE_PATTERNS:
+        seen = 0
+        for m in re.finditer(pat, low):
+            if seen >= MAX_CONTEXTS:
+                break
+            out.append({'hedge': label,
+                        'context': _sentence_around(src, m.start(), m.end())})
+            seen += 1
     return out
 
 
@@ -118,18 +203,29 @@ def commit_text(rng):
     return body, None
 
 
+PATTERN_BY_LABEL = dict(HEDGE_PATTERNS)
+
+
 def judge(item, commits):
-    """[(hedge, verdict, context)] -- verdict CARRIED | RESOLVED | DROPPED."""
+    """[(hedge, verdict, context)] -- verdict CARRIED | RESOLVED | DROPPED.
+
+    CARRIED is decided with the hedge's OWN pattern, not with its label spelled
+    out -- `appears to` is a label, and looking for the literal string
+    "appears to" in a commit would miss "appears that" and would have been a
+    second place for the two spellings to disagree.
+    """
     low = (commits or '').lower()
     out = []
     for h in hedges_in(item):
-        word = h['hedge']
-        if re.search(r'(?<![a-z])' + re.escape(word) + r'(?![a-z])', low):
-            out.append((word, 'CARRIED', h['context']))
+        label = h['hedge']
+        pat = PATTERN_BY_LABEL.get(label, r'(?<![a-z])' + re.escape(label)
+                                   + r'(?![a-z])')
+        if re.search(pat, low):
+            out.append((label, 'CARRIED', h['context']))
         elif RESOLVED.search(commits or ''):
-            out.append((word, 'RESOLVED', h['context']))
+            out.append((label, 'RESOLVED', h['context']))
         else:
-            out.append((word, 'DROPPED', h['context']))
+            out.append((label, 'DROPPED', h['context']))
     return out
 
 
@@ -184,6 +280,56 @@ def selftest():
     v = judge('this is IMPORTANT and URGENT', 'feat: did it')
     arm('KNOWN-BAD THE OTHER WAY: emphasis is NOT a hedge, so a wide word list '
         'cannot make this fire on every dispatch', v == [], v)
+
+    # ── THE FALSE DROPPED, REPRODUCED. Three polysemous entries, each on the
+    #    real sentence that produced the false finding, against a REAL PLAIN
+    #    COMMIT MESSAGE -- the shape the item named. Every one must be silent.
+    plain = 'chore(register): reseat after the rebase'
+    v = judge("The resource name appears in citation_drift_hook.py's DOCSTRING "
+              'and in invocation_path_scan.py\'s docstring, as the worked '
+              'example.', plain)
+    arm('FALSE DROPPED, FIXED: `appears` meaning OCCURS is not a hedge, and a '
+        'real plain commit no longer answers for it', v == [], v)
+    v = judge('Strip comments and block comments, then confirm the only '
+              'possible values are A and B.', plain)
+    arm('FALSE DROPPED, FIXED: `possible` ENUMERATING is not a hedge', v == [], v)
+    v = judge('The named suspect is the matcher, not the tool.', plain)
+    arm('FALSE DROPPED, FIXED: `suspect` as a NOUN is not a hedge', v == [], v)
+
+    # ── AND THE REAL FORMS MUST STILL FIRE, or the fix is a deletion.
+    v = judge('This appears to be a Tier A resource.', plain)
+    arm('and `appears to` STILL fires -- the fix disambiguates, it does not '
+        'delete the entry', v and v[0][1] == 'DROPPED', v)
+    v = judge('It is possible that the register is right.', plain)
+    arm('and `possible that` STILL fires', v and v[0][1] == 'DROPPED', v)
+    v = judge('I suspect the matcher is reading the wrong column.', plain)
+    arm('and `I suspect` STILL fires', v and v[0][1] == 'DROPPED', v)
+
+    # ── THE SHADOWING, which is the same bug pointing the other way.
+    shadowed = ('The name appears in the docstring. Separately, the row '
+                'appears to be Tier A on the money limb.')
+    v = judge(shadowed, plain)
+    arm('THE FALSE NEGATIVE THE SAME LINE CAUSED: a non-hedging "appears in" '
+        'earlier in the dispatch used to SHADOW a real "appears to be" later, '
+        'because the loop broke after the first match. The real hedge is now '
+        'reported UNDER ITS OWN LABEL -- `appears to`, which the bare-word '
+        'version could not produce',
+        len(v) == 1 and v[0][0] == 'appears to' and v[0][1] == 'DROPPED', v)
+    arm('and its CONTEXT is the sentence with the real hedge in it, not the '
+        'first one', v and 'appears to be Tier A' in v[0][2], v)
+
+    # ── THE CONTEXT BOUNDARY, which used to break on a filename.
+    # THE FILENAME SITS BEFORE THE HEDGE ON PURPOSE. With it after, the old
+    # bare-dot boundary happened to produce the right answer and the arm proved
+    # nothing -- which is the fixture-validity trap this file already records
+    # about its own first version.
+    h = hedges_in('The row appears to be Tier A because '
+                  'citation_drift_hook.py reads it that way.')
+    arm('a sentence boundary is a dot followed by SPACE -- a dot inside '
+        '`citation_drift_hook.py` no longer TRUNCATES the context at the '
+        'filename, which is the half a reader needs',
+        h and h[0]['context'] == 'The row appears to be Tier A because '
+        'citation_drift_hook.py reads it that way.', h and h[0]['context'])
 
     print('  %s' % ('ALL ARMS PASS' if not bad else '%d ARM(S) FAILED' % bad))
     return EXIT_CLEAN if not bad else EXIT_FINDING
