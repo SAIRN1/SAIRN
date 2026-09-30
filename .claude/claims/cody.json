@@ -2907,8 +2907,8 @@
       "task": "tools/citation_line_drift_check.py tests/run_citation_line_drift_probe.py",
       "claimed_at": "2026-09-30T12:14:12Z",
       "claimed_at_epoch": 1790770452.0472558,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T12:41:58Z",
       "files": null
     }
   ],
