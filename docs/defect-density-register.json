@@ -21815,6 +21815,61 @@
       "recurrence_open": "NOT CLOSED BY THESE ACTIONS, and two things stay open. (1) The fix trades a tracked-file mutation for a leftover WORKTREE when a run is killed -- reaped by name on the way in and out, with an arm on it, but that is a mitigation of the new cost rather than its absence. (2) The same defect is still live ONE LAYER UP, inside the control for it: tests/run_dead_rule_sweep_probe.py section A2 sabotages tools/dead_rule_sweep.py in the clone and restores it in a finally. Named in the fix commit and deliberately not fixed there. Nothing in the repo yet ASKS, of a new checker, where its writes land -- so the class recurs by default and this record is the only thing that says so."
     },
     {
+      "commit": "9643cb4c3f6e",
+      "date": "2026-09-30",
+      "subject": "fix(probe): my own mutation arms had no baseline gate, and arm 8 had been passing VACUOUSLY",
+      "files": [
+        "tests/mech_docs_redaction_wiring_probe.py"
+      ],
+      "lines_added": 45,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "probe-control",
+      "summary": "tests/mech_docs_redaction_wiring_probe.py arm 8 had been passing VACUOUSLY. Its arms are predicates over mutated source rather than suite runs, so the baseline question is whether the predicate is TRUE on the unmutated file -- and arm 8's predicate required the literal resource === mech_docs, which the 2026-09-29 map refactor removed. With the predicate already false, not predicate(mutated) is true before and after, so the arm reported a refusal it never tested. Arm 1 went RED off the identical cause and was fixed the day before without anyone noticing arm 8 had gone quiet.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tests/mech_docs_redaction_wiring_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "9643cb4c3f6e",
+        "date": "2026-09-30",
+        "subject": "fix(probe): my own mutation arms had no baseline gate, and arm 8 had been passing VACUOUSLY",
+        "lag_days": 0
+      },
+      "citation_note": "The shape is the same stale anchor cross-domain-disciplines item 8 describes, but the consequence here is a VACUOUS PASS rather than a decayed check, and item 8 is written about the latter.",
+      "contributing_factors": [
+        {
+          "factor": "The predicate named a literal the subject had moved past, so it was false before and after the mutation",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The predicate now names MECH_SCANNED_TEXT[resource] -- the mechanism rather than one of its cases -- matching the correction already made to arm 1."
+        },
+        {
+          "factor": "Nothing asserted the predicates hold on the UNMUTATED file, so a stale anchor turned a mutation arm green instead of red",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "A gate runs every predicate against the unmutated handler before anything is planted and exits 2 COULD NOT RUN naming each affected arm. A known-bad control breaks arm 8 in place and confirms exit 2 with no was-REFUSED verdict emitted."
+        },
+        {
+          "factor": "One stale anchor made one arm fail LOUDLY and another pass SILENTLY, and only the loud one was investigated",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Both are now anchored on the same mechanism, so the next time that mechanism moves both arms move together rather than one reddening and one going quiet."
+        },
+        {
+          "factor": "A predicate-over-source arm has no natural baseline the way a suite-run arm does, so the discipline was easy to leave out",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "The 35 hand-rolled mutation runners with no baseline precondition are enumerated in docs/2026-09-29-index-rows-cc.md for registering by owner. Only this one is fixed here."
+        }
+      ],
+      "recurrence_open": "34 of the 35 hand-rolled runners with no baseline precondition are untouched, and of the 41 that DO mention a baseline, 29 assert it without GATING on it -- a red baseline still lets them report caught or missed. The shared sabotage_harness gate now exits 2 for its 68 callers; neither population is covered by that."
+    },
+    {
       "commit": "9698606eb5d3",
       "date": "2026-09-30",
       "subject": "fix(tools): the mutation tester wrote a production engine, and the sibling scan did 1865 git launches",
@@ -21870,61 +21925,6 @@
         }
       ],
       "recurrence_open": "Three other tools in this repo mutate a real file and restore it -- the sabotage\nharness, the guard-ablation tool and the idempotence double-run -- and none was\nexamined for the same kill-window. They are not covered by this fix and were not\nswept for it here; guard_ablation.py in particular was still running when a 95s\nbound expired on 2026-09-30, which is exactly the condition that produced this\ndefect."
-    },
-    {
-      "commit": "9643cb4c3f6e",
-      "date": "2026-09-30",
-      "subject": "fix(probe): my own mutation arms had no baseline gate, and arm 8 had been passing VACUOUSLY",
-      "files": [
-        "tests/mech_docs_redaction_wiring_probe.py"
-      ],
-      "lines_added": 45,
-      "lines_removed": 1,
-      "app": "tooling",
-      "layer": "test",
-      "severity": "moderate",
-      "detection_method": "probe-control",
-      "summary": "tests/mech_docs_redaction_wiring_probe.py arm 8 had been passing VACUOUSLY. Its arms are predicates over mutated source rather than suite runs, so the baseline question is whether the predicate is TRUE on the unmutated file -- and arm 8's predicate required the literal resource === mech_docs, which the 2026-09-29 map refactor removed. With the predicate already false, not predicate(mutated) is true before and after, so the arm reported a refusal it never tested. Arm 1 went RED off the identical cause and was fixed the day before without anyone noticing arm 8 had gone quiet.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": "tests/mech_docs_redaction_wiring_probe.py",
-      "found_by_session": null,
-      "injection": {
-        "commit": "9643cb4c3f6e",
-        "date": "2026-09-30",
-        "subject": "fix(probe): my own mutation arms had no baseline gate, and arm 8 had been passing VACUOUSLY",
-        "lag_days": 0
-      },
-      "citation_note": "The shape is the same stale anchor cross-domain-disciplines item 8 describes, but the consequence here is a VACUOUS PASS rather than a decayed check, and item 8 is written about the latter.",
-      "contributing_factors": [
-        {
-          "factor": "The predicate named a literal the subject had moved past, so it was false before and after the mutation",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The predicate now names MECH_SCANNED_TEXT[resource] -- the mechanism rather than one of its cases -- matching the correction already made to arm 1."
-        },
-        {
-          "factor": "Nothing asserted the predicates hold on the UNMUTATED file, so a stale anchor turned a mutation arm green instead of red",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "A gate runs every predicate against the unmutated handler before anything is planted and exits 2 COULD NOT RUN naming each affected arm. A known-bad control breaks arm 8 in place and confirms exit 2 with no was-REFUSED verdict emitted."
-        },
-        {
-          "factor": "One stale anchor made one arm fail LOUDLY and another pass SILENTLY, and only the loud one was investigated",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Both are now anchored on the same mechanism, so the next time that mechanism moves both arms move together rather than one reddening and one going quiet."
-        },
-        {
-          "factor": "A predicate-over-source arm has no natural baseline the way a suite-run arm does, so the discipline was easy to leave out",
-          "kind": "latent-condition",
-          "action_status": "planned",
-          "action": "The 35 hand-rolled mutation runners with no baseline precondition are enumerated in docs/2026-09-29-index-rows-cc.md for registering by owner. Only this one is fixed here."
-        }
-      ],
-      "recurrence_open": "34 of the 35 hand-rolled runners with no baseline precondition are untouched, and of the 41 that DO mention a baseline, 29 assert it without GATING on it -- a red baseline still lets them report caught or missed. The shared sabotage_harness gate now exits 2 for its 68 callers; neither population is covered by that."
     },
     {
       "commit": "9b2735faba06",
@@ -22144,6 +22144,61 @@
         }
       ],
       "recurrence_open": "21 of 485 rows carry any reference at all, so for the other 464 there is nothing\na static arm can read a dose against. This control covers the 8 Topical\nAntiseptic rows; the same defect in an uncited row would be invisible, and the\nexisting sourcing-honesty suite is by design silent about rows that make no\nclaim."
+    },
+    {
+      "commit": "ec0f6681903b",
+      "date": "2026-09-30",
+      "subject": "fix(tests): three StoneDesk suites failed on stale expectations, and none of them was an app defect",
+      "files": [
+        "tests/ai_analysis_logs_delete.js",
+        "tests/ai_shortcuts_reach_the_chat.js",
+        "tests/quote_builder_delete_does_not_resurrect.js"
+      ],
+      "lines_added": 73,
+      "lines_removed": 7,
+      "app": "stonedesk",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "Three StoneDesk suites were RED at HEAD and none of the three causes was an app\ndefect -- every one was a stale expectation inside the test. A suite that fails for\na stale reason is a suite nobody reads, so the coverage it represented was already\ngone. quote_builder_delete_does_not_resurrect.js was not running AT ALL: grabLine()\nthrew on `  quoteHistory.unshift(q);`, a line item 92 removed when saveQuote stopped\nmutating ahead of its store, so the file died on line 80 before any arm ran.\nai_shortcuts_reach_the_chat.js asserted `id=\"userInput\"` is absent from the raw HTML\nand failed on the COMMENT at stonedesk.html:4812 that documents the absence and\nspells the literal to do so. ai_analysis_logs_delete.js failed seven arms with\n`seamRemakeLog is not defined` -- a function that exists at :34452 and was simply\nnot in the suite's hand-listed lift set -- and one arm required exactly two\nsdEnsureRowIds calls in sdVeinAnalyze, which was refactored so both paths call a\nshared record() helper that assigns the id once.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Each of the three went stale at a DIFFERENT commit -- the one that removed quoteHistory.unshift, the one that added the explanatory comment at :4812, and the one that refactored sdVeinAnalyze into record(). No single commit introduced the defect, and attributing it to any one of them would be wrong."
+      },
+      "contributing_factors": [
+        {
+          "factor": "All three tests encode the SHAPE of the code rather than the requirement. A verbatim lifted line, a raw-text absence check and a count of call sites are each exact, which is why they were chosen -- and exactness against a shape is what goes stale the first time the shape changes for a good reason.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Each was rewritten to assert the requirement instead: the current two lines are lifted, the absence check strips comments, and the id check is a RATIO of one ensure per save, which survives any refactor that keeps the guarantee."
+        },
+        {
+          "factor": "Two of the three failed in a way that reads like an app defect. `seamRemakeLog is not defined` and `the element is back -- re-check this suite` both point at stonedesk.html, and both were about the test. A failure message that accuses the wrong file costs more than a silent gap, because somebody goes and looks.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The comment-stripped arm now also asserts the comment is STILL there, so if it goes the arm says the stripping has stopped doing anything rather than silently reverting to the raw check; and the lift list is resolved transitively with the reason recorded."
+        },
+        {
+          "factor": "The hand-listed lift set is the sixth instance of this exact shape in this repo in one day. Five other suites broke the same way when sdData gained one global, and two of those carry comments predicting it.",
+          "kind": "technical",
+          "action_status": "planned",
+          "action": "The five were fixed by DERIVING the list; this one uses a per-module `extra` list because the symbols it needs are not derivable from a pattern. A general fix -- lifting a function's transitive dependencies automatically -- is not built and is named here as the remaining gap."
+        },
+        {
+          "factor": "Nothing reported that three suites were red. They were found by running every test that reads stonedesk.html while baselining an unrelated change, and they had been failing long enough that the 'is this from my change' question needed a stash to answer.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "No standing check reports the red set for an app. tools/run_all_tests.py exists but did not finish inside a 95-second bound today."
+        }
+      ],
+      "recurrence_open": "Nothing reports the red set for an app on a cadence. These three were found while\nbaselining something else, and a fourth could be red now without anybody knowing --\nthe only reason the count is 3 rather than unknown is that 78 suites were run by\nhand today. tools/run_all_tests.py did not finish inside 95 seconds."
     },
     {
       "commit": "f70a69be600b",
