@@ -3434,6 +3434,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "hank-1790783135",
+      "session": "hank",
+      "subject": "hank",
+      "task": "docs/tier-a-reviews.json",
+      "claimed_at": "2026-09-30T15:45:35Z",
+      "claimed_at_epoch": 1790783135.405842,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
