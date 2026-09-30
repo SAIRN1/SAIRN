@@ -2219,6 +2219,82 @@ def main():
                 "escape, and build the line with chr(92) if a heredoc keeps eating it.",
                 OVERRIDE_HINT,
             ]))
+    # ── CHECK: DOES EVERY SOURCE FILE THIS PUSH SHIPS PARSE? (2026-09-30) ──
+    # This gate syntax-checked stonedesk.html's script blocks and api/, and did
+    # NOT check tools/ at all -- so a tools/tooling_inventory.py that does not
+    # parse reached origin/main. Nothing at push time imports a tool, so no
+    # existing check looked at it; the next session to run the generator found
+    # out. Scoped to the files this push actually ships, over tools/, tests/ and
+    # api/, .py and .js.
+    _sp = os.path.join(repo, 'tools', 'staged_parse_check.py')
+    _sp_files = [q for q in changed
+                 if q.lower().endswith(('.py', '.js', '.mjs', '.cjs'))
+                 and q.replace(chr(92), '/').split('/')[0] in ('tools', 'tests', 'api')
+                 and os.path.isfile(os.path.join(repo, q))]
+    if _sp_files:
+        # A MISSING CHECKER IS NOT A CLEAN PUSH -- PR 1.11. Same rule checks 2,
+        # 3, 4, 5 and the control-byte check were each corrected to.
+        if not os.path.isfile(_sp):
+            deny(chr(10).join([
+                "Blocked: this push ships %d source file(s) under tools/, tests/ or"
+                % len(_sp_files),
+                "api/ and the parse checker is not in this clone, so nothing parsed",
+                "them.",
+                "",
+                "  expected: %s" % _sp,
+                OVERRIDE_HINT,
+            ]))
+        try:
+            _spr = subprocess.run([sys.executable, _sp]
+                                  + [os.path.join(repo, q) for q in _sp_files],
+                                  capture_output=True, text=True,
+                                  encoding='utf-8', errors='replace',
+                                  timeout=300, cwd=repo)
+        except Exception as _e:
+            deny(chr(10).join([
+                "Blocked: the parse check could not be run, so this push is",
+                "unchecked.",
+                "",
+                "  %s: %s" % (type(_e).__name__, _e),
+                OVERRIDE_HINT,
+            ]))
+        # DID IT HONOUR THE FILE LIST? An older copy that ignores its arguments
+        # would answer about something else entirely. Same staleness guard the
+        # control-byte check carries, and for the same reason: a wrong-reason
+        # deny is worse than either a right deny or a clean pass.
+        _m = re.search(r'files given\s*:\s*(\d+)', _spr.stdout or '')
+        if not _m or int(_m.group(1)) != len(_sp_files):
+            deny(chr(10).join([
+                "Blocked: the parse checker in this clone did not report the file",
+                "count this gate gave it (%s vs %d), so it is an older copy that"
+                % ((_m.group(1) if _m else 'nothing'), len(_sp_files)),
+                "ignored the list and answered about something else.",
+                "",
+                "This is a COULD-NOT-TELL, not a finding about your push.",
+                OVERRIDE_HINT,
+            ]))
+        if _spr.returncode == 1:
+            deny(chr(10).join([
+                "Blocked: this push ships a source file that DOES NOT PARSE.",
+                "",
+                (_spr.stdout or '').strip(),
+                "",
+                "In tools/ this is a tool that fails the first time anybody runs it,",
+                "and nothing at push time imports it -- which is why a broken",
+                "tools/tooling_inventory.py reached origin/main once already. In an",
+                "api/ file it is a route that 500s on its first request.",
+                OVERRIDE_HINT,
+            ]))
+        if _spr.returncode not in (0, 1):
+            deny(chr(10).join([
+                "Blocked: the parse check answered COULD NOT RUN (exit %d), which is"
+                % _spr.returncode,
+                "a third state and is not a pass. Usually: a .js is shipped and node",
+                "is not on PATH, or a file could not be read as UTF-8.",
+                "",
+                (_spr.stdout or _spr.stderr or '').strip()[:900],
+                OVERRIDE_HINT,
+            ]))
     # ── CHECK 12: A GENERATED DOCUMENT THAT *THIS PUSH* BROKE (2026-09-14) ──
     # BLOCKING, AND SCOPED BY CAUSATION RATHER THAN BY FILE LIST. Michael's
     # decision, 2026-09-14: a push is refused only when IT introduced the gap --
