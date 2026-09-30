@@ -2846,6 +2846,17 @@
       "status": "released",
       "released_at": "2026-09-30T01:18:21Z",
       "files": null
+    },
+    {
+      "id": "fourth-1790731108",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "tools/purge_evidence_gate.py tests/run_purge_evidence_probe.py tools/rewrite_convergence_map.py tests/run_rewrite_convergence_probe.py docs/2026-09-29-rewrite-map-fourth.md tools/numeric_default_coalesce_scan.py tests/run_numeric_coalesce_probe.py docs/2026-09-29-cells-fourth.md docs/2026-09-29-inventory-fourth.md sairnbuild.html tests/sairnbuild_settings_prefill_coalesce.js",
+      "claimed_at": "2026-09-30T01:18:28Z",
+      "claimed_at_epoch": 1790731108.8511264,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
