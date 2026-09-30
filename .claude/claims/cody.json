@@ -2753,8 +2753,8 @@
       "task": "discharge the 47h obligation authored by fourth on 2026-09-28T01:24:38Z",
       "claimed_at": "2026-09-30T00:03:01Z",
       "claimed_at_epoch": 1790726581.2345226,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T12:33:28Z",
       "files": null
     },
     {
