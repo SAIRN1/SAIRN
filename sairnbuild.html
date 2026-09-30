@@ -4657,7 +4657,18 @@ function bldPopulateAssigneeControls(){
 function openBidModal(){
   bideid=null;bidLineDraft=[];
   ['bm-client','bm-phone','bm-type','bm-sent','bm-decided','bm-lostreason','bm-notes'].forEach(function(f){$(f).value='';});
-  $('bm-source').value='referral';$('bm-stage').value='lead';$('bm-markup').value=bldSettings().default_markup_pct||18;
+  // SUBSTITUTE ON ABSENT, NEVER ON FALSY (2026-09-29). This used a plain `||18`
+  // fallback on the stored default markup, and 0 is falsy -- so a builder who
+  // sets default markup to 0% for cost-plus work had it stored as 0, shown as
+  // 0% on the settings screen (:7287), and prefilled HERE as 18%. Two figures
+  // for one stored setting, on screen at the same time, on a money field.
+  // bldSettings() already supplies 18 when the whole key is absent, so the
+  // fallback here only ever fired for the case it should not have.
+  //
+  // The expression is deliberately NOT repeated in this comment: the suite
+  // anchors on it and must find it exactly once, and a comment that quotes the
+  // anchor breaks the suite's own uniqueness guard. Found the hard way.
+  $('bm-source').value='referral';$('bm-stage').value='lead';$('bm-markup').value=(function(m){return m==null?18:m})(bldSettings().default_markup_pct);
   var row=$('bm-assignee-row');
   if(row){
     row.style.display=bldIsManagement()?'block':'none';
@@ -5583,7 +5594,11 @@ function openDrawModal(){
   if(!jobs().length){toast('Add a job first - a draw must belong to one');return;}
   drmeid=null;fillJobSelects();
   ['drm-no','drm-pct','drm-amount','drm-recamount','drm-notes'].forEach(function(f){$(f).value='';});
-  $('drm-retpct').value=bldSettings().default_retainage_pct||10;
+  // Same defect and same fix as the markup prefill in openBidModal: a plain
+  // `||10` replaced a deliberately-stored 0% retainage with 10%, while the
+  // settings screen went on showing 0%. Plenty of contracts hold nothing back,
+  // so 0 is a real setting and not a typo.
+  $('drm-retpct').value=(function(r){return r==null?10:r})(bldSettings().default_retainage_pct);
   $('drm-status').value='requested';
   $('drm-reqdate').value=bldLocalToday();
   $('drm-period').value='';$('drm-recdate').value='';
