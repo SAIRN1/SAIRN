@@ -33,6 +33,22 @@ const vm = require('vm');
 
 const html = fs.readFileSync(path.join(__dirname, '..', 'stonedesk.html'), 'utf8');
 
+// EVERY `var _sd* = {};` STATE MAP IN THE PAGE, DERIVED RATHER THAN LISTED
+// (2026-09-29). The comment below has been predicting its own breakage since
+// 2026-09-12 -- "a hand-listed mirror of another file's declarations is a mirror
+// that goes stale" -- and it went stale again today when sdData() gained
+// `_sdWriteOk` for the write-landed verdict. The omission does NOT surface as a
+// missing stub: the ReferenceError lands inside sdData's own catch, which
+// returns null, so every arm in the suite fails for a reason about this sandbox
+// and none of them about the transport. Derived, it cannot happen a sixth time.
+function stateMaps() {
+  const found = html.match(/^var _sd\w+ *= *\{\};.*$/gm) || [];
+  assert.ok(found.length >= 4, 'fewer than four `var _sd* = {};` state maps found '
+    + 'in stonedesk.html (' + found.length + ') -- the declaration style changed '
+    + 'and this sandbox is now silently missing some or all of them');
+  return found;
+}
+
 let pass = 0, fail = 0;
 function test(name, fn) {
   try { fn(); console.log('  ok   ' + name); pass++; }
@@ -89,15 +105,13 @@ const oneLiner = oneLinerFn('function sdAuthWasRefused(resource)') + '\n'
 // the same, against code that distinguishes three, was under-covering the thing
 // it exists to protect.
 const src =
-  'var _sdAuthRefused = {};\n' +
-  'var _sdReadFailed = {};\n' +
+  stateMaps().join('\n') + '\n' +
   // _sdLastStatus joined them 2026-09-12. sdData() writes it on EVERY path, so
   // omitting it here makes the real transport throw ReferenceError inside the
   // vm -- and the catch turns that into a null return, i.e. every arm in this
   // file "failing" for a reason that is about this sandbox rather than about
   // the transport. Five suites broke this way in one afternoon; a hand-listed
   // mirror of another file's declarations is a mirror that goes stale.
-  'var _sdLastStatus = {};\n' +
   oneLiner + '\n' +
   // sdData() gained `signal: sdFetchTimeoutSignal()` in the 2026-09-11 portfolio
   // transport sweep, so the helper has to be in scope or every arm below dies on

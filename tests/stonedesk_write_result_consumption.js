@@ -67,15 +67,35 @@ function grabLine(sig) {
   return html.slice(s, html.indexOf('\n', s));
 }
 
+// EVERY `var _sd* = {};` STATE MAP IN THE PAGE, DERIVED RATHER THAN LISTED
+// (2026-09-29). The comment below this has been predicting its own breakage
+// since 2026-09-12 -- "a hand-listed mirror of the layer's declarations is a
+// mirror that goes stale" -- and it went stale again today when sdData() gained
+// `_sdWriteOk` for the write-landed verdict. The omission does NOT surface as a
+// missing stub: the ReferenceError lands inside sdData's own catch, which
+// returns null, so every arm in the suite fails for a reason about this sandbox
+// and none of them about the transport. Derived, it cannot happen a sixth time.
+function stateMaps() {
+  const found = html.match(/^var _sd\w+ *= *\{\};.*$/gm) || [];
+  assert.ok(found.length >= 4, 'fewer than four `var _sd* = {};` state maps found '
+    + 'in stonedesk.html (' + found.length + ') -- the declaration style changed '
+    + 'and this sandbox is now silently missing some or all of them');
+  return found;
+}
+
 const TRANSPORT = [
-  grabLine('var _sdAuthRefused = {};'),
-  grabLine('var _sdReadFailed  = {};'),
-  grabLine('var _sdLastStatus  = {};'),
+  ...stateMaps(),
   grabLine('var SD_FETCH_TIMEOUT_MS = 15000;'),
   grabLine("var SD_SYNCED_KEY='sd_synced_ids';")
 ].join('\n') + '\n\n' + [
   grabAt('function sdFetchTimeoutSignal(){', ''),
   grabAt('async function sdData(action, resource, payload) {', ''),
+  // THE WRITE-LANDED ACCESSOR (2026-09-29), lifted rather than stubbed. Both
+  // sync functions below now ask it instead of testing sdData's return value
+  // against null -- the return value cannot answer the question, because the
+  // endpoint answers `data: rows[0] ? rows[0].data : payload` and a stored row
+  // with a null jsonb blob comes back as 200/ok:true/data:null.
+  grabAt('function sdWriteLanded(resource) {', ''),
   grabAt('function sdDataFailed(action, resource, why) {', ''),
   grabAt('function sdSyncedRead(){', ''),
   grabAt('function sdMarkSynced(resource,id){', '')
