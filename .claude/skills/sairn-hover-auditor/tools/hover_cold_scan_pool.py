@@ -849,6 +849,8 @@ def undirected_sweep(repo, n, log_path=LOG_PATH):
     names = [nm for nm, _ in resources]
     last_of = last_mention_seqs(entries, names, make_blob_reader(repo), _parse_all_names(tiers_text))
     rows = undirected_order(resources, last_of, tip, seed=seed)
+    import freshness_stamp as _fs
+    print(_fs.stamp())
     print('UNDIRECTED SWEEP -- pure staleness order, seeded-random among '
           'ties (seed=%s..., the log tip\'s own chain hash -- rerunning '
           'against the same log reproduces this exact order), DELIBERATELY '
@@ -893,6 +895,8 @@ def draw(repo, n, log_path=LOG_PATH):
             print('SHARE CAP (> 1/3 of %d recent reads): %s -- demoted below '
                   'every other app with stale ground until the share ages '
                   'down; not hidden, waiting.' % (total_recent, ', '.join(over)))
+    import freshness_stamp as _fs
+    print(_fs.stamp())
     print('DRAW SCORE -- lexicographic (freshness-floor bucket, app risk DESC, '
           'staleness DESC, name ASC); REASONED priority, not calibrated -- '
           'see module docstring')
@@ -915,6 +919,8 @@ def draw(repo, n, log_path=LOG_PATH):
 
 
 def _print_report(cold, warm, pick=None):
+    import freshness_stamp as _fs
+    print(_fs.stamp())
     print('HOVER COLD-SCAN POOL -- %d Tier B/C resources, %d never mentioned by this role, %d mentioned at least once'
           % (len(cold) + len(warm), len(cold), len(warm)))
     print('"READ" HERE MEANS A REF CITATION RESOLVED TO THE RESOURCE (bare name, '

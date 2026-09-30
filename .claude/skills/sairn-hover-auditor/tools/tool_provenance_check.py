@@ -322,6 +322,8 @@ def main(argv):
         path = os.path.join(HERE, t)
         d['has_own_selftest'] = has_own_selftest(path)
 
+    import freshness_stamp as _fs
+    print(_fs.stamp())
     print('TOOL PROVENANCE -- %d tool(s) tracked, %d validation event(s) in %s'
           % (r['total_tools'], len(validations), args.ledger))
     print()
