@@ -21870,7 +21870,7 @@
       "recurrence_open": "34 of the 35 hand-rolled runners with no baseline precondition are untouched, and of the 41 that DO mention a baseline, 29 assert it without GATING on it -- a red baseline still lets them report caught or missed. The shared sabotage_harness gate now exits 2 for its 68 callers; neither population is covered by that."
     },
     {
-      "commit": "9698606eb5d3",
+      "commit": "a468b4b89d68",
       "date": "2026-09-30",
       "subject": "fix(tools): the mutation tester wrote a production engine, and the sibling scan did 1865 git launches",
       "files": [
@@ -22146,7 +22146,7 @@
       "recurrence_open": "21 of 485 rows carry any reference at all, so for the other 464 there is nothing\na static arm can read a dose against. This control covers the 8 Topical\nAntiseptic rows; the same defect in an uncited row would be invisible, and the\nexisting sourcing-honesty suite is by design silent about rows that make no\nclaim."
     },
     {
-      "commit": "ec0f6681903b",
+      "commit": "d9083b93265d",
       "date": "2026-09-30",
       "subject": "fix(tests): three StoneDesk suites failed on stale expectations, and none of them was an app defect",
       "files": [
