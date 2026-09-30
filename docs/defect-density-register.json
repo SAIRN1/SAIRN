@@ -21800,6 +21800,62 @@
         }
       ],
       "recurrence_open": "21 of 485 rows carry any reference at all, so for the other 464 there is nothing\na static arm can read a dose against. This control covers the 8 Topical\nAntiseptic rows; the same defect in an uncited row would be invisible, and the\nexisting sourcing-honesty suite is by design silent about rows that make no\nclaim."
+    },
+    {
+      "commit": "f8acd128490b",
+      "date": "2026-09-30",
+      "subject": "fix(sairnbiz): a SAVED-EMPTY overtime threshold is reported too, found by driving the deployed URL",
+      "files": [
+        "docs/2026-09-29-live-verification-residue-fourth.md",
+        "sairnbiz.html",
+        "tests/sairnbiz_ot_threshold_coalesce.js"
+      ],
+      "lines_added": 215,
+      "lines_removed": 5,
+      "app": "sairnbiz",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "live-verification",
+      "summary": "A SAVED-EMPTY overtime threshold fell back to the federal 40 and said nothing. saveSettings() stores the raw input value, so clearing the box persists the empty string and loadSettings() puts it straight back -- the Shop Settings screen shows an EMPTY overtime box while payroll computes at 40. One stored setting, two answers on two screens. sbOtThresholdNote() excluded the empty string from its `rejected` predicate explicitly, so the one state a user reaches by CLEARING the field was the one state that could not be reported. The note now says so in its own words rather than reusing the out-of-range sentence, because an empty string is not \"outside 1-168\" and a true refusal with a false reason sends the reader to check a number they never typed.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "unknown",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The exclusion of the empty string from the rejected predicate was written deliberately alongside the note itself and looked correct from the day it shipped. Naming that commit as an injection would misreport a considered decision as a slip."
+      },
+      "citation_note": "The nearest standing rule is the substitute-on-absent-never-on-falsy shape fixed in sbCfg() the day before, and this is NOT that: sbCfg() was already correct and passes the empty string through intact. The defect is one layer further on, in what the DISCLOSURE does with a value that reached it unaltered.",
+      "phase_note": "The note was written when the overtime threshold was first wired, and the empty case was considered and deliberately excluded in that same change. There is no phase in which it was introduced by accident, so naming one would be a guess.",
+      "contributing_factors": [
+        {
+          "factor": "sbOtThresholdNote() excluded the empty string from `rejected` with an explicit `String(raw).trim()!==''` guard, so the one state a user reaches by CLEARING the box was the one state that could not be reported.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The predicate now reports a saved-empty value in its own words, and an ABSENT key still is not reported -- that survives by construction, because sbCfg() uses hasOwnProperty so an absent `ot` yields the NUMBER 40 rather than an empty string."
+        },
+        {
+          "factor": "The suite had already considered this case and EXCUSED it. An arm called a blank 'harmless for the verdict' -- true about the pay figure, which lands on 40 either way, and false about the disclosure, which is the whole subject.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Two arms replace that comment, and a known-bad control reconstructs the PRE-FIX note and requires it to fail to report a blank -- so the excuse cannot be restored silently."
+        },
+        {
+          "factor": "Every existing arm drove sbCfg with a typed 0 and none drove the app's own saveSettings(), which stores $('ss-ot').value -- a STRING. A cleared box therefore persists as '' and reloads into the settings screen as blank, which no in-suite arm could see because no arm went through the real save.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Found by driving the DEPLOYED page through saveSettings() rather than calling the chain directly. Recorded in docs/2026-09-29-live-verification-residue-fourth.md with the three-row table of what each input actually produced."
+        },
+        {
+          "factor": "The settings screen and the consumer disagree about one stored value -- the box renders empty while payroll computes at 40. That is the same latent shape as SAIRNbuild's 0% markup rendering as 18% on the bid form, fixed the same day, and neither was found by reading code.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "tools/numeric_default_coalesce_scan.py --config-only already finds the substitution sites. What it does NOT do is compare what a settings screen renders against what its consumer renders for the same stored key.",
+          "note": "That cross-screen comparison is the check that would have found both, and it is not built."
+        }
+      ],
+      "recurrence_open": "Nothing compares what a SETTINGS SCREEN renders for a stored key against what its CONSUMER renders for the same key. That cross-screen comparison is what would have found both this and the SAIRNbuild 0% markup case on the same day, and it is not built. tools/numeric_default_coalesce_scan.py finds the substitution sites but says nothing about whether two screens agree about one stored value."
     }
   ],
   "started": "2026-09-09",
