@@ -21471,6 +21471,64 @@
       "recurrence_open": "Nothing makes importing the shared lookup easier than writing a new one, so a fourth copy is available to anybody in a hurry. The sweep that would catch it lives in a control that is not in the recurring report-only set."
     },
     {
+      "commit": "071156163223",
+      "date": "2026-09-30",
+      "subject": "fix(dead-rule-sweep-probe): section A sabotaged the tracked tool it controls -- the same defect, one layer up, now fixed",
+      "files": [
+        "tests/run_dead_rule_sweep_probe.py"
+      ],
+      "lines_added": 107,
+      "lines_removed": 10,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "tests/run_dead_rule_sweep_probe.py section A2 sabotaged tools/dead_rule_sweep.py IN THE CLONE -- emptying its never-matching sentinel to prove the criteria lock is load-bearing -- and restored it in a finally. The same defect the sweep itself was fixed for that morning (80c5984c), one layer up, inside its own control: a kill mid-run leaves a tool with a broken sentinel on disk in a clone four sessions push from, where it reads as code. Fixed by mutating a byte-verified copy in a scratch tree outside the clone, with no restore because nothing is put back.",
+      "rules": [
+        "1.4"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "1e9271fd7fe9",
+        "date": "2026-09-29",
+        "subject": "check(methodology): a rule nothing exercises is indistinguishable from a rule that works -- the dead-rule sweep",
+        "lag_days": 1
+      },
+      "citation_note": "1.4, a read-only-sounding command that mutates -- the same citation 80c5984c carried for the sweep itself, because this is the identical defect one layer up. A probe is the most read-only-sounding thing in the repo.",
+      "phase_note": "Inferred. Section A was written in 1e9271fd (2026-09-29) alongside the sweep it controls, using the same in-place-and-restore shape the sweep used -- so the control inherited the tool's defect by imitation rather than by a separate decision.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "Section A broke the TRACKED tool to prove its criteria lock is load-bearing, and restored it in a finally -- isolation that holds on every path the interpreter walks and none of the ones it does not: SIGKILL, a harness timeout, a closed laptop.",
+          "action_status": "done",
+          "action": "A scratch tree outside the clone, holding a byte-verified copy of the tool plus checker_kit (the two modules the --fixtures path imports). No finally and no restore, because there is nothing to put back."
+        },
+        {
+          "kind": "detection",
+          "factor": "THE EXISTING ARM COULD NOT SEE IT BY CONSTRUCTION. D5 asserts the ablated file is unchanged AFTER a run, and a finally always runs on a run that finished -- so D5 was green for the whole life of the defect and would have stayed green.",
+          "action_status": "done",
+          "action": "The G arms check the TARGET rather than the outcome: SABOTAGE_TOOL is outside the clone, and no write to the tracked tool appears anywhere in the file. Structural, so it does not depend on observing a run that completed."
+        },
+        {
+          "kind": "process",
+          "factor": "It was found and NOT fixed at the time. 80c5984c named it in the fix commit and in that record's recurrence_open, and it sat for the rest of the session.",
+          "action_status": "done",
+          "action": "Closed here. The naming worked -- it is what made this fixable later rather than rediscovered -- which is the argument for writing a found-and-not-fixed into the commit and the register rather than only into a chat message."
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "A probe is trusted more than a tool: nobody expects the CONTROL to be the thing writing the clone, so the same defect one layer up is less likely to be looked for. The sweep's own fix was reviewed; its control was not.",
+          "action_status": "not-actionable",
+          "note": "Not actionable as a rule. There is no mechanical way to say 'check the control too' that would not also fire on every probe that legitimately mutates a scratch copy. What is actionable is the G2 shape -- grep the control's own source for writes to tracked paths -- and that is now in this file and could be lifted into a standing check by whoever owns checker_control_check.py."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED as a class. The G2 arm greps THIS file for writes to the tracked tool; nothing does that for any other control in tests/, and there are dozens. The shape is now written down and driven in one place, which is where a standing check would start rather than where it ends. Note also that the trade is debris in temp for a neutralised rule in a shared repo -- the scratch tree is removed at the end of a normal run and leaks on a kill, same as the sweep's own sandbox."
+    },
+    {
       "commit": "2ea91d84b482",
       "date": "2026-09-30",
       "subject": "fix(platform): raw model output is redacted server-side in six apps, not one",
@@ -21812,6 +21870,65 @@
       "recurrence_open": "34 of the 35 hand-rolled runners with no baseline precondition are untouched, and of the 41 that DO mention a baseline, 29 assert it without GATING on it -- a red baseline still lets them report caught or missed. The shared sabotage_harness gate now exits 2 for its 68 callers; neither population is covered by that."
     },
     {
+      "commit": "9b2735faba06",
+      "date": "2026-09-30",
+      "subject": "fix(tier-gate): the hover auditor's own tooling cannot serve a Tier A resource, so it no longer forces an obligation it is forbidden to commit (H2 seq 425)",
+      "files": [
+        "tests/run_tier_a_review_gate_probe.py",
+        "tools/tier_a_review_gate.py"
+      ],
+      "lines_added": 83,
+      "lines_removed": 0,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "tools/tier_a_review_gate.py forced a Tier A review obligation on the hover auditor's own tooling, because a resource NAME appearing as a short token in a fixture or rotation-pool list is indistinguishable from the same literal in a handler. The obligation is one the auditor STRUCTURALLY CANNOT COMMIT -- hover_auditor_scope_gate.py refuses docs/tier-a-reviews.json from that clone -- so two individually-correct gates deadlocked the role. Fired twice in one session (H2 seq 416, 422), and at seq 422 the record was written on disk to satisfy the push gate and then reset, so the gate was satisfied by something that did not persist. Fixed with a SKIP_REASONS clause keyed on what the file IS.",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "commit": "be7ec5689fc2",
+        "date": "2026-09-15",
+        "subject": "refactor(gate): the inversion was MEASURED AND REJECTED -- reasoned exclusions and an exhaustive-classification arm instead",
+        "lag_days": 15
+      },
+      "citation_note": "1.2 is 'grep cannot tell code from text that describes code', which is this defect exactly: a resource NAME in a rotation-pool list, a fixture or a docstring example was read as code serving that resource. The gate's own header had already reached the same conclusion and named it unsolvable by string analysis.",
+      "phase_note": "Inferred. SKIP_REASONS landed 2026-09-15 (be7ec568) as a deny-list of reasoned exclusions, deliberately defaulting unknown path classes to IN SCOPE -- correct then, and the auditor tool tree did not exist in the platform repo until 2026-09-29. The default did what it was designed to do; the class it met was new.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "The content scan classifies by TOKEN SHAPE and cannot classify by what the file IS. strip_diff_noise() blanks prose strings of three or more words and keeps short tokens, because a resource token in real serving code IS a short literal -- so a fixture token is character-for-character what a handler writes. This file's own header already said so and left the dead end open.",
+          "action_status": "done",
+          "action": "A fifth SKIP_REASONS clause keyed on the auditor's path prefix, which is a predicate about what the file IS -- the axis all four existing clauses already use."
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "THE TWO GATES ARE INDIVIDUALLY CORRECT AND JOINTLY A DEADLOCK. tier_a_review_gate demands a record in docs/tier-a-reviews.json; hover_auditor_scope_gate refuses that path from the auditor's clone. Neither is wrong on its own and nothing checks the pair.",
+          "action_status": "planned",
+          "action": "Not closed by this fix, which removes the one trigger that was firing. There is no standing check that the set of files a session is REQUIRED to write is a subset of the files it is PERMITTED to write, for any session -- so the next gate that demands a record will find the same wall. Routed as the open half."
+        },
+        {
+          "kind": "detection",
+          "factor": "It was found by being hit, twice, by the party it blocked -- not by a control. The gate's own probe asserts that every tracked path class is either in scope or excluded with a reason, and the auditor tree passed that arm by being IN SCOPE, which is the answer that produced the deadlock.",
+          "action_status": "done",
+          "action": "Three 2c arms plus three controls fencing the new clause in three directions: a real handler still counts, a sibling skill directory is not excluded, and a directory merely prefixed with the auditor's name is not the auditor."
+        },
+        {
+          "kind": "process",
+          "factor": "At seq 422 the record was written ON DISK, which satisfied the push gate and let the push proceed, and was then reset from the working tree because it could not be committed. The gate was satisfied by something that did not persist.",
+          "action_status": "declined",
+          "note": "Declined as a target for this fix. Making the push gate require a COMMITTED record rather than an on-disk one would have blocked that push entirely, which is the correct behaviour only once the deadlock above is gone -- tightening it first would have left the auditor unable to push at all. Recorded so the ordering is deliberate rather than forgotten."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED, and the open half is the wider one. This fix removes the trigger that was firing; it does not add any check that the files a session is REQUIRED to write are a subset of the files it is PERMITTED to write. Two gates that are each correct can still deadlock a role, and nothing on this platform tests for that pair. The auditor tree is also now the WIDEST clause in SKIP_REASONS -- a whole directory -- so anything genuinely serving a Tier A resource that is ever placed under it becomes invisible to this gate; the three fencing controls bound the prefix, not the contents."
+    },
+    {
       "commit": "a1247a2e063f",
       "date": "2026-09-30",
       "subject": "fix(harness): a red baseline answered 1 -- the same number as a mutation that was MISSED",
@@ -21917,6 +22034,65 @@
         }
       ],
       "recurrence_open": "21 of 485 rows carry any reference at all, so for the other 464 there is nothing\na static arm can read a dose against. This control covers the 8 Topical\nAntiseptic rows; the same defect in an uncited row would be invisible, and the\nexisting sourcing-honesty suite is by design silent about rows that make no\nclaim."
+    },
+    {
+      "commit": "f70a69be600b",
+      "date": "2026-09-30",
+      "subject": "fix(claim): a bare shared basename is no longer a hard file-collision refusal (H2 seq 418)",
+      "files": [
+        "tests/run_claim_bare_basename_probe.py",
+        "tools/sairn_claim.py"
+      ],
+      "lines_added": 148,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "tools/sairn_claim.py file_verdict() refused on ANY shared declared-file token including a BARE BASENAME, producing a false hard block between two physically distinct per-clone files: hover's hover_log.py and hover2's live in their own hover-audit-log/ directories, neither in the platform repo, and no write conflict is possible. Two sessions were blocked from working at the same time by a filename. Fixed by refusing only on a separator-bearing shared path; a bare-name overlap falls through to the lexical matcher.",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "commit": "cd2662fae046",
+        "date": "2026-09-22",
+        "subject": "fix(claims): the matcher decides on the DECLARED FILE SET, and the word overlap becomes a warning",
+        "lag_days": 8
+      },
+      "citation_note": "1.3 is 'an anchor that still matches is not an anchor that still points at the right thing', and that is this defect with the noun changed: hover_log.py still MATCHED on both sides while pointing at two different files in two different clones. The inexactness, stated rather than left: 1.3 is written about a citation anchor drifting over TIME, and this one was wrong across CLONES from the day the second auditor existed -- same failure, different axis.",
+      "phase_note": "Inferred. file_verdict landed 2026-09-22 (cd2662fa) with the plain set intersection as its design, months before a second auditor instance existed, so the assumption was reasonable when written and became false when hover2 was provisioned. Nothing in that commit records a decision about basenames.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "A BARE BASENAME WAS TREATED AS A FILE IDENTITY. declared_files() stores whatever FILE_TOKEN matches, and FILE_TOKEN accepts a name with no separator, so file_verdict() intersected sets whose elements did not denote the same files across clones.",
+          "action_status": "done",
+          "action": "Only a separator-bearing shared path refuses; a bare-name-only overlap returns 'unknown' and falls through to the lexical matcher, which still weighs the words. Narrowed, not removed."
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "The per-clone auditor tooling is the population where this shape is not rare: each hover instance keeps its own hover_log.py, hover_cold_scan_pool.py and so on under its own hover-audit-log/ directory, none of them in the platform repo. Every basename in that set names two different files by construction.",
+          "action_status": "not-actionable",
+          "note": "The two auditors keeping identically-named tools in separate clones is the mirror-scope design Michael settled on 2026-09-29, and it is not being changed to suit a matcher. What follows from it is that a filename is not a cross-clone identity here, which is what the fix encodes."
+        },
+        {
+          "kind": "detection",
+          "factor": "Nothing in the claim tool's five controls drove file_verdict with a bare-basename-only overlap. Every existing fixture used repo-relative paths, so the criterion was exercised only on the input shape where it happens to be right.",
+          "action_status": "done",
+          "action": "tests/run_claim_bare_basename_probe.py, six arms, five of them controls including a Windows backslash-path arm that would have caught the fix widening into a hole."
+        },
+        {
+          "kind": "process",
+          "factor": "The false block was absorbed rather than reported for some time -- a blocked session reads a refusal as the system working, which is the direction this matcher is deliberately tuned to fail in, and that tuning also makes a wrong refusal quiet.",
+          "action_status": "declined",
+          "note": "Declined as a target. Tuning the matcher to complain less about its own refusals would trade a quiet false block for a quiet false clear, which is the strictly worse direction. What closes this is a human noticing and routing it, which is what happened."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. The matcher still HARD-REFUSES on any separator-bearing path even when the two paths are in different clones -- the auditor tools are out of the platform repo entirely, so a future claim naming '.claude/skills/sairn-hover-auditor/tools-hover2/x.py' against '.../tools/x.py' would correctly differ, but a pair that happened to share a repo-relative spelling in two non-repo trees would refuse again. Nothing enumerates which declared paths are actually IN this repo, and the fix does not add that."
     },
     {
       "commit": "f8acd128490b",
