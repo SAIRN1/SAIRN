@@ -528,6 +528,21 @@
       "files": [
         "regenerate_repoint_list.py"
       ]
+    },
+    {
+      "id": "hover-1790775948",
+      "session": "hover",
+      "subject": "hover",
+      "task": "queue5: fix resource_app_map's sairncode ordering bug with fixture, rerun register check; build TS-DERIVED-RANGE-MOVED with fixture; apply alf_clients corrected citation and close the 6 verified rows; replacement text for the remaining ~98 register citations; state of the union.\n\nFILES: hover_cold_scan_pool.py citation_class_check.py register_citation_check.py",
+      "claimed_at": "2026-09-30T13:45:48Z",
+      "claimed_at_epoch": 1790775948.538282,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "citation_class_check.py",
+        "hover_cold_scan_pool.py",
+        "register_citation_check.py"
+      ]
     }
   ],
   "refusals": [
