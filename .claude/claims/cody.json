@@ -2987,6 +2987,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "cody-1790781311",
+      "session": "cody",
+      "subject": "cody-ledger6",
+      "task": "docs/tier-a-reviews.json",
+      "claimed_at": "2026-09-30T15:15:11Z",
+      "claimed_at_epoch": 1790781311.1727533,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
