@@ -3184,8 +3184,8 @@
       "task": "sairnbiz.html tests/sairnbiz_month_label.js docs/2026-09-29-sairnbiz-preview-check.md month-label UTC off-by-one d-rev pl-monthly, revenue-trend definition, ap-top vs vn-top biggest vendor, finding 8 reload re-login, finding 10 pay on held bill",
       "claimed_at": "2026-09-30T15:24:59Z",
       "claimed_at_epoch": 1790781899.217062,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T20:58:55Z",
       "files": null
     }
   ],
