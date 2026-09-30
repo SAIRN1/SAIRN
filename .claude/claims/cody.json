@@ -2943,6 +2943,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "cody-1790775556",
+      "session": "cody",
+      "subject": "cody-ownergate",
+      "task": "tools/tool_owner_header_check.py tests/run_tool_owner_header_probe.py",
+      "claimed_at": "2026-09-30T13:39:16Z",
+      "claimed_at_epoch": 1790775556.5052207,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
