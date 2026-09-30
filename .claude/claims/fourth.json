@@ -2843,6 +2843,39 @@
       "task": "tools/purge_evidence_gate.py tools/credential_purge_check.py tests/run_purge_evidence_probe.py tools/rewrite_convergence_map.py tests/run_rewrite_convergence_probe.py docs/2026-09-29-rewrite-map-fourth.md tools/numeric_default_coalesce_scan.py tests/run_numeric_coalesce_probe.py docs/2026-09-29-cells-fourth.md docs/2026-09-29-inventory-fourth.md",
       "claimed_at": "2026-09-30T00:04:18Z",
       "claimed_at_epoch": 1790726658.5893552,
+      "status": "released",
+      "released_at": "2026-09-30T01:18:21Z",
+      "files": null
+    },
+    {
+      "id": "fourth-1790731108",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "tools/purge_evidence_gate.py tests/run_purge_evidence_probe.py tools/rewrite_convergence_map.py tests/run_rewrite_convergence_probe.py docs/2026-09-29-rewrite-map-fourth.md tools/numeric_default_coalesce_scan.py tests/run_numeric_coalesce_probe.py docs/2026-09-29-cells-fourth.md docs/2026-09-29-inventory-fourth.md sairnbuild.html tests/sairnbuild_settings_prefill_coalesce.js",
+      "claimed_at": "2026-09-30T01:18:28Z",
+      "claimed_at_epoch": 1790731108.8511264,
+      "status": "released",
+      "released_at": "2026-09-30T01:30:21Z",
+      "files": null
+    },
+    {
+      "id": "fourth-1790732244",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "docs/tier-a-reviews.json api/sd-data.js api/sd-data-ai-scan-redaction.test.js tools/rewrite_convergence_map.py tests/run_rewrite_convergence_probe.py tools/purge_evidence_gate.py docs/2026-09-29-live-verification-residue-fourth.md docs/2026-09-29-actor-derivation-fourth.md",
+      "claimed_at": "2026-09-30T01:37:24Z",
+      "claimed_at_epoch": 1790732244.92945,
+      "status": "released",
+      "released_at": "2026-09-30T01:45:34Z",
+      "files": null
+    },
+    {
+      "id": "fourth-1790732742",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "docs/tier-a-reviews.json api/sd-data.js api/sd-data-ai-scan-redaction.test.js api/_lib/ai-scan-redaction.js tools/ai_output_resource_scan.py tests/run_ai_output_resource_probe.py tools/rewrite_convergence_map.py tests/run_rewrite_convergence_probe.py tools/purge_evidence_gate.py tools/tooling_inventory.py docs/2026-09-29-live-verification-residue-fourth.md docs/2026-09-29-actor-derivation-fourth.md docs/2026-09-29-sf-district-keypair-scope-fourth.md",
+      "claimed_at": "2026-09-30T01:45:42Z",
+      "claimed_at_epoch": 1790732742.3908043,
       "status": "active",
       "released_at": null,
       "files": null
