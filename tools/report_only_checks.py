@@ -161,6 +161,47 @@ REGISTRY = [
     # -- did not count their pairs. They were written up as paste-ready text in
     # docs/2026-09-29-registry-entries-cody.md first; this is that text landed
     # in its real target rather than left for somebody to paste.
+    # ── ADDED 2026-09-30, AND IT IS DELIBERATELY NOT PROMOTED ───────────────
+    {
+        'tool': 'sql_column_exists_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-30, report-only, and the reason it must STAY '
+                    'report-only is its SECOND output rather than its first. It '
+                    'reports a sql/ statement FILTERING on a column the table '
+                    'does not have -- the defect that reached origin/main on '
+                    '2026-09-29, where a removal block named entry_id on '
+                    'mech_checks and mech_takeoffs, and every statement in it, '
+                    'INCLUDING THE CONFIRM STEP, would have errored 42703 and '
+                    'removed nothing while reading as a clean sweep. '
+                    'BAD-COLUMN FINDINGS ARE 0 ON THIS REPO, so as a gate that '
+                    'half would block nothing today. What stops promotion is the '
+                    'other half: 21 columns are DECLARED and NOT DEPLOYED, and '
+                    'until somebody has decided which of those are unrun '
+                    'migrations and which are a snapshot captured 2026-09-13, '
+                    'promoting this would block every push behind a list nobody '
+                    'can clear -- which is how a gate gets overridden by habit. '
+                    'Control: tests/run_sql_column_exists_probe.py, 16 arms, '
+                    'whose sharpest two are the FALSE POSITIVES its own first '
+                    'real run produced: five migrations that add a column with '
+                    'alter table and then query it, and a grant whose `on` and '
+                    'whose `from service_role` were parsed as table names, '
+                    'inflating the blind count by 591 of 1012.',
+        'catches': 'a sql/ statement that FILTERS on a column the table does '
+                   'not have, in either the declared create-table and '
+                   'alter-table-add-column shape or the deployed snapshot -- '
+                   'and, separately, a column present in one source and absent '
+                   'from the other, which is where an unrun migration and a '
+                   'stale snapshot both land.',
+        'evidence': 'docs/2026-09-29-mech-docs-gate-live-verification.md shipped '
+                    'a removal block naming entry_id on mech_checks and '
+                    'mech_takeoffs, which use check_id and takeoff_id. Reached '
+                    'origin/main. Every statement would error 42703 '
+                    'undefined_column, including the confirm step, so it could '
+                    'not print the 0 it existed to prove. Current run: 0 '
+                    'bad-column findings, 21 declared/deployed disagreements, '
+                    '270 statements declared BLIND and counted.',
+    },
     {
         'tool': 'assertion_label_shape_check.py',
         'mode': 'once',
