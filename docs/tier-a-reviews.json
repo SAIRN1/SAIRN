@@ -5046,6 +5046,51 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hover2",
+      "opened_at": "2026-09-30T14:00:26Z",
+      "opened_at_sha": "82b69588a125e9b730cfafeb5a95e29aee55f5a1",
+      "resources": [
+        "leg_insurance",
+        "quotes",
+        "sv_soapnotes"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools-hover2/presync_tier_a_dryrun.py",
+        ".claude/skills/sairn-hover-auditor/tools-hover2/routing_field_shape_audit.py"
+      ],
+      "what": "RETROSPECTIVE, OPENED BY hank ON hover2's BEHALF 2026-09-30, AND THIS ONE WAS NOT ON THE LIST -- IT WAS FOUND BY DERIVING RATHER THAN BY COPYING. AUTHOR OF THE CHANGE IS hover2, NOT hank -- author_session is corrected to hover2 in the same commit.\n\nHOW IT SURFACED: the queue named three blocked obligations for the tools-hover2 landing. Recomputing every tools-hover2 landing commit's diff through the gate's own tier_a_resources() and touched_tier_a(), with today's auditor-tree skip clause bypassed by reason text, found FOUR that carry a Tier A name and one that does not (a5365fb8 is clean, which is the control that says this derivation is not simply flagging everything). This is the fourth. Reported rather than quietly opened as if it had always been on the list.\n\nWHAT CHANGED: commit 29203c25 synced routing_field_shape_audit.py and landed presync_tier_a_dryrun.py. THREE RESOURCES: leg_insurance, quotes, sv_soapnotes -- all three appearing as EXAMPLE TOKENS in presync_tier_a_dryrun.py's own docstring. H2 predicted exactly this at seq 429, using that tool against itself: it \"would trip on leg_insurance/quotes/sv_soapnotes (they appear as example tokens in its docstring)\". The independent derivation here agrees with that prediction on all three, which is the useful part -- two methods, one answer.\n\nREVIEWER, NAMED BY ROLE AND NOT BY AGENT: ANY BUILD SESSION OTHER THAN THE AUTHOR of the change, holding no claim on .claude/skills/sairn-hover-auditor/ at the time of review. THE HOVER AUDITOR IS EXPLICITLY NOT ELIGIBLE, either instance.\n\nWHAT THE REVIEW MUST DRIVE, NOT READ: confirm presync_tier_a_dryrun.py and routing_field_shape_audit.py are report-only and READ-ONLY toward platform data, and construct no write to any of the three resources. Note that presync_tier_a_dryrun.py IMPORTS the real gate module to predict its behaviour -- confirm that import is read-only and that it cannot cause the gate to record anything as a side effect. A verdict of \"reviewed, no findings\" is refused unless it names what it opened and what it looked for.",
+      "status": "open",
+      "reviewer_owner": "cloud",
+      "owner_assigned_at": "2026-09-30T14:00:26Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-30T15:15:56Z",
+      "opened_at_sha": "2d61bc91eb85b9c569cdea6661fb2b5ecddd8db5",
+      "resources": [
+        "rf_cert_rules",
+        "rf_contingency_rules",
+        "stonedesk_quote_history"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "docs/CRITICALITY-TIERS.md"
+      ],
+      "what": "# Tier A review obligation — cody, 2026-09-30 queue (ledger held by hank)\n\n**This is a review obligation that belongs in `docs/tier-a-reviews.json` and could\nnot be recorded there.** `docs/tier-a-reviews.json` is claimed by **hank**\n(claimed 2026-09-30T13:26:35Z), and the claim tool refused twice, forty minutes\napart, with:\n\n> `DO NOT start this. Flag it back to the coordinating chat session and let it\n> decide who runs it.`\n\nIt is written here so the obligation exists in a file somebody can read, and so\nthe next session to hold the ledger can move it across verbatim. **A document is\nweaker than a ledger row** — a row is queued and chased, this is read once — and\nthat weakness is the reason it is recorded rather than dropped.\n\n**Assign to:** any session other than cody. **Resources named:** `rf_cert_rules`,\n`rf_contingency_rules`, `stonedesk_quote_history`.\n\n---\n\n## The names are strings, not branches\n\n**No code serving any of the three was changed.** They appear on changed lines\nfor these reasons and no others:\n\n| resource | where it appears | what it is |\n|---|---|---|\n| `rf_cert_rules` | `tools/bare_run_writers.py` | one of five declared output paths, `sql/rf_cert_rules_load_gate_generated.sql` |\n| `rf_contingency_rules` | `tools/bare_run_writers.py` | the fifth declared output path, added because the sweep caught it missing |\n| `stonedesk_quote_history` | `tests/quote_builder_delete_does_not_resurrect.js` | the storage key inside a line lifted verbatim from `stonedesk.html` so the test does not re-type it |\n\nThis is PR §1.2 — grep cannot tell code from text that describes code — and the\ncorrect response is to record the obligation rather than argue with the gate.\n\n## What changed\n\n- `tools/bare_run_writers.py` — NEW. The 20 tools whose bare run is supposed to\n  write, each with the path it writes and why.\n- `tools/bare_run_write_check.py` — reads that list, reports its entries as\n  `INTENDED` rather than omitting them, and fails when a declared writer writes a\n  path it did not declare.\n- `tools/tool_owner_header_check.py` — NEW, plus its probe and the push-gate\n  wiring: a newly ADDED `tools/*.py` must carry `# OWNER: <session>`.\n- `tools/condition_coverage.py` — mutates a detached worktree instead of\n  `api/_lib/ledger.js`; `--report` added and refuses a source path.\n- `tools/nhi_register.py` — bare run is report-only; the sibling scan is bounded.\n- `tools/schema_provisioning_check.py` — a session-gated 403 now says so.\n- Twenty generators — one `OWNER-INTENDED BARE-RUN WRITER` header comment each.\n- Three StoneDesk suites re-anchored; one generated-doc regeneration.\n\n## What to attack\n\n**(a) THE ALLOWLIST IS A HAND-WRITTEN LIST OF PATHS AND IT WAS ALREADY WRONG.** I\ndeclared four output paths for `sairn_build_load_gates.py` and it writes five. The\nsweep's undeclared-path check caught it on the first real run, which is the arm\nworking — but the same class can recur on any entry whose generator gains an\noutput, and the only thing standing behind each entry's REASON is my judgement.\nRead the reasons, not the paths; the paths are machine-checked and the reasons are\nnot.\n\n**(b) `master_plan.py`, `traceability_matrix.py` AND `tooling_inventory.py` ARE\nSTILL BARE-RUN WRITERS BY DESIGN, AND THAT IS A DECISION.** I was told not to\nchange the push gate's `fix: python tools/master_plan.py` lines and I did not.\nThe consequence is that three tools the gate itself invokes will rewrite\ndocuments if anybody runs them to see what they do. The allowlist makes that\nvisible rather than safe. If the right answer is `--write` on all three plus the\ngate's fix lines updated in the same change, this is where to say so.\n\n**(c) THE OWNER GATE GRANDFATHERS 282 TOOLS AND I CHOSE THAT.** A gate refusing\nevery push touching any tool would be switched off within the hour, so it applies\nonly to files a push ADDS. The 282 still have no owner, the count is printed on\nevery run, and nothing forces it down. Argue for a deadline or a per-push\ndecrement if you think the printed count is not enough.\n\n**(d) `condition_coverage.py` NOW NEEDS A WORKTREE TO RUN AT ALL.** A clone where\n`git worktree add` fails gets exit 2 COULD NOT RUN instead of a measurement. That\nis the fail-closed direction and it is also a new way for the tool to be\nunavailable. I did not test it against a clone with worktrees disabled.\n\n**(e) THE SIBLING-SCAN CAP IS 32 AND I PICKED THE NUMBER.** Seven working copies\nexist today. 32 leaves room for worktrees beside them and is far below the 1865\nthat caused the timeout, but nothing measured where the real boundary is, and a\nclone parent that legitimately holds 33 repositories now gets a refusal.\n\n**(f) THE OWNER FIELD IS SELF-ASSERTED.** `# OWNER: cody` is checked against the\nsession list and against nothing else. A tool whose header names a session that\ndid not write it passes.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-30T15:15:56Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
