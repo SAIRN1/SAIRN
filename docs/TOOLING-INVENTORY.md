@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**288 files in `tools/`.** By what actually invokes them:
+**289 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,7 +27,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 74 | runs automatically on every push, never blocks |
 | **ADVISORY** | 5 | session-start or prompt hooks, informational |
 | **DECIDED** | 74 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 66 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 67 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 54 | nothing runs these at all |
 
 By what they are, independent of wiring:
@@ -35,7 +35,7 @@ By what they are, independent of wiring:
 | Kind | Count |
 |---|---:|
 | ADVISORY | 3 |
-| CHECKER | 206 |
+| CHECKER | 207 |
 | GATE | 1 |
 | GENERATOR | 19 |
 | GUARD | 1 |
@@ -51,13 +51,13 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 54 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 18 wired nowhere at all, and 36
+**The number to act on: 55 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 18 wired nowhere at all, and 37
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 54, by name, so this is actionable rather than a statistic:
+The 55, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
@@ -365,7 +365,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (66)
+## SUITE-ONLY (67)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -533,11 +533,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      288   git ls-files tools/
+  tools on disk                      289   git ls-files tools/
   hook entries                        16   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                70   report_only_checks.REGISTRY
-  tools invoked by tests/            209   tests/**/*.py, *.js
+  tools invoked by tests/            210   tests/**/*.py, *.js
   recorded NOT-promoted decisions     80   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```

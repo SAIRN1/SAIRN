@@ -21631,7 +21631,7 @@
       "recurrence_open": "other refusal-reason orderings in the same classifier were not exhaustively cross-checked; a new refusal branch added ahead of the host check could reintroduce the shadow"
     },
     {
-      "commit": "9e89b0acff5f",
+      "commit": "10390e8036b9",
       "date": "2026-09-30",
       "subject": "fix(platform): raw model output is redacted server-side in six apps, not one",
       "files": [
