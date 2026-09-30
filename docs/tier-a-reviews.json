@@ -4949,6 +4949,30 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-30T14:39:49Z",
+      "opened_at_sha": "abb17d4d96e5603f87bf596e8b5b9a93fcbc9717",
+      "resources": [
+        "sb_exps",
+        "sb_incidents",
+        "sb_invs",
+        "sb_ts"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "sairnbiz.html",
+        "tests/sairnbiz_preview_fixes.js"
+      ],
+      "what": "FOUR FINDINGS FROM THE SAIRNBIZ PREVIEW CHECK, FIXED IN sairnbiz.html. An outside HR and accounting professional is using this app on a demo licence, so the review is worth doing before she does.\n\nTHE ONE THAT MATTERS, AND MY OWN EARLIER ROOT CAUSE WAS WRONG: the preview check reported \"every save hits /api/ledger and 503s\" and concluded nothing reaches the server. sbBackupFetch() has always posted to /api/sd-data. What actually happened is that sbHydrateAll() reads all THIRTEEN SB_SYNCED resources at sign-in, sb_incidents answers provisioned:false because its table was never created, sbReportHydrate() set ONE GLOBAL BOOLEAN (sbBackupUnavailable), and sbSyncCollection() then returned early on it for EVERY resource for the rest of the session. One missing table silenced twelve present ones before the user typed anything, while the app's own sb_sync_stale read false.\n\nREVIEW THIS, in this order:\n\n(1) THE LATCH CHANGE IS THE RISKY ONE AND IT IS THE FIRST THING TO ATTACK. The global boolean now means \"EVERY synced resource is unprovisioned\" and a per-resource map (sbUnprovisioned) carries the rest. Ask: can the per-resource map be populated for a resource that IS provisioned, and thereby silence a working collection more quietly than before? The two writers are sbReportHydrate (from r.missing) and the not_provisioned branch of sbSyncCollection. A read that fails for a DIFFERENT reason must land in `failed`, not in `missing`, and I would check that path specifically -- sbBackupFetch distinguishes not_provisioned from error, and if that distinction is ever wrong this change converts a transient failure into a permanent per-resource silence.\n\n(2) WHETHER THE GLOBAL LATCH CAN STILL BE REACHED AT ALL, and whether it should be. It now needs notProvisioned >= SB_SYNCED.length. On a fresh database that is thirteen of thirteen and it fires. If any resource can answer something other than provisioned:false on a fresh database -- an error, a timeout -- the count never reaches thirteen and the burst suppression the original latch existed for is gone. That is a behaviour I did not drive.\n\n(3) PAYROLL NOW READS TIMESHEETS, and the semantics deserve a hostile read. sbWeeklyHours() returns the sum of the MOST RECENT recorded week, and that figure is then multiplied by 52 in sbAnnualGross() and by 52/periods in sbHoursPerPeriodExact(). So a single 44-hour week annualises as if every week were 44. That is exactly what the previous flat 40 did, so it is not a new class of error -- but it is now driven by data somebody typed, which makes it look more authoritative than it is. Ask whether the disclosure (\"(scheduled)\" only when there is NO record) is the right side of the line, or whether a recorded week should also say which week it came from.\n\n(4) THE RECORDED-ZERO RULE. A week recorded as all zeros returns 0 hours and 0 gross, and is NOT reported as assumed. I believe that is right -- the timesheet panel already argues that a blank and a recorded zero are different facts -- but it means a data-entry slip that saves an empty week now zeroes somebody's pay figure where it used to show 80 hours. Ask whether that fails in the safe direction.\n\n(5) THE VENDOR SELECTS. #popvendor and #rcvvendor changed from free-text inputs to selects filled by sbFillVendorSelects(), which also fills #blvendor. Two things to press on: whether any code still reads .value expecting free text and now gets '' when the list is empty (sbPoRaise and sbRecvLog both read .value.trim(), and an empty list yields the \"No vendors on file\" option whose value is the empty string -- confirm both refuse rather than storing a blank vendor); and whether the filler runs before every path that can open those forms, not just the three I wired (rAP, rVends, openBillModal).\n\n(6) THE EMPTY-MONTH CHANGE IS THE SMALLEST AND THE ONE MOST LIKELY TO BE WRONG IN A WAY I CANNOT SEE. Expenses THIS MONTH and TOTAL RECORDED now render \"--\" rather than \"$0\" when there are no records, matching LARGEST CATEGORY. Ask whether \"--\" is right for a MONEY figure: for hours the app argues that nobody has said zero, and for a month with no expenses one could argue $0 is the true answer. I chose consistency with the neighbouring card and with the app's own stated convention; a reviewer may reasonably decide the other way, and if so the fix is to make LARGEST CATEGORY show $0-equivalent rather than to revert this.\n\nWHAT IS NOT FIXED AND IS NOT MINE: /api/ledger still answers 503 on every save because sql/ledger_schema.sql has not been run, and sb_incidents is still unprovisioned because sql/sairnbiz_data_schema.sql has not been re-run. Both need the Supabase SQL editor. This clone has no SUPABASE_URL, no service-role key, no DATABASE_URL and no psql, so I could not do either and did not pretend to.\n\nTESTS: tests/sairnbiz_preview_fixes.js, 23 arms, landed at 14 failed / 5 passed before the fix. Two of my own arms were wrong first and are recorded at their lines -- A1 simulated the global latch the fix retires, and C3/C4 looked for the three-call-sites shape the fix removes.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-30T14:39:49Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
