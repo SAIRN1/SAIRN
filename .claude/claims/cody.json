@@ -2841,8 +2841,8 @@
       "task": "tests/customer_delete_does_not_resurrect.js tests/public_catalog_no_false_empty.js tests/quote_request_soft_delete_panel.js tests/refusal_not_empty.js tests/stonedesk_write_result_consumption.js",
       "claimed_at": "2026-09-30T01:00:01Z",
       "claimed_at_epoch": 1790730001.7591567,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T12:38:43Z",
       "files": null
     },
     {
