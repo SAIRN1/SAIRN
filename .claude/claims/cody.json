@@ -2962,8 +2962,8 @@
       "task": "tools/bare_run_writers.py tools/bare_run_write_check.py tests/run_bare_run_write_probe.py",
       "claimed_at": "2026-09-30T13:43:35Z",
       "claimed_at_epoch": 1790775815.680987,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T15:31:27Z",
       "files": null
     },
     {
@@ -2973,8 +2973,8 @@
       "task": "tools/master_plan.py tools/traceability_matrix.py tools/tooling_inventory.py tools/audit_checkpoint_status.py tools/cron_liveness_check.py tools/role_gate_mc_config.py tools/sairn_build_load_gates.py tools/gen_ma_calendar.py tools/gen_ma_seed.py tools/gen_mn_calendar.py tools/gen_mn_seed.py tools/gen_mo_calendar.py tools/gen_mo_seed.py tools/gen_nj_calendar.py tools/gen_nv_calendar.py tools/gen_ok_calendar.py tools/gen_or_calendar.py tools/gen_sc_calendar.py tools/gen_ut_calendar.py tools/gen_va_calendar.py tools/gen_va_seed.py",
       "claimed_at": "2026-09-30T13:53:42Z",
       "claimed_at_epoch": 1790776422.7879565,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T15:31:56Z",
       "files": null
     },
     {
@@ -2984,8 +2984,8 @@
       "task": "docs/defect-density-register.json",
       "claimed_at": "2026-09-30T14:51:20Z",
       "claimed_at_epoch": 1790779880.1048677,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T15:32:25Z",
       "files": null
     },
     {
@@ -2995,8 +2995,8 @@
       "task": "docs/tier-a-reviews.json",
       "claimed_at": "2026-09-30T15:15:11Z",
       "claimed_at_epoch": 1790781311.1727533,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T15:33:01Z",
       "files": null
     }
   ],
