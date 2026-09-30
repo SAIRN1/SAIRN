@@ -207,7 +207,6 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
-| **&#9989; RULED: the criticality register tiers RESOURCES, not stored data &mdash; and the ruling is MECHANICAL, not a judgement** <!-- REGISTER-SCOPE-RULING-HANK-2026-09-30 --> | **SETTLED 2026-09-30 (hank) from `tools/criticality_tier_check.py`'s own arms, not from the header prose. Closes the unit-disagreement row opened 2026-09-29** | `tests/run_criticality_tier_probe.py` |
 | **&#128993; 43 test files where STRING CHECKS ARE AT LEAST HALF the classified assertions &mdash; a registered population, not a completed sweep** <!-- QUEUE25-ITEM9-11-HANK-2026-09-29 --> | **MEASURED 2026-09-29 (hank) by `tools/message_assertion_audit.py` (NEW, report-only). 589 files, 10,718 assertions: 1,464 string-only, 2,755 value, 6,499 UNCLASSIFIED. Full account in `docs/2026-09-2 | `tests/lib/strip_comments.test.js`, `tests/run_master_plan_probe.py`, `tests/sairndental_rollup_panel.js`, `tests/sairnscape_memory.js`, `tests/sairnvet_formulary_source_honesty.js` |
 | **&#9989; THREE probe arms read SILENT &mdash; and the diagnosis in this row was WRONG ABOUT TWO OF ITS THREE CLAIMS, which is why the old text is quoted below rather than replaced** | **FIXED 2026-09-28 (CC). All three arms now catch; the severity stated here was TOO HIGH and is corrected.** | `api/sd-data-active-credential.test.js` |
 | **&#128993; The role-gate screen&rsquo;s NOT-DRIVEN bucket over-reports by at least 31% &mdash; it cannot see a suite that drives through a TABLE** | **MEASURED 2026-09-28 (CC), and proven against the ablation on one of them** | `api/sd-data-alf-caregiver-scope.test.js` |
@@ -679,20 +678,20 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 168 test files are traced to no stated requirement
+### 169 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 685 of 853 traced, 80.3%.
+For context and not as the headline: 688 of 857 traced, 80.3%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 686 citations come from
+### Where the 689 citations come from
 
 | source | citations |
 |---|---|
 | `index` | 322 |
-| `declared` | 288 |
+| `declared` | 291 |
 | `declared+index` | 66 |
 | `GUARD_TESTS+index` | 6 |
 | `GUARD_TESTS` | 2 |
@@ -706,7 +705,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | kind | count | what it means | the fix |
 |---|---|---|---|
 | **bound to a subject, tied to no requirement** | 34 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 134 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **no subject binding either** | 135 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
 **These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 34 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
@@ -807,6 +806,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_law_phase2_session_sabotage_probe.py`
 - `tests/run_live_probe_residue_probe.py`
 - `tests/run_log_cluster_probe.py`
+- `tests/run_mech_gate_live_probe_probe.py`
 - `tests/run_message_assertion_probe.py`
 - `tests/run_mutation_anchor_resolver_probe.py`
 - `tests/run_nhi_clone_enumeration_probe.py`
@@ -836,12 +836,12 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_session_recheck_coverage_probe.py`
 - `tests/run_shape_search_probe.py`
 - `tests/run_slab_hold_expiry_sabotage_probe.py`
+- `tests/run_sql_column_exists_probe.py`
 - `tests/run_sql_preflight_literal_probe.py`
 - `tests/run_staged_credential_probe.py`
 - `tests/run_staging_discipline_probe.py`
 - `tests/run_sync_write_result_probe.py`
 - `tests/run_tier_a_reseat_probe.py`
-- `tests/run_tier_sentence_gate_probe.py`
 - `tests/run_tiered_pricing_sabotage_probe.py`
 - `tests/run_tiering_recheck_probe.py`
 - `tests/run_two_axis_tier_parser_probe.py`
@@ -899,8 +899,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 853   tests/**, api/** (both walked)
-  open-work rows citing a test       384   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 857   tests/**, api/** (both walked)
+  open-work rows citing a test       383   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 10   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                70   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     75   report_only_checks.NOT_PROMOTED

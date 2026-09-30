@@ -2753,8 +2753,8 @@
       "task": "discharge the 47h obligation authored by fourth on 2026-09-28T01:24:38Z",
       "claimed_at": "2026-09-30T00:03:01Z",
       "claimed_at_epoch": 1790726581.2345226,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T12:33:28Z",
       "files": null
     },
     {
@@ -2764,8 +2764,8 @@
       "task": "stonedesk.html tests/stonedesk_sync_null_blob.js",
       "claimed_at": "2026-09-30T00:12:48Z",
       "claimed_at_epoch": 1790727168.028539,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T12:33:53Z",
       "files": null
     },
     {
@@ -2775,8 +2775,8 @@
       "task": "sairnvet.html tests/sairnvet_povidone_range.js",
       "claimed_at": "2026-09-30T00:13:47Z",
       "claimed_at_epoch": 1790727227.6899178,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T12:34:26Z",
       "files": null
     },
     {
@@ -2786,8 +2786,8 @@
       "task": "tools/schema_provisioning_check.py tests/run_schema_provisioning_probe.py",
       "claimed_at": "2026-09-30T00:14:14Z",
       "claimed_at_epoch": 1790727254.4944248,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T12:34:55Z",
       "files": null
     },
     {
@@ -2797,8 +2797,8 @@
       "task": "tools/bare_run_write_check.py tests/run_bare_run_write_probe.py",
       "claimed_at": "2026-09-30T00:14:37Z",
       "claimed_at_epoch": 1790727277.4313102,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T12:35:22Z",
       "files": null
     },
     {
@@ -2808,8 +2808,8 @@
       "task": "tools/sairn_push_gate_hook.py tools/staged_parse_check.py",
       "claimed_at": "2026-09-30T00:14:59Z",
       "claimed_at_epoch": 1790727299.026617,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T12:37:29Z",
       "files": null
     },
     {
@@ -2819,8 +2819,8 @@
       "task": "tests/stonedesk_bare_envelope_actions.js",
       "claimed_at": "2026-09-30T00:15:32Z",
       "claimed_at_epoch": 1790727332.5916383,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T12:37:48Z",
       "files": null
     },
     {
@@ -2830,8 +2830,8 @@
       "task": "docs/defect-density-register.json",
       "claimed_at": "2026-09-30T00:28:10Z",
       "claimed_at_epoch": 1790728090.5478108,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T12:38:14Z",
       "files": null
     },
     {
@@ -2841,8 +2841,8 @@
       "task": "tests/customer_delete_does_not_resurrect.js tests/public_catalog_no_false_empty.js tests/quote_request_soft_delete_panel.js tests/refusal_not_empty.js tests/stonedesk_write_result_consumption.js",
       "claimed_at": "2026-09-30T01:00:01Z",
       "claimed_at_epoch": 1790730001.7591567,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T12:38:43Z",
       "files": null
     },
     {
@@ -2852,8 +2852,8 @@
       "task": "docs/MASTER-PLAN.md docs/traceability-matrix.md",
       "claimed_at": "2026-09-30T01:21:12Z",
       "claimed_at_epoch": 1790731272.8922205,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T12:39:07Z",
       "files": null
     },
     {
@@ -2863,8 +2863,8 @@
       "task": "tools/sairn_claim.py tests/run_printed_command_paste_probe.py",
       "claimed_at": "2026-09-30T10:36:18Z",
       "claimed_at_epoch": 1790764578.8343167,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T12:39:30Z",
       "files": null
     },
     {
@@ -2874,8 +2874,8 @@
       "task": "docs/tier-a-reviews.json",
       "claimed_at": "2026-09-30T10:55:49Z",
       "claimed_at_epoch": 1790765749.7191966,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T12:39:59Z",
       "files": null
     },
     {
@@ -2885,8 +2885,8 @@
       "task": "tools/tooling_inventory.py docs/TOOLING-INVENTORY.md",
       "claimed_at": "2026-09-30T11:00:41Z",
       "claimed_at_epoch": 1790766041.766765,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T12:40:55Z",
       "files": null
     },
     {
@@ -2896,6 +2896,28 @@
       "task": "tools/nhi_register.py tests/run_nhi_register_write_flag_probe.py",
       "claimed_at": "2026-09-30T11:11:54Z",
       "claimed_at_epoch": 1790766714.5171564,
+      "status": "released",
+      "released_at": "2026-09-30T12:41:20Z",
+      "files": null
+    },
+    {
+      "id": "cody-1790770452",
+      "session": "cody",
+      "subject": "cody-linedrift",
+      "task": "tools/citation_line_drift_check.py tests/run_citation_line_drift_probe.py",
+      "claimed_at": "2026-09-30T12:14:12Z",
+      "claimed_at_epoch": 1790770452.0472558,
+      "status": "released",
+      "released_at": "2026-09-30T12:41:58Z",
+      "files": null
+    },
+    {
+      "id": "cody-1790772683",
+      "session": "cody",
+      "subject": "cody-condcov",
+      "task": "tools/condition_coverage.py tests/run_condition_coverage_sandbox_probe.py",
+      "claimed_at": "2026-09-30T12:51:23Z",
+      "claimed_at_epoch": 1790772683.6776378,
       "status": "active",
       "released_at": null,
       "files": null

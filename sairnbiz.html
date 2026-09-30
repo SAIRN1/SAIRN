@@ -5018,13 +5018,32 @@ function sbOtThreshold(){
 // is NOT the statutory default, because a reader seeing an unexpected OT figure
 // needs to know a setting produced it -- a changed threshold silently changing a
 // money figure is the same class as the invented hours this panel replaced.
+// ── A CLEARED FIELD IS A RECORDED SETTING, NOT AN ABSENT ONE (2026-09-30) ──
+// LIVE-VERIFIED ON THE DEPLOYED URL, which is how this was found. Typing 0 and
+// saving reported correctly; CLEARING the field and saving did not. The note
+// said only "Overtime is computed above 40 hours per week."
+//
+// AND THE TWO STATES ARE NOT THE SAME, which is what the earlier reading got
+// wrong. saveSettings() STORES `$('ss-ot').value`, so a cleared box persists as
+// the empty string -- and loadSettings() puts it straight back, so the Shop
+// Settings screen shows an EMPTY overtime box while payroll computes at 40.
+// One stored setting, two answers on two screens. That is the same shape as
+// SAIRNbuild's 0% markup rendering as 18% on the bid form, and the silence is
+// the defect there too.
+//
+// AN ABSENT KEY IS STILL NOT REPORTED and that distinction survives by
+// construction rather than by a special case: sbCfg() uses hasOwnProperty, so
+// an absent `ot` yields the NUMBER 40, which equals the threshold and is
+// therefore not rejected. Only a value somebody actually saved can be empty.
 function sbOtThresholdNote(){
   var n=sbOtThreshold();
   var raw=sbCfg().ot;
-  var rejected=(String(raw).trim()!=='' && Number(raw)!==n);
+  var blank=(raw!==null && raw!==undefined && String(raw).trim()==='');
+  var rejected=blank || (String(raw).trim()!=='' && Number(raw)!==n);
   return 'Overtime is computed above '+n+' hours per week'+
     (n!==40?' (set in Shop Settings, not the federal 40)':'')+
-    (rejected?' — the recorded setting '+JSON.stringify(String(raw))+' is outside 1–168 and was NOT used':'')+'.';
+    (blank?' — the overtime threshold was SAVED EMPTY, so the federal 40 is being used; the Shop Settings box will look blank until a number is entered':
+     rejected?' — the recorded setting '+JSON.stringify(String(raw))+' is outside 1–168 and was NOT used':'')+'.';
 }
 function loadSettings(){
   var c=sbCfg();

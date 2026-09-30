@@ -266,6 +266,39 @@ PURPOSES = {
         'exemption list is deliberately SHORT, because a long one becomes the '
         'escape hatch that makes every finding vanish. A RATCHET on '
         'docs/second-pass-coverage.json.'),
+    'sql_column_exists_check.py': ('REPORT',
+        'does a sql/ file FILTER on a column the table does not have? Catches the '
+        'defect that reached origin/main on 2026-09-29: a residue-removal block '
+        'naming entry_id on mech_checks and mech_takeoffs, which use check_id and '
+        'takeoff_id. EVERY statement in that block would error 42703 '
+        'undefined_column -- including the CONFIRM step, so it could not print the '
+        '0 it existed to prove, and in any runner reporting the last successful '
+        'statement it would read as a clean sweep. A column name is the one part of '
+        'hand-written SQL nothing checked: a wrong TABLE fails loudly at the first '
+        'read, a wrong COLUMN fails just as loudly only if somebody is watching. '
+        'Validates against TWO sources -- the declared create-table and '
+        'alter-table-add-column shape across sql/, and the deployed column list in '
+        'db/schema_snapshot.json -- and reports a name present in one and absent '
+        'from the other as a DISAGREEMENT rather than as clean, which is where a '
+        'migration nobody ran lands.'),
+    'mech_gate_live_probe.py': ('LIVE',
+        'does the DEPLOYED MECH_RECORDS boundary still refuse a mech_docs write on '
+        'the licence key alone, AND still allow the read and the three sibling '
+        'writes it deliberately did not close? Catches a gate that has silently '
+        'widened as well as one that has silently reopened -- mech_checks is a '
+        'cheque register whose own branch comment calls it the sharp one, and '
+        'closing it would be an unreviewed decision. '
+        'AND IT CATCHES ITS OWN RESIDUE, which is the reason it exists as a tool: '
+        'the same check run as an ad-hoc script on 2026-09-29 left two rows on a '
+        'demo-facing licence, on tables with no DELETE grant, and they were only '
+        'known about because somebody happened to read them back. Every write here '
+        'is recorded by table and id column, a dated record lands in '
+        'docs/live-residue/, and the select/delete/confirm SQL is printed with the '
+        'licence hash DERIVED in SQL. The recorder is cross-checked against the '
+        'write count the ENDPOINT observed and refuses COULD NOT RUN when they '
+        'disagree, because a recorder that counts its own calls cannot see a write '
+        'that bypassed it and would print removal SQL that is confidently '
+        'incomplete.'),
     'alf_facility_role_gate_live_probe.py': ('LIVE',
         'does the DEPLOYED alf_facility write gate refuse a non-management role? '
         'The gate is verified three ways already and none is live: in-process arms '
@@ -1245,6 +1278,10 @@ PURPOSES = {
     'cron_liveness_check.py': ('LIVE', 'a scheduled job that stopped, ran late, or ran and failed -- asked from OUTSIDE Vercel and written to docs/CRON-LIVENESS-STATUS.md'),
     'audit_checkpoint_status.py': ('LIVE', 'a daily audit checkpoint that FAILED, or could not be asked -- written to docs/AUDIT-CHECKPOINT-STATUS.md instead of a log line nobody opens'),
     'sairn_load_state_check.py': ('LIVE', 'live seed content differing from the repo seed (gate check 1)'),
+    'citation_line_drift_check.py': ('CHECKER', 'a `:NNNN` line citation in a tier row that no longer points at a WRITE site. The naive form of this check -- does the resource name appear within N lines of the cited number -- is WRONG on any app carrying a sync list or a storage-constant block, because '
+        'each of those names EVERY resource on one line, so a citation into one reads as sound for all 36 at once and the offsets it computes are all measured from the same line. This resolves resource -> K_ constant -> `st(K_..., ...)` call site and excludes any line naming two or more prefixed resources. THREE verdicts: SOUND, DRIFTED with the signed correction, and INCONCLUSIVE where no write site can be resolved at all -- never folded into DRIFTED, because a correction to a line that is also wrong is worse than a known gap. CANNOT SEE a resource written only through the generic transport, or one whose constant is built at run time'),
+    'staged_parse_check.py': ('CHECKER', 'a source file this PUSH SHIPS that does not parse -- .py through the interpreter own compiler, .js through `node --check`, over tools/, tests/ and api/. The gate checked stonedesk.html script blocks and api/ and NOT tools/, so a '
+        'tools/tooling_inventory.py that does not parse reached origin/main: nothing at push time imports a tool, so no existing check looked at it. NOT `python -m py_compile`, which writes a __pycache__/*.pyc beside every file it checks -- a gate mutating the tree it inspects, and the artefacts would show in git status as though the push made them. Exit 2 is COULD NOT RUN: no files given, an unreadable file, or a .js with no node on PATH. CANNOT SEE a file that parses and is still wrong -- a rule that compiles and matches nothing is tools/dead_rule_sweep.py job, and neither check subsumes the other'),
     'bare_run_write_check.py': ('CHECKER', 'a tool whose BARE RUN mutates the repo -- `python tools/foo.py` with no arguments is how you ask a tool what it is, and here it has also been how you tell it to go: one such run rewrote three generated documents. Runs every tools/*.py bare and with --help in a SCRATCH clone, checks git status after each, and resets '
         'between tools VERIFYING the reset rather than assuming it -- if residue is left it stops, because no later verdict would be attributable. REFUSES any path matching Documents/SAIRN-* (it executes what it finds, so in a working clone it IS the defect, 275 times), its own repo, a tree that is already dirty, and an empty population. Exit 2 is COULD NOT RUN: a tool that does not finish inside the timeout has no verdict and is never counted clean. CANNOT SEE a write reached only through a subcommand or a flag, which is the point -- the question is what a BARE run does'),
     'sairn_seam_check.py': ('CHECKER', 'an endpoint dropping a field the engine reads (gate check 4)'),

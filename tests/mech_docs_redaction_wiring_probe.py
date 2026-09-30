@@ -320,10 +320,28 @@ check('7b. THE PAIRED CONTROL: saveTakeoff still says it, so arm 7 is scoped '
       'Saved on this device' in function_body(RAW_APP, 'saveTakeoff'))
 
 # ── 8-10: MUTATIONS ─────────────────────────────────────────────────────
+# ── THE BASELINE GATE, ADDED 2026-09-30, AND IT FOUND A LIVE VACUOUS ARM ────
+# These arms are PREDICATES over mutated source, not suite runs, so the baseline
+# question is not "does a suite pass" -- it is: IS THE PREDICATE TRUE ON THE
+# UNMUTATED FILE? If it is already false, then `not predicate(mutated)` is true
+# before and after, and the arm reports a refusal it never tested.
+#
+# ARM 8 WAS IN EXACTLY THAT STATE. Its predicate required the literal
+# `resource === 'mech_docs'`, which the 2026-09-29 map refactor removed from the
+# code -- the same stale anchor that made arm 1 red. Arm 1 failed loudly and arm
+# 8 passed silently off the identical cause, which is the whole argument for
+# gating on the baseline rather than trusting a green arm.
+#
+# A FAILED BASELINE IS COULD-NOT-RUN, NOT A PASS AND NOT A FINDING about the
+# subject: nothing was planted, so nothing was measured.
 MUTATIONS = [
     ('8. removing the server call is REFUSED',
      lambda s: SERVER_CALL.sub('noRedact(', s, 1),
-     lambda code: bool(SERVER_CALL.search(code)) and "resource === 'mech_docs'" in code,
+     # THE MAP, NOT THE NAME -- corrected with arm 1. The old predicate named
+     # `resource === 'mech_docs'`, gone since the handler moved to
+     # MECH_SCANNED_TEXT, so this arm had been passing vacuously.
+     lambda code: bool(SERVER_CALL.search(code))
+     and 'MECH_SCANNED_TEXT[resource]' in code,
      'handler'),
     ('9. storing the RAW payload instead of the redacted one is REFUSED',
      lambda s: s.replace('data: mPayload', 'data: payload', 1),
@@ -335,6 +353,32 @@ MUTATIONS = [
      'handler'),
 ]
 H_RAW = io.open(HANDLER, encoding='utf-8', errors='replace').read()
+
+# THE BASELINE, FIRST, FOR EVERY ARM, BEFORE ANYTHING IS PLANTED.
+baseline_bad = []
+for label, _mutate, predicate, _which in MUTATIONS:
+    if not predicate(strip_comments(H_RAW)):
+        baseline_bad.append(label)
+
+if baseline_bad:
+    print('')
+    print('COULD NOT RUN -- %d mutation arm(s) have a predicate that is ALREADY '
+          'FALSE on the unmutated handler:' % len(baseline_bad))
+    for label in baseline_bad:
+        print('    %s' % label)
+    print('')
+    print('  `not predicate(mutated)` is true before and after, so each of those '
+          'arms would report')
+    print('  a refusal it never tested. The usual cause is an anchor the subject '
+          'has moved past --')
+    print('  arm 8 was in exactly that state after the 2026-09-29 map refactor '
+          'removed the')
+    print('  literal it named.')
+    print('')
+    print('  NOTHING WAS PLANTED. This is exit 2, not a pass and not a finding '
+          'about the subject.')
+    sys.exit(2)
+
 for label, mutate, predicate, which in MUTATIONS:
     src = H_RAW
     m = mutate(src)

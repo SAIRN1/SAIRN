@@ -491,13 +491,29 @@
       "task": "nine-item queue: independent 15-row repoint re-derivation; seq 498 content-changed adjudication; TS-DERIVED class in the citation classifier with fixture; four tool-noise anchor fixes with fixtures; near-miss and quoted-claim row adjudication; log-append-time classifier gate patch with failing-first fixture; register-scoped citation anchor check; sf_national_categories replacement verification; mutation-test extension to twenty plants across the two new checks.\n\nFILES: citation_class_check.py hover_log.py run_citation_class_mutation_test.py register_citation_check.py",
       "claimed_at": "2026-09-30T10:53:44Z",
       "claimed_at_epoch": 1790765624.5211594,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T11:55:49Z",
       "files": [
         "citation_class_check.py",
         "hover_log.py",
         "register_citation_check.py",
         "run_citation_class_mutation_test.py"
+      ]
+    },
+    {
+      "id": "hover-1790771222",
+      "session": "hover",
+      "subject": "hover",
+      "task": "nine-item queue 3: independent 15-row content-first re-derivation; five anchor-only hand resolutions; blob-prefixed citation class fix; per-citation quoted-claim marker attribution; 20 wrong plus 43 ts-wrong row adjudication; bare-line register citation extension; 46 apply-ready register replacement texts; append-time gate CLI drive; self-verifying repoint generator check.\n\nFILES: citation_class_check.py register_citation_check.py moved_since_repoint_list.txt regenerate_repoint_list.py",
+      "claimed_at": "2026-09-30T12:27:02Z",
+      "claimed_at_epoch": 1790771222.1269207,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "citation_class_check.py",
+        "moved_since_repoint_list.txt",
+        "regenerate_repoint_list.py",
+        "register_citation_check.py"
       ]
     }
   ],

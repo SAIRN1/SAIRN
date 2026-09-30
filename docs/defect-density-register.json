@@ -19775,6 +19775,49 @@
       "recurrence_open": "Nothing prevents the next server-side rule change from landing without the client copy, and nothing makes the case list grow when a rule is added. The parity arm now has a control proving it can see a divergence, which is not the same as proving it can see EVERY divergence -- a rule added with no matching case is still invisible to it."
     },
     {
+      "commit": "4d5f3deb557d",
+      "date": "2026-09-29",
+      "subject": "fix(hover2): hover_log.py live selftest arm disclosed per the closed-system convention; the checker's def-line-as-call-site false positive fixed with a 12th fixture (failed first against unfixed code); hover_editor_review.py gains the --selftest alias -- 0 UNDISCLOSED-live, 26/26 tools answer --selftest",
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools-hover2/hover_editor_review.py",
+        ".claude/skills/sairn-hover-auditor/tools-hover2/hover_log.py",
+        ".claude/skills/sairn-hover-auditor/tools-hover2/sabotage_closed_system_check.py"
+      ],
+      "lines_added": 51,
+      "lines_removed": 13,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "hover-audit",
+      "summary": "hover2 auditor tooling, two defects in one commit, both found by the closed-system checker's own report this session: (1) hover_log.py's seq-273 CLI-integration selftest arm reads the REAL self-log (line-count before/after a must-refuse append) with no disclosure marker, reported UNDISCLOSED_LIVE by sabotage_closed_system_check.py -- the arm was honest but undisclosed, violating the checker's own convention; disclosure comment added in the arm's own words. (2) The checker itself had a def-line-as-call-site false positive: a selftest whose own body touches LOG_PATH lands in indirect_callees and its own 'def selftest():' line matches the zero-arg call regex -- fixture FIXTURE_SELF_NAMED_DEF confirmed FAILING against unfixed code (1 of 12) before the one-guard fix, 12/12 after. Report now 0 UNDISCLOSED-live. Auditor-internal tooling; no platform code path served.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "unknown",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "unknown_reason": "both defects were injected in the per-clone hover-audit-log working directory before these tools ever entered platform git; the platform-repo landing commit carries them but did not create them"
+      },
+      "citation_note": "closed-system disclosure convention lives in the auditor's own tool contract, no platform standing rule names this shape",
+      "phase_note": "auditor-internal tooling has no product phase; found during a resume-queue selftest drive",
+      "contributing_factors": [
+        {
+          "factor": "the live selftest arm was written before the disclosure convention existed and never re-swept against it",
+          "kind": "process",
+          "action_status": "done",
+          "action": "disclosure comment added; checker rerun reports 0 UNDISCLOSED-live"
+        },
+        {
+          "factor": "the checker indirect-callee loop lacked the def-line guard its own network branch already had",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "guard added; FIXTURE_SELF_NAMED_DEF locks it, confirmed failing-first"
+        }
+      ],
+      "recurrence_open": "a future live arm written without re-running the checker would recur silently until the next selftest drive; the checker is not a pre-commit gate on the tooling directory"
+    },
+    {
       "commit": "4dc17346ccb5",
       "date": "2026-09-29",
       "subject": "fix(sync): a landed slab write was reported as LOST, because the guard read the payload instead of the envelope",
@@ -20873,6 +20916,47 @@
       "recurrence_open": "The criteria may now UNDER-accuse, and that is a judgement rather than a measurement: 31 rows moved out on MY reading of what counts as disclosed evidence, and nothing independent has checked that reading. The obligation opened this push names it as the second thing a reviewer should look at. Also unaddressed: 207 rows still point at no LINE, which is the real coverage gap and has not moved."
     },
     {
+      "commit": "a3c0b23793c1",
+      "date": "2026-09-29",
+      "subject": "fix(hover2): classify_remote credential reason scoped to github.com hosts only -- cold-read bug reproduced from description, tests-first (R7 plus R8 known-bad control), 52/52",
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools-hover2/hover2_log_mirror.py"
+      ],
+      "lines_added": 32,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "hover-audit",
+      "summary": "hover2_log_mirror.py classify_remote(): a non-github ssh URL carrying userinfo (ssh://deploy@gitlab.com/...) was refused with the WRONG REASON -- the credential/userinfo wording instead of the non-github wording -- because the userinfo regex ran before the host check and fired on any scheme://user@ shape regardless of host. Not a security gap: the URL was refused under either reason; the defect is a misleading refusal message. Found by the OTHER auditor instance (H1) from black-box description, reproduced here exactly, fixed tests-first: R7 (the reported URL must get the non-github reason) confirmed failing before the fix; R8 known-bad control (a real github.com URL WITH a credential must STILL get the credential reason) passing before and after, proving the fix narrows scope rather than deleting the check. 52/52 after.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "unknown",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "unknown_reason": "injected when classify_remote was first written in the per-clone hover-audit-log directory, before the tool entered platform git"
+      },
+      "citation_note": "refusal-reason accuracy in auditor-internal tooling; no platform standing rule names wrong-reason-right-refusal",
+      "phase_note": "auditor-internal mirror tooling, no product phase; found by cross-instance review",
+      "contributing_factors": [
+        {
+          "factor": "branch ordering: the credential check ran before the host check, so the more specific refusal shadowed the more accurate one for non-github hosts",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "credential branch now requires github.com in the URL; R7+R8 lock both directions"
+        },
+        {
+          "factor": "the original selftest had no non-github-with-userinfo arm, so the shadowing was never exercised",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "R7 added as a permanent arm"
+        }
+      ],
+      "recurrence_open": "other refusal-reason orderings in the same classifier were not exhaustively cross-checked; a new refusal branch added ahead of the host check could reintroduce the shadow"
+    },
+    {
       "commit": "bc89bf345b3c",
       "date": "2026-09-29",
       "subject": "fix(sairnbiz): a typed overtime threshold of 0 was swallowed before validation could see it",
@@ -21387,6 +21471,122 @@
       "recurrence_open": "Nothing makes importing the shared lookup easier than writing a new one, so a fourth copy is available to anybody in a hurry. The sweep that would catch it lives in a control that is not in the recurring report-only set."
     },
     {
+      "commit": "2ea91d84b482",
+      "date": "2026-09-30",
+      "subject": "fix(platform): raw model output is redacted server-side in six apps, not one",
+      "files": [
+        "api/_lib/ai-scan-redaction.js",
+        "api/sd-data-ai-scan-redaction.test.js",
+        "api/sd-data.js",
+        "docs/MASTER-PLAN.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/traceability-matrix.md",
+        "tests/run_ai_output_resource_probe.py",
+        "tools/ai_output_resource_scan.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 1268,
+      "lines_removed": 20,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "Raw model output was persisted unredacted on seven resources across six apps: the server-side redaction gate existed only inside the SAIRNmechanical branch as MECH_SCANNED_TEXT, so bld_photo_analyses (full, summary), grd_progress_photos, grd_ecosystem_reports, msb_food_scans, scp_progress_photos, rf_photos and memory stored whatever a model read off a photograph -- a name, a phone number, an SSN on a taped-up work order -- verbatim in the row. Now one declared map in api/_lib/ai-scan-redaction.js, gated per field on the server, with deliverables (parsed quantities, product names, quote lines) explicitly excluded because over-redaction is a different way to lose the record.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "unknown",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Seven independent write paths in six apps, each added with its own feature over months. A single injection commit does not exist, and naming the earliest would misreport six other dates."
+      },
+      "citation_note": "No standing coding rule names 'a gate scoped to one app while the same data shape exists in five others'. The nearest is the name-versus-property rule the mech_docs fix already states, and this is that rule applied across an app boundary rather than within one file.",
+      "phase_note": "Each of the seven write paths was added with its own feature at a different date; the redaction gate was added later and only where somebody was looking. There is no single phase in which this was introduced, and picking one would be a guess.",
+      "contributing_factors": [
+        {
+          "factor": "The redaction gate was defined INSIDE one app's branch (MECH_SCANNED_TEXT, api/sd-data.js, scoped to the SAIRNmechanical section) rather than at module level, so it was reachable only from the app whose author happened to need it.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Moved whole into api/_lib/ai-scan-redaction.js as a module-level declared map covering every app, with the per-resource deciding test on the entry."
+        },
+        {
+          "factor": "The universe was only ever derived in ONE direction. Walking forward from the model call finds the resources whose store sits inside the AI function, and is blind to a store that reads a module-level variable two functions away -- which is exactly how bld_photo_analyses is written.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tools/ai_output_resource_scan.py derives it twice, forward and backward, prints both counts and the symmetric difference, and never presents a union as agreement."
+        },
+        {
+          "factor": "Each of the seven write paths shipped with its own feature at its own date, and no step in the feature checklist asked whether the new resource persisted model output.",
+          "kind": "process",
+          "action_status": "planned",
+          "note": "Named rather than implied: until that arm exists nothing FORCES the question when a new AI-writing resource is added.",
+          "action": "The map is now the single place to answer the question, and tools/ai_output_resource_scan.py can be re-run at any time to re-derive the universe. What is PLANNED and not built is a push-gate arm that compares the derivation's output against the declared map and blocks when a resource appears in one and not the other."
+        },
+        {
+          "factor": "Two of the affected resources -- bld_ai_chat and sd_stonehead_history -- are deliberately excluded from server sync as conversation transcripts, so the raw text sits in localStorage where no server gate can reach it at all.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "A server-side redaction gate is structurally incapable of covering a local-only store. Recorded as a standing exposure with its reason, not closed."
+        }
+      ],
+      "recurrence_open": "Nothing yet FORCES the derivation to be re-run when a new resource is added, so the map can go stale the next time somebody ships an AI feature -- the same way MECH_SCANNED_TEXT went stale the moment a second app needed it. And bld_ai_chat plus sd_stonehead_history remain unredacted in localStorage, which no server gate can reach; shared_knowledge stores up to 60 lowercased words taken from model text, so a surname can survive, and it is registered rather than half-gated."
+    },
+    {
+      "commit": "36b4343e7176",
+      "date": "2026-09-30",
+      "subject": "feat(mech): the live gate check declared itself correctly THREE TIMES and the auditor still could not see it",
+      "files": [
+        "docs/live-residue/README.md",
+        "tests/run_mech_gate_live_probe_probe.py",
+        "tools/mech_gate_live_probe.py"
+      ],
+      "lines_added": 118,
+      "lines_removed": 10,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "A live gate verification was driven by an UNCOMMITTED scratchpad script, which imported nothing and was therefore invisible to tools/live_probe_residue_audit.py -- whose universe is tracked files under tools/ tests/ scripts/. audit_licence.require_audit_licence would have refused the demo-facing key outright. Two rows were left on a demo licence on tables with no DELETE grant. Replaced by tools/mech_gate_live_probe.py, and running the auditor against THAT found three further ways a correct declaration counts as absent: a write action passed positionally (tool missing from the writer list entirely, 9 instead of 10), LIVE_PROBE_RESIDUE written as a multi-line concatenation when RESIDUE_RE matches one quoted literal, and a residue declaration not starting with an existing path.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The ad-hoc script was never committed, so there is no commit that introduced it; the tool that replaces it is new."
+      },
+      "citation_note": "The nearest standing item is cross-domain-disciplines 8, nothing announces the day a check stops testing anything, but this is a check that never saw the subject at all rather than one that decayed.",
+      "contributing_factors": [
+        {
+          "factor": "A verification that writes was driven by an ad-hoc script, so no guard, no declaration and no auditor applied to it",
+          "kind": "process",
+          "action_status": "done",
+          "action": "It is now a tracked tool declaring LIVE_PROBE_CLASS VERIFICATION, calling require_audit_licence before any request, and driven by a control that runs the real entry point with the 2026-09-29 key and requires exit 2."
+        },
+        {
+          "factor": "The existing auditor checks that a residue path is NAMED, which is not the same fact as the rows being ENUMERATED",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Every write goes through a recorder capturing table, id column and id; finish() writes a dated record under docs/live-residue/ and prints select/delete/confirm with the hash derived in SQL."
+        },
+        {
+          "factor": "A recorder that counts its own calls cannot detect a write that bypassed it, and would print removal SQL that is confidently incomplete",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "finish() takes the write count the ENDPOINT observed and exits 2 COULD NOT RUN when the recorder saw fewer, printing no SQL and writing no record -- because SQL covering one of two rows reads as complete."
+        },
+        {
+          "factor": "Three declaration forms were syntactically correct and unparseable by the checker that polices them, so the tool was self-describing to nobody",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Arm 6 asserts the AUDITORS VERDICT rather than the presence of the declarations: listed as a VERIFICATION writer, guard yes, residue accepted, no finding raised."
+        }
+      ],
+      "recurrence_open": "Nothing stops the next writing verification being an ad-hoc script again. The auditor cannot see untracked files by design, and that is the gap the 2026-09-29 run went through; this closes one instance and not the class. Fourth owns the general form -- the asserted-teardown obligation on tools/live_probe_residue_audit.py."
+    },
+    {
       "commit": "46f8c0133043",
       "date": "2026-09-30",
       "subject": "fix(guard): a git_dir() that could not answer read as \"no operation running\" and allowed a blanket stage mid-rebase",
@@ -21438,6 +21638,119 @@
         }
       ],
       "recurrence_open": "The guard is still blind to 13 wrapper and substitution shapes -- command substitution, backticks, sh -c, env, xargs, eval, a subshell, a brace group -- and to a NAME=VALUE environment prefix, which is the ordinary way to write a non-interactive amend. All were driven and all were allowed. The header names git add -u, :/, stash and reset --hard as deliberate exclusions and says nothing about any of these, so a reader finishes that list believing it is complete. Reported in the discharge of hank's 2026-09-28T21:33:14Z obligation and NOT fixed here."
+    },
+    {
+      "commit": "41f0689295fb",
+      "date": "2026-09-30",
+      "subject": "fix(citation): the drift detector credited a line that names every resource at once",
+      "files": [
+        "docs/MASTER-PLAN.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/traceability-matrix.md",
+        "tests/run_citation_line_drift_probe.py",
+        "tools/citation_line_drift_check.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 524,
+      "lines_removed": 19,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "The citation-drift detector credited a line that names every resource at once. It\nasked whether a resource name appeared within 40 lines of a cited `:NNNN`, and\nsairnfreedom.html carries two blocks -- `var SF_SYNCED=[...]` at 1919-1928 and the\n`K_ACCOUNTS='sf_accounts', ...` storage-constant block at 2340-2344 -- each listing\nEVERY sf_ resource. A citation into either therefore read as sound for all 36\nresources simultaneously, and the \"corrected\" offsets were computed from the first\ntextual occurrence of the name, which is inside the sync list, so all 40 offsets\nwere measured from the same line. The app has no per-resource writer at all -- one\ngeneric sfData('write', key, r) serves them -- so the real per-resource write is\nst(K_<CONST>, ...), and the checker now resolves resource to constant to st() call\nsite and excludes any line naming two or more prefixed resources. Re-run: 41\ncitations over 28 resources, 8 SOUND, 33 DRIFTED, 0 INCONCLUSIVE. The earlier\nfigure of 40 wrong was itself wrong in both directions.",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The detector was a throwaway script in a session scratchpad and was never committed, so there is no commit that introduced it. The scratchpad copy is at 9d3f5b9f-.../scratchpad/sfdrift.py; that path is not in any repository and will not survive."
+      },
+      "contributing_factors": [
+        {
+          "factor": "The proximity heuristic was chosen because it is cheap and it looked right on the first few rows. What makes it wrong is a property of the FILE rather than of the heuristic: a line that names every resource makes any citation near it sound for all of them, and no amount of care in reading individual results would surface that -- the results all look plausible.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The checker resolves resource -> K_ constant -> st() call site, and excludes any line naming two or more prefixed resources. The exclusion is DERIVED from the line rather than a hardcoded range, so a third declaration block costs nothing."
+        },
+        {
+          "factor": "The detector was a throwaway script in a session scratchpad with no control of any kind. It produced 40 numbers that were reported as a measurement, and nothing in the repo could have contradicted them. A one-off script that produces a figure somebody will act on is a tool, whatever directory it lives in.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "It is now tools/citation_line_drift_check.py with tests/run_citation_line_drift_probe.py, 13 arms, and the known-bad arm reproduces the declaration-block match exactly."
+        },
+        {
+          "factor": "Two arms of the new control could never have passed, and the first run caught it rather than a reviewer: B1 and C1 tested `'DRIFTED' not in output`, and the summary block always prints `DRIFTED : 0`. An assertion whose negative branch is unreachable is the same class as the heuristic it was written to check.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Both parse the summary counts through one counts() helper, which records the mistake in its own docstring."
+        },
+        {
+          "factor": "The verification of the 33 corrections uses very nearly the predicate that produced them. Arm E2 re-reads each target line from the file and requires an st(K_..., ...) write for that resource, which is a genuine re-read rather than trusting the tool's output, but it cannot catch the case where st() is the wrong notion of a write site.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "Named as attack point (d) on the review obligation. A structurally different method -- reading the panel the resource renders in -- would be independent and was not done."
+        }
+      ],
+      "recurrence_open": "Only sairnfreedom was swept. Every other app on this platform has the same\ntwo-block shape -- a SYNCED list and a K_ constant block -- so the same citations\nin the same document for sv_, grd_, scp_, leg_ and the rest have never been\nchecked with a detector that excludes them. The count for those apps is unknown\nand this fix does not touch them."
+    },
+    {
+      "commit": "9643cb4c3f6e",
+      "date": "2026-09-30",
+      "subject": "fix(probe): my own mutation arms had no baseline gate, and arm 8 had been passing VACUOUSLY",
+      "files": [
+        "tests/mech_docs_redaction_wiring_probe.py"
+      ],
+      "lines_added": 45,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "probe-control",
+      "summary": "tests/mech_docs_redaction_wiring_probe.py arm 8 had been passing VACUOUSLY. Its arms are predicates over mutated source rather than suite runs, so the baseline question is whether the predicate is TRUE on the unmutated file -- and arm 8's predicate required the literal resource === mech_docs, which the 2026-09-29 map refactor removed. With the predicate already false, not predicate(mutated) is true before and after, so the arm reported a refusal it never tested. Arm 1 went RED off the identical cause and was fixed the day before without anyone noticing arm 8 had gone quiet.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tests/mech_docs_redaction_wiring_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "9643cb4c3f6e",
+        "date": "2026-09-30",
+        "subject": "fix(probe): my own mutation arms had no baseline gate, and arm 8 had been passing VACUOUSLY",
+        "lag_days": 0
+      },
+      "citation_note": "The shape is the same stale anchor cross-domain-disciplines item 8 describes, but the consequence here is a VACUOUS PASS rather than a decayed check, and item 8 is written about the latter.",
+      "contributing_factors": [
+        {
+          "factor": "The predicate named a literal the subject had moved past, so it was false before and after the mutation",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The predicate now names MECH_SCANNED_TEXT[resource] -- the mechanism rather than one of its cases -- matching the correction already made to arm 1."
+        },
+        {
+          "factor": "Nothing asserted the predicates hold on the UNMUTATED file, so a stale anchor turned a mutation arm green instead of red",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "A gate runs every predicate against the unmutated handler before anything is planted and exits 2 COULD NOT RUN naming each affected arm. A known-bad control breaks arm 8 in place and confirms exit 2 with no was-REFUSED verdict emitted."
+        },
+        {
+          "factor": "One stale anchor made one arm fail LOUDLY and another pass SILENTLY, and only the loud one was investigated",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Both are now anchored on the same mechanism, so the next time that mechanism moves both arms move together rather than one reddening and one going quiet."
+        },
+        {
+          "factor": "A predicate-over-source arm has no natural baseline the way a suite-run arm does, so the discipline was easy to leave out",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "The 35 hand-rolled mutation runners with no baseline precondition are enumerated in docs/2026-09-29-index-rows-cc.md for registering by owner. Only this one is fixed here."
+        }
+      ],
+      "recurrence_open": "34 of the 35 hand-rolled runners with no baseline precondition are untouched, and of the 41 that DO mention a baseline, 29 assert it without GATING on it -- a red baseline still lets them report caught or missed. The shared sabotage_harness gate now exits 2 for its 68 callers; neither population is covered by that."
     },
     {
       "commit": "a1247a2e063f",
@@ -21547,111 +21860,21 @@
       "recurrence_open": "21 of 485 rows carry any reference at all, so for the other 464 there is nothing\na static arm can read a dose against. This control covers the 8 Topical\nAntiseptic rows; the same defect in an uncited row would be invisible, and the\nexisting sourcing-honesty suite is by design silent about rows that make no\nclaim."
     },
     {
-      "commit": "4d5f3deb557d",
-      "date": "2026-09-29",
-      "subject": "fix(hover2): hover_log.py live selftest arm disclosed per the closed-system convention; the checker's def-line-as-call-site false positive fixed with a 12th fixture (failed first against unfixed code); hover_editor_review.py gains the --selftest alias -- 0 UNDISCLOSED-live, 26/26 tools answer --selftest",
-      "files": [
-        ".claude/skills/sairn-hover-auditor/tools-hover2/hover_editor_review.py",
-        ".claude/skills/sairn-hover-auditor/tools-hover2/hover_log.py",
-        ".claude/skills/sairn-hover-auditor/tools-hover2/sabotage_closed_system_check.py"
-      ],
-      "lines_added": 51,
-      "lines_removed": 13,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "low",
-      "detection_method": "hover-audit",
-      "summary": "hover2 auditor tooling, two defects in one commit, both found by the closed-system checker's own report this session: (1) hover_log.py's seq-273 CLI-integration selftest arm reads the REAL self-log (line-count before/after a must-refuse append) with no disclosure marker, reported UNDISCLOSED_LIVE by sabotage_closed_system_check.py -- the arm was honest but undisclosed, violating the checker's own convention; disclosure comment added in the arm's own words. (2) The checker itself had a def-line-as-call-site false positive: a selftest whose own body touches LOG_PATH lands in indirect_callees and its own 'def selftest():' line matches the zero-arg call regex -- fixture FIXTURE_SELF_NAMED_DEF confirmed FAILING against unfixed code (1 of 12) before the one-guard fix, 12/12 after. Report now 0 UNDISCLOSED-live. Auditor-internal tooling; no platform code path served.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "unknown",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover2",
-      "injection": {
-        "unknown_reason": "both defects were injected in the per-clone hover-audit-log working directory before these tools ever entered platform git; the platform-repo landing commit carries them but did not create them"
-      },
-      "citation_note": "closed-system disclosure convention lives in the auditor's own tool contract, no platform standing rule names this shape",
-      "phase_note": "auditor-internal tooling has no product phase; found during a resume-queue selftest drive",
-      "contributing_factors": [
-        {
-          "factor": "the live selftest arm was written before the disclosure convention existed and never re-swept against it",
-          "kind": "process",
-          "action_status": "done",
-          "action": "disclosure comment added; checker rerun reports 0 UNDISCLOSED-live"
-        },
-        {
-          "factor": "the checker indirect-callee loop lacked the def-line guard its own network branch already had",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "guard added; FIXTURE_SELF_NAMED_DEF locks it, confirmed failing-first"
-        }
-      ],
-      "recurrence_open": "a future live arm written without re-running the checker would recur silently until the next selftest drive; the checker is not a pre-commit gate on the tooling directory"
-    },
-    {
-      "commit": "a3c0b23793c1",
-      "date": "2026-09-29",
-      "subject": "fix(hover2): classify_remote credential reason scoped to github.com hosts only -- cold-read bug reproduced from description, tests-first (R7 plus R8 known-bad control), 52/52",
-      "files": [
-        ".claude/skills/sairn-hover-auditor/tools-hover2/hover2_log_mirror.py"
-      ],
-      "lines_added": 32,
-      "lines_removed": 1,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "low",
-      "detection_method": "hover-audit",
-      "summary": "hover2_log_mirror.py classify_remote(): a non-github ssh URL carrying userinfo (ssh://deploy@gitlab.com/...) was refused with the WRONG REASON -- the credential/userinfo wording instead of the non-github wording -- because the userinfo regex ran before the host check and fired on any scheme://user@ shape regardless of host. Not a security gap: the URL was refused under either reason; the defect is a misleading refusal message. Found by the OTHER auditor instance (H1) from black-box description, reproduced here exactly, fixed tests-first: R7 (the reported URL must get the non-github reason) confirmed failing before the fix; R8 known-bad control (a real github.com URL WITH a credential must STILL get the credential reason) passing before and after, proving the fix narrows scope rather than deleting the check. 52/52 after.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "unknown",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover",
-      "injection": {
-        "unknown_reason": "injected when classify_remote was first written in the per-clone hover-audit-log directory, before the tool entered platform git"
-      },
-      "citation_note": "refusal-reason accuracy in auditor-internal tooling; no platform standing rule names wrong-reason-right-refusal",
-      "phase_note": "auditor-internal mirror tooling, no product phase; found by cross-instance review",
-      "contributing_factors": [
-        {
-          "factor": "branch ordering: the credential check ran before the host check, so the more specific refusal shadowed the more accurate one for non-github hosts",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "credential branch now requires github.com in the URL; R7+R8 lock both directions"
-        },
-        {
-          "factor": "the original selftest had no non-github-with-userinfo arm, so the shadowing was never exercised",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "R7 added as a permanent arm"
-        }
-      ],
-      "recurrence_open": "other refusal-reason orderings in the same classifier were not exhaustively cross-checked; a new refusal branch added ahead of the host check could reintroduce the shadow"
-    },
-    {
-      "commit": "2ea91d84b482",
+      "commit": "f8acd128490b",
       "date": "2026-09-30",
-      "subject": "fix(platform): raw model output is redacted server-side in six apps, not one",
+      "subject": "fix(sairnbiz): a SAVED-EMPTY overtime threshold is reported too, found by driving the deployed URL",
       "files": [
-        "api/_lib/ai-scan-redaction.js",
-        "api/sd-data-ai-scan-redaction.test.js",
-        "api/sd-data.js",
-        "docs/MASTER-PLAN.md",
-        "docs/TOOLING-INVENTORY.md",
-        "docs/traceability-matrix.md",
-        "tests/run_ai_output_resource_probe.py",
-        "tools/ai_output_resource_scan.py",
-        "tools/tooling_inventory.py"
+        "docs/2026-09-29-live-verification-residue-fourth.md",
+        "sairnbiz.html",
+        "tests/sairnbiz_ot_threshold_coalesce.js"
       ],
-      "lines_added": 1268,
-      "lines_removed": 20,
-      "app": "PLATFORM",
+      "lines_added": 215,
+      "lines_removed": 5,
+      "app": "sairnbiz",
       "layer": "product",
-      "severity": "high",
-      "detection_method": "independent-review",
-      "summary": "Raw model output was persisted unredacted on seven resources across six apps: the server-side redaction gate existed only inside the SAIRNmechanical branch as MECH_SCANNED_TEXT, so bld_photo_analyses (full, summary), grd_progress_photos, grd_ecosystem_reports, msb_food_scans, scp_progress_photos, rf_photos and memory stored whatever a model read off a photograph -- a name, a phone number, an SSN on a taped-up work order -- verbatim in the row. Now one declared map in api/_lib/ai-scan-redaction.js, gated per field on the server, with deliverables (parsed quantities, product names, quote lines) explicitly excluded because over-redaction is a different way to lose the record.",
+      "severity": "moderate",
+      "detection_method": "live-verification",
+      "summary": "A SAVED-EMPTY overtime threshold fell back to the federal 40 and said nothing. saveSettings() stores the raw input value, so clearing the box persists the empty string and loadSettings() puts it straight back -- the Shop Settings screen shows an EMPTY overtime box while payroll computes at 40. One stored setting, two answers on two screens. sbOtThresholdNote() excluded the empty string from its `rejected` predicate explicitly, so the one state a user reaches by CLEARING the field was the one state that could not be reported. The note now says so in its own words rather than reusing the out-of-range sentence, because an empty string is not \"outside 1-168\" and a true refusal with a false reason sends the reader to check a number they never typed.",
       "rules": [],
       "citation_confidence": "not-citable",
       "injection_phase": "unknown",
@@ -21659,38 +21882,38 @@
       "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "unknown_reason": "Seven independent write paths in six apps, each added with its own feature over months. A single injection commit does not exist, and naming the earliest would misreport six other dates."
+        "unknown_reason": "The exclusion of the empty string from the rejected predicate was written deliberately alongside the note itself and looked correct from the day it shipped. Naming that commit as an injection would misreport a considered decision as a slip."
       },
-      "citation_note": "No standing coding rule names 'a gate scoped to one app while the same data shape exists in five others'. The nearest is the name-versus-property rule the mech_docs fix already states, and this is that rule applied across an app boundary rather than within one file.",
-      "phase_note": "Each of the seven write paths was added with its own feature at a different date; the redaction gate was added later and only where somebody was looking. There is no single phase in which this was introduced, and picking one would be a guess.",
+      "citation_note": "The nearest standing rule is the substitute-on-absent-never-on-falsy shape fixed in sbCfg() the day before, and this is NOT that: sbCfg() was already correct and passes the empty string through intact. The defect is one layer further on, in what the DISCLOSURE does with a value that reached it unaltered.",
+      "phase_note": "The note was written when the overtime threshold was first wired, and the empty case was considered and deliberately excluded in that same change. There is no phase in which it was introduced by accident, so naming one would be a guess.",
       "contributing_factors": [
         {
-          "factor": "The redaction gate was defined INSIDE one app's branch (MECH_SCANNED_TEXT, api/sd-data.js, scoped to the SAIRNmechanical section) rather than at module level, so it was reachable only from the app whose author happened to need it.",
+          "factor": "sbOtThresholdNote() excluded the empty string from `rejected` with an explicit `String(raw).trim()!==''` guard, so the one state a user reaches by CLEARING the box was the one state that could not be reported.",
           "kind": "technical",
           "action_status": "done",
-          "action": "Moved whole into api/_lib/ai-scan-redaction.js as a module-level declared map covering every app, with the per-resource deciding test on the entry."
+          "action": "The predicate now reports a saved-empty value in its own words, and an ABSENT key still is not reported -- that survives by construction, because sbCfg() uses hasOwnProperty so an absent `ot` yields the NUMBER 40 rather than an empty string."
         },
         {
-          "factor": "The universe was only ever derived in ONE direction. Walking forward from the model call finds the resources whose store sits inside the AI function, and is blind to a store that reads a module-level variable two functions away -- which is exactly how bld_photo_analyses is written.",
+          "factor": "The suite had already considered this case and EXCUSED it. An arm called a blank 'harmless for the verdict' -- true about the pay figure, which lands on 40 either way, and false about the disclosure, which is the whole subject.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Two arms replace that comment, and a known-bad control reconstructs the PRE-FIX note and requires it to fail to report a blank -- so the excuse cannot be restored silently."
+        },
+        {
+          "factor": "Every existing arm drove sbCfg with a typed 0 and none drove the app's own saveSettings(), which stores $('ss-ot').value -- a STRING. A cleared box therefore persists as '' and reloads into the settings screen as blank, which no in-suite arm could see because no arm went through the real save.",
           "kind": "detection",
           "action_status": "done",
-          "action": "tools/ai_output_resource_scan.py derives it twice, forward and backward, prints both counts and the symmetric difference, and never presents a union as agreement."
+          "action": "Found by driving the DEPLOYED page through saveSettings() rather than calling the chain directly. Recorded in docs/2026-09-29-live-verification-residue-fourth.md with the three-row table of what each input actually produced."
         },
         {
-          "factor": "Each of the seven write paths shipped with its own feature at its own date, and no step in the feature checklist asked whether the new resource persisted model output.",
-          "kind": "process",
-          "action_status": "planned",
-          "note": "Named rather than implied: until that arm exists nothing FORCES the question when a new AI-writing resource is added.",
-          "action": "The map is now the single place to answer the question, and tools/ai_output_resource_scan.py can be re-run at any time to re-derive the universe. What is PLANNED and not built is a push-gate arm that compares the derivation's output against the declared map and blocks when a resource appears in one and not the other."
-        },
-        {
-          "factor": "Two of the affected resources -- bld_ai_chat and sd_stonehead_history -- are deliberately excluded from server sync as conversation transcripts, so the raw text sits in localStorage where no server gate can reach it at all.",
+          "factor": "The settings screen and the consumer disagree about one stored value -- the box renders empty while payroll computes at 40. That is the same latent shape as SAIRNbuild's 0% markup rendering as 18% on the bid form, fixed the same day, and neither was found by reading code.",
           "kind": "latent-condition",
-          "action_status": "not-actionable",
-          "note": "A server-side redaction gate is structurally incapable of covering a local-only store. Recorded as a standing exposure with its reason, not closed."
+          "action_status": "planned",
+          "action": "tools/numeric_default_coalesce_scan.py --config-only already finds the substitution sites. What it does NOT do is compare what a settings screen renders against what its consumer renders for the same stored key.",
+          "note": "That cross-screen comparison is the check that would have found both, and it is not built."
         }
       ],
-      "recurrence_open": "Nothing yet FORCES the derivation to be re-run when a new resource is added, so the map can go stale the next time somebody ships an AI feature -- the same way MECH_SCANNED_TEXT went stale the moment a second app needed it. And bld_ai_chat plus sd_stonehead_history remain unredacted in localStorage, which no server gate can reach; shared_knowledge stores up to 60 lowercased words taken from model text, so a surname can survive, and it is registered rather than half-gated."
+      "recurrence_open": "Nothing compares what a SETTINGS SCREEN renders for a stored key against what its CONSUMER renders for the same key. That cross-screen comparison is what would have found both this and the SAIRNbuild 0% markup case on the same day, and it is not built. tools/numeric_default_coalesce_scan.py finds the substitution sites but says nothing about whether two screens agree about one stored value."
     }
   ],
   "started": "2026-09-09",

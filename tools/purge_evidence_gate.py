@@ -119,6 +119,24 @@ EVIDENCE = (
 )
 
 
+def clone_label(path):
+    """A filename-safe label that is UNIQUE across the checkouts on this machine.
+
+    `os.path.basename` IS NOT ENOUGH AND THE FIRST RUN PROVED IT. There are two
+    stray bare git directories here -- C:/Users/marsh/.git and
+    C:/Users/marsh/Documents/.git -- and both have the basename `.git`, so the
+    second record silently OVERWROTE the first and the run reported nine
+    successes for eight distinct records. A collision that reports success is
+    the shape this whole file exists to refuse, arriving through the filename.
+    """
+    p = os.path.abspath(path).rstrip(os.sep)
+    base = os.path.basename(p)
+    if base in ('.git', '') or base.startswith('.'):
+        parent = os.path.basename(os.path.dirname(p)) or 'root'
+        return (parent + base).replace(os.sep, '-')
+    return base
+
+
 def git_bin():
     return os.environ.get('SAIRN_PURGE_EVIDENCE_GIT') or 'git'
 
@@ -337,16 +355,30 @@ def audit(root):
 
 
 # ── the record ──────────────────────────────────────────────────────────────
-def record_evidence(record_dir):
+def record_evidence(record_dir, repo=None):
     """Write today's evidence record. Returns (exit_code, path_or_reason).
 
     NOTHING IS WRITTEN UNLESS THE FSCK COULD BE READ. An empty `unreachable`
     list because fsck failed reads identically to a genuinely clean repo, and
     that is the exact confusion this tool exists to end.
+
+    `repo` RECORDS ANOTHER CLONE WITHOUT WRITING INTO IT. There are seven
+    checkouts on this machine plus two stray git directories, and four of the
+    checkouts have a live session in them. Reading another clone's `git fsck`
+    is read-only; writing a file into its working tree while it is mid-rebase
+    is not, and `git add -A` staging somebody else's file is the exact failure
+    push_retry.py exists to prevent. So the SUBJECT is the named repo and the
+    DESTINATION is always the clone this tool was run from -- the record's
+    filename and its `clone` field both carry the subject, so nothing is
+    ambiguous about which repo was measured.
     """
+    target = os.path.abspath(repo) if repo else REPO
+    if not os.path.isdir(os.path.join(target, '.git')) and \
+            not os.path.isfile(os.path.join(target, 'HEAD')):
+        return EXIT_COULD_NOT_RUN, '%s is not a git repository or bare git dir' % target
     try:
         p = subprocess.run([git_bin(), 'fsck', '--unreachable', '--no-progress'],
-                           cwd=REPO, capture_output=True, text=True)
+                           cwd=target, capture_output=True, text=True)
     except (OSError, ValueError) as e:
         return EXIT_COULD_NOT_RUN, 'git could not be invoked (%s)' % e
     if p.returncode != 0 and not p.stdout.strip():
@@ -363,7 +395,10 @@ def record_evidence(record_dir):
     # own, so the packfile's mtime is recorded separately and the record says
     # which it is rather than silently conflating them.
     mtimes = {}
-    objdir = os.path.join(REPO, '.git', 'objects')
+    objdir = os.path.join(target, '.git', 'objects')
+    if not os.path.isdir(objdir):
+        # A bare git dir (Documents/.git, ~/.git) has objects/ at its root.
+        objdir = os.path.join(target, 'objects')
     for entry in unreachable:
         oid = entry['oid']
         loose = os.path.join(objdir, oid[:2], oid[2:])
@@ -384,7 +419,9 @@ def record_evidence(record_dir):
     now = datetime.datetime.utcnow()
     rec = {
         'recorded_at': now.isoformat() + 'Z',
-        'clone': os.path.basename(REPO),
+        'clone': clone_label(target),
+        'subject_path': target,
+        'recorded_from': os.path.basename(REPO),
         'fsck_exit': p.returncode,
         'unreachable': unreachable,
         'unreachable_count': len(unreachable),
@@ -396,7 +433,7 @@ def record_evidence(record_dir):
     try:
         os.makedirs(record_dir, exist_ok=True)
         path = os.path.join(record_dir, '%s-%s.json'
-                            % (now.strftime('%Y-%m-%d'), os.path.basename(REPO)))
+                            % (now.strftime('%Y-%m-%d'), clone_label(target)))
         io.open(path, 'w', encoding='utf-8', newline='\n').write(
             json.dumps(rec, indent=1, sort_keys=True) + '\n')
     except OSError as e:
@@ -406,11 +443,11 @@ def record_evidence(record_dir):
 
 def require_record(record_dir):
     today = datetime.datetime.utcnow().strftime('%Y-%m-%d')
-    want = '%s-%s.json' % (today, os.path.basename(REPO))
+    want = '%s-%s.json' % (today, clone_label(REPO))
     path = os.path.join(record_dir, want)
     if not os.path.isfile(path):
         print('REFUSED -- no purge-evidence record for %s in %s'
-              % (os.path.basename(REPO), record_dir))
+              % (clone_label(REPO), record_dir))
         print('  expected: %s' % want)
         have = sorted(os.listdir(record_dir)) if os.path.isdir(record_dir) else []
         print('  present : %s' % (', '.join(have) if have else 'nothing'))
@@ -431,12 +468,16 @@ def main(argv):
     g.add_argument('--require-record', action='store_true')
     ap.add_argument('--root', default=REPO, help='--audit: tree to scan')
     ap.add_argument('--dir', default=DEFAULT_RECORD_DIR, help='where records live')
+    ap.add_argument('--repo', default=None,
+                    help='--record: measure ANOTHER clone or bare git dir. '
+                         'Read-only on the subject; the record is written '
+                         'here, named for the subject.')
     a = ap.parse_args(argv)
 
     if a.audit:
         return audit(a.root)
     if a.record:
-        rc, detail = record_evidence(a.dir)
+        rc, detail = record_evidence(a.dir, a.repo)
         if rc == EXIT_CLEAN:
             print('recorded: %s' % detail)
         else:

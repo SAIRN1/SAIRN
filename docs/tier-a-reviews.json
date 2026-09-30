@@ -4879,6 +4879,48 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-30T12:08:26Z",
+      "opened_at_sha": "5a32fa3c4de00a92662c094d36ef57429952cee1",
+      "resources": [
+        "sv_audit_log"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "docs/CRITICALITY-TIERS.md"
+      ],
+      "what": "SEVERITY HIGH, AND IT IS HIGH BECAUSE THE STRING IS CLINICAL. Four Betadine\n(Povidone-Iodine) rows in sairnvet.html's VET_DRUGS told a clinician a dilution\nthe cited source does not give. A vet reads this off the Drug Database screen and\nmixes it.\n\nFILES AND LINES\n  sairnvet.html:2043  -- VET_DRUGS, the single-line array. The eight rows at\n                         issue are the `\"class\":\"Topical Antiseptic\"` objects:\n                         four `Betadine (Povidone-Iodine)` (dog, cat, horse,\n                         other/exotic/zoo species) and four\n                         `Chlorhexidine Solution` on the same species.\n  tests/sairnvet_povidone_range.js -- the 20-arm control, all four sections.\n  landed in commit d537709f (fix) and 2a8d9a7c (generated docs).\n\nTHE SOURCE, quoted verbatim on the rows themselves and retrieved 2026-09-26:\n  Mickelson MA, Mans C, Colopy SA. Principles of Wound Management and Wound\n  Healing in the Exotic Pets. Vet Clin North Am Exot Anim Pract. 2016\n  Jan;19(1):33-53. doi:10.1016/j.cvex.2015.08.002. PMID 26611923.\n  \"If antiseptic solutions are chosen, 0.05% chlorhexidine and 0.5 or 1%\n   povidone-iodine would be considered appropriate.\"\n\nWHAT WAS WRONG, THREE THINGS, AND THE WORST WAS ON THE ROW THAT CITED THE SOURCE\n  1. other/exotic/zoo species read \"Dilute to 1% for lavage (1:10 from 10%\n     stock)\" -- a RANGE NARROWED TO ITS UPPER BOUND, presented as sourced. That\n     row was the only povidone row carrying the citation.\n  2. dog, cat and horse read \"Dilute 1:10 for lavage\" -- a RATIO, not a\n     concentration. It is 1% only if the stock is 10%, and povidone-iodine scrub\n     ships at 5%, 7.5% and 10%.\n  3. Two rows read \"generally safe across species at this dilution\". The quote\n     says the concentration \"would be considered appropriate\" in one\n     wound-management context. Safety across species is a stronger and different\n     claim.\n\nWHAT IT NOW SAYS\n  all four povidone: \"0.5-1% for lavage -- dilute from 10% stock\", doseUnit\n  \"0.5-1%\"; the citation on all eight Topical Antiseptic rows; the cross-species\n  safety wording replaced with \"the source gives this concentration with no\n  species restriction\".\n\nWHAT TO ATTACK\n\n(a) THE WORDING I CHOSE IS NOT THE SOURCE'S WORDING. The source says \"0.5 or 1%\";\n    I wrote \"0.5-1%\", which reads as a continuous range and the source gives two\n    discrete concentrations. I judged a range safer to act on than an either/or a\n    clinician might read as \"pick one, they are equivalent\", but that IS an\n    interpretation I added. Decide whether \"0.5% or 1%\" is the more honest\n    rendering. This is the point I would attack first.\n\n(b) \"dilute from 10% stock\" IS ARITHMETIC I SUPPLIED. The source says nothing\n    about stock concentration. It is true for 10% povidone-iodine and it is the\n    common presentation, but it is my addition and the citation does not cover\n    it. Arm B2 checks the CONCENTRATION against the quote and does not check this\n    clause against anything.\n\n(c) THE CHLORHEXIDINE ROWS NOW CARRY A CITATION THEY DID NOT ASK FOR. Three of\n    the four had no reference before. I added the same Mickelson quote because it\n    covers 0.05% chlorhexidine verbatim and the same species-neutrality argument\n    applies. Check that this is not citation inflation -- a row that was silent\n    about its basis now asserts one, and if the quote is the wrong basis for\n    dog/cat/horse chlorhexidine specifically, I have made three rows worse.\n\n(d) THE SOURCE IS AN EXOTIC-PETS WOUND-MANAGEMENT REVIEW AND I APPLIED IT TO DOG,\n    CAT AND HORSE. My argument is that the sentence places no species restriction\n    on the concentration. The counter-argument is that the ARTICLE's scope does,\n    and a sentence inside a paper about exotics may be assuming that population\n    even where it does not say so. This is the judgement the whole change rests\n    on and one person made it.\n\n(e) ONLY 21 OF 485 ROWS CARRY ANY REFERENCE. The other 464 have nothing a static\n    arm can read a dose against, and the existing sourcing-honesty suite is by\n    design silent about a row that makes no claim. So this fix is correct and its\n    coverage is 8 rows. Do not read it as a formulary review.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-09-30T12:08:26Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-30T12:22:31Z",
+      "opened_at_sha": "3f4da4a78d24d96a2c24bbf03540622bf3cc5b2c",
+      "resources": [
+        "sf_accounts",
+        "sf_sessions"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tests/run_citation_line_drift_probe.py",
+        "tools/citation_line_drift_check.py"
+      ],
+      "what": "TOOLING AND A CONTROL ONLY. NO CODE SERVING sf_accounts OR sf_sessions WAS\nCHANGED. Both names appear because the new checker's DOCSTRING and its probe quote\nthe two declaration blocks verbatim -- `K_ACCOUNTS='sf_accounts',\nK_SESSIONS='sf_sessions', ...` is the literal line that caused the defect, and\nquoting it is the explanation. PR 1.2: grep cannot tell code from text that\ndescribes code. Recorded rather than argued with.\n\nWHAT CHANGED\n  tools/citation_line_drift_check.py       NEW, 213 lines, read-only\n  tests/run_citation_line_drift_probe.py   NEW, 13 arms\n  tools/tooling_inventory.py               one PURPOSES entry\n  the three generated documents            regenerated\n\nWHAT IT DOES. For each `:NNNN` citation on a prefixed row of\ndocs/CRITICALITY-TIERS.md, decide whether the cited line is near a real WRITE site\nfor that resource. It resolves resource -> `K_FOO='res'` constant -> `st(K_FOO,\n...)` call sites, and EXCLUDES any line naming two or more prefixed resources.\nThree verdicts: SOUND, DRIFTED with a signed correction, INCONCLUSIVE.\n\nREAL RUN: 41 citations over 28 sf_ resources -- 8 SOUND, 33 DRIFTED, 0\nINCONCLUSIVE. Nothing was written to any document; hank holds\ndocs/CRITICALITY-TIERS.md.\n\nWHAT TO ATTACK\n\n(a) THE DECLARATION-BLOCK RULE IS \"TWO OR MORE NAMES ON ONE LINE\" AND THAT IS MY\n    INVENTION. It is derived rather than hardcoded, which I argued is better than\n    a line range that goes stale. But it will exclude a legitimate line that\n    happens to mention two resources -- a comment contrasting them, or a genuine\n    two-resource write. On sairnfreedom it reported spans 1919-1925, 1927-1928,\n    2340-2344, 2414, 4435-4438, 5453-5454, 6326-6329 and 7162; the last five are\n    SHORT and I did not individually confirm that each is really a declaration\n    rather than a use. That is the weakest point and it is where I would start.\n\n(b) `st(K_FOO, ...)` IS THE ONLY WRITE SHAPE IT KNOWS. A write through a computed\n    constant, an alias, or a helper that wraps st() is invisible, and those are\n    reported INCONCLUSIVE rather than missed silently -- but on this app the\n    INCONCLUSIVE count was ZERO, which could mean the mapping is complete or\n    could mean the shape is over-fitted to what I happened to look at. Check\n    whether any sf_ resource is written some other way.\n\n(c) THE WINDOW IS 40 LINES AND I INHERITED THAT NUMBER. It came from the\n    throwaway detector and I did not re-derive it. A citation 41 lines from its\n    write site is DRIFTED and one 39 lines away is SOUND, and nothing measured\n    which distance actually corresponds to \"still points at the right thing\".\n    Arm B3 proves the window is honoured; nothing proves 40 is the right value.\n\n(d) I VERIFIED THE 33 CORRECTIONS WITH A RULE VERY CLOSE TO THE ONE THAT PRODUCED\n    THEM. Arm E2 re-reads each target line and requires it to match\n    `st(K_..., ...)` for that resource. That is a genuine re-read of the file\n    rather than trusting the tool's output, but it is the SAME PREDICATE, so it\n    cannot catch the case where the predicate itself is the wrong notion of a\n    write site. A structurally different method -- reading the panel the resource\n    renders in, say -- would be independent and I did not do it.\n\n(e) 8 OF 41 WERE ALREADY SOUND AND MY EARLIER REPORT SAID 40 WERE WRONG. That\n    number is now retracted in both directions: it missed the 8 and it counted a\n    41st. Treat any count I gave for this batch before today as void.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-30T12:22:31Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
