@@ -499,6 +499,22 @@
         "register_citation_check.py",
         "run_citation_class_mutation_test.py"
       ]
+    },
+    {
+      "id": "hover-1790771222",
+      "session": "hover",
+      "subject": "hover",
+      "task": "nine-item queue 3: independent 15-row content-first re-derivation; five anchor-only hand resolutions; blob-prefixed citation class fix; per-citation quoted-claim marker attribution; 20 wrong plus 43 ts-wrong row adjudication; bare-line register citation extension; 46 apply-ready register replacement texts; append-time gate CLI drive; self-verifying repoint generator check.\n\nFILES: citation_class_check.py register_citation_check.py moved_since_repoint_list.txt regenerate_repoint_list.py",
+      "claimed_at": "2026-09-30T12:27:02Z",
+      "claimed_at_epoch": 1790771222.1269207,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "citation_class_check.py",
+        "moved_since_repoint_list.txt",
+        "regenerate_repoint_list.py",
+        "register_citation_check.py"
+      ]
     }
   ],
   "refusals": [
