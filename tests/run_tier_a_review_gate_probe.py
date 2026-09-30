@@ -197,6 +197,57 @@ else:
           'unrecognised: %s -- decide whether it can serve a Tier A resource, '
           'then add it to this arm or to SKIP_REASONS with a reason' % _unreasoned)
 
+# ── 2c. THE HOVER AUDITOR'S OWN TOOLING (H2 seq 425, landed 2026-09-30) ─────
+# The gate tripped TWICE in one session on a resource NAME appearing as a bare
+# token inside auditor tooling -- "leg_insurance" in hover_citation_linter.py's
+# fixtures (seq 416), "quotes" in stale_basis_check.py's prose (seq 422). Each
+# forced an obligation the auditor STRUCTURALLY CANNOT COMMIT, because
+# hover_auditor_scope_gate.py refuses docs/tier-a-reviews.json from that clone.
+# A gate that demands a record its subject is forbidden to write is not a gate,
+# it is a deadlock, and it fired twice before anybody named it.
+#
+# THE GATE'S OWN HEADER ALREADY NAMED THIS DEAD END AND LEFT IT OPEN:
+# strip_diff_noise() blanks PROSE strings (3+ words) and keeps SHORT tokens,
+# because a resource token in real serving code IS a short literal ('sb_ts').
+# So a fixture token is "character-for-character what a handler writes" -- the
+# gate's own words -- and no string analysis can separate them.
+#
+# SO THE PREDICATE IS ABOUT WHAT THE FILE **IS**, which is the axis every other
+# SKIP_REASONS clause already uses. The auditor's core rule FORBIDS it writing
+# platform code, so a resource name in its rotation pool, its fixtures or a
+# regex example is a MENTION and never a handler -- the same "naming is not
+# serving" logic as docs/ and sql/.
+print('\n2c. the hover auditor\'s own tooling names resources it cannot serve')
+AUD = '.claude/skills/sairn-hover-auditor/tools-hover2/hover_x.py'
+check('auditor tooling is SKIPPED with a reason -- a Tier A name there is a '
+      'mention, not a handler, and the auditor cannot commit the obligation '
+      'the gate would demand',
+      isinstance(g.skip_reason(AUD), str), g.skip_reason(AUD))
+check('...the H1 tool tree too, not just tools-hover2',
+      isinstance(g.skip_reason(
+          '.claude/skills/sairn-hover-auditor/tools/hover_log.py'), str))
+_aud = g.touched_tier_a(diff_for(AUD, "POOL = ['sc_claims', 'sc_ar']"), RES)
+check('...so a rotation-pool list naming two Tier A resources attributes '
+      'NOTHING', _aud == {}, _aud)
+
+# ── THE CONTROLS. This exclusion is a whole DIRECTORY TREE, which is the
+# ── widest clause in SKIP_REASONS, so its blast radius is fenced in three
+# ── directions rather than one.
+_ctrl = g.touched_tier_a(diff_for('api/sd-data.js', "if (resource === 'sc_claims') {"), RES)
+check('CONTROL: a real handler naming the same resource STILL counts -- the '
+      'exclusion is about the auditor tree, not about the word',
+      _ctrl == {'sc_claims': ['api/sd-data.js']}, _ctrl)
+_near = g.touched_tier_a(diff_for('.claude/skills/sairn-other/tool.py', "'sc_claims'"), RES)
+check('CONTROL: a SIBLING skill directory is NOT excluded by accident -- the '
+      'clause is anchored on the auditor\'s path, not on .claude/skills/',
+      _near == {'sc_claims': ['.claude/skills/sairn-other/tool.py']}, _near)
+_claims = g.touched_tier_a(
+    diff_for('.claude/skills/sairn-hover-auditor-notreally/x.py', "'sc_claims'"), RES)
+check('CONTROL: a directory whose name merely STARTS WITH the auditor\'s is '
+      'not the auditor -- the prefix carries its trailing slash',
+      _claims == {'sc_claims': ['.claude/skills/sairn-hover-auditor-notreally/x.py']},
+      _claims)
+
 # THE OTHER DIRECTION, and it is the one that matters. Excluding prose must not
 # start excluding code: a file whose NAME merely contains ".md" is not markdown,
 # and a real handler must still count.

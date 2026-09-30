@@ -29,6 +29,27 @@ import tempfile
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
 TOOL = os.path.join(REPO, 'tools', 'dead_rule_sweep.py')
+# ── WHAT SECTION A MUTATES: A COPY, OUTSIDE THIS CLONE ─────────────────────
+# Section A has to break the sweep's criteria lock to prove the lock is
+# load-bearing, and until 2026-09-30 it broke the TRACKED file and put it back
+# in a `finally` -- the same defect the sweep itself was fixed for that morning
+# (80c5984c), one layer up, inside its own control. A restore reached only on a
+# normal exit is not isolation.
+#
+# A SCRATCH TREE RATHER THAN A LONE FILE: the sweep computes
+# REPO = dirname(dirname(__file__)) and imports checker_kit from REPO/tools, so
+# a copy dropped anywhere else cannot import and section A would be measuring an
+# ImportError instead of the lock. tools/ is reproduced with the two modules the
+# --fixtures path actually needs, and nothing else.
+_SBX = tempfile.mkdtemp(prefix='drs-sabotage-')
+os.makedirs(os.path.join(_SBX, 'tools'), exist_ok=True)
+for _m in ('dead_rule_sweep.py', 'checker_kit.py'):
+    _s = os.path.join(REPO, 'tools', _m)
+    if os.path.isfile(_s):
+        io.open(os.path.join(_SBX, 'tools', _m), 'w', encoding='utf-8',
+                newline='').write(io.open(_s, encoding='utf-8',
+                                          newline='').read())
+SABOTAGE_TOOL = os.path.join(_SBX, 'tools', 'dead_rule_sweep.py')
 CONTROLS_FOR = ['dead_rule_sweep.py']
 
 import dead_rule_sweep as D                                      # noqa: E402
@@ -52,6 +73,16 @@ def section(t):
     print('\n' + t)
 
 
+def run_copy(*args):
+    """The sabotage copy, in its own scratch tree. Never this clone."""
+    r = subprocess.run([sys.executable, SABOTAGE_TOOL] + list(args), cwd=_SBX,
+                       capture_output=True, text=True, encoding='utf-8',
+                       errors='replace',
+                       env=dict(os.environ, PYTHONIOENCODING='utf-8',
+                                PYTHONUTF8='1'))
+    return r.returncode, (r.stdout or '') + (r.stderr or '')
+
+
 def run(*args):
     r = subprocess.run([sys.executable, TOOL] + list(args), cwd=REPO,
                        capture_output=True, text=True, encoding='utf-8',
@@ -63,27 +94,88 @@ def run(*args):
 
 print('DEAD RULE SWEEP -- the control for the sweep')
 
+# ── G. THIS FILE MUST NOT DO THE THING IT EXISTS TO CATCH ──────────────────
+# Section A used to sabotage tools/dead_rule_sweep.py IN THIS CLONE and restore
+# it in a `finally` -- the defect the sweep itself was fixed for on 2026-09-30
+# (80c5984c), one layer up, inside the control for it. Named in that fix commit
+# and in the defect register's recurrence_open, and fixed here.
+#
+# THE ARM IS STRUCTURAL, NOT BEHAVIOURAL, and that is the point. A behavioural
+# arm can only observe a run that FINISHED, and a `finally` always runs on those
+# -- which is exactly why D5 stayed green for as long as the defect existed. The
+# only paths that expose it are the ones no assertion inside the process can
+# reach: SIGKILL, a harness timeout, a closed laptop. So the check is on the
+# TARGET rather than on the outcome: nothing in this file may open a tracked
+# file for writing, whatever happens afterwards.
+section('G. this control does not write the clone it is controlling')
+
+_self_src = io.open(os.path.abspath(__file__), encoding='utf-8',
+                    newline='').read()
+check('G1. SABOTAGE_TOOL is OUTSIDE this clone -- section A mutates a copy, so '
+      'there is no restore to fail to reach',
+      not os.path.abspath(SABOTAGE_TOOL).startswith(os.path.abspath(REPO)
+                                                    + os.sep),
+      'SABOTAGE_TOOL=%s is under REPO=%s' % (SABOTAGE_TOOL, REPO))
+# THE NEEDLE IS ASSEMBLED, NOT SPELLED, AND THE FIRST VERSION WAS WRONG BECAUSE
+# IT WAS SPELLED. A grep arm that writes its own search string as a literal
+# matches ITSELF and stays red forever after the defect is fixed -- which is
+# what happened here: G2 failed on its own source once the real write was gone.
+# Building it from pieces keeps the arm about the rest of the file.
+_WRITE_SITES = tuple('open(TOOL,%s%sw%s' % (_sp, _q, _q)
+                     for _q in (chr(39), chr(34))
+                     for _sp in ('', ' '))
+check('G2. no write to the tracked tool appears in this file at all -- the '
+      'grep is the arm, because a write guarded by a `finally` reads as safe '
+      'and is only safe on the paths the interpreter reaches',
+      not [n for n in _WRITE_SITES if n in _self_src],
+      'this file still opens the tracked tool for writing: %s'
+      % [n for n in _WRITE_SITES if n in _self_src])
+check('G2b. ...and the needles really would match if a write came back -- a '
+      'grep arm that cannot find its own subject is decoration. Driven '
+      'against a synthesised line, both quote styles and both spacings',
+      all(any(n in line for n in _WRITE_SITES)
+          for line in ('%s%s%sw%s).write(x)' % ('io.', 'open(TOOL,', q, q)
+                       for q in (chr(39), chr(34)))),
+      _WRITE_SITES)
+check('G3. ...and the tracked tool is still READ, so G2 was satisfied by '
+      'moving the write rather than by deleting the subject',
+      'io.open(TOOL, encoding=' in _self_src)
+
 # ── A. THE CRITERIA LOCK GATES THE RUN ─────────────────────────────────────
 section('A. break the rewrite and the sweep must REFUSE, not report clean')
 rc, out = run('--fixtures')
 check('A1. the lock passes on the shipped criteria', rc == 0
       and 'fixtures classify correctly' in out, (rc, out[-300:]))
 
+# THE COPY IS THE SUBJECT, and it is verified to BE a copy before it is broken.
+# A sabotage applied to an empty or missing file would exit 2 for the wrong
+# reason and read exactly like A2 passing.
 _orig = io.open(TOOL, encoding='utf-8', newline='').read()
+check('A1b. the scratch copy is byte-identical to the tracked tool, so A2 '
+      'breaks the REAL criteria lock and not some other file',
+      io.open(SABOTAGE_TOOL, encoding='utf-8', newline='').read() == _orig,
+      SABOTAGE_TOOL)
+rc, out = run_copy('--fixtures')
+check('A1c. ...and the COPY passes the lock before anything is done to it, so '
+      'A2 measures the sabotage rather than the copying',
+      rc == 0 and 'fixtures classify correctly' in out, (rc, out[-300:]))
+
 _sab = _orig.replace('NEVER = "(?!x)x"', 'NEVER = "(?!x)x"  # noqa\nNEVER = ""', 1)
 check('A2a. THE SABOTAGE APPLIED -- without this A2 proves nothing',
       _sab != _orig, 'the NEVER anchor moved')
-try:
-    io.open(TOOL, 'w', encoding='utf-8', newline='').write(_sab)
-    rc, out = run('--fixtures')
-    check('A2. ...and with the never-matching pattern emptied the lock FAILS '
-          'and the sweep exits 2. A sweep whose own rewrite is broken reports '
-          'every rule as dead, which is the loudest possible wrong answer',
-          rc == 2 and 'CRITERIA LOCK FAILED' in out, (rc, out[-400:]))
-finally:
-    io.open(TOOL, 'w', encoding='utf-8', newline='').write(_orig)
+io.open(SABOTAGE_TOOL, 'w', encoding='utf-8', newline='').write(_sab)
+rc, out = run_copy('--fixtures')
+check('A2. ...and with the never-matching pattern emptied the lock FAILS '
+      'and the sweep exits 2. A sweep whose own rewrite is broken reports '
+      'every rule as dead, which is the loudest possible wrong answer',
+      rc == 2 and 'CRITERIA LOCK FAILED' in out, (rc, out[-400:]))
+# NO `finally` AND NO RESTORE, and the absence IS the fix. There is nothing to
+# put back: the tracked file was never opened for writing, so there is no window
+# in which a kill leaves a neutralised tool behind in a clone four sessions push
+# from.
 rc, out = run('--fixtures')
-check('A3. THE RESTORE WORKED', rc == 0, (rc, out[-200:]))
+check('A3. THE TRACKED TOOL IS UNTOUCHED THROUGHOUT -- it still passes its own '
+      'lock, and it never needed restoring', rc == 0, (rc, out[-200:]))
 
 # ── B. THE REWRITE IS REAL, AND IT PARSES ──────────────────────────────────
 section('B. the neutralisation applies, parses, and can never match')
@@ -374,6 +466,11 @@ check('F9b. ...and leaves NO drs-sandbox- worktree registered afterwards, '
       'including the one F3 killed above -- otherwise every run of this '
       'control adds one to the clone forever',
       not _sandboxes(), _sandboxes())
+
+# The sabotage scratch tree, removed. Outside this clone either way, so a
+# leftover is untidy rather than dangerous -- which is the whole trade section G
+# makes: debris in temp instead of a neutralised rule in a shared repo.
+shutil.rmtree(_SBX, ignore_errors=True)
 
 print('\n%s -- %d passed, %d failed' % ('FAIL' if _fail else 'ALL ARMS PASS',
                                         _pass, _fail))
