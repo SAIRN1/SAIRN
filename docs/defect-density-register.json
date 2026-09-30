@@ -19775,6 +19775,68 @@
       "recurrence_open": "Nothing prevents the next server-side rule change from landing without the client copy, and nothing makes the case list grow when a rule is added. The parity arm now has a control proving it can see a divergence, which is not the same as proving it can see EVERY divergence -- a rule added with no matching case is still invisible to it."
     },
     {
+      "commit": "4dc17346ccb5",
+      "date": "2026-09-29",
+      "subject": "fix(sync): a landed slab write was reported as LOST, because the guard read the payload instead of the envelope",
+      "files": [
+        "stonedesk.html",
+        "tests/customer_delete_does_not_resurrect.js",
+        "tests/public_catalog_no_false_empty.js",
+        "tests/quote_request_soft_delete_panel.js",
+        "tests/refusal_not_empty.js",
+        "tests/stonedesk_sync_null_blob.js",
+        "tests/stonedesk_write_result_consumption.js"
+      ],
+      "lines_added": 519,
+      "lines_removed": 24,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "slabSyncOne and sdLineageSyncOne reported a LANDED write as lost. Both decided\nwhether the write reached the server by testing sdData()'s return value against\nnull, and that value is the unwrapped `data` key. api/sd-data.js answers\n`data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload` on 69 write\nbranches -- the guard is on the ROW existing, not on its jsonb blob being\nnon-null -- so a stored row whose `data` column is null comes back as 200 /\nok:true / data:null, sdData unwraps it to null, and both functions fall through\nto `return false` and warn that the yard copy and the server copy now disagree\nabout a record that is sitting on the server. The fix reads the envelope instead:\n_sdWriteOk[resource] is set false on sdData's first line and true only after the\nj.ok test passes, and sdWriteLanded(resource) returns it with a strict === true\nso a call that never happened is false rather than undefined.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "f764f90eb99e",
+        "date": "2026-09-26",
+        "subject": "fix(stonedesk): the two unread-result writes -- and the fix for the third was itself broken in three places",
+        "lag_days": 3
+      },
+      "contributing_factors": [
+        {
+          "factor": "The soundness argument was written down and never checked against the file it described. hank's 2026-09-26 review recorded that the boolean was safe because the slabs write branch answers `data: rows[0].data || payload`, and sdLineageSyncOne's own header made the same claim about the three lineage writes. Neither matched api/sd-data.js, which answers a row-exists ternary on all of them. A reviewer and an author independently asserted the same wrong fact about another file, which is what a cross-file claim with no mechanical check costs.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Arms C4 and C5 re-read api/sd-data.js on every run: C4 asserts the two EXEMPT resources still answer through flat(), and C5 asserts the row-exists ternary is still present, so the day the endpoint is fixed the arm goes red and prompts retiring the client workaround instead of quietly outliving it."
+        },
+        {
+          "factor": "A nullable jsonb column and a response shape that folds null into the failure signal. `data` is `jsonb not null default '{}'` on newer tables but nullable on the older ones, and the endpoint's write reply uses the same `rows[0] ? rows[0].data : payload` idiom 69 times, so one absent blob is indistinguishable from a refused write for every caller that tests the unwrapped value.",
+          "kind": "technical",
+          "action_status": "planned",
+          "action": "The endpoint half is api/sd-data.js, which is fourth's file and is not touched here. The change text -- coalesce the blob rather than guard the row -- is in the review verdict and in this session's report for fourth to land."
+        },
+        {
+          "factor": "The first version of the control failed for a reason that had nothing to do with the defect and would have been reported as a successful red. The sandbox stubbed sdLicKey while sdData calls sdLicenseKey, so sdData threw a ReferenceError that slabSyncOne's own catch converted into the same `false` the defect produces. A harness that can forge the red it is measuring is not a control.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Arm A0 runs first and asserts the transport was reached once and the 200 body parsed once before any other arm is allowed to mean anything; A1b was moved off sdDataFailed onto console.warn, the channel the defect actually uses."
+        },
+        {
+          "factor": "Five other suites hand-listed this file's `var _sd* = {};` declarations as a mirror, and two of them carry a comment saying a hand-listed mirror goes stale -- one records that five suites broke this way in one afternoon. Adding _sdWriteOk broke them for the sixth time, and invisibly: the ReferenceError lands inside sdData's own catch, so every arm fails for a reason about the sandbox rather than the transport.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "All five now derive the list with a regex over the page plus a floor assertion that refuses if fewer than four state maps are found, so a changed declaration style fails loudly instead of dropping maps silently."
+        }
+      ],
+      "recurrence_open": "Nothing on the client can tell, from a response, whether an empty `data` means\nan empty record or a failure -- the endpoint's 69 write branches all answer the\nsame ambiguous shape, and the two client callers that remain safe are safe only\nbecause their branches happen to route through flat(). Until the endpoint half\nlands, the next caller written the obvious way reintroduces this, and arm C2 is\nthe only thing that would catch it."
+    },
+    {
       "commit": "50d16fd4ac2a",
       "date": "2026-09-29",
       "subject": "fix(push): the tool that exists to replace `git add -A` was using it",
@@ -20652,68 +20714,6 @@
       "recurrence_open": "The sweep named in factor 4 is not run. Every other read in this file that decides on blob truthiness instead of row existence still has the same shape, and only this one branch was fixed. CORRECTED 2026-09-30, SEVERITY high -> low, BY THE SWEEP THIS RECORD ASKED FOR. Every `data jsonb` column declared in sql/ is NOT NULL -- 353 of 353 -- so the database cannot store the input this record is about. 398 resources were driven through the real api/sd-data.js read with data: null and ZERO returned 500 or threw. The fix is defensive code on a state the declared schema forbids, not a live product defect, and recording it as HIGH overstated it. THE DEPLOYED NULLABILITY IS NOT KNOWN from anything in this repo: db/schema_snapshot.json carries column names only and sql/schema_snapshot_query.sql does not select is_nullable, so this correction rests on the DECLARED schema, which is a weaker thing than the live one and is stated that way rather than as a clean bill."
     },
     {
-      "commit": "4dc17346ccb5",
-      "date": "2026-09-29",
-      "subject": "fix(sync): a landed slab write was reported as LOST, because the guard read the payload instead of the envelope",
-      "files": [
-        "stonedesk.html",
-        "tests/customer_delete_does_not_resurrect.js",
-        "tests/public_catalog_no_false_empty.js",
-        "tests/quote_request_soft_delete_panel.js",
-        "tests/refusal_not_empty.js",
-        "tests/stonedesk_sync_null_blob.js",
-        "tests/stonedesk_write_result_consumption.js"
-      ],
-      "lines_added": 519,
-      "lines_removed": 24,
-      "app": "stonedesk",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "slabSyncOne and sdLineageSyncOne reported a LANDED write as lost. Both decided\nwhether the write reached the server by testing sdData()'s return value against\nnull, and that value is the unwrapped `data` key. api/sd-data.js answers\n`data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload` on 69 write\nbranches -- the guard is on the ROW existing, not on its jsonb blob being\nnon-null -- so a stored row whose `data` column is null comes back as 200 /\nok:true / data:null, sdData unwraps it to null, and both functions fall through\nto `return false` and warn that the yard copy and the server copy now disagree\nabout a record that is sitting on the server. The fix reads the envelope instead:\n_sdWriteOk[resource] is set false on sdData's first line and true only after the\nj.ok test passes, and sdWriteLanded(resource) returns it with a strict === true\nso a call that never happened is false rather than undefined.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "f764f90eb99e",
-        "date": "2026-09-26",
-        "subject": "fix(stonedesk): the two unread-result writes -- and the fix for the third was itself broken in three places",
-        "lag_days": 3
-      },
-      "contributing_factors": [
-        {
-          "factor": "The soundness argument was written down and never checked against the file it described. hank's 2026-09-26 review recorded that the boolean was safe because the slabs write branch answers `data: rows[0].data || payload`, and sdLineageSyncOne's own header made the same claim about the three lineage writes. Neither matched api/sd-data.js, which answers a row-exists ternary on all of them. A reviewer and an author independently asserted the same wrong fact about another file, which is what a cross-file claim with no mechanical check costs.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Arms C4 and C5 re-read api/sd-data.js on every run: C4 asserts the two EXEMPT resources still answer through flat(), and C5 asserts the row-exists ternary is still present, so the day the endpoint is fixed the arm goes red and prompts retiring the client workaround instead of quietly outliving it."
-        },
-        {
-          "factor": "A nullable jsonb column and a response shape that folds null into the failure signal. `data` is `jsonb not null default '{}'` on newer tables but nullable on the older ones, and the endpoint's write reply uses the same `rows[0] ? rows[0].data : payload` idiom 69 times, so one absent blob is indistinguishable from a refused write for every caller that tests the unwrapped value.",
-          "kind": "technical",
-          "action_status": "planned",
-          "action": "The endpoint half is api/sd-data.js, which is fourth's file and is not touched here. The change text -- coalesce the blob rather than guard the row -- is in the review verdict and in this session's report for fourth to land."
-        },
-        {
-          "factor": "The first version of the control failed for a reason that had nothing to do with the defect and would have been reported as a successful red. The sandbox stubbed sdLicKey while sdData calls sdLicenseKey, so sdData threw a ReferenceError that slabSyncOne's own catch converted into the same `false` the defect produces. A harness that can forge the red it is measuring is not a control.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Arm A0 runs first and asserts the transport was reached once and the 200 body parsed once before any other arm is allowed to mean anything; A1b was moved off sdDataFailed onto console.warn, the channel the defect actually uses."
-        },
-        {
-          "factor": "Five other suites hand-listed this file's `var _sd* = {};` declarations as a mirror, and two of them carry a comment saying a hand-listed mirror goes stale -- one records that five suites broke this way in one afternoon. Adding _sdWriteOk broke them for the sixth time, and invisibly: the ReferenceError lands inside sdData's own catch, so every arm fails for a reason about the sandbox rather than the transport.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "All five now derive the list with a regex over the page plus a floor assertion that refuses if fewer than four state maps are found, so a changed declaration style fails loudly instead of dropping maps silently."
-        }
-      ],
-      "recurrence_open": "Nothing on the client can tell, from a response, whether an empty `data` means\nan empty record or a failure -- the endpoint's 69 write branches all answer the\nsame ambiguous shape, and the two client callers that remain safe are safe only\nbecause their branches happen to route through flat(). Until the endpoint half\nlands, the next caller written the obvious way reintroduces this, and arm C2 is\nthe only thing that would catch it."
-    },
-    {
       "commit": "bc89bf345b3c",
       "date": "2026-09-29",
       "subject": "fix(sairnbiz): a typed overtime threshold of 0 was swallowed before validation could see it",
@@ -21111,6 +21111,60 @@
         }
       ],
       "recurrence_open": "Nothing makes importing the shared lookup easier than writing a new one, so a fourth copy is available to anybody in a hurry. The sweep that would catch it lives in a control that is not in the recurring report-only set."
+    },
+    {
+      "commit": "d537709f63e4",
+      "date": "2026-09-30",
+      "subject": "fix(sairnvet): the povidone-iodine rows stated a concentration the cited source does not give",
+      "files": [
+        "sairnvet.html",
+        "tests/sairnvet_povidone_range.js"
+      ],
+      "lines_added": 244,
+      "lines_removed": 1,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "Four Betadine (Povidone-Iodine) rows in sairnvet.html's VET_DRUGS stated a\nconcentration the cited source does not give. Mickelson 2016 (PMID 26611923),\nquoted verbatim on the row itself, says \"0.05% chlorhexidine and 0.5 or 1%\npovidone-iodine would be considered appropriate\". The exotic/zoo row read \"Dilute\nto 1% for lavage (1:10 from 10% stock)\" -- the range narrowed to its upper bound,\non the one row that carried the citation -- and dog, cat and horse read \"Dilute\n1:10 for lavage\", a ratio that is 1% only if the stock is 10%, which a clinician\nholding a 5% or 7.5% scrub cannot rely on. Two rows also read \"generally safe\nacross species at this dilution\", a safety claim the quote does not make; it says\nthe concentration would be \"considered appropriate\" in one wound-management\ncontext. All four povidone rows now read 0.5-1%, the citation is on all eight\nTopical Antiseptic rows, and the unsupported safety wording is replaced with what\nthe quote supports.",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "requirement",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The four rows predate the sourcing pass and git log -S on the dose strings returns the bulk VET_DRUGS seed commit, which introduced 485 rows at once -- that is the commit the string first appears in, not a commit that made a decision about this figure. The citation was added later, in the 2026-09-26 sourcing pass, and that is where the narrowing to 1% entered; attributing the whole defect to either commit alone would be wrong."
+      },
+      "contributing_factors": [
+        {
+          "factor": "The narrowing happened DURING the act of sourcing. The row that disagreed with the source most specifically was the row that had just been given the citation -- somebody read a range and wrote down one end of it while adding the reference that contradicts it. Adding a citation felt like the verification step, so nothing after it compared the two.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Arm B2 asserts the verbatim quote STORED ON THE ROW still contains both concentrations the rows state, so the dose and its evidence are checked against each other on every run rather than at the moment the citation is pasted."
+        },
+        {
+          "factor": "A ratio and a concentration were treated as the same instruction. `1:10` is only 1% at a 10% stock, and povidone-iodine scrub ships at 5%, 7.5% and 10%. The doseUnit field carried \"1:10\" so even the structured half of the row recorded the ratio rather than the figure the source gives.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "doseUnit is now \"0.5-1%\" on all four rows, and the arm's predicate rejects a bare ratio as a statement of concentration -- the known-bad arm drives that with the exact string the table shipped."
+        },
+        {
+          "factor": "Three rows carried no citation at all while a fourth carried one, so the file's own honesty suite (sairnvet_formulary_source_honesty.js) could see nothing wrong with the three: its subject is whether the app CLAIMS a verification it did not do, and an uncited row makes no claim. A dose that is wrong and silent about its basis passes a sourcing-honesty check.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The citation is on all eight rows, and this file's B1 arm requires the PMID and the verbatim quote on every Topical Antiseptic row rather than only on the ones that volunteer a reference."
+        },
+        {
+          "factor": "The clinical review obligation could not be recorded with the fix. docs/tier-a-reviews.json is held by another session, so the HIGH-severity non-author review for a clinical dose string is delivered as report text rather than as a ledger row, which is weaker: a row is queued and chased, and text is read once.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "The obligation text and the verbatim claim refusal are in this session's report for the ledger holder to land."
+        }
+      ],
+      "recurrence_open": "21 of 485 rows carry any reference at all, so for the other 464 there is nothing\na static arm can read a dose against. This control covers the 8 Topical\nAntiseptic rows; the same defect in an uncited row would be invisible, and the\nexisting sourcing-honesty suite is by design silent about rows that make no\nclaim."
     }
   ],
   "started": "2026-09-09",
