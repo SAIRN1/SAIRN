@@ -2918,8 +2918,8 @@
       "task": "tools/condition_coverage.py tests/run_condition_coverage_sandbox_probe.py",
       "claimed_at": "2026-09-30T12:51:23Z",
       "claimed_at_epoch": 1790772683.6776378,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T15:29:26Z",
       "files": null
     },
     {
@@ -2929,8 +2929,8 @@
       "task": "tools/nhi_register.py tests/run_nhi_selftest_scope_probe.py",
       "claimed_at": "2026-09-30T12:56:40Z",
       "claimed_at_epoch": 1790773000.5326395,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T15:29:56Z",
       "files": null
     },
     {
@@ -2940,8 +2940,8 @@
       "task": "tests/ai_analysis_logs_delete.js tests/ai_shortcuts_reach_the_chat.js tests/quote_builder_delete_does_not_resurrect.js",
       "claimed_at": "2026-09-30T13:11:45Z",
       "claimed_at_epoch": 1790773905.751596,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T15:30:27Z",
       "files": null
     },
     {
@@ -2951,8 +2951,8 @@
       "task": "tools/tool_owner_header_check.py tests/run_tool_owner_header_probe.py",
       "claimed_at": "2026-09-30T13:39:16Z",
       "claimed_at_epoch": 1790775556.5052207,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T15:30:56Z",
       "files": null
     },
     {
