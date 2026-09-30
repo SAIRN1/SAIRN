@@ -19775,6 +19775,49 @@
       "recurrence_open": "Nothing prevents the next server-side rule change from landing without the client copy, and nothing makes the case list grow when a rule is added. The parity arm now has a control proving it can see a divergence, which is not the same as proving it can see EVERY divergence -- a rule added with no matching case is still invisible to it."
     },
     {
+      "commit": "4d5f3deb557d",
+      "date": "2026-09-29",
+      "subject": "fix(hover2): hover_log.py live selftest arm disclosed per the closed-system convention; the checker's def-line-as-call-site false positive fixed with a 12th fixture (failed first against unfixed code); hover_editor_review.py gains the --selftest alias -- 0 UNDISCLOSED-live, 26/26 tools answer --selftest",
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools-hover2/hover_editor_review.py",
+        ".claude/skills/sairn-hover-auditor/tools-hover2/hover_log.py",
+        ".claude/skills/sairn-hover-auditor/tools-hover2/sabotage_closed_system_check.py"
+      ],
+      "lines_added": 51,
+      "lines_removed": 13,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "hover-audit",
+      "summary": "hover2 auditor tooling, two defects in one commit, both found by the closed-system checker's own report this session: (1) hover_log.py's seq-273 CLI-integration selftest arm reads the REAL self-log (line-count before/after a must-refuse append) with no disclosure marker, reported UNDISCLOSED_LIVE by sabotage_closed_system_check.py -- the arm was honest but undisclosed, violating the checker's own convention; disclosure comment added in the arm's own words. (2) The checker itself had a def-line-as-call-site false positive: a selftest whose own body touches LOG_PATH lands in indirect_callees and its own 'def selftest():' line matches the zero-arg call regex -- fixture FIXTURE_SELF_NAMED_DEF confirmed FAILING against unfixed code (1 of 12) before the one-guard fix, 12/12 after. Report now 0 UNDISCLOSED-live. Auditor-internal tooling; no platform code path served.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "unknown",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "unknown_reason": "both defects were injected in the per-clone hover-audit-log working directory before these tools ever entered platform git; the platform-repo landing commit carries them but did not create them"
+      },
+      "citation_note": "closed-system disclosure convention lives in the auditor's own tool contract, no platform standing rule names this shape",
+      "phase_note": "auditor-internal tooling has no product phase; found during a resume-queue selftest drive",
+      "contributing_factors": [
+        {
+          "factor": "the live selftest arm was written before the disclosure convention existed and never re-swept against it",
+          "kind": "process",
+          "action_status": "done",
+          "action": "disclosure comment added; checker rerun reports 0 UNDISCLOSED-live"
+        },
+        {
+          "factor": "the checker indirect-callee loop lacked the def-line guard its own network branch already had",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "guard added; FIXTURE_SELF_NAMED_DEF locks it, confirmed failing-first"
+        }
+      ],
+      "recurrence_open": "a future live arm written without re-running the checker would recur silently until the next selftest drive; the checker is not a pre-commit gate on the tooling directory"
+    },
+    {
       "commit": "4dc17346ccb5",
       "date": "2026-09-29",
       "subject": "fix(sync): a landed slab write was reported as LOST, because the guard read the payload instead of the envelope",
@@ -20873,6 +20916,47 @@
       "recurrence_open": "The criteria may now UNDER-accuse, and that is a judgement rather than a measurement: 31 rows moved out on MY reading of what counts as disclosed evidence, and nothing independent has checked that reading. The obligation opened this push names it as the second thing a reviewer should look at. Also unaddressed: 207 rows still point at no LINE, which is the real coverage gap and has not moved."
     },
     {
+      "commit": "a3c0b23793c1",
+      "date": "2026-09-29",
+      "subject": "fix(hover2): classify_remote credential reason scoped to github.com hosts only -- cold-read bug reproduced from description, tests-first (R7 plus R8 known-bad control), 52/52",
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools-hover2/hover2_log_mirror.py"
+      ],
+      "lines_added": 32,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "hover-audit",
+      "summary": "hover2_log_mirror.py classify_remote(): a non-github ssh URL carrying userinfo (ssh://deploy@gitlab.com/...) was refused with the WRONG REASON -- the credential/userinfo wording instead of the non-github wording -- because the userinfo regex ran before the host check and fired on any scheme://user@ shape regardless of host. Not a security gap: the URL was refused under either reason; the defect is a misleading refusal message. Found by the OTHER auditor instance (H1) from black-box description, reproduced here exactly, fixed tests-first: R7 (the reported URL must get the non-github reason) confirmed failing before the fix; R8 known-bad control (a real github.com URL WITH a credential must STILL get the credential reason) passing before and after, proving the fix narrows scope rather than deleting the check. 52/52 after.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "unknown",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "unknown_reason": "injected when classify_remote was first written in the per-clone hover-audit-log directory, before the tool entered platform git"
+      },
+      "citation_note": "refusal-reason accuracy in auditor-internal tooling; no platform standing rule names wrong-reason-right-refusal",
+      "phase_note": "auditor-internal mirror tooling, no product phase; found by cross-instance review",
+      "contributing_factors": [
+        {
+          "factor": "branch ordering: the credential check ran before the host check, so the more specific refusal shadowed the more accurate one for non-github hosts",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "credential branch now requires github.com in the URL; R7+R8 lock both directions"
+        },
+        {
+          "factor": "the original selftest had no non-github-with-userinfo arm, so the shadowing was never exercised",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "R7 added as a permanent arm"
+        }
+      ],
+      "recurrence_open": "other refusal-reason orderings in the same classifier were not exhaustively cross-checked; a new refusal branch added ahead of the host check could reintroduce the shadow"
+    },
+    {
       "commit": "bc89bf345b3c",
       "date": "2026-09-29",
       "subject": "fix(sairnbiz): a typed overtime threshold of 0 was swallowed before validation could see it",
@@ -21387,6 +21471,60 @@
       "recurrence_open": "Nothing makes importing the shared lookup easier than writing a new one, so a fourth copy is available to anybody in a hurry. The sweep that would catch it lives in a control that is not in the recurring report-only set."
     },
     {
+      "commit": "36b4343e7176",
+      "date": "2026-09-30",
+      "subject": "feat(mech): the live gate check declared itself correctly THREE TIMES and the auditor still could not see it",
+      "files": [
+        "docs/live-residue/README.md",
+        "tests/run_mech_gate_live_probe_probe.py",
+        "tools/mech_gate_live_probe.py"
+      ],
+      "lines_added": 118,
+      "lines_removed": 10,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "A live gate verification was driven by an UNCOMMITTED scratchpad script, which imported nothing and was therefore invisible to tools/live_probe_residue_audit.py -- whose universe is tracked files under tools/ tests/ scripts/. audit_licence.require_audit_licence would have refused the demo-facing key outright. Two rows were left on a demo licence on tables with no DELETE grant. Replaced by tools/mech_gate_live_probe.py, and running the auditor against THAT found three further ways a correct declaration counts as absent: a write action passed positionally (tool missing from the writer list entirely, 9 instead of 10), LIVE_PROBE_RESIDUE written as a multi-line concatenation when RESIDUE_RE matches one quoted literal, and a residue declaration not starting with an existing path.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The ad-hoc script was never committed, so there is no commit that introduced it; the tool that replaces it is new."
+      },
+      "citation_note": "The nearest standing item is cross-domain-disciplines 8, nothing announces the day a check stops testing anything, but this is a check that never saw the subject at all rather than one that decayed.",
+      "contributing_factors": [
+        {
+          "factor": "A verification that writes was driven by an ad-hoc script, so no guard, no declaration and no auditor applied to it",
+          "kind": "process",
+          "action_status": "done",
+          "action": "It is now a tracked tool declaring LIVE_PROBE_CLASS VERIFICATION, calling require_audit_licence before any request, and driven by a control that runs the real entry point with the 2026-09-29 key and requires exit 2."
+        },
+        {
+          "factor": "The existing auditor checks that a residue path is NAMED, which is not the same fact as the rows being ENUMERATED",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Every write goes through a recorder capturing table, id column and id; finish() writes a dated record under docs/live-residue/ and prints select/delete/confirm with the hash derived in SQL."
+        },
+        {
+          "factor": "A recorder that counts its own calls cannot detect a write that bypassed it, and would print removal SQL that is confidently incomplete",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "finish() takes the write count the ENDPOINT observed and exits 2 COULD NOT RUN when the recorder saw fewer, printing no SQL and writing no record -- because SQL covering one of two rows reads as complete."
+        },
+        {
+          "factor": "Three declaration forms were syntactically correct and unparseable by the checker that polices them, so the tool was self-describing to nobody",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Arm 6 asserts the AUDITORS VERDICT rather than the presence of the declarations: listed as a VERIFICATION writer, guard yes, residue accepted, no finding raised."
+        }
+      ],
+      "recurrence_open": "Nothing stops the next writing verification being an ad-hoc script again. The auditor cannot see untracked files by design, and that is the gap the 2026-09-29 run went through; this closes one instance and not the class. Fourth owns the general form -- the asserted-teardown obligation on tools/live_probe_residue_audit.py."
+    },
+    {
       "commit": "46f8c0133043",
       "date": "2026-09-30",
       "subject": "fix(guard): a git_dir() that could not answer read as \"no operation running\" and allowed a blanket stage mid-rebase",
@@ -21545,90 +21683,6 @@
         }
       ],
       "recurrence_open": "21 of 485 rows carry any reference at all, so for the other 464 there is nothing\na static arm can read a dose against. This control covers the 8 Topical\nAntiseptic rows; the same defect in an uncited row would be invisible, and the\nexisting sourcing-honesty suite is by design silent about rows that make no\nclaim."
-    },
-    {
-      "commit": "4d5f3deb557d",
-      "date": "2026-09-29",
-      "subject": "fix(hover2): hover_log.py live selftest arm disclosed per the closed-system convention; the checker's def-line-as-call-site false positive fixed with a 12th fixture (failed first against unfixed code); hover_editor_review.py gains the --selftest alias -- 0 UNDISCLOSED-live, 26/26 tools answer --selftest",
-      "files": [
-        ".claude/skills/sairn-hover-auditor/tools-hover2/hover_editor_review.py",
-        ".claude/skills/sairn-hover-auditor/tools-hover2/hover_log.py",
-        ".claude/skills/sairn-hover-auditor/tools-hover2/sabotage_closed_system_check.py"
-      ],
-      "lines_added": 51,
-      "lines_removed": 13,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "low",
-      "detection_method": "hover-audit",
-      "summary": "hover2 auditor tooling, two defects in one commit, both found by the closed-system checker's own report this session: (1) hover_log.py's seq-273 CLI-integration selftest arm reads the REAL self-log (line-count before/after a must-refuse append) with no disclosure marker, reported UNDISCLOSED_LIVE by sabotage_closed_system_check.py -- the arm was honest but undisclosed, violating the checker's own convention; disclosure comment added in the arm's own words. (2) The checker itself had a def-line-as-call-site false positive: a selftest whose own body touches LOG_PATH lands in indirect_callees and its own 'def selftest():' line matches the zero-arg call regex -- fixture FIXTURE_SELF_NAMED_DEF confirmed FAILING against unfixed code (1 of 12) before the one-guard fix, 12/12 after. Report now 0 UNDISCLOSED-live. Auditor-internal tooling; no platform code path served.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "unknown",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover2",
-      "injection": {
-        "unknown_reason": "both defects were injected in the per-clone hover-audit-log working directory before these tools ever entered platform git; the platform-repo landing commit carries them but did not create them"
-      },
-      "citation_note": "closed-system disclosure convention lives in the auditor's own tool contract, no platform standing rule names this shape",
-      "phase_note": "auditor-internal tooling has no product phase; found during a resume-queue selftest drive",
-      "contributing_factors": [
-        {
-          "factor": "the live selftest arm was written before the disclosure convention existed and never re-swept against it",
-          "kind": "process",
-          "action_status": "done",
-          "action": "disclosure comment added; checker rerun reports 0 UNDISCLOSED-live"
-        },
-        {
-          "factor": "the checker indirect-callee loop lacked the def-line guard its own network branch already had",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "guard added; FIXTURE_SELF_NAMED_DEF locks it, confirmed failing-first"
-        }
-      ],
-      "recurrence_open": "a future live arm written without re-running the checker would recur silently until the next selftest drive; the checker is not a pre-commit gate on the tooling directory"
-    },
-    {
-      "commit": "a3c0b23793c1",
-      "date": "2026-09-29",
-      "subject": "fix(hover2): classify_remote credential reason scoped to github.com hosts only -- cold-read bug reproduced from description, tests-first (R7 plus R8 known-bad control), 52/52",
-      "files": [
-        ".claude/skills/sairn-hover-auditor/tools-hover2/hover2_log_mirror.py"
-      ],
-      "lines_added": 32,
-      "lines_removed": 1,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "low",
-      "detection_method": "hover-audit",
-      "summary": "hover2_log_mirror.py classify_remote(): a non-github ssh URL carrying userinfo (ssh://deploy@gitlab.com/...) was refused with the WRONG REASON -- the credential/userinfo wording instead of the non-github wording -- because the userinfo regex ran before the host check and fired on any scheme://user@ shape regardless of host. Not a security gap: the URL was refused under either reason; the defect is a misleading refusal message. Found by the OTHER auditor instance (H1) from black-box description, reproduced here exactly, fixed tests-first: R7 (the reported URL must get the non-github reason) confirmed failing before the fix; R8 known-bad control (a real github.com URL WITH a credential must STILL get the credential reason) passing before and after, proving the fix narrows scope rather than deleting the check. 52/52 after.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "unknown",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover",
-      "injection": {
-        "unknown_reason": "injected when classify_remote was first written in the per-clone hover-audit-log directory, before the tool entered platform git"
-      },
-      "citation_note": "refusal-reason accuracy in auditor-internal tooling; no platform standing rule names wrong-reason-right-refusal",
-      "phase_note": "auditor-internal mirror tooling, no product phase; found by cross-instance review",
-      "contributing_factors": [
-        {
-          "factor": "branch ordering: the credential check ran before the host check, so the more specific refusal shadowed the more accurate one for non-github hosts",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "credential branch now requires github.com in the URL; R7+R8 lock both directions"
-        },
-        {
-          "factor": "the original selftest had no non-github-with-userinfo arm, so the shadowing was never exercised",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "R7 added as a permanent arm"
-        }
-      ],
-      "recurrence_open": "other refusal-reason orderings in the same classifier were not exhaustively cross-checked; a new refusal branch added ahead of the host check could reintroduce the shadow"
     }
   ],
   "started": "2026-09-09",
