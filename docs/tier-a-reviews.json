@@ -4741,6 +4741,27 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-30T00:57:52Z",
+      "opened_at_sha": "fb9c12ef48849c6a899e203a413fe9360c9d2519",
+      "resources": [
+        "alf_incidents",
+        "quotes"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/alf-append-only-read-order.test.js"
+      ],
+      "what": "api/alf-append-only-read-order.test.js: the matcher required every trail read to sit inside ONE inline rest('...') literal, so the alf_incidents read being refactored into a query variable -- with its order clause still present -- made the arm report zero reads and the suite went RED on main. The matcher now resolves the variable to its definition and concatenates the literal fragments; six new control arms, all on synthetic source, cover the inline shape, the variable shape, a variable-built read with no order, an order present only in a trailing comment, a query variable never passed to rest(), and another table's query.\n\nREVIEW THIS, in this order:\n\n(1) Whether concatenating single-quoted literals can ever credit an order clause the runtime would not produce. The argument is that an expression contributes a VALUE and never a query PARAMETER NAME, and that same argument is the whole basis for not evaluating enc(). If it is wrong, the matcher can be talked into passing an unordered read.\n\n(2) Whether requiring the identifier to reach rest() can be defeated by an indirection -- a helper that takes the query and calls rest() itself, or a query passed through an object property. That requirement is what stops the matcher inventing coverage from a dead string, so a way around it is a way to a false pass.\n\n(3) Whether the per-statement trailing-comment strip can swallow a REAL fragment containing a double slash. A query literal carrying a URL would lose everything after the slashes, which would make an ordered read look unordered -- a false FAIL rather than a false pass, but still wrong.\n\nNO PRODUCT CODE CHANGED -- this commit touches one test file, and the diff will show that faster than this sentence will.\n\nalf_incidents appears on this obligation because the test names it. The resource `quotes` appears ONLY because my new comments use the English word for quoted literals -- which is the bare-name attribution false positive I confirmed an hour ago while discharging hank's 2026-09-28T21:33:14Z obligation, now arriving on my own commit. Of 273 Tier A resources exactly three have no prefix: invoices, quotes, subcontractors.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-30T00:57:52Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
