@@ -452,6 +452,22 @@
         "hover_cold_scan_pool.py",
         "hover_log.py"
       ]
+    },
+    {
+      "id": "hover-1790730365",
+      "session": "hover",
+      "subject": "hover",
+      "task": "nine-item queue: settle the supplier_lead_times schema-file contradiction from git and the live endpoint with replacement register-note text; the mech_checks tier and gate-change text; three driven cold verifications (sbCfg falsy coalesce, slabSyncOne null-data row, sv_audit_log povidone-iodine dose strings); print the 42 flagged citations by class with the corrected 729 wording; conditional H2 routable-field validation; re-derive the 16 open findings at fresh HEAD; one undirected batch through the linter; the rotation draw; a three-class citation classifier over the whole log with planted fixtures and a misclassification control, wired into the report stamps.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hover.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. Each component checks CLEAR on its own.\n\nFILES: hover_log.py freshness_stamp.py run_memory_vs_derived_sweep.py hover_cold_scan_pool.py",
+      "claimed_at": "2026-09-30T01:06:05Z",
+      "claimed_at_epoch": 1790730365.3703165,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "freshness_stamp.py",
+        "hover_cold_scan_pool.py",
+        "hover_log.py",
+        "run_memory_vs_derived_sweep.py"
+      ]
     }
   ],
   "refusals": [
