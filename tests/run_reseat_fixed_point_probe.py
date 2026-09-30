@@ -111,6 +111,40 @@ for label, diff, want in CASES:
     ok('%-28s -> %s' % (label, 'FOLD' if want else 'LEAVE'),
        is_reseat(diff) == want, 'got %r' % is_reseat(diff))
 
+# ── A2. THE MIXED DIFF, WHICH IS THE ONE THAT MATTERS ───────────────────
+# A diff that is ENTIRELY commit citations is a re-seat and is folded in. A
+# diff that is entirely something else is obviously not. The dangerous shape
+# is NEITHER: a real re-seat line sitting beside one edit that is not one,
+# which is what a concurrent session's record looks like after a rebase
+# touches the same file. Folding that in commits somebody else's unreviewed
+# change inside an amend -- the `git add -A` failure arriving by the only
+# door still open.
+#
+# EVERY case below carries at least one genuine commit line, so a rule that
+# stopped at 'does this diff contain a citation' would fold all of them.
+print(NL + 'A2. a citation line PLUS a non-citation edit is NOT a re-seat')
+CIT_OLD = '-      ' + chr(34) + 'commit' + chr(34) + ': ' + chr(34) + 'aaa' + chr(34) + ','
+CIT_NEW = '+      ' + chr(34) + 'commit' + chr(34) + ': ' + chr(34) + 'bbb' + chr(34) + ','
+def line(sign, key, val):
+    return sign + '      ' + chr(34) + key + chr(34) + ': ' + chr(34) + val + chr(34) + ','
+MIXED = [
+    ('citation + a new record', [CIT_OLD, CIT_NEW, line('+', 'app', 'sairncare')]),
+    ('citation + an edited severity', [CIT_NEW, line('-', 'severity', 'low'),
+                                       line('+', 'severity', 'high')]),
+    ('citation + a deleted record', [CIT_NEW, line('-', 'summary', 'older')]),
+    ('citation + a conflict marker', [CIT_NEW, '+<<<<<<< HEAD']),
+    ('citation + an emptied field', [CIT_NEW, line('+', 'limits', '')]),
+]
+for label, lines in MIXED:
+    diff = NL.join(lines)
+    ok('%-44s -> LEAVE' % label, is_reseat(diff) is False,
+       'a mixed diff was classified as a pure re-seat, so an unreviewed edit '
+       'would be folded into an amended commit: %r' % diff)
+ok('...and the citation lines ALONE would be folded -- so the arms above '
+   'are not passing because the fixtures are unrecognisable',
+   is_reseat(NL.join([CIT_OLD, CIT_NEW])) is True,
+   'the citation half of these fixtures is not recognised either')
+
 # ── B. THE FIXED POINT ───────────────────────────────────────────────────
 print(NL + 'B. applying the step twice changes nothing the second time')
 

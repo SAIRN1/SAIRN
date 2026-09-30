@@ -2761,14 +2761,113 @@
       "task": "print the complete PIN restore block with real derived hashes and an insert-if-missing path and commit it to sql/; an evidence-before-prune rule recording git fsck unreachable output and object mtimes to a dated record before any prune gc or reflog expire; the SAIRNcare witness migration and the refuse-a-self-witnessed-count code; find and fix the register re-seat livelock so it reaches a fixed point. FILES: sql/sairncare_witness_schema.sql sql/restore_demo_pins_2026-09-29.sql tools/credential_purge_check.py tools/push_retry.py",
       "claimed_at": "2026-09-29T17:05:29Z",
       "claimed_at_epoch": 1790701529.0878396,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T17:25:59Z",
       "files": [
         "sql/restore_demo_pins_2026-09-29.sql",
         "sql/sairncare_witness_schema.sql",
         "tools/credential_purge_check.py",
         "tools/push_retry.py"
       ]
+    },
+    {
+      "id": "fourth-1790703207",
+      "session": "fourth",
+      "subject": "ledgerwork",
+      "task": "docs/tier-a-reviews.json",
+      "claimed_at": "2026-09-29T17:33:27Z",
+      "claimed_at_epoch": 1790703207.7257872,
+      "status": "released",
+      "released_at": "2026-09-29T17:46:08Z",
+      "files": null
+    },
+    {
+      "id": "fourth-1790703362",
+      "session": "fourth",
+      "subject": "pushwork",
+      "task": "tools/push_retry.py tests/run_reseat_fixed_point_probe.py",
+      "claimed_at": "2026-09-29T17:36:02Z",
+      "claimed_at_epoch": 1790703362.035507,
+      "status": "released",
+      "released_at": "2026-09-29T17:46:42Z",
+      "files": null
+    },
+    {
+      "id": "fourth-1790703415",
+      "session": "fourth",
+      "subject": "snapwork",
+      "task": "db/schema_snapshot.json",
+      "claimed_at": "2026-09-29T17:36:55Z",
+      "claimed_at_epoch": 1790703415.4266276,
+      "status": "released",
+      "released_at": "2026-09-29T17:47:18Z",
+      "files": null
+    },
+    {
+      "id": "fourth-1790703489",
+      "session": "fourth",
+      "subject": "purgework",
+      "task": "tools/credential_purge_check.py",
+      "claimed_at": "2026-09-29T17:38:09Z",
+      "claimed_at_epoch": 1790703489.0650752,
+      "status": "released",
+      "released_at": "2026-09-29T17:47:52Z",
+      "files": null
+    },
+    {
+      "id": "fourth-1790704423",
+      "session": "fourth",
+      "subject": "f4",
+      "task": "sairnbiz.html",
+      "claimed_at": "2026-09-29T17:53:43Z",
+      "claimed_at_epoch": 1790704423.4253235,
+      "status": "released",
+      "released_at": "2026-09-29T23:45:29Z",
+      "files": null
+    },
+    {
+      "id": "fourth-1790704477",
+      "session": "fourth",
+      "subject": "f5",
+      "task": "tools/employee_auth_guard_check.py",
+      "claimed_at": "2026-09-29T17:54:37Z",
+      "claimed_at_epoch": 1790704477.9809263,
+      "status": "released",
+      "released_at": "2026-09-29T23:46:05Z",
+      "files": null
+    },
+    {
+      "id": "fourth-1790726658",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "tools/purge_evidence_gate.py tools/credential_purge_check.py tests/run_purge_evidence_probe.py tools/rewrite_convergence_map.py tests/run_rewrite_convergence_probe.py docs/2026-09-29-rewrite-map-fourth.md tools/numeric_default_coalesce_scan.py tests/run_numeric_coalesce_probe.py docs/2026-09-29-cells-fourth.md docs/2026-09-29-inventory-fourth.md",
+      "claimed_at": "2026-09-30T00:04:18Z",
+      "claimed_at_epoch": 1790726658.5893552,
+      "status": "released",
+      "released_at": "2026-09-30T01:18:21Z",
+      "files": null
+    },
+    {
+      "id": "fourth-1790731108",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "tools/purge_evidence_gate.py tests/run_purge_evidence_probe.py tools/rewrite_convergence_map.py tests/run_rewrite_convergence_probe.py docs/2026-09-29-rewrite-map-fourth.md tools/numeric_default_coalesce_scan.py tests/run_numeric_coalesce_probe.py docs/2026-09-29-cells-fourth.md docs/2026-09-29-inventory-fourth.md sairnbuild.html tests/sairnbuild_settings_prefill_coalesce.js",
+      "claimed_at": "2026-09-30T01:18:28Z",
+      "claimed_at_epoch": 1790731108.8511264,
+      "status": "released",
+      "released_at": "2026-09-30T01:30:21Z",
+      "files": null
+    },
+    {
+      "id": "fourth-1790732244",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "docs/tier-a-reviews.json api/sd-data.js api/sd-data-ai-scan-redaction.test.js tools/rewrite_convergence_map.py tests/run_rewrite_convergence_probe.py tools/purge_evidence_gate.py docs/2026-09-29-live-verification-residue-fourth.md docs/2026-09-29-actor-derivation-fourth.md",
+      "claimed_at": "2026-09-30T01:37:24Z",
+      "claimed_at_epoch": 1790732244.92945,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
@@ -2880,6 +2979,97 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "shared phrase: \"probe sweep\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-29T17:32:17Z",
+      "my_subject": "tooling",
+      "my_task": "docs/tier-a-reviews.json tools/employee_auth_guard_check.py tests/run_employee_auth_guard_probe.py tools/schema_snapshot_generator.py tools/sairn_sql_preflight.py tools/push_retry.py tests/run_reseat_fixed_point_probe.py tools/credential_purge_check.py sql/sairncare_witness_schema.sql docs/2026-09-29-register-cell-replacements-fourth.md",
+      "other_session": "cody",
+      "other_subject": "cody-matcher",
+      "other_task": "tools/sairn_claim.py tests/run_claim_matcher_probe.py",
+      "other_claimed_at": "2026-09-29T14:04:57Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"sairn tools\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-29T17:32:17Z",
+      "my_subject": "tooling",
+      "my_task": "docs/tier-a-reviews.json tools/employee_auth_guard_check.py tests/run_employee_auth_guard_probe.py tools/schema_snapshot_generator.py tools/sairn_sql_preflight.py tools/push_retry.py tests/run_reseat_fixed_point_probe.py tools/credential_purge_check.py sql/sairncare_witness_schema.sql docs/2026-09-29-register-cell-replacements-fourth.md",
+      "other_session": "hank",
+      "other_subject": "hank",
+      "other_task": "queue25: the fourth-transport arm rewritten so the synthetic old-shape caller fails it, known-bad control first; the citation-drift-hook fourth path decided under the could-not-run rule; the 32 and 6 uncited register claims re-read or downgraded; the hedge-carry false DROPPED root-caused and fixed; the 16 refused and 12 could-not-tell reseat rows each given their reason, and the tool extended where it can be made to tell; the five idempotence timeouts rerun with a longer bound; a read-only confirmation that the relocated auditor tool path is invisible to every build-agent gate, glob, denominator and defect count; and an audit of every arm that asserts on a MESSAGE rather than on behaviour, each mutated in both directions.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hank.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. Register cells needing a file another session holds are delivered as replacement TEXT in a doc I own; the holder and the verbatim refusal go in my report.\n\nSUBJECT NAMED PER PR 4.3 FILES: tests/sairncare_transport_refusal.js tools/citation_no_source_report.py tools/hedge_carry_check.py tests/run_hedge_carry_probe.py tools/tier_a_review_gate.py tests/run_tier_a_reseat_probe.py tools/idempotence_double_run.py tools/message_assertion_audit.py tests/run_message_assertion_probe.py docs/2026-09-29-register-cells-hank.md docs/SAIRN-OPEN-WORK-INDEX.md docs/2026-09-29-hover-path-visibility.md",
+      "other_claimed_at": "2026-09-29T17:21:49Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same app: sairncare",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-29T17:32:55Z",
+      "my_subject": "tooling",
+      "my_task": "docs/tier-a-reviews.json docs/2026-09-29-register-cell-replacements-fourth.md tools/employee_auth_guard_check.py tests/run_employee_auth_guard_probe.py tools/push_retry.py tests/run_reseat_fixed_point_probe.py tools/credential_purge_check.py sql/sairncare_witness_schema.sql db/schema_snapshot.json",
+      "other_session": "hank",
+      "other_subject": "hank",
+      "other_task": "queue25: the fourth-transport arm rewritten so the synthetic old-shape caller fails it, known-bad control first; the citation-drift-hook fourth path decided under the could-not-run rule; the 32 and 6 uncited register claims re-read or downgraded; the hedge-carry false DROPPED root-caused and fixed; the 16 refused and 12 could-not-tell reseat rows each given their reason, and the tool extended where it can be made to tell; the five idempotence timeouts rerun with a longer bound; a read-only confirmation that the relocated auditor tool path is invisible to every build-agent gate, glob, denominator and defect count; and an audit of every arm that asserts on a MESSAGE rather than on behaviour, each mutated in both directions.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hank.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. Register cells needing a file another session holds are delivered as replacement TEXT in a doc I own; the holder and the verbatim refusal go in my report.\n\nSUBJECT NAMED PER PR 4.3 FILES: tests/sairncare_transport_refusal.js tools/citation_no_source_report.py tools/hedge_carry_check.py tests/run_hedge_carry_probe.py tools/tier_a_review_gate.py tests/run_tier_a_reseat_probe.py tools/idempotence_double_run.py tools/message_assertion_audit.py tests/run_message_assertion_probe.py docs/2026-09-29-register-cells-hank.md docs/SAIRN-OPEN-WORK-INDEX.md docs/2026-09-29-hover-path-visibility.md",
+      "other_claimed_at": "2026-09-29T17:21:49Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same app: sairncare",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-29T17:33:56Z",
+      "my_subject": "guardwork",
+      "my_task": "tools/employee_auth_guard_check.py tests/run_employee_auth_guard_probe.py tools/push_retry.py tests/run_reseat_fixed_point_probe.py tools/credential_purge_check.py sql/sairncare_witness_schema.sql db/schema_snapshot.json docs/2026-09-29-register-cell-replacements-fourth.md",
+      "other_session": "hank",
+      "other_subject": "hank",
+      "other_task": "queue25: the fourth-transport arm rewritten so the synthetic old-shape caller fails it, known-bad control first; the citation-drift-hook fourth path decided under the could-not-run rule; the 32 and 6 uncited register claims re-read or downgraded; the hedge-carry false DROPPED root-caused and fixed; the 16 refused and 12 could-not-tell reseat rows each given their reason, and the tool extended where it can be made to tell; the five idempotence timeouts rerun with a longer bound; a read-only confirmation that the relocated auditor tool path is invisible to every build-agent gate, glob, denominator and defect count; and an audit of every arm that asserts on a MESSAGE rather than on behaviour, each mutated in both directions.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hank.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. Register cells needing a file another session holds are delivered as replacement TEXT in a doc I own; the holder and the verbatim refusal go in my report.\n\nSUBJECT NAMED PER PR 4.3 FILES: tests/sairncare_transport_refusal.js tools/citation_no_source_report.py tools/hedge_carry_check.py tests/run_hedge_carry_probe.py tools/tier_a_review_gate.py tests/run_tier_a_reseat_probe.py tools/idempotence_double_run.py tools/message_assertion_audit.py tests/run_message_assertion_probe.py docs/2026-09-29-register-cells-hank.md docs/SAIRN-OPEN-WORK-INDEX.md docs/2026-09-29-hover-path-visibility.md",
+      "other_claimed_at": "2026-09-29T17:21:49Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same app: sairncare",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-29T17:35:38Z",
+      "my_subject": "guardwork",
+      "my_task": "tools/push_retry.py tests/run_reseat_fixed_point_probe.py tools/credential_purge_check.py db/schema_snapshot.json",
+      "other_session": "hank",
+      "other_subject": "hank",
+      "other_task": "queue25: the fourth-transport arm rewritten so the synthetic old-shape caller fails it, known-bad control first; the citation-drift-hook fourth path decided under the could-not-run rule; the 32 and 6 uncited register claims re-read or downgraded; the hedge-carry false DROPPED root-caused and fixed; the 16 refused and 12 could-not-tell reseat rows each given their reason, and the tool extended where it can be made to tell; the five idempotence timeouts rerun with a longer bound; a read-only confirmation that the relocated auditor tool path is invisible to every build-agent gate, glob, denominator and defect count; and an audit of every arm that asserts on a MESSAGE rather than on behaviour, each mutated in both directions.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hank.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. Register cells needing a file another session holds are delivered as replacement TEXT in a doc I own; the holder and the verbatim refusal go in my report.\n\nSUBJECT NAMED PER PR 4.3 FILES: tests/sairncare_transport_refusal.js tools/citation_no_source_report.py tools/hedge_carry_check.py tests/run_hedge_carry_probe.py tools/tier_a_review_gate.py tests/run_tier_a_reseat_probe.py tools/idempotence_double_run.py tools/message_assertion_audit.py tests/run_message_assertion_probe.py docs/2026-09-29-register-cells-hank.md docs/SAIRN-OPEN-WORK-INDEX.md docs/2026-09-29-hover-path-visibility.md",
+      "other_claimed_at": "2026-09-29T17:21:49Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"probe tools\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-29T17:53:23Z",
+      "my_subject": "f4",
+      "my_task": "sairnbiz.html tools/employee_auth_guard_check.py tests/run_employee_auth_guard_probe.py docs/tier-a-reviews.json",
+      "other_session": "hank",
+      "other_subject": "hank",
+      "other_task": "queue25: the fourth-transport arm rewritten so the synthetic old-shape caller fails it, known-bad control first; the citation-drift-hook fourth path decided under the could-not-run rule; the 32 and 6 uncited register claims re-read or downgraded; the hedge-carry false DROPPED root-caused and fixed; the 16 refused and 12 could-not-tell reseat rows each given their reason, and the tool extended where it can be made to tell; the five idempotence timeouts rerun with a longer bound; a read-only confirmation that the relocated auditor tool path is invisible to every build-agent gate, glob, denominator and defect count; and an audit of every arm that asserts on a MESSAGE rather than on behaviour, each mutated in both directions.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hank.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. Register cells needing a file another session holds are delivered as replacement TEXT in a doc I own; the holder and the verbatim refusal go in my report.\n\nSUBJECT NAMED PER PR 4.3 FILES: tests/sairncare_transport_refusal.js tools/citation_no_source_report.py tools/hedge_carry_check.py tests/run_hedge_carry_probe.py tools/tier_a_review_gate.py tests/run_tier_a_reseat_probe.py tools/idempotence_double_run.py tools/message_assertion_audit.py tests/run_message_assertion_probe.py docs/2026-09-29-register-cells-hank.md docs/SAIRN-OPEN-WORK-INDEX.md docs/2026-09-29-hover-path-visibility.md",
+      "other_claimed_at": "2026-09-29T17:21:49Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"check tests\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-29T17:54:23Z",
+      "my_subject": "f5",
+      "my_task": "tools/employee_auth_guard_check.py tests/run_employee_auth_guard_probe.py",
+      "other_session": "hank",
+      "other_subject": "hank",
+      "other_task": "queue25: the fourth-transport arm rewritten so the synthetic old-shape caller fails it, known-bad control first; the citation-drift-hook fourth path decided under the could-not-run rule; the 32 and 6 uncited register claims re-read or downgraded; the hedge-carry false DROPPED root-caused and fixed; the 16 refused and 12 could-not-tell reseat rows each given their reason, and the tool extended where it can be made to tell; the five idempotence timeouts rerun with a longer bound; a read-only confirmation that the relocated auditor tool path is invisible to every build-agent gate, glob, denominator and defect count; and an audit of every arm that asserts on a MESSAGE rather than on behaviour, each mutated in both directions.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hank.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. Register cells needing a file another session holds are delivered as replacement TEXT in a doc I own; the holder and the verbatim refusal go in my report.\n\nSUBJECT NAMED PER PR 4.3 FILES: tests/sairncare_transport_refusal.js tools/citation_no_source_report.py tools/hedge_carry_check.py tests/run_hedge_carry_probe.py tools/tier_a_review_gate.py tests/run_tier_a_reseat_probe.py tools/idempotence_double_run.py tools/message_assertion_audit.py tests/run_message_assertion_probe.py docs/2026-09-29-register-cells-hank.md docs/SAIRN-OPEN-WORK-INDEX.md docs/2026-09-29-hover-path-visibility.md",
+      "other_claimed_at": "2026-09-29T17:21:49Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"check tests\"",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]

@@ -1137,7 +1137,45 @@ module.exports = async (req, res) => {
       //    BEFORE scpApplyLoggedIn -> scpInit -> scpSyncFromServer runs. The
       //    arms that check that read the shipped page rather than this comment.
       'invoices': ['read', 'write'],
-      'scp_quotes': ['read', 'write']
+      'scp_quotes': ['read', 'write'],
+      // ── SAIRNmechanical: mech_docs WRITE ONLY, 2026-09-29 ────────────────
+      //    MECH_RECORDS at :14308 gates all four of mech_quotes, mech_checks,
+      //    mech_docs and mech_takeoffs on the LICENCE KEY ALONE, and the
+      //    comment above it reasons "a quote or a cheque stub is not a
+      //    credential". That is true about CREDENTIALS and does not answer
+      //    what mech_docs holds.
+      //
+      //    mech_docs IS THE ONE OF THE FOUR WHOSE OWN REDACTOR HAS PATTERNS
+      //    FOR SSN, EIN AND CARD-LENGTH DIGIT RUNS. scanDoc() asks a model to
+      //    "EXTRACT: Every field -- names, dates, amounts, codes, reference
+      //    numbers" off work orders, contracts, permits and INVOICES, and the
+      //    answer is stored here. api/_lib/mech-redact.js REDUCES that text
+      //    and NEVER REFUSES A WRITE -- deliberately, and its own header says
+      //    so -- so the redactor is not the gate, and there was no other one.
+      //    The platform has already decided this table's contents need
+      //    redacting; writing into it needed a session and did not have one.
+      //
+      //    WRITE ONLY, AND ONLY THIS ONE TABLE. The reported finding is the
+      //    write. mech_docs READ stays licence-only, and mech_quotes,
+      //    mech_checks and mech_takeoffs stay licence-only -- each is its own
+      //    open-work row, and mech_checks is explicitly a DECISION nobody has
+      //    been asked to make (its branch comment calls the cheque register
+      //    "the sharp one"). Widening a gate past the row that justified it is
+      //    the scope growth this platform refuses, and
+      //    api/sd-data-mech-session-gate.test.js drives all four of those
+      //    unchanged surfaces so the day somebody widens this, the widening is
+      //    visible rather than silent.
+      //
+      //    A REGISTRY ENTRY RATHER THAN A BESPOKE INLINE GATE, so it inherits
+      //    the active-credential pre-gate above for free instead of being a
+      //    second place the same rule lives.
+      //
+      //    THE CLIENT HALF NEEDS NO CHANGE and that was READ, not assumed:
+      //    mechData() calls mechHeaders(true) and attaches X-SD-Auth whenever a
+      //    session exists, and the doc scanner sits behind mechEnter(), which
+      //    only runs after login. No signed-in technician loses anything; only
+      //    the licence-key-alone path closes.
+      'mech_docs': ['write']
     };
     // ── THE EXPECTED APP, PER GATED RESOURCE ────────────────────────────────
     // The gate below resolved this as "memory follows the caller, everything
@@ -1234,6 +1272,14 @@ module.exports = async (req, res) => {
       // is no 'scp_invoices' resource to pin.
       'invoices': 'sairnscape',
       'scp_quotes': 'sairnscape',
+      // Added 2026-09-29 in the SAME edit as its gate entry above, which is the
+      // rule this pair of lists has carried since 2026-09-24 and which
+      // sf_trustee_audits broke on main earlier the same day: a resource gated
+      // with no entry here resolves expectedApp to 'stonedesk', so every
+      // correctly signed-in SAIRNmechanical technician would be refused
+      // FORBIDDEN "sign in first" -- fails closed AND confusingly, which is how
+      // a security change gets reverted as broken rather than fixed.
+      'mech_docs': 'sairnmechanical',
       // ── THE FOUR THAT RELIED ON THE DEFAULT, MADE EXPLICIT (2026-09-29) ──
       // `SD_GATE_APP[resource] || 'stonedesk'` meant these four resolved
       // correctly WITHOUT an entry, because they really are StoneDesk's. That
@@ -10541,9 +10587,50 @@ module.exports = async (req, res) => {
       // NO PRIOR INVOICE IS LEFT ALONE, deliberately: with no invoice on file
       // every derived line genuinely IS new, `invoice_exists: false` says so,
       // and reconciling against [] is the right answer there.
+      // ── AND THE SAME DEFECT A THIRD TIME, THROUGH A THIRD DOOR. FIXED
+      // ── 2026-09-29 ──────────────────────────────────────────────────────
+      // The guard above was written as `if (priorRow && !Array.isArray(...))`,
+      // so IT WAS REACHED ONLY WHEN THE BLOB WAS TRUTHY. A row that exists with
+      // `data: null` makes priorRow null, the guard is skipped, the else branch
+      // runs, and this reports every derived line ADDED with net_change = the
+      // ENTIRE amount beside `invoice_exists: true` -- which is, word for word,
+      // the false reading the comment above describes and claims to have closed.
+      //
+      // A NULL BLOB IS UNREADABLE DATA, NOT ABSENT DATA, so it belongs with the
+      // 2026-09-04 case (the read that failed) and not with the 2026-09-11 case
+      // (no invoice on file). The 2026-09-27 fix covered "row present, blob
+      // readable, key absent" and nothing covered "row present, blob not
+      // readable" -- one branch of a three-way distinction, which is why it
+      // looked closed.
+      //
+      // THE THREE STATES ARE NOW DECIDED ON ROW EXISTENCE FIRST, and the blob
+      // second. Deciding on the blob first is what let a missing blob read as a
+      // missing invoice.
+      //
+      // TWO REFUSAL CODES, NOT ONE, and the difference is actionable: no line
+      // detail means the invoice is fine and simply predates per-event storage;
+      // an unreadable blob means the stored row is damaged and somebody has to
+      // look at it. Collapsing them would send a biller to the wrong problem.
+      //
+      // `invoice_exists` STAYS TRUE for both. The row is on file, and saying
+      // otherwise would tell the caller to create an invoice that already
+      // exists -- a second wrong answer in place of the first.
       const priorRow = (invRows[0] && invRows[0].data) || null;
-      derived.invoice_exists = !!(Array.isArray(invRows) && invRows.length);
-      if (priorRow && !Array.isArray(priorRow.charge_lines)) {
+      derived.invoice_exists = invRows.length > 0;
+      const priorBlobReadable = !!priorRow && typeof priorRow === 'object'
+        && !Array.isArray(priorRow);
+      const priorLines = priorBlobReadable && Array.isArray(priorRow.charge_lines)
+        ? priorRow.charge_lines : null;
+      if (derived.invoice_exists && !priorBlobReadable) {
+        derived.reconciliation_vs_invoice = null;
+        derived.reconciliation_unavailable = 'PRIOR_INVOICE_BLOB_UNREADABLE';
+        derived.reconciliation_unavailable_reason = 'An invoice for this month is '
+          + 'on file but the record of what it contains could not be read, so '
+          + 'there is nothing to compare against. No comparison is shown rather '
+          + 'than one computed against nothing, which would report every charge '
+          + 'as newly added and the net change as the whole invoice. The invoice '
+          + 'row itself needs looking at before regenerating.';
+      } else if (derived.invoice_exists && priorLines === null) {
         derived.reconciliation_vs_invoice = null;
         derived.reconciliation_unavailable = 'PRIOR_INVOICE_HAS_NO_CHARGE_LINES';
         derived.reconciliation_unavailable_reason = 'The invoice already on file '
@@ -10553,7 +10640,7 @@ module.exports = async (req, res) => {
           + 'whole invoice, which is a precise figure and a wrong one.';
       } else {
         derived.reconciliation_vs_invoice = careCharges.reconcileAgainstInvoice(
-          derived, (priorRow && priorRow.charge_lines) || []);
+          derived, priorLines || []);
       }
       res.status(200).json(derived);
       return;

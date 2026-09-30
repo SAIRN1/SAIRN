@@ -304,6 +304,36 @@ def confirm_private(owner, repo):
 
 def ensure_repo():
     if not os.path.isdir(os.path.join(HERE, '.git')):
+        # FOREIGN-WORKTREE GUARD (2026-09-29): refuse to init when HERE sits
+        # inside SOMEBODY ELSE'S git worktree. Paid for live: --selftest run
+        # from the platform-repo COPY of this tool git-inited a nested repo
+        # inside the platform tree. A copy in the wrong place must fail
+        # loudly, never contaminate its surroundings. A standalone directory
+        # (no surrounding repo -- the real mirror home's own fresh state,
+        # and every scratch fixture) still initializes normally.
+        probe = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
+                               cwd=HERE, capture_output=True, text=True,
+                               encoding='utf-8', errors='replace')
+        if probe.returncode == 0:
+            top = os.path.normcase(os.path.abspath(probe.stdout.strip()))
+            here_n = os.path.normcase(os.path.abspath(HERE))
+            # EXEMPTION, MEASURED NOT ASSUMED: a stray, commitless git repo
+            # sits at the HOME DIRECTORY itself on this machine (remote
+            # sairn-tech/sairn-skills, zero commits on main) -- discovered
+            # by this guard's own control fixture, since EVERYTHING under
+            # C:\Users\marsh is technically "inside" it, including the real
+            # mirror home and every temp fixture. That enclosure is inert
+            # (no commits, nothing staged by an init inside it) and
+            # exempting it is what keeps this guard meaningful for the
+            # enclosures that matter: the SAIRN platform clones.
+            home_n = os.path.normcase(os.path.abspath(os.path.expanduser('~')))
+            if top != here_n and top != home_n:
+                raise RuntimeError(
+                    'REFUSED: %s sits inside another repository (%s) -- '
+                    'initializing a nested mirror repo here would contaminate '
+                    'that worktree. This is almost certainly a COPY of the '
+                    'tool run from the wrong directory; the real mirror home '
+                    'is its own repository root.' % (HERE, probe.stdout.strip()))
         _git(['init', '-q'], check=True)
         _git(['config', 'user.email', 'hover-auditor@localhost'], check=True)
         _git(['config', 'user.name', 'hover-auditor-mirror'], check=True)
@@ -589,7 +619,7 @@ def cmd_restore_remote():
     return EXIT_CLEAN if ok else EXIT_BROKEN
 
 
-def _write_askpass_shim():
+def _write_askpass_shim(target_dir=None):
     """The GIT_ASKPASS pair: a .bat git can exec directly (GIT_ASKPASS
     takes ONE executable path -- 'python script.py' with spaces in either
     path breaks), which calls a .py that answers Username with
@@ -597,8 +627,15 @@ def _write_askpass_shim():
     The token never appears in argv, git config, a remote URL or any
     credential store; the shims contain only file paths, hold no secret,
     and are on the mirror's ignore list anyway to keep generated files
-    out of the snapshots. Returns the .bat path."""
-    py = os.path.join(HERE, '.mirror-askpass.py')
+    out of the snapshots. Returns the .bat path.
+
+    target_dir (2026-09-29, the selftest-hygiene sweep's find): the real
+    push paths write into HERE as always (default None); the FIXTURE
+    passes a temp dir instead, because a selftest that rewrites files in
+    the tool's live home -- even the tool's own gitignored artifacts --
+    is a write outside temp, the exact class the sweep exists to catch."""
+    base = target_dir or HERE
+    py = os.path.join(base, '.mirror-askpass.py')
     with open(py, 'w', encoding='utf-8') as f:
         f.write("import sys\n"
                 "prompt = ' '.join(sys.argv[1:]).lower()\n"
@@ -607,7 +644,7 @@ def _write_askpass_shim():
                 "else:\n"
                 "    print(open(%r, encoding='utf-8').read().strip())\n"
                 % TOKEN_FILE)
-    bat = os.path.join(HERE, '.mirror-askpass.bat')
+    bat = os.path.join(base, '.mirror-askpass.bat')
     with open(bat, 'w', encoding='utf-8') as f:
         f.write('@echo off\r\n"%s" "%s" %%*\r\n' % (sys.executable, py))
     return bat
@@ -939,12 +976,21 @@ def run_fixtures():
        r.returncode == 0)
     ck('token_is_tracked() is False here (nothing has ever committed it)',
        token_is_tracked() is False)
-    ck('the askpass shim pair contains the token FILE PATH and never the '
-       'token: written, then read back and checked for the path and for '
-       'absence of any secret-shaped content',
-       (lambda p: os.path.basename(TOKEN_FILE) in open(
-           os.path.join(HERE, '.mirror-askpass.py'), encoding='utf-8').read()
-           and os.path.isfile(p))(_write_askpass_shim()))
+    # Shims written to a TEMP dir, not HERE -- the selftest-hygiene sweep
+    # (2026-09-29) caught this fixture rewriting the live home's shim pair;
+    # the sweep's own hover_backup_mirror arm now asserts the live pair is
+    # untouched by a selftest run.
+    shim_scratch = tempfile.mkdtemp(prefix='mirror_shim_fx_')
+    try:
+        ck('the askpass shim pair contains the token FILE PATH and never the '
+           'token: written (to a temp dir), then read back and checked for '
+           'the path and for absence of any secret-shaped content',
+           (lambda p: os.path.basename(TOKEN_FILE) in open(
+               os.path.join(shim_scratch, '.mirror-askpass.py'),
+               encoding='utf-8').read()
+               and os.path.isfile(p))(_write_askpass_shim(shim_scratch)))
+    finally:
+        shutil.rmtree(shim_scratch, ignore_errors=True)
 
     # --- the helper-reset guard, 2026-09-28 hardening: the reset saved ---
     # --- the first real push and must not be deletable in a refactor.  ---
@@ -991,6 +1037,42 @@ def run_fixtures():
     ck('drill_due fires when there is no passing drill on record '
        '(fresh state = due, not silently fine)',
        drill_due()[0] in (True, False))  # smoke: callable against real state
+
+    # --- FOREIGN-WORKTREE GUARD (2026-09-29, the stale-path sweep's own ---
+    # find, paid for live): running --selftest from the PLATFORM-REPO copy
+    # of this tool git-inited a nested repository inside the platform
+    # worktree (.claude/skills/sairn-hover-auditor/tools/.git) --
+    # ensure_repo() initialized wherever HERE was, unconditionally. A copy
+    # of this tool must FAIL LOUDLY from the wrong directory, never
+    # contaminate it.
+    fw_scratch = tempfile.mkdtemp(prefix='mirror_fw_fx_')
+    fw_real_here = globals()['HERE']
+    try:
+        outer = os.path.join(fw_scratch, 'outer')
+        inner = os.path.join(outer, 'sub', 'tools')
+        os.makedirs(inner)
+        subprocess.run(['git', 'init', '-q', outer], check=True)
+        globals()['HERE'] = inner
+        try:
+            ensure_repo()
+            fw_refused = False
+        except RuntimeError as e:
+            fw_refused = 'inside another repository' in str(e)
+        ck('KNOWN-BAD CONTROL: ensure_repo() inside a FOREIGN git worktree '
+           'REFUSES loudly instead of git-initing a nested repo there',
+           fw_refused)
+        ck('...and it created no nested .git in the foreign tree',
+           not os.path.isdir(os.path.join(inner, '.git')))
+        standalone = os.path.join(fw_scratch, 'standalone')
+        os.makedirs(standalone)
+        globals()['HERE'] = standalone
+        ensure_repo()
+        ck('CONTROL: a standalone directory (no surrounding repo) still '
+           'initializes normally -- the guard blocks only foreign worktrees',
+           os.path.isdir(os.path.join(standalone, '.git')))
+    finally:
+        globals()['HERE'] = fw_real_here
+        shutil.rmtree(fw_scratch, ignore_errors=True)
 
     # --- MIRROR-SCOPE ALLOWLIST (Michael's decision, 2026-09-29): the ---
     # mirror carries the LOG, the ANCHORS and the BEACON only -- never a

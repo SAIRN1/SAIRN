@@ -1751,7 +1751,40 @@ function mechRedactLocal(text){
    [/\b\d{3}-\d{2}-\d{4}\b/g,'[SSN REDACTED]'],
    [/\b\d{2}-\d{7}\b/g,'[EIN REDACTED]'],
    [/(?:\+?1[ .-])?(?:\(\d{3}\)[ .-]?|\d{3}[ .-])\d{3}[ .-]\d{4}\b/g,'[PHONE REDACTED]'],
-   [/\b\d{1,6}\s+(?:[A-Za-z0-9.'-]+\s+){0,5}(?:St|Street|Ave|Avenue|Rd|Road|Blvd|Boulevard|Ln|Lane|Dr|Drive|Ct|Court|Way|Pl|Place|Ter|Terrace|Cir|Circle|Hwy|Highway|Pkwy|Parkway|Suite|Ste|Unit|Apt)\b\.?/gi,'[ADDRESS REDACTED]']
+   // ── BROUGHT BACK INTO LINE WITH api/_lib/mech-redact.js, 2026-09-30 ──────
+   // The server module was fixed on 2026-09-29 and this copy was not, so the
+   // two disagreed for a day. The parity arm of
+   // tests/mech_docs_redaction_wiring_probe.py is what says they agree, and it
+   // saw only ONE of the divergences because its case list had not grown with
+   // the rules; widened, it found four and the CLIENT was wrong in all four.
+   //
+   // THE SERVER IS THE ONE THAT MOVED AND THE SERVER IS RIGHT. This end is a
+   // convenience, never a boundary -- the handler redacts whatever arrives
+   // regardless of what the caller sent. What this copy protects is the LOCAL
+   // row saveDoc writes to localStorage, so a divergence here leaks into the
+   // device's own copy and nowhere else. Real, and smaller than the server half.
+   //
+   // TWO RULES CHANGE, IN THE SERVER'S ORDER, AND THE ORDER IS LOAD-BEARING:
+   // the labelled-phone rule must run BEFORE the address rule so it consumes
+   // the digit run first. The server-side ablation found the address half was
+   // being defended by the phone half with nothing pinning it, which is why
+   // the widened case list drives `Qty 12  Unit: RTU-4` with no phone label.
+   //
+   // A SEVEN-DIGIT LOCAL NUMBER, ONLY BEHIND A LABEL. Bare `555-0142` must
+   // survive: `2100-0142` is a part number and eating part numbers is the
+   // failure the ten-digit rule above already refuses a bare run to avoid.
+   [/\b(?:phone|tel|telephone|cell|mobile|fax)\b\s*:?\s*\d{3}[ .-]\d{4}\b/gi,'[PHONE REDACTED]'],
+   // A SECONDARY DESIGNATOR CANNOT ANCHOR THE MATCH. Suite/Ste/Unit/Apt used to
+   // sit in the SAME alternation as the street types here, so `0142  Unit`
+   // parsed as house-number-plus-street-type: `Phone: 555-0142  Unit: RTU-4`
+   // came back as `Phone: 555-[ADDRESS REDACTED]: RTU-4` -- the number
+   // half-surviving AND the equipment label destroyed. `Unit:` is on nearly
+   // every work order this redactor exists to process. They are secondary BY
+   // DEFINITION: they follow a street line and never start one, so a primary
+   // street type is required and the designator is an optional TAIL -- which is
+   // also what keeps `1425 Lakeshore Blvd, Suite 200` whole instead of leaving
+   // the suite number beside a redaction token.
+   [/\b\d{1,6}\s+(?:[A-Za-z0-9.'-]+\s+){0,5}(?:St|Street|Ave|Avenue|Rd|Road|Blvd|Boulevard|Ln|Lane|Dr|Drive|Ct|Court|Way|Pl|Place|Ter|Terrace|Cir|Circle|Hwy|Highway|Pkwy|Parkway)\b\.?(?:,?\s+(?:Suite|Ste|Unit|Apt)\.?\s*[A-Za-z0-9-]+)?/gi,'[ADDRESS REDACTED]']
   ].forEach(function(r){
     out=out.replace(r[0],function(m){
       if(m.indexOf('REDACTED]')!==-1)return m;

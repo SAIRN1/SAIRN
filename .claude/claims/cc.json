@@ -2973,12 +2973,99 @@
       "task": "derive_charges must not report invoice_exists true for a row whose data blob is null, regression test first with the exact null-blob shape; and the mech_docs session gate. SUBJECT NAMED PER PR 4.3 FILES: api/sd-data.js api/sd-data-derive-charges.test.js",
       "claimed_at": "2026-09-29T17:22:58Z",
       "claimed_at_epoch": 1790702578.9871824,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T17:31:48Z",
       "files": [
         "api/sd-data-derive-charges.test.js",
         "api/sd-data.js"
       ]
+    },
+    {
+      "id": "cc-1790703168",
+      "session": "cc",
+      "subject": "platform",
+      "task": "the mech_docs write reachable on a licence key alone -- add mech_docs to SD_SESSION_GATED and SD_GATE_APP as one registry entry, tests first. SUBJECT NAMED PER PR 4.3 FILES: api/sd-data.js api/sd-data-mech-session-gate.test.js",
+      "claimed_at": "2026-09-29T17:32:48Z",
+      "claimed_at_epoch": 1790703168.6444526,
+      "status": "released",
+      "released_at": "2026-09-29T17:52:20Z",
+      "files": [
+        "api/sd-data-mech-session-gate.test.js",
+        "api/sd-data.js"
+      ]
+    },
+    {
+      "id": "cc-1790704384",
+      "session": "cc",
+      "subject": "platform",
+      "task": "the mech_docs write reachable on a licence key alone -- add mech_docs to SD_SESSION_GATED and SD_GATE_APP as one registry entry, tests first. SUBJECT NAMED PER PR 4.3 FILES: api/sd-data.js api/sd-data-mech-session-gate.test.js",
+      "claimed_at": "2026-09-29T17:53:04Z",
+      "claimed_at_epoch": 1790704384.2165544,
+      "status": "released",
+      "released_at": "2026-09-29T23:52:25Z",
+      "files": [
+        "api/sd-data-mech-session-gate.test.js",
+        "api/sd-data.js"
+      ]
+    },
+    {
+      "id": "cc-1790726010",
+      "session": "cc",
+      "subject": "branches",
+      "task": "delete the regfresh branches already proven contained in main, local and remote, after recording every tip. SUBJECT NAMED PER PR 4.3 FILES: docs/2026-09-29-stale-branch-tips.md",
+      "claimed_at": "2026-09-29T23:53:30Z",
+      "claimed_at_epoch": 1790726010.4301531,
+      "status": "released",
+      "released_at": "2026-09-30T00:07:26Z",
+      "files": [
+        "docs/2026-09-29-stale-branch-tips.md"
+      ]
+    },
+    {
+      "id": "cc-1790726878",
+      "session": "cc",
+      "subject": "mechlive",
+      "task": "the live verification record for the mech_docs write gate on the deployed endpoint, and the removal SQL for two rows it left on the demo licence. SUBJECT NAMED PER PR 4.3 FILES: docs/2026-09-29-mech-docs-gate-live-verification.md",
+      "claimed_at": "2026-09-30T00:07:58Z",
+      "claimed_at_epoch": 1790726878.6285617,
+      "status": "released",
+      "released_at": "2026-09-30T00:12:40Z",
+      "files": [
+        "docs/2026-09-29-mech-docs-gate-live-verification.md"
+      ]
+    },
+    {
+      "id": "cc-1790727917",
+      "session": "cc",
+      "subject": "reviewledger",
+      "task": "docs/tier-a-reviews.json",
+      "claimed_at": "2026-09-30T00:25:17Z",
+      "claimed_at_epoch": 1790727917.4004807,
+      "status": "released",
+      "released_at": "2026-09-30T00:32:00Z",
+      "files": null
+    },
+    {
+      "id": "cc-1790728326",
+      "session": "cc",
+      "subject": "readorder",
+      "task": "api/alf-append-only-read-order.test.js",
+      "claimed_at": "2026-09-30T00:32:06Z",
+      "claimed_at_epoch": 1790728326.7031388,
+      "status": "released",
+      "released_at": "2026-09-30T00:40:56Z",
+      "files": null
+    },
+    {
+      "id": "cc-1790728876",
+      "session": "cc",
+      "subject": "mechredact",
+      "task": "tests/mech_docs_redaction_wiring_probe.py sairnmechanical.html",
+      "claimed_at": "2026-09-30T00:41:16Z",
+      "claimed_at_epoch": 1790728876.286119,
+      "status": "released",
+      "released_at": "2026-09-30T01:41:39Z",
+      "files": null
     }
   ],
   "refusals": [

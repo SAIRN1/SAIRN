@@ -396,13 +396,77 @@
       "task": "eight-item queue: print the tier-a obligation row for routing; confirm the relocated tools path is invisible to build-agent gates and denominators; six independent cold reads at HEAD on unregistered or misdescribed resources; conditional validation of hover2's updated log mirror; one undirected batch through the linter; the weighted rotation draw; an in-flight/blocked/stale inventory; a stale-path methodology sweep across all relocated tooling with selftests run from two working directories.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hover.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. Each component of this claim checks CLEAR on its own.\n\nFILES: hover_backup_mirror.py hover_cold_scan_pool.py hover_log.py docs/CRITICALITY-TIERS.md",
       "claimed_at": "2026-09-29T17:11:40Z",
       "claimed_at_epoch": 1790701900.8728678,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T17:42:54Z",
       "files": [
         "docs/CRITICALITY-TIERS.md",
         "hover_backup_mirror.py",
         "hover_cold_scan_pool.py",
         "hover_log.py"
+      ]
+    },
+    {
+      "id": "hover-1790703990",
+      "session": "hover",
+      "subject": "hover",
+      "task": "nine-item queue: two routable H2 findings (the non-github ssh mislabel and the tools-hover2 store divergence); a read-only forensic report on the stray home-directory git repository; run the routing-gap checker and print every unrouted routable finding grouped by owner; the sd_owner_pin trigger statement; one undirected batch through the linter; the weighted rotation draw; conditional validation of H2's structured routable field; a selftest-writes-outside-temp methodology sweep with before/after tree snapshots and known-bad controls.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hover.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. Each component of this claim checks CLEAR on its own.\n\nFILES: hover_backup_mirror.py hover_log.py hover_cold_scan_pool.py tools/hover_routing_gap_check.py",
+      "claimed_at": "2026-09-29T17:46:30Z",
+      "claimed_at_epoch": 1790703990.0321028,
+      "status": "released",
+      "released_at": "2026-09-29T23:52:14Z",
+      "files": [
+        "hover_backup_mirror.py",
+        "hover_cold_scan_pool.py",
+        "hover_log.py",
+        "tools/hover_routing_gap_check.py"
+      ]
+    },
+    {
+      "id": "hover-1790726327",
+      "session": "hover",
+      "subject": "hover",
+      "task": "eight-item queue: stray-repo containment map (which SAIRN folders resolve into Documents git) plus a grep for tools running git from non-clone cwds plus printed deletion commands; the leg_guestbook resolution against 702; re-derive the grouped routing list at HEAD; conditional H2 routable-field validation; independent verification of every register row hank landed since the cold reads; one undirected batch through the linter; the weighted rotation draw; a freshness-stamp and re-derivation methodology sweep over every report-style tool output with known-bad controls.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hover.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. Each component of this claim checks CLEAR on its own.\n\nFILES: hover_backup_mirror.py hover_log.py hover_cold_scan_pool.py hover_coverage_ledger.py tools/hover_routing_gap_check.py",
+      "claimed_at": "2026-09-29T23:58:47Z",
+      "claimed_at_epoch": 1790726327.8956547,
+      "status": "released",
+      "released_at": "2026-09-30T00:21:27Z",
+      "files": [
+        "hover_backup_mirror.py",
+        "hover_cold_scan_pool.py",
+        "hover_coverage_ledger.py",
+        "hover_log.py",
+        "tools/hover_routing_gap_check.py"
+      ]
+    },
+    {
+      "id": "hover-1790727943",
+      "session": "hover",
+      "subject": "hover",
+      "task": "eight-item queue: paste-ready leg_guestbook cell text for hank; read-only inventory and credential-shape scan of the deploy folder inside the stray repo's capture surface; three cold reads (mech_docs gate split, derive_charges null guard, expectedApp completeness); re-verify the 18 open register findings against origin/main with the freshness stamp; conditional H2 routable-field validation; one undirected batch through the linter; the weighted rotation draw; a memory-vs-derived sweep of log entries 600-onward with a planted-drift control and a derivation-flag warning in the logging tool.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hover.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. Each component checks CLEAR on its own.\n\nFILES: hover_log.py hover_cold_scan_pool.py freshness_stamp.py",
+      "claimed_at": "2026-09-30T00:25:43Z",
+      "claimed_at_epoch": 1790727943.3664753,
+      "status": "released",
+      "released_at": "2026-09-30T00:55:09Z",
+      "files": [
+        "freshness_stamp.py",
+        "hover_cold_scan_pool.py",
+        "hover_log.py"
+      ]
+    },
+    {
+      "id": "hover-1790730365",
+      "session": "hover",
+      "subject": "hover",
+      "task": "nine-item queue: settle the supplier_lead_times schema-file contradiction from git and the live endpoint with replacement register-note text; the mech_checks tier and gate-change text; three driven cold verifications (sbCfg falsy coalesce, slabSyncOne null-data row, sv_audit_log povidone-iodine dose strings); print the 42 flagged citations by class with the corrected 729 wording; conditional H2 routable-field validation; re-derive the 16 open findings at fresh HEAD; one undirected batch through the linter; the rotation draw; a three-class citation classifier over the whole log with planted fixtures and a misclassification control, wired into the report stamps.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hover.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. Each component checks CLEAR on its own.\n\nFILES: hover_log.py freshness_stamp.py run_memory_vs_derived_sweep.py hover_cold_scan_pool.py",
+      "claimed_at": "2026-09-30T01:06:05Z",
+      "claimed_at_epoch": 1790730365.3703165,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "freshness_stamp.py",
+        "hover_cold_scan_pool.py",
+        "hover_log.py",
+        "run_memory_vs_derived_sweep.py"
       ]
     }
   ],

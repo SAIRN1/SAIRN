@@ -290,7 +290,29 @@ function mapNames(blob) {
     //     sf_trustee_audits answered 403.
     assert.match(m[0], /'sf_trustee_audits':\s*\['read', 'write'\]/);
     assert.match(m[0], /'sf_vehicle_service':\s*\['read', 'write'\]/);
-    assert.strictEqual(pairs, 74,
+    // 74 -> 75 on 2026-09-29: ONE resource, ONE pair. mech_docs WRITE, and the
+    // odd number is the point -- every entry before it is ['read', 'write'] and
+    // this one is ['write'] alone.
+    //
+    // WHY IT IS GATED, which is what this tripwire asks for: MECH_RECORDS gated
+    // all four of mech_quotes, mech_checks, mech_docs and mech_takeoffs on the
+    // LICENCE KEY ALONE -- a key shipped to the browser -- and mech_docs is the
+    // one of the four whose own server-side redactor
+    // (api/_lib/mech-redact.js) carries patterns for SSN, EIN and card-length
+    // digit runs, because scanDoc() asks a model to extract every field off
+    // work orders, contracts, permits and invoices and the answer is stored
+    // here. That redactor REDUCES text and NEVER REFUSES A WRITE, deliberately
+    // and by its own header, so it was not the gate and there was no other one.
+    //
+    // WHY IT IS WRITE ONLY, which this arm should make somebody justify rather
+    // than wave through: the reported finding is the WRITE. The READ stays
+    // licence-only, and the three sibling tables stay licence-only -- each is
+    // its own open-work row, and mech_checks is explicitly a DECISION nobody
+    // has been asked to make. api/sd-data-mech-session-gate.test.js drives all
+    // four of those UNCHANGED surfaces as well as the gated one, so widening
+    // this later is visible rather than silent.
+    assert.match(m[0], /'mech_docs':\s*\['write'\]/);
+    assert.strictEqual(pairs, 75,
       'the gate table changed size to ' + pairs + ' pairs -- add the new resource to this test and say why it is gated');
   });
 
@@ -432,7 +454,18 @@ function mapNames(blob) {
         // scp_invoices and the RESOURCE the dispatch tests for is `invoices`.
         // The named suite has an arm whose whole job is that distinction.
         invoices: 'api/sd-data-scp-session-gate.test.js',
-        scp_quotes: 'api/sd-data-scp-session-gate.test.js'
+        scp_quotes: 'api/sd-data-scp-session-gate.test.js',
+        // SAIRNmechanical's one, 2026-09-29. Driven in its own suite for the
+        // same reason as every entry above: that one mints sairnmechanical
+        // sessions and this file mints StoneDesk ones.
+        //
+        // IT IS THE FIRST WRITE-ONLY ENTRY IN THE TABLE, so the named suite
+        // carries something the others do not: arms that require the READ and
+        // the three sibling mech_ writes to STILL ANSWER on the licence key
+        // alone. A gate that quietly grew to cover mech_checks -- the cheque
+        // register its own branch comment calls "the sharp one" -- would be an
+        // unreviewed decision, and those arms are what make that visible.
+        mech_docs: 'api/sd-data-mech-session-gate.test.js'
       };
       // ── AND THE sf_ REMAINDER, COVERED BY A RULE RATHER THAN BY NAME ──────
       // THIS ARM WAS RED ON origin/main FROM 2026-09-22 TO 2026-09-24 and the

@@ -4956,9 +4956,35 @@ function csv(type){
 // rather than left in it to be silently ignored -- `pay` because frequency
 // moved to the employee record, `tax` because the state-withholding calculation
 // it configured was removed as invented.
+// ── SUBSTITUTE ON ABSENT, NEVER ON FALSY (2026-09-29) ─────────────────────
+// This read `ot: c.ot||d.ot`, and 0 and '' are falsy. A user who typed 0 -- or
+// cleared the field -- had their value replaced by 40 BEFORE sbOtThreshold()
+// was ever called, so the validation's `n<=0` branch was UNREACHABLE for
+// exactly those two values and sbOtThresholdNote() compared 40 against 40 and
+// reported nothing.
+//
+// THAT IS THE ONE CASE THE NOTE EXISTS FOR. Its own comment says so: a user who
+// typed 0 would otherwise see a normal-looking column and believe the setting
+// took effect. Neither figure was wrong -- both land on the statutory 40 -- but
+// the silence was, and silence on a money setting is what this panel keeps
+// paying for.
+//
+// `ot` USES hasOwnProperty, so an ABSENT key still defaults and a PRESENT 0
+// reaches the validator, which is the whole distinction: an absent setting is
+// not a typo, and a typed zero is.
+//
+// fy AND terms KEEP `||` DELIBERATELY. They are strings whose only falsy value
+// is '', and an empty string there really does mean unset -- there is no
+// rejectable empty fiscal year. Changing them would be a different decision
+// with no defect behind it.
 function sbCfg(){
   var d={fy:'January',ot:40,terms:'Net 30'};
-  try{ var c=ld('sb_cfg',null); return c?{fy:c.fy||d.fy,ot:c.ot||d.ot,terms:c.terms||d.terms}:d; }catch(e){ return d; }
+  try{
+    var c=ld('sb_cfg',null);
+    if(!c) return d;
+    var hasOt=Object.prototype.hasOwnProperty.call(c,'ot') && c.ot!==null && c.ot!==undefined;
+    return {fy:c.fy||d.fy, ot:hasOt?c.ot:d.ot, terms:c.terms||d.terms};
+  }catch(e){ return d; }
 }
 // ── THE OVERTIME THRESHOLD IS READ NOW (2026-09-26) ────────────────────────
 // It was recorded and ignored, and the on-screen reason for ignoring it --

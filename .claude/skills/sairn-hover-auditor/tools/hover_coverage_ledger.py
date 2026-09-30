@@ -229,6 +229,8 @@ def _print_report(rows, uncovered_only=False):
     covered = [r for r in rows if r['covered']]
     uncovered = [r for r in rows if not r['covered']]
     if not uncovered_only:
+        import freshness_stamp as _fs
+        print(_fs.stamp())
         print('HOVER COVERAGE LEDGER -- %d review-shaped commits, %d referenced by this role, %d not'
               % (len(rows), len(covered), len(uncovered)))
         print('COVERAGE HERE MEANS "cited in a hover_log ref field", not "driven to SKILL.md\'s own '

@@ -52,10 +52,24 @@ process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ||
 
 const assert = require('assert');
 const fs = require('fs');
+// ── A SESSION IS ATTACHED AS OF 2026-09-29, AND IT IS NOT A LOOSENING ──────
+// `mech_docs write` joined SD_SESSION_GATED that day, so a licence-key-alone
+// write now answers 403 -- which took five arms of this file red. Those arms
+// are about WHAT THE REDACTOR DOES to text that reaches the row; they were
+// never about who may write. Signing in restores the subject they were written
+// for instead of testing the new gate a second time by accident.
+//
+// THE GATE IS NOT WEAKENED BY THIS and is not checked here either.
+// api/sd-data-mech-session-gate.test.js owns that question and drives it in
+// both directions, including that the READ and the three sibling mech_ writes
+// still answer on the key alone. Two files asserting one thing is how the
+// weaker of the two ends up being the one somebody edits.
+const { signSessionToken } = require('./_lib/auth');
 function chr10() { return String.fromCharCode(10); }
 
 const HASH = 'mech-redact-hash';
 const APP = 'sairnmechanical';
+const ME = 'emp-tech-1';
 
 let pass = 0, fail = 0;
 async function test(name, fn) {
@@ -74,6 +88,12 @@ function mockRes() {
 function postgrestMock(calls) {
   return async function (url, opts) {
     calls.push({ url: String(url), opts: opts || null });
+    // The active-credential pre-gate reads the employee row for every gated
+    // resource. Without this the gate refuses on a token that verifies.
+    if (/_employee_auth\?/.test(String(url))) {
+      return { ok: true, status: 200, json: async function () {
+        return [{ license_hash: HASH, employee_id: ME, role: 'owner', active: true }]; } };
+    }
     if (opts && opts.method === 'POST') {
       const sent = JSON.parse(opts.body);
       return { ok: true, status: 200, text: async function () { return opts.body; },
@@ -120,7 +140,11 @@ async function write(resource, payload) {
   const res = mockRes();
   await h({
     method: 'POST',
-    headers: { authorization: 'Bearer KEY-FOR-' + HASH },
+    headers: {
+      authorization: 'Bearer KEY-FOR-' + HASH,
+      'x-sd-auth': signSessionToken({ app: APP, employee_id: ME,
+                                      role: 'owner', license_hash: HASH })
+    },
     body: { action: 'write', resource: resource, app_id: APP, payload: payload }
   }, res);
   const post = calls.filter(function (c) {

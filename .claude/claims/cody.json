@@ -2665,8 +2665,8 @@
       "task": "discharge the 68h obligation authored by hank on 2026-09-26T17:36:42Z",
       "claimed_at": "2026-09-29T13:58:08Z",
       "claimed_at_epoch": 1790690288.0322647,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T23:51:38Z",
       "files": null
     },
     {
@@ -2676,8 +2676,8 @@
       "task": "tools/sairn_claim.py tests/run_claim_matcher_probe.py",
       "claimed_at": "2026-09-29T14:04:57Z",
       "claimed_at_epoch": 1790690697.0094457,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T23:51:47Z",
       "files": null
     },
     {
@@ -2687,8 +2687,8 @@
       "task": "tools/dead_rule_sweep.py tests/run_dead_rule_sweep_probe.py",
       "claimed_at": "2026-09-29T14:07:07Z",
       "claimed_at_epoch": 1790690827.6279962,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T23:51:45Z",
       "files": null
     },
     {
@@ -2698,8 +2698,8 @@
       "task": "tests/sd-data-scp-licence-only.test.js",
       "claimed_at": "2026-09-29T14:08:01Z",
       "claimed_at_epoch": 1790690881.9259627,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T23:51:40Z",
       "files": null
     },
     {
@@ -2709,8 +2709,8 @@
       "task": "docs/2026-09-29-unreachable-tables-cody.md",
       "claimed_at": "2026-09-29T14:08:54Z",
       "claimed_at_epoch": 1790690934.0745296,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-29T23:51:42Z",
       "files": null
     },
     {
@@ -2720,6 +2720,116 @@
       "task": "docs/2026-09-29-parse-history-sweep-cody.md",
       "claimed_at": "2026-09-29T14:53:51Z",
       "claimed_at_epoch": 1790693631.2279036,
+      "status": "released",
+      "released_at": "2026-09-29T23:51:49Z",
+      "files": null
+    },
+    {
+      "id": "cody-1790704647",
+      "session": "cody",
+      "subject": "cody-tiercells",
+      "task": "docs/CRITICALITY-TIERS.md",
+      "claimed_at": "2026-09-29T17:57:27Z",
+      "claimed_at_epoch": 1790704647.135068,
+      "status": "released",
+      "released_at": "2026-09-29T23:51:51Z",
+      "files": null
+    },
+    {
+      "id": "cody-1790704677",
+      "session": "cody",
+      "subject": "cody-regnotes",
+      "task": "docs/defect-density-register.json",
+      "claimed_at": "2026-09-29T17:57:57Z",
+      "claimed_at_epoch": 1790704677.7669418,
+      "status": "released",
+      "released_at": "2026-09-29T23:51:53Z",
+      "files": null
+    },
+    {
+      "id": "cody-1790726581",
+      "session": "cody",
+      "subject": "cody-rev21",
+      "task": "discharge the 47h obligation authored by fourth on 2026-09-28T01:24:38Z",
+      "claimed_at": "2026-09-30T00:03:01Z",
+      "claimed_at_epoch": 1790726581.2345226,
+      "status": "active",
+      "released_at": null,
+      "files": null
+    },
+    {
+      "id": "cody-1790727168",
+      "session": "cody",
+      "subject": "cody-slab",
+      "task": "stonedesk.html tests/stonedesk_sync_null_blob.js",
+      "claimed_at": "2026-09-30T00:12:48Z",
+      "claimed_at_epoch": 1790727168.028539,
+      "status": "active",
+      "released_at": null,
+      "files": null
+    },
+    {
+      "id": "cody-1790727227",
+      "session": "cody",
+      "subject": "cody-vet",
+      "task": "sairnvet.html tests/sairnvet_povidone_range.js",
+      "claimed_at": "2026-09-30T00:13:47Z",
+      "claimed_at_epoch": 1790727227.6899178,
+      "status": "active",
+      "released_at": null,
+      "files": null
+    },
+    {
+      "id": "cody-1790727254",
+      "session": "cody",
+      "subject": "cody-prov",
+      "task": "tools/schema_provisioning_check.py tests/run_schema_provisioning_probe.py",
+      "claimed_at": "2026-09-30T00:14:14Z",
+      "claimed_at_epoch": 1790727254.4944248,
+      "status": "active",
+      "released_at": null,
+      "files": null
+    },
+    {
+      "id": "cody-1790727277",
+      "session": "cody",
+      "subject": "cody-bare",
+      "task": "tools/bare_run_write_check.py tests/run_bare_run_write_probe.py",
+      "claimed_at": "2026-09-30T00:14:37Z",
+      "claimed_at_epoch": 1790727277.4313102,
+      "status": "active",
+      "released_at": null,
+      "files": null
+    },
+    {
+      "id": "cody-1790727299",
+      "session": "cody",
+      "subject": "cody-pushgate",
+      "task": "tools/sairn_push_gate_hook.py tools/staged_parse_check.py",
+      "claimed_at": "2026-09-30T00:14:59Z",
+      "claimed_at_epoch": 1790727299.026617,
+      "status": "active",
+      "released_at": null,
+      "files": null
+    },
+    {
+      "id": "cody-1790727332",
+      "session": "cody",
+      "subject": "cody-batch8",
+      "task": "tests/stonedesk_bare_envelope_actions.js",
+      "claimed_at": "2026-09-30T00:15:32Z",
+      "claimed_at_epoch": 1790727332.5916383,
+      "status": "active",
+      "released_at": null,
+      "files": null
+    },
+    {
+      "id": "cody-1790728090",
+      "session": "cody",
+      "subject": "cody-defreg",
+      "task": "docs/defect-density-register.json",
+      "claimed_at": "2026-09-30T00:28:10Z",
+      "claimed_at_epoch": 1790728090.5478108,
       "status": "active",
       "released_at": null,
       "files": null
@@ -2951,6 +3061,45 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "shared phrase: \"check tests\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-29T17:50:55Z",
+      "my_subject": "cody-register",
+      "my_task": "docs/defect-density-register.json",
+      "other_session": "hank",
+      "other_subject": "hank",
+      "other_task": "queue25: the fourth-transport arm rewritten so the synthetic old-shape caller fails it, known-bad control first; the citation-drift-hook fourth path decided under the could-not-run rule; the 32 and 6 uncited register claims re-read or downgraded; the hedge-carry false DROPPED root-caused and fixed; the 16 refused and 12 could-not-tell reseat rows each given their reason, and the tool extended where it can be made to tell; the five idempotence timeouts rerun with a longer bound; a read-only confirmation that the relocated auditor tool path is invisible to every build-agent gate, glob, denominator and defect count; and an audit of every arm that asserts on a MESSAGE rather than on behaviour, each mutated in both directions.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hank.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. Register cells needing a file another session holds are delivered as replacement TEXT in a doc I own; the holder and the verbatim refusal go in my report.\n\nSUBJECT NAMED PER PR 4.3 FILES: tests/sairncare_transport_refusal.js tools/citation_no_source_report.py tools/hedge_carry_check.py tests/run_hedge_carry_probe.py tools/tier_a_review_gate.py tests/run_tier_a_reseat_probe.py tools/idempotence_double_run.py tools/message_assertion_audit.py tests/run_message_assertion_probe.py docs/2026-09-29-register-cells-hank.md docs/SAIRN-OPEN-WORK-INDEX.md docs/2026-09-29-hover-path-visibility.md",
+      "other_claimed_at": "2026-09-29T17:21:49Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"docs register\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-30T00:12:44Z",
+      "my_subject": "cody-idx",
+      "my_task": "docs/SAIRN-OPEN-WORK-INDEX.md",
+      "other_session": "hank",
+      "other_subject": "hank",
+      "other_task": "queue25: the fourth-transport arm rewritten so the synthetic old-shape caller fails it, known-bad control first; the citation-drift-hook fourth path decided under the could-not-run rule; the 32 and 6 uncited register claims re-read or downgraded; the hedge-carry false DROPPED root-caused and fixed; the 16 refused and 12 could-not-tell reseat rows each given their reason, and the tool extended where it can be made to tell; the five idempotence timeouts rerun with a longer bound; a read-only confirmation that the relocated auditor tool path is invisible to every build-agent gate, glob, denominator and defect count; and an audit of every arm that asserts on a MESSAGE rather than on behaviour, each mutated in both directions.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hank.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. Register cells needing a file another session holds are delivered as replacement TEXT in a doc I own; the holder and the verbatim refusal go in my report.\n\nSUBJECT NAMED PER PR 4.3 FILES: tests/sairncare_transport_refusal.js tools/citation_no_source_report.py tools/hedge_carry_check.py tests/run_hedge_carry_probe.py tools/tier_a_review_gate.py tests/run_tier_a_reseat_probe.py tools/idempotence_double_run.py tools/message_assertion_audit.py tests/run_message_assertion_probe.py docs/2026-09-29-register-cells-hank.md docs/SAIRN-OPEN-WORK-INDEX.md docs/2026-09-29-hover-path-visibility.md",
+      "other_claimed_at": "2026-09-29T17:21:49Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: docs/sairn-open-work-index.md",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-30T00:14:35Z",
+      "my_subject": "cody-drift",
+      "my_task": "tools/tier_citation_drift_check.py tests/run_tier_citation_drift_probe.py",
+      "other_session": "hank",
+      "other_subject": "hank",
+      "other_task": "queue25: the fourth-transport arm rewritten so the synthetic old-shape caller fails it, known-bad control first; the citation-drift-hook fourth path decided under the could-not-run rule; the 32 and 6 uncited register claims re-read or downgraded; the hedge-carry false DROPPED root-caused and fixed; the 16 refused and 12 could-not-tell reseat rows each given their reason, and the tool extended where it can be made to tell; the five idempotence timeouts rerun with a longer bound; a read-only confirmation that the relocated auditor tool path is invisible to every build-agent gate, glob, denominator and defect count; and an audit of every arm that asserts on a MESSAGE rather than on behaviour, each mutated in both directions.\n\nTHE PR 4.3 DECLARATION FOR THIS CLAIM IS IN .claude/claims/hank.json UNDER refusals, WRITTEN THERE BY THE CLAIM TOOL, NOT IN THIS STRING. Register cells needing a file another session holds are delivered as replacement TEXT in a doc I own; the holder and the verbatim refusal go in my report.\n\nSUBJECT NAMED PER PR 4.3 FILES: tests/sairncare_transport_refusal.js tools/citation_no_source_report.py tools/hedge_carry_check.py tests/run_hedge_carry_probe.py tools/tier_a_review_gate.py tests/run_tier_a_reseat_probe.py tools/idempotence_double_run.py tools/message_assertion_audit.py tests/run_message_assertion_probe.py docs/2026-09-29-register-cells-hank.md docs/SAIRN-OPEN-WORK-INDEX.md docs/2026-09-29-hover-path-visibility.md",
+      "other_claimed_at": "2026-09-29T17:21:49Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"citation drift\"",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]

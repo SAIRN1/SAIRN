@@ -141,6 +141,31 @@ CASES = [
     'EPA 608 Type II cert 608-II-2026-00417.',
     'Total $12,480.00, deposit $3,000.',
     'Spoke to Dave about the condenser.',
+    # ── THE TWO HALVES OF THE 2026-09-29 SERVER FIX, ADDED 2026-09-30 ──────
+    # api/_lib/mech-redact.js changed twice that day and this list did not, so
+    # the parity arm could see ONE of the two divergences it had just acquired.
+    # A parity check is only as wide as its cases, and a case list that does not
+    # move when the rules move reports agreement about the shapes it happens to
+    # hold. THIS IS THE SAME DEFECT THE ARM ITSELF EXISTS TO CATCH, one level up.
+    #
+    # THE OVER-MATCH HALF: Suite/Ste/Unit/Apt used to sit in the same
+    # alternation as the street types, so a digit run beside an equipment label
+    # parsed as house-number-plus-street-type. This is the input from the fix.
+    'Phone: 555-0142  Unit: RTU-4',
+    # ...and the isolating form, with NO phone label, so the address half is
+    # driven on its own rather than being defended by the phone rule consuming
+    # the digits first. That defence-in-depth-with-nothing-pinning-it is what
+    # the server-side ablation found.
+    'Qty 12  Unit: RTU-4  Tons 7.5',
+    # THE UNDER-MATCH HALF: a seven-digit local number is removed only BEHIND A
+    # LABEL, and must survive without one because a bare `2100-0142` is a part
+    # number. Both directions, because a client that redacts neither and a
+    # client that redacts both are different defects.
+    'Tel: 555-0142 for the shop',
+    'Replacement 2100-0142 ordered',
+    # And the suite tail specifically: the whole line goes, not the street half
+    # with the suite number left sitting beside a redaction token.
+    '88 Marlowe Road Unit 4, back lot',
 ]
 
 SERVER_CALL = re.compile(r'mechRedact\s*\.\s*redactDocumentText\s*\(')
@@ -188,9 +213,44 @@ H_CODE = strip_comments(io.open(HANDLER, encoding='utf-8', errors='replace').rea
 MOD_RAW = io.open(MODULE, encoding='utf-8', errors='replace').read()
 
 # ── 1-2: THE SERVER IS THE BOUNDARY ─────────────────────────────────────
-check('1. the handler CALLS the redactor on the mech_docs write path',
-      bool(SERVER_CALL.search(H_CODE)) and "resource === 'mech_docs'" in H_CODE,
-      'a pure function nothing calls protects nothing')
+# ── THIS ARM WAS RED ON main AND ITS SUBJECT WAS FINE (fixed 2026-09-30) ────
+# It required the literal `resource === 'mech_docs'` in the handler. On
+# 2026-09-29 the handler was deliberately changed FROM that name test TO a map
+# lookup, because mech_takeoffs and then mech_quotes have the same provenance
+# and a name test cannot grow. api/sd-data.js now says so at the line:
+# "DRIVEN BY A MAP, NOT BY A RESOURCE NAME (2026-09-29). This read
+# `if (resource === 'mech_docs')`."
+#
+# SO THE ONLY OCCURRENCE OF THAT STRING IS NOW INSIDE THAT COMMENT, and this
+# probe strips comments -- correctly -- so the anchor resolved to nothing and
+# the arm failed while the redaction was working. A check anchored on a literal
+# in somebody else's file has no way to notice the day that literal moves, which
+# is the eighth cross-domain discipline, and this is the second instance found
+# in one session.
+#
+# THE ANCHOR IS NOW THE MECHANISM, NOT A NAME: mech_docs must be a key of the
+# MECH_SCANNED_TEXT map, the redactor call must be guarded by that map, and the
+# call must exist. That is what "the redactor is reached for mech_docs" actually
+# means now, and it keeps being true when a fourth table joins the map.
+SCANNED_MAP = re.compile(r'MECH_SCANNED_TEXT\s*=\s*\{([\s\S]*?)\}')
+_map_m = SCANNED_MAP.search(H_CODE)
+_map_keys = re.findall(r'(\w+)\s*:', _map_m.group(1)) if _map_m else []
+check('1. the handler CALLS the redactor on the mech_docs write path, driven by '
+      'the MECH_SCANNED_TEXT map rather than by a resource name',
+      bool(SERVER_CALL.search(H_CODE))
+      and 'mech_docs' in _map_keys
+      and 'MECH_SCANNED_TEXT[resource]' in H_CODE,
+      'a pure function nothing calls protects nothing. map found=%s keys=%s '
+      'call=%s guard=%s'
+      % (bool(_map_m), _map_keys, bool(SERVER_CALL.search(H_CODE)),
+         'MECH_SCANNED_TEXT[resource]' in H_CODE))
+check('1b. KNOWN-BAD for 1: dropping mech_docs from that map is CAUGHT -- or '
+      'arm 1 is asserting the map exists rather than that it covers this table',
+      'mech_docs' not in re.findall(
+          r'(\w+)\s*:',
+          (SCANNED_MAP.search(H_CODE.replace("mech_docs: 'text'", "// removed"))
+           or _map_m).group(1)) if _map_m else False,
+      'the arm cannot tell a map that covers mech_docs from one that does not')
 check('2. the redacted payload is what gets stored AND what is returned',
       'data: mPayload' in H_CODE and 'rows[0].data : mPayload' in H_CODE,
       'returning the raw request body on the fallback arm hands the client '
@@ -207,6 +267,32 @@ check('3. saveDoc redacts the LOCAL row before writing it',
 bad, err = parity(RAW_APP, MODULE)
 check('4. the client and server redactors agree on every case',
       bad == [], err or ('disagreements: ' + json.dumps(bad)[:400]))
+
+# ── KNOWN-BAD FOR ARM 4: A PAIR THAT DISAGREES MUST FAIL ────────────────
+# Arm 4 returning [] has two possible meanings and only one of them is good:
+# the copies agree, or the harness is not comparing anything. On 2026-09-29 the
+# case list had not grown with the rules and arm 4 saw ONE of the two
+# divergences it had just acquired -- a partial answer reading as a clean one.
+#
+# So a DELIBERATE divergence is planted in the client source IN MEMORY, never on
+# disk, and arm 4's own mechanism must report it. The mutation is the smallest
+# one that changes behaviour on a case already in the list: the labelled-phone
+# rule is deleted from the client, so `Tel: 555-0142 for the shop` is left
+# untouched at one end and redacted at the other.
+CLIENT_PHONE_RULE = "[/\\b(?:phone|tel|telephone|cell|mobile|fax)\\b\\s*:?\\s*\\d{3}[ .-]\\d{4}\\b/gi,'[PHONE REDACTED]'],"
+_mutant = RAW_APP.replace(CLIENT_PHONE_RULE, '', 1)
+check('4b. KNOWN-BAD for 4: the planted line is really in the app, or the '
+      'mutation below is a no-op and 4c proves nothing',
+      _mutant != RAW_APP,
+      'the client labelled-phone rule was not found verbatim, so 4c would be '
+      'comparing the app with itself')
+_mbad, _merr = parity(_mutant, MODULE)
+check('4c. KNOWN-BAD for 4: with the client labelled-phone rule REMOVED, the '
+      'parity arm REPORTS a disagreement -- so a green arm 4 means the copies '
+      'agree and not that nothing was compared',
+      _mbad is not None and len(_mbad) > 0,
+      _merr or 'the parity harness reported agreement between a client that '
+               'cannot redact a labelled local number and a server that can')
 
 # ── 5: NO LITERAL BACKSPACE, WHICH IS NOT THEORETICAL ───────────────────
 # The first version of the client function had a 0x08 in place of every `\b`

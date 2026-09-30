@@ -297,7 +297,7 @@ def append_entry(entry_type, summary, ref='', target='self', severity='',
                  eqa_checkpoint=False, path=None, source='',
                  source_exempt_reason='', repo=None, tier_claim=False,
                  contradicts=None, mistake_class='', rotation_batch=False,
-                 lint_token=''):
+                 lint_token='', routable=None):
     """Full schema per hover-interface-specs-2026-09-22.md #1. Refuses
     (raises ValueError) on: a backtick in summary (shell command-substitution
     data-loss risk -- use append_entry with text read from a file instead,
@@ -409,6 +409,42 @@ def append_entry(entry_type, summary, ref='', target='self', severity='',
             'already carry that meaning for their own entry types.'
             % entry_type)
 
+    # ROUTABLE FIELD, added 2026-09-29 (docs/2026-09-29-hover-gap-research-
+    # h2.md item 1): tools/hover_routing_gap_check.py (a build-agent tool,
+    # not read as H1's own implementation -- this is the shared CONTRACT
+    # both hover instances are meant to satisfy) reads entry['routable'] as
+    # a list of resource names and classifies it 'structured' -- EXACT --
+    # versus guessing resource-shaped tokens out of free-text `ref`
+    # ('prose-fallback', weaker, and the checker itself says so). Without
+    # this field this role's own findings were structurally invisible to
+    # that checker's exact-count half. Restricted to type=finding: a
+    # routable NAME is a claim "this specific resource needs a build
+    # agent's attention", which is what a finding asserts and a check/note
+    # does not. Mechanically checked against target, same discipline as
+    # --contradicts's shared-token check: every routable name must appear
+    # as one of the comma-split target tokens, so a caller cannot route a
+    # resource this entry's own target field never named.
+    routable_list = []
+    if routable is not None:
+        if isinstance(routable, str):
+            routable_list = [x.strip() for x in routable.split(',') if x.strip()]
+        else:
+            routable_list = [str(x).strip() for x in routable if str(x).strip()]
+    if routable_list and entry_type != 'finding':
+        raise ValueError(
+            'refusing: --routable marks a resource that needs a build '
+            "agent's attention -- type must be finding, not %r. A check "
+            'or note is not itself a routable claim.' % entry_type)
+    if routable_list:
+        target_tokens = {t.strip() for t in (target or '').split(',') if t.strip()}
+        unnamed = [r for r in routable_list if r not in target_tokens]
+        if unnamed:
+            raise ValueError(
+                'refusing: --routable names %r which %s not in --target '
+                '%r -- a routable resource must be one this entry already '
+                'names as its target, checked mechanically, not asserted'
+                % (unnamed, 'is' if len(unnamed) == 1 else 'are', target))
+
     # ROTATION-BATCH LINT-TOKEN GATE, added 2026-09-29: the mechanical
     # marker for the skipped-run gap named in docs/2026-09-29-hover-gap-
     # research-h2.md's item 3 ("nothing structural marks a skipped linter
@@ -517,6 +553,8 @@ def append_entry(entry_type, summary, ref='', target='self', severity='',
         body['contradicts'] = contradicts
     if mistake_class:
         body['mistake_class'] = mistake_class
+    if routable_list:
+        body['routable'] = routable_list
 
     # THE WRITE-TIME CHECK -- positional, not optional: the last thing that
     # happens before the file is opened. Every captured source is re-derived
@@ -630,6 +668,12 @@ def main(argv):
     ap.add_argument('--lint-token', default='',
                     help='the token hover_citation_linter.py --lint printed '
                          'for this exact summary text. See --rotation-batch.')
+    ap.add_argument('--routable', default='',
+                    help='comma-separated resource names this finding is '
+                         'routable against -- read by tools/'
+                         'hover_routing_gap_check.py as the STRUCTURED, '
+                         'exact form. type=finding only; every name must '
+                         'already appear in --target.')
     args = ap.parse_args(argv)
 
     if args.selftest:
@@ -657,7 +701,8 @@ def main(argv):
                              contradicts=args.contradicts,
                              mistake_class=args.mistake_class,
                              rotation_batch=args.rotation_batch,
-                             lint_token=args.lint_token)
+                             lint_token=args.lint_token,
+                             routable=args.routable)
         except (ValueError, RuntimeError) as exc:
             print('refusing: %s' % exc); return 2
         print('appended seq %d: %s' % (e['seq'], e['summary'][:80]))
@@ -879,6 +924,62 @@ def selftest():
        'disagrees with the real GUARD-REQUIRED verdict at 3 occurrences',
        report2['stale-fact-reuse'][2] == 'GUARD-REQUIRED' and
        fake['stale-fact-reuse'][2] == 'WATCH')
+
+    # ROUTABLE FIELD fixtures, 2026-09-29 (the routing-gap-invisibility gap:
+    # this role's own findings had no structured field the routing-gap
+    # checker could read, per tools/hover_routing_gap_check.py -- a build
+    # tool's own read contract, not H1's implementation).
+    ck('--routable on a non-finding type is refused',
+       _raises(ValueError, append_entry, 'check', 'trying to route a check',
+               target='rt_fixture_1', routable='rt_fixture_1', path=path))
+    ck('--routable on a note is refused',
+       _raises(ValueError, append_entry, 'note', 'trying to route a note',
+               target='rt_fixture_1', routable='rt_fixture_1', path=path))
+    ck('--routable naming something NOT in --target is refused -- a '
+       'routable resource must already be named as this entry\'s target',
+       _raises(ValueError, append_entry, 'finding', 'routes an unnamed resource',
+               target='rt_fixture_a', vector='T:B/EX:NA/IM:M/SC:C',
+               source_exempt_reason='fixture', routable='rt_fixture_b',
+               path=path))
+    rt1 = append_entry('finding', 'a real routable finding, comma string form',
+                       target='rt_fixture_2,rt_fixture_3',
+                       vector='T:B/EX:NA/IM:M/SC:C', source_exempt_reason='fixture',
+                       routable='rt_fixture_2,rt_fixture_3', path=path)
+    ck('--routable as a comma string, both names in --target, succeeds and '
+       'stamps a LIST on the entry',
+       rt1.get('routable') == ['rt_fixture_2', 'rt_fixture_3'])
+    rt2 = append_entry('finding', 'a real routable finding, list form',
+                       target='rt_fixture_4', vector='T:B/EX:NA/IM:M/SC:C',
+                       source_exempt_reason='fixture',
+                       routable=['rt_fixture_4'], path=path)
+    ck('--routable as a real list (not a CLI string) also succeeds',
+       rt2.get('routable') == ['rt_fixture_4'])
+    rt3 = append_entry('finding', 'a finding with no routable names at all',
+                       target='rt_fixture_5', vector='T:B/EX:NA/IM:M/SC:C',
+                       source_exempt_reason='fixture', path=path)
+    ck('a finding with NO --routable carries no routable key at all -- '
+       'absence is absence, not an empty list sitting in every row',
+       'routable' not in rt3)
+    # KNOWN-BAD CONTROL: the exact shape tools/hover_routing_gap_check.py
+    # itself distinguishes -- a routable list vs. the weaker prose-fallback
+    # guess out of `ref`. Prove OUR entries actually classify structured
+    # under that tool's own real function, not merely that our own field
+    # exists.
+    import importlib.util as _ilu
+    _rgc_path = os.path.join(DEFAULT_PLATFORM_REPO, 'tools',
+                             'hover_routing_gap_check.py')
+    if os.path.isfile(_rgc_path):
+        _spec = _ilu.spec_from_file_location('hover_routing_gap_check', _rgc_path)
+        _rgc = _ilu.module_from_spec(_spec)
+        _spec.loader.exec_module(_rgc)
+        ck('KNOWN-BAD CONTROL, driven against the REAL checker function: an '
+           'entry with a real --routable list classifies structured, and '
+           'one with none classifies NOT structured (prose-fallback or none)',
+           _rgc.routable_names(rt1)[1] == 'structured' and
+           _rgc.routable_names(rt3)[1] != 'structured')
+    else:
+        ck('routing-gap checker not found at %r -- real-function control '
+           'skipped, not silently passed' % _rgc_path, True)
 
     # ROTATION-BATCH LINT-TOKEN fixtures, 2026-09-29 (the skipped-run gap
     # named in docs/2026-09-29-hover-gap-research-h2.md's item 3).
