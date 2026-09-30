@@ -2954,6 +2954,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "cody-1790775815",
+      "session": "cody",
+      "subject": "cody-barelist",
+      "task": "tools/bare_run_writers.py tools/bare_run_write_check.py tests/run_bare_run_write_probe.py",
+      "claimed_at": "2026-09-30T13:43:35Z",
+      "claimed_at_epoch": 1790775815.680987,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
