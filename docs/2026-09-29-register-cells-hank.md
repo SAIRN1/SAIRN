@@ -495,14 +495,14 @@ carry a real risk are routed to the place that already owns them.
 | `sen_evv_config` | **A LEGACY KEY NOTHING WRITES ANY MORE.** Three occurrences in `sairnsenior.html`: a comment (`:1754`), the `SEN_UNSCOPED_CACHES` list (`:1761`), and a **one-way migration read** at `:5732` that lifts it into `sen_settings.evv_config` | `grep -n sen_evv_config sairnsenior.html` returns no `st(` or `setItem` — **no writer exists.** The live resource is `sen_settings`, whose registry comment at `api/_resources/sairnsenior.js:58` already says it *"holds 'agency_profile' and 'evv_config'"* | Nowhere new. **Finding (3) below:** `SEN_UNSCOPED_CACHES` declares a key nothing writes |
 | `sen_evv_queue` | **An offline outbox, not a record store.** `SEN_EVV_QUEUE_KEY` (`:3015`), capped at 200 (`:3017`), FIFO stop-on-first-failure flush (`senFlushEvvQueue`, `:3037`). Entries are `{queued_at, payload}` and are **deleted on successful send** | Does it hold anything after a successful sync? **No** — it is a transport buffer for `sen_visits`, which is registered | Nowhere new. It is upstream of a registered resource, not a resource |
 | `law_strike_log` | A local-only jury-strike log: `juryStrikeLog`/`juryStrikeSave` (`sairnlaw.html:7156`/`:7157`), three consumers, `{juror_id, reason, juror_statement, case_relevance, recorded_at, recorded_by}` | In `api/_resources/sairnlaw.js`? **No.** Nor in its `notSynced` list, which holds only `law_billingcodes` | **Finding (2) below.** Not a register row — a missing `notSynced` declaration, which `tools/local_only_collection_check.py` is the existing owner of |
-| `sd_owner_pin` | **A DEAD KEY. One occurrence in the entire repository** — inside `itaClearData`'s keep-list at `stonedesk.html:42280`. Nothing writes it, nothing reads it | `grep -rn "owner_pin\|ownerPin\|OWNER_PIN" --include=*.html --include=*.js --include=*.sql .` → **one hit, the keep-list itself** | **Finding (1) below.** A register row here would register a resource that does not exist |
+| `sd_owner_pin` | **A DEAD KEY. One occurrence in the entire repository** — inside `itaClearData`'s keep-list at `stonedesk.html:42326`. Nothing writes it, nothing reads it | `grep -rn "owner_pin\|ownerPin\|OWNER_PIN" --include=*.html --include=*.js --include=*.sql .` → **one hit, the keep-list itself** | **Finding (1) below.** A register row here would register a resource that does not exist |
 | `sf_district_keypair` | **An ECDSA P-256 PRIVATE key JWK in `localStorage`, in the clear.** `sfEnsureKeypair()` (`sairnfreedom.html:7215`) generates it with `extractable: true`, exports both JWKs and stores `{privateJwk, publicJwk, created}` at `:7224` | In the `resources` array? **No.** It is in `api/_resources/sairnfreedom.js`'s **declared exclusion block** (`:85-86`): *"SIGNING KEY MATERIAL. It must not leave the device, and a backup is the opposite of that"* | **Finding (4) below.** The exclusion is a real, reasoned declaration and `tests/sairnfreedom_key_reconciliation.js` already executes it. What is missing is a **criticality statement**, not a sync row |
 | `sf_known_keys` | **DOES NOT EXIST UNDER THAT NAME.** Zero occurrences repo-wide. The real key is **`sf_district_known_keys`** (`sairnfreedom.html:7163`, `K_KNOWNKEYS`) — the trust-on-first-use fingerprint map, also in the declared exclusion block | `grep -rn sf_known_keys .` → **nothing** | **The name is the finding.** Corrected here; nothing to write |
 
 ### The four findings this resolves into
 
 **(1) `sd_owner_pin` is preserved by a demo wipe and written by nothing.** `itaClearData`
-(`stonedesk.html:42280`) deletes every `sd_`-prefixed key except
+(`stonedesk.html:42326`) deletes every `sd_`-prefixed key except
 `['sd_owner_pin','sd_license_key','sd_plan', ITA_USERS_KEY, ITA_AUDIT_KEY]`. Four of
 those five are live. `sd_owner_pin` is the fifth and has no writer and no reader
 anywhere in the repo. **Two readings and both need action:** either an owner-PIN
@@ -975,3 +975,530 @@ Add this to the `MONEY IS COMPARED IN CENTS` header block:
   That is declared loudly in its header and in three test arms, which is the right
   treatment for the SAIRNmechanical G3 defect — not something to fix quietly.
 * **Nothing above is applied.** The file is not in my claim.
+
+---
+
+# 2026-09-30 — reconciliation against fourth and H1, and the register-scope ruling
+
+**Hank.** `docs/CRITICALITY-TIERS.md` checked **CLEAR** at the start of this pass
+(hover released it), so the cells below are **LANDED**, not delivered as text. Claim
+is exact file paths only, nothing reworded to pass the matcher.
+
+---
+
+## 1. Reconciled against `docs/2026-09-29-cells-fourth.md` — conflicts by resource
+
+### `locations` — **NO CONFLICT, AND THE REASON IS A GAP IN MY OWN SWEEP**
+
+Fourth's cell and mine are disjoint because **`locations` was invisible to the
+2026-09-29 money-sentence sweep.** That sweep's population was *rows carrying
+"neither money nor a regulated record"* **and** *"classified by the stated B rule
+rather than individually read"* — 47 rows. `locations`' integrity cell read
+*"Shared operational reference; `api/_lib/dnt-location.js` stamps location on
+writes elsewhere"* and **never carried the money sentence**, so the selector
+skipped it — while its CONFIDENTIALITY cell did carry the never-individually-read
+clause, and the row does hold a street address.
+
+> **A selector keyed on one clause cannot see a row that fails the other.** My 47
+> was the intersection; the never-read population alone is larger. Fourth found the
+> row my population definition excluded by construction, and that is the finding
+> rather than a disagreement.
+
+**Two corrections to fourth's delivered text, both landed:**
+
+1. **A DRIFTED CITATION I INTRODUCED BY PASTING IT.** `api/sd-data.js:1302` is the
+   right line — it reads `'locations': 'stonedesk'` — but `register_freshness_check`
+   reported it DRIFTED because the sentence named `sd_locations` beside it and that
+   identifier resolves to `:2846/:2854/:2887`. Rewritten to cite the app-map entry
+   by the identifier actually on the line, and the table separately at `:2887`.
+2. **The delivered text says the write is management-only *because* of the rename.**
+   That is the code's stated reason and not the whole one: `:2872-2876` gates the
+   whole write verb, rename included.
+
+**Fourth's central claim is confirmed and is the sharper half:** the previous basis
+cited `api/_lib/dnt-location.js`, SAIRNdental's write-side stamp (its own header,
+lines 1-8), for a row whose resource is StoneDesk's. A different app's file is not
+evidence for this row.
+
+### `sv_herdhealth` — **SAME VERDICT, FOUR CONFLICTS IN THE EVIDENCE, THREE OF THEM MINE**
+
+Both reads land **B/B** and both strike *"classified by the stated B rule rather
+than individually read"*. The evidence conflicts:
+
+| | fourth | hank (2026-09-29) | settled at HEAD |
+|---|---|---|---|
+| **`scc`** | somatic cell count, the milk-quality figure a dairy is held to for saleability | **not mentioned at all** | **FOURTH IS RIGHT.** The input is labelled *"Somatic Cell Count (thousands, dairy only)"* at `sairnvet.html:6387`; written at `:6415-6416`; averaged `:6361-6362`; published as `avgSCC` at `:6370`. **My read listed the field and characterised only `vaccinationCompliance` as the regulated-adjacent one — I missed the stronger of the two.** |
+| **consumers** | `renderHerdHealth`, `openHerdEdit`, `saveHerdEdit`, `removeHerd`, `addHerd`, the getter | *"renderHerdHealth, two further readers (`:6375`, `:6406`), the table, one CSV export"* | **MINE IS WRONG.** `:6375` and `:6406` are `openHerdEdit` and `saveHerdEdit` — a form renderer and a **WRITER**. An enumeration offered as the deciding test had mislabelled a writer as a reader. |
+| **egress** | *"no report, no export and no regulator path"* | *"one CSV export button (`:1180`)"* | **BOTH, AND THEY ARE COMPATIBLE ONLY FOR A REASON THAT HAD TO BE CHECKED.** The export is real — `exportTableCSV('panel-herdhealth-table', ...)` at `sairnvet.html:1180` — and it **cannot reach either figure**, because the exported table's `<thead>` is `Herd \| Species \| Head Count \| Last Visit \| Status` (`:1185`) and neither `scc` nor `vaccinationCompliance` is a column. Fourth's sentence is too strong as written; the conclusion survives. |
+| **rename blast radius** | does not exist here; the herd name is not editable and nothing outside references a herd | not addressed | **FOURTH IS RIGHT, verified:** `openHerdEdit` (`:6374-6398`) exposes five fields and the name is heading text only; `saveHerdEdit` (`:6405-6421`) writes only those five. |
+| **line numbers** | `:6386` for the SCC input | — | **OFF BY ONE.** `:6386` is the vaccination-compliance input; SCC is `:6387`. Corrected in the landed cell. |
+
+---
+
+## 2. H1's `leg_guestbook` replacement cell — **APPLIES CLEANLY, AND IT IS LANDED**
+
+**H1's quotation of the cell matched byte for byte at HEAD before the edit**, so the
+replacement applied with no ambiguity. H1's proposal is not a tier change: *"repoint
+the cell to state honestly what is on the row … and re-tier the confidentiality axis
+from that accurate description rather than the current false 'no PII' claim"*, with
+the trigger *"if a public-facing memorial page is ever built."*
+
+**OLD LINE (`docs/CRITICALITY-TIERS.md:467`), verbatim:**
+
+```
+| `leg_guestbook` | **B** | **B** | Operational data lost or wrong | No elevated confidentiality class -- no PII, PHI, privileged communication, or financial-account detail on this row. Classified by the stated B rule rather than individually read | Operational data lost or wrong: neither money nor a regulated record. Classified by the stated B rule rather than individually read |
+```
+
+**NEW LINE — B/B, the false clause struck, the trigger named.** Landed in `c97acbf9`
+and then corrected once more; read it at `docs/CRITICALITY-TIERS.md:467`. The three
+load-bearing facts, each the code's own statement rather than an inference from field
+names: the name is entered by **staff** (`sairnlegacy.html:3580-3582`, *"Guestbook
+entries are logged by staff on the family's behalf until real public hosting
+exists"*); **nothing is public** (*"Internal content record only -- deliberately no
+public URL/hosting"*); **only staff read it** (`rGuestbook()` `:3630` renders into
+`#gb-list`). **So H2's stated reason — intentionally public guestbook content — is
+wrong about this app twice over.**
+
+**THE CHECKER REFUSED MY FIRST TWO ATTEMPTS AT THIS CELL AND WAS RIGHT BOTH TIMES.**
+`criticality_tier_check.py` raised `ASSERTS A GATE`: my cell said the row was
+session-gated and named `api/sd-data.js:13299`. The register's own header forbids it
+— *"This table states what the data IS. Whether a gate exists is a code fact it does
+not assert"* — and my second attempt tripped the same arm by explaining the first.
+The clause is gone, not softened.
+
+**AND A CORRECTION TO MY OWN 2026-09-29 VERDICT:** it cited `#mm-guestbook` as the
+render target. At HEAD it is `#gb-list` (`:3631`).
+
+---
+
+## 3. H1's open register findings — **THE COUNT IS 16, NOT 18, AND H1 SAYS SO**
+
+**I could not derive 18 and did not manufacture it.** Three derivations:
+
+| derivation | count |
+|---|---|
+| H1's own statement, log #732 item 6: *"the 16 open register findings at fresh HEAD"* — and it names them | **16** |
+| resources named by a **structured-routable FINDING** in H1's log, excluding its own tooling (`hover2_log_mirror`, `tools_hover2_store_sync`) | **17** |
+| the same, plus `sd_inventory` (named by a *check*, #685, and still carrying the never-read clause) | 18 |
+
+**18 is reachable only by counting one check as a finding.** H1's own 16 is the
+number to use, and the third column is how a reader gets to 18 if they were told it.
+
+### The list, keyed by resource — apply-ready text, or the reason not
+
+| # | resource | status now | apply-ready, or why not |
+|---|---|---|---|
+| 1 | **`mech_checks`** | **LANDED** `c97acbf9` | B → A on integrity. Item 4 below. |
+| 2 | **`leg_guestbook`** | **LANDED** `c97acbf9` | Item 2 above. |
+| 3 | **`sd_customers`** | **CANNOT APPLY YET** | H1 cites `stonedesk.html:25556`; `register_freshness_check` reports that cite DRIFTED — `custSave` is now at `:25599`. The finding needs its citation re-derived before a cell is written on it, and re-deriving somebody else's finding is not the same as applying it. |
+| 4 | **`sd_business_snapshots`** | **CANNOT APPLY YET** | Same shape: H1 cites `:6864`, and the 2026-09-29 pass recorded a +43 drift on this row. The row also needs a money-limb judgement I have not made. |
+| 5 | **`sf_honor_details`** | **CANNOT APPLY YET** | H1 cites `:5496` and a +1381 drift plus five missing fields (`ours`, `shared`, `issued`, `recovered`, `presented`). A 1381-line drift means the cite must be re-derived, not repointed. |
+| 6 | **`sf_bottle_fills`** | **CANNOT APPLY YET** | H1's finding is that the cell cites `sfRecordBottleFill` where the real name is `sfBottleFill`. That is an identifier correction I have not verified at HEAD, and applying an unverified rename into the register is the defect this whole pass is about. |
+| 7 | **`sf_documents`** | **CANNOT APPLY YET** | H1 cites `:5637` plus a +832 drift. Same reason as 5. |
+| 8 | **`sb_emps`** | **CANNOT APPLY — NO ROW EXISTS** | Not in `api/_resources/sairnbiz.js`. Settled by the item-7 ruling: adding a row makes `criticality_tier_check.py` print `NOT A RESOURCE` and turns `run_criticality_tier_probe.py` RED on main. Cell text stands in this document from queue24. |
+| 9 | **`sb_co`** | **CANNOT APPLY — NO ROW EXISTS** | Same. |
+| 10 | **`sen_evv_queue`** | **CANNOT APPLY — NO ROW EXISTS, AND THE RULING SAYS WHY** | Item 7. H1's A/A risk assessment is correct and the venue is wrong. |
+| 11 | **`law_strike_log`** | **CANNOT APPLY — NO ROW EXISTS** | Item 7. |
+| 12 | **`sf_district_keypair`** | **CANNOT APPLY — NO ROW EXISTS** | Item 7. It is in `api/_resources/sairnfreedom.js`'s declared EXCLUSION block (`:85-86`), not its `resources` array. |
+| 13 | **`sf_district_known_keys`** | **CANNOT APPLY — NO ROW EXISTS** | Item 7, and item 8: this is the real name. |
+| 14 | **`sen_evv_config`** | **CANNOT APPLY — NO ROW EXISTS, AND NOTHING WRITES IT** | Item 7. A legacy key with a one-way migration read at `sairnsenior.html:5732` and no writer. |
+| 15 | **`sd_owner_pin`** | **CANNOT APPLY — NO ROW EXISTS AND THE KEY IS DEAD** | Item 6. A row here would register a resource that does not exist. |
+| 16 | **`supplier_lead_times`** | **CANNOT APPLY YET** | H1's #730 correction row settles a REPO fact (`sql/sd_supplier_lead_times_schema.sql` exists, landed `070fa0ad`) and explicitly leaves the LIVE fact open — an authenticated table-existence read COULD NOT RUN from that clone. The register note must not assert the half that could not be read. |
+
+**Two landed of sixteen. Eight cannot be applied because the register's unit forbids
+a row at all, five need a citation re-derived first, and one must not assert a live
+fact nobody could read.** None is blocked by a claim.
+
+---
+
+## 4. `mech_checks` — proposal A over proposal B, on the evidence
+
+**PROPOSAL A** (H1 #718(a) and #732 item 2): re-tier **A integrity / B
+confidentiality**, plus a gate change adding `'mech_checks': ['write']` to
+`SD_SESSION_GATED`.
+**PROPOSAL B** (H1 #718(a), the fallback): leave the tier, rewrite the two false
+clauses — *"At minimum the 'neither money nor a regulated record' and 'no PII'
+clauses must be rewritten … whatever the tier lands."*
+
+**PROPOSAL A. Three reasons, in order of weight.**
+
+1. **The register's own precedent decides it.** `invoices` is A-integrity on the bare
+   ground *"Money"*. A cheque register produced by the surface that writes the
+   instrument is the same class with a sharper loss mode.
+2. **H1 supplies a fact my method could not see, and it is what tips it.** The
+   surrounding panel is a cheque-**WRITING** surface: `updateCheck()`
+   (`sairnmechanical.html:1466`) renders a printable cheque with the amount in words
+   (`numWords`, `:1477`) and a signature pad (`clearSig`, `:1465`). A write-shape
+   extraction sees `{id, num, date, payee, amount, memo}` and cannot see what the
+   panel around it does.
+3. **Proposal B's own wording refuses it.** *"whatever the tier lands"* concedes that
+   the tier is the open question and then declines to answer it. A register whose
+   basis is corrected while its tier is left unexamined is the state this row was
+   already in.
+
+**H1's gate change is routed, not taken:** `SD_SESSION_GATED` lives in
+`api/sd-data.js`, which is not in this claim.
+
+### The final cell, as landed
+
+Read it at `docs/CRITICALITY-TIERS.md:491`. Tier **A**, confidentiality **B**;
+integrity basis names `saveCheck()` at `sairnmechanical.html:1527` and the
+cheque-number half (`crNum` restored only on a LOCAL write failure at `:1537`, while
+`mech_crnum` is a separate write that can fail on its own at `:1542`); the evidence
+cell names both independent reads, the two places the platform already said this in
+code, and the refusal of proposal B.
+
+### The six rows on which "neither money nor a regulated record" has been false
+
+1. **`sd_exec_msgs`** — found by an incident, not a read; the row sat at B on *"an
+   internal message lost"* while the actual risk was who could READ it. This row is
+   why the register has a second axis at all.
+2. **`bld_change_orders`** — money under the sentence, found by reading the app.
+3. **`bld_warranty`** — a `cost` column summed into a Total Cost KPI.
+4. **`bld_inspections`** — municipal code determinations.
+5. **`bld_toolbox_talks`** — OSHA instruction evidence.
+6. **`mech_checks`** — `saveCheck()` persists `payee` and `amount`. 2026-09-30.
+
+**3, 4 and 5 are one event:** all 15 `bld_` B rows carried the identical rule
+sentence, nobody had opened any of them, and three were wrong — a 20% error rate on
+one app's B tier, found by reading.
+
+---
+
+## 5. The review obligation for ted's `sen_visits`
+
+**Reviewer named by ROLE, not by agent**, as required — and the role is the point of
+the rule rather than a formality.
+
+> **REVIEWER: any build session OTHER than the author of the change, holding no
+> claim on `api/_resources/sairnsenior.js`, `sairnsenior.html` or
+> `api/sd-data.js`'s `sen_` branches at the time of review.**
+>
+> Naming a role and not an agent is deliberate. The standing rule is that a Tier A
+> change is reviewed by a session other than the one that wrote it, *because the
+> author shares the blind spot that produced the code* — and an obligation addressed
+> to `ted` survives only as long as that name maps to a session, while an obligation
+> addressed to *a non-author build session* survives a rename, a clone being retired,
+> and the 48-hour `--takeover` window. **The hover auditor is explicitly NOT eligible:**
+> it does not build, its scope is `.claude/skills/sairn-hover-auditor/`, and using it
+> as a reviewer of record would make the one independent role a participant in the
+> thing it audits.
+>
+> **WHAT THE REVIEW MUST DRIVE, not read.** `sen_visits` is A/A on both axes and the
+> integrity limb is payroll: it and `sen_pay_rates` are the two inputs and the output
+> is what a caregiver is PAID — hours × rate with FLSA weighted-average overtime on
+> top — so a wrong or lost visit is simultaneously a mispriced invoice and an
+> underpaid person, and an underpayment carries liquidated damages regardless of
+> intent.
+>
+> 1. **THE THIRD WRITE PATH, which is the one a reader misses.** `saveVisit()`
+>    (`sairnsenior.html:3139`) is gated by `senCertGate()` BEFORE the record is built
+>    (`:3137-3138`) so a refusal leaves nothing behind — drive that refusal and
+>    confirm no partial row. The clock path syncs at `:3078`. **And the offline queue
+>    flush at `:3047` replays `sen_evv_queue` into this resource FIFO, stopping at the
+>    first failure** — so while a device is offline the durable record of a payable
+>    visit is in an unregistered `localStorage` key and NOT in `sen_visits`. Drive an
+>    offline clock-in and clock-out, then a flush, and confirm the clock-out cannot be
+>    applied before the clock-in.
+> 2. **The confidentiality limb is the EVV payload**, not the visit row alone:
+>    `SEN_VISIT_EVV_FIELDS` carries `clock_in_lat`/`clock_in_lng`, which is a named
+>    client's HOME by coordinate. Confirm a read without a verified session is 401
+>    and that a caregiver cannot read another caregiver's visit.
+> 3. **The one thing this obligation does NOT ask for**, so the reviewer does not
+>    waste a pass on it: no judgement on whether `sen_evv_queue` should have a
+>    register row. That is settled — it is not an `api/_resources` unit — and the
+>    open question is its VENUE, which is Michael's and is recorded in the open-work
+>    index.
+>
+> **A verdict of "reviewed, no findings" is refused unless it names which of the
+> three it drove.** The gate already refuses a record whose reviewer is its own
+> author; this sentence is the other half, and it is here because a discharge that
+> names nothing is indistinguishable from one that read nothing.
+
+---
+
+## 6. `sd_owner_pin` — every remaining mention, `path:line`
+
+Full-repo grep, `.git/` excluded. **Exactly one is code; the other eight are this
+week's own paperwork about it.**
+
+| path:line | what it is |
+|---|---|
+| **`stonedesk.html:42326`** | **THE ONLY CODE REFERENCE.** Inside `itaClearData()`'s keep-list: `var keep=['sd_owner_pin','sd_license_key','sd_plan',ITA_USERS_KEY,ITA_AUDIT_KEY];`. Nothing writes the key and nothing reads it. |
+| `docs/2026-09-29-register-cells-hank.md:498` | my finding row |
+| `docs/2026-09-29-register-cells-hank.md:504` | my finding, paragraph (1) |
+| `docs/2026-09-29-register-cells-hank.md:506` | the keep-list quoted |
+| `docs/2026-09-29-register-cells-hank.md:507` | *"is the fifth and has no writer and no reader"* |
+| `docs/2026-09-29-register-cells-hank.md:514` | the deciding test |
+| `docs/SAIRN-OPEN-WORK-INDEX.md:78` | the eight-resource unit-disagreement row |
+| `docs/SAIRN-OPEN-WORK-INDEX.md:79` | the `sd_owner_pin` row |
+| `.claude/claims/hover.json:412` | H1's nine-item queue text, naming the trigger statement |
+
+**AND MY OWN CITATION OF IT HAD ALREADY DRIFTED.** The five references above say
+`:42280`; the line is **`:42326`** at HEAD — 46 lines, inside 24 hours, on a finding
+whose entire content is *"there is exactly one reference and here it is."* Corrected
+in this document below. It is the cheapest possible demonstration of why a bare line
+number in a standing document needs a re-derivation cadence.
+
+---
+
+## 7. Register scope — **IT TIERS RESOURCES, AND THE RULING IS MECHANICAL**
+
+Not a judgement. `tools/criticality_tier_check.py` enforces a **bijection**, in both
+directions, and its own refusal message states the rule verbatim:
+
+> `NOT A RESOURCE  %s has a row and is not registered in any api/_resources/*.js.`
+> **`The unit of this table is the registry.`**
+
+and the other direction:
+
+> `NO TIER      %s/%s is registered and has no row.`
+
+Measured at HEAD, after this pass: `RESOURCES_REGISTERED:391`,
+`RESOURCE_ROWS:391`, `PROBLEMS:0`. **One row per registered resource, none extra,
+none missing.** The register's own header says the same in prose — *"The unit is
+`api/_resources/<app>.js`"* — but the prose is not what settles it; the arm is.
+
+### The two rows it settles
+
+**`sen_evv_queue` — NO ROW. H1 is right about the risk and wrong about the venue.**
+It is not in `api/_resources/sairnsenior.js`'s `resources` array; it is
+`SEN_EVV_QUEUE_KEY` (`sairnsenior.html:3015`), a device-local FIFO capped at 200.
+Adding a row makes the checker print `NOT A RESOURCE` and turns
+`tests/run_criticality_tier_probe.py` RED on main — **the cost of the row is a red
+probe, which is checkable rather than arguable.** H1's A/A reasoning stands on its
+own terms: while offline this queue is the ONLY copy of wage-determining,
+EVV-regulated clock events joined to a client's home location.
+
+**`law_strike_log` — NO ROW.** Same test, same answer. `juryStrikeLog`/`juryStrikeSave`
+at `sairnlaw.html:7156-7157`; not in `api/_resources/sairnlaw.js`'s `resources`
+array, and not in its `notSynced` list either, which holds only `law_billingcodes`.
+
+### What the ruling does NOT do, and this is the open half
+
+**It settles the venue and it does not settle the risk.** Both keys hold something
+worth a tier and the register cannot hold it. The existing venue with teeth is the
+app's `notSynced` declaration plus `tools/local_only_collection_check.py` — which
+records that a key is device-local **and carries no tier**. So the platform can say
+*"this lives on one device"* and cannot say *"and losing it loses a wage-determining
+record."*
+
+**That gap is Michael's to close and there are only two honest ways:** extend the
+register's unit to stored data — which changes the unit for all 391 rows and must be
+said out loud in the header, because tiering the wrong unit is the mistake the
+register already made once and corrected — or give `notSynced` a criticality field of
+its own. Recorded in the open-work index; not decided here.
+
+---
+
+## 8. The item-2 correction confirmed — the eight, and the real name
+
+**Re-verified at HEAD. None of the eight is in any `api/_resources/*.js` `resources`
+array**, which under the item-7 ruling is what makes a register row possible:
+
+| named | what it actually is |
+|---|---|
+| `scp_customers` | a localStorage key for the ALREADY-REGISTERED resource `customers` — `sairnscape.html:2734` maps `['customers','scp_customers']` |
+| `scp_invoices` | same shape: `['invoices','scp_invoices']`; `invoices` has a row and is A/B |
+| `sen_evv_config` | a legacy key **with no writer** — three references in `sairnsenior.html` and not one is a write |
+| `sen_evv_queue` | a device-local FIFO outbox for `sen_visits`, cap 200 |
+| `law_strike_log` | a device-local jury-strike log, `sairnlaw.html:7156-7157` |
+| `sd_owner_pin` | **a dead key** — one reference repo-wide, in its own keep-list |
+| `sf_district_keypair` | an extractable ECDSA P-256 **private** key JWK in `localStorage`; in SAIRNfreedom's declared EXCLUSION block, not its `resources` array |
+| `sf_known_keys` | **DOES NOT EXIST** |
+
+> ### The real name is `sf_district_known_keys`
+>
+> `grep -rn sf_known_keys .` returns **nothing**. The key is
+> **`sf_district_known_keys`**, bound as `K_KNOWNKEYS` at `sairnfreedom.html:7163`
+> and read by `getKnownKeys()` at `:7481`. It is the **trust-on-first-use fingerprint
+> map** for other districts' signing keys, and
+> `api/_resources/sairnfreedom.js:88-91` states why it is device-local: *"syncing it
+> would let one device's first-seen decision silently become another device's trust
+> anchor."*
+>
+> **Its integrity is the sharper axis and it is the opposite way round from its
+> sibling.** `sf_district_keypair` is a confidentiality problem — a stolen private key
+> forges signed district reports. `sf_district_known_keys` is an **integrity** problem:
+> edit one fingerprint and a forged district report **verifies silently on this
+> device**. That is trust-anchor tampering, and a lost key regenerates while a
+> tampered anchor does not announce itself.
+
+---
+
+## 9. The four idempotence timeouts — last line reached, and the write target
+
+**Measured, not parsed.** Each tool was run in a throwaway copy of the tracked tree
+with output streamed to a file, because `subprocess.run(timeout=)` raises
+`TimeoutExpired` and takes the partial stdout with it — which is exactly why the
+sweep itself cannot answer this question about its own could-not-tells.
+
+| tool | last line reached at the 240s bound | tracked files it had written |
+|---|---|---|
+| **`dead_rule_sweep.py`** | `criteria lock: 6/6 fixtures classify correctly, on hand-built sources only` — **2 output lines in 240 seconds** | **20**, and they are tool sources: `accepted_risk_expiry_audit.py`, `ai_action_approval_audit.py`, `assertion_label_shape_check.py`, `cleanup_confirm_check.py`, `committer_identity_check.py`, `completeness_check.py`, `dependency_graph.py`, `discarded_verdict_check.py` + 12 more |
+| **`guard_ablation.py`** | `? EMPLOYEE_PROFILE_MANAGE_ROLES :1757 SILENT 152 suites, none noticed` | **0** |
+| **`metamorphic_check.py`** | `blind lock: LOCKED (10 fixture comparisons)` | **0** |
+| **`run_all_tests.py`** | `ok node api/sd-data-alf-isolation.test.js` — 237 output lines | **0** |
+
+### What the measurement settles, and it is the answer the rejected regex was reaching for
+
+**THREE OF THE FOUR WRITE NOTHING TRACKED.** `guard_ablation.py` works inside a
+worktree it builds itself; `metamorphic_check.py` writes only under a
+`tempfile.mkdtemp()` root; `run_all_tests.py` writes a lock under
+`tempfile.gettempdir()` and a report only to an explicit `--out`. **They have no
+tracked-tree idempotence question at all**, so the sweep double-running them will
+always say "no change", slowly, forever.
+
+**On 2026-09-29 I built a regex that tried to derive exactly this and REJECTED it**
+because it excluded `guard_ablation` by looking only at `jsonout` and never seeing
+its `io.open(os.path.join(wt, SUBJECT), 'w')` — the verdict was right and was reached
+by not looking. **Running the tools answers the same question by observation**, and
+it agrees with the verdict the regex reached unsoundly. That is the difference
+between a correct answer and a justified one.
+
+**AND THE FOURTH IS THE OPPOSITE, WHICH THE REGEX ALSO MISSED.**
+`dead_rule_sweep.py` had written **20 tracked tool sources** in 240 seconds — it
+neutralises a rule in a tool, runs the corpus against it, and restores in a
+`finally`. So it is the only one of the four with a real tracked-tree idempotence
+question, and its own `finally` plus a post-restore byte comparison is the control
+that answers it.
+
+**A RISK WORTH NAMING, and it is not a defect in the sweep:** killed mid-loop,
+`dead_rule_sweep.py` leaves 20 tool sources in the NEUTRALISED state. Inside the
+sweep's scratch copy that is harmless and self-cleaning. Run directly in a real
+clone and interrupted, it is 20 patched tools with nothing marking them — the same
+shape already recorded about `guard_ablation --ablate` editing the platform's largest
+dispatcher in place. It produced 2 output lines in 4 minutes, so an operator has no
+signal that it is mid-loop rather than hung.
+
+---
+
+## 10. `citation_class_check.py` against my three corrected buckets — **THE COMPARISON CANNOT BE MADE, AND THAT IS THE FINDING**
+
+**The tool does not measure register buckets.** It lives at
+`.claude/skills/sairn-hover-auditor/tools/citation_class_check.py` — the auditor's
+scope, read-only from here, nothing written into it — and it classifies
+**`path:line` citations inside the hover audit log's own entries** against
+`~/Documents/SAIRN-hover`, into five classes:
+
+`WRONG-AT-DERIVATION` · `MOVED-SINCE` · `NOT-A-REPO-PATH` · `UNVERIFIABLE-NO-SHA` · `HOLDS`
+
+My three corrected buckets are about `docs/CRITICALITY-TIERS.md`:
+
+`cited` · `disclosed` · `3.2 group stamp` · `dated-or-field-list read` · `contradictory`
+
+**Different subject, different corpus, non-overlapping class vocabulary. There is no
+bucket in one that corresponds to a bucket in the other**, so "where do the tool and
+my hand count disagree" has no answer to give. Reporting a disagreement figure would
+have required inventing a mapping.
+
+### Two real findings from running it anyway
+
+**(1) IT CANNOT BE RUN FROM A BUILD CLONE AT ALL, AND IT FAILS OPEN IN THE WORST
+SHAPE.** `LOG = os.path.join(HERE, 'hover-audit-log.jsonl')` resolves beside the
+tool, and the mirrored copy in a build clone has no log next to it. The run:
+
+```
+  7 ok, 0 failed
+Traceback (most recent call last):
+  ...
+FileNotFoundError: ... .claude\skills\sairn-hover-auditor\tools\hover-audit-log.jsonl
+```
+
+**The fixture gate prints `7 ok, 0 failed` and THEN crashes.** A reader who stops at
+the pass line sees a clean tool. It is a stale-path defect of exactly the class
+H1's own queue names — *"a stale-path methodology sweep across all relocated tooling
+with selftests run from two working directories"* — and it is in the tool that sweep
+would be run with. **There is no `--log` argument**, so the corpus run is impossible
+from here without editing the tool, which is out of scope. Routed, not fixed.
+
+**(2) ITS OWN FULL-LOG FIGURES, from H1's log #732 item 9:** `HOLDS 567 |
+MOVED-SINCE 114 | WRONG-AT-DERIVATION 54 | NOT-A-REPO-PATH 42 | NO-SHA 261`. Driven
+from a scratch copy with the log path overridden — the auditor's directory untouched
+— **the WRONG-AT-DERIVATION list reproduces**, 20 entry groups including seqs 638,
+640, 643, 654, 658, 672, 685, 690, 702, 718, 730, 732, 733. H1's own header says the
+54 are a worklist and not 54 confessions, and spot-reads show known tool-noise shapes
+in the residue; that reading is confirmed rather than challenged here.
+
+### What I could compare, and did
+
+The register buckets moved as a result of this pass, measured before and after:
+
+| bucket | before `c97acbf9` | after |
+|---|---|---|
+| cite at least one line | 184 | **191** |
+| CITE NOTHING | 207 | **200** |
+| … admit they were not read individually | 65 | **58** |
+| … 3.2 group stamp | 106 | 106 |
+| … dated or field-list read | 31 | 31 |
+| … **CLAIM a read with none of the above** | **0** | **0** |
+| neither stated | 5 | 5 |
+
+**Seven rows moved from "never individually read" into "cited", which is exactly the
+seven cells landed, and the contradiction bucket stayed at zero.** No hand count
+disagrees with the tool, because the tool's counts ARE the hand count here: the
+seven were read individually and the report re-derived the buckets afterwards.
+
+---
+
+## 11. The check — **BUILT, AND IT MUST NOT BLOCK. The answer is a measurement.**
+
+`tools/tier_sentence_gate.py` + `tests/run_tier_sentence_gate_probe.py`, report-only.
+
+> **If a row asserts the money clause, and the resource's own write persists a field
+> whose NAME is in a small closed money list, report the row and the field.**
+
+### It catches the real historical defect, and goes quiet once fixed
+
+Driven over `docs/CRITICALITY-TIERS.md` **as it stood before `c97acbf9`** — not over
+a fixture — it reports **exactly one row, `mech_checks`, naming `amount` and
+`payee`**. Driven over HEAD it reports **nothing**, and `mech_checks` is still SEEN
+and classified `QUOTED`, because the corrected cell quotes the clause to say it was
+false. That pair is the probe's central arm. **19 arms, 0 failures.**
+
+### FEASIBLE AS A PRE-COMMIT GATE? **NO — and the number is printed on every run**
+
+| | |
+|---|---|
+| rows asserting the money clause | **76** |
+| of those, with an extractable write shape | **35 of 50** (**70%**) |
+| threshold at which blocking becomes arguable | **95%** |
+| verdict | **NOT MET** |
+
+Both ways of handling the other 30% are wrong for a gate:
+
+* **FAIL OPEN** on an unresolved resource — report a pass it never performed. PR §1.11
+  verbatim, inside the gate meant to enforce the register.
+* **FAIL CLOSED** — refuse the ordinary edit to a file five sessions touch. A gate
+  that blocks the ordinary case gets switched off, and then protects nothing.
+
+So the third state is printed per resource — 15 `COULD-NOT-TELL`, named — and the
+check stays report-only. **The honest venue for it is a PostToolUse report on an edit
+to the register, the shape `citation_drift_hook.py` already is and the shape that
+works.**
+
+### What it deliberately cannot do, each for a measured reason
+
+* **It does not screen the REGULATED limb.** `sv_herdhealth.scc` is somatic cell
+  count and no field name would know; `sv_staff.credential` holds `'Current'`, a
+  currency flag, so a `credential` pattern fires on a row where B is correct.
+* **It does not screen the "no PII" clause.** Two of the three rows found false on
+  2026-09-29 failed on PII, and a `name`/`phone`/`email` screen fires on most
+  business-contact rows where B is right on the CLASS.
+* **So it would have caught ONE of the three rows found that day, and the one this
+  week.** Stated in the tool's own header rather than left for a reader to work out.
+
+### Two defects in it, both caught by its own controls on the first run
+
+1. **The push-helper pattern was case-sensitive.** The real call is
+   `window.mechPushRecord('mech_checks', entry)` with a **capital P**, and a lowercase
+   `push(?:Record|One)` matched nothing — so the one row the check was built for came
+   back `COULD-NOT-TELL`. **An extractor that silently resolves nothing reports
+   "nobody could tell" rather than "the regex has a capital letter wrong."** Caught by
+   the arm asserting `mech_checks` must be `MONEY-FIELD`, and a paired arm now
+   requires a name written nowhere to still resolve to nothing, so the widening did
+   not make every lookup succeed.
+2. **My first probe arm was wrong, not the tool.** It expected `mech_checks` to vanish
+   from the asserting population once corrected. It does not — the corrected cell
+   quotes the clause — and asserting `QUOTED` is the stronger claim, because it proves
+   the quotation exclusion works on the real corrected row rather than on a fixture.
