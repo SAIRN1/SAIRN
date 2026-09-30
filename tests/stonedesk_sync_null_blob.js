@@ -2,6 +2,12 @@
 //
 // Run:  node tests/stonedesk_sync_null_blob.js
 //
+// REQUIREMENT: a StoneDesk sync function that reports whether a write reached
+//   the server must decide that from the response ENVELOPE, never from the
+//   shape of the unwrapped payload -- the endpoint answers a stored row with a
+//   null jsonb blob as 200/ok:true/data:null, which is a LANDED write that the
+//   payload cannot be told apart from a failure.
+//
 // A LANDED WRITE REPORTED AS LOST, because the guard tests the wrong thing.
 //
 // hank's 2026-09-26 obligation said slabSyncOne's boolean "is only sound
