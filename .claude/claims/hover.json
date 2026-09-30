@@ -523,8 +523,8 @@
       "task": "weekly cleanup: route two defects to hank; wire row-name fallback into the repoint generator with fixture; hand-verify 25 unresolvable register citations; deliver apply-ready replacement text for 7 unrepointable rows; propose a fix for the ts-approximation-limit gap; confirm 737/738 log integrity; tool-idle inventory; claim inventory; state of the union.\n\nFILES: regenerate_repoint_list.py",
       "claimed_at": "2026-09-30T13:15:40Z",
       "claimed_at_epoch": 1790774140.0596964,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T13:39:47Z",
       "files": [
         "regenerate_repoint_list.py"
       ]
