@@ -2976,6 +2976,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "cody-1790779880",
+      "session": "cody",
+      "subject": "cody-defreg2",
+      "task": "docs/defect-density-register.json",
+      "claimed_at": "2026-09-30T14:51:20Z",
+      "claimed_at_epoch": 1790779880.1048677,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
