@@ -4921,6 +4921,34 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-30T12:59:51Z",
+      "opened_at_sha": "318a1d3355fca303018378903b3f13ac6dfbf10d",
+      "resources": [
+        "bld_change_orders",
+        "bld_inspections",
+        "bld_toolbox_talks",
+        "bld_warranty",
+        "mech_checks",
+        "quotes",
+        "sd_exec_msgs"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tests/run_stored_data_criticality_probe.py",
+        "tests/run_tier_sentence_gate_probe.py",
+        "tools/tier_sentence_gate.py"
+      ],
+      "what": "Queue-27 items 3-10 (hank, 2026-09-30). THREE changes touch code the gate maps to Tier A resources, and the mapping is by FILE so two of the three are docstring-only -- stated plainly rather than left for the reviewer to discover.\n\n(1) tools/tier_sentence_gate.py -- DOCSTRING ONLY (item 10). No criterion, threshold, field list or verdict changed; git diff is confined to the module docstring. It records the uncovered 30% grouped into THREE write shapes (mutated-in-place record, seed-plus-saver, indexed collection element) and the measurement that MATTERS: shapes 1 and 3 are 5 rows, so covering both reaches 40 of 50 = 80%, and 95% of 50 is 48, so the block threshold is UNREACHABLE without accepting SEED literals as evidence about real records. WHAT TO DRIVE: re-derive that arithmetic against the tool's own output, and check the three shape claims against the named rows -- leg_memorials/leg_obituaries build the record as rec=existing||{...} then assign properties; the ten sv_ rows store a whole collection through saveX(list); mech_docs/mech_takeoffs/sc_specialty_checklists pass arr[0] or list[list.length-1] into the skip list. If any of those three is wrong the grouping is wrong and the 80% ceiling with it.\n\n(2) tests/run_stored_data_criticality_probe.py and tools/stored_data_criticality_check.py plus docs/STORED-DATA-CRITICALITY.md -- NEW (item 6). A second criticality table for device-local localStorage keys that cannot have a register row, with two rows (sen_evv_queue, law_strike_log, both A/A, both venue UNDECLARED). WHAT TO DRIVE, and it is the one thing that could go wrong quietly: the BOUNDARY against docs/CRITICALITY-TIERS.md is enforced only from the new side -- a row whose key is in any api/_resources resources array is refused IS A RESOURCE. Verify the register's own bijection was NOT touched (git diff empty on all three register files, criticality_tier_check PROBLEMS:0 / 391 rows, run_criticality_tier_probe 0 failed) and then try to get one resource into BOTH tables. Also drive the venue criterion in both directions: it reads the EARLIEST venue token, because declaration-order scanning classified the honest cell 'UNDECLARED -- sairnsenior.js has no notSynced list at all' as a FALSE notSynced claim.\n\n(3) tools/dead_rule_sweep.py and tests/run_dead_rule_sweep_probe.py (item 8). The sweep no longer mutates tracked files: every neutralisation and evidence run happens in a throwaway worktree, and an unmakeable sandbox is exit 2 with no fallback. WHAT TO DRIVE: kill a sweep mid-run yourself and confirm the tree is clean -- that is the only path the old restore-in-finally could not cover, and it is what wrote 20 tracked tool sources on the first full run. Then confirm the ablation verdicts did not move (--tool assertion_label_shape_check.py still reports 8 of 8 exercised, 0 dead), because a sandbox that changed what the evidence commands see would look like a fix and be a measurement change.\n\nKNOWN AND NOT FIXED, so the reviewer does not spend a pass finding it: tests/run_dead_rule_sweep_probe.py section A2 still sabotages tools/dead_rule_sweep.py IN THE CLONE and restores it in a finally -- the same defect one layer up, inside the control for it. Left because the item named the sweep.\n\nA verdict of reviewed-no-findings is refused unless it names which of the three it drove.",
+      "status": "open",
+      "reviewer_owner": "cloud",
+      "owner_assigned_at": "2026-09-30T12:59:51Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
