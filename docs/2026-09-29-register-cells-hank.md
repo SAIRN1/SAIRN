@@ -674,3 +674,170 @@ the quantities `parsed_quantities` is derived from in `rf_photos`, which would s
 break the takeoff. **Stated as a precondition rather than done here**, because
 `api/sd-data.js` and its suite are fourth's and a fixture proving this is part of the
 same change.
+
+---
+
+# Queue25 — item 6. The counts were wrong, and the fix was the tool, not 38 cells
+
+**2026-09-29 (Hank).** The item asked me to re-read and cite, or downgrade, the
+**32** rows claiming an individual read with no evidence and the **6** carrying no
+stated basis at all. **Reading all 38 by hand is what the number was for, and it
+showed that 33 of the 38 were the report's own criteria being wrong.**
+
+## Before and after, on 391 rows
+
+| bucket | before (`2026-09-29.1`) | after (`2026-09-29.2`) | delta |
+|---|---|---|---|
+| cite at least one line | 182 | **184** | +2 |
+| CITE NOTHING | 209 | **207** | −2 |
+| … ADMIT they were not read individually | 65 | 65 | 0 |
+| … carry a 3.2 GROUP STAMP | 106 | 106 | 0 |
+| … show a **DATED or FIELD-LIST read** *(new bucket)* | — | **31** | +31 |
+| … **CLAIM a read with none of the above** | **32** | **0** | **−32** |
+| neither stated | 6 | **5** | −1 |
+
+**NOT ONE REGISTER ROW WAS EDITED TO GET THERE.** Every movement is a criterion
+of `tools/citation_no_source_report.py` being corrected. The three corrections:
+
+**1. A dated per-row read stamp was being read as no evidence at all — 27 rows.**
+Twenty-seven of the 32 carry *"**Confidentiality individually read 2026-09-22**"*,
+or the same with words in between (*"confidentiality individually read and left at
+B, 2026-09-23"*). That is the 3.2 pass's per-row stamp **without a group label** —
+the identical kind of disclosure `GROUP_STAMP` already accepted, one degree less
+labelled. **This is the same mistake the tool had already corrected once**, when
+the bucket went from 138 to 32 for exactly this reason, and it stopped one shape
+short.
+
+**2. A field list lifted out of the source was being read as no evidence — 4 rows.**
+`sv_scribe_consent` carries *"READ OUT OF THE APP: `{asked_at, date, patient,
+answer, statement_version, asked_by}`"*; `rf_company_programs` and
+`rf_job_warranties` carry *"READ OUT OF THE **HANDLER**: `{…}`"*. A field list
+taken out of the code IS the evidence; it simply has no line number. **And a rule
+keyed on the single word `APP` would have missed both `HANDLER` rows**, which is
+why the pattern now takes `READ OUT OF THE <ANYTHING>:` followed by a brace list.
+
+**3. `re-derived` fired on prose about the DATA, not about a read — 1 row.**
+`law_mattermilestones`'s only trigger was *"the matter survives it and the stage
+can be **re-derived**"* — a sentence about whether a lost milestone can be
+reconstructed. It was a false accusation, and the sole one. The alternative now
+requires the object: `re-derived at HEAD`, `re-derived from the`, `re-derived out of`.
+
+**And one separate fix, measured at exactly 2 rows so it is not overstated:**
+`CITE = r':\d{3,5}'` **could not see a line number under 100.** The three-digit
+floor is right for a bare `:NN` in prose, and wrong for a citation attached to a
+path — and `api/_resources/*.js` declarations live at the TOP of their files, so
+`api/_resources/stonedesk.js:27` (`style_profile`) and
+`api/_resources/sairnroofing.js:56` (`rf_proposals`) were both counted as citing
+nothing. Two of 391. **Reported anyway, because a citation rule that silently
+excludes the first 99 lines of every file is wrong about a shape it will keep
+meeting.**
+
+## The honest reading of a zero
+
+`CONTRADICTORY` now reads **0**, and the tool prints its own history beside it
+rather than a clean bill: *138, then 32, then 0, with no row edited.* **The figure
+to carry forward is the one that has not moved: 207 of 391 rows point at no LINE,
+142 of them Tier A.** That is a real coverage gap. What is closed is the claim that
+32 rows asserted evidence they did not have.
+
+## Controls locked, both directions
+
+`tests/run_citation_no_source_probe.py`: **29 arms, 0 failures**, up from 12. Every
+new shape has a known-bad twin, because a fix that empties a bucket by widening is
+indistinguishable from a fix that empties it by measuring:
+
+* a date **before** the claim with no axis word → **still a contradiction**
+* an axis and a read with **no date** → **still a contradiction**
+* the words *"READ OUT OF THE APP"* with **no field list** → **still a contradiction**
+* `re-derived at HEAD` → **still counted** (the narrowing did not kill the real form)
+* a bare two-digit `:45` with **no path** → **not** promoted to a citation
+* a cell carrying **both** a group stamp and a dated read → reported under the
+  **GROUP**, because a reader can disagree with a named group and cannot disagree
+  with a date (14 real `sv_` rows carry both)
+
+## The 5 that are genuinely uncited — read at HEAD, citations below as TEXT
+
+`docs/CRITICALITY-TIERS.md` is hover's, so these are replacement fragments. **Each
+was read, not grepped**: a located line is not a read, and citing a line I had only
+located would manufacture exactly the evidence these rows are accused of lacking.
+
+### `law_matterdocs` (L432) — **A/A holds, and there are FOUR write paths, not one**
+
+Append to the evidence cell:
+
+> **CITED 2026-09-29 (hank), read at HEAD. FOUR WRITE PATHS, and the register knew
+> of none of them.** `saveMatterDoc()` (`sairnlaw.html:3118`) writes
+> `{id, matter_id, title, doc_type, url_or_ref, content_text, ocr_text, source,
+> shared_with_client, revisions, uploaded_date, created_at}` and syncs at `:3124`.
+> Three more build the same shape: the OCR path (`:4064`, synced `:4070`) puts the
+> scanned text into **both** `content_text` and `ocr_text` and seeds `revisions`
+> with a full `content_snapshot`; the email path (`:4084`, synced `:4090`); and the
+> **AI-draft path (`:4213`, synced `:4219`), whose `last_edited_by` is literally
+> `'AI Draft (unreviewed)'`**. Two further syncs at `:4120` and `:4311` write an
+> edited row back. Server map entry `api/sd-data.js:13120`.
+> **THE FIELD THAT SHARPENS THE CONFIDENTIALITY ARGUMENT IS `shared_with_client`,
+> and it is `false` on every one of the four creation paths** — so disclosure to
+> the client is a per-document decision recorded on the row, which makes a wrong
+> value a disclosure event rather than a display bug. **And `revisions[]` carries
+> `content_snapshot`, so the row holds the document's HISTORY as well as its
+> current text** — the integrity limb is not one document but every version of it.
+
+### `law_mattermilestones` (L437) — **A/A holds; this row was a FALSE POSITIVE, and the citation is added anyway**
+
+> **CITED 2026-09-29 (hank), read at HEAD. THIS ROW WAS NEVER CONTRADICTORY —
+> `tools/citation_no_source_report.py` matched the word `re-derived` inside this
+> cell's own sentence *"the stage can be re-derived"*, which is about reconstructing
+> lost DATA, and accused the row of asserting a read it never claimed. The tool is
+> fixed; the citation is added because the row genuinely had none.**
+> `saveMilestone()` (`sairnlaw.html:3098`) writes
+> `{id, matter_id, title, date, notes, created_at}` and syncs at `:3101`. Server map
+> entry `api/sd-data.js:13121`. **The confidentiality argument this cell already
+> makes is confirmed by the field list: `notes` is free text about what is happening
+> on an identified client's matter and when**, which is the *"says what is happening
+> to an identified client"* limb, now with the field behind it.
+
+### `leg_documents` (L462) — **A/A holds, and the cell's own field list is confirmed verbatim**
+
+> **CITED 2026-09-29 (hank), read at HEAD, and the cell's field list was already
+> right — which is worth saying, because a row can be uncited and correct.**
+> `saveDoc()` (`sairnlegacy.html:2788`) writes
+> `{id, case_id, doc_type, status, esign_name, esign_at, content_text, created_at}`
+> and syncs at `:2792`; `sendDoc()` re-writes the row at `:2799` and a third path at
+> `:2820`. Server map entry `api/sd-data.js:13211`. `esign_name` and `esign_at` are
+> empty at creation and filled on execution, which is the point: **the same row is a
+> draft and then an executed instrument, so the integrity limb covers a transition
+> and not just a record.**
+
+### `sen_visits` (L566) — **A/A holds, and the THIRD write path is the one no citation would have found**
+
+> **CITED 2026-09-29 (hank), read at HEAD. THREE WRITE PATHS AND THEY ARE NOT
+> INTERCHANGEABLE.** (1) `saveVisit()` (`sairnsenior.html:3139`) writes
+> `{id, client_id, client_name, scheduled_date, scheduled_start, scheduled_end,
+> service_type, assigned_employee_id, status}` and syncs at `:3145` — and it is
+> **gated before the record is built** by `senCertGate()` (`:3137-3138`) so a
+> refusal leaves nothing behind. (2) The clock path syncs the EVV payload at
+> `:3078`. (3) **The offline queue flush at `:3047` replays `sen_evv_queue`
+> entries into this resource FIFO, stopping at the first failure** — so while a
+> device is offline the durable record of a payable visit is in an unregistered
+> `localStorage` key and not here. Server write branch `api/sd-data.js:6065`.
+> **That third path is why `sen_evv_queue` needs a home of its own** (see the
+> unit-disagreement row in `docs/SAIRN-OPEN-WORK-INDEX.md`): this cell's A/A rests
+> on `sen_visits` being the record, and for as long as a device is offline it is not.
+
+### `sf_signatures` (L375) — **A/A holds, and the row binds a person to a document VERSION and HASH**
+
+> **CITED 2026-09-29 (hank), read at HEAD.** The key alias is
+> `K_SIGNATURES='sf_signatures'` (`sairnfreedom.html:6326`), read by
+> `getSignatures()` (`:6333`); the single write is `st(K_SIGNATURES, list)` at
+> `:6498`, pushing `{id, docId, docTitle, version, hash, signer, typed, signed}`
+> (`:6496-6497`). Server map entry `api/sd-data.js:12689`.
+> **THE ROW CARRIES THE DOCUMENT'S `version` AND `hash`, which is what makes the
+> A-integrity argument stronger than "an executed signature":** the signature is
+> bound to a specific version of a specific document, so altering either the row or
+> the document breaks a link that was the whole point of capturing it.
+> **AND THE SIGNATURE IS A TYPED NAME CHECKED AGAINST THE SELECTED SIGNER**
+> (`:6489-6494`), which refuses a mismatch with the app's own sentence — *"A
+> signature that does not match the name it is filed under is not evidence of
+> anything."* That refusal is the reason `typed` and `signer` are both stored rather
+> than one being derived from the other, and a reader of this row should know the
+> check exists before judging the tier.
