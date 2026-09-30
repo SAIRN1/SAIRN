@@ -21587,59 +21587,6 @@
       "recurrence_open": "Nothing stops the next writing verification being an ad-hoc script again. The auditor cannot see untracked files by design, and that is the gap the 2026-09-29 run went through; this closes one instance and not the class. Fourth owns the general form -- the asserted-teardown obligation on tools/live_probe_residue_audit.py."
     },
     {
-      "commit": "46f8c0133043",
-      "date": "2026-09-30",
-      "subject": "fix(guard): a git_dir() that could not answer read as \"no operation running\" and allowed a blanket stage mid-rebase",
-      "files": [
-        "tests/run_rebase_state_guard_probe.py",
-        "tools/rebase_state_guard.py"
-      ],
-      "lines_added": 141,
-      "lines_removed": 2,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "independent-review",
-      "summary": "tools/rebase_state_guard.py: git_dir() returns None for a missing git, a non-zero rev-parse, an exception OR A 10-SECOND TIMEOUT, and operation_in_progress(None) returned the same None it returns for a clean tree. For git add -A, git add . and git commit -am x there is no second question to fall through to, so decide() answered (False, empty) and the command was ALLOWED -- a blanket stage into a live stopped rebase, silently, which is the 2026-09-27 incident the hook exists to prevent. The hook is wired into .claude/settings.json for all five clones.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "operation_in_progress has returned None for an unreadable git dir since the file was written; there is no commit where a correct three-state became two."
-      },
-      "citation_note": "The shape is PR 1.11 fail-closed-when-a-dependency-is-absent, and this file's own header states the same rule in its own words for a different question, but neither is a numbered rule about the operation-state lookup specifically.",
-      "contributing_factors": [
-        {
-          "factor": "One sentinel value carried two facts: no operation running, and the state could not be read",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "operation_in_progress() returns an UNKNOWN sentinel, and decide() checks it before the truthy-op branch so the sentinel is never formatted into the message as an operation named unknown."
-        },
-        {
-          "factor": "The file states the fail-open / fail-closed split correctly and applied it to one of its TWO unanswerable questions",
-          "kind": "process",
-          "action_status": "done",
-          "action": "The same treatment head_pushed=None already had is now applied to the operation question, at the same place and with the argument written at the line."
-        },
-        {
-          "factor": "Nothing exercised git_dir() at all -- it appeared once in the probe, on a live-state line, and was never asserted",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Eight arms added, two of which drive the failure: one replaces subprocess.run inside the module with a TimeoutExpired raiser and requires the whole chain git_dir -> operation_in_progress -> decide -> deny, then asserts subprocess.run was restored so nothing below measures a patched module."
-        },
-        {
-          "factor": "The realistic trigger is load, not a broken repository, and load is highest exactly when a rebase is stopped",
-          "kind": "latent-condition",
-          "action_status": "declined",
-          "note": "The 10s timeout is NOT raised. A longer timeout on a PreToolUse hook delays every Bash call in the session, which is the cost the header already weighs when it chooses to fail open on a hook bug. Refusing on could-not-tell is the correct answer at any timeout value, so the value is left alone deliberately."
-        }
-      ],
-      "recurrence_open": "The guard is still blind to 13 wrapper and substitution shapes -- command substitution, backticks, sh -c, env, xargs, eval, a subshell, a brace group -- and to a NAME=VALUE environment prefix, which is the ordinary way to write a non-interactive amend. All were driven and all were allowed. The header names git add -u, :/, stash and reset --hard as deliberate exclusions and says nothing about any of these, so a reader finishes that list believing it is complete. Reported in the discharge of hank's 2026-09-28T21:33:14Z obligation and NOT fixed here."
-    },
-    {
       "commit": "41f0689295fb",
       "date": "2026-09-30",
       "subject": "fix(citation): the drift detector credited a line that names every resource at once",
@@ -21696,6 +21643,118 @@
         }
       ],
       "recurrence_open": "Only sairnfreedom was swept. Every other app on this platform has the same\ntwo-block shape -- a SYNCED list and a K_ constant block -- so the same citations\nin the same document for sv_, grd_, scp_, leg_ and the rest have never been\nchecked with a detector that excludes them. The count for those apps is unknown\nand this fix does not touch them."
+    },
+    {
+      "commit": "46f8c0133043",
+      "date": "2026-09-30",
+      "subject": "fix(guard): a git_dir() that could not answer read as \"no operation running\" and allowed a blanket stage mid-rebase",
+      "files": [
+        "tests/run_rebase_state_guard_probe.py",
+        "tools/rebase_state_guard.py"
+      ],
+      "lines_added": 141,
+      "lines_removed": 2,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "tools/rebase_state_guard.py: git_dir() returns None for a missing git, a non-zero rev-parse, an exception OR A 10-SECOND TIMEOUT, and operation_in_progress(None) returned the same None it returns for a clean tree. For git add -A, git add . and git commit -am x there is no second question to fall through to, so decide() answered (False, empty) and the command was ALLOWED -- a blanket stage into a live stopped rebase, silently, which is the 2026-09-27 incident the hook exists to prevent. The hook is wired into .claude/settings.json for all five clones.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "operation_in_progress has returned None for an unreadable git dir since the file was written; there is no commit where a correct three-state became two."
+      },
+      "citation_note": "The shape is PR 1.11 fail-closed-when-a-dependency-is-absent, and this file's own header states the same rule in its own words for a different question, but neither is a numbered rule about the operation-state lookup specifically.",
+      "contributing_factors": [
+        {
+          "factor": "One sentinel value carried two facts: no operation running, and the state could not be read",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "operation_in_progress() returns an UNKNOWN sentinel, and decide() checks it before the truthy-op branch so the sentinel is never formatted into the message as an operation named unknown."
+        },
+        {
+          "factor": "The file states the fail-open / fail-closed split correctly and applied it to one of its TWO unanswerable questions",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The same treatment head_pushed=None already had is now applied to the operation question, at the same place and with the argument written at the line."
+        },
+        {
+          "factor": "Nothing exercised git_dir() at all -- it appeared once in the probe, on a live-state line, and was never asserted",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Eight arms added, two of which drive the failure: one replaces subprocess.run inside the module with a TimeoutExpired raiser and requires the whole chain git_dir -> operation_in_progress -> decide -> deny, then asserts subprocess.run was restored so nothing below measures a patched module."
+        },
+        {
+          "factor": "The realistic trigger is load, not a broken repository, and load is highest exactly when a rebase is stopped",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "The 10s timeout is NOT raised. A longer timeout on a PreToolUse hook delays every Bash call in the session, which is the cost the header already weighs when it chooses to fail open on a hook bug. Refusing on could-not-tell is the correct answer at any timeout value, so the value is left alone deliberately."
+        }
+      ],
+      "recurrence_open": "The guard is still blind to 13 wrapper and substitution shapes -- command substitution, backticks, sh -c, env, xargs, eval, a subshell, a brace group -- and to a NAME=VALUE environment prefix, which is the ordinary way to write a non-interactive amend. All were driven and all were allowed. The header names git add -u, :/, stash and reset --hard as deliberate exclusions and says nothing about any of these, so a reader finishes that list believing it is complete. Reported in the discharge of hank's 2026-09-28T21:33:14Z obligation and NOT fixed here."
+    },
+    {
+      "commit": "80c5984c6cd5",
+      "date": "2026-09-30",
+      "subject": "fix(dead-rule-sweep): every mutation now happens in a throwaway worktree, so no tracked file is ever written -- failing-first arm, then the fix",
+      "files": [
+        "tests/run_dead_rule_sweep_probe.py",
+        "tools/dead_rule_sweep.py"
+      ],
+      "lines_added": 401,
+      "lines_removed": 45,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/dead_rule_sweep.py neutralised a compiled rule IN THE TRACKED TOOL SOURCE and restored it in a finally, so a killed run left the neutralisation on disk. Measured on the first full run: 20 tracked tool sources written at the 240s bound, each carrying a rule replaced by a never-matching pattern, in a clone four build sessions push from. A restore reached only on a normal exit is not isolation, it is a tidy-up. Fixed by moving every mutation and every evidence run into a throwaway worktree, an unmakeable sandbox being exit 2 with NO fallback to the clone.",
+      "rules": [
+        "1.4"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "1e9271fd7fe9",
+        "date": "2026-09-29",
+        "subject": "check(methodology): a rule nothing exercises is indistinguishable from a rule that works -- the dead-rule sweep",
+        "lag_days": 1
+      },
+      "citation_note": "1.4 is A READ-ONLY-SOUNDING COMMAND THAT MUTATES, and the fit is close rather than exact: the tool's own docstring says REPORT ONLY and it is in the report-only registry, yet it wrote 20 tracked tool sources. The inexactness, stated so nobody has to re-derive it: it never CLAIMED not to write -- mutation IS its documented method -- so what was wrong is where the writes landed and that they survived a kill, not that they happened.",
+      "phase_note": "Inferred, not stated. The tool shipped 2026-09-29 in 1e9271fd with in-place mutation plus restore-in-finally as its design from the first commit, and nothing in that commit records a decision about writing tracked files -- so a design choice made without being noticed rather than a coding slip.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "The isolation was a restore in a `finally` rather than a copy. That covers every path the interpreter walks and none of the paths it does not -- SIGKILL, a harness timeout, a closed laptop -- so the tool was isolated exactly when nothing went wrong.",
+          "action_status": "done",
+          "action": "make_sandbox() creates one throwaway git worktree per run; every neutralisation, every evidence command and every bare corpus run happens inside it, and drop_sandbox() removes it in a finally. The clone is never opened for writing. The in-sandbox restore is kept because it still keeps one ablation to one rule."
+        },
+        {
+          "kind": "detection",
+          "factor": "The existing control arm (D5) asserted the tracked file was unchanged AFTER a run that finished -- which passed for as long as the finally ran. Only a KILLED run can see this defect, and nothing in the suite killed one, so the control was green about the wrong half of the behaviour.",
+          "action_status": "done",
+          "action": "Added section F to tests/run_dead_rule_sweep_probe.py: it starts a real sweep in a throwaway worktree, polls until a tracked file goes dirty, KILLS the process, and requires the tree clean anyway. Written before the fix and RED against the unchanged tool, with the dirty path named in the failure output."
+        },
+        {
+          "kind": "process",
+          "factor": "A tool that mutates tracked files was accepted into the report-only registry without anything asking where its writes land. The registry classifies what a tool REPORTS, not what it WRITES, so a mutating checker and a reading one enter it the same way.",
+          "action_status": "not-actionable",
+          "note": "Not actionable from inside this record. Changing what the report-only registry demands of an entry is a change to that registry's contract and to every tool already in it, which is a decision with an owner rather than a side effect of one fix. Recorded so the next person to add a mutating checker has a precedent rather than a blank."
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "The clone is shared by four build sessions pushing to one branch, so residue from one session surfaces as another session's unexplained diff -- and a neutralised regex reads as deliberate code rather than as debris.",
+          "action_status": "declined",
+          "note": "Declined as a target: the shared-clone arrangement is the platform's working model and is not being changed to accommodate one tool. What follows from it is that a tool which mutates tracked files carries a higher bar than the same tool would in a private checkout, which is the reasoning behind choosing exit 2 over any fallback to the clone."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED BY THESE ACTIONS, and two things stay open. (1) The fix trades a tracked-file mutation for a leftover WORKTREE when a run is killed -- reaped by name on the way in and out, with an arm on it, but that is a mitigation of the new cost rather than its absence. (2) The same defect is still live ONE LAYER UP, inside the control for it: tests/run_dead_rule_sweep_probe.py section A2 sabotages tools/dead_rule_sweep.py in the clone and restores it in a finally. Named in the fix commit and deliberately not fixed there. Nothing in the repo yet ASKS, of a new checker, where its writes land -- so the class recurs by default and this record is the only thing that says so."
     },
     {
       "commit": "9643cb4c3f6e",
