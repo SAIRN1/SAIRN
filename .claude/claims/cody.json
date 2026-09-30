@@ -2932,6 +2932,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "cody-1790773905",
+      "session": "cody",
+      "subject": "cody-sd3",
+      "task": "tests/ai_analysis_logs_delete.js tests/ai_shortcuts_reach_the_chat.js tests/quote_builder_delete_does_not_resurrect.js",
+      "claimed_at": "2026-09-30T13:11:45Z",
+      "claimed_at_epoch": 1790773905.751596,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
