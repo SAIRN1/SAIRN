@@ -69,6 +69,15 @@ print('\nA. violations() -- the pure classifier')
 import hover_auditor_scope_gate as G          # noqa: E402
 import hover_separation_audit as A            # noqa: E402
 
+# ── THE CLASSIFIER IS PER-INSTANCE NOW, SO THE ARMS NAME THE INSTANCE ──────
+# These arms used to run against the module-level ALLOWED, which was the same in
+# every clone because the scope was one hardcoded string. It is derived from the
+# running clone's session now, so a hank clone answers for hank -- correct, and
+# useless for testing the auditor. Every arm below passes an explicit
+# AuditorScope, which is also the only way to drive hover2's answer from here
+# without provisioning a hover2 clone to find out.
+H1 = G.AuditorScope('hover')
+
 IN_SCOPE = ['.claude/skills/sairn-hover-auditor/SKILL.md',
             '.claude/skills/sairn-hover-auditor/references/case-studies.md',
             'docs/defect-density-register.json',
@@ -78,31 +87,31 @@ OUT_OF_SCOPE = ['api/sv-witness.js', 'stonedesk.html', 'tools/defect_register.py
                 '.claude/skills/sairn-guardian-v2/SKILL.md',
                 '.claude/claims/cody.json', '.claude/claims/hank.json']
 
-allowed, refused = G.violations(IN_SCOPE)
+allowed, refused = G.violations(IN_SCOPE, H1)
 ok('every in-scope path is allowed', not refused, refused)
 ok('...and they are actually counted, not silently dropped',
    len(allowed) == len(IN_SCOPE), (len(allowed), len(IN_SCOPE)))
 
-allowed, refused = G.violations(OUT_OF_SCOPE)
+allowed, refused = G.violations(OUT_OF_SCOPE, H1)
 ok('every out-of-scope path is refused', len(refused) == len(OUT_OF_SCOPE), allowed)
 
-allowed, refused = G.violations(IN_SCOPE + OUT_OF_SCOPE)
+allowed, refused = G.violations(IN_SCOPE + OUT_OF_SCOPE, H1)
 ok('a MIXED change is refused, not averaged', len(refused) == len(OUT_OF_SCOPE), refused)
 ok('...and the in-scope half is still reported as allowed',
    len(allowed) == len(IN_SCOPE), allowed)
 
 # The skill names this file explicitly as out of scope. If somebody adds
 # tools/ to the allowlist wholesale, this arm is what goes red.
-_, refused = G.violations(['tools/defect_register.py'])
+_, refused = G.violations(['tools/defect_register.py'], H1)
 ok('tools/defect_register.py is refused -- the skill names it out of scope',
    refused == ['tools/defect_register.py'], refused)
 
 # Windows separators reach a hook via some callers; a backslash path that fell
 # through as "not matching the prefix" would be ALLOWED, which is the unsafe
 # direction.
-_, refused = G.violations(['api\\sv-witness.js'])
+_, refused = G.violations(['api\\sv-witness.js'], H1)
 ok('a backslash path is still refused', refused == ['api/sv-witness.js'], refused)
-_, refused = G.violations(['.claude\\skills\\sairn-hover-auditor\\SKILL.md'])
+_, refused = G.violations(['.claude\\skills\\sairn-hover-auditor\\SKILL.md'], H1)
 ok('a backslash path in scope is still allowed', not refused, refused)
 
 # The auditor's OWN claim file, added 2026-09-18 after this gate refused it
@@ -110,20 +119,21 @@ ok('a backslash path in scope is still allowed', not refused, refused)
 # than anywhere else in this file: hover.json must pass, and the four build
 # agents' claim files must NOT, because a prefix-shaped fix (`.claude/claims/`)
 # would have let the auditor write claims on behalf of the parties it audits.
-_, refused = G.violations(['.claude/claims/hover.json'])
+_, refused = G.violations(['.claude/claims/hover.json'], H1)
 ok('the auditor\'s own claim file is allowed -- it records its OWN actions',
    not refused, refused)
 _, refused = G.violations(['.claude/claims/cody.json', '.claude/claims/cc.json',
-                           '.claude/claims/hank.json', '.claude/claims/fourth.json'])
+                           '.claude/claims/hank.json', '.claude/claims/fourth.json'],
+                          H1)
 ok('...but a BUILD AGENT\'s claim file is still refused, all four',
    len(refused) == 4, refused)
-_, refused = G.violations(['.claude/claims/hover.json.bak'])
+_, refused = G.violations(['.claude/claims/hover.json.bak'], H1)
 ok('...and a near-miss on the claim file is refused, not prefix-matched',
    refused == ['.claude/claims/hover.json.bak'], refused)
 
 # A near-miss that must NOT be allowed: a sibling directory whose name starts
 # with the allowed one would pass a naive startswith on the un-slashed prefix.
-_, refused = G.violations(['.claude/skills/sairn-hover-auditor-evil/x.md'])
+_, refused = G.violations(['.claude/skills/sairn-hover-auditor-evil/x.md'], H1)
 ok('a sibling dir sharing the prefix is NOT allowed by accident',
    refused == ['.claude/skills/sairn-hover-auditor-evil/x.md'], refused)
 
@@ -147,10 +157,54 @@ ok('a claims-file commit is attributed to that session',
 ok('a platform commit is UNATTRIBUTED, not assigned to anybody',
    A.attribute({'files': ['api/sd-data.js']})[0] is None)
 
-# The two tools keep separate copies of the scope on purpose. They must agree.
-gate_scope = set(p for p, _why in G.ALLOWED)
-ok('the gate and the audit agree on the scope set',
-   gate_scope == set(A.AUDITOR_SCOPE), (gate_scope, set(A.AUDITOR_SCOPE)))
+# ── THE TWO TOOLS KEEP SEPARATE COPIES OF THE SCOPE ON PURPOSE, AND THIS IS
+# ── WHAT KEEPS THEM IN STEP ─────────────────────────────────────────────────
+# It used to compare one flat tuple against another, which worked only while the
+# scope was a single hardcoded instance. When the gate alone was made per-clone
+# on 2026-09-30 this arm went red -- correctly: the gate was answering for the
+# RUNNING clone and the audit for a hardcoded `hover`, so in every clone but a
+# provisioned H1 they disagreed. That half-fix was reverted rather than landed.
+#
+# NOW THE COMPARISON IS PER SESSION AND OVER SEVERAL SESSIONS, which is a
+# stronger arm than the one it replaces: a pair of copies can agree on one name
+# by coincidence and cannot agree on five.
+for _s in ('hover', 'hover2', 'hover3', 'hover42'):
+    ok('the gate and the audit derive the SAME scope for %r' % _s,
+       G.AuditorScope(_s).paths == A.AuditorScope(_s).paths,
+       (G.AuditorScope(_s).paths, A.AuditorScope(_s).paths))
+
+# AND THEY MUST AGREE ON WHO IS NOT AN AUDITOR, which is the half that decides
+# whether a build agent's claim file can ever land in auditor scope.
+for _s in ('hank', 'cc', 'cody', 'fourth', 'hoverer', 'Hover', '', 'hover-2'):
+    ok('neither treats %r as an auditor session' % _s,
+       not G.AuditorScope.is_auditor_session(_s)
+       and not A.AuditorScope.is_auditor_session(_s))
+    ok('...and both fail CLOSED on it -- no claim file, not a default one',
+       G.AuditorScope(_s).own_claim == G.UNPROVISIONED
+       and A.AuditorScope(_s).own_claim == A.UNPROVISIONED,
+       (G.AuditorScope(_s).own_claim, A.AuditorScope(_s).own_claim))
+
+# ── THE GATE AND THE AUDIT ASK DIFFERENT QUESTIONS, AND THE ARM SAYS SO ─────
+# The gate is narrow on purpose: hover2 must not write hover.json, or two
+# auditor instances stop being two parties. The audit reads HISTORY from any
+# clone and must accept every instance's claim file, or a legitimate hover2
+# claim commit is reported as a separation breach -- the same defect wearing the
+# opposite sign, which is the failure this pairing exists to prevent.
+ok('the AUDIT accepts any auditor instance\'s claim file, because it reads '
+   'history from clones it is not running in',
+   A.in_auditor_scope('.claude/claims/hover.json')
+   and A.in_auditor_scope('.claude/claims/hover2.json'))
+ok('...but the GATE in a hover2 clone would not permit hover.json -- narrower '
+   'on purpose, and that is not a disagreement',
+   '.claude/claims/hover.json' not in G.AuditorScope('hover2').paths)
+ok('CONTROL: the audit still refuses a BUILD AGENT\'s claim file as auditor '
+   'scope -- the widening is to auditor instances, not to everybody',
+   not A.in_auditor_scope('.claude/claims/hank.json')
+   and not A.in_auditor_scope('.claude/claims/cody.json'))
+ok('CONTROL: a near-miss name is not an auditor -- `hoverer` and `hover-2` are '
+   'not instances, so the pattern cannot be widened by a typo',
+   not A.in_auditor_scope('.claude/claims/hoverer.json')
+   and not A.in_auditor_scope('.claude/claims/hover-2.json'))
 
 
 # ══ C. the gate in a real repo, armed and unarmed ═══════════════════════════
@@ -766,11 +820,15 @@ _OUT = 'api/sd-data.js'
 # H1 pins the structural fact the whole finding rests on, so it cannot quietly
 # stop being true: SIGNATURE is a strict subset of SCOPE, therefore
 # who == 'hover' can never carry an out-of-scope file.
-ok('H1 AUDITOR_SIGNATURE is a strict subset of AUDITOR_SCOPE, which is what '
+# SCOPE stopped being a flat tuple when it became per-instance, so "strict
+# subset" is now asked of the predicate rather than of a length: every signature
+# prefix is in scope, and scope accepts something the signature does not.
+ok('H1 AUDITOR_SIGNATURE is a strict subset of the auditor scope, which is what '
    'made the old branch unreachable',
    A.signature_subset_of_scope()
-   and len(A.AUDITOR_SIGNATURE) < len(A.AUDITOR_SCOPE),
-   (A.AUDITOR_SIGNATURE, A.AUDITOR_SCOPE))
+   and not A.is_auditor_signature(A.REGISTER)
+   and A.in_auditor_scope(A.REGISTER),
+   (A.AUDITOR_SIGNATURE, A.AUDITOR_SHARED_SCOPE))
 ok('H2 ...so a commit attributed to hover NEVER has an out-of-scope file, '
    'which is the proof the old branch could not fire',
    A.attribute({'files': [_SIG, _OUT]})[0] != 'hover'

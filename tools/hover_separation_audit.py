@@ -65,18 +65,64 @@ from collections import Counter, OrderedDict
 SESSIONS = ('hank', 'cc', 'cody', 'fourth')
 SKILL_DIR = '.claude/skills/sairn-hover-auditor/'
 REGISTER = 'docs/defect-density-register.json'
-OWN_CLAIM = '.claude/claims/hover.json'
-
-# Kept identical in meaning to tools/hover_auditor_scope_gate.py's ALLOWED, and
-# the probe asserts the two agree. They are separate constants on purpose: the
-# gate must run with no imports in a hook, and a shared module that one of them
-# silently stopped importing is a failure mode neither would report.
+# ── ONE AUDITOR INSTANCE'S SCOPE, KEYED BY ITS SESSION NAME ─────────────────
+# Kept identical in meaning to tools/hover_auditor_scope_gate.py's, and the
+# probe asserts the two agree for SEVERAL session names rather than for one.
+# They are separate copies on purpose: the gate must run with no imports inside
+# a hook, and a shared module that one of them silently stopped importing is a
+# failure mode neither would report.
 #
-# OWN_CLAIM added 2026-09-18 with the gate's matching entry. It has to move in
-# BOTH halves at once: leaving it out here would turn every claim commit the
-# gate now permits into a reported scope VIOLATION in the history audit, which
-# is the same defect wearing the opposite sign.
-AUDITOR_SCOPE = (SKILL_DIR, REGISTER, OWN_CLAIM)
+# THE OWN-CLAIM ENTRY LANDED 2026-09-18 AS A HARDCODED hover.json, and it has to
+# move in BOTH halves at once -- leaving it out here would turn every claim
+# commit the gate permits into a reported scope VIOLATION in the history audit,
+# which is the same defect wearing the opposite sign. That is exactly what
+# happened when the gate alone was made per-clone: six arms of
+# tests/run_hover_separation_probe.py went red on 2026-09-30 and the change was
+# reverted rather than landed half-done.
+#
+# A CLASS RATHER THAN A PAIR, per Michael 2026-09-30, because a pair is the same
+# defect with a larger N -- right until a third instance exists, then silently
+# wrong.
+AUDITOR_SESSION_RE = re.compile(r'^hover[0-9]*$')
+UNPROVISIONED = '.claude/claims/__unprovisioned__.json'
+
+
+class AuditorScope(object):
+    """The paths ONE auditor instance may write, derived from its session name."""
+
+    SHARED = (SKILL_DIR, REGISTER)
+
+    def __init__(self, session):
+        self.session = session or ''
+        self.own_claim = (
+            '.claude/claims/%s.json' % self.session
+            if AUDITOR_SESSION_RE.match(self.session) else UNPROVISIONED)
+        self.paths = self.SHARED + (self.own_claim,)
+
+    @classmethod
+    def is_auditor_session(cls, name):
+        return bool(name and AUDITOR_SESSION_RE.match(name))
+
+    @classmethod
+    def claim_file_of_any_auditor(cls, path):
+        m = re.match(r'^\.claude/claims/([a-z][a-z0-9_-]{1,31})\.json$',
+                     (path or '').replace('\\', '/'))
+        return bool(m and cls.is_auditor_session(m.group(1)))
+
+
+# ── THE AUDIT ASKS A DIFFERENT QUESTION FROM THE GATE, AND CONFLATING THEM IS
+# ── WHAT BROKE THE FIRST ATTEMPT AT THIS FIX ────────────────────────────────
+# The GATE asks "may THIS clone commit this path", which is narrower and is what
+# keeps two auditor instances two parties -- hover2 must not write hover.json.
+# THIS FILE reads HISTORY, from any clone, and asks "was this path inside the
+# AUDITOR ROLE's scope", which must be true for every instance or the audit
+# reports a legitimate hover2 claim commit as a breach.
+#
+# So the shared prefixes are a constant and the claim half is a PREDICATE. There
+# is deliberately no `AUDITOR_SCOPE` tuple any more: a flat tuple cannot express
+# "any auditor's claim file" without listing them, which is the pair this
+# replaced.
+AUDITOR_SHARED_SCOPE = AuditorScope.SHARED
 
 # ── SCOPE AND SIGNATURE ARE NOT THE SAME SET, AND CONFLATING THEM WAS A REAL
 # BUG IN THE FIRST VERSION OF THIS FILE, caught by its own output before it
@@ -319,7 +365,12 @@ def _under(path, prefixes):
 
 
 def in_auditor_scope(path):
-    return _under(path, AUDITOR_SCOPE)
+    """Is this path inside the AUDITOR ROLE's scope -- any instance's?
+
+    Not the gate's question. See the block above AUDITOR_SHARED_SCOPE.
+    """
+    return (_under(path, AUDITOR_SHARED_SCOPE)
+            or AuditorScope.claim_file_of_any_auditor(path))
 
 
 def is_auditor_signature(path):
@@ -397,7 +448,7 @@ def signature_subset_of_scope():
     to exist -- is void if somebody edits the constants so a signature path is
     no longer in scope.
     """
-    return all(_under(p, AUDITOR_SCOPE) for p in AUDITOR_SIGNATURE)
+    return all(in_auditor_scope(p) for p in AUDITOR_SIGNATURE)
 
 
 def mixed_signature_commits(commits):

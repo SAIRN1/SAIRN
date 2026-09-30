@@ -66,7 +66,98 @@ import sys
 
 SKILL_DIR = '.claude/skills/sairn-hover-auditor/'
 REGISTER = 'docs/defect-density-register.json'
-OWN_CLAIM = '.claude/claims/hover.json'
+
+# ── ONE AUDITOR INSTANCE'S SCOPE, KEYED BY ITS SESSION NAME ─────────────────
+# This was `OWN_CLAIM = '.claude/claims/hover.json'`, a single hardcoded string,
+# and it was the second location of one assumption: hover finding #205 had
+# already fixed `eligible_reviewers` hardcoding HOVER_SESSION='hover'. A second
+# auditor instance -- identity `hover2` -- could not commit its own claim file,
+# so it structurally could not satisfy the claim-before-work commit half
+# (PR 2.2). Found and routed by H2 at seq 401/409/410.
+#
+# A CLASS RATHER THAN A SECOND CONSTANT, per Michael 2026-09-30. The obvious
+# repair was a pair -- hover.json and hover2.json -- and a pair is the same
+# defect with a larger N: it is right until there is a third instance and wrong
+# silently. The scope is now DERIVED from a session name, so any number of
+# auditor clones each get their own, and nothing has to be edited to add one.
+#
+# WHAT IDENTIFIES AN AUDITOR SESSION IS ITS NAME, and that is a convention this
+# names out loud rather than inferring. `hover`, `hover2`, `hover3`. It is not
+# derived from the clone marker, because THIS question has to be answerable
+# about a session that is not the one running -- tools/hover_separation_audit.py
+# asks it of commits in history, from any clone, and cannot read another
+# clone's .git.
+AUDITOR_SESSION_RE = re.compile(r'^hover[0-9]*$')
+
+# Fail-closed sentinel. session_name() validates ^[a-z][a-z0-9_-]{1,31}$, so a
+# real claim file is always <lowercase-name>.json and a name beginning with '_'
+# can never be provisioned -- this matches no real staged path and therefore
+# refuses EVERY claim file rather than defaulting to some session's. The
+# alternative, falling back to hover.json, would let an UNMARKED clone commit
+# hover.json again, which is the spoofable-by-absence shape
+# tools/sairn_session_identity.py's own header refuses.
+UNPROVISIONED = '.claude/claims/__unprovisioned__.json'
+
+
+class AuditorScope(object):
+    """The paths ONE auditor instance may write, derived from its session name.
+
+    Deliberately duplicated in tools/hover_separation_audit.py rather than
+    shared through an import -- that duplication predates this class and its
+    reason still holds: the gate must run inside a git hook with no imports, and
+    a shared module that one of the two silently stopped importing is a failure
+    mode neither would report. tests/run_hover_separation_probe.py asserts the
+    two copies agree, for several session names rather than for one.
+    """
+
+    # Every auditor instance may write these, and they are not per-clone: the
+    # skill file and the defect register are the role's, not an instance's.
+    SHARED = (SKILL_DIR, REGISTER)
+
+    def __init__(self, session):
+        self.session = session or ''
+        self.own_claim = (
+            '.claude/claims/%s.json' % self.session
+            if AUDITOR_SESSION_RE.match(self.session) else UNPROVISIONED)
+        self.paths = self.SHARED + (self.own_claim,)
+
+    @classmethod
+    def is_auditor_session(cls, name):
+        return bool(name and AUDITOR_SESSION_RE.match(name))
+
+    @classmethod
+    def claim_file_of_any_auditor(cls, path):
+        """Is this SOME auditor instance's claim file?
+
+        NOT what the gate asks -- the gate asks about THIS clone's own, which is
+        narrower and is what keeps two auditor instances two parties. This is
+        here because the history audit needs it and the two must not drift.
+        """
+        m = re.match(r'^\.claude/claims/([a-z][a-z0-9_-]{1,31})\.json$',
+                     (path or '').replace('\\', '/'))
+        return bool(m and cls.is_auditor_session(m.group(1)))
+
+
+def _session():
+    """This clone's session name, or '' when it cannot be established.
+
+    Reuses tools/sairn_session_identity.py rather than reinventing it -- finding
+    #258's whole point, and two answers to "who am I" would make the self-review
+    refusal meaningless.
+    """
+    here = os.path.dirname(os.path.abspath(__file__))
+    if here not in sys.path:
+        sys.path.insert(0, here)
+    try:
+        import sairn_session_identity as _sid
+        return _sid.session_name()
+    except Exception:                                          # noqa: BLE001
+        return ''
+
+
+# IMPORT-TIME on purpose: OWN_SCOPE feeds the module-level ALLOWED tuple below.
+OWN_SCOPE = AuditorScope(_session())
+OWN_CLAIM = OWN_SCOPE.own_claim
 
 # ── THE ALLOWLIST, AND EVERY ENTRY CARRIES THE SENTENCE THAT PUT IT THERE ────
 # Nothing is here because it seemed reasonable. If a future reader wants to add
@@ -141,20 +232,28 @@ def is_auditor_clone():
     return bool(m and os.path.isfile(m))
 
 
-def violations(paths):
+def violations(paths, scope=None):
     """Split paths into (allowed, refused). Pure -- no git, no filesystem.
 
     Kept pure so the probe can drive it on invented paths without touching a
     repo, which is the only way to test the REFUSING direction without
     committing a violation to find out.
+
+    `scope` NAMES THE INSTANCE TO CLASSIFY FOR, and it exists because the answer
+    stopped being the same in every clone the day the scope became per-session.
+    Default None means this clone's own -- the only thing a hook ever wants. A
+    probe passing AuditorScope('hover2') gets hover2's answer from a hank clone,
+    which is the only way to test the per-clone behaviour without provisioning
+    four clones to find out.
     """
+    prefixes = ([(p, '') for p in scope.paths] if scope is not None else ALLOWED)
     allowed, refused = [], []
     for p in paths:
         p = p.replace('\\', '/').strip()
         if not p:
             continue
         ok = False
-        for prefix, _why in ALLOWED:
+        for prefix, _why in prefixes:
             if prefix.endswith('/'):
                 if p.startswith(prefix):
                     ok = True
