@@ -4707,6 +4707,40 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-30T00:25:30Z",
+      "opened_at_sha": "3290ea8a55c0bf3aa3ce794e8bcd4db969cc7ce2",
+      "resources": [
+        "sc_anesthesia",
+        "sc_ar",
+        "sc_auth",
+        "sc_claims",
+        "sc_compliance",
+        "sc_denial",
+        "sc_drg",
+        "sc_fraud",
+        "sc_hcc",
+        "sc_prebill",
+        "sc_providers",
+        "sc_query",
+        "sc_rac",
+        "sc_revenue",
+        "sc_telehealth"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tests/run_schema_provisioning_probe.py"
+      ],
+      "what": "TOOLING ONLY -- no product code changed. tools/schema_provisioning_check.py and its first control. The fifteen sc_* names appear because the PROBE lists them as the tables whose \"unreachable\" verdict this fix overturns; nothing about their handling, gating or storage changed and api/sd-data.js is untouched.\n\nWHAT A REVIEWER SHOULD ATTACK, hardest first.\n\n(1) THE PREFIX STRIP IS A HEURISTIC AND IT DECIDES WHETHER A FINDING CAN FIRE AT ALL. resolves() strips a leading two-to-six-letter lowercase prefix plus underscore and retries the remainder against the registry. Attack the width: `[a-z]{2,6}_` also strips the first segment of a name like `sen_visits` down to `visits`, so if any app's registry happens to hold a BARE name that collides with another app's stripped table name, a genuinely orphan table resolves and the NOT-REGISTERED finding silently stops firing for it. I checked B5 (grd_jobs must not resolve against a registry of only golf_zones) and the orphan case, but I did NOT enumerate cross-app collisions across all seventeen registries. That enumeration is the arm I would add next and did not.\n\n(2) probe() NOW ASKS FOR A DIFFERENT STRING THAN IT REPORTS. It asks for the bare resource name and keys the result under the TABLE name. That is deliberate -- the dispatch has never seen `grd_properties` -- but it means a PROVISIONED verdict is now about the resource route rather than about the table, and the two can differ: a resource that reads from a VIEW or a differently-named table would report the table as provisioned on evidence about something else. Nothing in this change establishes that the mapping is one-to-one, and the tool's output does not say which string it asked for. Decide whether the printed line should name both.\n\n(3) THE COULD-NOT-READ REFUSAL IS NOW REACHABLE ON A FILE THAT EXISTS, which is new behaviour for this tool. registered() returns None when the file is present but no resource list parses out of it, and main() exits 2. Confirm that cannot fire on any of the seventeen live registries today -- I drove three (sairncode, sairngrounds, sairnscape) and not the other fourteen -- because a false exit 2 here turns a working provisioning check into a permanent could-not-run, which is the quietest possible way to lose a gate.\n\n(4) THE EMPTY-VERSUS-NONE DISTINCTION IS THE WHOLE POINT AND IT IS ONE LINE. A4 asserts that a registry declaring `resources: []` yields an EMPTY SET and not None. If a later simplification folds the two, A3 stops being falsifiable and the tool goes back to deriving findings from reads that returned nothing -- which is the defect being fixed. Check that A3 and A4 cannot both pass with a single implementation that returns the same thing for both inputs.\n\n(5) SAIRNVET IS STILL UNCHECKED AND THAT IS NOT THIS CHANGE'S DOING. Sign-in answers 401 INVALID_CREDENTIALS for sairn-demo-owner on SV-PINNACLE-2026, re-driven at the time of this commit, so 42 registered resources remain unverified. A reviewer should confirm that the tool REPORTS that as a could-not-run and does not fold it into a clean sweep -- and if the PIN has been restored by the time this is read, re-run it, because a stale 401 in this record is exactly the kind of figure that goes quietly wrong.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-30T00:25:30Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
