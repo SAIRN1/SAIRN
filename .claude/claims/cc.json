@@ -3173,8 +3173,8 @@
       "task": "sairnbiz.html",
       "claimed_at": "2026-09-30T13:56:02Z",
       "claimed_at_epoch": 1790776562.1044915,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T15:03:46Z",
       "files": null
     }
   ],
