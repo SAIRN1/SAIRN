@@ -492,6 +492,10 @@ def main():
     ap.add_argument('--stdin', action='store_true')
     ap.add_argument('--repo', default='.')
     ap.add_argument('--fixtures', action='store_true')
+    # alias per the platform's every-tool-answers---selftest convention --
+    # same suite, no duplicate; the naming-convention gap seq 397 already
+    # closed for claim_collision_scan.py and dependency_health_check.py
+    ap.add_argument('--selftest', action='store_true', dest='fixtures')
     ap.add_argument('-v', '--verbose', action='store_true')
     a = ap.parse_args()
 

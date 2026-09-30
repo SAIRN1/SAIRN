@@ -295,7 +295,10 @@ def run_fixtures():
 
 
 def main(argv):
-    if '--fixtures' in argv:
+    # --selftest ADDED 2026-09-29 (item 2), same reasoning as
+    # claim_collision_scan.py: the real fixture suite existed under
+    # --fixtures only. Both flags call the SAME function.
+    if '--fixtures' in argv or '--selftest' in argv:
         return run_fixtures()
 
     fx_buf = io.StringIO()

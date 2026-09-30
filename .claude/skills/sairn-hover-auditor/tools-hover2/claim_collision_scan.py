@@ -506,7 +506,13 @@ def run_fixtures():
 
 
 def main(argv):
-    if '--fixtures' in argv:
+    # --selftest ADDED 2026-09-29 (item 2): this tool's real fixture suite
+    # existed all along as run_fixtures() under --fixtures only -- grep for
+    # the literal word "selftest" found nothing, which is a naming-
+    # convention gap against the rest of this codebase's tools, not a
+    # missing test suite. Both flags call the SAME function; no duplicate
+    # suite was written.
+    if '--fixtures' in argv or '--selftest' in argv:
         return run_fixtures()
 
     fx_buf = io.StringIO()

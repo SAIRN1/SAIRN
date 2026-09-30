@@ -164,7 +164,18 @@ def classify_remote(url):
                               'hover logs stay separately recoverable, so '
                               'hover2 never pushes there')
         return ('check', (owner, repo))
-    if _CRED_IN_URL.search(u):
+    # CREDENTIAL check restricted to github.com hosts, fixed 2026-09-29 (a
+    # cold-read finding, reproduced from the description, H1's log not
+    # read): _CRED_IN_URL's userinfo pattern matches ANY scheme://user@
+    # shape regardless of host, so a non-github URL with a bare ssh
+    # username (ssh://deploy@gitlab.com/...) was reaching this branch and
+    # getting the credential reason -- wrong REASON, not a security gap,
+    # since privacy can never be confirmed for a non-github host either
+    # way and the URL was refused correctly under both reasons. A
+    # non-github host now always gets the non-github reason; the
+    # credential reason is reserved for a github.com URL whose userinfo
+    # the earlier _GITHUB match itself declined to accept.
+    if 'github.com' in u and _CRED_IN_URL.search(u):
         return ('refuse', 'remote URL embeds a credential/userinfo -- this '
                           'tool never puts a credential in a URL')
     return ('refuse', 'not a recognised github.com remote form -- privacy '
@@ -653,6 +664,26 @@ def selftest():
     ck('R4 embedded token refused', refuse('https://tok@github.com/SAIRN-1/hover2-log-mirror'))
     ck('R5 non-github refused', refuse('https://gitlab.com/SAIRN-1/hover2-log-mirror'))
     ck('R6 empty refused', refuse(''))
+    # R7/R8: another auditor's cold-read report, reproduced from the
+    # description (his own log not read), then fixed 2026-09-29.
+    # classify_remote('ssh://deploy@gitlab.com/...') was giving the
+    # CREDENTIAL reason instead of the non-github reason: _CRED_IN_URL's
+    # userinfo pattern matched regardless of host, so a non-github ssh URL
+    # with a bare username fell into the credential branch before the
+    # non-github branch ever got a chance, even though privacy could never
+    # be confirmed there anyway -- the reason given was simply the wrong
+    # one, not a security gap (the URL was correctly refused either way).
+    ck('R7 a non-github ssh URL with a bare username gives the NON-GITHUB '
+       'reason, not the credential reason (the reported cold-read bug)',
+       classify_remote('ssh://deploy@gitlab.com/SAIRN-1/hover2-log-mirror.git')
+       == ('refuse', 'not a recognised github.com remote form -- privacy '
+                     'cannot be confirmed, so it cannot be used'))
+    ck('R8 KNOWN-BAD CONTROL: a github.com URL that DOES embed a real '
+       'credential must still give the CREDENTIAL reason, proving the fix '
+       'did not just delete the credential check',
+       classify_remote('https://tok@github.com/SAIRN-1/hover2-log-mirror')
+       == ('refuse', 'remote URL embeds a credential/userinfo -- this '
+                     'tool never puts a credential in a URL'))
     ck('A1 the proposed repo passes to check, https',
        classify_remote('https://github.com/SAIRN-1/hover2-log-mirror.git')
        == ('check', ('SAIRN-1', 'hover2-log-mirror')))
