@@ -2929,8 +2929,8 @@
       "task": "tools/nhi_register.py tests/run_nhi_selftest_scope_probe.py",
       "claimed_at": "2026-09-30T12:56:40Z",
       "claimed_at_epoch": 1790773000.5326395,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T15:29:56Z",
       "files": null
     },
     {
