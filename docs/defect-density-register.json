@@ -21870,6 +21870,63 @@
       "recurrence_open": "34 of the 35 hand-rolled runners with no baseline precondition are untouched, and of the 41 that DO mention a baseline, 29 assert it without GATING on it -- a red baseline still lets them report caught or missed. The shared sabotage_harness gate now exits 2 for its 68 callers; neither population is covered by that."
     },
     {
+      "commit": "9698606eb5d3",
+      "date": "2026-09-30",
+      "subject": "fix(tools): the mutation tester wrote a production engine, and the sibling scan did 1865 git launches",
+      "files": [
+        "tests/run_condition_coverage_sandbox_probe.py",
+        "tests/run_nhi_selftest_scope_probe.py",
+        "tools/condition_coverage.py",
+        "tools/nhi_register.py",
+        "tools/schema_provisioning_check.py"
+      ],
+      "lines_added": 721,
+      "lines_removed": 24,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "tools/condition_coverage.py mutated api/_lib/ledger.js -- a production financial\nengine -- in place. It is a mutation tester: it flips an && to || , runs the\nengine's suite, and restores. Every guard around that was correct and none of them\nmattered. On 2026-09-30 a bare-run sweep launched it with no arguments under a\n15-second timeout, it was KILLED mid-mutation, and the scratch clone was left with\na mutated engine that `git status --porcelain` named. A `finally` does not run in a\nkilled process, and neither does the tool's three-stage restore verification. The\nfix is that the real tree is no longer the thing mutated: sweeps now run in a\ndetached git worktree at HEAD, chosen over a file copy because the suites resolve\nby path. A --report option was added and REFUSES any path under api/ sql/ tools/\ntests/ scripts/ or with a source extension, so no output of the tool can land in\nsrc through the front door either.",
+      "rules": [
+        "1.4"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/bare_run_write_check.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The in-place mutation is the tool's original design, present from its first commit, so no commit introduced it as a regression. What made it reachable was the combination with an external timeout, a property of the CALLER rather than of any commit here."
+      },
+      "contributing_factors": [
+        {
+          "factor": "The safety argument was entirely about ORDERLY failure. A finally, a restore, a three-stage verification with a git checkout as the last resort, and a refusal to run on a dirty tree -- every one of those is correct and every one assumes the process gets to run more code. A kill is the one failure mode none of them address, and it is the ordinary way a tool dies inside a timeout.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The mutation happens in a detached worktree at HEAD. A killed run now leaves a temp directory behind rather than a source file, and arm A2 polls the real engine's hash every 200ms during a real killed run to prove it never changes at any point."
+        },
+        {
+          "factor": "It was found by another tool rather than by review, and only because that tool ran it with no arguments. Nothing in the repo would otherwise have exercised the bare-run path: the tool is normally invoked with --engine, and the defect needed the combination of a bare run and an external timeout.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "tools/bare_run_write_check.py is that tool and now runs in CI-able form with an allowlist; this tool is deliberately NOT on the allowlist, because a tool writing a SOURCE file on a bare run is never an intended writer."
+        },
+        {
+          "factor": "The repo-wide dirty-tree refusal made the tool undevelopable once the worktree change landed -- it fired on an edit to the tool itself. A guard that blocks its own maintenance gets routed around, which is how the original guard would eventually have been weakened rather than fixed.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The refusal is scoped to the four engines and their four suites. It still refuses on a modified ENGINE, for the remaining real reason: that edit would not be measured, and a verdict about a different file than the one on disk is worse than a refusal."
+        },
+        {
+          "factor": "The first version of the control could not have caught this. It slept 14 seconds and then killed the process; the ledger sweep finished first, so nothing was interrupted, and the arm reported that rather than passing -- but only because it checked whether the process was still alive. An arm that had not checked would have reported a clean kill-test on a run that was never killed.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "A2 polls rather than sleeps, records whether the engine changed at ANY point during the run, and fails explicitly if the process exited before the kill."
+        }
+      ],
+      "recurrence_open": "Three other tools in this repo mutate a real file and restore it -- the sabotage\nharness, the guard-ablation tool and the idempotence double-run -- and none was\nexamined for the same kill-window. They are not covered by this fix and were not\nswept for it here; guard_ablation.py in particular was still running when a 95s\nbound expired on 2026-09-30, which is exactly the condition that produced this\ndefect."
+    },
+    {
       "commit": "9b2735faba06",
       "date": "2026-09-30",
       "subject": "fix(tier-gate): the hover auditor's own tooling cannot serve a Tier A resource, so it no longer forces an obligation it is forbidden to commit (H2 seq 425)",
@@ -21982,6 +22039,59 @@
       "recurrence_open": "A SWEEP FOUND 35 HAND-ROLLED MUTATION RUNNERS WITH NO BASELINE PRECONDITION AT ALL and they are not fixed here -- they do not use the shared harness, so this change does not reach them. 41 more have baseline language that was not read one by one. The detector is a screen: it requires a subprocess run, a textual mutation of source, and a caught/missed verdict, so a runner that mutates through a helper or reports in other words is invisible to it."
     },
     {
+      "commit": "abb17d4d96e5",
+      "date": "2026-09-30",
+      "subject": "fix(sairnbiz): ONE MISSING TABLE was silencing the backup for twelve that exist -- and three more preview findings",
+      "files": [
+        "sairnbiz.html",
+        "tests/sairnbiz_preview_fixes.js"
+      ],
+      "lines_added": 551,
+      "lines_removed": 19,
+      "app": "sairnbiz",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "live-verification",
+      "summary": "sairnbiz.html: one unprovisioned table silenced the server backup for twelve provisioned ones. sbHydrateAll reads all 13 SB_SYNCED resources at sign-in; sb_incidents answers provisioned:false because its table was never created; sbReportHydrate set the single global sbBackupUnavailable; and sbSyncCollection then returned early on it for EVERY resource for the rest of the session. Every record entered was accepted, confirmed on screen and survived a reload while existing only in that browser, and the app own sync indicator read sb_sync_stale false. An outside HR and accounting professional was due to enter clients, employees and numbers on this app the next day.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The global latch has been a single boolean since the backup loop was written; there is no commit where a per-resource latch became global."
+      },
+      "citation_note": "The nearest standing rule is PR 1.11 fail-closed-on-an-absent-dependency, but this is the mirror: a dependency WAS absent, the code noticed, and it then disabled a feature that did not depend on it.",
+      "contributing_factors": [
+        {
+          "factor": "The burst-suppression latch was a single global boolean when the condition it suppresses is per-table",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A per-resource map carries the unprovisioned state and the global flag now means EVERY synced resource is unprovisioned -- the fresh-database case the suppression was written for. Both the read path and the write path populate the map."
+        },
+        {
+          "factor": "The warning said the server backup is not set up, which was true of one table and read as true of thirteen",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "It now names the affected tables and states the total, and says the other collections are backed up normally. That sentence is how this was misdiagnosed as a broken save path for a whole day."
+        },
+        {
+          "factor": "The apps own freshness indicator reported the backup as current while nothing was reaching it",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "sb_sync_stale and sb_synced_ids are written by the local bookkeeping rather than derived from a server acknowledgement, so they cannot see a suppressed write. NOT fixed here -- it is a separate change and would need its own review."
+        },
+        {
+          "factor": "The preview check that found the symptom attributed it to the wrong cause -- an unrelated 503 on api/ledger -- and that attribution was written down and pushed",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The root cause is recorded at the line in sairnbiz.html and in tests/sairnbiz_preview_fixes.js, and arm A5 pins that the writer posts to api/sd-data so the routing theory cannot be revived."
+        }
+      ],
+      "recurrence_open": "sb_incidents is STILL unprovisioned and api/ledger STILL answers 503, because both need sql files run in the Supabase editor and this clone has no SUPABASE_URL, no service-role key, no DATABASE_URL and no psql. So the fix means the other twelve collections now sync; it does not mean the app is whole. And the local freshness indicator can still report a backup as current when a write was suppressed, which is factor 3 and is not fixed."
+    },
+    {
       "commit": "d537709f63e4",
       "date": "2026-09-30",
       "subject": "fix(sairnvet): the povidone-iodine rows stated a concentration the cited source does not give",
@@ -22034,6 +22144,61 @@
         }
       ],
       "recurrence_open": "21 of 485 rows carry any reference at all, so for the other 464 there is nothing\na static arm can read a dose against. This control covers the 8 Topical\nAntiseptic rows; the same defect in an uncited row would be invisible, and the\nexisting sourcing-honesty suite is by design silent about rows that make no\nclaim."
+    },
+    {
+      "commit": "ec0f6681903b",
+      "date": "2026-09-30",
+      "subject": "fix(tests): three StoneDesk suites failed on stale expectations, and none of them was an app defect",
+      "files": [
+        "tests/ai_analysis_logs_delete.js",
+        "tests/ai_shortcuts_reach_the_chat.js",
+        "tests/quote_builder_delete_does_not_resurrect.js"
+      ],
+      "lines_added": 73,
+      "lines_removed": 7,
+      "app": "stonedesk",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "Three StoneDesk suites were RED at HEAD and none of the three causes was an app\ndefect -- every one was a stale expectation inside the test. A suite that fails for\na stale reason is a suite nobody reads, so the coverage it represented was already\ngone. quote_builder_delete_does_not_resurrect.js was not running AT ALL: grabLine()\nthrew on `  quoteHistory.unshift(q);`, a line item 92 removed when saveQuote stopped\nmutating ahead of its store, so the file died on line 80 before any arm ran.\nai_shortcuts_reach_the_chat.js asserted `id=\"userInput\"` is absent from the raw HTML\nand failed on the COMMENT at stonedesk.html:4812 that documents the absence and\nspells the literal to do so. ai_analysis_logs_delete.js failed seven arms with\n`seamRemakeLog is not defined` -- a function that exists at :34452 and was simply\nnot in the suite's hand-listed lift set -- and one arm required exactly two\nsdEnsureRowIds calls in sdVeinAnalyze, which was refactored so both paths call a\nshared record() helper that assigns the id once.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Each of the three went stale at a DIFFERENT commit -- the one that removed quoteHistory.unshift, the one that added the explanatory comment at :4812, and the one that refactored sdVeinAnalyze into record(). No single commit introduced the defect, and attributing it to any one of them would be wrong."
+      },
+      "contributing_factors": [
+        {
+          "factor": "All three tests encode the SHAPE of the code rather than the requirement. A verbatim lifted line, a raw-text absence check and a count of call sites are each exact, which is why they were chosen -- and exactness against a shape is what goes stale the first time the shape changes for a good reason.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Each was rewritten to assert the requirement instead: the current two lines are lifted, the absence check strips comments, and the id check is a RATIO of one ensure per save, which survives any refactor that keeps the guarantee."
+        },
+        {
+          "factor": "Two of the three failed in a way that reads like an app defect. `seamRemakeLog is not defined` and `the element is back -- re-check this suite` both point at stonedesk.html, and both were about the test. A failure message that accuses the wrong file costs more than a silent gap, because somebody goes and looks.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The comment-stripped arm now also asserts the comment is STILL there, so if it goes the arm says the stripping has stopped doing anything rather than silently reverting to the raw check; and the lift list is resolved transitively with the reason recorded."
+        },
+        {
+          "factor": "The hand-listed lift set is the sixth instance of this exact shape in this repo in one day. Five other suites broke the same way when sdData gained one global, and two of those carry comments predicting it.",
+          "kind": "technical",
+          "action_status": "planned",
+          "action": "The five were fixed by DERIVING the list; this one uses a per-module `extra` list because the symbols it needs are not derivable from a pattern. A general fix -- lifting a function's transitive dependencies automatically -- is not built and is named here as the remaining gap."
+        },
+        {
+          "factor": "Nothing reported that three suites were red. They were found by running every test that reads stonedesk.html while baselining an unrelated change, and they had been failing long enough that the 'is this from my change' question needed a stash to answer.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "No standing check reports the red set for an app. tools/run_all_tests.py exists but did not finish inside a 95-second bound today."
+        }
+      ],
+      "recurrence_open": "Nothing reports the red set for an app on a cadence. These three were found while\nbaselining something else, and a fourth could be red now without anybody knowing --\nthe only reason the count is 3 rather than unknown is that 78 suites were run by\nhand today. tools/run_all_tests.py did not finish inside 95 seconds."
     },
     {
       "commit": "f70a69be600b",

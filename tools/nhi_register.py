@@ -578,6 +578,12 @@ class CouldNotTell(Exception):
 # auditor's clone, which a build agent must not reach into. This reads ONE
 # value, `remote.origin.url`, and writes nothing anywhere; NOT counting that
 # clone is the defect, so leaving it out is not the safe option.
+# More repositories than any clone parent plausibly holds. Seven working copies
+# exist today; 32 leaves room for worktrees beside them and is two orders of
+# magnitude below the 1865 that caused the 180-second timeout on 2026-09-30.
+SIBLING_CANDIDATE_CAP = 32
+
+
 def sibling_clones(repo=None):
     """Names of the sibling working copies that push to the same origin.
 
@@ -617,21 +623,65 @@ def sibling_clones(repo=None):
         entries = sorted(os.listdir(parent))
     except OSError as e:
         raise CouldNotTell('could not list %s (%s)' % (parent, e))
-    found = []
+
+    # ── BOUNDED, AND IT REFUSES RATHER THAN GRINDING (2026-09-30) ───────────
+    # MEASURED: `--selftest` run from a temp directory timed out at 180s, twice.
+    # Nothing was hanging. The system temp directory on this machine held 9182
+    # entries, 1865 of them carrying a `.git` -- almost all of them fixtures left
+    # by this repo's own probes -- and this loop launches one `git config` per
+    # candidate at roughly 50-100ms a process. 1865 of those is 90-190 seconds,
+    # and the selftest calls this more than once.
+    #
+    # THE WALK IS NOT SCOPED TO THIS TREE, and that is deliberate. Finding
+    # SIBLING working copies is the whole point: it is what found the fifth clone
+    # on 2026-09-16 and the seventh on 2026-09-28, after CLAUDE.md had named four
+    # for weeks. A walk that cannot leave its own directory always answers zero,
+    # which is a wrong answer wearing the shape of a measurement.
+    #
+    # So: a cheap structural pre-filter, then a hard cap that REFUSES. A parent
+    # holding more than SIBLING_CANDIDATE_CAP repositories is not a clone parent,
+    # and saying so is a fact about where the tool was run.
+    candidates = []
     for name in entries:
+        path = os.path.join(parent, name)
+        if not os.path.exists(os.path.join(path, '.git')):
+            continue
+        # A SAIRN working copy carries both of these. `tools/` alone is not
+        # enough: a mkdtemp fixture that copied one tool has it, and 1865 of
+        # those is exactly what this is protecting against. Two os.path.exists
+        # calls are free next to a process launch.
+        # THIS CLONE IS NEVER EXCLUDED BY THE HEURISTIC. The tool already read
+        # its own origin out of this directory, so it is a working copy as a
+        # matter of fact rather than of shape -- and dropping it would silently
+        # reduce the count by one, which is the direction that hid the fifth
+        # clone in the first place.
+        if os.path.normcase(path) != os.path.normcase(repo):
+            if not (os.path.isdir(os.path.join(path, 'tools'))
+                    and os.path.isdir(os.path.join(path, 'sql'))):
+                continue
+        candidates.append(name)
+    if len(candidates) > SIBLING_CANDIDATE_CAP:
+        raise CouldNotTell(
+            '%d candidate repositories in %s, which is above the cap of %d -- '
+            'this is not a clone parent, and enumerating them would mean one '
+            'git subprocess each (1865 of them took 180 seconds on 2026-09-30). '
+            'Run this from a real clone, or pass repo= explicitly.'
+            % (len(candidates), parent, SIBLING_CANDIDATE_CAP))
+
+    found = []
+    for name in candidates:
         # NO NAME FILTER. See the header: requiring `SAIRN-` is what hid the
         # seventh working copy, and a naming convention is not the question.
         path = os.path.join(parent, name)
         # `.git` is a DIRECTORY in a normal clone and a FILE in a worktree, and
         # this repo's probes build worktrees constantly -- so isdir() alone would
-        # skip a real working copy that can really push.
-        if not os.path.exists(os.path.join(path, '.git')):
-            continue
+        # skip a real working copy that can really push. Tested in the
+        # candidate pass above.
         try:
             url = subprocess.run(
                 ['git', '-C', path, 'config', '--get', 'remote.origin.url'],
                 capture_output=True, text=True, encoding='utf-8',
-                errors='replace', timeout=20).stdout.strip()
+                errors='replace', timeout=5).stdout.strip()
         except Exception:
             continue
         if url == mine:

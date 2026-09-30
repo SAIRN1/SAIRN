@@ -1,3 +1,9 @@
+# OWNER-INTENDED BARE-RUN WRITER. A bare run of this tool WRITES, and that is
+# its interface rather than a defect: see tools/bare_run_writers.py for the
+# path it writes and why. tools/bare_run_write_check.py reads that list and
+# does not flag the tools on it. If this tool stops being a generator, take it
+# off the list in the same change -- an allowlist nobody re-derives is how a
+# real defect hides inside a convention.
 """Generate the Virginia holiday calendar from Va. Code 2.2-3300.
 
 Every day is DERIVED from the statute's own words, quoted in the readme of the

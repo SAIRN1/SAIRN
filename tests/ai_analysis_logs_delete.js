@@ -87,6 +87,20 @@ const MODULES = {
     listId: 'seam-saved-list',
     kpiIds: ['seam-analyzed', 'seam-approved', 'seam-remakes', 'seam-savings'],
     delName: 'sdSeamDelete',
+    // HELPERS THE LIFTED FUNCTIONS CALL (added 2026-09-30). SeamAI's
+    // updateKPIs() and seamEnsureIds() derive the remake count at read time from
+    // localStorage['sd_remakes'] through seamRemakeLog(), and that function was
+    // not in the lifted set -- so seven arms failed with
+    // `seamRemakeLog is not defined`, which reads exactly like a defect in
+    // stonedesk.html and is not one: it is at :34452 and always was. A
+    // hand-listed mirror of another file's helper set goes stale, and this is
+    // the shape that broke five other suites in this repo on 2026-09-30.
+    // TRANSITIVE, not just the first one that was missing: seamRemakeLog
+    // was added and the next run reported seamHadRemake, then seamKey.
+    // Listed in dependency order so each is defined before its caller.
+    extra: ['  function seamRemakeLog(){',
+            '  function seamKey(s){',
+            '  function seamHadRemake(x,rms){'],
     rows: [
       { job: 'Hartley kitchen', mat: 'Quartz', loc: 'Kitchen Island', date: '2026-09-10', remake: false },
       { job: 'Park vanity', mat: 'Granite', loc: 'Bathroom Vanity', date: '2026-09-11', remake: true }
@@ -111,6 +125,7 @@ function build(m, rows, opts) {
     // load() is taken from just before the module's own save(), by span.
     html.slice(html.lastIndexOf('function load()', at), at) + '\n' +
     m.saveSig + '\n' +
+    (m.extra || []).map(function (sig) { return fnAfter(sig, at); }).join('\n') + '\n' +
     fnAfter(m.ensure, at) + '\n' +
     fnAfter('  function updateKPIs(){', at) + '\n' +
     fnAfter(m.renderSaved, at) + '\n' +
@@ -261,12 +276,37 @@ function build(m, rows, opts) {
     // BOTH SAVE PATHS. Each analyze() writes the row twice -- once on the API
     // reply and once in the .catch() fallback -- and an id set on only one of
     // them would leave every offline analysis unsyncable and undeletable.
-    test(name + ': BOTH save paths set an id, not just the happy one', () => {
+    test(name + ': EVERY save path assigns an id -- one ensure per save, '
+         + 'whatever shape the paths take', () => {
+      // COUNTED AS A RATIO, NOT AS 2 (rewritten 2026-09-30). This arm required
+      // exactly two `sdEnsureRowIds(d,'PREFIX'` calls in the analyze body, on
+      // the reasoning that there are two paths -- the API one and the offline
+      // fallback. sdVeinAnalyze was then refactored so BOTH paths call a shared
+      // `record(n)` helper that assigns the id once: the same guarantee with one
+      // call site. The arm failed on correct code for that reason alone.
+      // sdSeamAnalyze still inlines both, and still passes. The requirement was
+      // never "two calls" -- it is "no save without an id".
       const at = html.indexOf(m.saveSig);
       const analyze = fnAfter(m.analyze, at);
+      const saves = (analyze.match(/\bsave\(d\)/g) || []).length;
       const sets = (analyze.match(new RegExp("sdEnsureRowIds\\(d,'" + m.prefix + "'", 'g')) || []).length;
-      assert.strictEqual(sets, 2,
-        'the API path and the offline fallback do not both assign an id');
+      assert.ok(saves >= 1, 'no save(d) call in the analyze body at all -- the '
+        + 'anchor has gone stale and this arm is measuring nothing');
+      assert.strictEqual(sets, saves,
+        'the analyze body has ' + saves + ' save(d) call(s) and ' + sets
+        + " sdEnsureRowIds(d,'" + m.prefix + "') call(s). A save with no id "
+        + 'assignment writes a row nothing can delete or sync.');
+    });
+
+    test(name + ': KNOWN-BAD for the arm above -- a save with no ensure must '
+         + 'fail the same ratio', () => {
+      const synthetic = 'function f(){ var d=[]; d.push({}); save(d); }';
+      const saves = (synthetic.match(/\bsave\(d\)/g) || []).length;
+      const sets = (synthetic.match(new RegExp("sdEnsureRowIds\\(d,'" + m.prefix + "'", 'g')) || []).length;
+      assert.strictEqual(saves, 1, 'the synthetic body must contain one save');
+      assert.notStrictEqual(sets, saves,
+        'the ratio test accepts a save with no id assignment, so the arm above '
+        + 'is passing on a predicate that cannot fail');
     });
   });
 
