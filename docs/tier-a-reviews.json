@@ -4402,7 +4402,7 @@
     {
       "author_session": "hank",
       "opened_at": "2026-09-28T21:33:14Z",
-      "opened_at_sha": "50c32b02a46dec96027b47712bc82249ae5de741",
+      "opened_at_sha": "cc956d9ec115ceacbc9e8816dea7895be6a77822",
       "resources": [
         "quotes"
       ],
@@ -4417,7 +4417,10 @@
       "owner_assigned_at": "2026-09-28T21:33:14Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "opened_at_sha_was": "50c32b02a46dec96027b47712bc82249ae5de741",
+      "opened_at_sha_reseated": true,
+      "opened_at_sha_reseat_basis": "SUBJECT TWIN"
     },
     {
       "author_session": "cody",
@@ -4486,7 +4489,7 @@
     {
       "author_session": "hank",
       "opened_at": "2026-09-29T12:21:14Z",
-      "opened_at_sha": "2668863646366f28c4de686b3942481094df184c",
+      "opened_at_sha": "8fd013e3ff0aab6c3f45d6664fca5dfce9359d4e",
       "resources": [
         "leg_processions",
         "msb_sale_hours"
@@ -4503,7 +4506,10 @@
       "owner_assigned_at": "2026-09-29T12:21:14Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "opened_at_sha_was": "2668863646366f28c4de686b3942481094df184c",
+      "opened_at_sha_reseated": true,
+      "opened_at_sha_reseat_basis": "SUBJECT TWIN"
     },
     {
       "author_session": "fourth",
