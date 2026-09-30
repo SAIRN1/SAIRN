@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# OWNER: hank
 """Is every file a session is REQUIRED to write inside the set it is PERMITTED to?
 
     python tools/required_write_permission_check.py
