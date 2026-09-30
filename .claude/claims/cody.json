@@ -2855,6 +2855,39 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "cody-1790764578",
+      "session": "cody",
+      "subject": "cody-quotefix",
+      "task": "tools/sairn_claim.py tests/run_printed_command_paste_probe.py",
+      "claimed_at": "2026-09-30T10:36:18Z",
+      "claimed_at_epoch": 1790764578.8343167,
+      "status": "active",
+      "released_at": null,
+      "files": null
+    },
+    {
+      "id": "cody-1790765749",
+      "session": "cody",
+      "subject": "cody-ledger2",
+      "task": "docs/tier-a-reviews.json",
+      "claimed_at": "2026-09-30T10:55:49Z",
+      "claimed_at_epoch": 1790765749.7191966,
+      "status": "active",
+      "released_at": null,
+      "files": null
+    },
+    {
+      "id": "cody-1790766041",
+      "session": "cody",
+      "subject": "cody-inv",
+      "task": "tools/tooling_inventory.py docs/TOOLING-INVENTORY.md",
+      "claimed_at": "2026-09-30T11:00:41Z",
+      "claimed_at_epoch": 1790766041.766765,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
