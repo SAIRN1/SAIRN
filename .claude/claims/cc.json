@@ -3140,8 +3140,8 @@
       "task": "tests/run_sql_column_exists_probe.py tests/run_mech_gate_live_probe_probe.py",
       "claimed_at": "2026-09-30T12:39:29Z",
       "claimed_at_epoch": 1790771969.6580741,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T13:31:52Z",
       "files": null
     }
   ],
