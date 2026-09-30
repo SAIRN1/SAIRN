@@ -3110,6 +3110,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "cc-1790768859",
+      "session": "cc",
+      "subject": "blindline",
+      "task": "tools/blind_spot_line_check.py tests/run_blind_spot_line_probe.py",
+      "claimed_at": "2026-09-30T11:47:39Z",
+      "claimed_at_epoch": 1790768859.7120712,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
