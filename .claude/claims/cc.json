@@ -3129,8 +3129,8 @@
       "task": "tools/sql_column_exists_check.py tests/run_sql_column_exists_probe.py",
       "claimed_at": "2026-09-30T11:48:42Z",
       "claimed_at_epoch": 1790768922.4194043,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-30T12:04:18Z",
       "files": null
     }
   ],
