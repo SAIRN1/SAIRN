@@ -63,11 +63,41 @@ function main() {
   console.log('SAIRNlaw AI Chain of Custody: the matter link is checked, and the check is disclosed');
 
   test('the matter is looked up against law_matters, scoped to this licence', () => {
-    assert.match(CODE, /rest\('law_matters\?license_hash=eq\.' \+ enc\(licHash\)/,
-      'no licence-scoped law_matters lookup in ai_generate');
+    // ── MOVE-PROOF, 2026-09-30 ──────────────────────────────────────────
+    // This required `rest('law_matters?license_hash=eq.' + enc(licHash)` -- the
+    // full inline concatenation, which is the STRONGEST form of pinning the
+    // spelling of a call rather than the read. Refactoring the lookup into a
+    // query variable, with the licence scope entirely intact, would have taken
+    // this arm red and read as a security regression.
+    // api/alf-append-only-read-order.test.js was red on main for exactly that,
+    // and this was one of three arms found carrying the same pin.
+    //
+    // THE ANCHOR IS NOW THE QUERY FRAGMENT AND NOT ITS CALL SITE. The fragment
+    // is what carries the licence scope, which is what this arm is about; the
+    // `+ enc(licHash)` half is dropped from the requirement because a variable
+    // build splits the concatenation across lines and the scope survives that.
+    assert.match(CODE, /'law_matters\?license_hash=eq\./,
+      'no licence-scoped law_matters lookup in ai_generate, in either the '
+      + 'inline or the query-variable spelling');
+    assert.match(CODE, /enc\(licHash\)/,
+      'the licence hash is not being encoded into any query at all');
     assert.match(CODE, /matter_id=eq\.' \+ enc\(matter_id\)/,
       'the lookup does not filter on the claimed matter_id');
   });
+
+  // ── THE CANARY: it goes red when the LOOKUP LEAVES INLINE ────────────────
+  // SEPARATE ARM ON PURPOSE. The arm above no longer cares which spelling is
+  // used, so a refactor does not read as a licence-scoping regression. This one
+  // reports that the spelling CHANGED -- a fact about this file's anchor, not
+  // about the product. Red here alone means "read the matcher above and confirm
+  // it still reaches the lookup", never "revert the refactor".
+  test('CANARY: the law_matters lookup is still one INLINE rest() concatenation '
+    + '-- if this is the only red arm, it moved and the matcher above covers it',
+    () => {
+      assert.match(CODE, /rest\('law_matters\?license_hash=eq\.' \+ enc\(licHash\)/,
+        'the law_matters lookup is no longer a single inline rest() literal '
+        + 'concatenated with enc(licHash)');
+    });
 
   test('THE LOOKUP IS LICENCE-SCOPED -- a matter belonging to another firm must not confirm', () => {
     // The whole point of the check. An unscoped lookup would confirm any
@@ -77,10 +107,30 @@ function main() {
     // close-paren, which is inside enc(licHash), and the assertion then
     // inspects a fragment instead of the query. Caught by this test failing
     // on correct code, which is the cheap direction for that mistake.
-    const i = CODE.indexOf("rest('law_matters?");
-    assert.ok(i > 0, 'could not find the lookup to inspect');
-    const q = CODE.slice(i, CODE.indexOf('), { headers })', i));
+    // ── ALSO MOVE-PROOFED, 2026-09-30, AND IT WAS THE SECOND PIN IN THIS
+    // ── FILE ────────────────────────────────────────────────────────────
+    // The anchor was `rest('law_matters?` and the window ended at the literal
+    // `), { headers })`. Both pin the CALL SITE. Driving the refactor -- the
+    // lookup rewritten into a query variable -- took THIS arm red as well as
+    // the canary, so fixing only the arm above would have left the substantive
+    // licence-scoping assertion failing on a change that did not touch the
+    // licence scope. Found by driving the refactor in a throwaway worktree
+    // rather than by reading the diff.
+    //
+    // ANCHOR ON THE QUERY LITERAL, WINDOW TO THE END OF THE STATEMENT. A
+    // variable build splits the concatenation across lines but keeps it inside
+    // one statement, so a `;` is the honest boundary. The previous end marker
+    // is not simply widened -- `[^)]*` was already tried here and stopped
+    // inside enc(licHash), which the comment above records.
+    const i = CODE.indexOf("'law_matters?");
+    assert.ok(i > 0, 'could not find the lookup to inspect, in either the '
+      + 'inline or the query-variable spelling');
+    const semi = CODE.indexOf(';', i);
+    const q = CODE.slice(i, semi < 0 ? i + 600 : semi);
     assert.ok(q.indexOf('license_hash=eq.') !== -1, 'the lookup is not licence-scoped');
+    assert.ok(q.indexOf('matter_id=eq.') !== -1,
+      'the window found no matter_id filter at all, so the ordering assertion '
+      + 'below would be comparing against -1 and would pass for the wrong reason');
     assert.ok(q.indexOf('license_hash=eq.') < q.indexOf('matter_id=eq.'),
       'licence scope must be part of the same query, not applied after');
   });

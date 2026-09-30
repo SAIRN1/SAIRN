@@ -164,20 +164,51 @@ const remAuth = REM.indexOf("Bearer ' + process.env.CRON_SECRET");
 // writer at the top of the file also names dnt_appointments and is not the
 // read that was timing out. Anchoring on the wrong one would make this arm
 // pass or fail for a reason that has nothing to do with the ordering.
-const remRead = REM.indexOf("rest('dnt_appointments?status=eq.Confirmed");
+// ── MOVE-PROOF, 2026-09-30 ────────────────────────────────────────────────
+// This was `REM.indexOf("rest('dnt_appointments?status=eq.Confirmed")`, which
+// pins the SPELLING of the call. The arms below compare POSITIONS -- jitter
+// before the read -- and a read refactored into a query variable keeps its
+// position while losing the `rest('` prefix, so indexOf would answer -1 and both
+// arms would go red about ordering that had not changed.
+// api/alf-append-only-read-order.test.js was red on main for exactly that, and
+// this was one of three sites found carrying the same pin.
+//
+// THE ANCHOR IS THE QUERY LITERAL, NOT ITS CALL SITE. It keeps the distinction
+// the comment above insists on -- the LIST read, not the stamp writer's mention
+// of the table -- because `status=eq.Confirmed` is on the list read alone.
+const remRead = REM.indexOf("'dnt_appointments?status=eq.Confirmed");
 ok(remAuth > 0 && remJit > remAuth,
    'send-reminder waits AFTER the bearer check -- an unauthorised caller is '
    + 'refused immediately, not after a delay');
 ok(remRead > 0 && remJit < remRead,
    '...and BEFORE the appointment read, which is the read that was timing out');
 
+// THE SAME PIN, ONE TABLE OVER, AND IT IS FIXED IN THE SAME EDIT. The sweep that
+// found the three latent sites matched on `license_hash=eq.`, which this one does
+// not carry -- so it was invisible to that sweep and is the fourth instance.
+// Fixing three and leaving an identical fourth in the same file would publish an
+// all-clear over the one nobody looked at.
 const alfJit = ALF.indexOf('await jitter(');
-const alfRead = ALF.indexOf("rest('alf_facility?select=");
+const alfRead = ALF.indexOf("'alf_facility?select=");
 const alfCron = ALF.indexOf('if (isCron) {');
 ok(alfCron > 0 && alfJit > alfCron,
    'alf-alerts waits only on the CRON path -- the interactive path is somebody '
    + 'waiting on a response and has nothing to be spread away from');
 ok(alfRead > 0 && alfJit < alfRead,
    '...and before the facility sweep, which is the read that was timing out');
+
+// ── THE CANARY: it goes red when either read LEAVES INLINE ────────────────
+// SEPARATE ARM ON PURPOSE. The position arms above no longer care which spelling
+// is used, so a refactor does not read as an ordering regression. This one reports
+// that the spelling CHANGED -- a fact about this file's anchors, not about the
+// cron ordering. Red here alone means "check the two indexOf anchors still find
+// the LIST read and not the stamp writer", never "revert the refactor".
+ok(REM.indexOf("rest('dnt_appointments?status=eq.Confirmed") > 0,
+   'CANARY: the send-reminder appointment read is still an INLINE rest() '
+   + 'literal -- if this is the only red arm, it moved and the position anchor '
+   + 'above already follows it');
+ok(ALF.indexOf("rest('alf_facility?select=") > 0,
+   'CANARY: the alf-alerts facility sweep is still an INLINE rest() literal -- '
+   + 'same reading as the arm above');
 
 console.log('\nALL ' + n + ' ASSERTIONS PASS');
