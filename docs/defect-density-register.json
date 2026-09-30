@@ -20658,6 +20658,55 @@
       "recurrence_open": "Sabotage anchors are text in a moving file by construction and this platform has measured them decaying repeatedly. The harness now parse-checks its own mutation, so an arm that plants NOTHING is reported -- but an arm whose mutation applies and is caught for the wrong reason is still invisible to it, and that one was settled here by reading rather than by a check."
     },
     {
+      "commit": "8c09948c5d95",
+      "date": "2026-09-29",
+      "subject": "fix(fixture): the baseline fixture was red at every baseline, for its own reasons",
+      "files": [
+        "tests/fixtures/baseline_gate_fixture.py"
+      ],
+      "lines_added": 15,
+      "lines_removed": 14,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "probe-control",
+      "summary": "tests/fixtures/baseline_gate_fixture.py counted occurrences of its own anchor literal in its own source and required three; the literal occurs once. So the fixture was RED at every baseline, and the control that uses it could never pass its GREEN arm -- a fixture failing for its own reasons, which is precisely the condition the harness precondition exists to refuse, arriving one level down.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tests/run_sabotage_harness_baseline_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "8c09948c5d95",
+        "date": "2026-09-29",
+        "subject": "fix(fixture): the baseline fixture was red at every baseline, for its own reasons",
+        "lag_days": 0
+      },
+      "citation_note": "A fixture failing for its own reasons is the shape cross-domain-disciplines item 8 describes, but that item is about a check going stale over TIME; this one was wrong from its first line.",
+      "contributing_factors": [
+        {
+          "factor": "The self-check counted a literal in its own source and the expected count was wrong, so the fixture could never be green",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "It now compares the anchor assignment against a SECOND, SPLIT spelling of the same literal, so the mutation is detected and the same edit cannot rewrite the expectation with it."
+        },
+        {
+          "factor": "The GREEN arm of the control was written and run in the same breath as the RED arm, so a fixture that is always red looks like a subject that is always red",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The control now runs the GREEN direction FIRST and says at its own arm that a could-not-run on the red arm is not evidence about the gate unless the green arm passed."
+        },
+        {
+          "factor": "A fixture is code nobody reviews, because it exists to be trivial",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The fixture carries the account of its own defect at the line, so the next reader meets it rather than re-deriving it."
+        }
+      ],
+      "recurrence_open": "Nothing checks that a fixture is green before a control depends on it, beyond the control's own arm ordering. A second fixture written the same way would fail the same way and the only thing that would catch it is a human reading the arm order."
+    },
+    {
       "commit": "937bd6e858e3",
       "date": "2026-09-29",
       "subject": "fix(sairncare): a prior invoice whose blob is NULL was reconciled against nothing -- the same false figure, through a third door",
