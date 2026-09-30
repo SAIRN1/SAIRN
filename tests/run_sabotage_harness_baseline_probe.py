@@ -80,7 +80,12 @@ DRIVER = (
     "import os, sys\n"
     "sys.path.insert(0, os.path.join(%r, 'tests'))\n"
     "from sabotage_harness import run_probe\n"
-    "MUTATIONS = [(%r, 'ANCHOR = ', 'ANCHOR_REMOVED_BY_THE_CONTROL = ')]\n"
+    # FOUR-TUPLE: (label, file, old, new). A first draft passed a three-tuple and
+    # the harness read the OLD text as the file path, dying on
+    # FileNotFoundError for a path called 'ANCHOR = '. Named here because the
+    # arity is not obvious from run_probe's signature.
+    "MUTATIONS = [('the anchor assignment is rewritten', %r, 'ANCHOR = ',"
+    " 'ANCHOR_REWRITTEN_BY_THE_CONTROL = ')]\n"
     "sys.exit(run_probe(%r, MUTATIONS, title='harness baseline fixture'))\n"
     % (REPO, FIXTURE_REL.replace('\\', '/'), FIXTURE_REL.replace('\\', '/')))
 
@@ -130,14 +135,41 @@ try:
                         out_red),
           out_red[-500:])
 
-    # ── 3. THE TWO CODES ARE NOT THE SAME CODE ──────────────────────────────
-    # Stated as its own arm rather than left implied by arms 1 and 2: if a later
-    # edit made CLEAN and COULD-NOT-RUN equal, both arms above could still pass
-    # while the distinction this file exists for was gone.
-    check('3. CLEAN and COULD NOT RUN are different codes (%d vs %d)'
-          % (rc_green, rc_red), rc_green != rc_red,
-          'the harness answers the same number for "verified" and "could not '
-          'verify"')
+    # ── 3. THE DISTINCTION THAT ACTUALLY MATTERS ────────────────────────────
+    # A FIRST DRAFT OF THIS ARM CHECKED rc_green != rc_red AND PASSED ALREADY,
+    # because CLEAN(0) and the old red-baseline code(1) do differ -- it was
+    # asserting something that was never in doubt while the real conflation went
+    # unmeasured. The distinction this file exists for is COULD-NOT-RUN vs
+    # FINDING, not CLEAN vs anything.
+    #
+    # DRIVEN, NOT ASSUMED: the fixture is put into the one state that makes the
+    # harness report a genuine FINDING -- a mutation it fails to catch -- so the
+    # two codes are compared as two real observations rather than one observation
+    # and one constant. The mutation below is a no-op replace, so nothing changes,
+    # the suite stays green after "planting", and the harness must report that the
+    # planted defect was NOT refused.
+    noop_driver = DRIVER.replace(
+        "'ANCHOR = ', 'ANCHOR_REWRITTEN_BY_THE_CONTROL = '",
+        "'ANCHOR = ', 'ANCHOR = '")
+    io.open(driver_abs, 'w', encoding='utf-8', newline='\n').write(noop_driver)
+    env = dict(os.environ, PYTHONIOENCODING='utf-8')
+    env.pop('SAIRN_HARNESS_FIXTURE_RED', None)
+    rf = subprocess.run([sys.executable, driver_abs], cwd=REPO, env=env,
+                        capture_output=True, text=True, encoding='utf-8',
+                        errors='replace')
+    rc_finding = rf.returncode
+    out_finding = (rf.stdout or '') + (rf.stderr or '')
+    check('3. the FINDING direction really is reachable, or arm 3b has nothing '
+          'to compare against (exit %d)' % rc_finding,
+          rc_finding == EXIT_FINDING and 'baseline is red' not in out_finding,
+          out_finding[-500:])
+    check('3b. THE CONFLATION: COULD NOT RUN (%d) and a real FINDING (%d) are '
+          'DIFFERENT codes' % (rc_red, rc_finding),
+          rc_red != rc_finding,
+          'the harness answers the same number for "a planted defect was not '
+          'refused" and "nothing was planted because the baseline was already '
+          'red". Every caller that reads only the exit code is being told the '
+          'subject has a hole when in fact nothing was measured.')
 finally:
     try:
         os.remove(driver_abs)

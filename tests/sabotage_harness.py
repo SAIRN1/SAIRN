@@ -260,8 +260,16 @@ def _unstaged_suspects(suite, stage):
 
 
 def run_probe(suite, mutations, title='', stage=(), carry_identity=False):
-    """0 when every planted defect was refused, 1 when one was not, 3 when the
-    probe could not run at all -- which is NOT a pass and says so.
+    """0 when every planted defect was refused, 1 when one was not, and a
+    NON-1, NON-ZERO code when the probe could not run at all -- which is NOT a
+    pass and says so.
+
+    THE COULD-NOT-RUN CODE IS 2 FOR A RED BASELINE (changed from 1 on
+    2026-09-30, see the comment at that return) AND 3 FOR THE SETUP FAILURES
+    ABOVE IT. Two codes for one meaning is stated rather than tidied away:
+    unifying them touches every caller of every path. **What callers must not do
+    is treat 1 as the only failure**, because the most likely reason a probe
+    reports nothing useful is that its baseline was already red.
 
     `stage` names EXTRA files to copy in from this clone alongside the suite.
     The worktree is at HEAD, so a fix that is not committed yet is not in it and
@@ -342,7 +350,35 @@ def run_probe(suite, mutations, title='', stage=(), carry_identity=False):
                       'the argument')
                 print('  is for. If it is not, this list is noise and the suite '
                       'is really red.')
-            return 1
+            # ── COULD NOT RUN, NOT A FINDING. CHANGED FROM 1 TO 2, 2026-09-30 ──
+            # This returned 1, which is this function's code for "a planted
+            # defect was NOT refused". So a run that planted nothing and
+            # verified nothing answered the same number as a run that found a
+            # real hole in the subject -- indistinguishable to every caller that
+            # reads the exit code, which is what a caller does.
+            #
+            # FOUND THE HARD WAY THE SAME DAY.
+            # tests/run_self_exclusion_guard_sabotage_probe.py was red at its own
+            # baseline; the gate below worked, printed the right sentence, and
+            # then reported 1. The output said "could not run" and the number
+            # said "finding".
+            #
+            # "Could not run" is a THIRD STATE and folding it into a finding is
+            # the same defect as folding it into a pass -- PR 1.11, in the
+            # direction people forget. Driven by
+            # tests/run_sabotage_harness_baseline_probe.py, which observes BOTH
+            # codes rather than comparing one against a constant.
+            #
+            # THE THREE `return 3` PATHS ABOVE ARE LEFT ALONE, DELIBERATELY, AND
+            # THAT LEAVES TWO COULD-NOT-RUN CODES IN ONE FUNCTION. 3 is a real
+            # convention elsewhere in this repo (report_only_checks,
+            # local_only_collection_check, app_session_isolation_probe all use it
+            # for could-not-tell) and 2 is the convention the probes and tools
+            # around this one use. Unifying them touches every caller of every
+            # path and is a separate change with its own blast radius; saying so
+            # here is better than widening this one silently. What matters for the
+            # defect being fixed is that NEITHER is 1.
+            return 2
 
         originals = {}
         for rel in sorted({m[1] for m in mutations}):
