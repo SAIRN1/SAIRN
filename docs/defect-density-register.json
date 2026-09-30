@@ -21629,6 +21629,68 @@
         }
       ],
       "recurrence_open": "other refusal-reason orderings in the same classifier were not exhaustively cross-checked; a new refusal branch added ahead of the host check could reintroduce the shadow"
+    },
+    {
+      "commit": "95a6f6b55573",
+      "date": "2026-09-30",
+      "subject": "fix(platform): raw model output is redacted server-side in six apps, not one",
+      "files": [
+        "api/_lib/ai-scan-redaction.js",
+        "api/sd-data-ai-scan-redaction.test.js",
+        "api/sd-data.js",
+        "docs/MASTER-PLAN.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/traceability-matrix.md",
+        "tests/run_ai_output_resource_probe.py",
+        "tools/ai_output_resource_scan.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 1268,
+      "lines_removed": 20,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "Raw model output was persisted unredacted on seven resources across six apps: the server-side redaction gate existed only inside the SAIRNmechanical branch as MECH_SCANNED_TEXT, so bld_photo_analyses (full, summary), grd_progress_photos, grd_ecosystem_reports, msb_food_scans, scp_progress_photos, rf_photos and memory stored whatever a model read off a photograph -- a name, a phone number, an SSN on a taped-up work order -- verbatim in the row. Now one declared map in api/_lib/ai-scan-redaction.js, gated per field on the server, with deliverables (parsed quantities, product names, quote lines) explicitly excluded because over-redaction is a different way to lose the record.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "unknown",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Seven independent write paths in six apps, each added with its own feature over months. A single injection commit does not exist, and naming the earliest would misreport six other dates."
+      },
+      "citation_note": "No standing coding rule names 'a gate scoped to one app while the same data shape exists in five others'. The nearest is the name-versus-property rule the mech_docs fix already states, and this is that rule applied across an app boundary rather than within one file.",
+      "phase_note": "Each of the seven write paths was added with its own feature at a different date; the redaction gate was added later and only where somebody was looking. There is no single phase in which this was introduced, and picking one would be a guess.",
+      "contributing_factors": [
+        {
+          "factor": "The redaction gate was defined INSIDE one app's branch (MECH_SCANNED_TEXT, api/sd-data.js, scoped to the SAIRNmechanical section) rather than at module level, so it was reachable only from the app whose author happened to need it.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Moved whole into api/_lib/ai-scan-redaction.js as a module-level declared map covering every app, with the per-resource deciding test on the entry."
+        },
+        {
+          "factor": "The universe was only ever derived in ONE direction. Walking forward from the model call finds the resources whose store sits inside the AI function, and is blind to a store that reads a module-level variable two functions away -- which is exactly how bld_photo_analyses is written.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tools/ai_output_resource_scan.py derives it twice, forward and backward, prints both counts and the symmetric difference, and never presents a union as agreement."
+        },
+        {
+          "factor": "Each of the seven write paths shipped with its own feature at its own date, and no step in the feature checklist asked whether the new resource persisted model output.",
+          "kind": "process",
+          "action_status": "planned",
+          "note": "Named rather than implied: until that arm exists nothing FORCES the question when a new AI-writing resource is added.",
+          "action": "The map is now the single place to answer the question, and tools/ai_output_resource_scan.py can be re-run at any time to re-derive the universe. What is PLANNED and not built is a push-gate arm that compares the derivation's output against the declared map and blocks when a resource appears in one and not the other."
+        },
+        {
+          "factor": "Two of the affected resources -- bld_ai_chat and sd_stonehead_history -- are deliberately excluded from server sync as conversation transcripts, so the raw text sits in localStorage where no server gate can reach it at all.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "A server-side redaction gate is structurally incapable of covering a local-only store. Recorded as a standing exposure with its reason, not closed."
+        }
+      ],
+      "recurrence_open": "Nothing yet FORCES the derivation to be re-run when a new resource is added, so the map can go stale the next time somebody ships an AI feature -- the same way MECH_SCANNED_TEXT went stale the moment a second app needed it. And bld_ai_chat plus sd_stonehead_history remain unredacted in localStorage, which no server gate can reach; shared_knowledge stores up to 60 lowercased words taken from model text, so a surname can survive, and it is registered rather than half-gated."
     }
   ],
   "started": "2026-09-09",
