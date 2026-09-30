@@ -2965,6 +2965,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "cody-1790776422",
+      "session": "cody",
+      "subject": "cody-hdr20",
+      "task": "tools/master_plan.py tools/traceability_matrix.py tools/tooling_inventory.py tools/audit_checkpoint_status.py tools/cron_liveness_check.py tools/role_gate_mc_config.py tools/sairn_build_load_gates.py tools/gen_ma_calendar.py tools/gen_ma_seed.py tools/gen_mn_calendar.py tools/gen_mn_seed.py tools/gen_mo_calendar.py tools/gen_mo_seed.py tools/gen_nj_calendar.py tools/gen_nv_calendar.py tools/gen_ok_calendar.py tools/gen_or_calendar.py tools/gen_sc_calendar.py tools/gen_ut_calendar.py tools/gen_va_calendar.py tools/gen_va_seed.py",
+      "claimed_at": "2026-09-30T13:53:42Z",
+      "claimed_at_epoch": 1790776422.7879565,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
