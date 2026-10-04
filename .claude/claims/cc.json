@@ -3187,6 +3187,23 @@
       "status": "released",
       "released_at": "2026-09-30T20:58:55Z",
       "files": null
+    },
+    {
+      "id": "cc-1791156790",
+      "session": "cc",
+      "subject": "cc",
+      "task": "sairnbiz preview check re-run, revoked-licence AI cutoff ablation, register rows mech_docs and msb_bottle_scans, stale-branch tips record then delete, competitive-gap doc inventory FILES: docs/2026-09-29-sairnbiz-preview-check.md docs/2026-09-29-stale-branch-tips.md docs/defect-density-register.json docs/SAIRN-OPEN-WORK-INDEX.md SAIRN-ACTIVE-WORK-cc.md",
+      "claimed_at": "2026-10-04T23:33:10Z",
+      "claimed_at_epoch": 1791156790.7412043,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-cc.md",
+        "docs/2026-09-29-sairnbiz-preview-check.md",
+        "docs/2026-09-29-stale-branch-tips.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/defect-density-register.json"
+      ]
     }
   ],
   "refusals": [
