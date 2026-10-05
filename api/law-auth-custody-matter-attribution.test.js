@@ -125,8 +125,37 @@ function main() {
     const i = CODE.indexOf("'law_matters?");
     assert.ok(i > 0, 'could not find the lookup to inspect, in either the '
       + 'inline or the query-variable spelling');
-    const semi = CODE.indexOf(';', i);
-    const q = CODE.slice(i, semi < 0 ? i + 600 : semi);
+    // ── THE ';' BOUNDARY WAS WRONG AND IT WAS DRIVEN, NOT REASONED
+    // ── (2026-10-05) ────────────────────────────────────────────────────
+    // The 2026-09-30 move-proofing windowed from the anchor to the first ';'
+    // on the stated premise that "a variable build splits the concatenation
+    // across lines but keeps it inside ONE statement, so a ';' is the honest
+    // boundary." THAT PREMISE IS FALSE FOR THE MOST NATURAL VARIABLE BUILD:
+    //
+    //     let lmQ = 'law_matters?license_hash=eq.' + enc(licHash);
+    //     lmQ += '&matter_id=eq.' + enc(matter_id) + '&select=...';
+    //
+    // The first ';' lands at the end of line one, so the window contained
+    // `license_hash=eq.` and NOT `matter_id=eq.`, and this arm went red on a
+    // refactor that did not touch the licence scope. Proven by planting that
+    // exact refactor into api/law-auth.js and running this file: the arm above
+    // survived, the CANARY fired as designed, and THIS arm failed -- so the
+    // move-proofing was half done and the half that was missing is the
+    // SUBSTANTIVE licence-scoping assertion.
+    //
+    // AND THE += SHAPE IS NOT HYPOTHETICAL: api/sd-data.js:10782-10785 builds
+    // the alf_incidents query exactly that way, with a conditional += for the
+    // self-scope. The premise was tested against the wrong example.
+    //
+    // THE BOUNDARY IS NOW THE CONSUMER, NOT A PUNCTUATION MARK. Window from
+    // the anchor to the fetch/rest() call that USES the query, because every
+    // fragment appended before the call is part of the query by definition and
+    // nothing after it is. Falls back to a line budget if the call is not
+    // found, so a shape nobody anticipated widens the window rather than
+    // silently truncating it -- truncation is what produced this defect.
+    const after = CODE.slice(i);
+    const consumer = after.search(/fetch\(\s*rest\(/);
+    const q = consumer > 0 ? after.slice(0, consumer + 40) : after.slice(0, 900);
     assert.ok(q.indexOf('license_hash=eq.') !== -1, 'the lookup is not licence-scoped');
     assert.ok(q.indexOf('matter_id=eq.') !== -1,
       'the window found no matter_id filter at all, so the ordering assertion '
