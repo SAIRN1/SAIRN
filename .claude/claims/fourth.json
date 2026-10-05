@@ -3015,8 +3015,8 @@
       "task": "SAIRNlegacy Funeral Rule CPL and OBCPL built from the merchandise catalog plus a 19-arm suite; push_retry.py ACCUMULATED ledger guard so a rebase cannot silently eat an append-only record, with an 18-arm fixture probe; sql/schema_snapshot_constraints_query.sql for the missing _constraints half. CONFLICT DECLARED PER PR 4.3: cody holds tools/app* narrower-than-corpus scans -- none of those files are in my set. FILES: sairnlegacy.html tests/sairnlegacy_item_price_lists.js tools/push_retry.py tests/run_push_retry_ledger_guard_probe.py sql/schema_snapshot_constraints_query.sql SAIRN-ACTIVE-WORK-fourth.md",
       "claimed_at": "2026-10-05T21:55:08Z",
       "claimed_at_epoch": 1791237308.3172565,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-05T22:04:13Z",
       "files": [
         "SAIRN-ACTIVE-WORK-fourth.md",
         "sairnlegacy.html",
