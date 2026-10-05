@@ -3225,6 +3225,48 @@ HOOK_TIMEOUT_SECONDS = _hook_timeout() or 300
 SWEEP_BUDGET_SECONDS = HOOK_TIMEOUT_SECONDS
 
 
+REACHABILITY_FILE = os.path.join(REPO, 'docs', 'report-only-reachability.json')
+
+
+def _write_reachability(reach, budget):
+    """Persist (tool, seconds, cumulative, reached) from a real full sweep."""
+    try:
+        payload = {
+            'measured_budget_seconds': budget,
+            'effective_cutoff_seconds': (budget * 0.9) if budget else None,
+            'registry_size': len(REGISTRY),
+            'reached': sum(1 for r in reach if r[3]),
+            'never_reached': sum(1 for r in reach if not r[3]),
+            'note': 'DERIVED by tools/report_only_checks.py on a full sweep. '
+                    'A tool listed with reached=false is REGISTERED AND DEAD: '
+                    'the sweep stops at 0.9 x budget and breaks, so POSITION '
+                    'IN REGISTRY decides. Do not read a `promoted:` field as '
+                    'evidence that a checker runs -- read this.',
+            'entries': [{'tool': t, 'seconds': s, 'cumulative': round(c, 1),
+                         'reached': bool(k)} for t, s, c, k in reach],
+        }
+        with io.open(REACHABILITY_FILE, 'w', encoding='utf-8', newline='\n') as fh:
+            json.dump(payload, fh, indent=1)
+            fh.write('\n')
+    except Exception as exc:                                      # noqa: BLE001
+        # A failure to RECORD must not be mistaken for a clean sweep, and must
+        # not take the sweep down either. Said out loud, both ways.
+        print('COULD NOT WRITE %s (%s) -- the sweep ran, the reachability '
+              'record did not update, so `--list` is reporting an OLDER '
+              'measurement.' % (REACHABILITY_FILE, exc))
+
+
+def _read_reachability():
+    """{tool: (reached, cumulative)} plus the file's own header, or (None, {})."""
+    try:
+        with io.open(REACHABILITY_FILE, encoding='utf-8') as fh:
+            data = json.load(fh)
+    except Exception:                                             # noqa: BLE001
+        return None, {}
+    return data, dict((e['tool'], (e.get('reached'), e.get('cumulative')))
+                      for e in data.get('entries') or [])
+
+
 def sweep(show_all=False, quiet=False):
     """Run every promoted checker, TIMING EACH ONE.
 
@@ -3241,6 +3283,7 @@ def sweep(show_all=False, quiet=False):
     budget = SWEEP_BUDGET_SECONDS
     started = time.time()
     skipped = []
+    reach = []          # (tool, seconds, cumulative, reached) -- persisted below
     for i, entry in enumerate(REGISTRY):
         # ── THE BUDGET IS SPENT: STOP AND SAY WHAT WAS NOT RUN ──────────────
         # A hook killed at its timeout reports NOTHING -- no partial result, no
@@ -3250,6 +3293,9 @@ def sweep(show_all=False, quiet=False):
         # did not look". The remaining checkers are named, never just counted.
         if budget and (time.time() - started) >= budget * 0.9:
             skipped = [e['tool'] for e in REGISTRY[i:]]
+            _cum = time.time() - started
+            for e in REGISTRY[i:]:
+                reach.append((e['tool'], None, _cum, False))
             break
         if not quiet:
             print('-- %s --' % entry['tool'])
@@ -3257,6 +3303,7 @@ def sweep(show_all=False, quiet=False):
         f, u = run_one(entry, show_all, verbose=not quiet)
         _el = time.time() - _t0
         timings.append((_el, entry['tool']))
+        reach.append((entry['tool'], _el, time.time() - started, True))
         findings += f
         unrun += u
         if not quiet:
@@ -3264,6 +3311,24 @@ def sweep(show_all=False, quiet=False):
     for tool in skipped:
         unrun.append('%s -- NOT RUN, the sweep reached its %ds budget first. '
                      'This is an UNKNOWN, not a clean result.' % (tool, budget))
+    # ── THE SILENCE WAS BETWEEN SURFACES, NOT INSIDE THIS FUNCTION ─────────
+    # Measured 2026-10-05: 29 of 73 entries never run, a contiguous tail from
+    # index 44. This loop was ALREADY honest about it -- it names every skipped
+    # tool, prints the block below, and main() returns 1 on a non-empty `unrun`.
+    # NONE OF THAT REACHES `--list`, which is the surface a session actually
+    # reads before deciding whether a checker is on a cadence. An entry there
+    # says `promoted: <date>, <reasoning>` and cannot say "and it has never
+    # once executed". I had to hand-write that fact into two entries, which is
+    # a measurement in prose -- the thing this repo keeps paying for.
+    #
+    # So the reachability is PERSISTED here, from a real run, and `--list`
+    # annotates every entry from it. Written only on a full run (not --hook,
+    # not quiet) so the PostToolUse path does not churn the file on every push.
+    # When the file is absent `--list` says NO MEASUREMENT ON FILE rather than
+    # leaving the column blank -- an unmeasured entry and a reachable one must
+    # not look the same, which is the whole defect restated one level up.
+    if reach and not quiet:
+        _write_reachability(reach, budget)
     if not quiet and timings:
         total = sum(e for e, _ in timings)
         print('')
@@ -3369,8 +3434,46 @@ def main(argv):
                    'run written down here. That is not the same as a clean '
                    'run, and it is not a reason to invent one: run it and '
                    'record what it found.')
+        # ── REACHABILITY, DERIVED, PRINTED FIRST ───────────────────────────
+        # Added 2026-10-05. 29 of 73 entries never execute: the sweep stops at
+        # 0.9 x budget and BREAKS, so the remainder of the list is sliced off
+        # and POSITION IN REGISTRY DECIDES. This surface could not say so --
+        # every entry read `promoted: <date>` whether it ran or had never run
+        # once. Now each line carries RUNS / NEVER REACHED from a real sweep,
+        # and NO MEASUREMENT when the record is absent, which is a third state
+        # and not a blank.
+        _rdata, _rmap = _read_reachability()
+        if _rdata is None:
+            print('REACHABILITY: NO MEASUREMENT ON FILE (%s absent). Every '
+                  'line below is UNMEASURED for whether it runs at all -- run '
+                  '`python tools/report_only_checks.py` once to record it. An '
+                  'unmeasured entry is NOT a reachable one.'
+                  % os.path.relpath(REACHABILITY_FILE, REPO))
+        else:
+            print('REACHABILITY, measured: %d of %d entries REACHED the '
+                  'sweep; %d NEVER RAN (budget %ss, effective cutoff %ss). '
+                  'Position in REGISTRY decides -- a `promoted:` field is not '
+                  'evidence that a checker executes.'
+                  % (_rdata.get('reached', 0), _rdata.get('registry_size', 0),
+                     _rdata.get('never_reached', 0),
+                     _rdata.get('measured_budget_seconds'),
+                     _rdata.get('effective_cutoff_seconds')))
+        print('')
         no_evidence = []
-        for e in REGISTRY:
+        unreached = []
+        for _i, e in enumerate(REGISTRY):
+            if _rdata is None:
+                _tag = 'reach=NO MEASUREMENT'
+            elif e['tool'] not in _rmap:
+                # In the list but absent from the last measurement -- added
+                # since it was taken. Named, never silently treated as fine.
+                _tag = 'reach=UNMEASURED (added since the last sweep)'
+            elif _rmap[e['tool']][0]:
+                _tag = 'reach=RUNS at %ss' % _rmap[e['tool']][1]
+            else:
+                _tag = 'reach=NEVER REACHED -- REGISTERED AND DEAD'
+                unreached.append(e['tool'])
+            print('[%2d] %-32s %s' % (_i, e['tool'], _tag))
             print('%-32s promoted %s (%s)'
                   % (e['tool'], e.get('promoted', '(no promotion note)'),
                      e.get('mode', '(no mode)')))
@@ -3394,12 +3497,35 @@ def main(argv):
             print('  than listed only, because the count is the thing that '
                   'should not grow.')
             print('')
+        if unreached:
+            print('%d of %d REGISTERED CHECKER(S) NEVER RUN AT ALL:'
+                  % (len(unreached), len(REGISTRY)))
+            for t in unreached:
+                print('  %s' % t)
+            print('  These are PROMOTED and DEAD. The sweep stops at the '
+                  'effective cutoff and')
+            print('  BREAKS, so everything after that index is sliced off -- '
+                  'nothing about a')
+            print('  checker other than its POSITION decides this, and nothing '
+                  'in its entry')
+            print('  said so until 2026-10-05. A `promoted:` field is a '
+                  'decision, not an')
+            print('  execution. Raise the budget, split the sweep, or demote '
+                  'them honestly --')
+            print('  but do not count them as coverage.')
+            print('')
         print('DELIBERATELY NOT PROMOTED (%d) -- the decision, recorded once:'
               % len(NOT_PROMOTED))
         for tool, why in NOT_PROMOTED:
             print('  %s' % tool)
             print('      %s' % why)
-        return 0
+        # ── THE LOUD HALF: --list EXITS 1 WHEN A REGISTERED CHECKER IS DEAD ──
+        # Asked for as "a skipped entry must fail loudly". sweep() already did
+        # its half -- it names every skipped tool and main() returns 1 on a
+        # non-empty `unrun`. This surface returned 0 unconditionally, so a
+        # caller could read the registry and be told nothing was wrong while
+        # 40% of it had never executed.
+        return 1 if unreached else 0
     findings, unrun = sweep(show_all='--all-sections' in argv)
     print('')
     if unrun:

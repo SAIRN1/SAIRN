@@ -58,6 +58,36 @@ import os
 import subprocess
 import sys
 
+# ── THIS TOOL CRASHED PRINTING ITS OWN USAGE (found 2026-10-05) ────────────
+# `python tools/push_retry.py` with no arguments falls through to
+# `print(__doc__.strip())`, and the docstring above carries U+2500 box-drawing
+# characters. On Windows the console encoding is cp1252, which has no mapping
+# for them, so the usage path raised:
+#
+#     UnicodeEncodeError: 'charmap' codec can't encode characters in
+#     position 143-144: character maps to <undefined>
+#
+# WHY THAT MATTERED MORE THAN A COSMETIC CRASH. This is the tool that exists to
+# stop a lost push race from amending one session's work onto another session's
+# commit -- the near-miss its own docstring describes. The first thing a session
+# reaching for it does is run it to see how, and it answered with a traceback.
+# The only way past was reading the source for `--loop --attempts`.
+#
+# RECONFIGURED RATHER THAN ASCII-ING THE DOCSTRING, deliberately: every tool in
+# this repo uses those box rules, so stripping them here would fix one file and
+# leave the pattern, and the next tool with a docstring would do it again.
+# tools/gh_token.py has carried exactly these three lines since it was written;
+# this is the same guard, not a new idea. `errors='replace'` is NOT used -- a
+# mangled character is better than a crash, but a correct one is better still,
+# and utf-8 can encode the whole docstring.
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+if hasattr(sys.stderr, 'reconfigure'):
+    # stderr too: amend_safety() prints its refusal reasons there, and a guard
+    # whose REFUSAL cannot be printed is a guard that fails open at the moment
+    # it is trying to stop something.
+    sys.stderr.reconfigure(encoding='utf-8')
+
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # ── EVERY FILE GIT USES TO MARK AN OPERATION IN PROGRESS ──────────────────
