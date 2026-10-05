@@ -31,6 +31,7 @@ the defect this whole family of tools exists to catch, and it was inside one.
 """
 import io
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -173,6 +174,73 @@ _src = io.open(TOOL, encoding='utf-8').read()
 check('D3. the tool declares this file as its control, so '
       'checker_control_check can find the pair from either end',
       'run_schema_provisioning_probe.py' in _src, 'CONTROLLED_BY is missing')
+
+# ── E. THE `public.` PREFIX, AND THE SILENT ZERO BEHIND IT (2026-10-05) ────
+# declared_tables() required `create table if not exists public.<name>` and 25
+# files in sql/ write the unqualified form. Measured over the whole directory:
+# 442 tables with the prefix required, 470 with it optional -- 28 invisible,
+# almost all of them the *_employee_auth and *_audit_log families, which are
+# the tables an app's sign-in depends on.
+#
+# THE ARMS ARE IN BOTH DIRECTIONS because a reader that matched `create table`
+# loosely would satisfy the first arm and start counting prose.
+section('E. a table declared without the public. prefix is still a table')
+
+import tempfile                                                   # noqa: E402
+
+_d = tempfile.mkdtemp(prefix='spc-probe-')
+try:
+    def _w(name, body):
+        p = os.path.join(_d, name)
+        io.open(p, 'w', encoding='utf-8').write(body)
+        return p
+
+    _unq = _w('unqualified.sql',
+              'create table if not exists sd_employee_auth (\n'
+              '  id uuid primary key\n);\n')
+    check('E1. the UNQUALIFIED form is read -- this is the shape 25 files in '
+          'sql/ use, including every *_employee_auth schema',
+          S.declared_tables(_unq) == ['sd_employee_auth'],
+          S.declared_tables(_unq))
+
+    _q = _w('qualified.sql',
+            'create table if not exists public.sd_jobs (\n  id uuid\n);\n')
+    check('E2. ...and the qualified form still is, so E1 is not a replacement',
+          S.declared_tables(_q) == ['sd_jobs'], S.declared_tables(_q))
+
+    _both = _w('both.sql',
+               'create table if not exists public.a_one (id uuid);\n'
+               'create table if not exists a_two (id uuid);\n')
+    check('E3. a file mixing the two forms yields BOTH',
+          S.declared_tables(_both) == ['a_one', 'a_two'],
+          S.declared_tables(_both))
+
+    _none = _w('none.sql',
+               '-- a grant-only file\n'
+               'grant select on public.sd_jobs to service_role;\n')
+    check('E4. KNOWN-BAD: a file that creates no table yields an EMPTY list, '
+          'which main() must refuse rather than report as clean -- 13 files in '
+          'sql/ are grant-only or query-only',
+          S.declared_tables(_none) == [], S.declared_tables(_none))
+
+    _prose = _w('prose.sql',
+                '-- this file does not create table anything\n'
+                '-- see create table if not exists in the other file\n'
+                'select 1;\n')
+    check('E5. ...and a COMMENT saying "create table" without `if not exists` '
+          'yields nothing, so the reader did not become a prose matcher',
+          S.declared_tables(_prose) == [], S.declared_tables(_prose))
+
+    # THE SILENT ZERO, DRIVEN THROUGH main() RATHER THAN ASSERTED ON THE SOURCE.
+    # Zero declared used to mean zero checkable, zero provisioned, zero missing
+    # and EXIT 0 -- printed in the same shape as a fully-migrated app.
+    _rc = S.main(['--app', 'stonedesk', '--schema', _none,
+                  '--key', 'ZZ-PROBE-NO-SUCH-LICENCE'])
+    check('E6. main() on a schema declaring NOTHING exits 2 COULD NOT RUN, '
+          'never 0. Zero tables checked is not zero tables missing',
+          _rc == 2, 'exit=%r' % (_rc,))
+finally:
+    shutil.rmtree(_d, ignore_errors=True)
 
 print('\n%s -- %d passed, %d failed' % ('FAIL' if _fail else 'ALL ARMS PASS',
                                         _pass, _fail))

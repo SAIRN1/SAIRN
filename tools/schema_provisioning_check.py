@@ -61,9 +61,50 @@ def declared_tables(schema):
     migration was supposed to produce. Read from the file rather than from the
     registry, deliberately: the registry says what the app is allowed to ask
     for, and the schema says what the database was told to build. Checking the
-    registry against itself would prove nothing about the migration."""
+    registry against itself would prove nothing about the migration.
+
+    ── THE `public.` PREFIX WAS REQUIRED AND 28 TABLES WERE INVISIBLE ────────
+    (2026-10-05.) The pattern was `create table if not exists public\\.(\\w+)`
+    and 25 files in `sql/` write the unqualified form -- `create table if not
+    exists sd_employee_auth (`. Measured over the whole directory: **442 tables
+    with the prefix required, 470 with it optional, so 28 were never read.**
+    Almost all are the `*_employee_auth` and `*_audit_log` families, which is
+    the worst possible set to be blind to: they are the tables an app's sign-in
+    depends on.
+
+    HOW IT WAS FOUND, because it says something about the failure mode. Not by
+    review and not by a test -- by following ONE register cell.
+    `supplier_lead_times` is recorded as not provisioned, and when that was
+    re-driven today the table was not in the Gate-1 missing list OR in the
+    sweep at all. Pulling that thread found an app-prefix glob reading 113
+    schema files of 147, and pulling it again found this.
+
+    AND THE SILENT HALF IS WORSE THAN THE COUNT. A file whose every table is
+    unqualified returned an EMPTY LIST, and the caller then reported
+    `schema declares : 0`, `PROVISIONED : 0`, `MISSING : 0` and exited **0**.
+    `sql/stonedesk_audit_log_schema.sql` did exactly that in the 2026-10-05
+    sweep -- one declared table, read as none, reported clean. "Nothing to
+    check" and "everything checked out" printed the same, which is why
+    `main()` now refuses a schema file that declares nothing (PR 1.11).
+
+    AND COMMENTS ARE STRIPPED, BECAUSE MAKING THE PREFIX OPTIONAL MADE THEM
+    REACHABLE -- same change, caught by its own new arm. With `public.`
+    required a comment had to name a qualified table to produce a false hit,
+    which no file did. Optional, the phrase alone is enough: the probe's prose
+    fixture -- a comment reading "see create table if not exists in the other
+    file" -- yielded the table name `in`. A widening that reaches into comments
+    is the defect this platform records most often (PR 1.2: grep cannot tell
+    code from text that describes code), so the widening and the stripper land
+    together rather than one at a time.
+    """
     src = open(schema, encoding='utf-8', errors='replace').read()
-    return sorted(set(re.findall(r'create table if not exists public\.(\w+)', src)))
+    # Line comments only, which is what SQL files here use for prose. Block
+    # comments are not stripped and no file in sql/ uses one around a CREATE.
+    code = '\n'.join(l for l in src.split('\n')
+                     if not l.lstrip().startswith('--'))
+    return sorted(set(re.findall(
+        r'create\s+table\s+if\s+not\s+exists\s+(?:public\.)?(\w+)', code,
+        re.I)))
 
 
 CONTROLLED_BY = ['tests/run_schema_provisioning_probe.py']
@@ -343,6 +384,32 @@ def main(argv):
             return 2
 
     tables = declared_tables(schema)
+    # ── A SCHEMA FILE THAT DECLARES NOTHING IS NOT A CLEAN ONE (PR 1.11) ───
+    # This fell straight through: zero declared meant zero checkable, zero
+    # provisioned, zero missing and exit 0, printed in the same shape as a
+    # fully-migrated app. `sql/stonedesk_audit_log_schema.sql` was reported as
+    # `schema declares : 0 ... MISSING : 0`, exit 0, on 2026-10-05, while
+    # declaring one table the prefix-requiring regex above could not see.
+    #
+    # EITHER CAUSE IS A REFUSAL, and the message names both rather than
+    # guessing: the file may genuinely create no table (a grant-only or
+    # query-only file, of which sql/ has 13), or it may create one in a shape
+    # this reader cannot parse. The caller must not be told "clean" for either.
+    if not tables:
+        sys.stderr.write(
+            'COULD NOT RUN: %s declares NO table this reader can see, so\n'
+            'nothing below would be checked -- and zero tables checked is not\n'
+            'zero tables missing.\n\n'
+            'Two causes and this tool cannot tell them apart:\n'
+            '  (a) the file genuinely creates no table -- a grant-only, '
+            'policy-only or\n      query-only file. 13 files in sql/ are like '
+            'that.\n'
+            '  (b) it creates one in a shape this reader cannot parse. The '
+            'prefix was\n      REQUIRED until 2026-10-05 and 28 tables in 25 '
+            'files were invisible for it.\n\n'
+            'Exit 2, not a pass.\n' % os.path.relpath(schema, REPO)
+            .replace(os.sep, '/'))
+        return 2
     reg = registered(app)
     # AN UNREADABLE REGISTRY IS COULD NOT RUN, NEVER ZERO. Deriving a
     # NOT-REGISTERED finding from a read that returned nothing is the
