@@ -5117,6 +5117,27 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-10-05T09:03:14Z",
+      "opened_at_sha": "0e7f99af671ca74df4e713b67f3e82f13519b286",
+      "resources": [
+        "grd_irr_zones",
+        "grd_rounds"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tools/citation_line_drift_check.py"
+      ],
+      "what": "tools/citation_line_drift_check.py stopped closing every run with 'Each DRIFTED line above is the correction to apply'. It resolves WRITE sites only and cannot tell a stale citation from a deliberate render or field-construction one; on SAIRNgrounds at HEAD that sentence would have broken 4 of 4 correct citations (grd_irr_zones :3694, grd_rounds :2975/:3004/:3046). It now prints the cited line's own source text and names the arrow a candidate. NO code serving any Tier A resource is changed -- this is a report-only measurement tool, and the gate matched grd_irr_zones and grd_rounds out of the COMMENT and commit prose that explains the defect. That is the fifth recorded instance of this gate matching a resource name out of comments/docstrings/fixtures (PR 1.2 inside the gate itself). ATTACK POINTS: (a) is DRIFTED still the wrong word now that the header redefines it, (b) does printing the cited line at 140 chars truncate the deciding evidence on a minified app, (c) probe arm F4's fixture is outside every declaration block -- is it really indistinguishable from genuine drift, (d) the 32-vs-4 precision split is two apps, not a measured rate, (e) exit 1 unchanged means no gate loosened -- verify that.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-10-05T09:03:14Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
