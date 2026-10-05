@@ -1562,3 +1562,124 @@ regenerated to 567 lines, `--check` OK, and the tool self-tests 10/10.
   and I did not get to it. Capacity, named rather than dropped.
 * **Items 1 and 2** remain blocked on Supabase access. The full text of
   `sql/schema_snapshot_query.sql` was handed over in the report for pasting.
+
+---
+
+## 2026-10-05 (sixth batch) — the ledger guard made real, the constraints query, and the Funeral Rule gap built
+
+### 5. INVENTORY
+
+| # | Item | State |
+|---|---|---|
+| 1 | push_retry.py `--ours` data loss, fixed for all callers | **DONE** — and the diagnosis changed |
+| 2 | Snapshot `_constraints` | **QUERY WRITTEN** for Michael; the existing query already emits it |
+| 3 | Build a competitive gap | **DONE** — SAIRNlegacy CPL + OBCPL, 19 arms, 4 sabotages |
+| 4 | Confirm the Tier A obligation landed in cody's queue | **CONFIRMED on origin/main**, not assumed |
+| — | Michael still owed | run the committed SQL, sections 1 then 2, in the Supabase editor |
+
+### 1. The data loss was NOT in push_retry.py, and that matters
+
+**I had the location wrong.** `push_retry.py` does **not** auto-resolve
+anything — on a conflict it STOPS, prints guidance, and returns 3 without
+amending. The `--ours` resolution that ate my Tier A record was in **my own
+inline loops**, written per-command, exactly the shape `push_retry.py` exists
+to replace.
+
+So the fix is not "stop it auto-resolving". It is the thing neither the tool
+nor my loops had: **a count, taken before the rebase and compared after it.**
+
+`ACCUMULATED` lists 12 append-only ledgers with the key holding their list —
+`tier-a-reviews.json`, `defect-density-register.json`, the five claim files,
+and five smaller registers. The loop now:
+
+* counts them **before** the rebase;
+* on a conflict, names any that are in the unmerged set **first and loudest**,
+  because the advice printed two lines below for GENERATED documents is
+  `--ours`, and during a rebase that takes the **upstream** side;
+* after a **successful** rebase — which is not the same as nothing being lost,
+  since git can auto-merge two JSON appends and drop one — recounts and
+  **refuses to push (exit 4)** if any ledger shrank;
+* reports an unreadable ledger **separately**, never as 0. A 0 would look like
+  a catastrophic drop next time and would make a real drop indistinguishable
+  from a parse error.
+
+**A GROWING ledger is not reported**, deliberately: five clones append to one
+branch, so growth is the normal case, and a guard that refused it would be
+switched off inside a day.
+
+`tests/run_push_retry_ledger_guard_probe.py`, 18 arms, including the real
+case (229 → 228 records), the three unreadable shapes, and a control that
+`GENERATED` and `ACCUMULATED` never overlap — a file in both would get
+contradictory advice.
+
+### 2. The constraints half: the query was never the problem
+
+`sql/schema_snapshot_query.sql` has emitted `_constraints` since 2026-09-02.
+The 2026-10-05 snapshot came back without it, which means **an older copy of
+the query was pasted into the editor**. Nothing needed extending.
+
+`sql/schema_snapshot_constraints_query.sql` is the **cheap path**: it returns
+only the `_constraints` object — a few dozen lines instead of 440 keys — with
+a one-line merge command in its header and the verification step that follows
+it. Re-running the full current query is equally correct and is stated as the
+alternative.
+
+**An empty result must still be merged.** `{"_constraints": {}}` means *asked,
+and there are none*; a missing key means *never asked*, and the preflight
+distinguishes them. Discarding an empty result leaves the tool unable to tell,
+which is the exact failure this half exists to close.
+
+### 3. SAIRNlegacy: the Casket and Outer Burial Container price lists
+
+CC's audit calls F1 **"CONFIRMED AS DISQUALIFYING"** — the Funeral Rule wants a
+GPL *plus* itemised casket and outer-burial-container lists, every established
+vendor sells it as a headline feature, and a prospect can disqualify us in one
+question.
+
+**Checked before building: the GPL half was already here** (modal, print path,
+`leg_gplservices`). `CPL` and `outer burial container price` returned **zero**
+hits. So only the two itemised lists were missing and only those were built.
+
+**The category mapping is a disclosure decision, not a filter, and it is
+stated in the source:** a **vault IS an outer burial container** under the
+Rule, so the OBCPL draws `Vault` and `Outer Burial Container` both. An **urn is
+neither** — putting one on an itemised list would be a disclosure about an item
+the Rule does not govern, which is its own kind of wrong.
+
+Two refusals carry the real weight:
+
+* **A missing price never renders as money.** `fmt(0)` gives `$0.00`, and a $0
+  casket on a price list reads as an **offer**. Unpriced items print
+  `PRICE NOT ON FILE` and are counted in a warning block. A retail of 0 entered
+  deliberately is still a real price.
+* **An empty catalog refuses to render a table.** A blank list reads as *"we
+  offer none of these"*, which for a firm that does offer them is a false
+  disclosure. It prints "Nothing on file … this is an empty catalog" instead.
+
+**The buttons sit on the Merchandise panel**, not under Documents: the Rule
+requires the lists be offered *before* caskets are shown, and a compliance
+document a director has to go and find is one they produce afterwards.
+
+**The status line never claims compliance.** Whether a list was actually
+*offered to a family* is an act this system cannot observe, and it says so.
+
+19 arms; four sabotages each caught by the intended arm (vault dropped, urn
+added, missing price rendered as money, empty catalog rendering a table),
+`sairnlegacy.html` restored byte-identically.
+
+One trap re-hit and recorded: `deepStrictEqual` on two empty arrays fails
+across a vm realm boundary, because it compares prototypes. Same note already
+lives in `tests/sairnsenior_referral_hours.js`.
+
+### 4. The obligation is in cody's queue — verified, not assumed
+
+`docs/tier-a-reviews.json` on **origin/main** carries it: opened
+`2026-10-05T21:25:19Z`, `reviewer_owner: cody`, status `open`, 246 resources,
+file `db/schema_snapshot.json`. `tier_a_review_gate.py --list` shows it as
+`ASSIGNED TO cody (held 0h)` with no staleness flag.
+
+**And the listing exposed something worth reporting.** Many older obligations
+carry `** COULD-NOT-TELL ** the recorded sha … does not resolve in this clone
+— rebased away without a reseat`. That is the SHA-pinning decay
+`docs/2026-10-05-register-sha-pinning-proposal.md` predicted, now visible as
+real rot across the ledger rather than as an argument.

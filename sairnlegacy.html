@@ -186,6 +186,14 @@ label.chk input{width:auto;}
   body:has(#gplmodal.on) .modal:not(#gplmodal){display:none!important;}
   #gplmodal.on{position:static!important;background:#fff!important;display:block!important;}
   #gplmodal.on .mbox{box-shadow:none!important;width:100%!important;max-height:none!important;padding:0!important;}
+  /* THE SAME TREATMENT FOR THE CPL / OBCPL MODAL (2026-10-05). Copied as a
+     parallel rule rather than widened to `.modal.on`, deliberately: a
+     selector covering every modal would make any other open dialog print as
+     a document, and these two are the only ones a family is handed. */
+  body:has(#iplmodal.on) header,body:has(#iplmodal.on) aside,body:has(#iplmodal.on) main{display:none!important;}
+  body:has(#iplmodal.on) .modal:not(#iplmodal){display:none!important;}
+  #iplmodal.on{position:static!important;background:#fff!important;display:block!important;}
+  #iplmodal.on .mbox{box-shadow:none!important;width:100%!important;max-height:none!important;padding:0!important;}
 }
 </style>
 <!-- VERCEL WEB ANALYTICS, enabled 2026-09-13 on Michael's decision.
@@ -422,7 +430,14 @@ label.chk input{width:auto;}
 <!-- MERCHANDISE & INVENTORY RESERVATION -->
 <div class="panel" id="panel-merch">
   <div class="ph"><div><div class="ptitle">Merchandise Selection &amp; Inventory Reservation</div><div class="psub">Catalog of caskets/urns/vaults with real, individually-tracked on-hand units</div></div>
-  <div class="pa"><button class="btn bo bs" onclick="openMerchModal()">+ Add Catalog Item</button></div></div>
+  <div class="pa"><button class="btn bo bs" onclick="openItemPriceList('casket')">Casket Price List</button><button class="btn bo bs" onclick="openItemPriceList('obc')">Outer Burial Container Price List</button><button class="btn bo bs" onclick="openMerchModal()">+ Add Catalog Item</button></div></div>
+  <!-- THE TWO BUTTONS ABOVE ARE ON THIS PANEL ON PURPOSE, not filed under
+       Documents. 16 CFR 453.2(b)(2) and (b)(3) require the CPL and the OBCPL
+       to be offered for inspection BEFORE caskets or containers are shown,
+       and this is the screen where they are shown. A compliance document a
+       director has to go and find is one they show the family after the
+       merchandise, which is the order the Rule exists to prevent. -->
+  <div id="mc-pricelist-status" style="font-size:12px;margin-bottom:12px"></div>
   <div class="krow">
     <div class="kpi"><div class="klbl">Catalog Items</div><div class="kval" id="mc-catalog">0</div><div class="kt">Models on file</div></div>
     <div class="kpi"><div class="klbl">Units On Hand</div><div class="kval" id="mc-units">0</div><div class="kt">Individual pieces tracked</div></div>
@@ -763,6 +778,22 @@ label.chk input{width:auto;}
     <div id="gpl-preview"></div>
     <div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;">
       <button class="btn bo" onclick="closeGplModal()">Close</button>
+      <button class="btn bp" onclick="window.print()">Print</button>
+    </div>
+  </div>
+</div>
+
+<!-- CASKET PRICE LIST / OUTER BURIAL CONTAINER PRICE LIST (2026-10-05).
+     One modal serves both: the two lists differ only in which catalog
+     categories they draw from and in the sentence the Rule attaches to each.
+     Printing reuses the GPL's print CSS, which hides everything except the
+     open modal -- see the #gplmodal rules near the top of this file. -->
+<div class="modal" id="iplmodal">
+  <div class="mbox" style="width:680px">
+    <div class="mtitle" id="ipl-title">Price List</div>
+    <div id="ipl-preview"></div>
+    <div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeItemPriceList()">Close</button>
       <button class="btn bp" onclick="window.print()">Print</button>
     </div>
   </div>
@@ -2744,6 +2775,7 @@ async function markUnitSold(unitId){
 }
 function rMerch(){
   var catalog=merchCatalog(),units=merchUnits();
+  rItemPriceListStatus();
   $('mc-catalog').textContent=catalog.length;
   $('mc-units').textContent=units.length;
   $('mc-reserved').textContent=units.filter(function(u){return u.status==='Reserved';}).length;
@@ -3293,6 +3325,127 @@ function openGplModal(){
   $('gplmodal').classList.add('on');
 }
 function closeGplModal(){$('gplmodal').classList.remove('on');}
+
+// ── CASKET AND OUTER BURIAL CONTAINER PRICE LISTS (2026-10-05) ────────────
+// THE GAP, in CC's own words from docs/cloud-research/sairnlegacy-competitive
+// -gap-audit-2026-10-05.md: F1 is "CONFIRMED AS DISQUALIFYING". The FTC
+// Funeral Rule requires a written GPL on request, ITEMISED CASKET AND OUTER
+// BURIAL CONTAINER PRICE LISTS, and a written statement of goods and services
+// for every arrangement -- and every established vendor sells this as a
+// headline feature. A prospect can disqualify us in one question.
+//
+// WHAT WAS ALREADY HERE, checked before building rather than assumed: the GPL
+// half IS built (modal, print path, leg_gplservices). Searching this file for
+// "CPL" and "outer burial container price" returned ZERO. So the gap is the
+// two ITEMISED lists, not the GPL, and that is all this adds.
+//
+// ── THE CATEGORY MAPPING IS A JUDGEMENT AND IS STATED, NOT HIDDEN ─────────
+// The catalog offers Casket / Urn / Vault / Outer Burial Container / Other.
+// A VAULT IS AN OUTER BURIAL CONTAINER -- the Rule's term covers graveliners
+// and vaults alike -- so the OBCPL draws BOTH, and the printed list says so.
+// An URN IS NOT: cremation urns are not outer burial containers and are not
+// subject to either itemised list, so they appear on neither. Getting that
+// backwards would put an item on a disclosure document that the Rule does not
+// govern, which is its own kind of wrong.
+var IPL_KINDS = {
+  casket: {
+    title: 'Casket Price List',
+    categories: ['Casket'],
+    // 16 CFR 453.2(b)(2)(i): offered for inspection BEFORE showing caskets.
+    rule: 'Offer this list for inspection before showing caskets. '
+        + 'It must show every casket offered for sale that does not require '
+        + 'special ordering, with enough description to identify it.'
+  },
+  obc: {
+    title: 'Outer Burial Container Price List',
+    categories: ['Outer Burial Container', 'Vault'],
+    rule: 'Offer this list for inspection before showing outer burial '
+        + 'containers. Vaults are included here because a vault IS an outer '
+        + 'burial container under the Rule.'
+  }
+};
+
+// Rows for one list, plus what is WRONG with them. Separated from rendering
+// so the status line on the panel and the printed document cannot disagree
+// about what is on file.
+function iplRows(kind){
+  var spec=IPL_KINDS[kind];
+  if(!spec) return {rows:[],missingPrice:[],spec:null};
+  var rows=merchCatalog().filter(function(m){
+    return spec.categories.indexOf(m.category)>=0;
+  });
+  // A RETAIL PRICE THAT IS ABSENT IS NOT ZERO. fmt(0) renders "$0.00", and a
+  // $0 casket printed on a disclosure list is a worse error than a blank --
+  // it reads as an offer. These are collected and named instead.
+  var missingPrice=rows.filter(function(m){
+    return m.retail===undefined||m.retail===null||m.retail===''||!isFinite(Number(m.retail));
+  });
+  return {rows:rows,missingPrice:missingPrice,spec:spec};
+}
+
+function openItemPriceList(kind){
+  var r=iplRows(kind);
+  if(!r.spec){toast('Unknown price list');return;}
+  $('ipl-title').textContent=r.spec.title+' — Pinnacle Family Funeral Home';
+  var html='';
+  if(!r.rows.length){
+    // AN EMPTY LIST IS NOT A COMPLIANT LIST. Rendering an empty table would
+    // look like a finished document asserting "we offer none of these", which
+    // for a firm that does offer them is a false disclosure. It refuses to
+    // print as a document and says what is missing instead.
+    html='<div style="padding:18px;border:1px solid var(--line);border-radius:8px">'
+      +'<strong>Nothing on file for this list.</strong><br>'
+      +'No catalog item is in '+H(r.spec.categories.join(' or '))+'. '
+      +'This is NOT a price list showing that none are offered &mdash; it is an '
+      +'empty catalog. Add the items you sell in Merchandise, then print.</div>';
+  } else {
+    html='<div class="tw" tabindex="0" role="region" aria-label="Scrollable data table">'
+      +'<table><thead><tr><th>Item</th><th>SKU</th><th>Category</th><th>Price</th></tr></thead><tbody>';
+    r.rows.forEach(function(m){
+      var priced=r.missingPrice.indexOf(m)<0;
+      html+='<tr><td>'+H(m.model_name)+'</td><td>'+H(m.sku||'--')+'</td><td>'+H(m.category)+'</td>'
+        +'<td>'+(priced?fmt(m.retail)
+                      :'<strong style="color:var(--bad,#b00)">PRICE NOT ON FILE</strong>')+'</td></tr>';
+    });
+    html+='</tbody></table></div>';
+    if(r.missingPrice.length){
+      html+='<div style="margin-top:12px;padding:10px;border:1px solid var(--bad,#b00);border-radius:6px;font-size:12px">'
+        +'<strong>'+r.missingPrice.length+' item(s) have no price on file.</strong> '
+        +'They are listed above without one rather than at $0, because a zero '
+        +'on this document reads as an offer. Set their retail price in '
+        +'Merchandise before giving this list to a family.</div>';
+    }
+  }
+  html+='<div style="color:var(--muted);font-size:12px;margin-top:12px">'+H(r.spec.rule)
+    +' Generated live from the Merchandise catalog on file in this system, not from a fixed document.</div>';
+  $('ipl-preview').innerHTML=html;
+  $('iplmodal').classList.add('on');
+}
+function closeItemPriceList(){$('iplmodal').classList.remove('on');}
+
+// The one-line readiness statement on the Merchandise panel. Counts only --
+// it never asserts the firm IS compliant, because whether the list was
+// actually offered to a family is an act this system cannot observe.
+function rItemPriceListStatus(){
+  var box=$('mc-pricelist-status'); if(!box) return;
+  var c=iplRows('casket'), o=iplRows('obc');
+  var bits=[];
+  [['Casket',c],['Outer burial container',o]].forEach(function(p){
+    var label=p[0],r=p[1];
+    if(!r.rows.length){
+      bits.push('<strong>'+label+' list: nothing on file.</strong>');
+    } else if(r.missingPrice.length){
+      bits.push('<strong>'+label+' list: '+r.rows.length+' item(s), '
+        +r.missingPrice.length+' with no price.</strong>');
+    } else {
+      bits.push(label+' list: '+r.rows.length+' item(s), all priced.');
+    }
+  });
+  box.innerHTML=bits.join(' &nbsp;&middot;&nbsp; ')
+    +' <span style="color:var(--muted)">These lists must be offered for '
+    +'inspection BEFORE caskets or containers are shown. This system can show '
+    +'what is on file; it cannot record that a list was offered.</span>';
+}
 async function saveGplServicePrice(id){
   var input=$('gplprice-'+id);if(!input)return;
   var price=Number(input.value)||0;

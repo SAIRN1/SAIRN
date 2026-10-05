@@ -113,6 +113,81 @@ GENERATED = [
     ('docs/TOOLING-INVENTORY.md', 'tools/tooling_inventory.py'),
 ]
 
+# ── ACCUMULATED STATE: files where a RECORD CAN GO MISSING AND NOTHING SAYS SO
+#
+# A GENERATED document is safe to resolve with `--ours` because it is
+# re-derived from the repo one line later; whatever text survived the conflict
+# is overwritten. These are the opposite. Each is an append-only ledger whose
+# whole value is that nothing has been dropped from it, and a rebase can lose
+# an entry three ways, all of them silent:
+#
+#   * `git checkout --ours` DURING A REBASE TAKES THE UPSTREAM SIDE, not
+#     yours. The word means the opposite of what it reads like here, and the
+#     advice this file prints for GENERATED documents is correct for them and
+#     catastrophic for these.
+#   * git can AUTO-MERGE two JSON edits without a conflict and still lose one,
+#     when both sessions appended near the same line.
+#   * `git rebase --skip`, or an abandoned commit, drops the entry with no
+#     diff anyone reads.
+#
+# MEASURED 2026-10-05, not hypothetical: a Tier A review obligation recorded
+# by `tier_a_review_gate.py --open` was written, committed, and then silently
+# removed by an inline fetch/rebase/push loop resolving a conflict with
+# `--ours`. The push gate then refused the push for a missing obligation that
+# had in fact been created -- and the only reason it was noticed is that the
+# refusal was read rather than retried.
+#
+# (path, key holding the list). The COUNT of that list must never fall across
+# a rebase this tool performs.
+ACCUMULATED = [
+    ('docs/tier-a-reviews.json', 'records'),
+    ('docs/defect-density-register.json', 'records'),
+    ('docs/first-article-inspections.json', 'inspections'),
+    ('docs/known-red-suites.json', 'entries'),
+    ('docs/report-only-reachability.json', 'entries'),
+    ('docs/out-of-service-controls.json', 'entries'),
+    ('.claude/claims/cc.json', 'claims'),
+    ('.claude/claims/cody.json', 'claims'),
+    ('.claude/claims/fourth.json', 'claims'),
+    ('.claude/claims/hank.json', 'claims'),
+    ('.claude/claims/hover.json', 'claims'),
+    ('.claude/claims/cloud.json', 'claims'),
+]
+
+
+def accumulated_counts():
+    """{path: n} for every ACCUMULATED ledger that can be read RIGHT NOW.
+
+    A file that cannot be read is OMITTED rather than recorded as 0 -- a
+    missing key would otherwise look like a catastrophic drop on the next
+    comparison and a real drop would be indistinguishable from a parse error.
+    Unreadable is reported separately by the caller.
+    """
+    out, unreadable = {}, []
+    for rel, key in ACCUMULATED:
+        p = os.path.join(REPO, rel)
+        if not os.path.isfile(p):
+            continue
+        try:
+            d = json.load(io.open(p, encoding='utf-8'))
+            v = d.get(key)
+            if isinstance(v, list):
+                out[rel] = len(v)
+            else:
+                unreadable.append(rel + ' (no list at key %r)' % key)
+        except Exception as e:
+            unreadable.append('%s (%s)' % (rel, str(e)[:60]))
+    return out, unreadable
+
+
+def accumulated_losses(before, after):
+    """[(path, before, after)] for every ledger that SHRANK. Growth is fine --
+    another clone appending is the normal case and is why this compares counts
+    rather than requiring equality."""
+    return [(p, before[p], after[p])
+            for p in sorted(before)
+            if p in after and after[p] < before[p]]
+
 STATE_FILE = os.path.join(REPO, '.git', 'push_retry_safe_subjects.json')
 
 
@@ -568,6 +643,16 @@ def cmd_loop(attempts):
         behind = int(behind or '0') if rc == 0 else -1
         print('attempt %d: behind %s' % (i, behind))
         if behind > 0:
+            # COUNTED BEFORE THE REBASE, COMPARED AFTER. See ACCUMULATED.
+            acc_before, acc_unreadable = accumulated_counts()
+            if acc_unreadable:
+                # NOT a refusal -- an unreadable ledger is somebody else's
+                # problem and freezing every push on it would be worse. But it
+                # is printed, because a ledger absent from the comparison is a
+                # ledger this guard is NOT watching on this run.
+                print('  NOTE: %d accumulated ledger(s) could not be read and '
+                      'are NOT being watched this run: %s'
+                      % (len(acc_unreadable), '; '.join(acc_unreadable)))
             rrc, _, rerr = git('rebase', 'origin/main')
             if rrc != 0:
                 # STOP. Do not resolve, do not amend. The tree is exactly the
@@ -578,6 +663,23 @@ def cmd_loop(attempts):
                       % (len(um), ', '.join(um) or '(none listed)'),
                       file=sys.stderr)
                 gen = set(d for d, _ in GENERATED)
+                acc = set(p for p, _k in ACCUMULATED)
+                hit_acc = sorted(set(um) & acc)
+                if hit_acc:
+                    # SAID FIRST AND LOUDEST, because the advice printed for
+                    # GENERATED documents directly below is `--ours`, and
+                    # during a rebase that takes the UPSTREAM side. Applying
+                    # it to one of these deletes your own appended record and
+                    # leaves a tree that looks resolved.
+                    print('  *** DO NOT RESOLVE THESE WITH --ours: %s'
+                          % ', '.join(hit_acc), file=sys.stderr)
+                    print('  They are APPEND-ONLY LEDGERS. During a rebase '
+                          '`--ours` is the UPSTREAM side, so it discards the '
+                          'record you just appended and nothing reports it.',
+                          file=sys.stderr)
+                    print('  Resolve by KEEPING BOTH SETS OF ENTRIES, then '
+                          'check the count went UP and not down.',
+                          file=sys.stderr)
                 if um and set(um) <= gen:
                     print('  Every conflict is in a GENERATED document. '
                           'Resolve by RE-DERIVING (PR 2.5), not by merging '
@@ -604,6 +706,29 @@ def cmd_loop(attempts):
                 print('  NOTHING WAS AMENDED. HEAD is mid-rebase and may be '
                       'another session\'s commit.', file=sys.stderr)
                 return 3
+            # ── THE REBASE SUCCEEDED. THAT IS NOT THE SAME AS NOTHING BEING
+            # ── LOST. A clean rebase can still drop an appended ledger entry
+            # when git auto-merges two edits near the same line, and a skipped
+            # or abandoned commit takes its record with it. Compared here,
+            # BEFORE the push, because after the push it is on main.
+            acc_after, _unread_after = accumulated_counts()
+            lost = accumulated_losses(acc_before, acc_after)
+            if lost:
+                print('REFUSING TO PUSH -- a rebase this tool just performed '
+                      'SHRANK an append-only ledger:', file=sys.stderr)
+                for p, b, a in lost:
+                    print('    %-42s %d -> %d  (%d record(s) gone)'
+                          % (p, b, a, b - a), file=sys.stderr)
+                print('', file=sys.stderr)
+                print('  Nothing was pushed and nothing was amended. Recover '
+                      'the missing entries -- `git reflog` has the pre-rebase '
+                      'tree -- or re-run whatever created them, then push '
+                      'again.', file=sys.stderr)
+                print('  A GROWING ledger is fine and is not reported: '
+                      'another clone appending is the normal case, which is '
+                      'why this compares counts rather than requiring them to '
+                      'match.', file=sys.stderr)
+                return 4
             _f, _why = _regenerate_and_fold()
             if _f:
                 print('  regenerated documents folded into your own commit')
