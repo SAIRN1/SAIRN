@@ -3140,6 +3140,20 @@
       "files": [
         "docs/tier-a-reviews.json"
       ]
+    },
+    {
+      "id": "cody-1791211842",
+      "session": "cody",
+      "subject": "npmaudit",
+      "task": "the dependabot HIGH: grpc-js 1.14.4 patch inside range, and the node-forge/firebase-admin pair needing a two-major bump assessed for reachability FILES: package-lock.json docs/2026-10-05-dependabot-high-triage.md",
+      "claimed_at": "2026-10-05T14:50:42Z",
+      "claimed_at_epoch": 1791211842.0311852,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/2026-10-05-dependabot-high-triage.md",
+        "package-lock.json"
+      ]
     }
   ],
   "refusals": [
