@@ -71,6 +71,26 @@ function loadHandler() {
   authMod.tokenFromRequest = (req) => req.headers['x-test-token'] || null;
   authMod.verifySessionToken = (token, licHash, expectedApp) => {
     if (!token) return null;
+    // ── AN ABSENT expectedApp IS LEGITIMATE; A WRONG ONE IS STILL FATAL ────
+    // This threw on ANY expectedApp other than 'sairnbuild', INCLUDING
+    // `undefined`, which is what made both real arms of this race regression
+    // fail with 502 from c8b5e5b1 until now. `api/_lib/auth.js:604` is
+    // `if (expectedApp && payload.app !== expectedApp) return null;` -- the
+    // argument is OPTIONAL -- and `api/sd-data.js:1387`'s active-credential
+    // pre-gate omits it deliberately, so the refusal this stub modelled could
+    // never happen in production.
+    //
+    // WORTH NOTING FOR THIS FILE SPECIFICALLY: the NEGATIVE CONTROL arm stayed
+    // GREEN throughout, because it asserts the CAS mock refuses a mismatched
+    // write and never reaches the handler. So the one arm that exists to prove
+    // the test can fail was the one arm unaffected -- a control can be healthy
+    // while everything it vouches for is broken.
+    //
+    // The guard is kept: a branch gate that dropped or wrongly set its app
+    // scope is still fatal. Shape copied from
+    // `api/_lib/dnt-rollup-endpoint.test.js:49`, which was already green under
+    // the same pre-gate.
+    if (expectedApp === undefined) return JSON.parse(token);
     if (expectedApp !== 'sairnbuild') throw new Error('expected app scope not sairnbuild: ' + expectedApp);
     return JSON.parse(token);
   };

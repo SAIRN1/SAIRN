@@ -21,6 +21,34 @@ const authMod = require(path.join(ROOT, 'api/_lib/auth.js'));
 authMod.tokenFromRequest = (req) => req.headers['x-test-token'] || null;
 authMod.verifySessionToken = (token, licHash, expectedApp) => {
   if (!token) return null;
+  // ── AN ABSENT expectedApp IS LEGITIMATE; A WRONG ONE IS STILL FATAL ──────
+  // This stub threw on ANY expectedApp other than 'sairncare', INCLUDING
+  // `undefined`, and that is what made this file 0 passed / 20 failed from
+  // c8b5e5b1 until now -- the whole MAR gate, unverified, for over a week.
+  //
+  // THE STUB WAS STRICTER THAN THE FUNCTION IT STANDS IN FOR, which is the
+  // defect. `api/_lib/auth.js:604` is `if (expectedApp && payload.app !==
+  // expectedApp) return null;` -- the third argument is OPTIONAL and omitting
+  // it asserts nothing about the app while still checking the signature, the
+  // `typ` (so a pre-auth token cannot pass), the role-in-app, the expiry and
+  // the licence binding. `api/sd-data.js:1387`'s active-credential PRE-GATE
+  // omits it DELIBERATELY: the only use for the app at that point is choosing
+  // which `*_employee_auth` table to ask, and re-deriving each of 132
+  // branches' expected app at the entry point would be a second copy of a
+  // fact spread over the whole file.
+  //
+  // SO THE REFUSAL THIS STUB MODELLED COULD NEVER HAPPEN IN PRODUCTION. Every
+  // arm below reported 502 "Upstream connection error" -- the handler catching
+  // the stub's own throw -- and a suite failing on its own mock is not
+  // evidence about the subject.
+  //
+  // THE GUARD IS KEPT AND IS THE POINT. A branch gate that quietly DROPPED its
+  // app scope, or passed the wrong app, is still fatal here, because that is a
+  // real defect and this stub was written to catch it. Only the absent case is
+  // admitted. Shape copied from the two suites that were already green under
+  // the same pre-gate -- `api/_lib/dnt-rollup-endpoint.test.js:49` and
+  // `api/_lib/law-trust-reconcile-endpoint.test.js` -- rather than invented.
+  if (expectedApp === undefined) return JSON.parse(token);
   if (expectedApp !== 'sairncare') throw new Error('expected app scope not sairncare: ' + expectedApp);
   return JSON.parse(token);
 };
@@ -35,6 +63,33 @@ authMod.verifySessionToken = (token, licHash, expectedApp) => {
 const RESIDENTS = { 'RES-1': 'MA-1', 'RES-2': 'MA-2', 'RES-3': null };
 let MAR_ROWS = []; // {entry_id, resident_id, assigned_employee_id, entry_type, data}
 
+// ── THE WITNESS LOCK'S STORE (added 2026-10-05) ───────────────────────────
+// A controlled-substance `count` is gated by api/sairncare-witness.js as of
+// 2026-09-30: the write is refused unless a SECOND person has confirmed that
+// exact record on the server. This suite predates the lock, so its count arm
+// asserted 200 for a count carrying only a CLIENT-SUPPLIED `witness_id` --
+// which is precisely what the lock exists to refuse. Left as it was, that arm
+// would have pressured somebody into weakening a controlled-substance control
+// to make a suite green.
+//
+// SO THE FIXTURE SATISFIES THE LOCK RATHER THAN THE ARM BEING DOWNGRADED, the
+// way api/sd-data-alf-mar-actor-identity.test.js already does. The arm goes on
+// testing what it was written to test -- med_aide scope-of-practice on a count
+// -- and a NEW arm beside it drives the refusal, so this suite can also tell
+// if the lock is ever removed.
+//
+// THE content_hash IS COMPUTED BY THE REAL FUNCTION, imported rather than
+// re-implemented. A hand-rolled canonical form here would bind the arm to a
+// hash the endpoint does not actually use, and it would pass.
+const alfWitness = require(path.join(ROOT, 'api/sairncare-witness.js'));
+// A DIFFERENT person from any caller below. A self-witnessed count is refused,
+// so the witness cannot be MA-1 -- that is the lock working, not a fixture
+// convenience.
+const WITNESS_EMP = 'EMP-NUR-WITNESS';
+// `payload` null means NO confirmation exists on the server, which is the
+// default state and the one the refusal arm runs in.
+const witnessState = { payload: null, spent: false };
+
 global.fetch = async (url, opts) => {
   opts = opts || {};
   const method = opts.method || 'GET';
@@ -45,6 +100,44 @@ global.fetch = async (url, opts) => {
     const id = decodeURIComponent(clientLookup[1]);
     const assignee = RESIDENTS[id];
     return { ok: true, status: 200, json: async () => (assignee !== undefined ? [{ assigned_employee_id: assignee }] : []) };
+  }
+
+  // ── requireWitness RE-READS THE ATTESTER AT WRITE TIME -- the settling step
+  // -- so this must answer for the WITNESS as well as the caller. A mock that
+  // knew only the caller would fail every count arm with
+  // WITNESS_NO_LONGER_ACTIVE, and that failure would look like the gate
+  // working. Same trap the sibling suite's comment names.
+  if (/_employee_auth\?/.test(url)) {
+    const m = url.match(/employee_id=eq\.([^&]+)/);
+    const forId = m ? decodeURIComponent(m[1]) : null;
+    if (forId === WITNESS_EMP) {
+      return { ok: true, status: 200, json: async () => [{ license_hash: 'HASH1', employee_id: WITNESS_EMP, role: 'nursing', active: true }] };
+    }
+    return { ok: true, status: 200, json: async () => [{ license_hash: 'HASH1', employee_id: forId, role: 'med_aide', active: true }] };
+  }
+
+  // No per-facility witness policy row: the module's defaults apply.
+  if (/sairncare_witness_policy/.test(url)) {
+    return { ok: true, status: 200, json: async () => [] };
+  }
+
+  if (/sairncare_witness_tokens/.test(url)) {
+    // Spending the confirmation. A second PATCH finds nothing, which is how the
+    // real store makes a confirmation single-use.
+    if (method === 'PATCH') {
+      if (witnessState.spent) return { ok: true, status: 200, json: async () => [] };
+      witnessState.spent = true;
+      return { ok: true, status: 200, json: async () => [{ id: 'tok-1' }] };
+    }
+    if (!witnessState.payload) return { ok: true, status: 200, json: async () => [] };
+    return { ok: true, status: 200, json: async () => [{
+      id: 'tok-1',
+      content_hash: alfWitness.contentHash('alf_mar', witnessState.payload),
+      witness_employee_id: WITNESS_EMP,
+      countersign_employee_id: null,
+      spent_at: witnessState.spent ? '2026-10-05T00:00:00Z' : null,
+      expires_at: new Date(Date.now() + 600000).toISOString()
+    }] };
   }
 
   // alf_mar facility-wide read
@@ -89,12 +182,12 @@ function fakeRes() {
   r.json = (b) => { r.body = b; return r; };
   return r;
 }
-async function call(role, employeeId, action, payload) {
-  const req = {
-    method: 'POST',
-    headers: { authorization: 'Bearer testkey', 'x-test-token': JSON.stringify({ role, employee_id: employeeId }) },
-    body: { action, resource: 'alf_mar', payload }
-  };
+async function call(role, employeeId, action, payload, witnessToken) {
+  const headers = { authorization: 'Bearer testkey', 'x-test-token': JSON.stringify({ role, employee_id: employeeId }) };
+  // Only set when an arm is presenting a server-minted confirmation. Absent on
+  // every other arm, so no arm accidentally inherits a witnessed state.
+  if (witnessToken) headers['x-alf-witness'] = witnessToken;
+  const req = { method: 'POST', headers: headers, body: { action, resource: 'alf_mar', payload } };
   const res = fakeRes();
   await handler(req, res);
   return res;
@@ -159,9 +252,30 @@ function assertEq(actual, expected, msg) {
     const res = await call('med_aide', 'MA-1', 'write', { id: 'ADM-2', resident_id: 'RES-2', entry_type: 'administration', medication_id: 'MED-1', status: 'given' });
     assertEq(res.statusCode, 403);
   });
-  await check('med_aide CAN log a controlled-substance count for their own-assigned resident', async () => {
-    const res = await call('med_aide', 'MA-1', 'write', { id: 'CNT-1', resident_id: 'RES-1', entry_type: 'count', medication_id: 'MED-1', witness_id: 'EMP-NUR', count_value: 30 });
+  // ── THE COUNT IS WITNESS-LOCKED. Two arms, and the refusal comes first so a
+  // future reader sees the control before the happy path (added 2026-10-05).
+  await check('a controlled-substance count with only a CLIENT-SUPPLIED witness_id is REFUSED -- 403 WITNESS_REQUIRED', async () => {
+    // witnessState.payload is null: nothing is confirmed on the server. A
+    // `witness_id` in the payload names a second person and PROVES nothing --
+    // the caller typed it. This is the arm the old version of this file
+    // asserted 200 for.
+    const res = await call('med_aide', 'MA-1', 'write', { id: 'CNT-0', resident_id: 'RES-1', entry_type: 'count', medication_id: 'MED-1', witness_id: 'EMP-NUR', count_value: 30 });
+    assertEq(res.statusCode, 403);
+    assertEq(res.body.error.code, 'WITNESS_REQUIRED');
+    // AND NOTHING WAS STORED. A refusal that still files the row is the worse
+    // failure, and on an append-only MAR with no delete verb it is permanent.
+    assertEq(MAR_ROWS.some((r) => r.entry_id === 'CNT-0'), false);
+  });
+  await check('med_aide CAN log a controlled-substance count for their own-assigned resident, WITH a server-recorded second signature', async () => {
+    const payload = { id: 'CNT-1', resident_id: 'RES-1', entry_type: 'count', medication_id: 'MED-1', witness_id: WITNESS_EMP, count_value: 30 };
+    // The confirmation covers THIS EXACT RECORD -- the store hashes the same
+    // payload with the module's own contentHash, so changing any field after
+    // confirming invalidates it. That binding is the lock, not the header.
+    witnessState.payload = payload;
+    witnessState.spent = false;
+    const res = await call('med_aide', 'MA-1', 'write', payload, 'confirmation-token-1');
     assertEq(res.statusCode, 200);
+    witnessState.payload = null;
   });
 
   await check('append-only integrity: reusing an administration id is 409, not silently overwritten', async () => {
