@@ -6179,3 +6179,224 @@ writer, not a gate — nothing mechanically stops the next untested claim. (5) T
 four instances are the ones that were CAUGHT; how many untested claims sit in the
 ~900 unchecked index rows is unmeasured, and that is the corollary the rule
 names.
+
+---
+
+## 2026-10-05 — CC batch 8: the wrong-subject check now MEASURES instead of inferring, and its first fix was the defect it fixes
+
+### What this batch was: finishing four half-done items and verifying six claims
+
+Resumed after a context reset mid-edit. Nothing below is carried from the prior
+session's report — every item was re-derived against the file and the git state
+first, which found two of them in a different condition than reported.
+
+### Item: the standing wrong-subject-read check — `--post` on a tool I already own
+
+`tools/exit_status_attributable.py --post` is a `PostToolUse/Bash` observer that,
+after a git commit or push, prints the **OBSERVED** repository state: the HEAD
+subject, ahead/behind of `origin/main`, and the uncommitted-path count. **It
+reports state, never a verdict.** The pipeline-attribution half of this file
+covers one shape of wrong-subject read; two of the four real instances were the
+other half, and both were decidable by two cheap git reads nobody took.
+
+**RETROACTIVELY PROVEN AGAINST BOTH, DRIVEN NOT ARGUED.** `retro_two_instances.py`
+reproduces them in this clone:
+
+* the **no-op push** read as a refusal of my own push → `ahead=0` straight from
+  `rev-list --left-right --count`, and the note carries it
+* the **commit from a missing message file** → driven for real, it genuinely exits
+  **128**, HEAD before == HEAD after == `fd8e3682`, and the note states it. The
+  unrelated gate refusal printed in the same block was never the cause.
+
+**ITS OWN FAIL-OPEN, FOUND AND FIXED BEFORE WIRING.** The first version read
+`if rc_head != 0 or rc_ab != 0: return 0` — a **silent skip**. A clone with no
+comparable `origin/main` makes `rev-list` exit non-zero, the observer vanishes,
+and nothing downstream can tell that from "nothing worth saying". That is the
+exact shape this file exists to kill, in the file itself. Every leg now reports
+its own outcome and names what it could not read; only a **total** blackout is
+silence. Four arms, driven against a stubbed `_git`, because the branch that
+matters cannot be produced in a healthy clone.
+
+**WIRED**, `PostToolUse/Bash`, deliberately **not** async — the point is to land
+in the same block as the command's own output.
+
+### Item: the false positives — FOUR classes, not two
+
+Two were already fixed last batch (a tool named only inside a quoted body; a tool
+in the LAST element, whose status IS the command's status). Two more were found
+**by the hook firing on my own commands while I was fixing it**:
+
+* **FP3 — a tool path as another program's FILE OPERAND.** A `grep -n foo
+  tools/x.py` piped into `head` was reported as *"runs tools/x.py, status comes
+  from head"*. grep runs; the tool is a file being read.
+  Fired four times in the session that fixed it, because reading a tool's source
+  is most of what fixing a tool looks like. The path must now stand in
+  **invocation position**: first token, or first token after an interpreter and
+  any leading `VAR=value`.
+* **FP4 — THE HOOK FIRING ON ITS OWN RECOMMENDED FIX.** The note says *"measure it
+  alone: redirect, then read the status on its own line"* and the hook fired on
+  exactly that. Reported independently the same day by Fourth in
+  `docs/2026-10-05-exit-status-attributable-false-positive.md`.
+
+**MY FIRST FIX FOR FP4 WAS THE DEFECT IT FIXES, and Fourth's discriminator is the
+sharper one.** I accepted the status read **anywhere** after the tool, which
+silently blessed that document's shape 3 — a redirect, then a `tail` over the
+output file, then the status read. The status there belongs to `tail`. A reading
+of the wrong subject, approved by the tool built to catch readings of the wrong
+subject. The question is **not what sits last on the line — it is whether
+anything EXECUTED between the tool and the expansion.** The read must be in the
+element IMMEDIATELY after the tool, reached by `;`, a newline or `&&`. A pipe is
+never a measurement.
+
+**AND A FIXTURE THAT AGREED WITH THE CODE INSTEAD OF WITH THE WORLD.** The status
+read was searched on the MASKED text, so the double-quoted spelling — the one
+actually typed — was blanked out. My arm used the unquoted form and passed while
+the hook kept firing on the quoted form in the same session. Masking decides what
+RUNS; a status read is a mention, and a mention inside quotes still counts.
+
+**ABLATION, PER ARM (discipline 12), from a clean baseline of 0 wrong:**
+
+| layer ablated | arms it alone catches |
+|---|---|
+| invocation position (FP3) | **2** — grep and sed file operands |
+| the was-it-measured suppression (FP4) | **5** — incl. Fourth's shape 1 |
+| **the TIGHTENING of that suppression** | **2** — Fourth's shape 3, and pipe-to-reader |
+
+**Selftest: 32 arms, 0 failures**, up from 14.
+
+### Item: `.githooks/pre-commit:70` — both statuses driven SEPARATELY
+
+Committed `a3f6ae01` last batch; **this batch is the test that was owed.** The
+block is lifted out of the hook by line range and run twice against a stub git:
+
+* **git succeeds, grep finds nothing** → `rc=0`, empty staged-probe list,
+  continues silently. A real, empty, correct result.
+* **the staged-file read fails** → `rc=1`, *"could not read the staged file
+  list"*, and the audit is **never reached**.
+
+**rc A=0, B=1 — identical under the old `|| true`.**
+
+**THE FIXTURE WAS WRONG FIRST AND IT LOOKED LIKE THE HOOK BEING WRONG.** Both
+cases returned 0 on the first run, for two reasons that had nothing to do with
+the hook: the awk terminator was anchored with `$` on a line ending in `)`, so
+the extraction ran past the grep line into an unrelated `exit 0`; and `PATH` was
+given a `C:/...` spelling, so the stub was never found and the real program ran
+in a real repo. Both are now checked before the cases run, and a failed
+extraction says **COULD NOT RUN**, not FAIL.
+
+### Item: seq 464/467 — the arm is ALREADY THERE, and that is the answer
+
+`api/law-auth-custody-matter-attribution.test.js` has **no** literal `464`/`467`,
+which is what made this look open. It does not need one: **19/19 green at HEAD**,
+and the coverage is real, proven by mutation in a detached worktree rather than
+read:
+
+| mutation applied alone | red arms |
+|---|---|
+| licence filter dropped, matter filter kept | **3**, incl. *"THE LOOKUP IS LICENCE-SCOPED"* |
+| genuinely unscoped — confirms ANY licence's matter | **3**, same substantive arm |
+| the `+=` refactor | **1 — the canary ONLY**, as the suite's own header predicts |
+
+**Nothing applied. The arm exists; the open item was a bookkeeping gap.**
+
+**MY OWN PROBE MISCOUNTED FIRST:** it read the suite's `FAILED` summary line as an
+arm and reported 4 / 4 / 2. Corrected to 3 / 3 / 1. A wrong-subject read inside
+the batch whose subject is wrong-subject reads.
+
+### Item: hank's registry-tail fix — LANDED, and it is NOT the E2 fix
+
+**Two different fixes were being treated as one.**
+
+* **The registry-TAIL fix LANDED: `ff2671c5`.** Reachability is now derived from a
+  real run and persisted, `--list` annotates every entry from it, and
+  `push_retry.py` reaches its remedy — it prints its own usage.
+  `tests/run_push_retry_probe.py`: **7 passed, 0 failed**, 5 of 7 arms verified
+  red against the unfixed tool.
+* **E2 HAS NOT LANDED. Measured directly, not inferred: 75 registry entries, 5
+  offenders, the same five** — `assertion_label_shape_check.py`,
+  `entry_point_scope_check.py`, `parse_zero_third_state_check.py`,
+  `fact_sheet_regenerates.py`, `verification_owed_report.py`. Confirmed twice:
+  by evaluating the arm's own expression against the imported REGISTRY, and by
+  the full probe, where **E2 is the only FAIL**. The registry still has no
+  import-time refusal for an evidence-free entry.
+
+**AND THE BLOCKER ON RE-WIRING MY TWO INSTRUMENTS HAS MOVED, which is the honest
+resolution rather than a fix.** `seam_cannot_tell_watch.py` and
+`doc_checker_coverage.py` were unwired because `tools/report_only_checks.py` was
+**hank's**. At HEAD it is **cody's**, named in cody's live queue16 claim list.
+Re-checked fresh, not assumed. Left untouched.
+
+### Item: row 82 — the figures are GONE, and that is a measurement
+
+The brief said to write **37/18/2/6/11** into the row. They are in it, as one of
+**five** readings, because the figure drifted again while I was verifying it:
+
+| reading | source |
+|---|---|
+| 40 / 23 / 1 / 6 / 10 | hank's prepared text |
+| 37 / 18 / 2 / 6 / 11 | cc, same afternoon |
+| 39 / 18 / 3 / 7 / 11 | cc, under an hour later |
+| **39 / 18 / 3 / 7 / 11** | **cc, this batch — the fifth read** |
+
+**A reseat breakdown is a reading of a LIVE ledger five clones write to, not a
+property of the tool.** Any snapshot pasted into a standing row is stale before
+the next session reads it, and a reader comparing a fresh run against a written
+figure would conclude the row is wrong when nothing is wrong. The row carries the
+**capability** claim, which is stable, the **drift record**, which is the finding,
+and **RUN THE COMMAND; DO NOT QUOTE A NUMBER FROM HERE**. `PR §2.3` and `PR §2.7`
+meeting on one row.
+
+**FOR HANK, in the row itself:** the reseat output must be re-run at the moment of
+writing, never carried from an earlier run in the same session — three of the five
+drifts came from exactly that.
+
+### `PR §2.7` spot-check — my last six falsifiable tool claims, each re-run
+
+| claim | verdict |
+|---|---|
+| the reseat breakdown was 37/18/2/6/11 at HEAD | **was run; now 39/18/3/7/11.** Measured then, stale now — the reason the row carries no figure |
+| `+=` reddens only the canary; unscoped reddens three | **HOLDS**, re-driven by mutation today |
+| `SUBJECT_DIRS` literal-backspace fixed, hook fires | **HOLDS** — it fired on my own commands repeatedly this session |
+| manifest NOT regenerated, 7 drifts | **HOLDS** — 9 now, 7 of them not mine |
+| the comment classifier reads `ln-6 .. ln+3` | **HOLDS** — `tools/fail_open_scan.py:313`, read |
+| E2 still 5 failures, same five tools | **HOLDS** — re-measured two independent ways, 75 entries |
+
+**Six for six were actually run before being written.** The rule held on its first
+batch under test.
+
+### Manifest NOT regenerated again, same reason, now worse
+
+`hook_integrity_check.py` reports **9 drifts; only 2 are mine** (the new wiring
+line, and `exit_status_attributable.py` absent from the manifest — the latter
+pre-existing, since the PreToolUse half was already wired at HEAD). The other
+seven belong to at least four sessions: `pre-commit`, `deploy_verify_notify.py`,
+`register_feed_gate.py` (hank's), `report_only_checks.py` (**cody's, live
+claim**), `sairn_push_gate_hook.py`, and the `cron_beat_refusal_check.py` wiring.
+`--regenerate` is **all-or-nothing**, so closing my two gaps would bless four
+other sessions' unrecorded changes, two of them in live-claimed files. **The
+check was already red at HEAD before I touched anything.** Declared, not fixed.
+
+### One more false positive, in a DIFFERENT hook, found the same way
+
+`sairn_push_gate_hook.py` matches the two-word git write verbs **in the command
+text**, so writing this very log entry through a shell heredoc was refused as if
+it were a push — twice. Fourth's document already records the same shape in
+`deploy_verify_notify.py` as its instance 3. Not mine to fix and not in my claim;
+recorded here because it is now two hooks with one defect, and the workaround
+(write the body to a file, append with a tool rather than a shell line) is worth
+knowing before somebody loses an hour to it.
+
+### BLIND SPOTS: 6
+
+(1) **The `--post` observer has no probe under `tests/`** — its four arms live in
+the tool's own selftest, which is the shape I have criticised in others. (2) It
+reads `origin/main` by name; a clone on a differently-named upstream gets the
+could-not-read branch every time and I have not measured whether that is true in
+any other clone. (3) The invocation-position rule knows seven interpreter names
+and will miss an eighth silently — a false NEGATIVE, the direction I chose, and
+unmeasured. (4) **The hook manifest is 9 entries stale and nothing in this batch
+moves it**; a tenth would be indistinguishable. (5) E2's five offenders are named
+but the import-time refusal is still in a file I do not hold, so the INTAKE defect
+is open and will recur on the next promotion. (6) Every mutation proof here ran
+against a worktree at `05cbc74d`; a sixth reseat reading will exist before
+anybody reads this.

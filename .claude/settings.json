@@ -76,6 +76,12 @@
             "statusMessage": "Running the promoted report-only checkers...",
             "async": true,
             "asyncRewake": true
+          },
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/exit_status_attributable.py\" --post",
+            "timeout": 60,
+            "statusMessage": "Reading the repository state after a git write..."
           }
         ]
       }

@@ -5592,6 +5592,29 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-10-06T06:18:11Z",
+      "opened_at_sha": "c0ef09bdad7ee27f509c49c6f0623b45abc9ec61",
+      "resources": [
+        "quotes",
+        "sb_ap"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "sairnbiz.html",
+        "tests/sairnbiz_undated_payee_notes.js",
+        "tools/exit_status_attributable.py"
+      ],
+      "what": "sb_ap: sbVendorPaidUndatedPriorYear() excluded only the CURRENT year, so a FUTURE-dated bill marked Paid with no paidDate fed the 1099 at-risk figure. Split into sbVendorPaidUndatedOtherYear() -> {prior, future}, three separate notes in rVends, and a new unlisted-payee note because the at-risk loop walks sb_vends and could never name a payee absent from it. The guard was NOT widened to `< year` on purpose -- that would have silently DROPPED the future rows. REVIEW THE DIRECTION OF EACH BUCKET: an over-reported orphan note is chosen deliberately (no vendor row means no YTD figure to threshold against), and an unreadable year is bucketed PRIOR rather than dropped, which over-reports toward the 1099 threshold. 11 arms, both ablations driven. quotes: tools/exit_status_attributable.py gains a --post observer and fixes two false positives; MY FIRST FIX FOR THE SECOND ONE WAS ITSELF THE DEFECT (it accepted a status read anywhere after the tool, blessing a read of tail's status) -- so the suppression logic in status_was_measured() is the part that most needs a second pair of eyes. 32 selftest arms, per-arm ablation of both new layers.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-10-06T06:18:11Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

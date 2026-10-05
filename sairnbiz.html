@@ -4157,18 +4157,39 @@ function sbVendorPaidYTD(){
 //
 // A vendor is flagged when its undated prior-year total could carry it over
 // $600, because the only wrong answer is a silent one.
-function sbVendorPaidUndatedPriorYear(){
+// ── THE NAME SAID PRIOR YEAR AND THE TEST SAID NOT-THIS-YEAR (H2 seq 508) ──
+// `if(String(b.date||'').slice(0,4)===year)return;` excludes only the CURRENT
+// year, so a bill dated 2027 and marked Paid with no paidDate fell into a
+// bucket called PriorYear. A future-dated bill is not a prior-year ambiguity:
+// a prior-year row may genuinely have been paid this year, which is why it is
+// disclosed; a FUTURE-dated row marked Paid is a data-entry anomaly and
+// folding it into the 1099 at-risk figure would attribute a payment to a year
+// that has not happened.
+//
+// SO THE TWO ARE SEPARATED RATHER THAN THE GUARD WIDENED. Widening it to
+// `< year` would have silently DROPPED the future rows -- a third state folded
+// into "nothing to see", which is the defect this whole derivation exists to
+// avoid. They are counted apart and named apart.
+//
+// RENAMED TO MATCH WHAT IT COMPUTES. The old name is the finding: a reader
+// trusting it would have believed future rows were excluded.
+function sbVendorPaidUndatedOtherYear(){
   var year=String(new Date().getFullYear());
-  var by={};
+  var prior={},future={};
   sbNormalizeBills(ld('sb_ap',[])).forEach(function(b){
     if(!b||b.status!=='Paid')return;
     if(b.paidDate)return;                       // a stamped payment is dated
-    if(String(b.date||'').slice(0,4)===year)return;   // and this year already counts
+    var y=String(b.date||'').slice(0,4);
+    if(y===year)return;                         // this year already counts
     var k=String(b.vendor||'').trim().toLowerCase();
     if(!k)return;
-    by[k]=(by[k]||0)+(Number(b.amt)||0);
+    // A bill with no readable year is treated as PRIOR, not dropped: the
+    // ambiguity is the same one (we cannot say which year it was paid in) and
+    // dropping it would under-count toward the threshold.
+    var bucket=(y && y>year)?future:prior;
+    bucket[k]=(bucket[k]||0)+(Number(b.amt)||0);
   });
-  return by;
+  return {prior:prior,future:future};
 }
 function rVends(){
   var v=ld('sb_vends',[]);
@@ -4199,7 +4220,8 @@ function rVends(){
   // only vendors named are those where the undated amount could carry them
   // over the year's threshold, so the note stays a signal rather than becoming
   // furniture nobody reads.
-  var und=sbVendorPaidUndatedPriorYear();
+  var undAll=sbVendorPaidUndatedOtherYear();
+  var und=undAll.prior;
   var atRisk=[],riskSum=0;
   v.forEach(function(x){
     var k=String(x.name||'').trim().toLowerCase();
@@ -4208,6 +4230,45 @@ function rVends(){
   });
   if(atRisk.length){
     html+='<tr><td colspan="8" style="color:#92400e;font-size:12px;"><strong>1099 COULD NOT BE DECIDED for '+atRisk.length+' vendor(s).</strong> '+fmt(riskSum)+' of payments are marked Paid with no payment date against a prior-year bill, so this app cannot tell which year they were paid in. Counted in NEITHER total. Each of these is under the '+fmt(thr.amount)+' threshold YTD but would cross it if the undated amount was paid this year -- check the cheque dates before filing: '+H(atRisk.join('; '))+'</td></tr>';
+  }
+  // ── A PAYEE WHO IS NOT ON THE VENDOR LIST WAS IN NEITHER NOTE (H2 seq 507) ──
+  // The loop above is `v.forEach` -- it walks sb_vends. A payee that exists in
+  // sb_ap and NOT in sb_vends could therefore never be named, because the loop
+  // never visits it; and rVends carried no unlisted-payee note of its own, so
+  // there was no second place for it to surface either. MEASURED, not inferred:
+  // the at-risk loop iterates the vendor list, nothing unions it with the
+  // undated keys, and the word "unlisted" appeared nowhere in this function.
+  //
+  // THE WORST CASE IS THE 1099 ONE. An unlisted payee is exactly the shape a
+  // 1099 is most likely to be missed for -- a one-off contractor nobody added
+  // to the vendor master -- and every one of their bills being undated means
+  // they were absent from the YTD total AND from the could-not-decide note. A
+  // silent zero on the form.
+  //
+  // NO THRESHOLD TEST ON THESE, deliberately: with no vendor row there is no
+  // YTD figure to compare against, so "could it cross the threshold" cannot be
+  // asked. They are named whenever there is any undated amount at all, which
+  // over-reports rather than under-reports, and the note says which it is.
+  var listed={};
+  v.forEach(function(x){listed[String(x.name||'').trim().toLowerCase()]=1;});
+  var orphan=[],orphanSum=0;
+  Object.keys(und).forEach(function(k){
+    if(listed[k])return;
+    orphan.push(k+' ('+fmt(und[k])+' undated)');orphanSum+=und[k];
+  });
+  if(orphan.length){
+    html+='<tr><td colspan="8" style="color:#92400e;font-size:12px;"><strong>'+orphan.length+' PAYEE(S) ARE NOT ON THE VENDOR LIST and have undated payments.</strong> '+fmt(orphanSum)+' marked Paid with no payment date, against a bill dated in another year, for a payee with no vendor record -- so these appear in NO YTD total and in NO threshold check above. Add the payee to the vendor list or confirm the cheque dates before filing: '+H(orphan.join('; '))+'</td></tr>';
+  }
+  // FUTURE-DATED ROWS ARE THEIR OWN ANOMALY, counted apart from the prior-year
+  // ambiguity (seq 508). A bill dated after this year and already marked Paid
+  // is a data-entry error, not a year the payment might belong to, so it is
+  // never folded into the 1099 at-risk figure.
+  var fut=[],futSum=0;
+  Object.keys(undAll.future).forEach(function(k){
+    fut.push(k+' ('+fmt(undAll.future[k])+')');futSum+=undAll.future[k];
+  });
+  if(fut.length){
+    html+='<tr><td colspan="8" style="color:#92400e;font-size:12px;"><strong>'+fut.length+' payee(s) have bills dated in a FUTURE year already marked Paid.</strong> '+fmt(futSum)+' total. This is a data-entry anomaly rather than a 1099 question and is counted in NO threshold figure -- correct the bill date: '+H(fut.join('; '))+'</td></tr>';
   }
   $('vntbody').innerHTML=html;
 }

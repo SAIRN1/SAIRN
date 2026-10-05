@@ -22666,65 +22666,6 @@
       "recurrence_open": "No control requires a SAIRN tool to separate what it MEASURED from what it ADVISES. One file is fixed; the convention is not, and it is logged open rather than invented by the session that broke it."
     },
     {
-      "commit": "8246d8bab707",
-      "date": "2026-10-05",
-      "subject": "fix(sairncare): family_mar disclosed any resident's MAR to any session -- the consent check was standing in for an authorisation check",
-      "files": [
-        "api/sd-data.js",
-        "docs/2026-10-05-inventory-hank-batch8.md",
-        "tests/sd_data_family_mar_gate.js"
-      ],
-      "lines_added": 441,
-      "lines_removed": 0,
-      "app": "sairncare",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "hover-audit",
-      "summary": "api/sd-data.js resource alf_family_contacts: action 'family_mar' had NO caller gate at all. The sibling action 'read' on the same resource resolves ALF_FAMILY_READ_ROLES and then the caller's assigned residents from alf_clients and 403s a resident that is not theirs; 'family_mar', sixty lines below it in the same handler, did neither. It checked famLib.familyMarView(), which is the family CONTACT's consent, and then shipped the resident's medication administration record. Any authenticated session on the licence -- including a med_aide or activities employee with no resident assigned to them at all -- could pass any contact_id and receive that resident's full MAR. The consent check was standing in for an authorisation check: it answers a question about the contact, not about the session, and nothing asked the second question. Fixed in two halves because the resident is knowable only from the stored row: role and assignment scope resolved BEFORE the contact fetch (empty scope 403s, so a caller who may not ask anything is not told whether the contact exists), then the stored row's resident_id checked against that scope with a FORBIDDEN kept distinct from NO_SUCH_CONTACT.",
-      "rules": [
-        "1.3"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover",
-      "injection": {
-        "commit": "c0ae9a0a5354",
-        "date": "2026-09-26",
-        "subject": "feat(sairncare): the family record, and MAR access gated to administration STATUS only",
-        "lag_days": 9
-      },
-      "citation_note": "1.3 is 'an anchor that still matches is not an anchor that still points at the right thing', and this is that with the noun changed from an anchor to a check: a check WAS present on the family_mar path and it still ran and still refused people, so every signal that a path is guarded was present -- it was pointing at the contact's consent rather than at the caller's authority. Arguable rather than clean because 1.3 is written about string anchors in checkers, not about admission control in a handler; no standing rule names 'a present check that answers a different question', which is itself worth noticing.",
-      "contributing_factors": [
-        {
-          "factor": "The authorisation check was never written for this action: `action === \"family_mar\"` was added as a sibling of `action === \"read\"` on the same resource, and `read`s two gates (role set + resident assignment) were not carried across.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Both gates added to the family_mar branch, resolved before the contact fetch and re-applied against the stored rows resident_id."
-        },
-        {
-          "factor": "A CONSENT check stood where an AUTHORISATION check belonged. familyMarView() answers a question about the CONTACT; nothing asked the question about the SESSION. A reviewer scanning for \"is there a check on this path\" sees one and stops.",
-          "kind": "latent-condition",
-          "action_status": "planned",
-          "action": "Item 13 of this batch builds a gate-parity check that flags sibling actions in one handler file disclosing the same resource where one enforces role/assignment gates and the other does not; its selftest is this defects pre-fix shape."
-        },
-        {
-          "factor": "Nothing compares sibling actions on one resource. The two branches are sixty lines apart in the same file and no tool, probe or gate reads them as a pair, so the asymmetry was invisible to every automated layer and had to be found by a human reading the handler.",
-          "kind": "detection",
-          "action_status": "planned",
-          "action": "Same item 13 gate-parity tool; until it exists this class is caught only by reading."
-        },
-        {
-          "factor": "The feature commit c0ae9a0a shipped a new disclosure path and a new library in one change, and the review attention went to the librarys consent semantics (which are correct and carefully done) rather than to the callers admission control.",
-          "kind": "process",
-          "action_status": "not-actionable",
-          "note": "No process change would reliably redirect review attention; the durable fix is the mechanical parity check named above, not an instruction to look harder."
-        }
-      ],
-      "recurrence_open": "The actions close THIS pair. They do not close the class: the gate-parity tool in item 13 is not built yet, and when it is it will compare sibling actions within ONE handler file. Nothing proposed here compares a handler branch against a gate living in a different file, and nothing re-asks the question when a THIRD action is later added to alf_family_contacts. Separately, ALF_FAMILY_READ_ROLES includes 'billing' on a clinical record and this fix deliberately inherited that set rather than narrowing it -- so a billing role now reaches a MAR through a gate that is correct and a role set that may not be. That is flagged in docs/2026-10-05-inventory-hank-batch8.md and is open."
-    },
-    {
       "commit": "1b453253cc5b",
       "date": "2026-10-05",
       "subject": "fix(sairnsenior): a backwards clock pair billed NEGATIVE hours -- six callers, four unguarded; plus a role-gate ratchet that paid out for deleting the evidence",
@@ -23034,6 +22975,65 @@
       "recurrence_open": "The register retier is NOT done -- confidentiality B->A on SAIRNscape customers -- and until it lands the gate and the register disagree. Hank holds docs/CRITICALITY-TIERS.md. AND THE SAME CLASS IS NOT SWEPT: no check asks whether any OTHER row whose confidentiality basis names PII is carried at a tier below A, so other resources may sit in the same state. That sweep is not built and is not proposed above, because deciding which basis sentences imply a gate is the judgement the tier letter exists to carry."
     },
     {
+      "commit": "8246d8bab707",
+      "date": "2026-10-05",
+      "subject": "fix(sairncare): family_mar disclosed any resident's MAR to any session -- the consent check was standing in for an authorisation check",
+      "files": [
+        "api/sd-data.js",
+        "docs/2026-10-05-inventory-hank-batch8.md",
+        "tests/sd_data_family_mar_gate.js"
+      ],
+      "lines_added": 441,
+      "lines_removed": 0,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "hover-audit",
+      "summary": "api/sd-data.js resource alf_family_contacts: action 'family_mar' had NO caller gate at all. The sibling action 'read' on the same resource resolves ALF_FAMILY_READ_ROLES and then the caller's assigned residents from alf_clients and 403s a resident that is not theirs; 'family_mar', sixty lines below it in the same handler, did neither. It checked famLib.familyMarView(), which is the family CONTACT's consent, and then shipped the resident's medication administration record. Any authenticated session on the licence -- including a med_aide or activities employee with no resident assigned to them at all -- could pass any contact_id and receive that resident's full MAR. The consent check was standing in for an authorisation check: it answers a question about the contact, not about the session, and nothing asked the second question. Fixed in two halves because the resident is knowable only from the stored row: role and assignment scope resolved BEFORE the contact fetch (empty scope 403s, so a caller who may not ask anything is not told whether the contact exists), then the stored row's resident_id checked against that scope with a FORBIDDEN kept distinct from NO_SUCH_CONTACT.",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "c0ae9a0a5354",
+        "date": "2026-09-26",
+        "subject": "feat(sairncare): the family record, and MAR access gated to administration STATUS only",
+        "lag_days": 9
+      },
+      "citation_note": "1.3 is 'an anchor that still matches is not an anchor that still points at the right thing', and this is that with the noun changed from an anchor to a check: a check WAS present on the family_mar path and it still ran and still refused people, so every signal that a path is guarded was present -- it was pointing at the contact's consent rather than at the caller's authority. Arguable rather than clean because 1.3 is written about string anchors in checkers, not about admission control in a handler; no standing rule names 'a present check that answers a different question', which is itself worth noticing.",
+      "contributing_factors": [
+        {
+          "factor": "The authorisation check was never written for this action: `action === \"family_mar\"` was added as a sibling of `action === \"read\"` on the same resource, and `read`s two gates (role set + resident assignment) were not carried across.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Both gates added to the family_mar branch, resolved before the contact fetch and re-applied against the stored rows resident_id."
+        },
+        {
+          "factor": "A CONSENT check stood where an AUTHORISATION check belonged. familyMarView() answers a question about the CONTACT; nothing asked the question about the SESSION. A reviewer scanning for \"is there a check on this path\" sees one and stops.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Item 13 of this batch builds a gate-parity check that flags sibling actions in one handler file disclosing the same resource where one enforces role/assignment gates and the other does not; its selftest is this defects pre-fix shape."
+        },
+        {
+          "factor": "Nothing compares sibling actions on one resource. The two branches are sixty lines apart in the same file and no tool, probe or gate reads them as a pair, so the asymmetry was invisible to every automated layer and had to be found by a human reading the handler.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "Same item 13 gate-parity tool; until it exists this class is caught only by reading."
+        },
+        {
+          "factor": "The feature commit c0ae9a0a shipped a new disclosure path and a new library in one change, and the review attention went to the librarys consent semantics (which are correct and carefully done) rather than to the callers admission control.",
+          "kind": "process",
+          "action_status": "not-actionable",
+          "note": "No process change would reliably redirect review attention; the durable fix is the mechanical parity check named above, not an instruction to look harder."
+        }
+      ],
+      "recurrence_open": "The actions close THIS pair. They do not close the class: the gate-parity tool in item 13 is not built yet, and when it is it will compare sibling actions within ONE handler file. Nothing proposed here compares a handler branch against a gate living in a different file, and nothing re-asks the question when a THIRD action is later added to alf_family_contacts. Separately, ALF_FAMILY_READ_ROLES includes 'billing' on a clinical record and this fix deliberately inherited that set rather than narrowing it -- so a billing role now reaches a MAR through a gate that is correct and a role set that may not be. That is flagged in docs/2026-10-05-inventory-hank-batch8.md and is open."
+    },
+    {
       "commit": "ac9c21df5b93",
       "date": "2026-10-05",
       "subject": "fix(tests): alf-mar 0/20 -> 21/21 and retainage_race 1/2 -> 3/3 -- and ONE ARM WAS ASSERTING A CONTROLLED-SUBSTANCE DEFECT",
@@ -23153,6 +23153,124 @@
         }
       ],
       "recurrence_open": "Change 4 does not close the general case: every OTHER push-gate check that derives a file list from the outgoing range and then reads the working tree has the same hole, and only check 11 was fixed here. I did not sweep the rest -- the `changed` list is used by checks 2, 3, 4, 5, 6, 7, 12 and 12b, each with its own notion of what it needs to read, and whether a working-tree read is wrong for them is a per-check judgement rather than one edit. Named rather than done. AND THIS SENTENCE WAS ITSELF EATEN ONCE: the word `changed` was written inside bash backticks in a double-quoted printf, so the shell ran it as a command substitution, printed `changed: command not found`, and the record landed with a gap exactly where the subject belonged. That is scrubber item 18 and tools/eaten_substitution_check.py exists for it; it happened while writing about silent failure, which is the fourth recorded instance of this on this platform."
+    },
+    {
+      "commit": "eb449a63ee4c",
+      "date": "2026-10-06",
+      "subject": "fix(sb_ap+attribution): an unlisted undated payee was invisible to both notes, and the wrong-subject check now MEASURES -- including the measurement its own first fix got wrong",
+      "files": [
+        ".claude/settings.json",
+        "SAIRN-ACTIVE-WORK-cc.md",
+        "docs/MASTER-PLAN.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/tier-a-reviews.json",
+        "docs/traceability-matrix.md",
+        "sairnbiz.html",
+        "tests/sairnbiz_undated_payee_notes.js",
+        "tools/exit_status_attributable.py"
+      ],
+      "lines_added": 936,
+      "lines_removed": 19,
+      "app": "sairnbiz",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "hover-audit",
+      "summary": "sairnbiz rVends 1099 disclosure: the at-risk loop iterates sb_vends, so a payee present in sb_ap and ABSENT from the vendor master could never be named -- and if all of that payee's bills were marked Paid with no paidDate they were also absent from sbVendorPaidYTD. A one-off contractor nobody added to the vendor list therefore reached the 1099 view as a SILENT ZERO: in no total and in no could-not-decide note. Second half, same function: sbVendorPaidUndatedPriorYear() excluded only the CURRENT year (slice(0,4) === year), so a FUTURE-dated bill already marked Paid was counted into a bucket called PriorYear and fed the 1099 at-risk figure, attributing a payment to a year that has not happened. The guard was NOT widened to '< year', which would have silently DROPPED those rows; the function is split into sbVendorPaidUndatedOtherYear() -> {prior, future} and renamed, because the old name was itself the defect -- a reader trusting it would have believed future rows were excluded. Three notes now render: prior-year at-risk, unlisted payee, future-dated anomaly.",
+      "rules": [
+        "1.7"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "unknown_reason": "The narrow loop predates the undated-payee disclosure it now has to cover; git log -S on the at-risk block finds where the text came from and cannot say which commit made the window wrong, because it became wrong when the disclosure was added around it rather than when it was written. PR 2.6."
+      },
+      "citation_note": "The at-risk loop's window was the vendor master while the data it reported on was sb_ap, so every payee outside that window was silently exempt from the disclosure -- 1.7 exactly, with the sampling window being a data set rather than a time range. 1.3 is the second half: the guard 'not this year' still matched and no longer pointed at 'prior year'.",
+      "contributing_factors": [
+        {
+          "factor": "the loop's universe (sb_vends) was narrower than the data it was reporting on (sb_ap), and nothing unioned the two",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "rVends now builds a listed-payee set and walks the undated keys against it, so a key with no vendor row is reported rather than skipped"
+        },
+        {
+          "factor": "the function NAME asserted a narrower population than the code computed, so every reader inherited the wrong premise",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "renamed to sbVendorPaidUndatedOtherYear() and the return shape changed to {prior, future} so the two populations cannot be conflated by a caller either"
+        },
+        {
+          "factor": "no arm existed for a payee outside the vendor master or for a future-dated bill, so both were invisible to the suite as well as to the UI",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/sairnbiz_undated_payee_notes.js, 11 arms, including the two ablations: widening the guard DROPS the future bucket, and a LISTED payee is not reported as an orphan"
+        }
+      ],
+      "recurrence_open": "Nothing checks, across the other apps, for a render loop that walks a master list while reporting on a transaction table -- the same shape would be invisible in sairnbuild, sairnvet or stonedesk and no sweep for it exists."
+    },
+    {
+      "commit": "eb449a63ee4c",
+      "date": "2026-10-06",
+      "subject": "fix(sb_ap+attribution): an unlisted undated payee was invisible to both notes, and the wrong-subject check now MEASURES -- including the measurement its own first fix got wrong",
+      "files": [
+        ".claude/settings.json",
+        "SAIRN-ACTIVE-WORK-cc.md",
+        "docs/MASTER-PLAN.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/tier-a-reviews.json",
+        "docs/traceability-matrix.md",
+        "sairnbiz.html",
+        "tests/sairnbiz_undated_payee_notes.js",
+        "tools/exit_status_attributable.py"
+      ],
+      "lines_added": 936,
+      "lines_removed": 19,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "tools/exit_status_attributable.py, the hook whose subject is reading a status off the wrong subject, did it three ways itself. (1) Its new --post observer read 'if rc_head != 0 or rc_ab != 0: return 0' -- a SILENT SKIP. A clone with no comparable origin/main makes rev-list exit non-zero, the observer vanishes, and nothing downstream can tell that from 'nothing worth saying'. (2) The subject matcher matched a tool path ANYWHERE in a non-final element, so a grep or sed over a tool's own source was reported as running it. (3) It fired on the exact remedy its own message recommends, and MY FIRST FIX FOR THAT WAS THE SAME DEFECT AGAIN: it accepted a status read anywhere after the tool, which blesses 'tool > f; tail -3 f; echo $?' where the status belongs to tail. Fourth reported the false positive independently in docs/2026-10-05-exit-status-attributable-false-positive.md and its discriminator -- did anything EXECUTE between the tool and the expansion -- is the one now implemented. Fixed: every leg of the observer names what it could not read and only a total blackout is silence; the path must stand in invocation position; the status read must be in the element immediately after, reached by a sequencing separator and never a pipe.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Three of the four classes were injected by me in the preceding two commits of the same batch and the fourth by the commit being recorded here, so a single injection sha would be a guess among four. Named rather than picked."
+      },
+      "citation_note": "The observer's early return on a failed git leg is 1.11 in the pure form -- a check that could not run reporting as though it had nothing to say. 1.10 is the fourth instance found an hour later: it compared against the LOCAL origin/main ref and presented a stale answer as OBSERVED state, which is a computed answer no fresher than its oldest input.",
+      "contributing_factors": [
+        {
+          "factor": "the observer folded 'could not read' into 'nothing to report' by returning early on any failed git leg",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "each leg reports its own outcome and names the exit status it could not read; only a total blackout returns silently"
+        },
+        {
+          "factor": "attribution was decided POSITIONALLY -- what sits last on the line -- when the real question is whether anything executed between the measured command and the status expansion",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "status_was_measured() requires the read in the immediately following element, reached by ; or newline or &&, with a pipe refused outright"
+        },
+        {
+          "factor": "the fixture agreed with the code instead of with the world: the status read was searched on QUOTE-MASKED text, so the double-quoted spelling that is actually typed was blanked, and my arm used the unquoted form and passed",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the read is searched on raw text and an arm pins the quoted spelling explicitly; 32 selftest arms with a per-arm ablation of both new layers"
+        },
+        {
+          "factor": "a report-only hook that cries wolf is read as wallpaper, so a false positive here degrades the real warning rather than just being noise",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "measure the notice's own precision over a session -- count the commands it fires on and hand-classify each as a real discarded status or a false positive -- and publish the two numbers separately rather than a combined rate. Owed, not done: all four classes so far were found by the hook firing on a command I had just written, which is anecdote, not a rate."
+        }
+      ],
+      "recurrence_open": "The invocation-position rule knows seven interpreter names and will miss an eighth silently -- a false negative, chosen deliberately, and unmeasured. And nothing measures the notice's own precision over a session, which is the number that decides whether it is still read."
     }
   ],
   "started": "2026-09-09",
