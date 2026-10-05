@@ -22725,7 +22725,7 @@
       "recurrence_open": "TWO OF THE EIGHT WORDINGS ARE STILL OPEN -- X is hank's and X is another session's -- and the actions above do not close them. The cause is the CLAUSE SPLITTER: a real claim runs '...is not held by another session FILES: api/sd-data.js ...' with no clause boundary between the disclaimer and the declared file list, so any marker firing there exempts a file the session holds. Whether FILES: should be a hard clause break is unmeasured. Arm E6 asserts both still block so that closing them is a deliberate act."
     },
     {
-      "commit": "fd626df659bf",
+      "commit": "395f7f2ab9ad",
       "date": "2026-10-05",
       "subject": "fix(tests): the other ten suites green -- and alf-incidents was HIDING A LEAK NOBODY WAS TESTING FOR",
       "files": [
