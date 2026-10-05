@@ -143,12 +143,101 @@ def resolves(table, reg):
     return bare != table and bare in reg
 
 
-def probe(resource, key, app):
+# ── SIGNING IN, BECAUSE A LICENCE KEY ANSWERS 37% OF THE QUESTION ──────────
+# (2026-10-05.) Driven over every app with a demo key on 2026-10-05: 402
+# declared tables across 113 (app, schema) pairs, 148 confirmed PROVISIONED,
+# 2 confirmed MISSING -- and **216 REFUSED**, every one of them because the
+# resource is behind the employee session gate and this check presented a
+# licence key and nothing else. Per app: sairnvet 42, sairnlegacy 36,
+# sairnroofing 25, sairndental 24, sairnlaw 19, sairnfreedom 17, sairnsenior 15,
+# sairncare 14, sairnbiz 13, sairndesign 10, stonedesk 5, sairnmechanical 3,
+# sairnscape 2, sairnbuild 1.
+#
+# So Gate 1 -- the one gate in docs/MASTER-PLAN.md with a live dependency --
+# was UNANSWERABLE for more than half of what it covers, and the file already
+# said what to do about it: "Re-run with a session."
+#
+# THE AUTH ENDPOINT IS NOT DERIVED FROM THE APP NAME, deliberately, and this
+# file's own header gives the reason for the schema argument and it applies
+# twice over here: `sairncare` signs in at `/api/alf-auth`, `sairnfreedom` at
+# `/api/sf-auth`, `sairndesign` at `/api/sdn-auth`. There is no rule. A guess
+# would sign in to the WRONG APP and -- since f27a9cd5 -- get a 403
+# LICENSE_WRONG_APP that reads like a gate result. Passed explicitly or not at
+# all.
+#
+# A FAILED SIGN-IN IS EXIT 2 AND NEVER A SILENT FALLBACK to the unauthenticated
+# run. Falling back would answer a DIFFERENT question under the flag that asked
+# not to -- the same rule control_char_check's --rev follows.
+# ── GIT BASH REWRITES AN ARGUMENT THAT LOOKS LIKE A UNIX PATH ──────────────
+# `--auth /api/scp-auth` arrives as `C:/Program Files/Git/api/scp-auth`. MSYS
+# path conversion, and it is not optional on this platform: CLAUDE.md names Git
+# Bash as the shell. The first live run of this flag died on
+# `InvalidURL: URL can't contain control characters` naming a Program Files
+# path, which is a confusing way to learn that the shell edited your argument.
+#
+# So the ENDPOINT NAME is the accepted form -- `--auth scp-auth` -- and a
+# leading-slash path is still taken when it survives. A value that has clearly
+# been rewritten is REFUSED BY NAME rather than sent: a mangled endpoint would
+# otherwise produce a sign-in failure that reads like a dead credential.
+def normalise_auth(raw):
+    """('api/<name>', None) or (None, why it cannot be used)."""
+    v = (raw or '').strip().replace('\\', '/')
+    if not v:
+        return None, 'empty'
+    if re.match(r'^[A-Za-z]:/', v) or 'Program Files' in v:
+        tail = v.rsplit('/', 1)[-1]
+        return None, ('the shell rewrote this argument into a Windows path '
+                      '(%r). Git Bash converts an argument beginning with `/` '
+                      'into a filesystem path. Pass it WITHOUT the leading '
+                      'slash: --auth %s' % (v, tail))
+    v = v.lstrip('/')
+    if v.startswith('api/'):
+        v = v[4:]
+    if '/' in v:
+        return None, ('%r is not an endpoint name. Pass the name alone, e.g. '
+                      '--auth scp-auth' % raw)
+    return 'api/' + v, None
+
+
+def sign_in(auth_path, key, employee, pin):
+    """(token, None) or (None, why). Never raises, never falls back."""
+    url = URL.rsplit('/api/', 1)[0] + '/' + auth_path
+    body = json.dumps({'action': 'login', 'employee_id': employee,
+                       'pin': pin}).encode('utf-8')
+    try:
+        r = sairn_http.fetch(url, method='POST', data=body, headers={
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + key})
+        status, raw = r.status, r.body
+    except sairn_http.Challenged as e:
+        return None, 'the sign-in was CHALLENGED by Vercel (%s)' % e
+    except Exception as e:                                      # noqa: BLE001
+        status = getattr(e, 'code', None)
+        try:
+            raw = e.read()
+        except Exception:                                       # noqa: BLE001
+            return None, '%s: %s' % (type(e).__name__, e)
+    if isinstance(raw, bytes):
+        raw = raw.decode('utf-8', 'replace')
+    try:
+        d = json.loads(raw)
+    except Exception:                                           # noqa: BLE001
+        return None, 'sign-in returned unreadable body: %s' % raw[:160]
+    tok = d.get('token') if isinstance(d, dict) else None
+    if status == 200 and tok:
+        return tok, None
+    return None, 'sign-in returned %s %s' % (status, json.dumps(d)[:200])
+
+
+def probe(resource, key, app, token=None):
     body = json.dumps({'action': 'read', 'resource': resource,
                        'app_id': app, 'payload': {}}).encode('utf-8')
+    hdrs = {'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + key}
+    if token:
+        hdrs['X-SD-Auth'] = token
     try:
-        r = sairn_http.fetch(URL, method='POST', data=body, headers={
-            'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key})
+        r = sairn_http.fetch(URL, method='POST', data=body, headers=hdrs)
         status, raw = r.status, r.body
     except sairn_http.Challenged as e:
         return 'CHALLENGED', str(e)
@@ -216,6 +305,43 @@ def main(argv):
                          'WITHOUT ONE NOTHING IS CHECKED -- this is not a pass.\n')
         return 2
 
+    # ── THE SESSION, IF ONE WAS ASKED FOR ──────────────────────────────────
+    pin = opt(argv, '--pin') or os.environ.get('SAIRN_DEMO_PIN')
+    employee = opt(argv, '--employee') or 'sairn-demo-owner'
+    auth_path = opt(argv, '--auth')
+    token = None
+    if auth_path:
+        auth_path, why = normalise_auth(auth_path)
+        if auth_path is None:
+            sys.stderr.write('--auth cannot be used: %s\nExit 3.\n' % why)
+            return 3
+    if pin and not auth_path:
+        sys.stderr.write(
+            '--pin needs --auth <name>, and the name is NOT derived from the\n'
+            'app name because there is no rule: sairncare signs in at\n'
+            '/api/alf-auth, sairnfreedom at /api/sf-auth, sairndesign at\n'
+            '/api/sdn-auth. A guess would sign in to the WRONG APP and get a\n'
+            '403 LICENSE_WRONG_APP that reads like a gate result.\n'
+            'The endpoints are listed in docs/2026-09-03-demo-credentials.md.\n')
+        return 3
+    if auth_path and not pin:
+        sys.stderr.write('--auth needs --pin (or SAIRN_DEMO_PIN).\n')
+        return 3
+    if pin:
+        token, why = sign_in(auth_path, key, employee, pin)
+        if token is None:
+            # EXIT 2, NOT A FALLBACK. An unauthenticated run would answer a
+            # different question under the flag that asked for a session, and
+            # its REFUSED list would look exactly like today's.
+            sys.stderr.write(
+                'COULD NOT SIGN IN, so the session-gated resources CANNOT be\n'
+                'checked and this run is NOT falling back to an\n'
+                'unauthenticated one -- that would answer a different question\n'
+                'and its REFUSED list would be indistinguishable from a real\n'
+                'result.\n\n  %s\n  employee: %s   endpoint: %s\n'
+                'Exit 2, not a pass.\n' % (why, employee, auth_path))
+            return 2
+
     tables = declared_tables(schema)
     reg = registered(app)
     # AN UNREADABLE REGISTRY IS COULD NOT RUN, NEVER ZERO. Deriving a
@@ -241,7 +367,7 @@ def main(argv):
         # ASK FOR THE RESOURCE, NOT THE TABLE. `grd_properties` is not a
         # resource the dispatch has ever seen; `properties` is.
         asked = t if t in reg else _PREFIX.sub('', t, count=1)
-        results[t] = probe(asked, key, app)
+        results[t] = probe(asked, key, app, token)
         # RECORD WHAT WAS ACTUALLY ASKED FOR when it differs from the table.
         # A verdict about `scp_invoices` that came from asking for `invoices`
         # cannot be reconciled with the endpoint's own answer unless the report
@@ -261,6 +387,14 @@ def main(argv):
                           'refused': refused, 'challenged': blocked}, indent=1))
     else:
         print('%s live provisioning -- READ ONLY, nothing was written' % app)
+        # THE SESSION IS DISCLOSED ON EVERY RUN, present or absent. A reader
+        # comparing two runs of this tool has to be able to tell which question
+        # each one answered: the unauthenticated run's REFUSED list and the
+        # signed-in run's are the same shape and mean different things.
+        print('  session         : %s'
+              % ('SIGNED IN as %s at %s' % (employee, auth_path) if token
+                 else 'NONE -- licence key only, so every session-gated '
+                      'resource below is UNANSWERABLE rather than broken'))
         print('  schema          : %s' % os.path.relpath(schema, REPO).replace(os.sep, '/'))
         print('  schema declares : %d table(s)' % len(tables))
         print('  registered      : %d checkable' % len(checkable))
