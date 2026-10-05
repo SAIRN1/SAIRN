@@ -1053,6 +1053,19 @@ PURPOSES = {
                                   'scratch copy'),
     'citation_no_source_report.py': ('CHECKER', 'a register row that asserts a '
                                      'basis and cites no line of code'),
+    'citation_arm_depth_check.py': ('CHECKER', 'a cited test that EXISTS and '
+                                    'never loads its subject -- one level '
+                                    'deeper than a DEAD CITATION, which only '
+                                    'catches a test file that is absent. '
+                                    'Scoped to co-located X.js / X.test.js '
+                                    'pairs, where the pairing is the author\'s '
+                                    'own assertion, because the broader rule '
+                                    'in docs/2026-09-29-write-site-basis-rule-'
+                                    'scope.md fired on 82 rows and was killed '
+                                    'by running it. Reports 0 of 85 on this '
+                                    'repo, so its evidence is the fixture lock '
+                                    'in tests/run_citation_arm_depth_probe.py, '
+                                    'not the clean sweep'),
     'hedge_carry_check.py': ('CHECKER', 'a hedge in a dispatched item that no '
                              'commit message carried forward or resolved'),
     # pattern_enumeration_sweep.py and hover_routing_gap_check.py WERE HERE and
