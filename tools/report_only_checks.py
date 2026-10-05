@@ -2267,6 +2267,136 @@ REGISTRY = [
                     '100 anchors agree with the rule that applies to them, 4 of '
                     'them under a declared count',
     },
+    # ══ TWO ENTRIES LANDED 2026-10-05 (hank), OUT OF EIGHT ACCOUNTED ════════
+    # EIGHT report-only checkers were ABSENT FROM THIS FILE ENTIRELY -- neither
+    # promoted nor declined -- so nothing ran them on a cadence AND nothing
+    # recorded a decision not to. Measured 2026-10-04 and logged as a HIGH gap.
+    #
+    # THE COUNT WAS THE SMALLER HALF. Seven of the eight were wired nowhere at
+    # all; the eighth, hook_integrity_check.py, IS wired at SessionStart and was
+    # STILL absent -- so this list could not be read as "what is unwired"
+    # either. A registry with a hole in it reads as complete, and these entries
+    # are long and reasoned, which is precisely what made the hole invisible.
+    #
+    # ALL EIGHT WERE RUN AND TIMED BEFORE BEING SORTED, never classified from
+    # their names. Two earned promotion; six are in NOT_PROMOTED below with the
+    # measurement that decided each. The deciding question for this registry is
+    # not "is the tool good" -- it is whether its finding is a BOUNDED set that
+    # should fall to zero, or a STANDING POPULATION that would print the same
+    # number after every push for ever.
+    #
+    # ══ AND THEN THE MEASUREMENT FOUND SOMETHING BIGGER. READ THIS BEFORE
+    #    TRUSTING ANY `promoted:` FIELD IN THIS FILE. ═══════════════════════
+    # A full sweep at the REAL budget (600s, read from .claude/settings.json)
+    # on 2026-10-05 reported:
+    #
+    #     NOT RUN: 29 of 73 -- "the sweep reached its 600s budget first.
+    #              This is an UNKNOWN, not a clean result."
+    #
+    # THE UNRUN SET IS A CONTIGUOUS TAIL: indices 44-72. Entries 0-43 execute;
+    # the last 29 never do. POSITION IN THIS LIST, AND NOTHING ELSE, DECIDES
+    # WHETHER A REGISTERED CHECKER RUNS AT ALL -- and nothing about an entry
+    # says where it sits.
+    #
+    # SO "PROMOTED" HAS MEANT TWO DIFFERENT THINGS AND THIS FILE DID NOT SAY
+    # WHICH. 27 checkers were registered, reasoned, controlled, and silently
+    # not running before these two were added. That is the same defect the
+    # eight-absent-tools gap was about, one layer in: being in the registry
+    # reads as being wired, and for 40% of it that is false. The sweep is
+    # honest -- it names every tool it did not reach and calls it UNKNOWN
+    # rather than clean -- but nothing carries that fact back to the entries,
+    # and the entries are what a session reads.
+    #
+    # THESE TWO ARE AT INDICES 71-72, SO THEY DO NOT RUN. Said here rather
+    # than discovered later: an entry of mine that read as wired while
+    # measurably not running would be me adding instance 28 and 29 of the
+    # defect I was sent to fix.
+    #
+    # THEY WERE NOT MOVED TO THE FRONT TO MAKE THEM RUN, AND THAT WAS A CLOSE
+    # CALL. They are cheap -- 1.75s and 1.4s, 3.15s against a 600s budget --
+    # so the front is where they would earn their place. But the boundary sits
+    # at index 44, so inserting 3.15s ahead of it COSTS WHATEVER CURRENTLY RUNS
+    # AT INDEX 43 ITS SLOT, and every candidate there belongs to another
+    # session. Re-ordering this list is a decision about whose control survives
+    # a budget nobody has raised, which is not a decision a session should make
+    # for three others on its way past. Logged for a human:
+    # docs/2026-10-05-inventory-hank.md gap 1a.
+    {
+        'tool': 'hover_routing_gap_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': 'REGISTERED 2026-10-05 AND IT DOES NOT RUN -- index 71 of '
+                    '73, inside the 29-entry tail the sweep never reaches at '
+                    'the 600s budget (measured, see the block above). Treat '
+                    'this entry as ACCOUNTED FOR, not as wired. It also emits '
+                    'a DeprecationWarning to stderr on every run '
+                    '(datetime.utcnow() at :228, scheduled for removal), so it '
+                    'will need that fixed before it is worth running -- logged, '
+                    'not fixed here, because the naive-vs-aware swap is a real '
+                    'trap: _parse_ts() returns a NAIVE datetime, so the obvious '
+                    'datetime.now(datetime.UTC) would raise TypeError on the '
+                    'subtraction. '
+                    'ON THE MERITS it is the clearest promote of the eight '
+                    'because its finding is BOUNDED AND FALLS. Measured: 1.75s, '
+                    'exit 1, UNROUTED (7) -- seven findings in the auditor log '
+                    'that are in no index row. That is seven actionable items, '
+                    'not a population: each one is closed by routing it, and '
+                    'the count RISES when the auditor logs something nobody '
+                    'picks up, which is exactly the event a per-push notice '
+                    'should surface. Contrast citation_no_source_report.py '
+                    'below, which exits 1 on 199 rows it itself calls exempt. '
+                    'Control: tests/run_hover_routing_gap_probe.py.',
+        'catches': 'a finding in the hover auditor\'s own log that was never '
+                   'routed into docs/SAIRN-OPEN-WORK-INDEX.md -- flagged when '
+                   'it is older than six hours OR past a volume threshold, OR '
+                   'and not AND, because a busy hour buries a finding as well '
+                   'as a quiet week does.',
+        'evidence': 'THREE findings were sitting unrouted in the auditor log '
+                    'when this tool was written, and nothing in the repo '
+                    'connected that log to the index -- the gap was found by '
+                    'the tool, not by anybody reading either document. It '
+                    'found a fourth class on 2026-09-29: the supplier_lead_times '
+                    'row and a citation-drift row had been in the log since '
+                    '11:40Z and were never in the index. ITS OWN HEADER ONCE '
+                    'CARRIED A HARDCODED "2 of 686 routable", which went stale '
+                    'immediately; that number is printed on every run now and '
+                    'is deliberately not written in the prose.',
+    },
+    {
+        'tool': 'pattern_enumeration_sweep.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': 'REGISTERED 2026-10-05 AND IT DOES NOT RUN -- index 72 of '
+                    '73, the very last entry, inside the 29-entry tail the '
+                    'sweep never reaches (measured, see the block above). '
+                    'ACCOUNTED FOR, not wired. '
+                    'ON THE MERITS: measured 1.4s over 285 files under tools/, '
+                    'and CLEAN on its first half -- CORROBORATED (58), i.e. 58 '
+                    'name tests that also have a non-name derivation behind '
+                    'them. PROMOTED ON THE SECOND HALF, which is a genuine '
+                    'ratchet: it cross-checks filesystem membership against '
+                    'git membership per directory and flags a disagreement. '
+                    'ITS ONLY FINDING ON THIS RUN WAS THIS SESSION\'S OWN '
+                    'UNTRACKED FILE (tests/run_gh_token_live_probe.py, disk=624 '
+                    'tracked=623), which is the tool working and is the '
+                    'strongest argument for wiring it after a push: an '
+                    'untracked tool is how docs/NHI-REGISTER.md once named a '
+                    'live tool as deleted. Control: '
+                    'tests/run_pattern_enumeration_probe.py, which drives it '
+                    'against fixtures -- necessary here because the tool '
+                    'EXCLUDES ITSELF by name (its NAME_TESTS table is regexes '
+                    'about name tests, so it matches its own every row).',
+        'catches': 'a population derived from a NAME TEST -- startswith, a '
+                   'prefix glob, a hyphen convention -- with no second '
+                   'derivation behind it; and separately a directory where '
+                   'what is on disk and what git tracks DISAGREE.',
+        'evidence': 'the clone count in docs/NHI-REGISTER.md was wrong THREE '
+                    'TIMES. The third time it was ALREADY DERIVED FROM DISK and '
+                    'still wrong, because the filter was startswith(\'SAIRN-\') '
+                    'and one clone of the same remote has no hyphen. Deriving a '
+                    'population does not make it right if the FILTER encodes a '
+                    'habit -- which is the whole subject of this sweep.',
+    },
 ]
 
 # ── DELIBERATELY NOT PROMOTED, AND WHY ──────────────────────────────────────
@@ -2275,6 +2405,104 @@ REGISTRY = [
 # than left unanswered by default". This is that record for the ones that are
 # NOT going in, so the next session does not re-derive it. Printed by --list.
 NOT_PROMOTED = [
+    # ══ SIX ENTRIES LANDED 2026-10-05 (hank) ════════════════════════════════
+    # The declined half of the eight checkers that were absent from this file
+    # entirely. Each was RUN AND TIMED first; none was sorted by its name.
+    ('hook_integrity_check.py',
+     'NOT A REGISTRY CANDIDATE BECAUSE IT IS ALREADY WIRED, AND THIS ENTRY '
+     'EXISTS SO THIS LIST STOPS UNDER-REPORTING IN THAT DIRECTION. It runs at '
+     'SessionStart (.claude/settings.json:171). It was absent from BOTH halves '
+     'of this file, which meant the registry could not be read as "what runs" '
+     'OR as "what does not" -- a reader checking whether this checker was on a '
+     'cadence would have found nothing and concluded nobody had decided, when '
+     'in fact somebody had. Same shape as deploy_verify_notify.py and '
+     'sairn_claim_hook.py below. SessionStart is the right event and a push is '
+     'the wrong one: the question it answers is "are the hooks I am about to '
+     'rely on this session the ones somebody signed off", which is asked once '
+     'when the session opens, not after each push. '
+     'AND IT IS NOT CLEAN RIGHT NOW -- MEASURED 2026-10-05, exit 1, 2.3s, '
+     'DRIFT (6): citation_drift_hook.py, hover_auditor_scope_gate.py, '
+     'rebase_state_guard.py, report_only_checks.py, sairn_claim.py and '
+     'sairn_push_gate_hook.py have each changed in a commit with the manifest '
+     'never regenerated. DELIBERATELY NOT REGENERATED HERE: `--regenerate` '
+     'would bless six changed hook tools in one stroke on the authority of the '
+     'session that noticed, which is a detector blessing its own fix. Logged '
+     'for a human instead. NOTE ALSO WHAT A CLEAN RUN OF IT DOES NOT SAY, in '
+     'its own words: that the hooks are CORRECT -- only that they are '
+     'UNCHANGED since somebody ran --regenerate.'),
+    ('citation_no_source_report.py',
+     'NOT PROMOTED, AND THE REASON IS A DEFECT IN ITS EXIT CODE RATHER THAN IN '
+     'ITS SUBJECT. Measured 2026-10-05: 0.4s, exit 1. But the bucket it exits '
+     'on is the WRONG ONE. `return EXIT_FINDING if no_cite else EXIT_CLEAN` -- '
+     '`no_cite` is 199 of 391 rows, and the tool\'s OWN OUTPUT classifies 194 '
+     'of those as legitimately exempt (57 admit they were not read '
+     'individually, 106 carry a 3.2 group stamp, 31 show a dated or field-list '
+     'read). So a push notice would report 199 findings for ever, on a '
+     'population the tool itself says is not a defect. '
+     'MEANWHILE ITS ACTUAL DEFECT BUCKET IS ZERO: CONTRADICTORY (0) -- no row '
+     'claims an individual read with nothing behind it. READ THAT WITH ITS '
+     'HISTORY, as the tool insists: the bucket read 138, then 32, and is now 0, '
+     'AND NOT ONE ROW WAS EDITED to get there. Each drop was a criterion of '
+     'this tool being wrong. PROMOTE IT WHEN THE EXIT CODE KEYS ON '
+     '`contradictory` INSTEAD -- then it is a true ratchet sitting at zero, '
+     'which is the best promote shape there is. That is a one-line change and '
+     'it is NOT made here: it alters a checker\'s criteria, which needs its own '
+     'claim and its own known-bad control, and this session does not hold it.'),
+    ('message_assertion_audit.py',
+     'NOT PROMOTED: IT REPORTS A REGISTERED POPULATION, NOT A PER-PUSH EVENT, '
+     'and its own index row says so in those words -- "a registered '
+     'population, not a completed sweep". Measured 2026-10-05: 3.2s, exit 1, '
+     '43 of 240 scoreable files where STRING CHECKS are at least half the '
+     'classified assertions. That 43 does not move when somebody pushes a '
+     'change to an app; it moves when somebody rewrites a suite. A notice '
+     'printing 43 after every push is the shape this registry already names as '
+     'read-as-noise-then-ignored-when-a-real-one-appears. '
+     'ITS OWN LARGEST WEAKNESS IS ALSO A REASON TO LEAVE IT ON DEMAND: 6,499 '
+     'of 10,718 assertions CANNOT BE CLASSIFIED by it -- more than half the '
+     'corpus, reported as its own UNKNOWN bucket rather than folded into '
+     'either answer. A per-push number computed over 40% of the corpus invites '
+     'a trend nobody can read. IT IS A SUITE-AUTHORING TOOL: the question it '
+     'answers is asked when writing or reviewing arms.'),
+    ('idempotence_double_run.py',
+     'NOT PROMOTED ON COST, MEASURED RATHER THAN ARGUED: IT DID NOT FINISH IN '
+     '240 SECONDS, and did not finish in 300 either on the 2026-10-05 run. It '
+     'runs every candidate checker TWICE by construction -- 64 candidates on '
+     'the last full sweep -- so its floor is twice the cost of the thing it is '
+     'checking. SWEEP_BUDGET_SECONDS exists in this file precisely to stop one '
+     'entry eating the hook\'s window, and this one would eat all of it and '
+     'still be cut off, producing a PARTIAL sweep reported as a sweep. Same '
+     'decision and the same reason as guard_ablation.py below, which did not '
+     'finish in 180s. ITS SUBJECT ALSO DOES NOT CHANGE PER PUSH: whether a '
+     'checker is idempotent is a property of the checker, settled when it is '
+     'written. FOUR mutating tools are already known to be undoubleable inside '
+     'ANY bound a sweep can carry, and a derived exclusion for them was built, '
+     'measured and REJECTED -- so there is not even a cheap subset to promote.'),
+    ('hedge_carry_check.py',
+     'NOT A SWEEP -- IT IS A CLI THAT TAKES INPUT, and there is nothing for a '
+     'push notice to pass it. Measured 2026-10-05: exit 2 COULD NOT RUN with '
+     'no arguments, and its own message says why -- "no dispatched text was '
+     'given. Pass --item or --item-file. An empty item yields no hedges, which '
+     'would read as \'nothing was dropped\'." That refusal is correct and it is '
+     'also the whole reason it cannot be wired: the subject is a DISPATCHED '
+     'INSTRUCTION, which exists in a chat turn and not in the repo. Wiring it '
+     'with no input would mean a checker that exits 2 after every push for '
+     'ever, which trains readers to ignore exit 2 -- and exit 2 is the state '
+     'this platform least wants ignored. Same class as html_script_check.py '
+     'below. IT IS A PRE-WORK TOOL for whoever receives a dispatch.'),
+    ('citation_line_drift_check.py',
+     'NOT A SWEEP, SAME CLASS: a CLI requiring --app AND --prefix, and it '
+     'refuses to guess either from the other. Measured 2026-10-05: exit 2 with '
+     'no arguments. Fourteen apps times a prefix each is a loop somebody has to '
+     'write, and the per-app answers are not comparable -- which is the '
+     'tool\'s own finding: sairnfreedom\'s 32 flags were 32/32 GENUINE drift '
+     'from one uniform +825/+834 shift, and sairngrounds\'s 4 were 4/4 '
+     'DELIBERATE read-site citations where repointing would have broken four '
+     'correct cells. A single aggregated per-push number over both populations '
+     'would be meaningless, and the tool now prints each cited line\'s own '
+     'source text precisely because the judgement is per citation. '
+     'WHAT COULD BE WIRED ONE DAY is a per-app invocation table in this '
+     'registry with a prefix per app -- that is a real candidate and it is a '
+     'different change, needing the 14 prefixes derived rather than typed.'),
     ('out_of_service_register.py', 'PROMOTED? NOT YET, AND THIS ONE IS A CANDIDATE UNLIKE THE OTHERS HERE -- its subject is a COUNT that should be watched on a cadence, which is exactly what this registry is for. It is held back for one run only: it went in with four entries all dated today, so promoting it now would wire a ratchet to a baseline nobody has lived with. Promote it once an entry has cleared and the count has been seen to FALL, which proves the register is maintained rather than appended to. WHY IT EXISTS: on 2026-09-28 tools/audit_licence.py took FOUR live probes out of service in one change, because the audit licences three of them need do not exist. That was the right trade and it was a trade, and nothing counted it -- a guard that silently disables four probes removes four probes worth of evidence and reports only that it was installed. FAILS when the count rises above a declared ceiling, when an entry ages past max_age_days, when an entry lacks a route out, or when an out-of-service probe has NO entry at all -- the last is the half that cannot be gamed by editing the register. Control: tests/run_out_of_service_probe.py, SIX directions including that an ABSENT register is COULD NOT RUN and never clean.'),
     ('live_probe_residue_audit.py', 'PROMOTED? NO -- and the reason is that its subject changes only when somebody WRITES a live probe, which is a handful of times a year. A push-time run would report the same seven writers for ever, which is the always-passing checker this registry has a name for. IT IS A PRE-COMMIT QUESTION for whoever adds a live probe, and the convention that invokes it is docs/2026-09-28-verification-residue.md. Built after one probe wrote a rule to LAW-TEST-2026 to verify an identity strip -- seeing what an endpoint STORES needs a write -- and DELETE was revoked platform-wide on that table in August, so the row needs a human in the SQL editor. One probe, one un-deletable row, on a licence a prospect may be shown. The rule it enforces was ALREADY SETTLED in sql/stonedesk_recovery_admin_seed.sql -- THE FIX IS THE LICENCE, NOT THE PIN -- and applied by roofing in September; nothing made the other probes follow because the rule lived in a SQL comment rather than in the code path that writes. Its companion guard tools/audit_licence.py IS in the code path and exits 2 COULD NOT RUN on a non-audit key. CANNOT tell whether the guard is called on the path that actually writes -- presence is necessary, not sufficient. Control pair: tests/run_live_probe_residue_probe.py, FIVE directions including the one that matters most, that a COMPLIANT probe stays silent.'),
     ('gate_caller_impact.py', 'NOT PROMOTED BECAUSE IT ANSWERS A QUESTION ASKED AT A MOMENT, not on a cadence: "I am about to narrow this gate -- who calls it?" A push-time run would report the same 14 callers on every push forever, which is the always-passing checker this registry already has a name for. IT IS A PRE-CHANGE TOOL and the convention that invokes it is docs/2026-09-28-gate-tightening-caller-impact.md: before narrowing an authorisation gate, enumerate every caller and publish checked/universe. Built after add_rule and add_holidays were gated to a session and tools/load_deadline_seed.py -- the ONLY caller, sending a bearer key alone -- would have broken seeding on all 48 jurisdictions; it was caught by reading the loader, which is luck dressed as diligence. ITS SWEEP FOUND A REAL BUG: tools/alf_facility_role_gate_live_probe.py sent the session as X-Session-Token where tokenFromRequest reads x-sd-auth only, so every request it ever made carried no session and its role differentiation was never exercised. A CALLER OUTSIDE THIS REPO IS INVISIBLE TO IT, which is the largest gap and the second reason it reports rather than gates. Control pair: tests/run_gate_caller_impact_probe.py, both directions plus an arm that a DIFFERENT exempted path does not silence a finding.'),
