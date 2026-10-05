@@ -3361,6 +3361,24 @@
         "tools/cron_beat_refusal_check.py",
         "tools/fail_open_scan.py"
       ]
+    },
+    {
+      "id": "cc-1791212875",
+      "session": "cc",
+      "subject": "cc",
+      "task": "the fail-open dependency rise 17 to 19, wiring exit_status_attributable and the cron fixture into settings.json, the -S versus --grep rule into the standing conventions, and one more status-read-off-the-wrong-subject site FILES: .claude/settings.json tools/fail_open_scan.py docs/SAIRN-PROCESS-RULES.md docs/fail-open-baseline.json SAIRN-ACTIVE-WORK-cc.md docs/SAIRN-OPEN-WORK-INDEX.md",
+      "claimed_at": "2026-10-05T15:07:55Z",
+      "claimed_at_epoch": 1791212875.4878538,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        ".claude/settings.json",
+        "SAIRN-ACTIVE-WORK-cc.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/SAIRN-PROCESS-RULES.md",
+        "docs/fail-open-baseline.json",
+        "tools/fail_open_scan.py"
+      ]
     }
   ],
   "refusals": [
