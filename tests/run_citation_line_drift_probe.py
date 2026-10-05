@@ -63,7 +63,7 @@ def counts(o):
     """
     import re as _re
     out = {}
-    for k in ('SOUND', 'DRIFTED', 'INCONCLUSIVE'):
+    for k in ('ANCHORED', 'SOUND', 'DRIFTED', 'INCONCLUSIVE'):
         m = _re.search(r'^  %s\s*:\s*(\d+)' % k, o, _re.M)
         out[k] = int(m.group(1)) if m else None
     return out
@@ -158,10 +158,17 @@ def main():
         ap, dp = fixture(d, app(), doc([('zz_alpha', 60)]))
         code, o = run(ap, dp, '--window', '10')
         c = counts(o)
-        if code == 0 and c['SOUND'] == 1 and c['DRIFTED'] == 0:
-            ok('B1. a citation on the `st(K_ALPHA, ...)` line is SOUND and the '
-               'exit is 0. Without this the checker could be "everything has '
-               'drifted" and A1 would still pass')
+        # EXPECTATION UPDATED 2026-10-05, and the reason is recorded rather
+        # than the number quietly changed: a citation ON the write line NAMES
+        # the resource through its constant, so the ranking now reports it as
+        # ANCHORED, which is strictly more informative than SOUND. The arm
+        # accepts either, because what it is really pinning is that a citation
+        # at a write site is NOT drifted and the exit is 0.
+        if code == 0 and c['DRIFTED'] == 0 and (c['SOUND'] or 0) + (c['ANCHORED'] or 0) == 1:
+            ok('B1. a citation on the `st(K_ALPHA, ...)` line is ANCHORED or '
+               'SOUND -- never DRIFTED -- and the exit is 0. Without this the '
+               'checker could be "everything has drifted" and A1 would still '
+               'pass')
         else:
             bad('B1. a citation at a write site must be SOUND',
                 'exit=%s\n%s' % (code, o[-500:]))

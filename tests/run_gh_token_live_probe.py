@@ -221,8 +221,13 @@ def main():
     else:
         bad('E3. the default output must name --live', o[-300:])
 
+    # SAME CLASS, SAME REMEDY. github_token() is one comment away from
+    # documenting that it deliberately does not call fetch_user -- the sentence
+    # this repo would want there -- and this arm would then fail on its own
+    # documentation. See tools/pycomments.py.
     import inspect
-    src = inspect.getsource(gh_token.github_token)
+    import pycomments as _pyc
+    src = _pyc.strip_comments(inspect.getsource(gh_token.github_token))
     if 'fetch_user' not in src and 'urlopen' not in src:
         ok('E4. github_token() does not call the network. THIS IS THE ARM '
            'THAT MATTERS MOST: if the lookup fetched, then on a clone with no '

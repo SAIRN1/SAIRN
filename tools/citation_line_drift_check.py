@@ -25,8 +25,16 @@ in the K_ block itself. So this tool resolves resource -> constant -> `st(K_...)
 call sites, and a citation is SOUND only when it is within --window lines of one
 of those.
 
-THREE VERDICTS, and the third is not a failure:
-  SOUND        the cited line is within --window of a real write site
+FOUR VERDICTS, and RANKING IS THE POINT -- see the ranking block further down.
+  ANCHORED     the cited line NAMES the resource, or reaches it within two
+               hops. A direct reference, and it OUTRANKS distance: proximity
+               to a write is only a proxy for "this line is about the
+               resource", and on sd_comms the proxy inverted -- a comment 13
+               lines from the write scored above the real call site 55 lines
+               away, so repointing the citation correctly made the number
+               worse.
+  SOUND        no direct reference, but within --window of a real write site.
+               The original rule, DEMOTED to a fallback
   DRIFTED      it is not, and a write site exists -- the nearest one is reported
                with the signed offset, as a CANDIDATE and not as an instruction.
                See the next block: this verdict means NOT ANCHORED TO A WRITE
@@ -72,7 +80,7 @@ one read, and the closing line names the nearest write site as a candidate to be
 checked against the cell's prose. The judgement moved to where the evidence is;
 it did not get automated.
 
-Exit 0 when every citation is SOUND, 1 when any has DRIFTED, 2 COULD NOT RUN --
+Exit 0 when nothing DRIFTED, 1 when anything did, 2 COULD NOT RUN --
 the app or the document is unreadable, the K_ block cannot be found, or no
 citation matched the prefix at all.
 """
@@ -222,6 +230,111 @@ CITE_RE = re.compile(
     r'(?:-\d+)?`')
 
 
+# ── THE RANKING WAS WRONG, NOT THE COUNT (found 2026-10-05) ────────────────
+# Distance to a write site was the ONLY signal, so proximity decided the
+# verdict -- and proximity is a PROXY for "this line is about the resource".
+# Measured on sd_comms, where the proxy inverted:
+#
+#   :10539  a comment, 13 lines from the write  -> scored SOUND
+#   :10582  `var d=commsEnsureIds();`, 55 away  -> scored DRIFTED
+#
+# The three :10539/:10575/:10606 citations were WRONG -- the auditor's own read
+# says they were "the function DEFINITION area and unrelated helpers" -- and
+# they scored above the three RIGHT ones at :10582/:10618/:10649, which are the
+# real call sites. Repointing them correctly made the tool's number worse. A
+# checker that ranks a correct citation below an incorrect one is worse than no
+# ranking, because it rewards the wrong edit.
+#
+# SO A DIRECT REFERENCE NOW OUTRANKS DISTANCE, and the chain is resolved the
+# way a reader resolves it rather than by a name heuristic:
+#
+#   ANCHORED        the cited line itself names the resource -- its literal
+#                   key, or one of its storage constants. Unambiguous.
+#   ANCHORED-VIA    the cited line CALLS a function that reaches the resource
+#                   within two hops, each hop resolved to the NEAREST PRECEDING
+#                   definition of that name. commsEnsureIds@10552 calls load;
+#                   the nearest preceding `function load` is @10526, which is
+#                   `getItem('sd_comms')`. Labelled separately because it is
+#                   derived rather than read off the line.
+#   SOUND           none of the above, but within --window of a write site.
+#                   The old rule, DEMOTED to a fallback.
+#   DRIFTED         none of the above.
+#
+# NEAREST-PRECEDING IS THE HONEST RESOLUTION AND ITS LIMIT IS NAMED. This file
+# has 23 functions called `render` and many called `load`; the repo already
+# records 34 bare functions as NOT JUDGED for exactly that reason. Nearest
+# preceding is what a human reading top-to-bottom would pick, it is right
+# inside an IIFE, and it can be wrong across one. Two hops is the cap: a third
+# would reach half the file through `load`.
+_DEF_RE = r'(?:function\s+%s\s*\(|(?:var|let|const)\s+%s\s*=\s*function|%s\s*[:=]\s*function)'
+_CALL_RE = re.compile(r'\b([A-Za-z_$][A-Za-z0-9_$]*)\s*\(')
+
+
+def _direct_line(line, resource, consts):
+    """True when this line names the resource outright."""
+    if resource and ("'%s'" % resource) in line:
+        return True
+    for c in consts:
+        if re.search(r'\b%s\b' % re.escape(c), line):
+            return True
+    return False
+
+
+def _nearest_def(lines, name, before):
+    """Line number of the nearest definition of `name` at or before `before`."""
+    pat = re.compile(_DEF_RE % (re.escape(name), re.escape(name),
+                                re.escape(name)))
+    for i in range(min(before, len(lines)) - 1, -1, -1):
+        if pat.search(lines[i]):
+            return i + 1
+    return None
+
+
+def _body_lines(lines, start, limit=60):
+    """The `limit` lines from a definition -- a bounded read, not a parse.
+
+    A brace-matched body would be better and is not worth it here: the
+    question is only whether the resource is reachable, and a definition whose
+    reference is more than 60 lines in is not one a reader would call an
+    accessor either.
+    """
+    return lines[start - 1:min(start - 1 + limit, len(lines))]
+
+
+def anchor_verdict(lines, n, resource, consts, hops=2):
+    """(kind, detail) for the cited line itself. kind is '', 'direct' or 'via'."""
+    if not (0 < n <= len(lines)):
+        return '', ''
+    line = lines[n - 1]
+    if _direct_line(line, resource, consts):
+        return 'direct', 'the cited line names the resource'
+    seen = set()
+    frontier = [(t, n) for t in _CALL_RE.findall(line)]
+    for depth in range(1, hops + 1):
+        nxt = []
+        for name, before in frontier:
+            if name in seen or name in ('if', 'for', 'while', 'return',
+                                        'function', 'catch', 'switch',
+                                        'typeof', 'parseInt', 'parseFloat'):
+                continue
+            seen.add(name)
+            d = _nearest_def(lines, name, before)
+            if d is None:
+                continue
+            body = _body_lines(lines, d)
+            for bl in body:
+                if _direct_line(bl, resource, consts):
+                    return 'via', ('%s() at :%d reaches it in %d hop(s)'
+                                   % (name, d, depth))
+            for bl in body:
+                for t in _CALL_RE.findall(bl):
+                    nxt.append((t, d))
+        frontier = nxt
+        if not frontier:
+            break
+    return '', ''
+
+
 def citations(doc_lines, prefix, default_file=None):
     """[(resource, line, file)] for every citation form on a prefixed row.
 
@@ -318,7 +431,7 @@ def main(argv):
     out('  storage constants found: %d resource(s) mapped' % len(cmap))
     out('')
 
-    sound, drift, incon = [], [], []
+    sound, drift, incon, anchored = [], [], [], []
     for name, n, cfile in rows:
         # RESOLVED AGAINST THE FILE THE CITATION NAMES. `lines` (= --app) is
         # the default for the bare form only.
@@ -344,6 +457,27 @@ def main(argv):
                 why += ' in %s (the file this citation names)' % cfile
             incon.append((name, n, why))
             continue
+        # ── RANKING: A DIRECT REFERENCE OUTRANKS DISTANCE ──────────────────
+        # Checked BEFORE the window, which is the whole fix. sd_comms' three
+        # correct call sites are 55-122 lines from the write and the three
+        # wrong ones were 13-45; under the old order the wrong ones won.
+        # ── A DECLARATION BLOCK CAN NEVER ANCHOR, AND THIS ARRIVED AS A
+        #    REGRESSION I SHIPPED. ──────────────────────────────────────────
+        # The first version of the ranking checked anchoring first, and the
+        # existing control caught it immediately: a sync list or a K_ block
+        # literally contains EVERY resource name, so `_direct_line` returned
+        # True and a citation into one scored ANCHORED -- for all 36 resources
+        # at once. That is the ORIGINAL defect this whole tool was built to
+        # prevent, reintroduced by the fix for a different one.
+        #
+        # So the exclusion comes FIRST. A direct reference outranks distance,
+        # and a declaration block outranks both.
+        _in_decl = in_spans(n, spans) if same_app else False
+        kind, why = ('', '') if _in_decl else anchor_verdict(
+            flines, n, name, consts)
+        if kind:
+            anchored.append((name, n, cfile, kind, why))
+            continue
         near = [s for s in sites if abs(s - n) <= window]
         if near:
             sound.append((name, n, near[0], cfile))
@@ -355,6 +489,10 @@ def main(argv):
         drift.append((name, n, nearest, nearest - n,
                       in_spans(n, spans) if same_app else False, cited, cfile))
 
+    for name, n, cfile, kind, why in anchored:
+        out('  ANCHORED%-4s %-26s %s:%-6d %s'
+            % ('' if kind == 'direct' else '-VIA', name,
+               '' if cfile == app else cfile, n, why))
     for name, n, site, cfile in sound:
         out('  SOUND        %-26s %s:%-6d write site :%d within %d lines'
             % (name, '' if cfile == app else cfile, n, site, window))
@@ -371,7 +509,11 @@ def main(argv):
         out('  INCONCLUSIVE %-26s :%-6d %s' % (name, n, why))
 
     out('')
-    out('  SOUND        : %d' % len(sound))
+    out('  ANCHORED     : %d -- the cited line names the resource, or reaches '
+        'it in <=2 hops. This OUTRANKS distance: proximity to a write is a '
+        'proxy, and on sd_comms the proxy inverted.' % len(anchored))
+    out('  SOUND        : %d -- no direct reference, but within the window of '
+        'a write site. The old rule, now a FALLBACK.' % len(sound))
     out('  DRIFTED      : %d' % len(drift))
     out('  INCONCLUSIVE : %d -- no write site to point at, so NOT reported as '
         'drifted' % len(incon))

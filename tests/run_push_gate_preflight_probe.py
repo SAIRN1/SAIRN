@@ -145,6 +145,81 @@ def main():
     else:
         bad('P9. the verdict must carry its own limits', out[-400:])
 
+    # == THE ENFORCING PATH COLLECTS TOO, AND THE CRASH HANDLER IS THE RISK ==
+    # --preflight reported all 45 while the real gate still stopped at one, so
+    # a session learned one fact per rebase cycle against a shared branch. The
+    # enforcing path collects now. It still DENIES; it denies with the list.
+    #
+    # E3 IS THE ARM THE WHOLE CHANGE TURNS ON. The gate ends with
+    # `except Exception: sys.exit(0)` -- and exit 0 means ALLOW. Code after a
+    # deny() was written knowing it would never execute, so a continuation can
+    # raise. Collecting WITHOUT touching that handler would have converted the
+    # first continuation crash into a silent allow, which is strictly worse
+    # than reaching one check. Both directions are driven.
+    import io as _io
+
+    def _drive(source, argv):
+        inject = ('\ndef main():\n' +
+                  '    deny(\'INJECTED FIRST: a stale generated document\')\n' +
+                  '    deny(\'INJECTED SECOND: no register record\')\n' +
+                  '    raise RuntimeError(\'continuation\')\n')
+        src2 = source.replace('if __name__ == \'__main__\':',
+                              inject + '\nif __name__ == \'__main__\':', 1)
+        old = sys.argv
+        sys.argv = argv
+        buf = _io.StringIO()
+        real = sys.stderr
+        sys.stderr = buf
+        code = 'NO EXIT'
+        try:
+            exec(compile(src2, TOOL, 'exec'), {'__name__': '__main__'})
+        except SystemExit as e:
+            code = e.code if e.code is not None else 0
+        except Exception as e:
+            code = 'RAISED %s' % type(e).__name__
+        finally:
+            sys.stderr = real
+            sys.argv = old
+        return code, buf.getvalue()
+
+    code, out = _drive(src, ['gate', '--pre-push'])
+    if code == 1 and 'INJECTED FIRST' in out and 'INJECTED SECOND' in out:
+        ok('E1. a main() that denies TWICE then RAISES still exits 1, and BOTH ' +
+           'reasons print -- the push is denied with the whole list even ' +
+           'though a continuation crashed')
+    else:
+        bad('E1. a crash after collected denials must still deny',
+            'exit=%r out=%s' % (code, out[-250:]))
+
+    if 'check(s) refused this push' in out:
+        ok('E2. ...and the header states HOW MANY refused, so a reader knows ' +
+           'the list is the whole answer rather than the first item of one')
+    else:
+        bad('E2. the multi-denial header must be present', out[-250:])
+
+    bad_src = src.replace('        _deny_now_if_any()\n        sys.exit(0)',
+                          '        sys.exit(0)')
+    if bad_src != src:
+        code_b, _ = _drive(bad_src, ['gate', '--pre-push'])
+        if code_b == 0:
+            ok('E3. KNOWN-BAD CONFIRMED, AND IT IS WHY COLLECTING IS SAFE: with ' +
+               'the denial-outranks-fail-open line removed, the same run exits ' +
+               '0 -- it ALLOWS a push carrying two collected denials. That is ' +
+               'the regression collecting would have introduced, and this arm ' +
+               'fails if the line is ever removed again')
+        else:
+            bad('E3. the known-bad must ALLOW, proving the line is load-bearing',
+                'exit=%r' % (code_b,))
+    else:
+        bad('E3. could not construct the known-bad',
+            'the fail-open handler no longer matches the expected shape')
+
+    if 'if \'--one\' not in sys.argv' in src:
+        ok('E4. `--one` still restores stop-at-the-first, so the old ' +
+           'behaviour is available rather than removed')
+    else:
+        bad('E4. the old behaviour must remain reachable')
+
     sys.stdout.write('\n%d passed, %d failed\n' % (_pass, _fail))
     return 1 if _fail else 0
 

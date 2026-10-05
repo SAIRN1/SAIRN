@@ -129,8 +129,18 @@ try:
     check_now('T3 the record DISCLOSES that the boundary is not stable',
           'boundary_is_NOT_stable' in _d, True)
 
-    _src = io.open(os.path.join(REPO, 'tools', 'report_only_checks.py'),
-                   encoding='utf-8').read()
+    # ── COMMENTS STRIPPED. T4 asserts a string is ABSENT from
+    #    report_only_checks.py, which documents its own history in comments,
+    #    so the moment anyone writes "the tag used to say REGISTERED AND
+    #    DEAD" -- the sentence this repo asks for -- the arm fails on the
+    #    documentation rather than on the code. THIRD time this class has
+    #    caught me in two batches; see tools/pycomments.py for the other two
+    #    and for the wrong fix I tried first (jscomments, which cannot strip
+    #    a `#` at all).
+    import pycomments as _pyc
+    _src = _pyc.strip_comments(
+        io.open(os.path.join(REPO, 'tools', 'report_only_checks.py'),
+                encoding='utf-8').read())
     check_now('T4 the per-entry tag says DID NOT RUN, never CANNOT RUN',
           ('DID NOT RUN in the last measured sweep' in _src
            and 'REGISTERED AND DEAD' not in _src), True)

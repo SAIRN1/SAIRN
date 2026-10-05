@@ -449,7 +449,6 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **&#128993; Item 94's blob migration: SIX more branches converted individually, and the &ldquo;16 remaining&rdquo; figure is now 12 &mdash; re-measure, do not quote** | **SIX CONVERTED 2026-09-26 (cc)**, `9ff4b87f`, each column list derived from THAT BRANCH'S OWN READ. New `api/sd-data-stored-blob-scope-keys.test.js`, 31 arms, driven red four ways | `api/sd-data-stored-blob-scope-keys.test.js` |
 | **&#128993; The prompt-injection scanner's untrusted-field list is GENERIC and misses app-specific field names &mdash; three real unfenced sites were found BY HAND in two apps it reported clean** | **THREE SITES FENCED 2026-09-26 (cc)**, `a42a18d2`; two defect-register records; `note` and `desc` added to the criteria behind a literal-strip; `tests/prompt_fence_mirror.js` BUILT (it had been cited | `tests/prompt_fence_mirror.js`, `tests/sairnvet_dose_audit_reader.js` |
 | **&#128993; NINE test arms label an EXHAUSTIVE claim and compare ONE-SIDEDLY &mdash; the label says &ldquo;every&rdquo; and the comparison can only see a minimum** | **FOUND 2026-09-27 (Cody) by the new `tools/assertion_label_shape_check.py`; NOT fixed here, deliberately &mdash; each is a one-line judgement in somebody else&rsquo;s suite about what the arm was FOR | `tests/push_gate/check9_probe.py`, `tests/push_gate/refspec_and_override_probe.py`, `tests/reachability/resource_demand_probe.py`, `tests/run_assurance_case_probe.py`, `tests/run_checker_confidence_probe.py`, `tests/run_register_feed_gate_probe.py`, `tests/run_rotation_blast_radius_probe.py`, `tests/run_testability_gate_probe.py` |
-| **&#128993; The label-vs-shape checker is NOT in the report-only registry (`assertion_label_shape_check.py`), so `checker_control_check.py` cannot see its control and it is invisible to `checker_confidence.py`** | **BLOCKED, NOT FORGOTTEN, 2026-09-27 (Cody).** The one remaining line is an entry in `report_only_checks.REGISTRY`, and `tools/report_only_checks.py` is held by an ACTIVE cc claim (*&ldquo;report_only | `tests/run_assertion_label_shape_probe.py` |
 | The company's own name had THREE spellings across the platform, two of them under &copy; and &trade; | 2026-09-13 | `tests/base_prompt_single_source.js` |
 
 ### sairnbiz
@@ -691,19 +690,19 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 175 test files are traced to no stated requirement
+### 176 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 708 of 883 traced, 80.2%.
+For context and not as the headline: 707 of 883 traced, 80.1%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 708 citations come from
+### Where the 707 citations come from
 
 | source | citations |
 |---|---|
-| `index` | 323 |
+| `index` | 322 |
 | `declared` | 309 |
 | `declared+index` | 66 |
 | `GUARD_TESTS+index` | 6 |
@@ -718,7 +717,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | kind | count | what it means | the fix |
 |---|---|---|---|
 | **bound to a subject, tied to no requirement** | 34 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 141 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **no subject binding either** | 142 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
 **These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 34 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
@@ -781,6 +780,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_alf_scope_mutation_probe.py`
 - `tests/run_all_tests_pinned_probe.py`
 - `tests/run_allan_deviation_probe.py`
+- `tests/run_assertion_label_shape_probe.py`
 - `tests/run_auth_header_name_probe.py`
 - `tests/run_blob_conversion_coverage_probe.py`
 - `tests/run_checker_selftest_probe.py`
@@ -917,7 +917,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 883   tests/**, api/** (both walked)
-  open-work rows citing a test       387   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       386   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 10   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                73   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     81   report_only_checks.NOT_PROMOTED

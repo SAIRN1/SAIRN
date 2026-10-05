@@ -417,6 +417,54 @@ COLLECT = False
 COLLECTED = []
 
 
+def _emit_collected():
+    """Deny with EVERY reason collected. Returns the exit code to use.
+
+    ── THE ENFORCING PATH COLLECTS NOW, NOT JUST --preflight (2026-10-05) ──
+    `--preflight` reported all 45 and the real gate still stopped at one, so a
+    session learned one fact per rebase cycle against a shared branch. The
+    enforcing path collects too; it still DENIES, it just denies with the whole
+    list.
+
+    AND THE DANGEROUS PART IS NOT THE COLLECTING, IT IS THE CRASH HANDLER.
+    Code after a deny() was written knowing it would never execute, so a
+    continuation can raise -- and `__main__` ends with
+    `except Exception: sys.exit(0)`, which means ALLOW. Collecting without
+    touching that would convert a real denial into a silent allow the first
+    time a continuation threw. That is strictly worse than reaching one check.
+    So `_deny_now_if_any()` runs from inside that handler, and a denial already
+    established WINS over the fail-open promise: fail-open exists to stop a
+    gate BUG blocking a legitimate push, and a push with a collected denial is
+    not one.
+    """
+    n = len(COLLECTED)
+    joined = ('\n\n' + ('-' * 66) + '\n\n').join(COLLECTED)
+    head = ('Blocked: %d check(s) refused this push, and all %d are true right '
+            'now.\nThe gate used to stop at the first, so each one cost a '
+            'separate rebase\nand retry. Every reason follows.\n\n' % (n, n)
+            if n > 1 else '')
+    reason = head + joined
+    if MODE == 'prepush':
+        sys.stderr.write('\n' + reason + '\n\n')
+        sys.stderr.write('(blocked by .githooks/pre-push -> '
+                         'tools/sairn_push_gate_hook.py --pre-push)\n')
+        return 1
+    print(json.dumps({
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "deny",
+            "permissionDecisionReason": reason,
+        }
+    }))
+    return 0
+
+
+def _deny_now_if_any():
+    """Exit with the collected denials if there are any. Never returns then."""
+    if COLLECTED:
+        sys.exit(_emit_collected())
+
+
 def deny(reason):
     if COLLECT:
         COLLECTED.append(reason)
@@ -2987,9 +3035,31 @@ if __name__ == '__main__':
             _record_bypass('ALL', 'SAIRN_SEED_GATE=off in the environment '
                                   '(prepush mode) -- the BLANKET form')
             sys.exit(0)
+        # ENFORCE, BUT COLLECT FIRST. Every check runs; every refusal is kept;
+        # the push is denied at the end with all of them. `--one` restores the
+        # old stop-at-the-first behaviour for anyone who wants it.
+        if '--one' not in sys.argv:
+            COLLECT = True
         main()
+        # main() normally ends by exiting 0 to allow. If it RETURNS instead,
+        # a collected denial still has to be honoured.
+        _deny_now_if_any()
+    except SystemExit:
+        # main() exits 0 to ALLOW and that must still work -- but a collected
+        # denial outranks it. Re-raised unchanged when there is nothing held.
+        _deny_now_if_any()
+        raise
     except Exception:
-        # Fail open -- never let a hook bug block a legitimate command. Exit 0
-        # means "allow" in BOTH modes, so this is the same promise either way:
-        # a gate that crashes closed gets disabled, and then protects nothing.
+        # ── FAIL OPEN, EXCEPT ON A DENIAL ALREADY ESTABLISHED ─────────────
+        # Fail open so a hook bug never blocks a legitimate command: exit 0
+        # means allow in both modes, and a gate that crashes closed gets
+        # disabled and then protects nothing.
+        #
+        # BUT A COLLECTED DENIAL IS NOT A GATE BUG, it is a finding this run
+        # already made, and the crash is about checks that came AFTER it.
+        # Without this line, collecting would have turned the first
+        # continuation crash into a silent allow -- strictly worse than
+        # reaching one check, which is the whole reason the collecting is safe
+        # to switch on.
+        _deny_now_if_any()
         sys.exit(0)

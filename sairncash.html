@@ -996,9 +996,47 @@ function incUsage() {
   localStorage.setItem('sairncash_usage', JSON.stringify({ date: new Date().toDateString(), count: todayCount }));
   updateUsageBar();
 }
+// ── THE BAR IMPLIED A CAP ON A PRODUCT SOLD AS UNLIMITED ─────────────────
+// Fixed 2026-10-05. The line was:
+//
+//   usageFill.style.width = Math.min((todayCount/200)*100,100) + '%';
+//
+// A bar filling toward 200 with no number beside it reads as a quota. There is
+// no quota: `grep` for any comparison of `todayCount` against a limit returns
+// NOTHING, so the 200 was a denominator and never a cap.
+//
+// AND THE PRODUCT PROMISES THE OPPOSITE. The paywall's own feature list says
+// "Unlimited AI with Claude". So this was not a missing enforcement -- adding
+// a cap would have broken the promise -- it was an affordance implying a
+// ceiling the customer was told they did not have, which is the more
+// misleading direction of the two: a user watching it approach the end would
+// self-ration a product they had paid to use freely.
+//
+// The count stays, because the count is real and useful. The proportional fill
+// goes, because there is nothing honest to take a proportion OF. The bar now
+// shows activity relative to the busiest day this browser has seen, which is a
+// statement about this user's own history and implies no limit at all -- and
+// it is stored alongside the count rather than invented per render.
 function updateUsageBar() {
   document.getElementById('usageCount').textContent = todayCount;
-  document.getElementById('usageFill').style.width = Math.min((todayCount/200)*100,100) + '%';
+  var el = document.getElementById('usageFill');
+  if (!el) return;
+  var peak = 0;
+  try {
+    peak = Number(JSON.parse(localStorage.getItem('sairncash_usage') || '{}').peak) || 0;
+  } catch (e) {}
+  if (todayCount > peak) {
+    peak = todayCount;
+    try {
+      var rec = JSON.parse(localStorage.getItem('sairncash_usage') || '{}');
+      rec.peak = peak;
+      localStorage.setItem('sairncash_usage', JSON.stringify(rec));
+    } catch (e) {}
+  }
+  // A SINGLE MESSAGE MUST NOT READ AS A FULL BAR, which is what dividing by
+  // its own value would do on day one. Below a floor the bar stays short and
+  // the NUMBER carries the information.
+  el.style.width = (peak >= 5 ? Math.min((todayCount / peak) * 100, 100) : 8) + '%';
 }
 
 // ── TAX MATH (2026) ──────────────────────────────────────────────
