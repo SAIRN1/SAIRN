@@ -5639,3 +5639,126 @@ today's fix is what made that uniformly true. (4) The competitor-facing half of
 all fourteen merged docs is unverified and not claimed. (5) Merging PR #18
 through the API bypassed this repo's own push gate, so those 14 files were never
 seen by `sairn_push_gate_hook.py`.
+
+---
+
+## 2026-10-05 — CC batch 3: five planted defects all CAUGHT, and three documents corrected my own claims
+
+Full account: `docs/2026-10-05-cc-batch-3-inventory.md`.
+
+### 0. Two dispatch premises were stale, measured before touching anything
+
+`test-alf-mar.js` **21/0**, `test-alf-incidents.js` **14/0**,
+`sairnbuild_retainage_race.js` **3/0** at HEAD. All three landed earlier today in
+`ac9c21df` and `395f7f2a`; the dispatch describes the state before those commits.
+Not re-fixed.
+
+**But two things it asked for had genuinely not been done**, and those are the
+work: re-deriving 403-vs-200 rather than aligning to what passes, and planting
+the defect each arm exists to catch.
+
+### 1. 403 or 200 for the `alf_incidents` self-scope? RE-DERIVED: 200
+
+Four sources, none of them the arms and none of them the gate's own comment
+alone: `6977854d` reasons it in its own message ("ending write access is
+accountability; ending read access is just opacity"); the scope filters a REAL
+column set from the verified session and that commit explicitly REFUSES the
+forgeable `data.reported_by`; it carries a Tier A review, status `reviewed`
+(fourth, 2026-09-28T01:24:38Z); and `api/sd-data-alf-caregiver-scope.test.js` — a
+DIFFERENT suite whose job is pinning these product questions — records the flat
+403 as "now DECIDED".
+
+**And `recorded_by` itself is protected** — register record `ad97da6bce25`
+(critical) closed a spoof where it was missing from the write path's strip list.
+A scope on a forgeable column would have been theatre.
+
+The chain is now written into the test file. `3b4551c5`.
+
+### 2. Five planted defects, ALL CAUGHT. `3b4551c5`
+
+Landed as `tests/run_alf_scope_mutation_probe.py`, per arm, every mutant
+`node --check`ed first:
+
+    M1 refusal computed and not acted on          CAUGHT
+    M2 lock refuses EVERY count, even confirmed   CAUGHT
+    M3 self-scope eq-clause dropped               CAUGHT
+    M4 self-scope MOVED to the forgeable field    CAUGHT
+    M5 scope applied to broad roles too           CAUGHT
+
+**M4 justifies the file**: a suite catching the clause being DELETED can still be
+blind to it being MOVED to `data->>reported_by`, which looks correct in a diff
+and is the substitution `6977854d` refused by name.
+
+**A defect in my own harness, recorded not hidden:** the first run scored M1
+SURVIVED. The arm HAD gone red — it says CLIENT-SUPPLIED and my matcher said
+client-supplied, so a case-sensitive compare reported the opposite of what
+happened.
+
+### 3. Hank's `match.cost` text applied, and it came back STRONGER. `4dfc4753`
+
+His file was already on `main` and byte-identical to his clone's copy. All seven
+citations hold at HEAD this time. **And he was wrong about the sibling in the
+useful direction:** he named `msb_food_waste` as "where I would look next" and
+did not read it. `saveMsbWaste()` **refuses** —
+`if(cost<=0){toast('Cost must be greater than zero');return;}`. The same module,
+one panel over, treats an absent cost as a reason to refuse the write. That
+inverts the finding: not an input nobody thought about, but the one place a rule
+already applied elsewhere was not applied.
+
+**I broke the row on the first attempt** — 12 cells against a 6-cell header,
+because the pipes in `match.cost||0` are inside CODE SPANS where no escape works.
+The identical defect as index rows 355/356, a lesson I wrote down nine days ago.
+
+### 4. SAIRNlegacy Part 2 KILLED Part 1's main claim. `24ba5c08`
+
+Part 1 said breadth across four businesses was the competitive thesis.
+**Cemetery+crematory+funeral is a named category** — PlotBox, byondpro, Cemetery
+Workstation, Halcyon all sell it. **Breadth is parity, and cemetery MAPPING may
+put us behind.** F1 confirmed and worse: the CPL has a **presentation trigger**,
+attaching a regulated disclosure to the merchandise screen the app already has.
+F3 was mis-framed — revocable/irrevocable is a **contract field**, not a
+trust-administration feature. Pricing: $49–200/month **per firm**.
+
+**This is why Part 1 refused to write a competitor column it had not
+researched** — it would have guessed in favour of the platform.
+
+### 5. SAIRNdesign audit, both halves in one pass. `5a4ea4fb`
+
+**`tax` occurs ZERO times in the whole file**, and the zero is **CONTROLLED**:
+`sairnbiz` has 6, `stonedesk` has 8. In a trade that **buys at cost and
+resells**, so the studio is a reseller and owes tax on resold goods plus a resale
+certificate to the vendor. **The PO record confirms it** (`:2935`): eight fields,
+`total_cost` a sum of item costs and nothing else — no freight, no tax, no
+ship-to, no sidemark, no receiving date. `freight` 0, `procurement` 0, `expedit`
+0, `sidemark` 0.
+
+**And a commercial finding about the PLATFORM, not the app:** interior design
+prices **per user** (Studio Designer ~$65/user/mo; Houzz Pro $99 for one seat
++$60/seat) — the opposite of death care's per-firm norm. **The licence model that
+fits SAIRNlegacy under-monetises SAIRNdesign by construction.**
+
+### 6. GHAS check — closed as unanswerable
+
+GitHub status **"All Systems Operational", 0 incidents**. Both retry endpoints
+**403 "cannot be retried"**. The run is 8 days old and ran for **34 seconds**.
+**And it is not a repo workflow** — `event: dynamic`, no YAML, and **zero**
+`github-advanced-security` runs in the last 100 (only hover-separation 33, CodeQL
+33, source-manifest 33, nightly-backup 1). A fresh verdict needs a new PR.
+
+### Left alone, as directed
+
+`tools/report_only_checks.py` and the seam-watch wiring (hank's intake fix),
+cody's seven registry tools, index rows 82 and 845.
+
+### BLIND SPOTS: 5
+
+(1) Whether the `alf_incidents` migration has run in production is **unverified**,
+so which of 200 and 503 a real caregiver gets today is unmeasured. (2) The
+mutation probe proves the arms are load-bearing, **not** that the gates are
+correct. (3) Every competitor claim in both audits is marketing or a review-site
+tag — evidence of what is SOLD. (4) The `match.cost` code is **not fixed**, and
+nobody has checked whether any live product carries a zero or absent cost. (5)
+**Three of my own instruments were narrower than their subjects today** — a
+case-sensitive mutation matcher, pipes inside a code span, and an ad-hoc table
+checker that flagged three header rows; each failed toward a confident wrong
+answer rather than a refusal.
