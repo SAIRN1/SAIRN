@@ -3249,8 +3249,8 @@
       "task": "SAIRNcare alf-mar and sairnbuild retainage race back to green under the c8b5e5b1 credential pre-gate, plus the revoked-licence enforce-mode live confirmation and the seam-count drift watch FILES: api/sd-data.js tests/sairncare/test-alf-mar.js tests/sairnbuild_retainage_race.js api/claude.js docs/2026-10-05-cc-batch-inventory.md docs/SAIRN-OPEN-WORK-INDEX.md SAIRN-ACTIVE-WORK-cc.md",
       "claimed_at": "2026-10-05T09:39:15Z",
       "claimed_at_epoch": 1791193155.9189165,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-05T09:54:35Z",
       "files": [
         "SAIRN-ACTIVE-WORK-cc.md",
         "api/claude.js",
