@@ -22796,6 +22796,62 @@
       "recurrence_open": "TWO OF THE EIGHT WORDINGS ARE STILL OPEN -- X is hank's and X is another session's -- and the actions above do not close them. The cause is the CLAUSE SPLITTER: a real claim runs '...is not held by another session FILES: api/sd-data.js ...' with no clause boundary between the disclaimer and the declared file list, so any marker firing there exempts a file the session holds. Whether FILES: should be a hard clause break is unmeasured. Arm E6 asserts both still block so that closing them is a deliberate act."
     },
     {
+      "commit": "38514b5b4877",
+      "date": "2026-10-05",
+      "subject": "fix(provisioning): the public. prefix was required, so 28 tables were invisible and a file declaring none exited clean",
+      "files": [
+        "tests/run_schema_provisioning_probe.py",
+        "tools/schema_provisioning_check.py"
+      ],
+      "lines_added": 137,
+      "lines_removed": 2,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/schema_provisioning_check.py declared_tables() matched 'create table if not exists public.<name>' and 25 files in sql/ write the unqualified form, so 28 declared tables were invisible to the only tool that answers whether a migration ran -- 442 visible with the prefix required against 470 with it optional, almost all of the 28 being the *_employee_auth and *_audit_log families an app's sign-in depends on. THE SILENT HALF IS WORSE: a file whose every table is unqualified returned an EMPTY LIST and the tool printed 'schema declares : 0', 'PROVISIONED : 0', 'MISSING : 0' and exited 0, in the same shape as a fully-migrated app. sql/stonedesk_audit_log_schema.sql did exactly that in the 2026-10-05 Gate-1 sweep: one declared table, read as none, reported clean, and the sweep's published totals (402 declared, 24 missing) were therefore floors rather than counts. Found by following one register cell rather than by review or by a test -- supplier_lead_times is recorded as not provisioned and was absent from both the missing list and the sweep, which exposed first an app-prefix glob reading 113 schema files of 147 and then this. Fixed by making the prefix optional, stripping line comments in the same change because the widening made a comment reading 'see create table if not exists in the other file' yield the table name 'in', and refusing with exit 2 on a schema that declares nothing while naming both causes the tool cannot distinguish.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The pattern has required the public. prefix since the file's first commit, so the hole arrived with the feature. Which schema file first used the unqualified form is not determined here."
+      },
+      "citation_note": "1.11 is the rule the silent half breaks: zero tables checked was folded into zero tables missing and exit 0. 1.2 is the rule the FIX nearly broke in the other direction -- the widened pattern reached into comments until the stripper landed with it.",
+      "phase_note": "The reader was written against the shape of the first schema files it was pointed at and the directory had already diverged. Nothing re-derived the pattern against the corpus afterwards.",
+      "contributing_factors": [
+        {
+          "factor": "The reader encoded ONE spelling of a CREATE TABLE statement and sql/ contains two. 442 of 470 tables matched, and nothing compared the two readings, so the shortfall was never a number anybody saw.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The prefix is optional and six probe arms in section E drive both spellings, a mixed file, a grant-only file, a comment, and main()'s refusal."
+        },
+        {
+          "factor": "A zero-item read fell straight through as a clean pass: zero declared meant zero checkable, zero provisioned, zero missing and exit 0, printed in the same shape as a fully-migrated app.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "main() exits 2 on a schema declaring nothing and names BOTH causes it cannot distinguish -- a genuinely table-free file or one in an unparseable shape. PR 1.11."
+        },
+        {
+          "factor": "The tool had a control with 16 arms and none of them exercised declared_tables() at all. Every arm was about the registry reader and the prefix mapping, so the input side of the comparison was untested while the output side was well covered.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Section E is six arms on declared_tables() specifically, including the main() refusal driven through main() rather than asserted on the source."
+        },
+        {
+          "factor": "Gate 1 is the one gate in MASTER-PLAN with a live dependency and it is ATTESTED rather than derived, so there is no second instrument to disagree with this tool. A shortfall in its reader is invisible by construction until somebody follows a single cell by hand.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "No second reader is proposed and none is wanted: a second parse of the same files is a second thing to drift. What would have caught this is the sweep publishing its own FILE COVERAGE -- schema files read against schema files on disk -- which it does not print. Named here rather than built, because the sweep is a driver script rather than a tracked tool and the right home for that line is whatever next drives the full sweep."
+        }
+      ],
+      "recurrence_open": "The corrected figures are published but NOT re-driven end to end: 134 of 147 schema files are swept and the remaining 13 declare no tables, which was checked, but no tool yet prints its own file coverage against sql/ so the next reader has to take that on this record's word. And the 20 unreachable tables from the missed-glob sweep were asked of stonedesk because that was the licence to hand -- several belong to other registries and were not re-asked of the right app."
+    },
+    {
       "commit": "395f7f2ab9ad",
       "date": "2026-10-05",
       "subject": "fix(tests): the other ten suites green -- and alf-incidents was HIDING A LEAK NOBODY WAS TESTING FOR",
@@ -22860,62 +22916,6 @@
         }
       ],
       "recurrence_open": "The self-scope now has arms and an ablation, but legacy alf_incidents rows carry recorded_by NULL and are invisible to the self-service tier by Michael's recorded decision -- no arm covers that state and this commit does not add one. The two systemic actions stay open and are now on their third instance each: nothing reports an app's red set on a cadence, and nothing stops a control from landing into an already-red suite where its contradictions cannot be seen. And the deepest one is untouched: no instrument counts UNSCOPED verifySessionToken calls, so a branch gate that dropped its app scope entirely passes all fourteen stubs on this platform."
-    },
-    {
-      "commit": "38514b5b4877",
-      "date": "2026-10-05",
-      "subject": "fix(provisioning): the public. prefix was required, so 28 tables were invisible and a file declaring none exited clean",
-      "files": [
-        "tests/run_schema_provisioning_probe.py",
-        "tools/schema_provisioning_check.py"
-      ],
-      "lines_added": 137,
-      "lines_removed": 2,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "tools/schema_provisioning_check.py declared_tables() matched 'create table if not exists public.<name>' and 25 files in sql/ write the unqualified form, so 28 declared tables were invisible to the only tool that answers whether a migration ran -- 442 visible with the prefix required against 470 with it optional, almost all of the 28 being the *_employee_auth and *_audit_log families an app's sign-in depends on. THE SILENT HALF IS WORSE: a file whose every table is unqualified returned an EMPTY LIST and the tool printed 'schema declares : 0', 'PROVISIONED : 0', 'MISSING : 0' and exited 0, in the same shape as a fully-migrated app. sql/stonedesk_audit_log_schema.sql did exactly that in the 2026-10-05 Gate-1 sweep: one declared table, read as none, reported clean, and the sweep's published totals (402 declared, 24 missing) were therefore floors rather than counts. Found by following one register cell rather than by review or by a test -- supplier_lead_times is recorded as not provisioned and was absent from both the missing list and the sweep, which exposed first an app-prefix glob reading 113 schema files of 147 and then this. Fixed by making the prefix optional, stripping line comments in the same change because the widening made a comment reading 'see create table if not exists in the other file' yield the table name 'in', and refusing with exit 2 on a schema that declares nothing while naming both causes the tool cannot distinguish.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The pattern has required the public. prefix since the file's first commit, so the hole arrived with the feature. Which schema file first used the unqualified form is not determined here."
-      },
-      "citation_note": "1.11 is the rule the silent half breaks: zero tables checked was folded into zero tables missing and exit 0. 1.2 is the rule the FIX nearly broke in the other direction -- the widened pattern reached into comments until the stripper landed with it.",
-      "phase_note": "The reader was written against the shape of the first schema files it was pointed at and the directory had already diverged. Nothing re-derived the pattern against the corpus afterwards.",
-      "contributing_factors": [
-        {
-          "factor": "The reader encoded ONE spelling of a CREATE TABLE statement and sql/ contains two. 442 of 470 tables matched, and nothing compared the two readings, so the shortfall was never a number anybody saw.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The prefix is optional and six probe arms in section E drive both spellings, a mixed file, a grant-only file, a comment, and main()'s refusal."
-        },
-        {
-          "factor": "A zero-item read fell straight through as a clean pass: zero declared meant zero checkable, zero provisioned, zero missing and exit 0, printed in the same shape as a fully-migrated app.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "main() exits 2 on a schema declaring nothing and names BOTH causes it cannot distinguish -- a genuinely table-free file or one in an unparseable shape. PR 1.11."
-        },
-        {
-          "factor": "The tool had a control with 16 arms and none of them exercised declared_tables() at all. Every arm was about the registry reader and the prefix mapping, so the input side of the comparison was untested while the output side was well covered.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Section E is six arms on declared_tables() specifically, including the main() refusal driven through main() rather than asserted on the source."
-        },
-        {
-          "factor": "Gate 1 is the one gate in MASTER-PLAN with a live dependency and it is ATTESTED rather than derived, so there is no second instrument to disagree with this tool. A shortfall in its reader is invisible by construction until somebody follows a single cell by hand.",
-          "kind": "latent-condition",
-          "action_status": "not-actionable",
-          "note": "No second reader is proposed and none is wanted: a second parse of the same files is a second thing to drift. What would have caught this is the sweep publishing its own FILE COVERAGE -- schema files read against schema files on disk -- which it does not print. Named here rather than built, because the sweep is a driver script rather than a tracked tool and the right home for that line is whatever next drives the full sweep."
-        }
-      ],
-      "recurrence_open": "The corrected figures are published but NOT re-driven end to end: 134 of 147 schema files are swept and the remaining 13 declare no tables, which was checked, but no tool yet prints its own file coverage against sql/ so the next reader has to take that on this record's word. And the 20 unreachable tables from the missed-glob sweep were asked of stonedesk because that was the licence to hand -- several belong to other registries and were not re-asked of the right app."
     },
     {
       "commit": "ac9c21df5b93",
@@ -23037,6 +23037,63 @@
         }
       ],
       "recurrence_open": "Change 4 does not close the general case: every OTHER push-gate check that derives a file list from the outgoing range and then reads the working tree has the same hole, and only check 11 was fixed here. I did not sweep the rest -- the `changed` list is used by checks 2, 3, 4, 5, 6, 7, 12 and 12b, each with its own notion of what it needs to read, and whether a working-tree read is wrong for them is a per-check judgement rather than one edit. Named rather than done. AND THIS SENTENCE WAS ITSELF EATEN ONCE: the word `changed` was written inside bash backticks in a double-quoted printf, so the shell ran it as a command substitution, printed `changed: command not found`, and the record landed with a gap exactly where the subject belonged. That is scrubber item 18 and tools/eaten_substitution_check.py exists for it; it happened while writing about silent failure, which is the fourth recorded instance of this on this platform."
+    },
+    {
+      "commit": "eb34136feee4",
+      "date": "2026-10-05",
+      "subject": "fix(scp): SAIRNscape customer PII was reachable on the licence key alone -- gate armed, and it is now AHEAD of the register",
+      "files": [
+        "api/sd-data-scp-session-gate.test.js",
+        "api/sd-data-session-gate.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 100,
+      "lines_removed": 2,
+      "app": "sairnscape",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "live-verification",
+      "summary": "SAIRNscape's 'customers' resource dispatched on the licence hash alone, with no session check of any kind, for READ and WRITE -- and the row carries a customer's NAME, PHONE, EMAIL and STREET ADDRESS. The licence key is shipped to the browser and readable by anyone who can open sairnscape.html, so it was the whole authorisation. PROVEN LIVE WITH A CONTROL before the fix: on SCP-DEMO-2026 with no session token, read customers answered 200 and returned a row with all four fields, and write customers with an id-less payload answered 400 from the handler body -- so the gate did not fire, and nothing was stored because api/sd-data.js:4769 refuses before any store call. The controls are what make it a finding rather than a guess: invoices and scp_quotes on the SAME bare key answered 403 both, so the gate existed, worked, and did not cover this one. THE ROOT CAUSE IS NOT THE GATE, IT IS A CORRECTION THAT STOPPED AT THE PROSE. The 2026-10-05 sweep that armed SAIRNscape scoped itself to Tier A and was right to; 'customers' is carried B/B in docs/CRITICALITY-TIERS.md while its own confidentiality cell had already been corrected to read 'A CUSTOMER's NAME, PHONE, EMAIL AND STREET ADDRESS'. The basis was fixed and the LETTER was not, and the letter is what the sweep reads, so the resource was invisible to the mechanism that would have gated it. Fixed by adding the resource to SD_SESSION_GATED and SD_GATE_APP in one edit; the B->A retier that would have prevented it is owed and is held by another session. The client needed no change and that was checked rather than assumed: customers is read only inside scpSyncFromServer()'s resource loop at sairnscape.html:2734, reached only after login, and the two already-gated resources sit in the same loop.",
+      "rules": [
+        "3.4"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The resource has dispatched on the licence hash since SAIRNscape's data block landed 2026-08-06; the 2026-10-05 gate sweep narrowed the exposure to this one resource rather than introducing it. Which commit corrected the confidentiality basis cell without moving the letter is not determined here."
+      },
+      "citation_note": "3.4 is the nearest rule and the citation is arguable: that rule is about SQL writing credential rows, and this is a read-and-write gate on a PII table. What they share is the shape -- a surface reachable on a licence key alone, with the control that would stop it living in a different document from the code.",
+      "phase_note": "The gate sweep read the tier letter and the letter was stale relative to its own basis cell. The design decision -- scope the sweep to Tier A -- was correct; its INPUT was wrong.",
+      "contributing_factors": [
+        {
+          "factor": "The gating sweep's stopping rule was TIER A, read from docs/CRITICALITY-TIERS.md, and that document's confidentiality CELL for this row had been corrected to say the row carries PII while the LETTER stayed B. A correction that stops at the prose does not reach a mechanism that reads the letter.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The gate is armed ahead of the register and BOTH the gate comment and the test say so in full, so a reader finding them disagreeing has the reason rather than a puzzle. The retier is routed to the session holding that file."
+        },
+        {
+          "factor": "Nothing compares the gate table against the register. The sweep reads the register to decide what to gate, and no check reads both afterwards to ask whether a row whose basis says PII is gated.",
+          "kind": "detection",
+          "action_status": "not-actionable",
+          "note": "Not built here and not proposed lightly: the comparison needs a judgement about which confidentiality BASIS sentences imply a gate, which is the same judgement the tier letter is supposed to carry. The honest fix is that the letter follows the basis when the basis changes, which is a process action on whoever edits the cell, not a checker."
+        },
+        {
+          "factor": "The resource is spelled BARE -- customers, not scp_customers -- because SAIRNscape claimed the name before the scp_ convention existed. Any gate entry written against the storage table name would have gated nothing at all, silently.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Both the gate comment and the existing name-trap arm in api/sd-data-scp-session-gate.test.js pin the bare spelling, and the platform suite's new assertion matches on 'customers' specifically."
+        },
+        {
+          "factor": "The finding was found by a live provisioning sweep rather than by any check: the sweep reached scp_customers with a licence key and no token while scp_invoices and scp_quotes were refused, and that asymmetry is what exposed it.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tools/schema_provisioning_check.py gained --pin/--auth on 2026-10-05, which is what made the signed-in-versus-key-only comparison possible at all. The asymmetry it surfaces is now readable per app in its REFUSED list."
+        }
+      ],
+      "recurrence_open": "The register retier is NOT done -- confidentiality B->A on SAIRNscape customers -- and until it lands the gate and the register disagree. Hank holds docs/CRITICALITY-TIERS.md. AND THE SAME CLASS IS NOT SWEPT: no check asks whether any OTHER row whose confidentiality basis names PII is carried at a tier below A, so other resources may sit in the same state. That sweep is not built and is not proposed above, because deciding which basis sentences imply a gate is the judgement the tier letter exists to carry."
     }
   ],
   "started": "2026-09-09",
