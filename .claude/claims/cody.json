@@ -3013,6 +3013,20 @@
         "tools/dead_rule_sweep.py",
         "tools/sairn_claim.py"
       ]
+    },
+    {
+      "id": "cody-1791191995",
+      "session": "cody",
+      "subject": "claimprobes",
+      "task": "claim matcher probe arms and the file-set pin that my disclosure change moved FILES: tests/run_claim_matcher_probe.py tests/claims/run_fileset_matcher_probe.py",
+      "claimed_at": "2026-10-05T09:19:55Z",
+      "claimed_at_epoch": 1791191995.8098323,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "tests/claims/run_fileset_matcher_probe.py",
+        "tests/run_claim_matcher_probe.py"
+      ]
     }
   ],
   "refusals": [
