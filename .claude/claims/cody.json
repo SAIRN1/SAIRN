@@ -3205,8 +3205,8 @@
       "task": "register gap_ledger.py and gate1_verify.py in the report-only registry so the dead-rule sweep universe stops excluding them FILES: tools/report_only_checks.py",
       "claimed_at": "2026-10-05T21:47:08Z",
       "claimed_at_epoch": 1791236828.4666529,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-05T22:11:16Z",
       "files": [
         "tools/report_only_checks.py"
       ]
