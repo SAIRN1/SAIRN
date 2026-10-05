@@ -3245,7 +3245,15 @@ def _write_reachability(reach, budget):
             'entries': [{'tool': t, 'seconds': s, 'cumulative': round(c, 1),
                          'reached': bool(k)} for t, s, c, k in reach],
         }
-        with io.open(REACHABILITY_FILE, 'w', encoding='utf-8', newline='\n') as fh:
+        # BUILTIN open(), NOT io.open(): this module never imported io and the
+        # first version of this function assumed it did. The write raised
+        # NameError, the except below PRINTED it, and the record did not
+        # appear -- which is precisely why that handler prints instead of
+        # passing. The guard caught its own author, twice: I then "fixed" it
+        # with a string replace that did not match, re-ran, and got the same
+        # message. A silent `except: pass` would have left me reading an empty
+        # column as a measurement.
+        with open(REACHABILITY_FILE, 'w', encoding='utf-8', newline='\n') as fh:
             json.dump(payload, fh, indent=1)
             fh.write('\n')
     except Exception as exc:                                      # noqa: BLE001
@@ -3259,7 +3267,7 @@ def _write_reachability(reach, budget):
 def _read_reachability():
     """{tool: (reached, cumulative)} plus the file's own header, or (None, {})."""
     try:
-        with io.open(REACHABILITY_FILE, encoding='utf-8') as fh:
+        with open(REACHABILITY_FILE, encoding='utf-8') as fh:
             data = json.load(fh)
     except Exception:                                             # noqa: BLE001
         return None, {}
