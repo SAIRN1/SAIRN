@@ -1149,3 +1149,171 @@ written to repair on SAIRNvet. Its header says the hashes came from
 **NOT COMMITTED, per the instruction's own condition.** The repair is small —
 drop the SAIRNbiz insert, or re-hash it from the current PIN — but it is a
 credential write and belongs to whoever holds the local file.
+
+---
+
+## 2026-10-05 (third batch) — 14 items: 3 built, 7 already closed, 2 premises false, 1 hard-blocked
+
+### 13 + 14. THE INVENTORY, AND THE METHODOLOGY LESSON THAT PAID FOR ITSELF TODAY
+
+**The lesson first, because it is item 14 and it is the reason item 12a exists:
+READ THE FULL TOOL OUTPUT BEFORE CONCLUDING. Not the tail, not a grep for the
+symptom.**
+
+Earlier today a push failed. The command piped it through `tail -3`, grepped
+for `failed to push`, matched, and reported a lost race with another clone.
+**It was re-run ten times on that conclusion.** It was never a race: forty
+lines above the bottom the gate had printed
+
+> `Blocked: this push adds a tools/*.py file that does not say who owns it.`
+
+and, once that was fixed, a second refusal about a missing tool-inventory
+entry. Two one-line fixes, sitting in plain text, that nothing ever read.
+
+**The shape generalises and that is why it is written here rather than
+apologised for:** `error: failed to push some refs` is git's *epilogue*. It is
+present for every failure — race, gate refusal, bad credential — so matching it
+identifies nothing. **The symptom is at the bottom; the cause is at the top.**
+The same thing happened a second time within the hour: a sabotage loop grepped
+for `^  FAIL` and printed nothing at all for five mutations, because the
+mutated copies were failing to *load* (a path error), not failing arms. The
+grep hid a total non-run behind silence.
+
+**It is now a check and not a note** — see item 12a below.
+
+#### Item-by-item
+
+| # | Item | State |
+|---|---|---|
+| 1 | Task #19 data-overwrite — "CRITICAL, priority" | **ALREADY CLOSED.** Third time verified. `docs/2026-09-26-fire-and-forget-write-audit.md:3`: tombstones and last-write-wins *"already landed"*. The audit ran 2026-09-26; all three REAL findings fixed (`slabSyncOne`, `sdLineageSyncOne` read `sdWriteLanded()`; `saveSD3Data()` batched) |
+| 2 | SAIRNdental CDT from the scratchpad draft | **ALREADY CLOSED.** Second time verified. No scratchpad draft exists in any of this project's 20 session scratchpads; the work is landed and wired, 14/14 dental suites pass, HTML parses with zero structural errors |
+| 3 | Wave 3 click-through | **2 of 3 DONE** — StoneDesk 74/74, SAIRNbiz 20/20, zero findings, 2026-09-26. SAIRNvet blocked on item 4 |
+| 4 | Fix/extract the demo-pin SQL, run it, then finish SAIRNvet | **SQL DONE, RUN IMPOSSIBLE.** New file written and preflight-clean. **I cannot execute it** — see below |
+| 5 | Build the highest-value competitive gap | **NOT DONE.** Named rather than quietly dropped |
+| 6 | SAIRNlaw positioning reframe | **ALREADY DONE 2026-09-26**, and better than I would have written it |
+| 7 | SAIRNlegacy positioning reframe | **DONE** — `docs/2026-10-05-sairnlegacy-positioning.md` |
+| 8 | SAIRNcash billing flow — finish what is left | **NOTHING IDENTIFIABLE IS LEFT.** Enumerated below |
+| 9 | SAIRNveterans §45B | **ALREADY ANSWERED 2026-09-23** (Fourth), `docs/2026-09-17-sairnfreedom-tips-tax-treatment.md` §7. The app is SAIRNfreedom; there is no SAIRNveterans |
+| 10 | Multi-location/multi-brand — scope only | **ALREADY SCOPED 2026-09-22 (cody)**, `docs/2026-09-22-multi-location-multi-brand-design.md`, explicitly DESIGN ONLY across the five named apps |
+| 11 | SAIRNdesign pricing research | **PREMISE FALSE, RESEARCH DELIVERED** — `docs/2026-10-05-sairndesign-pricing-benchmark.md` |
+| 12 | My three self-flagged issues | **ALL THREE DONE** |
+
+### 4. The SQL: corrected, verified, and UNRUNNABLE FROM HERE
+
+`sql/restore_sairnvet_demo_pin_2026-10-05.sql` — **SAIRNvet only**, which was
+the second of the two options offered and is the right one: SAIRNbiz's
+credential **works** (driven 200 again today), so re-hashing it to tidy a file
+risks the thing it would be protecting and buys nothing.
+
+**Hashes verified against the CURRENT local file, in two directions:**
+`scryptSync(<the PIN at apps[3].pin>, pin_salt, 64) == pin_hash`, and
+`sha256('SV-PINNACLE-2026') == license_hash`. The PR 3.4 recoverability guard
+and the surrounding transaction are carried over.
+`tools/sairn_sql_preflight.py`: **0 findings**.
+
+**AND THE ROOT CAUSE OF THE BAD SAIRNbiz ROW IS NOW NAMED, which corrects my
+own earlier report.** I said the local file's value "had since moved". More
+precisely: **`.demo-credentials.local.json` apps[1].pin still holds the DEAD
+SAIRNbiz PIN.** The 2026-09-29 file's header was truthful — it really did hash
+what the local file held. The value moved **on the server** and the local file
+was never updated. **The SQL was a faithful copy of a stale source, which is a
+worse problem than a bad file**, because the next person to regenerate from
+that file reproduces the defect. Fix the local file first.
+
+**I did NOT drive the dead PIN to confirm it is dead.** A failed attempt
+increments the lockout counter, and locking out a *working* credential to
+confirm a struck-through one is still struck through buys nothing. The doc says
+dead; the working one returns 200; that is sufficient.
+
+**WHAT I CANNOT DO: run it.** There is no database access in this clone — no
+`SUPABASE_*`/`POSTGRES_*`/`DATABASE_*` in the environment, and the only
+SQL-adjacent tools are a preflight linter and a column-existence check, neither
+of which executes. **So SAIRNvet's third of the click-through audit remains
+blocked, and the blocker is unchanged: somebody with Supabase access runs that
+file.** The old `sql/restore_demo_pins_2026-09-29.sql` is **still uncommitted
+and still must not be run**; I left it alone rather than deleting another
+session's file.
+
+### 12a. The push-failure misdiagnosis is now a CHECK
+
+`tools/push_failure_reason.py` classifies the **whole** output and never the
+last line. Its ordering is the fix: **a `Blocked:` line always beats a race
+signature**, because the gate can refuse and the remote can also move, and
+reporting the race sends the next reader at the wrong problem — which is the
+incident. Anything unrecognised is **exit 2 COULD NOT CLASSIFY with the full
+text printed**, never a guess.
+
+10 fixtures, both directions, including the incident reproduced verbatim, a
+genuine lock-ref race, a case carrying **both** (the refusal must win), a
+failure with no recognisable cause that must **not** be called a race, and a
+control asserting the fixture set reaches all four verdicts. 10/10.
+
+### 12b. The senior suite's two self-inflicted defects — fixed, AND now covered
+
+Both were fixed last batch and **neither had an arm**, which left the only
+protection a paragraph of prose. A comment does not fail.
+
+* **E1/E2** drive the real `runQueue` with synthetic arms — one passing, one
+  throwing synchronously, one rejecting after a tick — and assert the tally.
+  A sync runner scores the third as a pass; E1 refuses.
+* **E3** asserts `run()` still delegates to `runQueue`, so E1/E2 cannot drift
+  into testing a copy.
+* **C1 now asserts the call RESOLVED.** "Created nothing" and "refused" are
+  different claims and the old arm could not tell them apart — a TypeError
+  before the write also leaves `created.length` at 0, which is exactly how the
+  null-stub defect hid.
+
+**And the sabotage found a THIRD defect I had not flagged.** Reverting the
+runner to synchronous printed:
+
+```
+22 passed, 0 failed
+  FAIL unhandled rejection: expected exactly 1 pass, got 2
+```
+
+E1 caught the regression and the process exited 1 — **but the green tally
+printed first.** A human reading that stops at line one. That is PR 1.5
+exactly, in a file whose own subject is a guard that must not report a corrupt
+record as clean. The summary now **waits one macrotask for pending rejections,
+reconciles arms-queued against arms-tallied, and prints `RESULT WITHHELD`**
+instead of a tally it cannot stand behind. Re-driven: the same sabotage now
+prints `RESULT WITHHELD -- 4 unhandled rejection(s)`, exit 1.
+
+Three sabotages, each caught by the intended arm, suite restored
+byte-identically. **22/22.**
+
+### 12c. The register SHA-pinning problem — proposal written, nothing changed
+
+`docs/2026-10-05-register-sha-pinning-proposal.md`. It shows the loop is not
+merely awkward but **has no fixed point** — a commit's SHA hashes a tree
+containing the file that would hold that SHA, so "just compute the post-amend
+sha" is a preimage attack, not an engineering task. The proposal is a
+Gerrit-style `Change-Id` trailer the row cites instead, with the costs stated
+(a new `commit-msg` hook on five clones; 439 rows that must **not** be
+backfilled, since a synthesised key for a historical commit is a fabricated
+one). A no-cost interim is included: have `--add` detect the shape and print
+the warning, so the next session does not rediscover the loop over four
+rebases. **`tools/defect_register.py` is unchanged — this is a proposal.**
+
+### 8. SAIRNcash billing, enumerated rather than asserted complete
+
+`api/sairncash/stripe-webhook.js` handles `checkout.session.completed`,
+`customer.subscription.updated` (incl. `past_due`/`unpaid` → `paymentFailed`),
+`customer.subscription.deleted`, `invoice.payment_failed` (carrying
+`attempt_count`), and `invoice.payment_succeeded` — plus an out-of-order guard
+that leaves the mirror alone when an event is older than stored state, and an
+explicit skip when an event carries no customer id. With `checkout.js`,
+`portal.js` and the entitlement gate, **that is a lifecycle, not a stub.**
+
+**What is NOT built, offered as candidates and not as findings:** a dunning
+surface in the app for `paymentFailed`, and an invoice-history view. Neither is
+named as a gap anywhere; both are what a reviewer might ask for next.
+
+### 5. NOT DONE, and why it is named
+
+No competitive gap was built. The four gap docs are live territory — CC holds
+the SAIRNscape audit and the open-work index this hour, cody is piloting
+`gap_ledger.py` on SAIRNlaw and SAIRNcode — and picking a gap to build without
+reading that in-flight work risks duplicating it. **This is a capacity
+statement, not a judgement that nothing is worth building.** Scaling the batch
+down is Michael's call, so it is reported rather than silently dropped.

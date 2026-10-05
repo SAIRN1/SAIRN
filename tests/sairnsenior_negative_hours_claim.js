@@ -59,16 +59,30 @@ const codeOnly = stripComments(html);
 // into an unhandled rejection the summary never sees. Written that way once in
 // this file's first draft and caught by running it against a deliberately
 // broken guard, which still printed all-green. Arms are queued and AWAITED.
+// THE AWAIT IS NOW ASSERTED, NOT JUST COMMENTED (2026-10-05). The paragraph
+// above was the whole defence against a regression to `try { fn() } catch`,
+// and a comment does not fail. The loop is extracted so section E can drive it
+// with SYNTHETIC arms -- a passing one, a sync-throwing one, and an
+// async-rejecting one -- and assert the tally. A sync runner scores the third
+// as a pass, which is exactly what section E refuses.
 const QUEUE = [];
 let pass = 0, fail = 0;
 function test(name, fn) { QUEUE.push([name, fn]); }
 function section(t) { QUEUE.push([t, null]); }
-async function run() {
-  for (const [name, fn] of QUEUE) {
-    if (!fn) { console.log('\n' + name); continue; }
-    try { await fn(); console.log('  ok   ' + name); pass++; }
-    catch (e) { console.log('  FAIL ' + name + '\n       ' + e.message); fail++; }
+
+async function runQueue(queue, log) {
+  let p = 0, f = 0;
+  for (const [name, fn] of queue) {
+    if (!fn) { log('\n' + name); continue; }
+    try { await fn(); log('  ok   ' + name); p++; }
+    catch (e) { log('  FAIL ' + name + '\n       ' + e.message); f++; }
   }
+  return { pass: p, fail: f };
+}
+
+async function run() {
+  const r = await runQueue(QUEUE, (s) => console.log(s));
+  pass = r.pass; fail = r.fail;
 }
 
 function grab(sig, terminator) {
@@ -200,12 +214,26 @@ test('B5. equal in and out is NOT reversed -- a zero-length visit is a '
 });
 
 section('C. THE CLAIM REFUSES -- the arm this file exists for');
-test('C1. generateClaim on a backwards visit creates NO claim', async () => {
-  const { ctx, created } = build([BACKWARDS]);
-  await ctx.generateClaim('V2');
+test('C1. generateClaim on a backwards visit REFUSES -- it returns normally, '
+  + 'creates no claim, and does NOT throw', async () => {
+  // "CREATED NOTHING" IS NOT THE SAME CLAIM AS "REFUSED", and the first draft
+  // of this file could not tell them apart: a TypeError before the write also
+  // leaves created.length at 0, and that is precisely how C4-C6 went red here
+  // on a null azResolve stub while C1-C3 stayed green. A crash is not a
+  // refusal -- it skips the toast, loses the reason, and would break the happy
+  // path too. So the arm asserts the call RESOLVED.
+  const { ctx, created, toasts } = build([BACKWARDS]);
+  let threw = null;
+  try { await ctx.generateClaim('V2'); }
+  catch (e) { threw = e; }
+  assert.strictEqual(threw, null,
+    'generateClaim THREW instead of refusing -- a crash leaves created.length '
+    + 'at 0 and would pass a naive arm: ' + (threw && threw.message));
   assert.strictEqual(created.length, 0,
     'a claim was created over a corrupt visit record: '
     + JSON.stringify(created[0] || null));
+  assert.ok(toasts.length > 0,
+    'nothing was created AND nothing was said -- silence is not a refusal');
 });
 test('C2. ...and it says WHY, naming both timestamps so the record can be '
   + 'found and corrected', async () => {
@@ -280,11 +308,93 @@ test('D3. CONTROL: the stripped source really is code -- D1 and D2 would pass '
   assert.ok(codeOnly.indexOf('function visitHours(v){') > 0);
 });
 
-process.on('unhandledRejection', (e) => {
-  console.log('  FAIL unhandled rejection: ' + (e && e.message));
-  process.exit(1);
+section('E. THE HARNESS ITSELF -- the two defects this file shipped in draft');
+// Both arms here guard a defect that was IN THIS FILE and was caught by
+// running it, not by reading it. Neither had an arm afterwards, which left the
+// only protection a paragraph of prose. A comment does not fail.
+test('E1. an ASYNC arm that rejects is counted as a FAILURE -- the sync-runner '
+  + 'defect that printed all-green against a deliberately broken guard',
+  async () => {
+    const quiet = () => {};
+    const r = await runQueue([
+      ['passes', async () => { }],
+      ['throws synchronously', () => { throw new Error('sync boom'); }],
+      ['rejects asynchronously', async () => {
+        await new Promise((res) => setTimeout(res, 0));
+        throw new Error('async boom');
+      }]
+    ], quiet);
+    assert.strictEqual(r.pass, 1, 'expected exactly 1 pass, got ' + r.pass);
+    assert.strictEqual(r.fail, 2,
+      'expected 2 failures, got ' + r.fail + ' -- if this is 1, the runner is '
+      + 'not awaiting and every async arm in section C is scoring itself');
+  });
+test('E2. a REJECTION AFTER A TICK is still caught -- an arm that fails only '
+  + 'after the microtask queue drains is the shape a sync runner misses most',
+  async () => {
+    const quiet = () => {};
+    const r = await runQueue([['late', async () => {
+      await new Promise((res) => setTimeout(res, 5));
+      assert.strictEqual(1, 2, 'deliberate');
+    }]], quiet);
+    assert.strictEqual(r.fail, 1, 'a late rejection scored as a pass');
+  });
+test('E3. CONTROL: runQueue is the SAME function the real run uses, so E1/E2 '
+  + 'are not testing a copy that agrees until it does not', () => {
+  const src = fs.readFileSync(__filename, 'utf8');
+  const runBody = src.slice(src.indexOf('async function run()'));
+  assert.ok(/runQueue\(QUEUE/.test(runBody.slice(0, 300)),
+    'run() no longer delegates to runQueue; section E now proves nothing '
+    + 'about the harness that actually executes these arms');
 });
-run().then(() => {
+
+// ── THE SUMMARY LINE REFUSES TO LIE (2026-10-05) ─────────────────────────
+// Found by sabotage, not by reading. Reverting runQueue to the synchronous
+// `try { fn() }` shape and re-running printed:
+//
+//     22 passed, 0 failed
+//     FAIL unhandled rejection: expected exactly 1 pass, got 2
+//
+// E1 DID catch the regression and the process DID exit 1 -- but the green
+// tally printed FIRST, because a sync runner resolves before the rejection
+// surfaces. A human reading that output sees "22 passed, 0 failed" and stops.
+// That is PR 1.5 exactly: the expensive part of a false success is the
+// success message printed after the error, and this file's own subject is a
+// guard that must not report a corrupt record as a clean one.
+//
+// Two changes. The handler no longer exits immediately -- it COUNTS, so the
+// summary can see it. And the summary waits one macrotask (`setImmediate`)
+// for pending rejections to land before it prints anything at all.
+let unhandled = 0;
+process.on('unhandledRejection', (e) => {
+  unhandled++;
+  console.log('  FAIL unhandled rejection: ' + (e && e.message));
+});
+run().then(async () => {
+  // One macrotask turn. A rejection queued during the run is a microtask and
+  // has already run by here; setImmediate additionally clears anything a
+  // setTimeout(0) arm left behind -- E2's shape.
+  await new Promise((r) => setImmediate(r));
+
+  // AND THE ARM COUNT IS RECONCILED, which catches a different failure: an
+  // arm that never ran at all contributes to neither tally and is invisible
+  // in "N passed, 0 failed".
+  const queued = QUEUE.filter(([, fn]) => fn).length;
+  const tallied = pass + fail;
+  const problems = [];
+  if (unhandled) {
+    problems.push(unhandled + ' unhandled rejection(s) -- the per-arm tally '
+      + 'was computed before they surfaced, which is the sync-runner shape');
+  }
+  if (tallied !== queued) {
+    problems.push(queued + ' arm(s) queued but ' + tallied + ' tallied -- '
+      + (queued - tallied) + ' never reported either way');
+  }
+  if (problems.length) {
+    console.log('\nRESULT WITHHELD -- ' + problems.join('; '));
+    console.log(pass + ' passed, ' + (fail + unhandled) + ' failed');
+    process.exit(1);
+  }
   console.log('\n' + pass + ' passed, ' + fail + ' failed');
   if (fail) process.exit(1);
 });
