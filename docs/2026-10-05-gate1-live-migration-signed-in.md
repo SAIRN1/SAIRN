@@ -145,20 +145,54 @@ confirmed.** Further accounts go through `setup`, which itself needs a session.
 **This needs a decision, not a SQL file:** either a credential minted through
 `setup` by somebody who already holds one, or a new demo licence.
 
-### SAIRNfreedom — 17 resources, and the auth table has never been created
+### SAIRNfreedom — 17 resources, and NO SQL IS OWED. THIS SECTION WAS WRONG.
 
-`/api/sf-auth` answers **503 NOT_PROVISIONED** because
-**`sql/sairnfreedom_employee_auth_schema.sql` has never been run.** Open-work
-row 156 already records this, and it is worth restating what it blocks: the 17
-include `sf_operators` (a felony flag and a gambling disqualification on a named
-volunteer), `sf_gaming_expenses` and `sf_disbursements` (ORC 2915 payee
-records), `sf_donations`, and `sf_youth_participants` (**minors**). The resources
-are gated correctly — every one answers 403 without a session — and the
-consequence is that **nobody, including this check, can confirm their tables
-exist.**
+> ## CORRECTION, 2026-10-05, SAME DAY, BEFORE MICHAEL ACTED ON IT
+>
+> **THE SENTENCE BELOW WAS FALSE AND IT WAS A FALSE ESCALATION TO MICHAEL.**
+> This section said `/api/sf-auth` answers 503 NOT_PROVISIONED and asked him to
+> run `sql/sairnfreedom_employee_auth_schema.sql`. **That file has been run.**
+> Driven against the deployed endpoint while reviewing an unrelated obligation:
+>
+> ```
+> POST /api/sf-auth {action: login,  ...}  -> 401 INVALID_CREDENTIALS
+> POST /api/sf-auth {action: roster}       -> 403 "Only a post governance
+>                                             officer can view the employee roster"
+> POST /api/sf-auth {action: whoami}       -> 401 NO_SESSION
+> ```
+>
+> `api/sf-auth.js` distinguishes three states **on purpose** — 503
+> `NOT_PROVISIONED` at `:478` and `:508` when the table is absent, 503
+> `NOT_GRANTED` at `:512` when it exists without privileges, and 401 for a bad
+> credential. **A 401 and a role-shaped 403 mean the request got past both 503
+> checks: the table exists and `service_role` has privileges on it.**
+>
+> **HOW I GOT IT WRONG: I TOOK IT FROM OPEN-WORK ROW 156 AND DID NOT DRIVE IT.**
+> Every other figure in this document was measured; this one was quoted. The row
+> was true when written and is now stale, and quoting a standing document instead
+> of asking the endpoint is the one shortcut this platform records most often.
+> **Row 156 carries the same stale sentence and is cc's to correct** — the index
+> is held.
+>
+> **WHAT IS ACTUALLY BLOCKING THE 17 IS A CREDENTIAL, NOT A MIGRATION.**
+> `docs/2026-09-03-demo-credentials.md` has no SAIRNfreedom row at all, so no
+> PIN is published. `bootstrap` is in sf-auth's `ACTIONS` and would mint one —
+> **not done, deliberately:** it WRITES a credential row to a customer-shaped
+> licence and that is Michael's call, not a check's side effect. Whether a
+> credential already exists cannot be read from here, because `roster` needs a
+> session.
 
-> **MICHAEL: run `sql/sairnfreedom_employee_auth_schema.sql`.** Then a PIN can
-> be minted and the 17 become answerable.
+What the 17 contain is unchanged and is why it matters: `sf_operators` (a felony
+flag and a gambling disqualification on a named volunteer),
+`sf_gaming_expenses` and `sf_disbursements` (ORC 2915 payee records),
+`sf_donations`, and `sf_youth_participants` (**minors**). They are gated
+correctly — every one answers 403 without a session — and **they remain
+unanswerable to this check**, for a credential reason rather than a migration
+one.
+
+> **MICHAEL: nothing to run here.** The decision owed is whether a SAIRNfreedom
+> demo credential should exist and under which role, the same shape as
+> SAIRNvet's above.
 
 ---
 

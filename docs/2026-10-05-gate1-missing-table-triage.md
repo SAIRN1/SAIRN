@@ -205,9 +205,23 @@ decision rather than a paste**:
   credential minted through `setup` by somebody who already holds a session, or
   a new demo licence. **Not a SQL file.**
 - **SAIRNfreedom** — 17 resources unanswerable, including a felony flag on a
-  named volunteer and minors' names. **This one IS a SQL file:**
-  `sql/sairnfreedom_employee_auth_schema.sql` has never been run, so
-  `/api/sf-auth` answers 503 and no PIN can exist.
+  named volunteer and minors' names. **CORRECTED SAME DAY: this is NOT a SQL
+  file and the sentence that said so was a false escalation.** I wrote *"`sql/sairnfreedom_employee_auth_schema.sql`
+  has never been run, so `/api/sf-auth` answers 503"* — **quoted from open-work
+  row 156 and never driven.** Driven: `/api/sf-auth` answers **401
+  INVALID_CREDENTIALS** on a login and a **role-shaped 403** on `roster`, and
+  `api/sf-auth.js` returns 503 `NOT_PROVISIONED` at `:478`/`:508` and 503
+  `NOT_GRANTED` at `:512` for exactly those two conditions — so the request got
+  past both and **the table exists with privileges.** What blocks the 17 is a
+  **credential**: no SAIRNfreedom row exists in
+  `docs/2026-09-03-demo-credentials.md`, and `bootstrap` would WRITE one to a
+  customer-shaped licence, which is Michael's call and not a reviewer's.
+  **Same shape as SAIRNvet above: a decision, not a paste.** Row 156 carries the
+  same stale sentence and is cc's to correct.
+
+  **EVERY OTHER FIGURE IN THIS DOCUMENT WAS MEASURED AND THIS ONE WAS QUOTED**,
+  which is the whole lesson: a standing row is a claim with a date on it, and
+  asking the endpoint costs one request.
 
 ---
 
