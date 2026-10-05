@@ -22787,6 +22787,63 @@
         }
       ],
       "recurrence_open": "The two fixed suites are green and the other ten with the identical stub are not -- measured at 12 files throwing on an absent expectedApp against 2 using the green shape. Nothing yet reports an app's red set on a cadence, so the NEXT control to land on a red suite will be just as invisible as the witness lock was. And the deepest one stays open by choice: no instrument counts unscoped verifySessionToken calls, so a branch gate that dropped its app scope entirely would pass every stub on this platform including the two reference-green ones -- the guard catches a WRONG app and cannot see a MISSING one."
+    },
+    {
+      "commit": "78cf827b7ffe",
+      "date": "2026-10-05",
+      "subject": "fix(check11): the gate read the working tree while the push shipped a commit, and git ls-files hid a path for 25 days",
+      "files": [
+        "tests/push_gate/check11_probe.py",
+        "tools/control_char_check.py",
+        "tools/sairn_push_gate_hook.py"
+      ],
+      "lines_added": 264,
+      "lines_removed": 17,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "Push-gate check 11 -- the one gate whose entire subject is a byte in a committed blob -- derived its file list from the OUTGOING COMMIT RANGE and then handed tools/control_char_check.py WORKING-TREE paths, so it answered about bytes that are not the bytes being pushed. Reproduced in a throwaway repo: commit a file containing PAT = r'grant[^;]*<BS>delete<BS>', repair the working tree without committing, and the checker prints \"CLEAN -- no raw control bytes\" and exits 0 while git show HEAD:guard.py still carries two raw 0x08. The push that shipped the defect would have passed a clean gate. Three further defects were found inside the same block and fixed with it. (a) A named file that could not be opened was skipped by a bare `continue` while `files scanned` still counted it, so the printed number was a claim about bytes nobody read and the gate's own count guard compared against it and agreed -- PR 1.11. (b) `git ls-files` QUOTES a path it cannot print plainly, and this repo tracks one: archive/.../SAIRNlaw \\342\\200\\224 A Partnership Proposal ... .pdf. Every sweep since 2026-09-10 looked for a filename beginning with a quote character, failed, and skipped it in silence while counting it as scanned -- 25 days of a tracked file never being read, disclosed only when (a) turned the silent skip into an exit 2. Fixed with ls-files -z rather than an unquoter. (c) Check 11 handled exit 1 and the scoping mismatch and nothing else, so an exit 2 COULD NOT RUN from the checker fell through the block as a pass; latent until --rev made exit 2 reachable.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Check 11 has read the working tree since it was promoted on 2026-09-13 (11496400286e) and the file-argument branch it calls was added in the same change, so the hole arrived with the feature rather than being introduced later. The ls-files quoting half dates from 2026-09-10, the tool's first commit."
+      },
+      "citation_note": "1.11 is the rule three of the four defects break: a could-not-read folded into a pass, a count that includes files nobody opened, and an exit 2 falling through a gate block as clean.",
+      "phase_note": "The gate block says SCOPED TO THE FILES THIS PUSH SHIPS and the code builds working-tree paths from the outgoing range. The sentence and the code disagree and the sentence was written first.",
+      "contributing_factors": [
+        {
+          "factor": "The gate computes `changed` from the outgoing range and then builds absolute WORKING-TREE paths from it. The list is about the push and the content is about the disk, and nothing in the block names the difference, so every reader of it -- including the four sessions who have edited it -- read `scoped to the files this push ships` as covering both.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "check 11 passes --rev tip, and refuses a checker whose output carries no `source` line because that one ignored the flag and read the tree."
+        },
+        {
+          "factor": "The probe asserted the gate REFUSES a committed byte and the gate did, because the probe never repaired the working tree after committing. A fixture that commits and leaves the file alone cannot tell the two sources apart.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Section H commits the byte, repairs the working tree, and drives both readings -- plus a CONTROL proving the same checker says CLEAN on the tree, so the arm is known to depend on --rev."
+        },
+        {
+          "factor": "A named file that could not be read was skipped by a bare `continue` while `files scanned` still counted it, so the count was a claim about bytes nobody opened and the gate compared its own argument count against that inflated number.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Unreadable files are collected, printed under COULD NOT READ, excluded from the scanned count, and exit 2. The gate reads `files given` and denies on any exit outside 0 and 1."
+        },
+        {
+          "factor": "`git ls-files` quotes paths it cannot print plainly and nothing on this platform had ever hit one, so the reader took its output literally for 25 days. The failure was a silent skip of a tracked file, which is indistinguishable from a clean scan of it.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "ls-files -z, so git does no quoting and there is nothing to parse. Writing the unquoter is how this class recurs."
+        }
+      ],
+      "recurrence_open": "Change 4 does not close the general case: every OTHER push-gate check that derives a file list from the outgoing range and then reads the working tree has the same hole, and only check 11 was fixed here. I did not sweep the rest -- the `changed` list is used by checks 2, 3, 4, 5, 6, 7, 12 and 12b, each with its own notion of what it needs to read, and whether a working-tree read is wrong for them is a per-check judgement rather than one edit. Named rather than done. AND THIS SENTENCE WAS ITSELF EATEN ONCE: the word `changed` was written inside bash backticks in a double-quoted printf, so the shell ran it as a command substitution, printed `changed: command not found`, and the record landed with a gap exactly where the subject belonged. That is scrubber item 18 and tools/eaten_substitution_check.py exists for it; it happened while writing about silent failure, which is the fourth recorded instance of this on this platform."
     }
   ],
   "started": "2026-09-09",
