@@ -5223,6 +5223,26 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-10-05T15:02:28Z",
+      "opened_at_sha": "13e40c9d79b7ac7b7a11f52d982899a9fe6b4458",
+      "resources": [
+        "quotes"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tools/deploy_verify_notify.py"
+      ],
+      "what": "tools/deploy_verify_notify.py entry condition replaced: classify_command() decides push / not-a-push / unsure from what a command DOES, instead of the old literal-text test which silently skipped every deploy check for work driven through tools/push_retry.py -- the documented contended-branch path. WHAT A REVIEWER SHOULD ATTACK FIRST: PUSHING_TOOLS is a HAND-MAINTAINED list of four entrypoints derived by grepping for the subprocess call. A tool added later will not be in it and scores 'unsure', which now prints a notice rather than skipping silently -- but a notice is not a deploy check. Confirm that degradation is acceptable and that no fifth such tool exists today: arm C3 of tests/run_deploy_verify_entry_probe.py checks each NAMED tool really does the thing, and nothing checks the converse. SECOND: the _MENTION_ONLY heuristic decides a command only TALKS about it by looking at line prefixes (echo/cat/#/grep); a quoted occurrence mid-line in some other construct would still score positive, which is the safe direction but should be confirmed as the intended one. THIRD: the regex now allows bare key=value tokens between git and the subcommand to cover 'git -c foo=bar ...' -- check it cannot match something that is not one. The hook stays notify-only, exits 0 on every path including the new third state, and never blocks a turn.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-10-05T15:02:28Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

@@ -42,9 +42,72 @@ const FILE = 'sairndental.html';
 const SRC = fs.readFileSync(path.join(ROOT, FILE), 'utf8');
 
 let pass = 0, fail = 0;
-function test(name, fn) {
-  try { fn(); console.log('  ok   ' + name); pass++; }
-  catch (e) { console.log('  FAIL ' + name + '\n       ' + e.message); fail++; }
+// -- THE RUNNER AWAITS, AND THE SUMMARY REFUSES TO LIE (2026-10-05) --------
+// This file hands ASYNC arms to a SYNCHRONOUS runner. Planted live rather
+// than reasoned about: an assertion placed AFTER an `await` inside an arm
+// produced
+//
+//     ok   <the arm whose assertion failed>
+//     ALL 17 VENDOR WRITE-CONFIRMATION ASSERTIONS PASS
+//     AssertionError: <the real failure, after the summary>
+//
+// -- the failing arm reported `ok`, the summary claimed every assertion
+// passed, and the truth printed after it. The process did exit 1, so CI was
+// safe; a HUMAN reading that output sees green and stops. PR 1.5: the
+// expensive part of a false success is the success message printed after the
+// error. The same defect was found and fixed in
+// tests/sairnsenior_negative_hours_claim.js on the same day, and the sweep
+// that found this one came out of it.
+//
+// AND THIS FILE'S TAIL WAS THE SAME BUG WEARING A FIX. It ended in an async
+// IIFE whose comment read "the async tests above register synchronously;
+// give them a tick to settle" and then slept 50ms. A SLEEP IS NOT A JOIN: it
+// is long enough for these arms today, it becomes a race the moment one gets
+// slower, and it counts no rejection either way. Replaced by a real await
+// over the queue.
+//
+// Arms are QUEUED and AWAITED. Unhandled rejections are COUNTED rather than
+// exiting immediately, so the summary can see them. And the summary
+// reconciles arms-queued against arms-tallied, because an arm that never ran
+// contributes to neither and is invisible in "N passed, 0 failed".
+const QUEUE = [];
+function test(name, fn) { QUEUE.push([name, fn]); }
+async function runQueue(queue, log) {
+  let p = 0, f = 0;
+  for (const [name, fn] of queue) {
+    try { await fn(); log('  ok   ' + name); p++; }
+    catch (e) { log('  FAIL ' + name + '\n' + '       ' + e.message); f++; }
+  }
+  return { pass: p, fail: f };
+}
+let unhandled = 0;
+process.on('unhandledRejection', (e) => {
+  unhandled++;
+  console.log('  FAIL unhandled rejection: ' + (e && e.message));
+});
+async function finish(okLine) {
+  const r = await runQueue(QUEUE, (s) => console.log(s));
+  pass = r.pass; fail = r.fail;
+  // One macrotask turn, so a rejection left by a setTimeout arm lands before
+  // anything is printed.
+  await new Promise((res) => setImmediate(res));
+  const queued = QUEUE.length, tallied = pass + fail;
+  const problems = [];
+  if (unhandled) {
+    problems.push(unhandled + ' unhandled rejection(s) -- a tally printed '
+      + 'before these surfaced is the sync-runner shape');
+  }
+  if (tallied !== queued) {
+    problems.push(queued + ' arm(s) queued but ' + tallied + ' tallied');
+  }
+  console.log('');
+  if (problems.length) {
+    console.log('RESULT WITHHELD -- ' + problems.join('; '));
+    console.log(pass + ' passed, ' + (fail + unhandled) + ' failed');
+    process.exit(1);
+  }
+  if (fail) { console.log(fail + ' FAILED, ' + pass + ' passed'); process.exit(1); }
+  console.log(okLine.replace('%d', String(pass)));
 }
 function section(t) { console.log('--- ' + t + ' ---'); }
 
@@ -297,11 +360,4 @@ test('the flag key is NOT a synced resource', () => {
     'the guard flag is in the sync registry');
 });
 
-(async () => {
-  // The async tests above register synchronously; give them a tick to settle.
-  await new Promise((r) => setTimeout(r, 50));
-  console.log('\n' + (fail === 0
-    ? 'ALL ' + pass + ' VENDOR WRITE-CONFIRMATION ASSERTIONS PASS'
-    : pass + ' passed, ' + fail + ' FAILED'));
-  process.exit(fail === 0 ? 0 : 1);
-})();
+finish('ALL %d VENDOR WRITE-CONFIRMATION ASSERTIONS PASS');

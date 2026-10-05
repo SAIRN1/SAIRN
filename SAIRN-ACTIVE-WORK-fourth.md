@@ -1437,3 +1437,128 @@ is still CC's active claim and the push gate refuses a new tool with no
 inventory entry. Paste-ready text is in
 `docs/2026-10-05-push-failure-reason-handoff.md`; nothing further is needed
 from me.
+
+---
+
+## 2026-10-05 (fifth batch) — the two held defects fixed under override, 15 suites cleared, and one of my own findings corrected
+
+### 6. METHODOLOGY — THE STANDING LESSON, AND A CORRECTION TO HOW I COUNTED IT
+
+**THE LESSON: a classifier must key on the SIGNAL, never on text that merely
+accompanies it. When it cannot tell, it must say so — "could not tell" is a
+verdict, and a silent skip is the worst of the three outcomes.**
+
+Four instances were claimed. **Three hold, and the fourth was my own
+misdiagnosis** — which is worth more than the tally:
+
+1. **The push epilogue.** `error: failed to push some refs` is printed for
+   every push failure, so matching it identifies nothing. Ten retries on a
+   one-line fix. Fixed by `tools/push_failure_reason.py`.
+2. **Grep silence.** A sabotage loop filtering for `^  FAIL` printed nothing
+   for five mutations and I read it as "no findings". The mutated copies were
+   failing to **load**. A filter cannot distinguish "no match" from "nothing
+   ran".
+3. **`deploy_verify_notify.py:57`** matching the literal `git push`, so the
+   deploy check never ran for `push_retry.py`. **Fixed this batch.**
+4. **~~The SQL preflight matching my commit message body.~~ WRONG — I read the
+   symptom and inferred the cause.** The condition is
+   `re.search(r'\bgit\s+commit\b', cmd)` plus *any* pending `sql/*.sql`. It
+   never looked at the message. The real defect is **over-breadth**: it denies
+   every commit made while an unrelated SQL file sits untracked, and then
+   describes it as a combined commit+push that did not happen. Account and
+   exact replacement in `docs/2026-10-05-sql-preflight-overbroad-handoff.md`.
+
+**That correction is the lesson applied to itself.** I classified a refusal
+from the text it printed rather than from the condition that produced it —
+the same move as reading `tail -3`. The rule is not "distrust text matches";
+it is **go and read the thing that made the decision.**
+
+### 3a. Both async-runner suites fixed, and proven by re-planting
+
+`tests/sairnbuild_server_backup.js` and `tests/dnt_vendor_write_confirmation.js`
+now queue their arms, `await` them, count unhandled rejections, wait one
+macrotask, reconcile arms-queued against arms-tallied, and print
+`RESULT WITHHELD` rather than a tally they cannot stand behind.
+
+| suite | planted failure after an await — BEFORE | AFTER |
+|---|---|---|
+| sairnbuild_server_backup | `ok` for the failing arm, then `ALL 29 … PASS` | `1 FAILED, 28 passed`, exit 1 |
+| dnt_vendor_write_confirmation | same shape | `1 FAILED, 16 passed`, exit 1 |
+
+**The dental suite's tail was the same bug wearing a fix.** It ended in an
+async IIFE commented *"the async tests above register synchronously; give them
+a tick to settle"* followed by a 50 ms sleep. **A sleep is not a join** — long
+enough today, a race the moment one arm gets slower, and it counts no
+rejection either way.
+
+**AND THE REPAIR BROKE IT MID-WAY, WHICH THE NEW GUARD WOULD HAVE CAUGHT.** A
+failed tail replacement left the arms queued but never run, and the file
+printed **`ALL 0 VENDOR WRITE-CONFIRMATION ASSERTIONS PASS`** — a green
+all-pass over zero arms. That is exactly the arms-queued-vs-tallied case the
+reconcile check exists for; it was the old tail still in place that printed
+it.
+
+### 3b. `deploy_verify_notify.py` now decides from what the command DOES
+
+`classify_command()` returns **push / not-a-push / unsure**. It recognises
+`git push` (including `git -c k=v push`), and the four entrypoints that
+actually shell out to one — derived by grepping for the subprocess call, not
+from memory: `push_retry.py`, `sairn_claim.py`,
+`register_freshness_propose.py`, `push_failure_reason.py`. A command that only
+**mentions** a push (`echo`, a comment) is not one.
+
+**The third verdict is the point.** A push-shaped command matching no known
+entrypoint now emits *"Deploy check SKIPPED and that is not a pass"* rather
+than exiting silently. The hook's own 403 branch already carried the rule it
+was breaking at its front door: *"a check that silently stops running is the
+failure this hook was rewritten to remove."*
+
+`tests/run_deploy_verify_entry_probe.py`, 21 arms. **One caught a real miss in
+my first draft** — `git -c foo=bar push` scored `unsure`, because the regex
+allowed flag tokens between `git` and `push` but not bare `key=value`. A safe
+answer and still the wrong one. Control C3 re-reads each named tool and
+asserts it really contains a push call, so a stale name cannot sit there as
+coverage the hook does not have.
+
+### 4. The 15 undecided suites: ALL FIFTEEN ARE SAFE
+
+Triaged by **planting after an await in each**, not by reading — reading is
+what missed the first two. Every one printed no green summary and exited 1.
+Backups taken and restored per file; `git status` clean afterwards.
+
+So across **661 JavaScript test files**, the population with this defect was
+**exactly the two already found**, and both are now fixed. The 15 were
+genuinely undecided by the static screen rather than quietly broken.
+
+### 2. Other clones: NONE are stale, because none have the file at all
+
+`.demo-credentials.local.json` is gitignored, so the `apps[1].pin` fix is
+local to this clone. Checked directly:
+
+| clone | state |
+|---|---|
+| `Documents\SAIRN-hank` | clone exists, **no credentials file** |
+| `Documents\SAIRN-cc` | clone exists, **no credentials file** |
+| `Documents\SAIRN-cody` | clone exists, **no credentials file** |
+| `Documents\SAIRN-hover` | clone exists, **no credentials file** |
+
+**So "which clones still hold the dead PIN" has the answer: none — and that is
+not good news.** `tools/demo_credentials_check.py` reads only that file, with
+no environment fallback and no default **by design**, so in four of the five
+clones it cannot run at all. The credential check exists in one place. Whoever
+distributes the file should distribute the corrected one.
+
+### 7. `tools/push_failure_reason.py` is LANDED
+
+cc released `tools/tooling_inventory.py`. The entry went in, the inventory
+regenerated to 567 lines, `--check` OK, and the tool self-tests 10/10.
+
+### 5 + 8. Still blocked / not done
+
+* **Item 5** is **hank's file** — `tools/sairn_push_gate_hook.py` is his active
+  claim and he is editing its denial path. Exact replacement text is in
+  `docs/2026-10-05-sql-preflight-overbroad-handoff.md`.
+* **Item 8** — no competitive-gap doc is in flight, so the territory is free,
+  and I did not get to it. Capacity, named rather than dropped.
+* **Items 1 and 2** remain blocked on Supabase access. The full text of
+  `sql/schema_snapshot_query.sql` was handed over in the report for pasting.

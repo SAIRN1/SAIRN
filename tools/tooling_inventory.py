@@ -1190,6 +1190,24 @@ PURPOSES = {
     'hover_auditor_scope_gate.py': ('CHECKER', 'a commit, push or working tree in the HOVER AUDITOR\'s clone that touches platform code -- the role reviews the four build agents and is reviewed by nobody, and its own skill forbids it writing platform code in terms. Armed per-clone by a marker under .git/, so no build clone can inherit it by pulling and each pays one shell file-test per commit. Fails OPEN where the marker is absent (a scope condition: not that clone\'s rule) and CLOSED everywhere else, including when the core-rule sentence is no longer in the skill file -- a gate enforcing a repealed rule reads as coverage'),
     'redaction_check.py': ('CHECKER', 'credential shapes in what is about to be written, and in what a push ships'),
     'html_script_check.py': ('CHECKER', 'a script block that no longer parses, after a Write or Edit'),
+    'push_failure_reason.py': ('TOOL',
+        'a push failure diagnosed from the LAST LINE instead of the whole '
+        'output. The line `error: failed to push some refs` is the git '
+        'epilogue and is present for EVERY failure -- a race, a gate refusal, '
+        'a bad credential -- so matching it identifies nothing, while the '
+        'push gate’s own `Blocked:` line names the cause forty lines '
+        'above it. On 2026-10-05 a session piped a push through `tail -3`, '
+        'grepped the epilogue, called it a lost race and RETRIED TEN TIMES; '
+        'it was a missing `# OWNER:` line and then a missing tool-inventory '
+        'entry, two one-line fixes sitting in plain text that nothing read. '
+        'This classifies the FULL text and always lets a `Blocked:` line beat '
+        'a race signature, because both can appear in one attempt and '
+        'reporting the race sends the next reader at the wrong problem. '
+        'Anything unrecognised is exit 2 COULD NOT CLASSIFY with the whole '
+        'output printed -- never a guess. Held by 10 fixtures in both '
+        'directions, including the incident reproduced verbatim, a case '
+        'carrying both a refusal and a lock error, and a control asserting '
+        'the fixture set reaches all four verdicts'),
     'push_retry.py': ('TOOL',
         'an amend that is about to run in a tree where HEAD is not what the '
         'author thinks it is -- and it REFUSES rather than warns. Five clones '

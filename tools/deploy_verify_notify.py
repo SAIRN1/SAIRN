@@ -15,9 +15,24 @@ that a push from another clone during those 60 seconds moves the baseline
 rather than registering as drift.
 
 KNOWN SCOPE LIMIT, stated rather than implied: this checks stonedesk.html
-only, and it is a PostToolUse hook keyed on the Bash command text containing
-"git push" -- so a push driven from Python (tools/sairn_claim.py) never
-triggers it, the same blind spot the pre-push gate was moved off in task 1.
+only.
+
+ENTRY CONDITION WIDENED 2026-10-05, and the gap it closes was MEASURED. The
+paragraph that used to sit here said the hook is "keyed on the Bash command
+text containing 'git push' -- so a push driven from Python
+(tools/sairn_claim.py) never triggers it". That was true, correctly recorded,
+and INCOMPLETE in the way that mattered: it named the claim tool and not
+tools/push_retry.py, which pushes at its line 610 through the same
+subprocess route and is THE DOCUMENTED PATH A SESSION IS TOLD TO USE WHEN THE
+BRANCH IS CONTENDED. Five clones push to one branch, so that is not a corner
+-- it is the busy case, which is exactly when a deploy is most likely to be
+disturbed, and the check was silently absent for all of it.
+
+A text match on the command also fails the OTHER way: a command that merely
+MENTIONS a push -- a commit whose message describes one -- looked like a push
+to the old test. See classify_command() for what replaced it and for the one
+residual case it still cannot decide.
+
 This is a
 NOTIFY-ONLY check -- it never commits or pushes anything itself. On a
 mismatch it exits 2 (asyncRewake) so a live Claude turn sees the finding
@@ -31,7 +46,7 @@ standard as the other hooks in this file (git_push_master_guard.py,
 redaction_check.py): never let a hook bug block or falsely alarm on a
 legitimate push.
 """
-import os, sys, json, subprocess, hashlib, time
+import os, sys, re, json, subprocess, hashlib, time
 
 # Imported by path rather than by package: this file is invoked as a hook
 # from an arbitrary cwd, so a bare `import sairn_http` would depend on where
@@ -48,13 +63,98 @@ def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+# ── EVERY ENTRYPOINT ON THIS PLATFORM THAT ACTUALLY RUNS `git push` ────────
+# Derived by grepping for the subprocess call rather than by memory:
+#   tools/push_retry.py:610              git('push', 'origin', 'main')
+#   tools/sairn_claim.py:1791            ['git', 'push', 'origin', 'HEAD:main']
+#   tools/register_freshness_propose.py:304  git('push', '-q', 'origin', ...)
+#   tools/push_failure_reason.py:182     ['git', 'push']   (and classifies it)
+# A NEW PUSHING TOOL WILL NOT BE HERE, which is why an unrecognised
+# push-shaped command is COULD-NOT-TELL below rather than a silent skip.
+PUSHING_TOOLS = (
+    'push_retry.py',
+    'sairn_claim.py',
+    'register_freshness_propose.py',
+    'push_failure_reason.py',
+)
+
+# Shapes that MENTION a push without being one. The commit that documented
+# this very defect was refused by a sibling hook because its MESSAGE BODY
+# contained the words the hook scanned for, so this is not hypothetical.
+_MENTION_ONLY = ('echo ', 'cat ', '#', 'grep ')
+
+
+def classify_command(cmd):
+    """'push' | 'not-a-push' | 'unsure' -- from what the command DOES.
+
+    THE OLD TEST WAS `if "git push" not in cmd: sys.exit(0)`. One substring,
+    two ways to be wrong, and both silent:
+
+      * MISSED a real push driven from Python -- push_retry.py being the
+        costly one, since it is what a session uses when the branch is busy;
+      * MATCHED a command that only talks about pushing.
+
+    The third verdict is the point. A command that looks push-shaped and
+    matches no known entrypoint is reported, not dropped -- this hook's own
+    403 branch already states the rule it was breaking here: "a check that
+    silently stops running is the failure this hook was rewritten to remove."
+    """
+    c = (cmd or '').strip()
+    if not c:
+        return 'not-a-push'
+    low = c.lower()
+
+    # A real `git push`, allowing for flags and a leading cd/&&.
+    # `git [-c key=val] [--flag] push ...` -- the global-option tokens between
+    # `git` and the subcommand are a flag OR a bare key=value, and the first
+    # draft only allowed the flag. `git -c foo=bar push` scored UNSURE, which
+    # is a safe answer and still the wrong one.
+    if re.search(r'(^|[;&|]\s*|\s)git\s+(?:-{1,2}[^\s]+\s+|[^\s]+=[^\s]+\s+)*push(\s|$)', low):
+        # ...unless every occurrence sits in something that only quotes it.
+        lines = [ln.strip() for ln in low.split('\n') if 'git' in ln and 'push' in ln]
+        if lines and all(any(ln.startswith(m) for m in _MENTION_ONLY) for ln in lines):
+            return 'not-a-push'
+        return 'push'
+
+    for tool in PUSHING_TOOLS:
+        if tool in low:
+            return 'push'
+
+    # Push-shaped but unrecognised. NOT silently dropped.
+    if 'push' in low:
+        return 'unsure'
+    return 'not-a-push'
+
+
 def main():
     payload = json.load(sys.stdin)
     tool_input = payload.get("tool_input", {}) or {}
     cmd = tool_input.get("command", "") or ""
     tool_response = payload.get("tool_response", {}) or {}
 
-    if "git push" not in cmd:
+    verdict = classify_command(cmd)
+    if verdict == 'not-a-push':
+        sys.exit(0)
+    if verdict == 'unsure':
+        # SAID OUT LOUD RATHER THAN SKIPPED. Exit 0 so an ambiguous command
+        # never blocks or delays a turn, but the turn is told the deploy was
+        # not verified -- "could not tell" is a third state and folding it
+        # into "nothing to do" is the defect this hook was rewritten to
+        # remove, one level up from where it was removed before.
+        print(json.dumps({
+            "hookSpecificOutput": {
+                "hookEventName": "PostToolUse",
+                "additionalContext": (
+                    "Deploy check SKIPPED and that is not a pass: this command "
+                    "looks push-shaped but matches no entrypoint this hook "
+                    "knows runs `git push` (see PUSHING_TOOLS in "
+                    "tools/deploy_verify_notify.py). The live site was NOT "
+                    "compared against origin/main. If this really did push, "
+                    "add the entrypoint to that list; if it did not, ignore "
+                    "this line."
+                ),
+            },
+        }))
         sys.exit(0)
     # Only check a push that actually succeeded -- a failed push has
     # nothing new to verify against.
