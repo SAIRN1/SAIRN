@@ -3471,6 +3471,24 @@
         "tools/gh_token.py",
         "tools/report_only_checks.py"
       ]
+    },
+    {
+      "id": "hank-1791195865",
+      "session": "hank",
+      "subject": "platform",
+      "task": "rebase_state_guard forbidden_forms bypasses seq 452; report_only sweep runner silent-skip; push_retry usage crash; hook manifest drift trace FILES: tools/rebase_state_guard.py tools/report_only_checks.py tools/push_retry.py docs/hook-manifest.json tests/run_rebase_state_guard_probe.py tests/run_push_retry_probe.py",
+      "claimed_at": "2026-10-05T10:24:25Z",
+      "claimed_at_epoch": 1791195865.0461776,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/hook-manifest.json",
+        "tests/run_push_retry_probe.py",
+        "tests/run_rebase_state_guard_probe.py",
+        "tools/push_retry.py",
+        "tools/rebase_state_guard.py",
+        "tools/report_only_checks.py"
+      ]
     }
   ],
   "refusals": [
