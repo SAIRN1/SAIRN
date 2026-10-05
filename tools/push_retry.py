@@ -466,6 +466,94 @@ def selftest():
     return out, bad
 
 
+# ── THE LOOP COULD NOT FIX THE ONE FAILURE IT IS NAMED FOR ─────────────────
+# Found 2026-10-05 by using it. This whole block used to live INSIDE
+# `if behind > 0:`, so it only ran when the rebase half had something to do.
+# Observed both ways in one session:
+#
+#   behind 1 -> regenerated, amended, PUSHED.
+#   behind 0 -> six consecutive attempts, NO regeneration, six identical
+#               "error: failed to push some refs" lines.
+#
+# The push had been refused for three STALE GENERATED DOCUMENTS -- exactly
+# what `regenerate()` fixes -- and the loop never called it, because nothing
+# was behind. A retry loop whose remedy is gated on an unrelated condition is
+# a loop that retries the same failure until it runs out of attempts.
+#
+# Extracted here so it can be called from BOTH paths: after a successful
+# rebase, and after a push refusal that names a generated document.
+def _regenerate_and_fold():
+    """Regenerate the derived documents and fold them into your own commit.
+
+    Returns (folded, reason). `folded` is True only when an amend happened.
+    Every refusal path returns False with a reason rather than raising: this
+    is called from inside a retry loop and a crash here strands a push.
+    """
+    for gen_name, status in regenerate():
+        if status != 'ok':
+            print('  %s: %s' % (gen_name, status))
+    rc2, porc, _ = git('status', '--porcelain')
+    if rc2 == 0 and porc.strip():
+        safe, reasons = amend_safety()
+        if not safe:
+            print('REFUSING TO AMEND:', file=sys.stderr)
+            for r in reasons:
+                print('  - %s' % r, file=sys.stderr)
+            return False, 'amend refused by the guard'
+        # ── THE ALLOWLIST, BECAUSE THIS LINE WAS `git add -A` ────────
+        # This tool exists to replace the hand-written loop whose own
+        # header, forty lines up, records `git add -A` staging conflict
+        # markers on a conflicted tree. It then did the same thing here.
+        # The regenerate step has NO business staging anything except
+        # the documents it just regenerated, and it already knows their
+        # names: GENERATED is right there.
+        #
+        # `git add -A` at this moment folds whatever happens to be in
+        # the tree into somebody's amended commit. On 2026-09-28 that
+        # shape swept a GitHub PAT into a commit in this repo; the push
+        # gate caught it, which is luck rather than design. Conflict
+        # markers twice and a credential once, all from the same
+        # one-liner.
+        #
+        # ANYTHING ELSE IS NAMED AND NOT STAGED, rather than refused.
+        # A refusal here strands a push mid-rebase, and the whole point
+        # of an allowlist is that the unexpected file simply does not
+        # get committed -- saying nothing about it is the part that
+        # would make this a silent narrowing.
+        for _doc, _gen in GENERATED:
+            git('add', '--', _doc)
+        # THE RE-SEAT, FOLDED IN -- see reseat_only() above for why this
+        # is the step that has to do it and why it is conditional.
+        _rs, _why = reseat_only()
+        if _rs:
+            git('add', '--', LEDGER)
+            print('  re-seated register citations folded in '
+                  '(commit fields only, --check passes)')
+        elif _why not in ('no change to fold',):
+            print('  %s NOT folded in: %s' % (LEDGER, _why))
+        rc3, porc3, _ = git('status', '--porcelain')
+        _left = [ln for ln in (porc3 or '').split('\n')
+                 if ln.strip() and ln[:2] != '  '
+                 and not any(ln.endswith(_d) for _d, _g in GENERATED)]
+        # Only report paths that are still UNSTAGED or UNTRACKED. A file
+        # already in the index is the caller's deliberate act -- often
+        # tools/sairn_rebase_resolve.py's merged ledger -- and belongs in
+        # the commit being amended.
+        _unstaged = [ln for ln in _left
+                     if ln[1:2] in ('M', 'D', '?') or ln[:2] == '??']
+        if _unstaged:
+            print('  NOT STAGED by the regenerate step -- this step '
+                  'stages only the documents it regenerates:')
+            for ln in _unstaged:
+                print('    %s' % ln)
+        arc, _, aerr = git('commit', '--amend', '--no-edit')
+        if arc != 0:
+            print('amend failed: %s' % aerr, file=sys.stderr)
+            return False, 'amend failed: %s' % (aerr or '')[:120]
+        return True, 'folded'
+    return False, 'nothing to fold -- the generated documents already match'
+
+
 def cmd_loop(attempts):
     cap = capture()
     if cap is None:
@@ -516,77 +604,52 @@ def cmd_loop(attempts):
                 print('  NOTHING WAS AMENDED. HEAD is mid-rebase and may be '
                       'another session\'s commit.', file=sys.stderr)
                 return 3
-            for gen_name, status in regenerate():
-                if status != 'ok':
-                    print('  %s: %s' % (gen_name, status))
-            rc2, porc, _ = git('status', '--porcelain')
-            if rc2 == 0 and porc.strip():
-                safe, reasons = amend_safety()
-                if not safe:
-                    print('REFUSING TO AMEND:', file=sys.stderr)
-                    for r in reasons:
-                        print('  - %s' % r, file=sys.stderr)
-                    return 3
-                # ── THE ALLOWLIST, BECAUSE THIS LINE WAS `git add -A` ────────
-                # This tool exists to replace the hand-written loop whose own
-                # header, forty lines up, records `git add -A` staging conflict
-                # markers on a conflicted tree. It then did the same thing here.
-                # The regenerate step has NO business staging anything except
-                # the documents it just regenerated, and it already knows their
-                # names: GENERATED is right there.
-                #
-                # `git add -A` at this moment folds whatever happens to be in
-                # the tree into somebody's amended commit. On 2026-09-28 that
-                # shape swept a GitHub PAT into a commit in this repo; the push
-                # gate caught it, which is luck rather than design. Conflict
-                # markers twice and a credential once, all from the same
-                # one-liner.
-                #
-                # ANYTHING ELSE IS NAMED AND NOT STAGED, rather than refused.
-                # A refusal here strands a push mid-rebase, and the whole point
-                # of an allowlist is that the unexpected file simply does not
-                # get committed -- saying nothing about it is the part that
-                # would make this a silent narrowing.
-                for _doc, _gen in GENERATED:
-                    git('add', '--', _doc)
-                # THE RE-SEAT, FOLDED IN -- see reseat_only() above for why this
-                # is the step that has to do it and why it is conditional.
-                _rs, _why = reseat_only()
-                if _rs:
-                    git('add', '--', LEDGER)
-                    print('  re-seated register citations folded in '
-                          '(commit fields only, --check passes)')
-                elif _why not in ('no change to fold',):
-                    print('  %s NOT folded in: %s' % (LEDGER, _why))
-                rc3, porc3, _ = git('status', '--porcelain')
-                _left = [ln for ln in (porc3 or '').split('\n')
-                         if ln.strip() and ln[:2] != '  '
-                         and not any(ln.endswith(_d) for _d, _g in GENERATED)]
-                # Only report paths that are still UNSTAGED or UNTRACKED. A file
-                # already in the index is the caller's deliberate act -- often
-                # tools/sairn_rebase_resolve.py's merged ledger -- and belongs in
-                # the commit being amended.
-                _unstaged = [ln for ln in _left
-                             if ln[1:2] in ('M', 'D', '?') or ln[:2] == '??']
-                if _unstaged:
-                    print('  NOT STAGED by the regenerate step -- this step '
-                          'stages only the documents it regenerates:')
-                    for ln in _unstaged:
-                        print('    %s' % ln)
-                arc, _, aerr = git('commit', '--amend', '--no-edit')
-                if arc != 0:
-                    print('amend failed: %s' % aerr, file=sys.stderr)
-                    return 1
+            _f, _why = _regenerate_and_fold()
+            if _f:
                 print('  regenerated documents folded into your own commit')
         prc, pout, perr = git('push', 'origin', 'main')
         if prc == 0:
             print('PUSHED')
             return 0
-        tail = (perr or pout or '').split('\n')
+        # ── THE REFUSAL WAS PRINTED FROM THE WRONG END ─────────────────────
+        # This was `tail[-6:]`. The push gate writes its explanation at the
+        # TOP -- the `Blocked:` header, then the named documents and the
+        # command that fixes each -- and git's generic
+        # `error: failed to push some refs` at the BOTTOM. So the last six
+        # lines are reliably the least informative six, and six attempts
+        # produced six identical useless lines while the real reason sat in
+        # the part that was discarded. Observed 2026-10-05: the three stale
+        # generated documents were visible only on a bare `git push`.
+        blob = (perr or '') + ('\n' + pout if pout else '')
+        lines = [l for l in blob.split('\n') if l.strip()]
         print('  push refused:')
-        for l in tail[-6:]:
-            if l.strip():
-                print('    %s' % l)
+        if not lines:
+            print('    (git said nothing on either stream -- that is itself '
+                  'the finding; a refusal with no text is not diagnosable)')
+        # HEAD-ANCHORED, and the lines that carry a remedy are never dropped.
+        _keep = [l for l in lines
+                 if l.lstrip().startswith(('Blocked:', 'fix:', 'FAIL', '!'))
+                 or ' -- ' in l or l.lstrip().startswith('python ')]
+        for l in lines[:14]:
+            print('    %s' % l)
+        if len(lines) > 14:
+            print('    ... %d more line(s); the ones carrying a remedy:'
+                  % (len(lines) - 14))
+            for l in _keep[:8]:
+                if l not in lines[:14]:
+                    print('    %s' % l)
+
+        # ── AND NOW ACT ON IT, which is the half that was missing ──────────
+        # A refusal naming a generated document is the exact failure
+        # `regenerate()` fixes, and the loop used to be unable to reach it
+        # unless something was behind. Try once per attempt.
+        if any(_d in blob for _d, _g in GENERATED):
+            print('  the refusal names a GENERATED document -- regenerating '
+                  'and folding in, which this loop could not do before '
+                  '2026-10-05 unless it was also behind:')
+            _f, _why = _regenerate_and_fold()
+            print('    %s' % ('folded; retrying' if _f
+                              else 'not folded: %s' % _why))
     print('gave up after %d attempt(s). Nothing was forced.' % attempts,
           file=sys.stderr)
     return 1

@@ -84,6 +84,30 @@ import sys
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+# ── THIS TOOL CRASHED MID-SWEEP AND REPORTED ZEROS (found 2026-10-05) ──────
+# The `cited line reads:` line added yesterday prints ARBITRARY APP SOURCE, and
+# sairnlegacy.html carries non-ASCII in a cited line. On a cp1252 console that
+# raised UnicodeEncodeError part-way through the leg_ run, so a sweep driving
+# all 18 prefixes recorded leg_ as SOUND=0 DRIFTED=0 INCONCLUSIVE=0 over 51
+# citations -- a CRASH read as a clean file.
+#
+# FOURTH INSTANCE OF THIS CLASS IN ONE DAY: tools/push_retry.py could not print
+# its own usage, my own derivation script died on it, my own commit-message
+# filter died on it, and now this. 237 of 286 tools/*.py carry non-ASCII with
+# no reconfigure -- that is a PRECONDITION count and not a crash count, but
+# four live hits in a day says the population is not dormant.
+#
+# AND THE FEATURE THAT BROKE IT WAS MINE, added yesterday for a good reason:
+# printing the cited line is what lets a reader tell a stale citation from a
+# deliberate one. The lesson is not "do not print source" -- it is that the
+# moment a tool starts echoing arbitrary file content, its output encoding
+# stops being its own business.
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8')
+
+
 def out(s):
     sys.stdout.write(s + '\n')
 
@@ -165,14 +189,52 @@ def write_sites(lines, consts, resource=None):
     return hits
 
 
-def citations(doc_lines, prefix):
+# ── THE TOOL READ 60% OF ITS SUBJECT AND DID NOT SAY SO (found 2026-10-05) ──
+# `citations()` matched only the BARE form, `` `:NNN` ``. Measured over
+# docs/CRITICALITY-TIERS.md at HEAD before this change:
+#
+#     bare  `:NNN`            285   <- the only form the tool read
+#     named `file.html:NNN`   188   <- INVISIBLE to it, across 147 rows
+#
+# So every verdict this tool ever printed covered 285 of 473 citations and
+# presented it as the answer. That is the coverage-disclosure class, and it is
+# not academic: `sb_perf`'s TWO genuinely drifted citations were both in the
+# invisible 188 and were found by hand-reading the row, not by the tool --
+# `sairnbiz.html:448` had become a Cancel button in the hire modal, and `:4714`
+# had become the training KPI tiles. The tool meanwhile reported a DRIFTED
+# verdict on that row's only bare citation, where the citation was correct.
+#
+# A NAMED CITATION MUST BE RESOLVED AGAINST THE FILE IT NAMES, which is the
+# half that makes this more than a regex widening. 188 of them include
+# `api/sd-data.js:2051` and `stonedesk.html:25608` -- on rows swept with
+# `--app sairngrounds.html`. Resolving those against --app would compare a
+# line number to the wrong file and invent drift with total confidence. So each
+# citation now carries its own file, --app is the default for the bare form
+# only, and a file this tool cannot read is COULD-NOT-RESOLVE rather than
+# drifted.
+#
+# RANGES ARE ANCHORED ON THEIR FIRST LINE. `:6752-6760` is one citation whose
+# subject starts at 6752; treating the end as a second citation would double
+# count, and treating the span as sound-if-any-line-is-near would make a
+# 40-line window into an 80-line one.
+CITE_RE = re.compile(
+    r'`(?:(?P<file>[A-Za-z0-9_./-]+\.(?:html|js))\s*)?:(?P<line>\d+)'
+    r'(?:-\d+)?`')
+
+
+def citations(doc_lines, prefix, default_file=None):
+    """[(resource, line, file)] for every citation form on a prefixed row.
+
+    `file` is the file the citation NAMES, or `default_file` for the bare form.
+    """
     rows = []
     for l in doc_lines:
         if not l.startswith('| `%s' % prefix):
             continue
         name = l.split('`')[1]
-        for m in re.finditer(r'`:(\d+)`', l):
-            rows.append((name, int(m.group(1))))
+        for m in CITE_RE.finditer(l):
+            rows.append((name, int(m.group('line')),
+                         m.group('file') or default_file))
     return rows
 
 
@@ -197,13 +259,27 @@ def main(argv):
     doc_lines = io.open(dp, encoding='utf-8',
                         errors='replace').read().split('\n')
 
-    rows = citations(doc_lines, prefix)
+    rows = citations(doc_lines, prefix, default_file=app)
     if not rows:
         sys.stderr.write(
             'COULD NOT RUN -- no `:NNNN` citation on any `%s` row in %s. An '
             'empty run reporting "no drift" is a measurement that did not '
             'happen.\n' % (prefix, doc))
         return 2
+
+    # ── EVERY CITED FILE IS LOADED, and one that cannot be is NAMED ────────
+    # A citation naming api/sd-data.js on a row swept with --app sairnbiz.html
+    # must be resolved against api/sd-data.js. Comparing it to --app would
+    # measure the wrong file and report drift with total confidence.
+    files = {}
+    unresolvable = []
+    for _f in sorted(set(r[2] for r in rows if r[2])):
+        _p = _f if os.path.isabs(_f) else os.path.join(REPO, _f)
+        try:
+            files[_f] = io.open(_p, encoding='utf-8',
+                                errors='replace').read().split('\n')
+        except OSError as exc:
+            unresolvable.append('%s (%s)' % (_f, exc.strerror or 'unreadable'))
 
     spans = declaration_spans(lines, prefix)
     cmap = const_map(lines, prefix)
@@ -221,6 +297,21 @@ def main(argv):
     out('CITATION LINE DRIFT -- %s against %s' % (doc, app))
     out('  citations found        : %d over %d resource(s)'
         % (len(rows), len(set(r[0] for r in rows))))
+    # ── THE DENOMINATOR, PRINTED. This tool read 60% of its subject and said
+    # nothing; the whole defect was the silence, not the regex.
+    _bare = sum(1 for r in rows if r[2] == app)
+    _named = len(rows) - _bare
+    out('  by form                : %d bare `:NNN` (resolved against --app), '
+        '%d naming their own file' % (_bare, _named))
+    if files:
+        out('  files resolved         : %s'
+            % ', '.join('%s (%d lines)' % (f, len(l))
+                        for f, l in sorted(files.items())))
+    if unresolvable:
+        out('  COULD NOT RESOLVE      : %s' % '; '.join(unresolvable))
+        out('      Those citations are reported INCONCLUSIVE below, never '
+            'drifted: a line number compared against a file this run could '
+            'not read is not a measurement.')
     out('  declaration spans      : %s' % ', '.join('%d-%d' % s for s in spans))
     out('      A citation inside one of these is NOT evidence: each span names')
     out('      every resource, so it would read as sound for all of them.')
@@ -228,9 +319,20 @@ def main(argv):
     out('')
 
     sound, drift, incon = [], [], []
-    for name, n in rows:
-        consts = cmap.get(name) or []
-        sites = write_sites(lines, consts, resource=name)
+    for name, n, cfile in rows:
+        # RESOLVED AGAINST THE FILE THE CITATION NAMES. `lines` (= --app) is
+        # the default for the bare form only.
+        flines = files.get(cfile)
+        if flines is None:
+            incon.append((name, n, 'cites %s, which this run could not read -- '
+                                   'COULD NOT RESOLVE, not drifted' % cfile))
+            continue
+        # Declaration spans and the constant map are properties of --app, so
+        # they only apply to citations INTO --app. A citation into another file
+        # gets the literal-key shape only, which is the honest subset.
+        same_app = (cfile == app)
+        consts = (cmap.get(name) or []) if same_app else []
+        sites = write_sites(flines, consts, resource=name)
         if not sites:
             why = ('no storage constant declared for it, and no literal '
                    "setItem('%s') or st('%s') write either" % (name, name)
@@ -238,25 +340,27 @@ def main(argv):
                    'constants %s are declared but never written with st(), '
                    'and there is no literal-key write either'
                    % ','.join(consts))
+            if not same_app:
+                why += ' in %s (the file this citation names)' % cfile
             incon.append((name, n, why))
             continue
         near = [s for s in sites if abs(s - n) <= window]
         if near:
-            sound.append((name, n, near[0]))
+            sound.append((name, n, near[0], cfile))
             continue
         nearest = min(sites, key=lambda s: abs(s - n))
         # THE CITED LINE ITSELF, because it is what decides stale-vs-deliberate
         # and the reader should not have to open the file to see it. 1-indexed.
-        cited = lines[n - 1].strip() if 0 < n <= len(lines) else ''
+        cited = flines[n - 1].strip() if 0 < n <= len(flines) else ''
         drift.append((name, n, nearest, nearest - n,
-                      in_spans(n, spans), cited))
+                      in_spans(n, spans) if same_app else False, cited, cfile))
 
-    for name, n, site in sound:
-        out('  SOUND        %-26s :%-6d write site :%d within %d lines'
-            % (name, n, site, window))
-    for name, n, site, off, indecl, cited in drift:
-        out('  DRIFTED      %-26s :%-6d -> :%-6d offset %+d%s'
-            % (name, n, site, off,
+    for name, n, site, cfile in sound:
+        out('  SOUND        %-26s %s:%-6d write site :%d within %d lines'
+            % (name, '' if cfile == app else cfile, n, site, window))
+    for name, n, site, off, indecl, cited, cfile in drift:
+        out('  DRIFTED      %-26s %s:%-6d -> :%-6d offset %+d%s'
+            % (name, '' if cfile == app else cfile, n, site, off,
                '   (the cited line is INSIDE a declaration block, which is why '
                'the first detector called it sound)' if indecl else ''))
         # Truncated, because one long minified line would bury every other

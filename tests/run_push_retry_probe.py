@@ -40,7 +40,7 @@ import sys
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOL = os.path.join(REPO, 'tools', 'push_retry.py')
 
-CRITERIA_VERSION = '2026-10-05.1'
+CRITERIA_VERSION = '2026-10-05.2'
 
 _pass = _fail = 0
 
@@ -153,6 +153,77 @@ def main():
     else:
         bad('C2. stderr must be reconfigured as well',
             'refusal reasons print there')
+
+    sys.stdout.write('\nD. THE LOOP CAN FIX THE FAILURE IT IS NAMED FOR\n')
+
+    # ── WHY THESE ARE SOURCE-LEVEL ARMS ────────────────────────────────────
+    # Driving cmd_loop() for real means fetch, rebase and PUSH against a branch
+    # four other clones share. A control with side effects on other people's
+    # work is not a control, so the two defects are pinned structurally: the
+    # remedy must not be reachable only from the rebase branch, and the
+    # refusal must not be printed from the tail. Stated rather than left as an
+    # unexplained gap -- see the header.
+    import inspect
+    sys.path.insert(0, os.path.join(REPO, 'tools'))
+    import push_retry as _pr
+
+    loop_src = inspect.getsource(_pr.cmd_loop)
+
+    if hasattr(_pr, '_regenerate_and_fold'):
+        ok('D1. the regenerate-and-fold step is its OWN function. It used to '
+           'live inside `if behind > 0:`, so with nothing to rebase the loop '
+           'could not reach the remedy at all -- observed 2026-10-05 as six '
+           'attempts, six identical "failed to push some refs" lines, and a '
+           'push refused the whole time for three stale generated documents')
+    else:
+        bad('D1. the remedy must be callable from both paths',
+            '_regenerate_and_fold is absent')
+
+    # It must be called from the REFUSAL path, not only after a rebase. Counted,
+    # because one call site is the old behaviour wearing a new name.
+    n_calls = loop_src.count('_regenerate_and_fold()')
+    if n_calls >= 2:
+        ok('D2. ...and cmd_loop calls it from %d sites -- after a successful '
+           'rebase AND after a push refusal. ONE call site would be the old '
+           'behaviour with a new name, which is why this arm counts them'
+           % n_calls)
+    else:
+        bad('D2. the remedy must be reached from the refusal path too',
+            'only %d call site(s)' % n_calls)
+
+    # MATCHED ON THE CODE FORM, NOT THE BARE STRING. The first version of this
+    # arm checked `'tail[-6:]' not in loop_src` and FAILED -- on the comment I
+    # had just written to explain that `tail[-6:]` was the old behaviour. A
+    # source-level arm that greps for a token matches the prose documenting the
+    # token, so it has to grep for something only the CODE can contain. Left in
+    # rather than tidied: this is PR 1.2 (grep cannot tell code from text that
+    # describes code) committed inside a control written the same hour.
+    _code_lines = [l for l in loop_src.split('\n')
+                   if not l.lstrip().startswith('#')]
+    _code = '\n'.join(_code_lines)
+    if 'tail[-6:]' not in _code and 'lines[:14]' in _code:
+        ok('D3. the refusal is printed HEAD-ANCHORED. The push gate writes its '
+           '`Blocked:` header and the fix command at the TOP and git\'s '
+           'generic error at the BOTTOM, so `tail[-6:]` reliably printed the '
+           'least informative six lines -- which is how six attempts produced '
+           'six useless messages')
+    else:
+        bad('D3. the refusal must not be printed from the tail',
+            'tail[-6:] still present, or the head slice is gone')
+
+    if 'carrying a remedy' in loop_src:
+        ok('D4. ...and when the output is longer than the head slice, the '
+           'lines carrying a REMEDY are pulled out rather than dropped, so a '
+           'truncation cannot hide the one line that says what to do')
+    else:
+        bad('D4. remedy-bearing lines must survive truncation', '')
+
+    if 'git said nothing on either stream' in loop_src:
+        ok('D5. a refusal with NO text on either stream is reported as itself '
+           'rather than printed as an empty block -- a push that fails '
+           'silently is not diagnosable, and saying so beats showing nothing')
+    else:
+        bad('D5. an empty refusal must be named', '')
 
     sys.stdout.write('\n%d passed, %d failed\n' % (_pass, _fail))
     return 1 if _fail else 0

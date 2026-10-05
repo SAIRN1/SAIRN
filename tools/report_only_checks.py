@@ -3274,10 +3274,22 @@ def _write_reachability(reach, budget):
             'reached': sum(1 for r in reach if r[3]),
             'never_reached': sum(1 for r in reach if not r[3]),
             'note': 'DERIVED by tools/report_only_checks.py on a full sweep. '
-                    'A tool listed with reached=false is REGISTERED AND DEAD: '
-                    'the sweep stops at 0.9 x budget and breaks, so POSITION '
-                    'IN REGISTRY decides. Do not read a `promoted:` field as '
+                    'A tool with reached=false DID NOT RUN IN THIS SWEEP: the '
+                    'sweep stops at 0.9 x budget and breaks, so POSITION IN '
+                    'REGISTRY decides. Do not read a `promoted:` field as '
                     'evidence that a checker runs -- read this.',
+            'boundary_is_NOT_stable': 'MEASURED 2026-10-05, and it is the '
+                    'caveat that matters: two consecutive full sweeps of the '
+                    'SAME registry on the SAME machine reached 38 and then 44 '
+                    'entries -- SIX FLIPPED from dead to alive on run-to-run '
+                    'timing variance alone (sairn_dead_button_audit.py 153.5s '
+                    'then 130.6s; write_without_readback_check.py 56.1s then '
+                    '40.2s). So reached=false means "did not run in the last '
+                    'measured sweep", NOT "cannot run", and an entry near the '
+                    'boundary may be either on any given push. The entries '
+                    'deep in the tail are reliably dead; the ones within a few '
+                    'slots of the cutoff are a coin toss, and nothing here can '
+                    'tell a reader which is which from one run.',
             'entries': [{'tool': t, 'seconds': s, 'cumulative': round(c, 1),
                          'reached': bool(k)} for t, s, c, k in reach],
         }
@@ -3515,7 +3527,12 @@ def main(argv):
             elif _rmap[e['tool']][0]:
                 _tag = 'reach=RUNS at %ss' % _rmap[e['tool']][1]
             else:
-                _tag = 'reach=NEVER REACHED -- REGISTERED AND DEAD'
+                # "DID NOT RUN", not "CANNOT RUN". Two consecutive sweeps of
+                # the same registry reached 38 then 44 -- six entries flipped
+                # on timing variance alone. An entry near the cutoff is a coin
+                # toss per push, and claiming otherwise would be this feature
+                # making the same kind of overstatement it was built to stop.
+                _tag = 'reach=DID NOT RUN in the last measured sweep'
                 unreached.append(e['tool'])
             print('[%2d] %-32s %s' % (_i, e['tool'], _tag))
             print('%-32s promoted %s (%s)'
@@ -3546,8 +3563,9 @@ def main(argv):
                   % (len(unreached), len(REGISTRY)))
             for t in unreached:
                 print('  %s' % t)
-            print('  These are PROMOTED and DEAD. The sweep stops at the '
-                  'effective cutoff and')
+            print('  These are PROMOTED and DID NOT RUN in the last measured '
+                  'sweep. The sweep stops')
+            print('  at the effective cutoff and')
             print('  BREAKS, so everything after that index is sliced off -- '
                   'nothing about a')
             print('  checker other than its POSITION decides this, and nothing '
@@ -3557,6 +3575,13 @@ def main(argv):
             print('  execution. Raise the budget, split the sweep, or demote '
                   'them honestly --')
             print('  but do not count them as coverage.')
+            print('  THE BOUNDARY IS NOT STABLE: two consecutive sweeps of '
+                  'this registry reached 38')
+            print('  then 44 entries, six flipping on timing variance alone. '
+                  'Entries deep in the')
+            print('  tail are reliably dead; ones within a few slots of the '
+                  'cutoff are a coin toss,')
+            print('  and one run cannot tell you which is which.')
             print('')
         print('DELIBERATELY NOT PROMOTED (%d) -- the decision, recorded once:'
               % len(NOT_PROMOTED))

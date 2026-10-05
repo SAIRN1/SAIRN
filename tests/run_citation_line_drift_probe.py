@@ -31,8 +31,9 @@ import tempfile
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CHECK = os.path.join(REPO, 'tools', 'citation_line_drift_check.py')
+sys.path.insert(0, os.path.join(REPO, 'tools'))
 
-CRITERIA_VERSION = '2026-10-04.2'
+CRITERIA_VERSION = '2026-10-05.3'
 
 _pass = _fail = 0
 
@@ -348,6 +349,78 @@ def main():
         else:
             bad('F4. a render-site citation must still be surfaced, not passed',
                 'exit=%s -- silently sound is the worse failure here' % code2)
+
+        # ── G. THE CITATION FORMS IT USED TO BE BLIND TO ────────────────────
+        # Measured 2026-10-05, before the expansion: the extractor was
+        # `` `:(\d+)` `` -- anchored on a CLOSING BACKTICK immediately after
+        # the digits. So two whole forms were invisible:
+        #
+        #   `file.html:NNN`   188 of them, across 147 register rows
+        #   `:NNN-NNN`        a range, because the `-` broke the anchor
+        #
+        # Every verdict this tool printed covered 285 of 473 citations and
+        # presented it as the answer. sb_perf's two genuinely drifted
+        # citations were both in the invisible set and were found by
+        # hand-reading the row.
+        section('G. THE FORMS THE EXTRACTOR WAS BLIND TO')
+
+        import citation_line_drift_check as _c
+        _row = ('| `zz_alpha` | A | shape at `:12`, also `app.html:34`, '
+                'and a range `:56-60`, plus `api/sd-data.js:78` |')
+        got = _c.citations([_row], 'zz_', default_file='DEFAULT.html')
+        if got == [('zz_alpha', 12, 'DEFAULT.html'),
+                   ('zz_alpha', 34, 'app.html'),
+                   ('zz_alpha', 56, 'DEFAULT.html'),
+                   ('zz_alpha', 78, 'api/sd-data.js')]:
+            ok('G1. all four forms extracted: bare, file-named, RANGE (anchored '
+               'on its FIRST line, not both ends -- counting the end too would '
+               'double count and treating the span as near-enough would turn a '
+               '40-line window into an 80-line one), and a nested api/ path')
+        else:
+            bad('G1. every citation form must be extracted', repr(got))
+
+        if all(f for _, _, f in got):
+            ok('G2. every citation carries a FILE -- bare ones inherit --app, '
+               'named ones keep their own. THIS IS THE HALF THAT MATTERS: '
+               '`api/sd-data.js:2051` appears on rows swept with --app set to '
+               'an .html, and resolving it against --app would compare a line '
+               'number to the wrong file and invent drift with total '
+               'confidence')
+        else:
+            bad('G2. a citation with no file would resolve against the wrong '
+                'file', repr(got))
+
+        _none = _c.citations([_row], 'yy_', default_file='DEFAULT.html')
+        if _none == []:
+            ok('G3. ...and a row whose resource does not match the prefix '
+               'still yields nothing, so G1 is not passing because the '
+               'extractor matches everything')
+        else:
+            bad('G3. the prefix filter must still apply', repr(_none))
+
+        ap, dp = fixture(d, app(), doc([('zz_alpha', 60)]))
+        code, o = run(ap, dp, '--window', '10')
+        if 'by form' in o:
+            ok('G4. the run DISCLOSES ITS DENOMINATOR by form -- the defect was '
+               'never the regex, it was that a 60%% reading printed as the '
+               'answer. A tool that reads part of its subject must say which '
+               'part')
+        else:
+            bad('G4. the coverage by form must be printed', o[-300:])
+
+        _missing = ('| `zz_alpha` | A | see `no_such_file_xyz.html:10` |')
+        ap2, dp2 = fixture(d, app(), [_missing])
+        code2, o2 = run(ap2, dp2, '--window', '10')
+        if 'COULD NOT RESOLVE' in o2 and 'DRIFTED      : 0' in o2:
+            ok('G5. KNOWN-BAD: a citation naming a file this run cannot read is '
+               'COULD NOT RESOLVE and is NOT counted as drifted. A line number '
+               'compared against a file that was never opened is not a '
+               'measurement, and reporting it as drift would invite a '
+               'correction computed from nothing')
+        else:
+            bad('G5. an unreadable cited file must not become a drift verdict',
+                'exit=%s\n%s' % (code2, o2[-400:]))
+
     finally:
         shutil.rmtree(d, ignore_errors=True)
 

@@ -55,6 +55,89 @@ R = {}
 def check(label, actual, expected):
     R[label] = (actual == expected, actual, expected)
 
+# ── MOVED TO THE FRONT 2026-10-05, and the reason is the finding itself ──
+# These arms were appended at the END of this file and the probe TIMED OUT
+# at 280s before reaching them -- so the control for 'a registered checker
+# that never runs' was itself a check that never ran. Same defect, one
+# level up, inside the control written to catch it. Discipline 10: no long
+# run whose first check is at the end. They are milliseconds and they are
+# first.
+
+# ══ A REGISTERED CHECKER THAT NEVER RUNS MUST NOT READ AS COVERAGE ═════════
+# FILED 2026-10-05 as a named finding, not an ad-hoc fix. Measured on the real
+# registry: 73 entries, and a full sweep at the real 600s budget reached 38 of
+# them. The other 35 were PROMOTED, REASONED, CONTROLLED -- and had never
+# executed. `--list` printed `promoted: <date>` for every one of them and could
+# not say which had never run, so 40% of the registry read as coverage.
+#
+# THE SWEEP ITSELF WAS NEVER THE SILENT PART, which is the half worth pinning:
+# it already named every skipped tool, printed a dedicated block, and main()
+# returned 1. The silence was in the OTHER surface, which returned 0
+# unconditionally -- a caller could read the whole registry and be told nothing
+# was wrong.
+#
+# AND THE BOUNDARY IS NOT STABLE. Two consecutive sweeps of the same registry
+# on the same machine reached 38 then 44, six entries flipping on timing
+# variance alone (sairn_dead_button_audit.py 153.5s then 130.6s). So the
+# verdict a reader may rely on is "did not run in the last measured sweep",
+# never "cannot run", and arm T4 pins that wording -- because the overstatement
+# is the exact failure this feature exists to prevent, one level up.
+#
+# DRIVEN ON A SYNTHETIC RECORD, not by running the 600-second sweep: the
+# question is whether the SURFACE tells the truth about a dead entry, and a
+# fixture answers that in milliseconds. A control that takes ten minutes is a
+# control that gets skipped.
+print()
+print('T. A DEAD REGISTRY ENTRY MUST NOT READ AS COVERAGE')
+
+_real_reach = roc.REACHABILITY_FILE
+_tmpd = tempfile.mkdtemp(prefix='reach_')
+try:
+    roc.REACHABILITY_FILE = os.path.join(_tmpd, 'reach.json')
+
+    # No record at all -> the third state, never a blank.
+    _d, _m = roc._read_reachability()
+    check('T1 absent record reads as a THIRD STATE, not as reachable',
+          (_d, _m), (None, {}))
+
+    # A record with one live and one dead entry.
+    roc._write_reachability([('alive.py', 1.0, 1.0, True),
+                             ('dead.py', None, 600.0, False)], 600)
+    _d, _m = roc._read_reachability()
+    check('T2 a written record round-trips, and the dead entry is dead',
+          (_d['reached'], _d['never_reached'], _m['dead.py'][0]),
+          (1, 1, False))
+
+    # THE KNOWN-BAD: the record must carry the instability caveat, so a reader
+    # cannot take "never reached" as a property of the tool.
+    check('T3 the record DISCLOSES that the boundary is not stable',
+          'boundary_is_NOT_stable' in _d, True)
+
+    _src = io.open(os.path.join(REPO, 'tools', 'report_only_checks.py'),
+                   encoding='utf-8').read()
+    check('T4 the per-entry tag says DID NOT RUN, never CANNOT RUN',
+          ('DID NOT RUN in the last measured sweep' in _src
+           and 'REGISTERED AND DEAD' not in _src), True)
+
+    # The loud half: the surface must FAIL, not just mention it.
+    check('T5 --list returns 1 when any registered checker is dead',
+          'return 1 if unreached else 0' in _src, True)
+
+    # And it must not fail when everything ran -- otherwise T5 passes because
+    # the surface always fails, which would be a different kind of useless.
+    check('T6 ...and the failure is CONDITIONAL on unreached, not constant',
+          _src.count('return 1 if unreached else 0'), 1)
+
+    # A write that cannot happen must be reported, not swallowed. This is the
+    # bug the feature shipped with: io.open in a module with no io, caught only
+    # because the handler printed.
+    check('T7 a failed record write is PRINTED, not passed over',
+          'COULD NOT WRITE' in _src, True)
+finally:
+    roc.REACHABILITY_FILE = _real_reach
+    shutil.rmtree(_tmpd, ignore_errors=True)
+
+
 
 def nav_on(html):
     fd, path = tempfile.mkstemp(suffix='.html')
