@@ -26,10 +26,46 @@ check that has stopped testing anything reads identically to one that passed --
 and the twelfth: ABLATION over assertion. Remove ONE named layer and measure
 what it alone catches.
 
+── THE POPULATION IS DERIVED, AND IT USED TO BE A LIST (changed 2026-10-05) ──
+The universe is now every TRACKED `tools/*.py` carrying at least one
+module-level compiled rule, read from `git ls-files`. It used to be
+`report_only_checks.REGISTRY`, and that is the single worst thing this tool has
+been wrong about, because it was wrong QUIETLY and in its own headline number.
+
+    MEASURED 2026-10-05, the same day the list was replaced:
+
+      tracked tools/*.py                            295
+      with at least one module-level rule           150   ->  521 rules
+        of those, IN the report-only registry        45   ->  169 rules
+        of those, OUTSIDE it                        105   ->  352 rules
+
+**The sweep had been reporting on 169 of 521 rules -- 32% -- and printing the
+figure as if it were the platform.** Nothing refused the other 352; they simply
+were not reachable from the only list it read, and it had no way to say so.
+
+The day before, this was found one tool at a time: `gap_ledger.py` was missing,
+so the real figure was called "162 of 169" and two names were added. **That
+closed two names and left the mechanism**, which is the lesson worth more than
+the fix -- *a universe derived from a hand-maintained list reports confidently
+about the part of the fleet that list happens to name, and cannot say what is
+outside it.*
+
+EXEMPTION IS NOW A DECLARATION WITH A REASON, NOT AN OMISSION. A file leaves the
+universe one of two ways, and both are printed by `--universe`:
+
+  * MECHANICALLY -- it compiles no module-level rule, so there is nothing to
+    ablate. Derived per file, never declared, never a judgement.
+  * DECLARED -- it is in `EXEMPT` below with a one-line reason. That dict is
+    deliberately tiny and every entry must still CARRY rules; an entry for a
+    file with none is noise and `--universe` says so rather than ignoring it.
+
+`--registry-only` reproduces the old 169-rule population on purpose, so the two
+figures can be compared and are never quoted as one.
+
 ── WHAT THIS DOES ───────────────────────────────────────────────────────────
-For every module-level compiled pattern in every tool in the report-only
-registry, it NEUTRALISES that one pattern -- replaced with `(?!x)x`, which is
-syntactically valid and can never match -- and re-runs the tool's own evidence:
+For every module-level compiled pattern in every tool in the universe, it
+NEUTRALISES that one pattern -- replaced with `(?!x)x`, which is syntactically
+valid and can never match -- and re-runs the tool's own evidence:
 
     1. its fixture lock  (`--fixtures` / `--selftest`), if it has one; else
     2. its declared control, from CONTROLLED_BY.
@@ -329,6 +365,83 @@ def registry_tools():
         return None
 
 
+# ── THE DECLARED EXEMPTIONS, AND THE LIST IS SHORT ON PURPOSE ───────────────
+# A long exemption list is the hand-maintained universe wearing a different
+# name. Anything that compiles a module-level rule is IN unless ablating it is
+# incoherent -- not merely inconvenient, not "probably fine", not "it is only a
+# library". A rule in a library can be dead exactly as a rule in a checker can.
+#
+# Every entry must still carry rules. An exemption for a file with none excuses
+# nothing and hides the fact that the mechanical rule already covered it, so
+# `--universe` reports it as a STALE EXEMPTION rather than passing over it.
+# IT IS EMPTY, AND THAT IS THE MEASURED RESULT RATHER THAN AN OVERSIGHT.
+# The first entry written here was `dead_rule_sweep.py` itself -- "neutralising
+# its own rule mid-run measures the harness, not the subject" -- which is a true
+# sentence and a USELESS exemption: this file compiles no module-level rule, so
+# the mechanical branch already excluded it. The STALE_EXEMPT check below caught
+# that within minutes of being written, on its author, and refused the run.
+#
+# So the honest state of the declared list is NOTHING. Every one of the 295
+# tracked tools is classified by a rule, not by a judgement, and if that ever
+# stops being true the entry has to carry a reason somebody can argue with.
+EXEMPT = {}
+
+
+def classify_universe(registry=None):
+    """[(tool, state, rules, why)] for every tracked tools/*.py.
+
+    Four states, and the first two are the universe:
+
+      IN        has module-level rules and is not exempt
+      OUT_REG   has rules, in the universe, but ABSENT from the report-only
+                registry -- the delta this change exists to make visible
+      EXEMPT    declared in EXEMPT above, with its reason
+      NO_RULE   compiles no module-level rule; nothing to ablate (mechanical)
+      UNREADABLE  does not parse -- NOT folded into NO_RULE, because "no rules"
+                and "I could not look" are opposite findings
+
+    The list is derived from `git ls-files`, matching what tooling_inventory.py
+    does, so an untracked file is reported as invisible rather than silently
+    swept in one tool and not the other.
+    """
+    r = subprocess.run(['git', '-C', REPO, 'ls-files', 'tools/*.py'],
+                       capture_output=True, text=True, encoding='utf-8',
+                       errors='replace')
+    if r.returncode != 0:
+        return None
+    reg = set(registry or [])
+    rows = []
+    for rel in sorted(x.strip() for x in (r.stdout or '').split('\n') if x.strip()):
+        base = os.path.basename(rel)
+        try:
+            src = io.open(os.path.join(REPO, rel), encoding='utf-8',
+                          errors='replace').read()
+        except OSError as exc:
+            rows.append((base, 'UNREADABLE', 0, exc.__class__.__name__))
+            continue
+        pats = module_patterns(src)
+        if pats is None:
+            rows.append((base, 'UNREADABLE', 0, 'does not parse'))
+        elif base in EXEMPT:
+            rows.append((base, 'EXEMPT' if pats else 'STALE_EXEMPT',
+                         len(pats), EXEMPT[base]))
+        elif not pats:
+            rows.append((base, 'NO_RULE', 0,
+                         'no module-level compiled rule -- nothing to ablate'))
+        elif base in reg:
+            rows.append((base, 'IN', len(pats), 'in the report-only registry'))
+        else:
+            rows.append((base, 'OUT_REG', len(pats),
+                         'NOT in the report-only registry -- invisible to this '
+                         'sweep before 2026-10-05'))
+    return rows
+
+
+def universe_tools(rows):
+    """The tools actually swept: every IN and every OUT_REG, in one order."""
+    return [t for t, state, _, _ in rows if state in ('IN', 'OUT_REG')]
+
+
 # ── THE SANDBOX, AND WHY THE RESTORE-IN-FINALLY WAS NOT ENOUGH ──────────────
 # This sweep used to neutralise a rule IN THE TRACKED FILE and put it back in a
 # `finally`. That is correct for every path the interpreter walks and worthless
@@ -520,7 +633,72 @@ def main(argv):
     ap.add_argument('--fixtures', action='store_true')
     ap.add_argument('--tool', default=None)
     ap.add_argument('--quiet', action='store_true')
+    ap.add_argument('--universe', action='store_true',
+                    help='classify every tracked tools/*.py and stop -- the '
+                         'delta list, no ablation')
+    ap.add_argument('--registry-only', action='store_true',
+                    help='the PRE-2026-10-05 population (report_only_checks.'
+                         'REGISTRY) so the old figure stays reproducible')
+    ap.add_argument('--segment', default=None, metavar='I/N',
+                    help='sweep slice I of N (1-based). The tenth discipline: '
+                         'no long run whose first check is at the end')
     a = ap.parse_args(argv)
+
+    def _universe_report():
+        # Runs AFTER the criteria lock, deliberately: the classification is
+        # `module_patterns()` applied 295 times, and that is the function the
+        # lock tests. A population printed by an unlocked parser is a list of
+        # names with no evidence behind it.
+        rows = classify_universe(registry=registry_tools())
+        if rows is None:
+            print('COULD NOT RUN -- `git ls-files tools/*.py` failed, so the '
+                  'population could not be derived.\nThis is NOT an empty '
+                  'universe and is not reported as one.')
+            return EXIT_COULD_NOT_RUN
+        by = {}
+        for t, state, n, why in rows:
+            by.setdefault(state, []).append((t, n, why))
+        print('UNIVERSE CLASSIFICATION -- criteria %s' % CRITERIA_VERSION)
+        print('derived from `git ls-files tools/*.py`, not from a '
+              'hand-maintained list\n')
+        for state in ('IN', 'OUT_REG', 'EXEMPT', 'STALE_EXEMPT', 'NO_RULE',
+                      'UNREADABLE'):
+            items = by.get(state, [])
+            if not items:
+                continue
+            print('%s (%d file(s), %d rule(s))'
+                  % (state, len(items), sum(n for _, n, _ in items)))
+            for t, n, why in sorted(items, key=lambda x: (-x[1], x[0])):
+                print('  %3d  %-44s %s' % (n, t, why))
+            print()
+        swept = universe_tools(rows)
+        in_reg = sum(n for _, n, _ in by.get('IN', []))
+        out_reg = sum(n for _, n, _ in by.get('OUT_REG', []))
+        print('TOTALS')
+        print('  tracked tools/*.py                  %4d' % len(rows))
+        print('  THE UNIVERSE -- files swept         %4d  -> %4d rule(s)'
+              % (len(swept), in_reg + out_reg))
+        print('    of those, in the registry         %4d  -> %4d rule(s)'
+              % (len(by.get('IN', [])), in_reg))
+        print('    of those, OUTSIDE it              %4d  -> %4d rule(s)'
+              % (len(by.get('OUT_REG', [])), out_reg))
+        print('  exempt, declared with a reason      %4d'
+              % len(by.get('EXEMPT', [])))
+        print('  no module-level rule -- mechanical  %4d'
+              % len(by.get('NO_RULE', [])))
+        if by.get('UNREADABLE'):
+            print('  UNREADABLE -- NOT a clean file      %4d'
+                  % len(by['UNREADABLE']))
+        if by.get('STALE_EXEMPT'):
+            print('\n! %d STALE EXEMPTION(S) -- declared for a file that '
+                  'compiles no rule.\n  The mechanical rule already covers it; '
+                  'the entry excuses nothing and\n  makes EXEMPT look longer '
+                  'than the judgement it actually carries.'
+                  % len(by['STALE_EXEMPT']))
+            return 1
+        print('\nREPORT ONLY. Nothing was ablated -- this is the population, '
+              'not a verdict.')
+        return 0
 
     if not a.quiet:
         print('DEAD RULE SWEEP -- criteria %s' % CRITERIA_VERSION)
@@ -540,14 +718,74 @@ def main(argv):
               'sources only' % (len(FIXTURES) + 1, len(FIXTURES) + 1))
     if a.fixtures:
         return 0
+    if a.universe:
+        return _universe_report()
 
-    tools = [a.tool] if a.tool else registry_tools()
+    # ── THE POPULATION ─────────────────────────────────────────────────────
+    # Derived from the tracked tool list, not from REGISTRY. --registry-only
+    # keeps the old population reachable so the two figures stay comparable
+    # and nobody has to guess which one a past document was quoting.
+    rows, out_of_registry = None, 0
+    if a.tool:
+        tools = [a.tool]
+    elif a.registry_only:
+        tools = registry_tools()
+        if not tools:
+            if not a.quiet:
+                print('\nCOULD NOT READ the report-only registry, which is the '
+                      'population --registry-only\nasks for. Nothing to report '
+                      'rather than nothing wrong.')
+            return EXIT_COULD_NOT_RUN
+    else:
+        rows = classify_universe(registry=registry_tools())
+        if rows is None:
+            if not a.quiet:
+                print('\nCOULD NOT DERIVE THE POPULATION -- `git ls-files '
+                      'tools/*.py` failed.\nThis is NOT an empty universe and '
+                      'is not reported as one. A sweep over zero\ntools exits 0 '
+                      'and says nothing, which is the shape two of these sweeps '
+                      'shipped\nwith until 2026-10-05.')
+            return EXIT_COULD_NOT_RUN
+        stale = [t for t, s, _, _ in rows if s == 'STALE_EXEMPT']
+        if stale:
+            if not a.quiet:
+                print('\nCOULD NOT RUN -- %d STALE EXEMPTION(S): %s'
+                      % (len(stale), ', '.join(stale)))
+                print('An EXEMPT entry for a file that compiles no rule excuses '
+                      'nothing and makes the\ndeclared list look longer than the '
+                      'judgement it carries. Fix EXEMPT first;\n`--universe` '
+                      'names them.')
+            return EXIT_COULD_NOT_RUN
+        tools = universe_tools(rows)
+        out_of_registry = len([t for t, s, _, _ in rows if s == 'OUT_REG'])
+
     if not tools:
         if not a.quiet:
-            print('\nCOULD NOT READ the report-only registry. The population is '
-                  'that registry\nand nothing else, so there is nothing to '
-                  'report rather than nothing wrong.')
+            print('\nCOULD NOT RUN -- the population is EMPTY. Not a clean '
+                  'sweep: a run over zero\ntools has nothing to say and must '
+                  'not exit 0.')
         return EXIT_COULD_NOT_RUN
+
+    # ── SEGMENTATION (tenth discipline) ────────────────────────────────────
+    # The glob universe is 150 tools where the registry was 45, so one run is
+    # long enough that its first verdict used to arrive at the end. A slice
+    # prints its own verdict at its own boundary. THE SLICE IS ALWAYS PRINTED:
+    # a partial run reported as a whole one is the defect this file is about.
+    seg_label = ''
+    if a.segment:
+        try:
+            i_s, n_s = a.segment.split('/')
+            i_s, n_s = int(i_s), int(n_s)
+            if not (1 <= i_s <= n_s):
+                raise ValueError
+        except ValueError:
+            print('--segment wants I/N with 1 <= I <= N, got %r' % a.segment)
+            return EXIT_COULD_NOT_RUN
+        whole = len(tools)
+        tools = tools[i_s - 1::n_s]
+        seg_label = ('  SEGMENT %d of %d -- %d of %d tool(s). THIS IS A SLICE; '
+                     'its findings are not\n  the platform figure.'
+                     % (i_s, n_s, len(tools), whole))
 
     # ── EVERY MUTATION FROM HERE DOWN HAPPENS IN A COPY ────────────────────
     # And if the copy cannot be made, this run does not happen. There is no
@@ -601,8 +839,19 @@ def main(argv):
     total = (len(dead) + live + len(unknown) + live_corpus
              + len(dead_output) + len(writes))
     if not a.quiet:
-        print('read %d tool(s) from the report-only registry; %d module-level '
-              'compiled rule(s)' % (len(tools), total))
+        if a.tool:
+            src_label = 'named on the command line'
+        elif a.registry_only:
+            src_label = ('from the report-only registry (--registry-only: the '
+                         'PRE-2026-10-05 population)')
+        else:
+            src_label = ('from `git ls-files tools/*.py`, of which %d are '
+                         'OUTSIDE the report-only registry\nand were invisible '
+                         'to this sweep before 2026-10-05' % out_of_registry)
+        print('read %d tool(s) %s; %d module-level compiled rule(s)'
+              % (len(tools), src_label, total))
+        if seg_label:
+            print(seg_label)
         print('\nCHECKED / UNIVERSE: %d of %d rules could be ABLATED against '
               'SOME evidence.\n  %d of those against evidence the tool SHIPS -- '
               'a lock or a control -- of which\n  %d exercised and %d dead. '

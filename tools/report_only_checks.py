@@ -2399,8 +2399,8 @@ REGISTRY = [
     },
 
     # ── TWO ENTRIES ADDED 2026-10-05, AND THE REASON IS THE REGISTRY ITSELF ─
-    # tools/dead_rule_sweep.py derives its universe FROM THIS LIST. A tool
-    # that is not here has its rules counted by nothing, so the platform
+    # tools/dead_rule_sweep.py USED TO DERIVE its universe from this list. A
+    # tool that was not here had its rules counted by nothing, so the platform
     # figure -- "162 rules, 8 dead" on 2026-10-05 -- silently excluded every
     # rule in any tool added while this file was claimed by somebody else.
     # Measured: gap_ledger.py appeared ZERO times in that sweep's output while
@@ -2411,6 +2411,18 @@ REGISTRY = [
     # the sweep reads, and the sweep had no way to say so. A universe derived
     # from a hand-maintained list reports confidently about the part of the
     # fleet that list happens to name.
+    #
+    # AND THAT IS WHY THESE TWO ENTRIES ARE NO LONGER WHAT FIXED IT. LATER THE
+    # SAME DAY the sweep's population was changed to `git ls-files tools/*.py`,
+    # and the hole turned out to be 352 rules in 105 files rather than 7 in
+    # one -- the sweep had been reporting on 169 of 521 rules. ADDING TWO NAMES
+    # CLOSED TWO NAMES AND LEFT THE MECHANISM, which is the more expensive
+    # lesson and is recorded here because this is where the wrong fix lives.
+    # These entries stay: being in REGISTRY is still what wires a tool to the
+    # report-only sweep, which is a different job from being counted by
+    # dead_rule_sweep. The two populations are now distinguishable on purpose
+    # (`--registry-only` reproduces this one). See
+    # docs/2026-10-05-dead-rule-universe-delta.md.
     {
         'tool': 'gap_ledger.py',
         'mode': 'once',
