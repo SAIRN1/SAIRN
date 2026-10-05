@@ -11572,6 +11572,60 @@ module.exports = async (req, res) => {
           res.status(400).json({ error: { code: 'NO_CONTACT_ID', message: 'contact_id is required' } });
           return;
         }
+        // ── THIS ACTION HAD NO CALLER GATE AT ALL (H1 #877, fixed 2026-10-05)
+        // `action === 'read'` eleven lines above gates on BOTH a role set and
+        // the caller's resident assignment. This one gated on NEITHER. It
+        // checked the CONTACT's consent, via familyMarView, and never asked
+        // whether the CALLER was allowed to ask -- so any authenticated session
+        // on the licence, including a `med_aide` or `activities` employee with
+        // no resident assigned to them at all, could pass any contact_id and
+        // receive that resident's full medication administration record.
+        //
+        // THE CONSENT CHECK IS NOT AN AUTHORISATION CHECK, and that is the
+        // whole defect in one sentence. familyMarView answers "may this FAMILY
+        // CONTACT see anything", which is a question about the contact. It was
+        // standing in for "may this EMPLOYEE read this resident's MAR", which
+        // is a question about the session, and nothing was asking it.
+        //
+        // SAME GATES AS `read`, AND RESOLVED BEFORE THE CONTACT IS FETCHED.
+        // The resident is only knowable from the stored contact row, so the
+        // tempting order is lookup-then-authorise -- but that answers
+        // "does this contact_id exist on this licence" to a caller who may not
+        // ask anything at all, which is the existence oracle `read`'s own
+        // comment refuses. A narrow caller therefore resolves its assigned
+        // scope FIRST and is refused on an empty scope before any contact
+        // query runs.
+        //
+        // THE ROLE SET IS INHERITED, NOT CHOSEN BY ME: ALF_FAMILY_READ_ROLES
+        // is {owner, billing, nursing}, the set `read` already uses for this
+        // resource. `billing` on a clinical record is arguable and it is NOT
+        // my call to narrow it here -- a gate that disagrees with its sibling
+        // is the defect being fixed. Flagged in the batch inventory instead.
+        const marBroad = !!ALF_FAMILY_READ_ROLES[session.role];
+        let marScope = null;
+        if (!marBroad) {
+          const mar_ar = await fetch(rest('alf_clients?license_hash=eq.' + enc(licHash)
+            + '&assigned_employee_id=eq.' + enc(String(session.employee_id))
+            + '&select=client_id'), { headers });
+          if (mar_ar.status === 404 || mar_ar.status === 400) {
+            res.status(503).json({ error: { code: 'NOT_PROVISIONED', message:
+              'Residents are not set up - run the SAIRNcare schema' } });
+            return;
+          }
+          const mar_arows = await mar_ar.json();
+          if (!mar_ar.ok) return upstream(res, mar_arows);
+          marScope = (mar_arows || []).map((x) => String(x.client_id));
+          if (marScope.length === 0) {
+            // REFUSED, NOT EMPTY. `read` returns [] here because an empty list
+            // of contacts is a truthful answer to a listing. This action
+            // answers about ONE resident, so "you have no residents" is a
+            // refusal and returning a blank MAR would read as "no medications
+            // administered" -- a clinical claim nobody made.
+            res.status(403).json({ error: { code: 'FORBIDDEN', message:
+              'No residents are assigned to you.' } });
+            return;
+          }
+        }
         const cr = await fetch(rest('alf_family_contacts?license_hash=eq.' + enc(licHash)
           + '&contact_id=eq.' + enc(String(famP.contact_id)) + '&select=' + famCols), { headers });
         if (cr.status === 404 || cr.status === 400) {
@@ -11583,6 +11637,17 @@ module.exports = async (req, res) => {
         const contact = Array.isArray(crows) && crows[0];
         if (!contact) {
           res.status(404).json({ error: { code: 'NO_SUCH_CONTACT', message: 'no such family contact on this licence' } });
+          return;
+        }
+        // THE SECOND HALF OF THE GATE. The resident is knowable only now, off
+        // the stored row, so this is where a narrow caller's scope is applied.
+        // 403 and not 404: "that resident is not yours" is the same answer
+        // `read` gives, and it is deliberately distinct from NO_SUCH_CONTACT
+        // so the two are never collapsed into one oracle.
+        if (!marBroad
+            && marScope.indexOf(String(contact.resident_id)) === -1) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message:
+            'That resident is not assigned to you.' } });
           return;
         }
         const famLib = require('./_lib/alf-family-mar');
