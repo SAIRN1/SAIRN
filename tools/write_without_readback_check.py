@@ -74,6 +74,7 @@ the commit before its hydrate landed, and clean on it afterwards. A checker
 that has only ever returned clean is a checker whose behaviour nobody knows.
 """
 import os
+import shutil
 import re
 import sys
 
@@ -247,7 +248,19 @@ def resolve_generic_writes(src):
         body = _function_body(src, fm.end())
         if body is None:
             continue
-        if not re.search(r"\w*Data\(\s*'write'\s*,\s*" + re.escape(param) + r'\s*,', body):
+        # ── ONE SOURCE FOR THE GENERIC-WRITE SHAPE (2026-10-05) ────────────
+        # This line used to re-spell WRITE_VAR_RE inline, parameterised by the
+        # function's own parameter name. The two spellings were identical and
+        # the consequence was that WRITE_VAR_RE HAD NO CONSUMER AT ALL: it was
+        # compiled at module level, documented as the fix for the 2026-09-05
+        # blind spot, and never read. dead_rule_sweep reported it DEAD and the
+        # cause was not a weak fixture -- there was nothing to exercise.
+        #
+        # Asking the module rule and then testing the parameter name against
+        # its capture gives the same answer from one pattern, so the rule is
+        # load-bearing and a change to it cannot drift away from this site.
+        # Item 43 (copy-exactly): a second copy is not a second opinion.
+        if param not in set(WRITE_VAR_RE.findall(body)):
             continue
         for cm in re.finditer(r'(?<![\w$.])' + re.escape(fn) + r"\(\s*'(\w+)'\s*,", src):
             resolved.add(cm.group(1))
@@ -543,7 +556,150 @@ def audit(path):
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+# ── THE FIXTURE LOCK (2026-10-05) ──────────────────────────────────────────
+# ADDED BECAUSE THIS TOOL HAD NO EVIDENCE OF ITSELF AT ALL. On 2026-10-05
+# `tools/dead_rule_sweep.py` reported it under COULD NOT RUN -- "no fixture
+# lock and no control to ablate against" -- which is the one state the sweep
+# will not fold into clean, because "nothing to ablate" and "the rule is
+# exercised" are opposite findings. It was the ONLY never-claimed registry tool
+# in that bucket not excused by writing when run, so it is the first one fixed.
+#
+# EVERY ARM BELOW IS AN ABLATION ARM: it is written so that replacing the named
+# pattern with a never-matching one turns THIS arm red and no other. That is
+# the property the sweep tests, so it is the property the lock has to hold --
+# a fixture that merely touches a rule clears the sweep while proving nothing,
+# which is sabotage_control_check's question and is explicitly not answered
+# here.
+#
+# THE SOURCES ARE HAND-BUILT, NOT SAMPLED FROM THE APPS. The first
+# cross-domain discipline: criteria get locked against synthetic fixtures
+# before the tool is pointed at real data, because a fixture cut from
+# stonedesk.html changes whenever somebody edits stonedesk.html and the lock
+# then moves without anybody deciding.
+FIXTURES = [
+    # (name, rule it pins, source, assertion on audit()'s record)
+    ('positional literal write, never read', 'WRITE_RE', """
+      function appData(action, resource, rec) { return post(action, resource, rec); }
+      function saveJob(r) { appData('write', 'x_jobs', r); }
+    """, lambda a: a is not None and a['missing'] == ['x_jobs']),
+
+    ('positional literal write WITH its read', 'READ_LIT_RE', """
+      function appData(action, resource, rec) { return post(action, resource, rec); }
+      function saveJob(r) { appData('write', 'x_jobs', r); }
+      function hydrate() { return appData('read', 'x_jobs'); }
+    """, lambda a: a is not None and a['missing'] == []),
+
+    ('object-literal write, never read', 'WRITE_OBJ_RE', """
+      function appPostRaw(body) { return fetch('/api/x', {body: body}); }
+      function saveAudit(r) {
+        appPostRaw({ action: 'write', resource: 'x_op_audits', rec: r });
+      }
+    """, lambda a: a is not None and a['missing'] == ['x_op_audits']),
+
+    ('object-literal write WITH its object-literal read', 'READ_OBJ_RE', """
+      function appPostRaw(body) { return fetch('/api/x', {body: body}); }
+      function saveAudit(r) {
+        appPostRaw({ action: 'write', resource: 'x_op_audits', rec: r });
+      }
+      function loadAudit() {
+        return appPostRaw({ action: 'read', resource: 'x_op_audits' });
+      }
+    """, lambda a: a is not None and a['missing'] == []),
+
+    # SHAPE B from resolve_generic_writes, NOT SHAPE A, AND THE FIRST DRAFT GOT
+    # THIS WRONG. A shape-A fixture (a forEach membership guard) resolves its
+    # write set through resolve_generic_writes' own inline forEach regex and
+    # never touches WRITE_VAR_RE, so neutralising the rule left the arm green
+    # and dead_rule_sweep still called it DEAD. The arm was measured against
+    # the ablation rather than reasoned about, which is the only way that shows.
+    # Shape B is the one WRITE_VAR_RE serves: a generic writer function whose
+    # callers pass literals.
+    ('generic writer function, callers pass literals', 'WRITE_VAR_RE', """
+      function appData(action, resource, rec) { return post(action, resource, rec); }
+      async function xLineageSyncOne(resource, rec) {
+        return appData('write', resource, rec);
+      }
+      function saveAll(a, b) {
+        xLineageSyncOne('x_slab_history', a);
+        xLineageSyncOne('x_blocks', b);
+      }
+    """, lambda a: a is not None
+         and {'x_slab_history', 'x_blocks'} <= a['writes']),
+
+    # READ_VAR_RE'S ONLY CONSUMER IS THE COULD-NOT-TELL REASON, and that only
+    # fires when a variable read is unresolved AND something is still missing.
+    # A fixture where the generic read RESOLVES cannot exercise it -- the first
+    # draft of this arm was exactly that and stayed green under ablation. So
+    # the list the read loop iterates here deliberately does NOT overlap the
+    # write set, which is what leaves the read unresolved and the write
+    # uncovered at the same time.
+    ('unresolved generic read beside a missing write', 'READ_VAR_RE', """
+      var X_PANELS = ['panel_a', 'panel_b', 'panel_c'];
+      function appData(action, resource, rec) { return post(action, resource, rec); }
+      function saveJob(r) { appData('write', 'x_jobs', r); }
+      function xHydratePanels() {
+        return X_PANELS.map(function (key) { return appData('read', key); });
+      }
+    """, lambda a: a is not None and a['missing'] == ['x_jobs']
+         and a['reasons'] and 'key' in a['reasons'][0]),
+
+    # WRAPPER_RE WAS DEAD FOR A DIFFERENT REASON AND THE REPAIR IS DIFFERENT.
+    # Its only consumer was a record field `wrappers` that main() computed and
+    # never printed, so the rule could vanish and no OUTPUT would change --
+    # which is why the sweep found it dead even against the real corpus. The
+    # honest repair for a rule with no consumer is one of two things, and
+    # deleting it is wrong here: this tool's own first printed line is
+    # "SCANNED-BY-NAME: only calls to a wrapper matching \\w*Data( are seen",
+    # and naming the wrappers it actually found is what turns that disclosure
+    # from a caveat into a fact the reader can check. So the field is surfaced
+    # in main() and pinned here.
+    ('the wrapper name is found and reported', 'WRAPPER_RE', """
+      function appData(action, resource, rec) { return post(action, resource, rec); }
+      function saveJob(r) { appData('write', 'x_jobs', r); }
+    """, lambda a: a is not None and a['wrappers'] == ['appData']),
+]
+
+
+def run_fixtures():
+    """The criteria lock. Exit 0 all arms hold, 1 any arm fails."""
+    import tempfile
+    bad = []
+    print('WRITE-WITHOUT-READBACK -- fixture lock, hand-built sources only')
+    d = tempfile.mkdtemp(prefix='wworb-fixtures-')
+    try:
+        for i, (name, rule, src, want) in enumerate(FIXTURES):
+            p = os.path.join(d, 'fixture_%d.html' % i)
+            with open(p, 'w', encoding='utf-8') as fh:
+                fh.write(src)
+            try:
+                rec = audit(p)
+                held = bool(want(rec))
+            except Exception as e:                             # noqa: BLE001
+                rec, held = None, False
+                name += ' (raised %s: %s)' % (type(e).__name__, e)
+            print('  %s %-12s %s' % ('ok  ' if held else 'FAIL', rule, name))
+            if not held:
+                bad.append('%s / %s' % (rule, name))
+                print('        got: %s' % (
+                    {k: sorted(v) if isinstance(v, set) else v
+                     for k, v in rec.items() if k != 'reads'}
+                    if rec else 'audit() returned None'))
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+    print('\n%d of %d fixture(s) hold' % (len(FIXTURES) - len(bad),
+                                          len(FIXTURES)))
+    if bad:
+        print('THE MEASUREMENT IS REFUSED -- a tool whose own criteria do not '
+              'classify its\nown fixtures correctly cannot be trusted about '
+              'real data.')
+        for b in bad:
+            print('  - ' + b)
+    return 1 if bad else 0
+
+
 def main(argv):
+    if '--fixtures' in argv or '--selftest' in argv:
+        return run_fixtures()
     targets = argv[1:] or sorted(
         os.path.join(REPO, f) for f in os.listdir(REPO) if f.endswith('.html'))
     results = [r for r in (audit(t) for t in targets) if r]
@@ -554,6 +710,17 @@ def main(argv):
         print('%-24s %-7d %-7d %s' % (r['file'], len(r['writes']),
                                       len(r['writes'] & r['reads']),
                                       ', '.join(r['declared']) or '(literal reads only)'))
+        # ── THE WRAPPERS ARE NAMED NOW, AND THAT CLOSES A DEAD RULE ────────
+        # `wrappers` was computed by audit() on every run and printed nowhere,
+        # so WRAPPER_RE could be deleted and no OUTPUT would change --
+        # dead_rule_sweep found it dead even against the real corpus on
+        # 2026-10-05, for that reason rather than because the pattern is wrong.
+        # The first line this tool prints is the SCANNED-BY-NAME caveat; naming
+        # the wrappers it actually matched is what makes that caveat checkable,
+        # and NONE is the loudest case -- a file with writes and no matched
+        # wrapper means the whole scan ran on the object-literal shape alone.
+        print('%-24s wrappers matched: %s' % (
+            '', ', '.join(r['wrappers']) or 'NONE -- object-literal shape only'))
         if r['missing']:
             bad.append(r)
         if r['reasons']:
