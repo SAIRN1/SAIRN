@@ -2920,8 +2920,8 @@
       "task": "sairncash portal.test.js -- close the MASTER-PLAN dead citation for api/sairncash/portal.js. CONFLICT DECLARED PER PR 4.3: docs/SAIRN-OPEN-WORK-INDEX.md IS CC'S (cc holds it for the competitive-gap doc inventory) and is NOT in my file set; the index row for this lands with cc or a later session. FILES: api/sairncash/portal.test.js SAIRN-ACTIVE-WORK-fourth.md",
       "claimed_at": "2026-10-05T09:40:54Z",
       "claimed_at_epoch": 1791193254.5346856,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-05T10:03:29Z",
       "files": [
         "SAIRN-ACTIVE-WORK-fourth.md",
         "api/sairncash/portal.test.js"
