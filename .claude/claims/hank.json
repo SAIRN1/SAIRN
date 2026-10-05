@@ -3497,8 +3497,8 @@
       "task": "citation drift checker citation-form coverage expansion; push_retry loop regenerate and reason surfacing; registry tail finding with control arm FILES: tools/citation_line_drift_check.py tests/run_citation_line_drift_probe.py tools/push_retry.py tests/run_push_retry_probe.py",
       "claimed_at": "2026-10-05T11:46:03Z",
       "claimed_at_epoch": 1791200763.1578512,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-05T12:52:08Z",
       "files": [
         "tests/run_citation_line_drift_probe.py",
         "tests/run_push_retry_probe.py",
