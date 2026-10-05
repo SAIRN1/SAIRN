@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# OWNER: hank
 # BACK IN tools/ 2026-10-05, SECOND MOVE, AND THE FIRST ONE WAS WRONG.
 # It spent one batch in tests/ because as a tools/*.py it could not be pushed:
 # the gate wants a tools/ file to declare who runs it AND to carry an entry in
