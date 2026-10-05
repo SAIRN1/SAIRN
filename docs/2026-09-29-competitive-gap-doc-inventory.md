@@ -69,6 +69,27 @@ the failure this inventory exists to prevent rather than repeat.
 * `docs/cloud-research/sairndesign-competitive-gap-audit-2026-10-05.md` (`5a4ea4fb`, both halves in one pass)
 * `docs/cloud-research/sairnscape-competitive-gap-audit-2026-10-05.md` (`29d738a7`, both halves in one pass)
 
+**AND THE INVENTORY'S OWN DENOMINATOR WAS SHORT, FOUND 2026-10-05 BY DERIVING
+THE APP SET INSTEAD OF TRUSTING THIS FILE.** This inventory tracked **17** apps
+and I reported *"every app now has an audit"* on the strength of closing its
+three gaps. `git ls-files '*.html'` at the repo root returns **22**. Cross-
+referencing every name against `docs/` filenames surfaced **`sairncare` as
+having no audit ON MAIN** — its audit existed only on
+`claude/cloud-research-sairncare`, which **PR #18 did not contain**. So the
+branch-only finding this document raised survived its own closure, in one
+branch nobody checked against the app list. Landed on `main` 2026-10-05 after
+re-deriving all nine of its internal citations; branch tip recorded in
+`docs/2026-09-29-stale-branch-tips.md` and the branch NOT deleted.
+
+**The other four of the 22 are not products and are deliberately unaudited:**
+`sairndental-book`, `sairndental-complaint`, `stonedesk-catalog` and
+`stonedesk-intake` are public-facing forms with no licence gate.
+`stonedesk-hr` is licence-gated and real, and is a StoneDesk module.
+
+**THE LESSON IS ABOUT THIS FILE: AN INVENTORY IS A CLAIM ABOUT A DENOMINATOR,
+and it had never published how it chose its 17.** A coverage document that does
+not derive its own universe cannot be used to say *every*.
+
 **THE METHOD CHANGED BETWEEN THE FIRST AND THE SECOND, and the reason is worth more than the three documents.** SAIRNlegacy shipped its internal half alone and its own Part 2 then overturned its central claim — breadth across four businesses, which turned out to be a named product category with at least four vendors selling exactly it. **An internal-only read invites a guess, and the guess runs IN FAVOUR OF THE PLATFORM.** The other two carry both halves in one pass for that reason.
 
 **AND ONE OF THIS SECTION'S OWN SUPPORTING MEASUREMENTS WAS WRONG.** The pick order was justified partly on panel count, with `sairnscape` recorded as *"0 found by that pattern"*. That app is a landing page plus a single app view (`showPage('home')` / `showPage('app')`), so it does not use the `id="panel-…"` idiom at all — the zero was a structural fact misread as an absence, and panel count was never evidence about how much app there is. Corrected in that audit's §0.

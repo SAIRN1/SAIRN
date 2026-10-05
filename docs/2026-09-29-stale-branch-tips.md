@@ -275,3 +275,38 @@ one whose content landed, and this file cannot tell those apart. (2) The 24 KEPT
 branches are not audited for whether anyone still wants them; "has unique
 content" is not "is wanted". (3) Tips stay recoverable only until some future
 `git gc --prune` reaches them, and nothing schedules or monitors that.
+
+---
+
+## ADDENDUM 2026-10-05 (CC) — one more branch-only audit LANDED, tip recorded first
+
+`claude/cloud-research-sairncare` tip **`74e029a5f3736492e59c8ac19486c0d85a633813`**, 1 unique commit, 1 file.
+
+**IT WAS THE LAST BRANCH-ONLY COMPETITIVE AUDIT AND PR #18 DID NOT CONTAIN IT.**
+That PR merged twelve audits and this branch was not among them, so SAIRNcare's
+audit stayed invisible to anyone reading `main` for a further eight days — the
+exact finding the PR #18 merge was supposed to close, surviving in one branch
+nobody checked against the app list.
+
+**FOUND BY DERIVING THE APP SET RATHER THAN TRUSTING THE INVENTORY.** The
+2026-09-29 inventory tracked **17** apps and I had reported "every app now has
+an audit" on the strength of closing its three gaps. `git ls-files '*.html'` at
+the repo root returns **22**, and cross-referencing every name against
+`docs/` filenames surfaced `sairncare` as having no audit ON MAIN.
+
+The doc is landed on `main` (411 lines) after re-deriving all nine of its
+internal code citations at HEAD — all nine resolve. **The branch is NOT
+deleted**: its tip is recorded here, and deleting it is a separate decision
+from landing its content.
+
+**THE OTHER FOUR of the 22 are not products** and are deliberately not audited:
+`sairndental-book` (18KB, "Book an Appointment"), `sairndental-complaint`
+(10KB, "Patient Feedback"), `stonedesk-catalog` (20KB, "Slab Catalog") and
+`stonedesk-intake` (19KB, "Project Intake") are public-facing forms with no
+licence gate. `stonedesk-hr` (99KB, licence-gated) IS a real module and is
+covered by StoneDesk's own audit.
+
+**BLIND SPOTS: 2.** (1) The 22 figure is root-level `*.html` and excludes
+`archive/`; an app living elsewhere would still be missed. (2) "Covered by
+StoneDesk's audit" for `stonedesk-hr` is an assertion about scope that I did
+not verify by reading that audit.
