@@ -5762,3 +5762,100 @@ nobody has checked whether any live product carries a zero or absent cost. (5)
 case-sensitive mutation matcher, pipes inside a code span, and an ad-hoc table
 checker that flagged three header rows; each failed toward a confident wrong
 answer rather than a refusal.
+
+---
+
+## 2026-10-05 — CC batch 4: four instrument failures repaired, and the competitive-gap coverage gap CLOSED
+
+Full account: `docs/2026-10-05-cc-batch-4-inventory.md`. The instrument failures
+are their own section there, with their own lesson entries, deliberately not
+folded into the items they happened inside.
+
+### The coverage gap is closed — all three uncovered apps audited today
+
+`sairnlegacy` (`88ee8fe7` + `24ba5c08`), `sairndesign` (`5a4ea4fb`),
+`sairnscape` (`29d738a7`). **Every app on the platform now has a
+competitive-gap audit.** The inventory doc's three-apps section is struck through
+and closed in place, with the method change recorded.
+
+**SAIRNscape's finding: its irrigation module competes with the hardware
+vendor's own free app.** The controller record is an ASSET RECORD — `{id,
+customer_id, name, brand, model, zones_supported}` — and `weather`,
+`evapotranspiration`, `et0`, `soil` and `runtime` are **zero occurrences each**.
+Hydrawise does predictive watering off forecast, flow-meter leak detection and
+365 days of history; Rachio maps by soil, plant, sun and slope. **A contractor
+installing Hunter or Rachio already has all of it, free, from the vendor.** The
+defensible move is to integrate, not compete — contingent on APIs this audit did
+not investigate.
+
+**And the price is NOT the problem, after two audits where it was.** $99/$199/$299
+on its own landing page — the only SAIRN app that states a price — inside Service
+Autopilot's band and below LMN's entry tier, with per-tenant being the category
+norm. The one app of the three where licence model, published price and norm all
+agree, paired with the thinnest surface audited (9 register rows, 1 Tier A).
+
+### Five instrument failures of mine, each with its own lesson
+
+**A — I put a FALSE could-not-run accusation into a standing document.**
+`md_table_check.py` does NOT exit 2; it exits **0**, and `main()` has no path
+that returns 2 at all. I read the 2 off a COMPOUND Bash command, where the status
+belongs to the last element of the pipeline. **On this platform a false
+COULD-NOT-RUN accusation against a working checker is worse than the defect it
+imagines** — it is the claim most likely to get a sound tool distrusted or
+rewritten. Withdrawn in place with the measurement.
+
+**B — the nine-day-old pipes-in-code-span lesson did not fail; the instrument did
+not read the file.** `DEFAULT_FILES` held three files and
+`docs/CRITICALITY-TIERS.md` was not one. **A discipline in prose cannot prevent
+what nothing measures.** Fixed: +`CRITICALITY-TIERS.md` (434 rows)
++`traceability-matrix.md` (516), both measured clean first. **837 rows over 3
+files → 1,787 over 5.** Driven: re-breaking that exact cell now reports
+*"409 12 cells, header says 8"*, exit 1. Locked by 11 probe arms; removing one
+turns the probe red.
+
+**C — narrow coverage manufactured a worse instrument.** The ad-hoc checker that
+false-flagged three HEADER rows existed **because** the real tool was blind to my
+file. **The second-order cost of a narrow instrument is larger than the first:**
+the session builds a worse one and then trusts it. Fixing B removes the reason.
+
+**D — case-insensitivity fixed the instance, not the class.** An arm can be
+reworded, split or deleted as easily as mis-cased, and each leaves a matcher that
+CANNOT MATCH — indistinguishable from a missing guard, failing toward the LOUDER
+verdict. `dead_expectations()` now checks every expectation against the arms that
+actually exist, before any mutation runs; unmatchable is **exit 2 REFUSING**.
+Driven both ways.
+
+**E — the assertion that stopped the fifth instance.** Writing the withdrawal row
+I put a pipe inside two code spans, one of them in the clause explaining that
+pipes inside code spans break rows. 9 cells against 7. **An assertion in the
+writing script caught it before the file was touched.** *Assert the invariant in
+the script that writes the artefact, not only in a check that runs afterwards.*
+
+**And a real defect the wider coverage found:** `docs/TOOLING-INVENTORY.md` has
+**11 genuinely malformed rows** (84, 91, 93, 101, 257, 318, 342, 406, 420, 422,
+431), every one a pipe inside a code span in a tool's PURPOSES text. **It is
+GENERATED**, so the fix belongs in `tooling_inventory.py`'s cell emitter.
+Deliberately NOT added to `DEFAULT_FILES` and named in `KNOWN_UNADDED` so the
+omission is a decision. **The defect is platform-wide and in a generated
+document — not a typo I made twice.**
+
+**Plus one small, same class:** the probe said "25 cases" while **35** ran, from
+a hardcoded `len(CASES) + 18`. Now derived.
+
+### Left alone, as directed
+
+Rows 82/845 (hank's text not delivered), `report_only_checks` E2 and the
+seam-watch wiring (hank's refuse-at-import fix not landed — not reworked
+around), cody's claimed registry tools, `rebase_state_guard.py`, seq 468. Claim
+record checked at batch start; no overlap with my file set.
+
+### BLIND SPOTS: 4
+
+(1) `dead_expectations` proves an expectation CAN match an arm, not that it
+matches the RIGHT one — an accidental substring match still scores wrongly. (2)
+The TOOLING-INVENTORY count of 11 is as of today and that file is regenerated, so
+it moves. (3) **Four of the five instrument failures were found by measuring my
+own claims and the fifth by an assertion — none by a cadenced check**, so the
+next of this class also waits for somebody to look. (4) SAIRNscape's "thinnest
+surface" is a stored-data count, not a scored competitive gap; no
+feature-by-feature comparison was run.

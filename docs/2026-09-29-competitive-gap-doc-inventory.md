@@ -63,7 +63,15 @@ the failure this inventory exists to prevent rather than repeat.
 
 ## Apps with NO competitive-gap doc of any kind
 
-**THREE: `sairndesign`, `sairnlegacy`, `sairnscape`.**
+~~**THREE: `sairndesign`, `sairnlegacy`, `sairnscape`.**~~ **ZERO, AS OF 2026-10-05 — ALL THREE WERE WRITTEN THE SAME DAY and this section is the only reason they were findable:**
+
+* `docs/cloud-research/sairnlegacy-competitive-gap-audit-2026-10-05.md` (`88ee8fe7` internal half, `24ba5c08` the vendor-claim half — **which killed the internal half's main claim**)
+* `docs/cloud-research/sairndesign-competitive-gap-audit-2026-10-05.md` (`5a4ea4fb`, both halves in one pass)
+* `docs/cloud-research/sairnscape-competitive-gap-audit-2026-10-05.md` (`29d738a7`, both halves in one pass)
+
+**THE METHOD CHANGED BETWEEN THE FIRST AND THE SECOND, and the reason is worth more than the three documents.** SAIRNlegacy shipped its internal half alone and its own Part 2 then overturned its central claim — breadth across four businesses, which turned out to be a named product category with at least four vendors selling exactly it. **An internal-only read invites a guess, and the guess runs IN FAVOUR OF THE PLATFORM.** The other two carry both halves in one pass for that reason.
+
+**AND ONE OF THIS SECTION'S OWN SUPPORTING MEASUREMENTS WAS WRONG.** The pick order was justified partly on panel count, with `sairnscape` recorded as *"0 found by that pattern"*. That app is a landing page plus a single app view (`showPage('home')` / `showPage('app')`), so it does not use the `id="panel-…"` idiom at all — the zero was a structural fact misread as an absence, and panel count was never evidence about how much app there is. Corrected in that audit's §0.
 
 Not "thin coverage" — nothing at all, on main or on any cloud branch, dedicated
 or shared. Those are the three rows the gap ledger should open empty.
