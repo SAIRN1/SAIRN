@@ -24,7 +24,11 @@ This is a PROBE, not a gate. It over-reports by construction and is the fourth
 over-reporting checker written on 2026-08-30 -- a checker that cries wolf gets
 switched off, so it prints its own caveat rather than a verdict.
 """
-import re, sys, glob, os, collections
+import collections
+import glob
+import os
+import re
+import sys
 
 RESTORE = re.compile(r'^(?:.*)(reverify|restore|resume|rehydrate|recheck|'
                      r'checksession|loadstate|hydrate|refreshsession|'
@@ -51,7 +55,24 @@ def body(s, start):
         j += 1
     return s[i:i+20000]
 
-for path in sorted(glob.glob('*.html')):
+# ── ANCHORED, AND AN EMPTY CORPUS IS A REFUSAL (2026-10-05) ────────────────
+# `glob.glob('*.html')` is relative to wherever this is run from. Driven from
+# `docs/`: this probe printed NOTHING AT ALL and exited 0 -- the most
+# reassuring possible wrong answer, because silence from a probe reads as "no
+# findings". Six siblings on this platform already anchor to REPO for exactly
+# this reason and write_without_readback_check.py's header records the
+# measurement that found the class.
+_REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_TARGETS = sorted(glob.glob(os.path.join(_REPO, '*.html')))
+if not _TARGETS:
+    sys.stderr.write(
+        'COULD NOT RUN: no *.html found at %s, so this probe examined NOTHING '
+        'and\nits silence would have read as "no findings". Exit 2, not a '
+        'pass.\n' % _REPO)
+    sys.exit(2)
+print('FILES PROBED: %d' % len(_TARGETS))
+
+for path in _TARGETS:
     s = open(path, encoding='utf-8', errors='replace').read()
     F = funcs(s)
     if not F: continue

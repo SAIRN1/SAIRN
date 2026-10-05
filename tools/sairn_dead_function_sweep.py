@@ -68,6 +68,10 @@ before action, not confidence in the tool.
 """
 import re, sys, glob, os
 
+# Anchored to this file, not to the cwd -- see the note at the bottom of the
+# file for the measurement that made this necessary.
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 # The one shared comment stripper. Four tools in tools/ were found blind on
 # 2026-09-04; see the measured table in jscomments.py's docstring.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -286,6 +290,33 @@ def main(paths):
           'occurrence of the name. Verify each site by hand before deleting.')
 
 
+# ── THE DEFAULT CORPUS IS ANCHORED, AND AN EMPTY ONE IS A REFUSAL ──────────
+# (2026-10-05.) `glob.glob('*.html')` is relative to WHEREVER THIS IS RUN FROM.
+# Driven from `docs/`: this tool printed `TOTAL_DEAD:0` and exited 0, with NO
+# file count anywhere in its output. A sweep over zero files reporting zero dead
+# functions is byte-indistinguishable from a sweep over twenty-two finding none.
+#
+# THIS IS A KNOWN CLASS ON THIS PLATFORM AND SIX SIBLINGS ALREADY FIXED IT --
+# comment_sensitivity_check.py, sairn_stale_snapshot_scan.py,
+# sairn_strict_args_check.py and tier_sentence_gate.py all anchor to REPO, and
+# two of them carry a comment saying why. write_without_readback_check.py's
+# header records the measurement that started it: run from `docs/` it printed an
+# empty table, "none" under every heading, and exit 0, and it was the only one
+# of four checkers tried that way with no count anywhere in its output.
+#
+# So: anchored to REPO, and an empty default corpus is COULD NOT RUN rather than
+# a clean sweep. An EXPLICIT path argument stays cwd-relative on purpose -- a
+# caller naming a file is the caller's business.
 if __name__ == '__main__':
-    args = sys.argv[1:] or sorted(glob.glob('*.html'))
+    args = sys.argv[1:]
+    if not args:
+        args = sorted(glob.glob(os.path.join(REPO, '*.html')))
+        if not args:
+            sys.stderr.write(
+                'COULD NOT RUN: no *.html found at %s, so nothing was swept '
+                'and\nTOTAL_DEAD would have printed 0 over an empty corpus. '
+                'Zero files swept is\nnot zero dead functions. Exit 2, not a '
+                'pass.\n' % REPO)
+            sys.exit(2)
+    print('FILES SWEPT: %d' % len(args))
     main(args)

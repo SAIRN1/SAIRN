@@ -77,8 +77,33 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) or '.'
 DISPATCHER = os.path.join('api', 'sd-data.js')
 SQL_DIR = 'sql'
 
+# ── THE `public.` PREFIX WAS REQUIRED AND 8 GRANTS WERE INVISIBLE ──────────
+# (2026-10-05.) This pattern demanded `public.<table>` and 8 files in sql/ write
+# the grant unqualified -- `grant select, insert on sd_employee_auth to
+# service_role`. Measured over the whole directory: 416 grant lines with the
+# prefix required against 424 with it optional.
+#
+# AND THE CONSEQUENCE IS NOT A COUNT, IT IS A POPULATION. This tool derives
+# append-only status FROM THE GRANTS -- select+insert with no update, delete or
+# truncate -- so a grant it cannot see is a table it cannot classify, and the
+# table silently never enters the scanned population. The 8 are every
+# `*_employee_auth` plus `stonedesk_audit_log` and `sairncode_audit_log`. AN
+# AUDIT LOG IS EXACTLY THE TABLE WHERE AN UNORDERED TRAIL READ MATTERS, and it
+# was outside the scan.
+#
+# SAME DEFECT, SAME DAY, SECOND TOOL: tools/schema_provisioning_check.py had
+# the identical assumption in its CREATE TABLE reader and 28 tables were
+# invisible to it. The shape is a pattern written against the spelling the
+# author happened to be looking at, run over a directory that had already
+# diverged.
+#
+# COMMENTS ARE STRIPPED FIRST, because making the prefix optional is what makes
+# prose reachable: with `public.` required a comment had to name a qualified
+# table to produce a false hit. The same pairing was needed in
+# schema_provisioning_check and for the same reason (PR 1.2).
 GRANT_RE = re.compile(
-    r'grant\s+([a-z,\s]+?)\s+on\s+(?:table\s+)?public\.(\w+)\s+to\s+service_role', re.I)
+    r'grant\s+([a-z,\s]+?)\s+on\s+(?:table\s+)?(?:public\.)?(\w+)\s+to\s+service_role',
+    re.I)
 CONTRACT_RE = re.compile(r"appendOnlyExisting\(res, existingR, '(\w+)'\)")
 
 # A SINGLE-ROW LOOKUP IS KEYED ON THE ROW'S OWN UNIQUE ID, and ordering one is
@@ -136,8 +161,19 @@ def append_only_tables():
         raise CouldNotRun('%s/ holds no .sql files. An empty population would '
                           'report every app clean.' % SQL_DIR)
     for n in names:
-        for m in GRANT_RE.finditer(read_text(os.path.join(SQL_DIR, n),
-                                             'derives append-only tables from grants')):
+        # SQL COMMENTS STRIPPED BEFORE MATCHING, and it landed in the same
+        # change as making the prefix optional rather than after it. Several of
+        # these files DISCUSS grants in prose -- "grant select, insert on
+        # <table> to service_role" appears inside the comment blocks that
+        # explain why there is no update grant -- so an unqualified pattern over
+        # raw text would read a WARNING as a GRANT and classify a table from a
+        # sentence about it (PR 1.2).
+        _sql = '\n'.join(
+            l for l in read_text(
+                os.path.join(SQL_DIR, n),
+                'derives append-only tables from grants').split('\n')
+            if not l.lstrip().startswith('--'))
+        for m in GRANT_RE.finditer(_sql):
             verbs = {v.strip().lower() for v in m.group(1).split(',') if v.strip()}
             grants.setdefault(m.group(2), set()).update(verbs)
     by_grant = {t for t, v in grants.items()
