@@ -22664,6 +22664,65 @@
         }
       ],
       "recurrence_open": "No control requires a SAIRN tool to separate what it MEASURED from what it ADVISES. One file is fixed; the convention is not, and it is logged open rather than invented by the session that broke it."
+    },
+    {
+      "commit": "f8c766ec96ff",
+      "date": "2026-10-05",
+      "subject": "fix(claim): a disclosure is only a disclosure when nothing else claims it, and UNBLOCKED is not BLOCKED",
+      "files": [
+        "tests/run_claim_matcher_probe.py",
+        "tools/sairn_claim.py"
+      ],
+      "lines_added": 186,
+      "lines_removed": 8,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/sairn_claim.py disclosed_files() exempted a path from the WHOLE claim whenever ANY clause carried a disjointness marker, so a claim that TAKES a file in one clause and mentions it in a disclaimer in another had it exempted outright and the matcher answered CLEAR to every other session wanting it. The 2026-09-29 finding had stated the required test -- a token disclosed ONLY inside a blocker clause -- and the implementation that landed that day carried the first half and not the second. Compounding it, markers were matched as bare SUBSTRINGS, so `blocked` matched inside UNBLOCKED: fourth's \"queue9 items 1,5,6 in api/sd-data.js, NOW UNBLOCKED\", a claim TAKING the file, read as a disclosure of not taking it and cleared against cc's concurrent FILES: api/sd-data.js. Measured over all 532,512 cross-session pairs in the 1,178-claim record: the two fixes together restore 54 blocks and remove none, all on api/sd-data.js, docs/tier-a-reviews.json and tools/report_only_checks.py. Seven new blocker-clause markers were added at a measured cost of ZERO blocks each; four more (deferred 73, holds 61, is-session's 50, conflict-declared 22) were measured and REJECTED, leaving two of the finding's eight wordings open on purpose with a probe arm asserting they still block.",
+      "rules": [
+        "4.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "d0bb06783104",
+        "date": "2026-09-29",
+        "subject": "docs(claims): the matcher blocks on prose position, not ownership -- filed, unassigned",
+        "lag_days": 6
+      },
+      "citation_note": "4.3 is the rule the defect DEFEATED rather than the rule it broke: it REQUIRES a session to declare a conflict in its claim, and the disclosure exemption converted that declaration into a blanket exemption, so following 4.3 made the matcher clear a file the session was taking. The citation is arguable because 4.3 governs sessions, not this function.",
+      "phase_note": "The 2026-09-29 finding wrote down the required test and the implementation shipped the first half of that sentence. Correct on paper, partial in code -- a design-phase miss rather than a coding slip.",
+      "contributing_factors": [
+        {
+          "factor": "The 2026-09-29 finding stated the required test in one sentence with two halves -- disclosed ONLY inside a blocker clause, and a claim that both holds and waits must still block -- and the implementation carried the first half. A two-clause requirement in prose has no mechanical check that both clauses landed.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The second half is now the implementation (inside - outside) and arms E1/E2 drive it in both directions, so a future narrowing of it turns an arm red."
+        },
+        {
+          "factor": "Markers were matched with a bare Python `in` substring test, so `blocked` matched inside UNBLOCKED and inverted the meaning of the clause it was reading.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Markers compile to a front-anchored word-boundary alternation. Arm E3 drives the real UNBLOCKED claim text."
+        },
+        {
+          "factor": "Nothing measured the disclosure rule against the claim corpus when it landed. Its cost was argued, not counted, and a rule that only ever loosens has no failing direction to notice.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Every change here is reported as two numbers over all 532,512 cross-session pairs -- BLOCK->CLEAR and CLEAR->BLOCK -- and the four rejected markers are recorded with their costs so they are not re-proposed."
+        },
+        {
+          "factor": "One git author identity covers all six clones, so the matcher is the only coordination signal and a false CLEAR from it is invisible: both sessions simply work, and the collision surfaces as a merge conflict hours later.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "Per-clone git identities were considered out of scope here; the claim record and the status registry already carry session identity and this defect is about the matcher reading them, not about who signs commits."
+        }
+      ],
+      "recurrence_open": "TWO OF THE EIGHT WORDINGS ARE STILL OPEN -- X is hank's and X is another session's -- and the actions above do not close them. The cause is the CLAUSE SPLITTER: a real claim runs '...is not held by another session FILES: api/sd-data.js ...' with no clause boundary between the disclaimer and the declared file list, so any marker firing there exempts a file the session holds. Whether FILES: should be a hard clause break is unmeasured. Arm E6 asserts both still block so that closing them is a deliberate act."
     }
   ],
   "started": "2026-09-09",
