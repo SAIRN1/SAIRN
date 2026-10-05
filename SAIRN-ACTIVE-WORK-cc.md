@@ -2005,7 +2005,7 @@ Cody reported it still broken, unfixed, pre-existing. **Both of us were partly r
 
 Timed per registry entry -- whole sweep **347.4s over 35 entries**:
 
-| | |
+| Registry entry | Share of the 347.4s sweep |
 |---|---|
 | `comment_sensitivity_check.py` | **95.9s, 28%** |
 | `sairn_dead_button_audit.py` | **73.7s, 21%** |

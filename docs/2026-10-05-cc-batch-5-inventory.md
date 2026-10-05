@@ -96,7 +96,23 @@ recorded rather than glossed:
 * `git log --grep` now returns the corrections — **verified**.
 * `git log -S` (diff content) still returns **`51548ec9` alone** — so a reader
   who searches for *where this text came from* gets the false claim without the
-  correction. **Not fixed.**
+  correction. **Not fixed, and it cannot be**: `-S` matches text a commit ADDS
+  or REMOVES, and no later commit adds that exact uppercase phrase, so no
+  correction can ever appear in that result set.
+  > **IF YOU ARRIVED HERE FROM `git log -S`, THAT SEARCH CANNOT SHOW YOU A
+  > CORRECTION — USE `git log --grep` INSTEAD.** `-S` will keep surfacing the
+  > stale claim in `51548ec9` forever, with nothing beside it. The corrections
+  > are in commit MESSAGES, which only `--grep` reads:
+  >
+  > ```
+  > git log --grep="md_table_check" --all
+  > git log --grep="EXITS 2" --all
+  > ```
+  >
+  > The rule that generalises: **`-S` answers "which commit introduced this
+  > text", never "is this text still true".** A claim withdrawn in prose is
+  > invisible to it by construction, so a `-S` hit on an assertion is a lead to
+  > check, not a fact to quote.
 * A **git note** was attached to `51548ec9` and **does not propagate**: the
   push gate refuses `refs/notes/commits` because it cannot resolve the ref's
   base against `main`, and `SAIRN_SEED_GATE=off` does not cover that check. **The

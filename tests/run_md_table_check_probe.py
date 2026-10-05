@@ -186,13 +186,14 @@ check('and every row in it is actually checked', _checked, _looks)
 # So the membership is asserted, by name, and shrinking it fails this probe.
 for _f in ('docs/SAIRN-OPEN-WORK-INDEX.md', 'CLAUDE.md',
            'docs/SAIRN-PROCESS-RULES.md', 'docs/CRITICALITY-TIERS.md',
-           'docs/traceability-matrix.md', 'docs/TOOLING-INVENTORY.md'):
+           'docs/traceability-matrix.md', 'docs/TOOLING-INVENTORY.md',
+           'SAIRN-ACTIVE-WORK-cc.md'):
     check('DEFAULT_FILES still covers %s' % _f, _f in mt.DEFAULT_FILES, True)
 
 # And the two added files must arrive CLEAN -- a file added red turns this tool
 # into noise on every run, which is how a report-only check stops being read.
 for _f in ('docs/CRITICALITY-TIERS.md', 'docs/traceability-matrix.md',
-           'docs/TOOLING-INVENTORY.md'):
+           'docs/TOOLING-INVENTORY.md', 'SAIRN-ACTIVE-WORK-cc.md'):
     check('%s is clean, so it was not added red' % _f, len(mt.scan(_f)), 0)
     _c, _l = mt.coverage(_f)
     check('%s is fully READ, not partly' % _f, _c, _l)

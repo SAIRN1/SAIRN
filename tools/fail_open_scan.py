@@ -99,8 +99,41 @@ DOCUMENTED = re.compile(
     re.I)
 
 # A guard whose SUBJECT is applicability, not capability. Absent => not here.
+#
+# ── THE BARE WORD `marker` IS REMOVED (2026-10-05, H2 seq 486) ───────────────
+# It matched ANYWHERE on the line, including inside a TOOL FILENAME, so
+#
+#     [ -f "$ROOT/tools/staged_conflict_marker_check.py" ] || exit 0
+#
+# -- a DEPENDENCY test, which must be reported -- was classified as a SCOPE
+# test and exempted, purely because the tool it guards has "marker" in its
+# name. DRIVEN: that line and the otherwise identical
+# `staged_conflict_check.py` line differ only in the filename, and SCOPE_WORDS
+# matched the first and not the second.
+#
+# THE REAL SCOPE TESTS DO NOT NEED IT, which is what makes this free rather
+# than a trade. The hover-clone guard matches on `.git/sairn-hover-clone` and
+# the auditor guard on `auditor-clone`, never on the bare word, so every
+# genuine exemption survives. MEASURED BY RUNNING THE SCAN BOTH WAYS: the
+# report is byte-identical with and without it, and a sweep of every
+# NON-COMMENT guard line in .githooks/ and scripts/ finds ZERO that relied on
+# the bare word.
+#
+# SO THE EXEMPTION WAS LATENT, NOT LIVE -- a loaded gun with no current target
+# -- and that is stated rather than dressed up as a caught defect. What it
+# closes is the NEXT tool whose filename happens to contain the word.
+#
+# I REPORTED THIS FIXED ONCE AND IT WAS NOT. It was written up on 2026-09-29
+# and the word stayed in the alternation, so the record and the code disagreed
+# for six days. Re-raised as seq 486 and fixed here.
+#
+# WHY THE SHAPE IS THE LESSON AND NOT THE WORD: every surviving alternative is
+# either hyphen-anchored (`-clone\b`), path-anchored (`.git/...`), or a word
+# whose only plausible reading IS applicability (`applies`, `applicable`,
+# `opt-in`, `enabled`). A BARE NOUN THAT CAN APPEAR IN A FILENAME is the shape
+# to refuse, and `marker` was the only one.
 SCOPE_WORDS = re.compile(
-    r'auditor-clone|-clone\b|marker|applies|applicable|opt-?in|enabled'
+    r'auditor-clone|-clone\b|applies|applicable|opt-?in|enabled'
     r'|sairn-hover|\.git/[a-z-]*clone', re.I)
 
 

@@ -103,6 +103,24 @@ DEFAULT_FILES = [
     # table_safe(), and the generator REFUSES TO WRITE a malformed table at
     # all -- so the file is clean (401/401, 0 malformed) and arrives green.
     'docs/TOOLING-INVENTORY.md',
+    # ── ADDED 2026-10-05, AND IT CORRECTS A FINDING I LOGGED AGAINST THIS TOOL
+    # ── EARLIER THE SAME DAY ──────────────────────────────────────────────────
+    # `doc_checker_coverage.py`'s first run said this file was read by nothing.
+    # Measuring it before adding reported `111/110 rows checked` -- `checked`
+    # exceeding `looks-like-a-row` -- and I wrote that up as an off-by-one in
+    # THIS TOOL's coverage pair, declining to add the file rather than relax the
+    # probe arm that asserts the two agree.
+    #
+    # THE TOOL WAS RIGHT AND THE DOCUMENT WAS WRONG. Line 2008 of the
+    # active-work file was `| | |` -- a two-cell row of nothing but pipes and
+    # spaces, which SEPARATOR matches -- so it was counted as a checked body row
+    # and excluded from the row tally. Giving that table a real header made the
+    # pair agree at 111/111 with zero findings. There was no accounting defect;
+    # there was a malformed row, which is exactly what this tool exists to say.
+    #
+    # Added now that it is clean, and the sequence is the point: DECLINING TO
+    # RELAX THE ARM is what left the real cause findable.
+    'SAIRN-ACTIVE-WORK-cc.md',
 ]
 
 # NOT ADDED, AND NAMED SO THE OMISSION IS A DECISION RATHER THAN AN OVERSIGHT.

@@ -115,13 +115,58 @@ def beat_dependencies():
 
 
 def auth_line(lines):
-    """The last line index carrying an authorisation marker, or None.
+    """The last line index carrying an authorisation marker IN CODE, or None.
 
     LAST rather than first: a handler may mention the secret in a comment far
     above the check. Using the first would put post-auth refusals above the
     boundary and silently exempt them, which is the failing direction.
+
+    ── AND COMMENTS ARE NOW EXCLUDED, WHICH IS THE WHOLE POINT (2026-10-05) ──
+    Taking the LAST marker ANYWHERE meant a single TRAILING COMMENT naming the
+    secret pushed the boundary to the bottom of the file, and every post-auth
+    refusal above it was then reported `pre-auth refusal -- must NOT beat`.
+    DRIVEN, not reasoned: a handler whose 502 is a genuine FINDING reports
+    FINDING, and the same handler with
+
+        // NOTE: callers must send CRON_SECRET in the Authorization header.
+
+    appended reports it CLEAN. One comment line, a real monitoring gap erased,
+    and the tool said CLEAN -- the exact shape PR 1.11 exists for, in a checker
+    rather than a gate.
+
+    I REPORTED THIS FIXED ONCE AND IT WAS NOT. It was written up on 2026-09-29
+    as an index row describing the "comment-armed disjunct", the structural
+    `own_auth` test was added beside it, and the LINE-NUMBER disjunct was left
+    in place -- so the finding stayed live while its record said otherwise.
+    Re-raised as H2 seq 486 and fixed here.
+
+    THE STRUCTURAL HALF IS UNTOUCHED. `own_auth` -- a refusal whose own nearest
+    enclosing `if` names a marker -- carries the real work and is comment-proof
+    by construction. This function is only the "sits above every marker"
+    fallback, and the fallback is what needed the code/comment distinction.
+
+    STRIPPED WITH tools/jscomments, NOT A REGEX OF MY OWN. That module already
+    handles `//`, `/* */` and the case a hand-rolled stripper gets wrong -- a
+    `//` inside a string literal -- and it is used by the inventory generator
+    for the same reason.
     """
-    hits = [i for i, l in enumerate(lines)
+    try:
+        import jscomments
+        code = jscomments.strip_comments(chr(10).join(lines)).split(chr(10))
+    except Exception:
+        # FAIL TOWARD THE STRICTER ANSWER, never toward clean. If the stripper
+        # cannot run, fall back to NO fallback boundary at all: `own_auth`
+        # still classifies real pre-auth refusals, and anything that would only
+        # have been exempted by the line-number test is reported instead of
+        # waved through. A comment-stripper outage must not be able to hide a
+        # finding -- that is the same failure, one layer up.
+        return None
+    if len(code) != len(lines):
+        # Line-for-line correspondence is what makes the index usable. If the
+        # stripper ever changes the line count, the index is meaningless and
+        # refusing the fallback is the only safe answer.
+        return None
+    hits = [i for i, l in enumerate(code)
             if any(m in l for m in AUTH_MARKERS)]
     return hits[-1] if hits else None
 
@@ -206,6 +251,33 @@ def refusals(src, window=14):
 
 # ── THE FIXTURE LOCK (discipline 1) ──────────────────────────────────────────
 FIXTURES = (
+    # ── THE TRAILING-COMMENT FIXTURE, added 2026-10-05 (H2 seq 486) ──────────
+    # FIRST, because it is the one this lock did not have and the reason the
+    # defect survived a report of its own fix. A single comment naming the
+    # secret BELOW a genuine post-auth finding used to push the line-number
+    # boundary to the bottom of the file and report the finding as pre-auth.
+    # If this fixture ever classifies as pre-auth again, the comment/code
+    # distinction in auth_line() has been lost.
+    ("""
+module.exports = async (req, res) => {
+  if (req.headers.authorization !== 'Bearer ' + process.env.CRON_SECRET) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+  const r = await fetch('https://example.invalid/x');
+  if (!r.ok) {
+    res.status(502).json({ error: 'upstream' });
+    return;
+  }
+  res.status(200).json({ ok: true });
+};
+// NOTE: callers must send CRON_SECRET in the Authorization header.
+""",
+     [CLEAN_PRE_AUTH, FINDING],
+     'a TRAILING COMMENT naming the secret must not exempt a post-auth '
+     'refusal -- one comment line used to erase a real monitoring gap and '
+     'report CLEAN'),
+
     ("""
   if (req.headers.authorization !== 'Bearer ' + process.env.CRON_SECRET) {
     res.status(401).json({ error: 'Unauthorized' });
