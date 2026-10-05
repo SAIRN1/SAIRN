@@ -3085,8 +3085,8 @@
       "task": "gate-1 missing-table triage, the sairnscape licence-key-alone routed fix, my own five logged mistakes reviewed, queue14 inventory and the dead-rule 30-day no-fire sweep FILES: docs/2026-10-05-gate1-missing-table-triage.md docs/2026-10-05-sairnscape-customers-licence-key-alone.md docs/2026-10-05-cody-mistake-review.md docs/2026-10-05-cody-queue14-inventory.md SAIRN-ACTIVE-WORK-cody.md",
       "claimed_at": "2026-10-05T11:42:37Z",
       "claimed_at_epoch": 1791200557.0828414,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-05T12:19:39Z",
       "files": [
         "SAIRN-ACTIVE-WORK-cody.md",
         "docs/2026-10-05-cody-mistake-review.md",
