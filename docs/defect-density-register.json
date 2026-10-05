@@ -22666,7 +22666,7 @@
       "recurrence_open": "No control requires a SAIRN tool to separate what it MEASURED from what it ADVISES. One file is fixed; the convention is not, and it is logged open rather than invented by the session that broke it."
     },
     {
-      "commit": "f8c766ec96ff",
+      "commit": "2f52470b6d73",
       "date": "2026-10-05",
       "subject": "fix(claim): a disclosure is only a disclosure when nothing else claims it, and UNBLOCKED is not BLOCKED",
       "files": [
