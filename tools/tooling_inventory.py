@@ -1801,6 +1801,29 @@ PURPOSES = {
     'verify-session-token-app-scope.js': ('LIBRARY', 'the semgrep rule body for the app-scope check'),
     'posthook.cjs': ('LIBRARY', 'the Node half of a PostToolUse hook'),
     'fetch_blocked_doc.sh': ('LIBRARY', 'fetches a document a plain request cannot reach'),
+    'capture_exit.py': ('TOOL',
+        'runs a command and writes ITS real exit status to a named file, so a '
+        'BACKGROUNDED run can be judged by the program rather than by whatever '
+        'ran last. The advice `tool > out 2>&1` then `echo "EXIT=$?"` is correct '
+        'and is what exit_status_attributable.py recommends -- and it is only '
+        'correct in the FOREGROUND. Backgrounded, the caller receives the status '
+        'of the compound command, whose last element is the `echo`, so it reports '
+        '0 whatever the tool did: on 2026-10-05 metamorphic_check.py (really 1) '
+        'and dead_rule_sweep.py (really 2) were both notified as "exit code 0" '
+        'and two not-green tools were one step from entering a standing document '
+        'as green. THE THIRD STATE IS THE HARD PART AND THE FILE IS WRITTEN '
+        'TWICE: `RUNNING` before the child starts, `EXIT <code>` after it is '
+        'reaped, `COULD_NOT_RUN` when it never started -- because a file that '
+        'does not exist yet and a file saying `EXIT 0` are the same bytes to a '
+        'careless reader, which is PR 1.11 one level down. `--read FILE` turns a '
+        'status file back into an exit status and exits 2, NEVER 0, on '
+        'ABSENT/RUNNING/UNREADABLE. DOES NOT INTERPRET the number: `EXIT 1` from '
+        'a report-only checker means findings and `EXIT 2` here usually means '
+        'COULD NOT RUN, and this tool knows neither convention. It does not '
+        'replace exit_status_attributable.py -- that reads command TEXT before a '
+        'run, this records the OUTCOME of one. Lock: `--fixtures`, 12 arms, 4 of '
+        'them negative, two reproducing the trailing-element mechanism itself '
+        '(the trailing process returns 0 while the status file still says 3)'),
     # DELETED from here 2026-09-12: it is in report_only_checks.py's REGISTRY,
     # which already carries its `catches`. Two descriptions of one tool can
     # disagree, and REGISTRY is the copy that actually runs. Found by this file's
