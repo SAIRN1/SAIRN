@@ -3326,6 +3326,24 @@
         "tests/run_md_table_check_probe.py",
         "tools/md_table_check.py"
       ]
+    },
+    {
+      "id": "cc-1791203209",
+      "session": "cc",
+      "subject": "cc",
+      "task": "tooling_inventory cell emitter pipe-in-code-span fix, the law-auth custody attribution test arm, landing sairncare's branch-only competitive audit, and a standing check for unverified-claim drift FILES: tools/tooling_inventory.py docs/TOOLING-INVENTORY.md api/law-auth-custody-matter-attribution.test.js docs/cloud-research/sairncare-external-competitive-gap-audit-2026-09-25.md docs/SAIRN-OPEN-WORK-INDEX.md SAIRN-ACTIVE-WORK-cc.md",
+      "claimed_at": "2026-10-05T12:26:49Z",
+      "claimed_at_epoch": 1791203209.3597145,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-cc.md",
+        "api/law-auth-custody-matter-attribution.test.js",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/cloud-research/sairncare-external-competitive-gap-audit-2026-09-25.md",
+        "tools/tooling_inventory.py"
+      ]
     }
   ],
   "refusals": [
