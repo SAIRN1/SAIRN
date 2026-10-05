@@ -5138,6 +5138,26 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-05T09:25:27Z",
+      "opened_at_sha": "6dd690d610819c4d1bf94cb8d026eaa9e05ca701",
+      "resources": [
+        "sd_crm"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tools/sairn_claim.py"
+      ],
+      "what": "THE CLAIM MATCHER'S DISCLOSURE RULE: ONLY-INSIDE, WORD-BOUNDARY MARKERS, SEVEN NEW MARKERS. NO CODE SERVING sd_crm WAS CHANGED.\n\nsd_crm appears on a changed line ONCE, as four characters inside a PROBE FIXTURE\nand the comment that explains it:\n\n    \"rewrite the sd_crm branch in api/sd-data.js. api/sd-data.js is not touched\n     by the hover half\"\n\nThat string is a synthetic CLAIM TASK handed to block_reason() to prove the\nmatcher no longer exempts a file a claim both takes and disowns. It is not a\nquery, not a route, not a branch name in any dispatcher. This is open-work index\nrow 78 -- the Tier A gate matching resource names out of comments, docstrings\nand fixtures, five measured instances in three days -- and PR 4.3's instruction\nis to record the obligation rather than reword the fixture to slip past the\nmatcher. Recorded rather than reworded.\n\nWHAT ACTUALLY CHANGED, and what to attack:\n\n(a) disclosed_files() now returns `inside - outside`: a path is disclosed only\n    when NO clause outside a blocker clause names it. Measured over all 532,512\n    cross-session pairs in the 1,178-claim record: BLOCK->CLEAR 0,\n    CLEAR->BLOCK 54. ATTACK THIS: the 54 are new blocks, and I read six of them\n    rather than all 54. If any is a false positive, the loudest case is hank's\n    queue15 claim, whose clause 11 names api/sd-data.js inside a sentence that\n    IS a disclosure (\"fourth holds api/sd-data.js under a LIVE claim\") but\n    carries no marker from the list. I judged that block CORRECT -- a third\n    session asking about that file should be told two sessions are arguing over\n    it -- and that judgement is mine alone.\n\n(b) markers are matched with a FRONT word boundary. ATTACK THIS: the front-only\n    choice is driven by one case (`not touch` vs NOT TOUCHING). Front-only means\n    `skip` matches `skipping` and `frees` matches `freestanding`. Measured cost\n    on the corpus is zero, but the corpus is 1,178 claims written by six\n    sessions and is not a sample of English.\n\n(c) seven new markers, each measured alone at BLOCK->CLEAR 0. ATTACK THIS:\n    zero-cost-on-the-corpus is not zero-cost. `skip` is the one I would attack\n    first -- \"skip the stonedesk.html panel\" is a plausible future claim where\n    the word means a work decision, not a disclaimer.\n\n(d) FOUR CANDIDATES MEASURED AND REJECTED: deferred 73, holds 61,\n    is <session>'s 50, conflict declared 22. ATTACK THIS: I rejected them on\n    the number plus a reading of the top cases. A reviewer may reasonably say\n    that 22 for `conflict declared` is worth paying, since PR 4.3 REQUIRES that\n    exact phrase and the matcher converting it into a block is the original\n    finding. I did not pay it and the reason is that the 22 are real file\n    collisions on api/sd-data.js.\n\n(e) TWO OF THE EIGHT WORDINGS ARE STILL OPEN and arm E6 asserts they block.\n    The cause is the clause splitter, not the markers. Whether the right fix is\n    a better boundary (FILES: as a hard clause break) is unmeasured and is the\n    biggest remaining question here.\n\n(f) NOT MINE, PRE-EXISTING, PROVEN BY STASHING: tests/claims/run_fileset_matcher_probe.py\n    is red at HEAD with 3 failures. My change moves its PINNED figure 26 -> 0.\n    I did NOT re-pin it. Somebody has to decide whether \"the file-set matcher\n    now refuses nothing the lexical matcher misses\" is a result or a regression\n    in the argument for keeping both.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-05T09:25:27Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
