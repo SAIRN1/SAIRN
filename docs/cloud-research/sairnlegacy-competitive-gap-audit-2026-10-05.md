@@ -1,6 +1,6 @@
-# SAIRNlegacy competitive-gap audit — 2026-10-05 (CC), **PART 1 OF 2: the internal half**
+# SAIRNlegacy competitive-gap audit — 2026-10-05 (CC). **PART 1: the internal half. PART 2, the vendor-claim axis, is at the bottom of this file.**
 
-**THIS DOCUMENT IS DELIBERATELY HALF-FINISHED AND SAYS SO IN ITS TITLE.** Every
+**PART 1 WAS DELIBERATELY HALF-FINISHED AND SAID SO. PART 2 CLOSES IT, AND IT KILLED ONE OF PART 1's OWN CLAIMS — see the correction at the head of Part 2.** Every
 other app's competitive-gap audit in `docs/cloud-research/` carries two halves:
 what we have, derived from the code, and what competitors have, derived from
 external research. **The internal half below is complete and every figure in it
@@ -194,7 +194,7 @@ when nothing is broken.
 
 ---
 
-## 6. THE EXTERNAL HALF — NOT DONE. The question list, scoped.
+## 6. ~~THE EXTERNAL HALF — NOT DONE.~~ **DONE 2026-10-05, SAME DAY — see PART 2 below.** The question list it was scoped from, kept
 
 **No competitor was researched for this document. No vendor name, price, feature
 or roadmap claim appears anywhere above, and none should be inferred.** What
@@ -250,3 +250,206 @@ between the three uncovered apps used size, panel count and Tier A density as
 proxies for commercial importance, and a proxy is not the thing — if SAIRNscape
 has a buyer waiting and SAIRNlegacy does not, this ordering is wrong and the
 measurement would not show it.
+
+---
+---
+
+# PART 2 — THE VENDOR-CLAIM AXIS, 2026-10-05 (CC)
+
+**Sourced to vendor and regulator material, with every URL listed at the end.
+Where a claim is a VENDOR'S OWN MARKETING it is labelled as such and not as a
+verified capability — a feature page is evidence of what is SOLD, which is the
+right evidence for a competitive gap and the wrong evidence for whether it
+works.**
+
+---
+
+## 0. THE CORRECTION THAT MATTERS: PART 1'S BREADTH THESIS IS WRONG
+
+Part 1 §1 said SAIRNlegacy spans "four businesses that are **usually sold
+separately**" and called that breadth "the competitive thesis". **That is false,
+and it was the single most load-bearing claim in Part 1.**
+
+Cemetery + crematory + funeral home on **one** platform is a named, established
+product category with multiple vendors selling exactly it:
+
+* **PlotBox** — markets itself verbatim as *"Cemetery, Crematory, and Funeral
+  Home Software"*, one central platform, and includes **trust fund management**
+  in that same sentence.
+* **byondpro (OpusXenta)** — *"a comprehensive cemetery, crematory, and funeral
+  home management solution … purpose-built for the death care industry."*
+* **Cemetery Workstation** — *"an all-in-one platform to handle all aspects of
+  cemetery and crematory operations."*
+* **Halcyon (Batesville)** — Cemetery Management, Cremation Management,
+  **preneed case management**, multi-location, and an AI Copilot.
+
+**SO THE BREADTH IS PARITY, NOT ADVANTAGE, and one of SAIRNlegacy's four
+"bundled" businesses is arguably BEHIND rather than ahead:** PlotBox and
+byondpro lead with **mapping and plot/record digitisation**, and SAIRNlegacy's
+cemetery surface is `leg_plots` and `leg_monuments` with no mapping anywhere in
+Part 1's read.
+
+**WHAT IS LEFT OF THE THESIS, narrowed to what the evidence supports:** the
+*livery/fleet* line (`leg_vehicles`, `leg_processions`, `leg_dispatches`,
+`leg_maintenance`) and the *events* line (`leg_caterers`, `leg_florists`,
+`leg_liveryvendors`) did **not** appear in any competitor's advertised feature
+list that this pass read. That is a narrower and possibly real differentiator,
+and it is **unverified in the negative** — absence from four vendors' marketing
+pages is not absence from their products.
+
+**This is why Part 1 refused to write a competitor column it had not
+researched.** Had it guessed, it would have guessed *in favour of the platform*,
+and the breadth claim would have gone into a deck.
+
+---
+
+## 1. F1 IS CONFIRMED AS DISQUALIFYING, and the Rule's own words are sharper than Part 1 had them
+
+Part 1 inferred that "every established vendor sells Funeral-Rule paperwork as a
+headline feature". **Sourced, that inference holds, and the mechanism is more
+specific than the claim:**
+
+> *"The Funeral Rule requires a written GPL on request, itemized casket and
+> outer-burial-container price lists, and a written statement of goods and
+> services for every arrangement. Software that generates these on demand with
+> current prices, current package math, and the required disclosures keeps you
+> out of FTC enforcement actions."*
+
+And from the FTC's own compliance guidance, which **corrects a nuance Part 1 got
+slightly wrong**:
+
+* The **GPL** is *"the keystone of the Funeral Rule"* and must carry identifying
+  information, **itemized** prices, and specific disclosures.
+* The **CPL** must be shown *"when someone asks or when you talk about caskets,
+  alternative containers, or their prices, **and before you show the items or
+  pictures of the items**."*
+* The **OBCPL** carries the same trigger for grave liners and vaults.
+
+**THE TRIGGER IS THE PART THAT MAKES THIS A SOFTWARE PROBLEM AND NOT A PRINTING
+PROBLEM.** The CPL is not a document you file once — it must be *presented before
+the merchandise is shown*. SAIRNlegacy shows caskets and urns out of
+`leg_merch_catalog` with no price-list object attached to that moment, so the app
+**cannot implement the trigger even if a home has a CPL on paper**. Part 1 said
+"the product does not model it, so it cannot help." The sourced version is
+worse: **the product's merchandise panel is the exact screen the Rule attaches an
+obligation to.**
+
+**F1's severity is therefore raised from "a salesperson can disqualify it in one
+question" to "the app has a screen where a regulated disclosure is required and
+does not know it."** The tier does not move — nothing here changes the stored
+record's criticality — but the competitive and regulatory reading does.
+
+---
+
+## 2. F3 ANSWERED: preneed is TABLE STAKES as case management, SPECIALIST as trust administration
+
+Part 1 called this "the single highest-value question" and declined to answer it.
+**Answered, and it splits in two — which is why it looked ambiguous:**
+
+| Layer | Market position | Evidence |
+|---|---|---|
+| Preneed **case** management | **TABLE STAKES.** It is a *filterable category* on GetApp and Capterra — i.e. buyers shop on it — and Halcyon lists "preneed case management" as a standard feature | vendor listings + Halcyon's own page |
+| Preneed **trust administration / recordkeeping** | **A SPECIALIST PRODUCT.** FSI Trust Solutions exists to do exactly this, as a service with its own tooling; PlotBox includes "trust fund management" on-platform | FSI Trust Solutions; PlotBox |
+
+**SO THE PRODUCT DECISION PART 1 REFUSED TO MAKE NOW HAS A SHAPE:**
+SAIRNlegacy has `leg_preneed` with 35 mentions and a panel, so it is already in
+the **table-stakes** layer. Its zero occurrences of `irrevocable`, `revocable`
+and `surety` mean it is **not** in the specialist layer — and that is a defensible
+place to stand, because a specialist layer with a dedicated competitor and
+state-by-state trust law is not a thing to half-build.
+
+**WHAT IS NOT DEFENSIBLE, and this is the actual finding:** revocable versus
+irrevocable is not a *trust-administration* feature. **It is a field on the
+contract** — it decides whether the family can get their money back and whether
+the funds count against Medicaid eligibility. A platform can be out of the trust
+business entirely and still have to record which kind of contract it is.
+**Recording it is table stakes; administering it is not, and Part 1 conflated
+them.**
+
+---
+
+## 3. PRICING — the axis Part 1 did not touch at all
+
+| Vendor | Published price | Unit |
+|---|---|---|
+| **Gather** | **$49/month**, *"no per-user fees and no hidden costs"* | per firm |
+| **Passare** | from **$100/month** flat, but pricing is **not published** — custom quote by firm size and locations | per firm |
+| **CRaKN** | not published, custom by firm size and features; free trial | — |
+| Category range | roughly **$50–$200/month**, some with a one-time purchase option | per firm |
+
+**THE UNIT IS THE FINDING, not the number.** The category prices **per firm, not
+per seat and not per case** — Gather advertises the absence of per-user fees as a
+selling point, and Osiris is positioned on *"affordable, unlimited-user"* for
+independents.
+
+**That is a direct constraint on SAIRNlegacy's licence model.** This platform's
+apps are licence-key-per-tenant, which is per-firm and therefore *aligned* — but
+it also means **the ceiling is low and known**: a death-care platform competing
+on breadth is competing for a $50–$200/month seat, and 27 panels do not change
+that. A feature decision that assumes headroom above $200 is assuming something
+the published prices do not support.
+
+**NOT CLAIMED:** nothing here is a quote for a multi-location group or a cemetery
+with mapping, where PlotBox and Halcyon sit and where pricing is uniformly
+unpublished. The $50–$200 band is the independent-firm band.
+
+---
+
+## 4. CHAIN OF CUSTODY — still the best candidate, and still unverified as a differentiator
+
+Part 1 named this as where SAIRNlegacy is most likely AHEAD and said research
+should start there. **It did, and it came back inconclusive, which is a result
+and is recorded as one.** None of the vendor material this pass read advertises a
+first-class identification-and-custody log as a named feature; Halcyon lists
+"Cremation Management" and "Document Management" without decomposing either.
+
+**SO THE HONEST STATUS IS UNKNOWN, NOT FAVOURABLE.** Absence from a feature list
+is not absence from a product, and "Cremation Management" is exactly the kind of
+label that could contain a custody log. **Settling this needs a demo or a
+customer, not another search** — and it is the one place where a search returning
+nothing is genuinely uninformative rather than mildly reassuring.
+
+---
+
+## 5. What Part 2 changes about Part 1, in one table
+
+| Part 1 said | Part 2 finds |
+|---|---|
+| Breadth across four businesses is the competitive thesis | **WRONG.** Cemetery+crematory+funeral is a named category with at least four vendors. Breadth is parity; cemetery MAPPING may put us behind |
+| F1: an incumbent could disqualify us in one question | **CONFIRMED AND WORSE.** The CPL has a *presentation trigger* attached to the merchandise screen the app already has |
+| F3: preneed trust administration — is it table stakes? | **ANSWERED, and the question was mis-framed.** Case management is table stakes; trust administration is specialist; **revocable/irrevocable is a contract field, not a trust feature** |
+| Pricing: not touched | **$49–$200/month, PER FIRM.** The unit constrains the roadmap more than the number |
+| Custody may be where we are ahead | **STILL UNKNOWN.** No vendor advertises it; that is not evidence either way |
+
+---
+
+## 6. Sources
+
+* [FTC — Complying With the Funeral Rule (2020)](https://www.ftc.gov/system/files/documents/plain-language/565a-complying-with-funeral-rule_2020_march_508.pdf)
+* [FTC — Funeral Rule price list essentials](https://www.ftc.gov/system/files/documents/plain-language/funeral_rule_price_list_essentials.pdf)
+* [FTC — Funeral Industry Practices Rule (legal library)](https://www.ftc.gov/legal-library/browse/rules/funeral-industry-practices-rule)
+* [PlotBox — Cemetery, Crematory, and Funeral Home Software](https://plotbox.com/)
+* [Halcyon — Funeral Home Management Software](https://www.halcyondcms.com/funeral-software/)
+* [Capterra — Funeral Home Software 2026](https://www.capterra.com/funeral-home-software/)
+* [Capterra — Passare pricing](https://www.capterra.com/p/164764/Passare/)
+* [GetApp — funeral home software with pre-need management](https://www.getapp.com/retail-consumer-services-software/funeral-home/f/pre-need-management/)
+* [FSI Trust Solutions](https://fsitrust.com/)
+* [Parting Pro — Best Funeral Home Software (2026)](https://partingpro.com/blog/what-is-the-best-software-for-funeral-homes)
+* [funeral.com — Funeral Home Price Lists Explained: GPL, Cash Advances](https://funeral.com/blogs/the-journal/funeral-home-price-lists-explained-gpl-cash-advances-and-how-to-compare-quotes-ftc-funeral-rule)
+
+**BLIND SPOTS: 6.** (1) **No vendor was contacted, trialled or demoed.** Every
+competitor claim is read off marketing, listing-site summaries or review-site
+feature tags, which describe what is SOLD and not what works. (2) **Feature-list
+absence is not product absence** — §4's custody finding and §0's livery
+differentiator both rest on absence from marketing pages, which is the weakest
+form of evidence in this document and is labelled as such in both places. (3)
+**Pricing is the independent-firm band only**; PlotBox, Halcyon and the
+multi-location/cemetery-mapping tier are uniformly unpublished and are not
+represented. (4) **No search was run in the negative** — I did not search for
+"funeral software that lacks a CPL", so F1's "every established vendor sells it"
+rests on two sources rather than a surveyed denominator. (5) **The FTC material
+is current-as-read-today and the Funeral Rule has been under review** — a 2022
+Federal Register notice appeared in the results and was not read, so a rule
+change could move F1 and F2 in either direction. (6) **Part 1's internal half was
+not re-run** — its code citations are as of this morning and are not re-derived
+here.
