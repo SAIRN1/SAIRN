@@ -3127,6 +3127,19 @@
         "api/sd-data.js",
         "docs/defect-density-register.json"
       ]
+    },
+    {
+      "id": "cody-1791207211",
+      "session": "cody",
+      "subject": "reviews9",
+      "task": "discharge the nine Tier A review obligations assigned to cody, oldest 2026-09-29 FILES: docs/tier-a-reviews.json",
+      "claimed_at": "2026-10-05T13:33:31Z",
+      "claimed_at_epoch": 1791207211.412342,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/tier-a-reviews.json"
+      ]
     }
   ],
   "refusals": [
