@@ -22789,7 +22789,7 @@
       "recurrence_open": "The two fixed suites are green and the other ten with the identical stub are not -- measured at 12 files throwing on an absent expectedApp against 2 using the green shape. Nothing yet reports an app's red set on a cadence, so the NEXT control to land on a red suite will be just as invisible as the witness lock was. And the deepest one stays open by choice: no instrument counts unscoped verifySessionToken calls, so a branch gate that dropped its app scope entirely would pass every stub on this platform including the two reference-green ones -- the guard catches a WRONG app and cannot see a MISSING one."
     },
     {
-      "commit": "367a3d883a51",
+      "commit": "d3d2db42af5d",
       "date": "2026-10-05",
       "subject": "fix(check11): the gate read the working tree while the push shipped a commit, and git ls-files hid a path for 25 days",
       "files": [
