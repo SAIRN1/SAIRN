@@ -22606,6 +22606,64 @@
         }
       ],
       "recurrence_open": "Nothing compares what a SETTINGS SCREEN renders for a stored key against what its CONSUMER renders for the same key. That cross-screen comparison is what would have found both this and the SAIRNbuild 0% markup case on the same day, and it is not built. tools/numeric_default_coalesce_scan.py finds the substitution sites but says nothing about whether two screens agree about one stored value."
+    },
+    {
+      "commit": "15da3f6647fd",
+      "date": "2026-10-05",
+      "subject": "fix(citation-drift): the tool's closing line was an INSTRUCTION it had not earned, and it was wrong 4 of 4 on SAIRNgrounds",
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "tests/run_citation_line_drift_probe.py",
+        "tools/citation_line_drift_check.py"
+      ],
+      "lines_added": 133,
+      "lines_removed": 7,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/citation_line_drift_check.py closed every run with \"Each DRIFTED line above is the correction to apply\". The tool resolves WRITE sites only, so it cannot tell a stale citation from one deliberately pointing at a render or field-construction site -- and a criticality cell cites whatever its argument rests on. Applied literally to SAIRNgrounds at HEAD the sentence would have broken 4 of 4 correct citations: grd_irr_zones :3694, whose cell argues the field \"is only rendered (:3694) with nothing computing an interval from it\", and grd_rounds :2975/:3004/:3046, three citations naming three different stored field groups which the correction collapsed onto one line, :2887. Fixed by printing the CITED line's own source text on every DRIFTED row and naming the arrow a CANDIDATE to be checked against the cell's prose. No heuristic was added: the discriminator is not available to the tool, and in_spans() was measured and does not separate the populations (0 of sairnfreedom's 32 are in a declaration block either).",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "41f0689295fb",
+        "date": "2026-09-30",
+        "subject": "fix(citation): the drift detector credited a line that names every resource at once",
+        "lag_days": 5
+      },
+      "contributing_factors": [
+        {
+          "factor": "The verdict name DRIFTED asserts a measurement the tool never made. It measures 'the cited line is not within --window of a resolvable write site', which is a different claim from 'the citation has moved' -- and the closing sentence acted on the stronger reading.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The header now defines DRIFTED as NOT ANCHORED TO A WRITE SITE and says so again in the output. The arrow is named a CANDIDATE, and the closing line sends the reader to the register cell's own prose. Exit 1 is unchanged, so nothing that used to be flagged now passes."
+        },
+        {
+          "factor": "The probe's arm E2 verified every correction's DESTINATION was a real write site and never verified the ORIGIN was wrong. A citation deliberately pointing at a render site therefore passed the control while the correction it invited was still wrong -- which is E2's own sentence ('an offset nobody checked against the line it now names') one step further back.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "New probe section F, 4 arms. F4 is a known-bad built to be indistinguishable from genuine drift by every signal the tool CAN measure -- a render line, far from the write site, outside every declaration block -- and requires it to still be surfaced at exit 1 rather than silently sound. F2 requires the blind-repoint instruction to be absent. Criteria bumped 2026-09-30.1 -> 2026-10-04.2."
+        },
+        {
+          "factor": "The tool was validated on sairnfreedom alone, where 32 of 32 flags were genuine drift from one uniform +825/+834 forward shift. The deliberate-citation population never appeared in the sample that set the closing sentence, so an observed 100% precision on one app was written into the output as an instruction for all fourteen.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Both populations are now named in the tool's own output with their measured offsets, so the next reader sees that precision was app-specific rather than a property of the method. This is cross-domain discipline 7: byte-identical is not safe-in-context -- the same detector on a second app needed its input range re-qualified, not just its code re-read."
+        },
+        {
+          "factor": "RECURRENCE: no control anywhere requires a SAIRN tool to distinguish 'what I measured' from 'what you should do about it'. This defect is a measurement correctly made and an action wrongly inferred from it, and that gap is a tool-authoring convention, not a bug in one file.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "Logged as an open gap in docs/2026-10-04-inventory-hank.md rather than closed here. A convention added by the same session that broke it, on the strength of one instance, is item 8 of the cross-domain disciplines -- a detector blessing its own fix."
+        }
+      ],
+      "recurrence_open": "No control requires a SAIRN tool to separate what it MEASURED from what it ADVISES. One file is fixed; the convention is not, and it is logged open rather than invented by the session that broke it."
     }
   ],
   "started": "2026-09-09",
