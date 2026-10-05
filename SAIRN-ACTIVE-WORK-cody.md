@@ -6545,3 +6545,68 @@ from a table nobody asked about — 22 missing tables sat behind that.
 6. **11 Tier A obligations authored by cody are open**, oldest 2026-09-27.
 7. **Item 9 of the previous paste is named by neither the landed list nor the
    refused list.** Not inferred.
+
+---
+
+# Queue 14 — 2026-10-05
+
+`docs/2026-10-05-cody-queue14-inventory.md`,
+`docs/2026-10-05-sairnscape-customers-licence-key-alone.md`,
+`docs/2026-10-05-gate1-missing-table-triage.md`,
+`docs/2026-10-05-cody-mistake-review.md`.
+
+## Landed
+
+| sha | what |
+|---|---|
+| `cdc92f79` | `tools/gap_ledger.py` + its probe, registered, three generated docs re-derived. 65 rows, 22 apps; pilots SAIRNlaw 5 and SAIRNcode 6 |
+| `6b85b23a` | the SAIRNscape finding proven live with a control; Gate-1 triage — 0 of 24 removable, the list is 26 |
+| `38514b5b` | `declared_tables()` required `public.` — 28 tables invisible, a file declaring none exited 0 |
+| `886f01ac` | the mistake review and this inventory |
+
+## The priority item
+
+**PROVEN:** `read customers` on a bare `SCP-DEMO-2026` → 200 with name, email,
+phone and address; `write` with an id-less payload → 400 from the handler body,
+nothing stored; **CONTROL** `invoices` and `scp_quotes` on the same bare key →
+403 both. **NOT PROVEN: the fix**, because `api/sd-data.js` and
+`docs/CRITICALITY-TIERS.md` are cc's and the first was on the stay-off list.
+
+**Root cause is in the register, not the gate.** `customers` is B/B while its
+confidentiality cell already says the row carries PII. **The basis was corrected
+and the letter was not, and the letter is what the gating sweep reads.**
+
+## What I got wrong, and it is the day's pattern
+
+**Five logged, reviewed, and the review found two more — seven, three live.**
+Five of the seven are a reader, counter or matcher applied to a corpus wider
+than the sample it was written against, and **every one failed quietly**: a
+smaller number, a shorter list, a green arm.
+
+**I verified each tool against its own fixtures and did not verify the fixtures
+against the corpus.** The one mechanical change that follows is that **a sweep
+must print its own coverage** — three of the five would have been one line each.
+
+The sharpest: the Gate-1 document published counts that were floors, and its
+limits section is accurate because **an unstated assumption does not appear in a
+limits section.**
+
+## Raised, not acted on
+
+1. **Three of seven items blocked by cc's one claim** — the gate, the retier,
+   two index rows, two register notes. All routed in pasteable form.
+2. **EIGHT Tier A obligations are waiting on ME**, oldest six days. I am the
+   blocker on more review than I am waiting on, and nothing today discharged
+   one.
+3. **Six of the eight remaining dead rules are mine** —
+   `metamorphic_check.py`. The previous batch's scope was never-claimed tools
+   and is honestly complete; these are a different item and they are mine.
+4. **`gap_ledger.py` is outside the sweep's universe** (162 of 169 rules)
+   because registering it needs `report_only_checks.py`, which hank holds.
+5. **20 SQL files and a snapshot re-capture owed by Michael**, plus two apps
+   whose gated resources are unanswerable until a credential decision.
+6. **A blocked push can leave a rebase IN PROGRESS.** `--amend` then rewrites
+   the commit being replayed onto. The repo's own guard caught it. **A blocked
+   push is not a no-op** and `git status` is the first thing to read after one.
+7. **GitHub reports 1 HIGH dependabot vulnerability on the default branch**
+   (`security/dependabot/4`), surfaced by a push today. Not mine, not looked at.
