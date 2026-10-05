@@ -1493,6 +1493,29 @@ PURPOSES = {
         'beat dependency list is READ FROM heartbeat.js and returns None on a read '
         'failure, never an empty set. 5 locked fixtures, 23-arm control whose '
         'ablation restores the REAL pre-fix shape in memory. REPORT ONLY'),
+    'gap_ledger.py': ('REPORT',
+        'AN APP THAT IS ABSENT FROM A COVERAGE TABLE, which reads as covered. '
+        'The named instance: docs/2026-09-29-competitive-gap-doc-inventory.md '
+        'lists SEVENTEEN apps and `git ls-files \'*.html\'` finds TWENTY-TWO, '
+        'so five were in no row at all and the "three apps have no '
+        'competitive-gap document" figure was counting a smaller platform than '
+        'exists. Also catches an audit that names no LIMITS and one that '
+        'carries no DECAY statement -- a competitive fact with no expiry reads '
+        'as current -- and an app whose newest audit is on a branch rather '
+        'than on main, which is how SAIRNcare read as uncovered while its '
+        'audit sat on origin/claude/cloud-research-sairncare. DERIVED on every '
+        'run from the documents themselves, never kept: each row is the '
+        'document\'s own bolded synthesis sentence LIFTED with its file and '
+        'line, because a paraphrased competitive claim is a second source that '
+        'can disagree with the first. IT HAS NO STATUS COLUMN AND NO PRIORITY '
+        'COLUMN deliberately -- whether a gap is open, closed or important is '
+        'a human judgement and a column the tool filled in would be a '
+        'fabricated figure. Report-only; a bare run writes nothing. What it '
+        'cannot see: a gap stated in a body section and never carried into the '
+        'synthesis, and six documents whose filename it cannot resolve to an '
+        'app, which it prints by name on every run so the shared-sweep count '
+        'reads as the floor it is.'),
+
     'dead_rule_sweep.py': ('CHECKER',
         'A CRITERIA RULE THAT NOTHING EXERCISES, which is indistinguishable '
         'from a rule that works and stays that way through every green light. '
