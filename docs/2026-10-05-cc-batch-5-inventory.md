@@ -110,7 +110,11 @@ recorded rather than glossed:
   > ```
   >
   > The rule that generalises: **`-S` answers "which commit introduced this
-  > text", never "is this text still true".** A claim withdrawn in prose is
+  > text", never "is this text still true".**
+  >
+  > **THE RULE NOW LIVES IN `docs/SAIRN-PROCESS-RULES.md` §2.6**, beside the
+  > other standing git conventions, so it is discoverable without finding
+  > this dated file. What stays here is only the instance that paid for it. A claim withdrawn in prose is
   > invisible to it by construction, so a `-S` hit on an assertion is a lead to
   > check, not a fact to quote.
 * A **git note** was attached to `51548ec9` and **does not propagate**: the

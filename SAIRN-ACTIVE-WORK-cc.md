@@ -6074,3 +6074,108 @@ checked ONE file for the all-pipes row; the other six standing files are
 unmeasured. (5) **Both seq-486 fixes were found by an auditor re-raising them,
 not by any check of mine** — nothing here closes the gap of a tool reporting a
 fix it never made.
+
+---
+
+## 2026-10-05 — CC batch 7: the 17→19 rise was mostly RELOCATIONS, and the cheap measurement is now a rule
+
+Full account: `docs/2026-10-05-cc-batch-7-inventory.md`.
+
+### The fail-open rise — `16e122dd`
+
+Diagnosed by running the same scanner against the baseline tree in a throwaway
+worktree and diffing the site lists. **Nine entries looked new; SEVEN were the
+same guard at a moved line number** (deploy_verify_notify 95→195, master_plan
+251→257, push_retry 490→694, sairn_claim 1483→1844, sairn_push_gate_hook
+781→812 and 832→863, pre-commit 51→102). **Two were real:** `gh_token.py:296`
+and `.githooks/pre-commit:70` — and the second also took `hook_failopen` from
+**0 to 1**, which the headline never said.
+
+**So the real defect was that the ratchet could not name what rose.** It pinned
+COUNTS, so a refactor read identically to a new fail-open. Fixed by recording the
+**site set keyed on (file, shape), not on a line number**, with ADDED/REMOVED by
+name — the same lesson as `seam_cannot_tell_watch.py` eight hours earlier: **the
+names are the point, not the count.** Driven three ways.
+
+**`.githooks/pre-commit:70` is my own reading-error class in the
+highest-consequence place:** `|| true` on a whole pipeline swallowed grep's
+legitimate no-match AND `git diff --cached` failing, so the hook saw an empty
+list and **skipped the live-probe-residue audit in silence**. git's status is now
+checked alone. The shape stays flagged — correctly — so the pin moved to **18
+deliberately** rather than being chased back to 17.
+
+**`gh_token.py:296` was never a defect**, a classification miss. And my first
+comment fix did not work: the classifier reads `ln-6 .. ln+3` and I wrote the
+reason five lines down. **The window was the constraint, not the vocabulary.**
+
+### Both instruments wired — `0e9419bd` — and the hook SHIPPED BROKEN
+
+Collision checked first: `.claude/settings.json` byte-identical in all four other
+clones. Appended, never reordered — the notice goes LAST so the four guards
+refuse first.
+
+**`SUBJECT_DIRS` shipped with a LITERAL BACKSPACE.** `'\b…'` through a heredoc
+that ate one backslash; in a non-raw Python string `\b` is U+0008, so the pattern
+**matched nothing and the hook was silent on every command including the one it
+exists for.** Silence from a report-only hook is indistinguishable from "nothing
+to report". **CLAUDE.md names this exact shape as one of its six paid-for
+lessons.** Found by printing `repr(pattern)`. It then fired on my next command
+and has fired correctly ever since.
+
+**Manifest NOT regenerated, deliberately:** 7 drifts, 5 mine, 2 not — and one of
+those is **hank's live claim file**, a push gate. `--regenerate` is
+all-or-nothing, so closing my gaps would bless his in-flight edit.
+
+### Rows 82/845 applied — and hank's figures had drifted again
+
+Both are **retractions of false claims**. I re-ran both: `--reseat-shas` reports
+**37/18/2/6/11** at HEAD against **40/23/1/6/10** in his text. Capability holds,
+numbers do not. **Third time prepared text from that source drifted** — a
+property of prepared text, not of hank.
+
+### Two standing rules, moved out of dated files
+
+**`PR §2.6`** — `git log -S` finds where text came from, never whether it is
+still true. Records what cannot be fixed too: a pushed message is immutable,
+`--amend` is refused, and `refs/notes/commits` does not propagate here.
+Numbered 2.6 because a 2.5 already existed, **checked before writing**.
+
+**`PR §2.7` — "Before writing a claim about a tool, run the tool."** Four
+instances in two days across three sessions. Carries the operational form and
+the corollary: **when a row says a capability is missing, run for it before
+acting** — two of the four were rows asserting a gap that had already closed, and
+~900 index rows have never been re-checked.
+
+### Items 4 and 5 verified landed, not asserted
+
+seq 486b: the bare word is gone, dependency-with-marker no longer exempt,
+hover-clone still exempt. seq 464/467: consumer boundary present, 19/19, `+=`
+reddens only the canary, unscoped reddens three. **Both re-driven today** rather
+than taken from my own previous report.
+
+### THE LESSON, named
+
+**A cheap measurement not taken becomes a confident wrong claim in a standing
+document.** Twice in two days I accused `md_table_check.py` of a defect it did
+not have, and both times I was *being careful* — I declined to relax a probe arm
+rather than force a file through, which is what left the real cause findable.
+**Care was not the missing ingredient. Running the program before describing it
+was.** And both claims accused a control of the one failure this platform treats
+as costliest.
+
+**Third instance, inside this batch:** my first wiring commit failed and I read
+the push gate's refusal, printed in the same block, as the cause. It was `git
+commit -F` exiting **128** on a missing message file. The gate's refusal was real
+and unrelated. The new hook did not catch it — a missing-file failure is not a
+pipeline.
+
+### BLIND SPOTS: 5
+
+(1) My two new tools are NOT in the hook manifest, a real gap chosen over
+blessing another session's push-gate edit. (2) The `(file, shape)` key cannot see
+a SECOND guard of the same shape in one file; the count check is kept for that.
+(3) Neither new hook has a probe under `tests/`. (4) `§2.7` is a rule for the
+writer, not a gate — nothing mechanically stops the next untested claim. (5) The
+four instances are the ones that were CAUGHT; how many untested claims sit in the
+~900 unchecked index rows is unmeasured, and that is the corollary the rule
+names.

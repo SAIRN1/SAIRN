@@ -608,6 +608,108 @@ rebase that pulled in another clone's commits, run each generator's `--check`
 at the new HEAD before pushing.** Not because a conflict appeared, but because
 one did not.
 
+### 2.6 `git log -S` finds where text came from, never whether it is still true
+
+**The rule, in one line: a `-S` hit on an assertion is a lead to check, not a
+fact to quote. To ask whether a claim was later corrected or withdrawn, use
+`git log --grep`.**
+
+`-S` matches text a commit ADDS or REMOVES. A claim withdrawn in prose,
+annotated, struck through, or retracted in a later commit message is therefore
+**invisible to it by construction** — no correction can ever enter that result
+set, because the correction does not add the original words.
+
+So the two searches answer different questions and are not interchangeable:
+
+```
+git log -S"<the exact text>" --all      # which commit INTRODUCED it
+git log --grep="<the text or a tool name>" --all   # what has been SAID about it
+```
+
+**WHY THIS IS A STANDING RULE AND NOT A TIP.** A false claim was written into
+`docs/SAIRN-OPEN-WORK-INDEX.md` and into a commit message on the same day. The
+index row was withdrawn in place and two inventory documents were annotated —
+but the commit message is immutable, so `-S` on the original phrase still
+returns that commit **alone, with nothing beside it, and will forever.** A
+reader arriving that way sees a confident accusation against a working checker
+and no sign that it was retracted within a day.
+
+**THE IMMUTABLE ARTEFACT IS THE POINT.** You can fix a row, a document, or a
+register entry. You cannot fix a pushed commit message, and `--amend` is refused
+once four other clones have it (§2.4). The only remedies are:
+
+* put the correction where the SAME search can reach it — `--grep` finds commit
+  messages, so a correction commit naming the original sha and repeating the
+  phrase makes both surface together;
+* a `git note` on the original commit, which `git log --notes` shows in place
+  — but note that `refs/notes/commits` does **not** propagate here: the push
+  gate refuses a ref whose base it cannot resolve against `main`, correctly, so
+  a note is local to the clone that wrote it;
+* and say in the correction which searches do and do not reach it.
+
+**WHAT THIS DOES NOT FIX, STATED SO NOBODY RELIES ON IT:** nothing makes the
+stale `-S` result go away. The rule is about not trusting it, and about leaving
+a trail the other search can find.
+
+### 2.7 Before writing a claim about a tool, run the tool
+
+**The rule, in one line: a falsifiable claim about a program — what it exits,
+what it reads, how many things it covers — must be measured directly before it
+is written into any standing document, and measured on the program ALONE, not
+off a pipeline.**
+
+**THIS IS THE CHEAPEST MEASUREMENT ON THE PLATFORM AND IT IS THE ONE MOST OFTEN
+SKIPPED.** Three sessions walked into it in two days, which is what makes it a
+rule rather than three apologies:
+
+* `tools/md_table_check.py` was accused of **exiting 2 (COULD NOT RUN)** while
+  reporting zero malformed rows. **It exits 0, and `main()` has no code path
+  that returns 2 at all.** The 2 was read off a compound command, where the
+  status belongs to the pipeline's last element. The claim reached the standing
+  open-work index *and* a commit message.
+* The **same tool** was then accused of a coverage off-by-one, from a
+  `111/110 rows checked` reading. **The tool was right and the document was
+  wrong**: the file carried a `| | |` row, which is nothing but pipes and
+  spaces, so the separator pattern matched it and it was counted one way and
+  tallied the other. Giving that table a header made the pair agree.
+* An index row claimed `tools/tier_a_review_gate.py` had **no `--reseat-shas`
+  and no path to repair** a record whose file set matches no single commit. The
+  flag existed, and the file-set-subset logic the row called missing had landed
+  **the same day** as the inventory that first claimed it was absent. Carried
+  through two inventories and into a row **without the tool ever being run.**
+* A fourth row claimed `assertion_label_shape_check.py` was **absent from the
+  report-only registry**. `--list` names it.
+
+**THE SHAPE IS NOT CARELESSNESS ABOUT TOOLS.** In every case the claim was
+plausible, the writer was attentive, and the check was one command. What was
+missing is that **nobody ran the thing they were describing** — and a confident
+sentence about a tool is indistinguishable, to the next reader, from a measured
+one.
+
+**WHY IT MATTERS MORE HERE THAN A WRONG NUMBER WOULD ELSEWHERE.** `PR §1.11`
+makes a silent COULD-NOT-RUN the costliest failure on this platform. That makes
+**falsely accusing a working checker of it the costliest false claim** — it is
+the accusation most likely to get a sound control distrusted, rewritten, or
+switched off. Two of the four above were exactly that, against the same tool.
+
+**THE OPERATIONAL FORM, so this is checkable and not advice:**
+
+```
+<the tool> > /tmp/out.txt 2>&1
+echo $?                       # on its own line, never off a pipeline
+```
+
+Then quote THAT number. `tools/exit_status_attributable.py` is wired as a
+PreToolUse notice for the pipeline half of this (§2.6 and the attribution
+hook), but it cannot see a claim you simply never tested — which is why this is
+a rule for the writer rather than a gate.
+
+**AND THE CORROLARY, which is the half that keeps costing days: WHEN A ROW SAYS
+A CAPABILITY IS MISSING, RUN FOR IT BEFORE YOU ACT ON IT.** Two of the four
+above were rows asserting a gap that had already closed; roughly 900 index rows
+have never been re-checked by anybody. A row is a claim with a date on it, not a
+fact.
+
 ## Part 3 — Push protocol, in full
 
 The two-line version is in `CLAUDE.md`. This is what each step actually means.
