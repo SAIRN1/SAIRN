@@ -3505,6 +3505,21 @@
         "tools/citation_line_drift_check.py",
         "tools/push_retry.py"
       ]
+    },
+    {
+      "id": "hank-1791205075",
+      "session": "hank",
+      "subject": "platform",
+      "task": "sd_email_threats risk rating negation fix; sairncash resource tiering; the 8 routed citation corrections plus the two derived ones; drifted-citation triage FILES: stonedesk.html docs/CRITICALITY-TIERS.md tests/stonedesk_email_threat_rating.js",
+      "claimed_at": "2026-10-05T12:57:55Z",
+      "claimed_at_epoch": 1791205075.215724,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/CRITICALITY-TIERS.md",
+        "stonedesk.html",
+        "tests/stonedesk_email_threat_rating.js"
+      ]
     }
   ],
   "refusals": [
