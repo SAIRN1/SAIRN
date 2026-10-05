@@ -5968,3 +5968,109 @@ planted refactor. (4) `git log -S` still returns the false claim without its
 correction, and the git note is local-only. (5) **Two of my own instruments are
 now unwired waiting on one other session's file**, which is a cost I am carrying
 rather than solving.
+
+---
+
+## 2026-10-05 — CC batch 6: seq 486 landed for real, one of the two was LATENT, and the tool I accused was right again
+
+`17343958`. Full account: `docs/2026-10-05-cc-batch-6-inventory.md`.
+
+### seq 486 was right on both counts and I had reported both discharged
+
+Both were written up 2026-09-29 and **neither landed in code** — the record and
+the behaviour disagreed for six days. They are **not** equally severe.
+
+**5a, the trailing comment — LIVE.** `auth_line()` returned the LAST auth marker
+anywhere in the file, comments included. **Driven before fixing:** a handler
+whose post-auth 502 is a genuine FINDING reports FINDING; append
+`// NOTE: callers must send CRON_SECRET in the Authorization header.` and the
+SAME handler reports `pre-auth refusal -- must NOT beat`. **One comment, a real
+monitoring gap erased, tool says CLEAN.**
+
+Fixed via `tools/jscomments` rather than my own regex — it handles the `//`
+inside a string literal that a hand-rolled stripper gets wrong. **And it fails
+toward the stricter answer:** on a stripper failure or a line-count mismatch the
+fallback is DROPPED, so a stripper outage cannot hide a finding. `own_auth` is
+untouched and carries the real work.
+
+Proven five directions; 6/6 fixture lock, 23/23 probe, real repo CLEAN. **A
+trailing-comment fixture is added at the head of the lock** — nothing held this,
+which is why it survived a report of its own fix. **My first two expectations
+for that fixture were wrong and the lock rejected both** before they landed.
+
+**5b, the `marker` exemption — LATENT, said plainly rather than dressed up.** A
+bare `marker` alternative matched anywhere on a line including inside a TOOL
+FILENAME, so a dependency guard was exempted while the otherwise identical
+guard without the word was not — **two identical guards, different verdicts,
+decided by a filename.**
+
+**Not live:** the scan's report is BYTE-IDENTICAL with and without the word, and
+zero non-comment guard lines relied on it. A loaded gun with no current target;
+what it closes is the next tool whose filename contains the word. Removing it is
+free — the real scope tests match on `.git/sairn-hover-clone` and
+`auditor-clone`. **The shape is the lesson: a bare noun that can appear in a
+filename is the shape to refuse.**
+
+**Not mine and not claimed:** the scan reports "dependency fail-opens rose from
+17 to 19", and said so before my change too.
+
+### The `| | |` row — and the tool I accused was right AGAIN
+
+Found by my own `doc_checker_coverage.py` on its first run. **And it corrects
+yesterday's finding against `md_table_check`:** I logged `111/110` as an
+off-by-one in the TOOL. **The tool was right and the document was wrong** — that
+row is nothing but pipes and spaces, so SEPARATOR matched it. With a real header
+the pair agrees at 111/111.
+
+**That is twice in two days I have accused `md_table_check` of a defect it did
+not have** — the false "exits 2", now a false off-by-one. Both times the
+measurement I had not taken was the cheap one.
+
+File now in `DEFAULT_FILES`: **seven files, 2,301 rows, 41 probe cases**. And
+**declining to relax the arm is what left the real cause findable** — relaxing it
+would have gone green and buried a malformed row in a standing document.
+
+### `git log -S` will surface the stale claim forever
+
+`-S` matches text a commit ADDS or REMOVES, so **no correction can ever appear in
+that result set.** Not fixable — warnable. The batch-5 doc now carries a
+blockquote with the two `--grep` commands and the rule: **`-S` answers "which
+commit introduced this text", never "is this text still true".**
+
+### The standing check for my own reading error — `tools/exit_status_attributable.py`
+
+Both errors were one shape: **a status read off the wrong subject.** The
+hazardous half is decidable from the command text — a pipeline or an `&&`/`||`
+chain returns ONE status and it is not the program you named. It NAMES the owning
+element rather than merely refusing, splits on raw text not shlex tokens, and
+skips `VAR=value` so `SAIRN_SEED_GATE=off git push` is attributed to git.
+Selftest carries **both real commands verbatim in shape** plus three
+attributable controls.
+
+**It worked on me the same day:** a push failed with "the outgoing range could
+not be read"; I checked `git status -sb` FIRST (ahead 1, behind 1), rebased, and
+it pushed. Last time I read a message like that as a refusal of my work.
+
+### seq 464/467 re-verified at HEAD
+
+`+=` build → **only the canary** reddens. Genuinely unscoped lookup → **three
+arms** red including the substantive one. `api/law-auth.js` byte-identical; 19/19.
+
+### Left alone — claims re-checked fresh first
+
+Only cody held anything (`docs/tier-a-reviews.json`). `citation_line_drift_check.py`,
+`push_retry.py` and `schema_provisioning_check.py` were **not** held at that
+moment and were left untouched anyway — **a claim rotating off is not
+permission.** Rows 82/845 untouched.
+
+### BLIND SPOTS: 5
+
+(1) `exit_status_attributable.py` and `doc_checker_coverage.py` are both
+**unwired** — `.claude/settings.json` is shared by five clones and a hook naming
+a tool on no commit yet would fail in four of them. (2) The cron fallback is now
+dropped on a stripper failure, a false-positive direction I prefer and have not
+measured. (3) The 17→19 fail-open regression is live and unexamined. (4) I
+checked ONE file for the all-pipes row; the other six standing files are
+unmeasured. (5) **Both seq-486 fixes were found by an auditor re-raising them,
+not by any check of mine** — nothing here closes the gap of a tool reporting a
+fix it never made.
