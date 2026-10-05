@@ -3528,8 +3528,8 @@
       "task": "drift checker ranking fix; push gate enforcing path collects all denials; sairncash usage cap finding; remaining repoint queue FILES: tools/sairn_push_gate_hook.py tools/citation_line_drift_check.py tests/run_citation_line_drift_probe.py sairncash.html docs/CRITICALITY-TIERS.md",
       "claimed_at": "2026-10-05T13:55:39Z",
       "claimed_at_epoch": 1791208539.0863662,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-05T21:44:51Z",
       "files": [
         "docs/CRITICALITY-TIERS.md",
         "sairncash.html",
