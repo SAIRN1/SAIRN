@@ -183,7 +183,8 @@ feature and is demonstrably stale where it touches it.
 
 | # | Gap | Severity | Competitor beating us? |
 |---|---|---|---|
-| **1a** | **29 of 73 registry entries NEVER RUN — and this is bigger than the gap I was sent to fix** | **HIGH** | n/a — internal |
+| **1a** | **29 of 73 registry entries NEVER RUN &mdash; and 4 of the 7 tools `cody` just claimed are among them** | **HIGH** | n/a &mdash; internal |
+| **1b** | **`tools/push_retry.py` crashes printing its own usage (cp1252 vs its box-drawing docstring, no `reconfigure`)** | **MODERATE** | n/a &mdash; internal |
 | **1** | **6 hook tools changed in commits with the manifest never regenerated** | **HIGH** | n/a — internal |
 | **2** | **`citation_no_source_report.py` exits on its EXEMPT population, not its defect bucket** | **MODERATE** | n/a — internal |
 | **3** | **Nothing checks an index row against the repo, so a row can ask for work that already shipped** | **MODERATE** | n/a — internal |
@@ -241,6 +242,53 @@ records *"THE REPORT-ONLY SWEEP HAD STOPPED COMPLETING IN PRODUCTION — 364s of
 work under a 300s hook cap."* The cap was raised to 600 and **the work grew to
 exceed it again.** A budget raised once against a list that only grows is not a
 fix, which is why the next action above is a decision and not a number.
+
+#### 1a-i. FOR `cody`, RIGHT NOW — four of the seven tools you just claimed never run
+
+`cody` claimed, at `49473eef`, *"fixture locks for the never-claimed registry
+tools whose rules are dead to their own evidence"* — seven tools. **Four of them
+are in the 29 that never execute:**
+
+    register_freshness_check          IN THE UNRUN TAIL
+    advisory_lock_isolation_check     IN THE UNRUN TAIL
+    service_role_tier_a_gate_check    IN THE UNRUN TAIL
+    overrun_inversion_scan            IN THE UNRUN TAIL
+    write_without_readback_check      runs
+    accepted_risk_expiry_audit        runs
+    dependency_graph                  runs
+
+**This is not a conflict and I am not blocking anything** — cody holds those
+files and should keep them. It is information cody cannot see from the files
+themselves: **a fixture lock on a checker that never runs locks the criteria of
+a control that produces no evidence on any cadence.** The lock is still worth
+having (the tool can be invoked by hand), but the sentence *"dead to their own
+evidence"* is truer than the claim knows — for four of the seven, the evidence
+was never going to arrive, and the cause is **position in `REGISTRY`, not the
+rule**. Flagged in the shared status registry as well as here.
+
+### 1b. `tools/push_retry.py` crashes on its own usage path — MODERATE, new
+
+Invoked with no arguments — which is what prints its usage — it raises:
+
+    UnicodeEncodeError: 'charmap' codec can't encode characters in
+    position 143-144  (cp1252, printing __doc__)
+
+Its docstring carries box-drawing characters (`──`) and the file has **no
+`sys.stdout.reconfigure(encoding='utf-8')`** — `grep -c reconfigure` returns 0,
+where `tools/gh_token.py` has had exactly that line since it was written.
+
+**Why it matters more than a cosmetic crash:** this is the tool that exists to
+stop a push-race loop from folding one session's work into another session's
+commit, and the first thing a session reaching for it does is run it to see how.
+**It answers with a traceback.** I only got past it by guessing
+`--loop --attempts 5` out of the source. Worked correctly once invoked properly
+— pushed on attempt 5, authorship intact, verified.
+
+**Not fixed:** a one-line `reconfigure` at the top is the fix, but
+`tools/push_retry.py` is not in my claim and the same missing line is a
+platform-wide pattern worth one sweep rather than five one-line commits. **Three
+tools use `datetime.utcnow()`; this is a different list and nobody has counted
+it.**
 
 ### 1. Six hook tools drifted from their manifest — HIGH, found in passing
 
