@@ -22666,6 +22666,65 @@
       "recurrence_open": "No control requires a SAIRN tool to separate what it MEASURED from what it ADVISES. One file is fixed; the convention is not, and it is logged open rather than invented by the session that broke it."
     },
     {
+      "commit": "1ad469e60a0f",
+      "date": "2026-10-05",
+      "subject": "fix(sairncare): family_mar disclosed any resident's MAR to any session -- the consent check was standing in for an authorisation check",
+      "files": [
+        "api/sd-data.js",
+        "docs/2026-10-05-inventory-hank-batch8.md",
+        "tests/sd_data_family_mar_gate.js"
+      ],
+      "lines_added": 441,
+      "lines_removed": 0,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "hover-audit",
+      "summary": "api/sd-data.js resource alf_family_contacts: action 'family_mar' had NO caller gate at all. The sibling action 'read' on the same resource resolves ALF_FAMILY_READ_ROLES and then the caller's assigned residents from alf_clients and 403s a resident that is not theirs; 'family_mar', sixty lines below it in the same handler, did neither. It checked famLib.familyMarView(), which is the family CONTACT's consent, and then shipped the resident's medication administration record. Any authenticated session on the licence -- including a med_aide or activities employee with no resident assigned to them at all -- could pass any contact_id and receive that resident's full MAR. The consent check was standing in for an authorisation check: it answers a question about the contact, not about the session, and nothing asked the second question. Fixed in two halves because the resident is knowable only from the stored row: role and assignment scope resolved BEFORE the contact fetch (empty scope 403s, so a caller who may not ask anything is not told whether the contact exists), then the stored row's resident_id checked against that scope with a FORBIDDEN kept distinct from NO_SUCH_CONTACT.",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "c0ae9a0a5354",
+        "date": "2026-09-26",
+        "subject": "feat(sairncare): the family record, and MAR access gated to administration STATUS only",
+        "lag_days": 9
+      },
+      "citation_note": "1.3 is 'an anchor that still matches is not an anchor that still points at the right thing', and this is that with the noun changed from an anchor to a check: a check WAS present on the family_mar path and it still ran and still refused people, so every signal that a path is guarded was present -- it was pointing at the contact's consent rather than at the caller's authority. Arguable rather than clean because 1.3 is written about string anchors in checkers, not about admission control in a handler; no standing rule names 'a present check that answers a different question', which is itself worth noticing.",
+      "contributing_factors": [
+        {
+          "factor": "The authorisation check was never written for this action: `action === \"family_mar\"` was added as a sibling of `action === \"read\"` on the same resource, and `read`s two gates (role set + resident assignment) were not carried across.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Both gates added to the family_mar branch, resolved before the contact fetch and re-applied against the stored rows resident_id."
+        },
+        {
+          "factor": "A CONSENT check stood where an AUTHORISATION check belonged. familyMarView() answers a question about the CONTACT; nothing asked the question about the SESSION. A reviewer scanning for \"is there a check on this path\" sees one and stops.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Item 13 of this batch builds a gate-parity check that flags sibling actions in one handler file disclosing the same resource where one enforces role/assignment gates and the other does not; its selftest is this defects pre-fix shape."
+        },
+        {
+          "factor": "Nothing compares sibling actions on one resource. The two branches are sixty lines apart in the same file and no tool, probe or gate reads them as a pair, so the asymmetry was invisible to every automated layer and had to be found by a human reading the handler.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "Same item 13 gate-parity tool; until it exists this class is caught only by reading."
+        },
+        {
+          "factor": "The feature commit c0ae9a0a shipped a new disclosure path and a new library in one change, and the review attention went to the librarys consent semantics (which are correct and carefully done) rather than to the callers admission control.",
+          "kind": "process",
+          "action_status": "not-actionable",
+          "note": "No process change would reliably redirect review attention; the durable fix is the mechanical parity check named above, not an instruction to look harder."
+        }
+      ],
+      "recurrence_open": "The actions close THIS pair. They do not close the class: the gate-parity tool in item 13 is not built yet, and when it is it will compare sibling actions within ONE handler file. Nothing proposed here compares a handler branch against a gate living in a different file, and nothing re-asks the question when a THIRD action is later added to alf_family_contacts. Separately, ALF_FAMILY_READ_ROLES includes 'billing' on a clinical record and this fix deliberately inherited that set rather than narrowing it -- so a billing role now reaches a MAR through a gate that is correct and a role set that may not be. That is flagged in docs/2026-10-05-inventory-hank-batch8.md and is open."
+    },
+    {
       "commit": "1b453253cc5b",
       "date": "2026-10-05",
       "subject": "fix(sairnsenior): a backwards clock pair billed NEGATIVE hours -- six callers, four unguarded; plus a role-gate ratchet that paid out for deleting the evidence",
@@ -22918,6 +22977,63 @@
       "recurrence_open": "The self-scope now has arms and an ablation, but legacy alf_incidents rows carry recorded_by NULL and are invisible to the self-service tier by Michael's recorded decision -- no arm covers that state and this commit does not add one. The two systemic actions stay open and are now on their third instance each: nothing reports an app's red set on a cadence, and nothing stops a control from landing into an already-red suite where its contradictions cannot be seen. And the deepest one is untouched: no instrument counts UNSCOPED verifySessionToken calls, so a branch gate that dropped its app scope entirely passes all fourteen stubs on this platform."
     },
     {
+      "commit": "5e33157ee606",
+      "date": "2026-10-05",
+      "subject": "fix(scp): SAIRNscape customer PII was reachable on the licence key alone -- gate armed, and it is now AHEAD of the register",
+      "files": [
+        "api/sd-data-scp-session-gate.test.js",
+        "api/sd-data-session-gate.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 100,
+      "lines_removed": 2,
+      "app": "sairnscape",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "live-verification",
+      "summary": "SAIRNscape's 'customers' resource dispatched on the licence hash alone, with no session check of any kind, for READ and WRITE -- and the row carries a customer's NAME, PHONE, EMAIL and STREET ADDRESS. The licence key is shipped to the browser and readable by anyone who can open sairnscape.html, so it was the whole authorisation. PROVEN LIVE WITH A CONTROL before the fix: on SCP-DEMO-2026 with no session token, read customers answered 200 and returned a row with all four fields, and write customers with an id-less payload answered 400 from the handler body -- so the gate did not fire, and nothing was stored because api/sd-data.js:4769 refuses before any store call. The controls are what make it a finding rather than a guess: invoices and scp_quotes on the SAME bare key answered 403 both, so the gate existed, worked, and did not cover this one. THE ROOT CAUSE IS NOT THE GATE, IT IS A CORRECTION THAT STOPPED AT THE PROSE. The 2026-10-05 sweep that armed SAIRNscape scoped itself to Tier A and was right to; 'customers' is carried B/B in docs/CRITICALITY-TIERS.md while its own confidentiality cell had already been corrected to read 'A CUSTOMER's NAME, PHONE, EMAIL AND STREET ADDRESS'. The basis was fixed and the LETTER was not, and the letter is what the sweep reads, so the resource was invisible to the mechanism that would have gated it. Fixed by adding the resource to SD_SESSION_GATED and SD_GATE_APP in one edit; the B->A retier that would have prevented it is owed and is held by another session. The client needed no change and that was checked rather than assumed: customers is read only inside scpSyncFromServer()'s resource loop at sairnscape.html:2734, reached only after login, and the two already-gated resources sit in the same loop.",
+      "rules": [
+        "3.4"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The resource has dispatched on the licence hash since SAIRNscape's data block landed 2026-08-06; the 2026-10-05 gate sweep narrowed the exposure to this one resource rather than introducing it. Which commit corrected the confidentiality basis cell without moving the letter is not determined here."
+      },
+      "citation_note": "3.4 is the nearest rule and the citation is arguable: that rule is about SQL writing credential rows, and this is a read-and-write gate on a PII table. What they share is the shape -- a surface reachable on a licence key alone, with the control that would stop it living in a different document from the code.",
+      "phase_note": "The gate sweep read the tier letter and the letter was stale relative to its own basis cell. The design decision -- scope the sweep to Tier A -- was correct; its INPUT was wrong.",
+      "contributing_factors": [
+        {
+          "factor": "The gating sweep's stopping rule was TIER A, read from docs/CRITICALITY-TIERS.md, and that document's confidentiality CELL for this row had been corrected to say the row carries PII while the LETTER stayed B. A correction that stops at the prose does not reach a mechanism that reads the letter.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The gate is armed ahead of the register and BOTH the gate comment and the test say so in full, so a reader finding them disagreeing has the reason rather than a puzzle. The retier is routed to the session holding that file."
+        },
+        {
+          "factor": "Nothing compares the gate table against the register. The sweep reads the register to decide what to gate, and no check reads both afterwards to ask whether a row whose basis says PII is gated.",
+          "kind": "detection",
+          "action_status": "not-actionable",
+          "note": "Not built here and not proposed lightly: the comparison needs a judgement about which confidentiality BASIS sentences imply a gate, which is the same judgement the tier letter is supposed to carry. The honest fix is that the letter follows the basis when the basis changes, which is a process action on whoever edits the cell, not a checker."
+        },
+        {
+          "factor": "The resource is spelled BARE -- customers, not scp_customers -- because SAIRNscape claimed the name before the scp_ convention existed. Any gate entry written against the storage table name would have gated nothing at all, silently.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Both the gate comment and the existing name-trap arm in api/sd-data-scp-session-gate.test.js pin the bare spelling, and the platform suite's new assertion matches on 'customers' specifically."
+        },
+        {
+          "factor": "The finding was found by a live provisioning sweep rather than by any check: the sweep reached scp_customers with a licence key and no token while scp_invoices and scp_quotes were refused, and that asymmetry is what exposed it.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tools/schema_provisioning_check.py gained --pin/--auth on 2026-10-05, which is what made the signed-in-versus-key-only comparison possible at all. The asymmetry it surfaces is now readable per app in its REFUSED list."
+        }
+      ],
+      "recurrence_open": "The register retier is NOT done -- confidentiality B->A on SAIRNscape customers -- and until it lands the gate and the register disagree. Hank holds docs/CRITICALITY-TIERS.md. AND THE SAME CLASS IS NOT SWEPT: no check asks whether any OTHER row whose confidentiality basis names PII is carried at a tier below A, so other resources may sit in the same state. That sweep is not built and is not proposed above, because deciding which basis sentences imply a gate is the judgement the tier letter exists to carry."
+    },
+    {
       "commit": "ac9c21df5b93",
       "date": "2026-10-05",
       "subject": "fix(tests): alf-mar 0/20 -> 21/21 and retainage_race 1/2 -> 3/3 -- and ONE ARM WAS ASSERTING A CONTROLLED-SUBSTANCE DEFECT",
@@ -23037,63 +23153,6 @@
         }
       ],
       "recurrence_open": "Change 4 does not close the general case: every OTHER push-gate check that derives a file list from the outgoing range and then reads the working tree has the same hole, and only check 11 was fixed here. I did not sweep the rest -- the `changed` list is used by checks 2, 3, 4, 5, 6, 7, 12 and 12b, each with its own notion of what it needs to read, and whether a working-tree read is wrong for them is a per-check judgement rather than one edit. Named rather than done. AND THIS SENTENCE WAS ITSELF EATEN ONCE: the word `changed` was written inside bash backticks in a double-quoted printf, so the shell ran it as a command substitution, printed `changed: command not found`, and the record landed with a gap exactly where the subject belonged. That is scrubber item 18 and tools/eaten_substitution_check.py exists for it; it happened while writing about silent failure, which is the fourth recorded instance of this on this platform."
-    },
-    {
-      "commit": "5e33157ee606",
-      "date": "2026-10-05",
-      "subject": "fix(scp): SAIRNscape customer PII was reachable on the licence key alone -- gate armed, and it is now AHEAD of the register",
-      "files": [
-        "api/sd-data-scp-session-gate.test.js",
-        "api/sd-data-session-gate.test.js",
-        "api/sd-data.js"
-      ],
-      "lines_added": 100,
-      "lines_removed": 2,
-      "app": "sairnscape",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "live-verification",
-      "summary": "SAIRNscape's 'customers' resource dispatched on the licence hash alone, with no session check of any kind, for READ and WRITE -- and the row carries a customer's NAME, PHONE, EMAIL and STREET ADDRESS. The licence key is shipped to the browser and readable by anyone who can open sairnscape.html, so it was the whole authorisation. PROVEN LIVE WITH A CONTROL before the fix: on SCP-DEMO-2026 with no session token, read customers answered 200 and returned a row with all four fields, and write customers with an id-less payload answered 400 from the handler body -- so the gate did not fire, and nothing was stored because api/sd-data.js:4769 refuses before any store call. The controls are what make it a finding rather than a guess: invoices and scp_quotes on the SAME bare key answered 403 both, so the gate existed, worked, and did not cover this one. THE ROOT CAUSE IS NOT THE GATE, IT IS A CORRECTION THAT STOPPED AT THE PROSE. The 2026-10-05 sweep that armed SAIRNscape scoped itself to Tier A and was right to; 'customers' is carried B/B in docs/CRITICALITY-TIERS.md while its own confidentiality cell had already been corrected to read 'A CUSTOMER's NAME, PHONE, EMAIL AND STREET ADDRESS'. The basis was fixed and the LETTER was not, and the letter is what the sweep reads, so the resource was invisible to the mechanism that would have gated it. Fixed by adding the resource to SD_SESSION_GATED and SD_GATE_APP in one edit; the B->A retier that would have prevented it is owed and is held by another session. The client needed no change and that was checked rather than assumed: customers is read only inside scpSyncFromServer()'s resource loop at sairnscape.html:2734, reached only after login, and the two already-gated resources sit in the same loop.",
-      "rules": [
-        "3.4"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The resource has dispatched on the licence hash since SAIRNscape's data block landed 2026-08-06; the 2026-10-05 gate sweep narrowed the exposure to this one resource rather than introducing it. Which commit corrected the confidentiality basis cell without moving the letter is not determined here."
-      },
-      "citation_note": "3.4 is the nearest rule and the citation is arguable: that rule is about SQL writing credential rows, and this is a read-and-write gate on a PII table. What they share is the shape -- a surface reachable on a licence key alone, with the control that would stop it living in a different document from the code.",
-      "phase_note": "The gate sweep read the tier letter and the letter was stale relative to its own basis cell. The design decision -- scope the sweep to Tier A -- was correct; its INPUT was wrong.",
-      "contributing_factors": [
-        {
-          "factor": "The gating sweep's stopping rule was TIER A, read from docs/CRITICALITY-TIERS.md, and that document's confidentiality CELL for this row had been corrected to say the row carries PII while the LETTER stayed B. A correction that stops at the prose does not reach a mechanism that reads the letter.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "The gate is armed ahead of the register and BOTH the gate comment and the test say so in full, so a reader finding them disagreeing has the reason rather than a puzzle. The retier is routed to the session holding that file."
-        },
-        {
-          "factor": "Nothing compares the gate table against the register. The sweep reads the register to decide what to gate, and no check reads both afterwards to ask whether a row whose basis says PII is gated.",
-          "kind": "detection",
-          "action_status": "not-actionable",
-          "note": "Not built here and not proposed lightly: the comparison needs a judgement about which confidentiality BASIS sentences imply a gate, which is the same judgement the tier letter is supposed to carry. The honest fix is that the letter follows the basis when the basis changes, which is a process action on whoever edits the cell, not a checker."
-        },
-        {
-          "factor": "The resource is spelled BARE -- customers, not scp_customers -- because SAIRNscape claimed the name before the scp_ convention existed. Any gate entry written against the storage table name would have gated nothing at all, silently.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "Both the gate comment and the existing name-trap arm in api/sd-data-scp-session-gate.test.js pin the bare spelling, and the platform suite's new assertion matches on 'customers' specifically."
-        },
-        {
-          "factor": "The finding was found by a live provisioning sweep rather than by any check: the sweep reached scp_customers with a licence key and no token while scp_invoices and scp_quotes were refused, and that asymmetry is what exposed it.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "tools/schema_provisioning_check.py gained --pin/--auth on 2026-10-05, which is what made the signed-in-versus-key-only comparison possible at all. The asymmetry it surfaces is now readable per app in its REFUSED list."
-        }
-      ],
-      "recurrence_open": "The register retier is NOT done -- confidentiality B->A on SAIRNscape customers -- and until it lands the gate and the register disagree. Hank holds docs/CRITICALITY-TIERS.md. AND THE SAME CLASS IS NOT SWEPT: no check asks whether any OTHER row whose confidentiality basis names PII is carried at a tier below A, so other resources may sit in the same state. That sweep is not built and is not proposed above, because deciding which basis sentences imply a gate is the judgement the tier letter exists to carry."
     }
   ],
   "started": "2026-09-09",
