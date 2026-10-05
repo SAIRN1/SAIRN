@@ -32,7 +32,7 @@ import tempfile
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CHECK = os.path.join(REPO, 'tools', 'citation_line_drift_check.py')
 
-CRITERIA_VERSION = '2026-09-30.1'
+CRITERIA_VERSION = '2026-10-04.2'
 
 _pass = _fail = 0
 
@@ -277,6 +277,77 @@ def main():
         else:
             bad('E2. every corrected target must be a real write site',
                 '\n       '.join(unverified[:6]))
+
+        # ── F. THE HALF E2 CANNOT SEE ────────────────────────────────────────
+        # E2 verifies the DESTINATION of every correction is a real write site.
+        # It never verifies the ORIGIN was wrong. A citation deliberately
+        # pointing at a render site passes E2 while the correction is still
+        # wrong -- which is E2's own sentence one step further back: an offset
+        # nobody checked against the line it CURRENTLY names.
+        #
+        # Measured 2026-10-04: on SAIRNgrounds, 4 of 4 DRIFTED rows were
+        # deliberate read-site citations and the closing instruction would have
+        # broken four correct cells.
+        section('F. A DRIFTED ARROW IS A CANDIDATE, NOT AN INSTRUCTION')
+
+        # COUNTED OFF LINE STARTS, NOT WITH o.count(). The first version of this
+        # arm counted the substring anywhere and got 33 for 32 rows: the closing
+        # advisory names `cited line reads:` too. An arm that counts its own
+        # explanatory prose as data is the fabrication shape this file exists to
+        # catch, so it is anchored to the report row's own indent.
+        row_cited = _re.findall(r'^ +cited line reads: ', o, _re.M)
+        if drifted and row_cited:
+            n_cited = len(row_cited)
+            if n_cited == len(drifted):
+                ok('F1. all %d DRIFTED rows carry the CITED line\'s own source '
+                   'text. That text is what decides stale-vs-deliberate, and a '
+                   'reader should not have to open the app file to see it'
+                   % n_cited)
+            else:
+                bad('F1. every DRIFTED row must carry its cited line',
+                    '%d rows, %d cited-line lines' % (len(drifted), n_cited))
+        else:
+            bad('F1. DRIFTED rows must print the cited line',
+                'absent from the real run -- the evidence is missing')
+
+        if 'is the correction to apply' not in o:
+            ok('F2. the output does NOT tell the reader each DRIFTED line is '
+               '"the correction to apply". That sentence was an instruction '
+               'the tool had not earned: it resolves write sites only, so it '
+               'cannot tell a stale citation from a deliberate read-site one')
+        else:
+            bad('F2. the blind-repoint instruction must be gone',
+                'the output still presents the arrow as a correction to apply')
+
+        if 'CANDIDATE' in o and "cell's own" in o:
+            ok('F3. the output names the arrow a CANDIDATE and sends the reader '
+               "to the register cell's own prose to settle it")
+        else:
+            bad('F3. the arrow must be named a candidate',
+                o[-400:])
+
+        # F4 IS THE KNOWN-BAD, and it is built to be indistinguishable from
+        # genuine drift by every signal this tool CAN measure: far from the
+        # write site, outside every declaration block. The only thing that
+        # separates it is the cited line's text -- so the arm requires that
+        # text to be present and does NOT require the tool to classify it.
+        L = app()
+        L[70] = "  td.innerHTML = H(z.last_service) + '</td>';"   # a RENDER site
+        ap2, dp2 = fixture(d, L, doc([('zz_alpha', 71)]))
+        code2, o2 = run(ap2, dp2, '--window', '5')
+        if code2 == 1 and 'DRIFTED' in o2 and 'last_service' in o2:
+            ok('F4. KNOWN-BAD: a citation on a RENDER line far from the write '
+               'site is still surfaced (exit 1 -- it needs a human look), and '
+               'the render text is in the output so the human can see it was '
+               'deliberate. The tool does not claim to classify it, and it no '
+               'longer tells anybody to repoint it')
+        elif code2 == 1 and 'DRIFTED' in o2:
+            bad('F4. the render line must appear in the output',
+                'flagged, but the cited text is missing -- the reader is back '
+                'to opening the file: ' + o2[-300:])
+        else:
+            bad('F4. a render-site citation must still be surfaced, not passed',
+                'exit=%s -- silently sound is the worse failure here' % code2)
     finally:
         shutil.rmtree(d, ignore_errors=True)
 

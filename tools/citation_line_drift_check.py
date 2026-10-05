@@ -28,12 +28,49 @@ of those.
 THREE VERDICTS, and the third is not a failure:
   SOUND        the cited line is within --window of a real write site
   DRIFTED      it is not, and a write site exists -- the nearest one is reported
-               with the signed offset, which is the correction to apply
+               with the signed offset, as a CANDIDATE and not as an instruction.
+               See the next block: this verdict means NOT ANCHORED TO A WRITE
+               SITE, which is not the same claim as "the citation has moved".
   INCONCLUSIVE no write site can be resolved. Reported separately and never
                folded into either of the others: a resource whose constant is
                built dynamically, or one written only through the generic
                transport, has no line for a citation to point AT, and saying
                "drifted" would invite a correction to a line that is also wrong.
+
+── DRIFTED WAS AN INSTRUCTION AND IT WAS WRONG FOUR TIMES OUT OF FOUR ─────
+This tool used to close with "Each DRIFTED line above is the correction to
+apply." Applied literally to SAIRNgrounds on 2026-10-04, that sentence would
+have broken four citations that were CORRECT at HEAD:
+
+  grd_irr_zones  :3694   renders `z.last_service`, and the register cell's
+                         argument is precisely that the field "is only rendered
+                         (`:3694`) with nothing computing an interval from it".
+                         Repointing it at the `st()` call would have made the
+                         cell's own sentence false.
+  grd_rounds     :2975   `var round = {... player_label ...}`
+                 :3004   `round.holes.push({arrived_at, completed_at, ...})`
+                 :3046   `hole.shots.push({from, to, meters, band_meters, at})`
+                         Three citations naming three different field groups --
+                         the evidence for that row's Confidentiality A. The
+                         "correction" collapsed all three onto one `st()` line,
+                         destroying which field group each was about.
+
+A CITATION IS NOT OBLIGED TO POINT AT A WRITE SITE. A criticality cell cites
+whatever its argument rests on: a render site to prove a field is only rendered,
+a field-construction site to show WHAT is stored. This tool only resolves write
+sites, so it cannot tell a STALE citation from a DELIBERATE read-site one, and
+it must not pretend otherwise.
+
+WHAT SEPARATED THE TWO POPULATIONS WAS NOT AVAILABLE TO THE TOOL, which is why
+no heuristic was added here rather than a guess that would fail silently later:
+  sairnfreedom  32 of 32 genuine -- offsets +825 and +834, one uniform forward
+                shift, the signature of a block inserted above them.
+  sairngrounds   4 of  4 deliberate -- offsets +75, -88, -117, -159, three of
+                them NEGATIVE and three belonging to one resource. Not a shift.
+So the output now prints THE CITED LINE'S OWN SOURCE TEXT, which decides it in
+one read, and the closing line names the nearest write site as a candidate to be
+checked against the cell's prose. The judgement moved to where the evidence is;
+it did not get automated.
 
 Exit 0 when every citation is SOUND, 1 when any has DRIFTED, 2 COULD NOT RUN --
 the app or the document is unreadable, the K_ block cannot be found, or no
@@ -208,17 +245,24 @@ def main(argv):
             sound.append((name, n, near[0]))
             continue
         nearest = min(sites, key=lambda s: abs(s - n))
+        # THE CITED LINE ITSELF, because it is what decides stale-vs-deliberate
+        # and the reader should not have to open the file to see it. 1-indexed.
+        cited = lines[n - 1].strip() if 0 < n <= len(lines) else ''
         drift.append((name, n, nearest, nearest - n,
-                      in_spans(n, spans)))
+                      in_spans(n, spans), cited))
 
     for name, n, site in sound:
         out('  SOUND        %-26s :%-6d write site :%d within %d lines'
             % (name, n, site, window))
-    for name, n, site, off, indecl in drift:
+    for name, n, site, off, indecl, cited in drift:
         out('  DRIFTED      %-26s :%-6d -> :%-6d offset %+d%s'
             % (name, n, site, off,
                '   (the cited line is INSIDE a declaration block, which is why '
                'the first detector called it sound)' if indecl else ''))
+        # Truncated, because one long minified line would bury every other
+        # verdict -- but never omitted: this line IS the evidence.
+        out('                 cited line reads: %s'
+            % ((cited[:140] + ' ...') if len(cited) > 140 else cited))
     for name, n, why in incon:
         out('  INCONCLUSIVE %-26s :%-6d %s' % (name, n, why))
 
@@ -229,8 +273,19 @@ def main(argv):
         'drifted' % len(incon))
     if drift:
         out('')
-        out('Each DRIFTED line above is the correction to apply. Nothing here '
-            'edits the document.')
+        out('DRIFTED means NOT ANCHORED TO A WRITE SITE. It does NOT mean the '
+            'citation has moved, and the arrow is a CANDIDATE, not a correction '
+            'to apply.')
+        out('Before repointing any line above, read the register cell\'s own '
+            'prose against the `cited line reads:` text. A cell may cite a '
+            'render or field-construction site DELIBERATELY -- to prove a field '
+            'is only rendered, or to show which fields are stored -- and this '
+            'tool resolves write sites only, so it cannot tell those from a '
+            'stale citation.')
+        out('Measured both ways: sairnfreedom 32/32 were genuine drift (one '
+            'uniform +825/+834 shift); sairngrounds 4/4 were deliberate '
+            'read-site citations and repointing them would have broken four '
+            'correct cells. Nothing here edits the document.')
         return 1
     return 0
 
