@@ -5859,3 +5859,112 @@ own claims and the fifth by an assertion — none by a cadenced check**, so the
 next of this class also waits for somebody to look. (4) SAIRNscape's "thinnest
 surface" is a stored-data count, not a scored competitive gap; no
 feature-by-feature comparison was run.
+
+---
+
+## 2026-10-05 — CC batch 5: the cell emitter, a false claim in FOUR places, and a standing check proven against the real event
+
+Full account: `docs/2026-10-05-cc-batch-5-inventory.md`.
+
+### The cell emitter — `39595804`. 11 malformed rows → **0**, 401/401, bare exit 0
+
+**The escape everyone reaches for cannot work**: inside a code span both a
+backslash and an HTML entity render literally. `table_safe()` is
+context-dependent — `&#124;` outside a span, U+2502 inside — and the fidelity cost
+is declared in the generated document's own header.
+
+**AND THREE ROWS SURVIVED A FIX I HAD ALREADY CALLED COMPLETE.** I sanitised
+`purpose()` and asserted "ONE EDIT AND NOT FIVE". Eight cleared, three survived:
+`purpose()` is the single accessor for *purpose text*, not for *cell text* — the
+promoted-registry table takes `catches` out of `REGISTRY` and the not-promoted
+table takes its reason out of `NOT_PROMOTED`.
+
+**So the durable fix is making a broken table unemittable.** `malformed_rows()`
+parses the assembled document before the write and refuses at exit 2. Driven:
+a planted unsanitised cell → *"REFUSING TO WRITE … 73 row(s)"*, document
+untouched. `TOOLING-INVENTORY.md` is now IN `md_table_check`'s list — **2,188
+rows over six files** — and `KNOWN_UNADDED` is empty.
+
+### The withdrawn claim lived in FOUR artifacts — `9e72413b`
+
+Index row 73 was corrected; **commit `51548ec9`'s message, and two inventory
+documents, were not.** I had corrected the one I remembered editing.
+
+**A claim does not live where you wrote it, it lives wherever it was copied.**
+`git log --grep` now connects the correction; **`git log -S` still returns the
+false claim alone** and that is unfixed. A git note is attached locally and
+**does not propagate** — the push gate refuses `refs/notes/commits` because it
+cannot resolve the ref's base, `SAIRN_SEED_GATE=off` does not cover that check,
+and **the gate is right**. Logged in `b8688e80` with the bypass log's own record
+of my attempt, because a bypass log containing only the overrides that worked is
+not a record of anything.
+
+### The move-proofing was HALF DONE — `c6d66c11`
+
+All three latent arms were already applied on 2026-09-30, all green — the
+dispatch premise was stale. **But nobody had planted the refactor they were made
+proof against.** Doing so reddened the substantive arm: it windowed to the FIRST
+SEMICOLON on the written premise that a variable build "keeps it inside ONE
+statement", and a `+=` build puts that semicolon at the end of line one.
+
+**The `+=` shape is not hypothetical — `api/sd-data.js:10782-10785` builds the
+alf_incidents query exactly that way**, the read I worked on this morning. The
+premise was tested against the wrong example, which is why reading the diff could
+not find it. Boundary is now the CONSUMER. Three directions driven, including the
+known-bad: an actually-unscoped lookup still reddens three arms, so widening did
+not hollow the arm out.
+
+**My first mutant renamed `matter_id` to `matterId`** — it parsed and was not
+faithful, and I briefly read its failure as the move-proofing being broken.
+`node --check` cannot tell you a mutant is semantically equivalent.
+
+### SAIRNcare was branch-only and PR #18 did not contain it — `f7d8a78c`
+
+**My "every app now has an audit" was false.** The 2026-09-29 inventory tracked
+**17** apps; `git ls-files '*.html'` returns **22**. `sairncare` had no audit on
+`main` — it was on `claude/cloud-research-sairncare`, which PR #18 did not
+include, so **the branch-only finding survived its own closure** for eight more
+days. Landed after re-deriving all nine citations; tip `74e029a5f373` recorded,
+branch not deleted. **An inventory is a claim about a denominator, and that one
+never published how it chose its 17.**
+
+### The standing check — `7c89e0a7`, and it catches TWO by one mechanism
+
+`tools/doc_checker_coverage.py`: which markdown files a change touches are read
+by **no** structural checker. The malformed row and the hand-rolled checker share
+one cause, and one question at commit time answers both.
+
+**Proven against the real event:** with `DEFAULT_FILES` shrunk to its
+2026-10-05-morning state, run on the exact commit range that malformed the row,
+it reports `docs/CRITICALITY-TIERS.md` **UNCOVERED**, exit 1 under `--strict`.
+The three-file state was read out of git at `5ab3bcb5~1` with `ast`, not assumed.
+
+Report-only by design — **a gate would be cleared by deleting a table.** Reads
+file sets with `ast`, never by importing. Publishes its denominator and its own
+blindness every run. **Says plainly what it does NOT catch**: nothing about the
+exit-2 claim, the matcher class fix, or the fifth pipe.
+
+### Still blocked — checked, not assumed
+
+Hank's refuse-at-import fix has **not** landed: REGISTRY 73, **E2 still 5
+failures, same five tools**, seam watch unwired, and now `doc_checker_coverage`
+unwired for the same single reason. Left as-is. Rows 82/845 untouched.
+
+### One more reading error, same family
+
+A no-op push after `7c89e0a7` printed *"could not tell what is being pushed"* and
+I read it as a refusal of my push. `rev-list --left-right --count` answered
+`0 0` — it had already landed. **Twice in two days a status read off the wrong
+subject**, and both times the fix was to measure the specific thing.
+
+### BLIND SPOTS: 5
+
+(1) `malformed_rows()` takes the first row of a block as its header, so a
+malformed HEADER would set a wrong expectation and pass the rest. (2)
+`doc_checker_coverage` reads TODAY's tools, cannot reproduce a historical
+verdict, and is blind to glob/config/function-built file sets — so "uncovered"
+over-reports. (3) The other two move-proofed files were not driven against a
+planted refactor. (4) `git log -S` still returns the false claim without its
+correction, and the git note is local-only. (5) **Two of my own instruments are
+now unwired waiting on one other session's file**, which is a cost I am carrying
+rather than solving.
