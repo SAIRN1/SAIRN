@@ -3192,8 +3192,8 @@
       "task": "metamorphic_check: a real verdict for each of the 6 rules dead to its own blind lock -- fixture or named limit, per rule FILES: tools/metamorphic_check.py",
       "claimed_at": "2026-10-05T21:33:01Z",
       "claimed_at_epoch": 1791235981.4064062,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-05T21:45:34Z",
       "files": [
         "tools/metamorphic_check.py"
       ]
