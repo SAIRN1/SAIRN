@@ -3296,8 +3296,8 @@
       "task": "api/sd-data.js plus the alf_mar witness-lock and alf_incidents self-scope arms re-derived and mutation-proved; SAIRNlegacy audit part 2 vendor-claim axis; the match.cost register cell from hank's delivered text FILES: api/sd-data.js tests/sairncare/test-alf-mar.js tests/sairncare/test-alf-incidents.js docs/CRITICALITY-TIERS.md docs/defect-density-register.json docs/SAIRN-OPEN-WORK-INDEX.md docs/cloud-research/sairnlegacy-competitive-gap-audit-2026-10-05.md SAIRN-ACTIVE-WORK-cc.md",
       "claimed_at": "2026-10-05T11:12:09Z",
       "claimed_at_epoch": 1791198729.6919196,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-05T11:46:21Z",
       "files": [
         "SAIRN-ACTIVE-WORK-cc.md",
         "api/sd-data.js",
