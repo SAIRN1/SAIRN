@@ -2912,6 +2912,20 @@
       "status": "released",
       "released_at": "2026-09-30T12:54:54Z",
       "files": null
+    },
+    {
+      "id": "fourth-1791193254",
+      "session": "fourth",
+      "subject": "sairncash",
+      "task": "sairncash portal.test.js -- close the MASTER-PLAN dead citation for api/sairncash/portal.js. CONFLICT DECLARED PER PR 4.3: docs/SAIRN-OPEN-WORK-INDEX.md IS CC'S (cc holds it for the competitive-gap doc inventory) and is NOT in my file set; the index row for this lands with cc or a later session. FILES: api/sairncash/portal.test.js SAIRN-ACTIVE-WORK-fourth.md",
+      "claimed_at": "2026-10-05T09:40:54Z",
+      "claimed_at_epoch": 1791193254.5346856,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-fourth.md",
+        "api/sairncash/portal.test.js"
+      ]
     }
   ],
   "refusals": [
@@ -3114,6 +3128,21 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "shared phrase: \"check tests\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-05T09:40:43Z",
+      "my_subject": "sairncash",
+      "my_task": "sairncash portal.test.js -- close the MASTER-PLAN dead citation for api/sairncash/portal.js FILES: api/sairncash/portal.test.js docs/SAIRN-OPEN-WORK-INDEX.md SAIRN-ACTIVE-WORK-fourth.md",
+      "other_session": "cc",
+      "other_subject": "cc",
+      "other_task": "SAIRNcare alf-mar and sairnbuild retainage race back to green under the c8b5e5b1 credential pre-gate, plus the revoked-licence enforce-mode live confirmation and the seam-count drift watch FILES: api/sd-data.js tests/sairncare/test-alf-mar.js tests/sairnbuild_retainage_race.js api/claude.js docs/2026-10-05-cc-batch-inventory.md docs/SAIRN-OPEN-WORK-INDEX.md SAIRN-ACTIVE-WORK-cc.md",
+      "other_claimed_at": "2026-10-05T09:39:15Z",
+      "shared_files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
