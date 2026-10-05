@@ -604,6 +604,108 @@ their rules can be ablated at all.
 
 ---
 
+## ADDENDUM, same session, later — three of the sections above are now out of date
+
+**Written as an addendum rather than folded into the sections, because the
+sequence is part of the evidence: §2, §6 and §10 were true when written and the
+work continued afterwards.**
+
+### §2 — ITEM 2 IS CLOSED. 7 of 7 tools, not 1 of 7
+
+| tool | result | sha |
+|---|---|---|
+| `write_without_readback_check.py` | 7/7 rules exercised, was COULD-NOT-RUN | `77b5b536` |
+| `accepted_risk_expiry_audit.py` | 4/4, was 2 dead | `1eb6da5c` |
+| `dependency_graph.py` | 6/6, was 6 dead | `1eb6da5c` |
+| `register_freshness_check.py` | 8/8, was 5 dead | `e1192ce5` |
+| `advisory_lock_isolation_check.py` | 9/9, was 3 dead | `e1192ce5` |
+| `service_role_tier_a_gate_check.py` | was 1 dead | `e1192ce5` |
+| `overrun_inversion_scan.py` | was 1 dead | `e1192ce5` |
+
+**IN FOUR OF THE SEVEN THE RULE WAS NOT WEAK — IT WAS REACHED BY A SECOND
+ROUTE THAT MADE THE EXISTING ARM PASS WITHOUT IT**, and that is the finding
+worth more than the fixtures:
+
+- **`READ_RE` / `AGG_RE`** (advisory locks) — every vulnerable fixture says
+  `select count(*) into v`, which matches BOTH, so neutralising either left the
+  other matching. **Two rules covering one fixture is one rule's worth of
+  evidence.**
+- **`DISPLAYISH`** (overrun inversion) — the arm `a progress BAR width ranks
+  LOW, not HIGH` drives `done/total*100`, which matches neither `ESTIMATE` nor
+  `PROGRESSY`, so with the rule neutralised it falls through `rank()`'s final
+  `return 'LOW'` and the arm **gets the same answer by a different route**.
+- **`TIER_A_ROW`** (service-role gate) — `self_check` replaces `TIER_A` with a
+  hardcoded set so the fixtures do not depend on the live register. Correct —
+  and it is exactly why the rule that builds that set was dead: **the isolation
+  that makes every other arm trustworthy bypasses it.**
+- **`WRITE_VAR_RE`** (write-without-readback) — **no consumer at all.**
+  Compiled, documented, never read; SHAPE B re-spelled the identical pattern
+  inline.
+
+### §10 — the platform figure moved, and here is the before and after
+
+Both numbers from `python tools/dead_rule_sweep.py`, same day, same criteria
+version, before and after the seven tools:
+
+| | before | after |
+|---|---|---|
+| tools in the registry | 71 | 73 |
+| module-level rules | 160 | 162 |
+| ablatable against some evidence | 136 | 140 |
+| against SHIPPED evidence | 68 → 42 exercised / **26 DEAD** | 75 → 67 exercised / **8 DEAD** |
+| against the real run only | 68 → 38 move / 30 do not | 65 → 37 move / 28 do not |
+| **COULD NOT RUN** | **24** | **22** |
+| **FINDINGS** | **56** | **36** |
+
+**The 8 that remain are `metamorphic_check.py` (6) and `register_feed_gate.py`
+(2) — both CLAIMED tools, cody and fourth respectively, and therefore outside
+item 2's never-claimed scope by definition.** All 22 remaining COULD-NOT-RUN
+belong to a tool that writes when run; none is a never-claimed tool with no
+evidence. **Item 2's scope is empty.**
+
+### §6 — GATE 1 IS NOW 77% ANSWERABLE, AND THERE ARE 24 MISSING TABLES, NOT 2
+
+**`tools/schema_provisioning_check.py` gained `--pin` / `--auth` (`36d58d34`)
+and the answer changed.** Full account and the eighteen SQL actions:
+**`docs/2026-10-05-gate1-live-migration-signed-in.md`**.
+
+| | licence key only | signed in |
+|---|---|---|
+| PROVISIONED | 148 | **289** |
+| **MISSING** | **2** | **24** |
+| REFUSED | 216 | 64 |
+| answerable | 150/402 = **37%** | 313/402 = **77%** |
+
+**TWENTY-TWO MISSING TABLES WERE INVISIBLE AND THE THING HIDING THEM WAS A
+SECURITY CONTROL WORKING CORRECTLY.** The session gate answered 403, the sweep
+recorded REFUSED — honestly — and REFUSED is indistinguishable in a summary
+from a table nobody asked about. Eighteen schema files across five apps have
+never been run: StoneDesk (1), SAIRNgrounds (1), SAIRNdental (3), SAIRNmechanical
+(1), SAIRNsenior (7), SAIRNroofing (5).
+
+**AND MY OWN IDEMPOTENCY CHECK WAS WRONG FIRST TIME.** A `create table` count
+flagged five of the eighteen as not fully idempotent; re-read directly, **all
+eighteen are** — each contains a comment with the words `create table if not` /
+`exists` split across two lines, which the count read as a second statement. Had
+I reported it, Michael would have been told to hand-edit five files that are
+already safe to re-run.
+
+**TWO APPS STILL CANNOT BE CHECKED AT ALL, 59 of the remaining 64 refusals:**
+SAIRNvet (42 resources, PIN dead 2026-09-25, `bootstrap` permanently closed —
+needs a decision, not a SQL file) and SAIRNfreedom (17 resources, including a
+felony flag on a named volunteer and minors' names, because
+`sql/sairnfreedom_employee_auth_schema.sql` has never been run — **that one IS a
+SQL action**).
+
+### What the addendum does NOT change
+
+**§7's blocked items are still blocked** — cc still holds the open-work index,
+hank still holds the citation-drift row — so the SAIRNscape licence-key-alone
+finding, the 24 missing tables and the two blocked apps **still have no index
+row.** Three documents now hold findings that belong in the index.
+
+---
+
 ## What is NOT in this document
 
 - **Any claim that an app is correct.** Gate 1 answers whether a TABLE EXISTS.
