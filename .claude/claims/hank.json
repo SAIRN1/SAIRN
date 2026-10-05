@@ -3445,6 +3445,17 @@
       "status": "released",
       "released_at": "2026-09-30T15:55:05Z",
       "files": null
+    },
+    {
+      "id": "hank-1791190416",
+      "session": "hank",
+      "subject": "platform",
+      "task": "sairngrounds grd citation line verdicts and the drift tool render-site false positive; open-work index row 73 job-risk citation closure; hank session state writeup",
+      "claimed_at": "2026-10-05T08:53:36Z",
+      "claimed_at_epoch": 1791190416.100206,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
@@ -3625,6 +3636,19 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "shared phrase: \"sweep tests\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-04T23:34:07Z",
+      "my_subject": "platform",
+      "my_task": "citation offset repoint sairngrounds grd, mech_docs and msb_bottle_scans register rows, job-risk citation drift, report-only cadence tools",
+      "other_session": "cc",
+      "other_subject": "cc",
+      "other_task": "sairnbiz preview check re-run, revoked-licence AI cutoff ablation, register rows mech_docs and msb_bottle_scans, stale-branch tips record then delete, competitive-gap doc inventory FILES: docs/2026-09-29-sairnbiz-preview-check.md docs/2026-09-29-stale-branch-tips.md docs/defect-density-register.json docs/SAIRN-OPEN-WORK-INDEX.md SAIRN-ACTIVE-WORK-cc.md",
+      "other_claimed_at": "2026-10-04T23:33:10Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same file or resource: mech_docs, msb_bottle_scans",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
