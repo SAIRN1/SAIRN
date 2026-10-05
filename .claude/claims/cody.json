@@ -3094,6 +3094,23 @@
         "docs/2026-10-05-gate1-missing-table-triage.md",
         "docs/2026-10-05-sairnscape-customers-licence-key-alone.md"
       ]
+    },
+    {
+      "id": "cody-1791202808",
+      "session": "cody",
+      "subject": "spcfix",
+      "task": "schema_provisioning_check declared_tables requires the public prefix, so 28 tables in 25 files are invisible and a file that declares none exits clean; plus the queue14 mistake review and inventory FILES: tools/schema_provisioning_check.py tests/run_schema_provisioning_probe.py docs/2026-10-05-cody-mistake-review.md docs/2026-10-05-cody-queue14-inventory.md SAIRN-ACTIVE-WORK-cody.md",
+      "claimed_at": "2026-10-05T12:20:08Z",
+      "claimed_at_epoch": 1791202808.525918,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/2026-10-05-cody-mistake-review.md",
+        "docs/2026-10-05-cody-queue14-inventory.md",
+        "tests/run_schema_provisioning_probe.py",
+        "tools/schema_provisioning_check.py"
+      ]
     }
   ],
   "refusals": [
