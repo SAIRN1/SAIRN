@@ -3120,8 +3120,8 @@
       "task": "arm the sairnscape customers session gate per the routed document; docs/CRITICALITY-TIERS.md is HANK'S and the B-to-A retier is NOT taken here, docs/SAIRN-OPEN-WORK-INDEX.md is CC'S and the index row is NOT taken here FILES: api/sd-data.js api/sd-data-scp-session-gate.test.js docs/defect-density-register.json",
       "claimed_at": "2026-10-05T13:10:09Z",
       "claimed_at_epoch": 1791205809.713661,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-05T13:32:20Z",
       "files": [
         "api/sd-data-scp-session-gate.test.js",
         "api/sd-data.js",
