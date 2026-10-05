@@ -3260,6 +3260,34 @@
         "tests/sairnbuild_retainage_race.js",
         "tests/sairncare/test-alf-mar.js"
       ]
+    },
+    {
+      "id": "cc-1791194112",
+      "session": "cc",
+      "subject": "cc",
+      "task": "the twelve suites red under the c8b5e5b1 credential pre-gate -- the absent-expectedApp stub shape across all SAIRNcare alf suites plus sairnbuild retainage race; revoked-licence enforce-mode live confirmation; seam-count drift watch; competitive-gap branch-only audits to main FILES: api/sd-data.js tests/sairncare/test-alf-mar.js tests/sairncare/test-alf-activities.js tests/sairncare/test-alf-billing.js tests/sairncare/test-alf-clients.js tests/sairncare/test-alf-clients-history.js tests/sairncare/test-alf-compliance.js tests/sairncare/test-alf-facility.js tests/sairncare/test-alf-incidents.js tests/sairncare/test-alf-payer-rules.js tests/sairncare/test-alf-phase3.js tests/sairncare/test-alf-signals.js tests/sairnbuild_retainage_race.js tools/sairn_seam_check.py docs/SAIRN-OPEN-WORK-INDEX.md SAIRN-ACTIVE-WORK-cc.md",
+      "claimed_at": "2026-10-05T09:55:12Z",
+      "claimed_at_epoch": 1791194112.3018003,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-cc.md",
+        "api/sd-data.js",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "tests/sairnbuild_retainage_race.js",
+        "tests/sairncare/test-alf-activities.js",
+        "tests/sairncare/test-alf-billing.js",
+        "tests/sairncare/test-alf-clients-history.js",
+        "tests/sairncare/test-alf-clients.js",
+        "tests/sairncare/test-alf-compliance.js",
+        "tests/sairncare/test-alf-facility.js",
+        "tests/sairncare/test-alf-incidents.js",
+        "tests/sairncare/test-alf-mar.js",
+        "tests/sairncare/test-alf-payer-rules.js",
+        "tests/sairncare/test-alf-phase3.js",
+        "tests/sairncare/test-alf-signals.js",
+        "tools/sairn_seam_check.py"
+      ]
     }
   ],
   "refusals": [
