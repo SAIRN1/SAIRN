@@ -3224,6 +3224,27 @@
         "SAIRN-ACTIVE-WORK-cody.md",
         "docs/2026-10-05-cody-queue15-inventory.md"
       ]
+    },
+    {
+      "id": "cody-1791239040",
+      "session": "cody",
+      "subject": "Tooling",
+      "task": "queue16: dead_rule_sweep universe from a tools/ glob with per-file exemptions; the 22 write-when-run tools made runnable in a scratch copy; capture_exit.py wrapper registered; node-forge/firebase-admin upgrade on a branch; the trailing-echo lesson. CONFLICT DECLARED PER PR 4.3: docs/SAIRN-OPEN-WORK-INDEX.md and tools/exit_status_attributable.py ARE CC'S under a live claim and are NOT in my file set -- the metamorphic rewording row and the trailing-echo finding are delivered as routed paste-ready text instead FILES: tools/dead_rule_sweep.py tools/report_only_checks.py tools/capture_exit.py tools/tooling_inventory.py package.json package-lock.json docs/2026-10-05-cody-queue16-inventory.md docs/2026-10-05-cody-routed-to-cc.md SAIRN-ACTIVE-WORK-cody.md",
+      "claimed_at": "2026-10-05T22:24:00Z",
+      "claimed_at_epoch": 1791239040.1770334,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/2026-10-05-cody-queue16-inventory.md",
+        "docs/2026-10-05-cody-routed-to-cc.md",
+        "package-lock.json",
+        "package.json",
+        "tools/capture_exit.py",
+        "tools/dead_rule_sweep.py",
+        "tools/report_only_checks.py",
+        "tools/tooling_inventory.py"
+      ]
     }
   ],
   "refusals": [
