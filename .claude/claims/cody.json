@@ -3050,8 +3050,8 @@
       "task": "fixture locks for the never-claimed registry tools whose rules are dead to their own evidence: write_without_readback_check, accepted_risk_expiry_audit, dependency_graph, register_freshness_check, advisory_lock_isolation_check, service_role_tier_a_gate_check, overrun_inversion_scan FILES: tools/write_without_readback_check.py tools/accepted_risk_expiry_audit.py tools/dependency_graph.py tools/register_freshness_check.py tools/advisory_lock_isolation_check.py tools/service_role_tier_a_gate_check.py tools/overrun_inversion_scan.py",
       "claimed_at": "2026-10-05T10:03:47Z",
       "claimed_at_epoch": 1791194627.7315388,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-05T11:05:21Z",
       "files": [
         "tools/accepted_risk_expiry_audit.py",
         "tools/advisory_lock_isolation_check.py",
