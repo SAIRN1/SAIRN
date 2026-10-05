@@ -389,7 +389,38 @@ GUARD_TESTS = [
 
 
 
+# ── 45 deny SITES, AND THE GATE REACHES ONE OF THEM ───────────────────────
+# Added 2026-10-05. `deny()` exits immediately, which is RIGHT for enforcement:
+# when the first check is fatal there is no value in running the other
+# forty-four. The cost lands somewhere else -- a session cannot find out what
+# ELSE is wrong without fixing the first thing and pushing again.
+#
+# MEASURED ON MYSELF, THREE TIMES IN ONE SESSION. One batch was refused for
+# stale generated documents, fixed and re-pushed; refused for a missing
+# register-feed trailer, fixed and re-pushed; refused for an unrecorded Tier A
+# obligation, fixed and re-pushed. Three full rebase-regenerate-retry cycles
+# against a branch five clones push to, to learn three facts that were all true
+# at the same moment.
+#
+# THE ENFORCING PATH IS UNCHANGED. `--preflight` sets COLLECT, and in that mode
+# deny() RECORDS and RETURNS so the run continues to the next check. Nothing
+# about a real push behaves differently; this is a reporting mode a session
+# runs BEFORE pushing.
+#
+# AND IT SAYS HOW FAR IT GOT. A check after a collected deny is running in a
+# state its author did not anticipate -- the code after a deny() was written
+# knowing it would never execute. So preflight wraps the whole run and, if it
+# crashes, reports the findings it HAD collected plus "could not continue past
+# this point" rather than presenting a partial sweep as a complete one. That is
+# the same third state the rest of this file insists on, applied to itself.
+COLLECT = False
+COLLECTED = []
+
+
 def deny(reason):
+    if COLLECT:
+        COLLECTED.append(reason)
+        return
     if MODE == 'prepush':
         # Non-zero from a pre-push hook aborts the push itself. stderr, because
         # git relays it to whoever ran the push -- including a subprocess caller
@@ -2890,8 +2921,66 @@ def main():
     sys.exit(0)
 
 
+def preflight():
+    """Run EVERY check and report EVERY finding. Never blocks anything.
+
+        python tools/sairn_push_gate_hook.py --preflight
+
+    Exit 0 when nothing was found, 1 when something was, 2 when the run could
+    not be completed -- and in that last case the findings collected so far are
+    printed anyway, labelled as partial.
+    """
+    global COLLECT, MODE
+    COLLECT = True
+    MODE = 'prepush'          # read the OUTGOING range, which is what a push does
+    crashed = None
+    try:
+        main()
+    except SystemExit as exc:
+        # NOT EVERY SystemExit IS A CRASH, and the first version of this got it
+        # backwards. main() ends by exiting 0 to ALLOW the push, so a completed
+        # sweep raises SystemExit(0) here -- and treating that as "could not
+        # complete" reported a full sweep as partial, which is the opposite of
+        # the error this mode exists to avoid. Code 0 or None means the run
+        # reached the end; anything else is a check leaving by a path that is
+        # not deny().
+        code = exc.code if exc.code is not None else 0
+        if code != 0:
+            crashed = 'a check exited the process with code %r' % (code,)
+    except Exception as exc:                                  # noqa: BLE001
+        crashed = '%s: %s' % (type(exc).__name__, str(exc)[:200])
+    n = len(COLLECTED)
+    print('PUSH GATE PREFLIGHT -- every check, not just the first')
+    print('')
+    if not n and not crashed:
+        print('NOTHING FOUND. That is not a promise the push will pass: this '
+              'mode runs the checks as they are, and a check that needs state '
+              'a real push creates can still refuse later.')
+        return 0
+    if n:
+        print('%d FINDING(S), all of them true at the same moment -- which is '
+              'the point of this mode. The enforcing gate would have shown you '
+              'only the first:' % n)
+        for i, r in enumerate(COLLECTED, 1):
+            print('')
+            print('--- %d of %d ---' % (i, n))
+            print(r)
+    if crashed:
+        print('')
+        print('COULD NOT COMPLETE THE SWEEP: %s' % crashed)
+        print('The %d finding(s) above are what had been collected. This is a '
+              'PARTIAL result and is not a clean bill for anything not listed '
+              '-- a check after a collected deny runs in a state its author '
+              'did not anticipate, because the code after a deny() was written '
+              'knowing it would never execute.' % n)
+        return 2
+    return 1
+
+
 if __name__ == '__main__':
     try:
+        if '--preflight' in sys.argv:
+            sys.exit(preflight())
         if '--pre-push' in sys.argv:
             MODE = 'prepush'
         if os.environ.get('SAIRN_SEED_GATE', '').lower() == 'off':
