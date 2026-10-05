@@ -42,7 +42,7 @@ credential that cannot provision anything.
 | StoneDesk | `SD-AUDIT-2026` | `sairn-demo-owner` | `31840627` | owner | `/api/sd-auth` |
 | StoneDesk (partner demo) | `SD-PARTNER-2026` | `sairn-demo-owner` | `52719084` | owner | `/api/sd-auth` |
 | SAIRNbiz | `SB-TEST-2026` | `sairn-demo-owner` | `84350271` | owner | `/api/sb-auth` |
-| SAIRNbiz (demo) | `SB-PINNACLE-2026` | `sairn-demo-owner` | ~~`60417293`~~ **DEAD 2026-09-25** | owner | `/api/sb-auth` |
+| SAIRNbiz (demo) | `SB-PINNACLE-2026` | `sairn-demo-owner` | **`84350271`** — driven 200 on **2026-10-05**; ~~`60417293`~~ **DEAD 2026-09-25**. **THE PIN DIED, THE LICENCE DID NOT**, and this row's single struck-through cell was read for six days as meaning the key was unusable. The working PIN is the same one `SB-TEST-2026` uses, on a **different tenant** (`license_hash` `05c4e1e1…` vs `87e7f2ee…`) | owner | `/api/sb-auth` |
 | SAIRNgrounds | `GRD-DEMO-2026` | `sairn-demo-owner` | `27593016` | owner | `/api/grd-auth` |
 | SAIRNscape | `SCP-DEMO-2026` | `sairn-demo-owner` | `73018452` | owner | `/api/scp-auth` |
 | SAIRNcare | `ALF-TEST-2026` | `sairn-demo-owner` | `19546830` | owner | `/api/alf-auth` |
@@ -214,7 +214,7 @@ nobody re-drives is the expired-fixture class, and this one had expired twice.**
 |---|---|
 | StoneDesk `SD-AUDIT-2026` / `31840627` | **200, role `owner`** — works |
 | SAIRNbiz `SB-TEST-2026` / `84350271` | **200, token issued** — works |
-| SAIRNbiz (demo) `SB-PINNACLE-2026` / `60417293` | **401 INVALID_CREDENTIALS** |
+| SAIRNbiz (demo) `SB-PINNACLE-2026` / `60417293` | **401 INVALID_CREDENTIALS** — still 401 when re-driven 2026-10-05, **and the licence is fine: the same key with `84350271` answers 200 with an owner token.** THIS TABLE TESTED ONE PIN PER KEY, so a dead PIN and a dead key are indistinguishable in it; that is the gap, not this row's value |
 | SAIRNvet `SV-PINNACLE-2026` / `38471260` | **401 INVALID_CREDENTIALS** |
 
 **WHAT CANNOT BE DETERMINED FROM OUTSIDE, stated rather than guessed:** the

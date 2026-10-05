@@ -8,36 +8,83 @@ happened on screen or an HTTP response that came back.**
 
 ## READ THIS FIRST — two blockers for tomorrow
 
-### 1. `SB-PINNACLE-2026` / `60417293` DOES NOT WORK. She cannot sign in.
+### 1. ~~`SB-PINNACLE-2026` / `60417293` DOES NOT WORK. She cannot sign in.~~ **CORRECTED 2026-10-05 — `SB-PINNACLE-2026` WORKS. NO SQL IS NEEDED.**
 
-Driven twice against `POST /api/sb-auth`:
+> **THE DEAD THING IS THE PIN, NOT THE LICENCE, AND THIS SECTION BLAMED THE
+> WRONG ONE FOR SIX DAYS.** `60417293` is refused on **both** licence keys and
+> `84350271` is accepted on **both**. Nobody had ever tried `SB-PINNACLE-2026`
+> with `84350271` — the two credentials were only ever driven as matched pairs,
+> so the PIN and the key failed together and the key took the blame.
+>
+> **Driven 2026-10-05 against the real `POST /api/sb-auth`, all four
+> combinations, in one run:**
+>
+> ```
+> SB-PINNACLE-2026  /  sairn-demo-owner  /  84350271  ->  200  role owner, token issued
+> SB-PINNACLE-2026  /  sairn-demo-owner  /  60417293  ->  401  INVALID_CREDENTIALS
+> SB-TEST-2026      /  sairn-demo-owner  /  84350271  ->  200  role owner, token issued
+> SB-TEST-2026      /  sairn-demo-owner  /  60417293  ->  401  INVALID_CREDENTIALS
+> ```
+>
+> **USE `SB-PINNACLE-2026` WITH PIN `84350271`.** That is her own tenant and it
+> signs in today. `SB-TEST-2026` is a *different* tenant — the two tokens carry
+> different `license_hash` values (`05c4e1e1…` and `87e7f2ee…`), so they do not
+> share data, and the earlier advice to "just use `SB-TEST-2026`" would have put
+> her evening's work in the wrong company.
+>
+> **NO RESET SQL IS REQUIRED and none is supplied.** Writing a PIN-reset
+> statement now would be changing a credential that works, for a symptom that
+> was a typo in this document. If `60417293` specifically has to live again, say
+> so and it is a `pin_hash`/`pin_salt` update on `sb_employee_auth` — but it is
+> not needed to sign in.
+>
+> **WHAT THE OLD TEXT GOT RIGHT, and it is still true:** `bootstrap` answers
+> **409 `ALREADY_PROVISIONED`** on both keys, re-driven today, so there is no
+> self-serve route that mints a fresh Owner on either licence. The route out is
+> `action: 'setup'` from an existing Owner session, or SQL.
+>
+> **WHY THE OLD CLAIM SURVIVED A RE-RUN:** the 2026-09-30 pass re-verified
+> `SB-TEST-2026` and recorded *"`SB-PINNACLE-2026` was not touched — its PIN is
+> Michael's to restore"*, which is a true sentence that re-stated the untested
+> assumption instead of testing it. One extra request would have settled it.
+> `docs/2026-09-03-demo-credentials.md` row 45 marks `60417293` **DEAD
+> 2026-09-25** and that row is correct — it is about the PIN. This section read
+> it as being about the licence.
+
+The original text is kept below because a correction without its predecessor is
+one the next reader cannot weigh.
+
+~~Driven twice against `POST /api/sb-auth`:~~
 
 ```
 SB-PINNACLE-2026  login     -> 401  {"code":"INVALID_CREDENTIALS","message":"Incorrect employee ID or PIN"}
 SB-PINNACLE-2026  bootstrap -> 409  {"code":"ALREADY_PROVISIONED"}
 ```
 
-`bootstrap` being 409 means **there is no self-serve way back in.** The route
-that mints a first Owner is closed on that licence.
+~~`bootstrap` being 409 means **there is no self-serve way back in.** The route
+that mints a first Owner is closed on that licence.~~ The 409 is real and still
+reproduces; the inference that the *licence* was closed does not follow from it.
 
-This is not new and it is already written down: `docs/2026-09-03-demo-credentials.md`
+~~This is not new and it is already written down: `docs/2026-09-03-demo-credentials.md`
 row 45 carries that PIN struck through and marked **DEAD 2026-09-25**, with the
-same 401 recorded in its own verification table. Nothing has changed it since.
+same 401 recorded in its own verification table. Nothing has changed it since.~~
 
-**WHAT WORKS RIGHT NOW, driven:**
+~~**WHAT WORKS RIGHT NOW, driven:**~~
 
 ```
 SB-TEST-2026  /  sairn-demo-owner  /  84350271   -> 200, role owner, token issued
 ```
 
-**So tomorrow, pick one:**
+~~**So tomorrow, pick one:**~~
 
-* **(a) Use `SB-TEST-2026`.** Nothing else changes; it is the same app and the
+* ~~**(a) Use `SB-TEST-2026`.** Nothing else changes; it is the same app and the
   same demo company (Pinnacle Stone & Design). This is the zero-risk option and
-  it is what this whole check was run on.
-* **(b) Reset the PIN on `SB-PINNACLE-2026` in SQL before she arrives.** That
+  it is what this whole check was run on.~~ **FALSE in one respect that matters:
+  it is the same *app* and NOT the same *tenant*.** Different `license_hash`,
+  different data.
+* ~~**(b) Reset the PIN on `SB-PINNACLE-2026` in SQL before she arrives.** That
   needs the hash the auth endpoint expects; it is not derivable from outside and
-  is not guessed at here.
+  is not guessed at here.~~ **Not needed. See above.**
 
 ### 2. NOTHING SHE TYPES WILL REACH THE SERVER. It lives in her browser only.
 
@@ -423,7 +470,11 @@ every other collection now backs up normally, which it did not before.
 ## Credentials, re-verified 2026-09-30
 
 `SB-TEST-2026` / `sairn-demo-owner` / `84350271` → **200, role owner, token
-issued.** `SB-PINNACLE-2026` was not touched — its PIN is Michael's to restore.
+issued.** ~~`SB-PINNACLE-2026` was not touched — its PIN is Michael's to restore.~~
+**THAT SENTENCE IS THE DEFECT, corrected 2026-10-05 in blocker 1 above:** not
+touching it meant re-stating an untested assumption inside a section headed
+*re-verified*. `SB-PINNACLE-2026` with `84350271` answers **200** and always
+would have. One extra request, never made across two re-runs.
 
 ## What this re-run did NOT do
 
