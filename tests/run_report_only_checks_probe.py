@@ -134,7 +134,7 @@ try:
     #    so the moment anyone writes "the tag used to say REGISTERED AND
     #    DEAD" -- the sentence this repo asks for -- the arm fails on the
     #    documentation rather than on the code. THIRD time this class has
-    #    caught me in two batches; see tools/pycomments.py for the other two
+    #    caught me in two batches; see tests/pycomments.py for the other two
     #    and for the wrong fix I tried first (jscomments, which cannot strip
     #    a `#` at all).
     import pycomments as _pyc
