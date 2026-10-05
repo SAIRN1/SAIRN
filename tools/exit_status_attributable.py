@@ -207,6 +207,15 @@ def hook():
         payload = json.load(sys.stdin)
         cmd = (payload.get('tool_input', {}) or {}).get('command', '') or ''
     except Exception:                                             # noqa: BLE001
+    # DELIBERATE, and in the SAFE direction: a report-only hook must not
+    # be the thing that stops a legitimate command. An unreadable payload
+    # means this notice says nothing, never that the command is blocked.
+    #
+    # THE WORD IS IN THE FIRST LINE ON PURPOSE -- fail_open_scan.py reads a
+    # window of ln-6 .. ln+3 around the `except`, so a reason written five
+    # lines down is invisible to it. Learned on gh_token.py:296 earlier in
+    # the same batch, where exactly that mistake left the site classified
+    # DEPENDENCY-shaped through a first attempt at this comment.
         return 0
     if not cmd.strip():
         return 0
