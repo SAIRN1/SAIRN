@@ -1146,6 +1146,44 @@ module.exports = async (req, res) => {
       //    arms that check that read the shipped page rather than this comment.
       'invoices': ['read', 'write'],
       'scp_quotes': ['read', 'write'],
+      // ── SAIRNscape `customers`, 2026-10-05, AND THE REGISTER SAYS B ─────
+      //    PROVEN LIVE WITH A CONTROL before this line was written. On
+      //    SCP-DEMO-2026 with NO session token: `read customers` answered 200
+      //    and returned a row carrying NAME, EMAIL, PHONE AND STREET ADDRESS,
+      //    and `write customers` with an id-less payload answered 400
+      //    "customer payload.id is required" -- the HANDLER BODY, so the gate
+      //    did not fire; nothing was stored, because :4769 refuses before any
+      //    store call and SAIRNscape has no delete path. The control is what
+      //    makes it a finding rather than a guess: `invoices` and `scp_quotes`
+      //    on the SAME bare key answered 403 both.
+      //
+      //    THIS BREAKS THE STOPPING RULE THE 2026-10-05 GATE SWEEP WROTE DOWN,
+      //    DELIBERATELY, AND THE REASON IS RECORDED HERE RATHER THAN ONLY IN A
+      //    COMMIT MESSAGE. That sweep stopped at TIER A and was right to;
+      //    `customers` is carried **B/B** in docs/CRITICALITY-TIERS.md while
+      //    its own confidentiality cell already reads "A CUSTOMER's NAME,
+      //    PHONE, EMAIL AND STREET ADDRESS". The basis was corrected and the
+      //    LETTER was not, and the letter is what the sweep reads. So the gate
+      //    is now AHEAD of the register.
+      //
+      //    THE RETIER IS OWED AND IT IS NOT MINE TO MAKE: hank holds
+      //    docs/CRITICALITY-TIERS.md under a live claim (2026-10-05T12:57:55Z).
+      //    Confidentiality B -> A, integrity stays B, tier follows the worse
+      //    axis -- the rule `sd_sms_log` is already carried under in that file.
+      //    Until it lands, a reader comparing the gate to the register will
+      //    find them disagreeing, and THIS COMMENT IS THE ANSWER TO WHY.
+      //    Routed in docs/2026-10-05-sairnscape-customers-licence-key-alone.md.
+      //
+      //    THE CLIENT NEEDED NO CHANGE AND THAT WAS CHECKED, NOT ASSUMED.
+      //    `customers` is read at sairnscape.html:2734 inside
+      //    scpSyncFromServer()'s resource loop and nowhere else, and that loop
+      //    is reached only through scpApplyLoggedIn -> scpInit. `invoices` and
+      //    `scp_quotes` sit in THE SAME LOOP and are already gated and
+      //    working, which is the strongest evidence available that this path
+      //    carries the token: there is no pre-login read of `customers` to
+      //    lock out. The one write is scpData('write','customers') at :2846,
+      //    post-login.
+      'customers': ['read', 'write'],
       // ── SAIRNmechanical: mech_docs WRITE ONLY, 2026-09-29 ────────────────
       //    MECH_RECORDS at :14308 gates all four of mech_quotes, mech_checks,
       //    mech_docs and mech_takeoffs on the LICENCE KEY ALONE, and the
@@ -1280,6 +1318,11 @@ module.exports = async (req, res) => {
       // is no 'scp_invoices' resource to pin.
       'invoices': 'sairnscape',
       'scp_quotes': 'sairnscape',
+      // Added 2026-10-05 in the SAME EDIT as its SD_SESSION_GATED entry, which
+      // is the whole rule this pair of lists carries. `customers` is the BARE
+      // resource name the dispatch uses; the storage table is `scp_customers`
+      // and an entry under that name would gate nothing at all, silently.
+      'customers': 'sairnscape',
       // Added 2026-09-29 in the SAME edit as its gate entry above, which is the
       // rule this pair of lists has carried since 2026-09-24 and which
       // sf_trustee_audits broke on main earlier the same day: a resource gated

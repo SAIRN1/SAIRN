@@ -85,7 +85,28 @@ const PAGE = fs.readFileSync(path.join(__dirname, '..', 'sairnscape.html'), 'utf
 // THE STOPPING RULE IS "TIER A", NOT "THESE TWO NAMES". If a third SAIRNscape
 // row is promoted, it belongs here and in both tables on the same day, which is
 // what the sdn set's growth from five to nine on 2026-09-24 established.
-const GATED = ['invoices', 'scp_quotes'];
+// ── `customers` ADDED 2026-10-05, AND IT BREAKS THE STOPPING RULE ABOVE ────
+// On purpose, and the arm below caught the source change before this list was
+// touched: adding the two SD_SESSION_GATED / SD_GATE_APP lines turned the
+// set-equality arm RED with nothing else edited, which is exactly what that
+// arm is for and is recorded here as the one time it fired.
+//
+// WHY IT IS HERE WHEN THE REGISTER SAYS B. Proven live with a control before
+// anything was changed: on SCP-DEMO-2026 with NO session, `read customers`
+// answered 200 and returned a row carrying NAME, EMAIL, PHONE AND STREET
+// ADDRESS; `write customers` with an id-less payload answered 400 from the
+// handler body, so the gate did not fire and nothing was stored; and
+// `invoices` and `scp_quotes` on the SAME bare key answered 403 both.
+//
+// `customers` is carried B/B in docs/CRITICALITY-TIERS.md while its own
+// confidentiality cell already reads "A CUSTOMER's NAME, PHONE, EMAIL AND
+// STREET ADDRESS" -- the basis was corrected and the LETTER was not, and the
+// letter is what a Tier-A-scoped sweep reads. THE GATE IS NOW AHEAD OF THE
+// REGISTER, the B->A retier is owed, and hank holds that file
+// (2026-10-05T12:57:55Z). Waiting for a register cell while a customer's
+// address is readable on a browser-shipped licence key is the wrong trade; the
+// retier is the root-cause follow-up, not a precondition.
+const GATED = ['customers', 'invoices', 'scp_quotes'];
 
 // One of the ten that stay licence-only, driven below. NOT an endorsement -- a
 // disclosure, so the day somebody widens the scope it is visible here.

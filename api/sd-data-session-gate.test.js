@@ -312,7 +312,34 @@ function mapNames(blob) {
     // four of those UNCHANGED surfaces as well as the gated one, so widening
     // this later is visible rather than silent.
     assert.match(m[0], /'mech_docs':\s*\['write'\]/);
-    assert.strictEqual(pairs, 75,
+    // 75 -> 78 on 2026-10-05: ONE resource, THREE pairs. SAIRNscape
+    // `customers`, read and write -- and the arithmetic is worth a line of its
+    // own, because `['read', 'write']` is TWO pairs by this arm's own counter
+    // and the third is the SD_GATE_APP entry that landed in the same edit.
+    //
+    // WHY IT IS GATED, which is what this tripwire exists to make somebody
+    // justify. PROVEN LIVE WITH A CONTROL before the entry was written: on
+    // SCP-DEMO-2026 with NO session token, `read customers` answered 200 and
+    // returned a row carrying NAME, EMAIL, PHONE AND STREET ADDRESS, and
+    // `write customers` with an id-less payload answered 400 from the HANDLER
+    // BODY -- so the gate did not fire, and nothing was stored because :4769
+    // refuses before any store call. The control is what makes it a finding
+    // rather than a guess: `invoices` and `scp_quotes` on the SAME bare key
+    // answered 403 both, so the gate existed, worked, and did not cover this.
+    //
+    // AND IT BREAKS THE "TIER A" STOPPING RULE DELIBERATELY. `customers` is
+    // carried B/B in docs/CRITICALITY-TIERS.md while its own confidentiality
+    // cell already reads "A CUSTOMER's NAME, PHONE, EMAIL AND STREET ADDRESS"
+    // -- the basis was corrected and the LETTER was not, and the letter is
+    // what a Tier-A-scoped sweep reads. THE GATE IS NOW AHEAD OF THE REGISTER.
+    // The B->A retier is owed and hank holds that file
+    // (2026-10-05T12:57:55Z). Waiting on a register cell while a customer's
+    // address is readable on a browser-shipped licence key is the wrong trade.
+    //
+    // THE RESOURCE IS SPELLED BARE, same trap as `invoices` above: the storage
+    // table is scp_customers and an entry under that name would gate nothing.
+    assert.match(m[0], /'customers':\s*\['read', 'write'\]/);
+    assert.strictEqual(pairs, 78,
       'the gate table changed size to ' + pairs + ' pairs -- add the new resource to this test and say why it is gated');
   });
 
@@ -455,6 +482,13 @@ function mapNames(blob) {
         // The named suite has an arm whose whole job is that distinction.
         invoices: 'api/sd-data-scp-session-gate.test.js',
         scp_quotes: 'api/sd-data-scp-session-gate.test.js',
+        // `customers`, 2026-10-05. Same suite, and it is driven there rather
+        // than here for the same reason the other two are: that file mints
+        // SAIRNscape sessions. Its GATED list drives a refusal, an allow with a
+        // real session, a wrong-app token and a deactivated credential per
+        // resource, so adding the name there added four arms without anybody
+        // writing one -- 18 passed became 24.
+        customers: 'api/sd-data-scp-session-gate.test.js',
         // SAIRNmechanical's one, 2026-09-29. Driven in its own suite for the
         // same reason as every entry above: that one mints sairnmechanical
         // sessions and this file mints StoneDesk ones.
