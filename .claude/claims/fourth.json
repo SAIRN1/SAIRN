@@ -2998,8 +2998,8 @@
       "task": "SAIRNdesign confirmed price book into api/_lib/exec-context.js plus tests/sairndesign_pricing.js; demo-credentials local file dead-PIN fix at source; two sweeps written up (sync test runners, deploy_verify_notify blind spot). CONFLICT DECLARED PER PR 4.3: tools/tooling_inventory.py IS STILL CC'S so tools/push_failure_reason.py stays held back untracked; hank holds push_retry.py which Part 2 of the sweep discusses but does NOT edit; cc holds the sairnscape gap audit. FILES: api/_lib/exec-context.js tests/sairndesign_pricing.js docs/2026-10-05-sairndesign-pricing-benchmark.md docs/2026-10-05-two-sweeps-sync-runners-and-a-blind-deploy-check.md SAIRN-ACTIVE-WORK-fourth.md",
       "claimed_at": "2026-10-05T13:16:44Z",
       "claimed_at_epoch": 1791206204.988941,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-05T13:25:24Z",
       "files": [
         "SAIRN-ACTIVE-WORK-fourth.md",
         "api/_lib/exec-context.js",
