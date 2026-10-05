@@ -6471,3 +6471,77 @@ written for one is not a threshold for the other.
 7. **The CDT upload path still must not be built** until counsel answers the CPT
    licensing question.
 8. **My expired `hover-three-fixes` claim still reads open** in the record.
+
+---
+
+# Queue 13 — 2026-10-05
+
+Full account: `docs/2026-10-05-cody-queue13-report.md` (and its addendum, which
+corrects three of its own sections written earlier the same session).
+Gate 1: `docs/2026-10-05-gate1-live-migration-signed-in.md`.
+
+## Landed
+
+| sha | what |
+|---|---|
+| `2f52470b` | **The claim matcher's disclosure rule.** `disclosed_files()` returns `inside - outside` — a path is disclosed only when no clause outside a blocker clause names it — and markers match on a FRONT word boundary, which stopped `blocked` matching inside **UNBLOCKED**. Seven new markers, each measured alone. **BLOCK→CLEAR 0, CLEAR→BLOCK 54, over all 532,512 cross-session pairs.** Four candidates measured and REJECTED (`deferred` 73, `holds` 61, `is <session>'s` 50, `conflict declared` 22), so two of the finding's eight wordings are still open and arm E6 asserts it |
+| `d3d2db42` | **Push-gate check 11 read the working tree while the push shipped a commit.** `--rev` on `control_char_check.py`; a named file that cannot be read is exit 2 and is NAMED; `git ls-files -z`, because quoting had hidden a tracked file for 25 days; and check 11 now denies on exit 2, which was falling through as a pass |
+| `77b5b536`, `1eb6da5c`, `e1192ce5` | **Item 2 CLOSED: fixture locks for all 7 never-claimed registry tools.** Platform figure moved **26 DEAD → 8**, **56 findings → 36**, **COULD NOT RUN 24 → 22**. The 8 that remain are two CLAIMED tools and are outside the item's scope |
+| `36d58d34` | **`schema_provisioning_check.py --pin/--auth`** — Gate 1 went from **37% to 77% answerable** |
+| `27287408` | The two measurement documents |
+
+## The thing worth keeping from all of it
+
+**IN FIVE SEPARATE PLACES TODAY THE RULE WAS NOT WEAK — IT WAS REACHED BY A
+SECOND ROUTE THAT MADE THE EXISTING EVIDENCE PASS WITHOUT IT.**
+
+* `READ_RE`/`AGG_RE` — one fixture matched both, so neutralising either left the other.
+* `DISPLAYISH` — the arm's input matched no other rule either, so it fell through to the same default verdict.
+* `TIER_A_ROW` — the isolation that makes every other arm trustworthy bypasses the rule that builds the set.
+* `WRITE_VAR_RE` — no consumer at all; the pattern was re-spelled inline.
+* `WRAPPER_RE` — its only consumer was a field computed on every run and printed nowhere.
+
+**And the same shape one layer up, in the gate:** check 11's file list came from
+the push and its bytes came from the disk, so the proxy and the subject were one
+`git show` apart. **And again in Gate 1:** the session gate answered 403, the
+sweep recorded REFUSED honestly, and REFUSED is indistinguishable in a summary
+from a table nobody asked about — 22 missing tables sat behind that.
+
+## My own mistakes, recorded
+
+1. **A register field was EATEN BY THE SHELL** — the word for the gate's file
+   list was written inside bash backticks in a double-quoted `printf`, so the
+   sentence landed with a gap exactly where its subject belonged. Scrubber item
+   18, while writing about silent failure. Repaired, and the incident is written
+   into the field.
+2. **Two of my own fixture arms were green on a dead rule**, caught by the
+   ablation rather than by reading. A shape-A fixture does not touch
+   `WRITE_VAR_RE`; a generic read that resolves does not touch `READ_VAR_RE`.
+3. **A driver truncated its own evidence to 500 characters**, so `missing` for
+   SAIRNscape was cut off mid-list and I was one step from reporting "1 missing
+   table" off a shortened read.
+4. **An idempotency check counted comments as statements**, flagging 5 of 18
+   safe-to-re-run SQL files as needing hand edits.
+5. **A word-boundary on both ends** broke `not touch` matching NOT TOUCHING —
+   one of the eight wordings went from covered to blocked, caught by driving all
+   eight before committing.
+
+## Raised, not acted on
+
+1. **cc holds `docs/SAIRN-OPEN-WORK-INDEX.md`**, so three findings have no row:
+   SAIRNscape `customers` (PII on a licence key alone, READ and WRITE), the 24
+   missing tables, and the two apps whose gated resources are unanswerable.
+   Written into the registry note for cc.
+2. **hank holds the `supplier_lead_times` citation-drift row (73)** and is
+   working it. Not touched.
+3. **`tests/claims/run_fileset_matcher_probe.py` is RED at HEAD**, 3 failures,
+   pre-existing and proven by stashing. My change moves its PINNED figure
+   **26 → 0**. NOT re-pinned — that needs a decision about whether the file-set
+   matcher still earns its place.
+4. **`tools/gap_ledger.py` NOT BUILT.** Inputs ready; one scope call outstanding
+   (both pilot apps' newest audit is on PR #18, not on main).
+5. **Checks 2, 3, 4, 5, 6, 7, 12 and 12b** build the same working-tree paths
+   from the same outgoing range as check 11 did. Not swept.
+6. **11 Tier A obligations authored by cody are open**, oldest 2026-09-27.
+7. **Item 9 of the previous paste is named by neither the landed list nor the
+   refused list.** Not inferred.
