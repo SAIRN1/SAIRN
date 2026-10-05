@@ -21,6 +21,17 @@ const authMod = require(path.join(ROOT, 'api/_lib/auth.js'));
 authMod.tokenFromRequest = (req) => req.headers['x-test-token'] || null;
 authMod.verifySessionToken = (token, licHash, expectedApp) => {
   if (!token) return null;
+  // ── AN ABSENT expectedApp IS LEGITIMATE; A WRONG ONE IS STILL FATAL ──
+  // Threw on ANY expectedApp other than 'sairncare', INCLUDING `undefined`, which
+  // is what made this suite red from c8b5e5b1: every arm answered 502 on the
+  // stub's own throw. api/_lib/auth.js:604 is `if (expectedApp && payload.app
+  // !== expectedApp) return null;` -- the argument is OPTIONAL -- and
+  // api/sd-data.js:1387's active-credential pre-gate omits it deliberately,
+  // so the refusal modelled here could never happen in production.
+  // The guard is KEPT: a branch gate that set the WRONG app is still fatal.
+  // Full account: the commit that fixed test-alf-mar.js and the register
+  // record against it.
+  if (expectedApp === undefined) return JSON.parse(token);
   if (expectedApp !== 'sairncare') throw new Error('expected app scope not sairncare: ' + expectedApp);
   return JSON.parse(token);
 };
