@@ -5199,6 +5199,30 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-05T13:23:46Z",
+      "opened_at_sha": "a4610fa386305858cdcab2321ab81137b36e1cf7",
+      "resources": [
+        "invoices",
+        "scp_quotes",
+        "sd_sms_log"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/sd-data-scp-session-gate.test.js",
+        "api/sd-data-session-gate.test.js",
+        "api/sd-data.js"
+      ],
+      "what": "SAIRNSCAPE `customers` SESSION GATE -- A TIER A RESOURCE IS GATED WHILE THE REGISTER STILL CALLS IT B, AND THAT IS THE FIRST THING TO ATTACK.\n\nWHAT CHANGED: two lines. `'customers': ['read', 'write']` in SD_SESSION_GATED\nand `'customers': 'sairnscape'` in SD_GATE_APP, both in one edit. No handler\nbranch was touched; no client change was needed.\n\nWHY, PROVEN LIVE WITH A CONTROL BEFORE THE EDIT: on SCP-DEMO-2026 with no\nsession token, `read customers` answered 200 and returned a row carrying NAME,\nEMAIL, PHONE AND STREET ADDRESS; `write customers` with an id-less payload\nanswered 400 from the handler body, so the gate did not fire, and nothing was\nstored because :4769 refuses before any store call. `invoices` and `scp_quotes`\non the SAME bare key answered 403 both.\n\nWHAT TO ATTACK, hardest first:\n\n(a) THE GATE IS AHEAD OF THE REGISTER AND I DECIDED THAT ALONE.\n    docs/CRITICALITY-TIERS.md carries SAIRNscape `customers` as B/B. The gate\n    sweep's stopping rule is TIER A and this entry breaks it. My reasoning is\n    that the confidentiality CELL already says the row holds a name, phone,\n    email and street address, so the letter is stale relative to its own basis\n    -- but the retier has not landed, hank holds that file, and until it does\n    the two documents disagree. A reviewer may reasonably hold that the gate\n    should have waited. Read the cell and say whether B is defensible; if it\n    is, this entry is wrong and should come out.\n\n(b) THE WRITE PATH IS GATED AND I PROVED ONLY THAT IT WAS UNGATED.\n    The pre-fix probe used an id-less payload specifically so nothing would be\n    stored, which means I demonstrated the write path reached the handler and\n    NOT that a legitimate signed-in write still succeeds end to end. The scp\n    suite's per-resource \"write WITH a valid session is allowed\" arm covers the\n    code path. A real signed-in write against the live licence has NOT been\n    driven for `customers`, deliberately -- SAIRNscape has no delete path and\n    the row would be permanent. If that is not good enough, say so.\n\n(c) THE CLIENT ARGUMENT RESTS ON TWO SIBLINGS, NOT ON A DRIVEN LOGIN.\n    `customers` is read at sairnscape.html:2734 inside scpSyncFromServer()'s\n    loop and nowhere else, and `invoices`/`scp_quotes` are in the same loop and\n    already gated and working. That is strong evidence the path carries the\n    token and it is still an inference from two neighbours rather than a login\n    driven against the deployed page.\n\n(d) 75 -> 78 ON THE COUNTED PAIR TRIPWIRE, and I wrote the arithmetic out\n    because `['read','write']` is two pairs by that arm's counter and the third\n    is the SD_GATE_APP entry. If that reading of its counter is wrong the\n    number is wrong, and it is a hardcoded literal that will be read by\n    everyone who gates anything next.\n\n(e) TEN SAIRNSCAPE RESOURCES REMAIN LICENCE-ONLY and this change does not\n    touch them. `scp_vendors` is the declared witness and its arm still passes.\n    Whether any of the other nine carries PII was NOT re-examined here --\n    `customers` was the one the live sweep surfaced, and stopping there is a\n    scope decision, not a finding that the rest are clean.\n\n(f) I TOUCHED api/sd-data.js THE HOUR CC RELEASED IT. The claim record was\n    re-read fresh and cc's narrowed claim no longer declares it, so this was\n    clear -- but cc had it minutes earlier and may have work in flight that\n    assumes the previous table.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-10-05T13:23:46Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
