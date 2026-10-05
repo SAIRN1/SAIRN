@@ -22666,6 +22666,77 @@
       "recurrence_open": "No control requires a SAIRN tool to separate what it MEASURED from what it ADVISES. One file is fixed; the convention is not, and it is logged open rather than invented by the session that broke it."
     },
     {
+      "commit": "1b453253cc5b",
+      "date": "2026-10-05",
+      "subject": "fix(sairnsenior): a backwards clock pair billed NEGATIVE hours -- six callers, four unguarded; plus a role-gate ratchet that paid out for deleting the evidence",
+      "files": [
+        "SAIRN-ACTIVE-WORK-fourth.md",
+        "api/sairncash/trial-renew-idempotency.test.js",
+        "api/sairncash/trial-renew.test.js",
+        "api/sairncash/trial-start.test.js",
+        "api/sairncash/verify.test.js",
+        "docs/MASTER-PLAN.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/role-gate-negative-coverage.json",
+        "docs/traceability-matrix.md",
+        "sairnsenior.html",
+        "tests/run_citation_arm_depth_probe.py",
+        "tests/run_role_gate_ratchet_probe.py",
+        "tests/sairncash_entitlement_gate_probe.py",
+        "tests/sairnsenior_negative_hours_claim.js",
+        "tests/sairnsenior_referral_hours.js",
+        "tools/citation_arm_depth_check.py",
+        "tools/role_gate_negative_coverage.py"
+      ],
+      "lines_added": 1311,
+      "lines_removed": 51,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "visitHours() returned a NEGATIVE for a sen_visits row whose clock_out_at precedes its clock_in_at, and generateClaim() billed hours_billed and amount straight off it -- so a backwards clock pair produced a negative claim. Three further unguarded consumers: visitLabourCost (a negative cost, which makes a badly-recorded branch look profitable), the branch rollup (one bad row subtracts from a branch total) and the authorisation-gap AI tool (inflates a shortfall). Clamped at source; the billing path now refuses the row outright rather than writing a silent zero-hour claim over a corrupt record, because in this app a $0 claim already means 'set the rate by hand'.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "visitHours() has had no non-negative guard since it was written; git log on the function identifies no commit that removed one, so no injection sha can be cited honestly"
+      },
+      "phase_note": "design: the guard was never specified. The app's own comment had already identified the gap and deferred it as its own change, so this is an omitted requirement rather than a coding slip",
+      "contributing_factors": [
+        {
+          "factor": "visitHours() was written as pure arithmetic with no domain guard, and its callers each decided independently whether to guard -- two did, four did not",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the clamp moved into visitHours() itself so the decision is made once; arm D1 pins that the guard is in the function and not at a call site"
+        },
+        {
+          "factor": "the gap was KNOWN and written in the source long before it was fixed -- a comment at the referral-hours site named it and scoped it correctly as its own change, and nothing tracked it from there",
+          "kind": "process",
+          "action_status": "declined",
+          "action": "DECLINED here, deliberately: the general repair is a sweep that turns every in-source SEPARATE FINDING note into a tracked row, and folding a sweep into a one-function fix is the scope growth this repo polices. What WAS done is local -- the note at the referral-hours site now points at the fix and at its suite, so the next reader of that comment is not told the gap is still open",
+          "note": "an in-source note is on no list a session reads at start-of-work; that remains true platform-wide"
+        },
+        {
+          "factor": "that same comment UNDERCOUNTED the blast radius -- three consumers named, six real -- so a reader acting on it would have fixed the claim and left negative costs and a subtracting branch rollup in place",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "the re-count is in the function header with each caller and its guard status, so the next reader starts from the measured list rather than re-deriving it"
+        },
+        {
+          "factor": "nothing drove the shape: no suite planted a backwards clock pair, so every consumer was green over data the fixtures could not produce",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/sairnsenior_negative_hours_claim.js -- 19 arms plus five sabotages, each caught by exactly the intended arm, source restored byte-identically"
+        }
+      ],
+      "recurrence_open": "NOTHING CLOSES THE GENERAL CASE. The fix and its arms are specific to visitHours(); no check on this platform looks for other arithmetic helpers whose callers disagree about guarding, and factor 2's platform-wide repair is DECLINED here rather than done."
+    },
+    {
       "commit": "2f52470b6d73",
       "date": "2026-10-05",
       "subject": "fix(claim): a disclosure is only a disclosure when nothing else claims it, and UNBLOCKED is not BLOCKED",
@@ -22791,6 +22862,62 @@
       "recurrence_open": "The self-scope now has arms and an ablation, but legacy alf_incidents rows carry recorded_by NULL and are invisible to the self-service tier by Michael's recorded decision -- no arm covers that state and this commit does not add one. The two systemic actions stay open and are now on their third instance each: nothing reports an app's red set on a cadence, and nothing stops a control from landing into an already-red suite where its contradictions cannot be seen. And the deepest one is untouched: no instrument counts UNSCOPED verifySessionToken calls, so a branch gate that dropped its app scope entirely passes all fourteen stubs on this platform."
     },
     {
+      "commit": "75e0376ae057",
+      "date": "2026-10-05",
+      "subject": "fix(provisioning): the public. prefix was required, so 28 tables were invisible and a file declaring none exited clean",
+      "files": [
+        "tests/run_schema_provisioning_probe.py",
+        "tools/schema_provisioning_check.py"
+      ],
+      "lines_added": 137,
+      "lines_removed": 2,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/schema_provisioning_check.py declared_tables() matched 'create table if not exists public.<name>' and 25 files in sql/ write the unqualified form, so 28 declared tables were invisible to the only tool that answers whether a migration ran -- 442 visible with the prefix required against 470 with it optional, almost all of the 28 being the *_employee_auth and *_audit_log families an app's sign-in depends on. THE SILENT HALF IS WORSE: a file whose every table is unqualified returned an EMPTY LIST and the tool printed 'schema declares : 0', 'PROVISIONED : 0', 'MISSING : 0' and exited 0, in the same shape as a fully-migrated app. sql/stonedesk_audit_log_schema.sql did exactly that in the 2026-10-05 Gate-1 sweep: one declared table, read as none, reported clean, and the sweep's published totals (402 declared, 24 missing) were therefore floors rather than counts. Found by following one register cell rather than by review or by a test -- supplier_lead_times is recorded as not provisioned and was absent from both the missing list and the sweep, which exposed first an app-prefix glob reading 113 schema files of 147 and then this. Fixed by making the prefix optional, stripping line comments in the same change because the widening made a comment reading 'see create table if not exists in the other file' yield the table name 'in', and refusing with exit 2 on a schema that declares nothing while naming both causes the tool cannot distinguish.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The pattern has required the public. prefix since the file's first commit, so the hole arrived with the feature. Which schema file first used the unqualified form is not determined here."
+      },
+      "citation_note": "1.11 is the rule the silent half breaks: zero tables checked was folded into zero tables missing and exit 0. 1.2 is the rule the FIX nearly broke in the other direction -- the widened pattern reached into comments until the stripper landed with it.",
+      "phase_note": "The reader was written against the shape of the first schema files it was pointed at and the directory had already diverged. Nothing re-derived the pattern against the corpus afterwards.",
+      "contributing_factors": [
+        {
+          "factor": "The reader encoded ONE spelling of a CREATE TABLE statement and sql/ contains two. 442 of 470 tables matched, and nothing compared the two readings, so the shortfall was never a number anybody saw.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The prefix is optional and six probe arms in section E drive both spellings, a mixed file, a grant-only file, a comment, and main()'s refusal."
+        },
+        {
+          "factor": "A zero-item read fell straight through as a clean pass: zero declared meant zero checkable, zero provisioned, zero missing and exit 0, printed in the same shape as a fully-migrated app.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "main() exits 2 on a schema declaring nothing and names BOTH causes it cannot distinguish -- a genuinely table-free file or one in an unparseable shape. PR 1.11."
+        },
+        {
+          "factor": "The tool had a control with 16 arms and none of them exercised declared_tables() at all. Every arm was about the registry reader and the prefix mapping, so the input side of the comparison was untested while the output side was well covered.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Section E is six arms on declared_tables() specifically, including the main() refusal driven through main() rather than asserted on the source."
+        },
+        {
+          "factor": "Gate 1 is the one gate in MASTER-PLAN with a live dependency and it is ATTESTED rather than derived, so there is no second instrument to disagree with this tool. A shortfall in its reader is invisible by construction until somebody follows a single cell by hand.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "No second reader is proposed and none is wanted: a second parse of the same files is a second thing to drift. What would have caught this is the sweep publishing its own FILE COVERAGE -- schema files read against schema files on disk -- which it does not print. Named here rather than built, because the sweep is a driver script rather than a tracked tool and the right home for that line is whatever next drives the full sweep."
+        }
+      ],
+      "recurrence_open": "The corrected figures are published but NOT re-driven end to end: 134 of 147 schema files are swept and the remaining 13 declare no tables, which was checked, but no tool yet prints its own file coverage against sql/ so the next reader has to take that on this record's word. And the 20 unreachable tables from the missed-glob sweep were asked of stonedesk because that was the licence to hand -- several belong to other registries and were not re-asked of the right app."
+    },
+    {
       "commit": "ac9c21df5b93",
       "date": "2026-10-05",
       "subject": "fix(tests): alf-mar 0/20 -> 21/21 and retainage_race 1/2 -> 3/3 -- and ONE ARM WAS ASSERTING A CONTROLLED-SUBSTANCE DEFECT",
@@ -22853,77 +22980,6 @@
         }
       ],
       "recurrence_open": "The two fixed suites are green and the other ten with the identical stub are not -- measured at 12 files throwing on an absent expectedApp against 2 using the green shape. Nothing yet reports an app's red set on a cadence, so the NEXT control to land on a red suite will be just as invisible as the witness lock was. And the deepest one stays open by choice: no instrument counts unscoped verifySessionToken calls, so a branch gate that dropped its app scope entirely would pass every stub on this platform including the two reference-green ones -- the guard catches a WRONG app and cannot see a MISSING one."
-    },
-    {
-      "commit": "1b453253cc5b",
-      "date": "2026-10-05",
-      "subject": "fix(sairnsenior): a backwards clock pair billed NEGATIVE hours -- six callers, four unguarded; plus a role-gate ratchet that paid out for deleting the evidence",
-      "files": [
-        "SAIRN-ACTIVE-WORK-fourth.md",
-        "api/sairncash/trial-renew-idempotency.test.js",
-        "api/sairncash/trial-renew.test.js",
-        "api/sairncash/trial-start.test.js",
-        "api/sairncash/verify.test.js",
-        "docs/MASTER-PLAN.md",
-        "docs/TOOLING-INVENTORY.md",
-        "docs/role-gate-negative-coverage.json",
-        "docs/traceability-matrix.md",
-        "sairnsenior.html",
-        "tests/run_citation_arm_depth_probe.py",
-        "tests/run_role_gate_ratchet_probe.py",
-        "tests/sairncash_entitlement_gate_probe.py",
-        "tests/sairnsenior_negative_hours_claim.js",
-        "tests/sairnsenior_referral_hours.js",
-        "tools/citation_arm_depth_check.py",
-        "tools/role_gate_negative_coverage.py"
-      ],
-      "lines_added": 1311,
-      "lines_removed": 51,
-      "app": "sairnsenior",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "visitHours() returned a NEGATIVE for a sen_visits row whose clock_out_at precedes its clock_in_at, and generateClaim() billed hours_billed and amount straight off it -- so a backwards clock pair produced a negative claim. Three further unguarded consumers: visitLabourCost (a negative cost, which makes a badly-recorded branch look profitable), the branch rollup (one bad row subtracts from a branch total) and the authorisation-gap AI tool (inflates a shortfall). Clamped at source; the billing path now refuses the row outright rather than writing a silent zero-hour claim over a corrupt record, because in this app a $0 claim already means 'set the rate by hand'.",
-      "rules": [
-        "1.5"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "visitHours() has had no non-negative guard since it was written; git log on the function identifies no commit that removed one, so no injection sha can be cited honestly"
-      },
-      "phase_note": "design: the guard was never specified. The app's own comment had already identified the gap and deferred it as its own change, so this is an omitted requirement rather than a coding slip",
-      "contributing_factors": [
-        {
-          "factor": "visitHours() was written as pure arithmetic with no domain guard, and its callers each decided independently whether to guard -- two did, four did not",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "the clamp moved into visitHours() itself so the decision is made once; arm D1 pins that the guard is in the function and not at a call site"
-        },
-        {
-          "factor": "the gap was KNOWN and written in the source long before it was fixed -- a comment at the referral-hours site named it and scoped it correctly as its own change, and nothing tracked it from there",
-          "kind": "process",
-          "action_status": "declined",
-          "action": "DECLINED here, deliberately: the general repair is a sweep that turns every in-source SEPARATE FINDING note into a tracked row, and folding a sweep into a one-function fix is the scope growth this repo polices. What WAS done is local -- the note at the referral-hours site now points at the fix and at its suite, so the next reader of that comment is not told the gap is still open",
-          "note": "an in-source note is on no list a session reads at start-of-work; that remains true platform-wide"
-        },
-        {
-          "factor": "that same comment UNDERCOUNTED the blast radius -- three consumers named, six real -- so a reader acting on it would have fixed the claim and left negative costs and a subtracting branch rollup in place",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "the re-count is in the function header with each caller and its guard status, so the next reader starts from the measured list rather than re-deriving it"
-        },
-        {
-          "factor": "nothing drove the shape: no suite planted a backwards clock pair, so every consumer was green over data the fixtures could not produce",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "tests/sairnsenior_negative_hours_claim.js -- 19 arms plus five sabotages, each caught by exactly the intended arm, source restored byte-identically"
-        }
-      ],
-      "recurrence_open": "NOTHING CLOSES THE GENERAL CASE. The fix and its arms are specific to visitHours(); no check on this platform looks for other arithmetic helpers whose callers disagree about guarding, and factor 2's platform-wide repair is DECLINED here rather than done."
     },
     {
       "commit": "d3d2db42af5d",
