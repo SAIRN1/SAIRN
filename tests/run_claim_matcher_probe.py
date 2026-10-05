@@ -148,14 +148,24 @@ check('C4. the threshold is a NAMED constant, so a change to it is visible '
 # ── D. THE DISCLOSURE RULE, both directions ────────────────────────────────
 section('D. what counts as a disclosure, and what does not')
 
+
+# THE FIXTURE PREFIX USED TO BE `FILES: api/sd-data.js. ` AND IT HAD TO MOVE
+# (2026-10-05). That prefix CLAIMS the file, and under the only-inside rule in
+# section E a path claimed anywhere in the string is no longer disclosed by a
+# disclaimer elsewhere in it -- correctly. So the old fixture asserted the
+# contract the only-inside change deliberately reverses, and four arms went red
+# on a fix rather than on a defect. Replaced with a prefix that claims a
+# DIFFERENT file, which is what these six arms were always about: does the
+# SENTENCE read as a disclosure. Every expectation below is unchanged.
 for phrase, disclosed in (
         ('api/sd-data.js is NOT taken here', True),
         ('api/sd-data.js is NOT touched', True),
+        ('api/sd-data.js is NOT TOUCHING anything here', True),
         ('api/sd-data.js is DELIBERATELY EXCLUDED', True),
         ('api/sd-data.js is fourth\'s and I do not edit it', True),
         ('api/sd-data.js: add the caregiver role', False),
         ('rewrite api/sd-data.js roleSets', False)):
-    got = C.disclosed_files('FILES: api/sd-data.js. ' + phrase)
+    got = C.disclosed_files('FILES: sairncare.html. ' + phrase)
     check('D. %-52s -> %s' % ('"' + phrase[:50] + '"',
                               'disclosure' if disclosed else 'a real claim'),
           ('api/sd-data.js' in got) == disclosed, sorted(got))
@@ -164,6 +174,76 @@ check('D2. ANCHOR: declared_files still returns None when a claim declares '
       'none, so the disclosure rule cannot turn "no evidence" into "cleared"',
       C.declared_files('no file names here at all') is None,
       C.declared_files('no file names here at all'))
+
+# ── E. ONLY-INSIDE, AND THE MARKERS THE 09-29 FINDING NAMED ────────────────
+# docs/2026-09-29-claim-matcher-prose-collisions.md stated the test the rule
+# had to obey: *"a token that occurs ONLY inside a blocker clause contributes
+# no identifier and no bigram. A claim that both holds and waits on the same
+# file must still block, because the token also occurs outside one."* The
+# implementation that landed that day took the first half only. These arms hold
+# BOTH halves, and the five wordings that were still blocking at HEAD on
+# 2026-10-05 are driven by name rather than described.
+section('E. a disclosure is ONLY a disclosure when nothing else claims it')
+
+check('E1. a path claimed in one clause and disclaimed in another is NOT '
+      'disclosed -- the finding\'s own second half, which the 09-29 '
+      'implementation did not carry. Loose direction: it answered CLEAR on '
+      'api/sd-data.js to every other session',
+      C.disclosed_files('rewrite the sd_crm branch in api/sd-data.js. '
+                        'api/sd-data.js is not touched by the hover half')
+      == set(),
+      sorted(C.disclosed_files(
+          'rewrite the sd_crm branch in api/sd-data.js. '
+          'api/sd-data.js is not touched by the hover half')))
+
+check('E2. ...and it therefore still BLOCKS another session wanting that file',
+      C.block_reason('x', 'fix api/sd-data.js dispatch', 'cody',
+                     'rewrite the sd_crm branch in api/sd-data.js. '
+                     'api/sd-data.js is not touched by the hover half')
+      is not None)
+
+check('E3. UNBLOCKED is not BLOCKED. `blocked` was matched as a bare '
+      'substring, so fourth\'s "queue9 items 1,5,6 in api/sd-data.js, NOW '
+      'UNBLOCKED" -- a claim TAKING the file -- read as a disclosure of not '
+      'taking it. The marker is anchored on a word boundary now',
+      C.block_reason(
+          'x', 'FILES: api/sd-data.js -- LEG_RESOURCES session gate', 'fourth',
+          'queue9 items 1,5,6 in api/sd-data.js, NOW UNBLOCKED '
+          '(cc-queue11 explicitly leaves this file to fourth)') is not None)
+
+check('E4. ...and the boundary is on the FRONT ONLY, because a boundary on '
+      'both ends stops `not touch` matching NOT TOUCHING and breaks a wording '
+      'this list always covered',
+      'api/sd-data.js' in C.disclosed_files(
+          'tier cells; NOT TOUCHING api/sd-data.js'),
+      sorted(C.disclosed_files('tier cells; NOT TOUCHING api/sd-data.js')))
+
+for phrase in ('waiting for api/sd-data.js',
+               'blocked on api/sd-data.js',
+               'resume when api/sd-data.js frees',
+               'skip api/sd-data.js this round',
+               'api/sd-data.js belongs to hank'):
+    check('E5. blocker clause now clears: "%s"' % phrase,
+          C.block_reason('x', 'alf_mar identity fix in api/sd-data.js',
+                         'cody', 'tier cells; ' + phrase) is None,
+          C.block_reason('x', 'alf_mar identity fix in api/sd-data.js',
+                         'cody', 'tier cells; ' + phrase))
+
+# ── E6. THE RESIDUAL IS ASSERTED OPEN, NOT LEFT UNSAID ────────────────────
+# Two of the finding's eight wordings are NOT closed, and the arms say so, so
+# that closing them later turns an arm red rather than passing silently. The
+# reason is the CLAUSE SPLITTER, not the marker list: hank's real claim runs
+# "...is not held by another session FILES: api/sd-data.js ..." with no `. `,
+# `;` or ` -- ` between the disclaimer and the declared file list, so a marker
+# that fired there would exempt a file the session genuinely holds. Measured:
+# `holds` costs 61 real blocks, `is <session>'s` 50, `deferred` 73, `conflict
+# declared` 22, over all 532,512 cross-session pairs.
+for phrase in ("api/sd-data.js is hank's",
+               "api/sd-data.js is another session's",
+               'deferred, see refusals: api/sd-data.js'):
+    check('E6. RESIDUAL, still blocks on purpose: "%s"' % phrase,
+          C.block_reason('x', 'alf_mar identity fix in api/sd-data.js',
+                         'cody', 'tier cells; ' + phrase) is not None)
 
 print('\n%s -- %d passed, %d failed' % ('FAIL' if _fail else 'ALL ARMS PASS',
                                         _pass, _fail))

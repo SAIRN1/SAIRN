@@ -578,7 +578,70 @@ DISJOINT_MARKERS = (
     'deliberately excluded', 'do not edit', 'does not touch', 'is not mine',
     'only read', 'read only', 'read-only', 'not landed by me', 'left alone',
     'not in this claim', 'not being done by me', 'blocked', 'is held by',
+    # ── THE WORDINGS THE 2026-09-29 FINDING NAMED AND THIS LIST DID NOT ────
+    # docs/2026-09-29-claim-matcher-prose-collisions.md listed eight blocker
+    # clauses. Two were already covered ('blocked on X' by `blocked`, 'NOT
+    # TOUCHING X' by `not touch`) and the rest were not, so three of the eight
+    # still produced a false hard block at HEAD on 2026-10-05 -- reproduced
+    # before changing anything, by calling block_reason() directly with the
+    # document's own strings:
+    #
+    #     waiting for api/sd-data.js          -> same file or resource: api/sd-data.js
+    #     resume when api/sd-data.js frees     -> same file or resource: api/sd-data.js
+    #     skip api/sd-data.js this round       -> same file or resource: api/sd-data.js
+    #
+    # EACH ONE COSTS ZERO BLOCKS, MEASURED INDIVIDUALLY over all 532,512
+    # cross-session pairs in the 1,178-claim record: BLOCK->CLEAR 0 for every
+    # marker below, alone and together. That is the only reason they are here --
+    # this file's rule is that a widening must be measured, not argued.
+    'waiting for', 'waiting on', 'frees', 'skip', 'belongs to',
+    'not taking', 'not claimed',
 )
+# ── THREE CANDIDATE MARKERS WERE MEASURED AND REJECTED, SAME RUN ───────────
+# Kept as a record so the next session does not re-propose them:
+#
+#     'deferred'          BLOCK->CLEAR  73
+#     'holds'             BLOCK->CLEAR  61
+#     'conflict declared' BLOCK->CLEAR  22
+#     "is <session>'s"    BLOCK->CLEAR  50
+#
+# READING THEM IS WHAT KILLS THEM, not the size. `holds` loses to one line of
+# ordinary English -- fourth's *"a soft-deleted record ... never reaches a
+# device that already HOLDS it FILES: api/sd-data.js"* -- where the word is
+# about a DEVICE, and exempting the busiest file on the platform on the
+# strength of it is exactly the loosening the finding's own doc forbids.
+#
+# SO `X is hank's` AND `X is another session's` ARE STILL OPEN. Both are in the
+# finding's list of eight and neither is closed here. The reason is the CLAUSE
+# SPLITTER, not the marker: hank's real claim runs
+# *"...is not held by another session FILES: api/sd-data.js ..."* with no `. `,
+# `;` or ` -- ` between the marker and the declared file list, so the path it
+# genuinely TAKES sits inside the same clause as the disclaimer. A marker that
+# fires there exempts a file the session is holding. The fix is a better clause
+# boundary, which is a separate change with its own measurement.
+#
+# ── A MARKER IS A WORD, NOT A SUBSTRING (2026-10-05) ───────────────────────
+# `'blocked' in clause` matched inside **UNBLOCKED**, which is the opposite
+# meaning, and that single substring produced false CLEARs on `api/sd-data.js`:
+#
+#     fourth "queue9 items 1,5,6 in api/sd-data.js, NOW UNBLOCKED (cc-queue11
+#             explicitly leaves this file to fourth) ..."
+#
+# -- a claim TAKING the file -- read as a disclosure of not taking it, so the
+# matcher answered CLEAR against cc's concurrent `FILES: api/sd-data.js`.
+# Front-boundary matching adds no loosening anywhere on the corpus.
+#
+# THE BOUNDARY IS ON THE FRONT ONLY, AND THAT IS NOT TIDINESS EITHER. A
+# boundary on BOTH ends was written first and it broke a wording this list had
+# always covered: `\bnot touch\b` does not match **NOT TOUCHING**, because the
+# `\b` after `touch` demands a non-word character and `ing` is not one. One of
+# the eight wordings in the finding went from covered to blocked, caught by
+# running the eight before committing rather than after. Only the FRONT
+# boundary carries the signal here -- `unblocked` fails on the `n` in front of
+# `blocked`, and inflections on the end (`touching`, `touched`, `skipped`) are
+# the same disclosure and must keep matching.
+_DISJOINT_RE = re.compile(
+    '|'.join(r'\b' + re.escape(m) for m in DISJOINT_MARKERS))
 # A BARE `.` CANNOT BE THE SPLIT, and the first run of this is why: every path
 # this rule exists to find contains one, so `api/sd-data.js is NOT taken` was
 # cut into three clauses and the marker never sat beside the path. The sentence
@@ -587,15 +650,50 @@ _CLAUSE_SPLIT = re.compile(r'\.\s+|;|\s--\s|\n')
 
 
 def disclosed_files(task):
-    """Paths a claim names in order to say it is NOT taking them."""
-    out = set()
+    """Paths a claim names ONLY in order to say it is NOT taking them.
+
+    ── ONLY-INSIDE, AND THE WORD `ONLY` IS THE WHOLE CHANGE (2026-10-05) ────
+    The 2026-09-29 finding stated the test it needed: *"a token that occurs
+    ONLY inside a blocker clause contributes no identifier and no bigram. A
+    claim that both holds and waits on the same file must still block, because
+    the token also occurs outside one."* The implementation that landed that
+    day took the first half and not the second -- ANY blocker clause naming a
+    path exempted that path from the whole claim -- so a claim that TAKES a
+    file in one clause and mentions it in a disclaimer in another had it
+    exempted outright, and the matcher answered CLEAR to every other session.
+    Reproduced before changing anything:
+
+        "rewrite the sd_crm branch in api/sd-data.js. api/sd-data.js is not
+         touched by the hover half"   vs   "fix api/sd-data.js dispatch"
+        -> block_reason() returned None
+
+    MEASURED over all 532,512 cross-session pairs in the 1,178-claim record,
+    as the rule actually ships -- front-boundary matching plus the seven new
+    markers: **BLOCK->CLEAR 0, CLEAR->BLOCK 54, over 10,991 pairs whose
+    disclosure set moved at all.** A pure tightening: it takes nothing away
+    and restores 54 blocks the disclosure rule had been giving away, on
+    `api/sd-data.js`, `docs/tier-a-reviews.json` and
+    `tools/report_only_checks.py` -- the three busiest shared files here.
+
+    THE FIGURE IS 54 AND AN EARLIER DRAFT OF THIS COMMENT SAID 102. 102 is the
+    BOTH-ENDS boundary variant, which is a different rule and a rejected one:
+    it also stopped `not touch` matching NOT TOUCHING, so it broke one of the
+    eight wordings while scoring better on this number. Quoting the stronger
+    figure for the weaker rule is the mistake; the number below the code is the
+    number the code produces.
+
+    THE SPLIT IS PER CLAUSE AND THE VERDICT IS PER CLAIM. A path is collected
+    into `inside` or `outside` clause by clause and the answer is the set
+    difference, so one honest mention outside a disclaimer is enough to keep
+    the file claimed -- which is the direction that cannot cost anybody work
+    they are entitled to be warned about.
+    """
+    inside, outside = set(), set()
     for clause in _CLAUSE_SPLIT.split(task or ''):
-        low = clause.lower()
-        if not any(m in low for m in DISJOINT_MARKERS):
-            continue
+        bucket = inside if _DISJOINT_RE.search(clause.lower()) else outside
         for f in FILE_TOKEN.findall(clause):
-            out.add(f.replace('\\\\', '/'))
-    return out
+            bucket.add(f.replace('\\\\', '/'))
+    return inside - outside
 
 
 # ── COMMON VOCABULARY IS MEASURED, NOT LISTED (2026-09-29) ─────────────────
