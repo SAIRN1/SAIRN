@@ -277,8 +277,26 @@ def normalise(out, path):
     the exit code all survive -- those are the answer.
     """
     out = out.replace(path, '<TARGET>').replace(path.replace(os.sep, '/'), '<TARGET>')
+    # ── THE DIRECTORY SUBSTITUTION WAS A BARE SUBSTRING REPLACE (2026-10-05)
+    # FOUND BY THE RULE FIXTURES ADDED THE SAME DAY, which is the point of
+    # adding them. `os.path.dirname('x/y.py')` is `'x'`, and
+    # `out.replace('x', '<DIR>')` then rewrote EVERY LETTER x in the report:
+    # "offending text" came back as "offending te<DIR>t".
+    #
+    # IT HAS NEVER BITTEN ON REAL DATA and that is why it survived: every real
+    # call passes an absolute temp path, so the dirname is long and collides
+    # with nothing. It is the SAME CLASS as the basename defect this function's
+    # own docstring records -- rewriting text that merely CONTAINS the token
+    # (PR 1.2) -- and the basename was fixed structurally while this one was
+    # left as a substring replace.
+    #
+    # THE GUARD IS THAT A DIRECTORY MUST LOOK LIKE A PATH. A dirname with no
+    # separator in it is not a directory this harness ever produces; it is a
+    # degenerate relative fragment, and substituting it can only damage prose.
+    # Narrower than a length threshold and it says what it means.
     d = os.path.dirname(path)
-    out = out.replace(d, '<DIR>').replace(d.replace(os.sep, '/'), '<DIR>')
+    if d and (os.sep in d or '/' in d):
+        out = out.replace(d, '<DIR>').replace(d.replace(os.sep, '/'), '<DIR>')
     out = _LINE_NO.sub('line <N>', out)
     out = _LEAD_NO.sub('<N>:', out)
     out = _LINES_LIST.sub('lines <L>', out)
@@ -430,9 +448,133 @@ def blind_lock():
                            'HOLDS' if want_hold else 'VIOLATED',
                            'HOLDS' if holds else 'VIOLATED',
                            (' (%s)' % why) if why else ''))
+        # ── THE SIX RULES THIS LOCK DID NOT REACH (2026-10-05) ─────────────
+        # tools/dead_rule_sweep.py reported six of this file's module-level
+        # rules DEAD TO ITS OWN EVIDENCE on 2026-09-29 and again on 2026-10-05,
+        # and it was right. The lock above is one of the better fixture locks in
+        # the repo -- two hand-built checkers, one sensitive and one robust, run
+        # before any real data and refusing the measurement when unlocked -- and
+        # it exercises the RELATIONS. It never touched normalise(), w_case() or
+        # the comment rewriter, so the rules that make those three correct could
+        # be deleted and every arm above would stay green.
+        #
+        # A STRONG LOCK OVER ONE HALF OF A TOOL SAYS NOTHING ABOUT THE OTHER
+        # HALF, and that is the whole lesson. Every rule below gets a verdict:
+        # all six are LOAD-BEARING, so all six get a fixture rather than a
+        # named limit. The reasoning per rule is in its own arm.
+        for name, got, want, why in _rule_fixtures():
+            ok = got == want
+            if not ok:
+                problems.append('%s: wanted %r, got %r (%s)'
+                                % (name, want, got, why))
+            rows.append({'fixture': 'rule', 'relation': name,
+                         'holds': ok, 'why': '' if ok else why})
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     return not problems, rows, problems
+
+
+def _rule_fixtures():
+    """[(rule, got, want, why)] -- one pair per module-level rule, both ways.
+
+    EVERY ONE IS A LOAD-BEARING RULE AND NONE IS RETIRED, and that verdict was
+    reached per rule rather than as a batch:
+
+    _LINE_NO, _LEAD_NO, _LINES_LIST, _BYTES all feed normalise(), which strips
+    the metadata a transform is ALLOWED to move. Delete any one and the
+    `blank_lines` transform -- which shifts every position in the file by
+    construction -- makes a checker report the identical finding one line down,
+    and this harness calls that VIOLATING IDENTITY. That is a nondeterminism
+    verdict, the most serious thing it can say, and it would be false. So the
+    cost of each being dead is a FALSE ACCUSATION against a correct checker,
+    which is why none of them is a candidate for a named limit.
+
+    _ENTITY_TOKEN keeps w_case() from shouting an HTML entity into nonsense.
+    `&AMP;` is not `&amp;`, so upper-casing one changes MEANING and the
+    transform stops being meaning-preserving -- the file's own comment records
+    that as the worst kind of finding a report-only tool can produce.
+
+    _FULL_LINE_COMMENT is the anchor that keeps the comment rewriter off CODE.
+    Its own docstring says it: "What this must never do is touch CODE, and
+    anchoring on `#` as the first non-space character is what guarantees that."
+    A dead anchor there rewrites source.
+
+    THE NEGATIVE HALF OF EACH PAIR IS THE POINT. "It normalises a line number"
+    is satisfied by a rule that rewrites every digit in the file; the second arm
+    is what keeps the finding TEXT, the finding COUNTS and the exit code -- the
+    answer -- surviving.
+    """
+    P = os.path.join('x', 'y.py')
+    out = []
+
+    # _LINE_NO -- `line 42` is metadata; a bare number in prose is not.
+    out.append(('_LINE_NO', normalise('found at line 42 of the file', P),
+                'found at line <N> of the file',
+                'a line number must normalise'))
+    out.append(('_LINE_NO/negative',
+                normalise('42 arms passed and 3 failed', P),
+                '42 arms passed and 3 failed',
+                'COUNTS MUST SURVIVE -- they are the answer, not metadata'))
+
+    # _LEAD_NO -- a leading `12:` is a position prefix.
+    # THE EXPECTATION HERE WAS WRITTEN BACKWARDS AND WAS CORRECTED TO WHAT THE
+    # RULE CORRECTLY DOES, which is discipline 1's FIRST kind of correction and
+    # is recorded rather than quietly amended. I expected `  <N>:` with the
+    # indent preserved; `^\s*\d+:` absorbs the leading whitespace by design, and
+    # that is right -- the indentation of a position prefix is metadata for the
+    # same reason the number is. The rule was correct and I was not.
+    out.append(('_LEAD_NO', normalise('  12: offending text', P),
+                '<N>: offending text',
+                'a leading position prefix must normalise, indent and all'))
+    out.append(('_LEAD_NO/negative', normalise('ratio 3:1 held', P),
+                'ratio 3:1 held',
+                'a colon mid-line is not a position prefix'))
+
+    # _LINES_LIST -- both spellings, because knowing only one is the defect
+    # this rule's own comment records.
+    out.append(('_LINES_LIST', normalise('at lines [12, 34] today', P),
+                'at lines <L> today', 'the `lines [..]` form must normalise'))
+    out.append(('_LINES_LIST/paren',
+                normalise('A line(s) [1802] moved', P),
+                'A lines <L> moved',
+                'the `line(s) [..]` form literal_drift_check uses must '
+                'normalise too -- knowing only the first form is the recorded '
+                'defect'))
+    out.append(('_LINES_LIST/negative',
+                normalise('the list [a, b] is unchanged', P),
+                'the list [a, b] is unchanged',
+                'a NON-numeric bracket list is not a position list'))
+
+    # _BYTES
+    out.append(('_BYTES', normalise('wrote 2048 bytes to disk', P),
+                'wrote <N> bytes to disk', 'a byte count must normalise'))
+    out.append(('_BYTES/negative', normalise('2048 rows were read', P),
+                '2048 rows were read',
+                'a count of ROWS is the answer and must survive'))
+
+    # _ENTITY_TOKEN -- through w_case(), which is the only consumer.
+    out.append(('_ENTITY_TOKEN', w_case('a &amp; b'), 'A &amp; B',
+                'an HTML entity must survive upper-casing -- &AMP; is not '
+                '&amp; and shouting it changes MEANING'))
+    out.append(('_ENTITY_TOKEN/negative', w_case('plain & text'),
+                'PLAIN & TEXT',
+                'a bare ampersand is NOT an entity and must be shouted with '
+                'the rest, or the rule is just "leave ampersands alone"'))
+
+    # _FULL_LINE_COMMENT -- through the rewriter, with a transform that marks.
+    mark = (lambda s: 'Z' + s)
+    out.append(('_FULL_LINE_COMMENT',
+                _r_comments('# a comment', mark), '# Za comment',
+                'a whole-line comment is rewritten'))
+    out.append(('_FULL_LINE_COMMENT/negative',
+                _r_comments('x = 1  # trailing', mark),
+                'x = 1  # trailing',
+                'CODE MUST NOT BE TOUCHED -- a trailing comment is on a code '
+                'line and the anchor is `#` as the first non-space character'))
+    out.append(('_FULL_LINE_COMMENT/empty',
+                _r_comments('#', mark), '#',
+                'an empty comment is left alone rather than given a body'))
+    return out
 
 
 # ── the real measurement ─────────────────────────────────────────────────────
