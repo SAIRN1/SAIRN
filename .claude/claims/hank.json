@@ -3520,6 +3520,23 @@
         "stonedesk.html",
         "tests/stonedesk_email_threat_rating.js"
       ]
+    },
+    {
+      "id": "hank-1791208539",
+      "session": "hank",
+      "subject": "platform",
+      "task": "drift checker ranking fix; push gate enforcing path collects all denials; sairncash usage cap finding; remaining repoint queue FILES: tools/sairn_push_gate_hook.py tools/citation_line_drift_check.py tests/run_citation_line_drift_probe.py sairncash.html docs/CRITICALITY-TIERS.md",
+      "claimed_at": "2026-10-05T13:55:39Z",
+      "claimed_at_epoch": 1791208539.0863662,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/CRITICALITY-TIERS.md",
+        "sairncash.html",
+        "tests/run_citation_line_drift_probe.py",
+        "tools/citation_line_drift_check.py",
+        "tools/sairn_push_gate_hook.py"
+      ]
     }
   ],
   "refusals": [
@@ -3713,6 +3730,21 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "same file or resource: mech_docs, msb_bottle_scans",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-05T13:55:09Z",
+      "my_subject": "platform",
+      "my_task": "apply row 82 retraction and row 845 closure; drift checker ranking fix; push gate enforcing path collects all denials; sairncash usage cap finding; remaining repoint queue FILES: docs/SAIRN-OPEN-WORK-INDEX.md tools/sairn_push_gate_hook.py tools/citation_line_drift_check.py sairncash.html docs/CRITICALITY-TIERS.md",
+      "other_session": "cc",
+      "other_subject": "cc",
+      "other_task": "seq 486 -- the cron-beat trailing-comment disjunct and the fail_open_scan marker-in-filename exemption, both of which I reported discharged and neither of which landed; plus the active-work empty header row and a wrong-subject reading check FILES: tools/cron_beat_refusal_check.py tools/fail_open_scan.py tests/run_fail_open_scan_probe.py SAIRN-ACTIVE-WORK-cc.md docs/SAIRN-OPEN-WORK-INDEX.md",
+      "other_claimed_at": "2026-10-05T13:54:45Z",
+      "shared_files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
