@@ -157,8 +157,21 @@ GIT_TIMEOUT_FETCH = 60
 GIT_TIMEOUT_LOCAL = 20
 
 _KNOWN_CLONES = (
-    'C:/Users/marsh/Documents/SAIRN-hover',
+    # H2's own clone first -- this is H2's private copy of this tool, reading
+    # H2's own self-log, and discover_repo() must default to auditing H2's own
+    # working tree. Found 2026-10-05 by this role's own self-audit, the same
+    # class of bug hover_coverage_ledger.py's _KNOWN_CLONES already fixed the
+    # same day, in a sibling file whose docstring says "Identical contract to
+    # hover_coverage_ledger.py's discover_repo()" -- and was identical in this
+    # one respect too. With H1's clone listed first, a bare
+    # `python sabotage_claim_verify.py` (no --repo) silently checked claimed
+    # commits against H1's clone's git state instead of this one. Both clones
+    # share one remote (SAIRN1/SAIRN) so most shas resolve identically either
+    # way -- but the day H1's clone is mid-fetch, on a different branch, or
+    # simply behind, this would silently verify a sabotage claim against the
+    # wrong repository's commit list with no error at all.
     'C:/Users/marsh/Documents/SAIRN-hover2',
+    'C:/Users/marsh/Documents/SAIRN-hover',
 )
 
 # Where this role's own self-log lives, relative to THIS file -- the same

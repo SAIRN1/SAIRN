@@ -50,8 +50,18 @@ GIT_TIMEOUT_FETCH = 60
 GIT_TIMEOUT_LOCAL = 20
 
 _KNOWN_CLONES = (
-    'C:/Users/marsh/Documents/SAIRN-hover',
+    # H2's own clone first -- this is H2's private copy of this tool, reading
+    # H2's own self-log, and discover_repo() must default to auditing H2's own
+    # working tree. Found 2026-10-05: with H1's clone listed first, a bare
+    # `python hover_coverage_ledger.py` (no --repo) silently scanned H1's
+    # clone's git history instead of this one. It produced the SAME numbers
+    # today only because both clones happened to be at identical commits for
+    # every review-shaped commit checked -- that is luck, not correctness, and
+    # the day H1's clone is mid-pull, on a different branch, or simply behind,
+    # this would silently report coverage against the wrong repository's
+    # commit list with no error at all.
     'C:/Users/marsh/Documents/SAIRN-hover2',
+    'C:/Users/marsh/Documents/SAIRN-hover',
 )
 
 SELF_LOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
