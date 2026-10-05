@@ -5462,11 +5462,27 @@ ones logged and left, per instruction.
 engineering work**, which is why those three apps have never competed with a red
 suite for attention and have therefore never won.
 
-### Reported, not fixed
+### Reported, not fixed — and both WERE measured; a backgrounded run finished after I had written them off
 
-`tests/run_report_only_checks_probe.py` arm E2 and `tools/sairn_seam_check.py`'s
-COULD-NOT-TELL count were **not re-measured** this session — the runs were cut
-short and they are named as unverified rather than carried forward as true.
+I recorded these as "not re-measured" because the foreground command timed out.
+**It had been moved to the background and completed.** Both numbers below are
+from that run, at HEAD, today:
+
+* `tests/run_report_only_checks_probe.py` — **arm E2 still FAIL**, *"every entry
+  records when and why it was promoted"*. 78 checks, 1 failed. Unchanged since
+  2026-09-28, same cause: `register_freshness_check.py`, `log_cluster.py`,
+  `allan_deviation_check.py` and `response_shape_check.py` carry no `evidence`
+  field, and writing evidence for four tools I did not promote would be inventing
+  a real-run record.
+* `tools/sairn_seam_check.py` — **96 clean, 0 not-forwarded, 19 COULD-NOT-TELL**,
+  and the tool prints *"COULD NOT TELL IS NOT A PASS"* itself. **That is 19, up
+  from the 18 recorded on 2026-09-28** — the count moved while nobody was
+  watching it, which is worth more than either value.
+
+**The lesson is about me, not the tools: a timeout is not a result.** "The run was
+cut short" is a third state, and I folded it into "unverified" when the run had in
+fact finished and the answer was on disk. That is the same `1.11` shape this file
+is full of, committed by the person writing it up.
 
 ### BLIND SPOTS: 4
 

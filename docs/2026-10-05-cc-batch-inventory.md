@@ -185,9 +185,28 @@ rather than left in the index:**
   unresolvable arms on 2026-09-28. Its own stated limit stands and it prints it:
   a unique anchor that drifted onto *different* code is still invisible to it.
 
-**BLIND SPOTS: 1.** "Nobody holds it" is read from a record that is only as fresh
-as the last push to it; a session working without claiming is invisible, and this
-report cannot distinguish that from an idle platform.
+**Two more measured at HEAD today, and recorded here because I had first written
+them off as unmeasured when the run had actually finished in the background:**
+
+* `tests/run_report_only_checks_probe.py` — **arm E2 still FAIL** (*"every entry
+  records when and why it was promoted"*), 78 checks, 1 failed. Same cause as
+  2026-09-28: four report-only tools carry no `evidence` field, and writing
+  evidence for tools I did not promote would be inventing a real-run record.
+* `tools/sairn_seam_check.py` — **96 clean, 0 not-forwarded, 19 COULD-NOT-TELL**,
+  and the tool says *"COULD NOT TELL IS NOT A PASS"* in its own output. **That is
+  19, up from 18 on 2026-09-28** — the count moved with nothing watching it,
+  which matters more than either number.
+
+**A TIMEOUT IS NOT A RESULT, and I treated it as one.** The foreground command hit
+its limit, was moved to the background, and completed; I had already written "not
+re-measured" on the strength of the timeout. That is the §1.11 shape — a third
+state folded into a verdict — committed inside the document reporting on it.
+
+**BLIND SPOTS: 2.** (1) "Nobody holds it" is read from a record that is only as
+fresh as the last push to it; a session working without claiming is invisible, and
+this report cannot distinguish that from an idle platform. (2) The tombstones
+paired-negative FLOOR was not re-measured at all — no run was started for it, so
+unlike the two above it is genuinely unknown rather than belatedly known.
 
 ---
 
