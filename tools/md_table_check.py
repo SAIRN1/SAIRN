@@ -94,6 +94,15 @@ DEFAULT_FILES = [
     # NAMED LIST and not a glob, for the reason stated above the list.
     'docs/CRITICALITY-TIERS.md',
     'docs/traceability-matrix.md',
+    # ── ADDED 2026-10-05, LATER THE SAME DAY, AND THE OMISSION BELOW IS NOW
+    # ── CLOSED RATHER THAN RE-ARGUED ─────────────────────────────────────────
+    # It was left out hours earlier because it carried 11 genuinely malformed
+    # rows and is GENERATED, so adding it would have parked this tool in a
+    # state no document edit could clear. tools/tooling_inventory.py's cell
+    # emitter is now fixed -- all three free-text sources route through
+    # table_safe(), and the generator REFUSES TO WRITE a malformed table at
+    # all -- so the file is clean (401/401, 0 malformed) and arrives green.
+    'docs/TOOLING-INVENTORY.md',
 ]
 
 # NOT ADDED, AND NAMED SO THE OMISSION IS A DECISION RATHER THAN AN OVERSIGHT.
@@ -106,11 +115,13 @@ DEFAULT_FILES = [
 # permanently in a reporting state nobody can clear from the document itself,
 # which is how a report-only check becomes noise. Recorded as an open-work row
 # instead, with the eleven line numbers.
-KNOWN_UNADDED = {
-    'docs/TOOLING-INVENTORY.md':
-        'generated; 11 rows malformed by pipes inside code spans in PURPOSES '
-        'text. Fix belongs in tools/tooling_inventory.py, not in the document.',
-}
+# Empty, and that is a RESULT rather than a default. Its one entry --
+# docs/TOOLING-INVENTORY.md, 11 rows malformed by pipes inside code spans --
+# was resolved the same day by fixing the generator rather than the rows, so
+# the file moved into DEFAULT_FILES above. Kept as a named constant because the
+# next deliberate omission should be recorded here rather than argued in a
+# commit message, and because the probe asserts on it.
+KNOWN_UNADDED = {}
 
 # A pipe not preceded by a backslash. Markdown treats `\|` as literal content.
 UNESCAPED = re.compile(r'(?<!\\)\|')
