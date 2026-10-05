@@ -5243,6 +5243,47 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-05T15:12:34Z",
+      "opened_at_sha": "406a387e3305da1f2e232b84b7c7e99bfb93b143",
+      "resources": [
+        "dnt_gfe",
+        "dnt_recall_outreach",
+        "dnt_txplans",
+        "grd_cart_orders",
+        "grd_rounds",
+        "mech_credentials",
+        "rf_bonding",
+        "rf_entities",
+        "rf_job_hazard_assessments",
+        "rf_job_warranties",
+        "rf_prequal_documents",
+        "rf_safety_equipment",
+        "rf_supplier_documents",
+        "rf_warranty_tiers",
+        "sd_approvals",
+        "sen_authorizations",
+        "sen_branches",
+        "sen_franchise_agreements",
+        "sen_payer_contracts",
+        "sen_referrals",
+        "sen_training_records",
+        "sen_training_rules"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tools/gate1_verify.py"
+      ],
+      "what": "THE GATE-1 RUNBOOK VERIFIER AND ITS CONFIRM SQL. TWENTY-ONE RESOURCE NAMES ON CHANGED LINES, ALL OF THEM IN A LOOKUP TABLE, AND NOT ONE QUERY TOUCHES A RESOURCE.\n\nWHAT CHANGED: tools/gate1_verify.py (NEW, report-only, every request\naction:'read'), sql/zz_confirm_2026-10-05_missing_tables.sql (NEW, read-only,\ninformation_schema and pg_tables SELECTs only), the runbook document, one\nPURPOSES entry and the three generated documents.\n\nWHY THE RESOURCE NAMES ARE THERE. TARGETS is a hand-written map of\ntable -> resource for the 26 tables Michael's 20 unrun migrations create. It\nexists because THE RESOURCE IS NOT THE TABLE: `sd_locations` is reached as\n`locations`, `sd_supplier_lead_times` as `supplier_lead_times`, and asking for a\ntable name that is not a resource gets a 400 that reads like a finding and is\nnot one. The map is written out per table rather than derived by stripping a\nprefix, because a stripped prefix is a guess and this file is read by somebody\nchecking whether a migration worked.\n\nSO NOTHING HERE SERVES ANY OF THE 21. The tool READS each of them once through\nthe real dispatcher and reports PRESENT / MISSING / REFUSED / UNREADABLE. It\nwrites nothing, has no write path, and the SQL file creates nothing.\n\nWHAT TO ATTACK, hardest first:\n\n(a) I HARD-WROTE A TABLE-TO-RESOURCE MAP AND THREE ENTRIES ARE NOT THE\n    IDENTITY. locations, supplier_lead_times and sd_approvals are the ones to\n    check -- the first two I read out of api/sd-data.js's dispatch, the third I\n    assumed is its own name. IF ANY MAPPING IS WRONG THE TOOL WILL REPORT A\n    TABLE AS REFUSED OR MISSING WHEN IT IS FINE, and after Michael runs 20 files\n    that is the worst possible direction to be wrong in: it invites a re-run.\n    The other 23 I took as identity mappings without checking each one.\n\n(b) THE PRE-RUN BASELINE IS A MEASUREMENT I CANNOT RE-TAKE. PRESENT 0 /\n    MISSING 26 was driven today, before any paste. Once Michael runs the files\n    that baseline is unreproducible, so if it was wrong nobody will ever know.\n    The one cross-check available is that the independent signed-in sweep on\n    2026-10-05 found the same 26 by a different route (per-schema-file rather\n    than per-table), and both agree.\n\n(c) FOUR VERDICTS, AND I DECIDED WHICH ARE ANSWERS. PRESENT and MISSING are\n    answers; REFUSED and UNREADABLE are not folded into MISSING. That is PR 1.11\n    applied, and it is also a judgement: a reviewer could argue a REFUSED on a\n    table that is supposed to be ungated IS a finding and should not be a\n    shrug. I chose the direction that cannot send somebody to re-run a\n    migration that is already there.\n\n(d) THE CONFIRM SQL'S SECTION 10 ASSERTS RLS IS ON AND DOES NOT REQUIRE A\n    POLICY, on the measurement that 91 tables in sql/ use the no-policy form and\n    81 are confirmed live. That measurement is mine and it is the reason two\n    files are not flagged. If the no-policy form is in fact wrong for an\n    append-only table, section 10 is now the thing that will not tell anybody.\n\n(e) EXPECTED_TOTAL IS 26 AND THE FIXTURE DERIVES IT FROM THE MAP, so the two\n    cannot drift -- but both come from the same sweep that was reading 113 of\n    147 schema files until today. If a 27th missing table exists, this tool is\n    built not to look for it.\n\n(f) I STAGED A NEW tools/*.py AND THE INVENTORY GENERATOR REFUSED UNTIL IT WAS\n    STAGED, which is correct and worth knowing: the PURPOSES entry and the\n    regenerated TOOLING-INVENTORY.md in this push were produced in that order,\n    so the entry describes a file that was already on disk rather than one\n    somebody intended to add.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-10-05T15:12:34Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
