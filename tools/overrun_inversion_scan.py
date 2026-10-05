@@ -194,6 +194,30 @@ def selftest():
     arm('an unrelated Math.min is not reported',
         hits('var lo = Math.min(a, b);') == [])
 
+    # ── THE BAR ARM ABOVE DOES NOT ACTUALLY TEST DISPLAYISH (2026-10-05) ───
+    # dead_rule_sweep reported DISPLAYISH DEAD and the reason is worth more
+    # than the fix: `done/total*100` matches NEITHER ESTIMATE NOR PROGRESSY, so
+    # with DISPLAYISH neutralised that string falls through rank()'s final
+    # `return 'LOW'` and the arm gets the same answer BY A DIFFERENT ROUTE. A
+    # verdict two routes agree on is one route's worth of evidence, and the
+    # route being tested is the one that is not there.
+    #
+    # This arm uses a source that would rank MEDIUM without DISPLAYISH --
+    # `costToDate/estTotal` is an estimate denominator -- so the demotion is
+    # the rule's and nothing else's. Measured: LOW with the rule, MEDIUM
+    # without it.
+    disp = 'el.style.width = Math.min(1, costToDate/estTotal)*100 + "px";'
+    arm('DISPLAYISH demotes a cap that would otherwise rank MEDIUM -- an '
+        'estimate denominator written into a style width is a PICTURE, and '
+        'nothing is derived from a picture',
+        hits(disp) and hits(disp)[0][1] == 'LOW', hits(disp))
+    arm('...and the SAME expression outside a display context is NOT demoted, '
+        'so the arm above is not satisfied by a rule that demotes everything',
+        rank('Math.min(1, costToDate/estTotal)',
+             'var pct = Math.min(1, costToDate/estTotal);') != 'LOW',
+        rank('Math.min(1, costToDate/estTotal)',
+             'var pct = Math.min(1, costToDate/estTotal);'))
+
     # ── THE CONTROL. Without it every arm above is satisfied by a scanner
     # that reports everything, or by one that reports nothing.
     arm('CONTROL -- the scanner DISCRIMINATES rather than answering one way',

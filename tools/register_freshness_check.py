@@ -413,8 +413,70 @@ def fixtures():
             orphan = check_cell('fx', 'a bare short cite (`:12`) first', pc, {})
             ck('a short cite with NO preceding file is UNVERIFIABLE',
                orphan and orphan[0][0] == 'UNVERIFIABLE', orphan)
+            # ── FIVE RULES NO ARM ABOVE TOUCHED (2026-10-05) ───────────────
+            # dead_rule_sweep reported BARE_PATH, SHA, CELL_FILE, CELL_CALL and
+            # CELL_CAMEL DEAD TO THIS TOOL'S OWN EVIDENCE. The cause is scope,
+            # not weakness: every arm above drives the LINE-CITATION half of
+            # check_cell, and these five live in the other three halves --
+            # BARE_PATH in check_cell's does-this-path-exist tail,
+            # CELL_FILE/CELL_CALL/CELL_CAMEL in check_dead_functions(), which
+            # no arm called at all, and SHA in the review-ledger loop.
+            io.open(os.path.join(d, 'tools_real.py'), 'w',
+                    encoding='utf-8').write('# a real file\n')
+            os.mkdir(os.path.join(d, 'tools'))
+            io.open(os.path.join(d, 'tools', 'real.py'), 'w',
+                    encoding='utf-8').write('# a real file\n')
+
+            bp = check_cell('fx', 'see `tools/ghost_tool_xyz.py` for this',
+                            {}, {})
+            ck('BARE_PATH: a backticked repo path that DOES NOT EXIST is '
+               'DRIFTED',
+               bp and any(s == 'DRIFTED' and 'tools/ghost_tool_xyz.py' in m
+                          for s, m in bp), bp)
+            bp2 = check_cell('fx', 'see `tools/real.py` for this', {}, {})
+            ck('BARE_PATH: ...and one that DOES exist raises nothing, so the '
+               'arm above is not satisfied by flagging every path',
+               not any('does not exist' in m for _s, m in bp2), bp2)
+
+            df = check_dead_functions(
+                'fx', 'the gate `vanishedFn()` in `app.js:20`', {}, set())
+            ck('CELL_FILE + CELL_CALL: a cited `fn()` that exists in NONE of '
+               'the files the cell cites is a RENAME, not a line drift',
+               df and df[0][0] == 'DRIFTED' and 'vanishedFn' in df[0][1], df)
+            df2 = check_dead_functions(
+                'fx', 'the gate `realThing()` in `app.js:20`', {}, set())
+            ck('CELL_FILE + CELL_CALL: ...and a function that IS there raises '
+               'nothing', df2 == [], df2)
+            df3 = check_dead_functions(
+                'fx', '`app.js` stores it in `vanishedField`', {}, set())
+            ck('CELL_CAMEL: a backticked camelCase IDENTIFIER with no parens '
+               'is checked too -- a renamed FIELD is the same defect as a '
+               'renamed function',
+               df3 and df3[0][0] == 'DRIFTED' and 'vanishedField' in df3[0][1],
+               df3)
+            df4 = check_dead_functions(
+                'fx', '`app.js` and `app.js:20` with no identifier at all',
+                {}, set())
+            ck('CELL_CAMEL + CELL_CALL: ...and a cell naming NO identifier '
+               'raises nothing rather than flagging the filename',
+               df4 == [], df4)
         finally:
             REPO = real
+
+        # SHA IS DRIVEN AGAINST THE PATTERN RATHER THAN THROUGH ITS CONSUMER,
+        # AND THAT IS A WEAKER ARM -- SAID RATHER THAN HIDDEN. Its only caller
+        # is the review-ledger loop in main(), which needs a real ledger and a
+        # real git repository; factoring that loop out is a bigger change than
+        # this lock. What these two arms DO establish is the thing the sweep
+        # asks: the rule is not a pattern that can never match, and its
+        # boundaries are the documented ones in both directions.
+        ck('SHA: an 8-to-12 character hex token is a candidate sha',
+           SHA.findall('fixed in a2dfe670 today') == ['a2dfe670'],
+           SHA.findall('fixed in a2dfe670 today'))
+        ck('SHA: ...and a 7-character one is NOT, so the lower bound is real',
+           SHA.findall('fixed in a2dfe67 today') == [],
+           SHA.findall('fixed in a2dfe67 today'))
+
         ck('NEGATIVE CONTROL: the comparator can tell 8 lines from 80 -- the '
            'window is +/-%d, not the whole file' % IDENT_WINDOW,
            IDENT_WINDOW < 20)

@@ -288,11 +288,68 @@ declare v bigint; begin
   return '{}'::jsonb;
 end; $$;
 """, 'UNGUARDED'),
+    # ── TWO FIXTURES THAT SEPARATE READ_RE FROM AGG_RE (2026-10-05) ────────
+    # dead_rule_sweep reported READ_RE and AGG_RE DEAD, and the cause was
+    # REDUNDANCY rather than a weak fixture: every vulnerable fixture above
+    # says `select count(*) into v`, which matches BOTH rules, so neutralising
+    # either one left the other matching and the verdict unchanged. Two rules
+    # covering one fixture is one rule's worth of evidence.
+    #
+    # So each of these exercises exactly ONE. Neutralise READ_RE and the first
+    # becomes NO_RMW; neutralise AGG_RE and the second does.
+    ('READ_RE only -- a plain select INTO, no aggregate', """
+create or replace function public.f_plain_into(p int) returns void language plpgsql as $$
+declare v integer; begin
+  perform pg_advisory_xact_lock(hashtext('k'));
+  select a into v from public.t where id = 1;
+  insert into public.t (a) values (v + 1);
+end; $$;
+""", 'UNGUARDED'),
+    ('AGG_RE only -- an aggregate with no INTO', """
+create or replace function public.f_agg_no_into(p int) returns void language plpgsql as $$
+declare v bigint; begin
+  perform pg_advisory_xact_lock(hashtext('k'));
+  v := (select count(*) from public.t);
+  insert into public.t (a) values (v);
+end; $$;
+""", 'UNGUARDED'),
+]
+
+# ── THE DROP CROSS-REFERENCE HAD NO FIXTURE EITHER (2026-10-05) ────────────
+# DROP_RE's only consumer is scan(), which walks the real sql/ directory, so
+# the rule was reachable only by running the tool against the repo -- and the
+# sweep calls that the weaker tier for a reason: a corpus changes when anybody
+# pushes, a fixture changes when somebody decides. The hazard it guards is not
+# about locking at all ("this function is not unique"), which is why it was
+# easy to leave uncovered.
+#
+# BOTH DIRECTIONS AND THE ARITY, because an arity miscount is how a drop stops
+# matching the definition it supersedes and the finding quietly disappears.
+DROP_FIXTURES = [
+    ('a drop with two arguments is name + arity 2',
+     'drop function if exists public.f_bad(int, text);',
+     [('f_bad', 2)]),
+    ('a drop with no arguments is arity 0, not 1',
+     'drop function public.f_zero();',
+     [('f_zero', 0)]),
+    ('a drop TABLE is not a drop FUNCTION -- without this the rule could be '
+     'as loose as `drop`',
+     'drop table if exists public.t;',
+     []),
 ]
 
 
 def self_check(verbose=True):
     bad = []
+    for label, src, want in DROP_FIXTURES:
+        got = [(m.group(1), arity(m.group(2)))
+               for m in DROP_RE.finditer(strip_sql_comments(src))]
+        if verbose:
+            print('    %-28s %-11s %s' % ('DROP_RE', str(got),
+                                           'ok' if got == want else
+                                           'EXPECTED ' + str(want)))
+        if got != want:
+            bad.append((label, str(got), str(want)))
     for label, src, want in FIXTURES:
         clean = strip_sql_comments(src)
         funcs = split_functions(clean)

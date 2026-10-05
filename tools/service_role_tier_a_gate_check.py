@@ -372,11 +372,49 @@ FIXTURES = [
 TIER_A = set()
 
 
+# ── TIER_A_ROW HAD NO FIXTURE BECAUSE self_check REPLACES ITS OUTPUT ───────
+# (2026-10-05.) self_check sets TIER_A to a hardcoded three-name set so the
+# fixtures do not depend on the live register -- which is right, and is exactly
+# why TIER_A_ROW was dead to this tool's own evidence: the one rule that turns
+# the register into that set is bypassed by the very isolation that makes the
+# other arms trustworthy.
+#
+# So the rule gets its own arms, over hand-built register rows rather than over
+# docs/CRITICALITY-TIERS.md. Both directions, because a rule that matched EVERY
+# row would satisfy the first arm alone and would hand this gate every Tier B
+# resource on the platform as if it were Tier A.
+TIER_A_ROW_FIXTURES = [
+    ('a Tier A row yields its resource name',
+     '| `sv_controlled` | **A** | **A** | a controlled-substance register |',
+     ['sv_controlled']),
+    ('a Tier B row yields NOTHING -- the A is what the rule is for',
+     '| `sd_jobs` | **B** | **B** | an operational job record |',
+     []),
+    ('the backtick and the leading pipe are both required, so prose naming a '
+     'resource and the letter A is not a row',
+     'the sv_controlled register is **A** on both axes',
+     []),
+    ('several rows in one document are all found',
+     '| `sv_controlled` | **A** | **A** | x |\n'
+     '| `sd_jobs` | **B** | **B** | y |\n'
+     '| `law_matters` | **A** | **B** | z |',
+     ['sv_controlled', 'law_matters']),
+]
+
+
 def self_check(verbose=True):
     global TIER_A
     saved = TIER_A
     TIER_A = {'sv_controlled', 'dnt_patients', 'invoices'}
     bad = []
+    for label, src, want in TIER_A_ROW_FIXTURES:
+        got = TIER_A_ROW.findall(src)
+        if verbose:
+            print('    %-46s -> %-17s %s'
+                  % ('TIER_A_ROW: ' + label[:34], str(got),
+                     'ok' if got == want else 'EXPECTED %s' % want))
+        if got != want:
+            bad.append((label, str(got), str(want)))
     try:
         for label, src, want in FIXTURES:
             got, _d = classify('fx.js', src)
