@@ -56,6 +56,7 @@ refusals BELOW it that reach a `return` with no `beat(` between.
 """
 import argparse
 import io
+import json
 import os
 import re
 import subprocess
@@ -385,7 +386,40 @@ def main(argv):
     ap.add_argument('--fixtures', action='store_true')
     ap.add_argument('--all', action='store_true')
     ap.add_argument('--quiet', action='store_true')
+    # PostToolUse/Write|Edit. Runs the CRITERIA LOCK only when the edit could
+    # have moved what it locks -- this checker itself, or a cron handler -- and
+    # is silent otherwise. Wired 2026-10-05 because the trailing-comment defect
+    # survived a report of its own fix for six days with nothing running the
+    # lock on a cadence.
+    ap.add_argument('--hook', action='store_true')
     a = ap.parse_args(argv)
+
+    if a.hook:
+        # NEVER blocks and says nothing unless the lock actually FAILS. Fails
+        # OPEN on an unreadable payload: a criteria lock must not be the thing
+        # that stops an edit.
+        try:
+            payload = json.load(sys.stdin)
+            fp = (payload.get('tool_input', {}) or {}).get('file_path', '') or ''
+        except Exception:                                     # noqa: BLE001
+            return 0
+        fp = fp.replace('\\', '/')
+        relevant = ('cron_beat_refusal_check.py' in fp
+                    or '/api/cron-' in fp or 'heartbeat.js' in fp
+                    or 'send-reminder' in fp)
+        if not relevant:
+            return 0
+        bad = run_fixtures(verbose=False)
+        if bad:
+            print(json.dumps({'hookSpecificOutput': {
+                'hookEventName': 'PostToolUse',
+                'additionalContext':
+                    'cron_beat_refusal_check CRITERIA LOCK FAILED after this '
+                    'edit -- %d of %d fixtures misclassify. The checker no '
+                    'longer classifies its own known cases, so any CLEAN it '
+                    'reports is unearned. First failure: %s'
+                    % (len(bad), len(FIXTURES), bad[0][:300])}}))
+        return 0
 
     if not a.quiet:
         print('CRON REFUSAL WITHOUT A HEARTBEAT -- criteria %s' % CRITERIA_VERSION)

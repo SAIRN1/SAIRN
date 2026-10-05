@@ -164,7 +164,74 @@ def selftest():
     return 0 if ok else 1
 
 
+# ── TOOLS WHOSE STATUS GETS QUOTED. The hook speaks only about these ────────
+# Wired 2026-10-05. A non-attributable status is only a HAZARD when somebody is
+# about to quote it as a fact about a checker -- `git log | head` does not
+# matter and warning about it would make the hook noise, which is how a
+# report-only check stops being read. So the hook fires only when the command
+# both (a) returns a status nobody can attribute AND (b) invokes something
+# under tools/ or tests/, which is where this platform's verdicts come from.
+#
+# NARROW ON PURPOSE AND IT MISSES THINGS. `git push` piped through a filter --
+# the second of the two real errors -- does NOT match this, because git is not
+# under tools/. That is the cost of not being noise, it is stated rather than
+# hidden, and the full check is still one command away for any pipeline.
+#
+# ── THIS LINE SHIPPED WITH A LITERAL BACKSPACE AND COULD NEVER MATCH ────
+# First written as '\b(tools|tests)/...\b' through a shell heredoc, which ate
+# one backslash. `\b` in a NON-RAW Python string is U+0008 BACKSPACE, not a
+# regex word boundary, so the compiled pattern began and ended with \x08 and
+# MATCHED NOTHING -- the hook was silent on every command including the one it
+# exists for, and silence from a report-only hook is indistinguishable from
+# "nothing to report".
+#
+# CLAUDE.md names this exact shape as one of its six paid-for lessons: "a
+# regex that shipped with a literal backspace and could never match". Found
+# here by printing repr(pattern) after the hook stayed quiet on a case I had
+# just proven should fire -- the same move as reading an exit code off the
+# program instead of off the pipeline, which is what this tool is about.
+#
+# The boundaries are DELETED rather than re-escaped: / and . already bound
+# this pattern, and a word boundary beside / was never doing anything.
+SUBJECT_DIRS = re.compile(r'(tools|tests)/[^\s|;&]+\.(py|js)')
+
+
+def hook():
+    """PreToolUse/Bash. NEVER blocks: prints a note or says nothing.
+
+    Fails open on anything it cannot read. A linter about misreading statuses
+    must not be the thing that stops a legitimate command.
+    """
+    import json
+    try:
+        payload = json.load(sys.stdin)
+        cmd = (payload.get('tool_input', {}) or {}).get('command', '') or ''
+    except Exception:                                             # noqa: BLE001
+        return 0
+    if not cmd.strip():
+        return 0
+    if not SUBJECT_DIRS.search(cmd):
+        return 0
+    att, owner, parts, note = analyse(cmd)
+    if att is not False:
+        return 0
+    subj = SUBJECT_DIRS.search(cmd).group(0)
+    print(json.dumps({'hookSpecificOutput': {
+        'hookEventName': 'PreToolUse',
+        'additionalContext':
+            'exit_status_attributable: this command runs `%s` but its exit '
+            'status will come from `%s` -- %s. Do NOT quote the status as a '
+            'fact about that tool; measure it alone:  <tool> > /tmp/out 2>&1  '
+            'then read $? on its own line. (Recorded because that misreading '
+            'put a false "EXITS 2 (COULD NOT RUN)" accusation against a '
+            'working checker into a standing document on 2026-10-04.)'
+            % (subj, owner, note)}}))
+    return 0
+
+
 def main(argv):
+    if '--hook' in argv:
+        return hook()
     if '--selftest' in argv:
         return selftest()
     if '--stdin' in argv:

@@ -51,6 +51,10 @@
             "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/index_duplicate_hook.py\"",
             "timeout": 90,
             "statusMessage": "Checking the open-work index for a duplicated row..."
+          },
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/cron_beat_refusal_check.py\" --hook"
           }
         ]
       },
@@ -110,6 +114,10 @@
             "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/sairn_push_gate_hook.py\"",
             "timeout": 150,
             "statusMessage": "Checking seed load state and credential guards..."
+          },
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/exit_status_attributable.py\" --hook"
           }
         ]
       },
