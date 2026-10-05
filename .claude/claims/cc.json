@@ -3316,8 +3316,8 @@
       "task": "my own four instrument failures -- md_table_check file list too narrow to see the file I broke, the FALSE exit-2 row I wrote against it, the case-insensitive-only mutation matcher, and the ad-hoc checker that replaced it; plus the sairnscape competitive-gap audit FILES: tools/md_table_check.py tests/run_md_table_check_probe.py tests/run_alf_scope_mutation_probe.py docs/SAIRN-OPEN-WORK-INDEX.md docs/cloud-research/sairnscape-competitive-gap-audit-2026-10-05.md SAIRN-ACTIVE-WORK-cc.md",
       "claimed_at": "2026-10-05T11:55:45Z",
       "claimed_at_epoch": 1791201345.053158,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-05T12:23:28Z",
       "files": [
         "SAIRN-ACTIVE-WORK-cc.md",
         "docs/SAIRN-OPEN-WORK-INDEX.md",
