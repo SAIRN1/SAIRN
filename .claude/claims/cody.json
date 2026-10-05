@@ -3177,8 +3177,8 @@
       "task": "two more of the narrower-than-the-corpus class: append_only_read_order_scan's grant pattern requires public. and misses 8, and two sweeps exit 0 over an empty corpus from any cwd FILES: tools/append_only_read_order_scan.py tools/sairn_dead_function_sweep.py tools/sairn_reachability_probe.py",
       "claimed_at": "2026-10-05T21:22:14Z",
       "claimed_at_epoch": 1791235334.5671172,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-05T21:32:06Z",
       "files": [
         "tools/append_only_read_order_scan.py",
         "tools/sairn_dead_function_sweep.py",
