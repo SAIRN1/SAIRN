@@ -55,6 +55,13 @@ CASES = [
 ]
 
 fails = 0
+# COUNTED, NEVER WRITTEN DOWN. The summary line used to read
+# `len(CASES) + 18` and said "25 cases" after eleven more arms had been
+# added -- a hardcoded check count that does not move when a check does, which
+# is the defect CLAUDE.md's push protocol names explicitly ("do not write the
+# number of checks anywhere"). check() now increments this, so the number is
+# derived from what actually ran.
+ran = 0
 tmp = tempfile.mkdtemp(prefix='mdtable-')
 
 
@@ -66,7 +73,8 @@ def write(name, text):
 
 
 def check(label, actual, expected):
-    global fails
+    global fails, ran
+    ran += 1
     if actual == expected:
         return True
     fails += 1
@@ -160,6 +168,45 @@ check('the live open-work index has nothing this checker cannot read',
 _checked, _looks = mt.coverage('docs/SAIRN-OPEN-WORK-INDEX.md')
 check('and every row in it is actually checked', _checked, _looks)
 
+# ── THE COVERAGE LOCK, added 2026-10-05 ───────────────────────────────────────
+# A checker that is CORRECT about the files it reads and blind to the file you
+# are editing is not a safe checker -- it is a confident one. On 2026-09-27 a
+# `|` inside a code span malformed two rows of the open-work index and the
+# lesson was written up the same day. On 2026-10-05 the same defect was
+# committed again, by the session that wrote the lesson, in
+# docs/CRITICALITY-TIERS.md -- and THIS TOOL DID NOT SEE IT, because that file
+# was not in DEFAULT_FILES. The lesson did not fail; the instrument did not
+# read the file.
+#
+# WORSE, AND THE REASON THIS IS A LOCK RATHER THAN A COMMENT: because the real
+# tool was blind to that file, the session hand-rolled a one-off checker, which
+# then FALSE-FLAGGED three header rows in an unrelated document. Narrow
+# coverage does not merely miss defects, it manufactures a worse instrument.
+#
+# So the membership is asserted, by name, and shrinking it fails this probe.
+for _f in ('docs/SAIRN-OPEN-WORK-INDEX.md', 'CLAUDE.md',
+           'docs/SAIRN-PROCESS-RULES.md', 'docs/CRITICALITY-TIERS.md',
+           'docs/traceability-matrix.md'):
+    check('DEFAULT_FILES still covers %s' % _f, _f in mt.DEFAULT_FILES, True)
+
+# And the two added files must arrive CLEAN -- a file added red turns this tool
+# into noise on every run, which is how a report-only check stops being read.
+for _f in ('docs/CRITICALITY-TIERS.md', 'docs/traceability-matrix.md'):
+    check('%s is clean, so it was not added red' % _f, len(mt.scan(_f)), 0)
+    _c, _l = mt.coverage(_f)
+    check('%s is fully READ, not partly' % _f, _c, _l)
+
+# THE OMISSION IS A DECISION AND IS NAMED AS ONE. docs/TOOLING-INVENTORY.md is
+# GENERATED and carries 11 genuinely malformed rows from pipes inside code
+# spans in PURPOSES text, so it cannot be repaired in the document and is
+# deliberately out of DEFAULT_FILES. This arm fails if somebody deletes the
+# record of that decision -- which is the only thing keeping it from reading as
+# an oversight.
+check('the deliberate omission is still recorded',
+      'docs/TOOLING-INVENTORY.md' in getattr(mt, 'KNOWN_UNADDED', {}), True)
+check('...and it is NOT silently in the default list',
+      'docs/TOOLING-INVENTORY.md' in mt.DEFAULT_FILES, False)
+
 print(('FAILED  ' if fails else 'ok  ') +
-      'md-table-check: %d cases, %d failed' % (len(CASES) + 18, fails))
+      'md-table-check: %d cases, %d failed' % (ran, fails))
 sys.exit(1 if fails else 0)

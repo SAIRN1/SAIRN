@@ -70,7 +70,47 @@ DEFAULT_FILES = [
     # -lesson table -- and both sit in files where prose pipes are common.
     'CLAUDE.md',
     'docs/SAIRN-PROCESS-RULES.md',
+    # ── ADDED 2026-10-05, AND THE REASON IS A DEFECT THIS LIST'S OWN NARROWNESS
+    # ── LET THROUGH ────────────────────────────────────────────────────────────
+    # On 2026-09-27 rows 355 and 356 of the open-work index were malformed by a
+    # `|` inside a CODE SPAN, where neither `\|` nor `&#124;` can work because a
+    # code span renders its contents literally. That was written up as a lesson
+    # the same day.
+    #
+    # On 2026-10-05 the SAME DEFECT was committed again, by the session that
+    # wrote the lesson, in `docs/CRITICALITY-TIERS.md` -- a cell went to 12
+    # cells against a 6-cell header. IT WAS NOT CAUGHT BY THIS TOOL, because
+    # this list did not contain that file; it was caught by a hand-rolled
+    # one-off script, which then false-flagged three HEADER rows in an unrelated
+    # document because it only updated its expected width on separator lines.
+    #
+    # SO THE LESSON DID NOT FAIL -- THE INSTRUMENT DID NOT READ THE FILE. A
+    # discipline written in prose cannot prevent what nothing measures, and the
+    # second-order cost is worse than the first: a session that finds this tool
+    # blind to its file hand-rolls a WORSE checker, and then trusts it.
+    #
+    # Both additions were measured before being added -- 434 and 516 rows, zero
+    # malformed, zero unreadable -- so neither arrives red. Deliberately still a
+    # NAMED LIST and not a glob, for the reason stated above the list.
+    'docs/CRITICALITY-TIERS.md',
+    'docs/traceability-matrix.md',
 ]
+
+# NOT ADDED, AND NAMED SO THE OMISSION IS A DECISION RATHER THAN AN OVERSIGHT.
+# `docs/TOOLING-INVENTORY.md` carries 400 rows and **11 GENUINELY MALFORMED
+# ROWS** at the time of writing, every one from a `|` inside a code span in a
+# tool's PURPOSES text (`+ (x || 0)`, `[ -f tools/x.py ] || exit 0`). It is a
+# GENERATED file, so the row cannot be repaired in place -- the fix belongs in
+# `tools/tooling_inventory.py`'s cell emitter, which is a different change with
+# a different owner. Adding the file here before that fix would put this tool
+# permanently in a reporting state nobody can clear from the document itself,
+# which is how a report-only check becomes noise. Recorded as an open-work row
+# instead, with the eleven line numbers.
+KNOWN_UNADDED = {
+    'docs/TOOLING-INVENTORY.md':
+        'generated; 11 rows malformed by pipes inside code spans in PURPOSES '
+        'text. Fix belongs in tools/tooling_inventory.py, not in the document.',
+}
 
 # A pipe not preceded by a backslash. Markdown treats `\|` as literal content.
 UNESCAPED = re.compile(r'(?<!\\)\|')

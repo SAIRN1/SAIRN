@@ -26,6 +26,16 @@ reported the opposite -- a probe whose matcher is narrower than its subject,
 which is the exact defect class this repo keeps paying for. Recorded here rather
 than silently fixed.
 
+AND CASE-INSENSITIVITY WAS ONLY THE INSTANCE. `dead_expectations()` closes the
+CLASS: every expectation is checked against the arm names that actually exist
+BEFORE any mutation runs, and one that matches nothing is a REFUSAL (exit 2)
+rather than a verdict. An arm can be reworded, split or deleted as easily as
+mis-cased, and each of those leaves a matcher that cannot match -- which is
+indistinguishable from a missing guard and fails toward the LOUDER answer, the
+direction that gets a real control deleted to make a probe green. Both
+directions are driven: a mis-cased expectation still matches, and an
+expectation naming an arm that does not exist refuses.
+
 api/sd-data.js IS RESTORED BYTE-FOR-BYTE after every mutation and the final
 state is checked against git rather than assumed.
 
@@ -105,21 +115,79 @@ def run(suite):
     out = (p.stdout or '') + (p.stderr or '')
     reds = [l.strip()[5:].strip() for l in out.split('\n')
             if l.strip().startswith('FAIL')]
+    # EVERY arm name, passing or failing. Needed by the dead-expectation guard
+    # below: an expectation can only be checked against the arms that exist.
+    names = [l.strip()[4:].strip() for l in out.split('\n')
+             if l.strip().startswith('PASS') or l.strip().startswith('ok ')]
+    names += reds
     summ = [l for l in out.split('\n') if 'passed,' in l]
-    return reds, (summ[-1].strip() if summ else '?')
+    return reds, (summ[-1].strip() if summ else '?'), names
+
+
+def dead_expectations(arm_names_by_suite):
+    """── THE FIX FOR THE DEFECT THIS FILE COMMITTED ON ITS FIRST RUN ────────
+
+    The first run of this harness scored M1 as SURVIVED. The arm HAD gone red;
+    the arm says CLIENT-SUPPLIED and the expectation said client-supplied, so a
+    case-sensitive compare reported the OPPOSITE of what happened.
+
+    MAKING THE MATCH CASE-INSENSITIVE FIXED THAT ONE INSTANCE AND NOT THE
+    CLASS. Case is only one of the ways an expectation stops matching: an arm
+    can be reworded, retitled, split in two, or deleted outright, and every one
+    of those leaves an expectation that matches nothing and a mutation that
+    scores SURVIVED for a reason that has nothing to do with the subject.
+
+    A matcher that cannot match is indistinguishable from a guard that is
+    missing -- and it fails toward the LOUDER verdict, which is the direction
+    that gets a real control deleted to make a probe green.
+
+    SO THE EXPECTATION IS CHECKED AGAINST THE ARMS THAT ACTUALLY EXIST, before
+    any mutation runs, and an unmatchable one is a REFUSAL rather than a
+    verdict. This is the same question `once()` asks of a sabotage anchor,
+    asked of the matcher instead of the subject.
+    """
+    dead = []
+    for label, suite, _old, _new, must in MUTATIONS:
+        pool = [n.lower() for n in arm_names_by_suite.get(suite, [])]
+        for m in must:
+            if not any(m.lower() in n for n in pool):
+                dead.append((label, suite, m))
+    return dead
 
 
 def main():
     print('tests/run_alf_scope_mutation_probe.py')
     print()
     print('BASELINE at HEAD -- a mutation run on a red tree measures nothing')
+    arm_names = {}
     for s in SUITES:
-        reds, summ = run(s)
-        print('  %-16s %s   reds=%d' % (s, summ, len(reds)))
+        reds, summ, names = run(s)
+        arm_names[s] = names
+        print('  %-16s %s   reds=%d  arms seen=%d'
+              % (s, summ, len(reds), len(names)))
         if reds:
             print('    REFUSING TO MUTATE: the baseline is not green, so no '
                   'verdict below could be attributed to a mutation.')
             return 2
+    print()
+
+    # ── DEAD-EXPECTATION GUARD. See dead_expectations() for why this is not
+    # ── tidying. An expectation that matches no arm is a matcher that cannot
+    # ── fail, and it reports SURVIVED about a subject it never looked at.
+    dead = dead_expectations(arm_names)
+    print('MATCHER SELF-CHECK -- can every expectation match a real arm?')
+    if dead:
+        print('  REFUSING: %d expectation(s) match NO arm in their suite. A '
+              'matcher that cannot match scores SURVIVED for a reason that has '
+              'nothing to do with the subject.' % len(dead))
+        for label, suite, m in dead:
+            print('    %s  [%s]  expected-red text never appears: %r'
+                  % (label, suite, m))
+        print('  Re-derive the expectation from the suite output -- never '
+              're-type it.')
+        return 2
+    print('  all %d expectation(s) across %d mutation(s) match a live arm'
+          % (sum(len(m[4]) for m in MUTATIONS), len(MUTATIONS)))
     print()
 
     bad = 0
@@ -139,7 +207,7 @@ def main():
             open(TARGET, 'w', encoding='utf-8', newline='').write(ORIG)
             bad += 1
             continue
-        reds, summ = run(suite)
+        reds, summ, _names = run(suite)
         open(TARGET, 'w', encoding='utf-8', newline='').write(ORIG)
 
         hit = [m for m in must if any(m.lower() in r.lower() for r in reds)]
