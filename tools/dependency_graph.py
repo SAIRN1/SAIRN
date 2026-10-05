@@ -352,6 +352,121 @@ def run_fixtures():
     if "require('./ghost')" in stripped or "require('./real')" not in stripped:
         bad.append(('a require() inside a comment is not an edge', 'strip',
                     'ghost gone, real kept', stripped))
+    bad.extend(_parse_fixtures())
+    return bad
+
+
+# ── THE PARSE RULES HAD NO FIXTURE AT ALL (2026-10-05) ─────────────────────
+# Every arm above drives the GRAPH ALGORITHMS over adjacency dicts somebody
+# typed, so the six rules that turn bytes into that adjacency -- REQ, ENV, and
+# the four register rules -- were invisible to this tool's own evidence.
+# dead_rule_sweep reported all six DEAD on 2026-09-29 and again today: replace
+# any one of them with a never-matching pattern and every fixture above stays
+# green, because none of them ever reads a line of source or a line of the SPOF
+# register.
+#
+# THAT IS SIX RULES, NOT ONE DEFECT, and they split into two groups that need
+# different fixtures:
+#
+#   REQ, ENV                 turn JS source into nodes and edges. Driven
+#                            through build(files=..., root=...) over real temp
+#                            files -- the regex is not tested against a string
+#                            of my own, it is tested by whether the graph comes
+#                            out right, which is the thing the tool claims.
+#   BASELINE_RE,             turn the SPOF register's prose into a frozen
+#   BASELINE_DATE_RE,        denominator, a date, and a review schedule. Driven
+#   SCHED_HEAD_RE,           through read_baseline / read_baseline_date /
+#   SCHED_DATE_RE            schedule_rows over hand-built register text.
+#
+# EVERY ARM IS WRITTEN SO THAT NEUTRALISING ONE RULE TURNS ONE ARM RED, and the
+# both-directions pairs are deliberate: without the "no env node when
+# include_env is False" arm, a tool that added an env node unconditionally
+# would satisfy the ENV arm; without the "a baseline sentence with NO date
+# yields None" arm, BASELINE_DATE_RE could be as loose as BASELINE_RE and pass.
+def _parse_fixtures():
+    import shutil
+    import tempfile
+    bad = []
+    d = tempfile.mkdtemp(prefix='depgraph-fixtures-')
+    try:
+        def w(rel, body):
+            p = os.path.join(d, rel)
+            io.open(p, 'w', encoding='utf-8').write(body)
+            return p
+
+        a = w('a.js', "const b = require('./b');\n"
+                      "const k = process.env.SD_AUTH_SECRET;\n")
+        b = w('b.js', "module.exports = {};\n")
+        g = w('g.js', "const m = require('./nowhere_at_all');\n")
+
+        nodes, edges, unres = build(include_env=False, files=[a, b], root=d)
+        if dict(edges) != {'a.js': {'b.js'}}:
+            bad.append(("REQ: a relative require() that RESOLVES is an edge",
+                        'REQ', {'a.js': {'b.js'}}, dict(edges)))
+
+        _, _, unres2 = build(include_env=False, files=[g], root=d)
+        if 'g.js -> ./nowhere_at_all' not in unres2:
+            bad.append(("REQ: a relative require() that does NOT resolve is "
+                        "reported UNRESOLVED, not dropped",
+                        'REQ', 'g.js -> ./nowhere_at_all', dict(unres2)))
+
+        nodes_e, edges_e, _ = build(include_env=True, files=[a, b], root=d)
+        if 'env:SD_AUTH_SECRET' not in nodes_e \
+                or 'env:SD_AUTH_SECRET' not in edges_e.get('a.js', set()):
+            bad.append(("ENV: process.env.X becomes an env: node AND an edge",
+                        'ENV', 'env:SD_AUTH_SECRET as node and edge',
+                        (sorted(nodes_e), dict(edges_e))))
+        if 'env:SD_AUTH_SECRET' in nodes:
+            bad.append(("ENV: ...and NOT when include_env is False, so the arm "
+                        "above cannot be satisfied by adding it always",
+                        'ENV', 'absent', sorted(nodes)))
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+
+    REG = ('# SPOF register\n\n'
+           'BASELINE: 11 components at or above threshold on 2026-09-16.\n\n'
+           '| Component | What retirement requires | Next review |\n'
+           '|---|---|---|\n'
+           '| `env:SD_AUTH_SECRET` | a second signer | 2026-10-20 |\n'
+           '| `env:SD_ENCRYPTION_KEY` | the key to be set | TBD |\n')
+    NO_DATE = 'BASELINE: 11 components at or above threshold.\n'
+
+    if read_baseline(REG) != 11:
+        bad.append(('BASELINE_RE: the frozen denominator is read out of the '
+                    'register sentence', 'BASELINE_RE', 11,
+                    read_baseline(REG)))
+    if read_baseline('nothing here names a baseline') is not None:
+        bad.append(('BASELINE_RE: and a register with NO baseline is None, '
+                    'which is the refusal this tool depends on',
+                    'BASELINE_RE', None,
+                    read_baseline('nothing here names a baseline')))
+    if read_baseline_date(REG) != '2026-09-16':
+        bad.append(('BASELINE_DATE_RE: the date comes out of the SAME sentence '
+                    'as the count, so the two cannot drift apart',
+                    'BASELINE_DATE_RE', '2026-09-16', read_baseline_date(REG)))
+    if read_baseline_date(NO_DATE) is not None:
+        bad.append(('BASELINE_DATE_RE: a baseline sentence with NO date is '
+                    'None -- without this arm the date rule could be as loose '
+                    'as the count rule and still pass',
+                    'BASELINE_DATE_RE', None, read_baseline_date(NO_DATE)))
+
+    rows = schedule_rows(REG)
+    if not rows or [r['components'] for r in rows] != \
+            [['env:SD_AUTH_SECRET'], ['env:SD_ENCRYPTION_KEY']]:
+        bad.append(('SCHED_HEAD_RE: the schedule is the table whose header '
+                    'names "Next review"', 'SCHED_HEAD_RE',
+                    "two rows, one component each", rows))
+    if schedule_rows(REG.replace('Next review', 'Something else')) is not None:
+        bad.append(('SCHED_HEAD_RE: ...and a table without that header is NOT '
+                    'the schedule', 'SCHED_HEAD_RE', None, 'a table'))
+    if rows and rows[0].get('date') != '2026-10-20':
+        bad.append(('SCHED_DATE_RE: a schedule line carries WHEN it is next '
+                    'looked at', 'SCHED_DATE_RE', '2026-10-20',
+                    rows[0].get('date')))
+    if rows and len(rows) > 1 and rows[1].get('date') is not None:
+        bad.append(('SCHED_DATE_RE: ...and a line whose review is TBD carries '
+                    'None rather than a borrowed date',
+                    'SCHED_DATE_RE', None, rows[1].get('date')))
     return bad
 
 
@@ -376,6 +491,15 @@ def main(argv):
     print('  blind lock: %d synthetic graphs classify as written, plus the blast-radius'
           % len(FIXTURES))
     print('              and comment-stripping fixtures. Run BEFORE the repo was read.')
+    # THE PARSE ARMS ARE NAMED SEPARATELY, because they are a different kind of
+    # evidence and folding them into "synthetic graphs" would overstate the
+    # graph lock and understate the parse lock at the same time. The six parse
+    # rules had NO fixture until 2026-10-05 and the line that says so is the
+    # only place a reader learns which half of this tool is locked.
+    print('              plus 10 PARSE arms over REQ, ENV and the four SPOF-'
+          'register rules')
+    print('              -- those six had no fixture of any kind before '
+          '2026-10-05.')
     if '--fixtures' in argv:
         return 0
 

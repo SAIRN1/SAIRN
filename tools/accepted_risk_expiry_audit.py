@@ -216,6 +216,37 @@ def classify(body, invokers):
     return 'UNINVOKED', tools
 
 
+# ── EXTRACTED FROM audit() SO IT CAN BE ABLATED (2026-10-05) ───────────────
+# `ACCEPTED` and `CLOSED_STATUS` were the only two of this tool's rules that
+# dead_rule_sweep reported DEAD TO ITS OWN EVIDENCE, and the cause was not a
+# weak criterion -- it was that the selftest below hands fixture strings
+# straight to classify(), which never sees either rule. The row SELECTION was
+# four lines inline in audit(), reachable only by reading the real open-work
+# index, so neutralising either pattern left every fixture arm green.
+#
+# Reading the index is exactly what a fixture lock must not depend on (the
+# eighth discipline: evidence that changes when anybody pushes is evidence
+# nobody decided to change). So the decision is a function, and the lock drives
+# the function.
+def is_open_accepted_risk(row):
+    """Does this index row DECIDE to live with something, and is it STILL open?
+
+    Two independent conditions and both are load-bearing:
+      ACCEPTED       -- the row decides rather than fixes
+      CLOSED_STATUS  -- ...and its STATUS cell does not say it is closed
+
+    The status cell, not the whole row: `index:345` was reported as an
+    un-expiring accepted risk while its status read "CLOSED 2026-09-04",
+    because the EVIDENCE cell still discusses the tripwire and the deliberate
+    non-fix. The words survive the fix that closed them.
+    """
+    if not ACCEPTED.search(row):
+        return False
+    cells = row.split('|')
+    status = cells[3] if len(cells) > 3 else ''
+    return not CLOSED_STATUS.search(status)
+
+
 def audit():
     rows = _rows()
     if rows is None:
@@ -223,12 +254,9 @@ def audit():
     invokers = _invokers()
     found = []
     for lineno, row in rows:
-        if not ACCEPTED.search(row):
+        if not is_open_accepted_risk(row):
             continue
         cells = row.split('|')
-        status = cells[3] if len(cells) > 3 else ''
-        if CLOSED_STATUS.search(status):
-            continue
         subject = cells[2].strip() if len(cells) > 2 else ''
         verdict, tools = classify(row, invokers)
         found.append({'where': 'index:%d' % lineno, 'subject': subject[:150],
@@ -277,12 +305,51 @@ def selftest():
             bad += 1
         print('  %s expected %-13s got %-13s | %s' % (mark, want, got, body[:58]))
     print('')
+
+    # ── THE ROW SELECTION, WHICH NO ARM ABOVE TOUCHES (2026-10-05) ─────────
+    # Every case above calls classify() directly, so ACCEPTED and
+    # CLOSED_STATUS -- the two rules that decide WHICH rows are accepted risks
+    # at all -- were dead to this tool's own evidence. These three arms drive
+    # is_open_accepted_risk() on hand-built rows shaped like index rows, and
+    # each is written so that neutralising ONE of the two patterns turns ONE
+    # arm red.
+    print('  the ROW SELECTION, on hand-built rows (not the real index):')
+    OPEN_ROW = ('| **Platform** | a thing nobody fixed | **ACCEPTED RISK, '
+                'MONITORED** | Michael | - | re-check this the moment anybody '
+                'adds a second granting role | S |')
+    CLOSED_ROW = ('| **Platform** | a thing somebody fixed | **CLOSED '
+                  '2026-09-04** | Hank | - | it was an accepted risk and the '
+                  'tripwire is still described here | S |')
+    PLAIN_ROW = ('| **Platform** | an ordinary open item | **FOUND 2026-09-20, '
+                 'NOT FIXED** | unassigned | - | nothing here decides to live '
+                 'with anything | M |')
+    sel = [
+        ('ACCEPTED fires: a row that DECIDES, with an open status', OPEN_ROW,
+         True),
+        ('CLOSED_STATUS fires: the SAME decision, status cell says CLOSED',
+         CLOSED_ROW, False),
+        ('neither fires: an ordinary open row is not an accepted risk',
+         PLAIN_ROW, False),
+    ]
+    for name, row, want in sel:
+        got = is_open_accepted_risk(row)
+        mark = 'ok  ' if got == want else 'FAIL'
+        if got != want:
+            bad += 1
+        print('    %s expected %-5s got %-5s | %s' % (mark, want, got, name))
+    print('')
     if bad:
         print('  %d of %d fixtures misclassified -- the real numbers below would '
               'be meaningless. Fix the criteria first.' % (bad, len(cases)))
     else:
-        print('  all %d fixtures classified correctly, including BOTH directions '
-              '(a tool that is invoked and one that is not).' % len(cases))
+        # THE COUNT NAMES BOTH GROUPS. It read `len(cases)` and printed "all 7"
+        # after 10 arms had run, which understates the lock by exactly the
+        # three arms added to cover the row selection -- and an understated
+        # disclosure is how a gap stays invisible even when it is closed.
+        print('  all %d fixtures classified correctly -- %d classifier arms '
+              '(BOTH directions: a tool that is invoked and one that is not) '
+              'and %d row-selection arms (one per rule, each way).'
+              % (len(cases) + len(sel), len(cases), len(sel)))
 
     # ── AND THE INPUT, NOT JUST THE CLASSIFIER ─────────────────────────────
     # Every arm above hands a fixture string to classify(). They prove the
