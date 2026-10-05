@@ -3195,8 +3195,8 @@
       "task": "sairnbiz preview check re-run, revoked-licence AI cutoff ablation, register rows mech_docs and msb_bottle_scans, stale-branch tips record then delete, competitive-gap doc inventory FILES: docs/2026-09-29-sairnbiz-preview-check.md docs/2026-09-29-stale-branch-tips.md docs/defect-density-register.json docs/SAIRN-OPEN-WORK-INDEX.md SAIRN-ACTIVE-WORK-cc.md",
       "claimed_at": "2026-10-04T23:33:10Z",
       "claimed_at_epoch": 1791156790.7412043,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-05T09:32:37Z",
       "files": [
         "SAIRN-ACTIVE-WORK-cc.md",
         "docs/2026-09-29-sairnbiz-preview-check.md",
@@ -3212,8 +3212,8 @@
       "task": "sairnbiz preview check re-run, revoked-licence AI cutoff ablation, register cells mech_docs and msb_bottle_scans, stale-branch tips record then delete, competitive-gap doc inventory FILES: docs/CRITICALITY-TIERS.md docs/2026-09-29-sairnbiz-preview-check.md docs/2026-09-29-stale-branch-tips.md docs/defect-density-register.json docs/SAIRN-OPEN-WORK-INDEX.md SAIRN-ACTIVE-WORK-cc.md",
       "claimed_at": "2026-10-05T08:57:59Z",
       "claimed_at_epoch": 1791190679.547196,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-05T09:32:37Z",
       "files": [
         "SAIRN-ACTIVE-WORK-cc.md",
         "docs/2026-09-29-sairnbiz-preview-check.md",
@@ -3230,8 +3230,8 @@
       "task": "sairnbiz preview check credential correction, revoked-licence AI cutoff ablation, register cells mech_docs and msb_bottle_scans, stale-branch tips record then delete, competitive-gap doc inventory FILES: docs/CRITICALITY-TIERS.md docs/2026-09-29-sairnbiz-preview-check.md docs/2026-09-03-demo-credentials.md docs/2026-09-29-stale-branch-tips.md docs/defect-density-register.json docs/SAIRN-OPEN-WORK-INDEX.md SAIRN-ACTIVE-WORK-cc.md",
       "claimed_at": "2026-10-05T09:05:37Z",
       "claimed_at_epoch": 1791191137.1790318,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-05T09:32:37Z",
       "files": [
         "SAIRN-ACTIVE-WORK-cc.md",
         "docs/2026-09-03-demo-credentials.md",
