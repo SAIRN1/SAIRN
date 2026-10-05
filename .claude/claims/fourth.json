@@ -2960,8 +2960,8 @@
       "task": "SAIRNlegacy and SAIRNdesign positioning/pricing docs; senior suite harness arms E1-E3 plus the RESULT WITHHELD summary; SAIRNvet-only demo-pin SQL; register sha-pinning proposal; push_failure_reason handed off as text. CONFLICT DECLARED PER PR 4.3: tools/tooling_inventory.py and docs/TOOLING-INVENTORY.md ARE CC'S (claimed minutes ago, cc is mid-fix on a cell emitter in that file) so tools/push_failure_reason.py is HELD BACK UNTRACKED and delivered as paste-ready text in docs/2026-10-05-push-failure-reason-handoff.md -- the push gate refuses a new tool with no inventory entry and the entry can only go in cc's file. cc also holds docs/SAIRN-OPEN-WORK-INDEX.md and the sairnscape audit; cody holds the registry tools and gap_ledger; hank holds rebase_state_guard.py and push_retry.py. None are in my file set, and I did not edit cc's sairnlegacy audit, only consumed it. FILES: docs/2026-10-05-sairnlegacy-positioning.md docs/2026-10-05-sairndesign-pricing-benchmark.md docs/2026-10-05-register-sha-pinning-proposal.md docs/2026-10-05-push-failure-reason-handoff.md tests/sairnsenior_negative_hours_claim.js sql/restore_sairnvet_demo_pin_2026-10-05.sql SAIRN-ACTIVE-WORK-fourth.md",
       "claimed_at": "2026-10-05T12:28:51Z",
       "claimed_at_epoch": 1791203331.3121357,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-05T12:37:45Z",
       "files": [
         "SAIRN-ACTIVE-WORK-fourth.md",
         "docs/2026-10-05-push-failure-reason-handoff.md",
@@ -2979,8 +2979,8 @@
       "task": "SAIRNlegacy and SAIRNdesign positioning/pricing docs; senior suite harness arms E1-E3 plus the RESULT WITHHELD summary; SAIRNvet-only demo-pin SQL and the stale-snapshot finding; register sha-pinning proposal; push_failure_reason handed off as text. CONFLICT DECLARED PER PR 4.3: tools/tooling_inventory.py and docs/TOOLING-INVENTORY.md ARE CC'S (claimed minutes ago, cc mid-fix inside that file) so tools/push_failure_reason.py is HELD BACK UNTRACKED. cc also holds docs/SAIRN-OPEN-WORK-INDEX.md and the sairnscape audit; cody holds the registry tools and gap_ledger; hank holds rebase_state_guard.py and push_retry.py. None are in my file set, and I did not edit cc's sairnlegacy audit, only consumed it. FILES: docs/2026-10-05-sairnlegacy-positioning.md docs/2026-10-05-sairndesign-pricing-benchmark.md docs/2026-10-05-register-sha-pinning-proposal.md docs/2026-10-05-push-failure-reason-handoff.md docs/2026-10-05-sairnvet-credential-and-stale-snapshot.md tests/sairnsenior_negative_hours_claim.js SAIRN-ACTIVE-WORK-fourth.md",
       "claimed_at": "2026-10-05T12:36:13Z",
       "claimed_at_epoch": 1791203773.3309445,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-05T12:37:45Z",
       "files": [
         "SAIRN-ACTIVE-WORK-fourth.md",
         "docs/2026-10-05-push-failure-reason-handoff.md",
