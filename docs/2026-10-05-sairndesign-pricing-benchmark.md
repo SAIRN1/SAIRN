@@ -5,9 +5,54 @@ vendor's own pricing page today.** Every figure below is quoted, not inferred.
 
 ---
 
-## 0. THE PREMISE WAS WRONG, AND IT CHANGES WHAT THIS DOCUMENT IS
+## 0a. THE CONFIRMED PRICE BOOK — Michael, 2026-10-05
 
-The task was to price a 10+ person firm *"under the current employee-headcount
+**This supersedes §0's "there is no pricing".** Pricing was confirmed after the
+benchmark below was researched, and is now recorded in the same place and the
+same format as StoneDesk's, in `api/_lib/exec-context.js`.
+
+| Tier | Price |
+|---|---|
+| **Business** | **$399/mo** |
+| **Professional** | **$599/mo** |
+| **Enterprise** | **$899/mo** |
+| Above that | **custom quote**, for full design-implementation engagements |
+
+**There is no entry-level tier below Business**, matching StoneDesk's posture.
+**No Stripe price IDs are on file for SAIRNdesign** — stated because the
+StoneDesk line in the same file does claim them, and inheriting that phrasing
+would be a claim this repo cannot verify.
+
+**Two sources, and a test that makes them agree.** This table and the
+`exec-context.js` line are the two places the figures live, and
+`tests/sairndesign_pricing.js` reads both. That is not ceremony: the incident
+`tests/pricing_single_source.js` exists for is StoneDesk carrying two price
+lists that disagreed, in two files, with the one a customer signs being the
+wrong one.
+
+### What the benchmark below says about these three numbers
+
+- **$599 Professional is the strong one.** A 10-person firm pays **$790/mo** on
+  Studio Designer Professional and **$790/mo** on Design Manager. At $599 per
+  firm we undercut the established cluster by ~$190/mo at ten seats, and
+  because ours is per-firm and theirs is per-seat **the gap widens with every
+  hire** — at 15 people they pay $1,185 and we still charge $599.
+- **$399 Business is comfortably inside the band** ($350–$1,090 at ten seats)
+  and sits just above Programa's 10-seat total of $350.
+- **$899 Enterprise is ABOVE the cluster**, including Studio Designer's top
+  Premier tier at $1,090 only for firms over ~8 seats. That is a real position
+  rather than a safe one: it needs the full design-implementation scope to
+  carry it, not feature breadth. Flagged, not objected to — it is a confirmed
+  decision.
+- **Still unmeasured: Houzz Pro**, whose pricing page 404'd. It is the largest
+  name in the category and is absent from every figure here, so none of the
+  three comparisons above account for it.
+
+---
+
+## 0. The premise of the research task was wrong, and that is why §0a is separate
+
+**The research task** was to price a 10+ person firm *"under the current employee-headcount
 tiers"*. **There are no such tiers.** The repo was searched for a SAIRNdesign
 pricing model and holds none: no price table, no headcount bands, no per-seat
 figure, nothing in `sairndesign.html`, `api/_resources/sairndesign.js` or any

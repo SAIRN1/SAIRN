@@ -130,6 +130,26 @@ const EXEC_CONTEXT = {
     // own STRIPE_PRICE_ID is documented as unset, and these are a different
     // product's ids.
     'StoneDesk pricing: Business $299/mo, Professional $599/mo, Enterprise $799/mo, with custom pricing for larger shops. There is NO entry-level tier below Business. Stripe price IDs on file.',
+    // ── SAIRNdesign PRICING, CONFIRMED BY MICHAEL 2026-10-05 ───────────────
+    // Added in the SAME SHAPE as the StoneDesk line above, deliberately. The
+    // incident this file records is two price lists in two files disagreeing,
+    // with the one a CUSTOMER SIGNS being the wrong one; a second product
+    // priced in a different format in a different place is how that starts
+    // again. tests/sairndesign_pricing.js pins these three numbers against
+    // the figures in docs/2026-10-05-sairndesign-pricing-benchmark.md.
+    //
+    // THE BENCHMARK SUPPORTS THE MIDDLE TIER AND IS HONEST ABOUT THE TOP ONE.
+    // Published list prices read 2026-10-05: a 10-person firm pays $790/mo on
+    // Studio Designer Professional and the same on Design Manager, so at $599
+    // PER FIRM this undercuts the established cluster by ~$190/mo at ten
+    // seats and the gap widens with headcount. At $899 it is ABOVE that
+    // cluster, which is a position that needs the full design-implementation
+    // scope to justify it rather than feature breadth.
+    //
+    // NO STRIPE PRICE IDS ARE CLAIMED HERE, unlike the StoneDesk line. None
+    // are on file for SAIRNdesign and saying otherwise is the exact shape of
+    // the "Stripe price IDs on file" caveat written two comments above.
+    'SAIRNdesign pricing: Business $399/mo, Professional $599/mo, Enterprise $899/mo, with a custom quote above that for full design-implementation engagements. There is NO entry-level tier below Business. No Stripe price IDs are on file for SAIRNdesign yet.',
     // CORRECTED 2026-09-02. "QuickBooks integration" sat in this expertise list
     // between "financial risk management" and "monthly close process", where it
     // reads as a capability the platform has rather than a subject the model

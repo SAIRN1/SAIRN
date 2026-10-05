@@ -1317,3 +1317,123 @@ the SAIRNscape audit and the open-work index this hour, cody is piloting
 reading that in-flight work risks duplicating it. **This is a capacity
 statement, not a judgement that nothing is worth building.** Scaling the batch
 down is Michael's call, so it is reported rather than silently dropped.
+
+---
+
+## 2026-10-05 (fourth batch) — two done at source, two sweeps that found real defects, four still blocked on database access
+
+| # | Item | State |
+|---|---|---|
+| 1 | Regenerate `db/schema_snapshot.json` | **CANNOT — needs the Supabase SQL editor.** `sql/schema_snapshot_query.sql` says so in its own header: *"No clone on this platform has generic information_schema access"* |
+| 2 | Commit + run the SAIRNvet SQL, finish its click-through | **BLOCKED ON 1**, then on database access to run it |
+| 3 | Fix `.demo-credentials.local.json` apps[1].pin | **DONE AND VERIFIED** |
+| 4 | Re-check cc's claim on `tooling_inventory.py` | **STILL CLAIMED — held** |
+| 5 | SAIRNdesign pricing as real tiers | **DONE** |
+| 6 | Build a gap for an app with no doc in flight | **NOT DONE** — named below |
+| 7 | Sweep for sync runners printing green over async arms | **DONE — 2 confirmed, 15 undecided** |
+| 8 | Sweep for another fragile text-match classifier | **DONE — found one that silently skips** |
+
+### 3. The dead PIN is fixed at the root, and the whole file is now verified
+
+`.demo-credentials.local.json` `apps[1]` (sairnbiz, `SB-PINNACLE-2026`) held
+`60417293` — the PIN the credentials doc marks **DEAD 2026-09-25**. That is
+why the 2026-09-29 SQL carried a dead hash: it was a faithful copy of a stale
+source, which is worse than a bad file because the next regeneration
+reproduces it.
+
+**Order of operations, deliberately:** the replacement was driven to a **200**
+*before* it was written, not after. A write-then-verify leaves a wrong value
+behind if the verify fails. The edit refuses unless `apps[1]` is the SAIRNbiz
+row **and** still holds the exact dead value, so a re-run cannot corrupt
+something already correct. Backed up first (sha `d8c4d9cc…`).
+
+**`python tools/demo_credentials_check.py` now reports OK 15, WRONG-PIN 1** —
+sairnbiz moved to OK, and the single remaining failure is SAIRNvet, which is
+the known blocker. The file is gitignored, so this change is local to this
+clone and **every other clone still holds the dead value**.
+
+Incidentally: SAIRNvet answered WRONG-PIN rather than LOCKED, so the lockout I
+caused earlier has expired.
+
+### 5. SAIRNdesign pricing, in the same place and shape as StoneDesk's
+
+Confirmed by Michael: **Business $399/mo, Professional $599/mo, Enterprise
+$899/mo**, custom quote above for full design-implementation engagements, no
+entry tier below Business.
+
+It went into `api/_lib/exec-context.js` beside the StoneDesk line **because**
+that file's own history is the argument for it: two price lists in two files
+disagreed and the one a customer signed was the wrong one. A second product
+priced in a different format somewhere else is how that restarts.
+
+**One difference from the StoneDesk line, stated in the code:** it does **not**
+claim Stripe price IDs. None are on file for SAIRNdesign, and inheriting
+StoneDesk's *"Stripe price IDs on file"* phrasing would be a claim this repo
+cannot verify. `tests/sairndesign_pricing.js` (18 arms) asserts the absence as
+hard as it asserts the prices.
+
+**The benchmark cross-check, now in the doc:** $599 is the strong tier — a
+10-person firm pays **$790/mo** on both Studio Designer Professional and
+Design Manager, so we undercut by ~$190 at ten seats and **the gap widens with
+every hire**, because ours is per-firm and theirs is per-seat. $899 is **above**
+that cluster; flagged as needing the implementation scope to carry it, not
+objected to. Houzz Pro is still unmeasured (its pricing page 404s).
+
+The test writes the tiers out **once as a third opinion** rather than
+comparing the two sources to each other — the StoneDesk incident is precisely
+two sources agreeing on the wrong thing. Arm D2 drives the matcher against a
+price one dollar off and requires it to fail, so section A cannot be vacuous.
+
+### 7 + 8. Both sweeps, in `docs/2026-10-05-two-sweeps-sync-runners-and-a-blind-deploy-check.md`
+
+**Sync runners: 661 files scanned, 138 hand async arms to a helper, 121 await
+them, 2 do not, 15 could not be decided.** The two were CONFIRMED BY PLANTING,
+and `tests/sairnbuild_server_backup.js` printed
+
+```
+  ok   server records absent locally are appended
+ALL 29 SERVER-BACKUP ASSERTIONS PASS
+AssertionError: PLANTED FAILURE AFTER AN AWAIT
+```
+
+**MY FIRST PLANT TESTED THE WRONG THING.** Placed *before* the first `await`
+it threw synchronously and crashed loudly, which looks like the suite working.
+Only a failure *after* an await reaches the blind spot — a sweep that planted
+at the top of each arm would have called both files clean.
+
+**NOT FIXED.** Rewriting the runners of two suites I do not own is a larger
+change than this sweep was asked for, and both are currently green — the
+defect is latent until an arm actually fails. The senior suite is the worked
+example; it is mechanical from there.
+
+**The deploy check has a hole in the same shape.**
+`tools/deploy_verify_notify.py:57` decides a command was a push with
+`if "git push" not in cmd`. **`tools/push_retry.py:610` pushes via a
+subprocess**, so the command string is `python tools/push_retry.py --loop` and
+contains no `git push` — **the post-push deploy check never runs on the
+platform's own documented contended-push path, and says nothing when it
+skips.** That is the path used exactly when the branch is busy, which is when
+a deploy is most likely to be disturbed; I used it twice today. The same line
+is wrong the other way too: it matches a command that merely *mentions* a
+push, verifying a deploy that never happened.
+
+**Proposed, not applied:** detect the push from what HAPPENED (did
+`origin/main` move) rather than from the command text, and emit a third state
+when it cannot tell. The hook's own 403 branch already says *"a check that
+silently stops running is the failure this hook was rewritten to remove"* —
+that sentence applies to its own entry condition. It is a live hook on every
+push and is not something to change unprompted in the batch that found it.
+
+### 6. NOT DONE
+
+No gap was built. `sairnscape` is the only gap audit still claimed, so there
+was territory available — this is capacity, after items 3, 5, 7 and 8, not a
+judgement that nothing is worth building.
+
+### 4. Still held
+
+`tools/push_failure_reason.py` remains untracked. `tools/tooling_inventory.py`
+is still CC's active claim and the push gate refuses a new tool with no
+inventory entry. Paste-ready text is in
+`docs/2026-10-05-push-failure-reason-handoff.md`; nothing further is needed
+from me.
