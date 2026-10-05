@@ -3184,6 +3184,19 @@
         "tools/sairn_dead_function_sweep.py",
         "tools/sairn_reachability_probe.py"
       ]
+    },
+    {
+      "id": "cody-1791235981",
+      "session": "cody",
+      "subject": "metacheck",
+      "task": "metamorphic_check: a real verdict for each of the 6 rules dead to its own blind lock -- fixture or named limit, per rule FILES: tools/metamorphic_check.py",
+      "claimed_at": "2026-10-05T21:33:01Z",
+      "claimed_at_epoch": 1791235981.4064062,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "tools/metamorphic_check.py"
+      ]
     }
   ],
   "refusals": [
