@@ -685,7 +685,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 693 of 870 traced, 79.7%.
+For context and not as the headline: 694 of 871 traced, 79.7%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -892,11 +892,9 @@ An untraced test is not a bad test. It means no source in this repo states what 
 
 ### Citations pointing at a file that does not exist
 
-**1.** A row names a test as its proof and the file is not there, so the requirement is UNPROVED however the row reads. Some of these are prose placeholders rather than real citations -- this cannot tell the difference, so it reports both and says so.
+None. Every cited test file exists.
 
-- `api/sairncash/portal.test.js` — cited by index
-
-**Not counted in the traced figure since 2026-09-18.** Two of these were, and that is how the closing-error leg and the prose in `docs/MASTER-PLAN.md` came to read 518 and 512 in the same run. A row promising a suite the repo does not hold is a finding; letting it count was a better number.
+**This is a real zero, not an empty filter.** The input is `dead_citations()`, which is computed from the RAW citations before `traced()` drops anything -- so a dead citation can still reach this section. Until 2026-09-18 the filter read from `traced()` itself, and once that function started dropping them this section would have printed None forever.
 
 ### What this matrix cannot tell you
 
@@ -910,7 +908,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 870   tests/**, api/** (both walked)
+  test files on disk                 871   tests/**, api/** (both walked)
   open-work rows citing a test       385   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 10   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                71   report_only_checks.REGISTRY

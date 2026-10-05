@@ -5158,6 +5158,26 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-10-05T09:50:00Z",
+      "opened_at_sha": "773fc2189cb044cc5d74d938171edf465045bbf8",
+      "resources": [
+        "invoices"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/sairncash/portal.test.js"
+      ],
+      "what": "api/sairncash/portal.test.js (NEW, 19 arms) closes the MASTER-PLAN DEAD CITATION for the Stripe Billing Portal endpoint. Tier A resource touched: invoices. WHAT A REVIEWER SHOULD ATTACK FIRST: section 6 is the only arm that tests portal.js's stated security design -- that the customer id is read off the SUBSCRIPTION and never from req.body -- and it is only a real test because the hostile id differs from the owner's; section 11 guards that, but a reviewer should confirm the discrimination is genuine and that no OTHER body-supplied field (customer, customer_id, cus) can reach billingPortal.sessions.create. SECOND: the suite stubs the stripe module via require.cache, so it proves response HANDLING and nothing about reachability -- no arm here says the live endpoint works. THIRD: four sabotages were planted in portal.js and each went red on exactly one arm, with the source restored byte-identically, but the sabotages were chosen by the same session that wrote the arms, which is the blind spot this review exists to cover. No product code changed in this commit.",
+      "status": "open",
+      "reviewer_owner": "cloud",
+      "owner_assigned_at": "2026-10-05T09:50:00Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

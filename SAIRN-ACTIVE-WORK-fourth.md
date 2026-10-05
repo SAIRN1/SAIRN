@@ -900,3 +900,96 @@ CLEAR is a wording artefact and I did not act on it** (PR 4.3). Both are recorde
 here as still blocked, and re-checking with the original strings still returns
 BLOCKED with cc and cody named. A CLEAR that a synonym can buy is not evidence
 about who is working on what.
+
+---
+
+## 2026-10-05 — a nine-item queue, verified before it was worked: seven items were already closed, one is blocked on Michael, one was real
+
+**The queue arrived as nine build items. Seven of them described work this repo
+has already done.** That is not a complaint about the queue — it is the reason
+the first action on any item is to check its premise against the repo rather
+than against the sentence describing it. Recorded per item so the next session
+does not re-open them:
+
+| # | As stated | What the repo actually holds |
+|---|---|---|
+| 1 | SAIRNdental CDT versioning "left half-applied — HTML corruption, orphaned tbody, unwired JS" | **CLOSED.** `sairndental.html` parses with zero structural errors and zero unclosed tags; 4/4 script blocks pass `node --check`; every CDT symbol resolves, *including* `pc-maintenance` at line 639, which `rCdtMaintenance()` guards on; 14/14 dental suites pass. The follow-up half (`a8fe1485`, charges re-reading the catalogue) already shipped |
+| 2 | Task #19 real fix — tombstones, LWW, write audit | **CLOSED.** `docs/2026-09-26-fire-and-forget-write-audit.md:3` states the tombstone and last-write-wins work "already landed". The audit RAN 2026-09-26; all three REAL findings are now fixed — `slabSyncOne` and `sdLineageSyncOne` read `sdWriteLanded()` (2026-09-29), `saveSD3Data()` batched to `write_batch` (2026-09-26) |
+| 3 | Click-through Wave 3 — StoneDesk, SAIRNbiz, SAIRNvet | **2 of 3 CLEAN, 1 BLOCKED.** StoneDesk 74/74 and SAIRNbiz 20/20, zero findings, 2026-09-26. SAIRNvet UNVERIFIED — see below |
+| 4 | Build the highest-value unbuilt competitive gap | Not started — the four gap docs exist and `docs/2026-09-29-competitive-gap-doc-inventory.md` is **CC's active claim**. Not touched |
+| 5 | SAIRNlaw: reframe exclusivity claims, "Clio beats our 269 jurisdictions" | **PREMISE FAILS TWICE.** 269 is a figure this index corrected on 2026-09-01 — live coverage is **35 jurisdictions / 397 rules**. And a grep of `sairnlaw.html` for exclusivity language (`only`/`exclusive`/`no other`/`unique` near jurisdiction/citator/court-rule/Clio) returns **nothing**. There is no customer-facing claim to reframe |
+| 6 | SAIRNcash billing flow "is not built" | **BUILT** — `checkout.js`, `portal.js`, `stripe-webhook.js` (273 lines), entitlement gate + fault probe + safe-harbor suite. One real hole inside it, and it is the item I worked |
+| 7 | SAIRNveterans tips, §45B "still unanswered" | **ANSWERED 2026-09-23 (Fourth)** — `docs/2026-09-17-sairnfreedom-tips-tax-treatment.md` §7. The app is SAIRNfreedom; there is no SAIRNveterans |
+| 8 | Multi-location/multi-brand "not yet designed" | **DESIGNED 2026-09-22 (cody)** — `docs/2026-09-22-multi-location-multi-brand-design.md`, which opens by recording that this same premise was wrong in this same direction once before |
+| 10 | "Update the app's status line in master-plan.md" | **`docs/MASTER-PLAN.md` IS GENERATED** and says so in its own second line: hand-editing it "will be overwritten and, worse, will look authoritative until it is". The correct action is `python tools/master_plan.py`, which is what was done. `--check` said **OK, matches the repo** before any of tonight's work, so it had not drifted |
+
+### The one real item: `api/sairncash/portal.test.js` (new, 19 arms)
+
+**`docs/MASTER-PLAN.md` printed this exact path under *DEAD CITATIONS — 1 row(s)
+promise a test file this repo does NOT hold*.** The index claimed coverage of
+the endpoint that mints Stripe Billing Portal sessions — a customer's card,
+invoice history and the power to cancel — and no such file existed. The
+generator prints a dead citation loudly rather than dropping it so that it gets
+written; this is that write. **After it, the DEAD CITATIONS section is gone
+entirely** and `sairncash` moves 12→13 suites, 7→8 traced.
+
+**THE ARM THAT MATTERS IS THE CUSTOMER-ID ONE, and a happy-path test cannot
+see it.** `portal.js`'s header states its whole security design: the caller
+sends a SUBSCRIPTION id and the customer is read off the subscription, because
+*"the identifier the caller can edit is the vulnerability"*. With no
+`customerId` in the body, reading one would change nothing and the arm passes
+either way — so §6 sends a **hostile `customerId` that differs from the
+subscription's owner** and asserts the portal opened for the owner. §11 is the
+control on that control: it asserts the two ids are not equal, because an
+identical pair would make §6 pass against an endpoint that trusts the body
+completely.
+
+**PROVEN TO DENY, not merely to pass.** Four sabotages planted in `portal.js`,
+each caught by exactly the intended arm and by no other, source restored
+byte-identically (`diff -q` clean) and 19/19 green afterwards:
+
+| Sabotage | Arm that went red |
+|---|---|
+| `customerId` read from `req.body` | the hostile-customerId arm |
+| `new Stripe(key)` with the `apiVersion` pin removed | the pinned-apiVersion arm |
+| `res.json({error: err.message})` — Stripe's text disclosed | the error-disclosure arm |
+| `typeof !== 'string'` guard dropped | the non-string-subscriptionId arm |
+
+Two constants are asserted **against the module that owns them** rather than
+re-typed — `stripe-config.CLIENT_MESSAGE` and `stripe-api-version.
+STRIPE_API_VERSION` — for the reason `verify.test.js:109` records: a copied
+string goes stale at the next rewording and turns an arm red for no product
+reason. Both are then checked for non-vacuity, since comparing a value to its
+own producer passes against an empty string.
+
+### BLOCKED, and it needs Michael — SAIRNvet has no working credential
+
+`docs/2026-09-26-clickthrough-render-half-completed.md:77` records SAIRNvet as
+**SKIPPED, one third of the intended population, unverified rather than clean**.
+Re-driven live tonight **with positive controls first**, because a 401 from a
+broken probe is indistinguishable from a 401 from a dead credential:
+
+| App | Result |
+|---|---|
+| SAIRNbiz `SB-PINNACLE-2026` (control) | **200, token issued** |
+| StoneDesk `SD-AUDIT-2026` (control) | **200, token issued** |
+| SAIRNvet `SV-PINNACLE-2026` | **401 INVALID_CREDENTIALS** |
+
+**I LOCKED IT OUT AND AM SAYING SO.** Two probe attempts pushed the
+failed-attempt counter past the threshold; a third answered **429 LOCKED**. The
+credential had no valid PIN to begin with so nothing usable was lost, and the
+lockout is time-bounded — but it is my doing and the next person to probe it
+will see 429 rather than 401.
+
+**THE FIX EXISTS ON DISK AND HAS NEVER BEEN COMMITTED.**
+`sql/restore_demo_pins_2026-09-29.sql` — 188 lines, SELECT then UPSERT then
+CONFIRM, carrying the PR 3.4 recoverability guard at its §4 with both apps'
+`PROVISIONING_ROLES` read from source — has sat **untracked in this clone for
+six days**. No other clone has it. It has never been run. `bootstrap` is
+permanently refused on that licence, so SAIRNvet is recoverable **only** by
+direct database access, which is Michael's to do.
+
+**Not committed by me, deliberately:** it writes credential rows, and the
+session that wrote it is better placed to confirm the hashes were produced from
+the current `.demo-credentials.local.json` than I am from reading its header.
+Flagged rather than adopted.
