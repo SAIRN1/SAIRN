@@ -3453,8 +3453,8 @@
       "task": "sairngrounds grd citation line verdicts and the drift tool render-site false positive; open-work index row 73 job-risk citation closure; hank session state writeup",
       "claimed_at": "2026-10-05T08:53:36Z",
       "claimed_at_epoch": 1791190416.100206,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-05T09:18:50Z",
       "files": null
     }
   ],
