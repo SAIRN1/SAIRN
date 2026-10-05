@@ -16,6 +16,19 @@ not by recall.
 **10 refs**: `origin/main` plus 9 branches — the eight `claude/*` cloud-research
 branches and `fourth/sairnvet-external-gap-audit-2026-09-26`.
 
+> **2026-10-05 — ONE REF IN THAT SCOPE NO LONGER EXISTS, and this note is here so
+> the table is not read as describing live branches.**
+> `claude/cloud-research-competitive-vet-law` was deleted today
+> (`docs/2026-09-29-stale-branch-tips.md`, addendum). **Nothing in this inventory
+> changes:** that branch's tip was an ancestor of `main` with a zero-file diff —
+> its SAIRNvet and SAIRNlaw audits are on `main` today at
+> `docs/cloud-research/SAIRNvet-external-competitive-gap-audit-2026-09-25.md` and
+> `…SAIRNlaw-external-competitive-gap-audit-2026-09-25.md`, which is why it was
+> deletable at all. **The nine-of-fourteen finding below is UNCHANGED and still
+> the live risk:** the branch that holds eight of those nine,
+> `claude/wizardly-ride-wtun13`, is PR #18 and was explicitly KEPT. Scope is now
+> 9 refs; the per-app table was not re-derived and is as of 2026-09-29.
+
 ## DEDICATED versus SHARED, and why the distinction is in this table
 
 **DEDICATED** — the app's name is in the FILENAME and no other app's is.

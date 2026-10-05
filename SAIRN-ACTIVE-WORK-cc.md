@@ -5328,3 +5328,152 @@ claimed by fourth**, whose claim names closing those seams.
 
 `tests/sairnbuild_retainage_race.js` still 1 passed / 2 failed -- `c8b5e5b1`'s
 credential pre-gate, verified red at HEAD before my edits, now fourth's.
+
+---
+
+## 2026-10-05 — CC: the resumed queue. Two documents were WRONG about live state, and both corrections run the same direction
+
+Pulled to `c0e97678` at start. Full account: `docs/2026-10-05-cc-batch-inventory.md`.
+
+### 1. `SB-PINNACLE-2026` WORKS. The dead thing was the PIN.
+
+`8e205448`. Michael got "wrong pin" and the document said the licence was dead.
+Driven, all four combinations in one run, which is the thing nobody had done:
+
+    SB-PINNACLE-2026 / sairn-demo-owner / 84350271  ->  200  owner, token
+    SB-PINNACLE-2026 / sairn-demo-owner / 60417293  ->  401  INVALID_CREDENTIALS
+    SB-TEST-2026     / sairn-demo-owner / 84350271  ->  200  owner, token
+    SB-TEST-2026     / sairn-demo-owner / 60417293  ->  401  INVALID_CREDENTIALS
+
+`60417293` is dead on **both** keys and `84350271` works on **both**. The two
+credentials had only ever been driven as MATCHED PAIRS, so a dead PIN and a dead
+key were indistinguishable and the key took the blame for six days. **No reset
+SQL is needed and none was written** — changing a working credential to fix a
+wrong inference in a document is not a fix.
+
+**The old advice was worse than wrong.** "Just use `SB-TEST-2026`, it is the same
+app and the same demo company" — same APP, **different TENANT** (`license_hash`
+`05c4e1e1…` vs `87e7f2ee…`). Following it would have put an evening of entry into
+the wrong company.
+
+**HOW IT SURVIVED TWO RE-RUNS, which is the part worth keeping.** The 2026-09-30
+pass wrote, under a heading reading *Credentials, re-verified*: "SB-PINNACLE-2026
+was not touched — its PIN is Michael's to restore." Every word true. **A
+NOT-TESTED LINE INSIDE A RE-VERIFIED SECTION READS AS VERIFIED.** One extra
+request would have settled it on either pass. `docs/2026-09-03-demo-credentials.md`
+row 45 is corrected too, and its verification table now records the structural
+gap rather than only the value: **one PIN per key cannot distinguish a dead PIN
+from a dead key.**
+
+### 2. The two H2 register cells — and one finding was already fixed in code while its cell still said otherwise
+
+`5ab3bcb5`. Both re-derived at HEAD rather than pasted from
+`docs/2026-09-29-register-cells-hank.md`, **and that choice is what found the
+drift.**
+
+`mech_docs` asserted "no PII, PHI, privileged communication, or financial-account
+detail" AND, in the same sentence, that it was not individually read. Three places
+in the shipped code contradict the first half: `mech-redact.js:162`
+`NOT_REDACTED_NOTE`, `:234` `complete: false` hardcoded always, the gate at
+`api/sd-data.js:14475-14491` writing both fields onto the row deliberately, and
+the app's own toast at `sairnmechanical.html:1814`. **Tier does not move** — prose
+residue is not a regulated identifier — and the cell no longer says the opposite
+of what the redactor admits.
+
+`msb_bottle_scans`: the 2026-09-23 read was right about everything it said and
+silent on the part that matters. `note` is not free text — `:4772-4776` derives
+`ozUsed` from the fill-level delta and prices it, so a **dollar figure** is stored.
+**Still B, driven:** `:4961` renders it as prose and `:4784` passes it as the note
+argument to `msbLogInventoryChange(..., 'scan_reading', 0, ...)`, `qty_delta` 0.
+The one difference from `msb_food_waste` is recorded rather than copied: the figure
+is DERIVED and lands in the "3+ years, audit-ready" append-only log, so a wrong
+`fill_pct` is permanent there.
+
+**AND THE PREPARED TEXT WAS STALE.** Its `mech_takeoffs` fix proposes
+`MECH_REDACTED = {mech_docs, mech_takeoffs}` — at HEAD the guard is already
+`MECH_SCANNED_TEXT` over all **three** resources, so pasting it would have
+**narrowed live redaction from three resources to two**. Two of its citations had
+moved (`:14284`→`:14475`, `:1780`→`:1814`); its `:4779` citation is still exact,
+which is the control. Filed as an index row: **a document carrying pasteable code
+should carry the sha it was derived at.**
+
+### 3. The revoked-licence cutoff — ablated per ARM, and HALF OF IT IS DORMANT IN PRODUCTION
+
+Suite 12/12. Two single-layer ablations, both mutants confirmed to PARSE first:
+
+    refusal removed (:352 enforce && inactive)        -> A1, A2 red   (2 of 12)
+    budget grouping restored (|| inactive at :470)    -> C1 red       (1 of 12)
+
+Each layer is held by arms specific to it, and C2/C3/C4 stay green, which is what
+makes C1 mean anything. File restored byte-for-byte, `git diff` empty.
+
+**`SAIRN_CLAUDE_AUTH_MODE` DOES NOT EXIST ON THE VERCEL PROJECT.** Read from the
+API against `prj_bj475nKLxC1TTmpFU6j7HVCSMEhn`, all targets,
+`hiddenProductionEnvCount: 0`. `api/claude.js:288` defaults to `observe`, so:
+**the budget half is LIVE** (mode-independent — a revoked tenant draws on
+`anon:<app_id>`, which was the half costing money), and **the refusal half never
+fires** — a revoked licence is still served AI. Known and documented
+(`claude-licence-enforce.test.js:29` calls it latent; the rollout doc makes the
+flip Phase 4); what is new is that it is **measured at the platform** instead of
+inferred from a default. **One env var, Michael's call** — and it also arms the
+`absent`/`invalid` refusal at `:325`, which is the bigger blast radius.
+
+### 4. Branches — 27 recorded before anything was deleted, and the "19" is not a set
+
+`495eef8a` pushed the record FIRST. **No subset of 27 comes to nineteen** under
+ancestry, content, age or name: the earlier pass recorded 27 `regfresh/*` tips and
+deleted 12, leaving 15 `regfresh/*` plus 12 it never looked at. Nothing was
+deleted on a figure that cannot be reproduced.
+
+Three deleted, each satisfying **all three** tests (ancestor of `main`, zero
+unique commits, zero-file diff) — stricter than the first pass could apply:
+`claude/cloud-research-competitive-vet-law`,
+`claude/stonedesk-div-balance-dedup-6mju2o`,
+`worktree-stonedesk-chamfered-corners`. Tips re-confirmed resolvable afterwards,
+**one `git cat-file` at a time** — the first pass's loop version reported all
+twelve as GONE because git ate the loop's stdin. 24 kept; four of those named with
+a reason beyond the test, including **PR #18** and `master`.
+
+### 5. `api/sd-data.js` is held by NOBODY — and two of my blockers cleared themselves
+
+`sairn_claim.py list` → no active claims, after a fetch, three times. **Which is
+indistinguishable from a record nobody pushed**, and the dispatch hook says so.
+
+* `mech_docs` write gate — **GONE, fixed and live-verified 403**, `:1186`.
+* `c8b5e5b1`'s pre-gate — **STILL RED at HEAD, re-driven today:**
+  `tests/sairncare/test-alf-mar.js` **0 passed / 20 failed** (the MEDICATION
+  ADMINISTRATION RECORD gate) and `tests/sairnbuild_retainage_race.js` 1/2. Ten of
+  the twelve bisected suites were NOT re-run and are not claimed red.
+* `tools/conflict_marker_preflight.py` — **unblocked and already wired**,
+  `.claude/settings.json:95`. Fourth's 13 commits landed.
+* `tools/mutation_anchor_check.py` — **no longer in COULD-NOT-RUN.** Exit 0, 527
+  anchors, 0 unreadable, run today. Its own stated limit stands and it prints it.
+
+### 6. The inventory, ranked twice, and the two orderings nearly invert
+
+Severity is led by things only we can see (SAIRNbiz finding 13; the red MAR
+suite). **Competitive exposure is led by not knowing where we stand on three
+products** — `sairndesign`, `sairnlegacy`, `sairnscape` have no competitive-gap
+doc of any kind — **and by nine of fourteen covered apps having their newest audit
+only on an unmerged branch**, eight on PR #18 alone. Four new index rows; the low
+ones logged and left, per instruction.
+
+**Nothing on this platform ranks commercial exposure in the same table as
+engineering work**, which is why those three apps have never competed with a red
+suite for attention and have therefore never won.
+
+### Reported, not fixed
+
+`tests/run_report_only_checks_probe.py` arm E2 and `tools/sairn_seam_check.py`'s
+COULD-NOT-TELL count were **not re-measured** this session — the runs were cut
+short and they are named as unverified rather than carried forward as true.
+
+### BLIND SPOTS: 4
+
+(1) No click-through of SAIRNbiz; finding 13 is still open and unfixed, and the
+last full pass is 2026-09-30. (2) No live call with a revoked licence key — §3's
+"live" is code-on-`main` plus a platform env read. (3) The competitive-gap figures
+are quoted from 2026-09-29 and that per-app table was not re-derived; it matched
+filenames and never read a doc's contents. (4) Only `sairn-demo-owner` was driven
+on the two SAIRNbiz keys, and the other fourteen rows of the demo-credentials doc
+share the one-PIN-per-key structure that produced today's mis-attribution.
