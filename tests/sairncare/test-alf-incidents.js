@@ -144,6 +144,32 @@ function assertEq(actual, expected, msg) {
   // names the alternative it refused: filtering on the caller-supplied
   // `data.reported_by` "would let any employee read any incident by claiming to
   // have filed it, which is worse than the flat 403 this replaces."
+  //
+  // ── 200-SELF-SCOPED IS RE-DERIVED, NOT ADOPTED BECAUSE IT MAKES ARMS PASS
+  // ── (2026-10-05). Four independent sources, none of them this file: ───────
+  //   1. `6977854d`, the commit that made the change, reasons it in its own
+  //      message -- filing is mandatory-reporting-by-whoever-witnessed-it, write
+  //      access correctly ends the moment the report is saved, and "ending write
+  //      access is accountability; ending read access is just opacity."
+  //   2. The scope filters a REAL COLUMN set from the verified session, and that
+  //      same commit explicitly REFUSES the forgeable `data.reported_by`
+  //      alternative as worse than the 403 it replaces.
+  //   3. It carries a Tier A review, status `reviewed` (fourth, opened
+  //      2026-09-28T01:24:38Z), which read it as a security fix.
+  //   4. `api/sd-data-alf-caregiver-scope.test.js` -- a DIFFERENT suite, whose
+  //      stated job is to pin exactly these product questions -- records the
+  //      flat 403 as "now DECIDED" and moved its arms accordingly. So the
+  //      decision exists somewhere other than the gate's own comment.
+  //
+  // AND `recorded_by` ITSELF IS PROTECTED, which is what makes the scope worth
+  // anything: register record `ad97da6bce25` (critical) closed a follow-on
+  // spoof where `recorded_by` was missing from the write path's strip list.
+  //
+  // THE 503 `MIGRATION_REQUIRED` STATE IS DELIBERATELY NOT ARMED HERE. Until
+  // `sql/sairncare_incidents_recorded_by.sql` runs, this read answers 503 and
+  // names the file -- and `api/sd-data-alf-caregiver-scope.test.js` already
+  // drives that, asserting the code AND that the message names the file. A
+  // second copy here would be a second thing to drift.
   await check('caregiver CAN read the incident log and sees ONLY their own filings', async () => {
     const res = await call('caregiver', 'CG-1', 'read', null);
     assertEq(res.statusCode, 200);
