@@ -22723,6 +22723,70 @@
         }
       ],
       "recurrence_open": "TWO OF THE EIGHT WORDINGS ARE STILL OPEN -- X is hank's and X is another session's -- and the actions above do not close them. The cause is the CLAUSE SPLITTER: a real claim runs '...is not held by another session FILES: api/sd-data.js ...' with no clause boundary between the disclaimer and the declared file list, so any marker firing there exempts a file the session holds. Whether FILES: should be a hard clause break is unmeasured. Arm E6 asserts both still block so that closing them is a deliberate act."
+    },
+    {
+      "commit": "ac9c21df5b93",
+      "date": "2026-10-05",
+      "subject": "fix(tests): alf-mar 0/20 -> 21/21 and retainage_race 1/2 -> 3/3 -- and ONE ARM WAS ASSERTING A CONTROLLED-SUBSTANCE DEFECT",
+      "files": [
+        "tests/sairnbuild_retainage_race.js",
+        "tests/sairncare/test-alf-mar.js"
+      ],
+      "lines_added": 142,
+      "lines_removed": 8,
+      "app": "sairncare",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tests/sairncare/test-alf-mar.js asserted 200 for a controlled-substance count carrying only a CLIENT-SUPPLIED witness_id, which api/sairncare-witness.js (2026-09-30) correctly refuses with 403 WITNESS_REQUIRED. The arm therefore asserted the absence of a two-person control on a controlled-substance count: left in place it would have pressured a future session into weakening the witness lock to turn a suite green. Fixed by making the fixture SATISFY the lock -- witness token store, policy row, and the attester re-read requireWitness performs at write time, with content_hash computed by the module's own contentHash imported rather than re-implemented -- so the arm goes on testing med_aide scope-of-practice, plus a NEW arm driving the refusal and asserting nothing is stored. Only visible after a second defect was cleared: the same file's verifySessionToken stub threw on an ABSENT expectedApp, which api/_lib/auth.js:604 treats as legitimate and api/sd-data.js:1387's pre-gate passes deliberately, so all 20 arms answered 502 on the stub's own throw from c8b5e5b1 and the whole MAR gate was unverified for over a week. Ablated both ways: disabling the requireWitness refusal reddens the new arm and nothing else; changing the alf_mar read gate's app scope to a wrong app reddens 5 arms, so the kept guard still has teeth. 21 passed / 0 failed.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "c8b5e5b123c4",
+        "date": "2026-09-26",
+        "subject": "fix(sd-data): 131 of 132 credential gates closed in ONE edit -- and both controls that were meant to catch this had to be rebuilt first",
+        "lag_days": 9
+      },
+      "citation_note": "A test arm that asserts the CURRENT behaviour of a gate becomes a defence of that behaviour the day the gate is corrected. When a suite goes red after a control lands, the arm is the suspect, not the control -- and the fix is to make the FIXTURE satisfy the new control, never to relax the assertion. Relaxing it converts a security fix into a documented expectation that the fix is absent.",
+      "contributing_factors": [
+        {
+          "factor": "The stub was STRICTER than the function it stands in for. api/_lib/auth.js:604 makes expectedApp optional; the stub threw on an absent one. A mock that refuses what production allows cannot be distinguished from a subject that is broken.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Absent expectedApp admitted, wrong one still fatal, copied from the two suites already green under the same pre-gate rather than invented. Ablated: a wrong app scope still reddens 5 arms."
+        },
+        {
+          "factor": "The pre-gate at api/sd-data.js:1387 was a deliberate ONE-EDIT-COVERS-132 design whose blast radius was every suite that stubbed the function it calls. The design note explains why no expectedApp is passed and does not enumerate who stubs it.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "The pre-gate is correct and the one-edit placement is the right call; the cost is that a shared seam's contract lives in a comment. Enumerating stubbers at design time is the sweep that did not happen, not a change to the gate."
+        },
+        {
+          "factor": "Nothing reported the red set. Twelve suites and 172 assertions went red at c8b5e5b1 and were found ~10 hours later by a session baselining something else; two were still red eight days on.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "A cadenced red-set report per app. Logged as an index row rather than built here -- the same gap the 2026-09-18 StoneDesk record already names, now with a second instance and a longer latency."
+        },
+        {
+          "factor": "The witness lock landed on 2026-09-30 into a suite that was ALREADY red, so its arrival produced no new signal. A control landing on a red surface is invisible, and the arm that contradicted it could not announce itself.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "When a control lands, re-run the suites covering that resource BEFORE and after, and treat an already-red suite as a blocker to the landing rather than a pre-existing condition."
+        },
+        {
+          "factor": "No instrument counts how many UNSCOPED verifySessionToken calls a request makes, so a branch gate that dropped its app scope entirely -- rather than setting a wrong one -- passes every stub on this platform, including the two reference-green ones.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "Count the unscoped calls per request in the stub and assert exactly one. Logged, not fixed here: the hole is in the reference shape and changing it is a decision about 14 files."
+        }
+      ],
+      "recurrence_open": "The two fixed suites are green and the other ten with the identical stub are not -- measured at 12 files throwing on an absent expectedApp against 2 using the green shape. Nothing yet reports an app's red set on a cadence, so the NEXT control to land on a red suite will be just as invisible as the witness lock was. And the deepest one stays open by choice: no instrument counts unscoped verifySessionToken calls, so a branch gate that dropped its app scope entirely would pass every stub on this platform including the two reference-green ones -- the guard catches a WRONG app and cannot see a MISSING one."
     }
   ],
   "started": "2026-09-09",
