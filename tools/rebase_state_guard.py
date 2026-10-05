@@ -85,7 +85,13 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # does: shlex separates on whitespace only, so `git add -A;echo hi` comes back
 # with `-A;echo` as one token and compares unequal to `-A`. That is a HOLE, not
 # a false positive, and a hole is the one direction this guard must not move in.
-SEPARATOR_RE = re.compile(r'&&|\|\||[;\n|&]')
+# `$(`, backtick and bare parens are GROUPING, and a grouped git invocation is
+# still an invocation -- `(git commit --amend)` and `x=$(git commit --amend)`
+# both ran and both were invisible here until 2026-10-05. Splitting on them
+# turns the inner command into its own segment, which is cheaper and safer than
+# tracking nesting: a segment is only ever judged by whether it IS a git
+# invocation, so over-splitting cannot manufacture a finding.
+SEPARATOR_RE = re.compile(r'&&|\|\||\$\(|[;\n|&()`{}]')
 
 # git's global options that take a SEPARATE value, so the subcommand after them
 # is still found. `--git-dir=x` style carries its value inline and needs no
@@ -107,11 +113,131 @@ UNPARSEABLE_RE = re.compile(
     r'\bgit\b(?:\s+-\S+)*\s+(?:commit\s+--amend\b|add\s+(?:-A\b|--all\b|\.(?:\s|$)))')
 
 
+# ── COMMAND PREFIXES THAT HID A GIT INVOCATION FROM THIS GUARD ─────────────
+# Found 2026-10-05, H2 seq 452. `_git_subcommand_args` required tokens[0] to be
+# `git`, so ANY leading token defeated it:
+#
+#     GIT_EDITOR=true git commit --amend      <- the reported one
+#
+# shlex keeps `GIT_EDITOR=true` as a token, the basename is not `git`, the
+# function returned (None, None), and the guard said CLEAR on an amend. The
+# env-var prefix is not an exotic spelling either -- it is the standard way to
+# stop `--amend` opening an editor, so it is the form a script is MOST likely
+# to use.
+#
+# Measured against the live function before the fix: 15 of 34 forms bypassed it,
+# in five classes. The quoting and flags-before-subcommand classes the brief
+# also asked about were ALREADY SOUND -- shlex handles `"git"`, `g'it'`,
+# `git "commit" --amend`, `git -C p`, `git -c a=b`, `--git-dir=` -- so no change
+# was made for those, and arms now pin them so a future rewrite cannot lose them.
+#
+# A PEELED PREFIX MUST LAND EXACTLY ON `git`. That is the rule that keeps this
+# from inventing findings: `echo git commit --amend` prints a string and `echo`
+# is not a wrapper, so it is untouched. Nothing here scans a token list for the
+# word `git` anywhere in it.
+_ASSIGNMENT_RE = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*=')
+
+# Wrappers that take a command as their ARGUMENT LIST, so the real invocation is
+# further along the same token list. Each needs its own flag handling -- a
+# generic "skip until git" would make `echo git commit --amend` a finding.
+_WRAPPER_VALUE_OPTS = {
+    'env':     ('-u', '--unset'),
+    'xargs':   ('-n', '-I', '-i', '-P', '-a', '-d', '-E', '-L', '-s', '--max-args',
+                '--replace', '--max-procs', '--arg-file', '--delimiter'),
+    'nice':    ('-n', '--adjustment'),
+    'ionice':  ('-c', '-n', '--class', '--classdata'),
+    'stdbuf':  ('-i', '-o', '-e', '--input', '--output', '--error'),
+    'sudo':    ('-u', '-g', '-U', '--user', '--group'),
+    'nohup':   (),
+    'command': (),
+    'time':    (),
+    'timeout': ('-s', '--signal', '-k', '--kill-after'),
+}
+
+# Shells that take a command STRING in a single token after -c. The payload
+# survives shlex as one token, so it must be re-parsed as its own command line.
+_SHELLS = ('sh', 'bash', 'zsh', 'dash', 'ksh', 'ash', 'bash.exe', 'sh.exe')
+
+_MAX_NEST = 4
+
+
+def _basename_lower(tok):
+    return posixpath.basename(str(tok).replace('\\', '/')).lower()
+
+
+def _peel_prefixes(tokens):
+    """Drop env assignments and command wrappers, returning the real argv.
+
+    Returns the token list with leading `NAME=VALUE` assignments and wrapper
+    commands removed. Never guesses past a wrapper it does not know.
+    """
+    toks = list(tokens)
+    for _ in range(_MAX_NEST):
+        before = len(toks)
+        # 1. Leading shell assignments: GIT_EDITOR=true, A=1 B=2, GIT_PAGER=
+        while toks and _ASSIGNMENT_RE.match(toks[0]):
+            toks = toks[1:]
+        if not toks:
+            return toks
+        name = _basename_lower(toks[0])
+        if name.endswith('.exe'):
+            name = name[:-4]
+        if name in _WRAPPER_VALUE_OPTS:
+            value_opts = _WRAPPER_VALUE_OPTS[name]
+            toks = toks[1:]
+            # The wrapper's own flags, and a value for the ones that take one.
+            while toks and toks[0].startswith('-'):
+                if toks[0] == '--':
+                    toks = toks[1:]
+                    break
+                opt = toks[0].split('=', 1)[0]
+                toks = toks[1:]
+                if opt in value_opts and toks and '=' not in opt:
+                    toks = toks[1:]
+            # `timeout 30 git ...` -- ONE bare duration, not a general skip.
+            if name == 'timeout' and toks and re.match(r'^\d+(\.\d+)?[smhd]?$',
+                                                       toks[0]):
+                toks = toks[1:]
+        if len(toks) == before:
+            break
+    return toks
+
+
+def _shell_c_payload(tokens):
+    """The command STRING a shell was asked to run with -c, or None.
+
+    `bash -c "git commit --amend"` survives shlex as three tokens, the third
+    being the entire inner command line. Nothing downstream of here parses a
+    token list that way, so it is re-entered as a command line instead.
+    """
+    toks = _peel_prefixes(tokens)
+    if not toks:
+        return None
+    name = _basename_lower(toks[0])
+    if name not in _SHELLS:
+        return None
+    i = 1
+    while i < len(toks):
+        if toks[i] == '-c' and i + 1 < len(toks):
+            return toks[i + 1]
+        # `-lc`, `-xc` and friends: a cluster ending in c takes the next token.
+        if (toks[i].startswith('-') and not toks[i].startswith('--')
+                and toks[i].endswith('c') and i + 1 < len(toks)):
+            return toks[i + 1]
+        i += 1
+    return None
+
+
 def _git_subcommand_args(tokens):
     """(subcommand, args) for a `git [global-opts] <sub> ...` invocation.
 
     (None, None) when this segment is not a git invocation at all.
     """
+    if not tokens:
+        return None, None
+    # PEELED FIRST. See the block above: an env assignment or a command wrapper
+    # ahead of `git` used to make this return (None, None) on a real amend.
+    tokens = _peel_prefixes(tokens)
     if not tokens:
         return None, None
     head = posixpath.basename(tokens[0].replace('\\', '/')).lower()
@@ -173,17 +299,20 @@ def _stages_everything(args):
     return None
 
 
-def forbidden_forms(cmd):
-    """Which forbidden forms this command line actually INVOKES.
+def _scan(cmd, found, depth):
+    """Append every forbidden form in `cmd` to `found`. Recurses into `sh -c`.
 
-    A form quoted inside a commit message is data, not an invocation, and is not
-    returned -- shlex keeps a quoted message as one token so `-A` inside it is
-    never a bare flag. That distinction is the whole reason this parses rather
-    than greps: the push-master guard's `.*` version denied the very commit that
-    documented it.
+    Split out of forbidden_forms() 2026-10-05 so a shell payload can be
+    re-entered as a command line. `bash -c "git commit --amend"` keeps its
+    payload as ONE shlex token, so nothing that inspects a token list could
+    ever have seen the amend inside it.
     """
-    found = []
-    for piece in SEPARATOR_RE.split(cmd or ''):
+    if depth > _MAX_NEST:
+        # A nest this deep is not a real invocation pattern, and a silent
+        # return would be a hole. Reported as what it is.
+        found.append('a command nested deeper than this guard will parse')
+        return
+    for piece in SEPARATOR_RE.split(cmd):
         if not piece.strip():
             continue
         try:
@@ -194,6 +323,10 @@ def forbidden_forms(cmd):
             if UNPARSEABLE_RE.search(piece):
                 found.append('an unparseable command line naming a forbidden '
                              'form')
+            continue
+        inner = _shell_c_payload(tokens)
+        if inner is not None:
+            _scan(inner, found, depth + 1)
             continue
         sub, args = _git_subcommand_args(tokens)
         if sub is None:
@@ -207,6 +340,19 @@ def forbidden_forms(cmd):
             form = _stages_everything(args)
             if form:
                 found.append(form)
+
+
+def forbidden_forms(cmd):
+    """Which forbidden forms this command line actually INVOKES.
+
+    A form quoted inside a commit message is data, not an invocation, and is not
+    returned -- shlex keeps a quoted message as one token so `-A` inside it is
+    never a bare flag. That distinction is the whole reason this parses rather
+    than greps: the push-master guard's `.*` version denied the very commit that
+    documented it.
+    """
+    found = []
+    _scan(cmd or '', found, 0)
     # Order-stable dedup: the message lists what it found and a repeat reads as
     # two separate problems.
     out = []

@@ -53,6 +53,7 @@ and a control that trips the guard it is testing cannot be committed.
 import io
 import json
 import os
+import shlex as _shlex
 import shutil
 import stat
 import subprocess
@@ -118,6 +119,66 @@ DENY = [
     'git ' + AMEND + '   ',
 ]
 
+# ── H2 seq 452 AND THE FOUR CLASSES BESIDE IT (added 2026-10-05) ───────────
+# forbidden_forms() required tokens[0] to be `git`, so ANY leading token made it
+# return nothing. Measured against the live function BEFORE the fix: 15 of 34
+# forms bypassed the guard. The reported one is first and is the form a script
+# is MOST likely to use, because it is how you stop --amend opening an editor.
+#
+# WHAT WAS ALREADY SOUND AND IS PINNED HERE ANYWAY: quoting (`"git"`, `g'it'`,
+# `git "commit" --amend`), flags before the subcommand (`-C`, `-c`,
+# `--git-dir=`, `--no-pager`) and plain `&&`/`;`/`|`/newline chaining all passed
+# before the fix. They are in this list so a future rewrite of the parser
+# cannot quietly lose them -- an arm that passes today and was never going to
+# fail is still the arm that catches tomorrow's regression.
+BYPASS_452 = [
+    # 1. env-var assignment prefix -- the reported bypass
+    'GIT_EDITOR=true git commit --amend',
+    'A=1 B=2 git commit --amend',
+    'GIT_EDITOR=true git add -A',
+    'GIT_EDITOR="vim -f" git commit --amend',
+    'GIT_PAGER= git commit --amend',                 # present but EMPTY value
+    'GIT_EDITOR=true git -C /tmp/x commit --amend',  # prefix AND a global opt
+    'true && GIT_EDITOR=true git commit --amend',     # prefix after a separator
+    # 2. the `env` wrapper
+    'env GIT_EDITOR=true git commit --amend',
+    '/usr/bin/env git commit --amend',
+    # 3. grouping -- a grouped invocation still runs
+    '(git commit --amend)',
+    'x=$(git commit --amend)',
+    'x=`git commit --amend`',
+    # 4. a shell given the command as a STRING in one token
+    'bash -c "git commit --amend"',
+    "sh -c 'git commit --amend'",
+    # 5. an argv-building wrapper
+    'echo x | xargs git commit --amend',
+    # ALREADY SOUND -- pinned so a rewrite cannot lose them
+    '"git" commit --amend',
+    "'git' commit --amend",
+    "g'it' commit --amend",
+    'git commit "--amend"',
+    'git "commit" --amend',
+    'git -C /tmp/x commit --amend',
+    'git --no-pager commit --amend',
+    'git -c user.name=x commit --amend',
+    'git --git-dir=/tmp/.git commit --amend',
+    'git -c a=b -C /tmp commit --amend',
+]
+
+# The negative direction for the SAME change. Peeling a prefix must land
+# EXACTLY on `git`; nothing may scan a token list for the word anywhere in it,
+# or `echo git commit --amend` becomes a finding.
+BYPASS_452_ALLOW = [
+    'echo git commit --amend',          # prints a string, invokes nothing
+    'echo "git add -A"',
+    'echo "amend" && git status',
+    'FOO=bar git status --short',        # a prefix on a HARMLESS command
+    'env FOO=bar git log --oneline -5',
+    'bash -c "git status"',              # shell payload, nothing forbidden in it
+    'timeout 30 git status',
+    'nice -n 10 git log -1',
+]
+
 ALLOW = [
     # The commands a person legitimately runs to get OUT of a rebase.
     'git status',
@@ -170,6 +231,51 @@ ok(bad == 0,
    'and none of the %d legitimate shapes is -- including the ones that merely '
    'QUOTE a forbidden command, which is how the push-master guard denied three '
    'commands in one session' % len(ALLOW), '%d false positives' % bad)
+
+# ── H2 seq 452: THE PREFIX AND WRAPPER CLASSES, BOTH DIRECTIONS ────────────
+missed = [c for c in BYPASS_452 if not guard.forbidden_forms(c)]
+ok(not missed,
+   'all %d prefix/wrapper/grouping forms are recognised -- 15 of these '
+   'BYPASSED the guard before 2026-10-05, led by `GIT_EDITOR=true git commit '
+   '--amend` (H2 seq 452): tokens[0] was not `git`, so the parser returned '
+   'nothing and the guard said CLEAR on an amend' % len(BYPASS_452),
+   'still bypassing: %r' % (missed[:6],))
+
+fp = [(c, guard.forbidden_forms(c)) for c in BYPASS_452_ALLOW
+      if guard.forbidden_forms(c)]
+ok(not fp,
+   'and none of the %d look-alikes is -- `echo git commit --amend` INVOKES '
+   'nothing, and a harmless command carrying an env prefix or a wrapper is '
+   'still harmless. THIS IS THE ARM THAT BOUNDS THE FIX: a peeled prefix must '
+   'land exactly on `git`, never scan the token list for the word'
+   % len(BYPASS_452_ALLOW), 'false positives: %r' % (fp[:4],))
+
+# ── NESTING, BUILT BY shlex.quote RATHER THAN HAND-QUOTED ──────────────────
+# The first version of this arm used a hand-written five-deep string and FAILED
+# -- not because the guard was wrong but because the literal was mis-quoted, so
+# the arm was measuring my typing. Recorded rather than quietly replaced: a
+# fixture that is hard to write by hand is a fixture that should be generated,
+# and a failing arm whose cause is the fixture is indistinguishable from one
+# whose cause is the subject until you check.
+_nest = {}
+for _d in range(1, 7):
+    _c = 'git commit --amend'
+    for _ in range(_d):
+        _c = 'bash -c ' + _shlex.quote(_c)
+    _nest[_d] = guard.forbidden_forms(_c)
+
+ok(all(_nest[d] == [AMEND] for d in (1, 2, 3, 4)),
+   'a shell nest is followed to depth 4 and the amend inside is named exactly '
+   '-- `bash -c "git commit --amend"` keeps its payload as ONE shlex token, so '
+   'nothing inspecting a token list could ever have seen it',
+   'depths 1-4 gave %r' % ({d: _nest[d] for d in (1, 2, 3, 4)},))
+
+ok(all(_nest[d] and 'deeper than this guard' in _nest[d][0] for d in (5, 6)),
+   'and a nest DEEPER than it will follow is REPORTED as could-not-parse, '
+   'never silence. THIS IS THE THIRD STATE: the parser declining to read '
+   'something must not be indistinguishable from it reading it and finding '
+   'nothing -- the same rule as the unparseable-line fallback above',
+   'depths 5-6 gave %r' % ({d: _nest[d] for d in (5, 6)},))
 
 
 # ══ PART 2 -- A REAL STOPPED REBASE, built by git, in a throwaway repo ══════
