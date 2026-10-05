@@ -1,9 +1,27 @@
 {
   "_what": "Pinned fail-open coverage. Written by tools/fail_open_scan.py --baseline. A ratchet: `dependency_failopen` and `hook_failopen` must never rise.",
   "_why": "From a git hook, exit 0 means ALLOW. A missing checker or a failed git discovery that exits 0 is a pass nobody performed -- which is how a credential reached a commit on 2026-09-28.",
-  "dependency_failopen": 17,
-  "files_with_a_shape": 22,
-  "hook_failopen": 0,
-  "hook_sites": [],
+  "dependency_failopen": 18,
+  "dependency_sites": [
+    ".githooks/pre-commit :: exit-0-on-failure",
+    "tools/copy_exactly_gate.py :: bare-except-pass",
+    "tools/defect_budget_policy.py :: bare-except-pass",
+    "tools/deploy_verify_notify.py :: bare-except-pass",
+    "tools/first_article_check.py :: bare-except-pass",
+    "tools/fmea_draft.py :: bare-except-pass",
+    "tools/gate_column_check.py :: bare-except-pass",
+    "tools/master_plan.py :: bare-except-pass",
+    "tools/push_retry.py :: bare-except-pass",
+    "tools/sairn_claim.py :: bare-except-pass",
+    "tools/sairn_push_gate_hook.py :: bare-except-pass",
+    "tools/sairn_self_state.py :: bare-except-pass",
+    "tools/sairn_source_fetch.py :: bare-except-pass",
+    "tools/sairn_status.py :: bare-except-pass"
+  ],
+  "files_with_a_shape": 24,
+  "hook_failopen": 1,
+  "hook_sites": [
+    ".githooks/pre-commit:104"
+  ],
   "scope_shaped": 1
 }

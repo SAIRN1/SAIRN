@@ -66,7 +66,41 @@ fi
 #
 # THIS BLOCK IS BEFORE THE HOVER SCOPE TEST DELIBERATELY. That test exits 0 in
 # all four build clones, and the build clones are the ones that write probes.
-STAGED_PROBES=$(git diff --cached --name-only --diff-filter=ACM \
+# ── TWO STATUSES, SEPARATED (2026-10-05) ────────────────────────────────────
+# This was one pipeline with `|| true` on the end:
+#
+#   STAGED_PROBES=$(git diff --cached ... | grep -E '...' || true)
+#
+# `|| true` applies to the WHOLE PIPELINE, so it swallowed two different
+# answers as one:
+#
+#   * grep exiting 1 because NOTHING MATCHED -- legitimate, and the reason the
+#     `|| true` was there at all: "no staged probe files" is a real, empty,
+#     correct result.
+#   * `git diff --cached` FAILING -- not legitimate. That is "could not
+#     check", and the hook then saw an empty STAGED_PROBES and skipped the
+#     live-probe-residue audit in silence. FROM A HOOK THAT IS A PASS NOBODY
+#     PERFORMED, which is the one thing `exit 0` must never mean here.
+#
+# It is the same class as the two reading errors recorded on 2026-10-04/05 --
+# A STATUS READ OFF THE WRONG SUBJECT -- and it was the highest-consequence
+# instance on the platform, because it sits in a git hook. Found by asking why
+# fail_open_scan.py's dependency count had risen from 17 to 19:
+# `.githooks/pre-commit:70` was one of only TWO genuinely new sites, and it
+# also took hook_failopen from 0 to 1.
+#
+# So git's status is checked on its own, and only THEN is the list filtered.
+# A git failure now refuses the commit with a reason instead of skipping an
+# audit quietly; grep finding nothing is still just an empty list.
+if ! STAGED_ALL=$(git diff --cached --name-only --diff-filter=ACM); then
+  echo "pre-commit: could not read the staged file list (git diff --cached failed)." >&2
+  echo "  REFUSING rather than skipping: an empty list and an unreadable one are" >&2
+  echo "  different answers, and only one of them means 'no probes were staged'." >&2
+  exit 1
+fi
+# grep's own status is deliberately discarded HERE and only here -- exit 1 from
+# grep means "no match", which is a correct empty result for this question.
+STAGED_PROBES=$(printf '%s\n' "$STAGED_ALL" \
   | grep -E '^(tools|tests|scripts)/.*\.(py|js)$' || true)
 if [ -n "$STAGED_PROBES" ]; then
   HITS=""

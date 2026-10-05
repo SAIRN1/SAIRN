@@ -401,6 +401,12 @@ def main(argv=None):
             'hook_failopen': len(hooks),
             'scope_shaped': len(scope),
             'hook_sites': ['%s:%d' % (r, h['line']) for r, h in hooks],
+            # KEYED ON (file, shape), NOT ON A LINE NUMBER. Seven of the
+            # nine apparent regressions on 2026-10-05 were the same guard
+            # relocated; a line number makes every refactor look like a
+            # new fail-open and buries the two that were real.
+            'dependency_sites': sorted(set(
+                '%s :: %s' % (r, h['shape']) for r, h in dep)),
         }, indent=2, sort_keys=True) + '\n')
         print('wrote %s' % os.path.relpath(PIN, REPO))
         return 0
@@ -421,6 +427,59 @@ def main(argv=None):
         sys.stderr.write('COULD NOT TELL -- the pin carries no integer '
                          '`dependency_failopen`.\n')
         return 2
+
+    # ── THE COUNT IS NOT ACTIONABLE ON ITS OWN, MEASURED 2026-10-05 ──────────
+    # This ratchet reported "dependency fail-opens rose from 17 to 19" for over
+    # a week and nobody could act on it, because A COUNT CANNOT NAME WHAT ROSE.
+    # Diffing the site list against the baseline tree with this same scanner
+    # showed NINE entries that looked new and SEVEN of them were THE SAME GUARD
+    # AT A MOVED LINE NUMBER -- deploy_verify_notify 95->195, master_plan
+    # 251->257, push_retry 490->694, sairn_claim 1483->1844,
+    # sairn_push_gate_hook 781->812 and 832->863, pre-commit 51->102. Only two
+    # were real.
+    #
+    # SO THE PIN NOW CARRIES THE SITE SET, KEYED ON (file, shape) AND NOT ON A
+    # LINE NUMBER, and the comparison reports ADDED and REMOVED by name. A
+    # relocated guard is no longer a regression, and a genuinely new one is
+    # named in the output instead of leaving the next session to bisect.
+    #
+    # Same lesson as tools/seam_cannot_tell_watch.py, which was built for the
+    # identical reason eight hours earlier: THE NAMES ARE THE POINT, NOT THE
+    # COUNT. A count-only ratchet is also silent on churn -- one guard fixed
+    # while another appears holds the total still and moves the risk.
+    #
+    # The count check is KEPT as well, not replaced: the pin is from an older
+    # format on first run and `sites` may be absent, in which case the count is
+    # the only comparison available and saying so beats inventing a set.
+    def key(rel, h):
+        return '%s :: %s' % (rel, h['shape'])
+
+    now_sites = sorted(set(key(r, h) for r, h in dep))
+    was_sites = pin.get('dependency_sites')
+    if isinstance(was_sites, list):
+        added = sorted(set(now_sites) - set(was_sites))
+        removed = sorted(set(was_sites) - set(now_sites))
+        if removed:
+            print('  %d dependency shape(s) GONE since the pin -- reported, '
+                  'not celebrated, because a removal is work somebody did:'
+                  % len(removed))
+            for k in removed:
+                print('    - %s' % k)
+        if added:
+            print('  %d NEW dependency shape(s), BY NAME:' % len(added))
+            for k in added:
+                print('    + %s' % k)
+        if not added and not removed and len(dep) != was:
+            print('  THE SET IS UNCHANGED AND THE COUNT MOVED (%d -> %d), which '
+                  'means the same (file, shape) pair gained or lost an '
+                  'occurrence. Not a new site; still worth a look.'
+                  % (was, len(dep)))
+    else:
+        print('  NOTE: the pin carries no `dependency_sites`, so only the COUNT '
+              'could be compared -- a relocated guard is indistinguishable from '
+              'a new one. Re-pin to fix that:')
+        print('    python tools/fail_open_scan.py --baseline')
+
     if len(dep) > was:
         print('REGRESSION -- dependency fail-opens rose from %d to %d.'
               % (was, len(dep)))
