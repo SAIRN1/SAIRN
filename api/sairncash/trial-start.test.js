@@ -1,4 +1,9 @@
 // api/sairncash/trial-start.test.js
+// REQUIREMENT: starting a trial is idempotent for the person who owns it and
+//   discloses nothing to anyone else -- a retried request recovers its own
+//   trial_token, while a caller presenting the right email with the wrong key
+//   or no key gets exactly what they got before, because this endpoint is
+//   public, unauthenticated, and keyed only on an email address
 // Run: node api/sairncash/trial-start.test.js
 //
 // ITEM 6. The ROW could never duplicate -- `email` is UNIQUE and the 409 was

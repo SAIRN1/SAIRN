@@ -1,4 +1,8 @@
 // api/sairncash/trial-renew.test.js
+// REQUIREMENT: the admin trial-renewal endpoint refuses before it touches the
+//   network -- a missing, blank or wrong SAIRNCASH_ADMIN_SECRET bearer is
+//   rejected, and a server with no secret configured must not fall open to
+//   anyone presenting none
 // Plain node:assert tests -- no test framework, matching
 // send-reminder.test.js's convention exactly (same auth-gate class of
 // endpoint: a shared-secret Bearer check that returns before any

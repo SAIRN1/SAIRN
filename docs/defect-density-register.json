@@ -22855,6 +22855,77 @@
       "recurrence_open": "The two fixed suites are green and the other ten with the identical stub are not -- measured at 12 files throwing on an absent expectedApp against 2 using the green shape. Nothing yet reports an app's red set on a cadence, so the NEXT control to land on a red suite will be just as invisible as the witness lock was. And the deepest one stays open by choice: no instrument counts unscoped verifySessionToken calls, so a branch gate that dropped its app scope entirely would pass every stub on this platform including the two reference-green ones -- the guard catches a WRONG app and cannot see a MISSING one."
     },
     {
+      "commit": "b62b959d8ade",
+      "date": "2026-10-05",
+      "subject": "fix(sairnsenior): a backwards clock pair billed NEGATIVE hours -- six callers, four unguarded; plus a role-gate ratchet that paid out for deleting the evidence",
+      "files": [
+        "SAIRN-ACTIVE-WORK-fourth.md",
+        "api/sairncash/trial-renew-idempotency.test.js",
+        "api/sairncash/trial-renew.test.js",
+        "api/sairncash/trial-start.test.js",
+        "api/sairncash/verify.test.js",
+        "docs/MASTER-PLAN.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/role-gate-negative-coverage.json",
+        "docs/traceability-matrix.md",
+        "sairnsenior.html",
+        "tests/run_citation_arm_depth_probe.py",
+        "tests/run_role_gate_ratchet_probe.py",
+        "tests/sairncash_entitlement_gate_probe.py",
+        "tests/sairnsenior_negative_hours_claim.js",
+        "tests/sairnsenior_referral_hours.js",
+        "tools/citation_arm_depth_check.py",
+        "tools/role_gate_negative_coverage.py"
+      ],
+      "lines_added": 1311,
+      "lines_removed": 51,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "visitHours() returned a NEGATIVE for a sen_visits row whose clock_out_at precedes its clock_in_at, and generateClaim() billed hours_billed and amount straight off it -- so a backwards clock pair produced a negative claim. Three further unguarded consumers: visitLabourCost (a negative cost, which makes a badly-recorded branch look profitable), the branch rollup (one bad row subtracts from a branch total) and the authorisation-gap AI tool (inflates a shortfall). Clamped at source; the billing path now refuses the row outright rather than writing a silent zero-hour claim over a corrupt record, because in this app a $0 claim already means 'set the rate by hand'.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "visitHours() has had no non-negative guard since it was written; git log on the function identifies no commit that removed one, so no injection sha can be cited honestly"
+      },
+      "phase_note": "design: the guard was never specified. The app's own comment had already identified the gap and deferred it as its own change, so this is an omitted requirement rather than a coding slip",
+      "contributing_factors": [
+        {
+          "factor": "visitHours() was written as pure arithmetic with no domain guard, and its callers each decided independently whether to guard -- two did, four did not",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the clamp moved into visitHours() itself so the decision is made once; arm D1 pins that the guard is in the function and not at a call site"
+        },
+        {
+          "factor": "the gap was KNOWN and written in the source long before it was fixed -- a comment at the referral-hours site named it and scoped it correctly as its own change, and nothing tracked it from there",
+          "kind": "process",
+          "action_status": "declined",
+          "action": "DECLINED here, deliberately: the general repair is a sweep that turns every in-source SEPARATE FINDING note into a tracked row, and folding a sweep into a one-function fix is the scope growth this repo polices. What WAS done is local -- the note at the referral-hours site now points at the fix and at its suite, so the next reader of that comment is not told the gap is still open",
+          "note": "an in-source note is on no list a session reads at start-of-work; that remains true platform-wide"
+        },
+        {
+          "factor": "that same comment UNDERCOUNTED the blast radius -- three consumers named, six real -- so a reader acting on it would have fixed the claim and left negative costs and a subtracting branch rollup in place",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "the re-count is in the function header with each caller and its guard status, so the next reader starts from the measured list rather than re-deriving it"
+        },
+        {
+          "factor": "nothing drove the shape: no suite planted a backwards clock pair, so every consumer was green over data the fixtures could not produce",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/sairnsenior_negative_hours_claim.js -- 19 arms plus five sabotages, each caught by exactly the intended arm, source restored byte-identically"
+        }
+      ],
+      "recurrence_open": "NOTHING CLOSES THE GENERAL CASE. The fix and its arms are specific to visitHours(); no check on this platform looks for other arithmetic helpers whose callers disagree about guarding, and factor 2's platform-wide repair is DECLINED here rather than done."
+    },
+    {
       "commit": "d3d2db42af5d",
       "date": "2026-10-05",
       "subject": "fix(check11): the gate read the working tree while the push shipped a commit, and git ls-files hid a path for 25 days",

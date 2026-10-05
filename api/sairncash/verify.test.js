@@ -1,4 +1,8 @@
 // api/sairncash/verify.test.js
+// REQUIREMENT: every decision verify.js makes about a Stripe Checkout Session
+//   or Subscription is correct without credentials -- an unpaid, cancelled or
+//   past_due subscription answers valid:false rather than an error code, and a
+//   server with no STRIPE_SECRET_KEY refuses without naming the secret
 //
 // Proves SAIRNcash's Stripe response handling is correct WITHOUT a Stripe key,
 // by injecting fixtures shaped like Stripe's published Checkout Session and

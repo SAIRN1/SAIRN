@@ -1,4 +1,9 @@
 // api/sairncash/trial-renew-idempotency.test.js
+// REQUIREMENT: the only write path that can extend a trial's expires_at must
+//   survive both a retried request and a concurrent one -- a lost response
+//   retried without an idempotency key must not grant a second 30-day window,
+//   and the loser of the compare-and-set must be TOLD rather than handed a 200
+//   over an empty array
 // Run: node api/sairncash/trial-renew-idempotency.test.js
 //
 // ITEM 6. trial-renew.js SELECTs renewal_count, adds one in JavaScript, and

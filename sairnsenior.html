@@ -3413,15 +3413,15 @@ function rfMedian(nums){
 // visit's hours out of the source total. Caught by arm B6 of
 // tests/sairnsenior_referral_hours.js, on the first run, against this very fix.
 //
-// SEPARATE FINDING, FLAGGED AND NOT FIXED HERE: `visitHours()` itself has no
-// non-negative guard, and `generateClaim()` bills `hoursBilled = visitHours(v)`
-// straight off it -- so a backwards pair would bill negative hours. The
-// authorisation burn-down at ~:2540 DOES guard (`isFinite(ms) && ms > 0`), so
-// the three consumers do not agree. api/_lib/sen-evv-clock.js refuses
-// CLOCK_OUT_BEFORE_IN, so the server cannot store one THROUGH THAT PATH, which
-// is why this is a latent disagreement rather than a live billing defect --
-// local rows predating the module are not covered by it. Changing visitHours()
-// touches claim generation and is its own change, not a line in a sweep fix.
+// THAT SEPARATE FINDING IS NOW FIXED (2026-10-05) and this note is kept
+// rather than deleted, because the guard below is what it was written about.
+// `visitHours()` clamps a backwards pair to 0 at source, and `generateClaim()`
+// REFUSES one outright via `visitClockReversed()` -- see the headers at
+// ~:3964. The re-count done before fixing found SIX callers, not three, and
+// four of them were unguarded; this line below is one of the two that always
+// was. It is left in place deliberately: the clamp makes it redundant, and a
+// caller that states its own precondition does not become wrong when the
+// callee starts honouring it.
 function rfDeliveredHoursFor(clientId){
   var h=0;
   visits().forEach(function(v){
@@ -3961,13 +3961,71 @@ function renderReadyToBill(){
 // Shared with the get_ops_attention AI tool below so both compute
 // delivered hours the same way -- a claim and an insufficient-hours
 // finding must never silently diverge on this arithmetic.
+// ── NON-NEGATIVE AT SOURCE (2026-10-05) ───────────────────────────────────
+// This returned a NEGATIVE number for a row whose clock_out_at precedes its
+// clock_in_at, and the comment at ~:3416 flagged it against ONE consumer.
+// Re-counted before fixing: there are SIX callers and FOUR of them were
+// unguarded, which is why the clamp belongs here and not at a call site.
+//
+//   GUARDED already  rfDeliveredHoursFor (~:3429)  `isFinite(vh)&&vh>0`
+//   GUARDED already  the authorisation burn-down (~:2540, own arithmetic)
+//   UNGUARDED        generateClaim (~:3971)   bills hours_billed and amount
+//   UNGUARDED        visitLabourCost (~:4675) a negative COST, which makes a
+//                    badly-recorded branch look profitable -- the exact
+//                    reading that function's own header says it exists to stop
+//   UNGUARDED        the branch rollup (~:5252) `r.hours += visitHours(v)`,
+//                    so one backwards row SUBTRACTS from a branch's hours
+//   UNGUARDED        the authorisation-gap tool (~:5837), which inflates the
+//                    reported shortfall and would send staff to a client who
+//                    is not short
+//
+// CLAMPED TO 0, NOT TO THE ABSOLUTE VALUE. |out - in| would invent a duration
+// nobody recorded and would read as a real visit; 0 matches what the two
+// already-guarded consumers do with a backwards row today, so this changes
+// nothing for them and nothing silently for anybody.
+//
+// AND 0 IS AMBIGUOUS ON PURPOSE, WHICH IS WHY THE PREDICATE BELOW EXISTS.
+// A visit nobody clocked also yields 0. The two are different facts and the
+// one caller that must not collapse them is the one that bills.
 function visitHours(v){
   if(!v||!v.clock_in_at||!v.clock_out_at)return 0;
-  return Math.round(((new Date(v.clock_out_at)-new Date(v.clock_in_at))/3600000)*100)/100;
+  var h=Math.round(((new Date(v.clock_out_at)-new Date(v.clock_in_at))/3600000)*100)/100;
+  if(!isFinite(h)||h<0)return 0;
+  return h;
+}
+// True ONLY for a row that carries both timestamps, both parse, and the clock
+// ran backwards. An unclocked visit is false -- it is missing, not reversed --
+// and an unparseable timestamp is false too, because "I cannot read this" is
+// not the same claim as "this is backwards".
+function visitClockReversed(v){
+  if(!v||!v.clock_in_at||!v.clock_out_at)return false;
+  var a=new Date(v.clock_in_at).getTime(), b=new Date(v.clock_out_at).getTime();
+  if(!isFinite(a)||!isFinite(b))return false;
+  return b<a;
 }
 async function generateClaim(visitId){
   var v=visits().find(function(x){return x.id===visitId;});if(!v){toast('Visit not found');return;}
   var cl=clients().find(function(c){return c.id===v.client_id;});
+  // ── A BACKWARDS CLOCK PAIR REFUSES RATHER THAN BILLING (2026-10-05) ─────
+  // Before the clamp above this billed NEGATIVE hours and a negative amount.
+  // The clamp alone would turn that into a silent zero-hour claim, which is
+  // worse in the one way this codebase cares about most: a $0 claim looks like
+  // a pricing problem a biller should fix by hand, so the real defect -- a
+  // corrupt visit record -- gets papered over at the only screen that would
+  // have surfaced it.
+  //
+  // WHY THIS IS NOT DEAD CODE. api/_lib/sen-evv-clock.js refuses
+  // CLOCK_OUT_BEFORE_IN, so the server cannot store one THROUGH THAT PATH.
+  // It is not the only path: rows written before that module existed are not
+  // covered by it, and `visits()` reads local storage, which the module never
+  // sees. The refusal is cheap and the alternative is billing a payer for a
+  // negative shift.
+  if(visitClockReversed(v)){
+    toast('This visit cannot be billed: its clock-out is BEFORE its clock-in ('
+      +v.clock_in_at+' to '+v.clock_out_at+'). Correct the visit record first '
+      +'-- no claim has been created.');
+    return;
+  }
   var hoursBilled=visitHours(v);
   // THE RATE COMES FROM THE CONTRACT IN FORCE ON THE SERVICE DATE, not from
   // the biller's memory and not from today's contract. Where no single

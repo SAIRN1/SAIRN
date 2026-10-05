@@ -702,6 +702,114 @@ def ablate(resource):
     return rc
 
 
+def compare_to_pin(n_uncovered, n_undriven, pin):
+    """(exit code, [lines]) -- the ratchet decision, with no I/O and no analysis.
+
+    PURE ON PURPOSE (item 92's shape). The decision this function makes is the
+    whole value of the ratchet, and before 2026-10-05 it lived inline in
+    main() where the only way to exercise it was to run the full static pass
+    over the real repo -- which takes minutes and can only ever produce the
+    ONE state the repo happens to be in. The gameable case below could not be
+    reached that way at all. Split out so fixtures can drive it directly;
+    tests/run_role_gate_ratchet_probe.py holds the arms.
+
+    ── WHAT WAS WRONG, AND EXACTLY HOW FAR THE FIX GOES ────────────────────
+    The old rule compared `uncovered` alone. Deleting the only suite that
+    drives a resource moves it from `uncovered` to `not_driven`:
+
+        before  R in uncovered   -- a suite drives it, never with an excluded role
+        after   R in not_driven  -- nothing drives it at all
+
+    `uncovered` FELL BY ONE and the tool printed "IMPROVED -- re-pin", so
+    deleting the evidence was rewarded with a better number and an invitation
+    to lock that number in. The repo got strictly worse: before, one suite
+    touched the resource; after, none did.
+
+    THE SUM CLOSES THAT, AND IT IS WORTH BEING PRECISE ABOUT HOW, because the
+    two deletion cases do NOT land in the same place:
+
+      * DELETING A SUITE THAT DRIVES A `covered` RESOURCE -- the serious one,
+        since that suite was the only one using an excluded role -- moves it
+        covered -> not_driven. `exposed` RISES. **REGRESSION, exit 1.**
+      * DELETING A SUITE THAT DRIVES AN `uncovered` RESOURCE moves it
+        uncovered -> not_driven. `exposed` IS UNCHANGED, so this returns
+        "no worse", exit 0 -- NOT "IMPROVED", and that is the fix. The payout
+        is gone and there is nothing to re-pin downward to. It is deliberately
+        not an exit 1: by this tool's own definition both buckets mean "nothing
+        would notice if the gate were deleted", so the measured exposure really
+        did not change, and raising a refusal on a figure that did not move
+        would be the tool overstating what it can see -- the exact fault its
+        `not_driven` / blind-population split exists to avoid.
+
+    SO THE CLAIM IS NARROW AND IS STATED NARROWLY: the ratchet can no longer
+    be RATCHETED DOWN by deleting a suite, and the covered case is denied
+    outright. A suite deletion inside the uncovered bucket is still invisible
+    to the static screen; `--ablate` is the only thing that settles that one,
+    and this function cannot and does not pretend otherwise.
+
+    ── AND THE SUM SURVIVES A RULE CHANGE, WHICH `uncovered` DID NOT ───────
+    The pin's own `_what` records that adding a table rule moved resources
+    not_driven -> uncovered (uncovered 12 -> 17, not_driven 16 -> 11) "without
+    the world changing", leaving the two pins non-comparable across that
+    commit. A move BETWEEN the two buckets leaves the sum unchanged, so the
+    ratcheted figure stays comparable across exactly the change that broke the
+    old one. A second reason, not a side effect.
+    """
+    out = []
+    was = pin.get('uncovered')
+    if not isinstance(was, int):
+        return 2, ['COULD NOT TELL -- the pin carries no integer `uncovered`.']
+
+    exposed_now = n_uncovered + n_undriven
+    exposed_was = pin.get('exposed')
+    if not isinstance(exposed_was, int):
+        # DERIVED FROM AN OLD PIN RATHER THAN DEMANDING A RE-BASELINE: every
+        # pin this tool has ever written carries both `uncovered` and
+        # `not_driven`, so a pin predating `exposed` can still answer the new
+        # question. Failing closed here would have frozen every unrelated push
+        # until somebody re-pinned -- the cost this file already names when it
+        # explains why a missing pin is exit 2 and not a silent pass.
+        nd_was = pin.get('not_driven')
+        if not isinstance(nd_was, int):
+            return 2, ['COULD NOT TELL -- the pin carries neither `exposed` nor '
+                       'an integer `not_driven`, so the sum cannot be derived. '
+                       'NOTHING WAS COMPARED on that leg.']
+        exposed_was = was + nd_was
+        out.append('note: pin predates `exposed`; derived %d from uncovered %d '
+                   '+ not_driven %d.' % (exposed_was, was, nd_was))
+
+    if exposed_now > exposed_was:
+        return 1, out + [
+            'REGRESSION -- gates nothing would notice rose from %d to %d '
+            '(uncovered %d + not-driven %d).'
+            % (exposed_was, exposed_now, n_uncovered, n_undriven),
+            'A SUITE THAT DRIVES A COVERED RESOURCE WAS PROBABLY DELETED -- that '
+            'is this check working. Restore it, or drive the resource with a role '
+            'its gate excludes.',
+            'Re-pin with --baseline only alongside a commit that says which it was.']
+    if n_uncovered > was:
+        return 1, out + [
+            'REGRESSION -- uncovered role gates rose from %d to %d.' % (was, n_uncovered),
+            'Either add an arm driving the new gate with a role it excludes, or say',
+            'why it does not need one and re-pin with --baseline in the same commit.']
+    # IMPROVED REQUIRES THE SUM TO FALL. `uncovered` falling on its own is the
+    # gamed shape -- it is what a deleted suite looks like -- so it is reported
+    # as "no worse" below and never as an improvement to be pinned in.
+    if exposed_now < exposed_was:
+        return 0, out + [
+            'IMPROVED -- uncovered %d -> %d, exposed (uncovered+not-driven) %d -> %d. Re-pin:'
+            % (was, n_uncovered, exposed_was, exposed_now),
+            '   python tools/role_gate_negative_coverage.py --baseline']
+    msg = ['OK -- no worse than pinned (%d uncovered, %d exposed).' % (was, exposed_was)]
+    if n_uncovered < was:
+        msg.append('NOT AN IMPROVEMENT, DELIBERATELY: `uncovered` fell %d -> %d while '
+                   'the sum held at %d, which is what DELETING a driving suite looks '
+                   'like. Nothing to re-pin.' % (was, n_uncovered, exposed_now))
+    msg.append('A RATCHET IS NOT A PASS. %d gate(s) would still survive deletion.'
+               % exposed_now)
+    return 0, out + msg
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument('--ablate', metavar='RESOURCE',
@@ -779,8 +887,13 @@ def main(argv=None):
             'uncovered': len(uncovered),
             'covered': len(covered),
             'not_driven': len(undriven),
+            # ── THE RATCHETED FIGURE (2026-10-05) ───────────────────────
+            # uncovered + not_driven. See the comparison in main() for why
+            # ratcheting `uncovered` alone was gameable by DELETING a suite.
+            'exposed': len(uncovered) + len(undriven),
             'gated_total': len(gated),
             'uncovered_resources': [u[0] for u in uncovered],
+            'not_driven_resources': [u[0] for u in undriven],
         }, indent=2, sort_keys=True) + '\n')
         print('wrote %s' % os.path.relpath(PIN, REPO))
         return 0
@@ -801,19 +914,42 @@ def main(argv=None):
         sys.stderr.write('COULD NOT TELL -- the pin carries no integer `uncovered`.\n')
         return 2
 
-    if len(uncovered) > was:
-        print('REGRESSION -- uncovered role gates rose from %d to %d.' % (was, len(uncovered)))
-        print('Either add an arm driving the new gate with a role it excludes, or say')
-        print('why it does not need one and re-pin with --baseline in the same commit.')
-        return 1
-    if len(uncovered) < was:
-        print('IMPROVED -- uncovered fell from %d to %d. Re-pin:' % (was, len(uncovered)))
-        print('   python tools/role_gate_negative_coverage.py --baseline')
-        return 0
-    print('OK -- no worse than pinned (%d uncovered).' % was)
-    print('A RATCHET IS NOT A PASS. %d gate(s) would still survive deletion.'
-          % len(uncovered))
-    return 0
+    # ── THE RATCHET IS ON THE SUM, BECAUSE `uncovered` ALONE WAS GAMEABLE ────
+    # Found 2026-10-05. Ratcheting `uncovered` by itself rewards DELETING the
+    # only suite that drives a resource:
+    #
+    #   before   R is in `uncovered`  -- a suite drives it, never with an
+    #                                    excluded role
+    #   delete that suite
+    #   after    R is in `not_driven` -- nothing drives it at all
+    #
+    # `uncovered` FALLS BY ONE and the old code printed "IMPROVED", exit 0,
+    # while coverage had strictly got worse: before, one suite touched the
+    # resource and merely never used an excluded role; after, nothing touches
+    # it. The ratchet paid out for removing the evidence.
+    #
+    # Both buckets mean the same thing for the question this tool asks -- "would
+    # anything notice if this gate were deleted?" -- so both belong in the
+    # ratcheted number. `covered` is the only bucket where the answer is yes.
+    #
+    # AND THE SUM IS ALSO IMMUNE TO THE RECLASSIFICATION THIS FILE ALREADY
+    # WARNS ABOUT. The pin's own `_what` records that adding a RULE moved
+    # resources not_driven -> uncovered (12 -> 17 and 16 -> 11 on 2026-09-29)
+    # "without the world changing", making the two pins non-comparable across
+    # that commit. A move between the two buckets leaves the SUM unchanged, so
+    # the ratcheted figure stays comparable across exactly the change that
+    # broke the old one. That is a second reason, not a side effect.
+    #
+    # DERIVED FROM AN OLD PIN RATHER THAN DEMANDING A RE-BASELINE: every pin
+    # this tool has ever written carries both `uncovered` and `not_driven`, so
+    # a pin predating `exposed` can still answer the new question. Falling back
+    # to "could not tell" here would have frozen every push until somebody
+    # re-pinned, which is the cost this file's own NOT_PROVISIONED note warns
+    # about.
+    code, lines = compare_to_pin(len(uncovered), len(undriven), pin)
+    for ln in lines:
+        (sys.stderr if code == 2 else sys.stdout).write(ln + '\n')
+    return code
 
 
 if __name__ == '__main__':

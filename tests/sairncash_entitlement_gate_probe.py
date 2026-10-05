@@ -1,5 +1,10 @@
 """tests/sairncash_entitlement_gate.js must REFUSE a forged entitlement.
 
+# REQUIREMENT: the entitlement suite must be PROVEN to deny, not merely to pass
+#   -- planting a forged-localStorage grant into sairncash.html has to turn
+#   tests/sairncash_entitlement_gate.js red, because reverifySubscription() is
+#   the only thing between a text editor and the paid product
+
 Run: python tests/sairncash_entitlement_gate_probe.py
 
 reverifySubscription() IS THE ONLY THING STANDING BETWEEN A TEXT EDITOR AND A

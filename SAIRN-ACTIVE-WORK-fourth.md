@@ -993,3 +993,159 @@ direct database access, which is Michael's to do.
 session that wrote it is better placed to confirm the hashes were produced from
 the current `.demo-credentials.local.json` than I am from reading its header.
 Flagged rather than adopted.
+
+---
+
+## 2026-10-05 (second batch) — premise log first, then four items built and two refused
+
+### 0. METHODOLOGY — every premise re-derived from HEAD before anything was touched
+
+| # | Premise as stated | Verdict against HEAD |
+|---|---|---|
+| — | "seq 444 / 445 / 450" | **REAL SCHEME, NOT RESOLVABLE FROM THIS CLONE — and the first answer here was wrong.** My first pass concluded "no such identifier exists": `docs/defect-density-register.json` holds **437** records with **no `seq` field**, and the highest `item N` in the open-work index is **102**. That conclusion was too strong. `seq` is the **hover auditor's** numbering — hank's live claim names "seq 452" and `.claude/skills/sairn-hover-auditor/tools/citation_class_check.py:89` references "seq 459", so the 450s are current. The ledger that would resolve 444/445/450 lives in `Documents\SAIRN-hover`, **which a build agent must not reach into** (CLAUDE.md, hover separation). Searching the hover jsonl files mirrored into this clone returns **0 matches** for all three. So the numbers are unresolvable *here*, by design, not absent. The technical descriptions attached to them were checked on their own merits instead, and that is what the rows below record |
+| 1 | `visitHours()` has no non-negative guard, feeds `generateClaim()` billing | **PREMISE HELD** — and understated. The app flagged it against **three** consumers; a re-count found **six**, of which **four** were unguarded |
+| 2 | the role-gate ratchet is gameable by deleting the driving suite | **PREMISE HELD**, exactly as described. It compared `uncovered` alone; the pin already stored `not_driven` and never compared it |
+| 3 | `alf_incidents` refusal cites the wrong migration file | **PREMISE FALSE** — doubly. See §3 |
+| 4 | 5 of 13 SAIRNcash suites untraced | **PREMISE HELD**, exactly 5 |
+| 5 | citations naming a test that exists but never reaches the cited endpoint | **PREMISE UNPROVEN, now measured** — detector built, swept, **0 of 85** |
+| 6 | the demo-pin SQL matches the documented credentials | **HALF TRUE, and the other half is a live hazard.** See §6 |
+
+### 1. `visitHours()` is non-negative at source, and a backwards clock pair REFUSES
+
+The in-file flag named three consumers and ended *"Changing visitHours() touches
+claim generation and is its own change."* Correct, and this is that change. The
+re-count found **six callers, four unguarded** — not only the claim:
+`visitLabourCost()` produced a **negative COST**, the exact reading its own
+header says it exists to prevent; the branch rollup did
+`r.hours += visitHours(v)`, so one bad row **subtracts** from a branch total;
+and the authorisation-gap AI tool **inflated a shortfall**, which sends staff to
+a client who is not short. A clamp at four call sites is four chances to miss
+the fifth, so it is clamped at source.
+
+**THE CLAMP ALONE WOULD HAVE BEEN THE WORSE FIX.** 0 already means "nobody
+clocked this". Clamping without more turns a corrupt record into a **$0 claim**
+— which in this app means *"set the rate by hand"*, a familiar pricing gap. The
+data defect would be laundered into a known-looking pricing problem at the one
+screen that could have surfaced it. So `visitClockReversed()` separates the
+three facts that all yield 0 hours (reversed / never clocked / unparseable) and
+`generateClaim()` refuses only the first.
+
+`tests/sairnsenior_negative_hours_claim.js`, 19 arms. **Five sabotages, each
+caught by exactly the intended arm**, `sairnsenior.html` restored
+byte-identically:
+
+| Sabotage | Arm that went red |
+|---|---|
+| clamp removed (the pre-fix code) | A1, A5, C6, D1 |
+| clamp to `Math.abs` instead of 0 | A1, A2 |
+| the `generateClaim` refusal deleted | C1, C2, D2 |
+| guard moved to AFTER `visitHours()` runs | D2 |
+| `visitClockReversed` calls an unclocked visit reversed | B2, C5 |
+
+**TWO DEFECTS IN MY OWN FIRST DRAFT, both caught by its own controls.** The
+runner was synchronous while `generateClaim` is `async`, so arms C1-C3 "passed"
+before their assertions ran — it printed all-green against a deliberately broken
+guard. The runner now queues and **awaits**. Second: the `azResolve` stub
+returned `null`, so C4-C6 died on a TypeError while C1-C3 stayed green — a
+refusal "proved" by a crash. Both are recorded at the lines that fix them.
+
+### 2. The ratchet is on `uncovered + not_driven`, and the limit is pinned as hard as the fix
+
+Old rule: deleting the only suite driving a resource moved it
+`uncovered -> not_driven`, `uncovered` **fell by one**, and the tool printed
+**"IMPROVED -- re-pin"**. Deleting the evidence bought a better number and an
+invitation to lock it in.
+
+The decision is now the pure `compare_to_pin()`. It previously lived inline in
+`main()`, where exercising it meant a multi-minute run over the real repo that
+can only ever produce the one state the repo is in — **the gameable case was
+unreachable that way at all.**
+
+**THE TWO DELETION CASES DO NOT LAND IN THE SAME PLACE, and the probe pins
+both:**
+
+- deleting a driver of a **covered** resource → exposure RISES →
+  **REGRESSION, exit 1**. `tests/run_role_gate_ratchet_probe.py` §C plants it,
+  and §C5 proves the **old rule would have said IMPROVED** on that same fixture.
+- deleting a driver of an **uncovered** one → exposure **UNCHANGED** → exit 0,
+  worded "no worse", never "IMPROVED". Not a refusal, deliberately: by this
+  tool's own definition both buckets mean *"nothing would notice if the gate
+  were deleted"*, so the measured exposure genuinely did not move, and refusing
+  on a figure that did not move is the overstatement its own `not_driven`/blind
+  split exists to avoid. **The payout is gone; the blindness is not.** §D4
+  asserts the word IMPROVED is absent.
+
+**§C5 failed on the first run and was right to.** It had taken
+`sorted(covered)[0]`; deleting those drivers also moved other resources, so
+`uncovered` rose and the OLD rule caught it too — a fixture both rules catch is
+no evidence for the change. The probe now SEARCHES for a discriminating target
+and says so if none exists. 23 arms, all passing.
+
+The sum is also **immune to the reclassification this file already warns
+about**: the 2026-09-29 rule change moved resources between the two buckets and
+made the old pins non-comparable. A move between buckets leaves the sum
+unchanged. Re-pinned: uncovered 17→16 (a real improvement by another session),
+`exposed` 27.
+
+### 3. REFUSED — the `alf_incidents` premise is false, and the file is CC's anyway
+
+`sql/sairncare_incidents_schema.sql:32` **does** `create table if not exists
+public.alf_incidents`, with its grant at :53. The citation is correct. And the
+second migration is already cited too, in its own distinct refusal: a missing
+TABLE answers `NOT_PROVISIONED` naming the schema file, a missing **column**
+answers `MIGRATION_REQUIRED` naming `sql/sairncare_incidents_recorded_by.sql`,
+and `api/sd-data.js` carries the comment explaining why collapsing the two would
+read as *"this facility has no incidents"* over a mandated-reporting log.
+
+Independently of the premise: **`api/sd-data.js` and
+`tests/sairncare/test-alf-incidents.js` are both in CC's active claim.** Not
+touched; declared per PR 4.3.
+
+### 4. SAIRNcash is 13 of 13 traced
+
+Traced by **declared REQUIREMENT headers in the files themselves**, not by index
+rows — `docs/SAIRN-OPEN-WORK-INDEX.md` is CC's active claim. That route is the
+matrix's own weakest of three and is labelled `declared` for exactly that
+reason; each sentence was written from the file's existing header after reading
+what its arms do, never from the filename. All five still pass.
+
+### 5. The citation-depth sweep: 0 of 85, and the detector is proven rather than trusted
+
+`tools/citation_arm_depth_check.py` — one level deeper than DEAD CITATION: a
+cited test that **exists** and never loads its subject. The population is
+deliberately narrow (`X.js` with a sibling `X.test.js`) because
+`docs/2026-09-29-write-site-basis-rule-scope.md` records a broader rule that
+fired on 82 rows and was killed by running it.
+
+**85 pairs, 85 load their subject, 0 findings.** A new detector that finds
+nothing is the result worth least — indistinguishable from one that cannot find
+anything — so `tests/run_citation_arm_depth_probe.py` locks it against synthetic
+fixtures in **both** directions, 13 arms: a test that loads nothing, one whose
+only reference is **in a comment** (the finding class itself), one that loads a
+different module; against require with and without the extension,
+`require.resolve`, an ESM import, `readFileSync`, and `path.join`. Plus a
+could-not-read arm that must answer `None`, never `False`.
+
+**The tool's header states what it cannot see:** loading is necessary and not
+sufficient; a test reaching its subject through a dispatcher is a known
+false-positive class, printed rather than guessed at; and everything outside
+co-located pairs is outside the measurement, so a clean run says nothing about
+it.
+
+### 6. DO NOT RUN `sql/restore_demo_pins_2026-09-29.sql` AS IT STANDS
+
+Both `license_hash` values verify as `sha256(licence key)`. The **SAIRNvet** row
+is correct: its `pin_hash`/`pin_salt` recompute to the documented PIN under the
+platform's own `scryptSync(pin, salt, 64)`.
+
+**The SAIRNbiz row does not.** It encodes `60417293` — the PIN
+`docs/2026-09-03-demo-credentials.md` marks **DEAD 2026-09-25**. The working PIN
+is `84350271`, driven 200 on 2026-10-05 and confirmed live again this session.
+Running this file today would **overwrite a currently working SAIRNbiz
+credential with the dead one**, causing on SAIRNbiz the exact outage it was
+written to repair on SAIRNvet. Its header says the hashes came from
+`.demo-credentials.local.json`; for SAIRNbiz that value has since moved.
+
+**NOT COMMITTED, per the instruction's own condition.** The repair is small —
+drop the SAIRNbiz insert, or re-hash it from the current PIN — but it is a
+credential write and belongs to whoever holds the local file.

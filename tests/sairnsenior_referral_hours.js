@@ -100,8 +100,12 @@ const UNCLOCKED = { id: 'V3', client_id: 'C1', scheduled_date: '2026-09-22',
 const OTHER = { id: 'V4', client_id: 'C2',
                 clock_in_at: '2026-09-20T09:00:00Z',
                 clock_out_at: '2026-09-20T17:00:00Z' };
-// Clocked out BEFORE clocking in. visitHours returns a negative, and the
-// authorisation burn-down refuses that shape -- see arm B5.
+// Clocked out BEFORE clocking in. visitHours USED to return a negative here;
+// since 2026-10-05 it clamps to 0 at source and generateClaim refuses the row
+// outright (tests/sairnsenior_negative_hours_claim.js). B6 below is unchanged
+// and still passes: it was written as a FLOOR (`h >= 0`), not as an equality,
+// so it asserts the property rather than the old implementation's value --
+// which is why the clamp did not turn it red.
 const BACKWARDS = { id: 'V5', client_id: 'C3',
                     clock_in_at: '2026-09-20T11:00:00Z',
                     clock_out_at: '2026-09-20T09:00:00Z' };
