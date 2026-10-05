@@ -2399,6 +2399,42 @@ REGISTRY = [
     },
 ]
 
+# ── MY TWO MOVED OUT OF THE DEAD TAIL, AND THE MOVE IS DERIVED ─────────────
+# Appended 2026-10-05, they landed at indices 71 and 72 of 73 and therefore
+# never executed once. A registry entry that reads as promoted while provably
+# never running is the defect this batch was sent to close, so leaving them
+# there would have made me two more instances of it.
+#
+# REORDERED HERE RATHER THAN BY MOVING THE LITERALS, deliberately: this is four
+# auditable lines that touch no other entry's text, and every other entry keeps
+# its relative order -- including the four cody holds (register_freshness_check,
+# advisory_lock_isolation_check, service_role_tier_a_gate_check,
+# overrun_inversion_scan), which the brief required be left alone. Their claim
+# was checked live before anything moved; none of their files is touched.
+#
+# THE COST IS DERIVED FROM THE MEASUREMENT, NOT ASSUMED TO BE ZERO.
+# docs/report-only-reachability.json, full sweep, 600s budget / 540s cutoff:
+#
+#     reached 36 of 73, never reached 37
+#     entry 35  comment_sensitivity_check.py   215.4s, cumulative 548.7s
+#     entry 36  metamorphic_check.py           first casualty
+#
+# Entry 35 STARTED at cumulative 333.3s, well under the 540s line, and ran for
+# 215.4 seconds -- so the cutoff is set by ONE checker costing 40% of the whole
+# budget. Inserting 3.15s (1.75 + 1.4) at the front moves entry 35's start to
+# 336.5s, still under 540, so it still runs and the break still happens
+# immediately after it. THE SAME 36 ENTRIES CLEAR THE LINE; two more now run
+# ahead of them and NOTHING is displaced. That is arithmetic from a real
+# measurement, and it is why this move is safe where a 60-second insertion
+# would not have been.
+#
+# IT DOES NOT FIX THE 37. Those need the budget raised, the sweep split, or
+# comment_sensitivity_check.py capped -- a decision with an owner, logged in
+# docs/2026-10-05-inventory-hank.md and not taken here.
+_FRONT = ('hover_routing_gap_check.py', 'pattern_enumeration_sweep.py')
+REGISTRY = ([e for e in REGISTRY if e['tool'] in _FRONT]
+            + [e for e in REGISTRY if e['tool'] not in _FRONT])
+
 # ── DELIBERATELY NOT PROMOTED, AND WHY ──────────────────────────────────────
 # `docs/2026-09-09-tooling-inventory.md` says the decision each unwired checker
 # needs is blocking / report-only / deliberately manual, "recorded once rather

@@ -1,0 +1,448 @@
+{
+ "measured_budget_seconds": 600,
+ "effective_cutoff_seconds": 540.0,
+ "registry_size": 73,
+ "reached": 38,
+ "never_reached": 35,
+ "note": "DERIVED by tools/report_only_checks.py on a full sweep. A tool listed with reached=false is REGISTERED AND DEAD: the sweep stops at 0.9 x budget and breaks, so POSITION IN REGISTRY decides. Do not read a `promoted:` field as evidence that a checker runs -- read this.",
+ "entries": [
+  {
+   "tool": "hover_routing_gap_check.py",
+   "seconds": 2.780107021331787,
+   "cumulative": 2.8,
+   "reached": true
+  },
+  {
+   "tool": "pattern_enumeration_sweep.py",
+   "seconds": 1.9478118419647217,
+   "cumulative": 4.7,
+   "reached": true
+  },
+  {
+   "tool": "sql_column_exists_check.py",
+   "seconds": 0.7596330642700195,
+   "cumulative": 5.5,
+   "reached": true
+  },
+  {
+   "tool": "assertion_label_shape_check.py",
+   "seconds": 23.026850938796997,
+   "cumulative": 28.5,
+   "reached": true
+  },
+  {
+   "tool": "entry_point_scope_check.py",
+   "seconds": 20.516624212265015,
+   "cumulative": 49.0,
+   "reached": true
+  },
+  {
+   "tool": "parse_zero_third_state_check.py",
+   "seconds": 5.121089696884155,
+   "cumulative": 54.2,
+   "reached": true
+  },
+  {
+   "tool": "fact_sheet_regenerates.py",
+   "seconds": 2.5791964530944824,
+   "cumulative": 56.7,
+   "reached": true
+  },
+  {
+   "tool": "verification_owed_report.py",
+   "seconds": 4.862677097320557,
+   "cumulative": 61.6,
+   "reached": true
+  },
+  {
+   "tool": "ai_action_approval_audit.py",
+   "seconds": 8.363369464874268,
+   "cumulative": 70.0,
+   "reached": true
+  },
+  {
+   "tool": "defect_budget_policy.py",
+   "seconds": 0.3239922523498535,
+   "cumulative": 70.3,
+   "reached": true
+  },
+  {
+   "tool": "accepted_risk_expiry_audit.py",
+   "seconds": 1.4436383247375488,
+   "cumulative": 71.7,
+   "reached": true
+  },
+  {
+   "tool": "flaky_checker_quarantine.py",
+   "seconds": 12.502310752868652,
+   "cumulative": 84.2,
+   "reached": true
+  },
+  {
+   "tool": "testability_gate.py",
+   "seconds": 0.6729891300201416,
+   "cumulative": 84.9,
+   "reached": true
+  },
+  {
+   "tool": "subprocess_decode_check.py",
+   "seconds": 8.987879514694214,
+   "cumulative": 93.9,
+   "reached": true
+  },
+  {
+   "tool": "completeness_check.py",
+   "seconds": 1.9826164245605469,
+   "cumulative": 95.9,
+   "reached": true
+  },
+  {
+   "tool": "secrets_inventory.py",
+   "seconds": 2.0416228771209717,
+   "cumulative": 97.9,
+   "reached": true
+  },
+  {
+   "tool": "dependency_graph.py",
+   "seconds": 1.2611706256866455,
+   "cumulative": 99.2,
+   "reached": true
+  },
+  {
+   "tool": "vercel_config_check.py",
+   "seconds": 0.15155029296875,
+   "cumulative": 99.3,
+   "reached": true
+  },
+  {
+   "tool": "sairn_dead_button_audit.py",
+   "seconds": 153.5281183719635,
+   "cumulative": 252.9,
+   "reached": true
+  },
+  {
+   "tool": "nav_panel_check.py",
+   "seconds": 16.77807068824768,
+   "cumulative": 269.6,
+   "reached": true
+  },
+  {
+   "tool": "cleanup_confirm_check.py",
+   "seconds": 0.17422962188720703,
+   "cumulative": 269.8,
+   "reached": true
+  },
+  {
+   "tool": "md_table_check.py",
+   "seconds": 0.1755833625793457,
+   "cumulative": 270.0,
+   "reached": true
+  },
+  {
+   "tool": "div_balance_check.py",
+   "seconds": 2.400872230529785,
+   "cumulative": 272.4,
+   "reached": true
+  },
+  {
+   "tool": "duplicate_global_check.py",
+   "seconds": 5.600379943847656,
+   "cumulative": 278.0,
+   "reached": true
+  },
+  {
+   "tool": "panel_nesting_check.py",
+   "seconds": 4.172646522521973,
+   "cumulative": 282.2,
+   "reached": true
+  },
+  {
+   "tool": "fail_open_check.py",
+   "seconds": 3.501805543899536,
+   "cumulative": 285.7,
+   "reached": true
+  },
+  {
+   "tool": "discarded_verdict_check.py",
+   "seconds": 3.1893131732940674,
+   "cumulative": 288.8,
+   "reached": true
+  },
+  {
+   "tool": "discarded_verdict_crossfile.py",
+   "seconds": 2.6029703617095947,
+   "cumulative": 291.5,
+   "reached": true
+  },
+  {
+   "tool": "literal_drift_check.py",
+   "seconds": 26.250322818756104,
+   "cumulative": 317.7,
+   "reached": true
+  },
+  {
+   "tool": "orphan_register_check.py",
+   "seconds": 14.261971473693848,
+   "cumulative": 332.0,
+   "reached": true
+  },
+  {
+   "tool": "key_collision_check.py",
+   "seconds": 2.850198984146118,
+   "cumulative": 334.8,
+   "reached": true
+  },
+  {
+   "tool": "sairn_strict_args_check.py",
+   "seconds": 1.4851405620574951,
+   "cumulative": 336.3,
+   "reached": true
+  },
+  {
+   "tool": "write_without_readback_check.py",
+   "seconds": 56.12900352478027,
+   "cumulative": 392.4,
+   "reached": true
+  },
+  {
+   "tool": "traceability_matrix.py",
+   "seconds": 1.3152072429656982,
+   "cumulative": 393.7,
+   "reached": true
+  },
+  {
+   "tool": "master_plan.py",
+   "seconds": 3.312230348587036,
+   "cumulative": 397.1,
+   "reached": true
+  },
+  {
+   "tool": "invisible_in_pattern_check.py",
+   "seconds": 11.396273612976074,
+   "cumulative": 408.5,
+   "reached": true
+  },
+  {
+   "tool": "checkblocks.py",
+   "seconds": 26.643840074539185,
+   "cumulative": 435.1,
+   "reached": true
+  },
+  {
+   "tool": "comment_sensitivity_check.py",
+   "seconds": 123.8581314086914,
+   "cumulative": 559.0,
+   "reached": true
+  },
+  {
+   "tool": "metamorphic_check.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "criticality_tier_check.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "soup_register_check.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "committer_identity_check.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "hover_process_pass_freshness.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "install_git_hooks.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "tooling_inventory.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "schema_snapshot_freshness.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "index_duplicate_check.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "gate_column_check.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "mutation_anchor_check.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "comment_quote_check.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "defect_register.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "npm_audit_check.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "control_char_check.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "truthy_sum_check.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "removal_path_check.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "bypassed_constant_check.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "ownership_evidence_drift.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "eaten_substitution_check.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "register_freshness_check.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "temporary_state_check.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "export_coverage_check.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "hover_separation_audit.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "advisory_lock_isolation_check.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "log_cluster.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "allan_deviation_check.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "response_shape_check.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "check_precedence.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "service_role_tier_a_gate_check.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "register_feed_gate.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "claim_activity_check.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "checker_denominator.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "overrun_inversion_scan.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  },
+  {
+   "tool": "probe_anchor_freshness.py",
+   "seconds": null,
+   "cumulative": 559.0,
+   "reached": false
+  }
+ ]
+}
