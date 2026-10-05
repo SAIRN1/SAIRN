@@ -80,7 +80,7 @@ against main.
 | Other panels | Employees, hiring, performance, training, P&L, invoices, expenses, AP, AR, budget, tax, company, vendors, reports | panel ids |
 | I-9, E-Verify, new-hire reporting, worker classification | None. Zero occurrences of I-9, E-Verify, employment eligibility or new-hire reporting. Contractors are vendors with a W-9 flag | vocabulary count |
 | Hiring pipeline | A free-text "Target Rate" per position (the demo seed holds ranges such as "$26-30/hr"). No structured range and no benefits-description field. The pipeline tracks hiring internally and publishes no postings | `:607-620`, `:1992-1996` |
-| "Free" wording | The only in-repo statement found is StoneDesk's AI system prompt: payroll, HR and accounting "are handled by SAIRNbiz, included free with this subscription". There is no SAIRNbiz service agreement and no pricing page in `docs/legal/` | `stonedesk.html:12427` |
+| "Free" wording | The only in-repo statement found is StoneDesk's AI system prompt: payroll, HR and accounting "are handled by SAIRNbiz, included free with this subscription". There is no SAIRNbiz service agreement and no pricing page in `docs/legal/` | `stonedesk.html:12470` *(cited `stonedesk.html:12427`; **re-derived at HEAD 2026-10-05 to `stonedesk.html:12470`, drift +43** — the claim holds, the line moved. The old line is now blank.)* |
 
 ### 0.3 Internal findings surfaced by the external research
 
@@ -157,7 +157,7 @@ to every licence.**
 
 **F5 — "Free" is claimed in an AI prompt and nowhere in a contract.**
 - The only "included free" wording found is StoneDesk's AI system prompt
-  (`stonedesk.html:12427`).
+  (`stonedesk.html:12470`).
 - The FTC's Guide Concerning Use of the Word "Free" (16 CFR 251) asks that the
   conditions of a "free" offer tied to a purchase be set out clearly and
   conspicuously, at the outset and in close conjunction with the offer (§6.4).

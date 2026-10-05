@@ -146,7 +146,7 @@ No session held a SAIRNbiz claim at the last SessionStart advisory.
 - **F3:** Employee FICA leaves out the 0.9% Additional Medicare Tax on wages over
   $200,000, and the app does not disclose that.
 - **F5:** the only "included free" wording anywhere is in StoneDesk's AI prompt
-  (`stonedesk.html:12427`). There is no SAIRNbiz agreement, and the FTC's
+  (`stonedesk.html:12470` *(cited `stonedesk.html:12427`; **re-derived at HEAD 2026-10-05 to `stonedesk.html:12470`, drift +43** — the claim holds, the line moved. The old line is now blank.)*). There is no SAIRNbiz agreement, and the FTC's
   16 CFR 251 conditions on "free" offers apply.
 
 **4. For whoever administers the repository.** The `github-advanced-security`

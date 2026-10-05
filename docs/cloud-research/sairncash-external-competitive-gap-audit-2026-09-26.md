@@ -166,7 +166,7 @@ Nothing is projected.
   (§4.3).
 - The tool's whole promise is "the number to set aside".
 - It **contradicts a live design decision stated elsewhere in the same file**.
-  The Predictive Insights panel (`sairncash.html:1154`, per the 09-03 audit)
+  The Predictive Insights panel (`sairncash.html:1703` *(cited `sairncash.html:1154`; **re-derived at HEAD 2026-10-05 to `sairncash.html:1703`, drift +549** — the claim holds, the line moved. The old line is now an unrelated QBI-deduction comment.)*, per the 09-03 audit)
   "Deliberately does NOT project a full-year total". The estimator is labelled
   as if it does, but it does not, and then compares the result against a
   full-year statutory basis.
