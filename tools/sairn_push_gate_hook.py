@@ -2152,6 +2152,19 @@ def main():
     # string. What changes is that the file becomes searchable and the intent
     # becomes visible, which is why there is no exemption file for this one.
     _cc = os.path.join(repo, 'tools', 'control_char_check.py')
+    # ── IT IS SCOPED TO THE FILES AND WAS READING THE WRONG BYTES (2026-10-05)
+    # `changed` is the OUTGOING COMMIT RANGE and the checker was handed
+    # WORKING-TREE PATHS, so the one gate whose entire subject is a byte in a
+    # committed blob was reading whatever is on disk right now. Reproduced in a
+    # throwaway repo: commit a raw 0x08, repair the working tree WITHOUT
+    # committing, and the checker answers "CLEAN -- no raw control bytes",
+    # exit 0, while `git show HEAD:guard.py` still carries two of them. The
+    # push would have shipped the defect under a clean gate.
+    #
+    # `--rev tip` reads each path as the TIP OF THE OUTGOING RANGE holds it,
+    # which is the thing being pushed. The working-tree filter below is kept on
+    # purpose -- it is what decides whether a path is a FILE rather than a
+    # deletion -- but it no longer decides what gets read.
     _cc_files = [q for q in changed
                  if not q.lower().endswith(('.zip', '.gz', '.png', '.jpg', '.jpeg',
                                             '.gif', '.ico', '.webp', '.pdf', '.woff',
@@ -2169,8 +2182,9 @@ def main():
                 "  expected: %s" % _cc,
                 OVERRIDE_HINT,
             ]))
+        _cc_rev = ['--rev', tip] if tip else []
         try:
-            _r = subprocess.run([sys.executable, _cc]
+            _r = subprocess.run([sys.executable, _cc] + _cc_rev
                                 + [os.path.join(repo, q) for q in _cc_files],
                                 capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=120, cwd=repo)
         except Exception as _e:
@@ -2181,6 +2195,23 @@ def main():
                 "  %s: %s" % (type(_e).__name__, _e),
                 OVERRIDE_HINT,
             ]))
+        # A CHECKER THAT PREDATES --rev IGNORES IT AND READS THE WORKING TREE.
+        # That is the hole, not a pass, so it is refused rather than accepted
+        # quietly: `--rev` is the whole reason this call is trustworthy, and a
+        # clone pinned to an older commit would answer the old question under
+        # the new gate with nothing to say which one ran.
+        if _cc_rev and 'source' not in (_r.stdout or ''):
+            deny(chr(10).join([
+                "Blocked: the control-byte checker in this clone does not support",
+                "--rev, so it read the WORKING TREE and not the commits this push",
+                "ships. Those are different bytes whenever a file was repaired after",
+                "it was committed, which is exactly the case the flag exists for.",
+                "",
+                "This is a COULD-NOT-TELL, not a finding about your push. Sync this",
+                "clone so tools/control_char_check.py and this gate come from the",
+                "same commit.",
+                OVERRIDE_HINT,
+            ]))
         # DID THE CHECKER ACTUALLY SCOPE ITSELF? A checker that predates the
         # file-argument support ignores the list and scans the WHOLE TREE, so a
         # standing finding in any file -- including one inside somebody else's
@@ -2189,8 +2220,27 @@ def main():
         # right deny or a clean pass, and it is reachable today: a `git worktree`
         # or a checkout at an older commit carries the older checker while the
         # gate being run is this one. It reports the count, so ask.
+        #
+        # IT ASKS `files given` FIRST AND `files scanned` ONLY AS A FALLBACK.
+        # The two stopped meaning the same thing on 2026-10-05: `files scanned`
+        # is now the count ACTUALLY OPENED, with binary skips and unreadable
+        # files subtracted, while `files given` echoes the argument list. The
+        # old comparison against `files scanned` would now deny any push
+        # shipping one binary-extension file -- a wrong-reason deny, which this
+        # comment already calls worse than either outcome.
+        _given = re.search(r'files given\s*:\s*(\d+)', _r.stdout or '')
+        if _given and int(_given.group(1)) != len(_cc_files):
+            deny(chr(10).join([
+                "Blocked: the control-byte checker received %s paths when this gate"
+                % _given.group(1),
+                "gave it %d, so the two disagree about what this push ships."
+                % len(_cc_files),
+                "",
+                "This is a COULD-NOT-TELL, not a finding about your push.",
+                OVERRIDE_HINT,
+            ]))
         _scanned = re.search(r'files scanned\s*:\s*(\d+)', _r.stdout or '')
-        if _scanned and int(_scanned.group(1)) != len(_cc_files):
+        if not _given and _scanned and int(_scanned.group(1)) != len(_cc_files):
             deny(chr(10).join([
                 "Blocked: the control-byte checker in this clone is older than this",
                 "gate -- it scanned %s files when it was given %d, so it ignored the"
@@ -2217,6 +2267,25 @@ def main():
                 "The fix is a run-time no-op -- the escape produces the identical",
                 "string -- so there is no exemption file for this check. Type the",
                 "escape, and build the line with chr(92) if a heredoc keeps eating it.",
+                OVERRIDE_HINT,
+            ]))
+        # ── EXIT 2 WAS FALLING THROUGH AS A PASS (2026-10-05) ──────────────
+        # This block handled 1 and the scoping mismatch and nothing else, so a
+        # COULD NOT RUN from the checker reached here and the gate carried on.
+        # It was LATENT -- the only exit-2 path was the empty-ls-files branch,
+        # which a file-argument call never reaches -- and the --rev work made it
+        # reachable: a path unreadable at the pushed revision now exits 2. PR
+        # 1.11 is that "could not tell" is a third state and is never folded
+        # into "passed", and this check is one of two the gate runs where the
+        # subject is a byte that makes a guard unable to fail.
+        if _r.returncode not in (0, 1):
+            deny(chr(10).join([
+                "Blocked: the control-byte check exited %d -- COULD NOT RUN. It did"
+                % _r.returncode,
+                "not answer, and an unanswered check is not a clean one.",
+                "",
+                (_r.stdout or '').strip()[:1200],
+                (_r.stderr or '').strip()[:400],
                 OVERRIDE_HINT,
             ]))
     # ── CHECK: A NEW tools/*.py MUST DECLARE AN OWNER (2026-09-30) ─────────

@@ -1,7 +1,14 @@
 """No source file may contain a raw C0 control byte. Type the escape instead.
 
-    python tools/control_char_check.py           # report, exit 1 on a hit
-    python tools/control_char_check.py --quiet   # exit code only
+    python tools/control_char_check.py                   # whole tree, exit 1 on a hit
+    python tools/control_char_check.py --quiet            # exit code only
+    python tools/control_char_check.py <paths...>         # as the WORKING TREE holds them
+    python tools/control_char_check.py --rev <REV> <paths...>
+                                       # as REVISION REV holds them -- what a
+                                       # push actually ships. See scan_at_rev().
+
+Exit 0 clean, 1 a finding, 2 COULD NOT RUN -- a file that could not be read is
+the third state and is never folded into either of the other two.
 
 WHY THIS EXISTS. On 2026-09-10 a sweep for control bytes across all 1,624
 tracked files found FOUR, in three source files, and two of them were dead code
@@ -75,16 +82,31 @@ NAMES = {
 }
 
 
+# ── `git ls-files` QUOTES A PATH IT CANNOT PRINT PLAINLY, AND THAT HID ONE ──
+# Found 2026-10-05 by the could-not-read disclosure below, on its first run.
+# This repo tracks
+#   archive/branch-lucid-ptolemy-b73vu0/SAIRNlaw \342\200\224 A Partnership Proposal ... .pdf
+# and plain `git ls-files` prints it WRAPPED IN DOUBLE QUOTES with the non-ASCII
+# bytes as C escapes. The old reader took that line literally, so every scan
+# since 2026-09-10 looked for a file whose name begins with a quote character,
+# failed to find it, and skipped it IN SILENCE while still counting it in
+# `files scanned`. It is a PDF and would have been skipped as binary anyway --
+# the defect is that the skip was invisible and the count was wrong, so the next
+# such path (a .js with an em-dash in the name) would have been unscanned and
+# reported as scanned.
+#
+# `-z` is the fix rather than an unquoting parser: git emits the raw bytes with
+# NUL separators and does no quoting at all, so there is nothing to parse and
+# nothing to get wrong. Writing the unquoter is how this class recurs.
 def tracked():
-    out = subprocess.run(['git', 'ls-files'], cwd=REPO,
-                         capture_output=True, text=True, encoding='utf-8', errors='replace').stdout
-    return [f for f in out.split('\n') if f.strip()]
+    out = subprocess.run(['git', 'ls-files', '-z'], cwd=REPO,
+                         capture_output=True, text=True, encoding='utf-8',
+                         errors='replace').stdout
+    return [f for f in out.split('\0') if f.strip()]
 
 
-def scan(path):
-    """Every (line, offset, byte) hit in one file."""
-    with io.open(os.path.join(REPO, path), 'rb') as fh:
-        data = fh.read()
+def scan_bytes(data):
+    """Every (line, offset, byte) hit in one blob of bytes."""
     if not (set(data) & BAD):
         return []
     hits, line = [], 1
@@ -94,6 +116,46 @@ def scan(path):
         elif b in BAD:
             hits.append((line, off, b))
     return hits
+
+
+def scan(path):
+    """Every (line, offset, byte) hit in one file, AS THE WORKING TREE HOLDS IT."""
+    with io.open(os.path.join(REPO, path), 'rb') as fh:
+        return scan_bytes(fh.read())
+
+
+# ── THE WORKING TREE IS NOT WHAT THE PUSH SHIPS (2026-10-05) ───────────────
+# Push-gate check 11 derives its file list from the OUTGOING COMMIT RANGE and
+# then hands the checker WORKING-TREE PATHS, so it answers about bytes that are
+# not the bytes being pushed. REPRODUCED in a throwaway repo before this was
+# written, and the gate's own words came out of it:
+#
+#   1. commit a file containing  PAT = r'grant[^;]*<BS>delete<BS>'
+#   2. fix the WORKING TREE only, do not commit
+#   3. `control_char_check.py <path>`  ->  "CLEAN -- no raw control bytes",
+#                                          exit 0
+#   4. `git show HEAD:guard.py`        ->  two raw 0x08 bytes, still outgoing
+#
+# So the one gate whose entire subject is a byte in a committed blob was
+# reading a file somebody had already repaired, and would have passed the push
+# that shipped the defect. It is the same proxy-for-the-real-subject shape this
+# register records over and over; here the proxy and the subject are one `git
+# show` apart.
+#
+# A READ FAILURE IS EXIT 2, NEVER A SKIP. `git show REV:path` failing means the
+# path does not exist at that revision or the revision is unreadable, and
+# neither is "no control bytes". The old file-argument branch did
+# `if not os.path.exists(...): continue` -- silently -- while still counting
+# that file in `files scanned`, so the printed number was a claim about files
+# nobody opened (PR 1.11).
+def scan_at_rev(rev, path):
+    """Hits in `path` AS REVISION `rev` HOLDS IT. Raises on an unreadable blob."""
+    r = subprocess.run(['git', 'show', '%s:%s' % (rev, path)],
+                       cwd=REPO, capture_output=True)
+    if r.returncode != 0:
+        raise IOError((r.stderr or b'').decode('utf-8', 'replace').strip()
+                      or 'git show %s:%s failed' % (rev, path))
+    return scan_bytes(r.stdout)
 
 
 def main(argv):
@@ -107,7 +169,25 @@ def main(argv):
     #
     # Paths may be absolute or repo-relative; they are reported repo-relative
     # either way so the message reads the same from a hook and from a terminal.
-    given = [a for a in argv if not a.startswith('--')]
+    # --rev REV / --rev=REV: read every named path AS THAT REVISION HOLDS IT
+    # rather than as the working tree holds it. See scan_at_rev() for the
+    # reproduction. Only meaningful with file arguments: a whole-tree sweep at
+    # a revision is a different tool and is not pretended to here.
+    rev = None
+    for i, a in enumerate(argv):
+        if a == '--rev' and i + 1 < len(argv):
+            rev = argv[i + 1]
+        elif a.startswith('--rev='):
+            rev = a.split('=', 1)[1]
+    given = [a for a in argv
+             if not a.startswith('--') and a != rev]
+    if rev and not given:
+        print('COULD NOT RUN: --rev names a revision and no file was given. '
+              'A whole-tree\nscan at a revision is not what this flag does, '
+              'and scanning the working tree\ninstead would answer a '
+              'different question under the flag that asked not to.\n'
+              'Exit 2, not a pass.')
+        return 2
     if given:
         files = []
         for a in given:
@@ -132,21 +212,45 @@ def main(argv):
                   'Zero files scanned\nis not zero control characters found. '
                   'Exit 2, not a pass.')
             return 2
+    unreadable = []
     for f in files:
         if f.lower().endswith(BINARY_EXT):
             skipped.append(f)
             continue
-        if not os.path.exists(os.path.join(REPO, f)):
+        try:
+            hits = scan_at_rev(rev, f) if rev else scan(f)
+        except (IOError, OSError) as e:
+            # ── A FILE NOBODY OPENED IS NOT A FILE WITH NO CONTROL BYTES ───
+            # This was `continue`, silently, while `files scanned` still
+            # counted the file -- so the printed number was a claim about
+            # bytes nobody read, and the gate's own count guard compared
+            # against it and agreed. Exit 2, named, every time (PR 1.11).
+            unreadable.append((f, str(e)))
             continue
-        for line, off, b in scan(f):
+        for line, off, b in hits:
             findings.append((f, line, off, b))
 
     if not quiet:
         print('control character check')
-        print('  tracked files scanned : %d' % (len(files) - len(skipped)))
+        if rev:
+            print('  source                : revision %s, NOT the working tree'
+                  % rev)
+        # NAMED BY WHERE THE LIST CAME FROM. `files given` is the count the
+        # push gate compares against its own argument list, and printing it
+        # for the whole-tree sweep -- where nobody gave anything -- would make
+        # the gate's guard compare two unrelated numbers.
+        if given:
+            print('  files given           : %d' % len(files))
+        print('  tracked files scanned : %d'
+              % (len(files) - len(skipped) - len(unreadable)))
         if skipped:
             print('  skipped as binary (%d, NOT silently): %s'
                   % (len(skipped), ', '.join(sorted(skipped))[:160]))
+        if unreadable:
+            print('\nCOULD NOT READ %d FILE(S) -- this is NOT a pass:'
+                  % len(unreadable))
+            for f, why in unreadable:
+                print('  ? %s -- %s' % (f, why[:140]))
         if findings:
             print('\n%d FINDING(S):' % len(findings))
             for f, line, off, b in findings:
@@ -159,9 +263,15 @@ def main(argv):
                   'where \\b was meant is a pattern that can never match, and '
                   'two of those were found on 2026-09-10, one of them guarding '
                   'a database privilege.')
-        else:
+        elif not unreadable:
             print('  CLEAN -- no raw control bytes in any tracked text file.')
-    return 1 if findings else 0
+    # ORDER MATTERS AND IS DELIBERATE: a FINDING outranks a could-not-read,
+    # because a known bad byte is actionable now and the unread file is still
+    # named in the output above. With no finding, an unread file is exit 2 --
+    # the third state -- and never 0.
+    if findings:
+        return 1
+    return 2 if unreadable else 0
 
 
 if __name__ == '__main__':

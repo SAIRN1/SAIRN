@@ -215,6 +215,74 @@ try:
        victim.replace('\\', '/') in out5.replace('\\', '/'),
        'looked for %s in\n%s' % (victim, out5[-400:]))
     ok('...and the checker is restored in the worktree', os.path.isfile(victim))
+
+    # ── H. THE PUSH SHIPS A COMMIT, NOT THE WORKING TREE (2026-10-05) ──────
+    # The gate derived its file list from the outgoing RANGE and then handed
+    # the checker WORKING-TREE paths, so it read whatever is on disk now. The
+    # arm below is the reproduction that found it: commit the byte, repair the
+    # working tree WITHOUT committing, and the pre-fix gate answered CLEAN on a
+    # push whose blob still carried two raw backspaces.
+    print('\nF. the gate reads the COMMIT, not the file on disk')
+    sync_tools(wt)
+    base_f = git(wt, 'rev-parse', 'HEAD').stdout.strip()
+    REL_F = 'probe_check11_rev.txt'
+    tip_f = commit(wt, REL_F,
+                   b"PAT = r'grant[^;]*\x08delete\x08'\n",
+                   'fixture: a committed raw backspace, repaired on disk only')
+    full_f = os.path.join(wt, REL_F)
+    io.open(full_f, 'wb').write(b"PAT = r'grant[^;]*" + b'\\' + b'bdelete'
+                                + b'\\' + b"b'\n")
+    ok('the WORKING TREE copy is clean -- the arm is about the commit, not '
+       'about a dirty tree',
+       b'\x08' not in io.open(full_f, 'rb').read())
+    ok('...while the COMMITTED blob still carries the byte',
+       git(wt, 'show', '%s:%s' % (tip_f, REL_F)).stdout.count('\x08') == 2,
+       repr(git(wt, 'show', '%s:%s' % (tip_f, REL_F)).stdout))
+    rc_f, out_f = run_gate(wt, tip_f, base_f)
+    ok('THE HOLE IS CLOSED: the gate refuses a push whose COMMIT carries a '
+       'raw control byte even though the working-tree file is clean',
+       rc_f != 0, 'exit=%d\n%s' % (rc_f, out_f[-700:]))
+    ok('...and the refusal says it read the revision rather than the tree',
+       'NOT the working tree' in out_f, out_f[-500:])
+
+    # THE CONTROL FOR H, AND WITHOUT IT THE ARM ABOVE PROVES NOTHING.
+    # If the checker read the working tree it would answer CLEAN on this exact
+    # state. Driven directly rather than asserted, so the arm above is known to
+    # depend on --rev and not on something else about the fixture.
+    _cc = os.path.join(wt, TOOL_REL.replace('/', os.sep))
+    _tree = subprocess.run([sys.executable, _cc, full_f],
+                           capture_output=True, text=True, encoding='utf-8',
+                           errors='replace', cwd=wt)
+    ok('CONTROL: the same checker reading the WORKING TREE says CLEAN and '
+       'exits 0 -- which is what the gate used to ask',
+       _tree.returncode == 0 and 'CLEAN' in (_tree.stdout or ''),
+       'exit=%d\n%s' % (_tree.returncode, _tree.stdout))
+    _rev = subprocess.run([sys.executable, _cc, '--rev', tip_f, REL_F],
+                          capture_output=True, text=True, encoding='utf-8',
+                          errors='replace', cwd=wt)
+    ok('...and reading the REVISION it exits 1 with both bytes named',
+       _rev.returncode == 1 and (_rev.stdout or '').count('0x08') == 2,
+       'exit=%d\n%s' % (_rev.returncode, _rev.stdout))
+
+    # ── G. COULD NOT RUN IS NOT A PASS ────────────────────────────────────
+    print('\nG. exit 2 from the checker is a refusal, not a fall-through')
+    _miss = subprocess.run([sys.executable, _cc, 'tools/not_a_real_tool.py'],
+                           capture_output=True, text=True, encoding='utf-8',
+                           errors='replace', cwd=wt)
+    ok('a named file that cannot be read exits 2 and is NAMED, not skipped',
+       _miss.returncode == 2 and 'COULD NOT READ' in (_miss.stdout or ''),
+       'exit=%d\n%s' % (_miss.returncode, _miss.stdout))
+    ok('...and the scanned count excludes it rather than counting it as read',
+       'files given           : 1' in (_miss.stdout or '')
+       and 'tracked files scanned : 0' in (_miss.stdout or ''),
+       _miss.stdout)
+    _norev = subprocess.run([sys.executable, _cc, '--rev', tip_f],
+                            capture_output=True, text=True, encoding='utf-8',
+                            errors='replace', cwd=wt)
+    ok('--rev with no file is COULD NOT RUN rather than a silent whole-tree '
+       'scan under a flag that asked for a revision',
+       _norev.returncode == 2, 'exit=%d\n%s' % (_norev.returncode,
+                                                _norev.stdout))
 finally:
     drop(wt)
     ok('the throwaway worktree is removed', not os.path.isdir(wt))
