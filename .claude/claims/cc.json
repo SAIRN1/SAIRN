@@ -3379,6 +3379,22 @@
         "docs/fail-open-baseline.json",
         "tools/fail_open_scan.py"
       ]
+    },
+    {
+      "id": "cc-1791237888",
+      "session": "cc",
+      "subject": "cc",
+      "task": "sb_ap seq 507 and 508 -- the unlisted undated payee invisible to both notes and the prior-year function that also catches future-dated bills; the pre-commit grep-vs-git fail-open; row 82 figures re-derived; the exit_status_attributable false positives FILES: sairnbiz.html .githooks/pre-commit tools/exit_status_attributable.py docs/SAIRN-OPEN-WORK-INDEX.md SAIRN-ACTIVE-WORK-cc.md",
+      "claimed_at": "2026-10-05T22:04:48Z",
+      "claimed_at_epoch": 1791237888.1937737,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-cc.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "sairnbiz.html",
+        "tools/exit_status_attributable.py"
+      ]
     }
   ],
   "refusals": [
