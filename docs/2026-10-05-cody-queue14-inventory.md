@@ -173,6 +173,19 @@ COULD NOT RUN                           22  -- all 22 belong to a tool that
 FINDINGS                                36
 ```
 
+> **CORRECTION 2026-10-05 (cody) — THIS BLOCK REPORTED A RUN AND NOT ITS EXIT
+> CODE, and a run reported without one reads as a pass.** `dead_rule_sweep.py`
+> **EXITS 2** whenever rules remain uncleared, and 22 did here — so the run
+> above was **never green**, and nothing in this file said so. The exit code of
+> *that* run was not captured and **cannot be recovered**; what is recorded
+> instead is a re-run at HEAD, measured with the status read on its own line
+> after a redirect: **exit 2**. The figures above are a **FLOOR**, which the
+> tool's own last line says and this block omitted. Later numbers are in
+> `docs/2026-10-05-cody-queue15-inventory.md`. The standing rule this cost is
+> in that file's methodology section: **a green claim must cite a captured exit
+> code, and `tools/capture_exit.py` is how to capture one from a backgrounded
+> run.**
+
 **Unchanged from the post-fix run earlier today, which is the result:** the
 seven never-claimed tools locked in the previous batch took DEAD from 26 to 8
 and the figure has held through four pushes since.

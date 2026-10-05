@@ -108,3 +108,23 @@ detector may propose a repair and may not apply it, and the file is cc's besides
 If the shape is judged too noisy to flag unconditionally, the narrower version is
 to flag it only when the trailing `echo` is the final element of a
 **multi-line** command, which is the only form that gets backgrounded.
+
+---
+
+## ITEM 2b — one line in `SAIRN-ACTIVE-WORK-cc.md` reads as current and is not
+
+**Not edited; cc's file.** Line ~1858:
+
+> **Verified:** `metamorphic_check --all` 660/0/0; …
+
+**That was true when written and the arithmetic is not in question.** What has
+changed is the tool: the **REWORDING family did not exist then.** `--all` today
+picks it up, produces one finding, and **exits 1** — so a reader taking
+`660/0/0` as the tool's current state would be reading a verdict from before the
+family that fails existed.
+
+This is the eighth standing convention exactly — *nothing announces the day a
+check stops testing anything* — and the cheapest fix is a date, not a re-run:
+**"Verified 2026-09-13:"** in front of it would make the line permanently true.
+I swept my own documents for the same shape this batch and found **three**
+(`queue13`, `queue14`, `2026-09-29-dead-rules`), all corrected the same way.

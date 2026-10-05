@@ -539,6 +539,15 @@ COULD NOT RUN                           24  -- 22 of them because the tool
 FINDINGS                                56
 ```
 
+> **CORRECTION 2026-10-05 (cody) — NO EXIT CODE WAS RECORDED FOR THIS RUN
+> EITHER, and a run reported without one reads as a pass.** With 24 rules
+> uncleared this run **exited 2**, not 0. That code was not captured at the time
+> and cannot be recovered; a re-run at HEAD still exits **2**. Same correction
+> applied to `docs/2026-10-05-cody-queue14-inventory.md` and
+> `docs/2026-09-29-dead-rules-cody.md` — **three of my own documents reported
+> this sweep without its status, which is why the rule is now written down
+> rather than remembered.**
+
 **THE TWO QUESTIONS ARE DIFFERENT AND THE ANSWER DEPENDS ON WHICH ONE IS
 ASKED.** "Has it fired in 30 days" is about the **corpus**; "is it dead" is
 about the **evidence**. A rule can be silent because the defect it hunts does

@@ -103,3 +103,23 @@ by something that changes without anybody deciding.
 
     python tools/dead_rule_sweep.py
     python tools/dead_rule_sweep.py --tool <name>.py
+
+> **ADDED 2026-10-05 (cody) — READ THE EXIT CODE, AND DO NOT ASSUME IT IS 0.**
+> Nothing in this file recorded one, and a run reported without its exit code
+> reads as a pass. The full sweep **EXITS 2** whenever any rule stays uncleared,
+> and on 2026-10-05 **22 did** — so the full run is **not green** and has not
+> been for as long as that tier has existed. A `--tool` run on a single tool
+> exits 0 when that tool is clean; **the two invocations do not have the same
+> verdict and must not be quoted as one.**
+>
+> Read the status on its own line after a redirect, never off a pipe or a
+> trailing `echo`:
+>
+>     python tools/dead_rule_sweep.py > /tmp/drs.txt 2>&1
+>     echo "EXIT=$?"
+>
+> **And that is only safe in the FOREGROUND.** Backgrounded, a caller reads the
+> trailing `echo`'s 0 — which reported both this tool and
+> `metamorphic_check.py` as "exit code 0" on 2026-10-05 when they were really 2
+> and 1. Use `python tools/capture_exit.py --status /tmp/drs.status -- python
+> tools/dead_rule_sweep.py` for any run that is not watched live.
