@@ -6610,3 +6610,57 @@ limits section.**
    push is not a no-op** and `git status` is the first thing to read after one.
 7. **GitHub reports 1 HIGH dependabot vulnerability on the default branch**
    (`security/dependabot/4`), surfaced by a push today. Not mine, not looked at.
+
+---
+
+# Queue 15 — 2026-10-05 (Cody) — the batch closes in one number, and the reset's summary was green where the tools are not
+
+**Resumed after a context reset. Every item below was re-derived against the
+repo; nothing was carried across from the pre-reset summary.** Full write-up:
+`docs/2026-10-05-cody-queue15-inventory.md`.
+
+## Landed
+
+1. **The registry commit was committed and NOT pushed.** `main` opened **ahead
+   1, behind 4**. Rebased onto `origin/main` (no conflict — hank's four touched
+   different files) and pushed as `31a1d4fc`. **The unpushed commit was the
+   registry one**, which the whole measurement below depends on.
+2. **Queue 14's under-counted universe is CLOSED. 162 → 169 rules.** `read 75
+   tool(s) from the report-only registry; 169 module-level compiled rule(s)`.
+3. **Every moved number in the sweep is attributable to a named change in this
+   batch, and nothing else moved.** +7 rules are gap_ledger's seven and all
+   seven; `gate1_verify.py` contributes **zero** (it compiles no module-level
+   rules); +13 exercised is those 7 plus the 6 metamorphic rules fixed; DEAD
+   **8 → 2**, and the 2 remaining are `register_feed_gate.py`'s, **fourth's
+   tool**, held by hank. The arithmetic closes: 80+2=82, 82+65=147, 147+22=169.
+4. **Nine tools re-run at HEAD, each measured alone.** Seven exit 0. Two do not,
+   and they are reported as not-green rather than as done.
+5. **Both anchoring fixes proven by the FILE COUNT, not the exit code** — 22
+   files swept and 22 probed from a non-root cwd. **Both sweeps exited 0 before
+   the fix too, over an empty corpus**, so the exit code was never the evidence.
+
+## Raised, not acted on
+
+1. **`metamorphic_check.py` exits 1 with its one pre-existing rewording
+   finding** (`fmea/alf_facility_role_gate_live_probe.py`, relation `case`).
+   Six fixed rules are green; **the tool is not.** It appears **0 times** in
+   `docs/SAIRN-OPEN-WORK-INDEX.md` — my tool, my gap. **Not logged, and I did
+   not edit the index: cc holds it under a live claim this hour.** NEXT ACTION:
+   one row, by whoever next holds the index.
+2. **The universe is 169 of 169; the sweep's COVERAGE is 147 of 169.** Two
+   different numbers. 22 rules are uncleared because their tools WRITE when run,
+   the sweep exits **2** and calls its findings a FLOOR. **Reporting the first
+   figure as the second would have published a 22-rule hole as a pass.**
+3. **Registering two tools did not fix the mechanism that excluded them.** The
+   universe is still derived from a hand-maintained list — **75 REGISTRY entries
+   against 293 `.py` files in `tools/`**. 293 is the wrong denominator and I do
+   not have the right one; **neither does the sweep, and that is the gap.**
+4. **20 SQL files and a snapshot re-capture are still owed by Michael.** Ready,
+   idempotent, no decision needed. **I did not re-drive the live `PRESENT 0 /
+   MISSING 26` baseline** — `--fixtures` green proves the verdict logic, not the
+   live state.
+5. **A backgrounded `tool > out; echo $?` reports the ECHO's status.** The
+   harness said *"exit code 0"* for both long runs; the real codes were **1**
+   and **2**, read out of the captured stdout. **Two not-green tools would have
+   gone into a standing document as green.** The attribution hook fired on
+   nearly every command this session and was right every time.
