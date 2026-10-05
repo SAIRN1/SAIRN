@@ -307,9 +307,20 @@ textarea#inp:focus{border-color:rgba(124,111,255,0.45)}
     <div class="app-body">
       <div class="sidebar">
         <div class="sb-section">Session</div>
-        <div class="usage-wrap"><div class="usage-bar-label"><span>Today</span><span id="usageCount">0</span></div><div class="usage-bar-bg"><div class="usage-bar-fill" id="usageFill"></div></div></div>
+        <!-- THE BAR IS GONE, NOT RESCALED. A filled track is a quota
+             affordance whatever it is a proportion of, and this product's own
+             paywall promises "Unlimited AI with Claude". Rescaling it to the
+             browser's busiest day (my previous fix) removed the false 200 and
+             LEFT THE AFFORDANCE: a track that fills still tells a customer
+             they are approaching something. There is nothing to approach.
+             The count stays because the count is true and useful. -->
+        <div class="usage-wrap"><div class="usage-bar-label"><span>Messages today</span><span id="usageCount">0</span></div></div>
         <div class="stat-row"><span class="stat-label">Messages</span><span class="stat-val" id="statMsgs">0</span></div>
-        <div class="stat-row"><span class="stat-label">Plan</span><span class="stat-val">Pro</span></div>
+        <!-- WAS THE LITERAL "Pro". See scPlanLabel(): a trial user, a lapsed
+             user and a user who forged sairncash_sub all read "Pro" off a
+             hardcoded string, on the one row that tells a customer what they
+             are paying for. -->
+        <div class="stat-row"><span class="stat-label">Plan</span><span class="stat-val" id="planLabel">&mdash;</span></div>
         <div class="sb-divider"></div>
         <button class="clear-btn" onclick="clearSession()">🗑 Clear session</button>
         <div class="sb-disclaimer">Estimates only. SAIRNcash does not file taxes -- review with your accountant or filing software before relying on any number here.</div>
@@ -962,6 +973,10 @@ async function initApp() {
   if (justPaid || await reverifySubscription() || hasTrial) {
     showAppShell();
     renderTrialBadge();
+    // Beside renderTrialBadge(), which is the other place plan state reaches
+    // the screen -- the two now read the SAME accessors, so the badge and the
+    // Plan row cannot disagree about whether a trial is still live.
+    updatePlanLabel();
     // Firebase sync only starts once a real, verified customerId exists
     // (2026-08-10 isolation fix) -- never before, never with a fallback
     // shared path. initFinanceSync() waits for it to finish setting up
@@ -1017,27 +1032,75 @@ function incUsage() {
 // shows activity relative to the busiest day this browser has seen, which is a
 // statement about this user's own history and implies no limit at all -- and
 // it is stored alongside the count rather than invented per render.
+// ── THE CONTRADICTION IS CLOSED BY REMOVING THE BAR, NOT BY CAPPING ──────
+// Two ways to end it and they are not equal:
+//
+//   ENFORCE 200 as a real cap -- would make the bar honest and BREAK THE
+//     PRODUCT'S OWN PROMISE. The paywall's feature list reads "Unlimited AI
+//     with Claude". Shipping a limit to make a progress bar truthful is
+//     changing the product to match the UI.
+//   REMOVE THE BAR -- the number stays, the promise stays, and nothing on
+//     screen implies a ceiling.
+//
+// The second. A filled track is a quota affordance WHATEVER it is a proportion
+// of, which is why my previous fix was incomplete: rescaling to the browser's
+// busiest day removed the false 200 and left the affordance intact. A track
+// that fills still tells a customer they are approaching something, and on an
+// unlimited plan there is nothing to approach.
+//
+// `peak` is no longer written. The key keeps whatever it already has -- this
+// is not a migration and an old record with a stale `peak` is harmless.
 function updateUsageBar() {
-  document.getElementById('usageCount').textContent = todayCount;
-  var el = document.getElementById('usageFill');
-  if (!el) return;
-  var peak = 0;
-  try {
-    peak = Number(JSON.parse(localStorage.getItem('sairncash_usage') || '{}').peak) || 0;
-  } catch (e) {}
-  if (todayCount > peak) {
-    peak = todayCount;
-    try {
-      var rec = JSON.parse(localStorage.getItem('sairncash_usage') || '{}');
-      rec.peak = peak;
-      localStorage.setItem('sairncash_usage', JSON.stringify(rec));
-    } catch (e) {}
-  }
-  // A SINGLE MESSAGE MUST NOT READ AS A FULL BAR, which is what dividing by
-  // its own value would do on day one. Below a floor the bar stays short and
-  // the NUMBER carries the information.
-  el.style.width = (peak >= 5 ? Math.min((todayCount / peak) * 100, 100) : 8) + '%';
+  var el = document.getElementById('usageCount');
+  if (el) el.textContent = todayCount;
 }
+
+// ── THE PLAN ROW WAS A LITERAL, ON THE ONE ROW THAT STATES WHAT YOU PAY ──
+// `<span class="stat-val">Pro</span>`. Hardcoded. So it read "Pro" for a
+// 30-day trial user, for a user whose subscription had lapsed, and for a user
+// who had forged `sairncash_sub` in devtools -- which this file's own comment
+// at :660 records as a thing that happened. A displayed value with no function
+// behind it is the fabricated-KPI class, and this is the worst row to have it
+// on: it is the app answering "what am I paying for".
+//
+// DERIVED FROM THE SAME TWO ACCESSORS THE ACCESS GATE USES, so the label and
+// the entitlement cannot disagree:
+//   isSubscribed()  checks sub.valid AND the real Stripe expiresAt, so an
+//                   expired record reads as not subscribed rather than as Pro.
+//   getTrial()      carries daysLeft from /api/sairncash/trial-verify.
+//
+// THE ORDER IS PAID-FIRST because a paying customer who also has a stale trial
+// record is a paying customer.
+//
+// AND IT IS LABELLED "unverified" RATHER THAN TRUSTED WHEN THE RECORD IS
+// CLIENT-ONLY. `sairncash_sub` is forgeable -- the server is what gates spend,
+// not this -- so a record claiming validity with no `subscriptionId` for the
+// server to look up gets "Pro (unverified)". That is the honest third state:
+// not "Pro", which would repeat the old lie, and not "Free", which would be
+// wrong for a real subscriber mid-sync.
+function scPlanLabel() {
+  var s = getSub();
+  if (typeof isSubscribed === 'function' && isSubscribed()) {
+    return (s && s.subscriptionId) ? 'Pro' : 'Pro (unverified)';
+  }
+  var t = getTrial();
+  if (t && t.trialToken) {
+    var d = (typeof t.daysLeft === 'number') ? t.daysLeft : null;
+    if (d === null) return 'Trial';
+    if (d <= 0) return 'Trial ended';
+    return 'Trial — ' + d + ' day' + (d === 1 ? '' : 's') + ' left';
+  }
+  // A lapsed subscription is NOT the same as never having had one, and the
+  // row says so rather than silently showing the free state.
+  if (s) return 'Expired';
+  return 'Free';
+}
+
+function updatePlanLabel() {
+  var el = document.getElementById('planLabel');
+  if (el) el.textContent = scPlanLabel();
+}
+window.scPlanLabel = scPlanLabel;
 
 // ── TAX MATH (2026) ──────────────────────────────────────────────
 // Every function here is pure and deterministic -- same inputs, same

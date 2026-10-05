@@ -21,7 +21,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**306 files in `tools/`.** By what actually invokes them:
+**307 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -29,7 +29,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 80 | runs automatically on every push, never blocks |
 | **ADVISORY** | 5 | session-start or prompt hooks, informational |
 | **DECIDED** | 79 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 68 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 69 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 56 | nothing runs these at all |
 
 By what they are, independent of wiring:
@@ -41,7 +41,7 @@ By what they are, independent of wiring:
 | GATE | 1 |
 | GENERATOR | 19 |
 | GUARD | 1 |
-| LIBRARY | 25 |
+| LIBRARY | 26 |
 | LIVE | 27 |
 | PUSH-GATE | 1 |
 | REPORT | 1 |
@@ -382,7 +382,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (68)
+## SUITE-ONLY (69)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -427,6 +427,7 @@ fixtures. Nothing points them at the real codebase.
 | `primitive_obsession_check.py` | CHECKER | a NEW occurrence of three shapes where a raw primitive crosses a boundary unparsed, each already paid for here: a measured value defended into a default (Number(x)&#124;&#124;0 -- empty, unreadable and a legitimate zero collapse into one number, the sairndental silent-$0 shape), a config read where Number('') is 0 (a cleared env var becomes a switched-off feature that looks configured), and a locale date string stored or compared as data (toLocaleDateString does not sort and differs per viewer). 233 existing keys grandfathered; refuses (exit 2) when its own fixture lock fails OR when a whole baselined shape finds zero matches, because a detector that went blind must never look like progress. Disjoint from truthy_sum_check by construction: that one requires coercion ABSENT, these require it present or absent-but-locale | `run_primitive_obsession_probe.py` |
 | `purge_evidence_gate.py` | GATE | a prune, gc or reflog expire that runs with nobody having recorded the forensics it is about to destroy. SAME INCIDENT AS credential_purge_check.py AND A DIFFERENT ARTEFACT: that one writes a dated VERDICT (clean or not, over this many objects), which answers WAS IT CLEAN; this writes the git fsck --unreachable output and the unreachable objects' MTIMES, which is the only thing that can answer WHEN DID THIS ARRIVE -- the question that went unanswerable on 2026-09-29 because the reflog-expire and gc that fixed the problem destroyed the evidence. --audit is the gate: a history-destroying command with no evidence call earlier in its own file BLOCKS. --record writes docs/purge-evidence/<date>-<clone>.json; --require-record exits non-zero unless TODAY'S record for THIS clone exists, because a record from an earlier day lists objects that may have arrived since. IT DOES NOT MATCH TEXT, and the reason is that its first version did: over comment-stripped lines it produced 40 findings on this repo and ALL FORTY WERE WRONG -- 37 were `git worktree prune`, which removes administrative files and destroys no object, and 3 were prose inside module docstrings and a tool-description table, including the two docstrings describing this very incident. It now walks the Python AST and reads only the string constants inside calls that EXECUTE a subprocess, so a docstring and a description table fall out by construction rather than by a heuristic; a FOURTH defect surfaced when the count dropped to zero, because most probes here do not call subprocess directly but through a local `def git(repo,*args)` helper, and the AST walk was blind to fifteen files until that callee shape was added. The evidence predicate is comment-stripped on purpose: a file carrying `# --record was run by hand, honest` above a real gc IS UNGUARDED. String literals are NOT stripped -- the command lives in one. --record is exit 2 COULD NOT RUN and WRITES NOTHING when git cannot be invoked or fsck fails, because an empty record reads as evidence of zero. CANNOT SEE a command built at run time, one in a .sh file where no AST is available (line-based there, and the limit is printed), or a prune in a clone it is not run in. Everything it saw and did not block is printed under DISCLOSED. Control: tests/run_purge_evidence_probe.py, 17 arms, with the docstring-only, worktree-prune, prose-string and git-helper cases all as fixtures in both directions. | `run_purge_evidence_probe.py` |
 | `push_retry.py` | TOOL | an amend that is about to run in a tree where HEAD is not what the author thinks it is -- and it REFUSES rather than warns. Five clones push to one branch, so a push often loses a race and the honest response is fetch, rebase, re-derive the generated documents, amend, push again. That loop was written inline per session, and on 2026-09-26 one of them reached `git commit --amend` WHILE A REBASE WAS STOPPED MID-CONFLICT: HEAD was a rewritten copy of cody's commit, so the amend folded this session's work into another session's commit under their message and authorship. Nothing caught it -- a human happened to read the next git log and see a foreign subject line. FOUR REFUSALS, each with its reason printed: an operation in progress (rebase-merge AND rebase-apply, merge, cherry-pick, revert, bisect -- checking only rebase-merge walks straight through the non-interactive form); unmerged paths, because `git add -A` on a conflicted tree stages the conflict markers and commits them as a fix; HEAD not being one of YOUR commits, matched by SUBJECT against a set captured before the loop, because a rebase rewrites shas and a sha comparison fails OPEN exactly when the rebase it guards does its job; and HEAD already being on a remote branch. A could-not-read is its own refusal, never folded into safe. Its --loop STOPS on a conflict instead of resolving one, and prints the PR 2.5 re-derive commands for a generated-document conflict rather than running them. 18 arms, both directions, plus a CONTROL that the decision discriminates at all -- a guard that refuses everything passes a suite built out of refusals, which is not hypothetical: the first local_only_subjects() was `git log --not --remotes` with no positive rev, which walks nothing and exits 0, so the safe-set came back EMPTY and the guard refused every amend while all fixture arms stayed green. Found by running it against a real local commit, and there is now a live arm for it | `run_deploy_verify_entry_probe.py`, `run_push_retry_ledger_guard_probe.py`, `run_push_retry_probe.py`, `run_reseat_fixed_point_probe.py`, `run_staging_discipline_probe.py` |
+| `pycomments.py` | LIBRARY | the same job for PYTHON source, and it exists because jscomments.py is NOT it: that one blanks the JavaScript comment forms and leaves a hash comment completely untouched, which I discovered by calling it on a .py file and watching the "stripped" result still contain the token. Used by any arm asserting a token is ABSENT from a .py source -- 22 such arms exist in tests/, and each one fails on the comment DOCUMENTING the token the moment somebody writes it, which is what this repo asks you to write. Three of my own controls were caught that way in two batches. Tracks quote state so a hash inside a string survives; does NOT track triple-quoted blocks, stated in its docstring rather than discovered, because a docstring mentioning a token is the same false positive a comment is | `run_gh_token_live_probe.py`, `run_report_only_checks_probe.py` |
 | `rate_limit_race_model.js` | CHECKER | the AI rate limiter's count-then-insert breaking its own cap under concurrency -- enumerated over EVERY interleaving, with the violating schedule printed, against docs/spec/RateLimitConsume.tla | `run_rate_limit_race_probe.js` |
 | `register_freshness_propose.py` | TOOL | a drifted register citation that CAN be repaired mechanically -- and offers the repair as a branch a human merges, never a write. Proposes ONLY a line-number repoint whose identifier has exactly ONE definition-like line today; several definitions, none at all, a dead sha or a dead path are refused WITH the reason, because those need a read rather than a repoint. Each batch re-runs the checker and is withdrawn unless it clears its own findings and nobody else's. Never merges, never force-pushes, never writes main | `run_deploy_verify_entry_probe.py`, `run_register_freshness_propose_probe.py` |
 | `required_write_permission_check.py` | CHECKER | a file one session is REQUIRED to write that another gate FORBIDS it to write -- a deadlock made of two individually-correct gates. The real instance: tier_a_review_gate.py DEMANDS a record in docs/tier-a-reviews.json and hover_auditor_scope_gate.py REFUSES that path from the auditor clone, so the hover auditor could neither push nor record. It fired twice in one session (H2 seq 416 and 422) and the second time the record was written ON DISK to satisfy the push gate and then reset because it could not be committed, so the gate was satisfied by something that did not persist. The tier-gate skip clause removed the one TRIGGER that was firing and did not remove the requirement; this asks the general question, which nothing on this platform was asking. PERMISSION IS NOT DECLARED HERE -- it is asked of the real oracle, hover_auditor_scope_gate.AuditorScope, so it cannot drift from what the gate enforces. REQUIREMENTS is a declared table because a gate demand is a judgement, and every row carries an ANCHOR string that must still appear in the tool imposing it, so the table cannot rot silently; that anchor check refused the first run of this tool and caught its own author naming the wrong gate for the defect-register requirement (sairn_push_gate_hook.py, where the demander is register_feed_gate.py) before any verdict was printed. Exits 1 with one real finding at HEAD. REPORT ONLY and wired into nothing -- which gate moves is a decision with an owner. CANNOT SEE a requirement nobody has declared in its table, which IS the whole population, so a clean run says the declared requirements are satisfiable and says nothing about a gate added yesterday; and it reports that a PAIR is contradictory rather than that any particular push will reach it | `run_claim_file_token_probe.py`, `run_required_write_permission_probe.py` |
@@ -553,11 +554,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      306   git ls-files tools/
+  tools on disk                      307   git ls-files tools/
   hook entries                        18   .claude\settings.json
   push-gate invocations               12   tools\sairn_push_gate_hook.py
   report-only registry                75   report_only_checks.REGISTRY
-  tools invoked by tests/            222   tests/**/*.py, *.js
+  tools invoked by tests/            223   tests/**/*.py, *.js
   recorded NOT-promoted decisions     86   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```

@@ -1698,6 +1698,21 @@ PURPOSES = {
     'sairn_build_load_gates.py': ('GENERATOR', 'SUPERSEDED -- its header says so; a generated gate goes stale by design'),
     # --- libraries and generators -----------------------------------------
     'jscomments.py': ('LIBRARY', 'the one comment stripper every scanner should use'),
+    'pycomments.py': ('LIBRARY', 'the same job for PYTHON source, and it exists '
+                      'because jscomments.py is NOT it: that one blanks the '
+                      'JavaScript comment forms and leaves a hash comment '
+                      'completely untouched, which I discovered by calling it '
+                      'on a .py file and watching the "stripped" result still '
+                      'contain the token. Used by any arm asserting a token is '
+                      'ABSENT from a .py source -- 22 such arms exist in tests/, '
+                      'and each one fails on the comment DOCUMENTING the token '
+                      'the moment somebody writes it, which is what this repo '
+                      'asks you to write. Three of my own controls were caught '
+                      'that way in two batches. Tracks quote state so a hash '
+                      'inside a string survives; does NOT track triple-quoted '
+                      'blocks, stated in its docstring rather than discovered, '
+                      'because a docstring mentioning a token is the same false '
+                      'positive a comment is'),
     'sairn_http.py': ('LIBRARY', 'browser-shaped HTTP, raising Challenged rather than letting a 403 look like an answer'),
     'sairn_source_fetch.py': ('LIBRARY', 'fetching a primary source with its retrieval date recorded'),
     'extract_scripts.py': ('LIBRARY', 'script blocks out of an app file, HTML-parser based'),

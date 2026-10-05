@@ -66,6 +66,30 @@ import re
 import subprocess
 import sys
 
+# ── THIS GATE COULD NOT PRINT ITS OWN USAGE (fixed 2026-10-05) ────────────
+# `python tools/register_feed_gate.py` with no arguments falls through to
+# `print(__doc__)`, and the docstring above carries box-drawing characters. On
+# a cp1252 console that raised UnicodeEncodeError and exited 1, so the gate
+# that refuses a push for not feeding the defect register could not tell
+# anybody what it wanted.
+#
+# FIFTH INSTANCE OF THIS CLASS IN ONE DAY: tools/push_retry.py (same usage
+# path), a derivation script of mine, a commit-message filter of mine, and
+# tools/citation_line_drift_check.py -- where it was worse than a crash,
+# because it died MID-SWEEP and the run recorded sairnlegacy as
+# SOUND=0 DRIFTED=0 INCONCLUSIVE=0 over 51 citations. A crash read as a clean
+# file.
+#
+# THE STREAM IS RECONFIGURED, NOT THE DOCSTRING. Every tool in this repo uses
+# those box rules, so ASCII-ing this one would fix one file and leave the
+# pattern in the other ~236. stderr too: this gate writes its refusal there in
+# prepush mode, and a gate whose REFUSAL cannot be encoded fails at the one
+# moment it is trying to stop something.
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8')
+
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REGISTER = os.path.join(REPO, 'docs', 'defect-density-register.json')
 

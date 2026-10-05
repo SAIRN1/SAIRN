@@ -91,15 +91,39 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from checker_kit import EXIT_CLEAN, EXIT_FINDING, EXIT_COULD_NOT_RUN  # noqa: E402
 
-CRITERIA_VERSION = '2026-09-29.1'
+CRITERIA_VERSION = '2026-10-05.1'
 
-# The auditor's log, outside every clone. Named rather than derived: there is no
-# way to compute another project's directory hash, and guessing at one would
-# produce a path that is wrong in a way this tool could not detect.
-DEFAULT_LOG = os.path.join(
-    os.path.expanduser('~'), '.claude', 'projects',
-    'C--Users-marsh-Documents-SAIRN-hover', 'hover-audit-log',
-    'hover-audit-log.jsonl')
+# ── THE DEFAULT COVERED ONE AUDITOR OF TWO, SILENTLY (hover2 seq 475/478) ──
+# This was DEFAULT_LOG, singular, pointing at the hover1 clone. The auditor
+# has run as more than one instance for weeks -- the shared status registry
+# lists `hover` AND `hover2`, and tier_a_review_gate.is_hover_session() has
+# matched `hover\d` since b3ae64ad -- so the default invocation measured half
+# the population and said nothing about the other half. A routing-gap checker
+# that cannot see one auditor's log is exactly the shape it exists to catch.
+#
+# NAMED, NOT DERIVED, for the same reason the original was: there is no way to
+# compute another project's directory hash, and guessing at one produces a path
+# wrong in a way this tool could not detect.
+#
+# PATCH DESIGNED AND PROVED BY hover2 (seq 478) IN AN ISOLATED SCRATCH COPY --
+# that role writes no platform code, so the repo file was never touched and the
+# design was handed over as a specification. Applied here and RE-VERIFIED LIVE
+# against the real repo, because a proof in a scratch copy is a proof about a
+# scratch copy.
+DEFAULT_LOGS = (
+    ('hover', os.path.join(
+        os.path.expanduser('~'), '.claude', 'projects',
+        'C--Users-marsh-Documents-SAIRN-hover', 'hover-audit-log',
+        'hover-audit-log.jsonl')),
+    ('hover2', os.path.join(
+        os.path.expanduser('~'), '.claude', 'projects',
+        'C--Users-marsh-Documents-SAIRN-hover2', 'hover-audit-log',
+        'hover-audit-log.jsonl')),
+)
+
+# Kept so anything importing the old name still resolves, and so the explicit
+# --log contract below has the same default it always had.
+DEFAULT_LOG = DEFAULT_LOGS[0][1]
 
 INDEX = os.path.join(REPO, 'docs', 'SAIRN-OPEN-WORK-INDEX.md')
 
@@ -262,9 +286,15 @@ def main(argv=None):
     ap = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('--log', default=DEFAULT_LOG,
-                    help='the hover audit log. Exists so the control can drive '
-                         'fixtures instead of the real record.')
+    # DEFAULT None, NOT DEFAULT_LOG. An explicitly passed --log keeps its exact
+    # original contract -- ONE path, fail closed on any failure -- because the
+    # control's FAIL CLOSED arms drive that path and were not touched. Omitting
+    # it now means "every known instance", which is the actual default anybody
+    # running this tool by hand wants.
+    ap.add_argument('--log', default=None,
+                    help='ONE hover audit log, fail-closed. Exists so the '
+                         'control can drive fixtures instead of the real '
+                         'record. Omit it to check every known instance.')
     ap.add_argument('--index', default=INDEX)
     ap.add_argument('--json', action='store_true')
     ap.add_argument('--now', default=None,
@@ -274,7 +304,11 @@ def main(argv=None):
 
     print('HOVER ROUTING GAP -- a finding nobody routed is a finding nobody has')
     print('  criteria  : %s' % CRITERIA_VERSION)
-    print('  log       : %s' % args.log)
+    # BOTH LOGS NAMED BEFORE ANY FINDING IS PRINTED, so a reader knows the
+    # population before they read a count off it.
+    targets = ([('--log', args.log)] if args.log else list(DEFAULT_LOGS))
+    for _inst, _p in targets:
+        print('  log       : %-8s %s' % (_inst, _p))
     print('  index     : %s' % os.path.relpath(args.index, REPO))
     print('  threshold : REASONED, NOT CALIBRATED -- older than %dh OR more '
           'than %d entries behind.' % (STALE_HOURS, STALE_ENTRIES))
@@ -283,12 +317,37 @@ def main(argv=None):
     print('              OR and not AND: a busy hour buries a finding as well')
     print('              as a quiet day does.')
 
-    try:
-        rows, bad = read_log(args.log)
-    except CouldNotRead as exc:
+    # ── ONE LOG PER TARGET, AND A SKIP IS NEVER SILENT ─────────────────────
+    # An explicit --log fails closed on its single path, exactly as before. In
+    # default mode a log that cannot be read is reported SKIPPED BY NAME with
+    # its reason, and the run only returns COULD NOT RUN when EVERY known
+    # instance failed -- because "one auditor's log is missing" and "no
+    # auditor's log is readable" are different facts and the second is the only
+    # one that means nothing was checked.
+    rows, bad, skipped = [], 0, []
+    for _inst, _p in targets:
+        try:
+            _r, _b = read_log(_p)
+        except CouldNotRead as exc:
+            skipped.append((_inst, str(exc)))
+            continue
+        for _e in _r:
+            if isinstance(_e, dict) and len(targets) > 1:
+                _e.setdefault('_instance', _inst)
+        rows += _r
+        bad += _b
+    if skipped:
         print()
-        print('COULD NOT RUN: %s' % exc)
-        print('This is the THIRD STATE. It is NOT "no unrouted findings".')
+        for _inst, _why in skipped:
+            print('  SKIPPED   : %-8s %s' % (_inst, _why))
+        print('  A skipped log is NOT zero findings. It is one instance this '
+              'run could not see.')
+    if not rows and skipped:
+        print()
+        print('COULD NOT RUN: every known log failed (%s).'
+              % ', '.join(i for i, _ in skipped))
+        print('This is the THIRD STATE. It is NOT "no unrouted findings", it '
+              'is nothing could be checked at all.')
         return EXIT_COULD_NOT_RUN
 
     if not os.path.isfile(args.index):
