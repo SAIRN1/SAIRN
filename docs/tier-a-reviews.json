@@ -5178,6 +5178,27 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-10-05T12:35:55Z",
+      "opened_at_sha": "f9f6786cca152c77daaa9ce5239082132a632d10",
+      "resources": [
+        "sb_perf"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tests/run_citation_line_drift_probe.py",
+        "tools/citation_line_drift_check.py"
+      ],
+      "what": "tools/citation_line_drift_check.py now reads EVERY citation form. The extractor was anchored on a closing backtick so 188 named-form and all range citations were invisible -- 285 of 473 read, presented as the answer. Named citations now resolve against the file they NAME (28 of them point at api/sd-data.js or another app), an unreadable cited file is COULD NOT RESOLVE not DRIFTED, and every run prints its denominator by form. Full register: 444 citations, 213 SOUND, 177 DRIFTED, 54 INCONCLUSIVE. Also fixed a cp1252 crash that made sairnlegacy report 0/0/0 over 51 citations -- a crash read as a clean file. NO code serving any Tier A resource is changed: this is a report-only measurement tool, and the gate matched sb_perf out of the COMMENT and commit prose explaining which citations were wrong. SEVENTH recorded instance of this gate matching a resource name out of prose (PR 1.2 inside the gate itself); row 78 of the open-work index carries the first six. ATTACK POINTS: (a) the range form anchors on its FIRST line only -- is that right when a cell cites :6752-6760 and the subject is at 6758, (b) declaration spans and the constant map are --app properties and are NOT applied to citations into another file, so a named citation gets the literal-key shape only -- is that subset honest or silently weaker, (c) 177 DRIFTED is a candidate list and the measured base rate says roughly half are deliberate read-site citations, (d) by-form counts call a bare citation 'resolved against --app' which is true but means two different confidence levels share one SOUND verdict, (e) the cp1252 fix is a reconfigure and 237 tools still lack it.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-10-05T12:35:55Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
