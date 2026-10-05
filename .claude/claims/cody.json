@@ -3006,8 +3006,8 @@
       "task": "sairn_claim.py blocker-clause false-block fix; control_char_check push-gate scope hole; dead_rule_sweep fixture sets for never-claimed tools FILES: tools/sairn_claim.py tools/control_char_check.py tools/dead_rule_sweep.py",
       "claimed_at": "2026-10-05T08:54:28Z",
       "claimed_at_epoch": 1791190468.1072574,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-05T09:24:07Z",
       "files": [
         "tools/control_char_check.py",
         "tools/dead_rule_sweep.py",
