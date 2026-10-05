@@ -1683,3 +1683,118 @@ carry `** COULD-NOT-TELL ** the recorded sha … does not resolve in this clone
 — rebased away without a reseat`. That is the SHA-pinning decay
 `docs/2026-10-05-register-sha-pinning-proposal.md` predicted, now visible as
 real rot across the ledger rather than as an argument.
+
+---
+
+## 2026-10-05 (seventh batch) — a sweep that found nothing it was looking for and two red suites instead
+
+### 5. INVENTORY
+
+| # | Item | State |
+|---|---|---|
+| 0 | Paste the SAIRNvet SQL | **DONE** in the report |
+| 1 | Flag `exit_status_attributable` to CC with a repro | **DONE** — `docs/2026-10-05-exit-status-attributable-false-positive.md` |
+| 2 | Build a gap for an app with no doc in flight | **RE-SCOPED — both candidates turned out closed or out of scope.** See §2 |
+| 3 | Sweep for the cross-realm `deepStrictEqual` trap | **DONE — zero live instances**, and two unrelated RED suites found |
+| 4 | The push_retry misdiagnosis as a standing rule | **DONE** — §4 |
+
+### 4. THE STANDING RULE, from getting it wrong
+
+**Before fixing a suspected tool defect, confirm the call site is actually
+using the tool and not a hand-rolled substitute.**
+
+I reported `push_retry.py` as having a `--ours`-during-rebase data-loss bug.
+It does not and never did: on a conflict it STOPS, prints guidance, and
+returns 3 without amending. The `--ours` that deleted a Tier A obligation was
+in **my own inline fetch/rebase/push loops**, typed fresh per command —
+exactly the thing `push_retry.py` exists to replace, and written because
+reaching for the tool felt slower than retyping the loop.
+
+**The symptom was real, the location was invented.** I had seen the tool print
+`git checkout --ours` in its guidance text, and attributed behaviour to it
+from that. That is the same move as reading `tail -3`: concluding from the
+output rather than from the thing that produced it.
+
+Two consequences worth keeping:
+
+* **A tool cannot be blamed for a loop that bypassed it.** The question
+  "which code actually ran" is one command — `git log`, `history`, or reading
+  the loop — and it comes before the diagnosis, not after.
+* **The real finding was better than the invented one.** Neither the tool nor
+  my loops had a count taken before the rebase and compared after. The fix
+  that shipped guards *all* callers, including the hand-rolled ones, because
+  it lives in the tool they should have been using.
+
+### 3. The cross-realm sweep: nothing live, and that is the result
+
+`assert.deepStrictEqual` compares **prototypes**, so an array or object
+created by a literal inside `vm`-executed code never equals a host-realm `[]`
+— even when both are empty. It bit twice: `tests/sairnsenior_referral_hours.js`
+(recorded there) and `tests/sairnlegacy_item_price_lists.js` yesterday.
+
+Swept: **61 suites use both `vm` and `deepStrictEqual`**, with **74 call sites
+comparing against an empty `[]` or `{}`** — the exact shape.
+
+**All 61 were RUN, not read. Zero are failing on the realm trap.** The
+co-occurrence is almost entirely safe because the compared value is a
+HOST-realm array: these suites inject their collectors (`c.__pushed`,
+`ctx.__logged`) from the outside, or build the array in the test itself. The
+trap only fires on a literal constructed *inside* vm source and returned out,
+which is the narrow case both real instances were.
+
+**So no call site was changed.** Rewriting 74 assertions that are correct
+today, to guard a shape none of them has, is the speculative refactor this
+repo polices. The rule is recorded where it bites instead.
+
+### 3b. TWO RED SUITES ON `main`, NEITHER REGISTERED
+
+The sweep's real yield. Both fail on **assertions**, not on the realm trap:
+
+| suite | failure |
+|---|---|
+| `tests/sairnlegacy_write_failure_voice.js` | `confirmReserve -> leg_merch_units (writes: )` — a write site with no failure voice |
+| `tests/sairnbiz_vendor_ytd_derivation.js` | the at-risk band disclosure arm |
+
+**NOT MINE, and that was checked rather than assumed.** I edited
+`sairnlegacy.html` this session, so I restored the pre-change file from
+`adea2129~1`, re-ran, and got the **identical failure and exit code**, then
+restored the current file and confirmed by sha256. The first attempt at that
+check was worthless and is recorded as such: I passed `LEG_HTML=` to a suite
+that reads `path.join(ROOT, FILE)` and ignores the variable, so both runs
+tested the same file. I only caught it by grepping for how the suite loads its
+source.
+
+**Neither is in `docs/known-red-suites.json`** (17 entries). And one entry
+that IS there, `tests/sairnlaw_hydrate.js`, now passes 19/19 — so the register
+is stale in both directions.
+
+### 2. The gap build: both candidates were already closed or too large
+
+Apps with no cloud-research gap audit: **sairndental, sairnmechanical,
+sairnroofing**. Two were checked against HEAD before building:
+
+* **SAIRNmechanical G3** — the 2026-09-17 doc's headline finding, *"claims an
+  enforcement it never invokes"*: the engine, endpoint, registry and tests all
+  existed and **the caller did not**. **That gap is CLOSED at HEAD.**
+  `sairnmechanical.html:872` has a *Check eligibility* button calling
+  `mechEligibility()` (:2592), which sends `mechData('eligibility',
+  'mech_credentials', …)` and handles a 403 with *"this is NOT a statement
+  that nobody is eligible"*. Verified inside the `page-technicians` block, not
+  just by a file-wide grep. **The gap doc's headline is stale.**
+* **SAIRNroofing A5** — QuickBooks/accounting integration, and the doc calls
+  it *"STILL OPEN — the only one"*. It is genuinely open: `QuickBooks`, `QBO`,
+  `Xero`, `general ledger`, `IIF`, `chart of accounts` are **0 hits each**.
+  But an accounting *integration* is OAuth plus a vendor relationship plus a
+  mapping layer, and `api/_lib/exec-context.js` carries a standing, verified
+  platform statement that SAIRN connects to none of them and that this must
+  not be described as pending. **Starting it in the tail of a batch would
+  produce exactly the half-thing that statement exists to prevent.**
+
+  The honest buildable half is a **general-ledger journal export** — no OAuth,
+  no vendor — with the firm's own account codes and a refusal to emit a line
+  that has none, on the SAIRNdental CDT model. That is a scoped next build,
+  not a leftover.
+
+**So: nothing was built, and the batch produced two corrections instead** — a
+stale gap-doc headline and two unregistered red suites. Reported rather than
+dropped, because "I picked an app and its gap was already closed" is a result.
