@@ -1798,3 +1798,116 @@ sairnroofing**. Two were checked against HEAD before building:
 **So: nothing was built, and the batch produced two corrections instead** — a
 stale gap-doc headline and two unregistered red suites. Reported rather than
 dropped, because "I picked an app and its gap was already closed" is a result.
+
+---
+
+## 2026-10-05 (eighth batch) — the red register reconciled, and the A/B rule that came from my own void comparison
+
+### 7. METHODOLOGY — THE STANDING RULE
+
+**An A/B comparison is void unless the varied input is first shown to change
+what the run reads.** Vary it to something that must FAIL, confirm it fails,
+then run the real comparison. Two identical results prove nothing until that
+step has been done.
+
+**My own case, and it is worse than I first reported.** I ran
+
+```
+LEG_HTML=<pre-change copy> node tests/sairnlegacy_write_failure_voice.js
+node tests/sairnlegacy_write_failure_voice.js
+```
+
+got the same failure twice, and read it as *"pre-existing, not mine"*. **That
+suite reads no override at all** — both runs tested the same file.
+
+**And the sweep showed my assumption was never true in the first place.** I
+inferred the `LEG_HTML` convention from two sibling suites. Across the whole
+SAIRNlegacy family it is **2 of 6**. There was no convention to rely on; I
+generalised from a sample of two and then used the result as evidence.
+
+The conclusion happened to be right, which is the worst outcome available: a
+void method that returns the correct answer gets reused.
+
+Applied immediately afterwards, in this batch: when adding `MECH_HTML` to a
+suite, pointing it at a mutated copy left the suite GREEN — inconclusive, not
+proof. Pointing it at a stub file made it exit 1 while the unoverridden run
+stayed at 20/20. **That** is the demonstration.
+
+### 1. The red-suite register, reconciled against a real run
+
+**All 17 registered entries were RUN individually.** 12 still red, **5
+RECOVERED and deleted** — a stale entry does not merely clutter the file, it
+swallows the next real failure of that suite:
+
+- `api/sd-data-memory-app-scope.test.js`
+- `tests/claims/run_freshness_probe.py`
+- `tests/run_invisible_in_pattern_probe.py`
+- `tests/run_master_plan_probe.py`
+- `tests/sairnlaw_hydrate.js` (19/19)
+
+**Two added**, then one immediately removed again because I fixed it. Net 13.
+
+**THE SCOPE LIMIT IS RECORDED IN THE FILE, because RECOVERED is complete and
+NEW is not.** Every entry was driven, so no stale entry survives. But this ran
+the register against itself plus one 61-suite sweep — not the whole tree, the
+way the 2026-09-17 measurement did. A red suite outside those two populations
+would be absent and nothing here would know. `total_files` is carried over
+unchanged for the same reason; it was not re-counted.
+
+### 2. `sairnlegacy_write_failure_voice.js` — THE APP WAS RIGHT, THE TEST'S SPAN WAS SHORT
+
+The arm reported `confirmReserve -> leg_merch_units (writes: )` — a call site
+naming a resource its own function never writes.
+
+**It does write it.** `spanOf()` defined a function's body as *"from its start
+to the start of the next function anywhere in the file"*, and `confirmReserve`
+declares `function undoLocalReservation(){…}` **inside itself**, between the
+`legWriteFailText(…)` call and the direct `fetch` carrying
+`resource:'leg_merch_units'`. The span stopped at the nested declaration and
+never saw the write.
+
+Replaced with brace matching from the function's opening `{`, skipping strings
+and comments so a brace in either cannot unbalance the count, and falling back
+to the old bound when no balanced close is found — a span that ran to EOF
+would make every later write look like this function's.
+
+**Proven still to deny:** planting `legWriteFailText('leg_invoices', …)` into
+`confirmReserve` turns the arm red with `confirmReserve -> leg_invoices
+(writes: leg_merch_units)` — which also shows the span now sees the fetch.
+`sairnlegacy.html` restored and sha256-verified. 11/11.
+
+**`sairnbiz_vendor_ytd_derivation.js` is NOT fixed and NOT mine to fix:** CC
+holds `sairnbiz.html` and the active claim names this exact subject (sb_ap
+seq 507/508, the unlisted undated payee). Registered with the failing
+assertion text and `owner: cc`.
+
+**Open-work index rows could not be added** — `docs/SAIRN-OPEN-WORK-INDEX.md`
+is in CC's claim. The register carries the full failing-assertion text in the
+interim.
+
+### 6. The override audit: one documented-but-ignored, one convention violation
+
+**269 suites read an env override to choose their input.** Swept for two
+different defects:
+
+* **Documents an override it does not read: 1.**
+  `api/_lib/auth-roleset-seam.test.js` carried
+  `Run: SD_AUTH_SECRET=test-secret node …` and reads no environment variable.
+  Prefix removed, with the reason in its header. Now **0**.
+* **Ignores an override its siblings honour: 1.**
+  `tests/mech_check_register_identity.js` did not read `MECH_HTML` while 2 of
+  3 SAIRNmechanical suites do. Added, and **proven** to reach the read.
+
+`tools/suite_override_consistency.py` finds the second class, which the
+obvious sweep misses: the suite that bit me documented nothing, so only a
+*family* comparison can see it. 6 fixture cases both directions, including
+"no member honours it" and "only a minority does" — both clean, because
+neither is a convention to violate. That rule is what correctly cleared the
+SAIRNlegacy family and exposed my 2-of-6 assumption.
+
+### NOT REACHED
+
+Items 3 (verify every gap-doc headline against HEAD), 4 (SAIRNroofing GL
+journal export) and 5 (build the highest-severity still-open gap, which
+depends on 3). Each is a multi-hour piece and the batch ran out before them.
+Named rather than quietly dropped.

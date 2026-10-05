@@ -28,7 +28,15 @@
 const fs = require('fs');
 const path = require('path');
 
-const HTML = path.join(__dirname, '..', 'sairnmechanical.html');
+// MECH_HTML ADDED 2026-10-05 so this suite accepts the same override its two
+// siblings already honour (sairnmechanical_credential_export.js,
+// sairnmechanical_site_asset_export.js). It was the only one of the three
+// that did not, which is the state that misleads: a caller who has seen the
+// others reasonably passes MECH_HTML here, gets a run against the REAL file,
+// and reads two identical results as an A/B comparison. That exact mistake
+// was made with a different app the same day -- see
+// tools/suite_override_consistency.py, which found this one.
+const HTML = process.env.MECH_HTML || path.join(__dirname, '..', 'sairnmechanical.html');
 const src = fs.readFileSync(HTML, 'utf8');
 
 let pass = 0, fail = 0;

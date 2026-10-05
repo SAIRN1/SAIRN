@@ -119,12 +119,54 @@ const funcs = [];
 const fre = /\n\s*(?:async\s+)?function\s+(\w+)\s*\(/g;
 let fm;
 while ((fm = fre.exec(SRC)) !== null) funcs.push([fm.index, fm[1]]);
+// ── A NESTED FUNCTION USED TO TRUNCATE THE SPAN, AND THE ARM BLAMED THE APP
+// Fixed 2026-10-05. This read `to: the start of the NEXT function anywhere in
+// the file`, which is right until a function declares one INSIDE itself.
+//
+// confirmReserve() does. It has an early `if(!lic)` branch that calls
+// legWriteFailText('leg_merch_units', …), then declares a nested
+// `function undoLocalReservation(){ … }`, and only AFTER that issues the
+// direct fetch carrying `resource:'leg_merch_units'`. The old span ran from
+// `function confirmReserve` to `function undoLocalReservation` and stopped --
+// so it never saw the write, and the arm reported
+//
+//     confirmReserve -> leg_merch_units (writes: )
+//
+// as though the app had named a resource it does not write. THE APP WAS
+// RIGHT. The span was short.
+//
+// This brace-matches from the function's opening `{` instead, which contains
+// nested declarations by construction. Strings and line comments are skipped
+// so a `{` inside either cannot unbalance the count; that is cheaper than a
+// parser and sufficient here, and when it CANNOT find a balanced close it
+// returns the old next-function bound rather than silently running to EOF --
+// a span that swallowed the rest of the file would make every later write
+// look like this function's.
+function balancedEnd(open) {
+  let depth = 0, i = open, inS = null, inLine = false, inBlock = false;
+  for (; i < SRC.length; i++) {
+    const c = SRC[i], n = SRC[i + 1];
+    if (inLine) { if (c === '\n') inLine = false; continue; }
+    if (inBlock) { if (c === '*' && n === '/') { inBlock = false; i++; } continue; }
+    if (inS) { if (c === '\\') { i++; continue; } if (c === inS) inS = null; continue; }
+    if (c === '/' && n === '/') { inLine = true; i++; continue; }
+    if (c === '/' && n === '*') { inBlock = true; i++; continue; }
+    if (c === '"' || c === "'" || c === '`') { inS = c; continue; }
+    if (c === '{') depth++;
+    else if (c === '}') { depth--; if (depth === 0) return i + 1; }
+  }
+  return -1;
+}
 function spanOf(pos) {
   const starts = funcs.filter(([s]) => s <= pos);
   if (!starts.length) return null;
   const [fs2, name] = starts[starts.length - 1];
   const later = funcs.filter(([s]) => s > pos);
-  return { name, from: fs2, to: later.length ? later[0][0] : SRC.length };
+  const fallback = later.length ? later[0][0] : SRC.length;
+  const open = SRC.indexOf('{', fs2);
+  if (open < 0) return { name, from: fs2, to: fallback };
+  const end = balancedEnd(open);
+  return { name, from: fs2, to: end > pos ? end : fallback };
 }
 
 // A function "writes" a resource through sdnData('write', ...) or, for the one

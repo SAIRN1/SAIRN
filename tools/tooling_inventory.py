@@ -1208,6 +1208,24 @@ PURPOSES = {
         'directions, including the incident reproduced verbatim, a case '
         'carrying both a refusal and a lock error, and a control asserting '
         'the fixture set reaches all four verdicts'),
+    'suite_override_consistency.py': ('CHECKER',
+        'a test suite that reads its app HTML WITHOUT the override a majority '
+        'of its sibling suites honour -- the state in which a caller '
+        'reasonably assumes the convention holds and is wrong about exactly '
+        'one file. On 2026-10-05 a session ran a suite twice, once with '
+        'LEG_HTML= pointed at a pre-change copy, got the same failure both '
+        'times and read that as evidence the failure was pre-existing. That '
+        'suite reads no override: both runs tested the same file and the A/B '
+        'established nothing while looking deliberate. A sweep for suites '
+        'that DOCUMENT an override they ignore does not catch it -- that '
+        'suite documented nothing, and the expectation came from its '
+        'siblings. CANNOT see an override read through a helper rather than '
+        'process.env, cannot judge a family of fewer than three (no majority '
+        'exists to violate), and does not check that a present override '
+        'actually reaches the read. A suite with no override is NOT itself a '
+        'finding: many are deliberately pinned, and a family where none or '
+        'only a minority honour one is reported clean, because neither is a '
+        'convention'),
     'push_retry.py': ('TOOL',
         'an amend that is about to run in a tree where HEAD is not what the '
         'author thinks it is -- and it REFUSES rather than warns. Five clones '

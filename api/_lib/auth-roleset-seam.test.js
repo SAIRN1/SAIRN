@@ -3,7 +3,22 @@
 //   because tools/sairn_seam_check.py cannot read this seam and 18 files depend
 //   on it.
 //
-// Run: SD_AUTH_SECRET=test-secret node api/_lib/auth-roleset-seam.test.js
+// Run: node api/_lib/auth-roleset-seam.test.js
+//
+// THE SD_AUTH_SECRET= PREFIX WAS REMOVED FROM THIS LINE, 2026-10-05, and the
+// removal is the point rather than tidying. This file does not read
+// SD_AUTH_SECRET -- it reads no environment variable at all -- so the prefix
+// documented an input the run ignores. Anyone following the usage line would
+// believe they had varied something, and any A/B comparison built on it would
+// be void while looking deliberate.
+//
+// That is not hypothetical: on 2026-10-05 a session passed LEG_HTML= to
+// tests/sairnlegacy_write_failure_voice.js, which likewise reads no override,
+// and used the two identical runs as evidence about a code change. The
+// comparison proved nothing and very nearly shipped as a finding.
+//
+// Found by sweeping every suite for an override NAMED in its own header
+// against the set it actually reads; this was the only mismatch in the tree.
 //
 // Plain node:assert, no framework, matching api/'s zero-npm-dependency
 // convention.
