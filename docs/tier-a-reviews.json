@@ -5549,6 +5549,26 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-10-05T21:33:08Z",
+      "opened_at_sha": "4b1e81df240364863a5fe2b7ac02b5bb4a6e22d4",
+      "resources": [
+        "sd_comms"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tools/citation_line_drift_check.py"
+      ],
+      "what": "tools/citation_line_drift_check.py RANKING FIX: a direct reference to the resource now outranks distance to a write site. Distance was the only signal and it is a PROXY -- on sd_comms a comment 13 lines from the write scored SOUND while the real commsEnsureIds() call site 55 lines away scored DRIFTED, so three WRONG citations outranked three RIGHT ones and repointing them correctly made the tool's number worse. New verdicts ANCHORED (the cited line names the resource) and ANCHORED-VIA (reaches it within two hops, each hop taken to the NEAREST PRECEDING definition of that name); SOUND demoted to a fallback. Platform-wide DRIFTED 170 to 136, so 34 citations were being called drifted while directly referencing their own resource. NO code serving any Tier A resource is changed: this is a report-only measurement tool and the gate matched sd_comms out of the COMMENT and commit prose explaining the defect -- EIGHTH recorded instance of that, and row 95 of the open-work index carries the first six at severity HIGH. ATTACK POINTS: (a) two hops with nearest-preceding resolution can cross an IIFE boundary and anchor to the wrong module's load() -- the cap is 2 and the limit is stated, but is 2 already too many in a 43k-line file with 23 render definitions, (b) the declaration-block exclusion now runs BEFORE anchoring because the first version did not and reintroduced the original defect the tool exists to prevent -- is the ordering right in every case or only in the fixture, (c) :10606 (a bare load() call) anchors at 1 hop and I argue that is correct rather than a false positive -- disagree if the cell's argument needs the specific call site, (d) ANCHORED and ANCHORED-VIA are reported as one count in the summary, which merges two confidence levels, (e) 136 DRIFTED is still a candidate list and the tool still cannot tell a stale citation from a deliberate read-site one.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-10-05T21:33:08Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
