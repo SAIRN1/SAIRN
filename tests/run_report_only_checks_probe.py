@@ -55,6 +55,22 @@ R = {}
 def check(label, actual, expected):
     R[label] = (actual == expected, actual, expected)
 
+
+def check_now(label, actual, expected):
+    """check(), but REPORTED IMMEDIATELY.
+
+    This file accumulates into R and prints the whole table at the end, so a
+    run killed by a timeout loses every result it had already computed. That
+    happened: the T arms below were moved to the FRONT so they would not sit
+    behind a 280-second preamble, and the probe still reported nothing, because
+    running first does not help when printing is deferred to last. Position
+    fixed one half; this fixes the other.
+    """
+    check(label, actual, expected)
+    okk = R[label][0]
+    print('  %s %s%s' % ('ok  ' if okk else 'FAIL', label,
+                         '' if okk else '  got=%r want=%r' % (actual, expected)))
+
 # ── MOVED TO THE FRONT 2026-10-05, and the reason is the finding itself ──
 # These arms were appended at the END of this file and the probe TIMED OUT
 # at 280s before reaching them -- so the control for 'a registered checker
@@ -97,41 +113,41 @@ try:
 
     # No record at all -> the third state, never a blank.
     _d, _m = roc._read_reachability()
-    check('T1 absent record reads as a THIRD STATE, not as reachable',
+    check_now('T1 absent record reads as a THIRD STATE, not as reachable',
           (_d, _m), (None, {}))
 
     # A record with one live and one dead entry.
     roc._write_reachability([('alive.py', 1.0, 1.0, True),
                              ('dead.py', None, 600.0, False)], 600)
     _d, _m = roc._read_reachability()
-    check('T2 a written record round-trips, and the dead entry is dead',
+    check_now('T2 a written record round-trips, and the dead entry is dead',
           (_d['reached'], _d['never_reached'], _m['dead.py'][0]),
           (1, 1, False))
 
     # THE KNOWN-BAD: the record must carry the instability caveat, so a reader
     # cannot take "never reached" as a property of the tool.
-    check('T3 the record DISCLOSES that the boundary is not stable',
+    check_now('T3 the record DISCLOSES that the boundary is not stable',
           'boundary_is_NOT_stable' in _d, True)
 
     _src = io.open(os.path.join(REPO, 'tools', 'report_only_checks.py'),
                    encoding='utf-8').read()
-    check('T4 the per-entry tag says DID NOT RUN, never CANNOT RUN',
+    check_now('T4 the per-entry tag says DID NOT RUN, never CANNOT RUN',
           ('DID NOT RUN in the last measured sweep' in _src
            and 'REGISTERED AND DEAD' not in _src), True)
 
     # The loud half: the surface must FAIL, not just mention it.
-    check('T5 --list returns 1 when any registered checker is dead',
+    check_now('T5 --list returns 1 when any registered checker is dead',
           'return 1 if unreached else 0' in _src, True)
 
     # And it must not fail when everything ran -- otherwise T5 passes because
     # the surface always fails, which would be a different kind of useless.
-    check('T6 ...and the failure is CONDITIONAL on unreached, not constant',
+    check_now('T6 ...and the failure is CONDITIONAL on unreached, not constant',
           _src.count('return 1 if unreached else 0'), 1)
 
     # A write that cannot happen must be reported, not swallowed. This is the
     # bug the feature shipped with: io.open in a module with no io, caught only
     # because the handler printed.
-    check('T7 a failed record write is PRINTED, not passed over',
+    check_now('T7 a failed record write is PRINTED, not passed over',
           'COULD NOT WRITE' in _src, True)
 finally:
     roc.REACHABILITY_FILE = _real_reach
