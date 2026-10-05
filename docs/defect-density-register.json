@@ -22862,7 +22862,7 @@
       "recurrence_open": "The self-scope now has arms and an ablation, but legacy alf_incidents rows carry recorded_by NULL and are invisible to the self-service tier by Michael's recorded decision -- no arm covers that state and this commit does not add one. The two systemic actions stay open and are now on their third instance each: nothing reports an app's red set on a cadence, and nothing stops a control from landing into an already-red suite where its contradictions cannot be seen. And the deepest one is untouched: no instrument counts UNSCOPED verifySessionToken calls, so a branch gate that dropped its app scope entirely passes all fourteen stubs on this platform."
     },
     {
-      "commit": "75e0376ae057",
+      "commit": "38514b5b4877",
       "date": "2026-10-05",
       "subject": "fix(provisioning): the public. prefix was required, so 28 tables were invisible and a file declaring none exited clean",
       "files": [
