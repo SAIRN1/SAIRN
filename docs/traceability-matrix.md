@@ -216,6 +216,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#128308; NOTHING COUNTS *UNSCOPED* `verifySessionToken` CALLS &mdash; a branch gate that DROPPED its app scope entirely passes ALL FOURTEEN stubs on this platform, including the two that are the reference shape** <!-- CCBATCH2-2026-10-05 --> | **NEW 2026-10-05 (CC). Found while fixing the twelve suites `c8b5e5b1` turned red (`ac9c21df`, `395f7f2a`); carried in BOTH of today&rsquo;s register records&rsquo; recurrence notes** | `api/_lib/dnt-rollup-endpoint.test.js`, `api/_lib/law-trust-reconcile-endpoint.test.js` |
 | **&#9989; RULED: the criticality register tiers RESOURCES, not stored data &mdash; and the ruling is MECHANICAL, not a judgement** <!-- REGISTER-SCOPE-RULING-HANK-2026-09-30 --> | **SETTLED 2026-09-30 (hank) from `tools/criticality_tier_check.py`'s own arms, not from the header prose. Closes the unit-disagreement row opened 2026-09-29** | `tests/run_criticality_tier_probe.py` |
 | **&#128993; 43 test files where STRING CHECKS ARE AT LEAST HALF the classified assertions &mdash; a registered population, not a completed sweep** <!-- QUEUE25-ITEM9-11-HANK-2026-09-29 --> | **MEASURED 2026-09-29 (hank) by `tools/message_assertion_audit.py` (NEW, report-only). 589 files, 10,718 assertions: 1,464 string-only, 2,755 value, 6,499 UNCLASSIFIED. Full account in `docs/2026-09-2 | `tests/lib/strip_comments.test.js`, `tests/run_master_plan_probe.py`, `tests/sairndental_rollup_panel.js`, `tests/sairnscape_memory.js`, `tests/sairnvet_formulary_source_honesty.js` |
 | **&#9989; TWO INDEPENDENT READS OF THE SAME EIGHT RESOURCES AGREE ON THE FACTS AND DISAGREE ON THE UNIT &mdash; `sen_evv_queue` and `law_strike_log` are A/A-class risks that the register&rsquo;s stated unit excludes** <!-- QUEUE25-ITEM3-HANK-2026-09-29 --> | **BOTH READS DONE 2026-09-29, INDEPENDENTLY AND WITHIN THE HOUR: hover log #718 (cold read, code only, H2&rsquo;s log not read) and hank&rsquo;s `docs/2026-09-29-register-cells-hank.md` item 2b (write | `tests/run_stored_data_criticality_probe.py` |
@@ -480,6 +481,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#128993; A CONTROL THAT LANDS ON AN ALREADY-RED SUITE IS INVISIBLE &mdash; the SAIRNcare witness lock landed into a suite whose arm CONTRADICTED it, and the contradiction produced no signal for five days** <!-- CCBATCH2-2026-10-05 --> | **NEW 2026-10-05 (CC). Second instance alongside the &ldquo;nothing reports an app&rsquo;s red set on a cadence&rdquo; row, and both are in today&rsquo;s register records** | `tests/sairncare/test-alf-mar.js` |
 | **&#128308; `c8b5e5b1`&rsquo;s credential pre-gate turned TWELVE test suites red &mdash; 172 assertions, the ENTIRE SAIRNcare test surface &mdash; and nothing said so for ten hours** | **OPEN, found 2026-09-27 (CC) while re-anchoring `tests/sairncare_fault_probe.py`** | `api/_lib/dnt-rollup-endpoint.test.js`, `api/_lib/law-trust-reconcile-endpoint.test.js`, `tests/sairnbuild_retainage_race.js`, `tests/sairncare/test-alf-mar.js`, `tests/sairncare_fault_probe.py` |
 | **&#9989; Three refusal messages promise the trail shows &ldquo;the later one as what is believed now&rdquo; &mdash; and NOTHING ordered the rows, on either half** | **CLOSED 2026-09-22 (Hank)** &mdash; both halves, and the read half turned out to be SIX reads rather than three | `api/alf-append-only-fail-closed.test.js`, `api/alf-append-only-read-order.test.js`, `tests/run_alf_read_order_sabotage_probe.py`, `tests/sairncare/test-alf-mar.js`, `tests/sairncare_route_record.js` |
 | **&#9888; The route-record sabotage probe&rsquo;s MUTATION 1 &mdash; &ldquo;the original defect restored EXACTLY&rdquo; &mdash; has been ANCHOR-2 since `ad6a6b9d`, so the arm the probe was built around has not been planted since** | **FOUND 2026-09-22 (Fourth), NOT FIXED** &mdash; surfaced while adding arms to `tests/sairncare_route_record.js`; the anchor count was traced through git rather than guessed | `tests/run_sairncare_route_record_sabotage_probe.py`, `tests/sairncare_route_record.js` |
@@ -918,7 +920,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 873   tests/**, api/** (both walked)
-  open-work rows citing a test       385   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       387   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 10   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                73   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     81   report_only_checks.NOT_PROMOTED

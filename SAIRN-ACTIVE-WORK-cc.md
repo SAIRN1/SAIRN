@@ -5493,3 +5493,149 @@ are quoted from 2026-09-29 and that per-app table was not re-derived; it matched
 filenames and never read a doc's contents. (4) Only `sairn-demo-owner` was driven
 on the two SAIRNbiz keys, and the other fourteen rows of the demo-credentials doc
 share the one-PIN-per-key structure that produced today's mis-attribution.
+
+---
+
+## 2026-10-05 — CC batch 2: enforce mode is LIVE, twelve suites green, and TWO TEST SUITES WERE DEFENDING DEFECTS
+
+Full account: `docs/2026-10-05-cc-batch-2-inventory.md`.
+
+### 1. `SAIRN_CLAUDE_AUTH_MODE=enforce` confirmed live. ITEM CLOSED.
+
+The env var exists now (production target), **and its value is masked**, so this
+was settled behaviourally rather than by reading it. `api/claude.js:325` answers
+**401 `NO_LICENSE` only in enforce mode** — in observe that code path does not
+exist — so an unauthenticated call is a positive, mode-gated discriminator and
+needs no revoked key:
+
+    no Authorization header    -> 401 NO_LICENSE
+    Bearer ZZ-NOT-A-REAL-KEY   -> 401 NO_LICENSE
+
+**And the paired negative, chosen so it costs no Anthropic call:** a VALID
+licence with no `messages` gets **400 "messages array is required"** — refused at
+the envelope, having cleared the licence gate. `SD-AUDIT-2026` and
+`SB-TEST-2026` both. A 401 there would have meant enforce mode was locking out
+paying customers, which is the failure this pair separates from success.
+
+Suite 12/12 at HEAD. Both ablations re-driven, mutants confirmed to parse:
+refusal removed → **A1, A2**; budget grouping restored → **C1** only, with
+C2/C3/C4 green. `api/claude.js` restored byte-for-byte.
+
+**So both halves are live and the refusal is no longer dormant.**
+
+### 2. The twelve red suites — all green, and two were defending defects
+
+`ac9c21df`, `395f7f2a`. **200 assertions across thirteen files, 0 failed.**
+Population MEASURED, not quoted: 14 files stub `verifySessionToken` with an
+app-scope throw, 2 tolerated an absent `expectedApp` and were green, 12 threw
+and were red.
+
+**Cause 1 — the stub was stricter than the function it stands in for.**
+`api/_lib/auth.js:604` makes `expectedApp` optional and the pre-gate at
+`api/sd-data.js:1387` omits it deliberately, so all twelve answered 502 on the
+stub's own throw. **The guard was kept and ablated:** a WRONG app still reddens
+5 arms.
+
+**Cause 2 — `test-alf-mar.js` asserted the ABSENCE of a controlled-substance
+control.** With cause 1 cleared it went 0/20 → 18/20 and the two survivors were
+one defect: `403 WITNESS_REQUIRED`, found by **printing the refusal body** rather
+than guessing which of four 403s fired. `api/sairncare-witness.js` requires a
+server-recorded second signature; the arm asserted **200** for a count carrying
+only a client-supplied `witness_id` — the field the gate's own comment calls "BY
+CONSTRUCTION unverified". **Left alone it would have pressured the next session
+into weakening a controlled-substance control to turn a suite green.** Fixture
+now satisfies the lock, `content_hash` from the module's own `contentHash`.
+
+**Cause 3 — `test-alf-incidents.js` had NO arm on the self-scope AND COULD NOT
+HAVE HAD ONE.** Three arms asserted a flat 403 that the gate deliberately stopped
+answering on 2026-09-27, **and the suite's own mock ignored the
+`&recorded_by=eq.` clause**, returning every row to every caller. **The arm and
+the mock were wrong in the same direction**, so the one control between a
+caregiver and the whole facility's mandated-reporting log was untested in both
+halves while the suite read as coverage. Rewritten to the property; ablated:
+removing the eq-clause now reddens three arms plus the management count, and
+**before this it would have reddened nothing.**
+
+**My own mistake, kept in the file:** the first med_aide arm asserted an empty
+log and saw one row, because an earlier arm has MA-1 file a report. A count is a
+fact about fixture history; "every row I can see is mine" is the contract.
+
+### 3. PR #18 merged — `60a19a43` — and not blindly
+
+14 docs, +11,332/−0. Ten internal code citations re-derived at HEAD first; eight
+land on live content, **two had drifted and both claims still hold**:
+`stonedesk.html:12427 → :12470` (+43, the FTC 16 CFR 251 "free" finding) and
+`sairncash.html:1154 → :1703` (+549). Repointed in `1d46ab8d`, old citation kept
+in the note.
+
+**ONE CHECK FAILED AND I MERGED ANYWAY.** `github-advanced-security` is failure
+at step 19 with an EMPTY output body and cannot be re-run (403). Positively
+known: **0 open code-scanning alerts** on the PR ref; six other checks success;
+combined status success; `mergeable_state: clean`, which GitHub does not report
+for a failing REQUIRED check; and the repo's one open secret-scanning alert
+predates the PR by 4½ months in files it does not touch.
+
+**This closes the standing finding that nine of fourteen apps' newest audits
+were branch-only.**
+
+### 4. SAIRNlegacy audit PART 1 — `88ee8fe7`
+
+Picked on measurement (largest, 27 panels, 36 register rows, **20 Tier A** vs 10
+and 1) and on the one axis the other two lack: a **federal rule that prescribes
+the product's own paperwork**.
+
+**F1, read from the code not counted from words:** the GPL is a first-class
+object (`leg_gplservices`, `:2028`/`:2917`/`:3301-3302`) and **the Casket and
+Outer Burial Container price lists are not modelled as price lists at all** —
+caskets and urns are merchandise rows in `leg_merch_catalog`. `casket price
+list`, `CPL`, `OBCPL`: zero each. It claims the narrow checkable thing — **the
+product does not model it, so it cannot help** — not non-compliance.
+
+**F3:** `preneed` has a panel and 35 mentions; `irrevocable`, `revocable`,
+`surety` are **zero**, and that distinction decides withdrawability and Medicaid
+treatment. A gap in the MODEL, and the product decision behind it is the
+highest-value open question.
+
+**Half-finished on purpose and the title says so.** No vendor name, price or
+feature claim appears in it.
+
+### 5. The seam watch — `6469d2eb`, and the 19th seam is named
+
+**Why the count grew, answered rather than guessed.** All 19 COULD-NOT-TELL
+seams share one cause (`roleSet()` into `api/_lib/auth.js`), so the count moved
+because one more file started calling it. Bisected: **18 landed 2026-09-24, the
+19th is `api/sairncare-witness.js` on 2026-09-30 08:53** — the controlled-substance
+witness lock again. A new unreadable seam on a two-person medication control,
+unannounced.
+
+Stores the SET, not the count, so **churn at a constant total still fails** (arm
+C). Fails closed five ways. **Never updates its own baseline** — `--propose`
+prints, no flag writes. 19 arms, both directions.
+
+### Blocked
+
+**`report_only_checks_probe` arm E2.** `tools/report_only_checks.py` is hank's
+under a live claim. Diagnosed statically, **and the diagnosis changed the
+finding**: on 2026-09-28 I recorded four offending tools; at HEAD it is **five
+entirely different ones**. The original four were fixed and five newly promoted
+entries landed with no `evidence`. **So it is not a backlog of strings — it is a
+recurring INTAKE defect**, and the durable fix is to make the registry REFUSE an
+evidence-free entry at import. One change, in hank's file.
+
+**The seam watch is UNWIRED** for the same reason, and that is declared in the
+module header, the PURPOSES entry, the landing commit and an index row rather
+than left for a later sweep.
+
+### BLIND SPOTS: 5
+
+(1) **No revoked licence key was driven against production** — the `inactive`
+path is proven by suite and ablation; what the live calls prove is that the
+`enforce` predicate both branches share is true in production. (2) Enforce mode
+also armed the absent/invalid refusal at `:325`, and **no sweep was done for app
+code calling `/api/claude` without a licence key** that now gets 401. (3)
+Nothing counts UNSCOPED `verifySessionToken` calls, so a gate that dropped its
+app scope entirely passes all 14 stubs including the two reference ones — and
+today's fix is what made that uniformly true. (4) The competitor-facing half of
+all fourteen merged docs is unverified and not claimed. (5) Merging PR #18
+through the API bypassed this repo's own push gate, so those 14 files were never
+seen by `sairn_push_gate_hook.py`.
