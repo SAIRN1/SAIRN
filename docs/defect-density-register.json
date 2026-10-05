@@ -22725,6 +22725,72 @@
       "recurrence_open": "TWO OF THE EIGHT WORDINGS ARE STILL OPEN -- X is hank's and X is another session's -- and the actions above do not close them. The cause is the CLAUSE SPLITTER: a real claim runs '...is not held by another session FILES: api/sd-data.js ...' with no clause boundary between the disclaimer and the declared file list, so any marker firing there exempts a file the session holds. Whether FILES: should be a hard clause break is unmeasured. Arm E6 asserts both still block so that closing them is a deliberate act."
     },
     {
+      "commit": "fd626df659bf",
+      "date": "2026-10-05",
+      "subject": "fix(tests): the other ten suites green -- and alf-incidents was HIDING A LEAK NOBODY WAS TESTING FOR",
+      "files": [
+        "tests/sairncare/test-alf-activities.js",
+        "tests/sairncare/test-alf-billing.js",
+        "tests/sairncare/test-alf-clients-history.js",
+        "tests/sairncare/test-alf-clients.js",
+        "tests/sairncare/test-alf-compliance.js",
+        "tests/sairncare/test-alf-facility.js",
+        "tests/sairncare/test-alf-incidents.js",
+        "tests/sairncare/test-alf-payer-rules.js",
+        "tests/sairncare/test-alf-phase3.js",
+        "tests/sairncare/test-alf-signals.js"
+      ],
+      "lines_added": 186,
+      "lines_removed": 10,
+      "app": "sairncare",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tests/sairncare/test-alf-incidents.js had NO arm on the alf_incidents self-scope, and the suite looked like it was guarding the resource. Three arms asserted a flat 403 for caregiver/med_aide/activities reads, which api/sd-data.js:10739 deliberately stopped answering on 2026-09-27 when a care role was given a self-scoped read of its own filings -- AND the suite's own fetch mock ignored the '&recorded_by=eq.<session.employee_id>' clause the handler adds for non-broad roles, returning every row to every caller. So the only control standing between a caregiver and the whole facility's mandated-reporting incident log was untested in both halves at once: the arms tested a status code that no longer occurs, and the fixture could not have detected a leak if one existed. Fixed by applying the eq-clause in the mock, carrying server-set recorded_by and created_at on rows because the real select asks for them, and rewriting the three arms to the real contract -- every row a care role sees was filed by that caller (asserted over the whole result, so one leaked row fails it), a report filed by a different caregiver is NOT visible, and management DOES see that same row so the arm proves a scope rather than an empty fixture. Ablated: removing the eq-clause from the handler now reddens all three rewritten arms plus the management count; before this commit it would have reddened nothing. Found only because the suite was red for an unrelated reason -- the absent-expectedApp stub shape shared by 12 files since c8b5e5b1 -- and clearing that exposed three survivors.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "c8b5e5b123c4",
+        "date": "2026-09-26",
+        "subject": "fix(sd-data): 131 of 132 credential gates closed in ONE edit -- and both controls that were meant to catch this had to be rebuilt first",
+        "lag_days": 9
+      },
+      "citation_note": "A test arm that asserts a STATUS CODE rather than the property behind it stops testing anything the day the code changes, and its red tells you nothing about whether the property still holds. Worse, a fixture that does not apply the gate's own filter cannot fail when the filter is removed -- so an arm and a mock can be wrong in the same direction and the suite still reads as coverage. When a gate is deliberately relaxed, rewrite the arm to the NEW control, never delete it: the relaxation always introduces a sharper risk than the one the old arm named.",
+      "contributing_factors": [
+        {
+          "factor": "The arms asserted a status code (403) rather than the property (a care role sees only its own filings). When the gate was relaxed on 2026-09-27 the arms became assertions about a code path that no longer exists.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Rewritten to the property, asserted over the whole result set so a single leaked row fails. Ablated: removing the handler's eq-clause now reddens three arms plus the management count."
+        },
+        {
+          "factor": "The fetch mock ignored the handler's own '&recorded_by=eq.' clause and returned every row to every caller, so even a correct arm could not have detected a leak. An arm and its fixture were wrong in the SAME direction.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The mock applies the eq-clause and carries recorded_by and created_at because the real select asks for both; the write mock takes recorded_by from the POST body and preserves it on update because the handler does not re-stamp it."
+        },
+        {
+          "factor": "The 2026-09-27 relaxation landed into a suite that was ALREADY red from the shared stub defect, so the three contradicting arms produced no new signal. A control landing on a red surface is invisible.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Treat an already-red suite as a blocker to landing a change in the resource it covers, rather than as a pre-existing condition. Same action as the alf-mar record, now with a second instance."
+        },
+        {
+          "factor": "Nothing reports an app's red set on a cadence. Twelve suites went red at c8b5e5b1 and this particular gap survived eight further days inside that redness, found only because something else was being cleared.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "A cadenced per-app red-set report. Logged as an index row; the same open action the 2026-09-18 StoneDesk record and the alf-mar record both carry, now three instances."
+        }
+      ],
+      "recurrence_open": "The self-scope now has arms and an ablation, but legacy alf_incidents rows carry recorded_by NULL and are invisible to the self-service tier by Michael's recorded decision -- no arm covers that state and this commit does not add one. The two systemic actions stay open and are now on their third instance each: nothing reports an app's red set on a cadence, and nothing stops a control from landing into an already-red suite where its contradictions cannot be seen. And the deepest one is untouched: no instrument counts UNSCOPED verifySessionToken calls, so a branch gate that dropped its app scope entirely passes all fourteen stubs on this platform."
+    },
+    {
       "commit": "ac9c21df5b93",
       "date": "2026-10-05",
       "subject": "fix(tests): alf-mar 0/20 -> 21/21 and retainage_race 1/2 -> 3/3 -- and ONE ARM WAS ASSERTING A CONTROLLED-SUBSTANCE DEFECT",
