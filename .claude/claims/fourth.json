@@ -2934,8 +2934,8 @@
       "task": "visitHours non-negative guard + generateClaim refusal; role_gate_negative_coverage ratchet on uncovered+not_driven; sairncash REQUIREMENT headers; new citation_arm_depth_check. CONFLICT DECLARED PER PR 4.3: api/sd-data.js, tests/sairncare/test-alf-incidents.js and docs/SAIRN-OPEN-WORK-INDEX.md ARE CC'S and are NOT in my file set -- the alf_incidents item was refused on its premise anyway, and sairncash tracing went through in-file REQUIREMENT headers rather than index rows for that reason. FILES: sairnsenior.html tests/sairnsenior_negative_hours_claim.js tests/sairnsenior_referral_hours.js tools/role_gate_negative_coverage.py tests/run_role_gate_ratchet_probe.py tools/citation_arm_depth_check.py tests/run_citation_arm_depth_probe.py docs/role-gate-negative-coverage.json api/sairncash/verify.test.js api/sairncash/trial-start.test.js api/sairncash/trial-renew.test.js api/sairncash/trial-renew-idempotency.test.js tests/sairncash_entitlement_gate_probe.py SAIRN-ACTIVE-WORK-fourth.md",
       "claimed_at": "2026-10-05T10:46:18Z",
       "claimed_at_epoch": 1791197178.2869203,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-05T11:56:10Z",
       "files": [
         "SAIRN-ACTIVE-WORK-fourth.md",
         "api/sairncash/trial-renew-idempotency.test.js",
