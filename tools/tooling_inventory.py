@@ -1571,6 +1571,30 @@ PURPOSES = {
         'beat dependency list is READ FROM heartbeat.js and returns None on a read '
         'failure, never an empty set. 5 locked fixtures, 23-arm control whose '
         'ablation restores the REAL pre-fix shape in memory. REPORT ONLY'),
+    'gate1_verify.py': ('REPORT',
+        'A MIGRATION THAT LANDED IN POSTGRES AND IS STILL UNREACHABLE FROM THE '
+        'APP. The named instance: a CREATE TABLE that succeeds while its GRANT '
+        'block does not leaves a table information_schema reports happily and '
+        'api/sd-data.js answers 503 NOT_PROVISIONED on -- the IDENTICAL answer '
+        'to a table that was never created, so confirming the catalogue is not '
+        'confirming the migration. It SIGNS IN on each app\'s own auth '
+        'endpoint and reads each of the 26 tables of the 2026-10-05 runbook '
+        'through the real dispatcher, which is the other half of '
+        'sql/zz_confirm_2026-10-05_missing_tables.sql and not a duplicate of '
+        'it. Also catches the reason a licence key alone cannot answer: 216 of '
+        '402 declared tables were REFUSED on 2026-10-05 because the resource '
+        'sits behind the employee session gate. FOUR VERDICTS AND ONLY TWO ARE '
+        'ANSWERS -- PRESENT and MISSING are answers; REFUSED (a session or '
+        'dispatch refusal) and UNREADABLE (a bot challenge or a transport '
+        'failure) mean the question was not answered and are never folded into '
+        'MISSING, because that would send somebody to re-run a migration that '
+        'is already there. An EMPTY provisioned table reads PRESENT, which is '
+        'the trap a human reading the app gets wrong: all 26 read empty the '
+        'moment they exist. Report-only, every request action:read, writes '
+        'nothing. What it cannot see: whether a WRITE succeeds, whether the '
+        'table\'s SHAPE is right, and anything about a customer licence -- it '
+        'reads six demo licences.'),
+
     'gap_ledger.py': ('REPORT',
         'AN APP THAT IS ABSENT FROM A COVERAGE TABLE, which reads as covered. '
         'The named instance: docs/2026-09-29-competitive-gap-doc-inventory.md '

@@ -21,7 +21,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**305 files in `tools/`.** By what actually invokes them:
+**306 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -30,7 +30,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 5 | session-start or prompt hooks, informational |
 | **DECIDED** | 79 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 70 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 57 | nothing runs these at all |
+| **UNWIRED** | 58 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
@@ -44,7 +44,7 @@ By what they are, independent of wiring:
 | LIBRARY | 25 |
 | LIVE | 27 |
 | PUSH-GATE | 1 |
-| REPORT | 2 |
+| REPORT | 3 |
 | REPORTER | 2 |
 | TOOL | 4 |
 | UNWIRED | 1 |
@@ -460,7 +460,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (57)
+## UNWIRED (58)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -482,6 +482,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `extract_panels.py` | LIBRARY | panel containers out of an app file | &mdash; |
 | `extract_scripts.py` | LIBRARY | script blocks out of an app file, HTML-parser based | &mdash; |
 | `fetch_blocked_doc.sh` | LIBRARY | fetches a document a plain request cannot reach | &mdash; |
+| `gate1_verify.py` | REPORT | A MIGRATION THAT LANDED IN POSTGRES AND IS STILL UNREACHABLE FROM THE APP. The named instance: a CREATE TABLE that succeeds while its GRANT block does not leaves a table information_schema reports happily and api/sd-data.js answers 503 NOT_PROVISIONED on -- the IDENTICAL answer to a table that was never created, so confirming the catalogue is not confirming the migration. It SIGNS IN on each app's own auth endpoint and reads each of the 26 tables of the 2026-10-05 runbook through the real dispatcher, which is the other half of sql/zz_confirm_2026-10-05_missing_tables.sql and not a duplicate of it. Also catches the reason a licence key alone cannot answer: 216 of 402 declared tables were REFUSED on 2026-10-05 because the resource sits behind the employee session gate. FOUR VERDICTS AND ONLY TWO ARE ANSWERS -- PRESENT and MISSING are answers; REFUSED (a session or dispatch refusal) and UNREADABLE (a bot challenge or a transport failure) mean the question was not answered and are never folded into MISSING, because that would send somebody to re-run a migration that is already there. An EMPTY provisioned table reads PRESENT, which is the trap a human reading the app gets wrong: all 26 read empty the moment they exist. Report-only, every request action:read, writes nothing. What it cannot see: whether a WRITE succeeds, whether the table's SHAPE is right, and anything about a customer licence -- it reads six demo licences. | &mdash; |
 | `gen_ma_calendar.py` | GENERATOR | a court-holiday calendar or deadline seed for one state | &mdash; |
 | `gen_ma_seed.py` | GENERATOR | a court-holiday calendar or deadline seed for one state | &mdash; |
 | `gen_mn_calendar.py` | GENERATOR | a court-holiday calendar or deadline seed for one state | &mdash; |
@@ -554,7 +555,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      305   git ls-files tools/
+  tools on disk                      306   git ls-files tools/
   hook entries                        16   .claude\settings.json
   push-gate invocations               12   tools\sairn_push_gate_hook.py
   report-only registry                73   report_only_checks.REGISTRY
