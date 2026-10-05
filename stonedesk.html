@@ -38284,6 +38284,101 @@ async function sdRunEmailScan() {
     render();
   };
 
+  // ── THE RISK RATING WAS A SUBSTRING SCAN AND IT STORED THE OPPOSITE ──────
+  // Replaced 2026-10-05. The line was:
+  //
+  //   var risk=lower.includes('critical')?'Critical':lower.includes('high')
+  //            ?'High':lower.includes('medium')?'Medium':'Low';
+  //
+  // THREE DEFECTS IN ONE EXPRESSION, on a row the criticality register rates
+  // A/A, and the first of them was logged by the hover auditor and left live:
+  //
+  //   1. NO NEGATION. "This is not a high risk" contains "high", so it stored
+  //      High. "No critical indicators found" stored Critical. The scan reads
+  //      the ASSESSMENT as though it were the VERDICT.
+  //   2. IT SEARCHED THE WHOLE RESPONSE. A red-flag list, a recommendation, a
+  //      phrase like "critical infrastructure" or "time-critical" -- any of
+  //      them outranked the model's own stated rating.
+  //   3. ORDERING MADE 1 AND 2 WORSE. `critical` was tested first, so one
+  //      incidental mention of it anywhere beat an explicit "Risk: Low" in the
+  //      same paragraph. The two most common real responses -- a clean email
+  //      described as "no critical red flags" and a clean email rated
+  //      "Risk: Low" with a caveat mentioning high-risk patterns -- BOTH came
+  //      back wrong, and wrong in the alarming direction.
+  //
+  // THE PROMPT ASKS FOR A RATING, SO READ THE RATING. sdEmailScan() sends
+  // "Rate risk Low/Medium/High/Critical", so the response carries a stated
+  // verdict and that is what this parses: the LABELLED form first ("Risk:
+  // High", "risk level: low", "overall risk is medium"), then the unlabelled
+  // form ("high risk") with a negation lookback, and nothing else.
+  //
+  // AND A RATING IT CANNOT READ IS NULL, NOT LOW. That is the whole third
+  // state and it is the half that a "safer default" argument gets wrong in
+  // both directions: defaulting to Low hides a real phish, defaulting to High
+  // trains the owner to ignore the banner. The caller shows "could not read a
+  // rating", keeps the full response on screen, and stores the row as
+  // `Unrated` so an unreadable answer about a suspicious email is never
+  // silently dropped and never silently labelled.
+  //
+  // Driven by tests/stonedesk_email_threat_rating.js, which EXTRACTS this
+  // function and executes it -- including against the exact "not a high risk"
+  // string from the auditor's finding.
+  function sdEmailRiskFrom(text){
+    var t=String(text||'').toLowerCase();
+    var LEVELS={low:1,medium:2,high:3,critical:4};
+    var NAME={1:'Low',2:'Medium',3:'High',4:'Critical'};
+    // The lookback stops at sentence punctuation on purpose: a negation in the
+    // PREVIOUS sentence says nothing about this one.
+    function negated(s,i){
+      return /\b(?:not|no|non|never|without|unlikely|nothing|neither|nor|rule[sd]? out|absent|lacks?|free of|rather than|other than|isn't|aren't|doesn't|does not|is not|are not)\b[^.;:!?]{0,30}$/
+        .test(s.slice(Math.max(0,i-60),i));
+    }
+    var m;
+    // 1. THE STATED VERDICT. First non-negated labelled rating wins -- the
+    //    model was asked for one rating, so the first one it gives is it.
+    //
+    // THE GAP BEFORE THE LEVEL IS DELIBERATELY PERMISSIVE, AND TWO LIVE CALLS
+    // ARE WHY. Driven against the real deployed /api/claude on 2026-10-05 with
+    // the documented SD-AUDIT-2026 licence, the model answered:
+    //
+    //     ### RISK RATING: 🟢 LOW
+    //     ### RISK RATING: 🟡 LOW-MEDIUM
+    //
+    // An EMOJI between the label and the value, both times, and a COMPOUND
+    // rating outside the four options it was asked for, once. My fixture set
+    // had neither -- every string in it was something I had imagined. A
+    // `\s*\**\s*` gap rejected both and returned the third state, which was
+    // honest but needless: this is evidently the ordinary shape.
+    //
+    // So the gap is "up to 12 characters, none of them a letter", which
+    // swallows a colon, a bullet, bold markers and an emoji, and STOPS at
+    // sentence punctuation so it can never cross from one sentence into the
+    // next and pick up a level belonging to a different clause.
+    var labelled=/\brisk\b(?:\s+(?:level|rating|assessment|score))?(?:\s+(?:is|was))?\s*[^A-Za-z\n.;!?]{0,12}(low|medium|high|critical)\b(?:\s*[-\/]\s*(low|medium|high|critical)\b)?/g;
+    while((m=labelled.exec(t))!==null){
+      if(!negated(t,m.index)){
+        // A COMPOUND TAKES THE HIGHER HALF. "low-medium" is the model
+        // declining to pick, and on a phishing screen the conservative
+        // direction is upward -- stated here rather than left to look like a
+        // parsing accident.
+        var lv=LEVELS[m[1]];
+        if(m[2]) lv=Math.max(lv,LEVELS[m[2]]);
+        return NAME[lv];
+      }
+    }
+    // 2. UNLABELLED "<level> risk". HIGHEST non-negated wins here, not first:
+    //    with no stated verdict these are descriptions, and for a security
+    //    tool the conservative direction on a description is upward.
+    var bare=/\b(low|medium|high|critical)[\s-]+risk\b/g, best=0;
+    while((m=bare.exec(t))!==null){
+      if(!negated(t,m.index)) best=Math.max(best,LEVELS[m[1]]);
+    }
+    if(best) return NAME[best];
+    // 3. NO RATING FOUND. See the block above: this is not Low.
+    return null;
+  }
+  window.sdEmailRiskFrom=sdEmailRiskFrom;
+
   window.sdEmailScan=function(){
     var txt=document.getElementById('email-input').value.trim();
     if(!txt){showToast('Paste email content to analyze');return;}
@@ -38294,14 +38389,25 @@ async function sdRunEmailScan() {
     }).then(function(r){return r.json();}).then(function(r){
       var result=(r.content&&r.content[0]&&r.content[0].text?r.content[0].text:(r.completion||''));
       var lower=result.toLowerCase();
-      var risk=lower.includes('critical')?'Critical':lower.includes('high')?'High':lower.includes('medium')?'Medium':'Low';
+      var risk=sdEmailRiskFrom(result);
+      var unrated=(risk===null);
       var isHigh=risk==='High'||risk==='Critical';
-      out.style.background=isHigh?'#fef2f2':'#f0fdf4';
-      out.style.border='1px solid '+(isHigh?'#fca5a5':'#86efac');
-      out.innerHTML='<strong>🤖 Security Analysis:</strong><br>'+escHtml(result).replace(/\n/g,'<br>');
+      // THREE STATES, THREE COLOURS. Unrated is AMBER and says so -- green
+      // would read as "cleared" for an answer nobody parsed, and red would
+      // make every unparseable response an alarm.
+      out.style.background=unrated?'#fffbeb':(isHigh?'#fef2f2':'#f0fdf4');
+      out.style.border='1px solid '+(unrated?'#fcd34d':(isHigh?'#fca5a5':'#86efac'));
+      out.innerHTML='<strong>&#129302; Security Analysis:</strong>'
+        +(unrated?'<br><strong>COULD NOT READ A RISK RATING from this response.</strong> '
+                 +'The full text is below and is unchanged -- read it yourself. '
+                 +'This is NOT a clean result and it is not stored as one.':'')
+        +'<br>'+escHtml(result).replace(/\n/g,'<br>');
       if(risk!=='Low'){
         var threats=threatsEnsureIds();
-        threats.unshift({type:lower.includes('phish')?'Phishing':'Suspicious',risk:risk,summary:txt.slice(0,120),date:sdLocalToday()});
+        // `Unrated` rather than null: the row has to say which of the three
+        // states it is, and a null in a risk column renders as blank, which is
+        // indistinguishable from an old row written before this field existed.
+        threats.unshift({type:lower.includes('phish')?'Phishing':'Suspicious',risk:(risk||'Unrated'),summary:txt.slice(0,120),date:sdLocalToday()});
         // Set on the way in, so a scan flagged today is syncable and deletable
         // immediately rather than waiting for a later render.
         sdEnsureRowIds(threats,'ET',['date','type','summary']);
