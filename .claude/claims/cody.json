@@ -3162,8 +3162,8 @@
       "task": "the Michael SQL runbook for the 20 unrun schema files plus the snapshot re-capture, with runnable confirm queries and a post-run verification driver FILES: sql/zz_confirm_2026-10-05_missing_tables.sql docs/2026-10-05-michael-sql-runbook.md tools/gate1_verify.py",
       "claimed_at": "2026-10-05T14:56:51Z",
       "claimed_at_epoch": 1791212211.4785583,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-05T21:16:04Z",
       "files": [
         "docs/2026-10-05-michael-sql-runbook.md",
         "sql/zz_confirm_2026-10-05_missing_tables.sql",
