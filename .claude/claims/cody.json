@@ -3210,6 +3210,20 @@
       "files": [
         "tools/report_only_checks.py"
       ]
+    },
+    {
+      "id": "cody-1791238322",
+      "session": "cody",
+      "subject": "Tooling",
+      "task": "queue15 inventory and methodology: the batch write-up, the dead-rule universe 162-to-169 measurement, and the per-tool green/not-green verdicts FILES: docs/2026-10-05-cody-queue15-inventory.md SAIRN-ACTIVE-WORK-cody.md",
+      "claimed_at": "2026-10-05T22:12:02Z",
+      "claimed_at_epoch": 1791238322.0219157,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/2026-10-05-cody-queue15-inventory.md"
+      ]
     }
   ],
   "refusals": [
