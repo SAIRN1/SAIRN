@@ -3464,8 +3464,8 @@
       "task": "gh_token live credential verification plus its control; report-only registry entries for eight unaccounted checks FILES: tools/gh_token.py tools/report_only_checks.py tests/run_gh_token_live_probe.py",
       "claimed_at": "2026-10-05T09:22:05Z",
       "claimed_at_epoch": 1791192125.3832083,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-05T10:10:34Z",
       "files": [
         "tests/run_gh_token_live_probe.py",
         "tools/gh_token.py",
