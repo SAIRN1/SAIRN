@@ -22608,7 +22608,7 @@
       "recurrence_open": "Nothing compares what a SETTINGS SCREEN renders for a stored key against what its CONSUMER renders for the same key. That cross-screen comparison is what would have found both this and the SAIRNbuild 0% markup case on the same day, and it is not built. tools/numeric_default_coalesce_scan.py finds the substitution sites but says nothing about whether two screens agree about one stored value."
     },
     {
-      "commit": "15da3f6647fd",
+      "commit": "04abf76e0cd6",
       "date": "2026-10-05",
       "subject": "fix(citation-drift): the tool's closing line was an INSTRUCTION it had not earned, and it was wrong 4 of 4 on SAIRNgrounds",
       "files": [
