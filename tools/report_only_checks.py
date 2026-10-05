@@ -2397,6 +2397,112 @@ REGISTRY = [
                     'population does not make it right if the FILTER encodes a '
                     'habit -- which is the whole subject of this sweep.',
     },
+
+    # ── TWO ENTRIES ADDED 2026-10-05, AND THE REASON IS THE REGISTRY ITSELF ─
+    # tools/dead_rule_sweep.py derives its universe FROM THIS LIST. A tool
+    # that is not here has its rules counted by nothing, so the platform
+    # figure -- "162 rules, 8 dead" on 2026-10-05 -- silently excluded every
+    # rule in any tool added while this file was claimed by somebody else.
+    # Measured: gap_ledger.py appeared ZERO times in that sweep's output while
+    # carrying 7 module-level rules, so the real universe was 162 of 169.
+    #
+    # THE EXCLUSION WAS NOT A DECISION AND THAT IS WHAT MAKES IT WORTH A NOTE.
+    # Nothing refused the tool; it simply was not reachable from the only list
+    # the sweep reads, and the sweep had no way to say so. A universe derived
+    # from a hand-maintained list reports confidently about the part of the
+    # fleet that list happens to name.
+    {
+        'tool': 'gap_ledger.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-10-05, report-only. Fast -- it reads 24 markdown '
+                    'documents and no code -- and it is wired for the same '
+                    'reason probe_anchor_freshness.py is: the thing it watches '
+                    'does not rot when somebody looks at it, it rots when the '
+                    'CORPUS MOVES. An app gains an audit, a branch merges, a '
+                    'new app file lands, and the coverage answer changes '
+                    'between runs with nobody editing the ledger. ITS FIRST '
+                    'RUN ROUTED REAL WORK rather than describing it: within '
+                    'the hour, audits landed for the exact three apps it named '
+                    'as uncovered.',
+        'catches': 'an app that is ABSENT FROM A COVERAGE TABLE, which reads as '
+                   'covered; an audit document that names no LIMITS; one that '
+                   'carries no DECAY statement, so every competitive fact in '
+                   'it reads as current; and an app whose newest audit is on a '
+                   'BRANCH rather than on main',
+        'why_it_matters': 'THE NAMED INSTANCE IS A TABLE DISAGREEING WITH THE '
+                          'REPO ABOUT HOW MANY APPS EXIST. '
+                          'docs/2026-09-29-competitive-gap-doc-inventory.md '
+                          'lists SEVENTEEN apps and `git ls-files \'*.html\'` '
+                          'finds TWENTY-TWO, so five were in no row at all and '
+                          'the standing "three apps have no competitive-gap '
+                          'document" figure was counting a smaller platform '
+                          'than exists. It also caught SAIRNcare reading as '
+                          'uncovered while its audit sat on '
+                          'origin/claude/cloud-research-sairncare, unmerged by '
+                          'a twelve-document merge. IT HAS NO STATUS COLUMN '
+                          'AND NO PRIORITY COLUMN deliberately -- whether a '
+                          'gap is open, closed or important is a human '
+                          'judgement and a column the tool filled in would be '
+                          'a fabricated figure',
+        'evidence': 'REAL RUN 2026-10-05: 65 rows across 22 apps, 32 findings, '
+                    'piloted on SAIRNlaw (5 rows) and SAIRNcode (6). TWO '
+                    'DEFECTS IN ITS OWN CRITERIA WERE FOUND BEFORE ANYTHING '
+                    'WAS PUBLISHED and both are in the file. (1) The heading '
+                    'regexes were written from the TWO PILOT documents, which '
+                    'number every heading, and the first full run over all 22 '
+                    'reported "no Synthesis", "NO LIMITS" and "no Decay" '
+                    'against documents that have all three -- 25 findings '
+                    'against clean documents, because sairnbiz writes them '
+                    'unnumbered. (2) The criteria lock BORROWED THE REPO\'S APP '
+                    'LIST, so it depended on which *.html files happen to '
+                    'exist; its own control caught that in a sandbox holding '
+                    'one app. The lock is now repo-independent and '
+                    'tests/run_gap_ledger_probe.py neutralises each of the 7 '
+                    'rules in turn and requires it to go red -- which is how '
+                    'DATE_IN_NAME and AUDIT_NAME were found to be uncovered.',
+    },
+    {
+        'tool': 'gate1_verify.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-10-05, report-only, AND IT IS A LIVE READ -- every '
+                    'request is action:read against the deployed endpoint and '
+                    'it signs in on six demo licences to make them. Wired '
+                    'because Gate 1 is the one gate in docs/MASTER-PLAN.md '
+                    'with a LIVE dependency, so the only thing that can answer '
+                    'it is a request. SLOWER THAN THE REST OF THIS LIST by '
+                    'construction: six sign-ins plus 26 reads.',
+        'catches': 'a migration that landed in Postgres and is STILL '
+                   'UNREACHABLE FROM THE APP -- and a schema file that was '
+                   'never run at all',
+        'why_it_matters': 'A CREATE TABLE THAT SUCCEEDS WHILE ITS GRANT BLOCK '
+                          'DOES NOT leaves a table information_schema reports '
+                          'happily and api/sd-data.js answers 503 '
+                          'NOT_PROVISIONED on -- the IDENTICAL answer to a '
+                          'table that was never created. So confirming the '
+                          'CATALOGUE is not confirming the migration, which is '
+                          'why this and '
+                          'sql/zz_confirm_2026-10-05_missing_tables.sql are '
+                          'two instruments and not one duplicated. FOUR '
+                          'VERDICTS AND ONLY TWO ARE ANSWERS: REFUSED and '
+                          'UNREADABLE are never folded into MISSING, because '
+                          'that would send somebody to re-run a migration '
+                          'that is already there',
+        'evidence': 'PRE-RUN BASELINE DRIVEN LIVE 2026-10-05, before any paste: '
+                    'PRESENT 0, MISSING 26, asked about 26 of 26, exit 1 -- so '
+                    'progress after Michael\'s pastes is measurable against a '
+                    'recorded starting point rather than a memory. That '
+                    'baseline is UNREPRODUCIBLE once the files are run, and '
+                    'the one cross-check available is that an independent '
+                    'signed-in sweep the same day found the same 26 by a '
+                    'different route (per schema file rather than per table). '
+                    'Criteria lock: 7 verdict fixtures plus the table count '
+                    'DERIVED from the target map rather than typed twice, so '
+                    'the two cannot drift. An EMPTY provisioned table reads '
+                    'PRESENT and an arm pins it -- all 26 read empty the '
+                    'moment they exist.',
+    },
 ]
 
 # ── MY TWO MOVED OUT OF THE DEAD TAIL, AND THE MOVE IS DERIVED ─────────────
