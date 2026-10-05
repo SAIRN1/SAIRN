@@ -1,0 +1,32 @@
+{
+  "_what": "The COULD-NOT-TELL seams tools/sairn_seam_check.py reports, recorded so a RISE is visible. Written by hand from `--propose`; this file is never updated by the watch itself, because a detector that re-baselines its own rise can never report one.",
+  "_how_to_update": "python tools/seam_cannot_tell_watch.py --propose > docs/seam-cannot-tell-baseline.json  -- and say in the commit WHY each added seam is accepted.",
+  "_not_a_claim": "COULD-NOT-TELL means unreadable by that tool, not unsafe. A rise means a new seam needs a hand-written test; it does not mean a defect landed.",
+  "counts": {
+    "clean": 96,
+    "not_forwarded": 0,
+    "could_not_tell": 19,
+    "total_seams": 115
+  },
+  "seams": [
+    "api/accounting.js -> api/_lib/auth.js :: roleSet() makes no direct `literal.field` reads -- it probably copies or destructures its input first, so this tool cannot see what it depends on",
+    "api/alf-alerts.js -> api/_lib/auth.js :: roleSet() makes no direct `literal.field` reads -- it probably copies or destructures its input first, so this tool cannot see what it depends on",
+    "api/alf-auth.js -> api/_lib/auth.js :: roleSet() makes no direct `literal.field` reads -- it probably copies or destructures its input first, so this tool cannot see what it depends on",
+    "api/bld-auth.js -> api/_lib/auth.js :: roleSet() makes no direct `literal.field` reads -- it probably copies or destructures its input first, so this tool cannot see what it depends on",
+    "api/dnt-auth.js -> api/_lib/auth.js :: roleSet() makes no direct `literal.field` reads -- it probably copies or destructures its input first, so this tool cannot see what it depends on",
+    "api/dnt-bi.js -> api/_lib/auth.js :: roleSet() makes no direct `literal.field` reads -- it probably copies or destructures its input first, so this tool cannot see what it depends on",
+    "api/law-auth.js -> api/_lib/auth.js :: roleSet() makes no direct `literal.field` reads -- it probably copies or destructures its input first, so this tool cannot see what it depends on",
+    "api/ledger.js -> api/_lib/auth.js :: roleSet() makes no direct `literal.field` reads -- it probably copies or destructures its input first, so this tool cannot see what it depends on",
+    "api/leg-auth.js -> api/_lib/auth.js :: roleSet() makes no direct `literal.field` reads -- it probably copies or destructures its input first, so this tool cannot see what it depends on",
+    "api/mech-auth.js -> api/_lib/auth.js :: roleSet() makes no direct `literal.field` reads -- it probably copies or destructures its input first, so this tool cannot see what it depends on",
+    "api/rf-auth.js -> api/_lib/auth.js :: roleSet() makes no direct `literal.field` reads -- it probably copies or destructures its input first, so this tool cannot see what it depends on",
+    "api/sairncare-witness.js -> api/_lib/auth.js :: roleSet() makes no direct `literal.field` reads -- it probably copies or destructures its input first, so this tool cannot see what it depends on",
+    "api/sd-data.js -> api/_lib/auth.js :: roleSet() makes no direct `literal.field` reads -- it probably copies or destructures its input first, so this tool cannot see what it depends on",
+    "api/sd-sub-data.js -> api/_lib/auth.js :: roleSet() makes no direct `literal.field` reads -- it probably copies or destructures its input first, so this tool cannot see what it depends on",
+    "api/sdn-auth.js -> api/_lib/auth.js :: roleSet() makes no direct `literal.field` reads -- it probably copies or destructures its input first, so this tool cannot see what it depends on",
+    "api/sen-auth.js -> api/_lib/auth.js :: roleSet() makes no direct `literal.field` reads -- it probably copies or destructures its input first, so this tool cannot see what it depends on",
+    "api/sen-portal.js -> api/_lib/auth.js :: roleSet() makes no direct `literal.field` reads -- it probably copies or destructures its input first, so this tool cannot see what it depends on",
+    "api/sf-auth.js -> api/_lib/auth.js :: roleSet() makes no direct `literal.field` reads -- it probably copies or destructures its input first, so this tool cannot see what it depends on",
+    "api/sv-auth.js -> api/_lib/auth.js :: roleSet() makes no direct `literal.field` reads -- it probably copies or destructures its input first, so this tool cannot see what it depends on"
+  ]
+}
