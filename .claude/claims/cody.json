@@ -3197,6 +3197,19 @@
       "files": [
         "tools/metamorphic_check.py"
       ]
+    },
+    {
+      "id": "cody-1791236828",
+      "session": "cody",
+      "subject": "registerentries",
+      "task": "register gap_ledger.py and gate1_verify.py in the report-only registry so the dead-rule sweep universe stops excluding them FILES: tools/report_only_checks.py",
+      "claimed_at": "2026-10-05T21:47:08Z",
+      "claimed_at_epoch": 1791236828.4666529,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "tools/report_only_checks.py"
+      ]
     }
   ],
   "refusals": [
