@@ -3479,8 +3479,8 @@
       "task": "rebase_state_guard forbidden_forms bypasses seq 452; report_only sweep runner silent-skip; push_retry usage crash; hook manifest drift trace FILES: tools/rebase_state_guard.py tools/report_only_checks.py tools/push_retry.py docs/hook-manifest.json tests/run_rebase_state_guard_probe.py tests/run_push_retry_probe.py",
       "claimed_at": "2026-10-05T10:24:25Z",
       "claimed_at_epoch": 1791195865.0461776,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-05T11:40:35Z",
       "files": [
         "docs/hook-manifest.json",
         "tests/run_push_retry_probe.py",
