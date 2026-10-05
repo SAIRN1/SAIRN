@@ -3061,6 +3061,22 @@
         "tools/service_role_tier_a_gate_check.py",
         "tools/write_without_readback_check.py"
       ]
+    },
+    {
+      "id": "cody-1791199028",
+      "session": "cody",
+      "subject": "gapledger",
+      "task": "build tools/gap_ledger.py and pilot it on sairnlaw and sairncode; triage the 24 gate-1 missing tables to shrink the Michael list; dead-rule 30-day no-fire sweep FILES: tools/gap_ledger.py tests/run_gap_ledger_probe.py docs/2026-10-05-gate1-missing-table-triage.md docs/2026-10-05-cody-mistake-review.md",
+      "claimed_at": "2026-10-05T11:17:08Z",
+      "claimed_at_epoch": 1791199028.6179385,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/2026-10-05-cody-mistake-review.md",
+        "docs/2026-10-05-gate1-missing-table-triage.md",
+        "tests/run_gap_ledger_probe.py",
+        "tools/gap_ledger.py"
+      ]
     }
   ],
   "refusals": [
