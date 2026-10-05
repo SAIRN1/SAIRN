@@ -3035,8 +3035,8 @@
       "task": "control_char_check reads the working tree while the push ships a commit: rev-scoped scan, could-not-run disclosure, check 11 wiring FILES: tools/control_char_check.py tools/sairn_push_gate_hook.py tests/push_gate/check11_probe.py",
       "claimed_at": "2026-10-05T09:38:48Z",
       "claimed_at_epoch": 1791193128.757522,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-05T10:02:42Z",
       "files": [
         "tests/push_gate/check11_probe.py",
         "tools/control_char_check.py",
