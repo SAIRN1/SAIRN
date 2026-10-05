@@ -3489,6 +3489,22 @@
         "tools/rebase_state_guard.py",
         "tools/report_only_checks.py"
       ]
+    },
+    {
+      "id": "hank-1791200763",
+      "session": "hank",
+      "subject": "platform",
+      "task": "citation drift checker citation-form coverage expansion; push_retry loop regenerate and reason surfacing; registry tail finding with control arm FILES: tools/citation_line_drift_check.py tests/run_citation_line_drift_probe.py tools/push_retry.py tests/run_push_retry_probe.py",
+      "claimed_at": "2026-10-05T11:46:03Z",
+      "claimed_at_epoch": 1791200763.1578512,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "tests/run_citation_line_drift_probe.py",
+        "tests/run_push_retry_probe.py",
+        "tools/citation_line_drift_check.py",
+        "tools/push_retry.py"
+      ]
     }
   ],
   "refusals": [
