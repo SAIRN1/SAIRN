@@ -54,6 +54,17 @@ import sys
 import tempfile
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# --- HOISTED 2026-10-06 (cc): the registry refusal must precede this
+# probe's OWN output. `report_only_checks.REGISTRY` raises at import on an
+# entry that reads as promoted while nothing records what it caught, and
+# its message says it does that "at IMPORT rather than in a suite".
+# MEASURED 2026-10-06: this import sat at module level but 233 lines down,
+# so 101 lines of `ok` output were printed before the refusal arrived -- and
+# a probe whose first sections pass and whose later one dies is harder to
+# read than one that refuses before printing anything. BARE, not guarded:
+# a probe has no third state to protect, so the traceback IS the answer.
+sys.path.insert(0, os.path.join(REPO, 'tools'))
+import report_only_checks as R                        # noqa: E402
 TOOL = os.path.join(REPO, 'tools', 'literal_drift_check.py')
 fails = []
 
@@ -230,7 +241,7 @@ check('!! Stage' in section(out, 'C'),
 
 # The registry entry is read rather than described, so this arm cannot go stale.
 sys.path.insert(0, os.path.join(REPO, 'tools'))
-import report_only_checks as R                                  # noqa: E402
+# `import report_only_checks as R` HOISTED to the header 2026-10-06 (cc) -- see the note there.
 entry = [e for e in R.REGISTRY if e['tool'] == 'literal_drift_check.py']
 check(len(entry) == 1, 'the checker is in the report-only registry exactly once')
 if entry:

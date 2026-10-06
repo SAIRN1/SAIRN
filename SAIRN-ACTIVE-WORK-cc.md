@@ -6755,3 +6755,80 @@ maps expired with the reflog.
 | `571cab5f` | `:6639` | ORPHAN | QUOTED-AS-DEAD &mdash; |
 
 COUNTS: NO-SUBJECT-MATCH=1  QUOTED-AS-DEAD=6  RESOLVED=16  UNRESOLVABLE=3
+
+---
+
+## 2026-10-06 — THE FOUR RESIDUALS ARE RESOLVED, and all four were MY classifier's fault
+
+The table above closed with **3 UNRESOLVABLE and 1 NO-SUBJECT-MATCH**. All four
+are resolved. **None of them was genuinely unresolvable** — each was a blind spot
+in the classifier I wrote, and the three blind spots are different, which is the
+part worth keeping.
+
+| cited | was | IS | resolution |
+|---|---|---|---|
+| `74e029a5f373` | NO-SUBJECT-MATCH | **ON A REMOTE BRANCH** | lives on `origin/claude/cloud-research-sairncare`; never merged to `main` |
+| `fe16d5d` | UNRESOLVABLE | **`11fc0f30`** | object found in **hank's** store; subject match confirms it on `origin/main` |
+| `27d62e7b` | UNRESOLVABLE | **`7773af72`** | *"fix(tools): the meta-checker was reading prose"* |
+| `eef02009` | UNRESOLVABLE | **NOT A BROKEN POINTER** | quoted as *another clone's unpushed tip*, and the sentence says so |
+
+### The three blind spots, each with the command that shows it
+
+**1. THE SUBJECT SEARCH WAS SCOPED TO `origin/main` ALONE.**
+
+    git branch -r --contains 74e029a5f373
+    # -> origin/claude/cloud-research-sairncare
+
+`74e029a5f373` resolves perfectly; it is simply on a branch that was never
+merged. My classifier searched `--grep <subject> origin/main`, found nothing, and
+reported NO-SUBJECT-MATCH — which reads as *"this work may never have landed"*
+when the real answer is *"it landed somewhere else and is still there."*
+
+**2. OBJECT EXISTENCE WAS TESTED IN THIS CLONE ONLY, and there are five on this
+machine.**
+
+    git --git-dir=/c/Users/marsh/Documents/SAIRN-hank/.git cat-file -e fe16d5d
+    # -> present (absent in cc, cody and fourth)
+    git --git-dir=/c/Users/marsh/Documents/SAIRN-hank/.git log -1 --format=%s fe16d5d
+    git log --fixed-strings --grep "<that subject>" --format=%h origin/main
+    # -> 11fc0f30
+
+**AND MY OWN LOG ALREADY CONTAINED THE ANSWER.** Line 793 reads *"THE COMMIT SHA
+IN THE ROW DID NOT EXIST. It said `fe16d5d` ... The change is `11fc0f30`."* So
+this row was **QUOTED-AS-DEAD** all along — it is cited *because* it was dead —
+and my classifier only looked for that class inside the 2026-10-06 close-out
+section. A quoted-as-dead citation outside that one heading was invisible to it.
+
+**3. `27d62e7b` NEEDED THE FILE, NOT THE TIMESTAMP, TO DISAMBIGUATE.**
+
+    git log --format='%h %ci %s' -S docstring --pickaxe-regex origin/main \
+      -- tools/checker_control_check.py
+    # -> 7773af72  2026-09-13 10:02:00  fix(tools): the meta-checker was reading prose...
+
+**Two commits share that second** — `7773af72` and `35c8195b`. A subject or date
+match alone is ambiguous between them. `--stat` settles it without judgement:
+`7773af72` touches `tools/checker_control_check.py`, which *is* the meta-checker
+the sentence is about; `35c8195b` touches the inventory. **The file is the
+discriminator and the timestamp is a decoy.**
+
+**4. `eef02009` WAS NEVER A BROKEN POINTER.** Line 5151 reads *"It is in fourth's
+thirteen unpushed local commits (tip `eef02009`)"* — a correct description of
+another clone's state at the time of writing, which by construction was never on
+`main`. Classifying it UNRESOLVABLE invented a defect. The work it was blocking
+has since landed anyway (`84eb61ea`, `7a8b87c9`), and
+`tools/conflict_marker_preflight.py` is in the tree.
+
+### What this changes about the table above
+
+**0 of 26 are unresolvable.** 16 RESOLVED by unique subject match, **4 more
+resolved here**, 6 QUOTED-AS-DEAD — and that last count should be **7**, because
+`fe16d5d` belongs in it. **The counts in the table above are NOT edited**; this
+section supersedes them, and the superseded figures stay visible because an
+append-only log that silently corrects its own arithmetic is harder to trust than
+one that shows the correction.
+
+**ALL THREE BLIND SPOTS ARE ONE SHAPE** — the same one the batch-10 methodology
+rule named: *a check whose verdict depends on which clone, which ref, or which
+section of the document it happens to consult is not a check.* I wrote that rule
+and then shipped three fresh instances of it in the classifier that produced the
+table it appears in.

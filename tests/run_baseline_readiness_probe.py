@@ -20,6 +20,16 @@ import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
+# --- HOISTED 2026-10-06 (cc): the registry refusal must precede this
+# probe's OWN output. `report_only_checks.REGISTRY` raises at import on an
+# entry that reads as promoted while nothing records what it caught, and
+# its message says it does that "at IMPORT rather than in a suite".
+# MEASURED 2026-10-06: this import sat at module level but 184 lines down,
+# so 41 lines of `ok` output were printed before the refusal arrived -- and
+# a probe whose first sections pass and whose later one dies is harder to
+# read than one that refuses before printing anything. BARE, not guarded:
+# a probe has no third state to protect, so the traceback IS the answer.
+import report_only_checks as _ROC                        # noqa: E402
 import entity_baseline_readiness as R                            # noqa: E402
 
 CONTROLS_FOR = ['entity_baseline_readiness.py']
@@ -181,7 +191,7 @@ check('...and it is the VOLUME verdict, so the reason given is the true one',
 # CLAIM: "REPORT ONLY -- nothing gates on this". Stated in the header and
 # nowhere enforced. It is mechanically checkable, so it is checked.
 sys.path.insert(0, os.path.join(REPO, 'tools'))
-import report_only_checks as _ROC                                # noqa: E402
+# `import report_only_checks as _ROC` HOISTED to the header 2026-10-06 (cc) -- see the note there.
 _reg_names = [x['tool'] if isinstance(x, dict) else x[0] for x in _ROC.REGISTRY]
 check('CLAIM "report only, nothing gates on this": it is NOT in the report-only '
       'RUNNER registry', 'entity_baseline_readiness.py' not in _reg_names,
