@@ -106,11 +106,11 @@
     {
       "file": "tests/sairnbiz_vendor_ytd_derivation.js",
       "kind": "node",
-      "tail": "the at-risk test is not \"under 600 now, over 600 with the undated amount\"",
+      "tail": "AssertionError: sbVendorPaidUndatedPriorYear not found -- anchor moved (module scope, tests/sairnbiz_vendor_ytd_derivation.js:140)",
       "since": "2026-10-05",
-      "why": "The arm 'the disclosure names only vendors the residual could carry OVER $600, and says the count is undecided rather than reporting a number' fails -- the at-risk band is not computing the under-600-now / over-600-with-the-undated-amount test the arm names. CC's active claim at the time of writing covers exactly this subject (sb_ap seq 507/508, the unlisted undated payee), so it is recorded here and NOT fixed by me.",
+      "why": "CORRECTED 2026-10-06 (fourth) -- MY OWN DIAGNOSIS OF 2026-10-05 WAS STALE AND NAMED AN ARM THE SUITE NO LONGER REACHES. It said the failing arm was 'the disclosure names only vendors the residual could carry OVER $600'. At HEAD the suite throws at MODULE SCOPE, line 140, before any of that: it anchors on 'function sbVendorPaidUndatedPriorYear(){' and sairnbiz.html has 0 occurrences of that name. cc renamed it to sbVendorPaidUndatedOtherYear (sairnbiz.html:4176, caller :4223) -- which matches cc's own status row about the prior-year function that also caught future-dated bills. So the APP moved and the SUITE did not. Seven arms pass before the throw. NOT FIXED HERE: the file and the suite are both in cc's active claim, and whether the repoint belongs in the test or an alias belongs in the app is the author's call. Full failing text, the one-line repoint, and a second span finding in the same file are routed in docs/2026-10-06-fourth-routed-to-cc.md.",
       "owner": "cc",
-      "diagnosed": "2026-10-05",
+      "diagnosed": "2026-10-06",
       "diagnosed_by": "fourth"
     },
     {
