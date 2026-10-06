@@ -206,6 +206,30 @@ const EXEC_CONTEXT = {
     // of which (sairnfuneral, sairnhr, sairnacc) have no app file in this repo
     // at all. So no single number is right without saying which thing it
     // counts, and this line now says.
+    // ── RE-DERIVED 2026-10-06 AND LEFT EXACTLY AS IT WAS. TWICE WRONG ON
+    //    THE WAY, AND BOTH MISTAKES ARE WORTH MORE THAN THE RE-DERIVATION.
+    //
+    // (1) I RE-COUNTED AND GOT 17 + 5 INSTEAD OF 18 + 4, by classifying a
+    //     sub-page as "a root .html with a hyphen in its name". That rule is
+    //     mine and is nowhere in this repo. The repo's rule is the explicit
+    //     four-item list in api/sd-data-exec-context.test.js:164 --
+    //     sairndental-book, sairndental-complaint, stonedesk-hr,
+    //     stonedesk-intake -- which deliberately counts stonedesk-catalog as
+    //     an APP, with a comment saying the boundary is fuzzy and was flagged
+    //     rather than quietly moved. 22 root files either way; 18 + 4 is the
+    //     declared split. A CONVENTION INFERRED FROM A SAMPLE HAS TO STATE
+    //     ITS RULE BEFORE IT IS USED AS EVIDENCE.
+    //
+    // (2) I REPORTED A DUPLICATE 'sairnsenior' IN KNOWN_APP_IDS. There is
+    //     none. My count matched app_id strings inside the COMMENTS in
+    //     api/claude.js -- which is the exact mistake that file's own suite
+    //     warns about at :197, in a comment that says a first pass did this
+    //     and was "one edit away from fixing a non-bug". PR §1.2, in the hour
+    //     after I read it. The allowlist is 20 entries and 20 distinct.
+    //
+    // Both were caught by api/sd-data-exec-context.test.js going red, not by
+    // re-reading. The arm at :206 pins the exact sentence below, which is why
+    // an edit that "improved" a correct count could not land silently.
     'Architecture: HONEY COMB cellular platform -- each app is a standalone HTML file on Vercel, authenticated per employee against its own api/*-auth.js (licence key as bearer, PIN login, signed session token from the shared api/_lib/auth.js), firewalled to allowlisted domains. 18 app files and 4 sub-pages in the repo; the Claude proxy allowlists 20 distinct app_ids, three of which have no app file here. They share one Supabase Postgres project, not a Railway one.',
     'IP: HONEY COMB architecture and 6-Layer AI Keyboard Privacy Firewall both have provisional patents filed May 21 2026. Non-provisional deadline May 21 2027.',
     // CORRECTED 2026-09-02: the cookie/cross-origin Railway-Vercel clause
@@ -233,7 +257,30 @@ const EXEC_CONTEXT = {
     // Replaced with what is actually wired, verified the same way. Telling the
     // model the company has an integration it does not have makes the model
     // tell the owner the same thing.
-    'Current integrations, verified against the code on 2026-09-02: Anthropic Claude API (api/claude.js proxy), Supabase Postgres (78 API functions), Stripe (SAIRNcash checkout and webhooks), Firebase Admin (SAIRNcash trial verification), Resend email (api/alf-alerts.js), @simplewebauthn/server (StoneDesk passkey login). There is NO accounting integration of any kind: no QuickBooks, no Gusto, no Xero. If asked, say so plainly rather than describing one as pending.',
+    // ── RE-VERIFIED 2026-10-06, AND TWO CLAUSES HAD GONE FALSE ───────────
+    // THE SAME DEFECT AS THE CFO LINE, IN THE SAME FILE, FOUND BY THE SWEEP
+    // THAT FIXED THAT ONE. This read "There is NO accounting integration of
+    // any kind" and "Supabase Postgres (78 API functions)".
+    //
+    //   * api/accounting.js EXISTS at HEAD, with api/_lib/accounting-connector.js
+    //     and sql/accounting_connector_schema.sql. The CONCLUSION a reader
+    //     needs is unchanged -- nothing is connected and nothing can be -- but
+    //     "no accounting integration of any kind" is refuted by one `ls`, and
+    //     a prospect who checks stops believing the rest of the sentence.
+    //   * 78 was not reproducible. Counted today: 70 serverless route files
+    //     under api/ (excluding *.test.js, _lib/ and _resources/) -- 49 at the
+    //     top level plus api/agent 5, api/sairncash 10, api/sairndental 6 --
+    //     of which 60 touch Supabase. A bare count with no statement of WHAT
+    //     it counts cannot be re-derived, which is why it drifted silently.
+    //
+    // EVERYTHING ELSE IN THIS LINE WAS RE-DRIVEN AND HOLDS: api/claude.js;
+    // Stripe at api/sairncash/checkout.js, api/sairncash/stripe-webhook.js and
+    // api/agent/stripe-webhook.js; Firebase Admin at
+    // api/sairncash/firebase-config.js and trial-verify.js; Resend at
+    // api/alf-alerts.js AND api/cron-watchdog.js (a second caller since this
+    // line was written); @simplewebauthn/server in package.json, which holds
+    // exactly three dependencies.
+    'Current integrations, re-verified against the code on 2026-10-06: Anthropic Claude API (api/claude.js proxy), Supabase Postgres (70 serverless route files under api/, 60 of which read or write it), Stripe (SAIRNcash checkout and webhooks), Firebase Admin (SAIRNcash trial verification), Resend email (api/alf-alerts.js and api/cron-watchdog.js), @simplewebauthn/server (StoneDesk passkey login). On accounting: an api/accounting.js endpoint and an accounting-connector schema EXIST, and NOTHING IS CONNECTED AND NOTHING CAN BE -- no Intuit application is registered, QB_CLIENT_ID / QB_CLIENT_SECRET / QB_REDIRECT_URI are unset in every environment, every OAuth action answers 501 with the real reason, and the connector table is not in the live schema snapshot. There is no Gusto and no Xero code at all. Say that, rather than either "we have no accounting integration" (an endpoint exists) or "it is pending" (it is not).',
     'HIPAA compliance stack for SAIRNcomm: Supabase Pro (BAA required), Vercel Pro (BAA required), 15-min session timeout, audit log table, RLS policies, no PHI in logs.',
     'Your CTO expertise: system architecture decisions, security posture and threat modeling, vendor evaluation and integration roadmap, API design and optimization, database schema and query performance, CI/CD pipeline, monitoring and alerting, tech debt prioritization, HIPAA/SOC2 compliance, patent protection strategy, team technical hiring, infrastructure scaling.',
     'Always recommend specific tools, not categories. Cite actual version numbers and known issues. Lead with the architectural decision, then the implementation path. Flag security implications on every recommendation.',
