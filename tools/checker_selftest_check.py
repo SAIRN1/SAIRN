@@ -71,6 +71,28 @@ sys.path.insert(0, os.path.join(REPO, 'tools'))
 
 from checker_kit import EXIT_COULD_NOT_RUN, finish                 # noqa: E402
 
+# ── MODULE LEVEL AND GUARDED, BOTH, MOVED 2026-10-06 (cc) ───────────────────
+# `report_only_checks.REGISTRY` refuses at import on an undocumented entry,
+# and its message justifies that placement: "a suite tells you after the entry
+# is on main, and five accumulated that way." MEASURED 2026-10-06: the promise
+# held for only 7 of its 14 importers, and this was one of the seven -- the
+# import sat inside `registry_tools()`, so the refusal arrived mid-run.
+#
+# A BARE MODULE-LEVEL IMPORT WOULD HAVE BEEN THE WRONG FIX HERE and the reason
+# is the whole point of this file. Two of the fourteen (`checker_control_check`,
+# `traceability_matrix`) have no third state, so hoisting their bare import
+# costs nothing. This one DOES: it exits 2 COULD NOT RUN naming the raised
+# cause. Hoisting it unguarded would replace that diagnosis with a traceback --
+# trading a worse message for an earlier one, when both are available at once.
+#
+# So the import is EVALUATED at import time (the guarantee) and its outcome is
+# CARRIED (the diagnosis). `_ROC_WHY` is None only when the module is usable.
+try:
+    import report_only_checks as _ROC                              # noqa: E402
+    _ROC_WHY = None
+except Exception as _e:                                            # noqa: BLE001
+    _ROC, _ROC_WHY = None, '%s: %s' % (type(_e).__name__, _e)
+
 CONTROLLED_BY = ['tests/run_checker_selftest_probe.py']
 CRITERIA_VERSION = '2026-09-29.1'
 
@@ -373,15 +395,43 @@ def run_fixtures(verbose=False):
 
 
 def registry_tools():
-    """The report-only registry, which is the population this is about."""
+    """The report-only registry, which is the population this is about.
+
+    RETURNS `(tools, why)` AND NEVER A BARE `None`, because the caller has to
+    tell THREE states apart and this function used to collapse two of them.
+
+    ── THE DEFECT THIS SHAPE EXISTS FOR, MEASURED 2026-10-06 (cc) ────────────
+    Both `except` arms returned `None`, so the caller could only say
+    *"COULD NOT READ tools/report_only_checks.py, or its REGISTRY is empty"* --
+    a disjunction, printed without knowing which disjunct was true. Driven: one
+    entry was appended to `REGISTRY` missing only its `evidence` field, and the
+    validator raised `RegistryIncomplete` naming the entry and the field. This
+    tool then exited 2 -- the RIGHT code -- under a reason in which **neither
+    disjunct held**: the file read fine, and the registry held 76 entries.
+
+    THE EXIT CODE WAS NEVER THE PROBLEM. PR §1.11 is satisfied by refusing to
+    fold COULD-NOT-RUN into a pass, and that was already right. What was wrong
+    is that the message sent the reader to look for an unreadable file or an
+    empty list -- the two places the answer was not -- while the real
+    diagnosis, which named the offending tool AND the missing field, was
+    discarded by the bare `except`. A third state that cannot say WHY costs the
+    same round trip as no third state at all.
+
+    `str(e)` IS CARRIED OUT RATHER THAN SUMMARISED. `RegistryIncomplete`'s own
+    message is already the useful artefact; paraphrasing it here would put a
+    second, staler wording of the same fact in a second file.
+
+    THE IMPORT ITSELF NOW HAPPENS AT MODULE LEVEL -- see the guarded block at
+    the top. This function reads its outcome; it no longer decides when the
+    registry is first touched.
+    """
+    if _ROC is None:
+        return None, _ROC_WHY
     try:
-        import report_only_checks
-    except Exception:                                          # noqa: BLE001
-        return None
-    try:
-        return [e['tool'] for e in report_only_checks.REGISTRY if e.get('tool')]
-    except Exception:                                          # noqa: BLE001
-        return None
+        return [e['tool'] for e in _ROC.REGISTRY if e.get('tool')], None
+    except Exception as e:                                     # noqa: BLE001
+        return None, ('the module imported, but its REGISTRY could not be '
+                      'walked -- %s: %s' % (type(e).__name__, e))
 
 
 def main(argv):
@@ -414,12 +464,31 @@ def main(argv):
     if a.fixtures:
         return 0
 
-    tools = registry_tools()
+    tools, why = registry_tools()
+    # TWO REFUSALS, NOT ONE DISJUNCTION. Both still exit COULD NOT RUN -- what
+    # changed is that each now states the cause it actually observed. See
+    # registry_tools() for the run that found the old message saying something
+    # false while its exit code was right.
+    if tools is None:
+        if not a.quiet:
+            # NO CLAIM BEYOND THE EXCEPTION. The first draft of this message
+            # appended "the file was NOT unreadable and the registry was NOT
+            # empty" -- true of a RegistryIncomplete raise and FALSE of a
+            # ModuleNotFoundError, which is the same defect this fix is about,
+            # reintroduced one line lower. Driven in both directions before it
+            # was deleted. The exception line already separates the cases.
+            print('\nCOULD NOT READ the report-only registry. THE REAL CAUSE, '
+                  'as raised:\n  %s\n\nThe population is that registry and '
+                  'nothing else, so this is "could not\nrun", never "nothing '
+                  'wrong". No cause beyond the line above is asserted.' % why)
+        return EXIT_COULD_NOT_RUN
     if not tools:
         if not a.quiet:
-            print('\nCOULD NOT READ tools/report_only_checks.py, or its REGISTRY '
-                  'is empty. The\npopulation is that registry and nothing else, '
-                  'so there is nothing to report\nrather than nothing wrong.')
+            print('\nTHE REGISTRY READ FINE AND IS GENUINELY EMPTY -- 0 entries '
+                  'carrying a `tool`\nkey. Nothing was judged, and that is a '
+                  'fact about the registry rather than about\nthis tool. Not '
+                  'folded into a pass: an empty population cannot clear '
+                  'anything.')
         return EXIT_COULD_NOT_RUN
 
     findings, cleared, unparsed = [], [], []

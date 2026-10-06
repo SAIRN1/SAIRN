@@ -1,7 +1,7 @@
 {
  "criteria": "2026-09-29.1",
  "hooks": {
-  "post-rewrite": "3dfd7d6f7f3d8e08710efc0660dbece079efe16f39d980b71883914bc9a780f8",
+  "post-rewrite": "2333faad5f0d50708807e70fb6b0990bc93fafaecd584c861fa63285be845c44",
   "pre-commit": "f108af0b4c84b8f15f9b319e55bbb5629cb4c3b698c6c5676cadd320d23d093c",
   "pre-push": "33b62192533ccae0a25e644faf6b260703e6d6a05b37d7e79384cf4315f660df",
   "prepare-commit-msg": "53e73a110a43bac2dd84e360b07c857f842130cb0a179d7342558a3d0db1073b"
@@ -17,6 +17,7 @@
   "defect_register.py": "3474fd68c2f1dfcbcaf3db4fc7c4ce1146f6cc443ad8bb2ff5c18319890a43f4",
   "deploy_verify_notify.py": "ab871c7707e3ba057bdf4f0e28a8cade90fdec9ead3fd6527c95cd3c0ba9141a",
   "dispatch_state.py": "645e56055c5d10c9e71e54f15c0916789779ded4d239964a8ad8f58de9e15b95",
+  "doc_sha_reseat.py": "1fadc7381127375aefa228419a3aa1714802eb12321152464be1269fa934b35f",
   "exit_status_attributable.py": "6a0e9786cd821be57908fbd78f3aaddf0abdd34eb1ef42d4ad83834c066f6dc0",
   "first_article_check.py": "b37312d0b7105421e56d1df089d76a7989639c52060935e40dbd0cea8ad43b5b",
   "git_push_master_guard.py": "995f76533473c289fbd029a84366b4a2e01de47e60e677edd9ac1c610232c032",

@@ -6673,3 +6673,85 @@ for only 7 of 14** — the rest import inside a function.
 `exit 124`, never a pass.
 
 **Handoff:** `docs/handoff-cc-2026-10-06.md`.
+
+---
+
+## 2026-10-06 — SHA CITATION RESOLUTION TABLE for everything above
+
+**THE REASON I GAVE THIS MORNING FOR LEAVING THESE ALONE DOES NOT HOLD UP, and
+re-deriving it is what produced this table.** The claim was *"an append-only log
+records what was true when each entry was written, and silently repointing
+history is worse than a stale pointer in it."* The first half is right about
+PROSE and wrong about POINTERS. A SHA written here before its push was never
+true on `main` — it resolved in exactly one clone, mine, and in no other, from
+the moment it was written. That is not a preserved past truth. It is a reference
+that never resolved for any reader.
+
+**BUT REWRITING THEM IN PLACE IS ALSO WRONG, for a reason I had not identified
+until I counted them: SIX OF THEM ARE QUOTED *AS DEAD*.** The 2026-10-06
+close-out entry above cites `99774ecc`, `cabb4f7e`, `21a41817`, `641fb936`,
+`ddbfd281` and `571cab5f` precisely *because* they are orphans — they are the
+evidence for the finding. Repointing those would delete the finding and leave a
+paragraph about dead SHAs in which every SHA resolves.
+
+**SO THIS IS APPENDED AND NOTHING ABOVE IS EDITED.** Append-only is kept
+literally; every dead pointer becomes resolvable in one place; and the three
+classes stay distinguishable, which an in-place rewrite would have destroyed.
+
+**MEASURED at `411f29ce`**, over every backticked 7-12 character lowercase hex
+token in this file, classified by reachability from `origin/main`
+(`git merge-base --is-ancestor <tok> origin/main`) and resolved by unique
+subject match (`git log --fixed-strings --grep <subject> origin/main`):
+
+* **26 tokens do not resolve on `main`** — not the 19 I reported this morning.
+  The difference is not drift: **seven of the extra are mine from today**, six
+  of them the deliberately-quoted orphans plus `74e029a5f373`. A figure quoted
+  from a scan taken before the same session appended to the file is stale by
+  construction, which is instrument drift at a scale of hours.
+* **16 RESOLVED**, each by a *unique* subject match — no ambiguity, no judgement.
+* **6 QUOTED-AS-DEAD**, deliberately, and left exactly as written.
+* **3 UNRESOLVABLE** — ABSENT, not an object in this clone at all, so there is
+  no subject to match. Created in another clone, orphaned there, never
+  fetchable. These cannot be resolved from here by any method and are named
+  rather than guessed.
+* **1 NO-SUBJECT-MATCH** — `74e029a5f373` resolves locally but its subject
+  (`docs(cloud-research): external competitive-gap audit`) appears on no commit
+  on `main`. Either it never landed or it landed reworded; this clone cannot
+  tell which, and it says so instead of choosing.
+
+**THE SUBJECT MATCH IS THE WEAKER METHOD AND IS USED HERE ONLY BECAUSE THE
+STRONGER ONE IS GONE.** `git`'s own old→new rewrite map is exact, and
+`tools/doc_sha_reseat.py` (landed today) consumes it from `post-rewrite` so that
+future rewrites never need this table. The 26 below predate that wiring; their
+maps expired with the reflog.
+
+| cited | at | state | resolution |
+|---|---|---|---|
+| `ca07b41` | `:212` | ORPHAN | RESOLVED **`25738ea2`** |
+| `c121dd5` | `:238` | ORPHAN | RESOLVED **`6d92cb93`** |
+| `79ee0a1` | `:246` | ORPHAN | RESOLVED **`efe0e690`** |
+| `6993e6a` | `:332` | ORPHAN | RESOLVED **`75b275b0`** |
+| `49cbb19` | `:384` | ORPHAN | RESOLVED **`0dff7156`** |
+| `07ee28e` | `:384` | ORPHAN | RESOLVED **`67c7e252`** |
+| `fe16d5d` | `:793` | ABSENT | UNRESOLVABLE &mdash; |
+| `29e82fb6` | `:943` | ORPHAN | RESOLVED **`1853368a`** |
+| `9139d626` | `:948` | ORPHAN | RESOLVED **`7f09f995`** |
+| `5424bc73` | `:950` | ORPHAN | RESOLVED **`799d78db`** |
+| `bcee0215` | `:953` | ORPHAN | RESOLVED **`2a61b739`** |
+| `27d62e7b` | `:2986` | ABSENT | UNRESOLVABLE &mdash; |
+| `d2f44c9d` | `:4406` | ORPHAN | RESOLVED **`a744ceb5`** |
+| `1d61b512` | `:4408` | ORPHAN | RESOLVED **`449b8476`** |
+| `b1ab3b52` | `:4586` | ORPHAN | RESOLVED **`7b59f73b`** |
+| `1ff35d41` | `:4963` | ORPHAN | RESOLVED **`c233df0a`** |
+| `eef02009` | `:5151` | ABSENT | UNRESOLVABLE &mdash; |
+| `53738ee4` | `:5210` | ORPHAN | RESOLVED **`681d9020`** |
+| `74e029a5f373` | `:5927` | ORPHAN | NO-SUBJECT-MATCH &mdash; |
+| `16e122dd` | `:6084` | ORPHAN | RESOLVED **`a3f6ae01`** |
+| `99774ecc` | `:6637` | ORPHAN | QUOTED-AS-DEAD &mdash; |
+| `cabb4f7e` | `:6638` | ORPHAN | QUOTED-AS-DEAD &mdash; |
+| `21a41817` | `:6638` | ORPHAN | QUOTED-AS-DEAD &mdash; |
+| `641fb936` | `:6638` | ORPHAN | QUOTED-AS-DEAD &mdash; |
+| `ddbfd281` | `:6639` | ORPHAN | QUOTED-AS-DEAD &mdash; |
+| `571cab5f` | `:6639` | ORPHAN | QUOTED-AS-DEAD &mdash; |
+
+COUNTS: NO-SUBJECT-MATCH=1  QUOTED-AS-DEAD=6  RESOLVED=16  UNRESOLVABLE=3

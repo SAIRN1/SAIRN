@@ -33,6 +33,19 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
 import export_coverage_check as X                                # noqa: E402
 
+# ── AT MODULE LEVEL, MOVED 2026-10-06 (cc) ──────────────────────────────────
+# `report_only_checks.REGISTRY` refuses at import on an undocumented entry and
+# says it does so "at IMPORT rather than in a suite". MEASURED 2026-10-06: that
+# held for only 7 of its 14 importers. This was the ONLY probe among the seven
+# -- its import sat two thirds of the way down, inside arm C's try/finally, so
+# a refused registry was reported after arms A and B had already printed `ok`.
+# A probe whose first two sections pass and whose third dies is harder to read
+# than one that refuses before printing anything.
+#
+# BARE, NOT GUARDED: a probe has no third state to protect. If the registry
+# will not import, there is no arm C to run and the traceback IS the answer.
+import report_only_checks as _ROC                                # noqa: E402
+
 SUBJECT = os.path.join(REPO, 'tools', 'export_coverage_check.py')
 FAIL = []
 
@@ -170,9 +183,8 @@ try:
         "sys.exit(B.main(['--check']))\n")
     out = subprocess.run([sys.executable, drv], capture_output=True, text=True, encoding='utf-8', errors='replace',
                          cwd=REPO)
-    sys.path.insert(0, os.path.join(REPO, 'tools'))
-    import report_only_checks as R                               # noqa: E402
-    findings, _ = R.by_exit(out.returncode, out.stdout)
+    # The import moved to the header 2026-10-06 -- see the note there.
+    findings, _ = _ROC.by_exit(out.returncode, out.stdout)
     ok('the planted gap really did make the copy fail', out.returncode == 1,
        'exit=%d %s' % (out.returncode, (out.stdout + out.stderr)[-250:]))
     ok('...and the resource NAME survives report_only_checks.by_exit rather '

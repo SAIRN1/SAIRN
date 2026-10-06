@@ -64,6 +64,19 @@ import sys
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
 import closing_error                                          # noqa: E402
+
+# ── AT MODULE LEVEL DELIBERATELY, MOVED 2026-10-06 (cc) ─────────────────────
+# `report_only_checks.REGISTRY` refuses at import on an undocumented entry and
+# its own message justifies that placement -- "a suite tells you after the
+# entry is on main". MEASURED: the promise held for only 7 of its 14 importers,
+# and this was one of the seven, deferring the import into `registry()`.
+#
+# NO try/except, for the same reason as `checker_control_check.py`: this tool
+# had no third state for an unreadable registry before the move and does not
+# acquire one here. The traceback is identical; it now arrives before this
+# generator writes anything, which matters because the thing it writes is a
+# standing document.
+import report_only_checks as _ROC                             # noqa: E402
 OUT = os.path.join('docs', 'traceability-matrix.md')
 INDEX = os.path.join('docs', 'SAIRN-OPEN-WORK-INDEX.md')
 TEST_RE = re.compile(r'(?:tests?/[\w/.-]+\.(?:js|py)|api/[\w/.-]+\.test\.js)')
@@ -254,8 +267,9 @@ def guard_tests():
 
 
 def registry():
-    import report_only_checks as r
-    return list(getattr(r, 'REGISTRY', [])), list(getattr(r, 'NOT_PROMOTED', []))
+    """The import moved to module level 2026-10-06 -- see the note beside it."""
+    return (list(getattr(_ROC, 'REGISTRY', [])),
+            list(getattr(_ROC, 'NOT_PROMOTED', [])))
 
 
 def gate_checks():

@@ -96,6 +96,22 @@ sys.path.insert(0, os.path.join(REPO, 'tools'))
 import jscomments as _jscomments                              # noqa: E402
 from checker_kit import EXIT_COULD_NOT_RUN                    # noqa: E402
 
+# ── AT MODULE LEVEL DELIBERATELY, MOVED 2026-10-06 (cc) ─────────────────────
+# `report_only_checks.REGISTRY` refuses at import on an entry that reads as
+# promoted while nothing records what it caught, and its own message says it
+# does that "at IMPORT rather than in a suite because a suite tells you after
+# the entry is on main". MEASURED: that promise held for only 7 of its 14
+# importers -- this was one of the seven that deferred the import into a
+# function (`promoted()`), so the refusal arrived mid-run instead.
+#
+# NO try/except HERE, AND THAT IS THE POINT RATHER THAN AN OVERSIGHT. This
+# tool has no third state for an unreadable registry: before the move it died
+# with a traceback from inside `promoted()`. The move does not change WHAT the
+# reader is told, only WHEN -- the same traceback, before any work is done.
+# Wrapping it would be a new third state, which is a different decision and
+# not this one.
+import report_only_checks as _ROC                             # noqa: E402
+
 # ── THE PATTERNS, AND WHAT CHANGED UNDER THEM ────────────────────────────────
 # These run over EXTRACTED ASSERTIONS now, never over raw source, so a word
 # appearing in a docstring or a message cannot reach them. Two markers do the
@@ -143,9 +159,11 @@ EXEMPT = {
 
 
 def promoted():
-    """The checkers the registry actually runs, read from the registry itself."""
-    import report_only_checks as R
-    return [e['tool'] for e in R.REGISTRY]
+    """The checkers the registry actually runs, read from the registry itself.
+
+    The import moved to module level 2026-10-06 -- see the note beside it.
+    """
+    return [e['tool'] for e in _ROC.REGISTRY]
 
 
 def test_files():

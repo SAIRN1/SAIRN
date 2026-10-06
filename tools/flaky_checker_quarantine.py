@@ -92,6 +92,31 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LEDGER = os.path.join(REPO, 'docs', 'flaky-checker-ledger.json')
 CRITERIA_VERSION = '2026-09-13.1'
 
+# ── MODULE LEVEL AND GUARDED, BOTH, MOVED 2026-10-06 (cc) ───────────────────
+# `report_only_checks.REGISTRY` refuses at import on an undocumented entry and
+# says it does so "at IMPORT rather than in a suite". MEASURED 2026-10-06: that
+# held for only 7 of its 14 importers, and this was one of the seven.
+#
+# GUARDED, AND THIS FILE IS THE REASON THE DISTINCTION MATTERS. Driven under a
+# planted incomplete entry, this tool was the best-behaved of the fourteen: it
+# fell back to the regex read AND labelled the figure
+# `registries REGEX FALLBACK (RegistryIncomplete) -- known to undercount`, so
+# the number it printed could not be mistaken for the imported one. Hoisting
+# the import unguarded would have deleted that behaviour in exchange for an
+# earlier traceback. Evaluated at import, outcome carried -- the fallback below
+# is unchanged and still says which method produced its answer.
+#
+# THE sys.path INSERT MOVES WITH IT, and it is not decoration: the old insert
+# sat INSIDE the function, so hoisting the import without it would work when
+# this file is run as a script (its own directory is `sys.path[0]`) and fail
+# when it is imported as a module -- which `tools/checker_confidence.py` does.
+sys.path.insert(0, os.path.join(REPO, 'tools'))
+try:
+    import report_only_checks as _ROC                              # noqa: E402
+    _ROC_WHY = None
+except Exception as _e:                                            # noqa: BLE001
+    _ROC, _ROC_WHY = None, _e
+
 # ── THRESHOLDS, decided before any checker was measured ───────────────────
 RUNS_PER_MEASURE = 3        # per invocation; evidence accumulates in the ledger
 MIN_RUNS_TO_JUDGE = 4       # below this, "stable" is not a claim worth making
@@ -442,9 +467,12 @@ def decided_tools():
     and when it is used the caller SAYS SO instead of quoting the figure as if
     both methods agreed.
     """
+    # The import itself moved to module level 2026-10-06 and is guarded there;
+    # this raise re-enters the same fallback by the same path.
     try:
-        sys.path.insert(0, os.path.join(REPO, 'tools'))
-        import report_only_checks as _roc
+        if _ROC is None:
+            raise _ROC_WHY
+        _roc = _ROC
 
         def _names(e):
             v = (e.get('tool') if isinstance(e, dict)

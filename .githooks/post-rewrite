@@ -63,8 +63,40 @@ if ! command -v "$PY" >/dev/null 2>&1; then
   exit 0
 fi
 
-"$PY" "$ROOT/tools/defect_register.py" --post-rewrite || {
+# ── THE MAP IS READ TWICE, BY TWO PROGRAMS, AND IT HAS TO BE ────────────────
+# git hands the old->new map on STDIN exactly once. Two consumers therefore
+# need two copies of it, so it is captured first and fed to each -- piping it
+# straight into the first would leave the second reading an empty stream and
+# reporting, truthfully and uselessly, that no commit moved.
+MAP=$(cat)
+
+printf '%s\n' "$MAP" | "$PY" "$ROOT/tools/defect_register.py" --post-rewrite || {
   echo "post-rewrite: the re-seat FAILED. Records may cite commits this" >&2
   echo "  rewrite replaced. Run: python tools/defect_register.py --reseat" >&2
 }
+
+# ── THE SECOND CONSUMER, ADDED 2026-10-06 (cc) ──────────────────────────────
+# The hook above has been right since 2026-09-24 and its SCOPE was one file.
+# `docs/defect-density-register.json` was re-seated and nothing else was, so
+# the register stayed healthy -- 546 of 564 hexish tokens on main at
+# `411f29ce` -- while the PROSE documents beside it rotted. Measured the same
+# day over `docs/SAIRN-OPEN-WORK-INDEX.md`'s 367 backticked SHA citations:
+# 321 on main, 8 orphaned, 38 absent. 46 dead, 12.5%, across 37 rows. The
+# mechanism was never the gap; the list of files it covered was.
+#
+# IT WRITES ONLY WHAT NOBODY ELSE IS HOLDING. Files in another session's live
+# claim are PROPOSED and not touched -- a mechanical substitution is not worth
+# a write race -- and generated documents are never patched, because the
+# generator is the fix. Same contract as above otherwise: working tree only,
+# never staged, never committed.
+if [ ! -f "$ROOT/tools/doc_sha_reseat.py" ]; then
+  echo "post-rewrite: tools/doc_sha_reseat.py is MISSING, so the tracking" >&2
+  echo "  DOCUMENTS were not re-seated. Their SHA citations may now be dead." >&2
+else
+  printf '%s\n' "$MAP" | "$PY" "$ROOT/tools/doc_sha_reseat.py" --post-rewrite || {
+    echo "post-rewrite: the DOCUMENT re-seat FAILED. Tracking documents may" >&2
+    echo "  cite commits this rewrite replaced. Run:" >&2
+    echo "  python tools/doc_sha_reseat.py --post-rewrite" >&2
+  }
+fi
 exit 0

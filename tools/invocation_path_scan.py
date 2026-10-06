@@ -56,6 +56,34 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SETTINGS = os.path.join(REPO, '.claude', 'settings.json')
 GATE = os.path.join(REPO, 'tools', 'sairn_push_gate_hook.py')
 
+# ── MODULE LEVEL AND GUARDED, BOTH, MOVED 2026-10-06 (cc) ───────────────────
+# `report_only_checks.REGISTRY` refuses at import on an undocumented entry and
+# says it does so "at IMPORT rather than in a suite". MEASURED 2026-10-06: that
+# held for only 7 of its 14 importers, and this was one of the seven.
+#
+# GUARDED RATHER THAN BARE, because this tool already answers an unreadable
+# registry with `COULD NOT RUN -- these inputs could not be read` and exit 2.
+# Hoisting the import unguarded would replace that third state with a
+# traceback. The import is now EVALUATED at import time and its outcome
+# CARRIED, so the guarantee and the diagnosis both hold.
+#
+# AND THE CAUSE IS KEPT, which it was not before: the old `except Exception:
+# return None` discarded the exception, so the report said only WHICH input
+# could not be read and never WHY. Driven: a `RegistryIncomplete` naming one
+# entry and one missing field was reduced to the bare words
+# `report_only_checks.REGISTRY`. Same defect class as
+# `checker_selftest_check.py`'s false disjunction, one notch milder -- that one
+# asserted something false, this one asserted too little.
+#
+# THE sys.path INSERT MOVES WITH IT. The old one sat inside the function, so
+# hoisting the import alone would work as a script and fail on import.
+sys.path.insert(0, os.path.join(REPO, 'tools'))
+try:
+    import report_only_checks as _ROC                              # noqa: E402
+    _ROC_WHY = None
+except Exception as _e:                                            # noqa: BLE001
+    _ROC, _ROC_WHY = None, '%s: %s' % (type(_e).__name__, _e)
+
 # A document a human authors with Write/Edit. The extension is the signal: a
 # .md or .json under docs/ is not produced by running a command, with the
 # explicit exception of the generated ones, which are handled separately
@@ -159,15 +187,18 @@ def settings_triggers():
 
 
 def registry_entries():
-    """The report-only registry, or None on a could-not-check."""
-    sys.path.insert(0, os.path.join(REPO, 'tools'))
-    try:
-        import report_only_checks as roc
-        return list(roc.REGISTRY)
-    except Exception:
+    """The report-only registry, or None on a could-not-check.
+
+    The import moved to module level 2026-10-06 and is guarded there -- see the
+    note beside it. `_ROC_WHY` carries the reason, which this function's own
+    caller prints beside the input name.
+    """
+    if _ROC is None:
         return None
-    finally:
-        sys.path.pop(0)
+    try:
+        return list(_ROC.REGISTRY)
+    except Exception:                                          # noqa: BLE001
+        return None
 
 
 def sweep_is_push_only():
@@ -313,18 +344,25 @@ def main(argv):
     s_trig = settings_triggers()
     gate = gate_tools()
     push_only = sweep_is_push_only()
-    missing = [n for n, v in (('report_only_checks.REGISTRY', entries),
-                              ('.claude/settings.json', s_trig),
-                              ('tools/sairn_push_gate_hook.py', gate),
-                              ('report_only_checks.hook_main()', push_only))
+    # THE REASON TRAVELS WITH THE INPUT NAME, added 2026-10-06 (cc). Naming
+    # the input that could not be read is necessary and was not sufficient:
+    # a `RegistryIncomplete` that names one entry and one missing field was
+    # being reduced to the eleven characters `...REGISTRY`, and the reader had
+    # to go and reproduce it to learn what this process already knew.
+    missing = [(n, w) for n, v, w in
+               (('report_only_checks.REGISTRY', entries, _ROC_WHY),
+                ('.claude/settings.json', s_trig, None),
+                ('tools/sairn_push_gate_hook.py', gate, None),
+                ('report_only_checks.hook_main()', push_only, None))
                if v is None]
     if missing:
         # PR 1.11. Every one of these is an input the classification depends
         # on; without any of them the answer is not "nothing found".
         print('COULD NOT RUN -- these inputs could not be read, so NOTHING was '
               'classified:', file=sys.stderr)
-        for m in missing:
-            print('    %s' % m, file=sys.stderr)
+        for m, why in missing:
+            print('    %s%s' % (m, ('\n        cause: %s' % why) if why
+                                else ''), file=sys.stderr)
         return 2
 
     rows = classify(entries, s_trig, gate, push_only)
