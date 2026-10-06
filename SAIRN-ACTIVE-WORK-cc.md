@@ -6625,3 +6625,51 @@ row of theirs carries.
 `fmea_draft`, the push gate and the registry refusal are build-time tools with no
 deployed surface to drive, so "verified" for them means their own controls and
 their own ablations — and nothing more than that.
+
+---
+
+## 2026-10-06 — resume close-out after a 2%-context death (no prior handoff)
+
+**Instruction was to trust nothing in the pasted transcript and re-measure against
+live HEAD. Two of the prior session's beliefs were wrong.**
+
+**LANDED STATE, verified:** `origin/main...HEAD` = `0 0`. The five SHAs the brief
+named are all orphans and all landed under rebased SHAs — `99774ecc`→`db8cc2d4`,
+`cabb4f7e`→`8c7e0f8d`, `21a41817`→`7d8c361e`, `641fb936`→`b121a27e`,
+`ddbfd281`→`c2150ae0`. The one genuinely unpushed commit, `571cab5f`
+(blind-spot-5 correction), is now `499576bd` on `origin/main`, byte-verified.
+The four untraceable tool files and both licence files are all in `c2150ae0`;
+nothing was uncommitted.
+
+**RELEASED the prior session's expired-but-unreleased `tooling` claim** (9.2h, a
+phantom to every other clone).
+
+**seq 538 — NEITHER written nor routed: ALREADY CLOSED.** The row existed at
+`docs/SAIRN-OPEN-WORK-INDEX.md:77` (hank, 2026-10-05) before the blind spot
+claiming otherwise was written. Verified rather than taken: the fix is at
+`api/sd-data.js:12412`, `tests/sd_data_sdn_blob_scope.js` is **10/0**, and all
+twelve register cells agree. Blind spot 4 now reads CORRECTED.
+
+**NEW FINDING, ROUTED TO HANK: 46 of the open-work index's 367 commit citations
+do not point at anything on `main`** (321 ON-MAIN, 8 ORPHAN, 38 ABSENT), across
+37 rows. Cause: `sairn_claim.py` rebases before it pushes, so any SHA written
+down pre-push is dead on landing. **My first sweep under-reported at 38 because
+it tested object existence, which is clone-dependent — my own orphans pass that
+test here and fail it everywhere else.** Reachability from `origin/main` is the
+right test. Full table and per-row method: `docs/2026-10-06-cc-routed.md` §9.
+Fixed my own 5 citations; left the 19 in this file alone deliberately, because an
+append-only log should not have its history silently repointed.
+
+**REGISTRY IMPORT REFUSAL — MEASURED, all 14 importers, control first, in a
+detached worktree with `tools/report_only_checks.py` NEVER edited** (hank holds a
+finding on it). Clean registry: 75 entries, exit 0, 13/13 importers green. One
+entry missing only `evidence`: exit 1 at import, message names tool and field;
+the live `PostToolUse` hook dies at import before any checker runs. 13/13 fail
+closed, none reports a clean run. Three findings: `checker_selftest_check.py`
+answers a true third state with a **false reason**; `flaky_checker_quarantine.py`
+degrades loudly and is the best of the fourteen; and **"refuses at IMPORT" holds
+for only 7 of 14** — the rest import inside a function.
+`tools/dead_rule_sweep.py` is **COULD NOT RUN AT A 900s BOUND**, control
+`exit 124`, never a pass.
+
+**Handoff:** `docs/handoff-cc-2026-10-06.md`.

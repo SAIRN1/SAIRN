@@ -28,7 +28,7 @@ Written first, because three of these were wrong and one item was already done.
 
 ---
 
-## 1. The Tier A gate stops matching prose comments · `fa2aebf7`
+## 1. The Tier A gate stops matching prose comments · `db8cc2d4`
 
 Open-work row 95. `strip_diff_noise()` blanked prose STRING bodies and
 deliberately counted COMMENT text, so writing a sentence about a Tier A resource
@@ -76,7 +76,7 @@ Both re-pointed rather than relaxed, and (b) strengthened in the direction the o
 arm had backwards: the literal 600 must now be **absent**. The partition arm goes
 from three buckets to four and checks **every pair**.
 
-## 3. `fmea_draft.py` · a metamorphic violation and a horoscope · `fa2aebf7`
+## 3. `fmea_draft.py` · a metamorphic violation and a horoscope · `db8cc2d4`
 
 (a) `\bCLEAN\b` is case-sensitive and matched the English word `clean` once a
 comment was upper-cased. **Culprit named by elimination over all six
@@ -196,6 +196,109 @@ Routed to hover.
 
 ---
 
+## 16. The import-time registry refusal, MEASURED across all 14 importers
+
+Blind spot 6 said *"I have not measured how that feels in a hook."* This is that
+measurement. **`tools/report_only_checks.py` IS NOT EDITED HERE** — hank holds a
+live finding on its `evidence` field. Everything below ran in a detached git
+worktree at `5553f1e2`; the live clone was never modified, and the injection was
+reverted with `git checkout --` and confirmed gone (`grep -c` → 0).
+
+**THE FAULT, stated so it is reproducible:** one entry appended to `REGISTRY`
+carrying `tool`, `mode`, `verdict`, `promoted` and `catches` — **missing only
+`evidence`**. One field, one entry, the smallest fault the validator is supposed
+to see.
+
+**CONTROL FIRST, ON THE SAME TREE, AND IT IS WHAT MAKES THE REST MEAN ANYTHING.**
+Clean registry: import succeeds, `_REGISTRY_VALIDATED` = **75** entries, exit 0 —
+and **all 13 bounded importers exit 0**. Without that arm, "exit 1 under
+injection" could have been a suite that was already red.
+
+**THE REFUSAL ITSELF IS EXACTLY WHAT IT CLAIMS.** `python -c "import
+report_only_checks"` → **exit 1**, `RegistryIncomplete`, and the message names
+the tool and the field: `deliberately_incomplete_probe.py  missing: evidence`.
+**And the live hook does the same thing:** the verbatim wiring from
+`.claude/settings.json` — `PostToolUse` / matcher `Bash` /
+`python "${CLAUDE_PROJECT_DIR:-.}/tools/report_only_checks.py" --hook`, `timeout
+600`, `async: true`, `asyncRewake: true` — exits **1** and dies **at import,
+before a single checker runs**. So the answer to "how does it feel in a hook" is
+concrete: it arrives as an async rewake carrying a Python traceback on the next
+`Bash` call, it does not block the tool that already ran, and it cannot be
+mistaken for a sweep result because no sweep output appears at all.
+
+**THE 13 BOUNDED IMPORTERS — ALL FAIL CLOSED, NONE REPORTS A CLEAN RUN:**
+
+| importer | control | injected | names the real cause? |
+|---|---|---|---|
+| `tests/run_report_only_checks_probe.py` | 0 | **1** | yes |
+| `tests/run_assurance_case_probe.py` | 0 | **1** | yes |
+| `tests/run_baseline_readiness_probe.py` | 0 | **1** | yes |
+| `tests/run_dora_metrics_probe.py` | 0 | **1** | yes |
+| `tests/run_export_coverage_probe.py` | 0 | **1** | yes |
+| `tests/run_literal_drift_control_probe.py` | 0 | **1** | yes |
+| `tests/run_optimistic_success_probe.py` | 0 | **1** | yes |
+| `tests/run_risk_event_tree_probe.py` | 0 | **1** | yes |
+| `tools/checker_control_check.py` | 0 | **1** | yes — bare traceback, no diagnosis of its own |
+| `tools/traceability_matrix.py` | 0 | **1** | yes — bare traceback, no diagnosis of its own |
+| `tools/flaky_checker_quarantine.py` | 0 | **1** | **yes, and best of the fourteen** |
+| `tools/checker_selftest_check.py` | 0 | **2** | **NO — and it says something FALSE** |
+| `tools/invocation_path_scan.py` | 0 | **2** | **NO — generic, but not false** |
+
+**TWO FINDINGS, AND THEY ARE ABOUT THE CONSUMERS RATHER THAN THE REFUSAL.**
+
+1. **`checker_selftest_check.py` ANSWERS A TRUE THIRD STATE WITH A FALSE
+   REASON.** It exits **2** — correct, that is what COULD NOT RUN is for — and
+   prints *"COULD NOT READ `tools/report_only_checks.py`, or its REGISTRY is
+   empty."* **Neither disjunct is true.** The file read fine and the registry
+   held 76 entries; one named entry was refused for one named missing field, and
+   that diagnosis is swallowed. **This is the §1.11 discipline satisfied on the
+   exit code and broken on the message** — the operator is sent to look for an
+   unreadable file or an empty list, which is the one place the answer is not.
+   The fix is one line: carry the caught exception's text into the output.
+   `invocation_path_scan.py` has the same gap without the false claim — it names
+   `report_only_checks.REGISTRY` as the unreadable input and stops there.
+2. **`flaky_checker_quarantine.py` DEGRADES AND STILL PRINTS A NUMBER, and it is
+   the best-behaved of the fourteen precisely because it says so.** It falls back
+   to a regex read of the registry and reports *"NO RECORDED DECISION: 86 of 133
+   check-shaped tools on disk [registries REGEX FALLBACK (RegistryIncomplete) —
+   known to undercount — WIRING NOT CONSULTED (RegistryIncomplete), so the count
+   below OVER-reports]"*. A quiet wrong number is the dangerous shape; this one
+   is loud about being wrong, names the exception by name in its own output, and
+   still exits 1. **That is the pattern the other four should copy** — not the
+   bare traceback, and certainly not the false reason.
+
+**A THIRD FINDING, AND IT IS ABOUT THE WORD "IMPORT" IN THE REFUSAL'S OWN
+MESSAGE.** The validator says it *"refuses at IMPORT rather than in a suite
+because a suite tells you after the entry is on main"*. **That promise holds for
+only 7 of the 14 importers.** Counted by the indentation of the import statement:
+
+* **7 import at top level and are refused before they do anything** — all the
+  probes except `run_export_coverage_probe.py`.
+* **7 import INSIDE A FUNCTION**, so the refusal arrives **mid-run or at the end
+  of the run, not at import**: all six tools, plus
+  `run_export_coverage_probe.py`.
+
+**`tools/dead_rule_sweep.py` IS THE WORST CASE AND IT IS BLIND SPOT 8.** Its
+import sits at `:488` inside a function, so the refusal cannot fire until the
+sweep reaches it. **BOTH ARMS HIT A 900-SECOND CEILING: control
+`CONTROL_EXIT=124`, a timeout, with no verdict either way.** Per the rule this
+same batch landed in `67080039` — *a timeout says COULD NOT RUN with its bound
+and never "no lock, no control"* — **this is COULD NOT RUN AT A 900s BOUND, not
+a pass and not a failure.** Without a green control the injected arm's exit code
+would be unattributable anyway, so no number is reported for it.
+
+**The distinction is not pedantic:** the refusal was designed so that nobody has
+to pay for a bad entry twice, and a tool that pays the full sweep first before
+being told its registry is invalid has paid for it once already.
+
+**WHAT THIS DOES NOT SAY.** It does not say the refusal is correctly *placed* —
+hank's open finding is that `REGISTRY` accepts entries whose `evidence` is prose
+rather than a run, and a validator that only checks for a non-empty string cannot
+tell those apart. This measurement is about what happens when it fires, not about
+whether the bar is high enough.
+
+---
+
 ## Methodology — the three conventions, and why each was paid for
 
 Routed to fourth for `docs/METHODOLOGY.md`; stated here because this is the batch
@@ -222,7 +325,7 @@ patch would have.
 
 ---
 
-## BLIND SPOTS — 7
+## BLIND SPOTS — 9
 
 1. **I did not enumerate the twelve red suites.** I fixed four red artefacts I met
    and routed one. A full-tree suite drive is fourth's claimed work this batch and
@@ -233,8 +336,34 @@ patch would have.
 3. **The two surviving instances need an `ast`-based line-number map** and I did
    not build it. Named in the docstring, which is the next best thing and not the
    same thing.
-4. **`seq 538`'s twelve SDN resources are not verified by me.** I wrote the method
-   and declined to write the row.
+4. ~~**`seq 538`'s twelve SDN resources are not verified by me.**~~ **CORRECTED
+   2026-10-06 — THE BLIND SPOT WAS WRITTEN AGAINST A STALE BELIEF AND THE ROW
+   ALREADY EXISTED.** I recorded "I declined to write the row" without checking
+   whether one was there. It was, written by hank the day before I wrote the
+   sentence. `docs/SAIRN-OPEN-WORK-INDEX.md:77`, marker
+   `HOVER-H2-529-538-ROUTED-HANK-2026-10-05`, marked **✅ FIXED**, with all
+   twelve resources and their save sites enumerated in the detail cell.
+
+   **WHAT I DID VERIFY, since a row claiming FIXED is a claim:**
+
+   * **The shared defect is really gone.** `api/sd-data.js:12412` carries the
+     fix and names `H2 seq 529/538` in its own comment; `data: payload` is
+     absent from that branch. Driven: `node tests/sd_data_sdn_blob_scope.js`
+     → **10 passed, 0 failed, exit 0**, and arms D1/D2 assert the anchor
+     appears exactly once so D2 cannot be grading a different branch.
+   * **All twelve register cells agree with the classification**, read at HEAD
+     out of `docs/CRITICALITY-TIERS.md`: `sdn_clients` / `sdn_contracts` /
+     `sdn_referrals` **A/A**; `sdn_projects` `sdn_specitems` `sdn_proposals`
+     `sdn_pos` `sdn_invoices` `sdn_timeentries` `sdn_discounts` **A/B**;
+     `sdn_team` `sdn_vendors` **B/B**. Not one cell disagrees, and not one
+     still carries a confidentiality could-not-tell.
+   * **The `sdn_vendors` "no PII" basis the auditor flagged is already
+     corrected** — `docs/CRITICALITY-TIERS.md:343`, 2026-10-05 (hank), tier
+     unchanged at B, and that cell names seq 538 as its source.
+
+   **SO THE DECISION IS NEITHER "write it" NOR "route it": it is closed, and
+   what I owed was the read that found that out.** The one thing genuinely
+   wrong with the row is its evidence pointer — see blind spot 9.
 5. ~~**Nothing I landed was verified against the deployment.**~~ **CORRECTED AFTER
    THE PUSH — the licence-case change IS live-verified**, and it was the one item
    with a drivable live surface. `POST /api/sd-auth {"action":"check_license"}`,
@@ -252,10 +381,24 @@ patch would have.
    else:** the Tier A gate, fmea, the push gate and the registry refusal are all
    build-time tools with no deployed surface to drive, so "verified" for them means
    their own controls and nothing more.
-6. **The import-time registry refusal is a new way to break every importer.** It
-   is deliberate and I believe it is right, but the first person it stops will be
-   stopped hard, and I have not measured how that feels in a hook.
+6. ~~**The import-time registry refusal is a new way to break every importer.**~~
+   **MEASURED 2026-10-06, CONTROL FIRST, AND THE REFUSAL IS SOUND WHILE TWO OF
+   ITS CONSUMERS MISREPORT IT.** See §16 below for the arms and the numbers.
 7. **`dnt_supplies` is re-tiered in a routed document, not in the register**, so
    until hank lands it the resource is still B/B and the Tier A obligation it
    wants cannot even be opened — the gate derives its resource list from the row
    that does not yet say A.
+8. **`tools/dead_rule_sweep.py` is the one importer I could not bound.** Both
+   arms hit a **900-second** ceiling — control `exit 124`, a timeout — so it is
+   **COULD NOT RUN AT A 900s BOUND**, never a pass; see §16. The other thirteen
+   all fail closed, so no importer measured here reports a clean run on a
+   refused registry. **And the reason it is slow is the finding:** its import
+   sits inside a function, so the refusal cannot fire until the sweep reaches
+   it — true of 7 of the 14 importers, which is §16's third finding.
+9. **The open-work index carries 38 DEAD COMMIT CITATIONS and five of the
+   orphans are mine.** Found while verifying blind spot 4's row, measured, and
+   **routed rather than fixed** because `docs/SAIRN-OPEN-WORK-INDEX.md` is
+   hank's under a live claim — `docs/2026-10-06-cc-routed.md` §9 carries the
+   list and the method. This is not hank's carelessness and it is not mine: it
+   is what `sairn_claim.py` rebasing before it pushes does to any SHA written
+   down before the push.
