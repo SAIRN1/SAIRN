@@ -817,6 +817,84 @@ check('K7. an explicit --corpus-timeout beats a measured per-tool bound, '
       'because re-asking a closed question is the whole point of the flag',
       D.tool_bound(sorted(D.TOOL_BOUNDS)[0], 999) == 999)
 
+# ── L. VERIFICATION ARMS FOR TWO FIXES ALREADY SHIPPED ─────────────────────
+# Item 6 of the 2026-10-06 queue: verify at HEAD, with an arm each, that (a) the
+# seven undecoded subprocess sites are closed and (b) the escape-check false
+# accusation cannot come back. A fix with no arm is a fix until somebody edits
+# near it.
+section('L. the shipped fixes, verified by arm rather than by memory')
+
+import re as _re                                                  # noqa: E402
+
+_SELF = os.path.join(REPO, 'tools', 'dead_rule_sweep.py')
+_PROBE = os.path.abspath(__file__)
+_BARE = _re.compile(r'capture_output=True,\s*text=True\s*\)')
+def _code_lines(path):
+    """Lines that are CODE, not a comment and not one of this file's own
+    fixture strings.
+
+    BOTH L1 AND L2 FAILED ON THEIR FIRST RUN BY MATCHING THEIR OWN TEXT -- the
+    probe holds a literal bare call inside arm L1c, and dead_rule_sweep.py holds
+    the retired accusation sentence inside the COMMENT that explains why it was
+    retired. That is the "my own comments trip my own scanners" class, which is
+    in my own notes, and I wrote it again anyway. Fixed in the ARM: a scanner
+    that cannot tell a fixture from a call is measuring itself.
+    """
+    out = []
+    for ln in io.open(path, encoding='utf-8', errors='replace').read().split(chr(10)):
+        t = ln.strip()
+        if t.startswith('#') or t.startswith('*'):
+            continue
+        if '_BARE' in ln or '_WITH_ENC' in ln or 'ACCUSED' in ln:
+            continue          # this arm's own fixtures
+        out.append(ln)
+    return chr(10).join(out)
+
+
+for _label, _path in (('tools/dead_rule_sweep.py', _SELF),
+                      ('tests/run_dead_rule_sweep_probe.py', _PROBE)):
+    _src = _code_lines(_path)
+    _hits = _BARE.findall(_src)
+    check('L1 %-36s has ZERO text-mode subprocess calls without an explicit '
+          'encoding= -- six of the seven were written on 2026-10-06 and found '
+          'by subprocess_decode_check, not by reading' % _label,
+          not _hits, '%d bare call(s)' % len(_hits))
+
+# THE NEGATIVE HALF. A regex that matched nothing would pass L1 on any file at
+# all, including one full of bare calls.
+check('L1c. NEGATIVE: the detector really does match a bare call, so L1 is not '
+      'passing because the pattern is broken',
+      bool(_BARE.search('subprocess.run(x, capture_output=True, text=True)')))
+_WITH_ENC = ('subprocess.run(x, capture_output=True, text=True,' + chr(10)
+             + "               encoding='utf-8', errors='replace')")
+check('L1d. ...and does NOT match one that carries an encoding, so it is not '
+      'matching everything either',
+      not _BARE.search(_WITH_ENC))
+
+# (b) THE ESCAPE CHECK. The accusation sentence must be gone, and the
+# discriminator must still be able to accuse when it IS an escape.
+_src_code = _code_lines(_SELF)
+_src_all = io.open(_SELF, encoding='utf-8', errors='replace').read()
+check('L2. the false-accusation sentence is GONE FROM EVERY CODE PATH -- no '
+      'executable line says a tool "reached outside the copy" on a bare '
+      'porcelain difference',
+      'reached outside the copy' not in _src_code, 'still on a code line')
+check('L2a. ...and it IS still in a comment, which is correct and is what made '
+      'the first version of this arm fail: the retired sentence is quoted where '
+      'the fix is explained, and a scanner that cannot tell a comment from a '
+      'code path reports the fix as absent',
+      'reached outside the copy' in _src_all)
+check('L2b. and the surviving accusation is CONDITIONAL on overlap: the words '
+      '"WROTE OUTSIDE ITS SANDBOX" appear only where the churn intersects what '
+      'the tool wrote',
+      'WROTE OUTSIDE ITS SANDBOX' in _src and 'overlap' in _src)
+check('L2c. NEGATIVE HALF: the escape path still EXISTS. A fix that deleted the '
+      'check would pass L2 and leave a writer free to reach into the clone',
+      'raise RuntimeError(' in _src and _src.count('WROTE OUTSIDE ITS SANDBOX') >= 1)
+check('L2d. and the clone state still carries BOTH halves -- a dirty-set-only '
+      'comparison is what made the accusation possible',
+      len(D._clone_state()) == 2)
+
 # The sabotage scratch tree, removed. Outside this clone either way, so a
 # leftover is untidy rather than dangerous -- which is the whole trade section G
 # makes: debris in temp instead of a neutralised rule in a shared repo.

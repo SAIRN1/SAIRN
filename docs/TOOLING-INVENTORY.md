@@ -21,7 +21,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**312 files in `tools/`.** By what actually invokes them:
+**313 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -30,7 +30,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 5 | session-start or prompt hooks, informational |
 | **DECIDED** | 79 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 70 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 60 | nothing runs these at all |
+| **UNWIRED** | 61 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
@@ -46,7 +46,7 @@ By what they are, independent of wiring:
 | PUSH-GATE | 1 |
 | REPORT | 1 |
 | REPORTER | 2 |
-| TOOL | 5 |
+| TOOL | 6 |
 | UNWIRED | 1 |
 
 **79 tool(s) are DECIDED -- deliberately not promoted, with the reason
@@ -466,7 +466,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (60)
+## UNWIRED (61)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -532,6 +532,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `strict_args_harness.js` | LIBRARY | proves the engine really discards a mutated parameter under strict mode | &mdash; |
 | `suite_override_consistency.py` | CHECKER | a test suite that reads its app HTML WITHOUT the override a majority of its sibling suites honour -- the state in which a caller reasonably assumes the convention holds and is wrong about exactly one file. On 2026-10-05 a session ran a suite twice, once with LEG_HTML= pointed at a pre-change copy, got the same failure both times and read that as evidence the failure was pre-existing. That suite reads no override: both runs tested the same file and the A/B established nothing while looking deliberate. A sweep for suites that DOCUMENT an override they ignore does not catch it -- that suite documented nothing, and the expectation came from its siblings. CANNOT see an override read through a helper rather than process.env, cannot judge a family of fewer than three (no majority exists to violate), and does not check that a present override actually reaches the read. A suite with no override is NOT itself a finding: many are deliberately pinned, and a family where none or only a minority honour one is reported clean, because neither is a convention | &mdash; |
 | `text_gate_literal_sweep.py` | CHECKER | a gate that searches source, SQL or prose finding its pattern INSIDE a string literal or a comment because it never removed them. TWO failure directions and only one is visible: a false positive is loud and survivable (and trains people to add skip-lists, which is how a real finding gets hidden later), while a DESYNCHRONISED scanner is silent and can make real code invisible to the gate. MEASURED, not hypothesised: sairn_sql_preflight.py stripped comments and literals in four separate regex passes, so a `--` inside a string was blanked as a comment and took the closing quote with it -- it reported MISSING_TABLE `the` out of an English sentence, and ~140 lines of sql/sairn_circuit_breaker_schema.sql were INVISIBLE to it because :54 is a literal beginning with `--`. Classifies every text-reading tool MASKED / BY-DESIGN / RAW, and says on every run that RAW IS A LIST TO READ, not a list of defects -- a marker scan anchored at column zero is correctly raw. BY_DESIGN entries each carry a REASON, because an exemption without one is a skip-list. THE STATIC HALF IS A PROXY AND THE TOOL SAYS SO: --empirical feeds a gate a file in which every line is a comment or a string containing exactly what that gate looks for, and only that can promote a tool to CONFIRMED-SAFE; the run prints how few gates have such a probe rather than publishing the masked count as a safety figure. A RATCHET on docs/text-gate-literal-coverage.json. It committed its own defect on the first run -- the matcher required a literal `re.search(` call and missed every PRECOMPILED pattern, undercounting the universe by 27 tools and reporting the exemption count as zero. | &mdash; |
+| `tool_owner_map.py` | TOOL | WHO OWNS EACH TOOL, derived from the claim-commit history instead of guessed per batch. Routing a finding needs an owner and most tracked tools carry no `# OWNER:` line -- the ratio is NOT written here because the tool prints it on every run and a number in a description drifts from what it describes (it was "13 of 297" when the file was written and "16 of 311" an hour later, which is the argument). Three findings on 2026-10-06 could not be routed to anybody for want of this: 30 dead-to-their-own-evidence rules across 16 tools, 64 undecoded subprocess sites, and three selftests that never drive their CLI. FOUR BASES AND THEY ARE NOT EQUAL: OWNER_LINE is AUTHORITATIVE and nothing else is; LAST_CLAIM is derived from the most recent session to name the file in a FILES list; CONTESTED is derived and more than one session has claimed it, with the others listed because push_retry.py resolves to fourth while hank has edited it too and one name would hide that; NONE is UNKNOWN, NOT UNOWNED, and those are opposite findings that must not print the same. CANNOT see a tool built WITHOUT a claim (that is the NONE bucket and it is the largest), attributes to the last CLAIMER rather than the author, cannot tell a claim that listed a file it never touched from one that did, and reads the SUBJECT line only so a FILES list wrapped into the body is invisible -- reported as a count, not silently dropped. Writes exactly one file, docs/tool-owner-map.json, and never touches a tool. `--check` asks whether that JSON still matches git; `--ownerless` prints the NONE bucket alone. Lock: `--fixtures`, paired arms on hand-built subjects, including that a RELEASE is not a claim, that a non-claim commit carrying a FILES list assigns nothing, and that an OWNER mention inside a docstring or indented in code is not a declaration -- ONE OF ITS EXPECTATIONS WAS WRONG AND THE LOCK SAID SO BEFORE ANY GIT READ, corrected in the arm rather than bent to the assumption. REPORT ONLY | &mdash; |
 | `verify-session-token-app-scope.js` | LIBRARY | the semgrep rule body for the app-scope check | &mdash; |
 | `wait_for.py` | CHECKER | a watcher that outlives its subject -- it catches the case where the thing being waited on DIES and the wait continues for ever. Measured cost: on 2026-09-25 an inline `until grep` loop polled for FOURTEEN HOURS after the process producing its sentinel was killed, because the loop's only terminal state was the happy path. Exits 3 WATCHED PID GONE -- explicitly NOT 0 -- when the pid exits without the condition being met, 4 on timeout, 2 on bad arguments, and re-checks the condition once after seeing the pid gone so a subject's final write is not discarded as a failure. An unreadable process table is UNKNOWN rather than dead, counted and reported | &mdash; |
 
@@ -563,7 +564,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      312   git ls-files tools/
+  tools on disk                      313   git ls-files tools/
   hook entries                        18   .claude\settings.json
   push-gate invocations               12   tools\sairn_push_gate_hook.py
   report-only registry                75   report_only_checks.REGISTRY
