@@ -482,6 +482,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#128308; `alf_compliance_rules` / `evaluate` SHIPS THE WHOLE STAFF ROSTER &mdash; names, hire dates and every training record &mdash; TO ANY AUTHENTICATED ROLE, while the sibling resource it reads from filters the same data to self-only** <!-- HOVER-H1-892-894-913-ROUTED-HANK-2026-10-06 --> | **ROUTED 2026-10-06 by hank from hover H1 seq 892 / 894 / 913 / 920, logged under the routable name `alf_compliance_rules_evaluate_gate`, EVERY CITATION RE-DERIVED AT HEAD `0bbffb7c`. NOT FIXED** &mda | `tests/sd_data_family_mar_gate.js` |
 | **&#128993; A CONTROL THAT LANDS ON AN ALREADY-RED SUITE IS INVISIBLE &mdash; the SAIRNcare witness lock landed into a suite whose arm CONTRADICTED it, and the contradiction produced no signal for five days** <!-- CCBATCH2-2026-10-05 --> | **NEW 2026-10-05 (CC). Second instance alongside the &ldquo;nothing reports an app&rsquo;s red set on a cadence&rdquo; row, and both are in today&rsquo;s register records** | `tests/sairncare/test-alf-mar.js` |
 | **&#128308; `c8b5e5b1`&rsquo;s credential pre-gate turned TWELVE test suites red &mdash; 172 assertions, the ENTIRE SAIRNcare test surface &mdash; and nothing said so for ten hours** | **OPEN, found 2026-09-27 (CC) while re-anchoring `tests/sairncare_fault_probe.py`** | `api/_lib/dnt-rollup-endpoint.test.js`, `api/_lib/law-trust-reconcile-endpoint.test.js`, `tests/sairnbuild_retainage_race.js`, `tests/sairncare/test-alf-mar.js`, `tests/sairncare_fault_probe.py` |
 | **&#9989; Three refusal messages promise the trail shows &ldquo;the later one as what is believed now&rdquo; &mdash; and NOTHING ordered the rows, on either half** | **CLOSED 2026-09-22 (Hank)** &mdash; both halves, and the read half turned out to be SIX reads rather than three | `api/alf-append-only-fail-closed.test.js`, `api/alf-append-only-read-order.test.js`, `tests/run_alf_read_order_sabotage_probe.py`, `tests/sairncare/test-alf-mar.js`, `tests/sairncare_route_record.js` |
@@ -706,8 +707,8 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | source | citations |
 |---|---|
 | `index` | 322 |
-| `declared` | 314 |
-| `declared+index` | 67 |
+| `declared` | 313 |
+| `declared+index` | 68 |
 | `GUARD_TESTS+index` | 6 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
@@ -925,7 +926,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 894   tests/**, api/** (both walked)
-  open-work rows citing a test       387   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       388   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 10   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                75   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     81   report_only_checks.NOT_PROMOTED
