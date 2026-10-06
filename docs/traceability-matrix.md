@@ -218,6 +218,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#128993; `tooling_inventory.py` REFUSES LOUDLY ON A MISSING `PURPOSES` ENTRY AND IS SILENT ON A DUPLICATE ONE &mdash; measured, with a probe that is also the acceptance test** <!-- PURPOSES-DUP-KEY-ROUTED-HANK-2026-10-06 --> | **ROUTED 2026-10-06 by hank to CODY BY NAME.** `tools/tooling_inventory.py` is cody's under a live claim (queue19, re-checked at HEAD), so this is routed and **not touched**. The artifact is `tests/ru | `tests/run_purposes_duplicate_key_probe.py` |
 | **&#128308; NOTHING COUNTS *UNSCOPED* `verifySessionToken` CALLS &mdash; a branch gate that DROPPED its app scope entirely passes ALL FOURTEEN stubs on this platform, including the two that are the reference shape** <!-- CCBATCH2-2026-10-05 --> | **NEW 2026-10-05 (CC). Found while fixing the twelve suites `c8b5e5b1` turned red (`ac9c21df`, `395f7f2a`); carried in BOTH of today&rsquo;s register records&rsquo; recurrence notes** | `api/_lib/dnt-rollup-endpoint.test.js`, `api/_lib/law-trust-reconcile-endpoint.test.js` |
 | **&#9989; RULED: the criticality register tiers RESOURCES, not stored data &mdash; and the ruling is MECHANICAL, not a judgement** <!-- REGISTER-SCOPE-RULING-HANK-2026-09-30 --> | **SETTLED 2026-09-30 (hank) from `tools/criticality_tier_check.py`'s own arms, not from the header prose. Closes the unit-disagreement row opened 2026-09-29** | `tests/run_criticality_tier_probe.py` |
 | **&#128993; 43 test files where STRING CHECKS ARE AT LEAST HALF the classified assertions &mdash; a registered population, not a completed sweep** <!-- QUEUE25-ITEM9-11-HANK-2026-09-29 --> | **MEASURED 2026-09-29 (hank) by `tools/message_assertion_audit.py` (NEW, report-only). 589 files, 10,718 assertions: 1,464 string-only, 2,755 value, 6,499 UNCLASSIFIED. Full account in `docs/2026-09-2 | `tests/lib/strip_comments.test.js`, `tests/run_master_plan_probe.py`, `tests/sairndental_rollup_panel.js`, `tests/sairnscape_memory.js`, `tests/sairnvet_formulary_source_honesty.js` |
@@ -482,6 +483,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#128308; `alf_staff` / `read` RETURNS EVERY CARE WORKER'S PERSONAL PHONE AND BACKGROUND-CHECK DATE TO ANY AUTHENTICATED ROLE &mdash; found by the cross-resource pass on its FIRST LIVE RUN** <!-- ALF-STAFF-READ-UNGATED-HANK-2026-10-06 --> | **FOUND AND ROUTED 2026-10-06 (hank). NOT FIXED** &mdash; which role set belongs on it is a product decision, and this batch was told not to make those unilaterally | `tests/sd_data_alf_compliance_staff_scope.js` |
 | **&#128308; `alf_compliance_rules` / `evaluate` SHIPS THE WHOLE STAFF ROSTER &mdash; names, hire dates and every training record &mdash; TO ANY AUTHENTICATED ROLE, while the sibling resource it reads from filters the same data to self-only** <!-- HOVER-H1-892-894-913-ROUTED-HANK-2026-10-06 --> | **ROUTED 2026-10-06 by hank from hover H1 seq 892 / 894 / 913 / 920, logged under the routable name `alf_compliance_rules_evaluate_gate`, EVERY CITATION RE-DERIVED AT HEAD `0bbffb7c`. NOT FIXED** &mda | `tests/sd_data_family_mar_gate.js` |
 | **&#128993; A CONTROL THAT LANDS ON AN ALREADY-RED SUITE IS INVISIBLE &mdash; the SAIRNcare witness lock landed into a suite whose arm CONTRADICTED it, and the contradiction produced no signal for five days** <!-- CCBATCH2-2026-10-05 --> | **NEW 2026-10-05 (CC). Second instance alongside the &ldquo;nothing reports an app&rsquo;s red set on a cadence&rdquo; row, and both are in today&rsquo;s register records** | `tests/sairncare/test-alf-mar.js` |
 | **&#128308; `c8b5e5b1`&rsquo;s credential pre-gate turned TWELVE test suites red &mdash; 172 assertions, the ENTIRE SAIRNcare test surface &mdash; and nothing said so for ten hours** | **OPEN, found 2026-09-27 (CC) while re-anchoring `tests/sairncare_fault_probe.py`** | `api/_lib/dnt-rollup-endpoint.test.js`, `api/_lib/law-trust-reconcile-endpoint.test.js`, `tests/sairnbuild_retainage_race.js`, `tests/sairncare/test-alf-mar.js`, `tests/sairncare_fault_probe.py` |
@@ -699,17 +701,17 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 715 of 898 traced, 79.6%.
+For context and not as the headline: 716 of 899 traced, 79.6%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 715 citations come from
+### Where the 716 citations come from
 
 | source | citations |
 |---|---|
-| `index` | 323 |
-| `declared` | 314 |
-| `declared+index` | 68 |
+| `index` | 324 |
+| `declared` | 313 |
+| `declared+index` | 69 |
 | `GUARD_TESTS+index` | 6 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
@@ -928,8 +930,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 898   tests/**, api/** (both walked)
-  open-work rows citing a test       389   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 899   tests/**, api/** (both walked)
+  open-work rows citing a test       391   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 10   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                75   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     81   report_only_checks.NOT_PROMOTED
