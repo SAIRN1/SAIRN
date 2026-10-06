@@ -6,15 +6,3428 @@
   "OWNER_LINE": "the file says so. Authoritative."
  },
  "_meta": {
-  "claim_commits_read": 2395,
-  "claim_commits_with_files": 328,
+  "claim_commits_read": 2398,
+  "claim_commits_with_files": 330,
   "criteria": "2026-10-06.1",
-  "owner_line": 17,
-  "tools": 312
+  "owner_line": 21,
+  "tools": 965
  },
  "_regenerate": "python tools/tool_owner_map.py",
  "_what_this_is": "Who owns each tool, derived from the claim-commit history rather than guessed.",
  "tools": {
+  "scripts/create-agent.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "scripts/mark-agent-paid.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "scripts/verify-skill-store.sh": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/active_credential_gate_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/ai_analysis_logs_delete.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/ai_auth_wrapper.test.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/ai_shortcuts_reach_the_chat.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/aiq_speed_and_waste_calc.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/alf_append_only_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/app_session_isolation.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "12a8bb40",
+   "owner": "cody"
+  },
+  "tests/app_session_isolation_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "c353289e",
+   "owner": "cc"
+  },
+  "tests/approval_persistence.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/approval_persistence_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/audit_checkpoint_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/base_prompt_single_source.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/checker_cwd_anchoring_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/claims/run_claim_audit_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/claims/run_claim_retype_mutation_control.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/claims/run_fileset_matcher_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "548e73ef",
+   "owner": "cody"
+  },
+  "tests/claims/run_fileset_matcher_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/claims/run_freshness_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/claims/run_matcher_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/claims/run_own_claim_overlap_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/claims/run_push_verify_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "617a9c06",
+   "owner": "cc"
+  },
+  "tests/claims/run_registry_claim_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/claims/run_registry_claim_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/claims/run_released_visibility_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/cleanup_residue_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/collection_delete_reaches_the_server.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "12bdac58",
+   "owner": "fourth"
+  },
+  "tests/comms_log_delete_and_ids.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/compliance_training_window_boundary.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/composite_context.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/confidentiality_flagger_asymmetry_review_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "37ac8693",
+   "owner": "hank"
+  },
+  "tests/conflict_marker_preflight_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/criticality_rollup_list_review_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "a37e034b",
+   "owner": "hank"
+  },
+  "tests/crm_seed_not_a_pipeline.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/cron_schedules_do_not_collide.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/cross_tenant_dispatchers_review_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/cross_tenant_grader_declaration_review_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/cross_tenant_scope_grader_review_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/customer_delete_does_not_resurrect.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/cut_sheet_basis_parity.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/defect_register_capa_control.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/demo_seed_licence_scope.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/demo_seed_licence_scope_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/discarded_verdict_check.test.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/dnt_bi_scope_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/dnt_complaint_qr.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/dnt_financial_tier_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/dnt_rollup_review_probe.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/dnt_vendor_backup_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/dnt_vendor_write_confirmation.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/dnt_vendor_write_confirmation_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/duplicate_review_merge_sweep.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/employees_refusal_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/entitlement_freshness_control.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/exec_chat_delete.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/exec_role_gate.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/exec_role_gate_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/fail_open_browser_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/fail_open_triage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/failsafe/countersign_coverage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/failsafe/failsafekit.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/failsafe/witness_atomicity.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/failsafe/witness_countersign.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/failsafe/witness_mint.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/failsafe/witness_recovery.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/faults/alf_rule_read_faults.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/faults/dnt_vendor_write_faults.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/faults/faultkit.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/faults/grd_write_faults.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/faults/run_fault_suite_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/faults/sd_write_faults.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/faults/sv_backup_write_faults.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/faults/sv_suppression_faults.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/faults/transport_timeout_sweep.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/fixtures/baseline_gate_fixture.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/fixtures/harness_multiedit_src.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/fixtures/harness_multiedit_suite.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/functional_core_is_pure.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/gated_resource_direct_fetch_header.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "1a0656ae",
+   "owner": "hank"
+  },
+  "tests/grader_declaration_reconstruction_review_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "76552439",
+   "owner": "fourth"
+  },
+  "tests/grader_exclusion_parser_review_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/guard_block_shape_control.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/hook_command_anchoring_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/hover_process_pass_freshness_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/hover_quotable_session_vocab_check.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/hover_quotable_session_vocab_control.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/hover_separation_ci_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/idless_rows_are_reported.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/install_git_hooks_check_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "c353289e",
+   "owner": "cc"
+  },
+  "tests/intake_form_public_surface.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/intake_link_no_credential.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/intake_link_no_credential_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/intake_no_false_success.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/invoice_panel_kpis.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/key_collision_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/law_custody_attribution_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/law_phase2_control_bucketing_review_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/law_phase2_control_review_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/law_reconcile_role_vocab_check.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/law_reconcile_role_vocab_control.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/law_resources_phase_boundary_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/law_timeentry_scope_meta_review_probe.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/law_timeentry_scope_review_probe.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/law_trust_reconcile_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/law_trust_reconcile_wiring_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/law_trusttx_session_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/ld_reports_unreadable.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/lib/active_credential_stub.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/lib/fn_span.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/lib/fn_span.test.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/lib/strip_comments.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "0bcdb33c",
+   "owner": "cody"
+  },
+  "tests/lib/strip_comments.test.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/licence_rekey_isolation.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/licence_rekey_isolation_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/license_trial_gate_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/local_only_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/local_only_self_evidence_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/local_only_shape_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/material_risk_denominator_review_probe.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/material_risk_engine.js": {
+   "also_claimed_by": [
+    "cc"
+   ],
+   "basis": "CONTESTED",
+   "last_claim": "9508695a",
+   "owner": "fourth"
+  },
+  "tests/mech_check_register_identity.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/mech_docs_redaction_wiring_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/merge_by_id_overwrite.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/nesting_dxf.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/nesting_saw_ticket.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/phi_cache_scope_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/phi_cache_scoped_to_user.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/pricing_single_source.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/prompt_budget.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/prompt_fence_mirror.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/public_catalog_no_false_empty.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/public_token_leaves_the_address_bar.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/push_gate/check11_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "008f3095",
+   "owner": "cody"
+  },
+  "tests/push_gate/check12_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/push_gate/check2_and_check5_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/push_gate/check3_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/push_gate/check4_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/push_gate/check7_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/push_gate/check8_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "65b458f9",
+   "owner": "fourth"
+  },
+  "tests/push_gate/check9_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "6973ed6a",
+   "owner": "cody"
+  },
+  "tests/push_gate/gate_freshness_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/push_gate/missing_checker_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/push_gate/preauth_exemption_anchor_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/push_gate/redaction_base_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/push_gate/refspec_and_override_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "6973ed6a",
+   "owner": "cody"
+  },
+  "tests/python_escape_hygiene.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/python_escape_hygiene_scope_review_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "c0bad2be",
+   "owner": "cc"
+  },
+  "tests/quote_builder_delete_does_not_resurrect.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/quote_history_delete.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/quote_history_duplication.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/quote_request_soft_delete_panel.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/reachability/action_demand_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/reachability/activity_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/reachability/live_mode_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/reachability/resource_demand_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "6973ed6a",
+   "owner": "cody"
+  },
+  "tests/rebase_resolve_merge_control.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/refusal_not_empty.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/retry_backoff_check_control.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/role_gate_loop_rule_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/role_maps_have_no_prototype.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/roofing_claim_gate_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/roofing_claim_gate_single_source.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/roofing_claim_photo_export.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/roofing_claim_photo_export_mutation_control.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/roofing_jobs_load_failure.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/roofing_unprovisioned_is_not_empty.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/rootpages.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_accepted_risk_expiry_control.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_accepted_risk_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_adversarial_prompt_corpus_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_advisory_lock_isolation_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_ai_action_approval_control.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_ai_output_resource_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_ai_prompt_refusal_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_alf_read_order_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_alf_scope_mutation_probe.py": {
+   "also_claimed_by": [],
+   "basis": "OWNER_LINE",
+   "owner": "cc"
+  },
+  "tests/run_all_tests_floor_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_all_tests_hook_gate_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_all_tests_pinned_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "345b4db3",
+   "owner": "cody"
+  },
+  "tests/run_allan_deviation_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_app_attribution_mutation_control.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_app_attribution_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_append_only_read_order_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_assertion_label_shape_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "b350a307",
+   "owner": "cody"
+  },
+  "tests/run_assurance_case_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "6973ed6a",
+   "owner": "cody"
+  },
+  "tests/run_auth_header_name_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "ad82bf83",
+   "owner": "fourth"
+  },
+  "tests/run_bare_run_write_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_baseline_readiness_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_benford_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_blind_review_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_blob_conversion_coverage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_body_file_roundtrip_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "a5bc56f8",
+   "owner": "cc"
+  },
+  "tests/run_body_file_wiring_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "a5bc56f8",
+   "owner": "cc"
+  },
+  "tests/run_bypassed_constant_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_capa_fields_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_check_precedence_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_checker_confidence_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "6973ed6a",
+   "owner": "cody"
+  },
+  "tests/run_checker_control_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_checker_selftest_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "b350a307",
+   "owner": "cody"
+  },
+  "tests/run_citation_anchor_hop_sabotage.py": {
+   "also_claimed_by": [],
+   "basis": "OWNER_LINE",
+   "owner": "cody"
+  },
+  "tests/run_citation_arm_depth_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "461b7bf4",
+   "owner": "fourth"
+  },
+  "tests/run_citation_line_drift_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "f102d224",
+   "owner": "hank"
+  },
+  "tests/run_citation_no_source_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_citator_freshness_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_claim_activity_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "ac74ac2f",
+   "owner": "cc"
+  },
+  "tests/run_claim_bare_basename_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_claim_doc_freshness_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_claim_file_token_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_claim_matcher_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "548e73ef",
+   "owner": "cody"
+  },
+  "tests/run_claim_provenance_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_claim_search_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "87deb212",
+   "owner": "fourth"
+  },
+  "tests/run_cleanup_confirm_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_closing_error_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_coding_rule_channel_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_coding_rule_discovery_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_comment_quote_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_comment_sensitivity_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_committer_identity_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_completeness_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_compliance_loader_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_concurrency_retry_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_condition_coverage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_condition_coverage_sandbox_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_conflict_marker_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_conflict_preflight_hook_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_control_char_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_copy_exactly_gate_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_copy_exactly_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_criticality_tier_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "4c8327cf",
+   "owner": "cc"
+  },
+  "tests/run_cron_beat_refusal_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_cron_liveness_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_cross_tenant_dispatchers_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_cross_tenant_isolation_scope_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "a01276bc",
+   "owner": "cc"
+  },
+  "tests/run_cross_tenant_scope_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "76552439",
+   "owner": "fourth"
+  },
+  "tests/run_cross_tenant_untabled_declaration_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_dead_rule_sweep_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "9ddc6827",
+   "owner": "cody"
+  },
+  "tests/run_defect_budget_policy_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_defect_budget_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_defect_dispersion_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_defect_register_planned_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_defect_register_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "536421ff",
+   "owner": "cc"
+  },
+  "tests/run_defect_register_vocab_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "769d72b1",
+   "owner": "cc"
+  },
+  "tests/run_defect_register_vocab_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_demo_credentials_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "bc9da40b",
+   "owner": "fourth"
+  },
+  "tests/run_dependency_graph_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_deploy_verify_entry_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_discarded_verdict_crossfile_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_dispatch_state_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_dispersion_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_dora_metrics_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_eaten_substitution_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_entry_point_scope_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "b350a307",
+   "owner": "cody"
+  },
+  "tests/run_estimate_fusion_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_exec_msgs_gate_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_export_coverage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "2c65ffff",
+   "owner": "cc"
+  },
+  "tests/run_fact_sheet_regenerates_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "aedcbb95",
+   "owner": "hank"
+  },
+  "tests/run_fail_open_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "0664cbd6",
+   "owner": "fourth"
+  },
+  "tests/run_financial_invariant_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_first_article_inspection_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_first_article_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_flaky_quarantine_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_fmea_loop_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_fmea_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_fn_span_control.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_gap_ledger_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "3c172152",
+   "owner": "cody"
+  },
+  "tests/run_gate_caller_impact_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "be2a1916",
+   "owner": "hank"
+  },
+  "tests/run_gate_column_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_gh_push_gate_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_gh_token_live_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "05e39f1f",
+   "owner": "hank"
+  },
+  "tests/run_ghost_field_read_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "6e453611",
+   "owner": "hank"
+  },
+  "tests/run_githook_install_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_graduated_exemption_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_guard_ablation_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_harness_stage_diagnosis_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_hedge_carry_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_hook_integrity_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "3b12f19c",
+   "owner": "hank"
+  },
+  "tests/run_hover_audit_method_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_hover_eqa_escalation_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_hover_routing_gap_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "3b12f19c",
+   "owner": "hank"
+  },
+  "tests/run_hover_scope_own_claim_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_hover_self_health_shim_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_hover_separation_probe.py": {
+   "also_claimed_by": [
+    "fourth",
+    "hank"
+   ],
+   "basis": "CONTESTED",
+   "last_claim": "9fe28f21",
+   "owner": "cody"
+  },
+  "tests/run_index_duplicate_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_invisible_in_pattern_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_irreversible_class_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_jscomments_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_known_red_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_landing_verification_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_last_admin_sole_role_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_law_phase2_session_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "536421ff",
+   "owner": "cc"
+  },
+  "tests/run_law_timeentry_trim_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_law_trusttx_clearance_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_leg_session_gate_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_literal_drift_control_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_literal_drift_determinism_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_live_probe_declaration_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_live_probe_residue_probe.py": {
+   "also_claimed_by": [
+    "hank"
+   ],
+   "basis": "CONTESTED",
+   "last_claim": "91cd6b8d",
+   "owner": "fourth"
+  },
+  "tests/run_log_cluster_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_master_plan_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_material_risk_engine_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "9508695a",
+   "owner": "fourth"
+  },
+  "tests/run_md_table_check_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "398042f7",
+   "owner": "cc"
+  },
+  "tests/run_mech_gate_live_probe_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_message_assertion_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_metamorphic_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "ce3e158d",
+   "owner": "cody"
+  },
+  "tests/run_mutation_anchor_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_mutation_anchor_resolver_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_new_checker_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_nhi_clone_enumeration_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_nhi_register_write_flag_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_nhi_selftest_scope_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_numeric_coalesce_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_optimistic_success_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_out_of_service_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "57e5ca45",
+   "owner": "hank"
+  },
+  "tests/run_ownership_drift_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_parse_zero_third_state_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "b350a307",
+   "owner": "cody"
+  },
+  "tests/run_pattern_enumeration_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "3b12f19c",
+   "owner": "hank"
+  },
+  "tests/run_payer_routing_integration_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_pinned_list_drift_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_plugin_upgrade_token_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "3b12f19c",
+   "owner": "hank"
+  },
+  "tests/run_pra_event_tree_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_primitive_obsession_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "dcc50055",
+   "owner": "fourth"
+  },
+  "tests/run_printed_command_paste_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_probe_anchor_freshness_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_provisioner_health_sole_role_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_purge_evidence_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_purposes_duplicate_key_probe.py": {
+   "also_claimed_by": [],
+   "basis": "OWNER_LINE",
+   "owner": "hank"
+  },
+  "tests/run_push_gate_preflight_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_push_master_guard_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_push_retry_ledger_guard_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "17442d94",
+   "owner": "fourth"
+  },
+  "tests/run_push_retry_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "21f9c8eb",
+   "owner": "hank"
+  },
+  "tests/run_python_escape_hygiene_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_rate_limit_race_probe.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_reachability_r5_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_rebase_resolve_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_rebase_state_guard_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "65bcb37f",
+   "owner": "hank"
+  },
+  "tests/run_reclassification_sweep_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "29588c53",
+   "owner": "cc"
+  },
+  "tests/run_reclassification_sweep_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "536421ff",
+   "owner": "cc"
+  },
+  "tests/run_register_feed_gate_probe.py": {
+   "also_claimed_by": [
+    "hank"
+   ],
+   "basis": "CONTESTED",
+   "last_claim": "6973ed6a",
+   "owner": "cody"
+  },
+  "tests/run_register_freshness_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_register_freshness_propose_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_reliability_growth_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_removal_path_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_report_only_checks_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_required_write_permission_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_reseat_fixed_point_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_response_shape_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_restore_coherence_probe.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_retry_policy_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_review_gate_validate_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "e9ea59b4",
+   "owner": "hank"
+  },
+  "tests/run_review_ledger_reseat_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_rewrite_convergence_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_risk_event_tree_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_role_gate_invariants_probe.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_role_gate_negative_coverage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_role_gate_ratchet_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "461b7bf4",
+   "owner": "fourth"
+  },
+  "tests/run_role_gate_table_rule_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_rotation_blast_radius_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "6973ed6a",
+   "owner": "cody"
+  },
+  "tests/run_row_count_baseline_probe.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_sabotage_control_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "3074a08b",
+   "owner": "cc"
+  },
+  "tests/run_sabotage_harness_baseline_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_sabotage_harness_multiedit_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_sabotage_harness_parse_check_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_sairn_status_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "32bf72c0",
+   "owner": "fourth"
+  },
+  "tests/run_sairnbuild_server_wins_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "a0625f24",
+   "owner": "cody"
+  },
+  "tests/run_sairncare_route_record_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "b38941e6",
+   "owner": "cc"
+  },
+  "tests/run_sairncare_transport_refusal_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_sairnlaw_billable_rate_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_sairnlaw_rate_limit_probe.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_sairnsenior_hydrate_delegation_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_sc_tier_a_live_probe_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_schema_provisioning_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "277b78d7",
+   "owner": "cody"
+  },
+  "tests/run_schema_verdict_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_sd_auth_last_admin_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_seam_cannot_tell_watch_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_seam_remake_derivation_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_secrets_inventory_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_self_exclusion_guard_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_selftest_independence_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_selftest_sweep_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_semgrep_encoding_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_server_wins_hydration_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "6ac8f6b2",
+   "owner": "cc"
+  },
+  "tests/run_service_role_gate_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_session_recheck_coverage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_setup_demotion_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_sf_session_gate_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "99f695f9",
+   "owner": "fourth"
+  },
+  "tests/run_shape_antipattern_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_shape_search_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_slab_hold_expiry_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_snapshot_freshness_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_snapshot_loader_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_solerole_validation_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_soup_register_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_sql_column_exists_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_sql_preflight_literal_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "f876d2e6",
+   "owner": "fourth"
+  },
+  "tests/run_staged_credential_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "ca7fb693",
+   "owner": "fourth"
+  },
+  "tests/run_staged_parse_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_staging_discipline_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_stored_data_criticality_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_subprocess_decode_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_suite_control_coverage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_suite_lock_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_sv_session_gate_sabotage_probe.py": {
+   "also_claimed_by": [
+    "hank"
+   ],
+   "basis": "CONTESTED",
+   "last_claim": "536421ff",
+   "owner": "cc"
+  },
+  "tests/run_sync_write_result_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "e0cf0fd6",
+   "owner": "fourth"
+  },
+  "tests/run_temporary_state_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_testability_gate_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "6973ed6a",
+   "owner": "cody"
+  },
+  "tests/run_three_way_match_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_tier_a_bypass_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_tier_a_replaceability_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_tier_a_reseat_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_tier_a_review_gate_probe.py": {
+   "also_claimed_by": [
+    "cc"
+   ],
+   "basis": "CONTESTED",
+   "last_claim": "0bcdb33c",
+   "owner": "cody"
+  },
+  "tests/run_tier_a_review_gate_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "c91bde36",
+   "owner": "fourth"
+  },
+  "tests/run_tier_sentence_gate_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_tiered_pricing_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_tiering_recheck_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "0f5d13cb",
+   "owner": "fourth"
+  },
+  "tests/run_tool_owner_header_probe.py": {
+   "also_claimed_by": [],
+   "basis": "OWNER_LINE",
+   "owner": "cody"
+  },
+  "tests/run_tool_selftest_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_tool_selftest_probe_control.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_tooling_inventory_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_traceability_matrix_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_trend_alarm_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_truthy_sum_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_two_axis_tier_parser_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "4733d4e6",
+   "owner": "cody"
+  },
+  "tests/run_unconfirmed_write_sweep_sabotage_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "536421ff",
+   "owner": "cc"
+  },
+  "tests/run_uncontrolled_checkers_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_unreachable_failure_path_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_verification_owed_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "72f717b5",
+   "owner": "fourth"
+  },
+  "tests/run_verification_plan_staleness_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_waf_rule_check_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_weakness_combination_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/run_write_path_scan_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sabotage_harness.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "536421ff",
+   "owner": "cc"
+  },
+  "tests/sairn_http_challenge.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairn_http_response_shape.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairn_storage_wrapper_honesty.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnbiz_1099_threshold.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnbiz_benefits_and_overtime.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnbiz_bill_cannot_settle_unmatched.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnbiz_fault_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnbiz_incidents_kpi.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnbiz_ledger_source_id.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnbiz_ot_threshold_coalesce.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnbiz_pay_frequency.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnbiz_po_recv_mutation_control.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnbiz_po_recv_reach_the_server.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnbiz_preview_fixes.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnbiz_preview_residual.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnbiz_server_backup.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnbiz_three_way_match_mutation_control.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnbiz_timesheet_hours.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "be2a1916",
+   "owner": "hank"
+  },
+  "tests/sairnbiz_timesheet_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnbiz_undated_payee_notes.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnbiz_vendor_ytd_derivation.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "e7322755",
+   "owner": "cc"
+  },
+  "tests/sairnbiz_void_mutation_control.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnbiz_void_not_delete.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnbuild_backup_pending.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnbuild_budget_early_warning.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnbuild_fault_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnbuild_retainage_race.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "63a0ac34",
+   "owner": "cc"
+  },
+  "tests/sairnbuild_server_backup.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnbuild_server_backup_mutation_control.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnbuild_server_wins.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "a0625f24",
+   "owner": "cody"
+  },
+  "tests/sairnbuild_settings_prefill_coalesce.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnbuild_wip_percent_complete.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairncare/test-alf-activities.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "63a0ac34",
+   "owner": "cc"
+  },
+  "tests/sairncare/test-alf-alerts-endpoint.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairncare/test-alf-billing.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "63a0ac34",
+   "owner": "cc"
+  },
+  "tests/sairncare/test-alf-clients-history.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "63a0ac34",
+   "owner": "cc"
+  },
+  "tests/sairncare/test-alf-clients.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "63a0ac34",
+   "owner": "cc"
+  },
+  "tests/sairncare/test-alf-compliance.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "63a0ac34",
+   "owner": "cc"
+  },
+  "tests/sairncare/test-alf-facility.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "63a0ac34",
+   "owner": "cc"
+  },
+  "tests/sairncare/test-alf-incidents.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "07eb0ce6",
+   "owner": "cc"
+  },
+  "tests/sairncare/test-alf-mar.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "07eb0ce6",
+   "owner": "cc"
+  },
+  "tests/sairncare/test-alf-payer-rules.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "63a0ac34",
+   "owner": "cc"
+  },
+  "tests/sairncare/test-alf-phase3.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "63a0ac34",
+   "owner": "cc"
+  },
+  "tests/sairncare/test-alf-signals.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "63a0ac34",
+   "owner": "cc"
+  },
+  "tests/sairncare/test-care-charges.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairncare/test-compliance-rules.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairncare/test-invoice-proration.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairncare/test-med-schedule.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairncare/test-op-audit.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairncare/test-payer-routing.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairncare_credential_export.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairncare_fault_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "3b420e8d",
+   "owner": "cc"
+  },
+  "tests/sairncare_payer_routing_integration.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairncare_route_record.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairncare_transport_refusal.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairncash_entitlement_fault_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "3b420e8d",
+   "owner": "cc"
+  },
+  "tests/sairncash_entitlement_gate.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairncash_entitlement_gate_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "461b7bf4",
+   "owner": "fourth"
+  },
+  "tests/sairncash_fault_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairncash_plan_label.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairncash_safe_harbor.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "0b7fc43e",
+   "owner": "cc"
+  },
+  "tests/sairncode_eligibility_coding_edge.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairncode_gates.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "0ac21be8",
+   "owner": "cc"
+  },
+  "tests/sairncode_gates_mutation_control.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairncode_kx_accumulator_wiring_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairncode_pt_gp_modifier.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "eb6c9363",
+   "owner": "cody"
+  },
+  "tests/sairndental_amount_construction.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairndental_coverage_edit.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairndental_coverage_edit_mutation_control.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairndental_estimate_null.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairndental_ledger_export.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairndental_ledger_export_mutation_control.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairndental_outbound_queue.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairndental_outbound_queue_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairndental_rollup_panel.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairndental_settings_patch.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairndental_unlinked_referral_queue.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairndental_write_failure_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairndental_write_failure_voice.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairndesign_po_procurement.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "6076262d",
+   "owner": "fourth"
+  },
+  "tests/sairndesign_pricing.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "23981934",
+   "owner": "fourth"
+  },
+  "tests/sairndesign_sairngrounds_fault_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "173fbfe0",
+   "owner": "cc"
+  },
+  "tests/sairndesign_server_backup.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnfreedom_auth_review_probe.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnfreedom_fault_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnfreedom_key_reconciliation.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnfreedom_segregation_of_duties.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnfreedom_server_backup.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnfreedom_server_backup_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairngrounds_server_backup.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnlaw_billable_rate.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "d387ba1a",
+   "owner": "cc"
+  },
+  "tests/sairnlaw_billing_codes.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnlaw_billing_codes_mutation_control.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnlaw_citation_rule.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnlaw_citation_rule_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnlaw_clearance_refusal_review_probe.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnlaw_csp.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnlaw_hydrate.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "d387ba1a",
+   "owner": "cc"
+  },
+  "tests/sairnlaw_invoiced_sync.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnlaw_invoiced_sync_review_probe.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnlaw_retrigger.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "3915743d",
+   "owner": "hank"
+  },
+  "tests/sairnlaw_trust_clearance.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "4f700016",
+   "owner": "cody"
+  },
+  "tests/sairnlaw_trust_clearance_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "4f700016",
+   "owner": "cody"
+  },
+  "tests/sairnlaw_trust_clearance_review_probe.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnlegacy_declinability.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnlegacy_fault_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnlegacy_item_price_lists.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "17442d94",
+   "owner": "fourth"
+  },
+  "tests/sairnlegacy_processions_isolation.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnlegacy_reservation_lock.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnlegacy_reservation_reverify_probe.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnlegacy_session_gate_review_probe.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnlegacy_write_failure_voice.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnmechanical_credential_export.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnmechanical_fault_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "173fbfe0",
+   "owner": "cc"
+  },
+  "tests/sairnmechanical_site_asset_export.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnroofing_fault_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnscape_fault_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnscape_memory.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnscape_outbound_queue.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnscape_outbound_queue_review_probe.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnscape_send_button_and_licence.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnsenior/test-evv-readiness.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnsenior_cert_gate.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnsenior_fault_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnsenior_hydrate_delegation_review_probe.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnsenior_negative_hours_claim.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "f07092dd",
+   "owner": "fourth"
+  },
+  "tests/sairnsenior_org_hydrate.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnsenior_referral_hours.js": {
+   "also_claimed_by": [
+    "hank"
+   ],
+   "basis": "CONTESTED",
+   "last_claim": "461b7bf4",
+   "owner": "fourth"
+  },
+  "tests/sairnvet_audit_and_controlled.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnvet_controlled_export.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "4bfc814c",
+   "owner": "cc"
+  },
+  "tests/sairnvet_controlled_export_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnvet_dose_audit_mutation_control.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnvet_dose_audit_reader.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnvet_dose_audit_reader_mutation_control.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnvet_fault_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnvet_formulary_source_honesty.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnvet_povidone_range.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnvet_scribe_review_probe.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnvet_seed_mutation_control.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sairnvet_seed_never_syncs.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sb_sync_badge_honesty.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sc_credentials_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/schema_provisioning_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/scp_quotes_review_probe.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sd_agent_budget_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sd_data_alf_compliance_staff_scope.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "11f29f6d",
+   "owner": "hank"
+  },
+  "tests/sd_data_dental_provider_scope_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sd_data_family_mar_gate.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "247ef081",
+   "owner": "hank"
+  },
+  "tests/sd_data_food_temp_unevaluated_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sd_data_mech_credentials_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sd_data_numeric_guards_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sd_data_sb_void_role_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sd_data_sdn_blob_scope.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sd_data_unconfirmed_write_review_probe.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sd_security_status_is_measured.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sd_tax_money_coercion.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "2ba9159c",
+   "owner": "cody"
+  },
+  "tests/sd_timesheet_pay_est.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sd_timesheet_pay_est_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/seam_check/run_delegation_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "65b458f9",
+   "owner": "fourth"
+  },
+  "tests/seam_check/run_delegation_residue_control.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/seam_check/run_or_default_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/seam_check/run_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/seam_check/run_ref_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/seam_remake_derivation.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/seed_never_syncs_platform.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sen_evv_payroll_wiring_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sen_hydrate_comparator_review_probe.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/server_wins_hydration.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "6ac8f6b2",
+   "owner": "cc"
+  },
+  "tests/session_gate_table_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "536421ff",
+   "owner": "cc"
+  },
+  "tests/session_lock_liveness_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/session_lock_retraction_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sf_operator_payee_match.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "32da1de3",
+   "owner": "cody"
+  },
+  "tests/sf_operator_payee_review_probe.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sf_resources_session_gate_probe.py": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "abdb9321",
+   "owner": "cody"
+  },
+  "tests/slab_reserve_client.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/slab_scan_labels.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sms_log_delete_and_ids.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/source_manifest_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sql_preflight/constraint_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sql_preflight/run_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/st_reports_failure.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/stale_row_sweep_control.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/stonedesk_admin_storage_kpi.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "ba0e26ab",
+   "owner": "cc"
+  },
+  "tests/stonedesk_bare_envelope_actions.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/stonedesk_damage_no_twin.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/stonedesk_dead_dom_readers.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/stonedesk_drawing_snapshot_budget.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/stonedesk_email_threat_rating.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "86b3d8c7",
+   "owner": "hank"
+  },
+  "tests/stonedesk_exec_msgs_gate.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/stonedesk_field_quote_wiring.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/stonedesk_fixture_catalog.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/stonedesk_followup_chip.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/stonedesk_hook_dormancy_disclosure.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/stonedesk_inside_corner_radius.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/stonedesk_locations.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/stonedesk_po_sequence_and_join.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/stonedesk_pricing_backtest.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/stonedesk_pricing_backtest_mutation_control.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/stonedesk_quote_load_state.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/stonedesk_remake_causes.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/stonedesk_saved_drawings.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/stonedesk_server_backup.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "5563b3e5",
+   "owner": "hank"
+  },
+  "tests/stonedesk_shop_identity.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/stonedesk_sync_null_blob.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/stonedesk_veinmatch_photos.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/stonedesk_write_result_consumption.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/style_profile_parity.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/suite_control_backfill_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sv_audit_completeness.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sv_boarding_revenue_coercion.js": {
+   "also_claimed_by": [],
+   "basis": "LAST_CLAIM",
+   "last_claim": "6a7e8c0a",
+   "owner": "cody"
+  },
+  "tests/sv_storage_guard.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/sv_witness_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/template_migration_orphaning.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/thh_material_rates.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/threat_and_snapshot_delete.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/tiered_pricing_commission.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/vendor_order_delete.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/viz_slab_list_freshness.js": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/write_readback_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
+  "tests/write_readback_shape_probe.py": {
+   "also_claimed_by": [],
+   "basis": "NONE",
+   "owner": null
+  },
   "tools/accepted_risk_expiry_audit.py": {
    "also_claimed_by": [],
    "basis": "LAST_CLAIM",
@@ -167,8 +3580,9 @@
   },
   "tools/checker_control_check.py": {
    "also_claimed_by": [],
-   "basis": "NONE",
-   "owner": null
+   "basis": "LAST_CLAIM",
+   "last_claim": "2c65ffff",
+   "owner": "cc"
   },
   "tools/checker_denominator.py": {
    "also_claimed_by": [],
@@ -187,10 +3601,12 @@
    "owner": null
   },
   "tools/checker_selftest_check.py": {
-   "also_claimed_by": [],
-   "basis": "LAST_CLAIM",
-   "last_claim": "b350a307",
-   "owner": "cody"
+   "also_claimed_by": [
+    "cody"
+   ],
+   "basis": "CONTESTED",
+   "last_claim": "2c65ffff",
+   "owner": "cc"
   },
   "tools/citation_arm_depth_check.py": {
    "also_claimed_by": [],
@@ -387,12 +3803,12 @@
   },
   "tools/defect_register.py": {
    "also_claimed_by": [
-    "cc",
+    "fourth",
     "cody"
    ],
    "basis": "CONTESTED",
-   "last_claim": "065a1178",
-   "owner": "fourth"
+   "last_claim": "2c65ffff",
+   "owner": "cc"
   },
   "tools/demo_credentials_check.py": {
    "also_claimed_by": [],
@@ -531,8 +3947,9 @@
   },
   "tools/flaky_checker_quarantine.py": {
    "also_claimed_by": [],
-   "basis": "NONE",
-   "owner": null
+   "basis": "LAST_CLAIM",
+   "last_claim": "2c65ffff",
+   "owner": "cc"
   },
   "tools/fmea_draft.py": {
    "also_claimed_by": [],
@@ -784,8 +4201,9 @@
   },
   "tools/invocation_path_scan.py": {
    "also_claimed_by": [],
-   "basis": "NONE",
-   "owner": null
+   "basis": "LAST_CLAIM",
+   "last_claim": "2c65ffff",
+   "owner": "cc"
   },
   "tools/js_code_only_diff.py": {
    "also_claimed_by": [],
@@ -1643,8 +5061,9 @@
   },
   "tools/traceability_matrix.py": {
    "also_claimed_by": [],
-   "basis": "NONE",
-   "owner": null
+   "basis": "LAST_CLAIM",
+   "last_claim": "2c65ffff",
+   "owner": "cc"
   },
   "tools/trend_alarm.py": {
    "also_claimed_by": [],

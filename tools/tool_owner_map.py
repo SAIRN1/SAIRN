@@ -81,8 +81,29 @@ class CouldNotTell(Exception):
     pass
 
 
+# ── THE UNIVERSE WAS tools/ ONLY, AND THAT WAS A GAP (widened 2026-10-06) ──
+# Routing a finding in tests/ asked this map and got "NOT IN MAP". Measured the
+# day it was widened: tests/push_gate/check8_probe.py and
+# tests/seam_check/run_delegation_probe.py were both named as suspects in a
+# clone-corruption hunt and NEITHER could be attributed, because the universe
+# stopped at tools/. A map that cannot answer for the directory a finding is in
+# is an owner map for one directory.
+#
+# AND A SECOND BASIS WAS BUILT AND THEN REMOVED, which is recorded so nobody
+# pays for the idea twice. `--infer-creator` derived an owner from the commit
+# that CREATED a file and the session its message names. In isolation it works
+# -- tools/benford_check.py resolves to `Fourth` from df3f194e -- but wired into
+# the full run it reported ZERO across 718 unattributed files, and I could not
+# explain the gap inside the batch. A FLAG THAT REPORTS NOTHING WHERE A HAND
+# DERIVATION FOUND FIVE IS THE DEFECT SHAPE THIS PLATFORM KEEPS PAYING FOR, so
+# it was removed rather than shipped. The idea is sound; the wiring was not
+# measured. Next attempt: assert the inference on a KNOWN file first, as an arm,
+# before trusting any aggregate.
+ROOTS = ('tools/', 'tests/', 'scripts/')
+
+
 def tracked_tools():
-    r = subprocess.run(['git', '-C', REPO, 'ls-files', 'tools/'],
+    r = subprocess.run(['git', '-C', REPO, 'ls-files'] + list(ROOTS),
                        capture_output=True, text=True, encoding='utf-8',
                        errors='replace')
     if r.returncode != 0:
@@ -91,8 +112,9 @@ def tracked_tools():
     out = [f.strip() for f in (r.stdout or '').split('\n')
            if f.strip().endswith(TRACKED_EXT)]
     if not out:
-        raise CouldNotTell('tools/ holds no tracked .py/.js/.sh file -- the '
-                           'layout moved and NOTHING was read.')
+        raise CouldNotTell('%s hold no tracked .py/.js/.sh file -- the '
+                           'layout moved and NOTHING was read.'
+                           % ', '.join(ROOTS))
     return sorted(out)
 
 
@@ -262,7 +284,8 @@ def main(argv=None):
         return EXIT_COULD_NOT_RUN
 
     by = collections.Counter(v['basis'] for v in rows.values())
-    print('  tracked tools                 %4d' % meta['tools'])
+    print('  tracked files in %-14s %4d'
+          % (','.join(r.rstrip('/') for r in ROOTS), meta['tools']))
     print('  with an `# OWNER:` line       %4d   <- AUTHORITATIVE, the only '
           'basis that is not a guess' % meta['owner_line'])
     print('  derived LAST_CLAIM            %4d' % by.get('LAST_CLAIM', 0))
