@@ -26,6 +26,7 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 const vm = require('vm');
+const { fnBody } = require('./lib/fn_span.js');
 
 const ROOT = path.join(__dirname, '..');
 const html = fs.readFileSync(path.join(ROOT, 'stonedesk.html'), 'utf8');
@@ -257,7 +258,24 @@ test('hydration is SERVER-WINS, through the one shared merge', () => {
   assert.strictEqual(wrapped.length, sts.length,
     'a hydration write is not suppressed -- those rows echo straight back '
     + 'to the server (' + wrapped.length + ' wrapped of ' + sts.length + ')');
-  const seam = html.slice(html.indexOf('function sdHydrateStore('), html.indexOf('function sdHydrateStore(') + 200);
+  // ── THIS ARM COULD FAIL GREEN (routed by fourth 2026-10-06, applied by hank)
+  // It was a FIXED 200-BYTE WINDOW over a function whose body is 96 bytes, so
+  // 104 bytes of whatever happened to follow `sdHydrateStore` were searched
+  // too -- and the assertion is POSITIVE (`the span contains this`), which is
+  // the combination that passes for the wrong reason. Remove the suppression
+  // wrapper from inside the function while ANY neighbouring code still
+  // mentions `sdWhileSuppressed`, and this arm goes green while the defect it
+  // exists for is live.
+  //
+  // `fnBody` bounds the body at its own balanced closing brace, skipping
+  // strings, comments and regex literals, and REFUSES rather than guessing on
+  // an absent signature, a signature that matches twice, or braces that never
+  // balance. `function sdHydrateStore(` was checked to occur exactly once in
+  // stonedesk.html. `tests/run_fn_span_control.js` carries the proof as its
+  // own arm: it plants `sdWhileSuppressed` OUTSIDE the function after renaming
+  // it inside, and the 200-byte window still found it while the balanced span
+  // does not -- so the repoint is proven to change the answer, not assumed to.
+  const seam = fnBody(html, 'function sdHydrateStore(');
   assert.ok(seam.indexOf('sdWhileSuppressed') !== -1,
     'the store seam does not suppress -- every hydrated row echoes back to the server');
 });
