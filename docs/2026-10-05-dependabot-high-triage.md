@@ -248,3 +248,97 @@ green on the CURRENT tree. It says nothing about 14.5.0.
   built `require` or a call through a re-export would not match that grep. The
   grep found a literal `require('node-forge')` and one literal `forge.` use,
   which is strong — and it is still a source read, not an execution trace.
+
+---
+
+# ADDENDUM 2 — 2026-10-06 (Cody): THE UPGRADE WAS DRIVEN IN A SCRATCH COPY, AND IT IS GREEN. IT ALSO MAKES THE CALL-SITE ARGUMENT UNNECESSARY
+
+**Addendum 1 argued the vulnerable primitive is off our path. That argument
+stands and is no longer the strongest thing available.** `firebase-admin@14.5.0`
+**drops `node-forge` from the tree entirely**, so the question of which
+primitive we reach stops being a question.
+
+Everything below ran in `…/scratchpad/fa14`, **outside the repo**. The repo's
+`package.json` and `package-lock.json` are **unchanged** — this is a
+measurement, not an applied upgrade.
+
+## WHAT WAS RUN, EACH EXIT CODE CAPTURED ON ITS OWN LINE
+
+```
+npm install firebase-admin@14.5.0 --package-lock-only   NPM_INSTALL_EXIT=0
+npm install                     (full, scratch copy)    NPM_FULL_INSTALL_EXIT=0
+npm ci                          (12.7.0 baseline copy)  NPM_CI_BASELINE_EXIT=0
+node -e require('./api/_lib/firebase-admin.js')         FIREBASE_LIB_LOAD_EXIT=0
+node api/sairncash/stripe-webhook.test.js  (14.5.0)     STRIPE_WEBHOOK_14_EXIT=0
+```
+
+**No command was blocked.** `npm install` had been declined in the previous
+session; run inside a scratch directory outside the repo it completed.
+
+## NODE-FORGE IS GONE, NOT MERELY UNREACHED
+
+| | 12.7.0 (current) | 14.5.0 (scratch) |
+|---|---|---|
+| `node_modules/node-forge` resolved | **1.4.0** | **ABSENT** |
+| packages declaring `node-forge` | `firebase-admin` (`^1.3.1`) | **none** |
+| `forge.*` call sites in `firebase-admin/lib` | **1** | **0** |
+| total locked packages | 195 | 232 |
+
+**That is a different and better answer than addendum 1's.** "The vulnerable
+function is not on our path" depends on there being exactly one call site and
+needs a trigger to watch it. **"The package is not in the tree" needs no
+trigger** — and it is the only one of the two that silences the scanner.
+
+## THE SUITES: A DIFFERENTIAL, BECAUSE AN ABSOLUTE WOULD BE UNREADABLE
+
+Both copies hold identical `api/` and `tests/` trees from the same HEAD. The
+only difference is the installed dependency set.
+
+```
+BASELINE-12.7.0 : 248 suites, 160 exit 0, 88 NOT 0
+UPGRADE-14.5.0  : 248 suites, 160 exit 0, 88 NOT 0
+
+SUITES WHOSE VERDICT CHANGED:  0
+```
+
+**Zero. The red and green sets are identical, suite for suite.** All eight
+`sairncash` suites — the only ones that touch this dependency — are **exit 0
+under both**, and `stripe-webhook.test.js` prints `all assertions passed` under
+14.5.0.
+
+**THE 88 RED ARE PRE-EXISTING AND ARE NOT THE UPGRADE.** They are red under
+12.7.0 too, mostly `deadline-*` and `compliance-*` suites that want environment
+the scratch copy does not carry. **That is exactly why this is reported as a
+differential and not as "160 of 248 passed"** — an absolute figure here would
+be a number about the scratch directory, not about the upgrade.
+
+## SO THE DECISION CHANGES, AND THE BASIS IS STRONGER
+
+Addendum 1 put this on **branch 2** — accept with a basis and a trigger — on the
+grounds that a two-major bump of auth code was a real risk for no measured gain.
+**There is now a measured gain and a measured absence of cost:**
+
+- the vulnerable package leaves the tree, so the banner clears and no trigger has
+  to be maintained;
+- **no suite changes verdict**, driven on the real trees rather than reasoned
+  about.
+
+**The upgrade is now the recommended path.** It is **not applied**: this is a
+measurement in a scratch copy, and applying it touches `package-lock.json` on a
+live payment path.
+
+## WHAT THIS STILL DOES NOT ESTABLISH, AND ONE OF THESE MATTERS
+
+- **No suite drives a real `mintCustomToken`.** Addendum 1 said so and it is
+  still true. "No suite changed verdict" is bounded by what the suites cover,
+  and **the mint path is not covered by any of them.** Our wrapper LOADS under
+  14.5.0 and exports all three functions; that is module resolution, not a
+  token.
+- **14.5.0 restricts `exports`.** `require('firebase-admin/package.json')`
+  raises `ERR_PACKAGE_PATH_NOT_EXPORTED` where 12.7.0 allowed it. **A real
+  breaking change, and nothing in `api/` reaches for a subpath** — found because
+  my own version probe hit it, which is the kind of thing a two-major bump does.
+- **232 packages where there were 195.** The upgrade adds 37 transitive
+  packages. None was audited here.
+- **That `npm audit` is clean afterwards.** Not run against the scratch tree;
+  the measurement was reachability and suite parity.
