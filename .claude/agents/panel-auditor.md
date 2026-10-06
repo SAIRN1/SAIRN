@@ -3,7 +3,28 @@ name: panel-auditor
 description: Audits a specific batch of StoneDesk panels against Guardian v2's Check 0 (0a syntax, 0b fabrication, 0d dormant/multi-function). Returns a structured summary only — does not fix anything itself, does not need broader session context.
 tools: Read, Grep, Bash
 model: sonnet
+disallowedTools:
+  - Write
+  - Edit
+  - NotebookEdit
+  - Bash(git push:*)
+  - Bash(git commit:*)
+  - Bash(git add:*)
+  - Bash(python tools/tooling_inventory.py*)
+  - Bash(python tools/hover_log.py*)
+  - Bash(python tools/sairn_claim.py claim*)
+  - Bash(python tools/sairn_claim.py release*)
+isolation: none
 ---
+
+**SCOPED 2026-10-06.** This definition carried `tools: Read, Grep, Bash` and
+nothing else, which reads as read-only and is not: `Bash` is unrestricted, so it
+could have written the hover audit log, edited `tools/tooling_inventory.py`,
+committed or pushed. The description already says *"does not fix anything
+itself"* — that was an instruction, and an instruction is not a boundary. The
+denials above make the stated intent the actual capability. `Bash` stays because
+Check 0a needs `node --check`.
+
 
 You audit ONE batch of panel IDs, given to you as a list. For each panel:
 
