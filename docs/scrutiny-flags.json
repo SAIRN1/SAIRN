@@ -1,0 +1,109 @@
+{
+ "_what_this_is": "Diffs that changed something which CHECKS the work -- test files, CI/hook configuration, or push-gate logic. A flag is NOT a finding and NOT a refusal. It is a record that an agent edited its own checker, written so a reviewer can ask why without having to notice it first.",
+ "_what_it_does_NOT_claim": "That the edit was wrong, or that an unflagged edit was fine. See blind_spots: an assertion that still exists and tests nothing is invisible here.",
+ "blind_spots": [
+  "An assertion that still EXISTS and no longer tests anything. The count holds, the sense is inverted, and nothing here can see it.",
+  "A fixture quietly made easier. The arms all still run and all still pass.",
+  "A weakening spread across two pushes, where neither diff alone matches a shape. This reads one outgoing range at a time.",
+  "Intent. It reports SHAPE. A deleted arm may be a correct deletion of a wrong arm -- which is exactly why this flags and does not block.",
+  "CODE versus PROSE ABOUT CODE, and this is MEASURED rather than feared. On its own landing commit -- the first real diff it ever saw -- the WEAKENING level was 3 of 3 FALSE: the word \"ignored\" inside a probe assertion label, a comment saying \"silent skip\", and this file's own _BOUND_HINTS tuple. Dropping comment lines took it to 2 of 3, and BOTH SURVIVORS ARE STILL FALSE -- prose inside a STRING LITERAL, which is real code by every syntactic test. SO THE WEAKENING LEVEL IS A TRIAGE PROMPT AND NOT A FINDING, on an n of 1 real push. It is left matching rather than narrowed, per scrubber item 24: narrowing clears the known instance and fails silently on the next phrasing, and in a detector a false negative is invisible where a false positive is loud and gets read. The rate on a larger sample is still unmeasured.",
+  "COVERAGE OF THE CLASS LIST ITSELF. A path in no SELF_CHECKING class is not examined and is not reported. The push-gate-logic class is a NAMED LIST of seven files, not a glob -- a new checker nobody adds to it is invisible here, which is the same staleness this platform keeps paying for one level up."
+ ],
+ "merge_policy": {
+  "strategy": "union-by-identity",
+  "records_key": "flags",
+  "identity": [
+   "sha",
+   "path"
+  ]
+ },
+ "criteria_version": "2026-10-06.1",
+ "flags": [
+  {
+   "path": "tests/run_assurance_case_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "main",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_baseline_readiness_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "main",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_dora_metrics_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "main",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_literal_drift_control_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "main",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_optimistic_success_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "main",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_risk_event_tree_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "main",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_scrutiny_flag_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "appears on every push is a flag that gets ignored."
+    }
+   ],
+   "sha": "main",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/exit_status_attributable.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "_BOUND_HINTS = ('timeout', 'max_', '--max', 'threshold', 'ceiling', 'limit',"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "_EXEMPTION_HINTS = ('skip', 'xfail', 'exempt', 'allowlist', 'whitelist',"
+    }
+   ],
+   "sha": "main",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "main",
+   "criteria_version": "2026-10-06.1"
+  }
+ ]
+}

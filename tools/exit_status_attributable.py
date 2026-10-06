@@ -907,12 +907,18 @@ SCRUTINY_BLIND_SPOTS = (
     # own rule is to match structure before prose, and this layer deliberately
     # does not -- an AST pass would be blind to .js, .sh and .json in the same
     # classes, so the limit is DECLARED instead of engineered away.
-    'CODE versus PROSE ABOUT CODE. The shape hints are substrings over diff '
-    'lines, so a docstring that uses the word "assert" counts as an assertion '
-    'and a comment-only edit can read as a weakening. FALSE POSITIVES RUN IN '
-    'THE LOUD DIRECTION, which is the right way round for a control nobody is '
-    'blocked by -- and the FALSE-POSITIVE RATE ON REAL PUSHES IS NOT YET '
-    'MEASURED, only the planted-fixture behaviour is.',
+    'CODE versus PROSE ABOUT CODE, and this is MEASURED rather than feared. '
+    'On its own landing commit -- the first real diff it ever saw -- the '
+    'WEAKENING level was 3 of 3 FALSE: the word "ignored" inside a probe '
+    'assertion label, a comment saying "silent skip", and this file\'s own '
+    '_BOUND_HINTS tuple. Dropping comment lines took it to 2 of 3, and BOTH '
+    'SURVIVORS ARE STILL FALSE -- prose inside a STRING LITERAL, which is real '
+    'code by every syntactic test. SO THE WEAKENING LEVEL IS A TRIAGE PROMPT '
+    'AND NOT A FINDING, on an n of 1 real push. It is left matching rather '
+    'than narrowed, per scrubber item 24: narrowing clears the known instance '
+    'and fails silently on the next phrasing, and in a detector a false '
+    'negative is invisible where a false positive is loud and gets read. The '
+    'rate on a larger sample is still unmeasured.',
     # ── SCRUBBER ITEM 24 PART 2: the residue must be visible ───────────────
     # "Did not match a shape" is NOT "safe", so a path in a self-checking
     # class with no shape match is still reported, at level CHANGE. Nothing
@@ -948,13 +954,39 @@ def weakening_shapes(diff_body):
     "no shape matched", which is a different statement from "this edit is
     fine" -- see SCRUTINY_BLIND_SPOTS.
     """
+    # ── COMMENT LINES ARE DROPPED, AND THE FIRST REAL PUSH IS WHY ──────────
+    # MEASURED on this classifier's own landing commit, which is the first
+    # real diff it ever saw: 3 of 3 WEAKENING flags were PROSE, not code. One
+    # matched the word "ignored" inside a probe's assertion label; one matched
+    # a comment containing "silent skip"; one matched this file's own
+    # `_BOUND_HINTS` declaration. **A 100% false-positive rate on the WEAKENING
+    # level at first contact**, which would have made the loud half of this
+    # control worthless by its third push.
+    #
+    # The blind spot was DECLARED before the push (see SCRUTINY_BLIND_SPOTS)
+    # and declaring it was not sufficient -- it fired immediately and at full
+    # strength. Scrubber item 24's rule is to match STRUCTURE before prose, so
+    # a line whose stripped form opens a comment is not a code line and does
+    # not count.
+    #
+    # WHAT THIS STILL CANNOT DO is see inside a docstring or a multi-line
+    # string: `_BOUND_HINTS`'s own tuple of words is real code by every
+    # syntactic test and is left matching. That residual is measured below
+    # rather than argued away, and an AST pass is not the answer -- the same
+    # classifier has to read .js, .sh and .json in the same path classes.
+    _COMMENT_OPENERS = ('#', '//', '*', '/*', '--')
+
+    def _is_comment(s):
+        t = s.strip()
+        return bool(t) and t.startswith(_COMMENT_OPENERS)
+
     added, removed = [], []
     for line in (diff_body or '').split('\n'):
         if line.startswith('+++') or line.startswith('---'):
             continue
-        if line.startswith('+'):
+        if line.startswith('+') and not _is_comment(line[1:]):
             added.append(line[1:])
-        elif line.startswith('-'):
+        elif line.startswith('-') and not _is_comment(line[1:]):
             removed.append(line[1:])
 
     def hits(lines, hints):
@@ -1193,6 +1225,24 @@ def scrutiny_selftest():
          weakening_shapes(''), [])
     case('CONTROL: a diff of only context lines matches no shape',
          weakening_shapes('     assert x == 1\n     assert y == 2\n'), [])
+
+    # ── THE FALSE POSITIVE MEASURED ON THE FIRST REAL PUSH, BOTH WAYS ──────
+    # 3 of 3 WEAKENING flags on this classifier's own landing commit were
+    # PROSE. These arms pin the filter that fixed it AND the arm that proves
+    # the filter did not simply disarm the detector -- without that last one,
+    # "no false positives" and "finds nothing" are the same measurement.
+    case('CONTROL: a removed COMMENT mentioning assert is NOT a weakening',
+         weakening_shapes('-    # we assert x here\n-    # and assert y\n'), [])
+    case('CONTROL: a removed // comment naming a threshold is not a bound '
+         'change',
+         weakening_shapes('-    // raise the timeout threshold\n'), [])
+    case('CONTROL: an added comment containing the word skip is not an '
+         'exemption',
+         weakening_shapes('+    # a silent skip would be PR 1.11\n'), [])
+    case('...and REAL code with those same words STILL fires, so the comment '
+         'filter did not disarm the detector',
+         [s for s, _ in weakening_shapes('-    assert x == 1\n-    assert y\n')],
+         ['assertions NET REMOVED'])
 
     # ── the aggregate, and the ordering contract ───────────────────────────
     flags = scrutiny_flags({
