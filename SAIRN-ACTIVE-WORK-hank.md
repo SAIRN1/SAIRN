@@ -2673,3 +2673,43 @@ by heredoc escaping, twice leaving a silent no-op that a wrong `grep` then
 commit that changed its universe. **Every one found by running the thing, never
 by reading it** — and three of them lived inside a checker whose own fixtures
 were tidier than production.
+
+---
+
+## 2026-10-06 — batch 10, resumed after a context compaction
+
+**Pushed:** `19c872e0` (duplicate `PURPOSES` key refuses), `6a4ee580` (the three
+probes' `__file__` fallback returned the HOME REPOSITORY), `104ab3ff`
+(panel-auditor loses Bash; `disallowedTools` NOT confirmed enforced), plus the
+SHA re-seat, two defect-register records and the generated-document
+regenerations each race forced.
+
+**Already landed before the resume, verified not assumed:** `16b2cc70` (#894 —
+exactly one `res.status(200)` in the branch, and it is the `scoped_to_self` one),
+`e7adad94` (gate-parity cross-resource), `c586d0e3` + `264d8c3f`
+(`sc_anesthesia_base_units` — 12 of 12 citations re-derived correct at HEAD, the
+three IMPOSSIBLE cites gone).
+
+**The finding worth carrying:** item 6 was dispatched as *"switch the three
+probes to `git rev-parse`"* and they had ALREADY been switched. The defect was
+one layer down — the unchecked `os.path.dirname(here)` fallback, which for a copy
+under the home directory IS `C:\Users\marsh`, **the home repository**, the exact
+wrong answer the anchoring exists to avoid. The anchored git call refused it,
+printed a warning, and the fallback returned it anyway. **Arm B1, "the fallback
+is announced", PASSED on the broken code.** A warning on stderr is not a refusal.
+
+**Measured, not claimed:** `tests/run_worktree_root_home_repo_probe.py` 16/3 RED
+pre-fix with arm B returning `C:\Users\marsh` from all three subjects, 22/0 GREEN
+after, three runs. `tests/sd_data_alf_compliance_staff_scope.js` 3/13 RED against
+`16b2cc70^`, 16/0 GREEN at HEAD, three runs.
+`tests/run_purposes_duplicate_key_probe.py` 5/0, three runs, and not one line of
+its two arms changed when it went from bug report to regression.
+
+**Open, flagged back, not reworded past:** 23 Tier A obligations eligible to
+hank, most overdue 234h — `docs/tier-a-reviews.json` is CODY'S under a live claim
+whose task text is "Tier A discharge most-overdue-first" verbatim. One was
+discharged this batch before that claim was visible (fourth's 237h record,
+verdict SOUND). No further discharge taken.
+
+**Inventory:** `docs/2026-10-06-inventory-hank-batch10.md`.
+**Handoff:** `docs/handoff-hank-2026-10-06b.md`.
