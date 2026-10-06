@@ -6,8 +6,8 @@
   "OWNER_LINE": "the file says so. Authoritative."
  },
  "_meta": {
-  "claim_commits_read": 2389,
-  "claim_commits_with_files": 325,
+  "claim_commits_read": 2395,
+  "claim_commits_with_files": 328,
   "criteria": "2026-10-06.1",
   "owner_line": 17,
   "tools": 312
@@ -397,7 +397,7 @@
   "tools/demo_credentials_check.py": {
    "also_claimed_by": [],
    "basis": "LAST_CLAIM",
-   "last_claim": "bc9da40b",
+   "last_claim": "65b458f9",
    "owner": "fourth"
   },
   "tools/dependency_graph.py": {
@@ -1045,8 +1045,9 @@
   },
   "tools/probe_public_book_guardian.py": {
    "also_claimed_by": [],
-   "basis": "NONE",
-   "owner": null
+   "basis": "LAST_CLAIM",
+   "last_claim": "11f29f6d",
+   "owner": "hank"
   },
   "tools/probe_selector.py": {
    "also_claimed_by": [],
@@ -1198,13 +1199,15 @@
   },
   "tools/rf_claim_gate_live_probe.py": {
    "also_claimed_by": [],
-   "basis": "NONE",
-   "owner": null
+   "basis": "LAST_CLAIM",
+   "last_claim": "11f29f6d",
+   "owner": "hank"
   },
   "tools/rf_roundtrip_probe.py": {
    "also_claimed_by": [],
-   "basis": "NONE",
-   "owner": null
+   "basis": "LAST_CLAIM",
+   "last_claim": "11f29f6d",
+   "owner": "hank"
   },
   "tools/risk_event_tree.py": {
    "also_claimed_by": [],
@@ -1635,7 +1638,7 @@
     "cody"
    ],
    "basis": "CONTESTED",
-   "last_claim": "ea5f7853",
+   "last_claim": "11f29f6d",
    "owner": "hank"
   },
   "tools/traceability_matrix.py": {

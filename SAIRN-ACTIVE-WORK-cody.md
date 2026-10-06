@@ -6820,3 +6820,76 @@ returning nothing. **Both fixes went to the ARM, not the tool.**
    covering obligation) and `tools/tooling_inventory.py` (fourth — hank's
    `gate_parity_check.py` landed undescribed and the generator refused, freezing
    every unrelated correction).
+
+---
+
+# Queue 18 — 2026-10-06 (Cody) — the arm I was told to build killed the upgrade, and 21 refusals were my own bound
+
+Full write-up: `docs/2026-10-06-cody-queue18-items-10-12-13.md`,
+`docs/2026-10-06-could-not-run-ledger.md`,
+`docs/2026-10-06-sql-runbook-remaining-19.md`.
+Handoff: `docs/handoff-cody-2026-10-06b.md`.
+
+## Landed
+
+1. **`firebase-admin@14.5.0` MUST NOT BE LANDED, and my own queue-17
+   recommendation is withdrawn.** The mintCustomToken arm (16 assertions, no
+   network, signature verified against a generated key) fails on 14.5.0: v13+
+   removed the legacy namespace, so `admin.credential`, `admin.auth`,
+   `admin.apps`, `admin.app` and `admin.database` are **all undefined** and ALL
+   THREE of our functions break. **1 of 249 suites changes verdict and it is
+   this arm.** `initializeApp` surviving is what hid it from a load-and-list
+   smoke test.
+2. **Both HIGH advisories DECIDED: accept**, with the measured basis (the
+   advisory is about *verification*; our one `forge.*` call is a *parser* on our
+   own key) and four triggers, trigger 1 being the modular-API port.
+3. **Two Tier A obligations discharged**, one a 236h takeover from a dead
+   session. The eleven blob conversions are fine; **the coverage number is a
+   floor** — `api_files()` uses flat `os.listdir`, so 124 subdirectory files
+   holding 10 `data:` sites are outside the universe, two of them writing an
+   unstripped blob beside its own id column.
+4. **A timeout now says `COULD NOT RUN: bound Ns exceeded`** and never "no lock,
+   no control". Per-tool bounds from measured runtimes at 2x headroom, printed
+   on every run; and **two tools are UNBOUNDABLE** — both exceeded 420s without
+   finishing, so no bound is set rather than an invented one.
+5. **The 4 dead rules in `cross_tenant_isolation_scope.py` diagnosed, four
+   DIFFERENT causes**: one unconditionally redundant regex (0 of 85 matches it
+   adds), one broader twin that is load-bearing and would be lost if the wrong
+   one were deleted, one masked by an OR across 165 files, one masked by a
+   nesting whose branch never fires.
+6. **`tools/tool_owner_map.py`** — ownership derived once and written down.
+   312 tools, **17 with an `# OWNER:` line**, 66 LAST_CLAIM, 20 CONTESTED,
+   **209 NONE — unknown, not unowned.**
+
+## Mine that went wrong, all caught
+
+1. **A verdict passed as a shell argument** got two backticked fragments eaten
+   and a third replaced by the output of `id` — **a uid and gid pasted into an
+   append-only ledger.** `--body-file` exists for exactly this. Reverted; the
+   leak never reached origin.
+2. **A `json.dumps` repair** produced 5681 insertions and 5674 deletions on a
+   235-record ledger four clones merge. Reverted; the right diff was 15 and 8.
+3. **The UNBOUNDABLE guard sat in a function the writer tier never reaches**, so
+   it did not fire. Caught by DRIVING the tool.
+4. **Two arms matched their own text** — *"my own comments trip my own
+   scanners"*, which is in my notes, written twice anyway.
+5. **A fabricated check** — `assert.ok(true)` with a paragraph on why it could
+   not be tested. It could: a child process has an empty module cache.
+6. **I nearly accused the push gate falsely.** Moving the untracked file out and
+   re-measuring showed all three `--check` runs exit 0. **The gate was right.**
+
+## Raised, not acted on
+
+1. **The clone was found with `core.bare = true`** and every git write failed
+   while `git log` kept working. One-line fix, nothing lost, **cause not
+   established and not guessed.** 28 leaked worktrees are the measurable
+   condition it happened under; **none are mine** and I did not sweep them.
+2. **32 open Tier A obligations, 23 eligible for me, 6 assigned** — re-measured
+   at the end; it was 35/26/7 at the start. **Do not quote the old numbers.**
+3. **`tests/run_blob_coverage_scope_sabotage.py` is held back untracked** —
+   tracking it drifts `docs/TOOLING-INVENTORY.md`, hank's when the decision was
+   made. Both verdicts citing it say so.
+4. **Three of my five fixed timeouts still owe the 2x rule**, and seven
+   methodology rules of mine now sit in dated files.
+5. **`db/schema_snapshot.json` has two blockers, not one**: `_constraints`
+   absent AND the recorded sha dangling.
