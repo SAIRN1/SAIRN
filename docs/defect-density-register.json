@@ -23377,6 +23377,65 @@
         }
       ],
       "recurrence_open": "The sweep for remaining raw 'data: payload' write branches across api/sd-data.js is NOT done and is not claimed by this change. Nothing mechanical requires a write branch to route its blob through api/_lib/blob.js, so the next branch added can reintroduce this with every suite green -- the new test asserts the SDN branch and nothing generalises it. Separately, the twelve sensitive resources' save-site line numbers in the routed index row are hover's and were NOT re-derived at HEAD; only the handler branch was."
+    },
+    {
+      "commit": "d8392f805969",
+      "date": "2026-10-06",
+      "subject": "fix(tests): the span was the defect in five more arms -- measured against the balanced close, not assumed, and each repoint proven to change the answer",
+      "files": [
+        "tests/lib/fn_span.js",
+        "tests/lib/fn_span.test.js",
+        "tests/lib/strip_comments.js",
+        "tests/run_fn_span_control.js",
+        "tests/sairnlegacy_processions_isolation.js",
+        "tests/sairnvet_formulary_source_honesty.js",
+        "tests/sairnvet_scribe_review_probe.js"
+      ],
+      "lines_added": 547,
+      "lines_removed": 8,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "Five test arms across four suites read a function body bounded by a byte window, the next symbol in the file, or a marker string rather than the function own balanced closing brace. Measured 2026-10-06: shareProcessionLocation +1200 over 923 bytes, rProcession +1400 over 1118, scribePreflight 80 bytes past the close, calculateDoseAI +4000 over 9895 (an ABSENCE assertion that never saw 60 percent of the function), sdHydrateStore +200 over 96. All five were green before and after, because a wrong span only shows when the thing being asserted moves across the boundary -- which is why each repoint is proven by a planted control instead of by the suite staying green.",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Each of the five sites was written at a different time by a different arm; a single injection sha would be a guess among five. Named rather than picked."
+      },
+      "contributing_factors": [
+        {
+          "factor": "Every one of these spans is bounded by something OTHER than the function own closing brace -- a byte window, the next symbol in the file, a marker string -- and none of those bounds moves when the function does.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "tests/lib/fn_span.js bounds a body at its balanced close and REFUSES on an absent, duplicate or unbalanced anchor; no fallback bound."
+        },
+        {
+          "factor": "All five arms were GREEN before and after the repoint, so nothing in a normal run distinguishes a correct span from one reading a neighbour function.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/run_fn_span_control.js plants, per arm, an input on which the old and new bounds must disagree, and reports NOT PROVEN rather than counting an arm that did not separate them."
+        },
+        {
+          "factor": "The sweep could only pair 24 of the 38 span sites with their source mechanically; the other 14 were read by eye and are not claimed as checked.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "Pair the remaining 14 span sites, or state per site why they cannot be paired. 24 of 38 is the coverage this record rests on."
+        },
+        {
+          "factor": "Two of the five are in other sessions active claims and could not be fixed here.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "stonedesk_server_backup.js routed to hank, sairnbiz_vendor_ytd_derivation.js routed to cc. Both holes remain OPEN at HEAD."
+        }
+      ],
+      "recurrence_open": "Nothing prevents the next arm from being written with a byte window. There is no checker that flags a function-body slice whose end is not a balanced close, and this sweep was a one-off measurement rather than a standing gate. 14 of 38 sites are also still unpaired."
     }
   ],
   "started": "2026-09-09",
