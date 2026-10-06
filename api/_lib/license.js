@@ -95,7 +95,11 @@ async function validateLicenseKey(key, expectedApp) {
     subscription_status: null,
     license_hash: null,
     app_scope: appScope(null, expectedApp),
-    key: (typeof key === 'string' ? key : null)
+    key: (typeof key === 'string' ? key : null),
+    // FALSE on every path including the early returns, so a caller reading it
+    // never sees `undefined` and cannot mistake "not set" for "not normalised".
+    // See the case-normalisation block in the lookup below.
+    key_normalised: false
   };
 
   if (!key || typeof key !== 'string') return out;
@@ -113,27 +117,75 @@ async function validateLicenseKey(key, expectedApp) {
   const headers = { apikey: SERVICE_KEY, Authorization: 'Bearer ' + SERVICE_KEY };
   // select=* so newly-added columns (e.g. trial_ends_at) are read if present
   // and simply absent (not a 400) before their migration is applied.
-  const url = SUPABASE_URL +
-    '/rest/v1/license_keys?key=eq.' + encodeURIComponent(key) +
-    '&select=*&limit=1';
-
-  let res;
-  try {
-    res = await fetch(url, { headers });
-  } catch (err) {
-    const e = new Error('license_keys lookup network error: ' + err.message);
-    e.code = 'UPSTREAM';
-    throw e;
+  // ── CASE: NORMALISED AT LOOKUP, EXACT FIRST, NEVER AT THE HASH ───────────
+  // H2 seq 545. hashLicense() hashes the raw key and the lookup compares `key`
+  // with PostgREST equality, so `sd-pinnacle-2026` reaches no row while
+  // `SD-PINNACLE-2026` does, and the caller gets 401 INVALID_LICENSE for a
+  // transcription difference. ~40 call sites inherit that.
+  //
+  // MEASURED BEFORE DECIDING, which is the whole reason this is safe: every
+  // string used AS A LICENCE KEY anywhere in the repository was collected by
+  // licence CONTEXT -- a licence column or table in SQL, a quoted key on a line
+  // naming a licence, a validateLicenseKey/hashLicense call, an X-SD-License
+  // header, an env var ending _LICENSE. TWENTY-ONE distinct keys, and ALL
+  // TWENTY-ONE ARE UPPERCASE: zero lower-case, zero mixed.
+  //
+  // (A FIRST, LOOSER MEASUREMENT WOULD HAVE DECIDED THIS BACKWARDS and is worth
+  // recording: a bare PREFIX-WORD-YEAR regex over the tracked tree returned 244
+  // strings, 135 of them lower-case -- and not one of those 135 is a licence
+  // key. They are claim subjects like `gap-audit-2026` and skill anchors like
+  // `managed-agents-2026`. "135 lower-case licence keys" would have been a
+  // confident wrong finding arguing for this change on the wrong evidence.)
+  //
+  // SO THE EXACT KEY IS TRIED FIRST AND ALWAYS. For every key that exists today
+  // the first query matches and NOTHING changes -- not the row, not the hash,
+  // not the scope. The uppercase retry can only ADD a match where there was
+  // none, which is a strict widening of what succeeds and cannot turn a valid
+  // licence invalid.
+  //
+  // AND THE HASH FOLLOWS THE KEY THAT MATCHED, which is the detail the whole
+  // change turns on. license_hash scopes every app's data. If the retry matched,
+  // the hash MUST be of the CANONICAL stored key, or the caller would be handed
+  // a hash no row carries and would read an empty tenant -- a silent wrong
+  // answer, which is worse than the 401 this replaces. An existing key's hash is
+  // never recomputed, because an existing key never reaches the retry.
+  async function lookup(k) {
+    const u = SUPABASE_URL + '/rest/v1/license_keys?key=eq.'
+      + encodeURIComponent(k) + '&select=*&limit=1';
+    let r;
+    try {
+      r = await fetch(u, { headers });
+    } catch (err) {
+      const e = new Error('license_keys lookup network error: ' + err.message);
+      e.code = 'UPSTREAM';
+      throw e;
+    }
+    if (!r.ok) {
+      const e = new Error('license_keys lookup failed: HTTP ' + r.status);
+      e.code = 'UPSTREAM';
+      throw e;
+    }
+    const j = await r.json();
+    return Array.isArray(j) ? j : [];
   }
 
-  if (!res.ok) {
-    const e = new Error('license_keys lookup failed: HTTP ' + res.status);
-    e.code = 'UPSTREAM';
-    throw e;
+  let rows = await lookup(key);
+  // `key_normalised` is reported so a caller that cares can tell a canonical
+  // hit from a case-corrected one. It is NOT a refusal signal: nothing refuses
+  // on it, and adding a refusal here would re-create the 401 this removes.
+  out.key_normalised = false;
+  if (rows.length === 0) {
+    const upper = key.toUpperCase();
+    if (upper !== key) {
+      rows = await lookup(upper);
+      if (rows.length > 0) {
+        out.key = upper;
+        out.license_hash = hashLicense(upper);
+        out.key_normalised = true;
+      }
+    }
   }
-
-  const rows = await res.json();
-  if (!Array.isArray(rows) || rows.length === 0) {
+  if (rows.length === 0) {
     return out; // valid stays false — unknown key
   }
 

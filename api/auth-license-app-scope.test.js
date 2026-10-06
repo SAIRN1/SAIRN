@@ -328,6 +328,126 @@ t('dropping the comparison lets the foreign licence straight back in', async () 
   }
 });
 
+// ── PART D: CASE NORMALISATION AT LOOKUP (H2 seq 545, added 2026-10-06) ─────
+// hashLicense() hashes the raw key and the lookup compares `key` with PostgREST
+// equality, so `sd-pinnacle-2026` reached NO row while `SD-PINNACLE-2026` did,
+// and ~40 call sites inherited a 401 INVALID_LICENSE for a transcription
+// difference. MEASURED FIRST: every string used AS A LICENCE KEY anywhere in the
+// repository -- collected by licence CONTEXT, not by shape -- is TWENTY-ONE keys
+// and ALL TWENTY-ONE ARE UPPERCASE. So the exact key always matches today and the
+// uppercase retry can only ADD a match.
+//
+// THE ARM THAT MATTERS MOST IS THE HASH ONE. license_hash scopes every app's
+// data; if a case-corrected hit reported the hash of the key AS TYPED, the caller
+// would be handed a hash no row carries and would read an EMPTY TENANT -- a
+// silent wrong answer, strictly worse than the 401 this replaces.
+section('D. case is normalised at LOOKUP, never at the hash');
+
+function stubbedLookup(stored) {
+  // Returns { calls, validate } -- a licence_keys table holding exactly one
+  // uppercase key, which is what the measurement says every real key looks like.
+  const calls = [];
+  return {
+    calls: calls,
+    async validate(typed) {
+      delete require.cache[require.resolve('./_lib/license')];
+      const { validateLicenseKey, hashLicense } = require('./_lib/license');
+      const envURL = process.env.SUPABASE_URL;
+      const envKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      const realFetch = global.fetch;
+      process.env.SUPABASE_URL = 'https://stub.invalid';
+      process.env.SUPABASE_SERVICE_ROLE_KEY = 'stub-key';
+      global.fetch = async (url) => {
+        const m = /key=eq\.([^&]+)/.exec(String(url));
+        const asked = m ? decodeURIComponent(m[1]) : null;
+        calls.push(asked);
+        return {
+          ok: true, status: 200,
+          json: async () => (asked === stored
+            ? [{ key: stored, status: 'active', app_id: 'stonedesk' }] : [])
+        };
+      };
+      try {
+        const out = await validateLicenseKey(typed);
+        out._canonicalHash = hashLicense(stored);
+        return out;
+      } finally {
+        global.fetch = realFetch;
+        if (envURL === undefined) delete process.env.SUPABASE_URL;
+        else process.env.SUPABASE_URL = envURL;
+        if (envKey === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+        else process.env.SUPABASE_SERVICE_ROLE_KEY = envKey;
+      }
+    }
+  };
+}
+
+const STORED_KEY = 'SD-PINNACLE-2026';
+
+t('the EXACT key validates in ONE query -- the retry never runs on a hit', async () => {
+  const s = stubbedLookup(STORED_KEY);
+  const r = await s.validate(STORED_KEY);
+  assert.strictEqual(r.valid, true);
+  assert.deepStrictEqual(s.calls, [STORED_KEY],
+    'a canonical hit must not pay for a second round trip');
+  assert.strictEqual(r.key_normalised, false);
+  assert.strictEqual(r.license_hash, r._canonicalHash,
+    'the hash of an exact hit must be the hash of the key as stored');
+});
+
+t('a LOWER-CASE key validates instead of 401-ing, via exact-then-uppercase', async () => {
+  const s = stubbedLookup(STORED_KEY);
+  const r = await s.validate(STORED_KEY.toLowerCase());
+  assert.strictEqual(r.valid, true);
+  assert.deepStrictEqual(s.calls, [STORED_KEY.toLowerCase(), STORED_KEY],
+    'the EXACT key must be tried first and always');
+  assert.strictEqual(r.key_normalised, true);
+});
+
+t('THE HASH FOLLOWS THE KEY THAT MATCHED: a case-corrected hit carries the '
+  + 'CANONICAL hash, not the hash of what was typed -- otherwise the caller '
+  + 'scopes data by a hash no row carries and reads an empty tenant', async () => {
+  const s = stubbedLookup(STORED_KEY);
+  const r = await s.validate(STORED_KEY.toLowerCase());
+  assert.strictEqual(r.license_hash, r._canonicalHash);
+  assert.strictEqual(r.key, STORED_KEY, 'key must be reported canonically');
+});
+
+t('...and a MIXED-CASE key, which is the shape a human types', async () => {
+  const s = stubbedLookup(STORED_KEY);
+  const r = await s.validate('Sd-Pinnacle-2026');
+  assert.strictEqual(r.valid, true);
+  assert.strictEqual(r.license_hash, r._canonicalHash);
+});
+
+t('CONTROL: a genuinely unknown key is STILL INVALID -- the retry widens what '
+  + 'matches, it does not invent a match', async () => {
+  const s = stubbedLookup(STORED_KEY);
+  const r = await s.validate('zz-nosuch-1999');
+  assert.strictEqual(r.valid, false);
+  assert.strictEqual(r.key_normalised, false);
+  assert.strictEqual(s.calls.length, 2, 'both forms tried before refusing');
+});
+
+t('CONTROL: an already-uppercase unknown key costs ONE query, so no call pays '
+  + 'for a retry it cannot benefit from', async () => {
+  const s = stubbedLookup(STORED_KEY);
+  await s.validate('ZZ-NOSUCH-1999');
+  assert.deepStrictEqual(s.calls, ['ZZ-NOSUCH-1999']);
+});
+
+t('key_normalised is FALSE and never undefined on the EARLY returns, so a '
+  + 'caller cannot mistake "not set" for "not normalised"', async () => {
+  delete require.cache[require.resolve('./_lib/license')];
+  const { validateLicenseKey } = require('./_lib/license');
+  for (const bad of [null, undefined, '', 42]) {
+    const r = await validateLicenseKey(bad);
+    assert.strictEqual(r.key_normalised, false,
+      'key_normalised was ' + JSON.stringify(r.key_normalised)
+      + ' for input ' + JSON.stringify(bad));
+  }
+});
+
 // ───────────────────────────────────────────────────────────────────────────
 (async () => {
   for (const [name, fn] of run) {

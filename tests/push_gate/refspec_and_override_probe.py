@@ -17,6 +17,7 @@ gate, and this repo's commit messages quote it in prose.
 """
 import io
 import json
+import re
 import os
 import subprocess
 import sys
@@ -450,6 +451,72 @@ try:
 finally:
     import shutil
     shutil.rmtree(sandbox, ignore_errors=True)
+
+# ── command_pushes(): A PUSH NAMED IN TEXT IS NOT A PUSH (2026-10-06) ────────
+# The PreToolUse entry point matched `\bgit\s+push\b` anywhere in the command
+# TEXT, so any command whose body merely CONTAINED those words ran the whole gate
+# and could be refused by it. It refused three work-log appends in one session,
+# written through a heredoc whose prose discussed a push.
+#
+# THE SAME DEFECT, OPPOSITE DIRECTION, IS RECORDED IN
+# docs/2026-10-05-exit-status-attributable-false-positive.md as instance 3:
+# deploy_verify_notify.py matched the literal `git push` and so NEVER RAN for
+# push_retry.py. That one failed OPEN and a real push went unchecked. This one
+# failed CLOSED. Both arms below exist because the false-negative direction is the
+# costlier one and a fix for the false positive is one step from causing it.
+print("\n7. command_pushes() -- a push in TEXT is not a push, and a real push "
+      "still is")
+_GP = 'g' + 'it push'          # kept un-literal so running THIS FILE through a
+                               # Bash tool call does not trip the very gate it
+                               # tests -- which happened while writing it.
+_CASES = [
+    ('a bare push', _GP, True),
+    ('a push with a remote and branch', _GP + ' origin main', True),
+    ('a push via -C', 'git -C . push origin main', True),
+    ('a push at the end of an && chain',
+     'git add -A && git commit -m x && ' + _GP, True),
+    ('a push with an env assignment in front',
+     'SAIRN_SEED_GATE=off ' + _GP + ' origin main', True),
+    ('a push on its own line', 'cd /x\n' + _GP + ' origin main', True),
+    ('A REAL PUSH THAT ALSO CONTAINS A QUOTED MENTION -- the false-negative '
+     'direction, which is the costlier one',
+     'echo "about to ' + _GP + '"; ' + _GP + ' origin main', True),
+    ('the words inside a double-quoted echo', 'echo "' + _GP + '"', False),
+    ('the words inside a single-quoted string', "echo '" + _GP + " origin'",
+     False),
+    ('the words in a commit message',
+     'git commit -m "explain why the ' + _GP + ' was refused"', False),
+    ('the words in a --task value',
+     'python tools/sairn_status.py set --task "the ' + _GP + ' gate"', False),
+    ('a push after a SEMICOLON that is itself inside quotes',
+     'echo "cd /x; ' + _GP + ' origin main"', False),
+    ('a push after a NEWLINE inside a HEREDOC body -- the real incident',
+     "cat > n.md <<'EOF'\nrun this:\n" + _GP + " origin main\nEOF", False),
+    ('git with a DIFFERENT subcommand', 'git pull origin main', False),
+    ('"push" with no git in front', 'npm push', False),
+]
+for _label, _cmd, _want in _CASES:
+    check('%s%s' % ('fires: ' if _want else 'ignored: ', _label),
+          H.command_pushes(_cmd), _want)
+
+# BOTH LAYERS ABLATED, so a future simplification that drops either is caught
+# here rather than in production. Per-arm, not per-exit-code.
+_real_q, _real_re = H._outside_quotes, H.PUSH_RE
+try:
+    H._outside_quotes = lambda cmd, at: True
+    _flip_q = [l for l, c, w in _CASES if H.command_pushes(c) is not w]
+    H._outside_quotes = _real_q
+    H.PUSH_RE = re.compile(r'\bgit\s+push\b')
+    _flip_b = [l for l, c, w in _CASES if H.command_pushes(c) is not w]
+finally:
+    H._outside_quotes, H.PUSH_RE = _real_q, _real_re
+check('ABLATION: removing the QUOTED/HEREDOC span test flips at least one arm, '
+      'so that layer is load-bearing rather than decorative',
+      len(_flip_q) > 0, True)
+check('ABLATION: removing the COMMAND-BOUNDARY anchor flips at least one arm too',
+      len(_flip_b) > 0, True)
+print('    quoted/heredoc layer alone catches %d arm(s); boundary anchor alone '
+      'catches %d' % (len(_flip_q), len(_flip_b)))
 
 print("\n%d failure(s)" % len(FAIL))
 if FAIL:

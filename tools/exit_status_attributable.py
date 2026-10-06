@@ -201,6 +201,65 @@ def selftest():
     # arguments. The commas were never the cause; these are. Held here because
     # a report-only notice that cries wolf stops being read, and then the real
     # one is invisible too.
+    # ── AND A SECOND, STRUCTURALLY DIFFERENT METHOD MUST AGREE (2026-10-06) ──
+    # Discipline 6: independence needs a structurally different method, not a
+    # second run of the same one. Every subject arm is therefore decided TWICE --
+    # once by the shipped positional match over quote-MASKED text, and once by
+    # `shlex` with punctuation_chars, a real shell lexer that keeps a quoted run
+    # as ONE token and emits the control operators as their own. The two
+    # implementations share no code, and an arm where they disagree FAILS.
+    #
+    # WHY THE LEXER IS A CROSS-CHECK AND NOT THE IMPLEMENTATION, measured before
+    # deciding rather than argued: a tokenised version was built and run against
+    # all 23 subject arms and AGREED ON EVERY ONE -- so it is not better on
+    # anything the arms cover. On eight real hard command shapes it then REFUSED
+    # one outright, `python tools/x.py --note "open | tail -1`, an UNMATCHED
+    # DOUBLE QUOTE, which the shipped regex handles correctly and which ordinary
+    # prose in a --note or a commit message produces. A lexer cannot guess at an
+    # unbalanced quote; the regex degrades gracefully. Replacing would have traded
+    # a true positive for nothing, and going quiet is the failure this file names
+    # as the worse of the two. Cost of running both: 0.022ms against 0.081ms per
+    # call, so the cross-check is free and only the selftest pays it.
+    def _lex_subject(cmd):
+        """The same answer, derived by LEXING. None when the lexer refuses."""
+        try:
+            lx = shlex.shlex(cmd, posix=True, punctuation_chars=True)
+            lx.whitespace_split = True
+            toks = list(lx)
+        except ValueError:
+            return None
+        groups, cur, gseps = [], [], []
+        for t in toks:
+            if t in (';', '&&', '||', '|', '\n'):
+                if cur:
+                    groups.append(cur)
+                    gseps.append(t)
+                cur = []
+            else:
+                cur.append(t)
+        if cur:
+            groups.append(cur)
+            gseps.append('')
+        if len(groups) < 2:
+            return ''
+        for gi, g in enumerate(groups[:-1]):
+            i = 0
+            while i < len(g) and '=' in g[i] and not g[i].startswith('-'):
+                i += 1
+            if i < len(g) and os.path.basename(g[i]).split('.')[0] in INTERPRETERS:
+                i += 1
+                while i < len(g) and g[i].startswith('-'):
+                    i += 1
+            if i >= len(g) or not SUBJECT_DIRS.fullmatch(g[i]):
+                continue
+            joined = ' '.join(g)
+            nxt = groups[gi + 1] if gi + 1 < len(groups) else []
+            if REDIRECTS_OUT.search(joined) and gseps[gi] in SEQUENCING \
+                    and any(STATUS_READ.search(t) for t in nxt):
+                continue
+            return g[i]
+        return ''
+
     def subj(label, cmd, want):
         nonlocal ok
         p_only = elements(cmd)
@@ -210,6 +269,11 @@ def selftest():
             ok = False
         got = subject_at_risk(p, s)
         good = (bool(got) is want)
+        lexed = _lex_subject(cmd)
+        if lexed is not None and bool(lexed) is not bool(got):
+            print('FAIL the LEXER and the positional match disagree on %r: '
+                  'lexer=%r shipped=%r' % (cmd, lexed, got))
+            ok = False
         print('%s %-56s subject=%r' % ('ok  ' if good else 'FAIL', label, got))
         if not good:
             ok = False
@@ -276,6 +340,29 @@ def selftest():
          'python tools/x.py --note "a|b" > /tmp/o 2>&1; echo "RC=$?"', False)
     subj('a REAL separator after a quoted one still splits',
          'python tools/x.py --note "a;b" | tail -3', True)
+
+    # ── THE CROSS-CHECK MUST BE LOAD-BEARING, OR IT IS DECORATION ───────────
+    # Every subject arm above is decided twice. If `_lex_subject` returned None
+    # for everything -- a lexer that always refuses -- the comparison would never
+    # fire and 23 arms would be back to one method each, SILENTLY. So the lexer is
+    # required to produce a real answer on a plain case, and required to refuse the
+    # one shape that is the reason it is not the implementation.
+    _probe = _lex_subject('python tools/md_table_check.py | tail -3')
+    if _probe != 'tools/md_table_check.py':
+        print('FAIL the lexer cross-check produced %r on a plain pipeline, so it '
+              'is not actually deciding anything' % (_probe,))
+        ok = False
+    else:
+        print('ok   the LEXER cross-check really answers (not None for '
+              'everything), so the arms above are decided TWICE')
+    _refused = _lex_subject('python tools/x.py --note "open | tail -1')
+    if _refused is not None:
+        print('FAIL the lexer did not refuse an unmatched quote, so the reason it '
+              'is a cross-check rather than the implementation no longer holds')
+        ok = False
+    else:
+        print('ok   ...and it REFUSES an unmatched double quote, which is exactly '
+              'why the regex stays the implementation')
 
     # The SEPARATOR half had the same defect, because analyse() splits the same
     # text. These two pin it directly rather than through subject_at_risk.

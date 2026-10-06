@@ -711,6 +711,98 @@ OVERRIDE_RE = re.compile(
     r"""(?:^|[;&|\n]|\bexport\s+)\s*SAIRN_SEED_GATE\s*=\s*(['"]?)off\1(?=\s|$|[;&|])""",
     re.IGNORECASE)
 
+# ── A `git push` INSIDE A QUOTED STRING IS NOT A PUSH (2026-10-06) ───────────
+# The PreToolUse entry point matched `\bgit\s+push\b` anywhere in the command
+# TEXT, so any command whose body merely CONTAINS those two words ran the whole
+# gate and could be refused by it. Observed three times in one session while
+# writing a work-log entry through a shell heredoc: the prose said "a no-op push
+# whose gate message was read as a refusal", the gate matched the words, and the
+# APPEND WAS REFUSED AS IF IT WERE A PUSH -- twice before the cause was obvious.
+#
+# FOURTH REPORTED THE SAME SHAPE IN deploy_verify_notify.py, whose instance 3 in
+# docs/2026-10-05-exit-status-attributable-false-positive.md reads: "matching the
+# literal `git push`, so the deploy check never ran for push_retry.py -- FIXED".
+# That one FAILED OPEN -- a real push went unchecked. This one FAILS CLOSED -- a
+# non-push is refused. Same defect, opposite and both wrong.
+#
+# THE RULE IS ALREADY IN THIS FILE, SIXTY LINES DOWN. override_in_command() reads
+# `SAIRN_SEED_GATE=off` out of the command text and honours a match "only when it
+# is anchored at a command boundary AND falls outside every quoted span", for
+# exactly this reason -- this repo's commit messages quote that string in prose.
+# The push detection got the first half and not the second. Nothing new is
+# invented here; the discipline this file already applies to one token is applied
+# to the other.
+#
+# THE ANCHOR IS A COMMAND BOUNDARY, not merely a word boundary: a push is the
+# start of the line, or follows `;`, `&&`, `||`, `|`, a newline, or an opening
+# `(`/`{`, optionally after env assignments. `echo "git push"` has a quote
+# before it and no boundary.
+PUSH_RE = re.compile(
+    r"""(?:^|[;&|\n(){}]|&&|\|\|)\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*"""
+    r"""git(?:\s+-C\s+\S+)?\s+push\b""")
+
+
+_HEREDOC_RE = re.compile(r"<<-?\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\1")
+
+
+def _heredoc_spans(cmd):
+    """[(start, end)] of every HEREDOC BODY in `cmd`.
+
+    ── QUOTE COUNTING CANNOT SEE A HEREDOC, AND THE HEREDOC IS THE REAL CASE ──
+    `<<'EOF'` carries an EVEN number of quotes, so the body after it counts as
+    unquoted and a `git push` written in prose there is read as a command. That is
+    exactly how this gate refused three work-log appends in one session: the body
+    said "a no-op push whose gate message was read as a refusal".
+
+    Found by the ablation that checks each layer alone: with the quoted-span layer
+    removed, four arms flipped and the heredoc arm did not -- so the heredoc was
+    being caught by nothing. A layer that catches zero is either redundant or
+    looking at the wrong thing, and here it was the second.
+
+    The body runs from the end of the `<<WORD` token to a line that is exactly
+    WORD (optionally indented, for `<<-`). An unterminated heredoc extends to the
+    end, which is the safe direction: more text treated as a body means fewer
+    false pushes, and a real push is never written inside one.
+    """
+    spans = []
+    for m in _HEREDOC_RE.finditer(cmd or ''):
+        word = m.group(2)
+        body = m.end()
+        end = len(cmd)
+        for lm in re.finditer(r'^[ \t]*' + re.escape(word) + r'[ \t]*$',
+                              cmd[body:], re.M):
+            end = body + lm.start()
+            break
+        spans.append((body, end))
+    return spans
+
+
+def _outside_quotes(cmd, at):
+    """Is offset `at` outside every quoted span AND every heredoc body in `cmd`?
+
+    The quote half is the test override_in_command() has always applied, lifted
+    out so both callers use one implementation rather than two that can drift --
+    two copies of one rule is how the push detection came to have half of it.
+    Escaped quotes are removed first so a `\\"` does not open a span.
+    """
+    for lo, hi in _heredoc_spans(cmd):
+        if lo <= at < hi:
+            return False
+    head = cmd[:at].replace('\\"', '').replace("\\'", '')
+    return head.count('"') % 2 == 0 and head.count("'") % 2 == 0
+
+
+def command_pushes(cmd):
+    """Does this command text actually RUN a git push?
+
+    False for a push named inside a quoted string, a commit message, a heredoc
+    body or a `--task` value. See PUSH_RE for the incident.
+    """
+    for m in PUSH_RE.finditer(cmd or ''):
+        if _outside_quotes(cmd, m.start()):
+            return True
+    return False
+
 
 # ── ITEM 101: THE OVERRIDE IS GRADUATED NOW, NOT BINARY (2026-09-25) ────────
 # Methodology item 101 is graduated mechanical commitment -- soft capture,
@@ -937,12 +1029,11 @@ def override_in_command(cmd):
     && git push` must NOT disable the gate. A match is honoured only when it is
     anchored at a command boundary AND falls outside every quoted span.
     """
+    # The quoted-span test lives in _outside_quotes() so this and
+    # command_pushes() cannot drift apart -- two copies of one rule is how the
+    # push detection came to have half of it.
     for m in OVERRIDE_RE.finditer(cmd):
-        head = cmd[:m.start()]
-        # An odd count of either quote means the match sits inside a string.
-        # Escaped quotes are removed first so \" does not open a span.
-        plain = head.replace('\\"', '').replace("\\'", '')
-        if plain.count('"') % 2 == 0 and plain.count("'") % 2 == 0:
+        if _outside_quotes(cmd, m.start()):
             return True
     return False
 
@@ -1050,7 +1141,10 @@ def main():
     else:
         payload = json.load(sys.stdin)
         cmd = (payload.get('tool_input', {}) or {}).get('command', '') or ''
-        if not re.search(r'\bgit\s+push\b', cmd):
+        # A push NAMED in a quoted string, a commit message or a heredoc body is
+        # not a push. See PUSH_RE and command_pushes() for the three refusals
+        # that found this.
+        if not command_pushes(cmd):
             sys.exit(0)
         # The override, read where it is actually reachable from a Bash call.
         # Checked BEFORE any work so an override costs nothing and behaves

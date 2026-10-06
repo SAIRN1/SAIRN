@@ -217,6 +217,15 @@ REGISTRY = [
                    'asserting a floor, or a bare truthiness -- `>= 4`, or `if '
                    'rows`, under a label claiming every answer carries the '
                    'limits',
+        'evidence': 'REAL RUN 2026-10-06, exit 1: CHECKED / UNIVERSE 903 of 903 '
+                    'suite files (100%), TIERS 26 CONFIRMED and 48 ADVISORY, '
+                    'printed separately and never added. The 48 are LISTED so '
+                    'the demotion is auditable rather than silent. Among the '
+                    'confirmed: tests/run_shape_search_probe.py:62 and :68, '
+                    '"renaming every identifier does not move the score" and '
+                    '"and changing every string literal does not either" -- '
+                    'universal labels over one-sided comparisons, in a probe '
+                    'about measurement stability.',
         'why_it_matters': 'ITS FIRST LIVE JAVASCRIPT RUN FOUND ONE IN THE '
                           'AUTHOR\'S OWN SUITE. api/_lib/sc-denial-reconcile.'
                           'test.js asserted `limits.length >= 4` under the '
@@ -248,6 +257,18 @@ REGISTRY = [
         'catches': 'a tool whose several real-data entry points enumerate '
                    'DIFFERENT MEMBERS OF ONE POPULATION FAMILY -- the copy a '
                    'human invokes is not the copy that enforces',
+        'evidence': 'REAL RUN 2026-10-06, exit 1: CHECKED / UNIVERSE 87 of 297 '
+                    'tools (29%) have more than one real-data door, 1 FINDING -- '
+                    'tools/purge_evidence_gate.py, whose bare run and --audit '
+                    'enumerate DIFFERENT populations (file-tree against the audit '
+                    'set). The run also PRINTS ITS OWN ABLATION rather than '
+                    'claiming it: "doors only this resolution sees: add / list / '
+                    'scope / types (subcommands)", "populations only this '
+                    'resolution reaches: load_ledger, load_tier_a", and '
+                    '"VERDICT MOVED: only one real-data entry point -> no two '
+                    'doors enumerate different members of one population family" '
+                    '-- so the dispatch-table layer is shown doing work on every '
+                    'run instead of being asserted once.',
         'why_it_matters': 'THE NAMED INSTANCE COST A REAL SESSION A REAL PUSH. '
                           'tier_a_review_gate.py answered from the WORKING TREE '
                           'on a bare run and from a merge-base commit range in '
@@ -277,6 +298,15 @@ REGISTRY = [
                     'tests/run_parse_zero_third_state_probe.py.',
         'catches': 'a checker whose corpus enumeration returns nothing, which '
                    'it then reports as a clean sweep -- "read 0 file(s) / CLEAN"',
+        'evidence': 'REAL RUN 2026-10-06, exit 1: CHECKED / UNIVERSE 10 of 297 '
+                    'tools (3%) carry a corpus variable this can read -- a small '
+                    'minority, PUBLISHED as the denominator rather than hidden. '
+                    'Of those: 9 GUARDED, 0 WRONG EXIT, 1 NO GUARD, 0 unreadable. '
+                    'The one finding is tools/live_probe_declaration_check.py, '
+                    '`paths <- tracked_paths()` with no zero-item guard, so an '
+                    'empty corpus reads as a clean sweep. The four-way split is '
+                    'the evidence that the tool is not answering one thing '
+                    'repeatedly.',
         'why_it_matters': 'IT IS THE COVERAGE "0 of 0 is not 100%" FAILURE '
                           'MOVED DOWN A LEVEL, and it is silent in every '
                           'direction: the git ls-files pattern stops matching '
@@ -299,6 +329,18 @@ REGISTRY = [
         'verdict': by_exit,
         'promoted': '2026-09-28, report-only. Under 3 seconds, and its number moves the moment anybody commits -- which is the point: the document it checks is carried into company meetings and every figure in it claims to be re-runnable.',
         'catches': 'a figure published in docs/FACT-SHEET-2026-09-29.md that the command beside it no longer produces',
+        'evidence': 'REAL RUN 2026-10-06, exit 1: CHECKED / UNIVERSE 30 of 30 '
+                    'figures that carry their own command (100%), and the sheet '
+                    'has drifted further rather than being repaired -- '
+                    'say_defects_headline restates 150 where the figures now give '
+                    '170; say_defects_layers 198 -> 237 and 396 -> 454; '
+                    'say_defects_math 396 -> 454, 146 -> 168 and 21 -> 24; '
+                    'sql_files sheet=259 against derived=263. THE RUN ALSO NAMES '
+                    'WHAT IT DOES NOT CHECK -- the application classification '
+                    'rows, the tooling-inventory rows, the live-probe rows, and '
+                    'the elapsed spans which are READ OUT OF THE SHEET and used '
+                    'as divisors rather than verified -- so a clean run could '
+                    'never be mistaken for the whole document being sound.',
         'why_it_matters': 'NINE OF TWENTY-ONE FIGURES HAD ALREADY DRIFTED within hours of the sheet being written, because four engineers push to this repository continuously -- commits, defects and review obligations all move daily. A sheet whose figures cite their own derivation reads as authoritative, which is exactly what makes a stale one dangerous: the number gets stated in a room where it was used to establish credibility. Off-by-one is a finding with no tolerance, because a tolerance is a rounding policy nobody agreed. It DOES NOT check the panel counts or the patent dates -- those are a stated per-application judgement and a quoted sentence, and encoding either here would turn a stated judgement into a hidden one.',
     },
     {
@@ -316,6 +358,23 @@ REGISTRY = [
                     'anybody heard of it until the live run the next day found '
                     'the fix did not work. Control: '
                     'tests/run_verification_owed_probe.py.',
+        'catches': 'a commit whose own message says a live run is OWED, with '
+                   'nothing anywhere recording that the run happened -- the debt '
+                   'a session disclosed honestly and then nobody collected',
+        'evidence': 'REAL RUN 2026-10-06, exit 0: 13 commits SAY verification is '
+                    'owed and the STILL OWED list is non-empty -- including the '
+                    'sairnmechanical.html / '
+                    'tests/mech_docs_redaction_wiring_probe.py pair. Exit 0 is '
+                    'correct and is the point: this REPORTS a debt, it does not '
+                    'refuse a push, because a gate here would be cleared by '
+                    'DELETING THE SENTENCE. ITS OWN LIMIT IS IN ITS OWN OUTPUT '
+                    'rather than only in this entry: "IT MATCHES PHRASES. A '
+                    'commit that owes a live run without saying so is invisible; '
+                    'one that discharges a debt in words this does not know reads '
+                    'as still-owed. Neither number measures the real debt, and it '
+                    'cannot tell whether the run that happened covered what was '
+                    'owed." Both directions disclosed, so neither figure can be '
+                    'quoted as the debt.',
     },
 
     {
@@ -2549,9 +2608,88 @@ REGISTRY = [
 # IT DOES NOT FIX THE 37. Those need the budget raised, the sweep split, or
 # comment_sensitivity_check.py capped -- a decision with an owner, logged in
 # docs/2026-10-05-inventory-hank.md and not taken here.
+
+# ── MY TWO INSTRUMENTS ARE STILL NOT HERE, AND THE BLOCKER IS NAMED (2026-10-06)
+# seam_cannot_tell_watch.py and doc_checker_coverage.py were written days ago,
+# are controlled, are fast (14.6s and 1.1s measured), and belong in this list.
+# Their entries were WRITTEN AND THEN WITHDRAWN rather than landed, and the reason
+# is one that cannot be fixed from this file:
+#
+#   tools/tooling_inventory.py already carries a PURPOSES line for each of them
+#   (:255 and :318). The moment a tool appears in BOTH REGISTRY and PURPOSES the
+#   inventory generator EXITS 2 and REFUSES to generate -- correctly, because a
+#   report-only tool's `catches` comes from REGISTRY and a second description in
+#   PURPOSES is a second source that can disagree. Its remedy is explicit: DELETE
+#   THE PURPOSES LINE, do not reword it.
+#
+# tools/tooling_inventory.py IS FOURTH'S under a live claim. Two lines in their
+# file is still their file, and the generated-doc push gate would refuse the push
+# in the meantime. So the full entries -- promoted, catches, evidence from a real
+# run, why_it_matters, and the budget arithmetic for the _FRONT insertion -- are
+# delivered as paste-ready text in docs/2026-10-06-cc-routed.md, for whoever holds
+# that file. This comment is here so the next session reading the registry knows
+# the two are MISSING ON PURPOSE and knows the one edit that unblocks them.
 _FRONT = ('hover_routing_gap_check.py', 'pattern_enumeration_sweep.py')
 REGISTRY = ([e for e in REGISTRY if e['tool'] in _FRONT]
             + [e for e in REGISTRY if e['tool'] not in _FRONT])
+
+
+# ── THE REGISTRY REFUSES AN UNDOCUMENTED ENTRY AT IMPORT (2026-10-06) ───────
+# `tests/run_report_only_checks_probe.py` arm E2 -- "every entry records when and
+# why it was promoted" -- was RED for days, and the diagnosis changed twice while
+# it sat there. On 2026-09-28 it named four offending tools; at a later HEAD it
+# was FIVE ENTIRELY DIFFERENT ONES. The original four had been fixed and five
+# newly promoted entries had landed with no `evidence`.
+#
+# SO IT IS NOT A BACKLOG OF STRINGS, IT IS A RECURRING INTAKE DEFECT, and the
+# probe is the wrong place to catch it: a suite tells you afterwards, and the
+# entry is already on main by then. The five were fixed in this commit by RUNNING
+# each tool and recording what it actually reported (PR 2.7), and this is the half
+# that stops a sixth.
+#
+# IT RAISES AT IMPORT, WHICH IS THE POINT AND IS NOT FREE. Every importer -- the
+# PostToolUse hook, --list, the probe -- stops working the moment an entry is
+# added without its three fields. That is deliberate: the author of the new entry
+# is the person who sees the failure, in the same minute, and the fix is to write
+# the sentence they were going to skip. A warning here would be read by nobody,
+# which is exactly how five accumulated.
+#
+# THE MESSAGE NAMES THE TOOL AND THE MISSING FIELDS, because "the registry is
+# invalid" sends somebody to read 75 entries.
+class RegistryIncomplete(Exception):
+    """An entry claims to be promoted without saying when, why, or what it caught."""
+
+
+def _validate_registry(entries):
+    """Raise unless every entry carries promoted, catches and evidence.
+
+    `evidence` MEANS A REAL RUN. The other 70 entries spell it that way --
+    "REAL RUN 2026-09-16: 74 AI call sites across 17 app files" -- and the field
+    exists so that promotion rests on an observation rather than on an intention.
+    An entry with a `promoted` rationale and no `evidence` is a decision nobody
+    checked.
+    """
+    bad = []
+    for e in entries:
+        missing = [k for k in ('promoted', 'catches', 'evidence')
+                   if not str(e.get(k) or '').strip()]
+        if missing:
+            bad.append((e.get('tool', '<no tool key>'), missing))
+    if bad:
+        lines = ['report_only_checks.REGISTRY REFUSES %d undocumented entry(ies). '
+                 'An entry that reads as promoted while nothing records what it '
+                 'caught is a decision nobody checked:' % len(bad)]
+        for tool, missing in bad:
+            lines.append('  %-44s missing: %s' % (tool, ', '.join(missing)))
+        lines.append('`evidence` means A REAL RUN -- run the tool and record what '
+                     'it reported, the way the other entries do. This refuses at '
+                     'IMPORT rather than in a suite because a suite tells you '
+                     'after the entry is on main, and five accumulated that way.')
+        raise RegistryIncomplete('\n'.join(lines))
+    return len(entries)
+
+
+_REGISTRY_VALIDATED = _validate_registry(REGISTRY)
 
 # ── DELIBERATELY NOT PROMOTED, AND WHY ──────────────────────────────────────
 # `docs/2026-09-09-tooling-inventory.md` says the decision each unwired checker
