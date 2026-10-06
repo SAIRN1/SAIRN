@@ -98,7 +98,8 @@ central Funeral Rule artefact.
 
 **The Casket Price List and the Outer Burial Container Price List are not
 modelled as price lists at all.** Caskets and urns exist — in
-`leg_merch_catalog` (`:1948`, `:1988`, `:2590`), carrying
+`leg_merch_catalog` (~~`:1948`, `:1988`, `:2590`~~ → **re-derived at HEAD
+2026-10-06: `:2017` the reader, `:2057` the seed, `:2659` the write**), carrying
 `category:'Casket'` and `category:'Urn'` rows — i.e. as **merchandise inventory**,
 which is a different object from a disclosure document. 16 CFR 453 treats the
 CPL and OBCPL as **separate lists with their own offering requirements**, not as
@@ -482,7 +483,9 @@ buttons **on the Merchandise panel** at `sairnlegacy.html:433` — which is the
 trigger Part 2 identified as the hard part — with the reasoning written beside
 them at `:435`: *"16 CFR 453.2(b)(2) and (b)(3) require the CPL and the OBCPL
 to be offered for inspection BEFORE caskets or containers are shown, and this
-is the screen where they are shown."* `IPL_KINDS` at `:3352` maps each list to
+is the screen where they are shown."* `IPL_KINDS` at ~~`:3352`~~ **`:3446` (re-derived 2026-10-06; the declinability
+work of the same day moved it, and the line this document cited is now inside
+`legComposeStatement`)** maps each list to
 its categories and its rule sentence, **a vault is counted as an outer burial
 container and an urn as neither**, an empty list refuses to print as a
 document, and a missing price prints `PRICE NOT ON FILE` rather than `$0`.

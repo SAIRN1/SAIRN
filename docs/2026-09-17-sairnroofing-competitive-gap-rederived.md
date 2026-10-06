@@ -236,3 +236,35 @@ quote them externally without checking, which is what that register says.
 - [Grant Thornton — Verifactu postpones its entry into force to 2027](https://www.grantthornton.es/en/insights/tax/verifactu-postpones-its-entry-into-force-to-2027/)
 - [EDICOM — Poland implements mandatory B2B e-invoicing with KSeF from 2026](https://edicomgroup.com/blog/poland-will-make-b2b-electronic-invoicing-mandatory)
 - [Sovos — KSeF: a timeline of Poland's e-invoicing mandate](https://sovos.com/blog/vat/poland-e-invoicing-via-ksef/)
+
+---
+
+## Marker counts re-taken at HEAD, 2026-10-06 (Fourth) — eight moved, no verdict did
+
+**Every verdict in this document still holds.** What moved are the marker
+counts its evidence column quotes, and all eight moved **upward**, which is
+what a count does in an app that is still being built:
+
+| marker | this doc says | HEAD, 2026-10-06 |
+|---|---|---|
+| `crew` | 39 | **55** |
+| `COI` | 14 | **16** |
+| `retainage` | 22 | **46** |
+| `WIP` | 10 | **28** |
+| `JHA` | 36 | **58** |
+| `supplier` | 26 | **41** |
+| `EMR` | 5 | **7** |
+
+**Why this is recorded rather than edited in place.** A count in an evidence
+column is a measurement with a date on it, and silently replacing it loses the
+fact that it moved. The verdicts rest on *non-zero and hand-read*, not on the
+particular number, so none of them changes. **The counts that would matter are
+the ZEROES**, because a zero becoming non-zero is a capability arriving — and
+this document has none left: A5's zeroes were corrected on 2026-10-06 when the
+accounting row was re-derived.
+
+Measured by `scratchpad/gapverify.py` over all 35 gap documents, which checks
+exactly three claim shapes — file citations, `token` × N counts, and
+`ident` at `:NNNN` line citations — and nothing else. Market claims, severity
+judgements and competitor analysis in this document were **not** re-checked and
+are not covered by that sweep.

@@ -203,3 +203,28 @@ a feature is genuinely built or removed — the same structural property that
 kept the 2026-09-03 audit's 33 cells stable over twelve days while the
 2026-08-26 audit's moved. **Re-derive before building anyway**; one
 confirmation is not a warranty.
+
+---
+
+## Marker counts re-taken at HEAD, 2026-10-06 (Fourth) — and ONE of the five went DOWN
+
+| marker | this doc says | HEAD, 2026-10-06 | direction |
+|---|---|---|---|
+| `IDR` | 5 | **4** | down 1 |
+| `site-of-service` | 3 | **0** | **GONE** |
+| `S9088` | 7 | **6** | down 1 |
+| `NCCI` | 8 | **10** | up 2 |
+| `specialty` | 112 | **144** | up 32 |
+
+**`site-of-service` going 3 → 0 is the one worth reading.** Every other
+movement here is an app growing or a string being reworded; a vocabulary that
+was present three times and is now absent entirely is either a feature removed
+or a rename, and **this sweep cannot tell those apart** — it counts tokens, it
+does not read diffs. Whoever owns SAIRNcode should establish which, because
+"the capability was removed" and "the word changed" lead to opposite
+conclusions about the gap this document describes.
+
+**NOT ESTABLISHED HERE, deliberately.** No verdict in this document was
+re-derived; only the five marker counts its evidence quotes. Measured by
+`scratchpad/gapverify.py`, which checks file citations, `token` × N counts and
+`ident` at `:NNNN` citations and nothing else.
