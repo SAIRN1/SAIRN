@@ -78,11 +78,11 @@ did not separate them:
 
 **RESOLVED LATER THE SAME SESSION — READING 2.** `python
 tests/push_gate/check8_probe.py` was then run **in the live clone** at HEAD
-`6984634e` with `.git/config` copied beforehand:
+`7eabd192` with `.git/config` copied beforehand:
 
     === CONFIG DELTA ===   CONFIG UNCHANGED   (byte-for-byte diff)
     === STATUS DELTA ===   STATUS UNCHANGED
-    === HEAD ===           6984634e, unmoved
+    === HEAD ===           7eabd192, unmoved
 
 and the probe now carries its own arms for it — *"and the CLONE was never
 touched — no commit, no modified file"* and *"...and neither was `.git/config`
@@ -143,3 +143,5 @@ LIVE** on "queue19 resume", and queue19's own first item is *"Tier A discharge
 most-overdue-first"* — the identical work. **Expiry is a timer, not a
 release.** The nine rows above are listed so the work is ready to land and are
 **not** discharged; nothing in that file was written by this session.
+
+*(SHA re-seat 2026-10-06: the six commits this file cites were rewritten by a `git pull --rebase` onto eleven upstream commits shortly after they landed. The pre-rebase SHAs 100b82fc, 7c911e5c and 6984634e are UNREACHABLE; the reachable equivalents 6b77545f, 326d277e and 7eabd192 are cited above. Every MEASUREMENT in this file was taken BEFORE those eleven upstream commits arrived, so the tree it describes is the rewritten commit's parent tree, not its current one. Re-seated by hand because `.githooks/post-rewrite` re-seats the defect register and the generated tracking documents, and this file is neither.)*

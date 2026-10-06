@@ -103,7 +103,7 @@ batch-9 figure; batch 10 took it 66 → 50 and this pass takes it 50 → **42**.
 
 Each of the eight was **run individually, its own exit code read from its own
 stdout, and its failing arm read** — none is driven-not-diagnosed. Commit
-`100b82fc`.
+`6b77545f`.
 
 **SIX OF THE EIGHT ARE ONE ROOT CAUSE, and it runs in both directions:** a
 probe arm that asserts something about the **live tree** is a drift tripwire,
@@ -159,7 +159,7 @@ shrinking list is visible. No PIN appears on any path.
 ## Item 12 — convention 17, from this batch's own defect
 
 `docs/2026-09-13-cross-domain-disciplines.md` **item 17: a third state for
-ABSENCE is not a third state for AMBIGUITY.** Commit `7c911e5c`. Full case is
+ABSENCE is not a third state for AMBIGUITY.** Commit `326d277e`. Full case is
 in that file and in the gap-doc appendix; the short form is that the verifier
 had a named state for *zero* candidate subjects and none for *two*, so absence
 refused and ambiguity resolved silently, in identical output shape. 15 false
@@ -197,7 +197,7 @@ proves nothing about the clone, and the clone is what was being damaged.
 ### `tests/seam_check/run_delegation_probe.py` — **FIXED, and green**
 
 `python tests/seam_check/run_delegation_probe.py` — **PROGRAM_EXIT=0** at
-`6984634e`, 2026-10-06, one run, read from its own invocation.
+`7eabd192`, 2026-10-06, one run, read from its own invocation.
 
     arm1_sees          True
     arm2_propagates    True
@@ -217,7 +217,7 @@ runs are not.
 ### `tests/push_gate/check8_probe.py` — **the CORRUPTION is fixed; the probe is still RED on 2 arms, and those are PRE-EXISTING**
 
 `python tests/push_gate/check8_probe.py` — **PROGRAM_EXIT=1**, `check8_probe: 2
-failed`, at `6984634e`.
+failed`, at `7eabd192`.
 
 **The corruption is gone and the probe now proves it itself:**
 
@@ -228,7 +228,7 @@ failed`, at `6984634e`.
 
     === CONFIG DELTA ===   CONFIG UNCHANGED
     === STATUS DELTA ===   STATUS UNCHANGED
-    === HEAD ===           6984634e, unmoved
+    === HEAD ===           7eabd192, unmoved
 
 **The 2 failures are NOT a regression from `b23dbc2e`, and that is measured
 rather than argued.** The pre-fix whole-tree run captured at **08:41**, long
@@ -275,3 +275,5 @@ Three records pointed at this one thing and they are not three findings:
 The one genuinely new item is in the andon log as **pull 4**: `.git/config` is
 untracked, so the residue a fixed writer already left is invisible to every
 check on this platform and survives every pull. Fixed writer, no detector.
+
+*(SHA re-seat 2026-10-06: the six commits this file cites were rewritten by a `git pull --rebase` onto eleven upstream commits shortly after they landed. The pre-rebase SHAs 100b82fc, 7c911e5c and 6984634e are UNREACHABLE; the reachable equivalents 6b77545f, 326d277e and 7eabd192 are cited above. Every MEASUREMENT in this file was taken BEFORE those eleven upstream commits arrived, so the tree it describes is the rewritten commit's parent tree, not its current one. Re-seated by hand because `.githooks/post-rewrite` re-seats the defect register and the generated tracking documents, and this file is neither.)*
