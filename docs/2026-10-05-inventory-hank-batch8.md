@@ -344,3 +344,92 @@ line-number sanity bound.
 
     python tools/md_table_check.py docs/SAIRN-OPEN-WORK-INDEX.md
       EXIT=0   831/831 rows, 0 malformed, 0 uncheckable
+
+---
+
+## 4. The SDN generic write branch stored the payload raw — hover H2 seq 529/538
+
+**Premise at HEAD: HELD.** `api/sd-data.js`, the single generic
+`SDN_RESOURCES` write branch, built its upsert body as **`data: payload`** —
+the caller's entire object, with no `storedBlob()` call. Any key the caller
+invented was persisted verbatim into the jsonb column, **including a forged
+`license_hash`, `app_id` or `p_license_hash`**, and echoed back on read beside
+the real columns that contradict it.
+
+**One branch, eighteen resources — which is what makes it worth a commit.**
+That branch is a parametrised pair covering all 18 SAIRNdesign resources, and
+that design is right: one fix is one fix. The same property makes one omission
+eighteen omissions, twelve of them on rows carrying client identity or money.
+
+**LATENT, NOT LIVE, and that is stated rather than used as a downgrade.** Every
+read path resolves tenancy from the real `license_hash` **column**, which
+always wins, so no cross-tenant read was ever reachable. What the defect
+produced is a **stored falsehood** waiting for the next reader that trusts a
+field inside `data`. `api/_lib/blob.js`'s own header already records two
+instances of exactly that found in one 2026-09-24 review.
+
+### The near-miss that the test exists to catch
+
+The obvious fix is `storedBlob(payload, ['id'])` — what **every** sibling call
+site in the file passes. **It would have been wrong here.** Those branches
+re-attach the id from its column on read; this one returns `x.data` verbatim.
+Passing `['id']` would have been a correct-looking scope fix that **silently
+emptied the id off every record in all eighteen resources**, and it would have
+passed every arm that only checks the forged keys are gone.
+
+So the call is `storedBlob(payload, [])` with the reason written at the call
+site, and **arm B1 exists specifically to fail that near-miss.**
+
+### Verification
+
+    node tests/sd_data_sdn_blob_scope.js            EXIT=0   10 passed, 0 failed
+    ABLATION vs byte-unmodified HEAD                EXIT=1    4 passed, 6 failed
+      FAIL A1/A2/A3  forged license_hash, app_id, p_license_hash all stored
+      FAIL C1        the ungated resources too
+      FAIL D1/D2     no storedBlob in the branch
+      ok   A0/A4/B1/B2  the preservation arms — so not "strip everything"
+
+**It asserts on the BODY POSTED UPSTREAM, not the response**, because the
+response is not where the defect lived. **Arm C1 drives an UNGATED resource**
+(`sdn_moodboards`, licence-key only) so a fix written into the session-gated
+path rather than the shared branch would be caught.
+
+    node --check api/sd-data.js                           EXIT=0
+    api/sd-data-sdn-session-gate.test.js                  EXIT=0
+    api/sd-data-bespoke-branch-isolation.test.js          EXIT=0
+    api/sd-data-cross-tenant-isolation.test.js            EXIT=0
+    api/sd-data-unconfirmed-write-sweep.test.js           EXIT=0
+    tests/sd_data_family_mar_gate.js                      EXIT=0
+    tools/role_gate_invariants.js                         EXIT=0
+    tools/md_table_check.py SAIRN-OPEN-WORK-INDEX.md      EXIT=0  831/831
+    tools/hover_routing_gap_check.py                      EXIT=0
+
+### Two defects in my own test, both found by running it
+
+1. **Every arm 403'd** with `CREDENTIAL_INACTIVE`. The active-credential
+   pre-gate runs above every branch and asks the app's employee-auth table; my
+   mock answered `[]`, which is a correct deactivation verdict on an empty
+   answer. Mocked honestly instead — had I "fixed" it by weakening the gate's
+   mock to pass unconditionally, I would have disabled a real control to make
+   a test about something else go green.
+2. **Arm D2 cut its source block at the string `SAIRNLEGACY`** — which exists
+   only in a **comment**, and the arm strips comments two lines earlier. So
+   the "block" ran to end-of-file and matched `data: payload` in unrelated
+   branches. Same class as the family_mar false pass in item 1, in the same
+   session, found the same way: by reading what the arm actually measured
+   rather than what its name says.
+
+### The index row was rewritten, not left
+
+It had been added hours earlier in item 3 as **ROUTED, NOT FIXED HERE**. That
+sentence stopped being true, so the row now reads FIXED with the sha, the
+ablation numbers and the register record — and carries **what is still open**:
+no sweep has been done for remaining raw `data: payload` branches elsewhere in
+the file, and the twelve save-site line numbers in that row are hover's and
+were **not** re-derived at HEAD. Only the handler branch was.
+
+Register record `57017e71eb4e`. `--injection-unknown` rather than a commit:
+the branch has carried `data: payload` since it was written, and
+`api/_lib/blob.js` came much later — it was written before the rule it
+violates existed, so naming the feature commit would misdate the
+discovery-lag figure by months and blame a commit that broke nothing.

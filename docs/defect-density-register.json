@@ -23155,6 +23155,57 @@
       "recurrence_open": "Change 4 does not close the general case: every OTHER push-gate check that derives a file list from the outgoing range and then reads the working tree has the same hole, and only check 11 was fixed here. I did not sweep the rest -- the `changed` list is used by checks 2, 3, 4, 5, 6, 7, 12 and 12b, each with its own notion of what it needs to read, and whether a working-tree read is wrong for them is a per-check judgement rather than one edit. Named rather than done. AND THIS SENTENCE WAS ITSELF EATEN ONCE: the word `changed` was written inside bash backticks in a double-quoted printf, so the shell ran it as a command substitution, printed `changed: command not found`, and the record landed with a gap exactly where the subject belonged. That is scrubber item 18 and tools/eaten_substitution_check.py exists for it; it happened while writing about silent failure, which is the fourth recorded instance of this on this platform."
     },
     {
+      "commit": "1cb08cbf6285",
+      "date": "2026-10-06",
+      "subject": "fix(exec-context): two clauses in the CFO accounting statement had gone false, and the conclusion they supported was still right -- which is the combination that gets the whole statement disbelieved",
+      "files": [
+        "api/_lib/exec-context.js",
+        "docs/2026-09-17-sairnroofing-competitive-gap-rederived.md"
+      ],
+      "lines_added": 39,
+      "lines_removed": 2,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "The CFO exec-context accounting statement asserted two facts that had gone false: 'no such endpoint is deployed' and 'no connection table exists'. api/accounting.js, api/_lib/accounting-connector.js and sql/accounting_connector_schema.sql all exist at HEAD. The conclusion (SAIRN does not connect to QuickBooks) was still true for a different reason, which is the dangerous shape -- a reader who checks finds the premise false and discards the conclusion.",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "27a2404dade2",
+        "date": "2026-09-02",
+        "subject": "feat(platform): accounting connector storage and endpoint -- the OAuth leg returns 501 and is not simulated",
+        "lag_days": 34
+      },
+      "contributing_factors": [
+        {
+          "factor": "The statement was written as a dated verification ('Verified against the code on 2026-09-02') and nothing re-reads it against the code on any cadence, so its truth decays silently.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "Sweep every remaining dated 'verified' statement in api/_lib/exec-context.js against HEAD and fix or route each; standing re-check cadence still owed."
+        },
+        {
+          "factor": "The accounting connector was built later by a different workstream; nothing in that change pointed at the prompt text that asserted the connector did not exist.",
+          "kind": "process",
+          "action_status": "not-actionable",
+          "note": "A general 'who else asserts this does not exist' back-reference does not exist and is not being invented for one case."
+        },
+        {
+          "factor": "The premise was false while the conclusion was true, so every behavioural test of the advisor still passed -- the defect is unreachable by assertion on output correctness.",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "Declined: asserting prompt PROSE against code would be a second copy of the facts and would drift the same way."
+        }
+      ],
+      "recurrence_open": "Nothing re-reads the other dated 'verified' statements in exec-context.js on a cadence; this fix corrects one statement and names the sweep as owed. Until that sweep lands and is re-run periodically, the same decay can happen to any other statement in the same array."
+    },
+    {
       "commit": "3cf3d5ec3e2c",
       "date": "2026-10-06",
       "subject": "fix(sb_ap+attribution): an unlisted undated payee was invisible to both notes, and the wrong-subject check now MEASURES -- including the measurement its own first fix got wrong",
@@ -23273,55 +23324,59 @@
       "recurrence_open": "The invocation-position rule knows seven interpreter names and will miss an eighth silently -- a false negative, chosen deliberately, and unmeasured. And nothing measures the notice's own precision over a session, which is the number that decides whether it is still read."
     },
     {
-      "commit": "1cb08cbf6285",
+      "commit": "57017e71eb4e",
       "date": "2026-10-06",
-      "subject": "fix(exec-context): two clauses in the CFO accounting statement had gone false, and the conclusion they supported was still right -- which is the combination that gets the whole statement disbelieved",
+      "subject": "fix(sairndesign): the one generic SDN write branch stored the caller's whole payload raw -- one omission, eighteen resources",
       "files": [
-        "api/_lib/exec-context.js",
-        "docs/2026-09-17-sairnroofing-competitive-gap-rederived.md"
+        "api/sd-data.js",
+        "tests/sd_data_sdn_blob_scope.js"
       ],
-      "lines_added": 39,
+      "lines_added": 270,
       "lines_removed": 2,
-      "app": "PLATFORM",
+      "app": "sairndesign",
       "layer": "product",
       "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "The CFO exec-context accounting statement asserted two facts that had gone false: 'no such endpoint is deployed' and 'no connection table exists'. api/accounting.js, api/_lib/accounting-connector.js and sql/accounting_connector_schema.sql all exist at HEAD. The conclusion (SAIRN does not connect to QuickBooks) was still true for a different reason, which is the dangerous shape -- a reader who checks finds the premise false and discards the conclusion.",
+      "detection_method": "hover-audit",
+      "summary": "api/sd-data.js, the single generic SDN_RESOURCES write branch serving all 18 SAIRNdesign resources, built its upsert body as 'data: payload' -- the caller's entire object with no storedBlob() call. Any key the caller invented was persisted verbatim into the data jsonb column, INCLUDING a forged license_hash, app_id or p_license_hash, and was echoed back on read beside the real columns that contradict it. Twelve of the eighteen resources carry client identity or money (sdn_clients, sdn_contracts, sdn_referrals, sdn_projects, sdn_specitems, sdn_proposals, sdn_pos, sdn_invoices, sdn_timeentries, sdn_discounts, sdn_team, sdn_vendors). LATENT RATHER THAN LIVE: every read path resolves tenancy from the real license_hash COLUMN, which always wins, so no cross-tenant read was reachable -- what the defect produced was a stored falsehood waiting for the next reader that trusts a field inside data. Fixed with storedBlob(payload, []), an EMPTY column list unlike every sibling call site's ['id'], because those branches re-attach the id from its column on read and this one returns x.data verbatim; passing ['id'] here would have emptied the id off every record in all eighteen resources.",
       "rules": [
-        "2.3"
+        "1.1"
       ],
-      "citation_confidence": "clean",
+      "citation_confidence": "arguable",
       "injection_phase": "coding",
       "phase_confidence": "stated",
       "found_by_tool": null,
-      "found_by_session": null,
+      "found_by_session": "hover2",
       "injection": {
-        "commit": "27a2404dade2",
-        "date": "2026-09-02",
-        "subject": "feat(platform): accounting connector storage and endpoint -- the OAuth leg returns 501 and is not simulated",
-        "lag_days": 34
+        "unknown_reason": "The branch has carried 'data: payload' since the SAIRNdesign sync-gap fix that created it, and api/_lib/blob.js was written much later -- so there is no single commit that INTRODUCED the defect in the usual sense. It was written before the rule it violates existed, and became a defect the day the helper was created and this call site was not migrated. Recording a feature commit as the injection would misdate the discovery-lag figure by months and would blame a commit that broke nothing at the time."
       },
+      "citation_note": "1.1 is 'a check that stopped checking', and the closest fit here is its inverse rather than its letter: api/_lib/blob.js is the one place that knows what never belongs in a stored blob, and this branch simply never called it, so the control did not stop working -- it was never wired in. Cited as arguable because no standing rule names 'a shared helper that exists and is not called at a site it was written for'. The register's own blob.js header already records two instances of the same shape found in one 2026-09-24 review, which makes this the third and argues the rule is missing rather than the citation being wrong.",
       "contributing_factors": [
         {
-          "factor": "The statement was written as a dated verification ('Verified against the code on 2026-09-02') and nothing re-reads it against the code on any cadence, so its truth decays silently.",
-          "kind": "detection",
-          "action_status": "planned",
-          "action": "Sweep every remaining dated 'verified' statement in api/_lib/exec-context.js against HEAD and fix or route each; standing re-check cadence still owed."
+          "factor": "The generic branch was written as a parametrised pair covering 18 resources -- deliberately, and correctly, so that one fix is one fix -- but the same property makes one OMISSION eighteen omissions, and nothing in the branch said so.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "data: payload replaced with storedBlob(payload, []), and the 200 fallback limb switched to the stripped object as well."
         },
         {
-          "factor": "The accounting connector was built later by a different workstream; nothing in that change pointed at the prompt text that asserted the connector did not exist.",
+          "factor": "api/_lib/blob.js was created precisely to stop every write branch re-deciding what must not be stored, and this branch was never migrated onto it. The module existed and the call site did not change, so the fix was available and unapplied rather than unknown.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "A sweep for remaining raw data: payload write branches across api/sd-data.js is owed; this change fixes the SDN one only and does not claim it is the last."
+        },
+        {
+          "factor": "Nothing asserts what a write branch SENDS. The existing SDN suites assert the response and the session gate; the defect lived in the upstream POST body, which no test read, so eighteen resources could store a forged tenant id with every suite green.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/sd_data_sdn_blob_scope.js captures the upstream POST and asserts on its body, with an ungated resource arm so a fix written into the gated path alone would fail."
+        },
+        {
+          "factor": "The defect is unreachable through every current read path, because the real license_hash column always wins. That made it invisible to any review asking what breaks today rather than what the stored row now asserts.",
           "kind": "process",
           "action_status": "not-actionable",
-          "note": "A general 'who else asserts this does not exist' back-reference does not exist and is not being invented for one case."
-        },
-        {
-          "factor": "The premise was false while the conclusion was true, so every behavioural test of the advisor still passed -- the defect is unreachable by assertion on output correctness.",
-          "kind": "latent-condition",
-          "action_status": "declined",
-          "note": "Declined: asserting prompt PROSE against code would be a second copy of the facts and would drift the same way."
+          "note": "No process change reliably surfaces a latent stored falsehood; the durable answer is the shared helper being mandatory at the call site, which is the planned sweep above, not a review instruction."
         }
       ],
-      "recurrence_open": "Nothing re-reads the other dated 'verified' statements in exec-context.js on a cadence; this fix corrects one statement and names the sweep as owed. Until that sweep lands and is re-run periodically, the same decay can happen to any other statement in the same array."
+      "recurrence_open": "The sweep for remaining raw 'data: payload' write branches across api/sd-data.js is NOT done and is not claimed by this change. Nothing mechanical requires a write branch to route its blob through api/_lib/blob.js, so the next branch added can reintroduce this with every suite green -- the new test asserts the SDN branch and nothing generalises it. Separately, the twelve sensitive resources' save-site line numbers in the routed index row are hover's and were NOT re-derived at HEAD; only the handler branch was."
     }
   ],
   "started": "2026-09-09",
