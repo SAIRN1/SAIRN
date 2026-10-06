@@ -208,9 +208,14 @@ test('and that resource is one the ENCLOSING function actually writes', () => {
     'can return another write\'s message:\n       ' + bad.join('\n       '));
 });
 
-test('the pairing covers every site — 57 of them, counted not assumed', () => {
-  assert.strictEqual(sites.length, 57,
-    'expected 57 call sites, found ' + sites.length +
+test('the pairing covers every site — 58 of them, counted not assumed', () => {
+  // 57 -> 58 on 2026-10-06: saveGplNonDeclinable() is a new save path, added
+  // with the declinability work (tests/sairnlegacy_declinability.js). It
+  // writes leg_gplservices and names leg_gplservices, so the pairing arm
+  // above covers it; only the count moved. Updated per this arm's own
+  // instruction rather than by widening the assertion.
+  assert.strictEqual(sites.length, 58,
+    'expected 58 call sites, found ' + sites.length +
     '. If a save path was added, pair it; if one was removed, update this number.');
 });
 

@@ -194,6 +194,16 @@ label.chk input{width:auto;}
   body:has(#iplmodal.on) .modal:not(#iplmodal){display:none!important;}
   #iplmodal.on{position:static!important;background:#fff!important;display:block!important;}
   #iplmodal.on .mbox{box-shadow:none!important;width:100%!important;max-height:none!important;padding:0!important;}
+  /* AND THE SAME FOR THE STATEMENT OF GOODS AND SERVICES SELECTED
+     (2026-10-06). Third parallel rule, same reasoning as the second: this is
+     now the third and last document a family is handed. If a FOURTH ever
+     appears, the three-copies-is-enough argument stops holding and a shared
+     `.modal.on.printable` class is the right change -- named here so the next
+     person does not add a fourth copy by default. */
+  body:has(#stmtmodal.on) header,body:has(#stmtmodal.on) aside,body:has(#stmtmodal.on) main{display:none!important;}
+  body:has(#stmtmodal.on) .modal:not(#stmtmodal){display:none!important;}
+  #stmtmodal.on{position:static!important;background:#fff!important;display:block!important;}
+  #stmtmodal.on .mbox{box-shadow:none!important;width:100%!important;max-height:none!important;padding:0!important;}
 }
 </style>
 <!-- VERCEL WEB ANALYTICS, enabled 2026-09-13 on Michael's decision.
@@ -742,7 +752,16 @@ label.chk input{width:auto;}
   </div></div>
   <div class="card"><div class="ch"><span class="ct">General Price List Rates</span></div><div class="cb">
     <div style="color:var(--muted);font-size:12px;margin-bottom:10px">Standard FTC Funeral Rule service categories. Prices are set by the funeral home and editable here &mdash; the GPL export pulls these rates plus the live Merchandise catalog, it does not compute or invent pricing on its own.</div>
-    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Service Category</th><th>Price</th><th>Actions</th></tr></thead>
+    <!-- NON-DECLINABLE IS A COLUMN AND NOT AN INFERENCE (2026-10-06).
+         16 CFR 453.2(b)(4)(iii)(C) permits exactly ONE non-declinable charge,
+         the basic services fee. Which of THIS home's lines that is, is the
+         home's own statement about its own price list. The seed list happens
+         to open with "Basic Services of Funeral Director and Staff" and
+         matching that string would be a legal determination made by a
+         substring match -- so nothing is pre-ticked and the status line below
+         says when nothing is. -->
+    <div id="gpl-nondeclinable-status" style="font-size:12px;margin-bottom:10px"></div>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Service Category</th><th>Price</th><th>Non-declinable</th></tr></thead>
     <tbody id="gpltbody"></tbody></table></div>
   </div></div>
 </div>
@@ -752,6 +771,7 @@ label.chk input{width:auto;}
     <div class="fg"><label>Case</label><select id="ivcase" onchange="rInvoiceLineItemPicker()"></select></div>
     <div class="fg"><label>Merchandise Units (reserved/sold for this case)</label><div id="iv-unit-picker" style="max-height:140px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:8px"></div></div>
     <div class="fg"><label>Service Line Items</label><div id="iv-service-picker" style="max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:8px"></div></div>
+    <div class="fg"><div id="iv-statement-note" style="font-size:12px;line-height:1.5"></div></div>
     <div class="fg"><div class="srow" style="border:none;padding:0"><span class="slbl">Invoice Total</span><span class="sval" id="iv-total-preview">$0</span></div></div>
     <div class="perr" id="invoice-err" role="alert" aria-live="polite"></div>
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
@@ -794,6 +814,24 @@ label.chk input{width:auto;}
     <div id="ipl-preview"></div>
     <div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;">
       <button class="btn bo" onclick="closeItemPriceList()">Close</button>
+      <button class="btn bp" onclick="window.print()">Print</button>
+    </div>
+  </div>
+</div>
+
+<!-- STATEMENT OF FUNERAL GOODS AND SERVICES SELECTED (2026-10-06).
+     16 CFR 453.2(b)(5). The document the Rule requires for every arrangement,
+     and the reason declinability has to be stored: this statement has to show
+     what the family SELECTED, and a decline has to be visible as a decline
+     rather than as an item that silently is not on the page.
+     Reuses the GPL's print CSS, which hides everything except the open
+     modal -- see the #gplmodal rules near the top of this file. -->
+<div class="modal" id="stmtmodal">
+  <div class="mbox" style="width:720px">
+    <div class="mtitle" id="stmt-title">Statement of Funeral Goods and Services Selected</div>
+    <div id="stmt-preview"></div>
+    <div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeStatement()">Close</button>
       <button class="btn bp" onclick="window.print()">Print</button>
     </div>
   </div>
@@ -3230,25 +3268,73 @@ async function advanceInsuranceStatus(id){
 // ── ACCOUNTING / INVOICING ────────────────────────────────────────────────
 function invoiceTotal(inv){return (inv.line_items||[]).reduce(function(s,li){return s+(Number(li.amount)||0);},0);}
 function invoicePaid(inv){return (inv.payments||[]).reduce(function(s,p){return s+(Number(p.amount)||0);},0);}
+// THREE STATES PER LINE, NOT A CHECKBOX (2026-10-06). A checkbox has two
+// states and the Funeral Rule needs three: selected, DECLINED, and never
+// offered. The old picker recorded only the first, so a decline left no trace
+// -- see the legComposeStatement() header for the whole account.
+//
+// `Not offered` is the DEFAULT on purpose. A director who has not reached a
+// line yet must not have that read as the family declining it.
+function legLineRadios(id,label,price){
+  var priced=legPriceOf(price);
+  var money=priced===null
+    ? '<strong style="color:var(--bad,#b00)">PRICE NOT ON FILE</strong>'
+    : fmt(priced);
+  var name='ivsel-'+id;
+  function r(val,text){
+    return '<label class="chk" style="padding:0;margin-right:10px;font-size:12px">'
+      +'<input type="radio" name="'+name+'" class="ivlinesel" value="'+val+'" data-line="'+H(id)+'"'
+      +(val===''?' checked':'')+' onchange="ivTotalPreview()"> '+text+'</label>';
+  }
+  return '<div style="padding:5px 0;border-bottom:1px solid var(--line,#eee)">'
+    +'<div style="font-size:13px">'+H(label)+' &mdash; '+money+'</div>'
+    +'<div style="margin-top:3px">'+r('','Not offered')+r('selected','Selected')+r('declined','Declined')+'</div>'
+    +'</div>';
+}
+function legSelectionsFromDom(){
+  var sel={};
+  document.querySelectorAll('.ivlinesel:checked').forEach(function(rb){
+    var v=rb.value;
+    if(v==='selected'||v==='declined')sel[rb.getAttribute('data-line')]=v;
+  });
+  return sel;
+}
 function rInvoiceLineItemPicker(){
   var caseId=$('ivcase').value;
-  var caseUnits=caseId?merchUnits().filter(function(u){return u.reserved_for_case_id===caseId;}):[];
-  var unitWrap=$('iv-unit-picker');
-  unitWrap.innerHTML=caseUnits.length?caseUnits.map(function(u){
-    var m=merchCatalog().find(function(x){return x.id===u.merch_id;});
-    return '<label class="chk" style="padding:4px 0"><input type="checkbox" class="ivunitpick" value="'+u.id+'" data-amount="'+(m?m.retail:0)+'" data-label="'+H(m?m.model_name:'Item')+' ('+H(u.unit_serial)+')" onchange="ivTotalPreview()"> '+
-      (m?H(m.model_name):'Item')+' ('+H(u.unit_serial)+') -- '+fmt(m?m.retail:0)+'</label>';
-  }).join(''):'<div style="color:var(--muted);font-size:13px">No reserved/sold merchandise units on this case yet.</div>';
-  var svcWrap=$('iv-service-picker');
-  svcWrap.innerHTML=gplServices().map(function(s){
-    return '<label class="chk" style="padding:4px 0"><input type="checkbox" class="ivsvcpick" value="'+s.id+'" data-amount="'+s.price+'" data-label="'+H(s.category)+'" onchange="ivTotalPreview()"> '+H(s.category)+' -- '+fmt(s.price)+'</label>';
-  }).join('');
+  var lines=caseId?legOfferedLines(caseId):[];
+  var units=lines.filter(function(l){return l.kind==='merchandise';});
+  var svcs=lines.filter(function(l){return l.kind==='service';});
+  $('iv-unit-picker').innerHTML=units.length
+    ?units.map(function(l){return legLineRadios(l.id,l.label,l.price);}).join('')
+    :'<div style="color:var(--muted);font-size:13px">No reserved/sold merchandise units on this case yet.</div>';
+  $('iv-service-picker').innerHTML=svcs.length
+    ?svcs.map(function(l){return legLineRadios(l.id,l.label,l.price);}).join('')
+    :'<div style="color:var(--muted);font-size:13px">No General Price List rates on file.</div>';
   ivTotalPreview();
 }
+// The preview reads the SAME composer the save path and the printed statement
+// read, so the three cannot disagree about what was selected or what it costs.
 function ivTotalPreview(){
-  var total=0;
-  document.querySelectorAll('.ivunitpick:checked,.ivsvcpick:checked').forEach(function(cb){total+=Number(cb.getAttribute('data-amount'))||0;});
-  $('iv-total-preview').textContent=fmt(total);
+  var caseId=$('ivcase').value;
+  var st2=legComposeStatement({offered:legOfferedLines(caseId),
+                               selections:legSelectionsFromDom(),
+                               nonDeclinable:legNonDeclinableIds()});
+  // null means a selected line has no price. "$0" would be a number the
+  // family could read as a total, so it says so instead.
+  $('iv-total-preview').textContent=st2.total===null?'not computable':fmt(st2.total);
+  var box=$('iv-statement-note');
+  if(box){
+    var refuse=st2.problems.filter(function(p){return p.severity==='refuse';});
+    var disclose=st2.problems.filter(function(p){return p.severity==='disclose';});
+    var bits=[];
+    bits.push(st2.selected.length+' selected, <strong>'+st2.declined.length
+      +' declined</strong>, '+st2.notOffered.length+' not offered');
+    refuse.forEach(function(p){
+      bits.push('<span style="color:var(--bad,#b00)"><strong>'+H(p.code)+':</strong> '+H(p.detail)+'</span>');
+    });
+    disclose.forEach(function(p){bits.push('<span style="color:var(--muted)">'+H(p.detail)+'</span>');});
+    box.innerHTML=bits.join('<br>');
+  }
 }
 function openInvoiceModal(){
   fillCaseSelects();
@@ -3261,13 +3347,23 @@ function closeInvoiceModal(){$('invoicemodal').classList.remove('on');}
 async function saveInvoice(){
   var caseId=$('ivcase').value;
   if(!caseId){$('invoice-err').textContent='Select a case';return;}
-  var lineItems=[];
-  document.querySelectorAll('.ivunitpick:checked,.ivsvcpick:checked').forEach(function(cb){
-    lineItems.push({label:cb.getAttribute('data-label'),amount:Number(cb.getAttribute('data-amount'))||0});
-  });
-  if(!lineItems.length){$('invoice-err').textContent='Select at least one merchandise unit or service line item';return;}
+  var statement=legComposeStatement({offered:legOfferedLines(caseId),
+                                     selections:legSelectionsFromDom(),
+                                     nonDeclinable:legNonDeclinableIds()});
+  if(!statement.selected.length){$('invoice-err').textContent='Select at least one merchandise unit or service line item';return;}
+  // THE REFUSAL IS HERE AND NOT ONLY IN THE PREVIEW. A preview that warns and
+  // a save that proceeds is the same defect as a renderer that refuses beside
+  // a writer that writes a zero.
+  if(!statement.printable){
+    $('invoice-err').textContent='Cannot create this invoice: '
+      +statement.problems.filter(function(p){return p.severity==='refuse';})
+        .map(function(p){return p.detail;}).join(' ');
+    return;
+  }
+  var fields=legInvoiceFields(statement);
   var rec={id:newId('IV'),case_id:caseId,invoice_number:'INV-'+Date.now().toString().slice(-6),
-    line_items:lineItems,payments:[],status:'Draft',created_at:legLocalToday()};
+    line_items:fields.line_items,declined_items:fields.declined_items,
+    payments:[],status:'Draft',created_at:legLocalToday()};
   var list=invoices();list.push(rec);st('leg_invoices',list);
   closeInvoiceModal();rInvoicing();
   var syncResult=await sdnData('write','leg_invoices',rec);
@@ -3455,6 +3551,243 @@ async function saveGplServicePrice(id){
   var syncResult=await sdnData('write','leg_gplservices',s);
   toast(syncResult?'Rate updated':legWriteFailText('leg_gplservices','Updated on this device only -- it did not reach the server, so no other computer can see it'),syncResult?2000:4000);
 }
+
+// ── DECLINABILITY, AND THE STATEMENT OF GOODS AND SERVICES SELECTED ───────
+// (2026-10-06)
+//
+// THE GAP, and it was marked NOT DRIVEN when it was raised.
+// docs/cloud-research/sairnlegacy-competitive-gap-audit-2026-10-05.md §F2:
+//
+//   "`declinable` appears zero times, and that is the Rule's actual mechanic.
+//    The Funeral Rule's substance is not 'publish a price list' -- it is that
+//    a customer may DECLINE individual items and buy only what they want...
+//    So the itemisation that the rule exists to create has no representation
+//    in the data model, and `leg_invoices` cannot distinguish a declined item
+//    from one never offered.
+//    NOT DRIVEN: I did not read the invoicing panel's line-item structure
+//    closely enough to say what it *does* model."
+//
+// IT IS DRIVEN NOW AND THE INFERENCE WAS RIGHT. Before this change saveInvoice
+// built `line_items` from the CHECKED boxes only. An unchecked box left no
+// trace, so a family who was offered embalming and declined it produced a
+// byte-identical record to a family never offered it. Those two are exactly
+// what the Rule exists to make different.
+//
+// THREE STATES, NOT TWO. A line is SELECTED, DECLINED, or NOT OFFERED, and
+// NOT OFFERED is the default rather than a synonym for declined. Folding the
+// third into the second is the defect.
+//
+// WHAT THIS DELIBERATELY DOES NOT DECIDE: which charge is the non-declinable
+// one. 16 CFR 453.2(b)(4)(iii)(C) permits exactly ONE -- the basic services
+// fee -- and which of a home's own GPL lines that is, is the home's statement
+// about its own price list. The seeded catalogue happens to open with "Basic
+// Services of Funeral Director and Staff", and inferring from that string
+// would be a legal determination made by a substring match. The home marks
+// it; until it does, the panel SAYS SO rather than guessing.
+//
+// AND IT NEVER ASSERTS COMPLIANCE. Whether a list was offered to a family
+// before the merchandise was shown is an act in a room. This is about what is
+// on file, which is the same line rItemPriceListStatus() already draws.
+var LEG_SELECTED='selected', LEG_DECLINED='declined';
+
+// A price that is ABSENT is not zero -- the same call openItemPriceList()
+// already makes for printed price lists, and it matters more here because a
+// statement of goods SELECTED is the document a family signs. A genuine 0 is
+// a price and is kept; undefined/null/''/non-numeric is MISSING.
+function legPriceOf(v){
+  if(v===undefined||v===null||v==='')return null;
+  var n=Number(v);
+  return isFinite(n)?n:null;
+}
+
+// problems carry a SEVERITY because two different things go wrong and only
+// one should stop a document:
+//   refuse   -- printing would put a false figure in front of a family
+//   disclose -- honest but incomplete; print it WITH the note
+// One flat list with no severity is how a hard stop becomes a footnote.
+function legProblem(code,severity,detail){return {code:code,severity:severity,detail:detail};}
+
+// Pure. No DOM, no storage, no clock, no network -- so the suite can drive it.
+//   offered       [{id,label,price,kind}]      every line the home can offer
+//   selections    {id:'selected'|'declined'}   anything absent = NOT OFFERED
+//   nonDeclinable [id,...]                     ids the HOME marked
+function legComposeStatement(input){
+  var offered=(input&&Array.isArray(input.offered))?input.offered:[];
+  var selections=(input&&input.selections)||{};
+  var nonDeclinable=(input&&Array.isArray(input.nonDeclinable))?input.nonDeclinable.slice():[];
+  var selected=[],declined=[],notOffered=[],problems=[];
+  var offeredIds={};
+  offered.forEach(function(o){offeredIds[o.id]=true;});
+
+  // A decision recorded against a line that has since left the price list is
+  // not harmless: the statement would silently omit something the family
+  // chose or declined.
+  Object.keys(selections).forEach(function(id){
+    if(!offeredIds[id]){
+      problems.push(legProblem('SELECTION_FOR_UNKNOWN_LINE','refuse',
+        'A decision is recorded for "'+id+'", which is no longer on the price '
+        +'list. The statement would omit something the family decided about.'));
+    }
+  });
+
+  var ndKnown=nonDeclinable.filter(function(id){return offeredIds[id];});
+  var ndUnknown=nonDeclinable.filter(function(id){return !offeredIds[id];});
+  if(ndUnknown.length){
+    problems.push(legProblem('NON_DECLINABLE_NOT_ON_LIST','refuse',
+      ndUnknown.length+' line(s) marked non-declinable are not on the price list: '
+      +ndUnknown.join(', ')+'. A mark pointing at nothing cannot be checked '
+      +'against what the family declined.'));
+  }
+  if(ndKnown.length===0){
+    problems.push(legProblem('NO_NON_DECLINABLE_MARKED','disclose',
+      'No line is marked non-declinable. 16 CFR 453.2(b)(4)(iii)(C) permits '
+      +'exactly one -- the basic services fee -- and this system does not '
+      +'decide which of your lines that is. Mark it in General Price List Rates.'));
+  } else if(ndKnown.length>1){
+    problems.push(legProblem('MULTIPLE_NON_DECLINABLE','refuse',
+      ndKnown.length+' lines are marked non-declinable: '+ndKnown.join(', ')
+      +'. The Rule permits one.'));
+  }
+
+  offered.forEach(function(o){
+    var state=selections[o.id];
+    var price=legPriceOf(o.price);
+    var row={id:o.id,label:o.label,kind:o.kind||'service',price:price,
+             nonDeclinable:ndKnown.indexOf(o.id)>=0};
+    if(state===LEG_SELECTED){
+      selected.push(row);
+      if(price===null){
+        problems.push(legProblem('PRICE_NOT_ON_FILE','refuse',
+          '"'+o.label+'" is selected and has no price on file. It is not shown '
+          +'at $0, because a zero on a signed statement reads as a price the '
+          +'family agreed to.'));
+      }
+    } else if(state===LEG_DECLINED){
+      declined.push(row);
+      if(row.nonDeclinable){
+        problems.push(legProblem('DECLINED_NON_DECLINABLE','refuse',
+          '"'+o.label+'" is marked non-declinable and is recorded as declined. '
+          +'One of those two is wrong and the statement cannot say both.'));
+      }
+    } else {
+      notOffered.push(row);
+    }
+  });
+
+  // A total over a set containing an unpriced SELECTED line is not a smaller
+  // total, it is a wrong one. null, never a number.
+  var total=0,totalKnown=true;
+  selected.forEach(function(r){
+    if(r.price===null){totalKnown=false;return;}
+    total+=r.price;
+  });
+  var printable=!problems.some(function(p){return p.severity==='refuse';});
+  return {selected:selected,declined:declined,notOffered:notOffered,
+          total:totalKnown?total:null,problems:problems,printable:printable};
+}
+
+// The fields an invoice stores. `declined_items` sits BESIDE the existing
+// `line_items` rather than changing a shape invoiceTotal() already reads, and
+// leg_invoices stores a `data jsonb` blob (sql/sairnlegacy_data_schema.sql:208)
+// so both ride along with NO server change -- api/sd-data.js is untouched.
+//
+// IT REFUSES ON A NON-PRINTABLE STATEMENT. The first draft mapped an unpriced
+// selected line to `amount:0`, which is the exact error PRICE_NOT_ON_FILE
+// exists to prevent -- written into the stored record instead of onto the
+// page. A refusal on screen plus a silent zero in the writer is worse than
+// neither, because the screen looks correct.
+function legInvoiceFields(statement){
+  if(!statement||!statement.printable){
+    throw new Error('refusing to build invoice fields from a statement that is '
+      +'not printable: writing a zero for an unpriced line is the defect the '
+      +'composer refuses on screen');
+  }
+  return {
+    line_items:statement.selected.map(function(r){return {label:r.label,amount:r.price};}),
+    declined_items:statement.declined.map(function(r){return {label:r.label,id:r.id};})
+  };
+}
+
+// Every line this home can offer for one case: the GPL services plus the
+// merchandise units already reserved/sold against that case, which is the
+// same pair rInvoiceLineItemPicker() has always drawn from.
+function legOfferedLines(caseId){
+  var out=gplServices().map(function(s){
+    return {id:s.id,label:s.category,price:s.price,kind:'service'};
+  });
+  merchUnits().filter(function(u){return u.reserved_for_case_id===caseId;}).forEach(function(u){
+    var m=merchCatalog().find(function(x){return x.id===u.merch_id;});
+    out.push({id:u.id,label:(m?m.model_name:'Item')+' ('+u.unit_serial+')',
+              price:m?m.retail:null,kind:'merchandise'});
+  });
+  return out;
+}
+function legNonDeclinableIds(){
+  return gplServices().filter(function(s){return s.non_declinable===true;})
+    .map(function(s){return s.id;});
+}
+
+// ── THE DOCUMENT ──────────────────────────────────────────────────────────
+// Rendered from the STORED invoice, not from the picker, so what prints is
+// what was saved. `declined_items` is read back; an invoice saved before
+// 2026-10-06 has no such field, and that is reported as UNRECORDED rather
+// than as "nothing was declined" -- an older record genuinely does not know,
+// and saying "none" for it would be the same fold this whole change exists to
+// undo.
+function openStatement(invoiceId){
+  var inv=invoices().find(function(x){return x.id===invoiceId;}); if(!inv)return;
+  var sel=inv.line_items||[];
+  var dec=inv.declined_items;
+  var html='<div style="font-size:13px;color:var(--muted);margin-bottom:10px">'
+    +'Pinnacle Family Funeral Home &mdash; '+H(caseLabel(inv.case_id))
+    +' &mdash; '+H(inv.invoice_number)+' &mdash; '+H(inv.created_at||'')+'</div>';
+
+  html+='<div style="font-weight:600;margin:12px 0 4px">Goods and services you SELECTED</div>';
+  if(!sel.length){
+    html+='<div style="color:var(--muted);font-size:13px">Nothing recorded as selected on this invoice.</div>';
+  } else {
+    html+='<div class="tw" tabindex="0" role="region" aria-label="Scrollable data table">'
+      +'<table><thead><tr><th>Item</th><th>Price</th></tr></thead><tbody>';
+    var total=0,known=true;
+    sel.forEach(function(r){
+      var p=legPriceOf(r.amount);
+      if(p===null)known=false; else total+=p;
+      html+='<tr><td>'+H(r.label)+'</td><td>'+(p===null
+        ?'<strong style="color:var(--bad,#b00)">PRICE NOT ON FILE</strong>':fmt(p))+'</td></tr>';
+    });
+    html+='</tbody></table></div>'
+      +'<div class="srow" style="margin-top:6px"><span class="slbl">Total of selected items</span>'
+      +'<span class="sval">'+(known?fmt(total):'not computable &mdash; a selected item has no price on file')+'</span></div>';
+  }
+
+  html+='<div style="font-weight:600;margin:16px 0 4px">Items you DECLINED</div>';
+  if(dec===undefined||dec===null){
+    // THE HONEST THIRD ANSWER for a record written before declines were kept.
+    html+='<div style="padding:10px;border:1px solid var(--line);border-radius:6px;font-size:12px">'
+      +'<strong>Not recorded.</strong> This invoice was created before this '
+      +'system kept declines, so it does not know what was declined and what '
+      +'was never offered. It is NOT a statement that nothing was declined.</div>';
+  } else if(!dec.length){
+    html+='<div style="color:var(--muted);font-size:13px">None recorded as declined.</div>';
+  } else {
+    html+='<ul style="margin:4px 0 0 18px;font-size:13px">'
+      +dec.map(function(r){return '<li>'+H(r.label)+'</li>';}).join('')+'</ul>';
+  }
+
+  // THE SENTENCE THAT KEEPS THIS HONEST. This system can show what is on
+  // file; it cannot observe whether a price list was offered to a family
+  // before merchandise was shown, and it does not assert compliance.
+  html+='<div style="margin-top:16px;font-size:12px;color:var(--muted)">'
+    +'Generated live from this invoice as it is stored, not from a fixed '
+    +'document. 16 CFR 453.2(b)(5) requires a written statement of the goods '
+    +'and services selected for every arrangement. This page shows what this '
+    +'system has on file; it cannot record that a price list was offered for '
+    +'inspection before merchandise was shown, and it does not assert that '
+    +'this home is compliant.</div>';
+  $('stmt-preview').innerHTML=html;
+  $('stmtmodal').classList.add('on');
+}
+function closeStatement(){$('stmtmodal').classList.remove('on');}
 // ===================================================================
 // PREDICTIVE INSIGHTS (2026-09-01) -- brought up to the level StoneDesk's
 // renderPredictiveInsights() set, on this home's own data.
@@ -3629,13 +3962,52 @@ function rInvoicing(){
     var total=invoiceTotal(i),paid=invoicePaid(i),balance=total-paid;
     return '<tr><td>'+H(i.invoice_number)+'</td><td>'+H(caseLabel(i.case_id))+'</td><td>'+fmt(total)+'</td><td>'+fmt(balance)+'</td>'+
       '<td><span class="badge '+(statusColors[i.status]||'bx')+'">'+H(i.status)+'</span></td>'+
-      '<td>'+(balance>0?'<button class="btn bp bs" onclick="openPaymentModal(\''+i.id+'\')">Record Payment</button>':'--')+'</td></tr>';
+      '<td><button class="btn bo bs" onclick="openStatement(\''+i.id+'\')">Statement</button>'+
+      (balance>0?' <button class="btn bp bs" onclick="openPaymentModal(\''+i.id+'\')">Record Payment</button>':'')+'</td></tr>';
   }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No invoices yet</td></tr>';
   var gtb=$('gpltbody');
   gtb.innerHTML=gplServices().map(function(s){
-    return '<tr><td>'+H(s.category)+'</td><td><input id="gplprice-'+s.id+'" type="number" value="'+s.price+'" style="width:110px" onchange="saveGplServicePrice(\''+s.id+'\')"></td><td></td></tr>';
+    return '<tr><td>'+H(s.category)+'</td><td><input id="gplprice-'+s.id+'" type="number" value="'+s.price+'" style="width:110px" onchange="saveGplServicePrice(\''+s.id+'\')"></td>'+
+      '<td><label class="chk" style="padding:0"><input type="checkbox" id="gplnd-'+s.id+'"'+(s.non_declinable===true?' checked':'')+
+      ' onchange="saveGplNonDeclinable(\''+s.id+'\')"> <span style="font-size:12px;color:var(--muted)">cannot be declined</span></label></td></tr>';
   }).join('');
+  rGplNonDeclinableStatus();
   legRenderPredictiveInsights();
+}
+
+// The status line under General Price List Rates. COUNTS ONLY, and it never
+// says the home is compliant -- the same line rItemPriceListStatus() draws.
+function rGplNonDeclinableStatus(){
+  var box=$('gpl-nondeclinable-status'); if(!box) return;
+  var nd=legNonDeclinableIds();
+  var names=gplServices().filter(function(s){return s.non_declinable===true;})
+    .map(function(s){return s.category;});
+  if(nd.length===0){
+    box.innerHTML='<strong>No line is marked non-declinable.</strong> '
+      +'16 CFR 453.2(b)(4)(iii)(C) permits exactly one &mdash; the basic '
+      +'services fee. This system does not decide which of your lines that '
+      +'is; tick it above. Until you do, a Statement of Goods and Services '
+      +'will print with that gap named on it.';
+  } else if(nd.length>1){
+    box.innerHTML='<strong style="color:var(--bad,#b00)">'+nd.length+' lines are '
+      +'marked non-declinable: '+H(names.join(', '))+'.</strong> The Rule '
+      +'permits one. A statement cannot be produced until this is resolved.';
+  } else {
+    box.innerHTML='Non-declinable charge: <strong>'+H(names[0])+'</strong>. '
+      +'<span style="color:var(--muted)">Every other line can be declined by a '
+      +'family, and a decline is recorded as a decline rather than as an '
+      +'absence.</span>';
+  }
+}
+async function saveGplNonDeclinable(id){
+  var box=$('gplnd-'+id); if(!box) return;
+  var list=gplServices();
+  var s=list.find(function(x){return x.id===id;}); if(!s) return;
+  s.non_declinable=box.checked===true;
+  st('leg_gplservices',list);
+  rGplNonDeclinableStatus();
+  var syncResult=await sdnData('write','leg_gplservices',s);
+  toast(syncResult?'Updated':legWriteFailText('leg_gplservices','Updated on this device only -- it did not reach the server, so no other computer can see it'),syncResult?2000:4000);
 }
 
 // ── AI OBITUARY DRAFTING ──────────────────────────────────────────────────

@@ -453,3 +453,99 @@ Federal Register notice appeared in the results and was not read, so a rule
 change could move F1 and F2 in either direction. (6) **Part 1's internal half was
 not re-run** — its code citations are as of this morning and are not re-derived
 here.
+
+---
+
+## Re-derived at HEAD, 2026-10-06 (Fourth) — F1 AND F2 ARE BOTH CLOSED, and F1 was already closed when Part 2 called it "CONFIRMED AND WORSE"
+
+**Re-derive before acting on any finding here.** This document was written on
+2026-10-05 and two of its findings had already moved or moved the next day.
+Both are now closed and both corrections are measured against the app at HEAD.
+
+### F1 — closed the same day this document was written
+
+Part 1 said the CPL and OBCPL *"are not modelled as price lists at all"* and
+Part 2 raised the severity to *"the app has a screen where a regulated
+disclosure is required and does not know it."* **At HEAD the app knows.**
+Counted in `sairnlegacy.html` today:
+
+| marker | Part 1 recorded | at HEAD |
+|---|---|---|
+| `CPL` | 0 | **6** |
+| `OBCPL` | 0 | **3** |
+| `casket price list` | 0 | **3** |
+| `outer burial` | 0 | **12** |
+| `16 CFR` | — | **2** |
+
+And it is not prose. `openItemPriceList('casket')` and `('obc')` are two
+buttons **on the Merchandise panel** at `sairnlegacy.html:433` — which is the
+trigger Part 2 identified as the hard part — with the reasoning written beside
+them at `:435`: *"16 CFR 453.2(b)(2) and (b)(3) require the CPL and the OBCPL
+to be offered for inspection BEFORE caskets or containers are shown, and this
+is the screen where they are shown."* `IPL_KINDS` at `:3352` maps each list to
+its categories and its rule sentence, **a vault is counted as an outer burial
+container and an urn as neither**, an empty list refuses to print as a
+document, and a missing price prints `PRICE NOT ON FILE` rather than `$0`.
+
+**So Part 2's own headline cell is stale about F1.** The table in §5 says
+"CONFIRMED AND WORSE"; the correct reading at HEAD is *confirmed as the right
+finding, and already built*. The analysis stays — the presentation trigger is
+exactly why the buttons are on the merchandise screen and not under Documents.
+
+### F2 — closed 2026-10-06, and the inference it was unsure about was right
+
+Part 1 marked F2 **NOT DRIVEN**: *"I did not read the invoicing panel's
+line-item structure closely enough to say what it *does* model."*
+
+**Driven now, and the inference held.** `sairnlegacy.html`'s `saveInvoice()`
+built `line_items` as `[{label, amount}]` from the CHECKED boxes only. An
+unchecked box left no trace, so a family offered embalming who declined it
+produced a byte-identical record to a family never offered it. `declinable`
+measured **0** at HEAD before this change.
+
+What landed:
+
+* **Three states per line, not two** — `Selected` / `Declined` / `Not offered`,
+  with **Not offered pre-checked**, so a director who has not reached a line
+  does not have it read as a decline.
+* **`declined_items` stored beside `line_items`** on the invoice record.
+  `leg_invoices` keeps a `data jsonb` blob
+  (`sql/sairnlegacy_data_schema.sql:208`), so this needed **no server change** —
+  `api/sd-data.js` is hank's under an active claim and was not touched.
+* **One non-declinable charge, and the app never guesses which.** 16 CFR
+  453.2(b)(4)(iii)(C) permits exactly one — the basic services fee. The home
+  ticks it in General Price List Rates; nothing is pre-ticked, and the seed
+  list is deliberately unmarked even though it opens with *"Basic Services of
+  Funeral Director and Staff"*, because matching that string would be a legal
+  determination made by a substring. Zero marked is **disclosed**; two marked
+  **refuses**; declining the marked one **refuses** and names it.
+* **A Statement of Funeral Goods and Services Selected** (16 CFR 453.2(b)(5))
+  per invoice, itemising selected items, listing declined items as declined,
+  and — for an invoice saved before declines were kept — saying
+  **"Not recorded… It is NOT a statement that nothing was declined"** rather
+  than rendering an empty declined list. That third answer is the same fold F2
+  names, one layer out.
+* **A price that is absent is never 0.** A selected line with no price refuses,
+  the total reports *"not computable"* rather than a figure, and the WRITER
+  refuses too — the first draft mapped it to `amount: 0`, which would have put
+  the refused value into the stored record while the screen looked correct.
+
+**It still asserts nothing about compliance.** Whether a list was offered to a
+family before the merchandise was shown is an act in a room; the statement says
+so in its own footer.
+
+**Driven by `tests/sairnlegacy_declinability.js` — 31 arms, 0 failed**,
+extracting the composer from the app file by its own balanced braces
+(`tests/lib/fn_span.js`) rather than a byte window, with a control proving the
+declined and never-offered cases produce DIFFERENT stored records and an
+ablation proving the writer's refusal is not a no-op.
+
+### What is left of this document's findings
+
+| Finding | At HEAD 2026-10-06 |
+|---|---|
+| **F1** CPL / OBCPL not modelled | **CLOSED** 2026-10-05 (CC) — buttons on the merchandise panel, with the trigger reasoning |
+| **F2** `declinable` zero; declined ≡ never-offered | **CLOSED** 2026-10-06 (Fourth) — three states, `declined_items`, the Statement, 31 arms |
+| **F3** preneed depth | Answered by Part 2 as a scoping question, not a code gap. Unchanged |
+| Chain of custody as a differentiator | **STILL UNKNOWN**, as Part 2 says. No vendor advertises it; that is not evidence either way |
+| Cemetery MAPPING may put us behind | **NOT RE-DERIVED HERE.** Outside this pass and not claimed as checked |
