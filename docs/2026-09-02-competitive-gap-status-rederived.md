@@ -83,7 +83,7 @@ and `sql/` schema files were checked for every item regardless of hit count.
 | A2 | Crew / field-labour scheduling depth | Partially closed, depth unassessed | **BUILT** | Depth assessed then the missing half built: `api/_lib/roofing-crew-capacity.js` (Cody) |
 | A3 | Subcontractor management | Not modelled, no `rf_subs`-class table | **BUILT** | `subcontractors`, `sub_assignments`, `panel-subs` (Cody) |
 | A4 | Tool fragmentation | *Positioning finding, not a gap* | **N/A** | Unchanged — SAIRNroofing is already single-app; this is the wedge, not a work item |
-| A5 | Accounting integration | Not present | **IN FLIGHT** | Cody holds an active claim: `accounting — fresh read-only quickbooks connector opt-in per customer` |
+| A5 | Accounting integration | Not present | ~~**IN FLIGHT**~~ → **CLOSED on the buildable half, vendor half REFUSED AND DISCLOSED. Re-derived at HEAD 2026-10-06 (Fourth)** | **THIS CELL CITED A CLAIM AS ITS EVIDENCE AND THE CLAIM EXPIRED, which is a status that cannot go stale in the right direction — "in flight" reads as "somebody is on it" forever.** At HEAD: the EXPORT is built and tested — `api/_lib/roofing-gl-export.js` (341 lines, pure) with `api/_lib/roofing-gl-export.test.js` **23/23**, `rfGlExport()` behind a "Build journal" button at `sairnroofing.html:874`, a chart-of-accounts panel at `:841`, and the on-screen disclosure at `:846`: *"This is not a QuickBooks connection."* The CONNECTOR also exists — `api/accounting.js`, `api/_lib/accounting-connector.js`, `sql/accounting_connector_schema.sql` — and **cannot connect**: `QB_CLIENT_ID` / `QB_CLIENT_SECRET` / `QB_REDIRECT_URI` are unset in every environment so every OAuth action answers 501 with the real reason, and the connector table is not in `db/schema_snapshot.json`. Same shape as B6: buildable half built, vendor half refused and said out loud. Full account: `docs/2026-09-17-sairnroofing-competitive-gap-rederived.md` |
 | B1 | Commercial roof asset registry | Absent — "single largest Tier B structural gap" | **BUILT** | `rf_buildings`, `rf_roof_sections`, `panel-assets`, `sairnroofing_asset_registry_schema.sql` (Cody) |
 | B2 | No Tier A→B bridge | Open whitespace | **ADDRESSED BY B1** | Positioning finding that followed B1; B1 is the bridge |
 | B3 | WIP / POC, retainage, certified payroll | 1 keyword hit, not modelled | **PARTIAL — DELIBERATELY** | Draws, retainage and over/under billing built (`rf_draws`, `panel-draws`). **Certified payroll explicitly refused** and said so on the panel: it needs external prevailing-wage determinations and *"inventing a rate would put a fabricated number in a federal filing."* |
@@ -114,7 +114,7 @@ in flight; B3 is complete except for the half refused on purpose.
 | A8 | Recall / reactivation | Zero occurrences | **BUILT** | `dnt_recall_outreach`, `panel-recall`, `sairndental_recall_schema.sql` (Fourth) |
 | A9 | Treatment planning | Zero occurrences | **BUILT** | `dnt_txplans`, `panel-txplan`, `sairndental_treatment_plans_schema.sql` |
 | B1 | Enterprise credentialing & payer-enrolment lifecycle — *"the clearest whitespace in the entire dental audit"* | Per-employee credentialing only, not payer enrolment | **BUILT** | `payer_enrollment` record type with its own effective/enrolment logic on `panel-credentials` (Hank) |
-| B2 | Cross-location roll-up reporting | Write-side done, reporting deferred | **SERVER BUILT, NO CALLER — CORRECTED 2026-09-17 (CC)** | This cell was wrong in both directions at once by 2026-09-15. The reporting is no longer deferred — `api/_lib/dnt-rollup.js`, the `dnt_rollup` endpoint at `api/sd-data.js:11274`, 39 passing test arms, tiered **A**, reviewed twice — and it is not reachable either: `dnt_rollup` appears **0 times** in `sairndental.html` and in every `.html` file in the repo. It is the only one of the app's 25 registered resources the client never names. **“Deferred” was also not quite right when written**: `rollup`/`roll-up` are 0 in `SAIRN-BACKLOG.md`, so the deferral this cell cited is not recorded there. See `docs/2026-09-17-sairndental-competitive-gap-rederived.md` §0 |
+| B2 | Cross-location roll-up reporting | Write-side done, reporting deferred | ~~**SERVER BUILT, NO CALLER — CORRECTED 2026-09-17 (CC)**~~ → **BUILT AND NOW REACHED. Re-derived at HEAD 2026-10-06 (Fourth)** | **The "NO CALLER" half of this cell went false and the cell kept asserting it.** It read *"`dnt_rollup` appears **0 times** in `sairndental.html` and in every `.html` file in the repo"*. Counted at HEAD: **4** occurrences, two of them real calls — `sairndental.html:2492` `var b=await sdnData('read','dnt_rollup',{});` and the error-surface read at `:2498` `dntLastErrText('dnt_rollup')`. The other two (`:1122`, `:1141`) are comment text recording the gap and the role gate. So the engine-with-no-caller defect this cell was written to flag is CLOSED. Still true as written: `api/_lib/dnt-rollup.js`, the endpoint at `api/sd-data.js`, 39 arms, tiered **A**, reviewed twice; and *"deferred"* was never recorded in `SAIRN-BACKLOG.md`. See `docs/2026-09-17-sairndental-competitive-gap-rederived.md` §0 |
 | B3 | Consolidated RCM / denials & appeals | `dnt_denial` + `dnt_ar` exist, no appeals lifecycle | **BUILT** | `panel-denials` with the appeals workflow and receivable ageing (Fourth, `f856b38`) |
 | B4 | Central call centre / missed-call leakage | *"recorded as a category, not a recommendation"* | **OPEN — NOT RECOMMENDED** | 0 hits. The audit itself declined to recommend it; it is not a backlog item |
 | B5 | Open BI / data-warehouse connectors | Absent, CSV export only | **BUILT** | `api/dnt-bi.js`, `api/_lib/dental-bi.js`, `panel-bi`, `sql/sairndental_bi_tokens_schema.sql` (Fourth, `363b830`). A generic pollable read-only JSON feed rather than a Power BI-specific `.mez` connector — all three named tools read a URL, so one feed serves all three. Eleven datasets of **stored facts**; derived measures (appeal deadlines, GFE due dates, recall standing, insurance estimates) are deliberately NOT duplicated out of the browser engines that own them. Inherits the minting employee's role, re-read live per poll; patient identifiers off by default behind a stable pseudonym. ⚠ SQL pending a run |
@@ -422,3 +422,65 @@ of the accounting story now exists one app over, built and named honestly. If
 row 6 is ever reopened, the question to ask first is whether StoneDesk needs a
 connection or the same export — they are different amounts of work and only one
 of them has a vendor dependency.
+
+---
+
+## Re-derived again at HEAD, 2026-10-06 (Fourth) — SAIRNroofing and SAIRNdental only, and TWO headline cells had gone false
+
+**Scope, stated before the result.** Every SAIRNroofing row (A1–A5, B1–B7, 12
+rows) and every SAIRNdental row (A1–A9, B1–B5, 14 rows) re-derived against the
+repository at HEAD. **26 of this file's 4 app sections.** The **SAIRNsenior and
+StoneDesk sections were NOT re-derived** and are not claimed as checked: hank
+holds an active claim naming `sairnsenior.html` and `stonedesk.html`
+(2026-10-06 06:55Z) and `sairn_claim.py check` BLOCKS on both apps. Declared
+per PR §4.3 rather than reworded past. What I found in those two sections is
+routed, not edited — see `docs/2026-10-06-fourth-routed-to-hank.md`.
+
+### The two cells that were false
+
+| Cell | What it said | What is true at HEAD |
+|---|---|---|
+| SAIRNroofing **A5** | **IN FLIGHT** — *"Cody holds an active claim"* | The claim expired weeks ago. The export is BUILT (`api/_lib/roofing-gl-export.js`, 23/23, `sairnroofing.html:874`/`:841`/`:846`); the connector exists and CANNOT connect (`api/accounting.js`, 501 on every OAuth action, table absent from `db/schema_snapshot.json`) |
+| SAIRNdental **B2** | **SERVER BUILT, NO CALLER** — *"`dnt_rollup` appears 0 times in `sairndental.html`"* | **4** occurrences, two of them real calls: `sairndental.html:2492` `sdnData('read','dnt_rollup',{})` and `:2498` `dntLastErrText('dnt_rollup')`. The engine-with-no-caller defect is closed |
+
+**A5 is the more interesting of the two, because its evidence was a CLAIM.**
+A cell whose status is *"somebody is working on it"* cannot go stale in the
+safe direction: the claim expires, the work either lands or does not, and the
+cell goes on saying in-flight either way. A status cell should cite code, a
+commit or a refusal — never a claim record.
+
+### Everything else in those two sections HOLDS, and here is the evidence
+
+Checked by locating each named identifier in the app at HEAD, not by recall.
+All 21 roofing identifiers and all 11 dental identifiers were found:
+
+* **SAIRNroofing** — `rf_warranty_tiers`:4737, `rf_job_warranties`:4755,
+  `panel-warranties`:550, `subcontractors`/`sub_assignments`:498,
+  `panel-subs`:504, `rf_buildings`:4478, `rf_roof_sections`:4494,
+  `panel-assets`:589, `rf_draws`:4287, `panel-draws`:631,
+  `rf_safety_equipment`:4077, `rf_job_hazard_assessments`:4097,
+  `panel-safety`:667, `rf_entities`:3602, `panel-entities`:889,
+  `rf_supplier_documents`:1721, `panel-supplier`:758,
+  `rf_prequal_documents`:3838, `rf_bonding`:3861, `panel-prequal`:701 — all in
+  `sairnroofing.html`; plus `api/_lib/roofing-crew-capacity.js`,
+  `api/_lib/roofing-supplier-match.js`, `api/_lib/roofing-gl-export.js` and
+  the four `sql/sairnroofing_*` schema files.
+* **SAIRNdental** — `cdt_version`:3176, `panel-gfe`:730, `dnt_gfe`:1802,
+  `panel-recall`:819, `dnt_recall_outreach`:1816, `panel-txplan`:881,
+  `dnt_txplans`:1802, `payer_enrollment`:494, `panel-credentials`:476,
+  `panel-denials`:960, `panel-bi`:692 — all in `sairndental.html`; plus
+  `api/dnt-bi.js`, `api/_lib/dental-bi.js` and the four `sql/sairndental_*`
+  schema files.
+* **A1 OPEN still holds exactly as written** — `eligibilit` is 4 hits in
+  `sairndental.html` and all four are `gfeEligibility` (`:761`, `:4780`,
+  `:4823`, `:4824`), which is No Surprises Act, not payer eligibility.
+* **A2, A3, A5, A6 OPEN — VENDOR/CERTIFICATION-BLOCKED all still measure
+  zero** at HEAD: `837` 0, `835` 0, `x12` 0, `clearinghouse` 0, `imaging` 0,
+  `radiograph` 0, `cbct` 0, `intraoral` 0, `prescrib` 0, `EPCS` 0, `PDMP` 0.
+* **B4 OPEN — NOT RECOMMENDED** holds: `call cent` 0 hits.
+
+**A COUNT OF ZERO IS NOT THE SAME EVIDENCE AS A COUNT OF FOUR, and that is the
+whole reason B2 was caught.** Every cell above whose evidence is a count now
+carries the count as measured today. A cell asserting an absence is the one
+most worth re-counting, because the thing it asserts is the thing a later
+commit adds.
