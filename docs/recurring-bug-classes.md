@@ -27,7 +27,7 @@ cannot drift into different vocabularies.
 | 1 | `tests/seam_check/run_delegation_probe.py` left `api/sd-data.js` and `api/_lib/subcontractor-compliance.js` carrying planted sabotage, one of which does not parse | coding | error handling | **due to** a destructive mutation written as a straight line — `write()`, then work, then `git checkout --` — with no `finally`, so every exception, assertion and kill between the two kept the plant | this batch |
 | 2 | The same probe's baseline read the LAST LINE of `tools/sairn_seam_check.py`'s output | coding | anchor selection | **due to** a positional anchor (`splitlines()[-1]`) on another tool's output, which moved the day that tool gained a three-line closing explanation | this batch |
 | 3 | The same probe's baseline required `0 could-not-tell` — a PLATFORM total — while printing "canAssign resolves at baseline" | requirement | criterion definition | **due to** a proxy standing in for the property actually named: the platform figure is 19 today, every one a different seam, and none of them canAssign | this batch |
-| 4 | `tests/push_gate/check8_probe.py` leaves `.git/config` with `core.bare = true` and a fixture identity, after which every git command in the clone fails | unknown | unknown | **unknown.** Pinned to one STEP — `dry_push(probe_env=False)`, the first dry-run push whose outgoing range resolves — and not to one command. Six isolations came back clean and all six exited early on "range could not be read", so none of them reached the code. Next place to look is named in the file; not guessed at here | contained this batch, not fixed |
+| 4 | `tests/push_gate/check8_probe.py` leaves `.git/config` with `core.bare = true` and a fixture identity, after which every git command in the clone fails | design | sandbox isolation | **due to** the fixture being a LINKED WORKTREE, which shares `.git/config` with the clone that owns it — so any `git config` write made with cwd inside it lands in the real clone. cody's class name: `SHARED_CONFIG_WRITE_FROM_WORKTREE`. **The writer is still unidentified and is cc's**; this row is about why the write REACHED this clone, which is a separate and fixable thing | **FIXED 2026-10-06** (batch 11): the fixture is a throwaway `git clone --local` with its own config. 9 driven runs, config byte-identical on 9 of 9 |
 | 5 | My own first version of the fix for #1: `--check-residue` DELETED the sentinel it had just reported | design | lifecycle | **due to** a cleanup handler registered at module import, so a read-only invocation ran it — a detector erasing its own evidence. Caught by the control on its first run, not by reading | this batch |
 
 ### What the five say together
@@ -42,3 +42,16 @@ tested; all three are about what happens on the way out.
 #1.** That is the expected rate rather than an embarrassment: a fix written
 and then controlled catches its own defect in the same hour. The rate worth
 watching is fixes that ship WITHOUT a control, and that number is zero here.
+
+## 2026-10-06 — batch 11 (fourth)
+
+| # | Defect | Phase | Sub-phase | Cause | Commit |
+|---|---|---|---|---|---|
+| 6 | My own clone cleanup leaked a 68 MiB hardlinked directory per run, silently | coding | error handling | **due to** `shutil.rmtree(..., ignore_errors=True)` over a cloned object store whose pack files are READ-ONLY on Windows — the removal failed and the flag swallowed it. Measured: three directories left in `%TEMP%` across the first three runs while the probe reported `ok` | this batch |
+| 7 | The config snapshot resolved `MAIN/.git/config`, which does not exist in a linked worktree | coding | path resolution | **due to** assuming `.git` is a directory. It is a FILE in a worktree, so the first run from a dev worktree SKIPPED with "config could not be read". Fixed with `git rev-parse --git-common-dir`, which also returns the SHARED dir — the one a worktree write would reach | this batch |
+| 8 | The dry-push retry fetched `MAIN` after the fixture became a clone | coding | state ownership | **due to** a line that was correct while the fixture shared MAIN's object store and became a no-op when it stopped. Measured: three consecutive runs SKIPPED on "could not read the outgoing range" | this batch |
+| 9 | Convention 11's heading in `docs/2026-09-13-cross-domain-disciplines.md` had NO BODY | process | document structure | **due to** its body sitting forty lines lower under a heading left over from when the file had eight items. Found and routed by cc, not by me, while working on an unrelated file | this batch |
+
+**All four are mine and three of the four were caught by RUNNING the thing, not
+by reading it** — which is the same ratio batch 10 recorded. Number 9 is the
+exception and it was caught by somebody else reading my file.
