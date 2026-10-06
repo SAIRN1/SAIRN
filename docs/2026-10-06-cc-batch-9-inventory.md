@@ -235,9 +235,23 @@ patch would have.
    same thing.
 4. **`seq 538`'s twelve SDN resources are not verified by me.** I wrote the method
    and declined to write the row.
-5. **Nothing I landed was verified against the deployment.** The licence-case
-   change in particular is a transport-level behaviour change tested only against
-   a stubbed `fetch`; a live drive with a lower-case key is owed.
+5. ~~**Nothing I landed was verified against the deployment.**~~ **CORRECTED AFTER
+   THE PUSH — the licence-case change IS live-verified**, and it was the one item
+   with a drivable live surface. `POST /api/sd-auth {"action":"check_license"}`,
+   read-only, control first:
+
+   ```
+   SD-PINNACLE-2026   HTTP 200  {"ok": true, "active": true, "app_id": "stonedesk"}
+   sd-pinnacle-2026   HTTP 200  {"ok": true, "active": true, "app_id": "stonedesk"}
+   ```
+
+   The uppercase form was driven FIRST as the control — without it a lower-case
+   200 says nothing — and the two resolve to the **same `app_id`**, which is the
+   one outcome the change must not get wrong: a retry reaching a different row
+   would scope data to the wrong tenant. **The residual stands for everything
+   else:** the Tier A gate, fmea, the push gate and the registry refusal are all
+   build-time tools with no deployed surface to drive, so "verified" for them means
+   their own controls and nothing more.
 6. **The import-time registry refusal is a new way to break every importer.** It
    is deliberate and I believe it is right, but the first person it stops will be
    stopped hard, and I have not measured how that feels in a hook.

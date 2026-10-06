@@ -6607,3 +6607,21 @@ measured how it feels when it first fires in a hook. (7) `dnt_supplies` is
 re-tiered in a routed document, so until hank lands it the resource is still B/B
 and the obligation it wants cannot be opened — the gate derives its list from the
 row that does not yet say A.
+
+### Post-push live verification — blind spot 5 corrected on the one item that had a live surface
+
+`POST /api/sd-auth {"action":"check_license"}`, read-only, control first:
+
+    SD-PINNACLE-2026   HTTP 200  {"ok": true, "active": true, "app_id": "stonedesk"}
+    sd-pinnacle-2026   HTTP 200  {"ok": true, "active": true, "app_id": "stonedesk"}
+
+**The uppercase form was driven FIRST as the control** — without it a lower-case
+200 says nothing, only that the clone reached a working endpoint. The two resolve
+to the **same `app_id`**, which is the single outcome the change must not get
+wrong: a retry reaching a different row would scope a tenant's data by a hash no
+row of theirs carries.
+
+**The residual stands for everything else in the batch.** The Tier A gate,
+`fmea_draft`, the push gate and the registry refusal are build-time tools with no
+deployed surface to drive, so "verified" for them means their own controls and
+their own ablations — and nothing more than that.
