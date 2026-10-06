@@ -30,6 +30,44 @@
 // unrelated SAIRNcash endpoint (or another app's serverless function in this
 // shared Vercel project) never pays the init cost or fails on a missing env
 // var it doesn't need.
+//
+// ---------------------------------------------------------------------------
+// PORTED TO THE MODULAR ENTRY POINTS, 2026-10-06. WHY, AND WHAT IT UNBLOCKS.
+//
+// This file used the LEGACY NAMESPACE -- admin.apps, admin.app(),
+// admin.credential.cert, admin.auth(), admin.database(). firebase-admin v13
+// REMOVED that namespace: at 14.5.0 `require('firebase-admin')` IS the modular
+// `firebase-admin/app` surface and exports only cert, initializeApp, getApp,
+// getApps, deleteApp and errors. Measured side by side:
+//
+//     admin.credential  12.7.0 object    14.5.0 undefined
+//     admin.auth        12.7.0 function  14.5.0 undefined
+//     admin.apps        12.7.0 object    14.5.0 undefined
+//     admin.app         12.7.0 function  14.5.0 undefined
+//     admin.database    12.7.0 function  14.5.0 undefined
+//     admin.initializeApp        function          function   <- the survivor
+//
+// ALL THREE EXPORTED FUNCTIONS BROKE, not just the minting one, and
+// `initializeApp` surviving is what made it invisible to a load-and-list smoke
+// test. `tools/dep_surface_check.py --package firebase-admin --version 14.5.0`
+// reproduces it mechanically: 2 of 11 named symbol paths resolved before this
+// port.
+//
+// THE SUBPATHS EXIST IN BOTH VERSIONS, which is the only reason this port is
+// safe to land while package.json still pins ^12.7.0. Verified by loading
+// them, 2026-10-06: `firebase-admin/app` gives initializeApp, getApp, getApps,
+// cert, deleteApp as functions and `firebase-admin/auth`.getAuth and
+// `firebase-admin/database`.getDatabase are functions, IDENTICALLY under
+// 12.7.0 and under 14.5.0.
+//
+// THIS PORT DOES NOT UPGRADE ANYTHING. package.json is unchanged. It clears
+// trigger 1 of the four recorded in docs/2026-10-05-dependabot-high-triage.md:
+// *"api/_lib/firebase-admin.js is ported to the modular API -- that is what
+// unblocks 14.5.0"*. The upgrade decision stays where addendum 3 left it until
+// somebody takes that decision deliberately.
+//
+// The requires stay INSIDE the functions. That is the lazy-singleton property
+// stated above, and hoisting them to module scope would quietly undo it.
 // ---------------------------------------------------------------------------
 
 let _app = null;
@@ -53,13 +91,17 @@ function getAdminApp() {
     throw e;
   }
 
-  const admin = require('firebase-admin');
+  // MODULAR ENTRY POINTS, not the legacy namespace -- see the block at the
+  // foot of this header. Still required INSIDE the function, deliberately:
+  // the lazy-singleton property above is why, and importing at module scope
+  // would make every unrelated SAIRNcash endpoint pay the SDK load.
+  const { initializeApp, getApp, getApps, cert } = require('firebase-admin/app');
   // A cold-started sibling serverless invocation could have already
   // initialized the default app in this same runtime -- reuse it instead of
   // throwing on a duplicate-app-name error.
-  _app = admin.apps && admin.apps.length
-    ? admin.app()
-    : admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+  _app = getApps().length
+    ? getApp()
+    : initializeApp({ credential: cert(serviceAccount) });
   return _app;
 }
 
@@ -76,8 +118,8 @@ async function mintCustomToken(uid) {
     throw new Error('mintCustomToken requires a real customerId string');
   }
   const app = getAdminApp();
-  const admin = require('firebase-admin');
-  return admin.auth(app).createCustomToken(uid);
+  const { getAuth } = require('firebase-admin/auth');
+  return getAuth(app).createCustomToken(uid);
 }
 
 // ---------------------------------------------------------------------------
@@ -113,10 +155,10 @@ function getDbApp() {
     e.code = 'CONFIG';
     throw e;
   }
-  const admin = require('firebase-admin');
-  const existing = (admin.apps || []).filter(Boolean).find(function (a) { return a.name === DB_APP_NAME; });
-  _dbApp = existing || admin.initializeApp(
-    { credential: admin.credential.cert(serviceAccount), databaseURL: databaseURL },
+  const { initializeApp, getApps, cert } = require('firebase-admin/app');
+  const existing = getApps().filter(Boolean).find(function (a) { return a.name === DB_APP_NAME; });
+  _dbApp = existing || initializeApp(
+    { credential: cert(serviceAccount), databaseURL: databaseURL },
     DB_APP_NAME
   );
   return _dbApp;
@@ -127,14 +169,14 @@ function getDbApp() {
 // different code path.
 async function rtdbUpdate(path, value) {
   if (!path || typeof path !== 'string') throw new Error('rtdbUpdate requires a path');
-  const admin = require('firebase-admin');
-  await admin.database(getDbApp()).ref(path).update(value);
+  const { getDatabase } = require('firebase-admin/database');
+  await getDatabase(getDbApp()).ref(path).update(value);
 }
 
 async function rtdbGet(path) {
   if (!path || typeof path !== 'string') throw new Error('rtdbGet requires a path');
-  const admin = require('firebase-admin');
-  const snap = await admin.database(getDbApp()).ref(path).once('value');
+  const { getDatabase } = require('firebase-admin/database');
+  const snap = await getDatabase(getDbApp()).ref(path).once('value');
   return snap.val();
 }
 
