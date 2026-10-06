@@ -5764,6 +5764,20 @@ function exportCsv(type){
 // silently UPLOADING them would be a write nobody asked for. Instead the form is
 // pre-filled from them and the panel says plainly that the value is device-local
 // until saved -- the user presses Save once and it becomes real.
+//
+// ── DELIBERATELY EXEMPT FROM A LOCAL ACCESSOR, 2026-10-05. DO NOT "FIX" THE
+// INCONCLUSIVE VERDICT BY ADDING ONE. `tools/citation_line_drift_check.py`
+// reports every `sen_settings` citation as INCONCLUSIVE -- *"no storage
+// constant declared for it, and no literal setItem('sen_settings') or
+// st('sen_settings') write either"* -- and that verdict is CORRECT. It is the
+// tool saying it cannot anchor a citation here, not that anything is wrong.
+// There is no `st('sen_settings')` because there must not be one: this
+// resource is server-authoritative by the decision recorded directly above,
+// and a localStorage copy of a federally-mandated EVV configuration is the
+// exact defect that decision removed. Writing the accessor would make the
+// checker say SOUND by re-creating the bug. The honest state is an
+// unanchorable citation on a resource with no local write site, and it is
+// recorded here rather than left for somebody to discover and helpfully undo.
 var SEN_AGENCY_DEFAULT={agency_name:'SAIRNsenior',demo_company:'Lakeshore Home Care'};
 var senSettings={agency_profile:null,evv_config:null,provisioned:null,migrated:{agency:false,evv:false}};
 

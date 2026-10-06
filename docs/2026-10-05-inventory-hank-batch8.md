@@ -433,3 +433,108 @@ the branch has carried `data: payload` since it was written, and
 `api/_lib/blob.js` came much later — it was written before the rule it
 violates existed, so naming the feature commit would misdate the
 discovery-lag figure by months and blame a commit that broke nothing.
+
+---
+
+## 5. `sen_settings` has no local accessor — EXEMPT, and the reason is now in the app
+
+**Premise at HEAD: HELD, and the dispatch's two options are not symmetric.**
+`tools/citation_line_drift_check.py` reports every `sen_settings` citation
+**INCONCLUSIVE** — *"no storage constant declared for it, and no literal
+`setItem('sen_settings')` or `st('sen_settings')` write either"*.
+
+**The verdict is correct and the resource must stay that way.** `sen_settings`
+is server-authoritative by a decision recorded in the app's own comment on
+2026-08-27, which fixed a real defect: a federally-mandated **EVV
+configuration** that lived only in `localStorage` did not survive a
+browser-data clear, did not follow the user to a second machine, and was
+invisible to the rest of the agency — *while the panel reported it as saved*.
+The legacy `sen_agency` / `sen_evv_config` keys are kept **read-only** as a
+migration source and are never written again.
+
+**So "add the accessor so it can reach SOUND" would make the checker say SOUND
+by re-creating the bug.** Exempted, with the reason written at
+`sairnsenior.html` immediately above `SEN_AGENCY_DEFAULT` — at the exact place
+somebody would otherwise helpfully add the accessor, rather than in a document
+they would not be reading at that moment.
+
+    python tools/checkblocks.py sairnsenior.html    EXIT=0   3 blocks, 0 failed
+
+**And the exemption note immediately caused a drift it also caught.** Adding
+15 lines above `saveEvvConfig()` moved it, so the `sen_settings` tier cell's
+citation went stale in the same edit — corrected in that edit. Re-deriving the
+other two cites in that cell then found **drift +456** on both
+`api/sd-data.js` citations, **already there and never reported**: an
+INCONCLUSIVE verdict cannot catch a drift, so a resource exempt from the
+checker is also invisible to it. That is the real cost of the exemption and it
+is now written down.
+
+---
+
+## 6. The drift backlog — 13 rows, 42 citations verified at HEAD
+
+**The dispatched figure was 135 DRIFTED. Re-measured: 170**, across 18
+app/prefix pairs. Not reconciled — re-run.
+
+    BEFORE   DRIFTED 170   ANCHORED 156   SOUND 101   INCONCLUSIVE 58
+    AFTER    DRIFTED 158   ANCHORED 182   SOUND 103   INCONCLUSIVE 58
+
+**13 rows, well past the 10 asked for:** `sen_settings`, `alf_activities`,
+`alf_staff`, `bld_comm_log`, `bld_deliveries`, `bld_equipment`,
+`bld_toolbox_talks`, `bld_warranty`, `dnt_vendor_contacts`, `grd_irr_zones`,
+`grd_rounds`, `law_picases`, `law_timeentries`.
+
+**42 citations read against the source at HEAD. 28 had genuinely drifted and
+are corrected. 14 were already right** — and **five of those fourteen were
+being reported DRIFTED by the tool.**
+
+### The result that matters more than the 28: the verdict is a PROXY
+
+`citation_line_drift_check.py` answers *"is this cited line near the nearest
+LOCAL WRITE SITE for this resource"*. That is a proxy for *"does this line
+support the sentence citing it"*, and on these rows it is wrong in both
+directions:
+
+- `law_timeentries:1977` — flagged DRIFTED +128. **Correct at HEAD.** It cites
+  a *comment recording a prior defect*, not a write.
+- `law_picases:4646`, `grd_rounds:3004` and `:3046`, `grd_irr_zones:3694` —
+  all flagged, all **correct at HEAD**.
+- `alf_staff:4393` and `:4441` cite `alf_staff_credentials`, a **different
+  resource**, so they are far from `alf_staff`'s write site by construction.
+- `sen_settings:6355`/`:6359` are in `api/sd-data.js` and are compared against
+  `sairnsenior.html`'s write site.
+
+**The tool's own header already records this class** — *"a checker that ranks
+a correct citation below an incorrect one is worse than no ranking, because it
+rewards the wrong edit"* — and `ANCHORED-VIA` was added to fix it. The
+backlog figure still carries the old proxy's false positives, and **a backlog
+count is not a defect count.**
+
+### A citation that still looks plausible is the hardest kind
+
+`bld_warranty` cited `fmt(w.cost)` at line `2182`. At HEAD **`2182` is the
+definition of the `fmt()` helper** — a line any reader opening it would accept.
+The real render is `:6904`. A number that lands on nothing gets fixed; a
+number that lands on a right-sounding function survives.
+
+### And one quotation that could not be found at all
+
+`bld_toolbox_talks` quoted `bld_incidents`'s corrective action as *"…
+TOOLBOX TALK CONDUCTED SAME DAY"*. The source says *"; toolbox talk conducted
+same day"* — lower case, no ellipsis. `grep` for the quoted text returned
+**nothing**. Capitals read as emphasis and make a cell unsearchable against
+its own source; **a quotation that cannot be found is the same failure as a
+line number that points nowhere.** Replaced with the verbatim text.
+
+### Recording the OLD number re-injects it as a citation
+
+Writing *"was `:3227`, now `:3376`"* contributes **both** numbers to
+`CITE_RE`, so each corrected cell gained a permanently-dead citation and the
+first re-measure came back **worse** (170 → 177). The convention of recording
+the superseded number is right — it is how a reader tells a re-derivation from
+an arithmetic adjustment — so the number stays and only the **form** changed:
+`` line `3227` ``, no colon, which the regex does not match. 18 occurrences
+converted. That is the difference between 177 and 158.
+
+    python tools/criticality_tier_check.py   EXIT=0  PROBLEMS:0  TIER_A 275
+    python tools/md_table_check.py …          EXIT=0  434/434 rows
