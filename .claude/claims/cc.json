@@ -3463,6 +3463,36 @@
         "tools/invocation_path_scan.py",
         "tools/traceability_matrix.py"
       ]
+    },
+    {
+      "id": "cc-1791312856",
+      "session": "cc",
+      "subject": "cc",
+      "task": "batch11: (1) Tier A ranks 7-12 by age -- REVIEW WORK ONLY THIS PASS, the WRITE IS BLOCKED and will be retried at the end: docs/tier-a-reviews.json is CODY'S under a live claim (queue19, \"Tier A discharge most-overdue-first\"), cody is taking the 6 oldest by chat agreement, and I will not override. Re-measured at HEAD f588ef02: 235 records, 31 open, 204 reviewed, 7 authored by cc and ineligible, 24 eligible to cc, 0 already assigned a reviewer_session. (2) move the registry import to the FIRST EXECUTABLE STATEMENT in the six already-eager probes that print 11-147 lines before refusing, with lines-of-own-output-before-refusal measured before and after per probe. (3) resolve or state-why-not the 3 UNRESOLVABLE and 1 NO-SUBJECT-MATCH rows in my appended citation table. (4) re-measure the dead-citation population at HEAD with doc_sha_reseat.py itself, definitions stated, and split the dead rows into fixable-by-the-tool and not. (5) the tool-landing coupling as a reproducing artifact routed to hank, artifact only, cause-tagged, mine to close. (6) an arm proving doc_sha_reseat.py refuses to edit GENERATED files and names the generator. (7) time report_only_checks.py --hook five times through capture_exit.py against its 600s PostToolUse bound, andon candidate if any run exceeds 50 percent. (8) BUILD, extending tools/exit_status_attributable.py and tools/sairn_push_gate_hook.py rather than a parallel tool: flag any diff touching test files, CI configuration or push-gate logic for extra scrutiny, visible in gate output AND written to a record a review obligation can pick up; design note first; planted-weakening selftest. (9) run every tools/ script once in read-only/--check/--selftest through capture_exit.py and report green/red/COULD-NOT-RUN. (10) two methodology rules routed to ted for docs/METHODOLOGY.md, not self-promoted. (12) handoff. CONFLICTS DECLARED PER PR 4.3 AND NONE REWORDED PAST: docs/tier-a-reviews.json is CODY'S (item 1 deferred, not taken); docs/METHODOLOGY.md, docs/SAIRN-OPEN-WORK-INDEX.md, docs/TOOLING-INVENTORY.md and tools/tooling_inventory.py are HANK'S, so item 10 lands in a dated doc of mine and item 5 is routed as an artifact with no proposed fix; tools/report_only_checks.py is FREE at HEAD but item 7 only TIMES it and edits nothing. I close only findings I originated and reclassify none. FILES: tests/run_baseline_readiness_probe.py tests/run_literal_drift_control_probe.py tests/run_optimistic_success_probe.py tests/run_dora_metrics_probe.py tests/run_risk_event_tree_probe.py tests/run_assurance_case_probe.py tools/exit_status_attributable.py tools/sairn_push_gate_hook.py tools/scrutiny_flag.py tests/run_scrutiny_flag_probe.py docs/scrutiny-flags.json tools/doc_sha_reseat.py tests/run_doc_sha_reseat_probe.py docs/2026-10-06-cc-batch-11-design-notes.md docs/2026-10-06-cc-batch-11-inventory.md docs/2026-10-06-cc-routed.md docs/handoff-cc-2026-10-06c.md SAIRN-ACTIVE-WORK-cc.md",
+      "claimed_at": "2026-10-06T18:54:16Z",
+      "claimed_at_epoch": 1791312856.719888,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-cc.md",
+        "docs/2026-10-06-cc-batch-11-design-notes.md",
+        "docs/2026-10-06-cc-batch-11-inventory.md",
+        "docs/2026-10-06-cc-routed.md",
+        "docs/handoff-cc-2026-10-06c.md",
+        "docs/scrutiny-flags.json",
+        "tests/run_assurance_case_probe.py",
+        "tests/run_baseline_readiness_probe.py",
+        "tests/run_doc_sha_reseat_probe.py",
+        "tests/run_dora_metrics_probe.py",
+        "tests/run_literal_drift_control_probe.py",
+        "tests/run_optimistic_success_probe.py",
+        "tests/run_risk_event_tree_probe.py",
+        "tests/run_scrutiny_flag_probe.py",
+        "tools/doc_sha_reseat.py",
+        "tools/exit_status_attributable.py",
+        "tools/sairn_push_gate_hook.py",
+        "tools/scrutiny_flag.py"
+      ]
     }
   ],
   "refusals": [
