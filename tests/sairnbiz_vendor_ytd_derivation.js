@@ -135,22 +135,47 @@ t('CONTROL: removing the year filter is caught by the last-year fixture', () => 
 // year), so it is DISCLOSED, and these arms hold the disclosure to the same
 // bar as the figure: it must identify exactly the rows the YTD figure cannot
 // see, and no others.
-const START2 = 'function sbVendorPaidUndatedPriorYear(){';
+// ── THE FUNCTION WAS SPLIT AND RENAMED (2026-10-06, seq 508) ──────────────
+// It was `sbVendorPaidUndatedPriorYear()` returning a flat `{vendor: amount}`.
+// The old name was itself a defect: the guard excluded only the CURRENT year,
+// so a FUTURE-dated bill marked Paid landed in a bucket called PriorYear and
+// fed the 1099 at-risk figure. It is now
+// `sbVendorPaidUndatedOtherYear()` -> `{prior, future}`.
+//
+// THIS SUITE WENT RED ON THE RENAME AND THAT IS THE ANCHOR DOING ITS JOB --
+// `assert.notStrictEqual(i2, -1)` is exactly the loud-extraction guard the
+// header promises, and it refused to test an empty string. The arms below are
+// re-pointed rather than relaxed, and the partition arm is widened from THREE
+// buckets to FOUR because the split created a fourth. Relaxing it to
+// `{prior}` alone would have left the new bucket untested while the suite went
+// green, which is the shape that makes a red suite worth fixing properly.
+const START2 = 'function sbVendorPaidUndatedOtherYear(){';
 const i2 = src.indexOf(START2);
-assert.notStrictEqual(i2, -1, 'sbVendorPaidUndatedPriorYear not found -- anchor moved');
+assert.notStrictEqual(i2, -1,
+  'sbVendorPaidUndatedOtherYear not found -- anchor moved');
 assert.strictEqual(src.indexOf(START2, i2 + 1), -1, 'defined twice');
 const j2 = src.indexOf('\nfunction rVends(){', i2);
 assert.notStrictEqual(j2, -1, 'rVends no longer follows it');
 const undText = src.slice(i2, j2);
 
-function undated(bills) {
+function buckets(bills) {
   const ctx = { Date: Date, Number: Number, String: String, Object: Object,
                 ld: function () { return bills; },
                 sbNormalizeBills: function (b) { return b; } };
   vm.createContext(ctx);
-  vm.runInContext(undText + '\nthis.__o = sbVendorPaidUndatedPriorYear();', ctx);
-  return JSON.parse(JSON.stringify(ctx.__o));
+  vm.runInContext(undText + '\nthis.__o = sbVendorPaidUndatedOtherYear();', ctx);
+  const o = JSON.parse(JSON.stringify(ctx.__o));
+  // THE SHAPE IS ASSERTED, not assumed. If a later edit returns a flat object
+  // again, `o.prior` would be undefined and every arm below would compare
+  // undefined to undefined and PASS. That is the vacuous-arm failure this file
+  // was written to avoid, one level up from the anchor.
+  assert.ok(o && typeof o === 'object' && o.prior && o.future,
+    'the function no longer returns {prior, future} -- arms below would be vacuous');
+  return o;
 }
+
+function undated(bills) { return buckets(bills).prior; }
+function future(bills) { return buckets(bills).future; }
 
 t('a Paid row with NO paidDate and a PRIOR-year bill date is the residual', () => {
   assert.deepStrictEqual(
@@ -183,28 +208,84 @@ t('an unpaid prior-year bill is not residual -- nothing was paid', () => {
     undated([{ vendor: 'Acme Stone', status: 'Open', amt: 900, date: LAST + '-11-02' }]), {});
 });
 
-t('THE PARTITION: every Paid row lands in exactly one of YTD, residual, or '
-  + 'neither -- never both', () => {
+t('THE PARTITION, now FOUR buckets: every Paid row lands in exactly one of '
+  + 'YTD, prior-residual, future-anomaly or neither -- never two', () => {
   const bills = [
     { vendor: 'A', status: 'Paid', amt: 10, paidDate: YEAR + '-01-01' },   // YTD
-    { vendor: 'B', status: 'Paid', amt: 20, date: LAST + '-01-01' },       // residual
+    { vendor: 'B', status: 'Paid', amt: 20, date: LAST + '-01-01' },       // prior
     { vendor: 'C', status: 'Paid', amt: 30, paidDate: LAST + '-01-01' },   // neither
-    { vendor: 'D', status: 'Open', amt: 40, date: YEAR + '-01-01' }        // neither
+    { vendor: 'D', status: 'Open', amt: 40, date: YEAR + '-01-01' },       // neither
+    { vendor: 'E', status: 'Paid', amt: 50, date: (YEAR + 1) + '-01-01' }  // future
   ];
-  const y = derive(bills), u = undated(bills);
+  const y = derive(bills), b = buckets(bills);
   assert.deepStrictEqual(y, { a: 10 });
-  assert.deepStrictEqual(u, { b: 20 });
-  Object.keys(y).forEach((k) => assert.ok(!(k in u), k + ' is in BOTH totals'));
+  assert.deepStrictEqual(b.prior, { b: 20 });
+  assert.deepStrictEqual(b.future, { e: 50 }, 'the future-dated row is missing');
+  // EVERY PAIR, not just YTD-vs-prior. The old arm checked one pair and a
+  // third bucket was added underneath it.
+  const sets = { ytd: y, prior: b.prior, future: b.future };
+  Object.keys(sets).forEach((n1) => Object.keys(sets).forEach((n2) => {
+    if (n1 >= n2) return;
+    Object.keys(sets[n1]).forEach((k) => assert.ok(!(k in sets[n2]),
+      k + ' is in BOTH ' + n1 + ' and ' + n2));
+  }));
+});
+
+// ── seq 508: THE FUTURE BUCKET, AND THE ABLATION THAT PROVES IT EXISTS ─────
+t('a FUTURE-dated bill marked Paid is a separate anomaly, NOT prior-year', () => {
+  const bills = [{ vendor: 'Acme Stone', status: 'Paid', amt: 700,
+                   date: (YEAR + 1) + '-06-01' }];
+  assert.deepStrictEqual(undated(bills), {},
+    'a future-dated row was counted into the 1099 at-risk prior-year figure');
+  assert.deepStrictEqual(future(bills), { 'acme stone': 700 });
+  assert.deepStrictEqual(derive(bills), {}, 'YTD counted a future-dated row');
+});
+
+t('CONTROL: the two buckets are reached by DIFFERENT comparisons -- a guard '
+  + 'widened to "< year" would have dropped the future rows entirely', () => {
+  // Driven, not asserted from the source text: the real function must put a
+  // prior row and a future row in DIFFERENT buckets, and neither in both. A
+  // single `y !== year` guard would put both in `prior`; a `y < year` guard
+  // would lose the future row with no trace, which is the third-state-folded-
+  // into-silence shape the split exists to avoid.
+  const b = buckets([
+    { vendor: 'P', status: 'Paid', amt: 1, date: LAST + '-01-01' },
+    { vendor: 'F', status: 'Paid', amt: 2, date: (YEAR + 1) + '-01-01' }
+  ]);
+  assert.deepStrictEqual(b.prior, { p: 1 }, 'the prior row did not stay prior');
+  assert.deepStrictEqual(b.future, { f: 2 }, 'the future row was folded or lost');
+});
+
+t('an UNREADABLE year is bucketed PRIOR rather than dropped -- under-counting '
+  + 'toward the threshold is the harm, so the ambiguous row is disclosed', () => {
+  assert.deepStrictEqual(
+    undated([{ vendor: 'Acme Stone', status: 'Paid', amt: 700, date: '' }]),
+    { 'acme stone': 700 });
 });
 
 t('the disclosure names only vendors the residual could carry OVER $600, and '
   + 'says the count is undecided rather than reporting a number', () => {
   const panel = src.slice(src.indexOf('function rVends()'),
                           src.indexOf("$('vntbody').innerHTML=html;"));
-  assert.ok(panel.includes('sbVendorPaidUndatedPriorYear()'),
+  assert.ok(panel.includes('sbVendorPaidUndatedOtherYear()'),
     'rVends does not consult the residual at all');
-  assert.ok(/spendOf\(x\)<600&&\(spendOf\(x\)\+u\)>=600/.test(panel.replace(/\s/g, '')),
-    'the at-risk test is not "under 600 now, over 600 with the undated amount"');
+  // ── THE ARM PINNED A LITERAL AND THE THRESHOLD BECAME DATA (2026-10-06) ──
+  // It required `spendOf(x)<600&&(spendOf(x)+u)>=600`. The code reads
+  // `thr.amount`, which is the CORRECT shape -- the 1099 threshold is a
+  // per-year figure and hardcoding 600 is the defect, not the contract. So the
+  // arm was RED while the code was right, and it was red for that reason
+  // BEFORE the seq 508 rename went anywhere near it.
+  //
+  // Re-pinned to the STRUCTURE and then strengthened in the direction the old
+  // arm had backwards: the literal must be ABSENT from this expression.
+  const flat = panel.replace(/\s/g, '');
+  assert.ok(/u>0&&spendOf\(x\)<thr\.amount&&\(spendOf\(x\)\+u\)>=thr\.amount/
+    .test(flat),
+    'the at-risk test is not "has undated money, under the threshold now, at '
+    + 'or over it with the undated amount"');
+  assert.ok(!/spendOf\(x\)<600|>=600/.test(flat),
+    'the threshold is hardcoded as 600 in the at-risk test -- it must come '
+    + 'from thr.amount, because the 1099 figure is a per-year number');
   assert.ok(panel.includes('COULD NOT BE DECIDED'),
     'the disclosure reports a figure instead of naming it undecidable');
   assert.ok(panel.includes('Counted in NEITHER total'),

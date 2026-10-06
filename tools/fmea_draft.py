@@ -103,14 +103,61 @@ def _probe_exists(path):
     return False
 
 
+_FULL_LINE_HASH = re.compile(r'^([ \t]*)#.*$', re.M)
+
+
+def _without_line_comments(src):
+    """`src` with FULL-LINE `#` comment text removed, indentation preserved.
+
+    ── WHY, AND IT IS A METAMORPHIC VIOLATION NOT A STYLE PREFERENCE ────────
+    `tools/metamorphic_check.py` holds the relation "upper-casing full-line
+    COMMENT text cannot change which failure modes fire" and it was VIOLATED, by
+    exactly one unit, on 2026-10-06:
+
+        tools/alf_facility_role_gate_live_probe.py
+        verdict MOVED: (_d_falsy_from_except, _d_fixed_window)
+                    -> (_d_checker_without_probe, _d_falsy_from_except,
+                        _d_fixed_window)
+
+    Reproduced and the culprit NAMED rather than guessed: of the six
+    alternatives in the regex below, `\\bCLEAN\\b` is the only one that is absent
+    from the file and present after upper-casing. The comment reads
+
+        # state -- instead of a false clean. Without that control the excluded
+
+    and upper-casing it makes the English word `clean` match a pattern written
+    for the VERDICT TOKEN `CLEAN` that a checker prints.
+
+    THE FIX IS NOT TO REWORD THE SUBJECT FILE. Editing that comment to avoid the
+    word would be slipping past the matcher -- the thing this platform refuses to
+    do to its own checks -- and it would leave every other file one rewrite away
+    from the same flip.
+
+    THE FIX IS NOT `re.I` EITHER, AND THAT WAS MEASURED BEFORE BEING REJECTED.
+    `\\bCLEAN\\b` matches 197 times across 296 files in tools/ as written; making
+    it case-insensitive would add the English word `clean` everywhere and the
+    detector's own header says a rule that fires on half the repo is a horoscope.
+
+    So the detector is made BLIND to full-line comment text, which satisfies the
+    relation by construction rather than by coincidence: rewording a comment can
+    no longer change this verdict, whatever the rewording is. Docstrings are
+    deliberately KEPT -- a `REPORT ONLY` marker usually lives in one, and that is
+    a declaration about the program, not prose about a defect.
+    """
+    return _FULL_LINE_HASH.sub(lambda m: m.group(1), src)
+
+
 def _d_checker_without_probe(src, path):
     # The risk is not "this is a checker". It is a checker WITH NO CONTROL
     # proving it can fire -- which is the only half of 1.1 a single file can
     # answer.
     if not path.startswith('tools/') or not path.endswith('.py'):
         return False
+    # COMMENT TEXT IS NOT EVIDENCE HERE. See _without_line_comments() for the
+    # metamorphic violation this closes and for the two fixes rejected first.
     looks_like = bool(re.search(r'REPORT ONLY|report-only|findings|\bCLEAN\b|'
-                                r'sys\.exit\(1 if|return 1 if', src))
+                                r'sys\.exit\(1 if|return 1 if',
+                                _without_line_comments(src)))
     return looks_like and not _probe_exists(path)
 
 
@@ -143,9 +190,47 @@ def _d_falsy_from_except(src, path):
     return bool(re.search(r'except[^\n]*:\s*\n(?:[^\n]*\n){0,4}?\s*return (None|False)\b', src))
 
 
+# ── 1.7 WAS A HOROSCOPE AT 44.6% AND THE BARE SLICE WAS THE WHOLE REASON ────
+# `tests/run_fmea_probe.py` arm 3b ("fires on 45% of the tree, must be under
+# 35%") was RED on main before this change -- confirmed red at origin/main in a
+# detached worktree, so it is not a regression from anything here. The table's
+# own header is the standard it failed: "a rule that fires on half the repo is a
+# horoscope -- it is right often enough to feel insightful and carries no
+# information."
+#
+# MEASURED, on the SAME universe fire_rates() uses (tools/*.py + tests/**/*.py,
+# 691 files), both halves separately:
+#
+#   as shipped                       308/691 = 44.6%   FAILS 3b
+#     the bare `[:NNN]` slice alone  307/691 = 44.4%
+#     the NAMED bound alone            1/691 =  0.1%
+#
+# AND THE 307 ARE NOT WINDOWS. Every one inspected is a DISPLAY truncation in a
+# message: `str(detail)[:400]`, `out[:500]`, `print(line.strip()[:100])`,
+# `'%s' % why[:120]`. Truncating what you SHOW is not a window that exempts what
+# you EXAMINE, which is what 1.7 is about. The slice half caught ZERO genuine
+# instances and 307 false ones.
+#
+# SO THE SLICE HALF IS DROPPED AND THE NAMED HALF IS WIDENED, and the result is
+# hand-checked rather than taken on the rate: 14/691 = 2.0%, and all 14 are real
+# bounds that exempt data -- `ops = ops[:limit]`, `todo = gates[:limit]`,
+# `roots[:limit]`, `WINDOW = 14`, `window=14`, `limit=1500`, `limit=20000`,
+# `CAPTURE_LOOKBACK = 500`, `BUDGET_PER_WINDOW = 60.0`, `MAX_STANDING_HOURS = 24`.
+#
+# 2.0% IS NEAR THE OTHER EXTREME AND THAT IS STATED, NOT HIDDEN: a rule this
+# rare carries information only if the shape really is rare, which the fourteen
+# say it is. Arm 3c already guards the opposite failure (a table of dead
+# detectors passing 3b trivially) and this still fires, so it is not dead.
+#
+# The two-digit floor is deliberate: `MAX_STANDING_HOURS = 24` is a time window
+# and a three-digit floor would have missed it.
+_FIXED_WINDOW = re.compile(
+    r'(?i)\b(window|limit|max_[a-z_]+|sample|budget|cap)\w*\s*=\s*\d{2,}'
+    r'|\[\s*:\s*(?:MAX|LIMIT|WINDOW|SAMPLE|CAP)[A-Z_]*\s*\]')
+
+
 def _d_fixed_window(src, path):
-    return bool(re.search(r'\[\s*:\s*\d{3,}\s*\]|'
-                          r'\b(WINDOW|LIMIT|MAX_[A-Z_]+|_CHARS|SAMPLE)\s*=\s*\d{3,}', src))
+    return bool(_FIXED_WINDOW.search(src))
 
 
 def _d_generates_a_gate(src, path):

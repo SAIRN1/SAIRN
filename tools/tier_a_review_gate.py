@@ -695,7 +695,64 @@ def is_report_only_artefact(path, content):
 _PROSE = re.compile(r'''(['"`])((?:(?!\1)[^\\\n]|\\.)*?)\1''')
 
 
-def strip_diff_noise(line):
+COMMENT_PROSE_WORDS = 3
+
+# Which marker starts a comment, decided by extension rather than guessed. An
+# extension that is in NEITHER set gets no comment stripping at all -- see the
+# `path=None` paragraph in strip_diff_noise().
+_HASH_EXT = ('.py', '.sh', '.bash', '.yml', '.yaml', '.toml', '.cfg', '.ini',
+             '.conf', '.gitignore', '.gitattributes', '.env')
+_SLASH_EXT = ('.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.css', '.java',
+              '.go', '.c', '.h', '.cpp', '.html', '.htm')
+
+
+def _comment_body_start(body, path):
+    """(marker, index-just-after-it) for the first UNQUOTED comment marker.
+
+    None when there is none, or when `path` does not tell us which marker this
+    language uses. Walks characters and tracks the open quote, so a marker inside
+    a string literal is not a comment -- the failure mode a regex has here is
+    silent, which is why _strip_code_noise() is also written this way.
+    """
+    if not path:
+        return None
+    p = path.replace('\\', '/').lower()
+    base = p.rsplit('/', 1)[-1]
+    ext = ('.' + base.rsplit('.', 1)[1]) if '.' in base else ''
+    hash_ok = ext in _HASH_EXT or (ext == '' and '/' in p)   # extensionless hooks
+    slash_ok = ext in _SLASH_EXT
+    if not hash_ok and not slash_ok:
+        return None
+    i, n, in_s = 0, len(body), None
+    while i < n:
+        c = body[i]
+        nxt = body[i + 1] if i + 1 < n else ''
+        if in_s:
+            if c == '\\':
+                i += 2
+                continue
+            if c == in_s:
+                in_s = None
+            i += 1
+            continue
+        if c in ('"', "'", '`'):
+            in_s = c
+            i += 1
+            continue
+        if slash_ok and c == '/' and nxt == '/':
+            # `https://` and `file://` are not comments. One character of
+            # context is enough and is cheaper than a URL grammar.
+            if i and body[i - 1] == ':':
+                i += 2
+                continue
+            return '//', i + 2
+        if hash_ok and c == '#':
+            return '#', i + 1
+        i += 1
+    return None
+
+
+def strip_diff_noise(line, path=None):
     """One diff line with comments and PROSE string bodies blanked.
 
     ── WHY NOT SIMPLY STRIP EVERY STRING (2026-09-16) ──────────────────────
@@ -740,6 +797,54 @@ def strip_diff_noise(line):
     string analysis can separate them -- the difference is what the FILE is,
     not what the token looks like. Naming it here so the next reader does not
     re-derive the same dead end.
+
+    ── THE COMMENT DECISION IS NOW REVERSED, DELIBERATELY AND BY MEASUREMENT
+    (2026-10-06, open-work row 95 / H2 seq 546) ────────────────────────────
+    The paragraph above left this open -- "whether a comment in a CHECKER should
+    count the way a comment in a handler does" -- and declined to decide it from
+    inside an unrelated change. TEN measured instances later it is decided, and
+    the reason the old decision failed is not that it was unreasonable but that
+    its cost ran one way: every false demand opens a real obligation that costs a
+    reviewer a full read, and complying is always cheaper than fixing, so they
+    accumulated instead of forcing the question.
+
+    THE OLD ARGUMENT, restated so it is not lost: "a hunk that discusses
+    sc_claims was edited by somebody thinking about sc_claims." True, and it is
+    an argument for REPORTING, not for BLOCKING -- which is exactly the
+    distinction context_only_tier_a() already draws for hunk context. A comment
+    is now treated the same way: a weaker signal, demoted rather than deleted.
+
+    THE RULE IS THE SAME ONE, NOT A SECOND ONE. A comment body is blanked when
+    it reads as a SENTENCE -- three or more whitespace-separated words, the
+    identical `_blank` threshold applied to prose string bodies. So:
+
+        # the sc_claims branch must refuse an unassigned caller   -> BLANKED
+        // sd_vendors                                             -> KEPT
+        # sb_perf, sd_comms                                       -> KEPT
+
+    A short code-shaped comment is how a developer labels a real code site, and
+    those still count. A sentence is prose.
+
+    THE MARKER IS CHOSEN BY EXTENSION AND DEFAULTS TO BLANKING NOTHING.
+    `#` is a comment in .py/.sh/.yml and is a private field or a fragment
+    elsewhere; `//` is a comment in .js and is the middle of `https://` in any
+    language. With no `path` the function blanks no comments at all, because the
+    direction of a wrong guess here is a gate going QUIET, which this docstring
+    already names as the worse of the two failures.
+
+    IT IS A CHARACTER WALK, NOT A REGEX, for the reason _strip_code_noise() gives
+    in its own docstring: the regex version of exactly this already shipped a
+    defect on this platform, and a string containing a comment marker breaks the
+    regex version silently.
+
+    WHAT IT STILL DOES NOT REACH, measured and reported rather than claimed
+    fixed: a diff line in the INTERIOR of a multi-line Python docstring carries
+    no quote character and no `#`, so neither this nor the prose rule sees it.
+    That is instance 1 of the ten (`sc_anesthesia_base_units` out of
+    citation_drift_hook.py's docstring). Fixing it needs line numbers from the
+    hunk headers mapped against an `ast` parse of the file, which is a different
+    change with a different control, and it is named here instead of being
+    silently absent.
     """
     body = line[1:] if line[:1] in ('+', '-', ' ') else line
 
@@ -747,6 +852,14 @@ def strip_diff_noise(line):
         inner = m.group(2)
         return m.group(1) + (' ' * len(inner) if len(inner.split()) >= 3
                              else inner) + m.group(1)
+
+    cut = _comment_body_start(body, path)
+    if cut is not None:
+        marker, start = cut
+        inner = body[start:]
+        if len(inner.split()) >= COMMENT_PROSE_WORDS:
+            # Length preserved, like _blank above, so nothing downstream shifts.
+            body = body[:start] + (' ' * len(inner))
 
     return _PROSE.sub(_blank, body)
 
@@ -872,7 +985,10 @@ def touched_tier_a(diff_text, resources):
         # worklog, a review probe, and two checkers whose fixtures must contain
         # real resource names to be worth anything. See strip_diff_noise() for
         # why this is not a blanket string-strip.
-        scanned = strip_diff_noise(line)
+        # THE PATH IS PASSED so the comment marker is chosen by extension rather
+        # than guessed; with no path, strip_diff_noise() blanks no comments at
+        # all. See its `path=None` paragraph for why that is the safe default.
+        scanned = strip_diff_noise(line, cur)
         for name in resources:
             # Word-bounded. `sc_ar` must not match `sc_archive`, and this
             # platform has already been bitten once by a substring search --

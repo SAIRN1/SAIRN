@@ -20,6 +20,7 @@ So the arms that matter are not "does it produce output". They are:
 import io
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -236,6 +237,74 @@ check('7h  every same-file risk carries a `rules` key',
       all('rules' in r for r in _sf), [r.get('basis') for r in _sf][:3])
 check('7i  and no same-app risk does', all('rules' not in r for r in _sa),
       '%d same-app risk(s) carry rules' % len([r for r in _sa if 'rules' in r]))
+
+# ── 8. REWORDING A COMMENT CANNOT MOVE A VERDICT (2026-10-06) ────────────────
+# `tools/metamorphic_check.py` holds this relation and it was VIOLATED, once:
+# upper-casing full-line comment text in tools/alf_facility_role_gate_live_probe.py
+# added `_d_checker_without_probe`, because the English word `clean` in a comment
+# became the verdict token `CLEAN` that 1.1's regex was written for.
+#
+# The relation is re-asserted HERE as well as there, deliberately: the
+# metamorphic run takes minutes over the whole tree and is not what a session
+# runs before a commit to this file. These arms are cheap and local, and they
+# pin BOTH directions -- upper and lower -- because the violation was found in
+# only one of them and a one-directional fix would have looked complete.
+print('\n8. rewording a full-line comment cannot move a verdict')
+_CM = re.compile(r'^(\s*#[ ]?)(.*)$')
+
+
+def _reword(unit, fn):
+    out = []
+    for ln in unit.split('\n'):
+        m = _CM.match(ln)
+        out.append(m.group(1) + fn(m.group(2)) if m and m.group(2).strip() else ln)
+    return '\n'.join(out)
+
+
+def _verdicts(unit):
+    return tuple(sorted(n for n in dir(D) if n.startswith('_d_')
+                        and D.__dict__[n](unit, 'tools/<subject>.py')))
+
+
+_SUBJ = 'tools/alf_facility_role_gate_live_probe.py'
+_p = os.path.join(REPO, _SUBJ)
+if not os.path.isfile(_p):
+    check('8a  COULD NOT RUN: %s is gone, so the relation was not exercised'
+          % _SUBJ, False, 'not a pass')
+else:
+    _s = io.open(_p, encoding='utf-8', errors='replace').read()
+    _as_is, _up, _lo = (_verdicts(_s), _verdicts(_reword(_s, str.upper)),
+                        _verdicts(_reword(_s, str.lower)))
+    check('8a  the known violator: upper-casing its comments moves nothing',
+          _as_is == _up, 'as-is %s vs upper %s' % (_as_is, _up))
+    check('8b  ...and lower-casing them moves nothing either',
+          _as_is == _lo, 'as-is %s vs lower %s' % (_as_is, _lo))
+    # NOT VACUOUS: the subject must actually HAVE comments carrying the token
+    # that caused the violation, or 8a passes on a file with nothing to reword.
+    check('8c  and the fixture is not vacuous -- the file really does contain '
+          'the lower-case word in a comment that used to flip 1.1',
+          any(re.match(r'^\s*#', l) and 'clean' in l.lower()
+              for l in _s.split('\n')),
+          'the word is gone from the comments, so 8a/8b prove nothing; pick a '
+          'new subject rather than letting these pass')
+    # And the detector really is blind to full-line comments now.
+    check('8d  _without_line_comments removes full-line comment text and keeps '
+          'code', 'CLEAN' not in D._without_line_comments('# a false clean\n')
+          and 'x = 1' in D._without_line_comments('x = 1  # a false clean\n'),
+          'the helper either keeps comment text or eats code')
+
+# A SECOND SUBJECT, chosen mechanically rather than by hand, so the relation is
+# not pinned to one file that someone may later edit.
+_others = sorted(f for f in os.listdir(os.path.join(REPO, 'tools'))
+                 if f.endswith('.py') and not f.startswith('_'))[:40]
+_moved = []
+for _f in _others:
+    _src = io.open(os.path.join(REPO, 'tools', _f), encoding='utf-8',
+                   errors='replace').read()
+    if _verdicts(_src) != _verdicts(_reword(_src, str.upper)):
+        _moved.append(_f)
+check('8e  across the first 40 tools/ files, upper-casing comments moves NO '
+      'verdict', not _moved, 'moved for: %s' % ', '.join(_moved[:5]))
 
 print('\n%d arm(s) failed' % len(failures))
 for f in failures:

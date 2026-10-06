@@ -842,11 +842,131 @@ sys.path.insert(0, os.path.join(REPO, 'tools'))
 import tier_a_review_gate as _G                                     # noqa: E402
 
 _res = _G.tier_a_resources()
-_name = sorted(_res)[0]
-_code, _ = _G.check(diff_for('api/sd-data.js', '+  // touches %s here' % _name))
-check('a REAL Tier A touch is still exit 1', _code == 1,
-      'the crash guard must not have swallowed findings into could-not-tell; got %r'
-      % _code)
+# ── THE FIXTURE RESOURCE MUST HAVE NO OPEN OBLIGATION, AND THE OLD ONE DID ──
+# 2026-10-06. This section asserted `check() == 1` for `sorted(_res)[0]`, which
+# is `alf_activities`. That passed when written and silently stopped testing the
+# crash guard the day somebody opened an obligation covering alf_activities
+# (2026-09-29T17:47:11Z, cc): check() then returns 0 for the correct reason --
+# "EVERY resource it touches has an OPEN obligation" -- and the arm would have
+# gone red for a reason that has nothing to do with crashes.
+#
+# It was caught here only because an unrelated change made the whole section
+# fail at once. A register-state-dependent fixture is the same shape as a stale
+# anchor: nothing announces the day it stops testing anything (discipline 8).
+# So the fixture resource is DERIVED as one no open obligation covers, and if
+# there is no such resource this says COULD NOT RUN rather than passing.
+_covered = set()
+for _r in _G.load_reviews()['records']:
+    if _r.get('status') == 'open':
+        _covered.update(_r.get('resources') or [])
+_uncovered = sorted(set(_res) - _covered)
+if not _uncovered:
+    check('COULD NOT RUN: every Tier A resource has an open obligation, so no '
+          'fixture can produce an exit 1 here', False,
+          'not a pass -- the three arms below were not exercised')
+    _uncovered = sorted(_res)            # keep the section runnable
+_name = _uncovered[0]
+_other = _uncovered[1] if len(_uncovered) > 1 else sorted(_res)[1]
+# ── THE FIXTURE WAS A COMMENT AND THE COMMENT DECISION WAS REVERSED ─────────
+# 2026-10-06. This arm's subject is "a REAL Tier A touch is still exit 1" -- it
+# exists so the crash guard cannot swallow a genuine finding into could-not-tell.
+# Its fixture was `+  // touches <name> here`, a COMMENT, which was a correct
+# fixture while comments counted as a Tier A touch and became a WRONG fixture the
+# moment strip_diff_noise() started blanking prose comment bodies (open-work row
+# 95, ten measured false positives).
+#
+# THE ARM IS NOT RELAXED -- IT IS POINTED AT WHAT IT ALWAYS MEANT. A real touch
+# is a code line that references the resource, which on this platform is a short
+# string literal in a dispatch condition; that is the gate's own most important
+# true positive, named in strip_diff_noise()'s docstring. So the fixture becomes
+# that line, and the comment moves to its own arm BELOW as the thing that must
+# now NOT fire.
+_code, _ = _G.check(diff_for(
+    'api/sd-data.js', "+  if (resource === '%s' && action === 'write') {" % _name))
+check('a REAL Tier A touch -- a dispatch condition in code -- is still exit 1',
+      _code == 1,
+      'the crash guard must not have swallowed findings into could-not-tell, and '
+      'the comment strip must not have blinded the gate to CODE; got %r' % _code)
+
+# ── THE TWO HALVES OF THE REVERSED DECISION, PINNED IN BOTH DIRECTIONS ──────
+_code_prose, _ = _G.check(diff_for(
+    'api/sd-data.js', '+  // the %s branch refuses an unassigned caller' % _name))
+check('...and a PROSE COMMENT naming the same resource is NO LONGER a finding',
+      _code_prose == 0,
+      'a sentence in a comment still opens a Tier A obligation; got %r -- that is '
+      'the ten-instance false positive row 95 records' % _code_prose)
+
+_code_short, _ = _G.check(diff_for('api/sd-data.js', '+  // %s' % _name))
+check('...but a SHORT code-shaped comment still counts, so a developer labelling '
+      'a real code site is not silently exempted', _code_short == 1,
+      'the strip swallowed a one-word comment label; got %r' % _code_short)
+
+_code_two, _ = _G.check(diff_for('api/sd-data.js', '+  // %s, %s'
+                                 % (_name, _other)))
+check('...and a TWO-token comment listing two resources still counts -- the '
+      'threshold is three words, stated and driven', _code_two == 1,
+      'got %r' % _code_two)
+
+# ── SABOTAGE, BOTH DIRECTIONS, ON THE COMMENT LAYER ITSELF ──────────────────
+# Four green arms prove the layer behaves. They do not prove the layer is what
+# makes them green -- a prose comment that happens not to match would pass the
+# second arm with the layer removed. So the layer is ABLATED and each arm is
+# required to flip the way only that layer explains, and then a mutation in the
+# other direction is planted. Per-arm, not per-exit-code (discipline 12).
+print('\n8b. the comment layer is ABLATED and each arm must flip')
+_real_cbs = _G._comment_body_start
+try:
+    # ABLATION 1: the layer off entirely -- no comment is ever a comment. This
+    # is the pre-2026-10-06 behaviour, so the prose arm MUST go red and the two
+    # code-shaped arms must NOT, which is the asymmetry that shows the layer is
+    # doing exactly one job.
+    _G._comment_body_start = lambda body, path: None
+    _a1, _ = _G.check(diff_for(
+        'api/sd-data.js', '+  // the %s branch refuses an unassigned caller' % _name))
+    _a2, _ = _G.check(diff_for(
+        'api/sd-data.js',
+        "+  if (resource === '%s' && action === 'write') {" % _name))
+    _a3, _ = _G.check(diff_for('api/sd-data.js', '+  // %s' % _name))
+    check('ABLATION: with the comment layer OFF the prose comment is a finding '
+          'again -- the layer is what fixed it, not the fixture', _a1 == 1,
+          'got %r: the prose arm passes with the layer removed, so it proves '
+          'nothing about the layer' % _a1)
+    check('ABLATION: the CODE arm is unaffected by the layer, so the layer '
+          'cannot be what makes the gate see code', _a2 == 1, 'got %r' % _a2)
+    check('ABLATION: the SHORT comment arm is unaffected, so the 3-word '
+          'threshold is not what admits it', _a3 == 1, 'got %r' % _a3)
+
+    # ABLATION 2: the threshold lowered to one word. A short code-shaped label
+    # must then be swallowed -- which is the false NEGATIVE this design chose
+    # against, and the arm pins that the choice is real rather than incidental.
+    _G._comment_body_start = _real_cbs
+    _real_words = _G.COMMENT_PROSE_WORDS
+    _G.COMMENT_PROSE_WORDS = 1
+    _a4, _ = _G.check(diff_for('api/sd-data.js', '+  // %s' % _name))
+    check('ABLATION: lowering the threshold to ONE word swallows the short '
+          'code-shaped label -- so three is a decision with a measured cost',
+          _a4 == 0, 'got %r: the threshold is not what keeps short labels' % _a4)
+finally:
+    _G._comment_body_start = _real_cbs
+    _G.COMMENT_PROSE_WORDS = 3
+
+# PLANTED THE OTHER WAY: a resource name in code with a prose comment on the
+# SAME line must still be a finding. This is the shape a real handler edit takes
+# and the one a comment-stripper is most likely to break.
+_a5, _ = _G.check(diff_for(
+    'api/sd-data.js',
+    "+  if (resource === '%s') {  // refuses an unassigned caller, see row 12"
+    % _name))
+check('a code line WITH a trailing prose comment is still a finding -- the '
+      'strip must cut at the marker, not take the whole line', _a5 == 1,
+      'got %r: trailing-comment lines are being blanked wholesale' % _a5)
+
+# AND a URL, which is the `//` false cut this platform would hit first.
+_a6, _ = _G.check(diff_for(
+    'api/sd-data.js',
+    "+  const u = 'https://x/y?r=%s' + q;  // three words of prose here" % _name))
+check('a `//` inside a URL is not a comment marker, so the resource after it '
+      'still counts', _a6 == 1, 'got %r' % _a6)
 
 _saved = _G.check
 try:
