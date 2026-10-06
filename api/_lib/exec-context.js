@@ -158,7 +158,31 @@ const EXEC_CONTEXT = {
     // not, and the absence is stated rather than left as a gap the model fills
     // in optimistically.
     'Your CFO expertise: cash flow forecasting and management, P&L analysis, payroll processing and journal entries (exact GAAP account codes), AR aging and collections strategy, budget vs actual variance analysis, tax planning (QSBS, ESOP, R&D credits), banking relationships and debt covenants, EBITDA optimization, financial risk management, general knowledge of accounting packages including QuickBooks, monthly close process, investor reporting.',
-    'SAIRN does NOT connect to QuickBooks, Gusto, Xero or any other accounting package. Verified against the code on 2026-09-02: no such endpoint is deployed and no connection table exists. If asked about pulling data from an accounting package, say it is not built rather than describing it as pending or on the roadmap.',
+    // ── RE-VERIFIED 2026-10-06, AND TWO CLAUSES HAD GONE FALSE ───────────
+    // The sentence below used to read: "…no such endpoint is deployed and no
+    // connection table exists. Verified against the code on 2026-09-02."
+    //
+    // BOTH OF THOSE ARE NOW WRONG AS WRITTEN, and the conclusion they
+    // supported is still right -- which is the dangerous combination, because
+    // the first prospect to look finds an endpoint the sentence says is not
+    // there and stops believing the rest of it.
+    //
+    // At HEAD: api/accounting.js EXISTS and is deployed; so do
+    // api/_lib/accounting-connector.js and sql/accounting_connector_schema.sql
+    // (which defines a connection table with provider in ('quickbooks_online')).
+    //
+    // WHAT IS STILL TRUE, and is what the advisor must say: no account is
+    // connected and none can be. api/accounting.js:67 gates on QB_CLIENT_ID /
+    // QB_CLIENT_SECRET / QB_REDIRECT_URI, none of which is set in any
+    // environment; every OAuth action answers 501 with the real reason rather
+    // than a stub URL or a success shape; and the connector table is NOT in
+    // the live schema snapshot (db/schema_snapshot.json, taken 2026-10-05 --
+    // the migration has not been run). The buildable half that DOES exist is
+    // an EXPORT, not a sync: api/_lib/roofing-gl-export.js produces a
+    // double-entry journal against the firm's own chart of accounts, and
+    // sairnroofing.html:846 says on screen "This is not a QuickBooks
+    // connection."
+    'SAIRN does not connect to QuickBooks, Gusto, Xero or any other accounting package, and cannot today: no Intuit application is registered and QB_CLIENT_ID / QB_CLIENT_SECRET / QB_REDIRECT_URI are unset in every environment, so api/accounting.js answers 501 on every OAuth action with the real reason. An api/accounting.js endpoint and an accounting-connector schema DO exist -- consent recording, revocation and honest state reporting work -- but the connector table is not in the live schema snapshot, so nothing is connected. SAIRNroofing additionally ships a general-ledger JOURNAL EXPORT against the firm own chart of accounts, which is a file an accountant imports and is NOT an integration or a sync. If asked about pulling data FROM an accounting package, say it is not built and cannot be enabled without an Intuit application -- never that it is pending or on the roadmap. Re-verified against the code and the live schema snapshot on 2026-10-06.',
     'Always cite specific account codes (Dr 6010, Cr 2100). Give exact journal entries, exact tax rates, exact formulas. Lead with numbers. End every recommendation with the financial risk if ignored.',
     'Format financial data clearly: use line items, totals, and variances. Make it feel like a CFO dashboard briefing.'
   ].join(' '),

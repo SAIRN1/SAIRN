@@ -65,7 +65,7 @@ panels, 15 nav targets, identical sets.** Nothing built is orphaned.
 | **A2** crew / field-labour scheduling depth | *"Partially closed — depth vs. the complaint not assessed here"* | **CLOSED**, and it assessed the thing the audit deferred | `api/_lib/roofing-crew-capacity.js` + `.test.js`. `crew` × 39, `double-book` × 4. Reports overlaps rather than refusing them, with the reasoning written down: two jobs in a day is a normal roofing day |
 | **A3** subcontractor management | *"23 keyword hits, but no `rf_subs`-class table. Not modelled"* | **CLOSED** via the **shared** layer, not a roofing copy | `panel-subs`, `subcontractors` + `sub_assignments` registered unprefixed, `api/_lib/subcontractor-compliance.js`. `subcontractor` × 28, `COI` × 14, `W-9` × 3 |
 | **A4** tool fragmentation as the buying trigger | *"a positioning finding, not a gap"* | **Still not a gap** — and stronger now: nine capabilities that were separate purchases in the audit now ship in one app | — |
-| **A5** accounting integration (QuickBooks) | *"Not present"* | **STILL OPEN — the only one** | `QuickBooks`, `QBO`, `Xero`, `general ledger`, `IIF`, `chart of accounts`: **0 each**. No partial, no disclosure banner, nothing |
+| **A5** accounting integration (QuickBooks) | *"Not present"* | ~~**STILL OPEN — the only one**~~ → **CLOSED 2026-09-26**, re-verified at HEAD 2026-10-06 | **THE HEADLINE ROW WAS STALE AND THE CORRECTION WAS ONLY IN §2's footnote.** Fixed here 2026-10-06 so a reader of the table is not told the opposite of what the same document says eighty lines later. At HEAD: `api/_lib/roofing-gl-export.js` (341 lines, pure) + `api/_lib/roofing-gl-export.test.js` **23/23**, `rfGlExport()` behind a "Build journal" button at `sairnroofing.html:874`, a chart-of-accounts panel at `:841`, and the disclosure at `:846` — *"This is not a QuickBooks connection."* **It is an EXPORT, not a sync**, and the account codes are the firm's own: *"Nothing is filled in for you, deliberately"* (`:852`). The vendor half — an Intuit app, OAuth, token lifecycle — is refused and disclosed, the same shape as B6 |
 | **B1** commercial roof asset registry | *"Absent. The single largest Tier B structural gap"* | **CLOSED** | `api/_lib/roofing-asset-registry.js`, `sql/sairnroofing_asset_registry_schema.sql`, `panel-assets`, `rf_roof_sections`. `roof section` × 10 |
 | **B2** no product bridges Tier A → Tier B | *"Open whitespace"* | **Structurally addressed**, by B1 shipping inside a Tier A app — which is precisely the bridge the row described as missing from the market | — |
 | **B3** WIP/POC, retainage, **certified payroll** | *"1 keyword hit total. Not modelled"* | **TWO THIRDS CLOSED, one third REFUSED ON PRINCIPLE** | `retainage` × 22, `WIP` × 10, `draw request` × 10; `sql/sairnroofing_draws_schema.sql`, `api/_lib/wip-accounting.js`, `panel-draws`. `certified payroll` × 1 — **and that single hit is the comment saying it is NOT here**: it needs external prevailing-wage determinations and *"inventing a wage rate would put a fabricated number in a federal filing"* |
@@ -134,6 +134,19 @@ absent would miss that the product tells the user the truth about them.
 > worse than one that is late.
 
 ## 3. What is genuinely still open
+
+> **SUPERSEDED 2026-10-06 (Fourth). NOTHING IN THIS SECTION IS STILL OPEN.**
+> A5 closed on 2026-09-26 and the table row in §2 has now been corrected to
+> say so; this section is kept rather than deleted, for the reason the
+> 2026-09-26 note gives — a status document that edits its own history is
+> worse than one that is late. Read it as what was true on 2026-09-17.
+>
+> **The one thing worth carrying forward is that the prediction below was
+> right about the shape.** It said the vendor half needs an Intuit
+> application and the buildable half is the journal. That is exactly what
+> shipped: `api/_lib/roofing-gl-export.js` is pure, produces a double-entry
+> journal against the firm's own chart of accounts, and the panel states
+> *"This is not a QuickBooks connection"* on screen rather than in a comment.
 
 **One row: A5, accounting integration.** Zero markers, no partial, no
 disclosure. It is not vendor-gated in the way the audit's blocked rows are —
