@@ -524,3 +524,79 @@ limit is honest; an unexercised rule presented as a criterion is not.**
 **`gate_parity_check.py` arrives with 6 of its 9**, which is worth saying to
 hank plainly: the tool landed today, it is a good tool, and more than half its
 module-level rules are invisible to its own `--selftest`.
+
+---
+
+## ITEM 6 — `push_retry.py` IS **FOURTH'S**, SO THE FIX IS ROUTED, NOT APPLIED
+
+### Ownership, derived two ways because the file carries no `# OWNER:` line
+
+`tools/push_retry.py` line 1 is `"""` — **no owner header.** So ownership comes
+from the claim-commit history, and it is not close:
+
+| session | times it has claimed `tools/push_retry.py` |
+|---|---|
+| **fourth** | **8** |
+| hank | 2 |
+| cc | 2 |
+
+**fourth, by both last-claim and by count.** Hank has also edited it (*"push_retry
+usage crash"*, *"push_retry loop regenerate and reason surfacing"*), so **fourth
+is the owner and hank is a second interested party** — worth saying because the
+derivation cannot tell an owner from a frequent editor and I am not pretending
+it can.
+
+### THE DEFECT, WITH THE EXACT SITE
+
+| | |
+|---|---|
+| message | `tools/push_retry.py:717-718` |
+| detection | `accumulated_losses()` at `tools/push_retry.py:184` |
+| ledger | `ACCUMULATED` at `tools/push_retry.py:142`, entry `('docs/known-red-suites.json', 'entries')` at `:146` |
+
+It printed:
+
+> **REFUSING TO PUSH — a rebase this tool just performed SHRANK an append-only
+> ledger:** `docs/known-red-suites.json 17 -> 13 (4 record(s) gone)`
+
+**MY TREE WAS BYTE-IDENTICAL TO `origin/main` ON THAT FILE** (`git diff
+origin/main -- docs/known-red-suites.json` → 0 lines) **and my commit did not
+touch it.** The four records were removed by **hank's `34c834aa`**, *"the red
+register reconciled against a real run"* — an upstream commit my rebase
+faithfully took.
+
+**The detection is RIGHT: four records did vanish.** `accumulated_losses()` is
+doing exactly its job. **The ATTRIBUTION is wrong:** it compares counts before
+and after its own rebase and says *"a rebase this tool just performed"* caused
+it, when a rebase that correctly adopts an upstream deletion produces the
+identical reading.
+
+**This is the same defect class as the one I shipped in my own escape check
+hours later**, and the fix I used there transfers:
+
+### THE PROPOSED FIX, which is a discriminator and not a looser filter
+
+`git log <base>..<tip> -- <ledger>` answers it directly. **If an upstream commit
+in the range modified the ledger, name THAT commit as the cause**; only when
+nothing in the range touched it is a rebase-eaten record the explanation.
+
+Suggested wording, keeping the refusal — the records really are gone and a push
+should still stop:
+
+> `docs/known-red-suites.json` lost 4 records between the base and this tip.
+> **`34c834aa` ("the red register reconciled against a real run") modified this
+> ledger in that range, so an upstream reconciliation explains it and your
+> rebase took it faithfully.** Confirm that deletion was intended and re-push,
+> or recover from `git reflog`. **If no commit in the range had touched it, the
+> rebase would be the cause.**
+
+**PROPOSED, NOT PATCHED.** Per the eleventh standing convention a detector may
+propose a repair and may not apply it — and the file is fourth's besides.
+
+### And one thing it does well that should not be lost in a rewrite
+
+`accumulated_losses()` **deliberately ignores GROWTH** — *"another clone
+appending is the normal case and is why this compares counts rather than
+requiring equality"*. That asymmetry is correct and is why the guard is usable
+at all with four clones appending. **The fix is to the attribution sentence, not
+to the comparison.**
