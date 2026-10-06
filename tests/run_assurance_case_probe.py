@@ -19,6 +19,16 @@ import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
+# --- HOISTED 2026-10-06 (cc): the registry refusal must precede this
+# probe's OWN output. `report_only_checks.REGISTRY` raises at import on an
+# entry that reads as promoted while nothing records what it caught, and
+# its message says it does that "at IMPORT rather than in a suite".
+# MEASURED 2026-10-06: this import sat at module level but 59 lines down,
+# so 35 lines of `ok` output were printed before the refusal arrived -- and
+# a probe whose first sections pass and whose later one dies is harder to
+# read than one that refuses before printing anything. BARE, not guarded:
+# a probe has no third state to protect, so the traceback IS the answer.
+import report_only_checks as ROC                        # noqa: E402
 import assurance_case as A                                       # noqa: E402
 
 CONTROLS_FOR = ['assurance_case.py']
@@ -56,7 +66,7 @@ for e in leaves:
 # inventory's own closing error. Registered means EITHER, never both.
 sys.path.insert(0, os.path.join(REPO, 'tools'))
 import tooling_inventory as T                                    # noqa: E402
-import report_only_checks as ROC                                 # noqa: E402
+# `import report_only_checks as ROC` HOISTED to the header 2026-10-06 (cc) -- see the note there.
 RUNNER = set(x['tool'] if isinstance(x, dict) else x[0] for x in ROC.REGISTRY)
 for e in leaves:
     base = os.path.basename(e['cmd'][0])

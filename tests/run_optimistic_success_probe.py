@@ -26,6 +26,16 @@ import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
+# --- HOISTED 2026-10-06 (cc): the registry refusal must precede this
+# probe's OWN output. `report_only_checks.REGISTRY` raises at import on an
+# entry that reads as promoted while nothing records what it caught, and
+# its message says it does that "at IMPORT rather than in a suite".
+# MEASURED 2026-10-06: this import sat at module level but 174 lines down,
+# so 48 lines of `ok` output were printed before the refusal arrived -- and
+# a probe whose first sections pass and whose later one dies is harder to
+# read than one that refuses before printing anything. BARE, not guarded:
+# a probe has no third state to protect, so the traceback IS the answer.
+import report_only_checks as _ROC                        # noqa: E402
 import optimistic_success_scan as S                              # noqa: E402
 
 fails = []
@@ -171,7 +181,7 @@ finally:
 
 # CLAIM: REPORT ONLY -- every hit needs a human.
 sys.path.insert(0, os.path.join(REPO, 'tools'))
-import report_only_checks as _ROC                                # noqa: E402
+# `import report_only_checks as _ROC` HOISTED to the header 2026-10-06 (cc) -- see the note there.
 _RUNNER = [x['tool'] if isinstance(x, dict) else x[0] for x in _ROC.REGISTRY]
 check('CLAIM "report only": optimistic_success_scan.py is NOT in the '
       'report-only RUNNER registry',

@@ -27,6 +27,15 @@ MEASURED at `411f29ce`, over the backticked 7-12 hex tokens in
 **46 of 367 = 12.5%, across 37 rows.** And five of the orphans were mine, from
 one batch, which is how the shape was recognised rather than theorised.
 
+**DO NOT QUOTE THOSE FOUR NUMBERS AS CURRENT. RUN `--census`.** They are a
+dated observation at one commit, kept because the DISCOVERY is the argument,
+and they will be wrong tomorrow. Guardian v2's own Check 0c is about exactly
+this -- a count carried in prose, with nothing forcing it to match -- and that
+skill has had the same figure wrong in three places at once. `--census` is the
+derived source: it prints the two definitions it uses, counts by reachability,
+and splits the dead rows into the ones a rewrite map could name and the ones no
+map ever will.
+
 ── THE HALF THAT ALREADY EXISTED, AND WHY THIS IS NOT A SECOND COPY OF IT ────
 `.githooks/post-rewrite` has done exactly the right thing since 2026-09-24: it
 fires once after a rebase or an `--amend` with git's own `<old> <new>` map on
@@ -262,6 +271,160 @@ def claimed_elsewhere():
     return held
 
 
+def census_state(tok, on_main, local):
+    """ON-MAIN / ORPHAN / ABSENT for one token, by REACHABILITY.
+
+    THE TEST IS REACHABILITY FROM origin/main, NOT OBJECT EXISTENCE, and the
+    difference is not pedantic: `git cat-file -e <sha>^{commit}` is
+    CLONE-DEPENDENT. An orphan left by this clone's own rebase passes it here
+    and fails it in every other clone on the machine. Measured 2026-10-06: the
+    object-existence test reported 38 dead in the open-work index and
+    reachability reported 46. A check whose verdict depends on which clone runs
+    it is not a check.
+    """
+    t = tok.lower()
+    if t in on_main[0] or on_main[1].get(t):
+        return 'ON-MAIN'
+    if t in local[0] or local[1].get(t):
+        return 'ORPHAN'
+    return 'ABSENT'
+
+
+def _prefix_index(shas):
+    idx = {}
+    for s in shas:
+        for n in range(7, 13):
+            idx.setdefault(s[:n], s)
+    return idx
+
+
+def census_universe():
+    """(on_main, local) each as (set, prefix-index). One git call apiece."""
+    full = (git('rev-list', 'origin/main') or '').split()
+    on_main = (set(full), _prefix_index(full))
+    try:
+        out = subprocess.run(
+            ['git', 'cat-file', '--batch-all-objects',
+             '--batch-check=%(objectname) %(objecttype)'],
+            cwd=REPO, capture_output=True, text=True,
+            encoding='utf-8', errors='replace')
+        loc = set(l.split()[0] for l in out.stdout.splitlines()
+                  if l.endswith(' commit'))
+    except Exception:                                          # noqa: BLE001
+        loc = set()
+    return on_main, (loc, _prefix_index(loc))
+
+
+def cmd_census():
+    """Count this repo's SHA citations by state, with the definitions stated.
+
+    ── THE TWO DEFINITIONS, BECAUSE THE NUMBER IS MEANINGLESS WITHOUT THEM ───
+    CITATION: a BACKTICKED run of 7 to 12 lowercase hex characters. Backticks
+    are required and that is a measurement, not a style preference -- over
+    docs/SAIRN-OPEN-WORK-INDEX.md the bare-word form matched 404 tokens against
+    the backticked form's 367, and the 37 extra were decimal figures, 12-hex
+    REGISTER RECORD IDS and one illustrative literal (`1234abcd`). A repair
+    tool with a 9% false-candidate rate on a 900-line standing document is not
+    one anybody should run, so the census counts exactly what the repairer
+    would act on and nothing else.
+
+    POPULATION: the documents this tool knows about -- REWRITE, GENERATED and
+    REPORT-ONLY -- and NOTHING ELSE. It is not "every citation in the repo".
+    Every other dated inventory, handoff and design note in docs/ also carries
+    citations and is deliberately out of scope: they are point-in-time reports,
+    and a report whose SHAs were repointed would describe a tree it never saw.
+
+    AND THE SPLIT THAT MATTERS: of the dead citations, how many could this tool
+    actually fix? Only one it can see in a rewrite map, which means only one
+    whose commit this clone still holds. An ABSENT citation was created and
+    orphaned in another clone and is not fetchable from anywhere -- no map will
+    ever name it. Reporting a dead count without that split would imply a
+    repair that is not available.
+    """
+    on_main, local = census_universe()
+    held = claimed_elsewhere()
+    print('DOC SHA CITATION CENSUS -- criteria %s, HEAD %s'
+          % (CRITERIA_VERSION, (git('rev-parse', '--short', 'HEAD') or '?')))
+    print('  CITATION   : a BACKTICKED 7-12 character lowercase hex run')
+    print('  POPULATION : the %d REWRITE + %d GENERATED + the REPORT-ONLY logs'
+          % (len(REWRITE), len(GENERATED)))
+    print('  STATE      : reachability from origin/main, never object existence')
+    print()
+    rows, totals = [], {'ON-MAIN': 0, 'ORPHAN': 0, 'ABSENT': 0}
+    fixable, unfixable = [], []
+    groups = ([(r, 'REWRITE') for r in REWRITE]
+              + [(g, 'GENERATED') for g in GENERATED]
+              + [(p, 'REPORT-ONLY') for p in report_only_paths()])
+    for rel, cls in groups:
+        path = os.path.join(REPO, rel)
+        if not os.path.isfile(path):
+            rows.append((rel, cls, 'COULD NOT READ -- not a file here',
+                         0, 0, 0, 0))
+            continue
+        try:
+            src = io.open(path, encoding='utf-8', errors='replace').read()
+        except Exception as e:                                 # noqa: BLE001
+            rows.append((rel, cls, 'COULD NOT READ -- %s' % e, 0, 0, 0, 0))
+            continue
+        seen, c = set(), {'ON-MAIN': 0, 'ORPHAN': 0, 'ABSENT': 0}
+        for m in TOKEN.finditer(src):
+            t = m.group(1)
+            if t in seen:
+                continue
+            seen.add(t)
+            s = census_state(t, on_main, local)
+            c[s] += 1
+            if s == 'ORPHAN':
+                fixable.append((rel, cls, t))
+            elif s == 'ABSENT':
+                unfixable.append((rel, cls, t))
+        for k in totals:
+            totals[k] += c[k]
+        note = ''
+        if cls == 'REWRITE' and held is not None and rel in held:
+            note = 'held by another session -- PROPOSE only'
+        elif cls == 'GENERATED':
+            note = 'never patched -- regenerate'
+        elif cls == 'REPORT-ONLY':
+            note = 'never rewritten -- append-only log'
+        rows.append((rel, cls, note, len(seen),
+                     c['ON-MAIN'], c['ORPHAN'], c['ABSENT']))
+
+    print('%-42s %-12s %5s %7s %6s %6s' % ('document', 'class', 'cites',
+                                           'ON-MAIN', 'ORPH', 'ABSENT'))
+    for rel, cls, note, n, a, o, b in rows:
+        print('%-42s %-12s %5s %7s %6s %6s' % (rel[:42], cls, n, a, o, b))
+        if note:
+            print('%-42s   %s' % ('', note))
+    dead = totals['ORPHAN'] + totals['ABSENT']
+    tot = dead + totals['ON-MAIN']
+    print()
+    print('  %d DEAD of %d citations in the population (%.1f%%)'
+          % (dead, tot, (100.0 * dead / tot) if tot else 0.0))
+    print('    ON-MAIN %d   ORPHAN %d   ABSENT %d'
+          % (totals['ON-MAIN'], totals['ORPHAN'], totals['ABSENT']))
+    print()
+    print('  WHAT THIS TOOL CAN FIX AND WHAT IT CANNOT:')
+    print('    FIXABLE IN PRINCIPLE   %d  ORPHAN -- the commit is still in '
+          'this clone, so a' % len(fixable))
+    print('                              rewrite map COULD name it. It will '
+          'only do so if the')
+    print('                              rewrite that orphaned it happens '
+          'again; these predate the')
+    print('                              post-rewrite wiring and their maps '
+          'expired with the reflog.')
+    print('    NOT FIXABLE BY ANY MAP %d  ABSENT -- not an object in this '
+          'clone at all. Created' % len(unfixable))
+    print('                              and orphaned in another clone, never '
+          'fetchable. No map will')
+    print('                              ever name it, from here or anywhere.')
+    print('    SO THE HONEST FIGURE FOR *THIS TOOL* IS %d of %d, and the other'
+          ' %d need a' % (len(fixable), dead, len(unfixable)))
+    print('    subject match or a human, which is why the batch-11 residual '
+          'table exists.')
+    return 0
+
+
 def run_fixtures(verbose=False):
     """Hand-built cases, locked before the tool was pointed at a real document.
 
@@ -371,6 +534,9 @@ def main(argv):
                     help="read git's old->new map on stdin and re-seat")
     ap.add_argument('--fixtures', action='store_true',
                     help='run the criteria lock alone -- reads no document')
+    ap.add_argument('--census', action='store_true',
+                    help='count citations by state, with the definitions '
+                         'stated; writes nothing')
     a = ap.parse_args(argv)
 
     bad, n = run_fixtures(verbose=a.fixtures)
@@ -386,6 +552,9 @@ def main(argv):
         print('criteria lock: %d/%d fixtures classify correctly, on hand-built '
               'sources only (criteria %s)' % (n, n, CRITERIA_VERSION))
         return 0
+
+    if a.census:
+        return cmd_census()
 
     if a.post_rewrite:
         try:

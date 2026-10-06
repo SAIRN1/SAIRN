@@ -1235,8 +1235,100 @@ def main():
     # absence is routed into check 1's own `untold` list, where it already has
     # a voice, and checks 2 through 10 now run regardless of it.
 
-    # ── CHECK 2: credential-writer guard on any changed sql/*.sql ──────────
     changed = outgoing_files(repo, base, tip)
+
+    # ── CHECK 15: THIS PUSH CHANGES THINGS THAT CHECK THE WORK (2026-10-06) ──
+    # NON-BLOCKING, AND THAT IS THE DESIGN RATHER THAN TIMIDITY. Every one of
+    # checks 1-14 asks "is this push's CONTENT wrong". None asks "is this
+    # push's content a change to the thing that answers that question". Check
+    # 13 comes closest -- it opens a review obligation on Tier A RESOURCE code
+    # -- and a gate check is not a Tier A resource, so a diff that deletes a
+    # gate check opens nothing today.
+    #
+    # AN AGENT MUST NOT QUIETLY WEAKEN THE THING THAT CHECKS ITS OWN WORK. The
+    # operative word is QUIETLY: editing a test is ordinary work, so this
+    # prints and records and never denies. A control that could block its own
+    # author's gate edits could not be installed at all -- this check's own
+    # landing commit touches this file, so it flags itself, which is the first
+    # end-to-end evidence that it fires.
+    #
+    # PLACED HERE, BEFORE CHECK 2, DELIBERATELY. Check 1 ends the function
+    # early with `sys.exit(0)` whenever the push touches no seed file, which is
+    # most pushes -- anything appended after it would never run on them. That
+    # early exit has already silently disabled later work once, which is the
+    # note above the `_have_checker` line.
+    #
+    # THE CLASSIFIER IS IMPORTED, NOT COPIED. It lives in
+    # tools/exit_status_attributable.py, which already owns "read a command or
+    # a diff and say what it really does" and is already in
+    # report_only_checks.REGISTRY. A third program parsing the outgoing diff
+    # was rejected on a measured cost -- `84eb61ea` records a conflict
+    # pre-flight that duplicated this very gate. Design note:
+    # docs/2026-10-06-cc-batch-11-design-notes.md.
+    #
+    # THE IMPORT IS GUARDED AND ITS FAILURE IS SAID OUT LOUD. A silent skip
+    # here would be PR 1.11 exactly: a check that reports a pass it never
+    # performed. It still does not deny -- it prints COULD NOT RUN with the
+    # import error and moves on, because a missing classifier must not block
+    # somebody else's legitimate push either.
+    try:
+        sys.path.insert(0, os.path.join(repo, 'tools'))
+        import exit_status_attributable as _ESA
+        _scr_why = None
+    except Exception as _e:                                    # noqa: BLE001
+        _ESA, _scr_why = None, '%s: %s' % (type(_e).__name__, _e)
+    if _ESA is None:
+        sys.stderr.write(
+            '\nEXTRA SCRUTINY: COULD NOT RUN -- tools/exit_status_attributable'
+            '.py could not be\n  imported, so this push was NOT examined for '
+            'changes to the things that check\n  the work. This is a third '
+            'state, not a pass.\n  cause: %s\n\n' % _scr_why)
+    else:
+        _in_class = [q for q in changed if _ESA.scrutiny_class(q)]
+        if _in_class:
+            # ── `base` IS None IN pretooluse MODE AND THAT CRASHED THIS CHECK
+            # The first version passed `base` straight to git. In prepush mode
+            # git supplies it on stdin; in PRETOOLUSE MODE IT IS None, so the
+            # argument list contained a None and raised TypeError -- which
+            # `__main__`'s `except Exception: sys.exit(0)` swallowed into a
+            # SILENT ALLOW. The gate printed nothing at all and looked like a
+            # clean push. That is the precise hazard the comment above
+            # `_emit_collected` warns about, and it was found by the probe
+            # rather than by reading: tests/run_scrutiny_flag_probe.py arm A
+            # failed with no gate output, which reads like "the check does not
+            # work" and actually meant "the check crashed".
+            #
+            # Resolved the same way CHECK 13 resolves it: trust `base` when it
+            # is given, else the merge-base with origin/main, else the ref
+            # itself. A range this cannot resolve means NOTHING is examined,
+            # and that is said out loud rather than becoming an empty flag
+            # list.
+            _scr_base = base or (git(repo, 'merge-base', 'origin/main', tip)
+                                 or '').strip() or 'origin/main'
+            _diffs = {}
+            for _q in _in_class:
+                _diffs[_q] = git(repo, 'diff', '--unified=0', _scr_base, tip,
+                                 '--', _q) or ''
+            if not any(_diffs.values()):
+                sys.stderr.write(
+                    '\nEXTRA SCRUTINY: COULD NOT RUN -- %d path(s) are in a '
+                    'self-checking class and\n  the diff range %s..%s produced '
+                    'no text for any of them, so NOTHING was\n  examined. '
+                    'Third state, not a pass.\n\n'
+                    % (len(_in_class), _scr_base[:12], str(tip)[:12]))
+                _diffs = {}
+            _flags = _ESA.scrutiny_flags(_diffs)
+            if _flags:
+                sys.stderr.write('\n' + _ESA.scrutiny_render(_flags, tip)
+                                 + '\n\n')
+                _wrote, _note = _ESA.scrutiny_record(repo, tip, _flags)
+                if not _wrote:
+                    sys.stderr.write(
+                        '  LEDGER NOT WRITTEN: %s -- the flags above stand, '
+                        'and nothing\n  downstream can pick them up until that '
+                        'is fixed.\n\n' % _note)
+
+    # ── CHECK 2: credential-writer guard on any changed sql/*.sql ──────────
     sql_changed = [q for q in changed if q.startswith('sql/') and q.endswith('.sql')]
     if sql_changed:
         gcheck = os.path.join(repo, 'tools', 'employee_auth_guard_check.py')

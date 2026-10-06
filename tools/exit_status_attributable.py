@@ -54,6 +54,8 @@ CLI:
     python tools/exit_status_attributable.py --stdin   < command.txt
     python tools/exit_status_attributable.py --selftest
 """
+import io
+import json
 import os
 import re
 import shlex
@@ -817,7 +819,461 @@ def post_hook():
     return 0
 
 
+# ════════════════════════════════════════════════════════════════════════════
+# SCRUTINY CLASSIFIER -- does this diff change the thing that checks the work?
+# Added 2026-10-06 (cc). Design note: docs/2026-10-06-cc-batch-11-design-notes.md
+# ════════════════════════════════════════════════════════════════════════════
+#
+# WHY IN THIS FILE RATHER THAN A NEW ONE. This file already owns the question
+# "read a command or a diff and say what it REALLY does" and is already in
+# `report_only_checks.REGISTRY`, so a flag it emits has an existing cadence. A
+# third program parsing a push's outgoing diff was rejected on a measured cost:
+# `84eb61ea` records a conflict pre-flight that duplicated an existing push
+# gate, and the batch-10 inventory rejected a parallel re-seater on the same
+# ground. Two diff parsers drift, and the drift is silent because both keep
+# passing.
+#
+# WHAT IT ANSWERS, and it is narrow on purpose: AN AGENT MUST NOT QUIETLY
+# WEAKEN THE THING THAT CHECKS ITS OWN WORK. The gate's 15 numbered checks all
+# ask "is this push's CONTENT wrong". None asks "is this push's content a
+# change to the thing that answers that question". Check 13 comes closest and
+# opens a review obligation on Tier A RESOURCE code -- a gate check is not a
+# Tier A resource, so a diff deleting a gate check opens nothing.
+#
+# IT NEVER BLOCKS, and that is a design constraint rather than caution. A
+# control that could block its own author's gate edits could not be installed:
+# this very build touches `tools/sairn_push_gate_hook.py`, so the control flags
+# its own landing commit. Flag, record, hand off -- the human read is the
+# control, and the ledger is what makes the hand-off possible.
+
+CRITERIA_VERSION_SCRUTINY = '2026-10-06.1'
+
+SCRUTINY_LEDGER = 'docs/scrutiny-flags.json'
+
+# Path classes. ORDER MATTERS: the first match wins, so the named-tool class
+# sits above the broad `tools/` one it would otherwise be swallowed by.
+SELF_CHECKING = (
+    ('push-gate logic', (
+        'tools/sairn_push_gate_hook.py',
+        'tools/exit_status_attributable.py',
+        'tools/report_only_checks.py',
+        'tools/run_all_tests.py',
+        'tools/tier_a_review_gate.py',
+        'tools/hook_integrity_check.py',
+        'tools/sairn_claim_hook.py',
+    )),
+    ('CI / hook configuration', (
+        '.github/workflows/',
+        '.githooks/',
+        '.claude/settings.json',
+        '.claude/settings.local.json',
+    )),
+    ('test file', (
+        'tests/',
+    )),
+)
+
+# A `.test.js` anywhere counts as a test file; `api/` holds its own.
+TEST_SUFFIXES = ('.test.js', '_probe.py', '_fault_probe.py',
+                 '_mutation_control.js')
+
+# Lines whose REMOVAL is the shape worth a second read. Deliberately
+# syntactic: this file's whole premise is that a decidable question beats an
+# intent inference.
+_ASSERTION_HINTS = (
+    'assert', 'ok(', 'expect(', 'strictEqual', 'notStrictEqual', 'deepEqual',
+    'throws(', 'rejects(', 'case(', 'arm(', 'deny(', 'refuse', 'COULD_NOT_RUN',
+    'sys.exit(1', 'sys.exit(2', 'fail(',
+)
+# Bounds and exemptions: a RISE or an ADDITION here is the weakening shape.
+_BOUND_HINTS = ('timeout', 'max_', '--max', 'threshold', 'ceiling', 'limit',
+                'RUNS_PER_', 'STALE_AFTER')
+_EXEMPTION_HINTS = ('skip', 'xfail', 'exempt', 'allowlist', 'whitelist',
+                    'KNOWN_RED', 'known-red', 'GRANDFATHER', 'ignore')
+
+SCRUTINY_BLIND_SPOTS = (
+    'An assertion that still EXISTS and no longer tests anything. The count '
+    'holds, the sense is inverted, and nothing here can see it.',
+    'A fixture quietly made easier. The arms all still run and all still pass.',
+    'A weakening spread across two pushes, where neither diff alone matches a '
+    'shape. This reads one outgoing range at a time.',
+    'Intent. It reports SHAPE. A deleted arm may be a correct deletion of a '
+    'wrong arm -- which is exactly why this flags and does not block.',
+    # ── SCRUBBER ITEM 24, NAMED RATHER THAN DISCOVERED ─────────────────────
+    # The hints are SUBSTRINGS over diff lines, so they cannot tell CODE from
+    # PROSE ABOUT CODE. A docstring paragraph in a test file that says the word
+    # "assert" counts as an assertion line: delete that paragraph and this
+    # reports "assertions NET REMOVED" on a comment-only edit. The scrubber's
+    # own rule is to match structure before prose, and this layer deliberately
+    # does not -- an AST pass would be blind to .js, .sh and .json in the same
+    # classes, so the limit is DECLARED instead of engineered away.
+    'CODE versus PROSE ABOUT CODE, and this is MEASURED rather than feared. '
+    'On its own landing commit -- the first real diff it ever saw -- the '
+    'WEAKENING level was 3 of 3 FALSE: the word "ignored" inside a probe '
+    'assertion label, a comment saying "silent skip", and this file\'s own '
+    '_BOUND_HINTS tuple. Dropping comment lines took it to 2 of 3, and BOTH '
+    'SURVIVORS ARE STILL FALSE -- prose inside a STRING LITERAL, which is real '
+    'code by every syntactic test. SO THE WEAKENING LEVEL IS A TRIAGE PROMPT '
+    'AND NOT A FINDING, on an n of 1 real push. It is left matching rather '
+    'than narrowed, per scrubber item 24: narrowing clears the known instance '
+    'and fails silently on the next phrasing, and in a detector a false '
+    'negative is invisible where a false positive is loud and gets read. The '
+    'rate on a larger sample is still unmeasured.',
+    # ── SCRUBBER ITEM 24 PART 2: the residue must be visible ───────────────
+    # "Did not match a shape" is NOT "safe", so a path in a self-checking
+    # class with no shape match is still reported, at level CHANGE. Nothing
+    # that reaches this classifier is silently dropped. What IS dropped is a
+    # path in no class at all, and that is the real coverage question:
+    'COVERAGE OF THE CLASS LIST ITSELF. A path in no SELF_CHECKING class is '
+    'not examined and is not reported. The push-gate-logic class is a NAMED '
+    'LIST of seven files, not a glob -- a new checker nobody adds to it is '
+    'invisible here, which is the same staleness this platform keeps paying '
+    'for one level up.',
+)
+
+
+def scrutiny_class(path):
+    """Which self-checking class this path belongs to, or None.
+
+    `None` is not "safe"; it is "not in a class this control knows about".
+    """
+    p = str(path or '').replace(chr(92), '/')
+    for label, prefixes in SELF_CHECKING:
+        for pre in prefixes:
+            if p == pre or p.startswith(pre):
+                return label
+    if p.endswith(TEST_SUFFIXES):
+        return 'test file'
+    return None
+
+
+def weakening_shapes(diff_body):
+    """Shapes in one file's unified diff that read as a WEAKENING.
+
+    Returns a list of (shape, detail) and never a verdict. An empty list means
+    "no shape matched", which is a different statement from "this edit is
+    fine" -- see SCRUTINY_BLIND_SPOTS.
+    """
+    # ── COMMENT LINES ARE DROPPED, AND THE FIRST REAL PUSH IS WHY ──────────
+    # MEASURED on this classifier's own landing commit, which is the first
+    # real diff it ever saw: 3 of 3 WEAKENING flags were PROSE, not code. One
+    # matched the word "ignored" inside a probe's assertion label; one matched
+    # a comment containing "silent skip"; one matched this file's own
+    # `_BOUND_HINTS` declaration. **A 100% false-positive rate on the WEAKENING
+    # level at first contact**, which would have made the loud half of this
+    # control worthless by its third push.
+    #
+    # The blind spot was DECLARED before the push (see SCRUTINY_BLIND_SPOTS)
+    # and declaring it was not sufficient -- it fired immediately and at full
+    # strength. Scrubber item 24's rule is to match STRUCTURE before prose, so
+    # a line whose stripped form opens a comment is not a code line and does
+    # not count.
+    #
+    # WHAT THIS STILL CANNOT DO is see inside a docstring or a multi-line
+    # string: `_BOUND_HINTS`'s own tuple of words is real code by every
+    # syntactic test and is left matching. That residual is measured below
+    # rather than argued away, and an AST pass is not the answer -- the same
+    # classifier has to read .js, .sh and .json in the same path classes.
+    _COMMENT_OPENERS = ('#', '//', '*', '/*', '--')
+
+    def _is_comment(s):
+        t = s.strip()
+        return bool(t) and t.startswith(_COMMENT_OPENERS)
+
+    added, removed = [], []
+    for line in (diff_body or '').split('\n'):
+        if line.startswith('+++') or line.startswith('---'):
+            continue
+        if line.startswith('+') and not _is_comment(line[1:]):
+            added.append(line[1:])
+        elif line.startswith('-') and not _is_comment(line[1:]):
+            removed.append(line[1:])
+
+    def hits(lines, hints):
+        return [l.strip() for l in lines
+                if any(h in l for h in hints)]
+
+    out = []
+    a_as, r_as = hits(added, _ASSERTION_HINTS), hits(removed, _ASSERTION_HINTS)
+    if len(r_as) > len(a_as):
+        out.append(('assertions NET REMOVED',
+                    '%d removed, %d added; first removed: %s'
+                    % (len(r_as), len(a_as), (r_as[0] or '')[:80])))
+    a_b, r_b = hits(added, _BOUND_HINTS), hits(removed, _BOUND_HINTS)
+    if a_b and r_b:
+        out.append(('a bound or threshold CHANGED',
+                    'was: %s  now: %s'
+                    % ((r_b[0] or '')[:60], (a_b[0] or '')[:60])))
+    elif a_b and not r_b:
+        out.append(('a bound or threshold ADDED', (a_b[0] or '')[:80]))
+    a_e = hits(added, _EXEMPTION_HINTS)
+    if len(a_e) > len(hits(removed, _EXEMPTION_HINTS)):
+        out.append(('a skip / exemption / allowlist entry ADDED',
+                    (a_e[0] or '')[:80]))
+    r_d = [l for l in removed if 'deny(' in l]
+    a_d = [l for l in added if 'deny(' in l]
+    if len(r_d) > len(a_d):
+        out.append(('a deny() was REMOVED',
+                    '%d removed, %d added' % (len(r_d), len(a_d))))
+    return out
+
+
+def scrutiny_flags(per_file_diffs):
+    """The flags for one outgoing range.
+
+    `per_file_diffs` is {path: unified diff body for that path}. Returns a list
+    of dicts, highest-level first: WEAKENING before CHANGE, because "a test
+    file moved" and "an assertion was deleted" are not the same claim and
+    collapsing them is how a non-blocking control becomes noise.
+    """
+    flags = []
+    for path in sorted(per_file_diffs):
+        cls = scrutiny_class(path)
+        if not cls:
+            continue
+        shapes = weakening_shapes(per_file_diffs[path])
+        flags.append({
+            'path': path,
+            'class': cls,
+            'level': 'WEAKENING' if shapes else 'CHANGE',
+            'shapes': [{'shape': s, 'detail': d} for s, d in shapes],
+        })
+    flags.sort(key=lambda f: (f['level'] != 'WEAKENING', f['path']))
+    return flags
+
+
+def scrutiny_render(flags, sha=''):
+    """The stderr block. Names the file and the reason, never a bare count."""
+    if not flags:
+        return ''
+    weak = [f for f in flags if f['level'] == 'WEAKENING']
+    out = []
+    out.append('EXTRA SCRUTINY -- this push changes things that CHECK the '
+               'work (criteria %s)' % CRITERIA_VERSION_SCRUTINY)
+    out.append('  %d path(s) in a self-checking class; %d match a WEAKENING '
+               'shape.' % (len(flags), len(weak)))
+    out.append('  NOT A REFUSAL. An agent must not quietly weaken the thing '
+               'that checks its own')
+    out.append('  work -- so this is written down and handed to a reviewer '
+               'rather than blocked,')
+    out.append('  because a control that could block gate edits could never '
+               'have been installed.')
+    out.append('')
+    for f in flags:
+        out.append('  [%-9s] %-58s %s' % (f['level'], f['path'], f['class']))
+        for s in f['shapes']:
+            out.append('              %s -- %s' % (s['shape'], s['detail']))
+    out.append('')
+    out.append('  RECORDED IN %s under %s, so a review obligation can pick it '
+               'up.' % (SCRUTINY_LEDGER, sha[:12] or '<no sha>'))
+    out.append('  WHAT THIS CANNOT SEE:')
+    for b in SCRUTINY_BLIND_SPOTS:
+        out.append('    - %s' % b)
+    return '\n'.join(out)
+
+
+def scrutiny_record(repo, sha, flags):
+    """Append to the ledger. Returns (written, note) and NEVER raises.
+
+    APPEND-ONLY WITH A UNION-BY-IDENTITY MERGE POLICY, identity `(sha, path)`.
+    That is the shape `docs/tier-a-reviews.json` already uses and that
+    `tools/sairn_rebase_resolve.py` already knows how to merge, which matters
+    because four clones push into one branch and a hand-merged ledger is a
+    write race with extra steps.
+
+    KEYED BY COMMIT, NOT BY PUSH ATTEMPT, so a refused-and-retried push does
+    not write the same flag three times. A rebase that rewrites the commit
+    writes a new entry -- and `.githooks/post-rewrite` plus
+    `tools/doc_sha_reseat.py` exist for exactly that, so this ledger joins the
+    set the rewrite map already repairs rather than inventing its own.
+    """
+    if not flags:
+        return False, 'no flags'
+    path = os.path.join(repo, SCRUTINY_LEDGER)
+    base = {
+        '_what_this_is':
+            'Diffs that changed something which CHECKS the work -- test files, '
+            'CI/hook configuration, or push-gate logic. A flag is NOT a '
+            'finding and NOT a refusal. It is a record that an agent edited '
+            'its own checker, written so a reviewer can ask why without '
+            'having to notice it first.',
+        '_what_it_does_NOT_claim':
+            'That the edit was wrong, or that an unflagged edit was fine. See '
+            'blind_spots: an assertion that still exists and tests nothing is '
+            'invisible here.',
+        'blind_spots': list(SCRUTINY_BLIND_SPOTS),
+        'merge_policy': {
+            'strategy': 'union-by-identity',
+            'records_key': 'flags',
+            'identity': ['sha', 'path'],
+        },
+        'criteria_version': CRITERIA_VERSION_SCRUTINY,
+        'flags': [],
+    }
+    try:
+        if os.path.isfile(path):
+            cur = json.load(io.open(path, encoding='utf-8'))
+            if not isinstance(cur, dict) or 'flags' not in cur:
+                return False, ('%s exists and is not this ledger -- NOT '
+                               'overwritten' % SCRUTINY_LEDGER)
+            base = cur
+                                                    # keep the hand-written half
+            base['criteria_version'] = CRITERIA_VERSION_SCRUTINY
+            base['blind_spots'] = list(SCRUTINY_BLIND_SPOTS)
+    except Exception as e:                                     # noqa: BLE001
+        return False, 'could not read %s: %s' % (SCRUTINY_LEDGER, e)
+
+    have = set((f.get('sha'), f.get('path')) for f in base['flags'])
+    added = 0
+    for f in flags:
+        key = (sha, f['path'])
+        if key in have:
+            continue
+        rec = dict(f)
+        rec['sha'] = sha
+        rec['criteria_version'] = CRITERIA_VERSION_SCRUTINY
+        base['flags'].append(rec)
+        have.add(key)
+        added += 1
+    if not added:
+        return False, 'every flag for %s was already recorded' % sha[:12]
+    base['flags'].sort(key=lambda f: (f.get('sha', ''), f.get('path', '')))
+    try:
+        # THE DIRECTORY IS CREATED RATHER THAN ASSUMED. The first version did
+        # not, and the probe's arm D failed in a scratch repo with no `docs/`
+        # -- the flags printed to stderr and the ledger silently did not
+        # appear. In THIS repo `docs/` always exists, so the defect would have
+        # shipped invisible and surfaced only in whatever clone or CI checkout
+        # lacked it. A ledger whose whole purpose is that somebody can read it
+        # later does not get to depend on a directory existing.
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        tmp = path + '.tmp'
+        io.open(tmp, 'w', encoding='utf-8', newline='').write(
+            json.dumps(base, indent=1, sort_keys=False) + '\n')
+        if os.path.exists(path):
+            os.remove(path)
+        os.rename(tmp, path)
+    except Exception as e:                                     # noqa: BLE001
+        return False, 'could not write %s: %s' % (SCRUTINY_LEDGER, e)
+    return True, '%d flag(s) recorded under %s' % (added, sha[:12])
+
+
+def scrutiny_selftest():
+    """Planted diffs, both directions. Reads no real file.
+
+    EVERY ARM IS PAIRED. A control that only proves "the weakening is caught"
+    cannot tell a working classifier from one that flags everything, which is
+    the failure the ninth cross-domain discipline is about.
+    """
+    ok, n = [], 0
+
+    def case(label, got, want):
+        nonlocal n
+        n += 1
+        good = got == want
+        ok.append(good)
+        print('%s %-72s' % ('ok  ' if good else 'FAIL', label))
+        if not good:
+            print('       want %r' % (want,))
+            print('       got  %r' % (got,))
+
+    # ── the path classifier, both directions ────────────────────────────────
+    case('tests/ is a test file',
+         scrutiny_class('tests/run_x_probe.py'), 'test file')
+    case('api/_lib/x.test.js is a test file by SUFFIX, not by directory',
+         scrutiny_class('api/_lib/x.test.js'), 'test file')
+    case('.githooks/pre-push is CI / hook configuration',
+         scrutiny_class('.githooks/pre-push'), 'CI / hook configuration')
+    case('.claude/settings.json is CI / hook configuration',
+         scrutiny_class('.claude/settings.json'), 'CI / hook configuration')
+    case('the push gate is push-gate logic, NOT swallowed by a tools/ class',
+         scrutiny_class('tools/sairn_push_gate_hook.py'), 'push-gate logic')
+    case('THIS file is push-gate logic too -- it must flag its own edits',
+         scrutiny_class('tools/exit_status_attributable.py'),
+         'push-gate logic')
+    case('an ordinary app file is in NO class',
+         scrutiny_class('stonedesk.html'), None)
+    case('an ordinary tool is in NO class -- the list is named, not a glob',
+         scrutiny_class('tools/dead_rule_sweep.py'), None)
+    case('a backslash path is normalised before matching',
+         scrutiny_class('tests' + chr(92) + 'run_x_probe.py'), 'test file')
+
+    # ── the weakening shapes, each with its NEGATIVE control ───────────────
+    d_removed = '-    assert x == 1\n-    assert y == 2\n+    pass\n'
+    case('two assertions removed and none added is NET REMOVED',
+         [s for s, _ in weakening_shapes(d_removed)],
+         ['assertions NET REMOVED'])
+    d_added = '+    assert x == 1\n+    assert y == 2\n'
+    case('CONTROL: assertions ADDED is not a weakening shape',
+         weakening_shapes(d_added), [])
+    d_even = '-    assert x == 1\n+    assert x == 2\n'
+    case('CONTROL: one assertion rewritten is not NET REMOVED',
+         weakening_shapes(d_even), [])
+    d_bound = '-    timeout = 60\n+    timeout = 600\n'
+    case('a bound changed is flagged',
+         [s for s, _ in weakening_shapes(d_bound)],
+         ['a bound or threshold CHANGED'])
+    d_skip = '+    KNOWN_RED.append("tests/x.py")\n'
+    case('an allowlist entry added is flagged',
+         [s for s, _ in weakening_shapes(d_skip)],
+         ['a skip / exemption / allowlist entry ADDED'])
+    d_deny = '-        deny(reason)\n+        report(reason)\n'
+    case('a deny() removed is flagged',
+         'a deny() was REMOVED' in [s for s, _ in weakening_shapes(d_deny)],
+         True)
+    case('CONTROL: an empty diff matches no shape',
+         weakening_shapes(''), [])
+    case('CONTROL: a diff of only context lines matches no shape',
+         weakening_shapes('     assert x == 1\n     assert y == 2\n'), [])
+
+    # ── THE FALSE POSITIVE MEASURED ON THE FIRST REAL PUSH, BOTH WAYS ──────
+    # 3 of 3 WEAKENING flags on this classifier's own landing commit were
+    # PROSE. These arms pin the filter that fixed it AND the arm that proves
+    # the filter did not simply disarm the detector -- without that last one,
+    # "no false positives" and "finds nothing" are the same measurement.
+    case('CONTROL: a removed COMMENT mentioning assert is NOT a weakening',
+         weakening_shapes('-    # we assert x here\n-    # and assert y\n'), [])
+    case('CONTROL: a removed // comment naming a threshold is not a bound '
+         'change',
+         weakening_shapes('-    // raise the timeout threshold\n'), [])
+    case('CONTROL: an added comment containing the word skip is not an '
+         'exemption',
+         weakening_shapes('+    # a silent skip would be PR 1.11\n'), [])
+    case('...and REAL code with those same words STILL fires, so the comment '
+         'filter did not disarm the detector',
+         [s for s, _ in weakening_shapes('-    assert x == 1\n-    assert y\n')],
+         ['assertions NET REMOVED'])
+
+    # ── the aggregate, and the ordering contract ───────────────────────────
+    flags = scrutiny_flags({
+        'stonedesk.html': '+<div>\n',
+        'tests/run_a_probe.py': '+    assert z\n',
+        'tests/run_b_probe.py': d_removed,
+    })
+    case('an out-of-class path produces NO flag',
+         [f['path'] for f in flags],
+         ['tests/run_b_probe.py', 'tests/run_a_probe.py'])
+    case('WEAKENING sorts before CHANGE',
+         [f['level'] for f in flags], ['WEAKENING', 'CHANGE'])
+    case('the render names the file and the shape, never a bare count',
+         'run_b_probe.py' in scrutiny_render(flags, 'deadbeef1234')
+         and 'assertions NET REMOVED' in scrutiny_render(flags, 'x'), True)
+    case('the render says NOT A REFUSAL in its own words',
+         'NOT A REFUSAL' in scrutiny_render(flags, 'x'), True)
+    case('the render states its blind spots rather than implying coverage',
+         'WHAT THIS CANNOT SEE' in scrutiny_render(flags, 'x'), True)
+    case('CONTROL: no flags renders to the empty string, so a clean push '
+         'prints nothing', scrutiny_render([], 'x'), '')
+
+    passed = sum(1 for x in ok if x)
+    print('\nscrutiny selftest: %d passed, %d failed, of %d arms'
+          % (passed, n - passed, n))
+    return 0 if passed == n else 1
+
+
 def main(argv):
+    if '--scrutiny-selftest' in argv:
+        return scrutiny_selftest()
     if '--post' in argv:
         return post_hook()
     if '--hook' in argv:

@@ -3101,8 +3101,8 @@
       "task": "batch11: check8_probe root-cause fix in a throwaway worktree; convention 11 heading-with-no-body repair (cc routed, my file); gap-doc app-inference rule stated and the 12 findings re-run; span walker replaced with a real measurement and 24 rows re-checked; red-register empty-why diagnoses; METHODOLOGY intake from cody/cc/hank; one new convention; batch-10 per-item map; handoff. BLOCKED AND NOT OVERRIDDEN: docs/tier-a-reviews.json is CODY'S under a live claim doing most-overdue-first discharges -- my ranks 13-18 are NOT taken and will be retried at the end of this batch. docs/METHODOLOGY.md, docs/CRITICALITY-TIERS.md, docs/SAIRN-OPEN-WORK-INDEX.md, tools/tooling_inventory.py are HANK'S. tools/sairn_push_gate_hook.py root cause is CC'S. FILES: tests/push_gate/check8_probe.py docs/2026-09-13-cross-domain-disciplines.md docs/known-red-suites.json docs/2026-10-06-gap-doc-verification-all-35.md tests/lib/fn_span.js docs/2026-10-06-fourth-andon-log.md docs/recurring-bug-classes.md",
       "claimed_at": "2026-10-06T19:00:26Z",
       "claimed_at_epoch": 1791313226.170616,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-06T21:55:27Z",
       "files": [
         "docs/2026-09-13-cross-domain-disciplines.md",
         "docs/2026-10-06-fourth-andon-log.md",
@@ -3111,6 +3111,27 @@
         "docs/recurring-bug-classes.md",
         "tests/lib/fn_span.js",
         "tests/push_gate/check8_probe.py"
+      ]
+    },
+    {
+      "id": "fourth-1791323971",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "batch11 CONTINUED after context exhaustion at 2% mid-batch. Premises re-derived at HEAD 762b084b. (3) the pinned whole-tree run DIED with the interruption at 656 lines -- rerun with --pinned at HEAD and correct the seam_check verdict. (4) ROOT CAUSE of the clone-corrupting probes: this clone WAS FOUND core.bare=true at session start and repaired by hand; selftest is a whole-tree run leaving git status clean, run in the LIVE clone not a worktree, for check8_probe.py and run_delegation_probe.py. (5) gap-doc slice of the 30 unverified. (6) span sweep 14 remaining of 38. (7) red-register empty-why diagnoses, real diagnosis not driven-not-diagnosed. (8) convention 11 body -- ALREADY DONE at b23dbc2e. (11) demo_credentials_check.py one fresh run on SAIRNvet. (12) one methodology rule from a real catch. (13) handoff. BLOCKED AND NOT OVERRIDDEN: docs/tier-a-reviews.json -- cody's claim has EXPIRED on the timer but cody is LIVE and the status registry says queue19 resume whose first item is Tier A discharge most-overdue-first, so I treat it as STILL HELD and do NOT write it; my obligations are listed, not discharged. docs/METHODOLOGY.md, docs/CRITICALITY-TIERS.md, docs/SAIRN-OPEN-WORK-INDEX.md, tools/tooling_inventory.py are HANK'S. tools/sairn_push_gate_hook.py is CC'S. Item 10 schema-constraints merge is BLOCKED on Michael's SQL result and cody owns the snapshot. I close only findings I originated. FILES: tests/push_gate/check8_probe.py tests/seam_check/run_delegation_probe.py docs/known-red-suites.json docs/2026-10-06-gap-doc-verification-all-35.md tests/lib/fn_span.js docs/2026-09-13-cross-domain-disciplines.md docs/2026-10-06-fourth-andon-log.md docs/2026-10-06-fourth-batch11-inventory.md SAIRN-ACTIVE-WORK-fourth.md",
+      "claimed_at": "2026-10-06T21:59:31Z",
+      "claimed_at_epoch": 1791323971.6508482,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-fourth.md",
+        "docs/2026-09-13-cross-domain-disciplines.md",
+        "docs/2026-10-06-fourth-andon-log.md",
+        "docs/2026-10-06-fourth-batch11-inventory.md",
+        "docs/2026-10-06-gap-doc-verification-all-35.md",
+        "docs/known-red-suites.json",
+        "tests/lib/fn_span.js",
+        "tests/push_gate/check8_probe.py",
+        "tests/seam_check/run_delegation_probe.py"
       ]
     }
   ],
