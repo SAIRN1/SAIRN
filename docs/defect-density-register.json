@@ -23478,6 +23478,60 @@
       "recurrence_open": "NOT CLOSED: sairnscape.html:258-261 advertises 'API access', 'Custom AI training on your business' and an 'SLA and uptime guarantee' on the Business tier. None of the three was verified in this pass and none is fixed -- they are the same class as the removed QuickBooks line, and keeping or removing them is a decision about what is sold. Nothing on this platform checks marketing surfaces at all."
     },
     {
+      "commit": "5c8a7b17bf4e",
+      "date": "2026-10-06",
+      "subject": "fix(exec-context): the CTO advisor carried the SAME false clause as the CFO one -- \"NO accounting integration of any kind\" -- plus a count nobody could re-derive; and tools/red_suite_register_check.py",
+      "files": [
+        "api/_lib/exec-context.js",
+        "tools/red_suite_register_check.py"
+      ],
+      "lines_added": 368,
+      "lines_removed": 1,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "The CTO exec-context statement asserted 'There is NO accounting integration of any kind' while api/accounting.js, api/_lib/accounting-connector.js and sql/accounting_connector_schema.sql exist at HEAD -- the same false-premise-true-conclusion shape as the CFO line in the same file, found by the sweep that followed it. It also claimed 'Supabase Postgres (78 API functions)'; counted at HEAD there are 70 serverless route files under api/ excluding tests, _lib and _resources, 60 of which touch Supabase, and the figure said nothing about what it counted so it could not be re-derived.",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The accounting clause went false when api/accounting.js landed (27a2404d) and the 78 count went false gradually as routes were added; one sha would be a guess between a single commit and a slow drift."
+      },
+      "contributing_factors": [
+        {
+          "factor": "The statement carried a dated verification and nothing re-reads any of them on a cadence, so both of these decayed in the same way the CFO line did -- in the same file, with the same fix, found only because somebody swept the file deliberately.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "A standing re-check of every dated 'verified' statement in api/_lib/exec-context.js is still owed. This sweep was a one-off."
+        },
+        {
+          "factor": "'78 API functions' never said what it counted. A bare number with no stated denominator cannot be re-derived, so nobody could tell it had drifted.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The replacement states the population (serverless route files under api/, excluding *.test.js, _lib/ and _resources/) and the sub-count that touches Supabase."
+        },
+        {
+          "factor": "The accounting clause was written as an absolute ('NO accounting integration of any kind') rather than as the conclusion it was defending, so a later commit adding a refusing endpoint made it false without changing anything a reader cares about.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Rewritten to state what exists AND why nothing is connected, so the sentence survives the endpoint existing."
+        },
+        {
+          "factor": "The suite pins the exact architecture sentence, which is why my own incorrect 'improvement' to a CORRECT count could not land silently -- but there is no equivalent arm pinning the integrations sentence, which is the one that was actually wrong.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "An arm pinning the integrations sentence against a measured route count is owed. Named rather than added here: the count it would pin is the thing that drifts, so the arm has to compute it rather than quote it."
+        }
+      ],
+      "recurrence_open": "Nothing re-reads the remaining dated statements in api/_lib/exec-context.js on a cadence, and no arm pins the integrations sentence the way :206 pins the architecture one. The HIPAA-for-SAIRNcomm line was NOT verified in this pass -- SAIRNcomm has no app file in this repo, so there is nothing to check it against, and that is stated rather than counted as clean."
+    },
+    {
       "commit": "607f4f034662",
       "date": "2026-10-06",
       "subject": "fix(sairndesign): the one generic SDN write branch stored the caller's whole payload raw -- one omission, eighteen resources",
