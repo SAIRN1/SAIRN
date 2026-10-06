@@ -5703,6 +5703,26 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-06T22:18:54Z",
+      "opened_at_sha": "4aa33b4565ddceeaac1081997f1d379d05b9de47",
+      "resources": [
+        "quotes"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tools/ledger_append.py"
+      ],
+      "what": "FIVE NEW TOOLS, FOUR RE-MEASURED TIMEOUT BOUNDS, AND NO PRODUCT CODE. The gate\nmatched the Tier A resource name `quotes` inside tools/ledger_append.py, where\nit occurs in the phrase \"embedded quotes\" -- the name of a selftest arm about\nshell quoting, not a resource. Say so first because it is the thing a reviewer\nshould check before anything else: `git show --stat` carries no api/ or *.html\npath at all.\n\nWHAT TO ACTUALLY REVIEW, in descending order of consequence.\n\n(1) tools/ledger_append.py writes docs/tier-a-reviews.json, a ledger four\nclones 3-way merge by (author_session, opened_at). Its claim is that a write\nthrough it cannot change an existing byte and cannot exceed the entry's own\nline count plus a printed allowance, with a breach REVERTED rather than\nreported. The arm that matters is the NEGATIVE one: an over-large append is\nrefused AND the record count is re-read afterwards to prove the revert\nhappened. If that arm can pass while the revert does not, the whole guarantee\nis decoration.\n\n(2) The four timeout bounds. metamorphic_check.py PER_RUN_TIMEOUT 120 -> 40\nagainst a measured worst case of 18.24s (literal_drift_check.py on\nstonedesk.html, 2.76MB, measured UNDER LOAD). THE RISK IS A REGRESSION I HAVE\nNOT CLOSED: metamorphic_check.py has NOT been re-run end to end under the new\nbound, so a slower machine or a larger stonedesk.html could turn a pass into a\nCOULD NOT RUN. The SPAWN_BOUND = 5 floor is a JUDGEMENT, not a measurement --\n2x of 0.051s is 0.1s and that would manufacture a third state out of scheduler\nnoise -- and it is labelled as one in the code. Disagreeing with 5 is a\nlegitimate review outcome.\n\n(3) tools/dep_surface_check.py installs packages from the public npm registry\ninto a throwaway directory and resolves symbols in a CHILD node process. It\nnever touches package.json or package-lock.json and never runs with --force.\nIts positive control reproduces the firebase-admin 14.5.0 namespace removal\nexactly (2 of 11 paths at 14.5.0, 11 of 11 at 12.7.0). Worth checking: whether\nthe enumerator can MISS a call site and thereby report a clean upgrade. It is\na regex reader, not a parser; it already says so, and it already missed two\nshapes that were found by running it on a second package.\n\n(4) tests/run_blob_coverage_scope_sabotage.py carries TWO FINDINGS AGAINST\nCODE THAT IS NOT MINE AND THAT I HAVE NOT FIXED: api/_lib/sd-store.js:166 and\napi/sairndental/public-complaint-submit.js:136 bind a plain variable into a\n`data:` write, and writeSlab() puts slab_id as a COLUMN beside the unstripped\nblob. Those two sites are the live-data consequence and a reviewer may\nreasonably decide they outrank everything above.\n\n(5) tools/rework_tracker.py reads git log and four registers and writes one\nreport doc. Its STALE_FIGURE precision is 12 of 20 on a sample hand-scored by\nme, which is the weakest adjudication available. A reviewer scoring a\ndifferent sample and getting a materially different number IS the finding.\n\nWHAT THIS CHANGE DOES NOT DO: it touches no api/ file, no *.html, no SQL, and\nno grant. docs/TOOLING-INVENTORY.md, docs/MASTER-PLAN.md and\ndocs/traceability-matrix.md are regenerated, not hand-edited, and all three\n--check at EXIT 0 in the commit.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-06T22:18:54Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
