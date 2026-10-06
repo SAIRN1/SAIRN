@@ -12409,10 +12409,32 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: { message: resource + ' payload.id is required' } });
         return;
       }
+      // ── THIS WAS `data: payload`, RAW (H2 seq 529/538, fixed 2026-10-05) ──
+      // One generic branch serves all 18 SDN resources, which is why the one
+      // omission was eighteen omissions: the caller's whole object went into
+      // the jsonb column verbatim, so any key it invented -- INCLUDING a
+      // forged `license_hash` or `app_id` -- was stored as data and echoed
+      // back on read beside the real columns that contradict it.
+      //
+      // LATENT, NOT LIVE, AND THE DISTINCTION IS NOT A DOWNGRADE. Every read
+      // path here resolves tenancy from the real `license_hash` COLUMN
+      // (`:12399`), which always wins, so no cross-tenant read was reachable.
+      // The exposure is to the NEXT reader that trusts a field inside `data`
+      // -- which is precisely the shape `api/_lib/blob.js` exists to make
+      // impossible rather than to keep catching.
+      //
+      // `[]` AND NOT `['id']`, UNLIKE EVERY SIBLING CALL SITE, AND THE REASON
+      // IS LOAD-BEARING: the sibling branches that pass `['id']` have reads
+      // that re-attach the id from its column. THIS read does not -- `:12403`
+      // returns `x.data` verbatim -- so stripping `id` from the blob would
+      // hand the client eighteen resources' worth of records with no id.
+      // The universal scope keys are stripped; the branch has no other column
+      // key it may safely remove.
+      const sdnData = storedBlob(payload, []);
       const r = await fetch(rest(resource + '?on_conflict=license_hash,' + idCol), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
-        body: JSON.stringify({ license_hash: licHash, app_id: 'sairndesign', [idCol]: String(payload.id), data: payload, updated_at: nowISO() })
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairndesign', [idCol]: String(payload.id), data: sdnData, updated_at: nowISO() })
       });
       if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdesign data tables are not set up yet — run sql/sairndesign_data_schema.sql in Supabase first.' } }); return; }
       // Invoice-per-proposal uniqueness (2026-08-10): once
@@ -12429,7 +12451,11 @@ module.exports = async (req, res) => {
       }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
-      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      // `sdnData` and not `payload` on the fallback limb, for the same reason:
+      // this limb says "here is the stored row" when the upstream returned no
+      // representation, so echoing the UNSTRIPPED payload would answer that
+      // question with a shape the database does not hold.
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : sdnData });
       return;
     }
 
