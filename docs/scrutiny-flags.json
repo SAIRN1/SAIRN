@@ -104,6 +104,27 @@
    "shapes": [],
    "sha": "5080cf60737544eb5f95cff4aa390a50ef9673e4",
    "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/exit_status_attributable.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "_sh.rmtree(_d, ignore_errors=True)"
+    }
+   ],
+   "sha": "e4d53fa8c51fba9d9027c3c412e54119876b33f1",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "e4d53fa8c51fba9d9027c3c412e54119876b33f1",
+   "criteria_version": "2026-10-06.1"
   }
  ],
  "_corrected_2026_10_06": "NINE ROWS KEYED \"main\" WERE REMOVED. The push gate handed its prepush `tip`, which is a REF NAME, not a sha -- so the (sha, path) identity could never dedup them and no rewrite map could ever re-seat them. Found by reading this file, not by reading the code that wrote it. Guarded in two places since: the gate resolves tip to a sha, and scrutiny_record refuses a non-sha key outright."
