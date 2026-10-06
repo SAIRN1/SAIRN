@@ -23,11 +23,29 @@ import urllib.error
 # it has already produced a fail-open in another tool's probe.
 #
 # So: anchor with `-C <this file's own directory>`, then CHECK the answer
-# actually contains this file. If git is absent, fails, or answers about a tree
-# this file is not in, fall back to the __file__ root and SAY SO on stderr --
-# a silent fallback would be the same defect one level down.
+# actually contains this file.
+#
+# ── AND THE FALLBACK IS CHECKED TOO, WHICH IS THE PART THAT WAS WRONG ───────
+# This returned `os.path.dirname(here)` unchecked. Run this file from a copy
+# sitting DIRECTLY UNDER the home directory and that is `C:\Users\marsh` --
+# THE HOME REPOSITORY, the exact wrong answer the anchoring above exists to
+# avoid, arrived at by the safety net instead of by git. Driven, not reasoned:
+# tests/run_worktree_root_home_repo_probe.py arm B returned `C:\Users\marsh`
+# from all three of these probes on 2026-10-06, with the stderr warning printed
+# and the wrong path returned anyway.
+#
+# A WARNING ON stderr IS NOT A REFUSAL. The caller gets a usable-looking string
+# and imports from the wrong tree; the one process that could tell has already
+# decided to carry on. So an unverifiable root now EXITS 2, naming both
+# candidates -- PR 1.11, "could not tell" is a third state and is never folded
+# into an answer.
 def _repo_root():
     here = os.path.dirname(os.path.abspath(__file__))
+    me = os.path.basename(os.path.abspath(__file__))
+
+    def _holds(root):
+        return bool(root) and os.path.isfile(os.path.join(root, 'tools', me))
+
     fallback = os.path.dirname(here)
     try:
         import subprocess
@@ -40,15 +58,26 @@ def _repo_root():
                 return root
             sys.stderr.write(
                 'worktree root: git answered %r, which does not contain this '
-                'file -- falling back to the path derived from __file__\n'
+                'file -- trying the path derived from __file__\n'
                 % root)
         else:
             sys.stderr.write('worktree root: git rev-parse exited %d -- '
-                             'falling back to __file__\n' % p.returncode)
+                             'trying __file__\n' % p.returncode)
     except Exception as _e:                                      # noqa: BLE001
         sys.stderr.write('worktree root: git rev-parse unavailable (%s) -- '
-                         'falling back to __file__\n' % type(_e).__name__)
-    return fallback
+                         'trying __file__\n' % type(_e).__name__)
+    if _holds(fallback):
+        return fallback
+    sys.stderr.write(
+        'COULD NOT RUN: no worktree root could be verified for %s.\n'
+        '  git rev-parse (anchored at %s) did not answer a tree containing it,\n'
+        '  and the __file__ fallback %r does not contain tools/%s either.\n'
+        'REFUSING rather than returning a path. An unverified root here is how\n'
+        'this file ends up importing another clone\'s tools and reporting about\n'
+        'the wrong tree with exit 0 -- and on this machine the home directory is\n'
+        'itself a git repository, so the wrong answer is a real path that exists.\n'
+        % (me, here, fallback, me))
+    raise SystemExit(2)
 
 
 sys.path.insert(0, os.path.join(_repo_root(), 'tools'))
