@@ -5635,6 +5635,26 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-10-06T07:56:17Z",
+      "opened_at_sha": "f989824106494811da3ef1ec9895c0748424c27e",
+      "resources": [
+        "sen_settings"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "sairnsenior.html"
+      ],
+      "what": "sairnsenior.html plus 13 criticality-register rows. CODE: sairnsenior.html gains a COMMENT ONLY -- an exemption note above SEN_AGENCY_DEFAULT recording that sen_settings must never get an st('sen_settings') local accessor, because it is server-authoritative by the 2026-08-27 decision that removed a localStorage copy of a federally-mandated EVV configuration; adding the accessor to satisfy citation_line_drift_check.py would re-create that bug. No executable line changed; checkblocks EXIT=0, 3 blocks, 0 failed. REGISTER: 42 citations across 13 rows read against the source at HEAD -- 28 genuinely drifted and corrected, 14 already right. WHAT A REVIEWER SHOULD ATTACK: (1) THE FALSE-POSITIVE CLAIM. I assert five flagged-DRIFTED citations are correct -- law_timeentries:1977 (a comment, not a write), law_picases:4646, grd_rounds:3004 and :3046, grd_irr_zones:3694 -- on the ground that the tool's verdict is a nearest-local-write-site PROXY. Re-open each and disagree if the citation does not in fact support its sentence; if I am wrong the backlog is understated, not overstated. (2) THE DE-CITING CHANGE. I rewrote superseded line numbers from the backticked colon form (colon then digits, inside backticks) to the word 'line' followed by the bare digits, so CITE_RE stops re-reporting dead numbers, 18 occurrences. That deliberately makes the tool's count smaller. Check it is not hiding anything live -- every LEFT side of an arrow pair should be a number I replaced in the same sentence. (3) alf_staff is the biggest single cell: seven citations, offsets +21 to +1470, and :4430 had been standing for TWO distinct facts (a render site and a KPI write). Verify both new numbers, :4579 and :4582. (4) bld_warranty's old :2182 is the definition of the fmt() helper -- plausible enough to pass a casual check -- so confirm :6904 is the actual row render. NOTE ON THIS RECORD ITSELF, left in rather than cleaned away: the two gaps you may see repaired above were caused by writing this text in a double-quoted bash string -- the backticked examples were run as command substitution and vanished from the record. Caught by reading the stored entry back instead of trusting the tool's 'RECORDED' line, which is the same read-what-landed discipline the rest of this batch uses.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-10-06T07:56:17Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
