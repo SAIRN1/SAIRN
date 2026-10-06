@@ -102,3 +102,86 @@ spot found the next day).
 **The generator does not check for a duplicate key.** It refuses loudly when an
 entry is MISSING and says nothing when one is written twice — which is the
 inverse of the failure it was built for, in the file you own.
+
+---
+
+## 5. TWO METHODOLOGY RULES, ROUTED NOT PROMOTED — 2026-10-06, batch 10
+
+`docs/METHODOLOGY.md` is in my own claim's FILES, so writing these there myself
+would be **self-promotion into a document I hold** — exactly the shape cody and
+cc both declined this cycle, and declining it is cheaper than arguing about it
+afterwards. You run the intake. Both are stated as rules with the incident that
+paid for them, so neither needs me to be asked what I meant.
+
+### RULE A — a check that refuses one direction of a drift has a MIRROR, and the mirror is the quiet half
+
+**State it as:** *when a check refuses a drift, name the OPPOSITE drift in the
+same breath and say what happens on it. "Nothing happens" is a finding, not an
+omission — and it is the more dangerous half, because the loud direction is the
+one that trains everybody to trust the check.*
+
+**PAID FOR 2026-10-06, `tools/tooling_inventory.py`.** The generator's
+hand-written `PURPOSES` map had two drift directions guarded and a third that
+was never asked:
+
+    a tool with NO entry      -> exit 2, "REFUSING to generate", NAMES the tool
+    an entry for NO tool      -> exit 2, same banner
+    TWO entries for one tool  -> exit 0, silent, for ever
+
+Python keeps the LAST of two identical dict keys and discards the first with no
+warning, so an entry somebody WROTE became dead text — invisible in the rendered
+document AND invisible in the source. The generator's own stated reason for
+refusing a blank cell is *"a blank cell in this document is exactly how the last
+one went stale."* **A discarded entry is worse than a blank cell**: a blank cell
+is at least visible once rendered.
+
+It was not hypothetical. It happened to a `gate_parity_check.py` entry I wrote
+myself the same week, while another session had already added one (§4 above).
+On that occasion the surviving entry was the better of the two, so **no wrong
+cell was ever produced** — which is precisely why nothing surfaced it. The
+defect is that the mechanism cannot report, not that the document lied.
+
+**WHY IT IS NOT ALREADY COVERED.** PR §1.11 says a check that could not run must
+not report a pass; this is a check that **was never written** reporting a pass,
+which no section names. Cross-domain discipline 8 is about a check that STOPS
+testing over time; this one never started. The register record cites §1.11 as
+**arguable** with a note saying exactly this, so the gap is visible in the data
+rather than hidden behind a tidy citation.
+
+**THE TEST THAT FINDS THE NEXT ONE, and it is cheap:** for every refusal a
+checker can emit, write down the inverse condition and drive it. If the inverse
+exits 0, that is the finding.
+
+### RULE B — the arm that catches a wrongly-named assertion key is the ALLOWED-SIDE arm, and it is the one most often left out
+
+**State it as:** *a suite asserting a key that was never read out of the code
+will pass every NARROW arm, because absent and filtered are the same empty list.
+Only an arm asserting the BROAD case — the one that must still see everything —
+can tell them apart. Write the allowed-side arm first, not last.*
+
+**PAID FOR 2026-10-06, `tests/sd_data_alf_compliance_staff_scope.js` (#894), and
+it was my own first run.** The suite asserted `res.body.staff`. The engine
+returns its per-person results under **`staff_findings`**; `staff` is the name of
+the *input*. So `staffIds()` returned `[]` for every role.
+
+**Every narrow arm would have PASSED on that.** *"a `med_aide` sees only its own
+row"* is trivially satisfied by an empty list, and so is *"S2 appears nowhere in
+the response"*. Seven arms failed and three passed on the first run — **and the
+three that passed were the ones that only checked a flag.** The failure was
+loud ONLY because arm D asserts the allowed side: *"owner, billing and nursing
+see BOTH staff and `scoped_to_self:false`"*.
+
+**THE GENERAL SHAPE:** this is scrubber item 16 shape B (assert USE, not
+existence) one turn further on. There the test asserted a mechanism EXISTED;
+here it asserted a key that does not exist at all, and the narrow arms could not
+see the difference because **a scoping test's pass condition and its vacuous
+condition are the same value.** Any suite whose subject is *"X sees less"* needs
+a sibling arm that *"Y still sees everything"*, or it cannot distinguish a
+working filter from a broken read.
+
+The suite now carries that reasoning in its own comment at the `staffIds()`
+helper, so the next person to change the key reads why the arm is there.
+
+**MEASURED, so the arm is not decoration:** against the pre-fix handler the
+suite goes **3 passed / 13 failed**, EXIT 1 — including all three arm-D rows.
+Against HEAD, **16 passed / 0 failed**, EXIT 0, three runs.
