@@ -3033,8 +3033,8 @@
       "task": "exec-context verified-statement re-verification; competitive-gap doc headline sweep; red suite register check tool; full-tree suite drive; spanOf helper fixes; methodology conventions FILES: api/_lib/exec-context.js docs/2026-09-17-sairnroofing-competitive-gap-rederived.md tools/red_suite_register_check.py tools/tooling_inventory.py docs/METHODOLOGY.md",
       "claimed_at": "2026-10-06T06:33:13Z",
       "claimed_at_epoch": 1791268393.0979342,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-06T15:34:36Z",
       "files": [
         "api/_lib/exec-context.js",
         "docs/2026-09-17-sairnroofing-competitive-gap-rederived.md",
@@ -3050,8 +3050,8 @@
       "task": "sairnlegacy F2 declinability -- a declined item and one never offered are indistinguishable in leg_invoices; pure statement engine plus the three-state picker and the Statement of Funeral Goods and Services Selected. api/sd-data.js is HANK'S and is NOT touched: leg_invoices stores a data jsonb blob so no server change is needed. FILES: sairnlegacy.html api/_lib/legacy-statement.js api/_lib/legacy-statement.test.js docs/cloud-research/sairnlegacy-competitive-gap-audit-2026-10-05.md",
       "claimed_at": "2026-10-06T08:43:49Z",
       "claimed_at_epoch": 1791276229.3503063,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-06T15:34:36Z",
       "files": [
         "api/_lib/legacy-statement.js",
         "api/_lib/legacy-statement.test.js",
@@ -3066,8 +3066,8 @@
       "task": "sairndesign procurement middle -- sidemark, ship-to, freight and receiving on the purchase order, the three absent steps of the advertised procurement spine per docs/cloud-research/sairndesign-competitive-gap-audit-2026-10-05.md findings 2 and 3; sales tax is REFUSED WITH A DISCLOSURE rather than computed, because a fabricated rate on a resold-goods invoice is the certified-payroll class. api/sd-data.js is HANK'S and is NOT touched: sdn_purchase_orders stores a data jsonb blob. FILES: sairndesign.html tests/sairndesign_po_procurement.js docs/cloud-research/sairndesign-competitive-gap-audit-2026-10-05.md",
       "claimed_at": "2026-10-06T15:04:38Z",
       "claimed_at_epoch": 1791299078.5607562,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-06T15:34:36Z",
       "files": [
         "docs/cloud-research/sairndesign-competitive-gap-audit-2026-10-05.md",
         "sairndesign.html",
