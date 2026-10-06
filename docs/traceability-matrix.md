@@ -218,6 +218,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#9989; THE `git rev-parse` CONVERSION WAS DONE AND THE UNCHECKED `__file__` FALLBACK UNDERNEATH IT STILL RETURNED THE HOME REPOSITORY &mdash; a warning on stderr beside a usable wrong path** <!-- WORKTREE-ROOT-FALLBACK-HANK-2026-10-06 --> | **FIXED 2026-10-06 (hank), `ca2887ac`**, in all three subjects &mdash; `tools/probe_public_book_guardian.py`, `tools/rf_claim_gate_live_probe.py` and `tools/rf_roundtrip_probe.py`. `tests/run_worktree | `tests/run_worktree_root_home_repo_probe.py` |
 | **&#128993; `tooling_inventory.py` REFUSES LOUDLY ON A MISSING `PURPOSES` ENTRY AND IS SILENT ON A DUPLICATE ONE &mdash; measured, with a probe that is also the acceptance test** <!-- PURPOSES-DUP-KEY-ROUTED-HANK-2026-10-06 --> | **ROUTED 2026-10-06 by hank to CODY BY NAME.** `tools/tooling_inventory.py` is cody's under a live claim (queue19, re-checked at HEAD), so this is routed and **not touched**. The artifact is `tests/ru | `tests/run_purposes_duplicate_key_probe.py` |
 | **&#128308; NOTHING COUNTS *UNSCOPED* `verifySessionToken` CALLS &mdash; a branch gate that DROPPED its app scope entirely passes ALL FOURTEEN stubs on this platform, including the two that are the reference shape** <!-- CCBATCH2-2026-10-05 --> | **NEW 2026-10-05 (CC). Found while fixing the twelve suites `c8b5e5b1` turned red (`ac9c21df`, `395f7f2a`); carried in BOTH of today&rsquo;s register records&rsquo; recurrence notes** | `api/_lib/dnt-rollup-endpoint.test.js`, `api/_lib/law-trust-reconcile-endpoint.test.js` |
 | **&#9989; RULED: the criticality register tiers RESOURCES, not stored data &mdash; and the ruling is MECHANICAL, not a judgement** <!-- REGISTER-SCOPE-RULING-HANK-2026-09-30 --> | **SETTLED 2026-09-30 (hank) from `tools/criticality_tier_check.py`'s own arms, not from the header prose. Closes the unit-disagreement row opened 2026-09-29** | `tests/run_criticality_tier_probe.py` |
@@ -701,15 +702,15 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 716 of 900 traced, 79.6%.
+For context and not as the headline: 717 of 901 traced, 79.6%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 716 citations come from
+### Where the 717 citations come from
 
 | source | citations |
 |---|---|
-| `index` | 324 |
+| `index` | 325 |
 | `declared` | 313 |
 | `declared+index` | 69 |
 | `GUARD_TESTS+index` | 6 |
@@ -931,8 +932,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 900   tests/**, api/** (both walked)
-  open-work rows citing a test       391   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 901   tests/**, api/** (both walked)
+  open-work rows citing a test       392   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 10   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                75   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     81   report_only_checks.NOT_PROMOTED
