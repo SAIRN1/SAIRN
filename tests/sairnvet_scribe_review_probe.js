@@ -30,6 +30,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
+const { fnBody } = require('./lib/fn_span.js');
 
 const ROOT = path.join(__dirname, '..');
 const HTML = path.join(ROOT, 'sairnvet.html');
@@ -93,8 +94,13 @@ function transcriptionStillMatches(html) {
   // the whole reason this arm exists: the fix landed, the probe's copy of the
   // rule went stale within the hour, and C0 went red about its own
   // transcription rather than reporting a phantom defect in the page.
-  const fn = html.slice(html.indexOf('function scribePreflight()'),
-                        html.indexOf('window.scribeAsk = function'));
+  // BOUNDED BY ITS OWN CLOSING BRACE as of 2026-10-06. It was bounded by the
+  // NEXT symbol in the file, `window.scribeAsk = function`, which measured 80
+  // bytes past the close -- so the three lines this control transcribes could
+  // have been matched from outside the function whose rule it is checking,
+  // and C0 would have reported the transcription current when it was not.
+  // That is the one failure this control exists to prevent.
+  const fn = fnBody(html, 'function scribePreflight()');
   const pos = fn.indexOf("if(code === 'CONSENT_REF_REQUIRED'){");
   const on = fn.indexOf('scAvailable = true;', pos);
   const off = fn.indexOf('scAvailable = false;', on);

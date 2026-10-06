@@ -33,6 +33,7 @@
 
 const assert = require('assert');
 const fs = require('fs');
+const { fnBody } = require('./lib/fn_span.js');
 // The species-copy detector is LIFTED out of sairnvet.html and run here rather
 // than reimplemented -- see the CROSS-SPECIES section.
 const vm = require('vm');
@@ -517,8 +518,13 @@ const DRUGS = m ? JSON.parse(m[1]) : null;
     assert.ok(/Confirm against a species-specific/.test(body),
       'the warning no longer tells the reader what to DO about it.');
     // Nothing anywhere may turn this into a block.
+    // THIS IS AN ABSENCE ASSERTION OVER A WINDOW, which is the combination
+    // that fails green. The window was `+ 4000`; calculateDoseAI measures
+    // 9,895 bytes (2026-10-06), so 5,895 bytes of the function -- 60% of it --
+    // were never searched, and a refusal added anywhere in that 60% would
+    // have passed this arm silently. Bounded by the function's own close now.
     assert.ok(!/svCopiedDoseIndex[\s\S]{0,400}?(return;|blocked|refuse)/i.test(
-                src.slice(src.indexOf('function calculateDoseAI'), src.indexOf('function calculateDoseAI') + 4000)),
+                fnBody(src, 'function calculateDoseAI')),
       'the calculator appears to REFUSE on a species-copied row. It must warn: '
       + 'a shared dose is sometimes correct, and a gate here refuses legitimate '
       + 'rows and gets switched off.');

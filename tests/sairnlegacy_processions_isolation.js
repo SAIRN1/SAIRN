@@ -45,6 +45,12 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
+// Bodies come from the function's own balanced closing brace. The two arms
+// below used `start + 1200` and `start + 1400` windows; measured 2026-10-06
+// the functions are 923 and 1118 bytes, so both arms were reading 277 and 282
+// bytes of the NEXT function and every positive assertion in them could have
+// been satisfied from outside the function it names.
+const { fnBody } = require('./lib/fn_span.js');
 
 const ROOT = path.join(__dirname, '..');
 const API = fs.readFileSync(path.join(ROOT, 'api', 'sd-data.js'), 'utf8');
@@ -135,8 +141,7 @@ t('the app writes leg_processions through a transport that sends the session',
   });
 
 t('the GPS write comes from the device sensor and nothing else sets it', () => {
-  const fn = APP.slice(APP.indexOf('function shareProcessionLocation'),
-                       APP.indexOf('function shareProcessionLocation') + 1200);
+  const fn = fnBody(APP, 'function shareProcessionLocation');
   assert.ok(/navigator\.geolocation\.getCurrentPosition/.test(fn),
     'shareProcessionLocation no longer reads the device sensor -- if the '
     + 'coordinates now come from somewhere else, the confidentiality basis in '
@@ -156,8 +161,7 @@ t('the GPS write comes from the device sensor and nothing else sets it', () => {
 
 t('the coordinates are rendered only into a link the USER clicks, never fetched',
   () => {
-    const r = APP.slice(APP.indexOf('function rProcession'),
-                        APP.indexOf('function rProcession') + 1400);
+    const r = fnBody(APP, 'function rProcession');
     assert.ok(/google\.com\/maps\?q='\+p\.last_lat/.test(r.replace(/\s+/g, '')) ||
               /maps\?q=/.test(r),
       'the Maps link is gone -- the tier cell cites it as the disclosure surface');

@@ -204,4 +204,9 @@ function stripJs(src) {
   return stripComments(src, { bareJs: true });
 }
 
-module.exports = { stripComments, stripJs };
+// REGEX_OK is exported for ONE reason: tests/lib/fn_span.js needs the same
+// division-vs-regex decision while walking RAW text (it reports offsets, which
+// this module's output cannot -- see the note above). A second copy of this
+// character set is a second thing to drift, and the set is the part that was
+// got wrong before. Nothing else should read it.
+module.exports = { stripComments, stripJs, REGEX_OK };
