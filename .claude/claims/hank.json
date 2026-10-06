@@ -3564,8 +3564,8 @@
       "task": "family_mar role and assignment gate; scp_designs alignment; leg_facilities and sdn_vendors register basis; sen_settings accessor; drift backlog; cp1252 sweep; plan-literal and paywall-affordance sweeps; gate parity check FILES: api/sd-data.js sairnscape.html docs/CRITICALITY-TIERS.md sairnsenior.html tools/gate_parity_check.py tests/run_gate_parity_probe.py tests/sd_data_family_mar_gate.js",
       "claimed_at": "2026-10-05T22:27:16Z",
       "claimed_at_epoch": 1791239236.5883446,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-06T09:23:28Z",
       "files": [
         "api/sd-data.js",
         "docs/CRITICALITY-TIERS.md",
@@ -3583,8 +3583,8 @@
       "task": "batch8: family_mar caller gate; scp_designs retier; routing the 14 unrouted hover findings into the index; leg_facilities sv_examrooms sdn_vendors sc_specialty basis corrections; sdn_vendors storedBlob gap; sen_settings accessor; drift backlog; cp1252 sweep; plan-literal and paywall-affordance sweeps; gate parity check. DOCS/SAIRN-OPEN-WORK-INDEX.MD TAKEN DELIBERATELY: it is cc's by convention, cc's claim on it EXPIRED 8.6h ago and tools/sairn_status.py reports that session DEAD (CLAUDE_PID 66660 gone). Taken, not reworded past. FILES: api/sd-data.js sairnscape.html sairnsenior.html stonedesk.html docs/CRITICALITY-TIERS.md docs/SAIRN-OPEN-WORK-INDEX.md tools/gate_parity_check.py tests/run_gate_parity_probe.py tests/sd_data_family_mar_gate.js docs/2026-10-05-inventory-hank-batch8.md",
       "claimed_at": "2026-10-06T06:55:49Z",
       "claimed_at_epoch": 1791269749.8550158,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-06T09:23:28Z",
       "files": [
         "api/sd-data.js",
         "docs/2026-10-05-inventory-hank-batch8.md",
