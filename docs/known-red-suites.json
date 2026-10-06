@@ -1,10 +1,10 @@
 {
   "_what_this_is": "The test suites known to be RED, so a genuinely new regression can be told from the existing set. Read by tools/known_red_check.py. REPORT ONLY.",
-  "_how_it_was_measured": "RE-MEASURED 2026-10-05 (fourth) by running EVERY REGISTERED ENTRY individually and recording its exit code, then reconciling: 5 RECOVERED and deleted, 12 still red and kept, 2 added. THE SCOPE IS NARROWER THAN THE 2026-09-17 MEASUREMENT AND THAT IS STATED RATHER THAN GLOSSED: that one ran tools/run_all_tests.py over the whole tree; this one ran the register against itself plus one 61-suite sweep. So RECOVERED is complete -- every entry was driven -- but NEW IS NOT: a suite outside those two populations could be red and absent from this file, and nothing here would know. total_files below is carried over from 2026-09-17 UNCHANGED for that reason; it was not re-counted.",
+  "_how_it_was_measured": "RE-MEASURED 2026-10-06 (fourth). Two passes. (1) tools/run_all_tests.py over the whole tree: 739 files ran, 3 SKIPPED (a precondition, NOT a pass), 84 FAILING. (2) Every failing file not already registered -- 74 of the 84 -- plus the 3 registered files the run showed GREEN, driven INDIVIDUALLY in its own process against a tree checked for drift after every suite. RESULT OF THE INDIVIDUAL DRIVE: 66 RED, 7 GREEN, 4 COULD NOT RUN (300s ceiling). The individual drive is the authority here and the whole-tree run is not, for the reasons in the next field.",
   "_what_an_empty_why_means": "NOT DIAGNOSED YET, recorded as empty rather than guessed. An invented cause is worse than a blank one because it ends the investigation. tools/known_red_check.py reports how many entries are undiagnosed, so a blank is a backlog rather than a shrug.",
   "_what_this_is_NOT": "Not an allow-list and not a gate. An entry does not make a failure acceptable -- it makes it ATTRIBUTABLE. An entry whose suite has gone GREEN is reported as RECOVERED and must be deleted: while it stands it swallows the next real failure of that file.",
-  "measured": "2026-10-05",
-  "measured_against": "the 17 entries THEN IN THIS REGISTER, each run individually in this clone, plus the 61 suites that use both vm and deepStrictEqual (swept for a different reason the same day). NOT a full run of all test files.",
+  "measured": "2026-10-06",
+  "measured_against": "EVERY suite in the tree, then every failing one re-driven ALONE. tools/run_all_tests.py drove 739 files (344 JS + 395 PY, 3 skipped) and reported 84 FAILING. All 74 of those not already registered were then driven INDIVIDUALLY, one process each, because that whole-tree run is NOT a trustworthy census -- see _why_the_whole_tree_run_was_not_trusted.",
   "total_files": 411,
   "entries": [
     {
@@ -58,26 +58,6 @@
       "diagnosed_by": "cody"
     },
     {
-      "file": "tests/run_fmea_probe.py",
-      "kind": "py",
-      "tail": "3b  1.7   fires on 43% of the tree (must be under 35%)",
-      "since": "2026-09-16",
-      "why": "Arm 3b: standing rule 1.7 fires on 43% of the tree and the criterion is under 35%. A calibration failure rather than a broken probe: the rule is matching too much of the platform to be evidence of anything. Either the rule needs narrowing or the threshold was set against a smaller tree.",
-      "owner": "unassigned",
-      "diagnosed": "2026-09-16",
-      "diagnosed_by": "cody"
-    },
-    {
-      "file": "tests/run_mutation_anchor_probe.py",
-      "kind": "py",
-      "tail": "7a  the real repo has zero bad anchors and zero unguarded probes",
-      "since": "2026-09-16",
-      "why": "Arm 7a \"the real repo has zero bad anchors and zero unguarded probes\" fails while 7b confirms it inspected 198 anchors, so the sweep ran and found real ones. This entry is a POINTER: the bad anchors it names are themselves the defects, and at least one of them is the stale anchor recorded against run_invisible_in_pattern_probe.",
-      "owner": "unassigned",
-      "diagnosed": "2026-09-16",
-      "diagnosed_by": "cody"
-    },
-    {
       "file": "tests/run_secrets_inventory_probe.py",
       "kind": "py",
       "tail": "6c  SILENT: against the real committed document the same entry point exits 0 -- the pair is what makes 6a evidence rather than an observation",
@@ -104,16 +84,6 @@
       "owner": "unassigned"
     },
     {
-      "file": "tests/sairnbiz_vendor_ytd_derivation.js",
-      "kind": "node",
-      "tail": "AssertionError: sbVendorPaidUndatedPriorYear not found -- anchor moved (module scope, tests/sairnbiz_vendor_ytd_derivation.js:140)",
-      "since": "2026-10-05",
-      "why": "CORRECTED 2026-10-06 (fourth) -- MY OWN DIAGNOSIS OF 2026-10-05 WAS STALE AND NAMED AN ARM THE SUITE NO LONGER REACHES. It said the failing arm was 'the disclosure names only vendors the residual could carry OVER $600'. At HEAD the suite throws at MODULE SCOPE, line 140, before any of that: it anchors on 'function sbVendorPaidUndatedPriorYear(){' and sairnbiz.html has 0 occurrences of that name. cc renamed it to sbVendorPaidUndatedOtherYear (sairnbiz.html:4176, caller :4223) -- which matches cc's own status row about the prior-year function that also caught future-dated bills. So the APP moved and the SUITE did not. Seven arms pass before the throw. NOT FIXED HERE: the file and the suite are both in cc's active claim, and whether the repoint belongs in the test or an alias belongs in the app is the author's call. Full failing text, the one-line repoint, and a second span finding in the same file are routed in docs/2026-10-06-fourth-routed-to-cc.md.",
-      "owner": "cc",
-      "diagnosed": "2026-10-06",
-      "diagnosed_by": "fourth"
-    },
-    {
       "file": "tests/sql_preflight/run_probe.py",
       "kind": "py",
       "tail": "dead_bare_tables_evidence_2026-09-05.sql: UNDECLARED_TABLE webhook_events",
@@ -132,7 +102,708 @@
       "owner": "unassigned",
       "diagnosed": "2026-09-16",
       "diagnosed_by": "cody"
+    },
+    {
+      "file": "api/sd-data-customer-soft-delete.test.js",
+      "kind": "node",
+      "tail": "5 passed",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "api/sd-data-family-contacts.test.js",
+      "kind": "node",
+      "tail": "FAILURES ABOVE",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "api/sd-data-scp-licence-only.test.js",
+      "kind": "node",
+      "tail": "23 passed, 1 failed",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "api/sf-auth.test.js",
+      "kind": "node",
+      "tail": "37 passed, 1 failed",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/claims/run_claim_retype_mutation_control.py",
+      "kind": "py",
+      "tail": "3 passed, 2 failed",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/claims/run_push_verify_probe.py",
+      "kind": "py",
+      "tail": "68 passed, 1 failed",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/faults/sd_write_faults.js",
+      "kind": "node",
+      "tail": "7 passed, 11 FAILED",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/faults/transport_timeout_sweep.js",
+      "kind": "node",
+      "tail": "77 passed, 4 FAILED",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/hover_quotable_session_vocab_check.py",
+      "kind": "py",
+      "tail": "    have gone unnoticed. Add the name to QUOTABLE.",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/hover_separation_ci_probe.py",
+      "kind": "py",
+      "tail": "    audit = set(A.AUDITOR_SCOPE)",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/install_git_hooks_check_probe.py",
+      "kind": "py",
+      "tail": "TIMED OUT after 300s -- a hang is not a pass",
+      "since": "2026-10-06",
+      "why": "COULD NOT RUN, NOT RED. It exceeded a 300s per-suite ceiling when driven alone. A hang is not a pass and it is not a failure either; the ceiling is the measurement, and whether this suite is slow or stuck has NOT been established.",
+      "owner": "unassigned",
+      "diagnosed": "2026-10-06",
+      "diagnosed_by": "fourth"
+    },
+    {
+      "file": "tests/law_reconcile_role_vocab_check.py",
+      "kind": "py",
+      "tail": "This is exit 2. Nothing was checked, and that is not a pass.",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/law_reconcile_role_vocab_control.py",
+      "kind": "py",
+      "tail": "CRITERIA LOCKED BEFORE THE REAL RUN",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/local_only_self_evidence_probe.py",
+      "kind": "py",
+      "tail": "1 ARM(S) FAILED",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/local_only_shape_probe.py",
+      "kind": "py",
+      "tail": "2 ARM(S) FAILED",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/phi_cache_scope_probe.py",
+      "kind": "py",
+      "tail": "  The baseline is red, so no mutation below would mean anything. Stopping.",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/phi_cache_scoped_to_user.js",
+      "kind": "node",
+      "tail": "63 passed, 1 failed",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/push_gate/check12_probe.py",
+      "kind": "py",
+      "tail": "TIMED OUT after 300s -- a hang is not a pass",
+      "since": "2026-10-06",
+      "why": "COULD NOT RUN, NOT RED. It exceeded a 300s per-suite ceiling when driven alone. A hang is not a pass and it is not a failure either; the ceiling is the measurement, and whether this suite is slow or stuck has NOT been established.",
+      "owner": "unassigned",
+      "diagnosed": "2026-10-06",
+      "diagnosed_by": "fourth"
+    },
+    {
+      "file": "tests/push_gate/check8_probe.py",
+      "kind": "py",
+      "tail": "TIMED OUT after 300s -- a hang is not a pass  || THIS SUITE CHANGED: .git\\config",
+      "since": "2026-10-06",
+      "why": "COULD NOT RUN, NOT RED. It exceeded a 300s per-suite ceiling when driven alone. A hang is not a pass and it is not a failure either; the ceiling is the measurement, and whether this suite is slow or stuck has NOT been established.",
+      "owner": "unassigned",
+      "diagnosed": "2026-10-06",
+      "diagnosed_by": "fourth"
+    },
+    {
+      "file": "tests/push_gate/check9_probe.py",
+      "kind": "py",
+      "tail": "FAILED  check9_probe: 10 failed",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/push_gate/preauth_exemption_anchor_probe.py",
+      "kind": "py",
+      "tail": "FAILED  preauth_exemption_anchor_probe: 1 failed",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/push_gate/refspec_and_override_probe.py",
+      "kind": "py",
+      "tail": "  - a quoted mention in a commit message does NOT disable the gate",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/rebase_resolve_merge_control.py",
+      "kind": "py",
+      "tail": " a1_clean_append",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/run_adversarial_prompt_corpus_probe.py",
+      "kind": "py",
+      "tail": "3 arm(s) FAILED: 4. the sweep runs and classifies: zero unfenced, 5 reported as fenced, 8. emptying the untrusted-field list cannot produce a CLEAN sweep -- the",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/run_alf_read_order_sabotage_probe.py",
+      "kind": "py",
+      "tail": "  - 5. THE FIX IS STILL THERE BUT THE ARM CAN NO LONGER SEE IT: the alf_mar read is hoisted into a local, so the arm finds ZERO list reads for that table. A swe",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/run_all_tests_floor_probe.py",
+      "kind": "py",
+      "tail": "2. _main_body() -- THE COPY A HUMAN RUNS",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/run_baseline_readiness_probe.py",
+      "kind": "py",
+      "tail": "  - ...and says NO ENTITY IS READY rather than printing a table and stopping",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/run_checker_control_probe.py",
+      "kind": "py",
+      "tail": "  EVERY CONTROLS_FOR under tests/ parses to a subject (these declare nothing: ['tests/criticality_rollup_list_review_probe.py'])",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/run_completeness_probe.py",
+      "kind": "py",
+      "tail": "  6b  ...and the finding it exits 1 for is the real one, not any line that happens to be printed",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/run_concurrency_retry_probe.py",
+      "kind": "py",
+      "tail": "B. the retry is driven with synthetic files, not the real three",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/run_copy_exactly_gate_probe.py",
+      "kind": "py",
+      "tail": "0 passed, 1 failed",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/run_cron_liveness_probe.py",
+      "kind": "py",
+      "tail": "  FAILED: the pre-change workflow had NO commit step -- only the artifact upload, which is the gap this closes",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/run_dispatch_state_probe.py",
+      "kind": "py",
+      "tail": "  FAILED: ...and NO subprocess.run, so it never invokes sairn_claim.py to ask the claim matcher",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/run_eaten_substitution_probe.py",
+      "kind": "py",
+      "tail": "eaten_substitution_check: 2 ARM(S) FAILED",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/run_export_coverage_probe.py",
+      "kind": "py",
+      "tail": "  - sairnmechanical declares mech_credentials in its registry, and it resolves",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/run_financial_invariant_probe.py",
+      "kind": "py",
+      "tail": "  7f  a judgment for a file the checker no longer flags is called out as stale, not left to look current",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/run_ghost_field_read_probe.py",
+      "kind": "py",
+      "tail": "11 passed, 5 failed",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/run_githook_install_probe.py",
+      "kind": "py",
+      "tail": "  - --check passes once the clone is really installed",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/run_harness_stage_diagnosis_probe.py",
+      "kind": "py",
+      "tail": "3 failure(s)",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/run_index_duplicate_probe.py",
+      "kind": "py",
+      "tail": "  7a  the real index has no undeclared duplicate pairs",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/run_nhi_clone_enumeration_probe.py",
+      "kind": "py",
+      "tail": "5 passed, 3 failed",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/run_nhi_register_write_flag_probe.py",
+      "kind": "py",
+      "tail": "5 passed, 7 failed",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/run_primitive_obsession_probe.py",
+      "kind": "py",
+      "tail": "  FAIL 0. baseline: the tool is not clean before anything is planted, so no mutation below means anything",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/run_rebase_resolve_probe.py",
+      "kind": "py",
+      "tail": "  - MIXED: one source + one generated -> REFUSES, exit 1",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/run_removal_path_probe.py",
+      "kind": "py",
+      "tail": "1 FAILED",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/run_report_only_checks_probe.py",
+      "kind": "py",
+      "tail": "TIMED OUT after 300s -- a hang is not a pass",
+      "since": "2026-10-06",
+      "why": "COULD NOT RUN, NOT RED. It exceeded a 300s per-suite ceiling when driven alone. A hang is not a pass and it is not a failure either; the ceiling is the measurement, and whether this suite is slow or stuck has NOT been established.",
+      "owner": "unassigned",
+      "diagnosed": "2026-10-06",
+      "diagnosed_by": "fourth"
+    },
+    {
+      "file": "tests/run_rewrite_convergence_probe.py",
+      "kind": "py",
+      "tail": "  FAILED: E1 --derive: nothing is derived that is neither declared nor exempted",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/run_role_gate_negative_coverage_probe.py",
+      "kind": "py",
+      "tail": "FAILED  run_role_gate_negative_coverage_probe: 4 failed",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/run_stored_data_criticality_probe.py",
+      "kind": "py",
+      "tail": "2 ARM(S) FAILED: an ESCAPED pipe inside a cell is content, not a boundary, THE PAIRED POSITIVE: both real rows are still parsed and counted",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/run_subprocess_decode_probe.py",
+      "kind": "py",
+      "tail": "  - zero text-mode subprocess calls without an explicit encoding",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/run_truthy_sum_probe.py",
+      "kind": "py",
+      "tail": "1 FAILED",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/run_two_axis_tier_parser_probe.py",
+      "kind": "py",
+      "tail": "  - 2. the NEW six-cell shape parses, raises no row-level problem, and counts as migrated",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/run_write_path_scan_probe.py",
+      "kind": "py",
+      "tail": "2 ARM(S) FAILED: the shipped baseline PASSES today -- a ratchet that fails on a clean tree is one somebody turns off, a count that FELL is not a regression",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/sairnbuild_fault_probe.py",
+      "kind": "py",
+      "tail": "  - ...and phi_cache_scoped_to_user.js is green again on it",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/sairncare/test-compliance-rules.js",
+      "kind": "node",
+      "tail": "47 passed, 3 failed",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/sairncare/test-op-audit.js",
+      "kind": "node",
+      "tail": "12 passed, 14 failed",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/sairncare_fault_probe.py",
+      "kind": "py",
+      "tail": "  - ...and phi_cache_scoped_to_user.js is green again on it",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/sairnfreedom_auth_review_probe.js",
+      "kind": "node",
+      "tail": "  ? 15:11 (2) -- the sf-auth setup guard anchor has moved -- this arm is not reporting agreement it did not check",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/sairnfreedom_fault_probe.py",
+      "kind": "py",
+      "tail": "FAILED  sairnfreedom_fault_probe: 1 failed",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/sairnfreedom_segregation_of_duties.js",
+      "kind": "node",
+      "tail": "FAIL -- 25 passed, 1 failed",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/sairnfreedom_server_backup.js",
+      "kind": "node",
+      "tail": "FAILED  sairnfreedom_server_backup: 16 passed, 1 failed",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/sairnfreedom_server_backup_probe.py",
+      "kind": "py",
+      "tail": "  The baseline is red, so no mutation below would mean anything. Stopping.",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/sairnlegacy_fault_probe.py",
+      "kind": "py",
+      "tail": "  The baseline is red, so no mutation below would mean anything. Stopping.",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/sairnlegacy_reservation_lock.js",
+      "kind": "node",
+      "tail": "1. reserving is an atomic conditional PATCH, not a read-then-write",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/schema_provisioning_probe.py",
+      "kind": "py",
+      "tail": "3 ARM(S) FAILED",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/scp_quotes_review_probe.js",
+      "kind": "node",
+      "tail": "  NOT REPRODUCED -- this finding appears to be closed.",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/seam_check/run_delegation_probe.py",
+      "kind": "py",
+      "tail": "restored_baseline True (api/_lib/deadline-endpoint-inputs.test.js.)  [re-driven on a restored tree]",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/seam_check/run_or_default_probe.py",
+      "kind": "py",
+      "tail": "2 ARM(S) FAILED  [re-driven on a restored tree]",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/seam_check/run_ref_probe.py",
+      "kind": "py",
+      "tail": "3 ARM(S) FAILED  [re-driven on a restored tree]",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
+    },
+    {
+      "file": "tests/write_readback_shape_probe.py",
+      "kind": "py",
+      "tail": "2 ARM(S) FAILED  [re-driven on a restored tree]",
+      "since": "2026-10-06",
+      "why": "",
+      "owner": "unassigned",
+      "diagnosed": "",
+      "diagnosed_by": ""
     }
   ],
-  "_scope_limit_2026_10_05": "RECOVERED is complete, NEW is not. Re-run tools/known_red_check.py --run for a whole-tree answer."
+  "_why_the_whole_tree_run_was_not_trusted": "THREE CONFOUNDS, each evidenced rather than suspected. (1) THE TREE MOVED UNDER IT: the log shows tests/sairnbiz_vendor_ytd_derivation.js PASSING, and at the time it was driven it failed at module scope -- cc pushed the anchor rename mid-run. tools/run_all_tests.py --pinned exists for exactly this and was not used. (2) THE RUN MUTATED THE TREE IT WAS MEASURING: tests/seam_check/run_delegation_probe.py left api/sd-data.js and api/_lib/subcontractor-compliance.js carrying planted sabotage, one of which is a redeclaration that does not parse. Four suites driven after it were re-driven on a restored tree and ONE of them -- tests/seam_check/run_probe.py -- went GREEN, so that confound changed at least one verdict. (3) THE RUN CORRUPTED THE CLONE: tests/push_gate/check8_probe.py left .git/config with core.bare = true and a fixture user identity, after which every git command in the clone fails with \"this operation must be run in a work tree\". Observed three times on 2026-10-06 and attributed by digesting .git/config after every suite.",
+  "_scope_limit_2026_10_06": "RED IS MEASURED, DIAGNOSIS IS NOT. 66 of the entries added today carry an EMPTY `why`, which this file defines as NOT DIAGNOSED YET rather than nothing to say. That is a 66-item backlog, not a clearance, and it is the largest single addition this register has had. Every one of them was driven alone and its exit code recorded; none of them was read arm by arm. An entry makes a failure ATTRIBUTABLE, never acceptable -- and 66 undiagnosed entries is itself the finding, because tools/red_suite_register_check.py will now report any of them that recovers rather than letting the entry absorb the next real failure of that file."
 }
