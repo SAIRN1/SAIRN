@@ -23155,6 +23155,61 @@
       "recurrence_open": "Change 4 does not close the general case: every OTHER push-gate check that derives a file list from the outgoing range and then reads the working tree has the same hole, and only check 11 was fixed here. I did not sweep the rest -- the `changed` list is used by checks 2, 3, 4, 5, 6, 7, 12 and 12b, each with its own notion of what it needs to read, and whether a working-tree read is wrong for them is a per-check judgement rather than one edit. Named rather than done. AND THIS SENTENCE WAS ITSELF EATEN ONCE: the word `changed` was written inside bash backticks in a double-quoted printf, so the shell ran it as a command substitution, printed `changed: command not found`, and the record landed with a gap exactly where the subject belonged. That is scrubber item 18 and tools/eaten_substitution_check.py exists for it; it happened while writing about silent failure, which is the fourth recorded instance of this on this platform."
     },
     {
+      "commit": "03d03cf757f5",
+      "date": "2026-10-06",
+      "subject": "fix(sairncare): alf_compliance_rules/evaluate shipped the whole staff roster to ANY role -- closes #894, the third #877-shaped disclosure this week",
+      "files": [
+        "api/sd-data.js",
+        "tests/sd_data_alf_compliance_staff_scope.js"
+      ],
+      "lines_added": 332,
+      "lines_removed": 1,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "hover-audit",
+      "summary": "api/sd-data.js, resource alf_compliance_rules, action 'evaluate': the branch gated on verifySessionToken ALONE (:11949) and, with payload.include_staff === true (:11994), fetched every alf_staff row (:12022) and every alf_staff_credentials training-hours record on the licence filtered by license_hash alone (:12033-12034), assembled per staff member a name, a position, a hire_date and the full training-hours array (:12052-12074), and returned all of it at :12077. Any authenticated sairncare employee -- including a med_aide or an activities role with no resident assigned to them at all -- could therefore read the employment and training record of every person on the licence. THE SIBLING THAT READS THE SAME TABLE ALREADY REFUSED THAT: alf_staff_credentials/read (:12088-:12098) resolves ALF_CRED_READ_ROLES and filters every other role to its own staff_id. Two code paths reached one table and only one carried its access rules. Fixed by applying the sibling's set and predicate to opts.staff BEFORE evaluateTraining() sees it -- filtering the engine's output would leave the roster assembled and one coding mistake from the response -- and by echoing scoped_to_self on every response from the action. Third disclosure of this shape in one week after #877 (family_mar) and the SDN raw-blob branch.",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "unknown_reason": "The include_staff join was added as a feature and the disclosure arrived with it rather than being introduced by a later regression, so there is no commit that BROKE something that previously worked. Naming the feature commit would record a discovery lag against a change that was defective from its first line, which is a different fact from a regression and should not be averaged with regressions in the lag figure."
+      },
+      "citation_note": "1.3 is 'an anchor that still matches is not an anchor that still points at the right thing', cited here for the third time on the same class with the noun changed again: every control that inspects ONE branch still matched and still passed -- session check present, licence scope present, clean refusal present -- while the question that mattered was COMPARATIVE, between this branch and the one that owns the table it reads. Arguable rather than clean because 1.3 is written about string anchors in checkers. The honest position is that no standing rule names 'a compute action whose side effect is a disclosure the owning resource would refuse', and three instances in one week is enough to argue the rule is missing rather than the citation being wrong.",
+      "contributing_factors": [
+        {
+          "factor": "The branch reads alf_staff_credentials rows directly (api/sd-data.js:12033) rather than going through the resource read that owns that table, so it inherited none of that resource own access rules. Two code paths reach one table and only one of them was gated.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The sibling set ALF_CRED_READ_ROLES and the sibling predicate staff_id === session.employee_id are applied to opts.staff BEFORE evaluateTraining() sees it, copied from :12091 rather than invented."
+        },
+        {
+          "factor": "The disclosure is a SIDE EFFECT of a compute action. `evaluate` reads as an analysis endpoint, not a read endpoint, so the question who may read this was never asked of it -- include_staff:true turns an evaluation into a roster dump and the action name does not say so.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "The gate-parity checker cannot see this because it groups by the resource the BRANCH is keyed on and the data disclosed belongs to another resource; extending it to cross-resource exposure, or formally documenting the blind spot, is the open decision filed alongside this fix."
+        },
+        {
+          "factor": "No check compares a branch that READS a table against the branch that OWNS that table. Every existing control inspects one branch: is there a session check, is it licence-scoped, does it refuse cleanly -- all three answered yes here.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/sd_data_alf_compliance_staff_scope.js drives the real handler with real signed sessions and asserts the leak against the WHOLE serialised response rather than against the staff list, so a filtered list with the same data echoed elsewhere still fails."
+        },
+        {
+          "factor": "The hover auditor filed this with a complete fix spec and it sat unactioned for roughly sixteen hours across six separate re-confirmations by the same auditor, which eventually stopped re-routing it.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Routed into docs/SAIRN-OPEN-WORK-INDEX.md as an owned row in the preceding batch and fixed in this one; the index row is what made it survive a session boundary."
+        }
+      ],
+      "recurrence_open": "THE DETECTOR FOR THIS CLASS STILL CANNOT SEE IT. tools/gate_parity_check.py was built from #877 and groups by the resource the BRANCH is keyed on, so a branch keyed on alf_compliance_rules that discloses alf_staff_credentials data is invisible to it -- measured with --json, not reasoned. Whether to extend it to cross-resource exposure or to document the blind spot formally is an open decision filed with this fix. Until one of those lands, the only thing standing between this class and the next instance is somebody reading two branches side by side. Separately: no sweep has asked which OTHER branches in api/sd-data.js read a table they do not own."
+    },
+    {
       "commit": "1cb08cbf6285",
       "date": "2026-10-06",
       "subject": "fix(exec-context): two clauses in the CFO accounting statement had gone false, and the conclusion they supported was still right -- which is the combination that gets the whole statement disbelieved",
@@ -23478,60 +23533,6 @@
       "recurrence_open": "NOT CLOSED: sairnscape.html:258-261 advertises 'API access', 'Custom AI training on your business' and an 'SLA and uptime guarantee' on the Business tier. None of the three was verified in this pass and none is fixed -- they are the same class as the removed QuickBooks line, and keeping or removing them is a decision about what is sold. Nothing on this platform checks marketing surfaces at all."
     },
     {
-      "commit": "8f15f7c5fc57",
-      "date": "2026-10-06",
-      "subject": "fix(exec-context): the CTO advisor carried the SAME false clause as the CFO one -- \"NO accounting integration of any kind\" -- plus a count nobody could re-derive; and tools/red_suite_register_check.py",
-      "files": [
-        "api/_lib/exec-context.js",
-        "tools/red_suite_register_check.py"
-      ],
-      "lines_added": 368,
-      "lines_removed": 1,
-      "app": "PLATFORM",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "The CTO exec-context statement asserted 'There is NO accounting integration of any kind' while api/accounting.js, api/_lib/accounting-connector.js and sql/accounting_connector_schema.sql exist at HEAD -- the same false-premise-true-conclusion shape as the CFO line in the same file, found by the sweep that followed it. It also claimed 'Supabase Postgres (78 API functions)'; counted at HEAD there are 70 serverless route files under api/ excluding tests, _lib and _resources, 60 of which touch Supabase, and the figure said nothing about what it counted so it could not be re-derived.",
-      "rules": [
-        "2.3"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The accounting clause went false when api/accounting.js landed (27a2404d) and the 78 count went false gradually as routes were added; one sha would be a guess between a single commit and a slow drift."
-      },
-      "contributing_factors": [
-        {
-          "factor": "The statement carried a dated verification and nothing re-reads any of them on a cadence, so both of these decayed in the same way the CFO line did -- in the same file, with the same fix, found only because somebody swept the file deliberately.",
-          "kind": "detection",
-          "action_status": "planned",
-          "action": "A standing re-check of every dated 'verified' statement in api/_lib/exec-context.js is still owed. This sweep was a one-off."
-        },
-        {
-          "factor": "'78 API functions' never said what it counted. A bare number with no stated denominator cannot be re-derived, so nobody could tell it had drifted.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "The replacement states the population (serverless route files under api/, excluding *.test.js, _lib/ and _resources/) and the sub-count that touches Supabase."
-        },
-        {
-          "factor": "The accounting clause was written as an absolute ('NO accounting integration of any kind') rather than as the conclusion it was defending, so a later commit adding a refusing endpoint made it false without changing anything a reader cares about.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Rewritten to state what exists AND why nothing is connected, so the sentence survives the endpoint existing."
-        },
-        {
-          "factor": "The suite pins the exact architecture sentence, which is why my own incorrect 'improvement' to a CORRECT count could not land silently -- but there is no equivalent arm pinning the integrations sentence, which is the one that was actually wrong.",
-          "kind": "latent-condition",
-          "action_status": "planned",
-          "action": "An arm pinning the integrations sentence against a measured route count is owed. Named rather than added here: the count it would pin is the thing that drifts, so the arm has to compute it rather than quote it."
-        }
-      ],
-      "recurrence_open": "Nothing re-reads the remaining dated statements in api/_lib/exec-context.js on a cadence, and no arm pins the integrations sentence the way :206 pins the architecture one. The HIPAA-for-SAIRNcomm line was NOT verified in this pass -- SAIRNcomm has no app file in this repo, so there is nothing to check it against, and that is stated rather than counted as clean."
-    },
-    {
       "commit": "607f4f034662",
       "date": "2026-10-06",
       "subject": "fix(sairndesign): the one generic SDN write branch stored the caller's whole payload raw -- one omission, eighteen resources",
@@ -23585,6 +23586,60 @@
         }
       ],
       "recurrence_open": "The sweep for remaining raw 'data: payload' write branches across api/sd-data.js is NOT done and is not claimed by this change. Nothing mechanical requires a write branch to route its blob through api/_lib/blob.js, so the next branch added can reintroduce this with every suite green -- the new test asserts the SDN branch and nothing generalises it. Separately, the twelve sensitive resources' save-site line numbers in the routed index row are hover's and were NOT re-derived at HEAD; only the handler branch was."
+    },
+    {
+      "commit": "8f15f7c5fc57",
+      "date": "2026-10-06",
+      "subject": "fix(exec-context): the CTO advisor carried the SAME false clause as the CFO one -- \"NO accounting integration of any kind\" -- plus a count nobody could re-derive; and tools/red_suite_register_check.py",
+      "files": [
+        "api/_lib/exec-context.js",
+        "tools/red_suite_register_check.py"
+      ],
+      "lines_added": 368,
+      "lines_removed": 1,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "The CTO exec-context statement asserted 'There is NO accounting integration of any kind' while api/accounting.js, api/_lib/accounting-connector.js and sql/accounting_connector_schema.sql exist at HEAD -- the same false-premise-true-conclusion shape as the CFO line in the same file, found by the sweep that followed it. It also claimed 'Supabase Postgres (78 API functions)'; counted at HEAD there are 70 serverless route files under api/ excluding tests, _lib and _resources, 60 of which touch Supabase, and the figure said nothing about what it counted so it could not be re-derived.",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The accounting clause went false when api/accounting.js landed (27a2404d) and the 78 count went false gradually as routes were added; one sha would be a guess between a single commit and a slow drift."
+      },
+      "contributing_factors": [
+        {
+          "factor": "The statement carried a dated verification and nothing re-reads any of them on a cadence, so both of these decayed in the same way the CFO line did -- in the same file, with the same fix, found only because somebody swept the file deliberately.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "A standing re-check of every dated 'verified' statement in api/_lib/exec-context.js is still owed. This sweep was a one-off."
+        },
+        {
+          "factor": "'78 API functions' never said what it counted. A bare number with no stated denominator cannot be re-derived, so nobody could tell it had drifted.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The replacement states the population (serverless route files under api/, excluding *.test.js, _lib/ and _resources/) and the sub-count that touches Supabase."
+        },
+        {
+          "factor": "The accounting clause was written as an absolute ('NO accounting integration of any kind') rather than as the conclusion it was defending, so a later commit adding a refusing endpoint made it false without changing anything a reader cares about.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Rewritten to state what exists AND why nothing is connected, so the sentence survives the endpoint existing."
+        },
+        {
+          "factor": "The suite pins the exact architecture sentence, which is why my own incorrect 'improvement' to a CORRECT count could not land silently -- but there is no equivalent arm pinning the integrations sentence, which is the one that was actually wrong.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "An arm pinning the integrations sentence against a measured route count is owed. Named rather than added here: the count it would pin is the thing that drifts, so the arm has to compute it rather than quote it."
+        }
+      ],
+      "recurrence_open": "Nothing re-reads the remaining dated statements in api/_lib/exec-context.js on a cadence, and no arm pins the integrations sentence the way :206 pins the architecture one. The HIPAA-for-SAIRNcomm line was NOT verified in this pass -- SAIRNcomm has no app file in this repo, so there is nothing to check it against, and that is stated rather than counted as clean."
     },
     {
       "commit": "d8392f805969",
