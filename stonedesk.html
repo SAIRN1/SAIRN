@@ -42402,7 +42402,22 @@ function itaRender(){
   if(sd){var keys=Object.keys(localStorage).filter(function(k){return k.startsWith('sd_');});sd.innerHTML='StoneDesk data keys: '+keys.length+' | Total: '+kb+' KB of ~5 MB limit';}
   var lic=document.getElementById('ita-license-info');
   var lk=localStorage.getItem('sd_license_key')||'Not set';
-  var plan=localStorage.getItem('sd_plan')||'Demo';
+  // ── "Plan: Demo" WAS A HARDCODED LITERAL WEARING A VARIABLE (2026-10-05).
+  // `sd_plan` has ZERO write sites anywhere on this platform -- the only two
+  // references are this read and the purge allowlist in itaClearData() that
+  // preserves it. So the fallback was not a fallback, it was the value, and
+  // this row told a licensed customer "Plan: Demo" for ever while reading as
+  // though it were reporting real state. Same shape as sairncash's hardcoded
+  // `Pro` (fixed 2026-10-05, ab531d36) and HARDER to notice, because a
+  // literal in the markup is visible and a dead localStorage key is not.
+  //
+  // THE ROW NOW SAYS WHAT IS KNOWN. StoneDesk's plan lives with the licence,
+  // server-side; this panel has the licence KEY and nothing that resolves it
+  // to a plan. Inventing a label from the key's presence would be the same
+  // defect one step along, so the honest answer is that the browser does not
+  // hold it. If a plan ever IS written to `sd_plan`, this renders it.
+  var planRaw=localStorage.getItem('sd_plan');
+  var plan=planRaw||'not recorded in this browser';
   if(lic)lic.innerHTML='<div>License Key: <strong>'+escHtml(lk)+'</strong></div><div>Plan: <strong>'+escHtml(plan)+'</strong></div><div>Proxy: <strong>sairn.vercel.app/api/claude</strong></div><div>App Version: <strong>StoneDesk Session 24</strong></div>';
   itaRenderAudit();
 }

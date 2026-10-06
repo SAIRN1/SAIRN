@@ -538,3 +538,146 @@ converted. That is the difference between 177 and 158.
 
     python tools/criticality_tier_check.py   EXIT=0  PROBLEMS:0  TIER_A 275
     python tools/md_table_check.py …          EXIT=0  434/434 rows
+
+---
+
+## 7. Gate parity — the check that would have caught #877, built and ablated
+
+`tools/gate_parity_check.py`. Flags a (file, resource) group where **two or
+more actions DISCLOSE the resource and disagree** on whether a role gate or an
+assignment gate is enforced.
+
+**Why nothing existing saw #877.** Every control on this platform asks about
+ONE branch — is there a session check, is it licence-scoped, does it refuse
+cleanly. All three answered **yes** for `family_mar`, because a check *was*
+present; it was answering a different question. The missing question is
+**comparative**, and nothing compared two branches to each other.
+
+### The ablation, which is the only claim worth making about a new checker
+
+    pre-fix file (git show 05cbc74d:api/sd-data.js)   EXIT=1   4 groups
+                                                      ... including alf_family_contacts
+    HEAD (fixed)                                      EXIT=1   3 groups
+                                                      ... alf_family_contacts gone
+    --selftest                                        EXIT=0   7 passed, 0 failed
+    under forced PYTHONIOENCODING=cp1252              EXIT=1   0 encode errors
+
+**It catches the real defect in the real file, and the real fix clears it.**
+
+### THREE TIMES THE FIXTURES PASSED WHILE THE TOOL WAS WRONG
+
+This is the part worth keeping, and all three were caught by running against
+the real file rather than by adding another fixture.
+
+1. **Writes were being compared against reads** — the docstring said they were
+   not. An upsert here carries `Prefer: return=representation` and answers
+   `{ ok: true, data: rows[0].data }`, so the disclosure test matched almost
+   every write branch. First live run: **36 groups**, mostly "the write
+   refuses more than the read", which is the design. Fixture B2's write
+   answered a bare `{ ok: true }` — **a fixture cleaner than production tests
+   a handler that does not exist.** B2 now returns a representation.
+2. **`roleSet(` counted as a role gate.** On the real pre-fix handler the set
+   is *declared* in the shared prelude (`:11501`) and *consulted* inside
+   `read` only — so the prelude lit up, both siblings inherited `role=True`,
+   and **the ablation did not flag #877 at all**. A declaration is not a gate.
+   Fixture A1 put the declaration inside the gated branch, which no handler in
+   this file does; **fixture A3 is now the production shape.**
+3. **The prelude was one shared string.** It must be **per action** —
+   everything before that branch, minus the branches it skipped — because the
+   tail after the last inner block is the **fall-through**, belonging to no
+   action. `api/sd-data.js:11671` is the write path's
+   `if (!ALF_MANAGEMENT_ROLES[session.role])`, sitting after the `family_mar`
+   block; folding it in handed the write's role gate to both readers and hid
+   the asymmetry a second way.
+
+And a fourth, from the same family as item 1's: **comments contaminated every
+signal.** `:11485` is a comment reading *"alf_clients.assigned_employee_id,
+which is the same source"*, inside the prelude — so every action under that
+block reported an assignment gate it did not have. Whole-line comments are now
+stripped before any signal is read.
+
+### Precision, reported as its own number
+
+**3 groups flagged on HEAD and all three triaged correct-by-design** — so
+**0 of 3**, printed by the tool itself rather than left in a document:
+
+| group | why it is not a defect |
+|---|---|
+| `rf_claims` | `read` consults the role sets only to **widen** (managers see every row); the siblings gate with `rfAuth.ownsRow()`, a **helper** a lexical check cannot see |
+| `rf_schedule` | `crew_load` **refuses** non-management outright — stricter than `read`'s filter, not weaker; the handler says so in its own comment |
+| `alf_payer_rules` | `read` discloses a statute reference table with no resident data; `route` is management-only because it **acts** |
+
+Both patterns are now in the tool's printed limits. **Report-only, and not a
+push gate:** a lexical comparator at 0-of-3 precision would refuse pushes on
+cases a human waves through, and a gate people learn to override is worse than
+a report people read.
+
+### NOT COMMITTED — conflict declared per PR §4.3
+
+`tools/tooling_inventory.py` **refuses** to regenerate `TOOLING-INVENTORY.md`
+while a tool in `tools/` has no `PURPOSES` entry, and that file is **fourth's**
+under a live claim (cody and cc name it too). The tool is **held back
+untracked** in this clone and the `PURPOSES` entry is delivered as paste-ready
+text in `docs/2026-10-05-hank-routed-to-fourth.md`. Same decision, same day,
+as fourth's own hold on `tools/push_failure_reason.py`.
+
+**The cost is real and is stated there rather than implied:** an untracked file
+is invisible to every other clone.
+
+---
+
+## 8. Plan literals and the paywall contradiction
+
+### `stonedesk.html` — `Plan: Demo` was a hardcoded literal wearing a variable
+
+`var plan=localStorage.getItem('sd_plan')||'Demo';` — **`sd_plan` has ZERO
+write sites anywhere on the platform.** The only two references are that read
+and the purge allowlist in `itaClearData()` that preserves it. So the fallback
+was not a fallback, **it was the value**: a licensed customer saw *"Plan:
+Demo"* for ever on the IT-admin panel.
+
+**Harder to notice than the sairncash case it matches.** A literal in markup is
+visible; a dead `localStorage` key reads as real state. Fixed to say what is
+known — *"not recorded in this browser"* — rather than inventing a label from
+the licence key's presence, which would be the same defect one step along.
+
+### `sairnscape.html` — the pricing header contradicted its own first card
+
+    :187  "Simple. Honest. No per-user games."
+    :188  "Flat monthly fee. Unlimited users. Cancel anytime."
+    :201  Starter, $99 ........................ "Up to 3 users"
+
+A blanket *unlimited users* claim over the pricing grid, withdrawn **thirteen
+lines below** by the entry tier — and Starter is the card a first-time reader
+prices against, so the claim has already done its work by the time the
+contradiction arrives. Same class as the *"QuickBooks integration"* line
+removed from this file on 2026-09-02.
+
+**What is true is kept:** the fee is flat, there is no per-seat billing, and
+users are unlimited on Professional and Business. The sentence now says that
+instead of more.
+
+    python tools/checkblocks.py stonedesk.html    EXIT=0   131 blocks, 0 failed
+    python tools/checkblocks.py sairnscape.html   EXIT=0     7 blocks, 0 failed
+
+### Swept and found clean, stated so the silence is not read as coverage
+
+- `sairncash.html:323` — the Plan row is derived via `scPlanLabel()` (batch 7).
+  `:241` *"Pro"* is a **paywall card naming the plan on offer**, not a claim
+  about the reader's plan. `:1059` is a comment quoting the old defect.
+- The *"unlock unlimited access"* trial-expiry banner appears in **13 apps**
+  with identical wording. Not a contradiction: it describes the licensed state,
+  and `sairncash.html:1024-1039` already records that the platform deliberately
+  does **not** meter AI because the paywall promises it. Consistent, not
+  conflicting.
+- `sairncode`, `sairndental`, `sairnmechanical`, `sairnsenior`, `sairnvet`,
+  `stonedesk:37637` — every other `Plan` hit is a **table column header or a
+  form label**, not an assertion about an entitlement.
+
+### LOGGED, NOT FIXED — out of this item's scope and a product decision
+
+`sairnscape.html:258-261`, the Business tier ($299) advertises **"API access"**,
+**"Custom AI training on your business"** and an **"SLA and uptime guarantee"**.
+These are purchase-influencing claims of the same class as the removed
+QuickBooks line, and I did not verify any of the three. Removing or keeping
+them is a decision about what is sold, not a literal-sweep fix.

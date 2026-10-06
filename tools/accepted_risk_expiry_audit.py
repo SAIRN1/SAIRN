@@ -92,6 +92,28 @@ import re
 import subprocess
 import sys
 
+# ── THIS AUDIT DIED AFTER DOING ITS WORK (fixed 2026-10-05) ────────────────
+# `main()` prints its per-verdict section headers with box-drawing rules
+# (`print('── %s ────…')`, the same rules every tool in this repo uses). On a
+# cp1252 console that raised UnicodeEncodeError and exited 1 -- and it raised
+# it AT THE REPORTING STAGE, after the whole audit had run, so the exit status
+# said "found something" and the findings were never printed. A tool that
+# computes the right answer and cannot say it is indistinguishable from one
+# that failed.
+#
+# Found by driving all 296 tools/*.py under forced PYTHONIOENCODING=cp1252 in
+# a scratch copy of the tree: 1 crash, this one.
+#
+# THE STREAM IS RECONFIGURED, NOT THE OUTPUT TEXT -- the same fix and the same
+# reason as `tools/register_feed_gate.py`'s: ASCII-ing this file would fix one
+# file and leave the pattern in the other ~295. stderr too, because a tool
+# whose ERROR cannot be encoded fails at the one moment it is trying to
+# report.
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8')
+
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INDEX = os.path.join(REPO, 'docs', 'SAIRN-OPEN-WORK-INDEX.md')
 
