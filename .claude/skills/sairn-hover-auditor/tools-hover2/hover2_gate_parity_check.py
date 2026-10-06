@@ -37,6 +37,15 @@ while writing the detection patterns below (written from the role/
 assignment vocabulary already used by hand in this role's own prior log
 entries, e.g. seq622/632/634, not from reading hank's source).
 
+LIMIT, MEASURED NOT ASSUMED: this tool's first real run (against rf_,
+2026-10-06) under-detected rf_claims' assess_damage/reconcile assignment
+gate -- both call rfAuth.ownsRow(session, claim), a named helper the first
+version of ASSIGN_PAT could not see, so they printed assignment=False when
+the real code assignment-gates them. Fixed in this same session before
+first use by adding the ONE named helper found; this is LEXICAL, same as
+tools/gate_parity_check.py's own documented limit, and a DIFFERENT helper
+name is still invisible to it. Not claimed complete.
+
 DETECTION (same two axes this role has used by hand all batch):
   role       -- a role-set membership check against session.role
                 (SOMETHING_ROLES[session.role] or a roleSet(...) literal
@@ -61,7 +70,14 @@ BLOCK_START = re.compile(r"if \(resource === '(\w+)' && action === '(\w+)'\) \{"
 ROLE_PAT = re.compile(r'\b[A-Z][A-Z0-9_]*_ROLES\[session\.role\]')
 ASSIGN_PAT = re.compile(r'session\.employee_id\s*===?\s*\w|'
                         r'\w\.assigned_employee_id\s*===?\s*session\.employee_id|'
-                        r'session\.employee_id\s*===?\s*\w*\.?assigned_employee_id')
+                        r'session\.employee_id\s*===?\s*\w*\.?assigned_employee_id|'
+                        # NAMED helper, found on this tool's own first real run against
+                        # rf_claims: rfAuth.ownsRow(session, claim) reads as an inline
+                        # assignment check (api/sd-data.js:8899), invisible to the three
+                        # literal patterns above. LEXICAL, same as hank's own tool's
+                        # documented limit -- a DIFFERENT helper name is still invisible
+                        # here. Named rather than claimed complete.
+                        r'\w+Auth\.ownsRow\(')
 
 
 def blocks(src, prefix):
@@ -158,14 +174,18 @@ def selftest():
     if (resource === 'fx_clean' && action === 'write') {
       if (!FX_ROLES[session.role]) { return; }
     }
+    if (resource === 'fx_helper' && action === 'read') {
+      if (!xyAuth.ownsRow(session, row)) { return; }
+    }
 """
     per_resource = analyze(fixture, 'fx_')
     groups_flagged, lines = report(per_resource)
     ok = (groups_flagged == 1 and
           per_resource['fx_a']['read'] == {'role': True, 'assignment': True} and
           per_resource['fx_a']['write'] == {'role': True, 'assignment': False} and
-          per_resource['fx_clean']['read'] == per_resource['fx_clean']['write'])
-    print('SELFTEST %s: %d group(s) flagged (expected 1: fx_a, assignment divergence); fx_clean correctly unflagged' %
+          per_resource['fx_clean']['read'] == per_resource['fx_clean']['write'] and
+          per_resource['fx_helper']['read']['assignment'] is True)
+    print('SELFTEST %s: %d group(s) flagged (expected 1: fx_a, assignment divergence); fx_clean correctly unflagged; fx_helper (named-helper assignment check) correctly detected' %
           ('PASS' if ok else 'FAIL', groups_flagged))
     return 0 if ok else 1
 
