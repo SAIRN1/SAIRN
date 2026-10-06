@@ -12071,10 +12071,53 @@ module.exports = async (req, res) => {
               records: byStaff[String(row.staff_id)] || []
             };
           });
+          // ── THIS SHIPPED THE WHOLE ROSTER TO ANY ROLE (#894, fixed 2026-10-06)
+          // Everything above assembles, per staff member, a `name`, a
+          // `position`, a `hire_date` and the FULL training-hours array -- and
+          // the only gate on this action is `verifySessionToken` at `:11949`.
+          // So any authenticated sairncare employee, including a `med_aide` or
+          // an `activities` role with no resident assigned to them at all,
+          // could ask for `include_staff:true` and receive the employment and
+          // training record of every person on the licence.
+          //
+          // AND THE SIBLING THAT READS THE SAME TABLE ALREADY REFUSED THAT.
+          // `alf_staff_credentials`/`read` (`:12088`-`:12098`) resolves
+          // ALF_CRED_READ_ROLES and filters every other role to its own
+          // `staff_id`, with the comment "enough to know what training they
+          // personally owe, without exposing the roster's qualifications".
+          // This branch reads the SAME `alf_staff_credentials` rows (`:12033`)
+          // and did not.
+          //
+          // SAME SET, SAME PREDICATE, SAME FLAG -- NOT A NEW POLICY. The set is
+          // ALF_CRED_READ_ROLES and the predicate is `staff_id ===
+          // session.employee_id`, both copied from `:12091` rather than
+          // invented, because a gate that disagrees with its sibling on the
+          // same data is the defect being closed and not the fix.
+          //
+          // FILTERED BEFORE evaluateTraining(), NOT AFTER. The engine computes
+          // a finding per staff member; filtering its OUTPUT would mean the
+          // roster was still assembled, still passed to a library, and still
+          // one coding mistake away from the response. Minimum necessary means
+          // the data does not get that far.
+          //
+          // A NARROW CALLER STILL GETS A REAL ANSWER -- about itself. That is
+          // the point: it can see what training it personally owes. An empty
+          // `staff` for a caller with no credential row is a truthful answer to
+          // "what do I owe", not a refusal, and `scoped_to_self` says which
+          // mode the client got so it cannot read a self-view as a facility
+          // view.
+          if (!ALF_CRED_READ_ROLES[session.role]) {
+            opts.staff = (opts.staff || []).filter(
+              (x) => String(x.staff_id) === String(session.employee_id));
+          }
         }
         result = complianceRules.evaluateTraining(ruleRows || [], opts);
       }
-      res.status(200).json(result);
+      // ECHOED ON EVERY RESPONSE FROM THIS ACTION, including the non-staff
+      // shape, because a flag that appears only in the narrow case is a flag
+      // the client has to infer from its absence.
+      res.status(200).json(Object.assign({}, result,
+        { scoped_to_self: !ALF_CRED_READ_ROLES[session.role] }));
       return;
     }
     if (resource === 'alf_staff_credentials' && action === 'read') {
