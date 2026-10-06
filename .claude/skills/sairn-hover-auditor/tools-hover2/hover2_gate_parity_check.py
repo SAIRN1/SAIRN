@@ -67,7 +67,16 @@ import re
 import sys
 
 BLOCK_START = re.compile(r"if \(resource === '(\w+)' && action === '(\w+)'\) \{")
-ROLE_PAT = re.compile(r'\b[A-Z][A-Z0-9_]*_ROLES\[session\.role\]')
+ROLE_PAT = re.compile(r'\b[A-Z][A-Z0-9_]*_ROLES\b')
+# Was `\b[A-Z][A-Z0-9_]*_ROLES\[session\.role\]` -- too narrow. rf_schedule's
+# set_status (api/sd-data.js:9898) passes rfAuth.MANAGEMENT_ROLES and
+# rfAuth.BROAD_READ_ROLES as ARGUMENTS into roofingLocations.canSeeSchedule(),
+# never indexed inline, so the indexing-only pattern missed a real role gate
+# on this tool's own first real run (same batch as the ownsRow fix above).
+# Widened to "a _ROLES identifier appears anywhere in the block" -- looser,
+# deliberately: an audit tool that under-detects a gate manufactures the
+# exact false asymmetry it exists to rule out, which is worse than a rare
+# over-detection (a _ROLES identifier referenced for an unrelated reason).
 ASSIGN_PAT = re.compile(r'session\.employee_id\s*===?\s*\w|'
                         r'\w\.assigned_employee_id\s*===?\s*session\.employee_id|'
                         r'session\.employee_id\s*===?\s*\w*\.?assigned_employee_id|'
@@ -177,6 +186,9 @@ def selftest():
     if (resource === 'fx_helper' && action === 'read') {
       if (!xyAuth.ownsRow(session, row)) { return; }
     }
+    if (resource === 'fx_argrole' && action === 'read') {
+      if (!canSeeRow(session, entry, xyAuth.MANAGEMENT_ROLES)) { return; }
+    }
 """
     per_resource = analyze(fixture, 'fx_')
     groups_flagged, lines = report(per_resource)
@@ -184,8 +196,9 @@ def selftest():
           per_resource['fx_a']['read'] == {'role': True, 'assignment': True} and
           per_resource['fx_a']['write'] == {'role': True, 'assignment': False} and
           per_resource['fx_clean']['read'] == per_resource['fx_clean']['write'] and
-          per_resource['fx_helper']['read']['assignment'] is True)
-    print('SELFTEST %s: %d group(s) flagged (expected 1: fx_a, assignment divergence); fx_clean correctly unflagged; fx_helper (named-helper assignment check) correctly detected' %
+          per_resource['fx_helper']['read']['assignment'] is True and
+          per_resource['fx_argrole']['read']['role'] is True)
+    print('SELFTEST %s: %d group(s) flagged (expected 1: fx_a, assignment divergence); fx_clean correctly unflagged; fx_helper (named-helper assignment check) and fx_argrole (role-set passed as an argument) correctly detected' %
           ('PASS' if ok else 'FAIL', groups_flagged))
     return 0 if ok else 1
 
