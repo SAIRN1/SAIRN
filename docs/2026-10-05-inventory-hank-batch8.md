@@ -232,3 +232,115 @@ unanchorable to it. **INCONCLUSIVE is the honest answer and the tool gives it**
 — it is not reporting a pass — but a whole app that can never be anchored is a
 coverage hole worth naming. Not fixed here: widening that tool is a change to a
 measurer and takes its own fixtures and a before/after count.
+
+---
+
+## 3. The unrouted hover findings — 14, not 10, and now 0
+
+**The dispatched number was stale before I started and I did not adjust it.**
+`python tools/hover_routing_gap_check.py` reported **14** unrouted, over
+**1439** log entries — the queue said 10 against 1404. Both logs had grown.
+Re-measured rather than reconciled.
+
+    BEFORE   EXIT=1   1439 entries, UNROUTED 14
+    AFTER    EXIT=0   1449 entries, UNROUTED 0
+
+### The claim question, answered before any write
+
+`docs/SAIRN-OPEN-WORK-INDEX.md` is cc's by convention and the dispatch said to
+route around it if held. **It was not held.** `sairn_claim.py check` reported
+cc's claim on it **EXPIRED 8.6h ago**, and `sairn_status.py` reported that
+session **DEAD** — `CLAUDE_PID 66660 no longer exists`, last row written
+2026-10-05T18:14. Expired *and* dead is the platform's own definition of
+takeable, so I took it **by name in the claim string** rather than rewording my
+task to avoid the matcher. The claim's first publish attempt **failed** (dirty
+tree, `git rebase` refuses); the tool said so out loud and said the claim was
+therefore invisible to every other clone. Committed, re-ran, published.
+
+### Six FIXED in `docs/CRITICALITY-TIERS.md`
+
+Every citation re-derived at HEAD. **Several of the routed entries' own line
+numbers had already drifted**, so nothing was pasted.
+
+| seq | Resource | What was wrong | Outcome |
+|---|---|---|---|
+| 875 | `leg_facilities` | *“no PII”* — the seed stores `{type:'Staff', name:'Maria Chen', notes:'Funeral Director'}` and bookings key on `facility_id` alone | basis corrected, **B holds** |
+| 872 | `sv_examrooms` | *“no PII”* — a named vet beside a named patient, and **not seed-only**: the editor writes both from live inputs | basis corrected, **B holds** |
+| H2 538 | `sdn_vendors` | *“no PII”* — `saveVendor()` writes `contact_name`, `phone`, `email` | basis corrected, **B holds** |
+| 884 | `sc_specialty_checklists` | never individually read | **confirmed B/B with evidence** + named trigger |
+| 884 | `sc_specialty_checks` | never individually read | **confirmed B/B with evidence** + named trigger |
+| 708/714 | `sf_bottle_fills`, `sf_documents`, `sf_ceremonial_items` | citations | corrected — see below |
+
+`criticality_tier_check.py` **EXIT=0 PROBLEMS:0**, `TIER_A` **275 before and
+after**: nothing moved tier. These are basis corrections, which is the harder
+half to notice and the easier half to skip.
+
+### The one worth reading: a function name that was wrong twice
+
+`sf_bottle_fills` has now been re-anchored **three times**.
+
+1. **2026-09-28** cited `sfRecordBottleFill()`. `grep` returns **zero hits**,
+   and always did.
+2. **2026-09-30** caught that, found the app's own comment names
+   `sfBottleFill` — **also not a function; it appears exactly twice and both
+   are comments** — and concluded *“the honest citation is a line range and not
+   a function name.”*
+3. **That conclusion is also wrong, and that is this pass's finding.** The
+   write does sit in an anonymous `.then(function(res){…})` inside
+   `reader.onload`, so the *innermost* scope has no name. But the enclosing
+   named entry point is **`sfEstimateFill()` at `sairnfreedom.html:4834`**,
+   called by the button at `:1106`. A durable anchor was available the whole
+   time. **Two passes looked at the wrong depth, and the second then wrote the
+   absence down as a fact** — which is worse than the original typo, because a
+   stated impossibility stops the next reader from looking.
+
+The cell also carried a **spliced-in duplicate fragment** (`…so method is
+always 'Automatic, from photograph' writes {productId, …} with method recorded
+as…`) and a trailing `RE-ANCHORED 2026-09-28` sentence that contradicted its
+own body. Both removed.
+
+**And hover's own proposed replacement text would have been wrong.** Entry 714
+supplied paste-ready text naming `sfBottleFill()`. Pasting it would have
+swapped one non-existent identifier for another — in a correction whose entire
+subject is a non-existent identifier. Caught only because I re-derived instead
+of pasting.
+
+### Four ROUTED as index rows, with file:line
+
+- **SAIRNdesign** — the generic `SDN_RESOURCES` write branch stores
+  `data: payload` raw, no `storedBlob()`, across all 18 resources; 12 carry
+  client identity or money, each named with its own save site. (This is also
+  queue item 8; the code half is not done.)
+- **StoneDesk** — `sd_pb` / `sd_pb2` / `sd_pb3`, purge-exempt keys with **zero**
+  read and write sites, `stonedesk.html:3581`. Re-measured at HEAD. **One fact
+  the finding did not have:** the identical `keepKeys` line is copy-pasted into
+  four archived apps, so it is a propagated line, not a one-off.
+- **Tooling → hover2** — `classify_remote()`'s credential mislabel (seq
+  710/722) and the `tools-hover2/` skill-store divergence (seq 723). **Owner
+  is hover2 and only hover2**: a build agent must not write into that scope,
+  so these are routed and explicitly not fixable from here.
+- **Platform** — a ✅ row recording the six cells applied above, so the work is
+  visible to the next reader rather than only to `git log`.
+
+### Three findings were ALREADY APPLIED and had simply never been routed
+
+Checked before writing anything, which is why they cost nothing:
+`grd_boq_rates` (seq 403 finding 1) is **already Tier A**, re-tiered
+2026-09-22 — the same day the finding was logged. `leg_cremations`,
+`leg_custodylog` and `leg_deathrecords` (seq 403 finding 2) are **already
+A/A**, same date. `sdn_clients` (H1 seq 538) is **already A/A**. All three were
+counted as unrouted purely because no index row names them — **the gap was in
+the record, not in the work**, which is a different problem from the other
+eleven and is worth not conflating with them.
+
+### The insert guard that fired
+
+The row insert anchors on the table header and asserts the match count. It
+came back **2**, not 1: the index carries a second table with an identical
+header, the frozen *“Added by the handoff-reading pass, 2026-08-24”* one near
+the end. A bare first-match would have been right by luck; a bare positional
+insert would have been wrong in silence. Asserted explicitly instead, plus a
+line-number sanity bound.
+
+    python tools/md_table_check.py docs/SAIRN-OPEN-WORK-INDEX.md
+      EXIT=0   831/831 rows, 0 malformed, 0 uncheckable
