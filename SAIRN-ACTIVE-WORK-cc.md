@@ -6436,3 +6436,174 @@ by the tool failing on me. That is the honest summary of the batch and it is
 also its blind spot: nothing measures the notice's own precision over a session,
 so "five classes found" is anecdote, not a rate. Recorded as an owed action on
 the register record rather than left as a feeling.
+
+---
+
+## 2026-10-06 — CC batch 9: nine of nine obligations, five FP classes, and FIVE of my own fixtures wrong before any of it reproduced
+
+Full account: `docs/2026-10-06-cc-batch-9-inventory.md`.
+Routed work: `docs/2026-10-06-cc-routed.md`.
+
+Sixteen items. Eleven landed, four routed to the session holding the file, one
+refused on the hover boundary.
+
+### The premise log is the artefact, not a formality
+
+THREE OF EIGHT PREMISES WERE WRONG ABOUT **WHERE** OR **WHETHER**, and one item
+was already done. The scratchpad a prior session was said to hold was empty. The
+pre-commit fix was already committed. A test arm said to be missing was present
+and provable by mutation. `fmea/alf_facility_role_gate_live_probe.py` has no
+`fmea/` directory — that is the metamorphic SUBJECT name. `tools/hover_tip_beacon.py`
+does not exist at all.
+
+**A brief is the least trustworthy document in the repository because it is the
+most recent** — and when it is my own prior report it carries my own blind spots
+forward at full confidence.
+
+### Nine Tier A obligations discharged — ZERO now owed to cc
+
+Each driven with a control per attack point rather than read. The findings I would
+carry forward:
+
+* **TWO new vacuous-sweep states** in hover_routing_gap_check, both reachable: a
+  renamed `routable` field, and an unparseable `ts` that makes `too_old` false with
+  no trace. **I found the fifth only because my own fixture was wrong first.**
+* **A LIVE FALSE-CLEAR** in the claim matcher, wider than its author stated: a
+  marker in the same clause as the `FILES:` list exempts EVERY declared path.
+* **The 40-line citation window sits at the MEDIAN** of the nearest-write
+  distribution (min 0, median 44, max 3471) — the least stable place to put a
+  threshold, and six citations hinge on it.
+* **The review gate cannot name the subject of a change that INTRODUCES a
+  resource.** `sf_trustee_audits` is recorded under four unrelated resources
+  because it had no tier row when its obligation opened. That is the INVERSE of
+  open-work row 95 — same single source, opposite failure — and the under-report is
+  the more dangerous half.
+* **The day-zero compliance branch reaches every customer** via
+  `DEFAULT_ANNUAL_WINDOW`, and **the existing suite feeds a shape that cannot reach
+  it** (`hasRecords = Array.isArray(s.records)`; the sibling suite sends
+  `annual_hours_recorded`).
+* **The reseat gate's SUPERSET bar is right for an asymmetry neither of us had
+  written down:** a SUPERSET twin can only be wrong by being too broad and still
+  contains the work; a PARTIAL twin is positive evidence that record and commit
+  disagree.
+
+### FIVE of my own fixtures were wrong, and every one looked like somebody else's defect
+
+An invented rule object instead of the seed. An OBJECT where the module takes a
+STRING. `annual_hours_recorded` instead of a `records` array. A rule whose
+`meets=null` came from an UNATTRIBUTABLE POOL rather than from day zero — which
+would have let me report the day-zero branch as working while looking at something
+else entirely. And `date` instead of `completed_on`, which sent 999 hours into
+`skipped_no_date` and made the "meeting on day zero is still true" arm FAIL against
+a claim that is correct.
+
+Plus a lazy regex that reported `sf_trustee_audits` as UNGATED when it is gated at
+`:982`, and an exclusion-list extraction that returned five fragments of English as
+resource names and reported two lists as ALREADY DIVERGED.
+
+**EVERY ONE WOULD HAVE BEEN A CONFIDENT, SPECIFIC, FALSE FINDING AGAINST SOMEBODY
+ELSE'S WORK.** The only reason none of them reached a verdict is that the arms were
+written to require a POSITIVE result rather than a non-empty one, so a vacuous pass
+FAILS instead of passing. That is the single most useful thing I did this batch and
+it is a property of how the arms are phrased, not of care.
+
+### exit_status_attributable: FIVE false-positive classes, and not one found by reading
+
+1. a tool path inside a quoted body or heredoc. 2. a tool in the LAST element.
+3. a tool path as another program's FILE OPERAND. 4. the hook firing on ITS OWN
+RECOMMENDED REMEDY. 5. a `;` or `|` INSIDE A QUOTED ARGUMENT.
+
+**THE FIFTH REVEALED THE DEFECT WAS NEVER IN THE SUBJECT HALF.** `analyse()` splits
+the same text, so every command carrying a quoted separator — a commit message, a
+`--task`, a `sed` script — was decomposed wrongly by the ATTRIBUTION half too, and
+the wrong decomposition then decided which element owns the status.
+
+**A TOKENISED PARSE WAS BUILT AND MEASURED AND IS NOT THE IMPLEMENTATION.** `shlex`
+with punctuation_chars agreed on all 23 subject arms — so it is better at nothing
+the arms cover — and then REFUSED `python tools/x.py --note "open | tail -1`, an
+unmatched double quote the regex handles and that ordinary prose produces. 0.022ms
+against 0.081ms. It is a CROSS-CHECK instead: every subject arm is now decided
+twice by implementations sharing no code, with two arms proving the cross-check is
+load-bearing rather than decoration.
+
+### The push gate refused prose about a push, and the rule was already in the file
+
+`\bgit\s+push\b` over the command TEXT. It refused three work-log appends in one
+session. **`override_in_command()` sixty lines down already honours a match "only
+when it is anchored at a command boundary AND falls outside every quoted span"** —
+the push detection had the first half and not the second. The quoted-span test is
+now one implementation used by both callers, because two copies of one rule is how
+this happened.
+
+**HEREDOC BODIES WERE ADDED BECAUSE THE ABLATION FOUND THE LAYER CATCHING ZERO.**
+`<<'EOF'` has an even number of quotes, so the body counts as unquoted — and the
+heredoc is the case that actually bit me. A layer that catches zero arms is either
+redundant or looking at the wrong thing; here it was the second. Pre-fix rule: 10
+of 20 arms wrong.
+
+**AND IT IS FOURTH'S INSTANCE 3 IN MIRROR IMAGE.** Theirs made
+`deploy_verify_notify.py` fail OPEN — a real push went unchecked. Mine failed
+CLOSED. Same defect, opposite direction, and the open one is worse.
+
+### E2 closed at the INTAKE, which is the half that stops a sixth
+
+The diagnosis CHANGED while the arm sat red: four offending tools on 2026-09-28,
+FIVE ENTIRELY DIFFERENT ONES later. So it was never a backlog of strings. Both
+halves are done: the five got `evidence` from a REAL RUN each, and the registry now
+**raises at import** on an undocumented entry, naming the tool and the field.
+
+It raises rather than warns because a suite tells you after the entry is on main,
+which is exactly how five accumulated — and the author of the new entry is the
+person who sees the failure, in the same minute.
+
+### `fmea_draft` 1.7 was a horoscope and the measurement is the whole argument
+
+44.6% of 691 files, and `run_fmea_probe` arm 3b was RED ON MAIN for it. Measured
+per half: the bare `[:NNN]` slice was **307 of 308** hits and **every one inspected
+is a display truncation in a message** — `str(detail)[:400]`, `out[:500]`,
+`print(line.strip()[:100])`. Truncating what you SHOW is not a window that exempts
+what you EXAMINE. Slice half dropped, named half widened, 14/691 = 2.0%, all
+fourteen hand-checked.
+
+### The hook manifest: FIVE were mine, not two
+
+`.githooks/pre-commit`, `cron_beat_refusal_check.py`, `exit_status_attributable.py`,
+`report_only_checks.py`, `sairn_push_gate_hook.py`. Not mine:
+`deploy_verify_notify.py` (fourth) and `register_feed_gate.py` (hank). Regenerated
+with all nine changes named, which is the explicit step the tool asks for — and
+blessing those two is different from the refusal I made last batch, because both
+are COMMITTED on origin/main with their own commit messages rather than in-flight.
+
+### The one refusal, and the one withdrawal
+
+**REFUSED:** wiring `hover_tip_beacon.py` into the build-side verify chain. The
+path does not exist in `tools/`, there is no `--max-lag` flag (staleness is
+`STALE_AFTER_ENTRIES = 15`), and doing it would be a build agent arming the
+auditor's gate — which CLAUDE.md forbids in those words. **What I could do I did,
+read-only:** its `--selftest` writes only to a tempfile scratch dir, so I ran it —
+13 arms, 0 failed, and it already covers both the FRESH and STALE cases the
+request names. `git status` on the auditor path afterwards: empty.
+
+**WITHDRAWN:** registry entries for my two instruments. Both already carry a
+PURPOSES line in `tools/tooling_inventory.py`, and a tool in BOTH makes the
+inventory generator exit 2 and refuse — correctly. That file is fourth's. The
+entries, the evidence and the `_FRONT` budget arithmetic are routed; the registry
+carries a comment saying the two are missing ON PURPOSE and naming the one edit
+that unblocks them.
+
+### BLIND SPOTS: 7
+
+(1) **I did not enumerate the twelve red suites** and I am not implying I did — I
+fixed four red artefacts I met and routed one; a full-tree drive is fourth's
+claimed work this batch. (2) Three of row 95's ten are COULD NOT TELL because
+`opened_at_sha` is HEAD at open time rather than the diff the gate judged — a
+defect in the record shape that nothing here fixes. (3) The two surviving
+instances need an `ast` line-number map I did not build. (4) seq 538's twelve SDN
+resources are unverified by me; I wrote the method and declined to write the row.
+(5) **Nothing I landed was verified against the deployment** — the licence-case
+change especially is tested only against a stubbed `fetch`. (6) The import-time
+registry refusal is a new way to break every importer; deliberate, and I have not
+measured how it feels when it first fires in a hook. (7) `dnt_supplies` is
+re-tiered in a routed document, so until hank lands it the resource is still B/B
+and the obligation it wants cannot be opened — the gate derives its list from the
+row that does not yet say A.
