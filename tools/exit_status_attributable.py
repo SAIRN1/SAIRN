@@ -79,26 +79,51 @@ SEPARATORS_CAP = re.compile(r'(\|\||&&|;|\||\n)')
 
 def elements(cmd):
     """The command text split into the pieces a shell would sequence."""
-    return [p.strip() for p in SEPARATORS.split(cmd) if p.strip()]
+    return elements_and_seps(cmd)[0]
 
 
 def elements_and_seps(cmd):
     """(parts, seps) where seps[i] is the separator that FOLLOWS parts[i].
 
-    `elements()` throws the separators away, and for the attribution question
-    that is fine -- any of them discards the earlier status. It is NOT fine for
-    deciding whether `$?` read the right thing: `tool; echo $?` and
-    `tool | echo $?` differ only in the separator. seps is one shorter than
-    parts when the command does not end in a separator; callers index defensively.
+    ── FALSE POSITIVE 5: A SEPARATOR INSIDE A QUOTED ARGUMENT IS NOT A
+    SEPARATOR (2026-10-06) ─────────────────────────────────────────────────
+    Found the way the other four were -- the hook firing on my own command,
+    which was:
+
+        python tools/sairn_status.py set --task "...both ways; writing the
+        inventory" > /tmp/st.txt 2>&1; echo "RC=$?"; cat /tmp/st.txt
+
+    That is the remedy shape and should have been silent. The `;` INSIDE the
+    quoted `--task` value split the command, so the element holding the tool no
+    longer contained the redirect, and the suppression could not fire.
+
+    THIS WAS NEVER ONLY A SUBJECT-HALF PROBLEM. `SEPARATORS.split()` is also
+    what `analyse()` uses, so EVERY command carrying a quoted semicolon --
+    a commit message, a `--task`, a sed script -- was being decomposed wrongly
+    by the attribution half too, and the wrong decomposition then decided which
+    element "owns" the status. A tool whose subject is reading a status off the
+    wrong subject was itself reading the wrong text.
+
+    So the separators are located in the QUOTE-MASKED text and the slices are
+    taken from the RAW text. `mask_quoted` preserves length exactly, which is
+    what makes the offsets interchangeable -- that property was written for the
+    subject matcher and is load-bearing here.
+
+    seps[i] is '' for the last part when the command does not end in a
+    separator; callers index defensively.
     """
-    bits = SEPARATORS_CAP.split(cmd)      # [text, sep, text, sep, ..., text]
-    parts, seps = [], []
-    for i in range(0, len(bits), 2):
-        text = bits[i].strip()
-        if not text:
-            continue
-        parts.append(text)
-        seps.append(bits[i + 1] if i + 1 < len(bits) else '')
+    masked = mask_quoted(cmd)
+    parts, seps, pos = [], [], 0
+    for m in SEPARATORS_CAP.finditer(masked):
+        text = cmd[pos:m.start()].strip()
+        if text:
+            parts.append(text)
+            seps.append(m.group(0))
+        pos = m.end()
+    tail = cmd[pos:].strip()
+    if tail:
+        parts.append(tail)
+        seps.append('')
     return parts, seps
 
 
@@ -241,6 +266,32 @@ def selftest():
          'python tools/x.py > /tmp/o 2>&1 && echo "rc=$?"', False)
     subj('PowerShell $LASTEXITCODE counts as a status read',
          'python tools/x.py > out.txt 2>&1; echo $LASTEXITCODE', False)
+
+    # ── FALSE POSITIVE 5 (2026-10-06): a separator INSIDE a quoted argument.
+    # The real command that exposed it, reduced. Silent is correct here.
+    subj('a `;` inside a quoted --task value is not a shell separator',
+         'python tools/sairn_status.py set --task "both ways; writing it" '
+         '> /tmp/st.txt 2>&1; echo "RC=$?"; cat /tmp/st.txt', False)
+    subj('...and a `|` inside one does not make a pipeline either',
+         'python tools/x.py --note "a|b" > /tmp/o 2>&1; echo "RC=$?"', False)
+    subj('a REAL separator after a quoted one still splits',
+         'python tools/x.py --note "a;b" | tail -3', True)
+
+    # The SEPARATOR half had the same defect, because analyse() splits the same
+    # text. These two pin it directly rather than through subject_at_risk.
+    _p, _s = elements_and_seps('python tools/x.py --m "a;b;c" > /tmp/o 2>&1')
+    if _p != ['python tools/x.py --m "a;b;c" > /tmp/o 2>&1']:
+        print('FAIL a quoted-semicolon command splits into %r' % (_p,))
+        ok = False
+    else:
+        print('ok   elements(): a command that is ONE element stays one')
+    _att, _o, _pp, _n = analyse('python tools/x.py --m "a;b" 2>&1')
+    if _att is not True:
+        print('FAIL analyse() calls a single quoted-semicolon command '
+              'non-attributable')
+        ok = False
+    else:
+        print('ok   analyse(): quoted `;` no longer costs attributability')
 
     # The owner must be NAMED, not merely "not attributable".
     _att, owner, _p, note = analyse('python tools/x.py 2>&1 | tail -3')

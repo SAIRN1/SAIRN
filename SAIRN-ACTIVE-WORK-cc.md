@@ -6400,3 +6400,39 @@ but the import-time refusal is still in a file I do not hold, so the INTAKE defe
 is open and will recur on the next promotion. (6) Every mutation proof here ran
 against a worktree at `05cbc74d`; a sixth reseat reading will exist before
 anybody reads this.
+
+### A FIFTH false-positive class, and it was never only the subject half
+
+Full account: `docs/2026-10-06-cc-batch-8-inventory.md`.
+
+Found the way the other four were — the hook firing on a command I had just
+typed, this one:
+
+    python tools/sairn_status.py set --task "...both ways; writing the
+    inventory" > /tmp/st.txt 2>&1; echo "RC=$?"; cat /tmp/st.txt
+
+That is the remedy shape and should have been silent. **The `;` INSIDE the quoted
+`--task` value split the command**, so the element holding the tool no longer
+contained the redirect and the suppression could not fire.
+
+**THE PART THAT MATTERS: `analyse()` SPLITS THE SAME TEXT.** So every command
+carrying a quoted semicolon — a commit message, a `--task`, a `sed` script — was
+being decomposed wrongly by the **attribution** half too, and the wrong
+decomposition then decided which element "owns" the status. The tool whose
+subject is reading a status off the wrong subject was reading the wrong text.
+
+Separators are now located in the **quote-masked** text with the slices taken
+from the **raw** text. `mask_quoted` preserving length exactly is what makes
+those offsets interchangeable — a property written for the subject matcher,
+now load-bearing in two places.
+
+**Selftest 38 arms, 0 failures**, including two that pin the separator half
+directly rather than through `subject_at_risk`. Ablation, per arm, from a clean
+baseline: layer A (invocation position) **2**, layer B (the suppression) **6**,
+B tightened to Fourth's rule **2**, layer C (quote-aware splitting) **1**.
+
+**FIVE CLASSES, AND NOT ONE WAS FOUND BY READING THE CODE.** Every one was found
+by the tool failing on me. That is the honest summary of the batch and it is
+also its blind spot: nothing measures the notice's own precision over a session,
+so "five classes found" is anecdote, not a rate. Recorded as an owed action on
+the register record rather than left as a feeling.
