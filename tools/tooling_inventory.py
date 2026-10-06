@@ -1964,6 +1964,51 @@ PURPOSES = {
         'declaration -- ONE OF ITS EXPECTATIONS WAS WRONG AND THE LOCK SAID SO '
         'BEFORE ANY GIT READ, corrected in the arm rather than bent to the '
         'assumption. REPORT ONLY'),
+    # ── ADDED 2026-10-06 (cc) UNDER A DECLARED CONFLICT, PR §4.3 ────────────
+    # hank holds this file under a live claim (batch10, tooling_inventory
+    # duplicate-key asymmetry). THIS IS THE ONLY CHANGE I MADE TO IT: one
+    # additive key, no edit to any existing entry, no change to the generator.
+    # It is here because push gate checks 14 and 12 both refuse a new
+    # tools/*.py with no PURPOSES entry, and the generator exits 2 rather than
+    # emitting a blank cell -- so a new tool CANNOT land without touching this
+    # file. That is the gate working, and it is also a structural coupling
+    # worth naming: any session adding a tool must write into whatever session
+    # happens to hold the inventory.
+    'doc_sha_reseat.py': ('TOOL',
+        'catches a commit SHA citation in a PROSE tracking document that a '
+        'rebase turned from true into false -- and repairs it from git\'s OWN '
+        'old->new rewrite map rather than from a subject match. `sairn_claim.py` '
+        'REBASES BEFORE IT PUSHES, so every local commit gets a new SHA at push '
+        'time and a session that writes "fixed in <sha>" while that commit is '
+        'still local has written a pointer that is dead the instant it lands -- '
+        'while the document still reads as precise. MEASURED at 411f29ce over '
+        'docs/SAIRN-OPEN-WORK-INDEX.md\'s 367 backticked citations: 321 ON-MAIN, '
+        '8 ORPHAN (object present in ONE clone, reachable from no ref), 38 '
+        'ABSENT (not an object here at all) -- 46 dead, 12.5%, across 37 rows. '
+        'THE MECHANISM ALREADY EXISTED AND ITS SCOPE WAS ONE FILE: '
+        '.githooks/post-rewrite has handed git\'s map to defect_register.py '
+        '--post-rewrite since 2026-09-24, and the covered file is the clean one '
+        '(546 of 564 on main). This is the second consumer on that hook. '
+        'SUBSTITUTES ONLY a token that is a prefix of an `old` SHA git itself '
+        'named, one direction only, inside backticks only -- the bare-word form '
+        'has a 9% false-candidate rate on a 900-line document. THREE FILE '
+        'CLASSES: REWRITE is written in the working tree and NEVER STAGED, '
+        'unless another session holds it under a live claim, in which case it '
+        'PROPOSES (the hazard is a write race, not correctness); GENERATED is '
+        'never patched because the generator is the fix, found by driving it -- '
+        'it re-seated docs/traceability-matrix.md CORRECTLY before the obvious '
+        'question surfaced, that the next generation would discard the edit '
+        'while it read as applied; REPORT-ONLY (append-only logs) is never '
+        'rewritten and is named on every run. DOES NOT CLAIM a document whose '
+        'SHAs resolve is CORRECT -- defect_register.is_bookkeeping_only exists '
+        'because three citations resolved perfectly and were the wrong commits. '
+        'Lock: `--fixtures`, 12 hand-built arms including that an unbackticked '
+        'run, a 6-char run, a 13-char run and an UPPERCASE run are all '
+        'non-candidates. Controlled by tests/run_doc_sha_reseat_probe.py, 19 '
+        'arms, which drives all three classes against temp trees BECAUSE every '
+        'REWRITE target was claimed on the day it landed and the live run '
+        'exercised only PROPOSE and GENERATED. REPORT ONLY in --check; writes '
+        'only under --post-rewrite, never stages, never commits'),
     'capture_exit.py': ('TOOL',
         'runs a command and writes ITS real exit status to a named file, so a '
         'BACKGROUNDED run can be judged by the program rather than by whatever '

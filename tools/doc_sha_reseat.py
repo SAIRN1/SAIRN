@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# OWNER: cc
 """doc_sha_reseat.py -- re-seat commit SHAs in the PROSE tracking documents
 from git's own old->new rewrite map, so a rebase stops turning true citations
 into false ones.
