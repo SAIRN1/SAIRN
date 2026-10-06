@@ -22666,7 +22666,7 @@
       "recurrence_open": "No control requires a SAIRN tool to separate what it MEASURED from what it ADVISES. One file is fixed; the convention is not, and it is logged open rather than invented by the session that broke it."
     },
     {
-      "commit": "bc8f613d57f2",
+      "commit": "8246d8bab707",
       "date": "2026-10-05",
       "subject": "fix(sairncare): family_mar disclosed any resident's MAR to any session -- the consent check was standing in for an authorisation check",
       "files": [
