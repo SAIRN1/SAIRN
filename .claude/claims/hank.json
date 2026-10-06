@@ -3638,6 +3638,33 @@
         "tools/gate_parity_check.py",
         "tools/tooling_inventory.py"
       ]
+    },
+    {
+      "id": "hank-1791305269",
+      "session": "hank",
+      "subject": "platform",
+      "task": "batch10: alf_compliance_rules/evaluate role gate (#894, CRITICAL PII); gate_parity cross-resource decision; tooling_inventory duplicate-key asymmetry; sc_anesthesia_base_units 3 impossible citations; 3 probes to a worktree-root derivation; panel-auditor real scoping plus frontmatter-enforcement verification; the 6 platform-work items tracked by file+line; methodology rule; handoff. CONFLICT DECLARED PER PR 4.3 AND NOT REWORDED PAST: docs/tier-a-reviews.json IS CODY'S (1.9h, Tooling). I WROTE ONE RECORD IN IT BEFORE SEEING THE CLAIM -- the discharge of fourth's 237h obligation, identity (fourth, 2026-09-26T19:12:42Z), through the only sanctioned path, tier_a_review_gate.py --discharge --takeover. That file's own merge_policy is union-by-identity 3-way merged on exactly that identity key and REFUSES when both sides change one record differently, so the collision is handled by design; cody was not discharging this record, which was assigned to cloud. The file is NOT otherwise in my set and I will not write it again. tools/capture_exit.py is ALSO CODY'S -- adopted as a CALLER, not edited. docs/2026-09-13-cross-domain-disciplines.md is FOURTH'S, so the methodology rule is routed rather than promoted. FILES: api/sd-data.js tests/sd_data_alf_compliance_staff_scope.js tools/gate_parity_check.py tools/tooling_inventory.py docs/TOOLING-INVENTORY.md tools/probe_public_book_guardian.py tools/rf_claim_gate_live_probe.py tools/rf_roundtrip_probe.py tools/worktree_root.py .claude/agents docs/CRITICALITY-TIERS.md docs/SAIRN-OPEN-WORK-INDEX.md docs/METHODOLOGY.md docs/2026-10-06-inventory-hank-batch10.md docs/handoff-hank-2026-10-06.md SAIRN-ACTIVE-WORK-hank.md",
+      "claimed_at": "2026-10-06T16:47:49Z",
+      "claimed_at_epoch": 1791305269.4016755,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-hank.md",
+        "api/sd-data.js",
+        "docs/2026-10-06-inventory-hank-batch10.md",
+        "docs/CRITICALITY-TIERS.md",
+        "docs/METHODOLOGY.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/handoff-hank-2026-10-06.md",
+        "tests/sd_data_alf_compliance_staff_scope.js",
+        "tools/gate_parity_check.py",
+        "tools/probe_public_book_guardian.py",
+        "tools/rf_claim_gate_live_probe.py",
+        "tools/rf_roundtrip_probe.py",
+        "tools/tooling_inventory.py",
+        "tools/worktree_root.py"
+      ]
     }
   ],
   "refusals": [
@@ -3843,6 +3870,21 @@
       "other_claimed_at": "2026-10-05T13:54:45Z",
       "shared_files": [
         "docs/SAIRN-OPEN-WORK-INDEX.md"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-06T16:45:05Z",
+      "my_subject": "platform",
+      "my_task": "batch10: alf_compliance_rules/evaluate role gate (#894, CRITICAL PII); gate_parity cross-resource decision; tooling_inventory duplicate-key asymmetry; sc_anesthesia_base_units 3 impossible citations; 3 probes to git rev-parse --show-toplevel; panel-auditor real scoping + frontmatter-enforcement verification; the 6 platform-work items tracked by file+line; methodology rule; handoff. Discharged fourth's 237h obligation first (takeover, assigned cloud). FILES: api/sd-data.js tests/sd_data_alf_compliance_staff_scope.js tools/gate_parity_check.py tools/tooling_inventory.py docs/TOOLING-INVENTORY.md tools/probe_public_book_guardian.py tools/rf_claim_gate_live_probe.py tools/rf_roundtrip_probe.py tools/worktree_root.py .claude/agents docs/CRITICALITY-TIERS.md docs/SAIRN-OPEN-WORK-INDEX.md docs/METHODOLOGY.md docs/2026-10-06-inventory-hank-batch10.md docs/handoff-hank-2026-10-06.md SAIRN-ACTIVE-WORK-hank.md docs/tier-a-reviews.json",
+      "other_session": "cody",
+      "other_subject": "Tooling",
+      "other_task": "queue18: Tier A discharges most-overdue-first with adversarial controls; the timeout-vs-no-evidence bound defect and its test arm; cross_tenant 4 DEAD rules diagnosed; the 23-rule could-not-run table for H2; verification arms for the 7 subprocess sites and the escape-check fix; tools/tool_owner_map.py; mintCustomToken arm plus the 248-suite rerun and the dependabot decision; red_suite_register_check blocker; the SQL runbook remaining-19 table; upgrade check; the 2x-bound methodology rule; handoff. CONFLICT DECLARED PER PR 4.3: hank holds tools/tooling_inventory.py, docs/TOOLING-INVENTORY.md, docs/METHODOLOGY.md, docs/SAIRN-OPEN-WORK-INDEX.md, docs/CRITICALITY-TIERS.md, tools/gate_parity_check.py and .claude/agents -- NONE are in my file set, no OWNER lines are added to other sessions tools, and the methodology rule goes in a dated file of mine. docs/tier-a-reviews.json is in NO live claim at HEAD (cc's expired) FILES: docs/tier-a-reviews.json tools/dead_rule_sweep.py tests/run_dead_rule_sweep_probe.py tools/tool_owner_map.py docs/tool-owner-map.json tools/capture_exit.py docs/2026-10-06-cody-queue18-inventory.md docs/2026-10-06-could-not-run-ledger.md docs/2026-10-06-sql-runbook-remaining-19.md docs/handoff-cody-2026-10-06b.md SAIRN-ACTIVE-WORK-cody.md",
+      "other_claimed_at": "2026-10-06T14:53:05Z",
+      "shared_files": [
+        "docs/tier-a-reviews.json"
       ],
       "source": "status-registry",
       "why": "same declared FILES",
