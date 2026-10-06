@@ -11,6 +11,17 @@
       "status": "released",
       "released_at": "2026-10-06T18:08:03Z",
       "files": null
+    },
+    {
+      "id": "hover2-1791310158",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "hover2 batch7: SHA-citation verifier tool+run, gate-parity sweep 4 of 17 (SAIRNcare), undirected sweep (SAIRNgrounds grd_ session-gate finding), a249565f driven, 5 rotation draws, methodology rule J, handoff",
+      "claimed_at": "2026-10-06T18:09:18Z",
+      "claimed_at_epoch": 1791310158.351971,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ]
 }
