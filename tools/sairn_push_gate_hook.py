@@ -1319,9 +1319,32 @@ def main():
                 _diffs = {}
             _flags = _ESA.scrutiny_flags(_diffs)
             if _flags:
-                sys.stderr.write('\n' + _ESA.scrutiny_render(_flags, tip)
-                                 + '\n\n')
-                _wrote, _note = _ESA.scrutiny_record(repo, tip, _flags)
+                # ── `tip` IS A REF NAME IN prepush MODE, NOT A SHA ──────────
+                # FOUND BY READING THE LEDGER THIS CHECK WROTE, not by reading
+                # this code. In prepush mode `tip = local or 'HEAD'`, so the
+                # first real pushes recorded `"sha": "main"` -- which is not a
+                # sha, which breaks the ledger's own (sha, path) identity so
+                # every subsequent push re-adds the same rows, and which no
+                # rewrite map can ever re-seat. 9 of the first 18 rows were
+                # junk by that route.
+                #
+                # Resolved to a real sha here. If it cannot be resolved the
+                # ledger is NOT written and the run says so, because an entry
+                # keyed by something that is not a commit is worse than no
+                # entry: it looks like a record.
+                _scr_sha = (git(repo, 'rev-parse', tip) or '').strip()
+                sys.stderr.write('\n' + _ESA.scrutiny_render(
+                    _flags, _scr_sha or str(tip)) + '\n\n')
+                if not _scr_sha:
+                    sys.stderr.write(
+                        '  LEDGER NOT WRITTEN: %r does not resolve to a '
+                        'commit, and an entry keyed by\n  something that is '
+                        'not a sha is worse than no entry -- it looks like a '
+                        'record.\n\n' % (tip,))
+                    _wrote, _note = False, 'tip did not resolve'
+                else:
+                    _wrote, _note = _ESA.scrutiny_record(repo, _scr_sha,
+                                                         _flags)
                 if not _wrote:
                     sys.stderr.write(
                         '  LEDGER NOT WRITTEN: %s -- the flags above stand, '

@@ -1089,6 +1089,18 @@ def scrutiny_record(repo, sha, flags):
     """
     if not flags:
         return False, 'no flags'
+    # ── THE KEY MUST BE A SHA, CHECKED HERE AND NOT ONLY AT THE CALLER ─────
+    # The caller resolves it now, and this is the second place because the
+    # first version trusted whatever it was handed and recorded `"sha":
+    # "main"` from the gate's prepush `tip`. The ledger's identity is
+    # (sha, path): a ref NAME breaks dedup silently, so every push re-adds
+    # the same rows, and no rewrite map can re-seat a key that is not a
+    # commit. Refusing is the only safe answer -- an entry keyed by a
+    # non-sha LOOKS like a record.
+    if not re.fullmatch(r'[0-9a-f]{7,40}', str(sha or '')):
+        return False, ('refusing to record under %r -- not a sha. The '
+                       'ledger identity is (sha, path) and a ref name '
+                       'breaks it silently.' % (sha,))
     path = os.path.join(repo, SCRUTINY_LEDGER)
     base = {
         '_what_this_is':
@@ -1264,6 +1276,25 @@ def scrutiny_selftest():
          'WHAT THIS CANNOT SEE' in scrutiny_render(flags, 'x'), True)
     case('CONTROL: no flags renders to the empty string, so a clean push '
          'prints nothing', scrutiny_render([], 'x'), '')
+
+    # ── THE LEDGER KEY, FOUND BY READING THE LEDGER AND NOT THE CODE ───────
+    import tempfile as _tf
+    _d = _tf.mkdtemp(prefix='scr_key_')
+    _f = [{'path': 'tests/x.py', 'class': 'test file', 'level': 'CHANGE',
+           'shapes': []}]
+    _w, _n = scrutiny_record(_d, 'main', _f)
+    case('a REF NAME is refused as a ledger key -- the gate hands `tip`, '
+         'which is a ref name in prepush mode', _w, False)
+    case('...and the refusal says why rather than going quiet',
+         'not a sha' in _n, True)
+    _w2, _n2 = scrutiny_record(_d, 'deadbeefcafe', _f)
+    case('CONTROL: a real sha IS accepted, so the guard did not simply '
+         'refuse everything', _w2, True)
+    _w3, _n3 = scrutiny_record(_d, 'deadbeefcafe', _f)
+    case('...and the SAME sha twice adds nothing, which is the dedup the '
+         'ref-name key was silently breaking', _w3, False)
+    import shutil as _sh
+    _sh.rmtree(_d, ignore_errors=True)
 
     passed = sum(1 for x in ok if x)
     print('\nscrutiny selftest: %d passed, %d failed, of %d arms'
