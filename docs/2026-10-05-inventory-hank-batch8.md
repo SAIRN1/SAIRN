@@ -886,3 +886,33 @@ to see the exact defect it was written for*.
   without a SEEN/EXIST line.
 - **31 Tier A review obligations are past their 24h deadline** platform-wide,
   three of them opened by me today.
+
+---
+
+## 12. Addendum — the unrouted count re-measured at the end of the batch
+
+**It is 19, not 0, and saying "0" would be true only of a moment that has
+passed.**
+
+    at the time of the routing pass (§3)   1449 entries   UNROUTED  0   EXIT=0
+    at the end of the batch                1492 entries   UNROUTED 19   EXIT=1
+
+**All nineteen were logged DURING this session, after the pass.** Ages run
+**0.0h to 1.9h**; the sequence numbers are 551, 556, 557 and 905–913, and the
+targets are `fourth` (2), `cody` (1), `platform` (1), `self` (1) and a cluster
+of 14 `*_employee_auth` resources carried on ten entries from one finding.
+**None of them is one I failed to route** — the pass closed everything that
+existed when it ran, and two live auditors added 43 entries while the rest of
+the batch was being done.
+
+**Recorded because a zero quoted from a stale measurement is the exact defect
+this platform keeps paying for.** §3's number is correct *as of* `8783093f`
+and is now stale, which is a property of a count over a live log rather than a
+mistake in the pass. The queue did not stay closed and nobody should read it
+as closed.
+
+**Not routed here, deliberately:** these are minutes old, most belong to other
+sessions by their own `target` field, and a backlog that refills faster than
+one session can drain it is not drained by one session trying harder. The
+right read is the **rate**, not the instantaneous count, and nothing measures
+that yet.
