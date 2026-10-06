@@ -24,7 +24,25 @@ import sys
 import urllib.request
 import urllib.error
 
-sys.path.insert(0, os.path.join(r"C:\Users\marsh\Documents\SAIRN-hank", 'tools'))
+# ── PATH DERIVED FROM THIS FILE, NOT FROM A HARDCODED CLONE (2026-10-06) ───
+# This line hardcoded the absolute path of the `SAIRN-hank` clone, so running
+# this probe from ANY OTHER CLONE imported hank's tools rather than its own --
+# a cross-clone import that reports about the wrong tree while looking
+# entirely normal. Nothing would have failed; the answer would have been
+# about a directory the caller never pointed at.
+#
+# AND NOT `git rev-parse --show-toplevel`, WHICH IS THE WORSE OPTION HERE AND
+# THE REPO ALREADY DOCUMENTS WHY: the HOME directory is itself a git
+# repository, so git's upward discovery SUCCEEDS from any directory beneath it
+# and answers about THAT repository -- exit 0, confident, wrong. See
+# tools/git_discovery_anchoring_check.py, which exists for that hazard. A path
+# derived from __file__ cannot be wrong about which tree this file is in,
+# because it IS in it -- no subprocess, no discovery, nothing to anchor.
+# REDUNDANT AS WELL AS WRONG: this file already inserts the same directory,
+# derived from __file__, further down. Two inserts -- one of them pointing at
+# another clone -- is exactly how the hardcoded one survived unnoticed: the
+# import works either way, so nothing ever went red.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import sairn_http  # noqa: E402
 
 AUTH = 'https://sairn.vercel.app/api/rf-auth'
