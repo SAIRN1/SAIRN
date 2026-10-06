@@ -1887,7 +1887,21 @@ PURPOSES = {
         'is why it is a REPORT: exit 1 means "look at these", never "this is a '
         'defect". Unreadable target exits 2 COULD NOT RUN naming the file. '
         'Default file list printed on every run, because a silent universe is '
-        'how a sweep reports clean for a file it never opened'),
+        'how a sweep reports clean for a file it never opened. '
+        'TWO NUMBERS ADDED 2026-10-06 BY THE AUTHOR, both measured, neither '
+        'quotable from the other: 4 groups flagged on the PRE-FIX file '
+        'including alf_family_contacts, 3 on the fixed file -- so it catches '
+        'the real defect and the real fix clears it -- and ALL THREE on the '
+        'fixed file are triaged correct-by-design (rf_claims widens for '
+        'management, rf_schedule refuses outright, alf_payer_rules discloses a '
+        'statute table), so its PRECISION ON THIS FILE IS 0 OF 3. '
+        'AND A BLIND SPOT FOUND THE DAY AFTER IT LANDED, measured with --json '
+        'rather than reasoned: it groups by the resource the BRANCH is keyed '
+        'on, so alf_compliance_rules/evaluate shipping every '
+        'alf_staff_credentials row to any role is INVISIBLE to it -- the branch '
+        'is keyed on one resource and the data disclosed belongs to another. A '
+        'CROSS-RESOURCE disclosure is outside its model, which is the second '
+        'time a tool built for a class has missed an instance of that class'),
     'capture_exit.py': ('TOOL',
         'runs a command and writes ITS real exit status to a named file, so a '
         'BACKGROUNDED run can be judged by the program rather than by whatever '
