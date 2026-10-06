@@ -7,47 +7,93 @@ defect as a check that reports a pass it never performed.
 
 ---
 
-## WHAT IS ACTUALLY ENFORCED, AND WHAT IS NOT — read this before trusting the table
+## MEASURED 2026-10-06 — and the answer is narrower than the first version of this file claimed
 
-**`tools:` IS THE ENFORCEMENT.** It is a documented frontmatter key and it is an
-**allowlist**: a tool absent from it is not available to the agent. For the four
-read-only agents this is the whole boundary and it is a strong one — with no
-`Write`, no `Edit` and no `Bash`, they cannot modify any file or run any command,
-so *"must not write the audit log"* is not a rule they could break.
+**I drove a live subagent to find out, instead of reasoning about it.** A
+`suite-driver` instance was asked to attempt four things and report the verbatim
+refusal for each: one command NOT on its denial list (the control), two that
+were, and one `Write`.
 
-**`disallowedTools:` and `isolation:` in frontmatter are DECLARED, NOT VERIFIED
-BY ME.** `isolation: "worktree"` is documented as a parameter of the `Agent`
-**tool call**, and `disallowedTools` is documented for settings rather than for
-agent frontmatter. I have not driven either through a live spawn to confirm the
-harness reads them from these files. **So treat them as intent plus a tripwire
-for a future editor, and pass `isolation: "worktree"` on the Agent call itself
-when it matters** — `sweep-runner` is the one where it matters, because that
-agent runs tools that write.
+**All four were refused identically:**
 
-That distinction is the honest state. **Do not read the `disallowedTools` block
-as a proven boundary on an agent that also has `Bash`.** For `panel-auditor`,
-`sweep-runner` and `suite-driver`, `Bash` is unrestricted at the harness level
-unless the harness honours those entries, and I have not proved it does.
+    Error: No such tool available: Bash. Bash is disabled for this
+    session, in subagents as well as here.
+
+**The CONTROL was blocked too**, which is what makes the result honest and
+inconclusive in the direction that matters:
+
+- **`disallowedTools:` in frontmatter is NOT CONFIRMED to be enforced.** The
+  observed behaviour is equally consistent with `Bash` and `Write` being
+  disabled session-wide, one layer above the agent file. Nothing in the refusal
+  text mentions a pattern, a command, or the agent definition. **Treat it as
+  declared, not enforced.**
+- **`tools:` CANNOT GRANT, only narrow.** `suite-driver` lists `Bash` in its
+  allowlist and did not get it. So the session's own tool policy is an upper
+  bound and a definition can only subtract from it. The first version of this
+  file called `tools:` "the enforcement" — **that was half right and the wrong
+  half was load-bearing**: it is enforcement against WIDENING, and it is not a
+  grant.
+- **`isolation:` in frontmatter is likewise unverified**, and `isolation` is
+  documented as a parameter of the `Agent` **call**. Pass it there when it
+  matters.
+
+**The practical consequence, which is the only thing to act on: in this
+session, subagents are read-only because the SESSION says so, not because these
+files say so.** That is a stronger guarantee than the one I wrote down and a
+*different* one — it can change without any of these files changing. So
+`suite-driver` and `sweep-runner` **cannot currently do their jobs**: both need
+`Bash` and neither can have it. They are kept because the definitions are
+correct about what those roles need; they are **not usable in this session** and
+that is recorded here rather than discovered by somebody whose sweep returns
+nothing.
+
+---
+
+## HOW TO READ THE TABLE BELOW
+
+**SUPERSEDED, 2026-10-06, AND LEFT NAMED RATHER THAN DELETED.** This section
+used to open *"`tools:` IS THE ENFORCEMENT"* and describe it as an allowlist
+that makes the read-only agents safe. **The measurement above shows that was
+half right, and the wrong half was the load-bearing one:** `tools:` constrains
+only DOWNWARD. It cannot hand an agent a tool the session withholds, and in
+this session it withheld `Bash` and `Write` from every subagent regardless of
+what any definition asked for.
+
+So read the `tools:` column as **the most this agent could ever have**, not as
+what it has. The read-only agents really are read-only here — but by the
+session's policy, which can change without any of these files changing.
 
 ---
 
 ## The delegation points
 
-| Agent | What it is for | `tools:` (enforced) | Writes possible? |
+| Agent | What it is for | `tools:` (the CEILING, not a grant) | Writes possible in THIS session? |
 |---|---|---|---|
 | `citation-verifier` | re-derive a `file:line` at HEAD; MOVED / UNMOVED / NOT FOUND / CANNOT TELL | `Read, Grep, Glob` | **No** — no Write, Edit or Bash |
 | `register-cell-reader` | read a resource's real write site, field list, consumers, named trigger | `Read, Grep, Glob` | **No** |
 | `hover-finding-reader` | read named seq numbers out of the auditors' logs | `Read, Grep, Glob` | **No** — and this one is structural, see below |
-| `suite-driver` | run named suites, report real exit codes and failing arm names | `Read, Grep, Glob, Bash` | Bash present; denials declared |
-| `sweep-runner` | run write-when-run sweeps in a worktree, report exit codes | `Read, Grep, Glob, Bash` | Bash present; **`isolation: worktree`** is the real boundary |
-| `panel-auditor` | pre-existing; Guardian Check 0 over a batch of StoneDesk panels | `Read, Grep, Bash` | Bash present; **was previously unscoped** |
+| `suite-driver` | run named suites, report real exit codes and failing arm names | `Read, Grep, Glob, Bash` | **No — and it cannot run either.** `Bash` is withheld session-wide, so this agent is currently UNUSABLE |
+| `sweep-runner` | run write-when-run sweeps in a worktree, report exit codes | `Read, Grep, Glob, Bash` | **No — and it cannot run either.** Same session-wide withholding; pass `isolation: "worktree"` on the Agent CALL if Bash ever returns |
+| `panel-auditor` | pre-existing; Guardian Check **0b and 0d** over a batch of StoneDesk panels | `Read, Grep, Glob` | **No** — `Bash` REMOVED 2026-10-06; Check 0a routed to `suite-driver` |
 
 **`panel-auditor` was the only pre-existing definition and it was NOT scoped.**
 It carried `tools: Read, Grep, Bash` with no denials and a description saying
 *"does not fix anything itself"*. That sentence was an instruction, and an
 instruction is not a boundary: unrestricted `Bash` could have written the hover
-audit log, edited `tools/tooling_inventory.py`, committed or pushed. Scoped in
-this same change.
+audit log, edited `tools/tooling_inventory.py`, committed or pushed.
+
+**A first pass added a `disallowedTools:` block and KEPT `Bash`, on the grounds
+that Check 0a needs `node --check`. That was still a declaration** — and the
+measurement above shows why it was not good enough: a denial LIST enumerates
+the shapes somebody thought of, and `disallowedTools:` is not confirmed to be
+read at all.
+
+**`Bash` is now REMOVED from the allowlist (2026-10-06).** *"It cannot fix
+anything"* stops being a promise and becomes a fact about what it can reach.
+**Check 0a is not silently dropped** — it is taken out of the agent's
+description and routed to `suite-driver`, because an agent that quietly stopped
+performing one of three named checks while still returning a verdict would be
+the fabrication defect 0b exists to catch, committed by the auditor.
 
 ---
 

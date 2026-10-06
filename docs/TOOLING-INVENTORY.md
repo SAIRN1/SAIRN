@@ -545,9 +545,13 @@ correctly manual. Only `CHECKER` rows here are a gap.
     python tools/tooling_inventory.py           # rewrite it
 
 The generator refuses to run if a tool in `tools/` has no entry in its
-`PURPOSES` map, and refuses if `PURPOSES` names a tool that is gone. A blank
-cell is how the last inventory went stale, so both directions are errors
-rather than omissions.
+`PURPOSES` map, refuses if `PURPOSES` names a tool that is gone, and refuses
+if `PURPOSES` carries the SAME KEY TWICE. A blank cell is how the last
+inventory went stale, so all three directions are errors rather than
+omissions -- and the duplicate is the quietest of them: Python keeps the
+last of two identical dict keys and discards the first silently, so until
+2026-10-06 an entry somebody wrote could be dead text with nothing able to
+say so.
 
 **What this cannot tell you**, said here rather than found out: `BLOCKING`
 means a tool is reachable from something that can refuse. It does not mean

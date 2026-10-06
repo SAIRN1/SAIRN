@@ -1,46 +1,62 @@
 # OWNER: hank
-"""run_purposes_duplicate_key_probe.py -- the generator is LOUD on a missing
-PURPOSES entry and SILENT on a duplicate one. This proves both, by driving it.
+"""run_purposes_duplicate_key_probe.py -- a MISSING PURPOSES entry and a
+DUPLICATE one must both refuse. This is the REGRESSION that proves it, by
+driving the real generator rather than reading it.
 
     python tests/run_purposes_duplicate_key_probe.py
     python tests/run_purposes_duplicate_key_probe.py --selftest
 
-── WHY THIS IS A PROBE AND NOT A BUG REPORT ──────────────────────────────────
-`tools/tooling_inventory.py` is CODY'S under a live claim (checked at HEAD
-2026-10-06T17:3xZ, queue19, 0.2h old), so this finding cannot be fixed by the
-session that found it. The standing rule is that a finding routed to another
-agent carries a REPRODUCING ARTIFACT rather than prose. This file is that
-artifact: it runs, it demonstrates both halves of the asymmetry on the real
-tool, and it goes GREEN the moment the fix lands -- so it is also the
-acceptance test, not just an accusation.
+── WHAT THIS WAS, AND WHAT IT IS NOW ─────────────────────────────────────────
+It was a BUG REPORT. Written 2026-10-06 while `tools/tooling_inventory.py`
+appeared to be another session's under a live claim, so the finding could not be
+fixed by the session that found it; the standing rule is that a finding routed
+to another agent carries a REPRODUCING ARTIFACT rather than prose, and this file
+was that artifact. It exited 1 and arm B was the accusation.
 
-── THE ASYMMETRY ─────────────────────────────────────────────────────────────
-MISSING entry  -> the generator REFUSES to run, exit 2, naming the file:
+IT IS NOW A REGRESSION. Re-derived at HEAD 2026-10-06: cody's claim text FLAGGED
+THE FILE BACK ("hank holds tools/tooling_inventory.py ... item 7 is FLAGGED BACK
+unlanded") and does not list it among its own FILES, and hank's live claim does.
+So the fix was hank's to make and was made in the same change as this edit. Not
+one line of the two arms changed -- only the prose and the exit contract. THAT IS
+THE POINT: the arms were written to go green on the fix, so the file that
+accused the generator is the file that now guards it, with no rewrite to make it
+agree with the code.
+
+── THE ASYMMETRY IT WAS BUILT FROM ───────────────────────────────────────────
+MISSING entry  -> the generator REFUSED to run, exit 2, naming the file:
     "REFUSING to generate -- the hand-written half has drifted.
      1 tool(s) in tools/ with no PURPOSES entry."
 DUPLICATE key  -> nothing. Python keeps the LAST of two identical dict keys and
-discards the first silently; the generator never looks, so the document
-regenerates cleanly and the dead entry is invisible for ever.
+discards the first silently; the generator never looked, so the document
+regenerated cleanly and the dead entry was invisible for ever.
 
-THE SECOND IS THE MIRROR OF THE FIRST AND IT IS THE QUIETER FAILURE. A missing
+THE SECOND IS THE MIRROR OF THE FIRST AND IT WAS THE QUIETER FAILURE. A missing
 entry announces itself at the next push. A duplicate is a cell somebody WROTE,
-believing it landed, which is never read -- and the author has no way to find
+believing it landed, which is never read -- and the author had no way to find
 out. This happened for real on 2026-10-06: a `gate_parity_check.py` entry was
 written into PURPOSES while another session had already added one, Python kept
 theirs, and the duplicate was dead text nobody could have noticed.
 
-── WHY DUPLICATE SHOULD REFUSE AT LEAST AS LOUDLY ────────────────────────────
+── WHY DUPLICATE REFUSES AT LEAST AS LOUDLY ──────────────────────────────────
 The generator's own stated reason for refusing a MISSING entry is that "a blank
 cell is how the last inventory went stale". A duplicate is worse than a blank
 cell: a blank cell is visible in the rendered document, and a discarded entry is
-visible nowhere at all.
+visible nowhere at all. The fix is `duplicate_purposes_keys()`, which parses the
+generator's own SOURCE with `ast` -- the imported dict cannot answer the
+question, because by then Python has already thrown the duplicate away.
 
 ── WHAT THIS PROBE DOES NOT CLAIM ────────────────────────────────────────────
 It does not say the duplicate ever produced a WRONG cell -- on 2026-10-06 the
-surviving entry was the better of the two. It says the mechanism cannot tell
-anybody, which is a different and more durable problem.
+surviving entry was the better of the two. It says the mechanism could not tell
+anybody, which was a different and more durable problem than one bad row.
 
-EXIT: 0 both halves refuse (the fix has landed), 1 the asymmetry is present,
+It also does not cover the THIRD STATE the fix added: a generator that cannot
+read or parse its own source refuses with "COULD NOT CHECK" rather than
+reporting no duplicates. Driving that needs an unreadable source, which is a
+different arm and is NOT RUN here. Stated so a green run is not read as covering
+it.
+
+EXIT: 0 both halves refuse (the regression holds), 1 the asymmetry is BACK,
 2 COULD NOT RUN.
 """
 import io
@@ -58,7 +74,11 @@ if hasattr(sys.stderr, 'reconfigure'):
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GEN = os.path.join('tools', 'tooling_inventory.py')
-CRITERIA_VERSION = '2026-10-06.1'
+#   .1 the asymmetry as a bug report (arm B expected to FAIL).
+#   .2 the same two arms as a REGRESSION (arm B expected to PASS). The arms are
+#      byte-identical; only the contract around them moved, so a past report
+#      stamped .1 and a run stamped .2 are not comparing different criteria.
+CRITERIA_VERSION = '2026-10-06.2'
 
 
 def scratch_tree():
@@ -191,11 +211,20 @@ def main(argv):
         loud_dup = rc_dup != 0 and ('duplicate' in out_dup.lower()
                                     or 'DUPLICATE' in out_dup)
         ck('B. a DUPLICATE key refuses at least as loudly as a missing one. '
-           'THIS IS THE FINDING WHILE IT FAILS: Python keeps the LAST of two '
-           'identical dict keys and discards the first silently, the generator '
-           'never looks, and the discarded entry is invisible in the rendered '
+           'THE DEFECT IF THIS FAILS: Python keeps the LAST of two identical '
+           'dict keys and discards the first silently, the generator never '
+           'looks, and the discarded entry is invisible in the rendered '
            'document AND in the source', loud_dup,
            'exit=%d, and the output does not mention a duplicate' % rc_dup)
+        # B1 is NOT redundant with B. Arm B is satisfied by any non-zero exit
+        # mentioning a duplicate, so a refusal that said "a duplicate exists
+        # somewhere" would pass it -- and that is not actionable: the author
+        # cannot find a key they cannot see. This arm requires the KEY ITSELF in
+        # the output, which is the standard arm A holds the missing half to.
+        ck('B1. ...and NAMES THE KEY, the way the missing-entry refusal names '
+           'the tool. "There is a duplicate somewhere" is not actionable on a '
+           'literal of this size', key in out_dup,
+           'exit=%d; the output never mentions %s' % (rc_dup, key))
 
         print('')
         print('  MEASURED: missing -> exit %d%s | duplicate -> exit %d%s'
@@ -205,13 +234,15 @@ def main(argv):
         print('%d passed, %d failed' % (npass, nfail))
         if nfail:
             print('')
-            print('THE ASYMMETRY IS PRESENT. tools/tooling_inventory.py is '
-                  'CODY\'S under a live claim, so this is ROUTED and not fixed '
-                  'here. The fix is a duplicate-key check over the PURPOSES '
-                  'literal -- ast.parse the module, find the dict, and refuse '
-                  'on a repeated key with the same wording the missing-entry '
-                  'refusal already uses. This probe is the acceptance test: it '
-                  'exits 0 when that lands.')
+            print('THE ASYMMETRY IS BACK. This arm went green on 2026-10-06 when '
+                  'tools/tooling_inventory.py grew duplicate_purposes_keys(), '
+                  'which parses the generator\'s own SOURCE with ast -- the '
+                  'imported dict cannot answer the question, because Python has '
+                  'already discarded the duplicate by then. If arm B is failing, '
+                  'check that function is still CALLED from build() and still in '
+                  'the `if absent or untracked or gone or dup or dupkeys or '
+                  'dupwhy:` condition; a check that is present but no longer '
+                  'consulted is the shape this probe exists to catch.')
         return 1 if nfail else 0
     finally:
         shutil.rmtree(base, ignore_errors=True)

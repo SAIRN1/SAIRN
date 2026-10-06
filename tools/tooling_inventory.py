@@ -42,9 +42,13 @@ Derived, every run, from the repo:
 
 NOT derived, and it cannot be: what a tool catches, for everything that is not
 in REGISTRY. That is judgement and lives in PURPOSES below. The generator
-REFUSES to run if a tool has no entry, and refuses if PURPOSES names a tool
-that no longer exists -- so the hand-written half cannot drift in either
-direction without failing loudly.
+REFUSES to run if a tool has no entry, refuses if PURPOSES names a tool that no
+longer exists, and refuses if PURPOSES carries the same key TWICE -- so the
+hand-written half cannot drift in any of the three directions without failing
+loudly. The third was added 2026-10-06 and was the asymmetry: missing refused at
+exit 2 naming the tool, duplicate exited 0 and said nothing, and a key Python
+discarded is less visible than a blank cell, not more. See
+duplicate_purposes_keys().
 
 LIMIT, stated rather than discovered: "BLOCKING" means the tool is reachable
 from something that can refuse. It does not mean every one of its findings
@@ -2445,6 +2449,73 @@ def purpose(t, reg):
     return kind, table_safe(text)
 
 
+def duplicate_purposes_keys():
+    """Repeated keys in the PURPOSES *literal*, read from this file's SOURCE.
+
+    THE IMPORTED DICT CANNOT ANSWER THIS, which is the whole reason the check has
+    to go to the source. Python keeps the LAST of two identical dict keys and
+    discards the first with no warning, so by the time `PURPOSES` is a dict the
+    duplicate is already gone -- and the entry somebody WROTE is dead text,
+    invisible in the rendered document AND invisible in the source.
+
+    IT IS THE MIRROR OF `missing_purposes()` AND IT WAS THE QUIET HALF. A missing
+    entry refused loudly at the next push, exit 2, naming the tool. A duplicate
+    exited 0 and said nothing, for ever. The generator's own stated reason for
+    refusing a blank cell is that "a blank cell in this document is exactly how
+    the last one went stale" -- a discarded entry is worse than a blank cell,
+    because a blank cell is at least visible once rendered.
+
+    IT HAPPENED FOR REAL ON 2026-10-06: a `gate_parity_check.py` entry was
+    written into PURPOSES while another session had already added one, Python
+    kept theirs, and nothing in the toolchain could have told the author. On that
+    occasion the surviving entry was the better of the two, so no wrong cell was
+    produced -- the defect is that the mechanism cannot tell anybody, which is a
+    different and more durable problem than one bad row.
+
+    Returns `(dupes, why)`. `why` IS THE THIRD STATE and is not foldable into "no
+    duplicates": a source this function could not read, could not parse, or in
+    which it could not find the literal has NOT been checked, and PR 1.11 says
+    that must refuse rather than report a pass it never performed.
+    """
+    me = os.path.abspath(__file__)
+    try:
+        src = io.open(me, encoding='utf-8').read()
+    except Exception as e:                                       # noqa: BLE001
+        return [], 'could not read %s (%s: %s)' % (me, type(e).__name__, e)
+    try:
+        tree = ast.parse(src)
+    except SyntaxError as e:
+        return [], 'could not parse %s as Python (%s)' % (me, e)
+    # Module level only, and by `tree.body` rather than `ast.walk` on purpose:
+    # the literal that matters is the one the import actually evaluated, and a
+    # `PURPOSES = {...}` nested inside some function would not be it.
+    node = None
+    for st in tree.body:
+        if (isinstance(st, ast.Assign) and len(st.targets) == 1
+                and isinstance(st.targets[0], ast.Name)
+                and st.targets[0].id == 'PURPOSES'
+                and isinstance(st.value, ast.Dict)):
+            node = st.value
+            break
+    if node is None:
+        return [], ('no module-level `PURPOSES = {...}` literal found in %s, so '
+                    'nothing was compared' % me)
+    seen, dupes = {}, []
+    for k in node.keys:
+        # A non-string or computed key cannot be compared by value here, and
+        # guessing is how a check starts reporting on a population it did not
+        # cover. Refuse instead of skipping it quietly.
+        if not isinstance(k, ast.Constant) or not isinstance(k.value, str):
+            return [], ('the PURPOSES key at line %d is not a plain string '
+                        'literal, so the keys cannot be compared by value'
+                        % getattr(k, 'lineno', 0))
+        if k.value in seen:
+            dupes.append((k.value, seen[k.value], k.lineno))
+        else:
+            seen[k.value] = k.lineno
+    return dupes, None
+
+
 def missing_purposes(tools, reg):
     """THREE buckets, not two, and the third is the whole point.
 
@@ -2527,7 +2598,8 @@ def build():
     # reporting -- which is the right direction for a mistake in a refusal, but
     # worth the comment so the next reader does not repeat it.
     dup = sorted(t for t in reg if t in PURPOSES)
-    if absent or untracked or gone or dup:
+    dupkeys, dupwhy = duplicate_purposes_keys()
+    if absent or untracked or gone or dup or dupkeys or dupwhy:
         lines = ['REFUSING to generate -- the hand-written half has drifted.', '']
         if absent:
             lines += ['%d tool(s) in tools/ with no PURPOSES entry. A blank cell in this'
@@ -2560,6 +2632,31 @@ def build():
                       'PURPOSES LINE; do not reword it to match. This is usually a half-finished',
                       'promotion, so check the same tool has ledger evidence too:',
                       '    python tools/flaky_checker_quarantine.py']
+        if dupkeys:
+            lines += ['',
+                      '%d DUPLICATE key(s) in the PURPOSES literal:' % len(dupkeys)]
+            lines += ['    %s -- written at line %d, SILENTLY DISCARDED; the copy '
+                      'Python kept is at line %d' % (k, first, kept)
+                      for k, first, kept in dupkeys]
+            lines += ['',
+                      'Python keeps the LAST of two identical dict keys and discards the first',
+                      'with NO warning, so the earlier entry is dead text -- invisible in this',
+                      'document and invisible in the source. This is the MIRROR of the',
+                      'missing-entry refusal above and it is the QUIETER half: a blank cell is',
+                      'at least visible once rendered, and a missing entry refuses at the next',
+                      'push. A discarded one announced itself nowhere until this check existed.',
+                      '',
+                      'DELETE ONE -- and READ BOTH before choosing, because the discarded line',
+                      'may be the better description. Do not merge them into one cell without',
+                      'deciding which claim is true.']
+        if dupwhy:
+            lines += ['',
+                      'COULD NOT CHECK the PURPOSES literal for duplicate keys:',
+                      '    ' + dupwhy,
+                      'This is a THIRD STATE and is NOT folded into "no duplicates". The check',
+                      'did not run, so it reports neither a pass nor a fail -- PR 1.11. Fix the',
+                      'reason above; a generator that cannot read its own hand-written half',
+                      'must not write a document claiming that half is sound.']
         return None, '\n'.join(lines)
 
     order = ['BLOCKING', 'REPORT-ONLY', 'ADVISORY', 'DECIDED', 'SUITE-ONLY', 'UNWIRED']
@@ -2777,9 +2874,13 @@ def build():
     A('    python tools/tooling_inventory.py           # rewrite it')
     A('')
     A('The generator refuses to run if a tool in `tools/` has no entry in its')
-    A('`PURPOSES` map, and refuses if `PURPOSES` names a tool that is gone. A blank')
-    A('cell is how the last inventory went stale, so both directions are errors')
-    A('rather than omissions.')
+    A('`PURPOSES` map, refuses if `PURPOSES` names a tool that is gone, and refuses')
+    A('if `PURPOSES` carries the SAME KEY TWICE. A blank cell is how the last')
+    A('inventory went stale, so all three directions are errors rather than')
+    A('omissions -- and the duplicate is the quietest of them: Python keeps the')
+    A('last of two identical dict keys and discards the first silently, so until')
+    A('2026-10-06 an entry somebody wrote could be dead text with nothing able to')
+    A('say so.')
     A('')
     A('**What this cannot tell you**, said here rather than found out: `BLOCKING`')
     A('means a tool is reachable from something that can refuse. It does not mean')
