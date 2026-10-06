@@ -864,15 +864,34 @@ def sweep_writer(tool, path, orig, pats, work, verbose=False):
                   % (repo_before[0][:8], repo_after[0][:8], tool))
             repo_before = repo_after
         else:
-            raise RuntimeError(
-                'the clone changed while %s ran in the sandbox AND HEAD DID NOT '
-                'MOVE, so a commit does not explain it. The comparison is void '
-                'either way and the run stops. THIS IS NOT PROOF THAT %s WROTE '
-                'HERE -- another process in this clone produces the identical '
-                'reading, and on 2026-10-06 that is exactly what happened and '
-                'this message named an innocent tool. Changed: %s'
-                % (tool, tool,
-                   sorted(set(repo_after[1]) ^ set(repo_before[1]))[:8]))
+            # ── THE DISCRIMINATOR THAT MAKES THIS ATTRIBUTABLE ─────────────
+            # The question is not "did the clone change" -- four sessions and
+            # my own document generators change it constantly. It is "did the
+            # clone change IN A FILE THIS TOOL WROTE INSIDE THE SANDBOX".
+            # `first[3]` is exactly that set, already computed by _writer_sig.
+            #
+            # An INTERSECTION is an escape and is named as one. A change
+            # DISJOINT from what the tool wrote is somebody else's churn, and
+            # voiding the run for it cost a second 12-minute sweep on
+            # 2026-10-06 -- killed by my own `python tools/
+            # traceability_matrix.py`, with criticality_tier_check.py named in
+            # the message. The run re-baselines and continues instead.
+            churn = sorted(set(repo_after[1]) ^ set(repo_before[1]))
+            wrote = set(first[3] or ())
+            overlap = sorted(set(churn) & wrote)
+            if overlap:
+                raise RuntimeError(
+                    '%s WROTE OUTSIDE ITS SANDBOX. The clone changed in a file '
+                    'this tool wrote inside the copy, which no other process '
+                    'explains: %s. The comparison is void and the clone needs '
+                    'looking at.' % (tool, overlap))
+            print('  note: the clone changed while sweeping %s, in file(s) that '
+                  'tool did NOT write\n        in the sandbox -- %s -- so it is '
+                  'another process in this clone, not an escape.\n        '
+                  'Re-baselined and continuing. (It wrote: %s)'
+                  % (tool, churn[:4] or 'none readable',
+                     sorted(wrote)[:4] or 'nothing'))
+            repo_before = repo_after
 
     rows = []
     for name, _ln in pats:

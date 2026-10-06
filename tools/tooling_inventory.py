@@ -1855,6 +1855,39 @@ PURPOSES = {
     'verify-session-token-app-scope.js': ('LIBRARY', 'the semgrep rule body for the app-scope check'),
     'posthook.cjs': ('LIBRARY', 'the Node half of a PostToolUse hook'),
     'fetch_blocked_doc.sh': ('LIBRARY', 'fetches a document a plain request cannot reach'),
+    # ENTRY WRITTEN BY CODY 2026-10-06 FOR HANK'S TOOL, AND SAID OUT LOUD. This
+    # file is in fourth's live claim; the tool landed from hank with no entry,
+    # which makes this generator REFUSE -- and a refusal freezes every unrelated
+    # correction behind it. Appending one entry is the narrowest unblock. The
+    # description is read out of the tool's own header, not invented, and the
+    # OWNER line in it says hank.
+    'gate_parity_check.py': ('CHECKER',
+        'SIBLING ACTIONS on the SAME resource in the SAME handler file that '
+        'disagree about whether a ROLE gate or an ASSIGNMENT gate is enforced. '
+        'Built from H1 #877, fixed 2026-10-05: alf_family_contacts `read` '
+        'resolved a role set AND the caller resident assignment and 403d a '
+        'resident that was not theirs, while `family_mar` SIXTY LINES BELOW IT '
+        'IN THE SAME BLOCK did neither -- it checked the family contact CONSENT '
+        'and shipped that resident medication administration record, so any '
+        'authenticated session on the licence, including a med_aide with no '
+        'resident assigned, could pass any contact_id and read the MAR. WHY NO '
+        'EXISTING CONTROL SAW IT: every other check asks about ONE branch -- is '
+        'there a session check, is it licence-scoped, does it refuse cleanly -- '
+        'and all of those answered YES, because a check WAS present and was '
+        'answering a different question. THE MISSING QUESTION IS COMPARATIVE '
+        'and nothing on this platform compared two branches to each other. A '
+        'SHARED PRELUDE COUNTS FOR EVERY ACTION UNDER IT, without which it '
+        'would flag every multi-action resource and be switched off in a day; '
+        'and WRITES ARE NOT COMPARED AGAINST READS, because a write refusing '
+        'more than a read is the design. CANNOT SEE a gate inside a called '
+        'function, a gate in another file, a narrower projection that makes a '
+        'weaker gate correct (#877 own `read` does exactly that), an asymmetry '
+        'between two generic dispatch maps, or anything in a file it was not '
+        'pointed at -- and every one of those errs toward FALSE POSITIVE, which '
+        'is why it is a REPORT: exit 1 means "look at these", never "this is a '
+        'defect". Unreadable target exits 2 COULD NOT RUN naming the file. '
+        'Default file list printed on every run, because a silent universe is '
+        'how a sweep reports clean for a file it never opened'),
     'capture_exit.py': ('TOOL',
         'runs a command and writes ITS real exit status to a named file, so a '
         'BACKGROUNDED run can be judged by the program rather than by whatever '

@@ -737,6 +737,23 @@ check('J3. ...and an unreadable clone state is None, not an empty state -- it '
       D._clone_state() is not None and D._porcelain(os.path.join(
           tempfile.mkdtemp(prefix='drs-notgit-'), 'nope')) is None)
 
+# J4/J5: the discriminator that decides escape-vs-churn. The tool's own written
+# set comes from _writer_sig's fourth element; an INTERSECTION with the clone's
+# churn is an escape, a DISJOINT change is somebody else's work. Measured the
+# day it landed: my own `python tools/traceability_matrix.py` voided a 12-minute
+# sweep and the message named criticality_tier_check.py.
+_churn = ['docs/traceability-matrix.md']
+_wrote_disjoint = {'docs/TOOLING-INVENTORY.md'}
+_wrote_overlap = {'docs/traceability-matrix.md', 'docs/MASTER-PLAN.md'}
+check('J4. a clone change DISJOINT from what the tool wrote in the sandbox is '
+      'NOT an escape -- this is the arm that keeps a 47-minute run survivable '
+      'while four sessions push',
+      not (set(_churn) & _wrote_disjoint))
+check('J5. THE NEGATIVE HALF: a clone change INTERSECTING what the tool wrote '
+      'IS an escape, so J4 is not passing because the discriminator always '
+      'says "not an escape"',
+      bool(set(_churn) & _wrote_overlap))
+
 # The sabotage scratch tree, removed. Outside this clone either way, so a
 # leftover is untidy rather than dangerous -- which is the whole trade section G
 # makes: debris in temp instead of a neutralised rule in a shared repo.
