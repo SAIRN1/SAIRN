@@ -467,6 +467,123 @@ check('F9b. ...and leaves NO drs-sandbox- worktree registered afterwards, '
       'control adds one to the clone forever',
       not _sandboxes(), _sandboxes())
 
+# ── H. THE WRITER TIER, AND THE NEGATIVE ARM IS THE ONLY REASON TO TRUST IT ─
+# Added 2026-10-06 with the tier. On its first real run the tier cleared all 22
+# rules that had been COULD NOT RUN and reported EVERY ONE of them exercised.
+# A tier that can only say "exercised" would produce exactly that output, and
+# it would be the fail-open shape this whole file exists to catch. So H2 below
+# is the arm that matters: a rule the writer provably does not use must come
+# back DEAD, from the same tier, in the same run.
+#
+# EVERY FIXTURE WRITES NOTHING TO STDOUT. That is deliberate. If stdout were
+# carrying the signal, the tier could pass these arms while the FILE comparison
+# did nothing -- and a generator that rewrites a whole document without changing
+# a byte of stdout is the normal case, not the edge case. With stdout empty and
+# identical throughout, only the digest of what was WRITTEN can tell these arms
+# apart.
+section('H. the writer tier -- reset, reproducibility, and a rule it must call '
+        'DEAD')
+
+
+def _git(tree, *args):
+    return subprocess.run(['git', '-C', tree] + list(args),
+                          capture_output=True, text=True, encoding='utf-8',
+                          errors='replace')
+
+
+def _writer_tree(body):
+    """A throwaway git repo holding one hand-built writer tool. Never the clone."""
+    t = tempfile.mkdtemp(prefix='drs-writer-')
+    os.makedirs(os.path.join(t, 'tools'), exist_ok=True)
+    os.makedirs(os.path.join(t, 'docs'), exist_ok=True)
+    io.open(os.path.join(t, 'docs', 'data.txt'), 'w', encoding='utf-8',
+            newline='\n').write('alpha one\nbeta two\nalpha three\n')
+    io.open(os.path.join(t, 'docs', 'out.txt'), 'w', encoding='utf-8',
+            newline='\n').write('BASELINE\n')
+    io.open(os.path.join(t, 'tools', 'w.py'), 'w', encoding='utf-8',
+            newline='\n').write(body)
+    _git(t, 'init', '-q')
+    _git(t, 'config', 'user.email', 'probe@example.invalid')
+    _git(t, 'config', 'user.name', 'probe')
+    _git(t, 'add', '-A')
+    _git(t, 'commit', '-q', '-m', 'fixture')
+    return t
+
+
+# USED feeds the written file; UNUSED is compiled, documented and never read --
+# the precise shape of the 2026-09-29 defect this sweep was built for.
+_W_BODY = '''import io, os, re
+USED = re.compile(r'alpha')
+UNUSED = re.compile(r'zzz-never-read')
+D = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+src = io.open(os.path.join(D, 'docs', 'data.txt'), encoding='utf-8').read()
+io.open(os.path.join(D, 'docs', 'out.txt'), 'w', encoding='utf-8',
+        newline='\\n').write('\\n'.join(USED.findall(src)) + '\\n')
+'''
+
+_wt = _writer_tree(_W_BODY)
+try:
+    _wp = os.path.join(_wt, 'tools', 'w.py')
+    _worig = io.open(_wp, encoding='utf-8', newline='').read()
+    _wpats = D.module_patterns(_worig)
+    _before_clone = D._porcelain(REPO)
+    _rows = dict(D.sweep_writer('w.py', _wp, _worig, _wpats, _wt))
+
+    check('H1. the writer tier RAN at all -- a verdict for every rule, not a '
+          'blanket refusal',
+          set(_rows) == {'USED', 'UNUSED'}, _rows)
+    check('H2. THE NEGATIVE ARM: a rule the writer never reads comes back DEAD. '
+          'Without this, "all 22 exercised" is indistinguishable from a tier '
+          'that can only say exercised',
+          _rows.get('UNUSED') == D.DEAD_WRITER, _rows.get('UNUSED'))
+    check('H3. ...and the rule it DOES read comes back exercised, from the same '
+          'run -- the paired positive, so H2 is not passing because the tier is '
+          'simply broken',
+          _rows.get('USED') == D.LIVE_WRITER, _rows.get('USED'))
+    check('H4. STDOUT WAS IDENTICAL THROUGHOUT, so only the digest of the '
+          'WRITTEN FILE could have told H2 and H3 apart',
+          _rows.get('USED') != _rows.get('UNUSED'))
+    check('H5. the fixture tool source is byte-identical after the tier -- the '
+          'per-rule restore happened inside the copy',
+          io.open(_wp, encoding='utf-8', newline='').read() == _worig)
+    check('H6. the written file is back to its committed baseline -- the RESET '
+          'worked, which is what makes each run a comparison rather than a '
+          'reading of the previous run output',
+          io.open(os.path.join(_wt, 'docs', 'out.txt'),
+                  encoding='utf-8').read() == 'BASELINE\n',
+          io.open(os.path.join(_wt, 'docs', 'out.txt'), encoding='utf-8').read())
+    check('H7. the fixture tree is CLEAN afterwards -- nothing left dirty for '
+          'the next comparison to inherit',
+          D._porcelain(_wt) == {}, D._porcelain(_wt))
+    check('H8. and THIS CLONE was not touched while a writer ran',
+          D._porcelain(REPO) == _before_clone)
+finally:
+    shutil.rmtree(_wt, ignore_errors=True)
+
+# A writer nobody can compare: the output depends on the process, not the rule.
+# It must come back NOT REPRODUCIBLE -- never exercised, and never dead either.
+_ND_BODY = '''import io, os, re
+R = re.compile(r'alpha')
+D = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+io.open(os.path.join(D, 'docs', 'out.txt'), 'w', encoding='utf-8',
+        newline='\\n').write('%d\\n' % os.getpid())
+'''
+_nt = _writer_tree(_ND_BODY)
+try:
+    _np = os.path.join(_nt, 'tools', 'w.py')
+    _norig = io.open(_np, encoding='utf-8', newline='').read()
+    _nrows = dict(D.sweep_writer('w.py', _np, _norig,
+                                 D.module_patterns(_norig), _nt))
+    check('H9. a writer whose two identical baseline runs DIFFER is reported '
+          'NOT REPRODUCIBLE -- a finding about the tool, not a verdict about '
+          'its rule',
+          _nrows.get('R') == D.WRITES_NONDET, _nrows.get('R'))
+    check('H10. ...and it is NOT folded into exercised, and NOT into dead '
+          'either -- three states, and this is the third',
+          _nrows.get('R') not in (D.LIVE_WRITER, D.DEAD_WRITER))
+finally:
+    shutil.rmtree(_nt, ignore_errors=True)
+
 # The sabotage scratch tree, removed. Outside this clone either way, so a
 # leftover is untidy rather than dangerous -- which is the whole trade section G
 # makes: debris in temp instead of a neutralised rule in a shared repo.

@@ -124,6 +124,7 @@ fallback to the clone: "could not isolate" is a third state and folding it into
 """
 import argparse
 import ast
+import hashlib
 import io
 import os
 import re
@@ -175,6 +176,42 @@ NO_EVIDENCE = ('COULD NOT TELL -- no lock, no control, and the real run could '
                'not be compared either')
 WRITES = ('COULD NOT TELL -- no lock, no control, and the tool REGENERATES a '
           'file when run, so its output is not a stable comparison')
+# ── THE WRITER TIER IS NOW MEASURED RATHER THAN REFUSED (2026-10-06) ────────
+# The comment below said the surviving problem was ATTRIBUTION, not safety, and
+# it was right: a tool that rewrites its own subject compares its output against
+# a corpus it has just changed. The fix is therefore not more isolation -- the
+# sandbox already gives that -- it is RESETTING THE CORPUS BETWEEN RUNS so a
+# difference is attributable to the rule again.
+#
+# Three things have to hold before a writer's run counts as evidence, and each
+# one is MEASURED on that tool rather than assumed for the tier:
+#
+#   1. THE RESET WORKS. Every file the run dirtied is put back -- tracked files
+#      from git, untracked ones deleted -- and the sandbox must return to the
+#      exact porcelain state it had before.
+#   2. THE TOOL IS DETERMINISTIC. Two identical baseline runs, with a reset
+#      between them, must produce the same exit code, the same stdout and the
+#      same bytes in every file they write. A generator that stamps a timestamp
+#      fails here, and failing here is a FINDING ABOUT THE COMPARISON, not a
+#      verdict about the rule.
+#   3. NOTHING ESCAPED. The CLONE's own porcelain state is read before and after
+#      and must be identical. A writer that computes its target from something
+#      other than its own location could reach outside the copy, and that must
+#      be loud rather than discovered later.
+#
+# Any of the three failing leaves the rule in a COULD NOT RUN state with the
+# measured reason -- never folded into clean, and never into dead either.
+WRITES_NONDET = ('COULD NOT TELL -- the tool writes when run and is NOT '
+                 'REPRODUCIBLE: two identical baseline runs differed, so no '
+                 'difference can be attributed to a rule')
+WRITES_NO_RESET = ('COULD NOT TELL -- the tool writes when run and the sandbox '
+                   'could not be reset between runs, so each run would see the '
+                   'previous run output')
+LIVE_WRITER = ('exercised BY THE REAL RUN ONLY -- a WRITER, reset between runs '
+               'and proved reproducible first')
+DEAD_WRITER = ('DEAD EVEN ON THE REAL RUN -- a WRITER, reset between runs and '
+               'proved reproducible first, and neutralising it changes neither '
+               'the output nor a byte it writes')
 # THE REASON FOR THIS TIER CHANGED WHEN THE SANDBOX LANDED (2026-09-30) and the
 # tier is kept, so the reason is restated rather than left to read as stale.
 # It used to be a SAFETY tier -- a generator run bare would leave
@@ -555,6 +592,179 @@ def drop_sandbox(work):
     reap_stale_sandboxes()
 
 
+def _porcelain(tree):
+    """{relpath: status} for every dirty path, or None if git could not be read.
+
+    None is NOT an empty tree. A writer tier that read "nothing is dirty" from a
+    failed git call would reset nothing and compare a corpus against itself one
+    run later.
+    """
+    r = subprocess.run(['git', '-C', tree, 'status', '--porcelain'],
+                       capture_output=True, text=True, encoding='utf-8',
+                       errors='replace')
+    if r.returncode != 0:
+        return None
+    out = {}
+    for line in (r.stdout or '').split('\n'):
+        if len(line) < 4:
+            continue
+        out[line[3:].strip().strip('"')] = line[:2]
+    return out
+
+
+def _digest(tree, rels):
+    """A content fingerprint of named paths. A missing file is recorded as such."""
+    h = hashlib.sha256()
+    for rel in sorted(rels):
+        p = os.path.join(tree, rel.replace('/', os.sep))
+        h.update(rel.encode('utf-8'))
+        if os.path.isfile(p):
+            with io.open(p, 'rb') as fh:
+                h.update(fh.read())
+        else:
+            h.update(b'<ABSENT>')
+    return h.hexdigest()
+
+
+def _snapshot(tree, rels):
+    return {rel: (io.open(os.path.join(tree, rel.replace('/', os.sep)), 'rb').read()
+                  if os.path.isfile(os.path.join(tree, rel.replace('/', os.sep)))
+                  else None)
+            for rel in rels}
+
+
+def _reset_writer(tree, baseline, snap):
+    """Put the sandbox back to `baseline` porcelain. True only if it really is.
+
+    Returns False rather than raising, because "the reset did not work" is a
+    measurable reason to refuse this tool and not a crash of the sweep.
+    """
+    now = _porcelain(tree)
+    if now is None:
+        return False
+    for rel in sorted(set(now) - set(baseline)):
+        p = os.path.join(tree, rel.replace('/', os.sep))
+        rc = subprocess.run(['git', '-C', tree, 'checkout', '--', rel],
+                            capture_output=True, text=True)
+        if rc.returncode != 0 and os.path.isfile(p):
+            # Untracked: git cannot restore it because there is nothing to
+            # restore to. It did not exist before this run, so it goes.
+            try:
+                os.unlink(p)
+            except OSError:
+                return False
+    for rel, data in snap.items():
+        p = os.path.join(tree, rel.replace('/', os.sep))
+        try:
+            if data is None:
+                if os.path.isfile(p):
+                    os.unlink(p)
+            else:
+                with io.open(p, 'wb') as fh:
+                    fh.write(data)
+        except OSError:
+            return False
+    back = _porcelain(tree)
+    return back is not None and set(back) == set(baseline)
+
+
+def _writer_sig(tree, argv, baseline, ignore=()):
+    """(exit, stdout, digest-of-what-it-wrote) -- or None if it could not run.
+
+    The digest is the point. A generator can rewrite a whole document without
+    changing one byte of stdout, so comparing stdout alone would call a
+    load-bearing rule dead.
+
+    `ignore` MUST CARRY THE SWEPT TOOL OWN PATH, and leaving it out was a real
+    fail-open rather than a theoretical one. The ablation writes the neutralised
+    source into the sandbox, so that file is dirty on every patched run and on
+    no baseline run. Including it made the signature differ EVERY time, which
+    reported every rule as exercised -- the first measured output of this tier
+    was "all 22 cleared, all 22 exercised", and it was the digest noticing the
+    mutation rather than its effect. Caught by the probe negative arm (H2) on a
+    hand-built writer with one rule it provably never reads.
+    """
+    rc, out = run(argv, tree, timeout=CORPUS_TIMEOUT, want_output=True)
+    if out is None:
+        return None
+    now = _porcelain(tree)
+    if now is None:
+        return None
+    skip = set(ignore)
+    touched = sorted(set(now) - set(baseline) - skip) + sorted(
+        r for r in (set(now) & set(baseline)) - skip if now[r] != baseline[r])
+    return (rc, out, _digest(tree, touched), tuple(touched))
+
+
+def sweep_writer(tool, path, orig, pats, work, verbose=False):
+    """The writer tier. [(rule, verdict)] -- every refusal below is MEASURED.
+
+    Order matters and is the segmented-verification discipline in miniature: the
+    escape check and the reset are proved BEFORE any ablation, because a rule
+    verdict taken on an unproven harness is worse than no verdict.
+    """
+    repo_before = _porcelain(REPO)
+    baseline = _porcelain(work)
+    if baseline is None or repo_before is None:
+        return [(n, WRITES_NO_RESET) for n, _ln in pats]
+    snap = _snapshot(work, list(baseline))
+    argv = [sys.executable, os.path.join(work, 'tools', tool)]
+    # The swept source is dirty on every patched run by construction. Comparing
+    # it would make the signature differ because of the MUTATION rather than its
+    # EFFECT -- see _writer_sig.
+    ignore = ('tools/%s' % tool, os.path.join('tools', tool))
+
+    first = _writer_sig(work, argv, baseline, ignore)
+    if first is None:
+        return [(n, NO_EVIDENCE) for n, _ln in pats]
+    if not _reset_writer(work, baseline, snap):
+        return [(n, WRITES_NO_RESET) for n, _ln in pats]
+
+    # 2. REPRODUCIBLE? The second baseline is the whole licence to continue.
+    second = _writer_sig(work, argv, baseline, ignore)
+    if second is None or not _reset_writer(work, baseline, snap):
+        return [(n, WRITES_NO_RESET) for n, _ln in pats]
+    if first != second:
+        if verbose:
+            print('     %-26s two identical baseline runs differed: '
+                  'exit %s/%s, stdout %s, wrote %s'
+                  % ('(baseline)', first[0], second[0],
+                     'same' if first[1] == second[1] else 'DIFFERENT',
+                     'same bytes' if first[2] == second[2] else 'DIFFERENT bytes'))
+        return [(n, WRITES_NONDET) for n, _ln in pats]
+
+    # 3. NOTHING ESCAPED the copy while that ran.
+    if _porcelain(REPO) != repo_before:
+        raise RuntimeError(
+            '%s changed this CLONE while running in the sandbox -- a writer '
+            'reached outside the copy. Refusing to continue; the comparison is '
+            'void and the clone needs looking at.' % tool)
+
+    rows = []
+    for name, _ln in pats:
+        patched = neutralise(orig, name)
+        if patched is None:
+            rows.append((name, NO_EVIDENCE))
+            continue
+        io.open(path, 'w', encoding='utf-8', newline='').write(patched)
+        if NEVER not in io.open(path, encoding='utf-8').read():
+            rows.append((name, NO_EVIDENCE))
+            continue
+        got = _writer_sig(work, argv, baseline, ignore)
+        # The tool source itself is now dirty, so restore the SOURCE by hand
+        # before the generic reset -- `git checkout` would undo the overlay this
+        # sweep is supposed to be judging.
+        io.open(path, 'w', encoding='utf-8', newline='').write(orig)
+        ok = _reset_writer(work, baseline, snap)
+        if got is None or not ok:
+            rows.append((name, WRITES_NO_RESET if not ok else NO_EVIDENCE))
+        elif got != first:
+            rows.append((name, LIVE_WRITER))
+        else:
+            rows.append((name, DEAD_WRITER))
+    return rows
+
+
 def sweep_tool(tool, work, verbose=False):
     """[(rule, verdict)] for one tool. `work` is the sandbox, never REPO."""
     path = os.path.join(work, 'tools', tool)
@@ -569,7 +779,9 @@ def sweep_tool(tool, work, verbose=False):
     cmds = evidence_cmds(tool, orig, work)
     bare = None
     if not cmds and writes_when_run(orig):
-        return [(n, WRITES) for n, _ln in pats]
+        # Used to return WRITES for the whole tool, unmeasured. Now the writer
+        # tier is attempted and each refusal inside it is a measurement.
+        return sweep_writer(tool, path, orig, pats, work, verbose=verbose)
     if not cmds:
         # THE THIRD TIER. Run the tool bare and compare its OUTPUT, not only its
         # exit code: a rule can change what a report says without changing
@@ -810,6 +1022,7 @@ def main(argv):
 
     dead, live, unknown, unreadable = [], 0, [], []
     live_corpus, dead_output, writes = 0, [], []
+    nondet, noreset = [], []
     try:
         for t in tools:
             try:
@@ -825,19 +1038,23 @@ def main(argv):
                     dead.append((t, name))
                 elif verdict == LIVE:
                     live += 1
-                elif verdict == LIVE_CORPUS:
+                elif verdict in (LIVE_CORPUS, LIVE_WRITER):
                     live_corpus += 1
-                elif verdict == DEAD_EVEN_ON_OUTPUT:
+                elif verdict in (DEAD_EVEN_ON_OUTPUT, DEAD_WRITER):
                     dead_output.append((t, name))
                 elif verdict == WRITES:
                     writes.append((t, name))
+                elif verdict == WRITES_NONDET:
+                    nondet.append((t, name))
+                elif verdict == WRITES_NO_RESET:
+                    noreset.append((t, name))
                 else:
                     unknown.append((t, name))
     finally:
         drop_sandbox(work)
 
     total = (len(dead) + live + len(unknown) + live_corpus
-             + len(dead_output) + len(writes))
+             + len(dead_output) + len(writes) + len(nondet) + len(noreset))
     if not a.quiet:
         if a.tool:
             src_label = 'named on the command line'
@@ -865,12 +1082,21 @@ def main(argv):
               % (live + len(dead) + live_corpus + len(dead_output), total,
                  live + len(dead), live, len(dead),
                  live_corpus + len(dead_output), live_corpus, len(dead_output),
-                 len(unknown) + len(writes)))
+                 len(unknown) + len(writes) + len(nondet) + len(noreset)))
         if writes:
-            print('  OF THOSE, %d belong to a tool that WRITES when run, so the '
-                  'real run is not\n  safe to use as evidence -- the first '
-                  'attempt at this tier left three generated\n  documents '
-                  'modified in the working tree.' % len(writes))
+            print('  OF THOSE, %d belong to a tool that WRITES when run and the '
+                  'writer tier was NOT\n  attempted -- that path should no '
+                  'longer be reachable, so seeing this means a\n  shape slipped '
+                  'past it.' % len(writes))
+        if nondet:
+            print('  OF THOSE, %d belong to a writer that is NOT REPRODUCIBLE: '
+                  'two identical\n  baseline runs differed, so no difference '
+                  'can be attributed to a rule. THAT IS A\n  FINDING ABOUT THE '
+                  'TOOL, not a verdict about its rules.' % len(nondet))
+        if noreset:
+            print('  OF THOSE, %d belong to a writer whose sandbox could not be '
+                  'RESET between runs,\n  so each run would have seen the '
+                  'previous one output.' % len(noreset))
         if unreadable:
             print('  UNREADABLE: %s' % ', '.join(unreadable))
 
@@ -879,8 +1105,12 @@ def main(argv):
         + ['%s  %s  %s' % (t, n, DEAD_EVEN_ON_OUTPUT) for t, n in dead_output],
         could_not_run=['%s %s -- no fixture lock and no control to ablate '
                        'against' % (t, n) for t, n in unknown]
-        + ['%s %s -- the tool WRITES when run; the real run is not safe '
-           'evidence' % (t, n) for t, n in writes],
+        + ['%s %s -- the tool WRITES when run; the writer tier was not '
+           'attempted' % (t, n) for t, n in writes]
+        + ['%s %s -- WRITER, NOT REPRODUCIBLE: two identical baseline runs '
+           'differed' % (t, n) for t, n in nondet]
+        + ['%s %s -- WRITER, the sandbox could not be reset between runs'
+           % (t, n) for t, n in noreset],
         quiet=a.quiet,
         clean_line='\nCLEAN -- every module-level rule whose tool ships '
                    'evidence is exercised by it.')
