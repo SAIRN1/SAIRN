@@ -600,3 +600,36 @@ appending is the normal case and is why this compares counts rather than
 requiring equality"*. That asymmetry is correct and is why the guard is usable
 at all with four clones appending. **The fix is to the attribution sentence, not
 to the comparison.**
+
+---
+
+## ITEM 4 ADDENDUM — FOUR MORE DEAD RULES IN `cross_tenant_isolation_scope.py`, ROUTED TO **cc**
+
+Re-asked with the bound lifted, `EXIT 1` from the status file:
+
+```
+python tools/dead_rule_sweep.py --tool cross_tenant_isolation_scope.py \
+       --corpus-timeout 200
+  corpus bound: 200s per bare real run (--corpus-timeout)
+  CHECKED / UNIVERSE: 21 of 21 rules could be ABLATED
+  17 move the output, 4 DO NOT MOVE A BYTE
+```
+
+| rule | file:line | verdict |
+|---|---|---|
+| `_HASH_LITERALS` | `tools/cross_tenant_isolation_scope.py` | **DEAD EVEN ON THE REAL RUN** |
+| `_HASH_RETURNED` | `tools/cross_tenant_isolation_scope.py` | **DEAD EVEN ON THE REAL RUN** |
+| `_REFUSAL_LENGTH` | `tools/cross_tenant_isolation_scope.py` | **DEAD EVEN ON THE REAL RUN** |
+| `_DECL_BLOCK` | `tools/cross_tenant_isolation_scope.py` | **DEAD EVEN ON THE REAL RUN** |
+
+**These were invisible, and the reason was mine.** The tool needs 131s and my
+sweep's bound was 45, so all 21 of its rules came back *"no fixture lock and no
+control to ablate against"* — **a sentence that was false about the real run**.
+With the bound lifted, 21 of 21 are answerable and four do not move a byte of
+the output.
+
+**Re-ask it yourself rather than taking this list:**
+`--corpus-timeout 200`, about 48 minutes. **The bound is printed on every run
+now**, so two sweeps at different bounds can never be confused in a past report.
+
+**Added to cc's total: 9 + 4 = 13 dead rules across 6 tools.**

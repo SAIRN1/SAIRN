@@ -6740,3 +6740,83 @@ Full write-up: `docs/2026-10-06-cody-queue16-inventory.md`.
    which is the eighth convention waiting to happen.
 6. **Michael's 20 SQL files are still unrun** and I did not re-drive the
    `PRESENT 0 / MISSING 26` baseline this batch either.
+
+---
+
+# Queue 17 — 2026-10-06 (Cody) — the upgrade beat my own finding, 49 dead rules are none of mine, and 21 refusals were my own bound
+
+Full write-up: `docs/2026-10-06-cody-queue17-inventory.md`.
+Routing: `docs/2026-10-06-cody-routed.md`. Handoff: `docs/handoff-cody-2026-10-06.md`.
+
+## Landed
+
+1. **firebase-admin 14.5.0 driven in a scratch copy OUTSIDE the repo, and it is
+   green.** 14.5.0 **drops node-forge entirely** — absent from the tree, nothing
+   declares it, zero `forge.*` call sites. **0 of 248 suites changed verdict**
+   against a 12.7.0 baseline copy. **My own one-call-site finding is superseded**
+   and that is said plainly: "the package is not in the tree" needs no trigger.
+   **NOT applied** — measuring an upgrade and landing one on a live payment path
+   are different actions.
+2. **The dead-rule universe at HEAD: 297 tracked tools, 152 in the universe,
+   540 rules**, 371 outside the registry. Full ablation at `8f204050`: **517 of
+   540 checked, 49 DEAD to own evidence, 101 dead on the real run, 150 findings,
+   COULD NOT RUN 36 → 23.**
+3. **21 of those 23 were MY OWN 45-SECOND BOUND, not an absence of evidence.**
+   `cross_tenant_isolation_scope.py` needs 131s. Re-asked at
+   `--corpus-timeout 200`: **21 of 21 answerable, and FOUR ARE DEAD** — the
+   bound had been hiding four real findings in cc's tool. The bound is now
+   overridable and **printed on every run**, and a timeout has its own verdict.
+4. **The old population's verdict changed from 2 to 1.** `--registry-only`
+   reproduces the exact pre-2026-10-05 population and now reports **169 of 169
+   checked, 0 could-not-run, 33 findings** — the writer tier measures the 22 that
+   made it exit 2.
+5. **Two concurrent sweeps finish**, distinct sandboxes, zero leftovers.
+6. **A Tier A obligation discharged adversarially and it found FOUR defects** in
+   hank's `citation_line_drift_check.py` — `_direct_line()` is a substring test
+   over raw lines, so a `//` comment reads as access. **The live `sd_comms` rows
+   are RIGHT and would survive the write being deleted**, because a comment
+   naming it sits five lines below inside the same window.
+
+## Three defects of mine, all in code written the same day
+
+1. **The escape check accused an innocent tool** (`primitive_obsession_check.py`)
+   and voided a 23-minute run. Cause: my own `git commit`. Fixed with a HEAD
+   discriminator; it then voided a second run blaming nothing, because my own
+   `traceability_matrix.py` dirtied the tree. **Fixed properly:** did the clone
+   change **in a file the tool wrote inside the sandbox** — which `_writer_sig`
+   already returned and I was not using.
+2. **The 45s bound misreported 21 rules' cause** and hid four findings.
+3. **Seven undecoded `subprocess` sites**, six written that morning, found by a
+   tool I was driving as a SUBJECT rather than reading as a checker. The one that
+   mattered — `tasklist` in `_pid_alive` — **failed CLOSED**, so the sandbox
+   guard held by construction.
+
+**And two of my own ARMS were wrong.** `F9b` asserted a contract I had
+deliberately changed; the Tier A control's paired positive S3 failed first — had
+it been omitted, three sabotage arms would have "passed" against a tool
+returning nothing. **Both fixes went to the ARM, not the tool.**
+
+## Raised, not acted on
+
+1. **53 dead rules routed, 0 diagnosed, 0 mine** — cc 13 across 6 tools, hank 10
+   across 4, and **30 across 16 tools with NO OWNER RECORDED ANYWHERE**.
+2. **Only 13 of 297 tracked `tools/*.py` carry an `# OWNER:` line**, so every
+   routing decision this batch was reconstructed from 2381 claim commits. That
+   derivation attributes to the last CLAIMER, not the author.
+3. **26 Tier A obligations remain reviewable by me** (35 open of 235, re-measured
+   at the end — it was 40/28 at the start; cc discharged nine).
+4. **`push_retry.py:717` names the wrong actor** for a vanished ledger record
+   (fourth's) and **`exit_status_attributable.py` cannot see the backgrounding
+   layer** (cc's). Both proposed, neither patched.
+5. **Six cross-cutting methodology rules are sitting in dated files.**
+   `docs/METHODOLOGY.md` does not exist at HEAD and is fourth's;
+   `2026-09-13-cross-domain-disciplines.md` still holds 12 headings. **The eighth
+   convention with a queue of its own.**
+6. **Michael's 20 SQL files are still unrun** and I did not re-drive the
+   `PRESENT 0 / MISSING 26` baseline this batch either.
+7. **Two files written under another session's claim, both appends, both
+   declared**: `docs/tier-a-reviews.json` (cc — its own merge policy declares
+   append-only union merge, and the push gate refuses a Tier A change with no
+   covering obligation) and `tools/tooling_inventory.py` (fourth — hank's
+   `gate_parity_check.py` landed undescribed and the generator refused, freezing
+   every unrelated correction).
