@@ -23324,7 +23324,7 @@
       "recurrence_open": "The invocation-position rule knows seven interpreter names and will miss an eighth silently -- a false negative, chosen deliberately, and unmeasured. And nothing measures the notice's own precision over a session, which is the number that decides whether it is still read."
     },
     {
-      "commit": "57017e71eb4e",
+      "commit": "607f4f034662",
       "date": "2026-10-06",
       "subject": "fix(sairndesign): the one generic SDN write branch stored the caller's whole payload raw -- one omission, eighteen resources",
       "files": [
