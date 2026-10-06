@@ -23210,6 +23210,56 @@
       "recurrence_open": "THE DETECTOR FOR THIS CLASS STILL CANNOT SEE IT. tools/gate_parity_check.py was built from #877 and groups by the resource the BRANCH is keyed on, so a branch keyed on alf_compliance_rules that discloses alf_staff_credentials data is invisible to it -- measured with --json, not reasoned. Whether to extend it to cross-resource exposure or to document the blind spot formally is an open decision filed with this fix. Until one of those lands, the only thing standing between this class and the next instance is somebody reading two branches side by side. Separately: no sweep has asked which OTHER branches in api/sd-data.js read a table they do not own."
     },
     {
+      "commit": "19c872e077b6",
+      "date": "2026-10-06",
+      "subject": "fix(inventory): a DUPLICATE PURPOSES key now refuses as loudly as a missing one -- and the bug report becomes the regression",
+      "files": [
+        "docs/TOOLING-INVENTORY.md",
+        "tests/run_purposes_duplicate_key_probe.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 179,
+      "lines_removed": 43,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/tooling_inventory.py REFUSED LOUDLY on a MISSING PURPOSES entry (exit 2, naming the tool) and exited 0 SILENTLY on a DUPLICATE key. Python keeps the last of two identical dict keys and discards the first with no warning, so an entry somebody wrote became dead text -- invisible in the rendered document AND in the source, with nothing able to tell the author. It happened for real on 2026-10-06 to a gate_parity_check.py entry written while another session had already added one. Severity moderate rather than high because no WRONG cell was produced: the surviving entry was the better of the two, so the defect is that the mechanism cannot report, not that the document lied.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The missing-entry refusal and the PURPOSES map predate this clone's register; the duplicate direction was never written, so there is no commit that introduced the defect -- it is an absence from the original design of the drift check, not a regression. Naming the commit that created missing_purposes() would be citing the fix for the OTHER direction as the injection of this one."
+      },
+      "citation_note": "ARGUABLE AND SAID SO. 1.11 names the third state -- \"could not run\" must never be folded into \"passed\" -- and the fix does add that state (COULD NOT CHECK on an unreadable or unparseable source, worded separately from \"no duplicates\"). But 1.11 does NOT name the defect itself, which is a generator loud on one failure direction and silent on its mirror. No standing section covers that shape, which is why it is this batch's methodology rule and is routed to ted rather than self-promoted. Cited as arguable so the gap is visible in the register instead of being hidden behind a clean citation.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "Python keeps the LAST of two identical dict keys and discards the first with no warning, so the duplicate is already gone by the time PURPOSES is a dict -- the imported object cannot be asked the question.",
+          "action_status": "done",
+          "action": "duplicate_purposes_keys() ast.parses the generator's own SOURCE and compares the literal keys, so it reads the only representation where both copies still exist."
+        },
+        {
+          "kind": "detection",
+          "factor": "The drift check was built with two directions (no entry for a tool; an entry for no tool) and the third -- two entries for one tool -- was never asked. A duplicate exited 0 and said nothing, so no run of the generator, no push and no --check could ever surface it.",
+          "action_status": "done",
+          "action": "the duplicate direction now refuses with the same banner and the same exit 2 as the missing one, naming the key and both line numbers; tests/run_purposes_duplicate_key_probe.py is the regression and drives the real generator."
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "Four sessions edit one hand-written map in one file from separate clones, and a rebase merges two additions cleanly when both are new lines -- so writing the same key twice is the NORMAL outcome of concurrent work rather than carelessness.",
+          "action_status": "planned",
+          "action": "nothing stops the collision happening; the refusal only makes it visible at the next generate. Splitting PURPOSES per-owner, or deriving it, would remove the shared write-point -- not done, and not in this change."
+        }
+      ],
+      "recurrence_open": "The collision itself is NOT closed. Four sessions still write one shared PURPOSES literal from separate clones and a rebase still merges two new lines cleanly, so a duplicate can still be WRITTEN -- it is now caught at the next generate instead of never. And the COULD NOT CHECK third state is not driven by any test: that needs an unreadable source, which is a different arm and is not run."
+    },
+    {
       "commit": "1cb08cbf6285",
       "date": "2026-10-06",
       "subject": "fix(exec-context): two clauses in the CFO accounting statement had gone false, and the conclusion they supported was still right -- which is the combination that gets the whole statement disbelieved",
@@ -23642,54 +23692,58 @@
       "recurrence_open": "Nothing re-reads the remaining dated statements in api/_lib/exec-context.js on a cadence, and no arm pins the integrations sentence the way :206 pins the architecture one. The HIPAA-for-SAIRNcomm line was NOT verified in this pass -- SAIRNcomm has no app file in this repo, so there is nothing to check it against, and that is stated rather than counted as clean."
     },
     {
-      "commit": "19c872e077b6",
+      "commit": "ca2887ac2a2c",
       "date": "2026-10-06",
-      "subject": "fix(inventory): a DUPLICATE PURPOSES key now refuses as loudly as a missing one -- and the bug report becomes the regression",
+      "subject": "fix(paths): the three probes' __file__ FALLBACK landed on the HOME REPOSITORY -- the exact answer the rev-parse anchoring exists to avoid",
       "files": [
-        "docs/TOOLING-INVENTORY.md",
-        "tests/run_purposes_duplicate_key_probe.py",
-        "tools/tooling_inventory.py"
+        "tests/run_worktree_root_home_repo_probe.py",
+        "tools/probe_public_book_guardian.py",
+        "tools/rf_claim_gate_live_probe.py",
+        "tools/rf_roundtrip_probe.py"
       ],
-      "lines_added": 179,
-      "lines_removed": 43,
+      "lines_added": 358,
+      "lines_removed": 21,
       "app": "tooling",
       "layer": "tooling",
       "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "tools/tooling_inventory.py REFUSED LOUDLY on a MISSING PURPOSES entry (exit 2, naming the tool) and exited 0 SILENTLY on a DUPLICATE key. Python keeps the last of two identical dict keys and discards the first with no warning, so an entry somebody wrote became dead text -- invisible in the rendered document AND in the source, with nothing able to tell the author. It happened for real on 2026-10-06 to a gate_parity_check.py entry written while another session had already added one. Severity moderate rather than high because no WRONG cell was produced: the surviving entry was the better of the two, so the defect is that the mechanism cannot report, not that the document lied.",
+      "detection_method": "fault-injection",
+      "summary": "probe_public_book_guardian.py, rf_claim_gate_live_probe.py and rf_roundtrip_probe.py anchored `git rev-parse --show-toplevel` correctly and then returned an UNCHECKED `os.path.dirname(__file__ dir)` fallback. Run from a copy sitting directly under the home directory, that fallback IS C:/Users/marsh -- the home repository, which is the exact wrong answer the anchoring exists to avoid. The anchored call refused it, printed a warning, and the fallback returned it anyway. A warning on stderr is not a refusal: nothing downstream reads it, so the caller imports from the wrong tree with exit 0. Driven, not read: the probe returned C:/Users/marsh from all three on its first run.",
       "rules": [
         "1.11"
       ],
       "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tests/run_worktree_root_home_repo_probe.py",
       "found_by_session": null,
       "injection": {
-        "unknown_reason": "The missing-entry refusal and the PURPOSES map predate this clone's register; the duplicate direction was never written, so there is no commit that introduced the defect -- it is an absence from the original design of the drift check, not a regression. Naming the commit that created missing_purposes() would be citing the fix for the OTHER direction as the injection of this one."
+        "commit": "c586d0e3a8ae",
+        "date": "2026-10-06",
+        "subject": "fix(paths+tiers): git rev-parse for the three probes, anchored and VERIFIED -- and a sc_anesthesia citation that pointed at a DELETE function",
+        "lag_days": 0
       },
-      "citation_note": "ARGUABLE AND SAID SO. 1.11 names the third state -- \"could not run\" must never be folded into \"passed\" -- and the fix does add that state (COULD NOT CHECK on an unreadable or unparseable source, worded separately from \"no duplicates\"). But 1.11 does NOT name the defect itself, which is a generator loud on one failure direction and silent on its mirror. No standing section covers that shape, which is why it is this batch's methodology rule and is routed to ted rather than self-promoted. Cited as arguable so the gap is visible in the register instead of being hidden behind a clean citation.",
+      "citation_note": "CLEAN IN SUBSTANCE AND NOTED ANYWAY. 1.11 is about a check that cannot run reporting a pass; this is a derivation that cannot be verified returning an answer, which is the same third-state collapse one layer over -- \"could not tell\" folded into a value instead of into an exit code. Noted rather than cited clean because 1.11's own text is about checks and tools, not about return values, and stretching a section silently is how a vocabulary stops meaning anything.",
       "contributing_factors": [
         {
           "kind": "technical",
-          "factor": "Python keeps the LAST of two identical dict keys and discards the first with no warning, so the duplicate is already gone by the time PURPOSES is a dict -- the imported object cannot be asked the question.",
+          "factor": "The fallback `os.path.dirname(here)` was returned unchecked, while git's answer one branch above WAS checked for containing this file. Two paths to the same return value, one verified and one not.",
           "action_status": "done",
-          "action": "duplicate_purposes_keys() ast.parses the generator's own SOURCE and compares the literal keys, so it reads the only representation where both copies still exist."
+          "action": "the same containment predicate now gates the fallback, and an unverifiable root raises SystemExit(2) naming both candidates instead of returning one."
         },
         {
           "kind": "detection",
-          "factor": "The drift check was built with two directions (no entry for a tool; an entry for no tool) and the third -- two entries for one tool -- was never asked. A duplicate exited 0 and said nothing, so no run of the generator, no push and no --check could ever surface it.",
+          "factor": "The announcement was mistaken for the guard. stderr carried an honest warning, so reading the code -- and the probe's own arm B1 -- reported the fallback as \"said so\" while the wrong path was returned and used.",
           "action_status": "done",
-          "action": "the duplicate direction now refuses with the same banner and the same exit 2 as the missing one, naming the key and both line numbers; tests/run_purposes_duplicate_key_probe.py is the regression and drives the real generator."
+          "action": "tests/run_worktree_root_home_repo_probe.py arm B2 asserts a REFUSAL rather than a warning, and arm D asserts a naive rev-parse really does answer the home repo so arm B cannot pass on git merely being unavailable."
         },
         {
           "kind": "latent-condition",
-          "factor": "Four sessions edit one hand-written map in one file from separate clones, and a rebase merges two additions cleanly when both are new lines -- so writing the same key twice is the NORMAL outcome of concurrent work rather than carelessness.",
-          "action_status": "planned",
-          "action": "nothing stops the collision happening; the refusal only makes it visible at the next generate. Splitting PURPOSES per-owner, or deriving it, would remove the shared write-point -- not done, and not in this change."
+          "factor": "C:/Users/marsh is itself a git repository, so a wrong worktree answer is a REAL EXISTING PATH rather than an error. Every discovery walk under the home directory succeeds with exit 0 about the wrong tree.",
+          "action_status": "not-actionable",
+          "note": "the home repository is the user's and is not this platform's to remove. The condition stands; what changed is that these three tools can no longer be fooled by it. Any OTHER tool deriving a root the same way still can."
         }
       ],
-      "recurrence_open": "The collision itself is NOT closed. Four sessions still write one shared PURPOSES literal from separate clones and a rebase still merges two new lines cleanly, so a duplicate can still be WRITTEN -- it is now caught at the next generate instead of never. And the COULD NOT CHECK third state is not driven by any test: that needs an unreadable source, which is a different arm and is not run."
+      "recurrence_open": "ONLY THESE THREE ARE FIXED. Any other tool on this platform that derives a clone root from __file__, or from an unanchored rev-parse, is still fooled by the home repository in exactly the same way, and nothing sweeps for the shape. tools/git_discovery_anchoring_check.py covers the unanchored-rev-parse half; the unchecked-__file__-fallback half has no sweep. And the probes themselves are not driven here -- only their root derivation."
     },
     {
       "commit": "d8392f805969",
