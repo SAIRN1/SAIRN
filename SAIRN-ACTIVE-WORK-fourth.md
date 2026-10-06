@@ -2017,3 +2017,75 @@ entries diagnosed, 66 -> 50 empty `why`.
 * 50 register entries still undiagnosed; 283 tools with no `# OWNER:` line;
   four gap-doc findings routed; cc's three methodology conventions still not
   received.
+
+---
+
+## BATCH 11 — 2026-10-06. Ran out of context at 2% mid-item and was interrupted; this is the continuation. Inventory: `docs/2026-10-06-fourth-batch11-inventory.md`
+
+**THE CLONE WAS CORRUPT WHEN THE CONTINUATION OPENED.** The session's first
+command failed with `fatal: this operation must be run in a work tree`;
+`core.bare = true` was in `.git/config` alongside the fixture identity.
+Repaired by hand. **Later proved to be PRE-FIX RESIDUE, not a failed fix** —
+`check8_probe.py` run in the live clone leaves `.git/config` byte-identical,
+`git status` unchanged and HEAD unmoved, and now carries its own arms asserting
+exactly that. **The writer is fixed and there is no detector for what it
+already wrote**, because `.git/config` is untracked: no commit, no `git
+status`, no push gate and no pull can see the residue, and it survives every
+fetch. That gap is in nobody's claim — andon pull 4.
+
+**Landed and pushed, `01c7b423..f98a4e39`, 7 commits:**
+
+* **Item 4 — both corrupting probes selftested in the LIVE clone**, not a
+  worktree, because a worktree staying clean proves nothing about the clone.
+  `run_delegation_probe` exit **0**, green, and `node --check` independently
+  says both files it used to leave sabotaged now parse. `check8_probe`'s
+  corruption is **gone**; the probe is still exit 1 on 2 arms and **those
+  predate the fix** — the 08:41 whole-tree capture already read `2 failed`,
+  before `b23dbc2e` landed at 16:03. Both arms assert *which* refusal fires and
+  the gate's fail-closed `no ref lines on stdin` path fires first. **Exit 0
+  four times from a dev copy, exit 1 here, same code** — environment-dependent,
+  and *why* is NOT established.
+* **Item 5 — gap documents 36 of 36** at `762b084b`, exit 0. The "5 of 35"
+  premise was the batch-9 figure and the population re-enumerates to 36.
+* **Item 6 — span sweep 34 of 34** at `762b084b`, exit 0, judged by **V8**.
+  The dispatch's 38 is re-derived to **34** (143 locator matches − 110 that
+  take no span + 1 fixed-window). **3 site spans are not function bodies.**
+  All 34 walker spans parse, so `tests/lib/fn_span.js` is clean.
+* **Item 7 — red register 8 of 50** empty `why` diagnosed, 50 → **42** of 79.
+  The "66" was batch 9's. Each run individually with its own exit code and its
+  failing arm read.
+* **Items 8 and 12 — conventions 11 (body) and 17 (new).**
+* **Item 11 — demo credentials 16 of 16 OK**, exit 0, sairnvet `role=owner`.
+* Seven SHA citations my own rebase orphaned, re-seated 20 minutes after
+  writing them. `post-rewrite` correctly said none were in *the tracking
+  documents* — these two dated files are not tracking documents, so its clean
+  verdict was true and did not cover them.
+
+**THE FINDING WORTH CARRYING:** six of the eight red suites I diagnosed are
+**one root cause running in both directions** — a probe arm that asserts
+something about the **live tree**. Five say "the tree is clean of what I
+detect" and go red on ordinary feature work; one says "the tool still finds
+this real defect" and went red because it was fixed. **And arm ordering decides
+the blast radius from an identical assertion:** `primitive_obsession` puts it
+at arm 0 as a gate and loses every other arm, so the detector is unverified in
+either direction; `truthy_sum` puts it last and still reports 13 passes.
+
+### NOT REACHED / OWED
+
+* **The pinned whole-tree rerun did not finish inside this session either** —
+  it was still running past 421 of ~739 lines. The first attempt died with the
+  interruption at 656 lines with its status file still reading `RUNNING`. Next
+  step is in the handoff.
+* **42 register entries still undiagnosed**, and two of the eight diagnosed are
+  **NOT CLEARED** and say so: `write_path_scan`'s fallen baseline key and
+  `removal_path`'s unaccounted resource are not yet named.
+* **Nine Tier A obligations NOT discharged**, listed most-overdue-first in the
+  andon log. `docs/tier-a-reviews.json` is cody's — re-claimed at
+  2026-10-06T22:06:45Z per hank's claim, and cody has already written a
+  discharge by takeover. **The two most overdue cannot be reviewed at all:**
+  their recorded SHAs `54e4835ac96e` and `f88105a88287` are UNREACHABLE,
+  verified with `git cat-file -e`, while three other recorded SHAs resolve.
+* **Item 10 remains blocked on Michael's SQL result** and was not guessed at.
+* 3 span sites not repointed; 17 broken gap-doc count claims measured, not
+  triaged; the 40-file `encoding=` sweep and the 16 + 18 unbaselined numeric
+  occurrences routed, not run.
