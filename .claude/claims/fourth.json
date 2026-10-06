@@ -3101,8 +3101,8 @@
       "task": "batch11: check8_probe root-cause fix in a throwaway worktree; convention 11 heading-with-no-body repair (cc routed, my file); gap-doc app-inference rule stated and the 12 findings re-run; span walker replaced with a real measurement and 24 rows re-checked; red-register empty-why diagnoses; METHODOLOGY intake from cody/cc/hank; one new convention; batch-10 per-item map; handoff. BLOCKED AND NOT OVERRIDDEN: docs/tier-a-reviews.json is CODY'S under a live claim doing most-overdue-first discharges -- my ranks 13-18 are NOT taken and will be retried at the end of this batch. docs/METHODOLOGY.md, docs/CRITICALITY-TIERS.md, docs/SAIRN-OPEN-WORK-INDEX.md, tools/tooling_inventory.py are HANK'S. tools/sairn_push_gate_hook.py root cause is CC'S. FILES: tests/push_gate/check8_probe.py docs/2026-09-13-cross-domain-disciplines.md docs/known-red-suites.json docs/2026-10-06-gap-doc-verification-all-35.md tests/lib/fn_span.js docs/2026-10-06-fourth-andon-log.md docs/recurring-bug-classes.md",
       "claimed_at": "2026-10-06T19:00:26Z",
       "claimed_at_epoch": 1791313226.170616,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-06T21:55:27Z",
       "files": [
         "docs/2026-09-13-cross-domain-disciplines.md",
         "docs/2026-10-06-fourth-andon-log.md",
