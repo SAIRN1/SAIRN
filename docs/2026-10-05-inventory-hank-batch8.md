@@ -1,7 +1,31 @@
 # Hank inventory — batch 8, 2026-10-05
 
-Thirteen items. This file is written as each lands, not at the end, so a
-session that dies halfway leaves a true partial record rather than nothing.
+Written as each item lands, not at the end, so a session that dies halfway
+leaves a true partial record rather than nothing.
+
+**The dispatch listed fifteen numbered items; this file has eleven sections,
+and the mapping is stated rather than left to be inferred.** Three of the
+dispatch's items were the resume instruction, the inventory itself, and the
+methodology entry, and two more collapsed into sections written for other
+items — `leg_facilities` (dispatch item 7) is inside section 3 because the
+same hover entry routed it, and `sdn_vendors`'s register half (part of
+dispatch item 8) is there for the same reason. **Nothing was dropped; the
+section numbers are not the dispatch numbers.**
+
+| dispatch | here |
+|---|---|
+| 1 `family_mar` gate | §1 |
+| 2 `scp_designs` (#878) | §2 |
+| 3 route the unrouted hover findings | §3 |
+| 4 `leg_facilities` basis | §3 (same hover entry) |
+| 5 `sdn_vendors` / SDN `storedBlob` | §3 register half, §4 code half |
+| 6 `sen_settings` accessor | §5 |
+| 7 drift backlog, 10+ rows | §6 |
+| 8 cp1252 sweep | §9 |
+| 9 plan literals + paywall affordance | §8 |
+| 10 gate-parity check | §7 |
+| 11 population methodology | §10 |
+| 12 inventory | §11 |
 
 ---
 
@@ -681,3 +705,184 @@ instead of more.
 These are purchase-influencing claims of the same class as the removed
 QuickBooks line, and I did not verify any of the three. Removing or keeping
 them is a decision about what is sold, not a literal-sweep fix.
+
+---
+
+## 9. The cp1252 sweep, with its own uncertainty stated
+
+**DRIVEN 296. CRASHED 1. COULD NOT TELL 1.**
+
+    pass 1   296 tools, 25s timeout, 8 workers
+             CRASHED  1   accepted_risk_expiry_audit.py
+             TIMEOUT 27   NOT a crash, and NOT a pass either
+    pass 2   the same 27, serial, 600s timeout
+             CRASHED  0
+             STILL TIMEOUT 1   run_all_tests.py
+
+So **295 of 296 answered**, and the one that did not is named. `run_all_tests.py`
+drives the whole suite, so >10 minutes is expected rather than suspicious — but
+it is **not** counted as clean, because a tool that was never observed to finish
+has not been observed to encode anything.
+
+**Run in a scratch copy** (`git archive HEAD` into the scratchpad), because a
+meaningful fraction of these tools write when run and a sweep must not mutate
+its own subject.
+
+### The harness violated a standing convention and was rewritten mid-task
+
+The first version buffered every row and wrote the report at the end. It was
+killed at the ten-minute mark and produced **an empty file** — a long run whose
+first check is at the end, which is the tenth standing convention, broken by
+the tool written to check an unrelated one. Rewritten to flush each row as it
+completes, so a kill leaves a true partial answer.
+
+### The one crash, and why its shape matters more than its count
+
+`tools/accepted_risk_expiry_audit.py` printed its per-verdict section headers
+with box-drawing rules. Under cp1252 that is `UnicodeEncodeError` — **at the
+REPORTING stage, after the whole audit had run.** The process exits 1, and
+**exit 1 is also this tool's finding status**, so a caller reading the status
+alone cannot tell a crash from a result. It computed the right answer and
+could not say it.
+
+Fixed by reconfiguring the **stream**, not the text: ASCII-ing this file would
+fix one file and leave the pattern in the other ~295. That is the same fix and
+the same reasoning `tools/register_feed_gate.py` already carries, where this
+class was recorded as its **fifth instance in one day** — one of which died
+*mid-sweep* and recorded an entire app as `SOUND=0 DRIFTED=0 INCONCLUSIVE=0`
+over 51 citations. **A crash read as a clean file.**
+
+---
+
+## 10. Methodology — a population must state what it SAW against what EXISTS
+
+**Written here and routed, not into `docs/METHODOLOGY.md`:** that file is
+**fourth's** under a live claim. The text is lift-and-paste ready and is named
+in `docs/2026-10-05-hank-routed-to-fourth.md`.
+
+### The convention
+
+> **A tool that reads a POPULATION must report the sources it SAW against the
+> sources that EXIST, and must fail loudly when the two differ.** A count
+> computed over part of a population is not a smaller true answer — it is a
+> different question, answered confidently.
+
+**Paid for by `hover_routing_gap_check.py`.** Its default read **876** log
+entries and reported **8** unrouted. There were **1404** entries across two
+auditor instances and **10** unrouted. **528 entries and two findings were
+invisible, and the tool never said a second instance existed.** A
+routing-gap checker blind to one auditor's log is the exact shape it was built
+to catch.
+
+### What the convention requires, concretely
+
+1. **Enumerate the universe from something that cannot be forgotten** — a
+   glob, a `git ls-files`, a registry — never a hardcoded list. A list is a
+   snapshot and goes stale silently; the fifth clone on this machine was
+   pushing commits for weeks while `CLAUDE.md` said there were four.
+2. **Print SEEN / EXIST on every run**, not on request. `876 of 1404` is a
+   finding; `876` is a result.
+3. **A partial read is a THIRD STATE and is never folded into the pass.** Two
+   runs in this batch depend on it: the cp1252 sweep reports
+   `run_all_tests.py` as COULD-NOT-TELL rather than counting it clean, and
+   `gate_parity_check.py` prints its file list on every run **because a silent
+   universe reports clean for a file it never opened.**
+4. **Name the exclusions out loud.** A tool that caps at top-N, skips
+   retries or samples must `log()` what it dropped — silent truncation reads
+   as "covered everything".
+
+### Where it already holds, and where it does not
+
+| | |
+|---|---|
+| `tooling_inventory.py` | **holds** — 7 declared sources, each with its count and its origin, and it **REFUSES** rather than emitting a blank cell |
+| `criticality_tier_check.py` | **holds** — `RESOURCES_REGISTERED` against `RESOURCE_ROWS`, and a disagreement is a PROBLEM |
+| `citation_line_drift_check.py` | **partly** — it reports INCONCLUSIVE honestly, but has no SEEN/EXIST line for apps; every SAIRNscape row is unanchorable to it and nothing says so |
+| the cp1252 sweep here | **holds, after a rewrite** — see item 9 |
+| `gate_parity_check.py` | **holds by construction** — the file list prints every run |
+
+**The third row is the live gap and it is not closed by this entry.**
+
+---
+
+## 11. Inventory — what landed, what did not, and what I got wrong
+
+### Landed, with shas
+
+| What | Sha | Verified by |
+|---|---|---|
+| `family_mar` caller gate (H1 #877) | `8246d8ba` | `tests/sd_data_family_mar_gate.js` **10/0**; ablation 6 arms fail on unmodified HEAD, 3 allowed arms stay green |
+| `scp_designs` B&rarr;A on integrity | `5faa4f1a` | `criticality_tier_check` PROBLEMS:0, TIER_A 275 |
+| 14 unrouted hover findings &rarr; 0 | `8783093f` | `hover_routing_gap_check` **EXIT=0**; `md_table_check` 831/831 |
+| Six tier cells corrected from the backlog | `7bd72e4d` | PROBLEMS:0; every citation re-derived at HEAD |
+| SDN generic write branch `storedBlob()` | `607f4f03` | `tests/sd_data_sdn_blob_scope.js` **10/0**; ablation 6 fail / 4 green |
+| 13 rows off the drift backlog | `f9898241` | DRIFTED 170&rarr;158, ANCHORED 156&rarr;182 |
+| `sen_settings` accessor exemption | `f9898241` | `checkblocks` 3/0 |
+| cp1252 crash; `sd_plan`; pricing header | `53168bb5` | 296 driven, 1 crash fixed; `checkblocks` 131/0 and 7/0 |
+
+### NOT landed, and why
+
+- **`tools/gate_parity_check.py`** — written, 7/0 selftest, ablated against the
+  real pre-fix file. **Held back untracked**: `tooling_inventory.py` refuses a
+  tool with no `PURPOSES` entry and that file is fourth's. Routed with
+  paste-ready text. **An untracked file is invisible to every other clone** and
+  that is the cost of the hold, not a detail.
+- **The `billing` role in `ALF_FAMILY_READ_ROLES`** — flagged, deliberately not
+  narrowed. See item 1.
+- **The SAIRNscape Business-tier feature claims** — logged with file:line, not
+  verified, not removed. A decision about what is sold.
+- **The `sdn_` save-site line numbers** in the routed index row are hover's and
+  were **not** re-derived at HEAD. Only the handler branch was.
+
+### What I got wrong, and what caught it
+
+**Five of my own defects this batch, none caught by review and all five caught
+by running the thing against real input.**
+
+1. **A false PASS in my own `family_mar` test.** The anchor
+   `action === 'family_mar'` matches **twice**, so arm C2 was grading `read`'s
+   body — a green arm in a test written specifically to prove that code
+   exists. Fixed with a `count == 1` uniqueness guard (arm C0).
+2. **The SDN test's arm D2** cut its source block at the string `SAIRNLEGACY`,
+   which exists only in a **comment**, and the arm strips comments two lines
+   earlier. The block ran to end-of-file.
+3. **`gate_parity_check` compared writes against reads** after its own
+   docstring said it would not — because fixture B2's write was cleaner than
+   any real write branch in the file.
+4. **`gate_parity_check` treated a role-set DECLARATION as a gate**, so the
+   ablation against the pre-fix file **did not flag #877 at all**. The tool
+   built to catch that defect could not see it, and the fixtures all passed.
+5. **Recording a superseded line number re-injected it as a citation**, so the
+   first drift re-measure came back **worse** (170 &rarr; 177) after thirteen
+   correct repointings.
+
+**The pattern is one pattern:** every fixture I wrote was tidier than the code
+it stood for, and every one of those defects was found by pointing the tool at
+production instead of at the fixture. Three of the five are *the tool failing
+to see the exact defect it was written for*.
+
+### Two hover findings whose proposed FIX was wrong
+
+- **seq 714** supplied paste-ready text naming `sfBottleFill()`. That function
+  **does not exist** — it appears twice, both in comments. Pasting it would
+  have swapped one non-existent identifier for another, in a correction whose
+  whole subject is a non-existent identifier. The real anchor is
+  `sfEstimateFill()` at `:4834`.
+- **seq 403 and the second half of 538** were **already applied** —
+  `grd_boq_rates`, the three `leg_` vital-records rows and `sdn_clients` are
+  all at their corrected tiers already. The gap was in the **record**, not the
+  work.
+
+### Open, named rather than left implied
+
+- The SAIRNscape **Tier A gating** obligation created by the `scp_designs`
+  promotion — a third Tier A resource still on the licence key alone.
+- The **dead-storage-key** class: keys READ but never WRITTEN. `sd_plan` is
+  fixed; `sd_pb`/`sd_pb2`/`sd_pb3` are routed; nothing sweeps for the rest.
+- A sweep for remaining raw **`data: payload`** write branches in
+  `api/sd-data.js`.
+- `citation_line_drift_check.py` cannot anchor **any** SAIRNscape row — it does
+  not know the `scpSt`/`scpLd` accessor idiom — and reports INCONCLUSIVE
+  without a SEEN/EXIST line.
+- **31 Tier A review obligations are past their 24h deadline** platform-wide,
+  three of them opened by me today.
