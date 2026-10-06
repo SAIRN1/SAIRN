@@ -3290,6 +3290,33 @@
         "tools/dead_rule_sweep.py",
         "tools/tool_owner_map.py"
       ]
+    },
+    {
+      "id": "cody-1791308055",
+      "session": "cody",
+      "subject": "Tooling",
+      "task": "queue19: Tier A discharge most-overdue-first; BUILD ledger_append.py, clone_health_check.py, dep_surface_check.py, rework_tracker.py with design notes; read-only core.bare cause hunt routed to ted; firebase-admin modular port on a branch with the failing arm as acceptance; finish tool_owner_map; measure run_all_tests and guard_ablation to a real 2x bound; re-derive the Sept-17 service_role_tier_a_gate_check claim and route to hank; postmortem plus a tautological-arm detector spec; two methodology rules routed to ted; handoff. CONFLICT DECLARED PER PR 4.3: hank holds tools/tooling_inventory.py, docs/TOOLING-INVENTORY.md, docs/METHODOLOGY.md and docs/CRITICALITY-TIERS.md -- so item 7 is FLAGGED BACK unlanded, every new tool stays unregistered and held, and both methodology rules are routed; cc holds tools/checker_selftest_check.py so the tautological-arm detector is a ROUTED SPEC and not a patch. None of those files are in my set FILES: docs/tier-a-reviews.json tools/ledger_append.py tools/clone_health_check.py tools/dep_surface_check.py tools/rework_tracker.py tools/tool_owner_map.py docs/tool-owner-map.json api/_lib/firebase-admin.js tests/run_blob_coverage_scope_sabotage.py docs/2026-10-05-dependabot-high-triage.md docs/postmortem-cody-2026-10-06b.md docs/2026-10-06-cody-queue19-design-notes.md docs/2026-10-06-cody-queue19-inventory.md docs/handoff-cody-2026-10-06c.md SAIRN-ACTIVE-WORK-cody.md",
+      "claimed_at": "2026-10-06T17:34:15Z",
+      "claimed_at_epoch": 1791308055.0765667,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "api/_lib/firebase-admin.js",
+        "docs/2026-10-05-dependabot-high-triage.md",
+        "docs/2026-10-06-cody-queue19-design-notes.md",
+        "docs/2026-10-06-cody-queue19-inventory.md",
+        "docs/handoff-cody-2026-10-06c.md",
+        "docs/postmortem-cody-2026-10-06b.md",
+        "docs/tier-a-reviews.json",
+        "docs/tool-owner-map.json",
+        "tests/run_blob_coverage_scope_sabotage.py",
+        "tools/clone_health_check.py",
+        "tools/dep_surface_check.py",
+        "tools/ledger_append.py",
+        "tools/rework_tracker.py",
+        "tools/tool_owner_map.py"
+      ]
     }
   ],
   "refusals": [
