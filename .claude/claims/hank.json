@@ -3605,8 +3605,8 @@
       "task": "batch9: land gate_parity_check.py; route all 19 unrouted hover findings; write the 3 missing already-applied rows (grd_boq_rates, leg_ vital-records cluster, sdn_clients); correct hover seq 714's wrong paste-ready fix; subagent scoping under .claude/agents; worktree-root path derivation; adopt cody's capture_exit.py as the exit sentinel; 10 more drift rows; fixture-vs-production methodology; the billing-in-a-clinical-role-set sweep across sairnvet sairndental sairnsenior sairncode; handoff. CONFLICTS DECLARED PER PR 4.3, NONE REWORDED PAST: tools/tooling_inventory.py and docs/METHODOLOGY.md are FOURTH'S (2.9h) -- registration for gate_parity_check.py is left PENDING and routed, and the methodology entry goes in my own inventory. docs/tier-a-reviews.json is CC'S (2.5h) and I am NOT writing it this batch. tools/capture_exit.py is CODY'S (1.1h) -- ADOPTED AS A CALLER, not edited. docs/SAIRN-OPEN-WORK-INDEX.md is in NO active claim's file set at HEAD cfd60db4. FILES: tools/gate_parity_check.py docs/SAIRN-OPEN-WORK-INDEX.md docs/CRITICALITY-TIERS.md .claude/agents docs/2026-10-06-inventory-hank-batch9.md docs/handoff-hank-2026-10-06.md docs/2026-10-06-hank-routed-to-fourth.md SAIRN-ACTIVE-WORK-hank.md",
       "claimed_at": "2026-10-06T09:30:21Z",
       "claimed_at_epoch": 1791279021.196478,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-06T16:17:54Z",
       "files": [
         "SAIRN-ACTIVE-WORK-hank.md",
         "docs/2026-10-06-hank-routed-to-fourth.md",
@@ -3624,8 +3624,8 @@
       "task": "batch9 continued: register gate_parity_check.py now that fourth's tooling_inventory claim has EXPIRED (6.9h, re-checked at 2026-10-06T13:54Z); cc's routed-to-hank doc measured ABSENT from the tree; subagent scoping; worktree-root paths; exit sentinel; 10 more drift rows; fixture-vs-production methodology; the billing-in-a-clinical-role-set sweep; handoff. FOUR EXPIRED CLAIMS OVERLAP AND ARE NAMED RATHER THAN IGNORED: cc (6.9h, docs/tier-a-reviews.json and docs/2026-10-06-cc-routed-to-hank.md), fourth (tools/tooling_inventory.py and docs/METHODOLOGY.md), cody, and my own previous one. Every one is past the 4h expiry; every session is LIVE but none has refreshed. FILES: tools/gate_parity_check.py tools/tooling_inventory.py docs/TOOLING-INVENTORY.md docs/METHODOLOGY.md docs/SAIRN-OPEN-WORK-INDEX.md docs/CRITICALITY-TIERS.md sairnfreedom.html .claude/agents docs/2026-10-06-inventory-hank-batch9.md docs/handoff-hank-2026-10-06.md SAIRN-ACTIVE-WORK-hank.md",
       "claimed_at": "2026-10-06T13:55:43Z",
       "claimed_at_epoch": 1791294943.3409111,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-06T16:17:54Z",
       "files": [
         "SAIRN-ACTIVE-WORK-hank.md",
         "docs/2026-10-06-inventory-hank-batch9.md",
