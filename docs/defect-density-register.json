@@ -23273,7 +23273,7 @@
       "recurrence_open": "The invocation-position rule knows seven interpreter names and will miss an eighth silently -- a false negative, chosen deliberately, and unmeasured. And nothing measures the notice's own precision over a session, which is the number that decides whether it is still read."
     },
     {
-      "commit": "888da2118fd1",
+      "commit": "1cb08cbf6285",
       "date": "2026-10-06",
       "subject": "fix(exec-context): two clauses in the CFO accounting statement had gone false, and the conclusion they supported was still right -- which is the combination that gets the whole statement disbelieved",
       "files": [
