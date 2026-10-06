@@ -3267,6 +3267,29 @@
         "tools/capture_exit.py",
         "tools/dead_rule_sweep.py"
       ]
+    },
+    {
+      "id": "cody-1791298385",
+      "session": "cody",
+      "subject": "Tooling",
+      "task": "queue18: Tier A discharges most-overdue-first with adversarial controls; the timeout-vs-no-evidence bound defect and its test arm; cross_tenant 4 DEAD rules diagnosed; the 23-rule could-not-run table for H2; verification arms for the 7 subprocess sites and the escape-check fix; tools/tool_owner_map.py; mintCustomToken arm plus the 248-suite rerun and the dependabot decision; red_suite_register_check blocker; the SQL runbook remaining-19 table; upgrade check; the 2x-bound methodology rule; handoff. CONFLICT DECLARED PER PR 4.3: hank holds tools/tooling_inventory.py, docs/TOOLING-INVENTORY.md, docs/METHODOLOGY.md, docs/SAIRN-OPEN-WORK-INDEX.md, docs/CRITICALITY-TIERS.md, tools/gate_parity_check.py and .claude/agents -- NONE are in my file set, no OWNER lines are added to other sessions tools, and the methodology rule goes in a dated file of mine. docs/tier-a-reviews.json is in NO live claim at HEAD (cc's expired) FILES: docs/tier-a-reviews.json tools/dead_rule_sweep.py tests/run_dead_rule_sweep_probe.py tools/tool_owner_map.py docs/tool-owner-map.json tools/capture_exit.py docs/2026-10-06-cody-queue18-inventory.md docs/2026-10-06-could-not-run-ledger.md docs/2026-10-06-sql-runbook-remaining-19.md docs/handoff-cody-2026-10-06b.md SAIRN-ACTIVE-WORK-cody.md",
+      "claimed_at": "2026-10-06T14:53:05Z",
+      "claimed_at_epoch": 1791298385.092442,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/2026-10-06-cody-queue18-inventory.md",
+        "docs/2026-10-06-could-not-run-ledger.md",
+        "docs/2026-10-06-sql-runbook-remaining-19.md",
+        "docs/handoff-cody-2026-10-06b.md",
+        "docs/tier-a-reviews.json",
+        "docs/tool-owner-map.json",
+        "tests/run_dead_rule_sweep_probe.py",
+        "tools/capture_exit.py",
+        "tools/dead_rule_sweep.py",
+        "tools/tool_owner_map.py"
+      ]
     }
   ],
   "refusals": [
