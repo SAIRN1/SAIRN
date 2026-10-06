@@ -72,6 +72,24 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
 DOC = os.path.join('docs', 'NHI-REGISTER.md')
 
+# ── THE BOUND ON A SINGLE PROCESS SPAWN, AND ITS FLOOR IS A JUDGEMENT ──────
+# The rule is 2x a MEASURED worst case. Measured 2026-10-06 on this machine
+# under load from a full 249-suite run, 20 samples each:
+#
+#   git config --get remote.origin.url   worst 0.051s   median 0.043s
+#   git ls-files '*.js' '*.html'         worst 0.056s   median 0.048s
+#
+# 2x is 0.1s, AND THAT IS NOT THE RIGHT BOUND. Below about a second the
+# measurement stops being about git and starts being about the OS scheduler, so
+# a 0.1s bound converts a momentary stall into a false COULD NOT RUN -- the
+# third state fabricated out of load. The floor is therefore a stated
+# judgement, not a measurement, and 5s is ~90x the measured worst case while
+# still being 4x tighter than the 20s it replaces and 24x tighter than the 120s
+# in overrun_inversion_scan.py.
+#
+# SAID OUT LOUD so the next reader does not take 5 for a measured figure.
+SPAWN_BOUND = 5
+
 # ── THE HAND-WRITTEN HALF: OWNER and SCOPE. Neither is derivable. ────────────
 # `credentials` lists the env-var names from secrets_inventory.SECRETS that this
 # identity authenticates with, so the cross-reference in check_attribution() has
@@ -607,11 +625,14 @@ def sibling_clones(repo=None):
     # A remote URL is ASCII in practice, so this one would not have bitten --
     # which is exactly why it is worth pinning rather than reasoning about: the
     # defect is invisible until the bytes happen to be non-ASCII.
+    # 20 -> SPAWN_BOUND, 2026-10-06. `git config --get` measured 0.051s worst
+    # over 20 samples under load; 2x that is 0.1s, which is below the floor
+    # SPAWN_BOUND states and justifies. 20s was a number nobody measured.
     try:
         mine = subprocess.run(
             ['git', '-C', repo, 'config', '--get', 'remote.origin.url'],
             capture_output=True, text=True, encoding='utf-8', errors='replace',
-            timeout=20).stdout.strip()
+            timeout=SPAWN_BOUND).stdout.strip()
     except Exception as e:
         raise CouldNotTell('could not read this clone\'s own origin (%s), so '
                            'no sibling can be compared to it' % e)
@@ -681,7 +702,7 @@ def sibling_clones(repo=None):
             url = subprocess.run(
                 ['git', '-C', path, 'config', '--get', 'remote.origin.url'],
                 capture_output=True, text=True, encoding='utf-8',
-                errors='replace', timeout=5).stdout.strip()
+                errors='replace', timeout=SPAWN_BOUND).stdout.strip()
         except Exception:
             continue
         if url == mine:

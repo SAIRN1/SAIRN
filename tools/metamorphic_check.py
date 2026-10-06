@@ -185,7 +185,26 @@ def read_raw(path):
 # about what "the fleet" means.
 from comment_sensitivity_check import CHECKERS               # noqa: E402
 
-PER_RUN_TIMEOUT = 120          # seconds. A timeout is COULD-NOT-RUN, not a pass.
+# ── BOUND SET AT 2x A MEASUREMENT, 2026-10-06, not at a round number ───────
+# It was 120, which is a number nobody measured. What it actually bounds is ONE
+# of the six CHECKERS run against ONE target. Measured on this machine while a
+# full 249-suite run was loading it -- deliberately the loaded case, because a
+# bound calibrated on an idle box is the one that fires under load:
+#
+#   literal_drift_check.py   stonedesk.html (2.76MB)   18.24s   <- the worst
+#   nav_panel_check.py       stonedesk.html            14.35s
+#   key_collision_check.py   stonedesk.html             3.18s
+#   the other three                                   <1s
+#
+# 2 x 18.24 = 36.5, rounded up to 40. The alarm is now ~2x the failure point
+# instead of ~6.6x, which is the whole reason for the rule: a bound that
+# generous reports a hang as a slow pass.
+#
+# RE-MEASURE WHEN stonedesk.html GROWS. The worst case is dominated by one
+# 2.76MB file and that file is growing; a bound tied to a measurement inherits
+# the measurement's expiry date, which is item 8 of the cross-domain
+# disciplines in its most literal form.
+PER_RUN_TIMEOUT = 40           # seconds. A timeout is COULD-NOT-RUN, not a pass.
 
 SAME = 'SAME'
 NO_ERASE = 'NO_ERASE'

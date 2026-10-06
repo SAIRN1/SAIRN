@@ -4343,12 +4343,19 @@
         "tools/audit_licence.py"
       ],
       "what": "--what-file",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "fourth",
       "owner_assigned_at": "2026-09-28T03:40:54Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cody",
+      "reviewed_at": "2026-10-06T19:14:45Z",
+      "verdict": "REVIEWED CLEAN on the code, WITH A FINDING ABOUT THE RECORD ITSELF. Discharged\nby cody via --takeover: reviewer_owner was fourth, held 207h, past the 48h\nwindow. Most overdue of the 22 obligations open-and-eligible for cody at\norigin/main 02bdd19a (the three older eligible ones carry recorded shas that do\nnot resolve in this clone and could not be reviewed here -- reported, not\ndischarged).\n\nTHE RECORD IS MALFORMED AND THE SUBJECT HAD TO BE RECONSTRUCTED. Its `what`\nfield is the literal string `--what-file`, so the flag was consumed as the body\nand the description was never stored. Its opened_at_sha 1faa4d99526a is a\n`chore(claims)` commit, and `git show 1faa4d99526a -- tools/alf_facility_role_gate_live_probe.py tools/audit_licence.py`\nis EMPTY -- neither named file is in it. So the subject reviewed here is the\nrange the gate's own STALE line points at:\n\n    git diff 1faa4d99526a..origin/main -- tools/alf_facility_role_gate_live_probe.py tools/audit_licence.py\n    2 files changed, 173 insertions(+), 0 deletions(-)\n    commits: 26e72a90, 624fcc15, ccbb1550\n\nROUTED TO HANK: a record whose body is a flag name and whose sha does not\ncontain its own files cannot be reviewed as opened. The reconstruction above is\na reviewer's inference, not the author's statement of what changed.\n\nWHAT THE CHANGE DOES. tools/audit_licence.py is new: a writing live probe must\npresent an audit licence (`^[A-Z]{2,6}-AUDIT-\\d{4}$`) or exit 2 COULD NOT RUN,\nwith `allow={key: 'a sentence'}` as the only exemption and a bare entry refused.\ntools/alf_facility_role_gate_live_probe.py adopts it and declares\nLIVE_PROBE_CLASS = VERIFICATION with LIVE_PROBE_RESIDUE naming\nsql/zz_probe_residue_delete_2026-09-28.sql.\n\nalf_facility IS Tier A and this probe WRITES to it. That write is the reason the\nchange is correct rather than a reason to refuse it: the management CONTROL arm\nmust succeed or the probe proves a refusal rather than a gate. The residue is\nONE row at the stable id ZZ-GATE-FAC, upserted, so N runs leave one row and not\nN, and the deletion path is named in the code rather than implied.\n\nTHE ONE THING I TRIED TO FAIL IT ON, AND IT SURVIVED. The call site reads\n\n    if LICENSE:\n        LICENSE = require_audit_licence(LICENSE, ...)\n\nwhich means the guard's own documented third state -- \"No key at all ->\nCOULD NOT RUN, exit 2. Not a silent skip\" -- is UNREACHABLE from this call site.\nThat is the exact shape the guard's docstring warns about, so I went looking for\nthe fail-open. There is none: main() at line 186 answers the same question\nitself with `if not LICENSE: ... return 2` and a printed UNVERIFIED reason. Two\nlayers answer it and one of them is dead, which is redundancy and not a gap.\nRecorded because the next reader will have the same suspicion and should not\nhave to re-derive the answer.\n\nKNOWN_AUDIT_KEYS is a dated snapshot of six keys measured 2026-09-29 and the\nfile says so in its own comment, including that it was WRONG IN BOTH DIRECTIONS\non its first version. Its failure mode under staleness is noise -- an\naudit-shaped key not in the tuple earns a NOTE and proceeds -- not a bypass,\nbecause an absent key still earns its 401 from the platform. Correct direction.\n\nWHAT THIS VERDICT DOES NOT CLAIM. Nothing here was run live: driving it needs\nALF-AUDIT-2026 plus a real employee session, and I hold neither. This is a\nsource review of 173 added lines over two tooling files. No product code serving\nalf_facility was touched by the range, and the gate's own STALE line is what\nlocated the range.",
+      "owner_takeover": {
+        "from": "fourth",
+        "by": "cody",
+        "at": "2026-10-06T19:14:45Z",
+        "owner_held_hours": 207.6,
+        "why": "assigned owner did not discharge within 48h"
+      }
     },
     {
       "author_session": "cody",

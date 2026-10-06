@@ -53,6 +53,11 @@ import subprocess
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# IMPORTED, NOT RE-DECLARED. A second copy of a bound is a second source of
+# truth, and the one that drifts is always the copy nobody is looking at.
+sys.path.insert(0, os.path.join(REPO, 'tools'))
+from nhi_register import SPAWN_BOUND                           # noqa: E402
 CRITERIA_VERSION = '2026-09-28.1'
 
 # A ratio capped at its nominal maximum. The two spellings that exist on this
@@ -91,8 +96,13 @@ BLIND_SPOTS = [
 
 def tracked():
     try:
+        # 120 -> SPAWN_BOUND, 2026-10-06. `git ls-files '*.js' '*.html'`
+        # measured 0.056s worst over 20 samples under load. 120s was 2000x the
+        # failure point: it would have reported a hung git as a slow pass for
+        # two minutes. The floor and its justification are stated once, in
+        # tools/nhi_register.py, rather than re-argued here.
         p = subprocess.run(['git', 'ls-files', '*.js', '*.html'], cwd=REPO,
-                           capture_output=True, timeout=120)
+                           capture_output=True, timeout=SPAWN_BOUND)
     except Exception:
         return None
     if p.returncode != 0:

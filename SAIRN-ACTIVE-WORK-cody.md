@@ -6893,3 +6893,29 @@ Handoff: `docs/handoff-cody-2026-10-06b.md`.
    methodology rules of mine now sit in dated files.
 5. **`db/schema_snapshot.json` has two blockers, not one**: `_constraints`
    absent AND the recorded sha dangling.
+
+---
+
+## 2026-10-06 — queue19 resumed after compaction (Cody)
+
+**Landed in one commit:** `tools/ledger_append.py`, `tools/clone_health_check.py`,
+`tools/dep_surface_check.py`, `tools/rework_tracker.py`,
+`tests/run_blob_coverage_scope_sabotage.py`, their PURPOSES entries, and all
+three generated documents regenerated so nothing drifts. The blocking claim
+(hank batch10, which held the inventory) **handed off mid-batch**; re-derived at
+`def36696`, not assumed.
+
+**Also landed:** the Tier A discharge of hank's 2026-09-28T03:40:54Z obligation
+(`alf_facility`, 207.6h, by takeover, 11 insertions not 5681), and four timeout
+bounds re-measured to 2x — `metamorphic_check.py` 120→40 and `SPAWN_BOUND`=5 for
+the three `git`-spawn bounds, defined once and imported.
+
+**NOT landed, and why:** the firebase-admin modular port. Its acceptance arm is
+green under 12.7.0 AND 14.5.0, the pre-port wrapper is red under 14.5.0, and
+every named symbol resolves at both — but **no clean 249-suite pass exists**:
+`run_all_tests.py` passed 3h16m without finishing. **ANDON.** The port is held
+at `<scratchpad>/held/firebase-admin.ported.js`, branch
+`cody/firebase-modular-port`.
+
+Detail: `docs/2026-10-06-cody-queue19b-items-5-7-8-9-10-14.md`.
+Handoff: `docs/handoff-cody-2026-10-06d.md`.
