@@ -23271,6 +23271,57 @@
         }
       ],
       "recurrence_open": "The invocation-position rule knows seven interpreter names and will miss an eighth silently -- a false negative, chosen deliberately, and unmeasured. And nothing measures the notice's own precision over a session, which is the number that decides whether it is still read."
+    },
+    {
+      "commit": "888da2118fd1",
+      "date": "2026-10-06",
+      "subject": "fix(exec-context): two clauses in the CFO accounting statement had gone false, and the conclusion they supported was still right -- which is the combination that gets the whole statement disbelieved",
+      "files": [
+        "api/_lib/exec-context.js",
+        "docs/2026-09-17-sairnroofing-competitive-gap-rederived.md"
+      ],
+      "lines_added": 39,
+      "lines_removed": 2,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "The CFO exec-context accounting statement asserted two facts that had gone false: 'no such endpoint is deployed' and 'no connection table exists'. api/accounting.js, api/_lib/accounting-connector.js and sql/accounting_connector_schema.sql all exist at HEAD. The conclusion (SAIRN does not connect to QuickBooks) was still true for a different reason, which is the dangerous shape -- a reader who checks finds the premise false and discards the conclusion.",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "27a2404dade2",
+        "date": "2026-09-02",
+        "subject": "feat(platform): accounting connector storage and endpoint -- the OAuth leg returns 501 and is not simulated",
+        "lag_days": 34
+      },
+      "contributing_factors": [
+        {
+          "factor": "The statement was written as a dated verification ('Verified against the code on 2026-09-02') and nothing re-reads it against the code on any cadence, so its truth decays silently.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "Sweep every remaining dated 'verified' statement in api/_lib/exec-context.js against HEAD and fix or route each; standing re-check cadence still owed."
+        },
+        {
+          "factor": "The accounting connector was built later by a different workstream; nothing in that change pointed at the prompt text that asserted the connector did not exist.",
+          "kind": "process",
+          "action_status": "not-actionable",
+          "note": "A general 'who else asserts this does not exist' back-reference does not exist and is not being invented for one case."
+        },
+        {
+          "factor": "The premise was false while the conclusion was true, so every behavioural test of the advisor still passed -- the defect is unreachable by assertion on output correctness.",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "Declined: asserting prompt PROSE against code would be a second copy of the facts and would drift the same way."
+        }
+      ],
+      "recurrence_open": "Nothing re-reads the other dated 'verified' statements in exec-context.js on a cadence; this fix corrects one statement and names the sweep as owed. Until that sweep lands and is re-run periodically, the same decay can happen to any other statement in the same array."
     }
   ],
   "started": "2026-09-09",
