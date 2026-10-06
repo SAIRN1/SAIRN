@@ -5615,6 +5615,26 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-10-06T07:29:58Z",
+      "opened_at_sha": "581e214fb1330527ae5783c640eb3b26ec123857",
+      "resources": [
+        "sdn_projects"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tests/sd_data_sdn_blob_scope.js"
+      ],
+      "what": "api/sd-data.js, the ONE generic SDN_RESOURCES write branch serving all 18 SAIRNdesign resources: data: payload replaced with storedBlob(payload, []), and the 200 response's fallback limb switched to the stripped object. Before this, any key the caller invented -- including a forged license_hash, app_id or p_license_hash -- was stored verbatim in the data jsonb column and echoed back on read beside the real columns that contradict it. Twelve of the eighteen resources carry client identity or money. LATENT, not live: every read resolves tenancy from the real license_hash COLUMN, which always wins. WHAT A REVIEWER SHOULD ATTACK: (1) THE EMPTY COLUMN LIST. Every sibling storedBlob call site passes ['id']; this one passes []. My reason is that those branches re-attach the id from its column on read and this branch returns x.data verbatim, so ['id'] would empty the id off every record in eighteen resources -- check that reading of the read limb, because if I am wrong the fix is under-strict. (2) updated_at is a real column and is NOT stripped from the blob, so a caller-supplied updated_at still sits inside data; I left it because the read never returns the column and widening the strip was not the finding -- that judgement is reviewable and may be wrong. (3) sdn_clients has a BESPOKE write branch earlier in file order that already used storedBlob; confirm the generic branch is genuinely unreachable for it, because if it is reachable the two branches now strip differently. (4) tests/sd_data_sdn_blob_scope.js asserts on the captured upstream POST body rather than the response -- check arm C1 really drives an UNGATED resource and that arm D2's block scoping is right, since its first version cut on a string that only exists in a comment.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-10-06T07:29:58Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
