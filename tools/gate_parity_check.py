@@ -87,7 +87,10 @@ DEFAULT_FILES = [
     'api/sd-data.js',
 ]
 
-CRITERIA_VERSION = '2026-10-05.1'
+# .2 -- a FIXTURE WAS DELETED, so the criteria changed and the stamp moves.
+# A lock that grows or shrinks without the version moving makes two different
+# locks indistinguishable in a past report.
+CRITERIA_VERSION = '2026-10-06.2'
 
 # ── THE THREE SIGNALS ───────────────────────────────────────────────────────
 # ROLE: the session's role is CONSULTED. `session.role` is the only way this
@@ -331,35 +334,12 @@ def findings(all_units):
 #    Locked here rather than measured on the live file, because the live file is
 #    now FIXED and a check validated only against clean code has been validated
 #    against nothing.
-FIX_877_BEFORE = """
-    if (resource === 'alf_family_contacts' &&
-        (action === 'read' || action === 'write' || action === 'family_mar')) {
-      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
-      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION' } }); return; }
-      if (action === 'read') {
-        const ALF_FAMILY_READ_ROLES = roleSet({ owner: true, nursing: true });
-        const famBroad = !!ALF_FAMILY_READ_ROLES[session.role];
-        if (!famBroad) {
-          const ar = await fetch(rest('alf_clients?assigned_employee_id=eq.' + x + '&select=client_id'));
-        }
-        const cr = await fetch(rest('alf_family_contacts?select=' + famCols));
-        res.status(200).json({ ok: true, data: rows });
-        return;
-      }
-      if (action === 'family_mar') {
-        const cr = await fetch(rest('alf_family_contacts?contact_id=eq.' + id + '&select=' + famCols));
-        const view = famLib.familyMarView({ contact: contact, entries: entries });
-        res.status(200).json({ ok: true, data: view });
-        return;
-      }
-    }
-"""
-
 FIX_877_AFTER = """
     if (resource === 'alf_family_contacts' &&
         (action === 'read' || action === 'write' || action === 'family_mar')) {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION' } }); return; }
+      const ALF_FAMILY_READ_ROLES = roleSet({ owner: true, billing: true, nursing: true });
       if (action === 'read') {
         const famBroad = !!ALF_FAMILY_READ_ROLES[session.role];
         if (!famBroad) {
@@ -381,14 +361,23 @@ FIX_877_AFTER = """
     }
 """
 
-# ── THE PRODUCTION SHAPE, AND THE ONE THE FIRST FIXTURE SET MISSED ─────────
+# ── THE PRODUCTION SHAPE, AND THE ONLY PRE-FIX FIXTURE THERE IS ────────────
 # Copied from the real api/sd-data.js at 05cbc74d, trimmed: the role SET is
-# DECLARED in the shared prelude and CONSULTED inside `read` only. A1 above
-# puts the declaration inside the gated branch, which no handler in this file
-# actually does -- so A1 passed while the tool was blind to the real defect.
-# Caught by running the tool against the pre-fix file instead of trusting the
-# fixtures: it flagged three groups and alf_family_contacts was not one.
-FIX_877_BEFORE_REAL_SHAPE = """
+# DECLARED in the shared prelude (`:11501`) and CONSULTED inside `read` only.
+#
+# THERE USED TO BE A SECOND, TIDIER FIXTURE HERE AND IT IS DELETED RATHER THAN
+# KEPT ALONGSIDE THIS ONE (2026-10-06). It put the declaration INSIDE the gated
+# branch, which no handler in api/sd-data.js does -- and because it was the arm
+# that ran first, it PASSED while the tool was blind to the real defect. The
+# ablation against the actual pre-fix file flagged three groups and
+# alf_family_contacts was not one of them.
+#
+# A FIXTURE NO REAL CODE MATCHES IS A TEST OF A SYSTEM THAT DOES NOT EXIST, and
+# keeping it beside the true one would have left the green arm that misled this
+# tool in place as evidence. Two of this tool's three defects were exactly this
+# shape; the third (fixture B2's bare `{ ok: true }` write) was corrected the
+# same way, by making the fixture carry what every real write here carries.
+FIX_877_BEFORE = """
     if (resource === 'alf_family_contacts' &&
         (action === 'read' || action === 'write' || action === 'family_mar')) {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
@@ -474,17 +463,17 @@ BRACE_IN_STRING = """
 def selftest():
     print('gate_parity_check selftest -- criteria %s\n' % CRITERIA_VERSION)
     cases = [
-        ('A1. the PRE-FIX #877 shape IS FLAGGED -- read gates on a role set and '
-         'an assignment, family_mar on neither, and both disclose the resource',
+
+        ('A1. THE REAL PRE-FIX #877 SHAPE IS FLAGGED -- the role SET DECLARED '
+         'in the SHARED PRELUDE and CONSULTED inside `read` only, which is what '
+         'the handler actually looked like. The earlier fixture put that '
+         'declaration inside the gated branch, matched no real handler, PASSED, '
+         'and left this tool blind to the defect it was built from; it is '
+         'deleted rather than kept beside this one',
          FIX_877_BEFORE, True, 'alf_family_contacts'),
         ('A2. the POST-FIX shape is NOT flagged. WITHOUT THIS ARM the check '
          'could flag every multi-action resource and A1 would still pass',
          FIX_877_AFTER, False, 'alf_family_contacts'),
-        ('A3. THE REAL PRE-FIX SHAPE IS FLAGGED -- the role SET DECLARED in the '
-         'shared prelude and CONSULTED in one branch only. A1 did not contain '
-         'this and the tool was blind to it: the ablation against the actual '
-         'pre-fix file flagged three groups and this was not one of them',
-         FIX_877_BEFORE_REAL_SHAPE, True, 'alf_family_contacts'),
         ('B1. a gate in the SHARED PRELUDE counts for both siblings and is NOT '
          'flagged -- the single most common correct shape on this platform',
          SHARED_PRELUDE_OK, False, 'zz_thing'),
