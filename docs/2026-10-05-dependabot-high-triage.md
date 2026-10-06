@@ -342,3 +342,137 @@ live payment path.
   packages. None was audited here.
 - **That `npm audit` is clean afterwards.** Not run against the scratch tree;
   the measurement was reachability and suite parity.
+
+---
+
+# ADDENDUM 3 — 2026-10-06 (Cody): **DO NOT LAND THE UPGRADE. IT BREAKS `mintCustomToken`.**
+
+**Addendum 2 recommended the upgrade on the strength of "0 of 248 suites
+changed verdict", and named the limit that made that figure safe to doubt:
+NO SUITE DROVE A REAL `mintCustomToken`.** That limit has now been closed with
+an arm, and the arm fails on 14.5.0.
+
+**My own recommendation in addendum 2 is WITHDRAWN.**
+
+## THE ARM, AND WHAT IT PROVES
+
+`api/_lib/firebase-mint.test.js` — 16 assertions, **no network and no stub
+of `firebase-admin` itself.**
+
+**There is no network boundary to stub, and that is the point.**
+`createCustomToken()` signs a JWT **locally**, RS256, in-process. So the real
+path is fully reachable offline with a throwaway RSA key generated per run by
+`crypto.generateKeyPairSync` — never written to disk, corresponding to no
+real project. **A fixed test key in a repo is a credential; a generated one is
+arithmetic.**
+
+| what the arm drives | why it matters |
+|---|---|
+| real `admin.credential.cert(json)` | **this is the advisory call site** — the only `forge.*` use in 12.7.0 is `forge.pki.privateKeyFromPem` inside `ServiceAccount`, reached from here |
+| real `initializeApp` and `createCustomToken` | nothing mocked |
+| **signature verified against the public half** | the arm that proves the PEM was really parsed and really used. Every other assertion passes against a token with a garbage signature |
+| tampered-payload negative | so the verify arm is not passing because `verify()` returns true for anything |
+| 6 bad-uid refusals, asserted FIRST | a token minted for a bad uid is the worst outcome, so the refusals come before the success |
+| missing-credential refusal, **in a child process** | the module caches its app, so the refusal is only drivable with an empty module cache |
+
+## THE RESULT: 1 OF 249 SUITES CHANGES VERDICT, AND IT IS THIS ONE
+
+```
+BASELINE-12.7.0 : 249 suites, 161 exit 0, 88 NOT 0
+UPGRADE-14.5.0  : 249 suites, 160 exit 0, 89 NOT 0
+
+SUITES WHOSE VERDICT CHANGED (1):
+  api/_lib/firebase-mint.test.js    12.7.0=0   14.5.0=1
+```
+
+Under 12.7.0: `all 16 assertions passed`. Under 14.5.0:
+
+```
+TypeError: Cannot read properties of undefined (reading cert)
+    at getAdminApp (api/_lib/firebase-admin.js:62)
+    at mintCustomToken (api/_lib/firebase-admin.js:78)
+```
+
+## THE CAUSE: v13+ REMOVED THE LEGACY NAMESPACE, AND WE USE ALL OF IT
+
+In 14.5.0 `require('firebase-admin')` **is** the modular `firebase-admin/app`
+surface. Measured side by side:
+
+| we call | 12.7.0 | 14.5.0 |
+|---|---|---|
+| `admin.credential.cert` | `object` | **`undefined`** |
+| `admin.auth(app)` | `function` | **`undefined`** |
+| `admin.apps` | `object` | **`undefined`** |
+| `admin.app()` | `function` | **`undefined`** |
+| `admin.database(app)` | `function` | **`undefined`** |
+| `admin.initializeApp` | `function` | `function` |
+
+14.5.0 exports `cert`, `initializeApp`, `getApp`, `getApps`, `deleteApp` and
+errors — nothing else. **ALL THREE of our exported functions break**, not
+just the minting one: `rtdbUpdate` and `rtdbGet` use `admin.apps` and
+`admin.database` too.
+
+**`initializeApp` surviving is what made this invisible.** A smoke test that
+only loads the module and lists its exports passes under both — which is
+exactly what addendum 2 did, reporting *"our wrapper LOADS under 14.5.0 and
+exports all three functions"*. **That was true, and it was module resolution,
+not a token.**
+
+## THE DECISION, EXECUTED
+
+### The two HIGHs are one problem — **ACCEPTED, with a basis and four triggers**
+
+`npm audit` on the current tree: **2 high, 1 moderate, 3 total.** Both highs
+are the same chain, `firebase-admin > node-forge`, *"RSA PKCS#1 v1.5 signature
+verification accepts extra nested DigestAlgorithm elements"*, and for both
+`fixAvailable` is `firebase-admin@14.5.0, isSemVerMajor: true`.
+
+**THE ONLY OFFERED FIX IS THE ONE THAT BREAKS THE AUTH PATH.** So the decision
+is to accept, and the basis is a measurement rather than a shrug:
+
+1. **The vulnerable primitive is not on our path.** The advisory is about
+   signature **verification** (`rsa.js` `verify`). Our one and only `forge.*`
+   call is `pki.privateKeyFromPem` — a **parser**, whose return value is
+   discarded, applied to **our own service-account key out of our own env**.
+   Never attacker-supplied.
+2. **Nothing else in the tree pulls node-forge** — `firebase-admin` is the
+   sole declarer across all 195 locked packages.
+3. **Nothing in `api/`, `tests/` or `tools/` requires it directly.**
+
+**THE TRIGGERS, and the first is now the load-bearing one:**
+
+| # | re-open when | how to check |
+|---|---|---|
+| 1 | **`api/_lib/firebase-admin.js` is ported to the modular API** — that is what unblocks 14.5.0, and it is a rewrite of auth code on a live payment path | after the port, re-run `api/_lib/firebase-mint.test.js` against 14.5.0 |
+| 2 | `firebase-admin` gains a second `forge.*` call site | `grep -rn "forge[.][a-zA-Z]" <firebase-admin>/lib` must return exactly one line |
+| 3 | anything in this repo requires `node-forge` directly | `grep -rn node-forge api/ tests/ tools/` |
+| 4 | a new advisory lands against `pki.privateKeyFromPem` itself | that is the one primitive we do use |
+
+### The moderate — not one of the two, and already patched
+
+`@grpc/grpc-js` resolves to **1.14.5** in the lockfile, the patched version
+from the original triage. The remaining moderate is its low-severity
+companion, unchanged, and is not one of the two HIGHs.
+
+## STATUS, ITEM BY ITEM
+
+| | |
+|---|---|
+| mintCustomToken arm, network stubbed only | **DONE** — 16 assertions, no network at all, signature verified |
+| 249-suite baseline re-run against 14.5.0 | **DONE** — 1 verdict changed |
+| land the upgrade | **NOT DONE, AND CORRECTLY REFUSED.** The condition was "green arm AND 0 verdicts change". The arm is RED and 1 verdict changed |
+| `node-forge` HIGH | **DONE — DECIDED: accept**, basis and four triggers above |
+| `firebase-admin` HIGH | **DONE — DECIDED: accept.** Same chain, same decision; one problem in two rows |
+
+## WHAT THIS STILL DOES NOT ESTABLISH
+
+- **That the port to the modular API is hard.** It is five call sites in one
+  141-line file. Not estimated here, and it is auth code on a payment path, so
+  it is a decision rather than a chore.
+- **That 1 changed verdict is the whole blast radius.** 88 suites are red
+  under BOTH versions in the scratch copy for want of environment, and a real
+  break hiding inside one of those 88 would be invisible to this differential.
+- **That the arm covers the RTDB half.** It drives `mintCustomToken` only.
+  `rtdbUpdate` and `rtdbGet` break on the same namespace removal, established
+  by reading the exports rather than by driving them — they need a live
+  database URL.
