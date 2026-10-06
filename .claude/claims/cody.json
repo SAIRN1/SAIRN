@@ -3345,6 +3345,19 @@
         "tools/rework_tracker.py",
         "tools/tooling_inventory.py"
       ]
+    },
+    {
+      "id": "cody-1791327215",
+      "session": "cody",
+      "subject": "Tooling",
+      "task": "SHORT HOLD, MINUTES NOT HOURS, ON ONE FILE: write the Tier A discharge of cc 2026-09-28T10:44:30Z (criticality_tier_check rollup dedup) and RELEASE IMMEDIATELY. The previous Tooling claim was released at 2026-10-06T22:40:01Z specifically so cc can take her ranks 7-12, and this does NOT retake it -- the record being discharged is AUTHORED BY cc and is therefore not reviewable by her, so it is not in her set. Re-derived at HEAD 095ee8a7: no live claim declares docs/tier-a-reviews.json in its FILES list. FILES: docs/tier-a-reviews.json",
+      "claimed_at": "2026-10-06T22:53:35Z",
+      "claimed_at_epoch": 1791327215.0394862,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/tier-a-reviews.json"
+      ]
     }
   ],
   "refusals": [
