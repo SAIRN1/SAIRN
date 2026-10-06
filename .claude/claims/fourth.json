@@ -3025,6 +3025,23 @@
         "tests/sairnlegacy_item_price_lists.js",
         "tools/push_retry.py"
       ]
+    },
+    {
+      "id": "fourth-1791268393",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "exec-context verified-statement re-verification; competitive-gap doc headline sweep; red suite register check tool; full-tree suite drive; spanOf helper fixes; methodology conventions FILES: api/_lib/exec-context.js docs/2026-09-17-sairnroofing-competitive-gap-rederived.md tools/red_suite_register_check.py tools/tooling_inventory.py docs/METHODOLOGY.md",
+      "claimed_at": "2026-10-06T06:33:13Z",
+      "claimed_at_epoch": 1791268393.0979342,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/_lib/exec-context.js",
+        "docs/2026-09-17-sairnroofing-competitive-gap-rederived.md",
+        "docs/METHODOLOGY.md",
+        "tools/red_suite_register_check.py",
+        "tools/tooling_inventory.py"
+      ]
     }
   ],
   "refusals": [
