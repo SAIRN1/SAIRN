@@ -1911,3 +1911,60 @@ Items 3 (verify every gap-doc headline against HEAD), 4 (SAIRNroofing GL
 journal export) and 5 (build the highest-severity still-open gap, which
 depends on 3). Each is a multi-hour piece and the batch ran out before them.
 Named rather than quietly dropped.
+
+---
+
+## BATCH 9 — 2026-10-06. Fourteen items. Full inventory: `docs/2026-10-06-fourth-batch9-inventory.md`
+
+**The three findings, ahead of the item list:**
+
+1. **A WHOLE-TREE TEST RUN CORRUPTS THIS CLONE.**
+   `tests/push_gate/check8_probe.py` leaves `.git/config` with
+   `core.bare = true` and a fixture identity, after which **every** git command
+   fails with `fatal: this operation must be run in a work tree`. Observed
+   three times today and repaired by hand each time.
+   `tests/seam_check/run_delegation_probe.py` leaves `api/sd-data.js` and
+   `api/_lib/subcontractor-compliance.js` carrying planted sabotage, one of
+   which **does not parse**. Both attributed by digesting a watch-list after
+   every suite. **Neither is fixed and check8's mechanism is NOT pinned.**
+   `docs/2026-10-06-whole-tree-run-and-the-runner-that-corrupts-its-clone.md`.
+
+2. **`tools/suite_override_consistency.py`, which I wrote in batch 8, COULD NOT
+   FIRE.** Its majority rule is satisfied by no app-file override anywhere in
+   the tree, so `findings 0` over 488 suites was the only answer it could give
+   — including for the LEG_HTML incident it exists for. The 2-of-6 figure this
+   file recorded last batch is **2 of 7** with `api/` in the corpus. Rule
+   changed to ANY sibling, corpus widened, now **155 findings, 0 of them under
+   a majority convention**.
+
+3. **Two headline cells in standing status documents were false, and in both
+   cases the correction already existed somewhere else.** SAIRNroofing A5 cited
+   an EXPIRED CLAIM as its evidence — a status that cannot go stale in the safe
+   direction. SAIRNdental B2 said `dnt_rollup` had no caller eleven days after
+   `b179d967` gave it one, and the closure was already recorded in the
+   2026-09-25 reverification pass.
+
+**Landed:** the spanOf class sweep (24 of 38 sites measured, 5 real, each
+repoint proven by a planted control, `tests/lib/fn_span.js` + 15 fixtures);
+exec-context's CFO **and** CTO accounting clauses corrected; SAIRNlegacy F2
+declinability built (31 arms); SAIRNdesign procurement middle built (21 arms);
+`tools/red_suite_register_check.py`; the red register reconciled 13 → 80
+entries; conventions **13, 14 and 15** added to
+`docs/2026-09-13-cross-domain-disciplines.md`; `docs/METHODOLOGY.md` created as
+a pointer.
+
+**THE THREE ITEMS THIS FILE RECORDED AS NOT REACHED LAST BATCH:** item 3
+(gap-doc headlines) is **PARTIAL — 5 of 35 documents**, item 4 (roofing GL
+export) was found **already built**, item 5 (build the highest-severity gap) is
+**done** — SAIRNlegacy F2.
+
+### NOT REACHED / OWED
+
+* **66 of the 80 red-register entries carry an empty `why`** — driven, never
+  diagnosed. The largest single addition that register has had.
+* **30 of 35 gap documents unverified.**
+* **14 of 38 span sites unpaired.**
+* The two corrupting probes, unfixed and routed.
+* **I ran the whole tree WITHOUT `--pinned`**, which is the one thing that
+  would have removed the moving-target confound entirely. My mistake, and the
+  cheapest of the three to avoid.
