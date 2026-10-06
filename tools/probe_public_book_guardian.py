@@ -10,21 +10,48 @@ import sys
 import urllib.request
 import urllib.error
 
-# ── PATH DERIVED FROM THIS FILE, NOT FROM A HARDCODED CLONE (2026-10-06) ───
-# This line hardcoded the absolute path of the `SAIRN-hank` clone, so running
-# this probe from ANY OTHER CLONE imported hank's tools rather than its own --
-# a cross-clone import that reports about the wrong tree while looking
-# entirely normal. Nothing would have failed; the answer would have been
-# about a directory the caller never pointed at.
+# ── THE WORKTREE ROOT, ASKED OF GIT AND THEN CHECKED (2026-10-06) ──────────
+# This line hardcoded the absolute path of one clone, so running this probe
+# from any other clone imported THAT clone's tools. Nothing would have failed;
+# the answer would have been about the wrong tree.
 #
-# AND NOT `git rev-parse --show-toplevel`, WHICH IS THE WORSE OPTION HERE AND
-# THE REPO ALREADY DOCUMENTS WHY: the HOME directory is itself a git
-# repository, so git's upward discovery SUCCEEDS from any directory beneath it
-# and answers about THAT repository -- exit 0, confident, wrong. See
-# tools/git_discovery_anchoring_check.py, which exists for that hazard. A path
-# derived from __file__ cannot be wrong about which tree this file is in,
-# because it IS in it -- no subprocess, no discovery, nothing to anchor.
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# `git rev-parse --show-toplevel` IS THE SOURCE, per instruction -- and it is
+# ANCHORED AND VERIFIED, because unanchored it is a trap in this repository
+# specifically: the HOME directory is itself a git repository, so discovery
+# walks UP from any directory beneath it and SUCCEEDS with exit 0 about the
+# wrong repo. tools/git_discovery_anchoring_check.py exists for that hazard and
+# it has already produced a fail-open in another tool's probe.
+#
+# So: anchor with `-C <this file's own directory>`, then CHECK the answer
+# actually contains this file. If git is absent, fails, or answers about a tree
+# this file is not in, fall back to the __file__ root and SAY SO on stderr --
+# a silent fallback would be the same defect one level down.
+def _repo_root():
+    here = os.path.dirname(os.path.abspath(__file__))
+    fallback = os.path.dirname(here)
+    try:
+        import subprocess
+        p = subprocess.run(['git', '-C', here, 'rev-parse', '--show-toplevel'],
+                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if p.returncode == 0:
+            root = p.stdout.decode('utf-8', 'replace').strip()
+            if root and os.path.isfile(os.path.join(root, 'tools',
+                                                    os.path.basename(__file__))):
+                return root
+            sys.stderr.write(
+                'worktree root: git answered %r, which does not contain this '
+                'file -- falling back to the path derived from __file__\n'
+                % root)
+        else:
+            sys.stderr.write('worktree root: git rev-parse exited %d -- '
+                             'falling back to __file__\n' % p.returncode)
+    except Exception as _e:                                      # noqa: BLE001
+        sys.stderr.write('worktree root: git rev-parse unavailable (%s) -- '
+                         'falling back to __file__\n' % type(_e).__name__)
+    return fallback
+
+
+sys.path.insert(0, os.path.join(_repo_root(), 'tools'))
 import sairn_http  # noqa: E402
 
 URL = 'https://sairn.vercel.app/api/sairndental/public-book'
