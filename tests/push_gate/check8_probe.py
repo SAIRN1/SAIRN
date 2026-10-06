@@ -28,6 +28,154 @@ import tempfile
 
 MAIN = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# ── THIS PROBE LEAVES THE CLONE'S .git/config CORRUPTED (2026-10-06) ───────
+# MEASURED, THREE TIMES, DETERMINISTICALLY. After a run of this file that is
+# killed by a per-suite ceiling, `.git/config` carries
+#
+#     [core]  bare = true
+#     [user]  email = fx@example.invalid   name = fx
+#
+# and from that moment EVERY git command in the clone fails with
+# `fatal: this operation must be run in a work tree`. It was first seen during
+# a whole-tree run on 2026-10-06, attributed to this file by digesting
+# .git/config after every suite, and reproduced on demand with
+# `timeout 240 python tests/push_gate/check8_probe.py`.
+#
+# PINNED TO ONE STEP, NOT TO ONE COMMAND, AND THE DIFFERENCE IS STATED.
+# The per-step reassertion below labels the step the drift is seen after, and
+# it reports the same one every time:
+#
+#     dry_push(probe_env=False)
+#
+# -- the FIRST real `git push --dry-run` from the worktree, which is the one
+# whose outgoing range is READABLE, because the fixture sits on top of
+# FETCH_HEAD. So the writer is inside the .githooks/pre-push chain, on a path
+# reached only when the range resolves.
+#
+# THAT ALSO EXPLAINS WHY SIX ISOLATIONS CAME BACK CLEAN, and the explanation
+# matters more than the list: every manual reproduction hit "the outgoing
+# range ... could not be read" -- origin/main moves hourly here -- so the gate
+# chain exited BEFORE the path that writes. A negative result from an
+# isolation that never reached the code is not evidence about that code. The
+# six were: copy_exactly_gate --fixtures; copy_exactly_gate --range from a
+# worktree (its _fx_repo() is the ONLY place in this repo that writes
+# `fx@example.invalid`); each of the four pre-push gates driven separately
+# with a crafted refs line; sairn_push_gate_hook in PreToolUse mode; a real
+# dry-run push from a worktree; and `git worktree add` alone.
+#
+# NOT CHASED FURTHER, DELIBERATELY. The remaining suspects are inside
+# tools/sairn_push_gate_hook.py's check-12 path, which builds a
+# `sairn-gate-base-*` worktree and runs GENERATORS FROM THE BASE COMMIT --
+# i.e. older copies of tools, with cwd inside a worktree, where a `git config`
+# write lands in the SHARED config. That is a plausible mechanism and it is
+# NOT a measurement; it is recorded as the next place to look, by the session
+# that owns that gate.
+#
+# SO THIS IS CONTAINMENT, NOT A ROOT-CAUSE FIX, and it is labelled as such.
+# The config bytes are copied before anything runs, restored on every ordinary
+# exit, and left as a RESTORABLE BACKUP for the one path a process cannot
+# defend against -- being killed. `--check-residue` finds that backup, says
+# the clone may be corrupt, and restores it.
+CONFIG = os.path.join(MAIN, '.git', 'config')
+CONFIG_BACKUP = os.path.join(MAIN, '.git', 'config.check8-probe-backup')
+
+
+def _read_config():
+    try:
+        with open(CONFIG, 'rb') as fh:
+            return fh.read()
+    except OSError:
+        return None
+
+
+def check_config_residue(restore=False):
+    """-> exit code. Did a killed run leave this clone's config corrupted?"""
+    if not os.path.exists(CONFIG_BACKUP):
+        print('no backup: no run of this probe died before restoring .git/config.')
+        return 0
+    try:
+        with open(CONFIG_BACKUP, 'rb') as fh:
+            saved = fh.read()
+    except OSError as e:
+        print('COULD NOT READ the backup (%s). That is not a clean result.' % e)
+        return 2
+    now = _read_config()
+    if now is None:
+        print('COULD NOT READ .git/config. That is not a clean result.')
+        return 2
+    if now == saved:
+        print('a run died before removing its backup, but .git/config is '
+              'byte-identical to it -- nothing to repair.')
+        if restore:
+            os.remove(CONFIG_BACKUP)
+        return 0
+    print('A RUN OF THIS PROBE DIED AND .git/config DIFFERS FROM ITS BACKUP.')
+    try:
+        txt = now.decode('utf-8', 'replace')
+        for key in ('bare = true', 'fx@example.invalid'):
+            if key in txt:
+                print('    present now and NOT in the backup: %s' % key)
+    except Exception:
+        pass
+    if restore:
+        with open(CONFIG, 'wb') as fh:
+            fh.write(saved)
+        os.remove(CONFIG_BACKUP)
+        print('    RESTORED from %s' % os.path.relpath(CONFIG_BACKUP, MAIN))
+        return 0
+    print('    Restore it with:  python %s --restore-config'
+          % os.path.relpath(os.path.abspath(__file__), MAIN))
+    return 1
+
+
+if '--check-residue' in sys.argv or '--restore-config' in sys.argv:
+    sys.exit(check_config_residue(restore='--restore-config' in sys.argv))
+
+_CONFIG_BEFORE = _read_config()
+if _CONFIG_BEFORE is None:
+    print('SKIPPED: .git/config could not be read, so this probe cannot '
+          'guarantee it will hand the clone back the way it found it. Nothing '
+          'about check 8 was verified.')
+    sys.exit(3)
+with open(CONFIG_BACKUP, 'wb') as _fh:
+    _fh.write(_CONFIG_BEFORE)
+
+
+_CONFIG_DRIFTED = []
+
+
+def _reassert_config(step='(exit)'):
+    """Put the config back NOW, and remember that it had moved.
+
+    Called after every push-shaped step rather than only at exit. The write
+    happens somewhere inside one of those steps, and between it and process
+    exit this clone is BARE -- every `git` command in it, including another
+    session's, fails outright. Restoring immediately bounds that window to one
+    step instead of the whole run. The drift is recorded, not swallowed: the
+    arm at the end still fails, because a config this probe had to put back is
+    a config it should never have moved.
+    """
+    now = _read_config()
+    if now == _CONFIG_BEFORE:
+        return
+    _CONFIG_DRIFTED.append('%s (%s bytes)' % (step, len(now) if now is not None else 'unreadable'))
+    try:
+        with open(CONFIG, 'wb') as fh:
+            fh.write(_CONFIG_BEFORE)
+    except OSError:
+        pass
+
+
+@atexit.register
+def _restore_config():
+    """Hand the clone back byte-identical, on every exit this process controls."""
+    _reassert_config()
+    try:
+        if os.path.exists(CONFIG_BACKUP):
+            os.remove(CONFIG_BACKUP)
+    except OSError:
+        pass
+
 # ── THE FIXTURE IS PLANTED IN A THROWAWAY WORKTREE (2026-09-11) ────────────
 # THIS FILE WAS NOT ON THE LIST AND HAD THE DEFECT IT TESTS.
 # `docs/2026-09-10-run-all-tests-hook-PAUSED.md` names check4_probe.py and
@@ -155,6 +303,7 @@ def dry_push(probe_env=False):
                            cwd=REPO, capture_output=True, text=True,
                            encoding='utf-8', errors='replace', env=env)
         err = (r.stderr or '') + (r.stdout or '')
+    _reassert_config('dry_push(probe_env=%s)' % probe_env)
     return {
         'exit': r.returncode,
         'could_not_run': r.returncode != 0 and RANGE_UNREADABLE in err,
@@ -174,6 +323,7 @@ def pretooluse(cmd):
     except ValueError:
         out = {}
     hook = out.get('hookSpecificOutput', {}) or {}
+    _reassert_config('pretooluse(%s)' % cmd)
     return {
         'decision': hook.get('permissionDecision'),
         'reason': hook.get('permissionDecisionReason', '') or '',
@@ -296,6 +446,29 @@ check('and the CLONE was never touched -- no commit, no modified file',
       and subprocess.run(['git', '-C', MAIN, 'rev-parse', 'HEAD'],
                          capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
       == MAIN_HEAD_BEFORE)
+
+
+# ── AND NEITHER WAS .git/config (2026-10-06) ───────────────────────────────
+# `git status --porcelain` above says NOTHING about .git/config -- it is not a
+# tracked file, so a clone whose config has been switched to `bare = true`
+# reports a clean tree right up until the next git command fails outright.
+# That is exactly how this went unnoticed: the probe's own "the CLONE was never
+# touched" arm was true and the clone was unusable.
+#
+# This arm compares BYTES, not keys, so it also catches a write nobody
+# predicted -- which matters here, because the writing command is not pinned.
+_cfg_now = _read_config()
+check('...and neither was .git/config -- byte-identical to the pre-run copy',
+      _cfg_now == _CONFIG_BEFORE and not _CONFIG_DRIFTED,
+      ('config was changed %d time(s) DURING this run (in: %s) and put back '
+       'each time. The clone is usable; the writer is still unknown and this '
+       'arm is the alert for it. Manual repair, if a run is ever killed: '
+       'python tests/push_gate/check8_probe.py --restore-config'
+       % (len(_CONFIG_DRIFTED), '; '.join(str(n) for n in _CONFIG_DRIFTED)))
+      if _CONFIG_DRIFTED else
+      ('config differs at exit. Expected %d bytes, found %s.'
+       % (len(_CONFIG_BEFORE),
+          'unreadable' if _cfg_now is None else '%d bytes' % len(_cfg_now))))
 
 print('\n%s  check8_probe: %d failed' % ('FAILED' if fails else 'ok', len(fails)))
 sys.exit(1 if fails else 0)
