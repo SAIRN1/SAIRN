@@ -115,6 +115,22 @@ a pipeline's last element:
 
 `node --check api/sd-data.js` EXIT=0 before and after.
 
+### Live verification: COULD NOT TELL, and that is not a pass
+
+Pushed as `8246d8ba` (reseated after two rebases; the register cites that sha).
+`tools/sairn_http.py` against the real deployment:
+
+    POST https://sairn.vercel.app/api/sd-data
+      {action: family_mar, resource: alf_family_contacts, ...}
+    -> 401 {"error":{"code":"NO_LICENSE","message":"Missing bearer license key"}}
+
+**That proves the endpoint is live and refusing. It proves nothing about the
+gate**, because the unauthenticated refusal is identical on the old code — it
+fires before either branch is reached. Driving the actual gate needs a
+sairncare licence key AND an employee session token for a narrow role, which
+this session does not hold. So: deployment reachable, fix **NOT live-verified**.
+Recorded as a third state rather than folded into the green above.
+
 ### Observed, not caused by this change
 
 Every arm of the new test prints:
@@ -127,3 +143,92 @@ That is the handler's own disclosure firing because the test mocks auth, and it
 fires identically on the unfixed code in the ablation. Not a regression and not
 in scope here, but it is the right warning in the right place and worth not
 mistaking for noise later.
+
+---
+
+## 2. `scp_designs` carried boilerplate while its twin had been read — hover seq 878
+
+**Premise at HEAD: HELD, and re-derived rather than accepted.** The hover
+auditor's entry 878 (log `C--Users-marsh-Documents-SAIRN-hover`, severity
+moderate) says `scp_designs` still carried the 178-character *"Classified by
+the stated B rule rather than individually read"* boilerplate while
+`grd_designs` — functionally identical — had been read and moved to **A/B** on
+2026-09-23. I re-read both at HEAD before touching the register, because a
+routed finding is a claim to verify.
+
+**Verified in the app, not inferred from the finding:**
+
+| | `grd_designs` (sairngrounds) | `scp_designs` (sairnscape) |
+|---|---|---|
+| send function | `sendDesignToQuote()` `:2500` | `scpSendDesignToQuote()` `:3218` |
+| quote gated on approval | `if(!rec\|\|!rec.approved)` refuse | `:3220`, same refusal, same string |
+| approval printed on the quote | `lines.push('Design approved by '+…)` | `:3223`, same, plus the Design Walk id |
+| prices anything | no — every line `a:0` | no — `:3222`-`:3223`, every line `a:0` |
+| target of the write | `grd_quotes` (Tier A) | `scp_quotes` (Tier A) |
+
+Both halves of `grd_designs`'s A verdict — **it gates quote creation** and
+**the approval attribution is printed on a customer-facing quote** — are true
+of `scp_designs` field for field.
+
+**Applied:** `scp_designs` **B → A on integrity, confidentiality stays B**, with
+the evidence written out rather than stamped with a group name. App rollup
+`sairnscape` 12 | 2 | 10 → 12 | **3** | 9, `scp_designs` added to the RE-TIERED
+list.
+
+**An obligation this creates, written into the row rather than left implied.**
+`scp_quotes`'s own cell states the SAIRNscape gating stopping rule as *"Tier A,
+not these two names"*. `scp_designs` is now a third Tier A SAIRNscape resource
+still authorised by the **licence key alone**. Arming that gate is a handler
+change needing its own both-directions suite and its own live verification —
+the same shape `invoices` and `scp_quotes` each got — so it is **OPEN and
+named**, not quietly absent.
+
+### The headline the promotion broke, which is the guard working
+
+    criticality_tier_check.py   EXIT=1   PROBLEMS:2
+      HEADLINE  file says 391/274/117/0, rows say 391/275/116/0
+      HEADLINE  "The B tier is 117 rows" -- rows say 116
+
+Both re-derived from the checker's own `RESOURCE_ROWS` / `TIER_A`, not adjusted
+by one. **Tenth recorded drift of that sentence, and the first I caught in the
+same minute I created it.**
+
+**And the stale figure nothing checks.** The same sentence ended *"That is 64%
+Tier A"* — against 274/391, which is **70%**. The two counts beside it are
+re-derived on every edit by a guard; the ratio computed from them is not, so it
+had drifted furthest and silently. Corrected to 70% with the division written
+out. Folded into this edit deliberately rather than split off: it is the same
+sentence, and leaving a false ratio inside a line whose whole discipline is
+re-derivation would be the defect the line exists to prevent.
+
+### Verification
+
+    python tools/criticality_tier_check.py        EXIT=0   PROBLEMS:0  (TIER_A 275)
+    python tools/md_table_check.py CRITICALITY..  EXIT=0   434/434 rows, 0 malformed
+    python tools/citation_line_drift_check.py --app sairnscape.html --prefix scp_
+                                                  EXIT=0   DRIFTED 0
+    python tests/run_criticality_tier_probe.py    EXIT=1 while uncommitted ->
+                                                  re-run after commit, below
+
+The probe's failing arm is `this clone's own register is untouched`, a
+dirty-tree guard; it is expected to be red while the edit is unstaged.
+
+**One false citation caught by that drift check and removed before it landed.**
+My first draft of the row cited the `scp_quotes` row as `` `:544` ``, a
+*document* line number. `citation_line_drift_check.py` reads a bare `:NNN` in a
+`scp_` row as a line in `sairnscape.html`, so the register would have carried a
+citation pointing at an unrelated line of the app. Replaced with a named
+cross-reference and the reason written beside it.
+
+### A tool blind spot found while verifying, logged not fixed
+
+`citation_line_drift_check.py` returned **INCONCLUSIVE** for all six
+`scp_designs` citations: *"no storage constant declared for it, and no literal
+`setItem('scp_designs')` or `st('scp_designs')` write either"*. The write does
+exist — `sairnscape.html:2915` is `scpLd('scp_designs',[])` and the saves go
+through `scpSt`. The tool looks for `st(` and `setItem(` and does not know about
+per-app prefixed accessors like `scpSt`/`scpLd`, so every SAIRNscape row is
+unanchorable to it. **INCONCLUSIVE is the honest answer and the tool gives it**
+— it is not reporting a pass — but a whole app that can never be anchored is a
+coverage hole worth naming. Not fixed here: widening that tool is a change to a
+measurer and takes its own fixtures and a before/after count.
