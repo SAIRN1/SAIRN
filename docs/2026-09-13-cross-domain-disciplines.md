@@ -733,9 +733,77 @@ by a different road.
 
 ---
 
-## The failure mode eight of the fifteen share
+## 16. A probe that never reached the code proves nothing about the code -- so prove it arrived
 
-*(Count corrected 2026-10-06: this heading read "eight of the eleven" when the document had eleven numbered sections, and was not updated when 12 was added on 2026-09-25 or when 13, 14 and 15 were added today. The EIGHT is unchanged and is the load-bearing number -- 12, 13, 14 and 15 are NOT members of that group. Carrying what it said so the correction is visible rather than invisible, per the numbering note at the end of this file.)*
+**Adopted 2026-10-06 (Fourth), after reading SIX clean results as evidence
+when all six were non-runs.**
+
+**THE CASE.** `tests/push_gate/check8_probe.py` leaves this clone's
+`.git/config` carrying `core.bare = true` and a fixture identity, after which
+every git command in the clone fails outright. To find the writer I isolated
+six candidates and every one came back **CONFIG UNCHANGED**:
+
+* `tools/copy_exactly_gate.py --fixtures`, and `--range` from a worktree
+  (its `_fx_repo()` is the *only* place in the repo that writes
+  `fx@example.invalid`);
+* each of the four `.githooks/pre-push` gates, driven separately with a
+  crafted refs line on stdin;
+* `tools/sairn_push_gate_hook.py` in PreToolUse mode;
+* a real `git push --dry-run` from a worktree;
+* `git worktree add` on its own.
+
+I was one step from writing "mechanism unknown, six candidates excluded".
+
+**EVERY ONE OF THOSE SIX EXITED EARLY ON THE SAME LINE:** *"the outgoing range
+`<a>..<b>` could not be read"*. `origin/main` moves hourly here, so the gate
+chain refused before reaching the path that writes. **Six negative results
+from six runs that never executed the code under suspicion.** The probe's own
+instrumentation then pinned it in one run — a per-step reassertion that names
+the step the drift appears after reported `dry_push(probe_env=False)`, the
+first dry-run push whose range *does* resolve, every time.
+
+**THE RULE.**
+
+> A negative result is evidence only if the run REACHED the code it is about.
+> Before recording "X did not do it", show that X ran — a line of its output,
+> a counter, a side effect, anything that could only exist if the suspect code
+> executed. **An isolation with no arrival evidence is a COULD-NOT-TELL
+> wearing a verdict.**
+
+**This is PR §1.11 moved from checks to EXPERIMENTS,** and it is harder to see
+there. A check that could not run usually says so; an isolation that could not
+run looks *exactly* like an isolation that ran and found nothing. Both print
+nothing.
+
+**THE SIBLING CASE, from the batch before, because the two share a root.** A
+whole-tree run was driven WITHOUT `--pinned` on a branch five clones push to
+hourly. Its log reports `tests/sairnbiz_vendor_ytd_derivation.js` as passing;
+the same suite driven by hand exits 1, because a rename arrived mid-run. There
+the run DID reach the code — and reached a *different version of it* than the
+one being reported on. **Arrival has two halves: did it execute, and did it
+execute the thing you are naming.** `--pinned` exists for the second half and
+not using it cost a day's census.
+
+**HOW TO IMPLEMENT IT.**
+- **Make the suspect announce itself.** The per-step label that pinned the
+  config writer cost four lines and replaced six wasted isolations.
+- **Pin the subject before measuring it** — a commit, a sha, a frozen copy —
+  whenever anything else can move it while you look.
+- **Record WHY each negative is a negative.** "Ran and found nothing" and
+  "refused before reaching it" are different sentences; a list of the first
+  that is secretly the second is worse than no list.
+
+**WHERE IT DOES NOT TRANSFER, said plainly.** A total, unconditional absence —
+grep over a corpus for a string that is simply not there — has no "arrival" to
+demonstrate; the search itself is the arrival. The rule bites when the suspect
+is CODE THAT HAS PRECONDITIONS, because the preconditions are what fail
+quietly.
+
+---
+
+## The failure mode eight of the sixteen share
+
+*(Count corrected 2026-10-06: this heading read "eight of the eleven" when the document had eleven numbered sections, and was not updated when 12 was added on 2026-09-25 or when 13, 14 and 15 were added on 2026-10-06, or when 16 followed them. The EIGHT is unchanged and is the load-bearing number -- 12, 13, 14, 15 and 16 are NOT members of that group. Carrying what it said so the correction is visible rather than invisible, per the numbering note at the end of this file.)*
 
 Eight of these conventions defend against the same thing: **a check that reads as
 coverage and structurally cannot fire.** (Items 7, 9 and 10 are the exceptions
