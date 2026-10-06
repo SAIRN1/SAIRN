@@ -23436,6 +23436,62 @@
         }
       ],
       "recurrence_open": "Nothing prevents the next arm from being written with a byte window. There is no checker that flags a function-body slice whose end is not a balanced close, and this sweep was a one-off measurement rather than a standing gate. 14 of 38 sites are also still unpaired."
+    },
+    {
+      "commit": "f864c57ef551",
+      "date": "2026-10-06",
+      "subject": "fix(suite-override): the rule could not fire, so `findings 0` over 488 suites was not a result -- plus the per-verdict census the count needs",
+      "files": [
+        "tools/suite_override_consistency.py"
+      ],
+      "lines_added": 206,
+      "lines_removed": 44,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/suite_override_consistency.py, written 2026-10-05, reported findings 0 and could not have reported anything else. Its rule required a MAJORITY of an app family to honour a file override; measured 2026-10-06 no app-file override reaches a majority anywhere in the tree (LEG_HTML 2 of 7, SD_HTML 6 of 70, SB_HTML 7 of 20, DNT_HTML 5 of 18), so the detector was dead -- including to the exact 2026-10-05 incident it was written for, where a caller passed LEG_HTML to a suite that ignores it because two siblings accept it. Its corpus also excluded 145 api/**/*.test.js suites, which changes family ratios rather than merely narrowing coverage. Under the corrected rule it reports 155 findings over 488 suites, 0 of them under a majority convention.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "34c834aae5b9",
+        "date": "2026-10-05",
+        "subject": "fix(tests): the app was right and the test's span was short -- plus the red register reconciled against a real run, and the A/B rule that came from my own void comparison",
+        "lag_days": 1
+      },
+      "contributing_factors": [
+        {
+          "factor": "The rule required a MAJORITY of a family to honour an override. Measured against the real tree, no app-file override reaches a majority anywhere except a 3-of-3 family where there is nothing to find -- so the rule was structurally incapable of returning a finding, and its 0 was vacuous.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Trigger is now ANY sibling, matching the actual misreading (the caller saw one sibling and generalised); --rule majority kept so the difference is measurable, with three fixtures separating the two."
+        },
+        {
+          "factor": "The corpus was tests/ only, excluding 145 api/**/*.test.js suites. A narrower corpus is not a smaller version of the same answer here: a family majority is computed from its members, so an excluded member changes the ratio.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Corpus is now the same two places tools/run_all_tests.py discover() reads; 488 JS suites."
+        },
+        {
+          "factor": "The tool reported a finding count with no denominator, so a vacuous zero was indistinguishable from a real clean sweep.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "A per-verdict census prints beside the count, including the two verdicts the tool CANNOT judge, with a TOTAL that must equal the suites examined."
+        },
+        {
+          "factor": "Shared credential vars (SD_AUTH_SECRET, SUPABASE_URL) were counted as file-substitution conventions, which generated findings against suites that had no file override to be inconsistent about.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Only _HTML/_FILE/_PATH/_SRC vars count, with a fixture in each direction."
+        }
+      ],
+      "recurrence_open": "The tool still cannot see an override read through a helper rather than process.env directly, cannot tell whether a present override reaches the read, and does not judge the 16 CROSS_APP suites at all. Those three are named limits, not findings. And the 155 findings are now a backlog nobody owns: the fix per finding is a judgement (add the override, or say in the header that the suite is pinned), and none of the 155 has been made."
     }
   ],
   "started": "2026-09-09",
