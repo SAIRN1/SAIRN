@@ -1,0 +1,16 @@
+{
+  "session": "hover2",
+  "claims": [
+    {
+      "id": "hover2-1790731125",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "resume queue: verify item1/2 state, close the recommitted hover_self_health_fires.jsonl regression in tools-hover2/, then items 3-9, push and refresh mirror",
+      "claimed_at": "2026-09-30T01:18:45Z",
+      "claimed_at_epoch": 1790731125.3229148,
+      "status": "released",
+      "released_at": "2026-10-06T18:08:03Z",
+      "files": null
+    }
+  ]
+}
