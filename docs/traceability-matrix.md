@@ -529,6 +529,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#9989; THE ONE GENERIC `SDN_RESOURCES` WRITE BRANCH STORED THE CALLER'S WHOLE PAYLOAD RAW &mdash; no `storedBlob()` &mdash; across all 18 resources, 12 of which carry client identity or money** <!-- HOVER-H2-529-538-ROUTED-HANK-2026-10-05 --> | **FIXED 2026-10-05 (hank), `57017e71`, same session that routed it.** `tests/sd_data_sdn_blob_scope.js` **10/0**, asserting on the BODY POSTED UPSTREAM rather than on the response. **ABLATION against  | `tests/sd_data_sdn_blob_scope.js` |
 | ~~**&#128308; ALL 18 SAIRNdesign resources are authorised by the LICENCE KEY ALONE &mdash; `SDN_RESOURCES` verifies NO SESSION on either leg, and FIVE of them are now Tier A**~~ | **&#9989; THE FIVE TIER A ROWS ARE GATED, 2026-09-23 (Hank).** `sdn_contracts`, `sdn_discounts`, `sdn_invoices`, `sdn_pos`, `sdn_referrals` are in `SD_SESSION_GATED` with matching `SD_GATE_APP` entrie | `api/sd-data-sdn-session-gate.test.js` |
 | **&#128308; EVERY INVOICE CREATED SINCE 2026-09-23 GOT 403 AND THE USER WAS TOLD IT WAS A CONNECTION PROBLEM &mdash; the session gate landed and one DIRECT FETCH bypassed the transport that carries the token** | **FOUND AND FIXED 2026-09-25 (CC)** while reviewing hank&rsquo;s gate (944f6685). `sairndesign.html`&rsquo;s invoice-create is a deliberate direct fetch &mdash; it needs the real 409 DUPLICATE_INVOICE | `tests/gated_resource_direct_fetch_header.js` |
 
@@ -696,17 +697,17 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 712 of 888 traced, 80.2%.
+For context and not as the headline: 713 of 889 traced, 80.2%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 712 citations come from
+### Where the 713 citations come from
 
 | source | citations |
 |---|---|
 | `index` | 322 |
 | `declared` | 314 |
-| `declared+index` | 66 |
+| `declared+index` | 67 |
 | `GUARD_TESTS+index` | 6 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
@@ -918,8 +919,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 888   tests/**, api/** (both walked)
-  open-work rows citing a test       386   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 889   tests/**, api/** (both walked)
+  open-work rows citing a test       387   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 10   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                75   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     81   report_only_checks.NOT_PROMOTED
