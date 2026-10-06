@@ -3058,6 +3058,21 @@
         "docs/cloud-research/sairnlegacy-competitive-gap-audit-2026-10-05.md",
         "sairnlegacy.html"
       ]
+    },
+    {
+      "id": "fourth-1791299078",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "sairndesign procurement middle -- sidemark, ship-to, freight and receiving on the purchase order, the three absent steps of the advertised procurement spine per docs/cloud-research/sairndesign-competitive-gap-audit-2026-10-05.md findings 2 and 3; sales tax is REFUSED WITH A DISCLOSURE rather than computed, because a fabricated rate on a resold-goods invoice is the certified-payroll class. api/sd-data.js is HANK'S and is NOT touched: sdn_purchase_orders stores a data jsonb blob. FILES: sairndesign.html tests/sairndesign_po_procurement.js docs/cloud-research/sairndesign-competitive-gap-audit-2026-10-05.md",
+      "claimed_at": "2026-10-06T15:04:38Z",
+      "claimed_at_epoch": 1791299078.5607562,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/cloud-research/sairndesign-competitive-gap-audit-2026-10-05.md",
+        "sairndesign.html",
+        "tests/sairndesign_po_procurement.js"
+      ]
     }
   ],
   "refusals": [
