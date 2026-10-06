@@ -55,3 +55,78 @@ block. The whole remaining step is:
 
 **`constraints.json` itself is not committed** — per the dispatch, and because
 it is a transcription of live database state, not a repo artefact.
+
+---
+
+# BATCH 11 CONTINUATION — 2026-10-06, after the context exhaustion
+
+## PULL 4 — this clone was CORRUPT when the session opened, AFTER the fix commit
+
+**Halted on:** the session's first command, `git status --porcelain`, failed
+with `fatal: this operation must be run in a work tree`.
+`git config --get core.bare` returned **`true`**, with the fixture identity
+`fx@example.invalid` also present in `.git/config`.
+
+**Why it is a pull rather than a repair note.** `b23dbc2e` ("fix(check8): ROOT
+CAUSE, not containment — the fixture is a throwaway CLONE now") landed at
+16:03 and the corruption was observed at ~17:50. Two readings fit and the
+evidence does not separate them:
+
+1. the fix did not work, or does not cover every path; or
+2. the fix works, the residue was left on disk by an earlier run, and
+   **nothing repairs it**.
+
+**The thing worth escalating is true either way:** `.git/config` is
+**untracked**. No commit, no `git status`, no push gate and no pull can see
+the residue. It survives every fetch and every rebase, and the only symptom is
+that every subsequent git command in the clone fails outright. There is a
+fixed writer and **no detector for what it already wrote**. That gap is
+separate from the writer, is in nobody's claim, and is named here rather than
+folded into item 4's result.
+
+Repaired by hand with `git config --unset core.bare`, verified by
+`git config --get core.bare` returning nothing and `git status` working again.
+
+## PULL 5 — two of my nine Tier A obligations CANNOT be reviewed, and the gate says so
+
+`python tools/tier_a_review_gate.py --list` — **PROGRAM_EXIT=1**, at HEAD
+`762b084b`, 2026-10-06. **31 open obligations; 9 eligible to fourth** (records
+authored by another session and assigned to `fourth`), most overdue first:
+
+| author | identity | resources | overdue | freshness |
+|---|---|---|---|---|
+| hank | 2026-09-27T03:42:29Z | alf_staff, sen_visits | **235h** | **COULD-NOT-TELL** — sha `54e4835ac96e` UNREACHABLE |
+| cody | 2026-09-28T03:34:57Z | dnt_ar, dnt_revenue | **211h** | **COULD-NOT-TELL** — sha `f88105a88287` UNREACHABLE |
+| hank | 2026-09-28T03:40:54Z | alf_facility | 211h | STALE — moved since `1faa4d99526a` (reachable) |
+| cc | 2026-09-29T17:47:11Z | alf_activities, alf_billing, alf_clients, alf_facility, alf_mar | 173h | fresh |
+| cody | 2026-09-30T10:58:02Z | rf_claims, rf_invoices, sen_visits | 156h | fresh |
+| cody | 2026-09-30T12:08:26Z | sv_audit_log | 154h | fresh |
+| hank | 2026-09-30T12:59:51Z | bld_change_orders, bld_inspections, bld_toolbox_talks, bld_warranty, mech_checks, quotes, sd_exec_msgs | 154h | fresh |
+| hank | 2026-10-05T09:03:14Z | grd_irr_zones, grd_rounds | 37h | fresh |
+| cody | 2026-10-05T13:23:46Z | invoices, scp_quotes, sd_sms_log | 33h | fresh |
+
+(A tenth row assigned to `fourth` — identity `2026-10-05T09:50:00Z`,
+`invoices` — is **authored by fourth** and is therefore not eligible to me.
+Counted out rather than silently skipped.)
+
+**Halted on:** the **two most overdue** carry `** COULD-NOT-TELL ** the
+recorded sha does not resolve in this clone`. Verified independently with
+`git cat-file -e <sha>^{commit}`: `54e4835ac96e` and `f88105a88287` are both
+UNREACHABLE, while `1faa4d99526a`, `1da31d4ceb77` and `15843e311da8` resolve —
+so this is per-record, not a broken clone or a missing fetch. Four of the six
+distinct SHAs in the overdue block are gone, rebased away without a reseat.
+
+**A review obligation whose subject commit cannot be read cannot be
+discharged.** Signing it off would be an assertion that somebody read a diff
+that is not in this clone, which is precisely the thing the review record
+exists to make true. "Could not tell" is the third state and it is not a pass.
+**Escalated rather than discharged, and rather than discharged with a caveat.**
+
+## THE WRITE IS BLOCKED AND I DID NOT OVERRIDE IT
+
+`docs/tier-a-reviews.json` is **cody's**. cody's claim has passed the 4-hour
+expiry timer, but `python tools/sairn_status.py` reports **cody `working`
+LIVE** on "queue19 resume", and queue19's own first item is *"Tier A discharge
+most-overdue-first"* — the identical work. **Expiry is a timer, not a
+release.** The nine rows above are listed so the work is ready to land and are
+**not** discharged; nothing in that file was written by this session.
