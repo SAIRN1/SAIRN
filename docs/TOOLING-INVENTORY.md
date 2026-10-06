@@ -21,7 +21,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**311 files in `tools/`.** By what actually invokes them:
+**312 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -30,14 +30,14 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 5 | session-start or prompt hooks, informational |
 | **DECIDED** | 79 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 70 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 59 | nothing runs these at all |
+| **UNWIRED** | 60 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
 | ADVISORY | 3 |
-| CHECKER | 224 |
+| CHECKER | 225 |
 | GATE | 1 |
 | GENERATOR | 19 |
 | GUARD | 1 |
@@ -54,13 +54,13 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 58 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 22 wired nowhere at all, and 36
+**The number to act on: 59 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 23 wired nowhere at all, and 36
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 58, by name, so this is actionable rather than a statistic:
+The 59, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
@@ -466,7 +466,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (59)
+## UNWIRED (60)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -563,7 +563,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      311   git ls-files tools/
+  tools on disk                      312   git ls-files tools/
   hook entries                        18   .claude\settings.json
   push-gate invocations               12   tools\sairn_push_gate_hook.py
   report-only registry                75   report_only_checks.REGISTRY
