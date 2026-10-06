@@ -6356,7 +6356,16 @@ var VA_CLAIM_REFUSAL =
 // ── THE ONE AI SITE HERE THAT DELIBERATELY OMITS THE REFUSAL ABOVE ────────
 // Named 2026-09-14 on Michael's decision, so the exemption is a recorded scope
 // rather than an author's oversight. tools/ai_prompt_refusal_check.py flags
-// this app's bottle-fullness site (sfBottleFill, the photo estimator) for
+// this app's bottle-fullness site (sfEstimateFill, the photo estimator -- the
+// NAME WAS WRONG HERE UNTIL 2026-10-06 and it propagated: `sfBottleFill` has
+// never existed in this file, and these two comments were the ONLY places it
+// appeared. docs/CRITICALITY-TIERS.md's sf_bottle_fills cell cited it as the
+// write site on the strength of this line, the hover auditor read the cell
+// and routed a paste-ready fix naming it, and a register pass concluded from
+// its absence that the write has NO enclosing named function at all. The real
+// entry point is sfEstimateFill(), declared at :4834 and called by the button
+// at :1106; the write sits in an anonymous .then() inside reader.onload, which
+// is why a search for a name at the innermost scope found nothing) for
 // referencing no rule constant, and THE FINDING IS CORRECT -- the constant
 // genuinely is absent. This constant is the reason, attached where a reader
 // will meet it, not a way of making the checker quiet: the flag stays.
@@ -6379,7 +6388,7 @@ var VA_CLAIM_REFUSAL =
 // permanent: the handler accepting free text, displaying any model output
 // verbatim, or that site gaining a second purpose that answers questions.
 var SF_PHOTO_JSON_ONLY_EXEMPTION =
-  'sfBottleFill omits VA_CLAIM_REFUSAL deliberately: image in, a two-key JSON ' +
+  'sfEstimateFill omits VA_CLAIM_REFUSAL deliberately: image in, a two-key JSON ' +
   'object out, no model prose ever displayed, so there is no channel for a ' +
   'claim-strategy question to arrive on or an answer to leave by. Reviewed ' +
   '2026-09-14. Revisit if that handler ever displays model text.';
