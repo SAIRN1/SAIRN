@@ -724,3 +724,23 @@ row.** Three documents now hold findings that belong in the index.
   the landed list nor the refused list and I did not guess at it.
 - **The 54 new blocks in §3 read one by one.** I read six. If one is a false
   positive it is in the other 48.
+
+> **EXIT CODE CAPTURED 2026-10-06 (cody), from a status FILE and not a trailing
+> echo — item 5.** The run below was re-driven at commit `8f204050` under
+> `python tools/capture_exit.py --status <f> -- …`, and the status file is the
+> authority:
+>
+> ```
+> python tools/dead_rule_sweep.py --registry-only --segment 1/1
+>   EXIT 1
+>   169 of 169 rules CHECKED, 0 COULD NOT RUN, 33 FINDINGS
+>   corpus bound: 45s per bare real run
+> ```
+>
+> **THIS POPULATION'S VERDICT HAS CHANGED SINCE THE FIGURES ABOVE, FROM 2 TO
+> 1.** `--registry-only` reproduces the exact pre-2026-10-05 population — 75
+> tools, 169 rules — and on it **every rule is now answerable**: the 22
+> write-when-run rules that made this run exit **2** are measured by the writer
+> tier added 2026-10-06, so COULD NOT RUN is **0**. The exit code the figures
+> above never recorded was **2**; it is **1** today, and the difference is a
+> named change rather than drift.

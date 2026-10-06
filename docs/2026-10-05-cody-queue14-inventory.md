@@ -262,3 +262,23 @@ distinction is recorded in the file rather than inferred from silence.
 - **That the seven mistakes in the review are all of them.** Two of the seven
   were found by reviewing the five, which is evidence the list grows when looked
   at.
+
+> **EXIT CODE CAPTURED 2026-10-06 (cody), from a status FILE and not a trailing
+> echo — item 5.** The run below was re-driven at commit `8f204050` under
+> `python tools/capture_exit.py --status <f> -- …`, and the status file is the
+> authority:
+>
+> ```
+> python tools/dead_rule_sweep.py --registry-only --segment 1/1
+>   EXIT 1
+>   169 of 169 rules CHECKED, 0 COULD NOT RUN, 33 FINDINGS
+>   corpus bound: 45s per bare real run
+> ```
+>
+> **THIS POPULATION'S VERDICT HAS CHANGED SINCE THE FIGURES ABOVE, FROM 2 TO
+> 1.** `--registry-only` reproduces the exact pre-2026-10-05 population — 75
+> tools, 169 rules — and on it **every rule is now answerable**: the 22
+> write-when-run rules that made this run exit **2** are measured by the writer
+> tier added 2026-10-06, so COULD NOT RUN is **0**. The exit code the figures
+> above never recorded was **2**; it is **1** today, and the difference is a
+> named change rather than drift.

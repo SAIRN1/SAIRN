@@ -45,8 +45,43 @@ right to say so.
 | **Tooling** | **&#128993; `metamorphic_check.py` EXITS 1 on a rewording finding that appears in NO index row &mdash; the tool is cody&rsquo;s and so is the gap** <!-- QUEUE16-ITEM1-CODY-2026-10-05 --> | **MEASURED 2026-10-05 and re-measured 2026-10-06 at HEAD, and the tool is otherwise green: the file-transform family is CLEAN at 0 violated of 90 comparisons, `blind_lock()` is LOCKED at 24 fixture comparisons, and all SIX rules `dead_rule_sweep` called DEAD on 2026-09-29 are now exercised (`--tool metamorphic_check.py`: 6 of 6, 0 dead, CLEAN). The ONE finding is in the REWORDING family: `fmea/alf_facility_role_gate_live_probe.py`, relation `case`, 504 applicable and 1 violated. The verdict MOVED &mdash; `('_d_falsy_from_except', '_d_fixed_window')` gained `_d_checker_without_probe`. PRE-EXISTING, not introduced by the fixture work: `b70b040f` names it as &ldquo;its one existing finding&rdquo;** | cody (the tool); row routed to hank | **The ROW was blocked, never the diagnosis.** `docs/SAIRN-OPEN-WORK-INDEX.md` was cc&rsquo;s on 2026-10-05 and is **hank&rsquo;s** at HEAD on 2026-10-06 (taken deliberately, cc&rsquo;s claim expired). Authored and handed over in `docs/2026-10-06-cody-routed.md` rather than inserted, twice, to two different holders | **Reproduce in seconds, not 200: `python tools/metamorphic_check.py --prose` isolates the rewording family and exits 1.** Then decide between TWO hypotheses, which are opposite findings and must not be merged: **(a)** the `case` rewording is NOT meaning-preserving on this subject, so the RELATION is over-broad and the fix is to narrow or declare it, or **(b)** `_d_checker_without_probe` is case-sensitive where it should not be, so the FMEA DETECTOR has a real defect and the relation caught it. **cc holds `fmea/alf_facility_role_gate_live_probe.py` at HEAD and is working it directly, which is where (b) would be settled** | S |
 ```
 
-**ITEM 2 STAYS OPEN.** The row is authored, verified against the table's seven
-columns, and not inserted. It closes when hank pastes it or releases the file.
+### ⚠ WITHDRAWN 2026-10-06 — **DO NOT PASTE THAT ROW. THE FINDING NO LONGER REPRODUCES.**
+
+Re-measured before handing it over, under `capture_exit` so the status comes
+from a file:
+
+```
+python tools/metamorphic_check.py --prose     EXIT 0   (twice, 10 minutes apart)
+  case   506 applicable, 0 violated
+  CLEAN -- every applicable rewording held
+```
+
+**It was `case 504 applicable, 1 violated` this morning. It is 0 violated now.**
+
+### AND I CHECKED THE OBVIOUS FALSE EXPLANATION FIRST
+
+The FMEA subject is a **DECLARED SAMPLE — the first 12 tools alphabetically**
+(`FMEA_SAMPLE = 12` in `_c_fmea()`). **Two tools were added to `tools/` today**
+— my `capture_exit.py` and hank's `gate_parity_check.py` — so the obvious
+reading is that the violating subject got pushed out of the sample and the
+"CLEAN" is a subject that is no longer measured. **That would be the eighth
+standing convention with my name on it.**
+
+**It did not happen.** `alf_facility_role_gate_live_probe.py` is **index 9 of
+12** — still sampled, still measured, and now holding. The applicable-unit count
+rose 504 → 506, so the subject's own comment text changed.
+
+**Cause NOT attributed.** No commit touches a `fmea/` path (that directory does
+not exist — the label is a subject family, not a file), and the probe's last
+commit is `26e72a90`, too old. Most likely cc's work on
+`tools/alf_facility_role_gate_live_probe.py` or on `fmea_draft`'s detectors,
+both of which she holds. **Recorded as unattributed rather than guessed.**
+
+**ITEM 2 IS CLOSED, NOT BLOCKED, AND NOT BY ME.** The row was authored twice,
+for two different holders, and is withdrawn before being inserted because the
+thing it asserts is no longer true. **The check that caught it was re-running
+the tool instead of quoting my own earlier measurement** — which is the rule
+item 15(b) exists to make a habit.
 
 ---
 
@@ -383,3 +418,109 @@ read instead of a reconstruction from 2381 claim commits. **It is not a
 `tooling_inventory` entry — it is 283 file headers**, and the generator that
 would enforce it is fourth's. **Routed to fourth as a proposal, with the
 derivation this batch had to use instead.**
+
+---
+
+## ITEM 3 — 49 RULES DEAD TO THEIR OWN EVIDENCE, AND **NONE OF THEM IS MINE**
+
+Measured at commit `8f204050`, 2026-10-06, `python tools/dead_rule_sweep.py`
+under `capture_exit` — **status file says `EXIT 2`**, 152 tools, 540 rules.
+
+**DIAGNOSED: 0. FIXED: 0. ROUTED: 49.** The item asked me to diagnose every one
+in my own tools and there are **zero in my own tools** — not a dodge, a result.
+`metamorphic_check.py`'s six were fixed 2026-10-05 and hold; `gap_ledger.py` is
+7 of 7; `dead_rule_sweep.py`, `capture_exit.py` and `gate1_verify.py` compile no
+module-level rule at all; `sairn_claim.py`, `run_all_tests.py`,
+`nhi_register.py` and `dependency_graph.py` appear nowhere in the 49.
+
+| owner | tools | rules |
+|---|---|---|
+| **cc** | 5 | **9** |
+| **hank** | 4 | **10** |
+| **UNKNOWN** | 16 | **30** |
+| | | **49** |
+
+### cc — 9 rule(s)
+
+```
+copy_exactly_gate.py                 EXEMPT_RE              tools/copy_exactly_gate.py:170
+copy_exactly_gate.py                 NONE_RE                tools/copy_exactly_gate.py:188
+copy_exactly_gate.py                 TRAILER_RE             tools/copy_exactly_gate.py:187
+exit_status_attributable.py          SEPARATORS             tools/exit_status_attributable.py:68
+report_only_checks.py                COUNT_RE               tools/report_only_checks.py:136
+sabotage_control_check.py            NEVER_A_FILE           tools/sabotage_control_check.py:267
+sabotage_control_check.py            STRINGISH              tools/sabotage_control_check.py:294
+tier_a_review_gate.py                _PROSE                 tools/tier_a_review_gate.py:695
+tier_a_review_gate.py                _SQL_GRANT_RE          tools/tier_a_review_gate.py:1583
+```
+
+### hank — 10 rule(s)
+
+```
+dispatch_state.py                    STRIKE                 tools/dispatch_state.py:87
+gate_parity_check.py                 ACTION_IN_RE           tools/gate_parity_check.py:197
+gate_parity_check.py                 ASSIGN_RE              tools/gate_parity_check.py:114
+gate_parity_check.py                 COMMENT_LINE_RE        tools/gate_parity_check.py:263
+gate_parity_check.py                 DATA_200_RE            tools/gate_parity_check.py:118
+gate_parity_check.py                 ROLE_RE                tools/gate_parity_check.py:111
+gate_parity_check.py                 SELECT_RE              tools/gate_parity_check.py:117
+register_feed_gate.py                REST_PATH              tools/register_feed_gate.py:420
+register_feed_gate.py                TIER_A_ROW             tools/register_feed_gate.py:418
+unreachable_failure_path_scan.py     DIRECT_CALL_RE         tools/unreachable_failure_path_scan.py:168
+```
+
+### UNKNOWN — 30 rule(s)
+
+```
+adversarial_prompt_corpus.py         SYSTEM_SITE            tools/adversarial_prompt_corpus.py:251
+adversarial_prompt_corpus.py         _IDENT                 tools/adversarial_prompt_corpus.py:287
+ai_prompt_refusal_check.py           OWN_RULES_RE           tools/ai_prompt_refusal_check.py:227
+benford_check.py                     FIELD_RE               tools/benford_check.py:130
+csv_formula_injection_check.py       GUARD_SPLIT            tools/csv_formula_injection_check.py:87
+hedge_carry_check.py                 RESOLVED               tools/hedge_carry_check.py:143
+hedge_carry_check.py                 _SENT_END              tools/hedge_carry_check.py:155
+idempotence_double_run.py            SIDE_EFFECT            tools/idempotence_double_run.py:136
+idempotence_double_run.py            WRITES                 tools/idempotence_double_run.py:70
+idempotency_check.py                 FILTER_COL             tools/idempotency_check.py:130
+idempotency_check.py                 KEY_SHAPE              tools/idempotency_check.py:125
+idempotency_check.py                 MUTATING               tools/idempotency_check.py:131
+known_red_check.py                   TOTAL_RE               tools/known_red_check.py:74
+live_probe_declaration_check.py      BLOCK_C                tools/live_probe_declaration_check.py:123
+live_probe_declaration_check.py      LINE_C                 tools/live_probe_declaration_check.py:124
+live_probe_declaration_check.py      TRIPLE                 tools/live_probe_declaration_check.py:122
+push_failure_reason.py               COULD_NOT              tools/push_failure_reason.py:64
+register_freshness_propose.py        DRIFT_RE               tools/register_freshness_propose.py:69
+retry_backoff_check.py               BREAKER_NEEDS_EXIT     tools/retry_backoff_check.py:125
+retry_backoff_check.py               EXIT_STMT              tools/retry_backoff_check.py:126
+retry_backoff_check.py               _KEYWORD_BEFORE_REGEX  tools/retry_backoff_check.py:151
+retry_policy_audit.py                BREAKER                tools/retry_policy_audit.py:103
+retry_policy_audit.py                DEADLINE               tools/retry_policy_audit.py:236
+retry_policy_audit.py                IDENT                  tools/retry_policy_audit.py:107
+retry_policy_audit.py                RETRY_BOUND            tools/retry_policy_audit.py:237
+shape_search.py                      JS_FUNC                tools/shape_search.py:289
+suite_override_consistency.py        APP_RX                 tools/suite_override_consistency.py:60
+suite_override_consistency.py        ENV_RX                 tools/suite_override_consistency.py:58
+tier_sentence_gate.py                CORRECTED              tools/tier_sentence_gate.py:147
+tier_sentence_gate.py                QUOTED                 tools/tier_sentence_gate.py:144
+```
+
+**30 OF 49 HAVE NO OWNER ANYWHERE.** No `chore(claims)` commit in 2381 has named
+their file in a `FILES:` list, and only 13 of 296 tools carry an `# OWNER:`
+line. **They cannot be routed to a session; they go to the open-work queue**,
+which is hank's file this hour.
+
+### WHAT A `DEAD` VERDICT DOES AND DOES NOT MEAN, because 49 is a big number
+
+It does **not** mean the rule is wrong, or unused on real data. It means
+**nothing the tool ships as evidence would notice the rule vanishing** — it
+could be deleted, mistyped, or shipped with a literal backspace and every green
+light stays green, which is the 2026-09-29 defect this sweep was built from.
+
+**The repair is one of two and they are not the same answer:** add a fixture
+that exercises the rule when it is load-bearing, or register it as a **NAMED
+LIMIT** when it is defensive or covers a shape that no longer occurs. **A named
+limit is honest; an unexercised rule presented as a criterion is not.**
+
+**`gate_parity_check.py` arrives with 6 of its 9**, which is worth saying to
+hank plainly: the tool landed today, it is a good tool, and more than half its
+module-level rules are invisible to its own `--selftest`.

@@ -153,6 +153,20 @@ LOCK_FLAGS = ('--fixtures', '--selftest', '--self-check')
 # Lowered from 180 after the first full run: the third tier costs TWO bare
 # runs per rule and the sweep has to finish to be worth anything. A timeout
 # is COULD NOT TELL, never dead.
+# ── THE BOUND, AND IT WAS SILENTLY THE ANSWER FOR 21 RULES ─────────────────
+# MEASURED 2026-10-06: tools/cross_tenant_isolation_scope.py needs 131s and this
+# bound was 45, so its bare run timed out on every ablation and all 21 of its
+# rules came back COULD NOT RUN -- 21 of the platform's 23. THE REPORTED REASON
+# WAS "no fixture lock and no control to ablate against", WHICH IS FALSE: it has
+# no lock, but the real run WAS available and this tool refused to wait for it.
+# Two different causes were printing one line, which is the defect this file
+# exists to catch, arriving in its own output.
+#
+# Raising the default is NOT the fix. 21 rules at 131s each, twice, is 90
+# minutes for one tool and would make the full sweep unusable. So the bound is
+# OVERRIDABLE and PRINTED, and a timeout now says so by name -- the same answer
+# the report-only sweep reached for its own bound: a could-not-tell can be
+# re-asked instead of becoming permanent.
 CORPUS_TIMEOUT = 45
 
 DEAD = 'DEAD TO ITS OWN EVIDENCE -- neutralise it and nothing goes red'
@@ -174,6 +188,10 @@ DEAD_EVEN_ON_OUTPUT = ('DEAD EVEN ON THE REAL RUN -- no lock, no control, and '
                        'neutralising it does not change a byte of the output')
 NO_EVIDENCE = ('COULD NOT TELL -- no lock, no control, and the real run could '
                'not be compared either')
+NO_EVIDENCE_TIMEOUT = ('COULD NOT TELL -- no lock and no control, and the real '
+                       'run DID NOT FINISH inside the corpus bound. The '
+                       'evidence exists and this tool declined to wait for it: '
+                       're-ask with --corpus-timeout')
 WRITES = ('COULD NOT TELL -- no lock, no control, and the tool REGENERATES a '
           'file when run, so its output is not a stable comparison')
 # ── THE WRITER TIER IS NOW MEASURED RATHER THAN REFUSED (2026-10-06) ────────
@@ -918,7 +936,25 @@ def sweep_writer(tool, path, orig, pats, work, verbose=False):
     return rows
 
 
-def sweep_tool(tool, work, verbose=False):
+def _bare_baseline(bare, work, timeout):
+    """(result, verdict_if_unusable). A TIMEOUT is told apart from a crash.
+
+    `run()` returns (None, None) for both a timeout and a harness crash, so this
+    re-asks with a tiny bound to find out which: a tool that cannot even START
+    inside a second is broken, one that merely needs longer is a BOUND problem
+    and says so. Without the distinction, 21 rules reported "no evidence to
+    ablate against" when the evidence was there and this tool would not wait.
+    """
+    r = run(bare, work, timeout=timeout, want_output=True)
+    if r[1] is not None:
+        return r, None
+    quick = run(bare, work, timeout=2, want_output=True)
+    if quick[1] is not None:
+        return r, NO_EVIDENCE          # finished fast once, failed now: unstable
+    return r, NO_EVIDENCE_TIMEOUT
+
+
+def sweep_tool(tool, work, verbose=False, corpus_timeout=None):
     """[(rule, verdict)] for one tool. `work` is the sandbox, never REPO."""
     path = os.path.join(work, 'tools', tool)
     if not os.path.isfile(path):
@@ -944,12 +980,14 @@ def sweep_tool(tool, work, verbose=False):
     base = {}
     for label, argv in cmds:
         base[label] = run(argv, work)
-    base_bare = (run(bare, work, timeout=CORPUS_TIMEOUT, want_output=True)
-                 if bare else None)
-    if bare and base_bare[1] is None:
+    tmo = corpus_timeout or CORPUS_TIMEOUT
+    base_bare, unusable = (_bare_baseline(bare, work, tmo) if bare else (None, None))
+    if bare and unusable is not None:
         # The baseline itself could not be taken, so nothing below is a
-        # comparison. NOT folded into dead.
-        return [(n, NO_EVIDENCE) for n, _ln in pats]
+        # comparison. NOT folded into dead -- and the REASON is carried, because
+        # "no evidence exists" and "I would not wait for it" are different
+        # findings that used to print the same line.
+        return [(n, unusable) for n, _ln in pats]
 
     rows = []
     try:
@@ -965,7 +1003,7 @@ def sweep_tool(tool, work, verbose=False):
                 rows.append((name, NO_EVIDENCE))
                 continue
             if bare:
-                got = run(bare, work, timeout=CORPUS_TIMEOUT, want_output=True)
+                got = run(bare, work, timeout=tmo, want_output=True)
                 if got[1] is None:
                     rows.append((name, NO_EVIDENCE))
                 elif got != base_bare:
@@ -1004,6 +1042,11 @@ def main(argv):
     ap.add_argument('--registry-only', action='store_true',
                     help='the PRE-2026-10-05 population (report_only_checks.'
                          'REGISTRY) so the old figure stays reproducible')
+    ap.add_argument('--corpus-timeout', type=int, default=None, metavar='SEC',
+                    help='seconds a bare real run may take (default %d). '
+                         'PRINTED on every run: two sweeps at different bounds '
+                         'must never be indistinguishable in a past report'
+                         % CORPUS_TIMEOUT)
     ap.add_argument('--segment', default=None, metavar='I/N',
                     help='sweep slice I of N (1-based). The tenth discipline: '
                          'no long run whose first check is at the end')
@@ -1175,7 +1218,7 @@ def main(argv):
 
     dead, live, unknown, unreadable = [], 0, [], []
     live_corpus, dead_output, writes = 0, [], []
-    nondet, noreset = [], []
+    nondet, noreset, slow = [], [], []
     try:
         for t in tools:
             # THE SANDBOX CAN BE GONE, and it used to surface as a traceback
@@ -1195,7 +1238,8 @@ def main(argv):
                       file=sys.stderr)
                 return EXIT_COULD_NOT_RUN
             try:
-                rows = sweep_tool(t, work, verbose=bool(a.tool) and not a.quiet)
+                rows = sweep_tool(t, work, verbose=bool(a.tool) and not a.quiet,
+                                  corpus_timeout=a.corpus_timeout)
             except RuntimeError as e:
                 print('RESTORE FAILURE: %s' % e, file=sys.stderr)
                 return EXIT_COULD_NOT_RUN
@@ -1224,13 +1268,16 @@ def main(argv):
                     nondet.append((t, name))
                 elif verdict == WRITES_NO_RESET:
                     noreset.append((t, name))
+                elif verdict == NO_EVIDENCE_TIMEOUT:
+                    slow.append((t, name))
                 else:
                     unknown.append((t, name))
     finally:
         drop_sandbox(work)
 
     total = (len(dead) + live + len(unknown) + live_corpus
-             + len(dead_output) + len(writes) + len(nondet) + len(noreset))
+             + len(dead_output) + len(writes) + len(nondet) + len(noreset)
+             + len(slow))
     if not a.quiet:
         if a.tool:
             src_label = 'named on the command line'
@@ -1243,6 +1290,9 @@ def main(argv):
                          'to this sweep before 2026-10-05' % out_of_registry)
         print('read %d tool(s) %s; %d module-level compiled rule(s)'
               % (len(tools), src_label, total))
+        print('  corpus bound: %ds per bare real run%s'
+              % (a.corpus_timeout or CORPUS_TIMEOUT,
+                 '' if a.corpus_timeout is None else ' (--corpus-timeout)'))
         if seg_label:
             print(seg_label)
         print('\nCHECKED / UNIVERSE: %d of %d rules could be ABLATED against '
@@ -1258,7 +1308,15 @@ def main(argv):
               % (live + len(dead) + live_corpus + len(dead_output), total,
                  live + len(dead), live, len(dead),
                  live_corpus + len(dead_output), live_corpus, len(dead_output),
-                 len(unknown) + len(writes) + len(nondet) + len(noreset)))
+                 len(unknown) + len(writes) + len(nondet) + len(noreset)
+                 + len(slow)))
+        if slow:
+            print('  OF THOSE, %d belong to a tool whose real run DID NOT '
+                  'FINISH in %ds.\n  THE EVIDENCE EXISTS and this sweep '
+                  'declined to wait: re-ask with --corpus-timeout.\n  That is '
+                  'a BOUND problem, not an absence of evidence, and until '
+                  '2026-10-06 the\n  two printed the same line.'
+                  % (len(slow), a.corpus_timeout or CORPUS_TIMEOUT))
         if writes:
             print('  OF THOSE, %d belong to a tool that WRITES when run and the '
                   'writer tier was NOT\n  attempted -- that path should no '
@@ -1286,7 +1344,10 @@ def main(argv):
         + ['%s %s -- WRITER, NOT REPRODUCIBLE: two identical baseline runs '
            'differed' % (t, n) for t, n in nondet]
         + ['%s %s -- WRITER, the sandbox could not be reset between runs'
-           % (t, n) for t, n in noreset],
+           % (t, n) for t, n in noreset]
+        + ['%s %s -- the real run DID NOT FINISH in %ds; re-ask with '
+           '--corpus-timeout' % (t, n, a.corpus_timeout or CORPUS_TIMEOUT)
+           for t, n in slow],
         quiet=a.quiet,
         clean_line='\nCLEAN -- every module-level rule whose tool ships '
                    'evidence is exercised by it.')
