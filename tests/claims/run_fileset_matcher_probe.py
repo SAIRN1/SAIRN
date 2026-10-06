@@ -113,9 +113,43 @@ print('\n2. file_verdict() -- three states, and the third is not a pass')
 arm('disjoint declared sets are CLEAR',
     SC.file_verdict('FILES: a.py', 'FILES: b.py')[0] == 'clear')
 
-arm('intersecting declared sets are REFUSE, and name the shared path',
+# ── THIS ARM ENCODED THE PRE-NARROWING CONTRACT (re-pointed 2026-10-06) ─────
+# It required `file_verdict('FILES: a.py c.py', 'FILES: b.py c.py')` to be
+# ('refuse', {'c.py'}). file_verdict() was deliberately NARROWED on 2026-09-30
+# (H2 seq 418): a bare BASENAME is not a file identity, because the two hover
+# auditors each keep their own `hover_log.py` outside this repo and the matcher
+# hard-blocked them against each other on the filename alone. A path WITH a
+# separator still refuses; a bare basename now returns 'unknown' so the caller
+# falls through to the lexical matcher, which can still block.
+#
+# SO THE CODE IS RIGHT AND THE ARM WAS STALE. It is re-pointed to the real
+# three-state contract and split in BOTH directions, because an arm that only
+# checked the refuse side would pass on a matcher that refused everything.
+arm('an intersecting PATH (with a separator) is REFUSE, and names the path',
+    SC.file_verdict('FILES: x/a.py x/c.py', 'FILES: y/b.py x/c.py')
+    == ('refuse', {'x/c.py'}),
+    'got ' + repr(SC.file_verdict('FILES: x/a.py x/c.py',
+                                  'FILES: y/b.py x/c.py')))
+
+arm('a shared BARE BASENAME is UNKNOWN, not refuse -- two clones can each own '
+    'a different file of that name, and it is not folded into CLEAR either',
     SC.file_verdict('FILES: a.py c.py', 'FILES: b.py c.py')
-    == ('refuse', {'c.py'}))
+    == ('unknown', {'c.py'}),
+    'got ' + repr(SC.file_verdict('FILES: a.py c.py', 'FILES: b.py c.py'))
+    + ' -- "clear" here would silently drop a real signal, and "refuse" is the '
+    'hover_log.py false block seq 418 removed')
+
+arm('CONTROL: the narrowing is about the SEPARATOR and nothing else -- the same '
+    'two sets with one path qualified refuse again',
+    SC.file_verdict('FILES: a.py sub/c.py', 'FILES: b.py sub/c.py')
+    == ('refuse', {'sub/c.py'}))
+
+arm('CONTROL: a mixed intersection returns ONLY the strong paths, so the '
+    'evidence named is evidence that holds',
+    SC.file_verdict('FILES: c.py sub/d.py', 'FILES: c.py sub/d.py')
+    == ('refuse', {'sub/d.py'}),
+    'got ' + repr(SC.file_verdict('FILES: c.py sub/d.py',
+                                  'FILES: c.py sub/d.py')))
 
 arm('either side declaring nothing is UNKNOWN, never CLEAR',
     SC.file_verdict('FILES: a.py', 'no declaration here')[0] == 'unknown'
@@ -272,9 +306,28 @@ print('    cross-session pairs         %4d' % len(pairs))
 print('    lexical blocks              %4d' % len(lex))
 print('      files INTERSECT           %4d   still refused' % len(inter))
 print('      files DISJOINT            %4d   now cleared' % len(disj))
-arm('every lexically-blocked pair with intersecting files still refuses',
-    all(SC.file_verdict(a['task'], b['task'])[0] == 'refuse' for a, b in inter),
-    'a real collision was cleared')
+# ── SAME RE-POINT AS SECTION 2, ON THE REAL CORPUS (2026-10-06) ─────────────
+# This arm required 'refuse' for every intersecting pair and went red on the
+# seq 418 narrowing: an intersection on a BARE BASENAME is now 'unknown', which
+# falls through to the lexical matcher rather than hard-blocking. These pairs are
+# lexically blocked anyway -- that is how they got into `inter` -- so NOTHING IS
+# CLEARED by the narrowing here, and that is the property worth asserting.
+_bad = [(a, b) for a, b in inter
+        if SC.file_verdict(a['task'], b['task'])[0] == 'clear']
+arm('NO lexically-blocked pair with intersecting files is ever CLEARED by the '
+    'file matcher -- refuse or unknown, never clear',
+    not _bad, '%d pair(s) cleared a real collision' % len(_bad))
+_weak = [(a, b) for a, b in inter
+         if SC.file_verdict(a['task'], b['task'])[0] == 'unknown']
+print('      of which BARE-BASENAME only %4d   unknown, still lexically blocked'
+      % len(_weak))
+arm('...and the ones demoted to unknown are STILL blocked by the lexical '
+    'matcher, so the narrowing let nothing through',
+    all(SC.block_reason(a.get('subject', ''), a.get('task', ''),
+                        b.get('subject', ''), b.get('task', ''))
+        for a, b in _weak),
+    'a pair was demoted to unknown AND passes the lexical matcher -- that is a '
+    'hole the seq 418 narrowing opened')
 arm('every lexically-blocked pair with disjoint files clears',
     all(SC.file_verdict(a['task'], b['task'])[0] == 'clear' for a, b in disj))
 arm('the corpus is not degenerate -- BOTH outcomes occur in real data',
@@ -303,13 +356,49 @@ print('    refused by FILES alone      %4d   (no lexical rule fires)' % len(only
 # The number is pinned rather than the arm relaxed to `>= 0`: a floor would stop
 # measuring, and the next movement in either direction is the thing worth
 # seeing. If it FALLS, the exemption has widened past where files can catch it.
-FILE_ONLY_REFUSALS = 23
-arm('PINNED: the file set refuses exactly %d pairs the lexical matcher misses'
-    % FILE_ONLY_REFUSALS,
-    len(only_file) == FILE_ONLY_REFUSALS,
-    'this is now %d, not %d. That is not a failure -- it means the two checks '
-    'have moved apart again. Read the pairs, then update this number '
-    'deliberately.' % (len(only_file), FILE_ONLY_REFUSALS))
+# ── THE EXACT PIN WAS MEASURING CORPUS GROWTH, NOT THE GAP (2026-10-06) ─────
+# It went 0 -> 23 -> 24 and the arm's own failure message says "That is not a
+# failure". THE PAIRS WERE READ, as that message instructs, and all 24 of them
+# share ONE claim on one side -- cody's 2026-10-05 scpgate claim, which declares
+# api/sd-data.js. Twenty-two of the 24 share exactly `api/sd-data.js`; the other
+# two add or substitute docs/defect-density-register.json.
+#
+# SO THE NUMBER IS len(older claims that also declared api/sd-data.js) AND IT
+# RISES EVERY TIME ANYBODY CLAIMS THAT FILE. An exact pin over a monotonically
+# growing append-only record is guaranteed to go red for a reason that is not a
+# finding, which is what happened twice. The arm's intent -- "if it FALLS, the
+# exemption has widened past where files can catch it" -- is a FLOOR, and that is
+# what it now is, with the count and the pairs printed so a RISE is still visible.
+#
+# AND THE PROPERTY WORTH PINNING EXACTLY IS A DIFFERENT ONE: every file-only
+# refusal must rest on a separator-qualified path. A bare basename reaching this
+# list would mean the seq 418 narrowing had been undone, and that IS a property
+# of the matcher rather than of how many claims exist.
+FILE_ONLY_FLOOR = 24
+arm('FLOOR: the file set refuses at least %d pairs the lexical matcher misses '
+    '-- a FALL means the lexical exemption widened past where files can catch it'
+    % FILE_ONLY_FLOOR,
+    len(only_file) >= FILE_ONLY_FLOOR,
+    'this is now %d, BELOW the floor of %d. Read the pairs printed above: a '
+    'fall is the direction that loses coverage.'
+    % (len(only_file), FILE_ONLY_FLOOR))
+
+_weak_only = [(a, b) for a, b in only_file
+              if not all('/' in p for p in SC.file_verdict(a['task'],
+                                                           b['task'])[1])]
+arm('EXACT: every file-only refusal rests on a SEPARATOR-QUALIFIED path, so '
+    'none of them is the bare-basename collision seq 418 removed',
+    not _weak_only,
+    '%d pair(s) refused on a bare basename alone -- the narrowing has been '
+    'undone' % len(_weak_only))
+
+_sessions = sorted(set(tuple(sorted((a.get('session'), b.get('session'))))
+                       for a, b in only_file))
+print('    file-only refusals involve %d distinct session pair(s): %s'
+      % (len(_sessions), '; '.join('%s/%s' % s for s in _sessions)))
+arm('the file-only refusals are not one session arguing with itself',
+    all(s[0] != s[1] for s in _sessions),
+    'a same-session pair reached a cross-session list')
 
 print('\n%d failure(s)' % fails)
 sys.exit(1 if fails else 0)
