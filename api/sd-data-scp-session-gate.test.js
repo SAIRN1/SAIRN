@@ -72,6 +72,7 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const { signSessionToken } = require('./_lib/auth');
+const { fnBody } = require('../tests/lib/fn_span.js');
 
 const HASH = 'scape-company-A-hash';
 const APP = 'sairnscape';
@@ -266,8 +267,26 @@ function withToken(app, role) {
     assert.ok(/scpInit\(\);/.test(apply),
       'scpApplyLoggedIn no longer calls scpInit -- the ordering asserted above '
       + 'no longer says anything about when the first read happens');
-    const init = PAGE.slice(PAGE.indexOf('function scpInit(){'),
-                            PAGE.indexOf('function scpInit(){') + 900);
+    // ── BOUNDED BY scpInit's OWN CLOSING BRACE, NOT BY `+ 900` ───────────
+    // MEASURED 2026-10-06: scpInit() is 726 bytes and the window was 900, so
+    // 174 bytes of the NEXT thing were being searched -- and what is in those
+    // 174 bytes is a comment block that talks about sync functions by name:
+    //
+    //     "\n\n// Read-through sync -- same honest-degrade behavior as
+    //      SAIRNgrounds'\n// grdSyncFromServer(): ..."
+    //
+    // The arm passes today for the right reason -- `scpSyncFromServer();` IS
+    // inside scpInit. But if somebody removed that call and left a comment
+    // saying so, this arm would go on passing, which is the whole failure
+    // mode it exists to catch. A positive assertion over a too-long span
+    // fails GREEN.
+    //
+    // The sweep that found it measured 26 span sites against their functions'
+    // balanced closes; this was the ONE real silent-direction disagreement.
+    // Eight others were LONG by 1-2 bytes of pure whitespace and are left
+    // alone, because a gap that is a newline cannot carry a false match --
+    // checked by printing the gap bytes rather than assuming.
+    const init = fnBody(PAGE, 'function scpInit(){');
     assert.ok(/scpSyncFromServer\(\);/.test(init),
       'scpInit no longer calls scpSyncFromServer -- re-derive where the first '
       + 'server read now happens and re-anchor this arm on that');

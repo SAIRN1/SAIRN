@@ -193,5 +193,24 @@ arm('tests/sairnvet_formulary_source_honesty.js -- no refusal on a copied dose',
   cleanAnswer: false,
 });
 
+// ── 6. sairnscape scpInit: `start + 900` over 726 bytes (2026-10-06) ──────
+// The ONE real silent-direction disagreement in the 2026-10-06 re-measurement
+// of all 26 span sites. The 174-byte overrun lands in a comment block that
+// names sync functions -- "// Read-through sync -- same honest-degrade
+// behavior as SAIRNgrounds' // grdSyncFromServer(): ..." -- so a removed call
+// plus a comment mentioning it would have kept this arm green.
+arm('api/sd-data-scp-session-gate.test.js -- scpInit calls scpSyncFromServer', {
+  file: 'sairnscape.html',
+  signature: 'function scpInit(){',
+  oldBound: (s, start) => start + 900,
+  plant: (s) => plantAfter(
+    s.replace(/scpSyncFromServer\(\);/g, 'scpSyncFromServerXX();'),
+    'function scpInit(){',
+    '\n// planted outside: scpSyncFromServer();\n'),
+  predicate: (b) => /scpSyncFromServer\(\);/.test(b),
+  wrongAnswerIsTrue: true,
+  cleanAnswer: true,
+});
+
 console.log('\n' + pass + ' proven, ' + notProven + ' NOT PROVEN, ' + fail + ' failed');
 process.exit(fail || notProven ? 1 : 0);
