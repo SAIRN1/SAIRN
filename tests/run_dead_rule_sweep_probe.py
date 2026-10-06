@@ -389,7 +389,8 @@ else:
               'sandbox:' in _out, _out[:600])
     finally:
         subprocess.run(['git', '-C', REPO, 'worktree', 'remove', '--force', _wt],
-                       capture_output=True, text=True)
+                       capture_output=True, text=True,
+                       encoding='utf-8', errors='replace')
         shutil.rmtree(_wt, ignore_errors=True)
 
 # ── F6. THE SANDBOX IS REMOVED, AND A SANDBOX THAT CANNOT BE MADE IS EXIT 2 ─
@@ -459,13 +460,39 @@ def _sandboxes():
             and os.path.basename(l.strip().rstrip('/\\')).startswith('drs-sandbox-')]
 
 
+def _abandoned_sandboxes():
+    """Sandboxes with no LIVE owner -- the only ones that are a leak.
+
+    F9b used to assert the registered set was EMPTY, which was the right
+    contract while the reap deleted every matching directory. The owner-aware
+    reap (2026-10-06) changed that contract deliberately: a sandbox belonging to
+    a live process is KEPT, because deleting it is what killed a 151-tool run.
+    MEASURED THE DAY THE GUARD LANDED -- this arm failed while a legitimate
+    concurrent sweep was running, owner pid 51032, alive. THE ARM WAS ASSERTING
+    THE OLD CONTRACT; loosening it to "no ABANDONED sandbox" keeps the original
+    intent (this control must not leak one per run) without re-opening the hole.
+    """
+    out = []
+    for p in _sandboxes():
+        owner = D._sandbox_owner(p)
+        if owner is not None and owner != os.getpid() and D._pid_alive(owner):
+            continue          # somebody else's live run; protected on purpose
+        out.append(p)
+    return out
+
+
 rc, out = run('--tool', 'assertion_label_shape_check.py')
 check('F9a. a normal run finishes and names a sandbox',
       rc in (0, 1) and 'sandbox:' in out, (rc, out[:300]))
-check('F9b. ...and leaves NO drs-sandbox- worktree registered afterwards, '
-      'including the one F3 killed above -- otherwise every run of this '
-      'control adds one to the clone forever',
-      not _sandboxes(), _sandboxes())
+check('F9b. ...and leaves NO ABANDONED drs-sandbox- worktree registered '
+      'afterwards, including the one F3 killed above -- otherwise every run of '
+      'this control adds one to the clone forever. A sandbox owned by another '
+      'LIVE process is excluded, because keeping it is the 2026-10-06 fix',
+      not _abandoned_sandboxes(), _abandoned_sandboxes())
+check('F9c. CONTROL for F9b: the raw registered set is reported too, so '
+      '"no abandoned sandbox" can never be read as "no sandbox" -- a live '
+      'concurrent run is a different fact from a clean clone',
+      True, 'registered now: %s' % (_sandboxes() or 'none'))
 
 # ── H. THE WRITER TIER, AND THE NEGATIVE ARM IS THE ONLY REASON TO TRUST IT ─
 # Added 2026-10-06 with the tier. On its first real run the tier cleared all 22

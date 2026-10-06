@@ -532,7 +532,8 @@ def _pid_alive(pid):
     try:
         if os.name == 'nt':
             r = subprocess.run(['tasklist', '/FI', 'PID eq %d' % pid, '/NH'],
-                               capture_output=True, text=True)
+                               capture_output=True, text=True,
+                   encoding='utf-8', errors='replace')
             return str(pid) in (r.stdout or '')
         os.kill(pid, 0)
         return True
@@ -565,7 +566,8 @@ def reap_stale_sandboxes():
     so a caller can say that a leftover was left on purpose.
     """
     subprocess.run(['git', '-C', REPO, 'worktree', 'prune'],
-                   capture_output=True, text=True)
+                   capture_output=True, text=True,
+                   encoding='utf-8', errors='replace')
     r = subprocess.run(['git', '-C', REPO, 'worktree', 'list', '--porcelain'],
                        capture_output=True, text=True, encoding='utf-8',
                        errors='replace')
@@ -581,10 +583,12 @@ def reap_stale_sandboxes():
             skipped.append((p, owner))
             continue
         subprocess.run(['git', '-C', REPO, 'worktree', 'remove', '--force', p],
-                       capture_output=True, text=True)
+                       capture_output=True, text=True,
+                   encoding='utf-8', errors='replace')
         shutil.rmtree(p, ignore_errors=True)
     subprocess.run(['git', '-C', REPO, 'worktree', 'prune'],
-                   capture_output=True, text=True)
+                   capture_output=True, text=True,
+                   encoding='utf-8', errors='replace')
     return skipped
 
 
@@ -655,7 +659,8 @@ def drop_sandbox(work):
     if not work:
         return
     subprocess.run(['git', '-C', REPO, 'worktree', 'remove', '--force', work],
-                   capture_output=True, text=True)
+                   capture_output=True, text=True,
+                   encoding='utf-8', errors='replace')
     shutil.rmtree(work, ignore_errors=True)
     reap_stale_sandboxes()
 
@@ -713,7 +718,8 @@ def _reset_writer(tree, baseline, snap):
     for rel in sorted(set(now) - set(baseline)):
         p = os.path.join(tree, rel.replace('/', os.sep))
         rc = subprocess.run(['git', '-C', tree, 'checkout', '--', rel],
-                            capture_output=True, text=True)
+                            capture_output=True, text=True,
+                   encoding='utf-8', errors='replace')
         if rc.returncode != 0 and os.path.isfile(p):
             # Untracked: git cannot restore it because there is nothing to
             # restore to. It did not exist before this run, so it goes.

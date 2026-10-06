@@ -137,3 +137,86 @@ cannot see a tool somebody built without claiming it, it attributes to the last
 *claimer* rather than the author, and `push_retry.py` resolves to **fourth**
 while hank has also edited it. **An `# OWNER:` line in all 296 is the fix and it
 belongs in `tooling_inventory.py`, which is fourth's** — see item 13.
+
+---
+
+## ITEM 9 — THE CLI ENTRY-POINT SWEEP, AND IT FOUND SEVEN SITES OF MINE IN A DIFFERENT TOOL
+
+**Universe: 296 tracked `tools/*.py`. 105 carry a selftest arm. 99 of those
+drive their own real entry point** — they spawn `sys.executable __file__` or
+call `main(argv)` — **which is the shape `capture_exit.py` lacked.**
+
+### SIX WHOSE SELFTEST NEVER DRIVES THE CLI — each driven once, exit code on its own line
+
+```
+python tools/accepted_risk_expiry_audit.py --selftest    EXIT=0   (cody)
+python tools/ai_action_approval_audit.py  --selftest     EXIT=0   (UNKNOWN)
+python tools/citation_drift_hook.py       --selftest     EXIT=0   (cc)
+python tools/sabotage.py                  --selftest     EXIT=0   (UNKNOWN)
+python tools/subprocess_decode_check.py   --selftest     EXIT=1   (UNKNOWN)
+python tools/pycomments.py --help                        EXIT=0   (hank)
+```
+
+### SIX WITH NO RECOGNISED FLAG — and TWO of those were MY SCANNER being wrong
+
+```
+python tools/criticality_tier_check.py                   EXIT=0   (cody)
+python tools/mutation_anchor_check.py                    EXIT=2   (cc)
+python tools/stored_data_criticality_check.py            EXIT=0   (UNKNOWN)
+python tools/tooling_inventory.py --check                EXIT=0   (fourth)
+python tools/pycomments.py --help                        EXIT=0   (hank)
+python tools/run_all_tests.py                            -- see below
+```
+
+- **`criticality_tier_check.py` is a FALSE POSITIVE, and the truth is stronger
+  than a flag:** `run_fixtures()` is called **unconditionally at line 746 on
+  every run**, and a failing lock returns 2 before anything real is judged. A
+  lock that always runs beats a lock behind a flag nobody types.
+- **`run_all_tests.py` is a FALSE POSITIVE too** — my regex matched the *words*
+  `--selftest` inside strings describing **other** tools' selftests
+  (`tools/run_all_tests.py:632`). It has no selftest of its own to skip.
+
+**So 2 of the 6 I owned in that group were my scanner, not the tools.** Said
+here because the same error rate applies to the four I am routing.
+
+### THE REAL FINDING: `subprocess_decode_check.py` EXIT 1 NAMED SEVEN SITES OF MINE — FIXED
+
+That tool is not a broken selftest; **`--selftest` runs its real check** and
+exit 1 is findings. It reported **71 text-mode subprocess calls with no explicit
+`encoding=`** on a machine whose locale default is cp1252. **Seven were mine:**
+
+```
+tools/dead_rule_sweep.py              534, 567, 583, 586, 657, 715
+tests/run_dead_rule_sweep_probe.py    391
+```
+
+**Six of those I wrote TODAY**, in the owner-aware reap and the writer-tier
+reset. All seven now carry `encoding='utf-8', errors='replace'`.
+
+**Line 534 is the one that mattered:** the `tasklist` call inside `_pid_alive`,
+which is what stops a concurrent sweep reaping a live sandbox. A decode error
+there would have raised inside its `try`, which returns `True` — *could not
+tell, do not reap* — **so it failed closed and the guard held.** Correct by
+construction rather than by luck, and still wrong to leave.
+
+```
+python tools/subprocess_decode_check.py --selftest   BEFORE: 71 sites, EXIT=1
+python tools/subprocess_decode_check.py --selftest   AFTER:  64 sites, EXIT=1
+```
+
+**Still exit 1, and that is honest:** 64 sites remain in other sessions' files.
+Mine are gone — `grep` for `dead_rule_sweep` in the output returns nothing.
+
+### ROUTED
+
+| finding | file:line | owner |
+|---|---|---|
+| **64 remaining undecoded `text=True` subprocess calls** | the tool's own list | **UNKNOWN** for the tool; the sites span cc, hank and fourth files |
+| `mutation_anchor_check.py` **EXIT 2** — *"could not read: 5 (NOT a pass)"* plus 2 anchors not matching exactly once | `tools/mutation_anchor_check.py` | **cc** |
+| the 2 bad anchors it names | `tests/claims/run_fileset_matcher_sabotage_probe.py` | **UNKNOWN** — no claim has ever named it, though `tools/sairn_claim.py` is mine |
+| 3 selftests that never drive their CLI and could not be attributed | `ai_action_approval_audit.py`, `sabotage.py`, `stored_data_criticality_check.py` | **UNKNOWN** |
+
+**The `tests/claims/` anchor finding is the one to look at first** — the probe
+lives beside controls for a tool I own, so it is probably mine in practice even
+though no claim records it. **I did not touch it: `mutation_anchor_check.py` is
+cc's and she is the one holding the verdict.**
