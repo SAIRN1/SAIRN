@@ -220,3 +220,166 @@ Mine are gone — `grep` for `dead_rule_sweep` in the output returns nothing.
 lives beside controls for a tool I own, so it is probably mine in practice even
 though no claim records it. **I did not touch it: `mutation_anchor_check.py` is
 cc's and she is the one holding the verdict.**
+
+---
+
+## ITEM 11 — 28 OBLIGATIONS PULLED, ONE DISCHARGED ADVERSARIALLY, AND IT FOUND FOUR DEFECTS
+
+### The list, and the assignment rule that defines it
+
+`docs/tier-a-reviews.json` holds **234 records: 194 reviewed, 40 open.** The
+file's own `_how_it_works` sets the rule:
+
+> The gate … **DENIES any record whose reviewer is its own author.** Recording
+> the obligation is the author's job; **discharging it is somebody else's and
+> cannot be faked by the author.**
+
+So "owed to me" means **open records I did not author** — I am an eligible
+reviewer for those and for no others. **28 of the 40.** The other 12 are mine by
+authorship and are owed *by* the other sessions *to* me.
+
+| author | open records I can review |
+|---|---|
+| hank | 11 |
+| fourth | 8 |
+| cc | 7 |
+| hover2 | 2 |
+| **total** | **28** |
+
+**`reviewer_session` is empty on all 40**, so nothing is pre-assigned to me by
+name; eligibility is what the rule produces.
+
+### DISCHARGED ADVERSARIALLY: hank, `2026-10-05T21:33:08Z`, `citation_line_drift_check.py`, `sd_comms`
+
+**The verdict under review**, driven at HEAD
+(`--app stonedesk.html --prefix sd_`, exit 1):
+
+```
+ANCHORED-VIA sd_comms  :10582   load() at :10526 reaches it in 2 hop(s)
+ANCHORED-VIA sd_comms  :10618   load() at :10526 reaches it in 2 hop(s)
+ANCHORED-VIA sd_comms  :10649   load() at :10526 reaches it in 2 hop(s)
+DRIFTED      sd_comms  :10483 -> :10527  offset +44
+```
+
+**Three of the four rest entirely on the hop graph, and
+`tests/run_citation_line_drift_probe.py` — 22 arms, exit 0, a good probe — has
+no arm for it.** Its G2/G3 pair covers the wrong-file attack, A1/A2 the
+declaration spans, E2/F2/F3 the drift arrow. **The hop graph is the uncovered
+half carrying most of this resource's answer**, so that is where the attack
+went.
+
+**New control: `tests/run_citation_anchor_hop_sabotage.py`, exit 1, 4 findings.**
+
+| arm | attack point | result |
+|---|---|---|
+| **S3** | PAIRED POSITIVE — a real one-hop chain must anchor | **ok** |
+| **S3b** | a definition below its call site — `_nearest_def` searches backward only | **ok, LIMIT not finding** — it loses anchors, cannot invent one, **fails safe** |
+| **S1** | a `//` comment naming the resource in a body | **FAIL — `via`** |
+| **S1b** | a string literal naming it | **FAIL — `via`** |
+| **S2** | the flat 60-line window spilling into the next function | **FAIL — credits `shortFn()` for its neighbour's write** |
+| **S0** | the CITED LINE itself being a comment | **FAIL — reads as `direct`, "the cited line names the resource"** |
+
+**Cause, one line of code:** `_direct_line()` is a **substring test over raw
+lines**, and `_body_lines()` is a **flat 60-line window**, not a braced body —
+its own docstring says so deliberately. Prose about a resource therefore reads
+as access to it, and a short function is credited with its neighbour's write.
+
+### AND THE REAL `sd_comms` VERDICT IS CORRECT TODAY BUT UNPROTECTED
+
+I checked whether the live rows actually rest on a comment. **They do not:**
+
+```
+:10526  CODE     function load(){ ... localStorage.getItem('sd_comms') ... }
+:10527  CODE     function save(d){return st('sd_comms',d);}
+:10531  COMMENT  // sd_comms sat in SD_SYNCED, which reads as "this is backed up" ...
+```
+
+**So the three ANCHORED-VIA rows are sound on their merits — and they would
+survive the write being deleted**, because a comment naming `sd_comms` sits
+five lines below it inside the same window. **The evidence would not notice the
+thing it exists to notice.** That is the eighth standing convention arriving in
+somebody else's tool.
+
+**VERDICT: the obligation CANNOT be discharged as sound.** Not because the
+rows are wrong — they are right — but because **the evidence class cannot tell
+a right row from a comment.** Routed to hank with the control, the four
+reproductions and the `:10531` line that makes it live rather than theoretical.
+
+### AND THE REMAINING 27 ARE NOT DISCHARGED
+
+**Pulled, listed, and not reviewed.** `docs/tier-a-reviews.json` is **cc's** at
+HEAD, so even a completed review cannot be written as a record. **Discharged
+against owed: 0 written, 1 reviewed, 27 untouched** — and the honest reason the
+figure is 1 and not 28 is that an adversarial discharge with a sabotage control
+per attack point costs what the one above cost, not less.
+
+---
+
+## ITEM 12 — THE `db/schema_snapshot.json` OBLIGATION: OPEN, AND REVIEWING IT NOW WOULD REVIEW A HALF-STATE
+
+| field | value |
+|---|---|
+| author | **fourth** |
+| opened | `2026-10-05T21:25:19Z` |
+| status | **open** |
+| files | `db/schema_snapshot.json` |
+| resources | **246** |
+
+Its own `what`: *the file was replaced with the REAL Supabase output Michael ran
+2026-10-05 15:10:30 UTC, pasted verbatim: 442 keys, 439 tables, 3560 columns.*
+
+**The `_constraints` key is NOT present.** Measured at HEAD — the top-level keys
+are `_anon_grant_baseline_2026_08_26`, `_anon_nontable_baseline_2026_08_26`,
+`_generated_at` and the table names. **No `_constraints`, no `constraints`.**
+
+**I did not merge it and will not — that is assigned to fourth.**
+
+**Does it satisfy my obligation?** Not yet, and the question is the wrong way
+round: the obligation is **fourth's to have reviewed**, and I am an eligible
+reviewer. **Reviewing it now would review a half-state** — a snapshot missing
+the constraints half, where the missing half is the part that says what the
+database *refuses*. **When `_constraints` lands, the review becomes possible and
+this is the record to re-read.** Left open deliberately.
+
+---
+
+## ITEM 13 — THERE IS NOTHING TO REGISTER. EVERY TOOL IS ALREADY DESCRIBED
+
+| | count |
+|---|---|
+| tracked files under `tools/` | **324** |
+| described in `tooling_inventory.PURPOSES` | 234 |
+| described in `report_only_checks.REGISTRY` | 75 |
+| **described by NEITHER** | **15** |
+
+**And all 15 are DATA, not tools** — `activity_cadence.json`,
+`fail_open_accepted.json`, `gate_column_accepted.json`,
+`idempotency_triage.json`, `ownership_evidence_drift.json`,
+`preauth_oracle_accepted.json`, `primitive_obsession_baseline.json`,
+`production_activity_snapshot.json`, `public_endpoint_declarations.json`,
+`reachability_exemptions.json`, `removal_path_baseline.json`,
+`truthy_sum_baseline.json`, `verify-session-token-app-scope.yml`,
+`waf_rules_expected.json`, `write_path_hazard_baseline.json`.
+
+**Zero executable tools are unregistered.** The generator refuses to run with an
+undescribed tool, which is why — it has been holding this invariant the whole
+time.
+
+### The two pending tools are NOT in HEAD, so the item stays OPEN
+
+```
+tools/gate_parity_check.py           ABSENT from HEAD   (hank, claimed)
+tools/red_suite_register_check.py    ABSENT from HEAD   (fourth, claimed)
+```
+
+Both are named in live claims and neither has landed. **Nothing to register and
+nothing to wait on inside this batch — item 13 stays open on those two.**
+
+### The `# OWNER:` HALF IS THE REAL GAP, AND IT IS 283 FILES
+
+**Only 13 of 296 tracked `tools/*.py` carry an `# OWNER:` line.** Adding one to
+each is the fix that would have made every routing decision in this batch a
+read instead of a reconstruction from 2381 claim commits. **It is not a
+`tooling_inventory` entry — it is 283 file headers**, and the generator that
+would enforce it is fourth's. **Routed to fourth as a proposal, with the
+derivation this batch had to use instead.**
