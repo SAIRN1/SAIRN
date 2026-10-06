@@ -1875,9 +1875,15 @@ PURPOSES = {
         'a report-only checker means findings and `EXIT 2` here usually means '
         'COULD NOT RUN, and this tool knows neither convention. It does not '
         'replace exit_status_attributable.py -- that reads command TEXT before a '
-        'run, this records the OUTCOME of one. Lock: `--fixtures`, 12 arms, 4 of '
-        'them negative, two reproducing the trailing-element mechanism itself '
-        '(the trailing process returns 0 while the status file still says 3)'),
+        'run, this records the OUTCOME of one. Lock: `--fixtures`, which prints '
+        'its own arm count rather than having it written here; two arms '
+        'reproduce the trailing-element mechanism itself (the trailing process '
+        'returns 0 while the status file still says 3). ITS OWN --read PATH '
+        'RAISED AttributeError ON FIRST REAL USE -- a `.strip()` inside the '
+        '%-format parentheses bound to the tuple -- because every arm tested '
+        'read_status() and none went through the CLI wrapping it. A strong lock '
+        'over one half of a tool says nothing about the other half; the CLI arms '
+        'exist now and the criteria stamp moved with them'),
     # DELETED from here 2026-09-12: it is in report_only_checks.py's REGISTRY,
     # which already carries its `catches`. Two descriptions of one tool can
     # disagree, and REGISTRY is the copy that actually runs. Found by this file's

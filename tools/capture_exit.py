@@ -69,7 +69,10 @@ import subprocess
 import sys
 import tempfile
 
-CRITERIA_VERSION = '2026-10-05.1'
+# .2 -- the CLI arms were added after --read raised on its first real use. The
+# criteria really changed, so the stamp moves; a lock that grows without the
+# version moving makes two different locks indistinguishable in a past report.
+CRITERIA_VERSION = '2026-10-05.2'
 
 RUNNING = 'RUNNING'
 EXIT = 'EXIT'
@@ -224,10 +227,43 @@ def _fixtures():
             trailing == 0, 'trailing returned %r' % (trailing,))
         arm('while the status FILE still says 3 -- the fix, measured',
             real == 3 and filed == 3, 'file %r, wrapper %r' % (filed, real))
+
+        # ── THE --read CLI, NOT read_status() ────────────────────────────────
+        # Added after --read raised AttributeError on its FIRST REAL USE: a
+        # `.strip()` inside the %-format parentheses bound to the tuple. Every
+        # arm above passed, because every arm above called read_status()
+        # directly and none of them went through the CLI that wraps it. A
+        # strong lock over one half of a tool says nothing about the other half,
+        # which is a sentence I wrote about a different tool the day before.
+        def _cli(*args):
+            r = subprocess.run([sys.executable, os.path.abspath(__file__)] + list(args),
+                               capture_output=True, text=True, encoding='utf-8',
+                               errors='replace')
+            return r.returncode, (r.stdout or '') + (r.stderr or '')
+
+        rc, out = _cli('--read', sp3)
+        arm('--read EXITS WITH THE RECORDED CODE and does not traceback',
+            rc == 3 and 'Traceback' not in out, 'rc=%r out=%r' % (rc, out[:160]))
+        arm('...and prints the state it read', 'EXIT 3' in out, out[:160])
+
+        rc, out = _cli('--read', os.path.join(tmp, 'does-not-exist.status'))
+        arm('--read on an ABSENT file exits 2 COULD NOT RUN, NEVER 0 -- the '
+            'negative half, and the only arm that would have caught a wrapper '
+            'returning success for a file it never found',
+            rc == 2 and 'ABSENT' in out, 'rc=%r out=%r' % (rc, out[:160]))
+
+        rc, out = _cli('--read', sp2)          # left UNREADABLE above
+        arm('--read on an UNREADABLE file exits 2, not 0 and not 1',
+            rc == 2, 'rc=%r' % (rc,))
+
+        rc, out = _cli('--status', os.path.join(tmp, 'z.status'))
+        arm('a run with --status and NOTHING TO RUN is an argument error, not a '
+            'silent success', rc != 0, 'rc=%r' % (rc,))
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
-    print('  criteria lock: 12 arms, 4 of them negative (criteria %s)' % CRITERIA_VERSION)
+    print('  criteria lock: 17 arms, 6 of them negative, and 5 through the CLI '
+          'rather than the function (criteria %s)' % CRITERIA_VERSION)
     return ok
 
 
@@ -250,7 +286,12 @@ def main():
 
     if a.read:
         state, code, rest = read_status(a.read)
-        print('%s %s %s' % (state, '' if code is None else code, rest).strip())
+        # The .strip() used to sit INSIDE the %-format parentheses, so it bound
+        # to the tuple and raised AttributeError on the first real use of
+        # --read. The arms below did not catch it because they tested
+        # read_status() and never the CLI around it: A STRONG LOCK OVER ONE HALF
+        # OF A TOOL SAYS NOTHING ABOUT THE OTHER HALF.
+        print(('%s %s %s' % (state, '' if code is None else code, rest)).strip())
         if state == EXIT:
             return code
         # NOT 0. "I cannot tell you the status" is the third state and folding

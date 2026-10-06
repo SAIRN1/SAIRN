@@ -501,6 +501,52 @@ def universe_tools(rows):
 # sweep the committed version of a tool the author has just edited, and report
 # a verdict about code that is not the code in front of them.
 SANDBOX_PREFIX = 'drs-sandbox-'
+OWNER_FILE = '.drs-owner'
+
+
+# ── AND THE REAP USED TO DESTROY A LIVE RUN (fixed 2026-10-06) ──────────────
+# `reap_stale_sandboxes` removed EVERY directory matching the prefix, on the way
+# in and on the way out, with no notion of whose it was. So a second run of this
+# sweep -- even a one-tool `--tool X.py` run -- deleted the sandbox a long run
+# was working in, and the victim did not report anything useful: it crashed with
+# FileNotFoundError when it next tried to write a patched source.
+#
+# MEASURED, on the first full 151-tool run: `--tool register_feed_gate.py` was
+# started in another shell while it was going, and the long run died 29 tools in
+# with a traceback naming tools/copy_exactly_gate.py -- a file that had simply
+# stopped existing underneath it. The verdicts for the first 28 tools went with
+# it, and nothing said "a concurrent run took my sandbox"; it read like a bug in
+# the tool being swept.
+#
+# This is the two-probe-runs-at-once failure the platform already has a memory
+# for: the second run restored the first run's mutation and reported success.
+# Here the second run deleted the first run's whole tree.
+#
+# SO THE REAP NOW FAILS CLOSED. A sandbox is reaped only when its owning process
+# is provably gone. "Could not tell" leaves it alone, which costs a leftover
+# directory in temp -- the trade this file's own comment already argues for --
+# instead of destroying a run in flight.
+def _pid_alive(pid):
+    if pid == os.getpid():
+        return True
+    try:
+        if os.name == 'nt':
+            r = subprocess.run(['tasklist', '/FI', 'PID eq %d' % pid, '/NH'],
+                               capture_output=True, text=True)
+            return str(pid) in (r.stdout or '')
+        os.kill(pid, 0)
+        return True
+    except Exception:                                          # noqa: BLE001
+        return True      # COULD NOT TELL -- never a licence to delete
+
+
+def _sandbox_owner(path):
+    """The pid that owns this sandbox, or None if it carries no marker."""
+    try:
+        return int(io.open(os.path.join(path, OWNER_FILE),
+                           encoding='utf-8').read().strip())
+    except Exception:                                          # noqa: BLE001
+        return None
 
 
 def reap_stale_sandboxes():
@@ -512,22 +558,34 @@ def reap_stale_sandboxes():
     forgets entries whose directory is gone, so a killed run's sandbox stays
     registered and they accumulate. This reaps them by NAME, and only the ones
     this tool creates -- other sessions' throwaway worktrees are not touched.
+
+    AND ONLY THE ONES WHOSE OWNER IS PROVABLY GONE. It used to reap every
+    matching directory, so a concurrent run of this sweep destroyed a live one
+    mid-flight; see the note above `_pid_alive`. Returns the paths it SKIPPED,
+    so a caller can say that a leftover was left on purpose.
     """
     subprocess.run(['git', '-C', REPO, 'worktree', 'prune'],
                    capture_output=True, text=True)
     r = subprocess.run(['git', '-C', REPO, 'worktree', 'list', '--porcelain'],
                        capture_output=True, text=True, encoding='utf-8',
                        errors='replace')
+    skipped = []
     for line in (r.stdout or '').split('\n'):
         if not line.startswith('worktree '):
             continue
         p = line[len('worktree '):].strip()
-        if os.path.basename(p.rstrip('/\\')).startswith(SANDBOX_PREFIX):
-            subprocess.run(['git', '-C', REPO, 'worktree', 'remove', '--force', p],
-                           capture_output=True, text=True)
-            shutil.rmtree(p, ignore_errors=True)
+        if not os.path.basename(p.rstrip('/\\')).startswith(SANDBOX_PREFIX):
+            continue
+        owner = _sandbox_owner(p)
+        if owner is not None and owner != os.getpid() and _pid_alive(owner):
+            skipped.append((p, owner))
+            continue
+        subprocess.run(['git', '-C', REPO, 'worktree', 'remove', '--force', p],
+                       capture_output=True, text=True)
+        shutil.rmtree(p, ignore_errors=True)
     subprocess.run(['git', '-C', REPO, 'worktree', 'prune'],
                    capture_output=True, text=True)
+    return skipped
 
 
 def make_sandbox():
@@ -555,6 +613,16 @@ def make_sandbox():
                          encoding='utf-8', errors='replace')
     if add.returncode != 0:
         shutil.rmtree(work, ignore_errors=True)
+        return None
+    # THE OWNER MARKER, WRITTEN BEFORE ANY WORK. It is what stops a concurrent
+    # run reaping this tree out from under us, so it cannot be written later --
+    # a window between `worktree add` and the marker is a window in which this
+    # sandbox looks abandoned.
+    try:
+        io.open(os.path.join(work, OWNER_FILE), 'w', encoding='utf-8',
+                newline='\n').write('%d\n' % os.getpid())
+    except OSError:
+        drop_sandbox(work)
         return None
     # Overlay every tracked file the working tree has changed, so the sweep
     # judges what is on disk. A copy that silently landed nothing would make
@@ -1025,10 +1093,33 @@ def main(argv):
     nondet, noreset = [], []
     try:
         for t in tools:
+            # THE SANDBOX CAN BE GONE, and it used to surface as a traceback
+            # about the tool being swept. If it has vanished, every verdict
+            # already collected was taken in a tree that no longer exists and
+            # the run is void -- not partially useful.
+            if not os.path.isdir(work):
+                print('\nCOULD NOT RUN -- THE SANDBOX DISAPPEARED while '
+                      'sweeping %s, after %d tool(s).' % (t, tools.index(t)),
+                      file=sys.stderr)
+                print('Every verdict collected so far was taken in a tree that '
+                      'is gone, so none of\nthem is reported. The known cause '
+                      'is a CONCURRENT run of this sweep reaping it:\nuntil '
+                      '2026-10-06 the reap deleted every drs-sandbox- directory '
+                      'regardless of\nowner. If this still happens, something '
+                      'other than this tool is removing them.',
+                      file=sys.stderr)
+                return EXIT_COULD_NOT_RUN
             try:
                 rows = sweep_tool(t, work, verbose=bool(a.tool) and not a.quiet)
             except RuntimeError as e:
                 print('RESTORE FAILURE: %s' % e, file=sys.stderr)
+                return EXIT_COULD_NOT_RUN
+            except OSError as e:
+                print('\nCOULD NOT RUN -- the sandbox could not be written '
+                      'while sweeping %s: %s' % (t, e), file=sys.stderr)
+                print('Reported as a refusal rather than a traceback: a missing '
+                      'sandbox file is not a\ndefect in the tool being swept, '
+                      'and it used to read like one.', file=sys.stderr)
                 return EXIT_COULD_NOT_RUN
             if rows is None:
                 unreadable.append(t)

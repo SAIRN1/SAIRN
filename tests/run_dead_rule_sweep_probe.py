@@ -584,6 +584,93 @@ try:
 finally:
     shutil.rmtree(_nt, ignore_errors=True)
 
+# ── I. A CONCURRENT RUN MUST NOT REAP A LIVE SANDBOX ───────────────────────
+# Measured 2026-10-06: the first full 151-tool run died 29 tools in with a
+# FileNotFoundError naming tools/copy_exactly_gate.py, because a one-tool
+# `--tool register_feed_gate.py` run was started in another shell and the reap
+# deleted every drs-sandbox- directory regardless of owner. The victim's 28
+# tools of verdicts went with it and nothing said what had happened -- it read
+# like a defect in the tool being swept.
+#
+# THE NEGATIVE ARM IS I2. A reap that never deletes anything would pass I1
+# trivially, so the dead-owner case has to be proved in the same run.
+section('I. the reap is owner-aware -- a live run keeps its sandbox')
+
+
+def _mk_marked(owner_pid):
+    """A registered sandbox carrying a given owner pid. Reaped by the arms."""
+    p = D.make_sandbox()
+    if p and owner_pid is not None:
+        io.open(os.path.join(p, D.OWNER_FILE), 'w', encoding='utf-8',
+                newline='\n').write('%d\n' % owner_pid)
+    return p
+
+
+# A LIVE pid THAT IS NOT OURS, which is the only shape that matters: the reap
+# deliberately DOES collect a tree marked with its own pid, because make_sandbox
+# reaps on the way in and drop_sandbox on the way out. Marking the fixture with
+# os.getpid() tested the wrong thing and failed -- recorded rather than quietly
+# swapped, because the first version of this arm was wrong and passing it by
+# changing production code would have removed the guard it is here to prove.
+_helper = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(120)'])
+try:
+    _live = _mk_marked(_helper.pid)
+    check('I0. a sandbox was made and carries an owner marker at all',
+          _live is not None and os.path.isfile(os.path.join(_live, D.OWNER_FILE)),
+          _live)
+    check('I0b. CONTROL: the helper pid reads as ALIVE, and is not ours',
+          D._pid_alive(_helper.pid) and _helper.pid != os.getpid(), _helper.pid)
+    _skipped = D.reap_stale_sandboxes()
+    check('I1. a sandbox owned by ANOTHER LIVE process SURVIVES the reap, and '
+          'the reap says it skipped it -- this is the arm the 151-tool run '
+          'needed and did not have',
+          os.path.isdir(_live) and any(
+              os.path.normcase(p) == os.path.normcase(_live)
+              for p, _o in _skipped),
+          (os.path.isdir(_live), _skipped))
+finally:
+    _helper.kill()
+    _helper.wait()
+
+# A pid that cannot be alive: the owner marker is rewritten to a free high pid.
+# 0 and negative are rejected by tasklist/os.kill differently, so a plausible
+# but dead pid is the honest fixture.
+_dead_pid = 2
+for _cand in range(999990, 999950, -1):
+    if not D._pid_alive(_cand):
+        _dead_pid = _cand
+        break
+check('I2a. CONTROL: the fixture pid really does read as dead, or every arm '
+      'below is measuring nothing', not D._pid_alive(_dead_pid), _dead_pid)
+if _live and os.path.isdir(_live):
+    io.open(os.path.join(_live, D.OWNER_FILE), 'w', encoding='utf-8',
+            newline='\n').write('%d\n' % _dead_pid)
+    D.reap_stale_sandboxes()
+    check('I2b. THE NEGATIVE ARM: the same sandbox, re-marked with a DEAD '
+          'owner, IS reaped -- so I1 is not passing because the reap simply '
+          'stopped deleting things',
+          not os.path.isdir(_live), _live)
+else:
+    check('I2b. THE NEGATIVE ARM: the same sandbox, re-marked with a DEAD '
+          'owner, IS reaped', False,
+          'I1 left no sandbox to re-mark, so the negative half could not run '
+          '-- reported, not skipped')
+
+_unmarked = D.make_sandbox()
+if _unmarked:
+    try:
+        os.unlink(os.path.join(_unmarked, D.OWNER_FILE))
+    except OSError:
+        pass
+D.reap_stale_sandboxes()
+check('I3. a sandbox with NO marker is still reaped -- a tree left by the '
+      'pre-2026-10-06 version must not become permanent',
+      _unmarked is not None and not os.path.isdir(_unmarked), _unmarked)
+
+check('I4. "could not tell" is never a licence to delete -- _pid_alive returns '
+      'True for a pid it cannot ask about',
+      D._pid_alive(os.getpid()) is True)
+
 # The sabotage scratch tree, removed. Outside this clone either way, so a
 # leftover is untidy rather than dangerous -- which is the whole trade section G
 # makes: debris in temp instead of a neutralised rule in a shared repo.
