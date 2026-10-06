@@ -23324,6 +23324,160 @@
       "recurrence_open": "The invocation-position rule knows seven interpreter names and will miss an eighth silently -- a false negative, chosen deliberately, and unmeasured. And nothing measures the notice's own precision over a session, which is the number that decides whether it is still read."
     },
     {
+      "commit": "53168bb506f0",
+      "date": "2026-10-06",
+      "subject": "fix(cp1252+plan-literals): an audit that died at the reporting stage, a Plan row reading a key nothing writes, and a pricing header its own first card withdraws",
+      "files": [
+        "docs/2026-10-05-hank-routed-to-fourth.md",
+        "docs/2026-10-05-inventory-hank-batch8.md",
+        "sairnscape.html",
+        "stonedesk.html",
+        "tools/accepted_risk_expiry_audit.py"
+      ],
+      "lines_added": 300,
+      "lines_removed": 3,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/accepted_risk_expiry_audit.py main() prints its per-verdict section headers with box-drawing rules and the module never reconfigures sys.stdout. Under cp1252 -- the real console encoding on this machine -- that raises UnicodeEncodeError AT THE REPORTING STAGE, after the whole audit has run, so the process exits 1 and prints no findings. Exit 1 is also this tool's finding status, so a caller reading the status alone cannot tell a crash from a result. Found by driving all 296 tools/*.py under forced PYTHONIOENCODING=cp1252 in a scratch copy of the tree: 1 crash of 296, with 26 slow tools re-driven at a long timeout and run_all_tests.py reported as COULD-NOT-TELL rather than folded into the pass count. Fixed by reconfiguring stdout and stderr to utf-8 at import -- the stream, not the text, because ASCII-ing this file would fix one file and leave the pattern in the other ~295.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The box rules have been in this file since it was written and no commit introduced the defect; it has never been runnable on a cp1252 console. Naming the feature commit would misdate the discovery lag and blame a commit that was no worse than its ~295 siblings, five of which have already been fixed for the identical reason."
+      },
+      "citation_note": "1.5 is 'the confident line printed after the error'. This is its mirror: the error is printed and the confident line is NOT, and the surviving signal -- exit 1 -- means 'findings' in this tool's own vocabulary. Arguable because 1.5 is written about output that outlives a failure, and here it is the output that DIES while the status survives and misleads. No standing rule names 'a crash at the reporting stage wearing the tool's own finding status'.",
+      "contributing_factors": [
+        {
+          "factor": "The report stage prints box-drawing section rules, like every other tool in this repo, and nothing reconfigures the stream. On a cp1252 console that is fatal.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "sys.stdout/sys.stderr reconfigured to utf-8 at import, the same fix register_feed_gate.py already carries."
+        },
+        {
+          "factor": "The crash is at the REPORTING stage, after the audit has run, so the process exits 1 -- which this tool uses for findings. A caller reading the status alone sees a normal finding-bearing run.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "A standing cp1252 sweep is owed; this one was run by hand. Until it exists the class is caught only when somebody re-runs it."
+        },
+        {
+          "factor": "Nothing drives tools under a non-UTF8 console. Every CI and agent run here is UTF-8, so the whole class is invisible to the machine and visible only to a human on a plain Windows terminal -- which is the one reader these tools are written for.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "All 296 tools/*.py driven under forced PYTHONIOENCODING=cp1252 in a scratch copy; 1 crash found, 26 slow tools re-driven at a long timeout, 1 (run_all_tests.py) still COULD-NOT-TELL and reported as such."
+        }
+      ],
+      "recurrence_open": "The sweep was run BY HAND and nothing re-runs it. 295 of 296 tools answered; run_all_tests.py is COULD-NOT-TELL at a 600s timeout and is not claimed clean. No gate drives tools under a non-UTF8 console, so the next tool added can reintroduce this with every check green."
+    },
+    {
+      "commit": "53168bb506f0",
+      "date": "2026-10-06",
+      "subject": "fix(cp1252+plan-literals): an audit that died at the reporting stage, a Plan row reading a key nothing writes, and a pricing header its own first card withdraws",
+      "files": [
+        "docs/2026-10-05-hank-routed-to-fourth.md",
+        "docs/2026-10-05-inventory-hank-batch8.md",
+        "sairnscape.html",
+        "stonedesk.html",
+        "tools/accepted_risk_expiry_audit.py"
+      ],
+      "lines_added": 300,
+      "lines_removed": 3,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "stonedesk.html's IT-admin panel rendered 'Plan: <value>' from var plan=localStorage.getItem('sd_plan')||'Demo'. sd_plan has ZERO write sites anywhere on the platform -- the only two references are that read and the keep-list in itaClearData() that preserves it across a demo purge. The fallback was therefore not a fallback but the value, unconditionally, so a licensed customer read 'Plan: Demo' for ever on the one row that answers what they are paying for. Same class as sairncash's hardcoded 'Pro' fixed the same day, and harder to notice: a literal in markup is visible on sight, a dead localStorage key reads as derived state. Fixed to report that the browser does not hold a plan rather than naming one; inventing a label from the licence key's presence would be the same defect one step along.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "No commit introduced it as a regression -- the read and its fallback were written together, and whatever used to write sd_plan either never existed or predates this file's history. Dating it to the panel's own commit would record a discovery lag for a defect that was present from the first line."
+      },
+      "citation_note": "1.1 is 'a check that stopped checking'. This is the display equivalent: a row that reads live state and has not been reading anything, for as long as the key has had no writer. Arguable because 1.1 is written about checkers rather than about a rendered value, and no standing rule names 'a storage key that is read and never written'.",
+      "contributing_factors": [
+        {
+          "factor": "The row reads localStorage key sd_plan with a ||Demo fallback, and nothing anywhere on the platform ever writes that key. The fallback is therefore the value, unconditionally.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The row now reports that the browser does not hold a plan, rather than naming one."
+        },
+        {
+          "factor": "A dead storage key reads as live state. The sibling defect fixed the same day (sairncash hardcoded Pro) was a literal in markup and was visible on sight; this one looked derived, which is why it survived longer.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "A dead-storage-key sweep -- keys READ but never WRITTEN -- is owed. The sd_pb/sd_pb2/sd_pb3 purge-exemption finding routed in the same session is the same shape."
+        },
+        {
+          "factor": "No check compares a localStorage read against the set of write sites for that key, so a key with zero writers is indistinguishable from one with many.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "Same sweep as above; not built here."
+        }
+      ],
+      "recurrence_open": "The dead-storage-key class is NOT swept. Keys READ but never WRITTEN are findable mechanically and nothing looks; the sd_pb/sd_pb2/sd_pb3 purge-exemption routed in this same session is the same shape in the other direction, and neither is closed by this fix."
+    },
+    {
+      "commit": "53168bb506f0",
+      "date": "2026-10-06",
+      "subject": "fix(cp1252+plan-literals): an audit that died at the reporting stage, a Plan row reading a key nothing writes, and a pricing header its own first card withdraws",
+      "files": [
+        "docs/2026-10-05-hank-routed-to-fourth.md",
+        "docs/2026-10-05-inventory-hank-batch8.md",
+        "sairnscape.html",
+        "stonedesk.html",
+        "tools/accepted_risk_expiry_audit.py"
+      ],
+      "lines_added": 300,
+      "lines_removed": 3,
+      "app": "sairnscape",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "sairnscape.html's pricing section heading read 'Simple. Honest. No per-user games.' over 'Flat monthly fee. Unlimited users. Cancel anytime.' -- a blanket claim about the pricing model -- while the Starter card thirteen lines below it reads 'Up to 3 users'. Professional and Business genuinely are unlimited; Starter is not, and Starter is the card a first-time reader prices against, so the claim has already influenced the decision by the time the contradiction arrives. Same class as the 'QuickBooks integration' line removed from this same file on 2026-09-02: a purchase-influencing claim the product withdraws. Fixed by saying what is true -- flat fee, never billed per user, unlimited users on Professional and Business, Starter covers 3 -- rather than by deleting the sentence, because the fee really is flat and there really is no per-seat billing.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "requirement",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "A heading and its cards were written at different times and the repo history does not separate them cleanly; identifying which pass introduced the disagreement would be a guess, and this field is not the place for one."
+      },
+      "citation_note": "No standing process rule covers a marketing claim contradicted by the product description beside it. The nearest neighbour is the decision-gate discipline about claims made to people outside the team, which is a judgement layer rather than a numbered rule. Recorded as not-citable rather than stretched onto a rule about checkers.",
+      "contributing_factors": [
+        {
+          "factor": "The pricing section heading made a blanket claim -- Flat monthly fee. Unlimited users. -- that the first tier card thirteen lines below withdraws with Up to 3 users.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Heading rewritten to say what is true: flat fee, no per-seat billing, unlimited users on Professional and Business, Starter covers 3."
+        },
+        {
+          "factor": "A heading and the cards under it are written at different times by different passes, and nothing re-reads one against the other. The QuickBooks line removed from this same file on 2026-09-02 is the same shape.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "A paywall-claim consistency check is owed -- a heading claim contradicted by a card in the same section is mechanically findable."
+        },
+        {
+          "factor": "No check reads marketing surfaces at all. Every control on this platform is pointed at handlers, storage and registers; a purchase-influencing sentence is not in any universe.",
+          "kind": "detection",
+          "action_status": "not-actionable",
+          "note": "Naming it is the action available here. Building a claims checker is a separate piece of work and would need a source of truth for what is actually sold, which does not exist in the repo."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED: sairnscape.html:258-261 advertises 'API access', 'Custom AI training on your business' and an 'SLA and uptime guarantee' on the Business tier. None of the three was verified in this pass and none is fixed -- they are the same class as the removed QuickBooks line, and keeping or removing them is a decision about what is sold. Nothing on this platform checks marketing surfaces at all."
+    },
+    {
       "commit": "607f4f034662",
       "date": "2026-10-06",
       "subject": "fix(sairndesign): the one generic SDN write branch stored the caller's whole payload raw -- one omission, eighteen resources",
@@ -23436,62 +23590,6 @@
         }
       ],
       "recurrence_open": "Nothing prevents the next arm from being written with a byte window. There is no checker that flags a function-body slice whose end is not a balanced close, and this sweep was a one-off measurement rather than a standing gate. 14 of 38 sites are also still unpaired."
-    },
-    {
-      "commit": "e4472e9ea22a",
-      "date": "2026-10-06",
-      "subject": "fix(suite-override): the rule could not fire, so `findings 0` over 488 suites was not a result -- plus the per-verdict census the count needs",
-      "files": [
-        "tools/suite_override_consistency.py"
-      ],
-      "lines_added": 206,
-      "lines_removed": 44,
-      "app": "PLATFORM",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "tools/suite_override_consistency.py, written 2026-10-05, reported findings 0 and could not have reported anything else. Its rule required a MAJORITY of an app family to honour a file override; measured 2026-10-06 no app-file override reaches a majority anywhere in the tree (LEG_HTML 2 of 7, SD_HTML 6 of 70, SB_HTML 7 of 20, DNT_HTML 5 of 18), so the detector was dead -- including to the exact 2026-10-05 incident it was written for, where a caller passed LEG_HTML to a suite that ignores it because two siblings accept it. Its corpus also excluded 145 api/**/*.test.js suites, which changes family ratios rather than merely narrowing coverage. Under the corrected rule it reports 155 findings over 488 suites, 0 of them under a majority convention.",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "34c834aae5b9",
-        "date": "2026-10-05",
-        "subject": "fix(tests): the app was right and the test's span was short -- plus the red register reconciled against a real run, and the A/B rule that came from my own void comparison",
-        "lag_days": 1
-      },
-      "contributing_factors": [
-        {
-          "factor": "The rule required a MAJORITY of a family to honour an override. Measured against the real tree, no app-file override reaches a majority anywhere except a 3-of-3 family where there is nothing to find -- so the rule was structurally incapable of returning a finding, and its 0 was vacuous.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Trigger is now ANY sibling, matching the actual misreading (the caller saw one sibling and generalised); --rule majority kept so the difference is measurable, with three fixtures separating the two."
-        },
-        {
-          "factor": "The corpus was tests/ only, excluding 145 api/**/*.test.js suites. A narrower corpus is not a smaller version of the same answer here: a family majority is computed from its members, so an excluded member changes the ratio.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Corpus is now the same two places tools/run_all_tests.py discover() reads; 488 JS suites."
-        },
-        {
-          "factor": "The tool reported a finding count with no denominator, so a vacuous zero was indistinguishable from a real clean sweep.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "A per-verdict census prints beside the count, including the two verdicts the tool CANNOT judge, with a TOTAL that must equal the suites examined."
-        },
-        {
-          "factor": "Shared credential vars (SD_AUTH_SECRET, SUPABASE_URL) were counted as file-substitution conventions, which generated findings against suites that had no file override to be inconsistent about.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Only _HTML/_FILE/_PATH/_SRC vars count, with a fixture in each direction."
-        }
-      ],
-      "recurrence_open": "The tool still cannot see an override read through a helper rather than process.env directly, cannot tell whether a present override reaches the read, and does not judge the 16 CROSS_APP suites at all. Those three are named limits, not findings. And the 155 findings are now a backlog nobody owns: the fix per finding is a judgement (add the override, or say in the header that the suite is pinned), and none of the 155 has been made."
     },
     {
       "commit": "db8cc2d485db",
@@ -23657,6 +23755,62 @@
         }
       ],
       "recurrence_open": "Nothing links an app function's name to the suites that extract it by anchor, so the next rename breaks the next suite the same way and the push gate will not know -- this suite is not in GUARD_TESTS. The red suite register caught it after the fact, which is a day later than the push."
+    },
+    {
+      "commit": "e4472e9ea22a",
+      "date": "2026-10-06",
+      "subject": "fix(suite-override): the rule could not fire, so `findings 0` over 488 suites was not a result -- plus the per-verdict census the count needs",
+      "files": [
+        "tools/suite_override_consistency.py"
+      ],
+      "lines_added": 206,
+      "lines_removed": 44,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/suite_override_consistency.py, written 2026-10-05, reported findings 0 and could not have reported anything else. Its rule required a MAJORITY of an app family to honour a file override; measured 2026-10-06 no app-file override reaches a majority anywhere in the tree (LEG_HTML 2 of 7, SD_HTML 6 of 70, SB_HTML 7 of 20, DNT_HTML 5 of 18), so the detector was dead -- including to the exact 2026-10-05 incident it was written for, where a caller passed LEG_HTML to a suite that ignores it because two siblings accept it. Its corpus also excluded 145 api/**/*.test.js suites, which changes family ratios rather than merely narrowing coverage. Under the corrected rule it reports 155 findings over 488 suites, 0 of them under a majority convention.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "34c834aae5b9",
+        "date": "2026-10-05",
+        "subject": "fix(tests): the app was right and the test's span was short -- plus the red register reconciled against a real run, and the A/B rule that came from my own void comparison",
+        "lag_days": 1
+      },
+      "contributing_factors": [
+        {
+          "factor": "The rule required a MAJORITY of a family to honour an override. Measured against the real tree, no app-file override reaches a majority anywhere except a 3-of-3 family where there is nothing to find -- so the rule was structurally incapable of returning a finding, and its 0 was vacuous.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Trigger is now ANY sibling, matching the actual misreading (the caller saw one sibling and generalised); --rule majority kept so the difference is measurable, with three fixtures separating the two."
+        },
+        {
+          "factor": "The corpus was tests/ only, excluding 145 api/**/*.test.js suites. A narrower corpus is not a smaller version of the same answer here: a family majority is computed from its members, so an excluded member changes the ratio.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Corpus is now the same two places tools/run_all_tests.py discover() reads; 488 JS suites."
+        },
+        {
+          "factor": "The tool reported a finding count with no denominator, so a vacuous zero was indistinguishable from a real clean sweep.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "A per-verdict census prints beside the count, including the two verdicts the tool CANNOT judge, with a TOTAL that must equal the suites examined."
+        },
+        {
+          "factor": "Shared credential vars (SD_AUTH_SECRET, SUPABASE_URL) were counted as file-substitution conventions, which generated findings against suites that had no file override to be inconsistent about.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Only _HTML/_FILE/_PATH/_SRC vars count, with a fixture in each direction."
+        }
+      ],
+      "recurrence_open": "The tool still cannot see an override read through a helper rather than process.env directly, cannot tell whether a present override reaches the read, and does not judge the 16 CROSS_APP suites at all. Those three are named limits, not findings. And the 155 findings are now a backlog nobody owns: the fix per finding is a judgement (add the override, or say in the header that the suite is pinned), and none of the 155 has been made."
     }
   ],
   "started": "2026-09-09",
