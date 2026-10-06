@@ -2522,3 +2522,81 @@ match one new one would have been the wrong direction of correction.**
   could-not-tells are all one `roleSet()` shape across 18 auth endpoints; and
   `api/sd-data.js`'s citation drift delta from this change is **zero** — 33
   drifted cells before and after, identical.
+
+---
+
+## 2026-10-06 — batch 8 (hank)
+
+Full account: `docs/2026-10-05-inventory-hank-batch8.md`. Shas below are on
+`origin/main`.
+
+**THE ONE THAT MATTERS.** `api/sd-data.js`, `alf_family_contacts`: the
+`family_mar` action had **no caller gate at all** (`8246d8ba`, H1 #877). Its
+sibling `read`, sixty lines above in the same block, gated on a role set AND
+the caller's resident assignment. `family_mar` checked the family contact's
+**consent** and shipped the resident's medication administration record — so
+any authenticated session on the licence, including an unassigned `med_aide`,
+could pass any `contact_id` and read it. **The consent check was standing in
+for an authorisation check:** it answers a question about the contact, not
+about the session, and nothing asked the second one. Fixed in two halves
+because the resident is only knowable from the stored row.
+`tests/sd_data_family_mar_gate.js` 10/0; ablation against unmodified HEAD
+fails 6 arms and keeps the 3 allowed arms green.
+
+**Then the check that would have caught it.** `tools/gate_parity_check.py`
+compares SIBLING ACTIONS on one resource — the question nothing on this
+platform asked, because every existing control inspects ONE branch and all of
+them passed `family_mar`. Selftest 7/0; **ablation against the pre-fix file
+flags 4 groups including `alf_family_contacts`, and HEAD flags 3 without it.**
+**NOT COMMITTED** — `tooling_inventory.py` refuses a tool with no `PURPOSES`
+entry and that file is **fourth's** under a live claim. Held untracked in this
+clone; entry routed in `docs/2026-10-05-hank-routed-to-fourth.md`. An
+untracked file is invisible to every other clone and that is the cost.
+
+**Also landed.** `scp_designs` B→A on integrity (`5faa4f1a`, hover 878) —
+field for field what `grd_designs` was promoted for eleven days earlier. The
+14 unrouted hover findings taken to **0** (`8783093f`), six tier cells
+corrected (`7bd72e4d`), the SDN generic write branch routed through
+`storedBlob()` (`607f4f03`, 18 resources, one omission), 13 rows off the drift
+backlog (`f9898241`, DRIFTED 170→158), and the cp1252 sweep's single crash
+plus two claim defects (`53168bb5`).
+
+**I TOOK `docs/SAIRN-OPEN-WORK-INDEX.md`, WHICH IS CC'S BY CONVENTION.** Her
+claim on it had **expired 8.6h earlier** and `sairn_status.py` reported that
+session **DEAD** (PID gone). Taken by name in the claim string rather than by
+rewording the task past the matcher. cc has since opened a new claim that
+names this overlap from her side; **her routed text in
+`docs/2026-10-06-cc-routed-to-hank.md` is NOT consumed, and at the time of writing that file DOES NOT EXIST IN THIS TREE** — her claim names it, it is not on `origin/main` after a fetch, so it is either unpushed or not yet written. Checked rather than assumed; nobody has reconciled the two sets of rows.
+
+**I ALSO WROTE `docs/tier-a-reviews.json`, WHICH CC NOW HOLDS.** Three
+obligations opened through `tier_a_review_gate.py --open`, the sanctioned
+path; two of the three predate her claim and one does not. Declared rather
+than discovered later.
+
+**WHAT I GOT WRONG — five defects of my own, none caught by review.**
+A false PASS in my own `family_mar` test (the anchor matched twice and an arm
+was grading `read`'s body); the SDN test cutting its source block on a string
+that exists only in a comment; and **three in `gate_parity_check.py`, of which
+two made the tool unable to see the defect it was written for** — it compared
+writes against reads, and it read a role-set *declaration* as a gate. Plus:
+recording superseded line numbers re-injected them as citations and made the
+first drift re-measure **worse**. Every one was found by pointing the thing at
+production. **Every fixture I wrote was tidier than the code it stood for.**
+
+**WHAT I DID NOT DO.**
+
+* **`ALF_FAMILY_READ_ROLES` still includes `billing`** on a clinical record.
+  Inherited unchanged on purpose: the defect being fixed is a gate disagreeing
+  with its sibling, and narrowing here would introduce a second disagreement
+  silently. Flagged for a decision, not fixed in passing.
+* **The SAIRNscape Tier A gating obligation** created by the `scp_designs`
+  promotion — a third Tier A resource still on the licence key alone. Named in
+  the row, not armed.
+* **`sairnscape.html:258-261`** advertises API access, custom AI training and
+  an SLA on the Business tier. Logged with file:line, **not verified and not
+  removed** — a decision about what is sold.
+* **`citation_line_drift_check.py` cannot anchor any SAIRNscape row** (it does
+  not know the `scpSt`/`scpLd` idiom) and says INCONCLUSIVE with no SEEN/EXIST
+  line. Named; widening a measurer is its own work.
+* **`run_all_tests.py` is COULD-NOT-TELL** in the cp1252 sweep at a 600s
+  timeout — 295 of 296 answered, and the one that did not is not counted clean.
