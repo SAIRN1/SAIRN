@@ -86,7 +86,17 @@ ASSIGN_PAT = re.compile(r'session\.employee_id\s*===?\s*\w|'
                         # literal patterns above. LEXICAL, same as hank's own tool's
                         # documented limit -- a DIFFERENT helper name is still invisible
                         # here. Named rather than claimed complete.
-                        r'\w+Auth\.ownsRow\(')
+                        r'\w+Auth\.ownsRow\(|'
+                        # SECOND named helper, same batch, rf_schedule/read+write:
+                        # roofingLocations.canSeeSchedule(session, row, assignee, ...)
+                        # performs BOTH the role and the per-row assignee check in one
+                        # call -- the role half is already caught by the _ROLES-anywhere
+                        # widening above, this catches the assignment half of the SAME
+                        # call. Stopping at two named helpers rather than chasing every
+                        # possible name: diminishing returns past the shapes actually
+                        # found this run, and this tool's docstring already states it
+                        # is lexical and not claimed complete.
+                        r'canSeeSchedule\(')
 
 
 def blocks(src, prefix):
@@ -189,6 +199,9 @@ def selftest():
     if (resource === 'fx_argrole' && action === 'read') {
       if (!canSeeRow(session, entry, xyAuth.MANAGEMENT_ROLES)) { return; }
     }
+    if (resource === 'fx_sched' && action === 'read') {
+      const ok = canSeeSchedule(session, row, assignee, xyAuth.MANAGEMENT_ROLES);
+    }
 """
     per_resource = analyze(fixture, 'fx_')
     groups_flagged, lines = report(per_resource)
@@ -197,8 +210,9 @@ def selftest():
           per_resource['fx_a']['write'] == {'role': True, 'assignment': False} and
           per_resource['fx_clean']['read'] == per_resource['fx_clean']['write'] and
           per_resource['fx_helper']['read']['assignment'] is True and
-          per_resource['fx_argrole']['read']['role'] is True)
-    print('SELFTEST %s: %d group(s) flagged (expected 1: fx_a, assignment divergence); fx_clean correctly unflagged; fx_helper (named-helper assignment check) and fx_argrole (role-set passed as an argument) correctly detected' %
+          per_resource['fx_argrole']['read']['role'] is True and
+          per_resource['fx_sched']['read'] == {'role': True, 'assignment': True})
+    print('SELFTEST %s: %d group(s) flagged (expected 1: fx_a, assignment divergence); fx_clean correctly unflagged; fx_helper, fx_argrole, fx_sched (three named-helper shapes) correctly detected' %
           ('PASS' if ok else 'FAIL', groups_flagged))
     return 0 if ok else 1
 
