@@ -90,7 +90,9 @@ DEFAULT_FILES = [
 # .2 -- a FIXTURE WAS DELETED, so the criteria changed and the stamp moves.
 # A lock that grows or shrinks without the version moving makes two different
 # locks indistinguishable in a past report.
-CRITERIA_VERSION = '2026-10-06.2'
+# .3 -- a whole second GROUPING was added (cross-resource), so the criteria
+# changed and the stamp moves.
+CRITERIA_VERSION = '2026-10-06.3'
 
 # ── THE THREE SIGNALS ───────────────────────────────────────────────────────
 # ROLE: the session's role is CONSULTED. `session.role` is the only way this
@@ -132,6 +134,17 @@ DATA_200_RE = re.compile(r"status\(200\)\.json\(\s*\{[^}]*\bdata\b")
 # does. A fixture that is cleaner than production tests a handler that does not
 # exist. B2 now returns a representation, the way the real ones do.
 MUTATE_RE = re.compile(r"method:\s*'(?:POST|PATCH|PUT|DELETE)'|'rpc/")
+
+# ── THE TABLE A BRANCH ACTUALLY READS, WHICH IS NOT ALWAYS ITS OWN RESOURCE ──
+# Added 2026-10-06 for #894, the third instance of this class and the first the
+# tool could not see. `alf_compliance_rules`/`evaluate` is keyed on one resource
+# and reads `alf_staff_credentials`, the table a DIFFERENT branch owns and gates
+# -- so grouping by the dispatch resource alone compared it against nothing.
+#
+# Every PostgREST read on this platform is spelled `rest('<table>?...')`, which
+# is as lexically available as `select=` already was. The extension is a second
+# GROUPING, not a second parser.
+TABLE_RE = re.compile(r"rest\(\s*'([a-z0-9_]+)\?")
 
 
 def read(path):
@@ -296,6 +309,10 @@ def classify(u):
     u['mutates'] = bool(MUTATE_RE.search(own))
     u['discloses'] = bool(
         (SELECT_RE.search(t) or DATA_200_RE.search(t)) and not u['mutates'])
+    # TABLES READ FROM THE UNIT'S OWN BODY, NOT THE PRELUDE. A prelude read is
+    # shared by every sibling and so cannot be an asymmetry between them; a
+    # read in one branch and not another is exactly what this is looking for.
+    u['tables'] = sorted(set(TABLE_RE.findall(own)))
     return u
 
 
@@ -325,6 +342,53 @@ def findings(all_units):
                          'role': u['role'], 'assign': u['assign']} for u in bare],
             'all': [{'action': u['action'], 'line': u['line'],
                      'role': u['role'], 'assign': u['assign']} for u in disc],
+        })
+    return out
+
+
+def cross_findings(all_units):
+    """Branches on DIFFERENT resources that read ONE table and disagree on a gate.
+
+    THIS IS #894 AND THE TOOL COULD NOT SEE IT BEFORE. `findings()` groups by
+    the resource a branch is DISPATCHED on; this groups by the table a branch
+    READS. `alf_compliance_rules`/`evaluate` read `alf_staff_credentials` with
+    no role gate while `alf_staff_credentials`/`read` scoped every narrow role
+    to its own row -- two code paths, one table, different answers, and nothing
+    compared them.
+
+    ONLY CROSS-RESOURCE PAIRS ARE REPORTED HERE. A same-resource disagreement is
+    already `findings()`' job and reporting it twice would make one defect look
+    like two.
+
+    THE OWNING BRANCH IS NAMED WHEN THERE IS ONE -- the unit whose dispatch
+    resource IS the table -- because the owner's gate is the one a reader should
+    compare against rather than an arbitrary other caller.
+    """
+    by_table = {}
+    for u in all_units:
+        if not u['discloses']:
+            continue
+        for tbl in u['tables']:
+            by_table.setdefault((u['file'], tbl), []).append(u)
+    out = []
+    for (f, tbl), us in sorted(by_table.items()):
+        if len({u['resource'] for u in us}) < 2:
+            continue
+        roles = set(u['role'] for u in us)
+        assigns = set(u['assign'] for u in us)
+        if len(roles) == 1 and len(assigns) == 1:
+            continue
+        owner = [u for u in us if u['resource'] == tbl]
+        out.append({
+            'file': f, 'table': tbl,
+            'owner_branch': ('%s/%s' % (owner[0]['resource'], owner[0]['action'])
+                             if owner else None),
+            'differs_on': ([] if len(roles) == 1 else ['role'])
+                          + ([] if len(assigns) == 1 else ['assignment']),
+            'readers': [{'resource': u['resource'], 'action': u['action'],
+                         'line': u['line'], 'role': u['role'],
+                         'assign': u['assign'],
+                         'owns_table': u['resource'] == tbl} for u in us],
         })
     return out
 
@@ -399,6 +463,57 @@ FIX_877_BEFORE = """
         res.status(200).json({ ok: true, data: view });
         return;
       }
+    }
+"""
+
+# ── #894: ONE TABLE, TWO RESOURCES, TWO ANSWERS. Trimmed from the real
+# api/sd-data.js before the 2026-10-06 fix. `alf_compliance_rules`/`evaluate` is
+# dispatched on one resource and READS `alf_staff_credentials`, which a different
+# branch owns and gates. Grouping by the dispatch resource compared it against
+# nothing at all, which is why the tool built from #877 could not see #894.
+CROSS_894_BEFORE = """
+    if (resource === 'alf_compliance_rules' && action === 'evaluate') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION' } }); return; }
+      const cr = await fetch(rest('alf_staff_credentials?license_hash=eq.' + enc(licHash)
+        + '&record_type=eq.training_hours&select=staff_id,data'), { headers });
+      res.status(200).json({ ok: true, data: result });
+      return;
+    }
+    if (resource === 'alf_staff_credentials' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      const r = await fetch(rest('alf_staff_credentials?license_hash=eq.' + enc(licHash)
+        + '&select=entry_id,staff_id,data'), { headers });
+      if (!ALF_CRED_READ_ROLES[session.role]) {
+        out = out.filter((x) => x.staff_id === session.employee_id);
+      }
+      res.status(200).json({ ok: true, data: out });
+      return;
+    }
+"""
+
+CROSS_894_AFTER = """
+    if (resource === 'alf_compliance_rules' && action === 'evaluate') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION' } }); return; }
+      const cr = await fetch(rest('alf_staff_credentials?license_hash=eq.' + enc(licHash)
+        + '&record_type=eq.training_hours&select=staff_id,data'), { headers });
+      if (!ALF_CRED_READ_ROLES[session.role]) {
+        opts.staff = (opts.staff || []).filter(
+          (x) => String(x.staff_id) === String(session.employee_id));
+      }
+      res.status(200).json({ ok: true, data: result });
+      return;
+    }
+    if (resource === 'alf_staff_credentials' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      const r = await fetch(rest('alf_staff_credentials?license_hash=eq.' + enc(licHash)
+        + '&select=entry_id,staff_id,data'), { headers });
+      if (!ALF_CRED_READ_ROLES[session.role]) {
+        out = out.filter((x) => x.staff_id === session.employee_id);
+      }
+      res.status(200).json({ ok: true, data: out });
+      return;
     }
 """
 
@@ -493,6 +608,39 @@ def selftest():
          BRACE_IN_STRING, False, 'zz_brace'),
     ]
     npass = nfail = 0
+    # ── THE CROSS-RESOURCE ARMS, added 2026-10-06. They use their own runner
+    #    because the verdict comes from cross_findings(), a different grouping,
+    #    and folding them into the same loop would let a same-resource flag
+    #    satisfy a cross-resource arm.
+    cross_cases = [
+        ('X1. #894 IS FLAGGED: one table read by TWO resources, gated in the '
+         'owning branch and not in the other. This is the shape the tool built '
+         'from #877 could not see, because it grouped by the resource a branch '
+         'is DISPATCHED on and never by the table a branch READS',
+         CROSS_894_BEFORE, True, 'alf_staff_credentials'),
+        ('X2. ...and the POST-FIX shape is NOT flagged. WITHOUT THIS ARM the '
+         'cross pass could flag every table two branches happen to touch and '
+         'X1 would still pass',
+         CROSS_894_AFTER, False, 'alf_staff_credentials'),
+        ('X3. a SAME-resource disagreement is NOT reported by the cross pass -- '
+         'findings() already owns it, and reporting one defect twice makes it '
+         'look like two',
+         FIX_877_BEFORE, False, 'alf_family_contacts'),
+    ]
+    for label, src, want_flag, tbl in cross_cases:
+        us = [classify(u) for u in units('fixture.js', src)]
+        fs = [f for f in cross_findings(us) if f['table'] == tbl]
+        got = bool(fs)
+        if got == want_flag:
+            npass += 1
+            print('  ok   ' + label)
+        else:
+            nfail += 1
+            print('  FAIL ' + label)
+            print('       wanted flag=%s got flag=%s; cross=%s'
+                  % (want_flag, got,
+                     [(x['table'], x['differs_on']) for x in cross_findings(us)]))
+
     for label, src, want_flag, res in cases:
         us = [classify(u) for u in units('fixture.js', src)]
         fs = [f for f in findings(us) if f['resource'] == res]
@@ -552,10 +700,12 @@ def main(argv):
         all_units.extend(classify(u) for u in units(rel, src))
 
     fs = findings(all_units)
+    xs = cross_findings(all_units)
     if as_json:
         print(json.dumps({'criteria': CRITERIA_VERSION, 'files': files,
-                          'units': len(all_units), 'findings': fs}, indent=1))
-        return 1 if fs else 0
+                          'units': len(all_units), 'findings': fs,
+                          'cross_findings': xs}, indent=1))
+        return 1 if (fs or xs) else 0
 
     print('GATE PARITY -- sibling actions on one resource -- criteria %s'
           % CRITERIA_VERSION)
@@ -569,12 +719,28 @@ def main(argv):
                  if len([u for u in v if u['discloses']]) > 1]))
     print('')
 
-    if not fs:
+    if not fs and not xs:
         print('No (file, resource) group has two disclosing actions that '
-              'disagree on a role or assignment gate.')
+              'disagree on a role or assignment gate, and no table is read by '
+              'two resources that disagree.')
         print('')
         _limits()
         return 0
+
+    if xs:
+        print('CROSS-RESOURCE -- one TABLE read by branches on DIFFERENT '
+              'resources, disagreeing on a gate (#894 is this shape):')
+        for x in xs:
+            print('! %s  table %s  differs on: %s%s'
+                  % (x['file'], x['table'], ', '.join(x['differs_on']),
+                     ('   [owner: %s]' % x['owner_branch'])
+                     if x['owner_branch'] else '   [NO branch owns this table]'))
+            for r in x['readers']:
+                print('    %-34s :%-6d role=%-5s assignment=%-5s%s'
+                      % (r['resource'] + '/' + r['action'], r['line'],
+                         r['role'], r['assign'],
+                         '  <- OWNS THE TABLE' if r['owns_table'] else ''))
+            print('')
 
     for f in fs:
         print('! %s  %s  differs on: %s'
@@ -583,10 +749,11 @@ def main(argv):
             print('    action %-14s :%-6d role=%-5s assignment=%s'
                   % (u['action'], u['line'], u['role'], u['assign']))
         print('')
-    print('%d group(s) flagged. REPORT ONLY -- a flagged pair may be a '
+    print('%d same-resource group(s) and %d cross-resource table(s) flagged. '
+          'REPORT ONLY -- a flagged pair may be a '
           'deliberate tiering (a narrower projection can justify a weaker '
           'gate). The finding says WHAT DIFFERS, never that it is wrong.'
-          % len(fs))
+          % (len(fs), len(xs)))
     print('')
     _limits()
     return 1
@@ -615,16 +782,15 @@ def _limits():
     print('    asymmetry when it is the opposite of one.')
     print('  * An assignment gate reached through a named helper is invisible.')
     print('    rfAuth.ownsRow(session, claim) is the live example.')
-    print('  * CROSS-RESOURCE DISCLOSURE IS OUTSIDE THE MODEL, and of every')
-    print('    limit here this is the one that has already cost something.')
-    print('    Grouping is by the resource the BRANCH is keyed on, so a branch')
-    print('    keyed on resource A that discloses resource B rows is never')
-    print('    compared against B own reader. MEASURED 2026-10-06 with --json,')
-    print('    not reasoned: alf_compliance_rules/evaluate ships every')
-    print('    alf_staff_credentials row to ANY role, while')
-    print('    alf_staff_credentials/read scopes the same data to self -- and')
-    print('    this tool DOES NOT FLAG IT. Second time a tool built for a')
-    print('    class has missed an instance of that class.')
+    print('  * CROSS-RESOURCE IS NOW CHECKED (2026-10-06) and was the one')
+    print('    limit here that had already cost something: #894 was invisible')
+    print('    to the same-resource grouping. A second pass groups by the')
+    print('    TABLE a branch READS, taken from rest(table?...). WHAT IT STILL')
+    print('    CANNOT SEE: a table reached through a helper that builds the')
+    print('    URL, an RPC, or a read in a DIFFERENT FILE -- all three err')
+    print('    toward a MISS here rather than a false positive, which is the')
+    print('    opposite direction from every other limit above and is the')
+    print('    reason this pass is not evidence of absence.')
     print('  MEASURED ON FIRST LIVE RUN, 2026-10-05: 3 groups flagged on')
     print('  api/sd-data.js at HEAD and ALL THREE triaged as correct-by-design')
     print('  (rf_claims, rf_schedule, alf_payer_rules). The same run against')
