@@ -1,4 +1,22 @@
-# SAIRNdental competitive-gap status, re-derived 2026-09-17 — and B2 was built, tiered, reviewed twice, and never wired to a caller
+# SAIRNdental competitive-gap status, re-derived 2026-09-17 — B2 was built, tiered, reviewed twice, and never wired to a caller. ~~IT STILL IS NOT~~ **IT WAS WIRED THE NEXT MORNING. Headline corrected at HEAD 2026-10-06 (Fourth).**
+
+> **THE HEADLINE OF THIS DOCUMENT WAS FALSE FOR ELEVEN DAYS AND THE
+> CORRECTION WAS ALREADY WRITTEN DOWN SOMEWHERE ELSE.**
+> `b179d967` *"feat(sairndental): the roll-up gets a reader…"* wired
+> `dnt_rollup` on the morning of **2026-09-18**, and
+> `docs/2026-09-25-gap-status-docs-reverified.md` recorded that closure on
+> 2026-09-25 — in a table whose own row reads *"dental, 19:29 … next morning
+> 08:29 … `b179d967` the roll-up gets a reader"*. **Nobody came back here.**
+> So the document that exists to answer *"is this still open"* answered it
+> correctly, was used, and then went on asserting the old answer in the one
+> place a reader hits first.
+>
+> That is exactly the finding the 2026-09-25 pass generalised — *"the build
+> that closes a row edits the row"* — and this file is now the fourth instance
+> of it rather than a counter-example. §0's body is corrected below with
+> counts taken today; the ANALYSIS in §0.1 and §0.2 is left standing, because
+> it was right about why the gap mattered and that reasoning does not expire
+> with the status.
 
 **Derived 2026-09-17 (CC) against the code at HEAD.** A **status** document, per
 the convention `docs/2026-09-02-competitive-gap-status-rederived.md` set, using
@@ -26,7 +44,7 @@ they were built to catch.
 
 ---
 
-## 0. The finding, stated first: `dnt_rollup` is SAIRNmechanical's defect again, with the claim in the audit trail instead of the UI
+## 0. The finding, stated first: `dnt_rollup` is SAIRNmechanical's defect again, with the claim in the audit trail instead of the UI — **CLOSED 2026-09-18 by `b179d967`, confirmed at HEAD 2026-10-06**
 
 `docs/2026-09-15-competitive-gap-status-rederived-mechanical-and-five-apps.md`
 §3.1 called SAIRNdental **B2 — cross-location roll-up reporting** *"the one row
@@ -43,32 +61,55 @@ It was built the same day. Everything except the caller exists:
 | Tier | `docs/CRITICALITY-TIERS.md:222` — **A**, reasoning from *"a practice-group owner makes staffing and investment decisions from per-office production"* |
 | Tests | `api/_lib/dnt-rollup.test.js` **27** arms, `api/_lib/dnt-rollup-endpoint.test.js` 12 arms — both run for this pass, 39 passing, 0 failing. (`SAIRN-OPEN-WORK-INDEX.md:176` says 19 for the first; it was 19 when written and the suite has grown. Counted, not quoted) |
 | Independent review | **Twice, and both findings are now CLOSED.** Hank's review (`ce7764fa`, `tests/dnt_rollup_review_probe.js`) found 2 real findings; both were fixed and discharged in `91618cc6` — **which landed 40 minutes after this pass read the file, and is corrected here rather than left standing.** The suites are 27/27 and 12/12. None of it touches reachability |
-| **Caller** | **NONE.** `dnt_rollup` appears **0 times** in `sairndental.html` — and 0 times in every `.html` file in the repo |
+| **Caller** | ~~**NONE.** `dnt_rollup` appears **0 times** in `sairndental.html` — and 0 times in every `.html` file in the repo~~ → **BUILT 2026-09-18 by `b179d967`. Re-counted at HEAD 2026-10-06: `dnt_rollup` appears 4 times, two of them real.** `sairndental.html:2492` is the read — `var b=await sdnData('read','dnt_rollup',{});` — behind an owner check at `:2485` (`rollup-owner-tools`), rendering into `rollup-tbody` / `rollup-note` / `rollup-disclosure-card`. `:2498` reads `dntLastErrText('dnt_rollup')` so a REFUSAL and an empty practice are told apart on screen rather than both rendering as nothing. `:1122` and `:1141` are comment text recording the gap and the role gate |
 
-Beyond the resource name, the app has no vocabulary for the feature at all:
+~~Beyond the resource name, the app has no vocabulary for the feature at all:
 `rollup` × 0, `roll-up` × 0, `cross-location` × 0, `all locations` × 0,
-`panel-rollup` × 0, `location_name` × 0.
+`panel-rollup` × 0, `location_name` × 0.~~
 
-**The sharpest form of this, and the one I would lead with: of the 25 resources
+**RE-COUNTED AT HEAD 2026-10-06, and the vocabulary arrived with the caller:**
+`rollup` × **41**, `roll-up` × **9**, `panel-rollup` × **1**. Still zero:
+`cross-location` × 0, `all locations` × 0, `location_name` × 0 — the panel uses
+its own wording rather than the audit's.
+
+~~**The sharpest form of this, and the one I would lead with: of the 25 resources
 registered in `api/_resources/sairndental.js`, exactly ONE is never named
-anywhere in `sairndental.html`, and it is `dnt_rollup`.** That is a whole-set
-comparison rather than a search for a string I expected to be missing — the
-other 24 all appear, so the method is proven to find them when they are there.
-Every `dnt_` resource name in the app is a **literal**; none is built by
-concatenation, so a name search cannot miss one that is present.
+anywhere in `sairndental.html`, and it is `dnt_rollup`.**~~ **THAT SENTENCE IS
+NO LONGER TRUE AND IT IS THE MOST QUOTABLE ONE IN THE FILE**, which is why it
+is struck rather than quietly reworded. **Re-run at HEAD 2026-10-06 as a whole
+set, not as a spot check:** `api/_resources/sairndental.js` now registers **28**
+`dnt_*` names (not 25 — three were added since), and **0 of the 28 are
+unnamed** in `sairndental.html`. The METHOD is left on the record because the
+method is what
+was worth keeping — a whole-set comparison rather than a search for a string
+somebody expected to be missing, with the other 24 appearing, so it was proven
+to find them when they are there. Every `dnt_` resource name in the app is a
+**literal**; none is built by concatenation, so a name search cannot miss one
+that is present. `tools/sairn_reachability_probe.py` is the standing form of
+that method.
 
 **The panel census cannot see this, and that is the whole reason the
-caller-level check exists.** SAIRNdental is **22 panels / 22 nav targets / 22
+caller-level check exists.** SAIRNdental was **22 panels / 22 nav targets / 22
 sidebar ids, three identical sets** — no unreachable panel, no orphan nav
-target, no sidebar id without a panel. The roll-up is missing from all three,
-so a census that compares them to each other reports clean.
+target, no sidebar id without a panel. The roll-up was missing from all three,
+so a census that compares them to each other reported clean.
+
+> **TENSE CORRECTED 2026-10-06 (Fourth) and the argument is UNAFFECTED.** The
+> roll-up is now in all three (`panel-rollup`, `sairndental.html:2485`
+> onward). The paragraph above is past tense now because the *claim about the
+> census* is what was worth keeping: a census that compares three sets to each
+> other cannot see a capability absent from all three, and that is still true
+> of every app. Changing the verb rather than deleting the paragraph, because
+> the method critique is the durable half.
 
 ### 0.1 Where this differs from SAIRNmechanical, and it matters
 
 SAIRNmechanical's `eligibility` defect had a **claim on screen**: a panel
 subtitle told a dispatcher *"the record dispatch eligibility is computed from"*
-while nothing computed it. `sairndental.html` makes no cross-location claim
-anywhere — it cannot, having no vocabulary for the feature.
+while nothing computed it. `sairndental.html` made no cross-location claim
+anywhere — it could not, having no vocabulary for the feature. **As of
+`b179d967` it has both the vocabulary and the screen, so this contrast is
+historical; re-counted 2026-10-06, `rollup` × 41.**
 
 **So the claim is not in the product. It is in the records the platform keeps
 about itself**, which is a quieter place for it and a worse one, because those
@@ -149,7 +190,7 @@ and re-checked against HEAD, 15 days later.
 | # | 09-02 verdict | At HEAD, 2026-09-17 | Evidence |
 |---|---|---|---|
 | **B1** enterprise credentialing / payer enrolment | BUILT | **holds** | `payer_enrollment` × 5, `panel-credentials`, and `dnt_credentials: ['evaluate']` is registered **and sent** (`:2621`) |
-| **B2** cross-location roll-up | PARTIAL — deliberately deferred | **SERVER BUILT, NO CALLER — see §0** | The 09-02 verdict is now wrong in both directions at once: the aggregation is no longer deferred, and it is not reachable either |
+| **B2** cross-location roll-up | PARTIAL — deliberately deferred | ~~**SERVER BUILT, NO CALLER — see §0**~~ → **BUILT AND REACHED. Closed 2026-09-18 by `b179d967`, re-counted at HEAD 2026-10-06** | The owner-gated panel the §0 recommendation asked for is the one that shipped: `sairndental.html:2485` gates on owner, `:2492` reads `dnt_rollup`, `:2498` distinguishes a REFUSAL from an empty practice via `dntLastErrText`. `rollup` × 41, `roll-up` × 9, `panel-rollup` × 1 — all three were 0 when this row was written |
 | **B3** consolidated RCM / denials & appeals | BUILT | **holds** | `appeal` × 67, `panel-denials` |
 | **B4** central call centre | OPEN — not recommended | **holds** | `call centre` × 0, `missed call` × 0. The 08-26 audit itself declined to recommend it |
 | **B5** open BI / data-warehouse connectors | BUILT (⚠ SQL pending) | **holds; the SQL flag could not be checked — see §3** | `api/dnt-bi.js`, `api/_lib/dental-bi.js`, `panel-bi` × 3, `sql/sairndental_bi_tokens_schema.sql` present |
@@ -187,7 +228,7 @@ found this.
 
 | Item | Why it is open |
 |---|---|
-| **B2 — the roll-up has no reader** | **Needs a decision, not an estimate.** Either a panel (owner-gated, reusing `DNT_MANAGEMENT_ROLES`, ~one screen against an endpoint that already exists and is reviewed) or a written deferral saying the BI feed is the intended surface and the in-app report is not coming. What must not persist is the current state, where `SAIRN-OPEN-WORK-INDEX.md` says BUILT and no user can reach it |
+| ~~**B2 — the roll-up has no reader**~~ **CLOSED 2026-09-18 by `b179d967`** | The recommendation was *"either a panel (owner-gated, reusing `DNT_MANAGEMENT_ROLES`, ~one screen against an endpoint that already exists and is reviewed) or a written deferral."* **The panel is what shipped**, with the owner gate and the refusal-versus-empty distinction asked for. Confirmed at HEAD 2026-10-06. The row is struck rather than deleted so the prediction can be checked against what happened |
 | A1 real-time eligibility | Needs a vendor or clearinghouse relationship |
 | A2 / A3 837D, 835, clearinghouse | Vendor-gated. Same relationship |
 | A5 imaging / CBCT / scanner | Vendor-gated. **The "only NexHealth" claim is CORRECTED 2026-09-25 (Cody, external research PR #17): DEXIS publishes public API documentation, so NexHealth is no longer the only open documented API here.** Not independently fetched from this clone, so it is recorded as "no longer safe to repeat" rather than as a verified new fact. SAIRNdental is still zero for imaging either way &mdash; the correction moves this from vendor-gated to buildable-in-principle, not to built |
@@ -227,3 +268,52 @@ the exception, and it is a decision rather than an engineering problem.
   and it is the same class of error as the one this document's §0 is about,
   running the opposite way.
 * **No code was written and no app file was touched by this pass.**
+
+---
+
+## Re-verified at HEAD, 2026-10-06 (Fourth) — all 14 rows, with every count re-taken
+
+**One row had gone false: B2, which was this document's whole headline.** It
+closed on 2026-09-18, the morning after this pass was written, by `b179d967`.
+The other thirteen hold. Every count below was taken today against
+`sairndental.html` at HEAD, not quoted from above.
+
+| Row | 09-17 verdict | At HEAD 2026-10-06 | What was counted |
+|---|---|---|---|
+| A1 real-time eligibility | OPEN | **holds** | `eligibilit` × 4, all four `gfeEligibility` / the `gfe-eligibility` element — `:761`, `:4780`, `:4823`, `:4824` |
+| A2 X12 837D / 835 ERA | OPEN — vendor-blocked | **holds** | `837` × 0, `835` × 0, `x12` × 0 in the app |
+| A3 clearinghouse | OPEN — vendor-blocked | **holds** | `clearinghouse` × 0 |
+| A4 CDT annual code maintenance | BUILT | **holds** | `cdt_version` × 12, first at `:3176` |
+| A5 imaging / CBCT / intraoral | OPEN — vendor-blocked | **holds** | `imaging` × 0, `radiograph` × 0, `cbct` × 0, `intraoral` × 0 |
+| A6 e-prescribing / EPCS / PDMP | OPEN — certification-blocked | **holds** | `prescrib` × 0, `EPCS` × 0, `PDMP` × 0 |
+| A7 good-faith estimates | BUILT | **holds** | `gfe` × 237, `panel-gfe`:730, `dnt_gfe`:1802, `sql/sairndental_gfe_schema.sql` |
+| A8 recall / reactivation | BUILT | **holds** | `recall` × 92, `panel-recall`:819, `dnt_recall_outreach`:1816, schema present |
+| A9 treatment planning | BUILT | **holds** | `txplan` × 42, `treatment plan` × **11** (was 10), `panel-txplan`:881, `dnt_txplans`:1802, schema present |
+| B1 credentialing / payer enrolment | BUILT | **holds** | `payer_enrollment` × 5 (`:494`), `panel-credentials`:476 |
+| **B2** cross-location roll-up | **SERVER BUILT, NO CALLER** | **CLOSED — the one that moved** | `dnt_rollup` × 4, the read at `:2492`, the owner gate at `:2485`, the refusal-vs-empty branch at `:2498`; `rollup` × 41, `roll-up` × 9, `panel-rollup` × 1, all three previously 0 |
+| B3 consolidated RCM / denials | BUILT | **holds** | `appeal` × 67, `panel-denials`:960 |
+| B4 central call centre | OPEN — not recommended | **holds** | `call centre` × 0, `missed call` × 0 |
+| B5 open BI / warehouse connectors | BUILT | **holds** | `panel-bi` × 3 (`:692`), `api/dnt-bi.js`, `api/_lib/dental-bi.js`, `sql/sairndental_bi_tokens_schema.sql` |
+
+### The whole-set reachability claim, re-run rather than re-quoted
+
+§0's sharpest sentence was *"of the 25 resources registered in
+`api/_resources/sairndental.js`, exactly ONE is never named anywhere in
+`sairndental.html`."* Re-run today as the same whole-set comparison:
+
+* registered `dnt_*` names: **28** — three more than when that sentence was
+  written;
+* names absent from `sairndental.html`: **0**.
+
+**Both halves of that sentence moved, and only one of them is the status.**
+The denominator changed too, which is the part a re-quote would have missed:
+reporting "0 of 25" today would have been right about the finding and wrong
+about the set.
+
+### What this leaves genuinely open for SAIRNdental
+
+**Nothing in-house and un-gated.** A1, A2, A3, A5 are vendor-gated; A6 is
+certification-gated (21 CFR 1311 identity-proofing and DEA registration); B4
+was declined by the audit that raised it. Every BUILT row was confirmed by
+locating its identifier at HEAD. That is the same conclusion §0 reached about
+the rest of the app — with B2, the one exception it named, now closed.
