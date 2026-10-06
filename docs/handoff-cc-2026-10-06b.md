@@ -215,3 +215,72 @@ without the incident that bought the rule.
   (`tools/report_only_checks.py`) was not modified this batch and its import was
   already eager**, so it is not a regression gate for this work — but it is also
   not a green I am claiming.
+
+---
+
+## 10. ADDENDUM — written after the push, because three things only happened there
+
+### The push gate refused three times and all three were correct
+
+`06547eb4` is the pushed tip. It took two commits, not one, because the gate
+stopped the first:
+
+1. **`tools/doc_sha_reseat.py` had no `# OWNER:` line.** Added `# OWNER: cc`.
+2. **A new `tools/*.py` cannot land without a `PURPOSES` entry**, and the
+   generator exits 2 rather than emitting a blank cell. **`tools/tooling_inventory.py`
+   is HANK'S under a live claim.** Declared, not reworded past: **one additive
+   key, no existing entry edited, no generator logic touched**, with a comment at
+   the insertion point stating that scope so hank can see it without reading a
+   diff. **The coupling is the finding, not the edit** — any session adding any
+   tool must write into whichever session happens to hold the inventory that
+   hour. The gate is right to demand the entry; the two systems pull against each
+   other and the only honest options were "declare and add one key" or "do not
+   land the tool".
+3. **Three generated documents were stale.** Regenerated, each generator **EXIT
+   0**, and **every delta is attributable to this batch**: `docs/MASTER-PLAN.md`
+   went 896 → 897 test files on disk, traced-gap 182 → 183, worst case 823 → 825
+   — that is `tests/run_doc_sha_reseat_probe.py` and nothing else.
+
+**AND THE GATE REACHED MY OWN CONCLUSION INDEPENDENTLY.** Two of those three
+documents — `TOOLING-INVENTORY.md` and `traceability-matrix.md` — are exactly the
+ones `doc_sha_reseat.py` classifies as GENERATED and refuses to patch. The gate's
+instruction was *regenerate, do not edit*, which is what the tool's own drive
+concluded hours earlier by a completely different route.
+
+### The tool fired in production during my own rebase, and said the right thing
+
+`git rebase origin/main` hit a conflict in two generated documents.
+`tools/sairn_rebase_resolve.py` classified both as GENERATED, regenerated rather
+than merged, and staged them. Then `git rebase --continue` fired
+`.githooks/post-rewrite`, and the **last lines of the rebase output were my new
+tool's**:
+
+```
+tracking documents. Nothing to do.
+REPORT-ONLY, never rewritten (append-only logs):
+  SAIRN-ACTIVE-WORK-{cc,cody,fourth,hank}.md
+```
+
+**That is the first real firing, and "Nothing to do" is the correct answer** — the
+rewrite moved only my own two commits, which no tracking document cites. Blind
+spot 3 of the inventory still stands: this exercised the no-op path, not the
+write path.
+
+### `docs/hook-manifest.json` needed regenerating TWICE and the second time was my fault
+
+The first regeneration recorded `doc_sha_reseat.py` at `1fadc7381127`. Then the
+gate made me add the `# OWNER:` line, which changed the file to `003baf096225`,
+and the integrity check correctly refused again — *"CHANGED IN A COMMIT AND THE
+MANIFEST WAS NOT REGENERATED."* **A manifest regenerated before the last edit is
+a manifest that blesses the wrong bytes**, which is this batch's own methodology
+rule in miniature: the act of completing the work changed the value I had just
+recorded about it.
+
+### State at the end
+
+    git fetch origin && git rev-list --left-right --count origin/main...HEAD   # 0 0
+    python tools/capture_exit.py --status /tmp/h.st -- python tools/hook_integrity_check.py
+    python tools/capture_exit.py --read /tmp/h.st                              # expect EXIT 0
+
+**`tests/run_report_only_checks_probe.py` is still unbounded by me** and is still
+not a green I claim — see §9.
