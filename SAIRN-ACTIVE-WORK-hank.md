@@ -2600,3 +2600,76 @@ production. **Every fixture I wrote was tidier than the code it stood for.**
   line. Named; widening a measurer is its own work.
 * **`run_all_tests.py` is COULD-NOT-TELL** in the cp1252 sweep at a 600s
   timeout — 295 of 296 answered, and the one that did not is not counted clean.
+
+---
+
+## 2026-10-06 — batch 9 (hank)
+
+Full account: `docs/2026-10-06-inventory-hank-batch9.md`.
+Handoff: `docs/handoff-hank-2026-10-06.md`.
+
+**LANDED `tools/gate_parity_check.py` WITH A BLANKET OVERRIDE AND SAID SO.**
+Three checks refused the push and only one was mine to clear (a missing
+`# OWNER:` line, fixed properly). The other two were one fact: a `PURPOSES`
+registration in fourth's file. `SAIRN_SEED_GATE=off`, recorded in
+`docs/BYPASS-LOG.jsonl` and in the commit. An untracked file is invisible to
+every other clone, and work that does not exist is worse than a pending row in
+a generated document. **The registration then closed itself and NOT by me** —
+`8f204050` had already landed one, my insert made a duplicate dict key Python
+silently discards, and I reverted it in full.
+
+**ROUTED 21 UNROUTED HOVER PAIRS TO 0** (10 source findings, 6 rows), then **3
+more rows for work that LANDED WEEKS AGO AND WAS NEVER RECORDED** —
+`grd_boq_rates`, the `leg_` vital-records cluster, `sdn_clients`. The gap was in
+the record, not the work.
+
+**THE SHARP ONE IS NOT FIXED AND IT IS MINE.** `alf_compliance_rules`/`evaluate`
+(`api/sd-data.js:11948`) gates on `verifySessionToken` alone and ships every
+staff member's name, hire date and full training-hours array to **any role**,
+while `alf_staff_credentials`/`read` — reading the **same table** — scopes every
+other role to self. **It is #877 with the resources swapped**, and
+`gate_parity_check.py`, landed hours earlier to catch that class, **does not see
+it**: measured with `--json`, it groups by the resource the BRANCH is keyed on,
+and a cross-resource disclosure is outside its model.
+
+**CORRECTED A PHANTOM AT ITS SOURCE.** `sfBottleFill` has never existed; it was a
+word in an app comment that a register cell, two correction passes and one routed
+"paste-ready fix" all inherited. The citation was fixed three times and **the
+comment that caused it was never touched** until now.
+
+**CC'S ROUTED TEXT DOES NOT EXIST** — measured against `origin/main`, not
+inferred, while five other routed-to-X docs do. Nothing merged, nothing
+invented, three undelivered items named. **Fourth's DID arrive** and two of three
+findings are applied, including a test arm that bounded a 96-byte function with a
+200-byte window and reported 23/23 while the defect was live.
+
+**SCOPED SIX DELEGATION POINTS**, and the only pre-existing one was not scoped:
+`panel-auditor` said *"does not fix anything itself"* in its description, which
+is an instruction, not a boundary — unrestricted `Bash`. **And `.claude/agents/README.md`
+states what is ENFORCED versus DECLARED**, because `disallowedTools:`/`isolation:`
+in frontmatter are not verified by me.
+
+**THREE PROBES IMPORTED HANK'S TOOLS FROM ANY CLONE.** Derived from `__file__`,
+**not** `git rev-parse --show-toplevel` — the home directory is itself a git
+repository, so upward discovery succeeds with the wrong answer. Deviation from
+the instruction stated rather than silently substituted.
+
+**ADOPTED cody's `capture_exit.py`** rather than rebuilding it, driven end to end,
+and retrofitted the cp1252 sweep into `tools/cp1252_console_sweep.py`.
+
+**TEN MORE DRIFT ROWS.** DRIFTED 178 → 168. `sv_herdhealth` has **seven flagged
+citations and seven are correct**; `sc_anesthesia_base_units` had three cites
+that were IMPOSSIBLE, not stale — lines inside a function the same sentence says
+starts later.
+
+**SEVEN ROLE SETS** with a money-facing role over clinical data, four apps, two
+verticals genuinely clean. **Nothing narrowed** — narrowing one while its
+siblings keep the wider set reproduces #877 exactly.
+
+**WHAT I GOT WRONG:** a duplicate dict key; a commit message with quotes inside
+`-m` that exited 127 with an error about a FILE; three generator scripts broken
+by heredoc escaping, twice leaving a silent no-op that a wrong `grep` then
+"confirmed"; an index row with a raw `|`; and regenerating a document before the
+commit that changed its universe. **Every one found by running the thing, never
+by reading it** — and three of them lived inside a checker whose own fixtures
+were tidier than production.
