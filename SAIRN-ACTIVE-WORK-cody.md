@@ -6664,3 +6664,79 @@ repo; nothing was carried across from the pre-reset summary.** Full write-up:
    and **2**, read out of the captured stdout. **Two not-green tools would have
    gone into a standing document as green.** The attribution hook fired on
    nearly every command this session and was right every time.
+
+---
+
+# Queue 16 — 2026-10-06 (Cody) — two hidden universes, three defects of my own, and one item whose premise was false
+
+Full write-up: `docs/2026-10-06-cody-queue16-inventory.md`.
+
+## Landed
+
+1. **The sweep's universe was 169 of 521 rules, not 162 of 169.** Replaced the
+   hand-maintained `report_only_checks.REGISTRY` population with `git ls-files
+   tools/*.py` + a per-file classification. **295 tracked tools, 150 with rules,
+   521 rules — 105 files and 352 rules were outside the universe entirely.**
+   Yesterday I closed this hole *two names at a time* and pushed the fix; that
+   closed two names and left the mechanism.
+2. **The declared exemption list is EMPTY, and the only entry I wrote was
+   refused by the check I wrote with it** — `dead_rule_sweep.py` compiles no
+   module-level rule, so the mechanical branch already excluded it. All 295
+   files are classified by a rule, not a judgement.
+3. **The 22 write-when-run rules are measured: COULD NOT RUN 22 → 0.** The
+   sandbox already gave isolation; the real blocker was ATTRIBUTION, so the
+   corpus is now RESET between runs and reproducibility is proved per tool
+   before any ablation counts. **17 exercised, 5 DEAD — the blanket refusal had
+   been hiding five real findings.**
+4. **The dependabot HIGH is decided on a measurement, not a guess.**
+   `firebase-admin@12.7.0` reaches node-forge in exactly ONE place,
+   `forge.pki.privateKeyFromPem` — a PARSER. The advisory is about signature
+   VERIFICATION. **Not on our path**, four-point re-check trigger written.
+5. **`tools/capture_exit.py` built, locked and registered** — the real status to
+   a named file, `RUNNING`/`EXIT`/`COULD_NOT_RUN`, and `--read` exits 2 and
+   never 0 on a status it cannot read.
+6. **Three of my own documents reported this sweep with NO exit code.** Nothing
+   claimed either tool green; the quiet version is worse. All three corrected,
+   and **the exit code of a past run was not invented** — each says it is
+   unrecoverable and records a re-run.
+
+## Three defects of mine, all found by USE
+
+1. **The writer-tier digest included its own mutation** and reported 22 of 22
+   exercised. Caught by the negative arm written with it.
+2. **`capture_exit.py --read` raised on its FIRST real use.** Every arm passed
+   because every arm called `read_status()` and none went through the CLI. *A
+   strong lock over one half of a tool says nothing about the other half* — my
+   own sentence from the day before. The traceback's exit 1 happened to equal
+   the sweep's real 1, so the number was right by accident.
+3. **A concurrent sweep deleted the live one's sandbox**, killing a 151-tool run
+   29 tools in with a traceback naming an innocent file. The reap is now
+   owner-aware and fails closed. **My first version of the arm proving it was
+   wrong, and the fix went into the FIXTURE, not the tool** — passing it by
+   changing production code would have removed the guard.
+
+## Raised, not acted on
+
+1. **5 newly-found DEAD rules in three tools I do not own** —
+   `criticality_tier_check.py`, `defect_register.py`, `hover_separation_audit.py`.
+2. **Item 6's premise was FALSE.** hank's `register_feed_gate` cp1252 fix IS in
+   `origin/main` (`cd19bd7f`) and **DEAD is still 2, not 0**. Unrelated defects
+   sharing a file: an encoding fix cannot move an evidence verdict. Fourth's
+   tool.
+3. **`tools/push_retry.py --loop` refused my push with a FALSE ATTRIBUTION** —
+   "a rebase this tool just performed SHRANK docs/known-red-suites.json 17 → 13".
+   My tree was byte-identical to `origin/main` on that file and my commit did not
+   touch it; the records were removed by hank's `34c834aa`. Right that records
+   vanished, wrong about who did it. Hank's tool, routed.
+4. **Two items could only be routed, PR §4.3 declared both times.** cc holds
+   `docs/SAIRN-OPEN-WORK-INDEX.md` and `tools/exit_status_attributable.py`; the
+   metamorphic row and the false-negative finding are paste-ready in
+   `docs/2026-10-05-cody-routed-to-cc.md`. **cc is now working on
+   `fmea/alf_facility_role_gate_live_probe.py` directly** — that finding's exact
+   subject — so the routing reached the right place.
+5. **The methodology lesson is ROUTED, not promoted.** `docs/METHODOLOGY.md` is
+   fourth's and `docs/2026-09-13-cross-domain-disciplines.md` is under a
+   subject-level block, so a cross-cutting rule is sitting in a dated file,
+   which is the eighth convention waiting to happen.
+6. **Michael's 20 SQL files are still unrun** and I did not re-drive the
+   `PRESENT 0 / MISSING 26` baseline this batch either.
