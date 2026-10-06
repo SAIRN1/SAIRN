@@ -3395,6 +3395,32 @@
         "sairnbiz.html",
         "tools/exit_status_attributable.py"
       ]
+    },
+    {
+      "id": "cc-1791270044",
+      "session": "cc",
+      "subject": "tooling",
+      "task": "tier_a_review_gate comment-body blanking; fmea alf_facility_role_gate_live_probe; sairnbiz_vendor_ytd_derivation; license.js hashLicense case; hook manifest drift routing; sairn_push_gate_hook literal command-text match; exit_status_attributable tokenized parse; report_only_checks E2 rewire; hover_tip_beacon verify-chain wiring; tier A obligations owed to cc. CONFLICT DECLARED PER PR 4.3, TWO SESSIONS, NEITHER REWORDED PAST: (1) hank has TAKEN docs/SAIRN-OPEN-WORK-INDEX.md and docs/CRITICALITY-TIERS.md and is ALREADY DOING 'routing the 14 unrouted hover findings into the index' plus the scp_designs retier -- which is my queue items 2, 7 and 12 verbatim. Those are NOT in my file set. Every index row, the row 95 exact-10 list, the row 82 figure replacement and the dnt_supplies B-to-A retier are delivered as verified paste-ready text in a doc I own, for hank. (2) fourth holds tools/tooling_inventory.py and docs/METHODOLOGY.md, so item 15's three methodology conventions land in my own inventory doc and are routed to fourth for METHODOLOGY.md. FILES: tools/tier_a_review_gate.py tests/run_tier_a_gate_probe.py fmea/alf_facility_role_gate_live_probe.py tests/sairnbiz_vendor_ytd_derivation.js api/_lib/license.js tools/sairn_push_gate_hook.py tools/exit_status_attributable.py tools/report_only_checks.py tools/hover_tip_beacon.py docs/hook-manifest.json docs/tier-a-reviews.json docs/2026-10-06-cc-batch-9-inventory.md docs/2026-10-06-cc-routed-to-hank.md SAIRN-ACTIVE-WORK-cc.md",
+      "claimed_at": "2026-10-06T07:00:44Z",
+      "claimed_at_epoch": 1791270044.4911156,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-cc.md",
+        "api/_lib/license.js",
+        "docs/2026-10-06-cc-batch-9-inventory.md",
+        "docs/2026-10-06-cc-routed-to-hank.md",
+        "docs/hook-manifest.json",
+        "docs/tier-a-reviews.json",
+        "fmea/alf_facility_role_gate_live_probe.py",
+        "tests/run_tier_a_gate_probe.py",
+        "tests/sairnbiz_vendor_ytd_derivation.js",
+        "tools/exit_status_attributable.py",
+        "tools/hover_tip_beacon.py",
+        "tools/report_only_checks.py",
+        "tools/sairn_push_gate_hook.py",
+        "tools/tier_a_review_gate.py"
+      ]
     }
   ],
   "refusals": [
