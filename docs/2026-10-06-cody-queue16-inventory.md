@@ -96,6 +96,56 @@ normal case here, not the edge case.
 
 ---
 
+## THE FULL RE-RUN — 47 MINUTES, EXIT 2, AND 137 FINDINGS WHERE THERE WERE 30
+
+`python tools/capture_exit.py --status s -- python tools/dead_rule_sweep.py`
+→ the status file says **`EXIT 2`**, which is the only reason that number is
+quotable here.
+
+```
+151 tool(s), 528 module-level compiled rule(s)
+  106 of those tools are OUTSIDE the report-only registry
+
+CHECKED / UNIVERSE   492 of 528 could be ablated against SOME evidence
+  against evidence the tool SHIPS   226 -> 183 exercised,  43 DEAD
+  against the REAL RUN only         266 -> 172 move the output,
+                                           94 do not move a byte
+COULD NOT RUN                        36
+FINDINGS                            137
+```
+
+### THE 22 ARE GONE FROM THE REFUSAL SET, AND THE HEADLINE COUNT STILL ROSE
+
+| | old population | new population |
+|---|---|---|
+| rules | 169 | **528** |
+| DEAD to its own evidence | 2 | **43** |
+| DEAD even on the real run | 28 | **94** |
+| COULD NOT RUN | **22** | **36** |
+| &nbsp;&nbsp;of those, write-when-run | **22** | **0** |
+| findings | 30 | **137** |
+
+**22 → 0 is the item-4 answer and it is a category, not the total.** The full run
+contains **zero** writer refusals — `grep -c WRITER` over 23KB of output returns
+0. The 36 that remain are a **different cause**: no lock, no control, and the
+bare run could not be compared either, concentrated in seven tools —
+**`cross_tenant_isolation_scope.py` alone accounts for 21 of them.**
+
+**So the headline refusal count went UP while the thing item 4 asked about went
+to zero**, because the universe grew from 169 rules to 528 in the same batch.
+Reporting "22 → 36" as a regression, or "22 → 0" as the whole story, would each
+be a true sentence used to mislead.
+
+### The per-tool runs and the full run AGREE, which is the cross-check
+
+All five writer DEAD rules found one tool at a time reappear in the 151-tool
+run, **and the full run found a sixth** — `hover_auditor_scope_gate.py`'s
+`AUDITOR_SESSION_RE`, the same rule name in a sibling tool. Two independent
+derivations of the same verdicts is the point; one of them finding more is the
+reason to run both.
+
+---
+
 ## ITEM 6 — THE PREMISE WAS FALSE, AND THE FIX IS GENUINELY LANDED
 
 The item said: when hank's `register_feed_gate.py` cp1252 fix is in
@@ -279,9 +329,14 @@ removed the guard the arm exists to prove.
 - **That 521 is every rule on the platform.** Only a module-level
   `NAME = re.compile(...)` is reachable, and `tools/*.py` is not `tests/`,
   `scripts/` or `api/`. **521 is a floor at 3.1x the old floor, not a total.**
-- **That the 352 newly visible rules are mostly alive.** See the full-sweep
-  section; the verdicts are measured, and the tier that carries most of them is
-  the weakest one the tool has.
+- **That the 137 findings are 137 defects.** DEAD does not mean wrong. It means
+  nothing the tool ships as evidence would notice the rule vanishing, and the
+  repair is a fixture **or** a named limit — different answers. **94 of the 137
+  come from the weakest tier the tool has** (no lock, no control, judged only
+  against the corpus), and that tier's verdict changes when anybody pushes.
+- **That 43 DEAD-to-its-own-evidence rules are all real.** They are the strong
+  tier and they are the ones to read first, across ~20 tools owned by four
+  sessions. **None has been diagnosed.**
 - **That `firebase-admin@14.5.0` is safe, or unsafe.** It was never installed.
 - **That the dependabot banner will clear.** It will not — the vulnerable
   version is still in the tree. **Not-reachable and not-present are different

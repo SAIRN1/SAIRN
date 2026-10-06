@@ -219,6 +219,27 @@ IN (45 file(s), 169 rule(s))
 
 ---
 
+## THE DRIFT RATE, MEASURED RATHER THAN ASSUMED
+
+**Re-run roughly one hour after the table above, on the same machine:**
+
+```
+tracked tools/*.py   295 -> 296
+THE UNIVERSE         150 -> 151   ->  521 -> 528 rule(s)
+  OUTSIDE registry   105 -> 106   ->  352 -> 359 rule(s)
+```
+
+**One new file in the universe (`suite_override_consistency.py`, 2 rules) and
+five more rules inside files that were already in it** — four other clones push
+to this branch, so the population moves without anybody editing this document.
+
+**That is the number to take from this section, not the totals: +7 rules in
+about an hour.** The eighth standing convention asks for a re-reference cadence
+taken from a *measured* drift rate, and this is the measurement. It is also why
+every figure here says to run the command: a document that chased the total
+would be wrong again by the time it was committed, which is exactly what
+happened to "162 of 169" yesterday.
+
 ## WHAT THIS DOES NOT ESTABLISH
 
 - **That the 352 new rules are dead, or alive.** This is the POPULATION. The ablation
