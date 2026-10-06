@@ -685,6 +685,40 @@ def _porcelain(tree):
     return out
 
 
+# ── THE ESCAPE CHECK ACCUSED AN INNOCENT TOOL (fixed 2026-10-06) ────────────
+# The writer tier reads the CLONE's state before and after each writer run, so a
+# tool that reached outside its sandbox is loud rather than discovered later.
+# The first version compared `_porcelain(REPO)` alone and, on difference, raised
+#
+#     "<tool> changed this CLONE while running in the sandbox -- a writer
+#      reached outside the copy"
+#
+# MEASURED: that fired against tools/primitive_obsession_check.py, 23 minutes
+# into a 151-tool run, and VOIDED THE WHOLE RUN. The tool is innocent -- driven
+# alone on a clean tree it leaves the clone byte-identical. THE REAL CAUSE WAS MY
+# OWN `git commit` IN THE CLONE WHILE THE SWEEP RAN.
+#
+# It is the same defect class as the push_retry message this session routed to
+# fourth: a guard that detects a real change and attributes it to the wrong
+# actor. Two in one session, and this one is mine.
+#
+# So the state now carries HEAD as well as the dirty set. A HEAD move explains
+# the difference as a commit, which CANNOT affect the sandbox -- that is a
+# detached worktree created before it -- so the run re-baselines, says so, and
+# continues. Only an unexplained change voids the run, and even then the message
+# refuses to name the tool as the cause, because another process in the clone
+# produces the identical reading.
+def _clone_state():
+    """(HEAD, sorted dirty paths) for the clone, or None if git cannot be read."""
+    h = subprocess.run(['git', '-C', REPO, 'rev-parse', 'HEAD'],
+                       capture_output=True, text=True, encoding='utf-8',
+                       errors='replace')
+    p = _porcelain(REPO)
+    if h.returncode != 0 or p is None:
+        return None
+    return (h.stdout.strip(), tuple(sorted(p)))
+
+
 def _digest(tree, rels):
     """A content fingerprint of named paths. A missing file is recorded as such."""
     h = hashlib.sha256()
@@ -777,7 +811,7 @@ def sweep_writer(tool, path, orig, pats, work, verbose=False):
     escape check and the reset are proved BEFORE any ablation, because a rule
     verdict taken on an unproven harness is worse than no verdict.
     """
-    repo_before = _porcelain(REPO)
+    repo_before = _clone_state()
     baseline = _porcelain(work)
     if baseline is None or repo_before is None:
         return [(n, WRITES_NO_RESET) for n, _ln in pats]
@@ -807,12 +841,38 @@ def sweep_writer(tool, path, orig, pats, work, verbose=False):
                      'same bytes' if first[2] == second[2] else 'DIFFERENT bytes'))
         return [(n, WRITES_NONDET) for n, _ln in pats]
 
-    # 3. NOTHING ESCAPED the copy while that ran.
-    if _porcelain(REPO) != repo_before:
-        raise RuntimeError(
-            '%s changed this CLONE while running in the sandbox -- a writer '
-            'reached outside the copy. Refusing to continue; the comparison is '
-            'void and the clone needs looking at.' % tool)
+    # 3. NOTHING ESCAPED the copy while that ran -- AND THE FIRST VERSION OF
+    #    THIS CHECK MADE A FALSE ACCUSATION, so read `_clone_state` before
+    #    trusting what it says.
+    repo_after = _clone_state()
+    if repo_after != repo_before:
+        if repo_after is None or repo_before is None:
+            raise RuntimeError(
+                'the clone state could not be read while sweeping %s, so '
+                'nothing below is a comparison. NOT an accusation against that '
+                'tool.' % tool)
+        if repo_after[0] != repo_before[0]:
+            # HEAD MOVED: somebody committed in the clone. That cannot touch
+            # this sandbox -- it is a detached worktree created before the
+            # commit -- so the measurement is intact and the run continues on a
+            # fresh baseline. Printed, never silent: a re-baseline that nobody
+            # is told about is a state change wearing a pass.
+            print('  note: the clone HEAD moved from %s to %s while sweeping '
+                  '%s -- a commit in the clone, not a writer escaping. The '
+                  'sandbox is a detached worktree made before it, so the '
+                  'comparison is unaffected; re-baselined and continuing.'
+                  % (repo_before[0][:8], repo_after[0][:8], tool))
+            repo_before = repo_after
+        else:
+            raise RuntimeError(
+                'the clone changed while %s ran in the sandbox AND HEAD DID NOT '
+                'MOVE, so a commit does not explain it. The comparison is void '
+                'either way and the run stops. THIS IS NOT PROOF THAT %s WROTE '
+                'HERE -- another process in this clone produces the identical '
+                'reading, and on 2026-10-06 that is exactly what happened and '
+                'this message named an innocent tool. Changed: %s'
+                % (tool, tool,
+                   sorted(set(repo_after[1]) ^ set(repo_before[1]))[:8]))
 
     rows = []
     for name, _ln in pats:

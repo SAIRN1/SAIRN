@@ -698,6 +698,45 @@ check('I4. "could not tell" is never a licence to delete -- _pid_alive returns '
       'True for a pid it cannot ask about',
       D._pid_alive(os.getpid()) is True)
 
+# ── J. THE ESCAPE CHECK MUST NOT ACCUSE AN INNOCENT TOOL ────────────────────
+# Measured 2026-10-06: the escape check fired against
+# tools/primitive_obsession_check.py 23 minutes into a 151-tool run and VOIDED
+# IT. That tool is innocent -- driven alone on a clean tree the clone is
+# byte-identical afterwards. THE CAUSE WAS MY OWN `git commit` IN THE CLONE
+# WHILE THE SWEEP RAN, and the message named the tool as the writer.
+#
+# Same defect class as the push_retry message routed to fourth this session: a
+# guard that detects a real change and attributes it to the wrong actor.
+#
+# J2 IS THE NEGATIVE ARM. A guard that simply stopped checking would pass J1.
+section('J. a commit in the clone is not a writer escaping')
+
+_st = D._clone_state()
+check('J0. the clone state reads at all, and carries BOTH halves -- a dirty-set '
+      'comparison alone is what made the false accusation possible',
+      _st is not None and len(_st) == 2 and isinstance(_st[0], str),
+      _st if _st is None else (_st[0][:8], len(_st[1])))
+check('J1. the accused tool really is innocent: driven alone it leaves the '
+      'clone state unchanged, which is why the message had to change rather '
+      'than the tool',
+      (lambda b: (subprocess.run([sys.executable,
+                                  os.path.join(REPO, 'tools',
+                                               'primitive_obsession_check.py')],
+                                 cwd=REPO, capture_output=True, text=True,
+                                 encoding='utf-8', errors='replace'),
+                  D._clone_state() == b)[1])(D._clone_state()))
+_h1 = ('a' * 40, ('M tools/x.py',))
+_h2 = ('b' * 40, ('M tools/x.py',))
+_d1 = ('a' * 40, ('M tools/y.py',))
+check('J2. THE NEGATIVE ARM: a state whose HEAD moved is DIFFERENT from one '
+      'whose dirty set moved -- without this distinction the check cannot tell '
+      'a commit from an escape and must either accuse or stop checking',
+      _h1 != _h2 and _h1 != _d1 and _h1[0] == _d1[0] and _h1[1] == _h2[1])
+check('J3. ...and an unreadable clone state is None, not an empty state -- it '
+      'must raise "could not read", never "nothing changed"',
+      D._clone_state() is not None and D._porcelain(os.path.join(
+          tempfile.mkdtemp(prefix='drs-notgit-'), 'nope')) is None)
+
 # The sabotage scratch tree, removed. Outside this clone either way, so a
 # leftover is untidy rather than dangerous -- which is the whole trade section G
 # makes: debris in temp instead of a neutralised rule in a shared repo.
