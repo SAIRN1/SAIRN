@@ -23642,7 +23642,7 @@
       "recurrence_open": "Nothing re-reads the remaining dated statements in api/_lib/exec-context.js on a cadence, and no arm pins the integrations sentence the way :206 pins the architecture one. The HIPAA-for-SAIRNcomm line was NOT verified in this pass -- SAIRNcomm has no app file in this repo, so there is nothing to check it against, and that is stated rather than counted as clean."
     },
     {
-      "commit": "34d793531638",
+      "commit": "19c872e077b6",
       "date": "2026-10-06",
       "subject": "fix(inventory): a DUPLICATE PURPOSES key now refuses as loudly as a missing one -- and the bug report becomes the regression",
       "files": [
