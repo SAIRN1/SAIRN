@@ -810,9 +810,89 @@ quietly.
 
 ---
 
-## The failure mode eight of the sixteen share
+## 17. A third state for ABSENCE is not a third state for AMBIGUITY
+
+**Adopted 2026-10-06 (Fourth), from my own tool reporting FIFTEEN findings
+that were all true of the wrong file.**
+
+**THE CONVENTION: when a check has to pick which thing it is judging, "I
+could not find a subject" and "I found several and chose one" are DIFFERENT
+third states. A tool that handles only the first silently guesses its way
+through the second, and the guess is reported in the same shape as a
+measurement.**
+
+**THE CASE.** My gap-document verifier was written to remove an inference it
+had been caught making: it had guessed each document's subject app from the
+document's *filename*. The replacement rule was explicitly evidence-based —
+judge each claim against **the file the document itself names nearest above
+it** — and it carried a proper third state, `COULD NOT CHECK (no file
+named)`, counted separately and never folded into "holds". That was the right
+correction and it was not enough.
+
+Run over 36 gap documents at HEAD `762b084b`, it reported **21 broken line
+citations**. Fifteen of them looked like this:
+
+    CITE  `rf_warranty_tiers` at sairndental.html:4737 -- found at NOWHERE
+    CITE  `dnt_gfe`           at sairnroofing.html:1802 -- found at NOWHERE
+
+Roofing's `rf_*` tables judged against the dental app; dental's `dnt_*` and
+`cdt_*` tables judged against the roofing app. The document is
+`docs/superpowers/specs/2026-08-26-competitive-gap-audit-roofing-dental-senior.md`
+— **three verticals interleaved in one file.** Inside a 1200-character
+lookback window it names more than one app, and `hits[-1]` picked whichever
+was nearest. Each "NOWHERE" was *true*: the identifier really is absent from
+the file the tool chose. The denominator was mine.
+
+**WHY IT IS A CONVENTION AND NOT A BUG REPORT.** The tool had already been
+fixed once for exactly this class and the fix did not generalise. It had a
+named third state for the case where the evidence was MISSING, and no state at
+all for the case where the evidence was AMBIGUOUS — so zero candidates
+refused, and two candidates resolved silently. That asymmetry is invisible in
+the output: `found at NOWHERE` reads identically whether the subject was
+established or guessed. This is item 8's decay and item 16's non-arrival
+wearing a third skin: the check ran, it reached code, and it reached the
+wrong code.
+
+**AND WIDENING THE WINDOW IS NOT THE FIX.** A longer lookback moves the error
+to a different set of claims; a shorter one converts real checks into
+no-subject refusals. Any proximity heuristic has this failure at its
+boundary. Tuning the boundary cannot remove it, which is what makes a state
+the answer rather than a parameter.
+
+**HOW TO IMPLEMENT IT.**
+- **Enumerate the candidates before choosing.** If the resolver returns one,
+  proceed. If it returns none, refuse with the existing absence state. If it
+  returns more than one, refuse with a **separate, separately counted**
+  ambiguity state. `len(set(candidates)) > 1` is the whole test.
+- **Report your own wrong answers under your own name.** Where the chosen
+  subject lacks the identifier but exactly one other candidate the document
+  names *has* it, that is not a document defect — it is a misattribution by
+  the tool, and it belongs in a line that says so:
+  `MISATTRIBUTED ... MY denominator, not the document`. Fifteen of twenty-one
+  findings moved out of "broken" into that line, and the remaining five are
+  the real ones.
+- **Fail closed on an empty subject list.** The same run, invoked with no
+  arguments, printed `TOTALS over 0 document(s)` with every counter at zero
+  and **exited 0** — a run that verified nothing, in the same shape and with
+  the same exit code as a run that verified all 36. It now exits 2 and says
+  `COULD NOT RUN`. Counts must state what was NAMED, what was READ and what
+  was ABSENT, because one number cannot carry all three.
+- **A tool is allowed to say the finding was its own fault.** Nothing else in
+  the output can discover that for you.
+
+**WHERE IT DOES NOT TRANSFER.** A check whose subject is handed to it
+explicitly — a path argument, a declared resource, a row key — has no
+resolution step and therefore no ambiguity state to add. The rule bites
+wherever a subject is *derived*, and proximity is the most common derivation
+because it usually works.
+
+---
+
+## The failure mode eight of the seventeen share
 
 *(Count corrected 2026-10-06: this heading read "eight of the eleven" when the document had eleven numbered sections, and was not updated when 12 was added on 2026-09-25 or when 13, 14 and 15 were added on 2026-10-06, or when 16 followed them. The EIGHT is unchanged and is the load-bearing number -- 12, 13, 14, 15 and 16 are NOT members of that group. Carrying what it said so the correction is visible rather than invisible, per the numbering note at the end of this file.)*
+
+*(Denominator moved again 2026-10-06 when 17 was added. 17 is NOT a ninth member and the question was asked rather than assumed: the shared failure mode is a check that reads as coverage and STRUCTURALLY CANNOT FIRE, and item 17's check fires -- it fires on the wrong subject and reports a guess in the shape of a measurement. That is adjacent to item 8's loss of independence, not identical to the eight. Left out of the group deliberately; putting it in would have been the easier edit and the wrong one.)*
 
 Eight of these conventions defend against the same thing: **a check that reads as
 coverage and structurally cannot fire.** (Items 7, 9 and 10 are the exceptions
