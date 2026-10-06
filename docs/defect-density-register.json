@@ -23492,6 +23492,171 @@
         }
       ],
       "recurrence_open": "The tool still cannot see an override read through a helper rather than process.env directly, cannot tell whether a present override reaches the read, and does not judge the 16 CROSS_APP suites at all. Those three are named limits, not findings. And the 155 findings are now a backlog nobody owns: the fix per finding is a judgement (add the override, or say in the header that the suite is pinned), and none of the 155 has been made."
+    },
+    {
+      "commit": "db8cc2d485db",
+      "date": "2026-10-06",
+      "subject": "fix(tier-a-gate+fmea): a PROSE COMMENT no longer opens a Tier A obligation, and rule 1.7 was a horoscope at 44.6%",
+      "files": [
+        "docs/TOOLING-INVENTORY.md",
+        "tests/run_fmea_probe.py",
+        "tests/run_tier_a_review_gate_probe.py",
+        "tests/sairnbiz_vendor_ytd_derivation.js",
+        "tools/fmea_draft.py",
+        "tools/tier_a_review_gate.py"
+      ],
+      "lines_added": 502,
+      "lines_removed": 31,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "tools/tier_a_review_gate.py strip_diff_noise() blanked PROSE STRING bodies but deliberately counted COMMENT text, so writing a sentence about a Tier A resource registered the author as changing code that serves it. Each false demand opened a real obligation costing a reviewer a full read, and complying was always cheaper than fixing, so ten accumulated instead of forcing the question. Now a comment body of three or more whitespace-separated words is blanked by the same _blank threshold already used for prose strings, with the marker chosen by file extension and NO comment stripping at all when the path is unknown -- because the direction of a wrong guess there is a gate going quiet, which the docstring already names as the worse failure. Character walk, not a regex, per the lesson _strip_code_noise() records. ONE commit-level flip in the entire register (BLOCKED->CLEAN on f07d8660), hand-verified three independent ways rather than accepted. The context-only, never-blocking walk is deliberately unchanged, so a comment is DEMOTED rather than deleted.",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The comment-counting behaviour is the file's ORIGINAL design, stated in its own docstring as a deliberate decision rather than introduced by a later commit, so there is no injecting change to name. git log -S finds where the text came from and cannot say when it became wrong -- it became wrong as the gate's blast radius grew, which is PR 2.6."
+      },
+      "citation_note": "tier_a_review_gate.py matched Tier A resource names out of COMMENT TEXT and demanded an independent-review obligation for changes that touched no Tier A resource -- PR 1.2 in its purest form, inside the review gate itself, which open-work row 95 says in those words. Ten measured instances; 5 of 10 stop matching after the fix, 2 are multi-line docstring interiors the fix cannot reach and are named in the docstring, 3 are COULD NOT TELL because opened_at_sha post-dates the diff the gate judged.",
+      "contributing_factors": [
+        {
+          "factor": "the gate decided 'does this hunk name a Tier A resource' by text match, with no distinction between code and prose about code",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "prose comment bodies are blanked before the resource match, by extension-chosen marker, with a character walk that tracks the open quote"
+        },
+        {
+          "factor": "the design decision to count comments was defensible when made and its COST ran one way -- complying with a false demand is always cheaper than changing the matcher, so instances accumulated instead of escalating",
+          "kind": "process",
+          "action_status": "done",
+          "action": "decided and reversed with the measurement attached, and the old argument is restated in the docstring as an argument for REPORTING rather than BLOCKING"
+        },
+        {
+          "factor": "the probe arm that should have caught a change in what the gate matches had a COMMENT as its fixture, so it encoded the old decision rather than the arm's actual subject",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the fixture is now a dispatch condition in code; the comment moved to its own arm as the thing that must NOT fire; plus four ablation arms that remove the layer and require each arm to flip the way only that layer explains"
+        },
+        {
+          "factor": "that same arm was register-state dependent -- its fixture resource acquired an open obligation on 2026-09-29, after which check() correctly returned 0 and the arm would have gone red for a reason unrelated to its subject",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "the fixture resource is DERIVED as one no open obligation covers, and with no such resource the arm reports COULD NOT RUN instead of passing"
+        }
+      ],
+      "recurrence_open": "A diff line in the INTERIOR of a multi-line Python docstring carries no quote character and no comment marker, so neither the comment rule nor the prose rule can see it -- 2 of the 10 instances are exactly that and they still match. Reaching them needs hunk-header line numbers mapped against an ast parse of the file, which is not done here. And a bare fixture literal such as routable=['leg_processions'] is character-for-character what a handler writes; no string analysis can separate those, which the docstring already named as a dead end before this change."
+    },
+    {
+      "commit": "db8cc2d485db",
+      "date": "2026-10-06",
+      "subject": "fix(tier-a-gate+fmea): a PROSE COMMENT no longer opens a Tier A obligation, and rule 1.7 was a horoscope at 44.6%",
+      "files": [
+        "docs/TOOLING-INVENTORY.md",
+        "tests/run_fmea_probe.py",
+        "tests/run_tier_a_review_gate_probe.py",
+        "tests/sairnbiz_vendor_ytd_derivation.js",
+        "tools/fmea_draft.py",
+        "tools/tier_a_review_gate.py"
+      ],
+      "lines_added": 502,
+      "lines_removed": 31,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "tools/fmea_draft.py had two defects found by driving it. (1) _d_checker_without_probe's regex included the case-sensitive alternative \\bCLEAN\\b, written for the VERDICT TOKEN a checker prints, and it matched the English word 'clean' once a comment was upper-cased -- so metamorphic_check reported a verdict MOVE on tools/alf_facility_role_gate_live_probe.py. Rewording the subject file was rejected as slipping past the matcher and re.I was rejected on a measurement (\\bCLEAN\\b matches 197 times across 296 files); the detector is instead made blind to full-line comment text, which satisfies the relation by construction. Cost named, not counted: 96 files still fire, exactly 3 lose their verdict. (2) _d_fixed_window fired on 44.6% of 691 files and tests/run_fmea_probe.py arm 3b was RED ON MAIN for it. Measured per half: the bare [:NNN] slice accounted for 307 of 308 and every one inspected was a DISPLAY truncation in a message, not a window that exempts data. Slice half dropped, named half widened, 14/691 = 2.0%, and all fourteen hand-checked as real bounds.",
+      "rules": [
+        "1.9"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/metamorphic_check.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Both defects are in the detector table as originally calibrated -- the header records that the first version was BADLY tuned and was retuned, so these are survivors of that tuning rather than a later regression. Naming a single injecting commit would be a guess among the table's whole history."
+      },
+      "citation_note": "metamorphic_check.py holds the relation that rewording full-line comment text cannot change which failure modes fire, and it was violated: the same program answered differently on inputs that differ only in the case of prose. 1.9 -- a checker must answer the same on identical input -- with 'identical' meaning identical in everything the checker claims to depend on.",
+      "contributing_factors": [
+        {
+          "factor": "a detector mixed a CODE/OUTPUT marker (the printed verdict token CLEAN) with prose, so comment text became evidence about the program",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the 1.1 detector reads a copy with full-line comment text removed; docstrings are kept because a REPORT ONLY marker is a declaration, not prose about a defect"
+        },
+        {
+          "factor": "a fire rate of 44.6% was recorded by the tool's own arm and left red rather than acted on -- the calibration doctrine was written into the file's header and then not enforced",
+          "kind": "process",
+          "action_status": "done",
+          "action": "both halves of 1.7 measured separately on the same universe fire_rates() uses, the noisy half removed, and the surviving 14 hits each read and named rather than reported as a rate"
+        },
+        {
+          "factor": "the metamorphic relation lived only in a whole-tree run that takes minutes, so it is not what anybody runs before committing to this file",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "five local arms in tests/run_fmea_probe.py assert the relation in BOTH case directions, with a not-vacuous arm requiring the subject to still contain the word that caused the violation, plus a 40-file sweep so it is not pinned to one file"
+        }
+      ],
+      "recurrence_open": "Only ONE of twelve detectors was case-sensitive in a way the relation could catch, and nothing sweeps the other eleven for the same shape against transformations metamorphic_check does not currently apply. And 2.0% is near the opposite extreme from a horoscope: a rule that rare carries information only if the shape really is rare, which is argued from fourteen files and not proven."
+    },
+    {
+      "commit": "db8cc2d485db",
+      "date": "2026-10-06",
+      "subject": "fix(tier-a-gate+fmea): a PROSE COMMENT no longer opens a Tier A obligation, and rule 1.7 was a horoscope at 44.6%",
+      "files": [
+        "docs/TOOLING-INVENTORY.md",
+        "tests/run_fmea_probe.py",
+        "tests/run_tier_a_review_gate_probe.py",
+        "tests/sairnbiz_vendor_ytd_derivation.js",
+        "tools/fmea_draft.py",
+        "tools/tier_a_review_gate.py"
+      ],
+      "lines_added": 502,
+      "lines_removed": 31,
+      "app": "sairnbiz",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tests/sairnbiz_vendor_ytd_derivation.js was RED on main for TWO independent reasons and only one of them was the rename. (a) The extraction anchor named sbVendorPaidUndatedPriorYear, renamed to sbVendorPaidUndatedOtherYear by the seq 507/508 split -- the notStrictEqual(-1) guard refused to test an empty string, which is the anchor doing its job. (b) The disclosure arm required spendOf(x)<600&&(spendOf(x)+u)>=600 while the code reads thr.amount, which is the CORRECT shape -- so the arm was red while the code was right, and it was red before the rename went near it. Both re-pointed rather than relaxed, and (b) is strengthened in the direction the old arm had backwards: the literal 600 must now be ABSENT from that expression. The partition arm is widened from three buckets to four because the split created a fourth, and it now checks every pair.",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Half (a) was injected by 3cf3d5ec, the seq 508 split, and half (b) by whichever commit made the 1099 threshold data-driven; they are different commits and the record cites one sha, so naming either alone would be wrong about the other."
+      },
+      "citation_note": "Two anchors in one suite that still matched text and no longer pointed at the right thing: one at a function name that had been renamed, one at a literal 600 after the 1099 threshold became data (thr.amount). 1.3 exactly, twice, in the same file.",
+      "contributing_factors": [
+        {
+          "factor": "a suite that extracts a function from an app by name was not updated when the function was renamed, and nothing in the push that renamed it ran that suite",
+          "kind": "process",
+          "action_status": "done",
+          "action": "anchors re-pointed and a shape assertion added so a future return to a flat object makes the arms fail loudly instead of comparing undefined to undefined"
+        },
+        {
+          "factor": "an arm pinned a LITERAL threshold while the production code correctly derived it from data, so the arm asserted the defect rather than the contract",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "re-pinned to the structure, plus a new arm requiring the hardcoded 600 to be absent"
+        },
+        {
+          "factor": "the partition arm claimed every Paid row lands in exactly one bucket and checked only one pair, so a third bucket could be added underneath it silently",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "four buckets, every pair compared, and three new arms for the future-dated bucket and the unreadable-year case"
+        }
+      ],
+      "recurrence_open": "Nothing links an app function's name to the suites that extract it by anchor, so the next rename breaks the next suite the same way and the push gate will not know -- this suite is not in GUARD_TESTS. The red suite register caught it after the fact, which is a day later than the push."
     }
   ],
   "started": "2026-09-09",
