@@ -23642,6 +23642,56 @@
       "recurrence_open": "Nothing re-reads the remaining dated statements in api/_lib/exec-context.js on a cadence, and no arm pins the integrations sentence the way :206 pins the architecture one. The HIPAA-for-SAIRNcomm line was NOT verified in this pass -- SAIRNcomm has no app file in this repo, so there is nothing to check it against, and that is stated rather than counted as clean."
     },
     {
+      "commit": "c5e65e9e23ff",
+      "date": "2026-10-06",
+      "subject": "fix(inventory): a DUPLICATE PURPOSES key now refuses as loudly as a missing one -- and the bug report becomes the regression",
+      "files": [
+        "docs/TOOLING-INVENTORY.md",
+        "tests/run_purposes_duplicate_key_probe.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 179,
+      "lines_removed": 43,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/tooling_inventory.py REFUSED LOUDLY on a MISSING PURPOSES entry (exit 2, naming the tool) and exited 0 SILENTLY on a DUPLICATE key. Python keeps the last of two identical dict keys and discards the first with no warning, so an entry somebody wrote became dead text -- invisible in the rendered document AND in the source, with nothing able to tell the author. It happened for real on 2026-10-06 to a gate_parity_check.py entry written while another session had already added one. Severity moderate rather than high because no WRONG cell was produced: the surviving entry was the better of the two, so the defect is that the mechanism cannot report, not that the document lied.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The missing-entry refusal and the PURPOSES map predate this clone's register; the duplicate direction was never written, so there is no commit that introduced the defect -- it is an absence from the original design of the drift check, not a regression. Naming the commit that created missing_purposes() would be citing the fix for the OTHER direction as the injection of this one."
+      },
+      "citation_note": "ARGUABLE AND SAID SO. 1.11 names the third state -- \"could not run\" must never be folded into \"passed\" -- and the fix does add that state (COULD NOT CHECK on an unreadable or unparseable source, worded separately from \"no duplicates\"). But 1.11 does NOT name the defect itself, which is a generator loud on one failure direction and silent on its mirror. No standing section covers that shape, which is why it is this batch's methodology rule and is routed to ted rather than self-promoted. Cited as arguable so the gap is visible in the register instead of being hidden behind a clean citation.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "Python keeps the LAST of two identical dict keys and discards the first with no warning, so the duplicate is already gone by the time PURPOSES is a dict -- the imported object cannot be asked the question.",
+          "action_status": "done",
+          "action": "duplicate_purposes_keys() ast.parses the generator's own SOURCE and compares the literal keys, so it reads the only representation where both copies still exist."
+        },
+        {
+          "kind": "detection",
+          "factor": "The drift check was built with two directions (no entry for a tool; an entry for no tool) and the third -- two entries for one tool -- was never asked. A duplicate exited 0 and said nothing, so no run of the generator, no push and no --check could ever surface it.",
+          "action_status": "done",
+          "action": "the duplicate direction now refuses with the same banner and the same exit 2 as the missing one, naming the key and both line numbers; tests/run_purposes_duplicate_key_probe.py is the regression and drives the real generator."
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "Four sessions edit one hand-written map in one file from separate clones, and a rebase merges two additions cleanly when both are new lines -- so writing the same key twice is the NORMAL outcome of concurrent work rather than carelessness.",
+          "action_status": "planned",
+          "action": "nothing stops the collision happening; the refusal only makes it visible at the next generate. Splitting PURPOSES per-owner, or deriving it, would remove the shared write-point -- not done, and not in this change."
+        }
+      ],
+      "recurrence_open": "The collision itself is NOT closed. Four sessions still write one shared PURPOSES literal from separate clones and a rebase still merges two new lines cleanly, so a duplicate can still be WRITTEN -- it is now caught at the next generate instead of never. And the COULD NOT CHECK third state is not driven by any test: that needs an unreadable source, which is a different arm and is not run."
+    },
+    {
       "commit": "d8392f805969",
       "date": "2026-10-06",
       "subject": "fix(tests): the span was the defect in five more arms -- measured against the balanced close, not assumed, and each repoint proven to change the answer",
