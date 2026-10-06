@@ -67,14 +67,27 @@ with `fatal: this operation must be run in a work tree`.
 `git config --get core.bare` returned **`true`**, with the fixture identity
 `fx@example.invalid` also present in `.git/config`.
 
-**Why it is a pull rather than a repair note.** `b23dbc2e` ("fix(check8): ROOT
-CAUSE, not containment — the fixture is a throwaway CLONE now") landed at
-16:03 and the corruption was observed at ~17:50. Two readings fit and the
-evidence does not separate them:
+**Why it was a pull.** `b23dbc2e` ("fix(check8): ROOT CAUSE, not containment —
+the fixture is a throwaway CLONE now") landed at 16:03 and the corruption was
+observed at ~17:50. Two readings fit and, at the time of the pull, the evidence
+did not separate them:
 
 1. the fix did not work, or does not cover every path; or
 2. the fix works, the residue was left on disk by an earlier run, and
    **nothing repairs it**.
+
+**RESOLVED LATER THE SAME SESSION — READING 2.** `python
+tests/push_gate/check8_probe.py` was then run **in the live clone** at HEAD
+`6984634e` with `.git/config` copied beforehand:
+
+    === CONFIG DELTA ===   CONFIG UNCHANGED   (byte-for-byte diff)
+    === STATUS DELTA ===   STATUS UNCHANGED
+    === HEAD ===           6984634e, unmoved
+
+and the probe now carries its own arms for it — *"and the CLONE was never
+touched — no commit, no modified file"* and *"...and neither was `.git/config`
+— byte-identical to the pre-run copy"*, both **ok**. The writer is fixed. The
+residue was pre-fix and nothing cleaned it up.
 
 **The thing worth escalating is true either way:** `.git/config` is
 **untracked**. No commit, no `git status`, no push gate and no pull can see

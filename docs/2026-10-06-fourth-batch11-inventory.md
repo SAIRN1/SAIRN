@@ -184,3 +184,94 @@ the heading now says why rather than absorbing it silently.
 | `run_two_axis_tier_parser` arm 2 false red | test design | assertion scope | a helper collecting headline-scope problems into a row-scope assertion |
 | `run_financial_invariant` arm 7f false red | test design | assertion scope | an unconditional assertion on a conditionally-printed section |
 | `.git/config` residue outlives its fix | tooling | recovery | the writer was fixed; nothing detects or repairs the untracked residue it already left |
+
+---
+
+## Item 4 — the two clone-corrupting probes: the selftest, run in the LIVE clone
+
+**The selftest is the one the dispatch named: a run leaves `git status`
+clean.** Deliberately **not** run in a worktree — a worktree staying clean
+proves nothing about the clone, and the clone is what was being damaged.
+`.git/config` was copied byte-for-byte before each run and diffed after.
+
+### `tests/seam_check/run_delegation_probe.py` — **FIXED, and green**
+
+`python tests/seam_check/run_delegation_probe.py` — **PROGRAM_EXIT=0** at
+`6984634e`, 2026-10-06, one run, read from its own invocation.
+
+    arm1_sees          True
+    arm2_propagates    True
+    arm3_stops         True
+    arm4_no_residue    True
+    restored_baseline  True (96 clean, 0 not-forwarded, 19 could-not-tell)
+
+    === CONFIG DELTA ===   CONFIG UNCHANGED
+    === STATUS DELTA ===   STATUS UNCHANGED
+
+And independently of the probe's own self-report, `node --check` on both files
+it used to leave sabotaged: `api/sd-data.js` **PARSES**,
+`api/_lib/subcontractor-compliance.js` **PARSES**. The arm that asserts no
+residue (`arm4_no_residue`) is the probe judging itself; the two `node --check`
+runs are not.
+
+### `tests/push_gate/check8_probe.py` — **the CORRUPTION is fixed; the probe is still RED on 2 arms, and those are PRE-EXISTING**
+
+`python tests/push_gate/check8_probe.py` — **PROGRAM_EXIT=1**, `check8_probe: 2
+failed`, at `6984634e`.
+
+**The corruption is gone and the probe now proves it itself:**
+
+    ok   the repo was restored
+    ok   ...and HEAD is back where it started
+    ok   and the CLONE was never touched -- no commit, no modified file
+    ok   ...and neither was .git/config -- byte-identical to the pre-run copy
+
+    === CONFIG DELTA ===   CONFIG UNCHANGED
+    === STATUS DELTA ===   STATUS UNCHANGED
+    === HEAD ===           6984634e, unmoved
+
+**The 2 failures are NOT a regression from `b23dbc2e`, and that is measured
+rather than argued.** The pre-fix whole-tree run captured at **08:41**, long
+before `b23dbc2e` landed at 16:03, already reads:
+
+    FAIL py  tests/push_gate/check8_probe.py   FAILED  check8_probe: 2 failed
+
+**The two arms, and what actually happens.**
+
+| arm | expected | observed |
+|---|---|---|
+| `a PROBE-subject commit IS blocked` | check 8 refuses, naming the probe commit | the push is refused one layer EARLIER: `Blocked: this gate could not tell what is being pushed. / no ref lines on stdin` |
+| `...and the refusal NAMES the commit` | the commit sha in the refusal text | same earlier refusal; no commit named |
+
+Both arms assert *which* refusal happens. The gate's **fail-closed** path fires
+first, so check 8 is never reached and the arm cannot see what it is asserting
+about. The surrounding arms pass, including `...and the push exits non-zero`
+and `...and the PreToolUse path denies it too` — so the gate is denying
+correctly; only the *attribution* is wrong.
+
+**IT IS ENVIRONMENT-DEPENDENT, which is the lead and not the answer.** The
+same probe run from a throwaway dev copy at
+`C:/Users/marsh/AppData/Local/Temp/ted-c8-dev/` exited **0** four separate
+times (19:19:35Z, 19:24:30Z, 19:28:30Z, 19:57:58Z, each exit code captured to
+its own `.status` file) while exiting **1** in this clone. So the two arms pass
+in one clone and fail in another at the same code.
+
+**NOT ESTABLISHED, stated rather than guessed:** *why* `git push --dry-run`
+delivers no ref lines to the pre-push hook in this clone when it does in the
+dev copy. The live clone was ahead of `origin/main` during the run, which is a
+candidate and not a finding. **This is the next step on item 4** and it is a
+separate defect from the config writer, which is closed.
+
+### Reconciliation — one finding, one owner, deduped by first real evidence
+
+Three records pointed at this one thing and they are not three findings:
+
+| record | what it was | resolution |
+|---|---|---|
+| **fourth, batch 9** — `docs/2026-10-06-whole-tree-run-and-the-runner-that-corrupts-its-clone.md` | the **first real evidence**: named both probes, named `core.bare = true` and the fixture identity, attributed by digesting a watch-list after every suite | **the originating finding. Mine, and closed by the selftest above** |
+| **cody, queue19** — "read-only `core.bare` cause hunt **routed to ted**" | a cause hunt on the same symptom, routed to this role | **same finding, not a second one.** Routed to the originator, which is the correct direction. Nothing for cody to close |
+| **fourth → cc** — `.git/config` written from a worktree by `dry_push(probe_env=False)` in `tools/sairn_push_gate_hook.py` | the **mechanism one layer down**, in cc's file | **still cc's, and NOT closed by me.** The selftest above proves check8_probe's *fixture* can no longer reach this clone; it does **not** prove the hook cannot write shared config from a worktree by some other caller. Only the originating finder closes, and that layer's finder is cc |
+
+The one genuinely new item is in the andon log as **pull 4**: `.git/config` is
+untracked, so the residue a fixed writer already left is invisible to every
+check on this platform and survives every pull. Fixed writer, no detector.
