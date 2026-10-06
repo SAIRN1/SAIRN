@@ -23438,7 +23438,7 @@
       "recurrence_open": "Nothing prevents the next arm from being written with a byte window. There is no checker that flags a function-body slice whose end is not a balanced close, and this sweep was a one-off measurement rather than a standing gate. 14 of 38 sites are also still unpaired."
     },
     {
-      "commit": "f864c57ef551",
+      "commit": "e4472e9ea22a",
       "date": "2026-10-06",
       "subject": "fix(suite-override): the rule could not fire, so `findings 0` over 488 suites was not a result -- plus the per-verdict census the count needs",
       "files": [
