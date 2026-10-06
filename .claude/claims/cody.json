@@ -3253,8 +3253,8 @@
       "task": "queue17: npm upgrade probe in a scratch copy outside the repo; the 43 DEAD-to-own-evidence rules diagnosed and routed; the 36 could-not-run causes; exit codes into three docs; sandbox uniqueness plus a concurrency drive; self-mutation digest sweep; CLI entry-point sweep; universe re-measure; handoff. CONFLICT DECLARED PER PR 4.3, THREE SESSIONS: hank holds docs/SAIRN-OPEN-WORK-INDEX.md (TAKEN from cc deliberately, cc's claim on it expired) so my metamorphic row routes to HANK not cc; cc holds docs/tier-a-reviews.json, tools/exit_status_attributable.py, tools/report_only_checks.py, tools/sairn_push_gate_hook.py and fmea/alf_facility_role_gate_live_probe.py; fourth holds tools/tooling_inventory.py, docs/METHODOLOGY.md and tools/red_suite_register_check.py so every registration and methodology promotion routes to fourth. None of those files are in my set FILES: tools/dead_rule_sweep.py tools/capture_exit.py tests/run_dead_rule_sweep_probe.py docs/2026-10-06-cody-queue17-inventory.md docs/2026-10-06-cody-routed.md docs/2026-10-05-cody-queue13-report.md docs/2026-10-05-cody-queue14-inventory.md docs/2026-09-29-dead-rules-cody.md docs/handoff-cody-2026-10-06.md SAIRN-ACTIVE-WORK-cody.md",
       "claimed_at": "2026-10-06T08:20:49Z",
       "claimed_at_epoch": 1791274849.0079658,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-06T14:48:14Z",
       "files": [
         "SAIRN-ACTIVE-WORK-cody.md",
         "docs/2026-09-29-dead-rules-cody.md",
