@@ -5569,6 +5569,29 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-10-06T06:14:34Z",
+      "opened_at_sha": "c0be1a70208834a800cbf8cdca914b229bebee93",
+      "resources": [
+        "alf_clients",
+        "alf_family_contacts",
+        "alf_mar"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/sd-data.js",
+        "tests/sd_data_family_mar_gate.js"
+      ],
+      "what": "api/sd-data.js resource alf_family_contacts, action 'family_mar': added the caller gate it never had -- role set (ALF_FAMILY_READ_ROLES, inherited unchanged from the sibling 'read' action) resolved BEFORE the contact fetch with an empty assignment scope refused 403, then the stored contact row's resident_id checked against that scope with a FORBIDDEN kept distinct from NO_SUCH_CONTACT. Before this, any authenticated session on the licence including an unassigned med_aide could pass any contact_id and receive that resident's full medication administration record; the familyMarView() CONSENT check was standing in for an authorisation check. WHAT A REVIEWER SHOULD ATTACK: (1) the ORDER -- I refuse an empty scope before any contact query specifically so a caller who may not ask anything is not told whether the contact exists, but the second half necessarily runs AFTER the fetch, so a narrow caller with a NON-empty scope still learns existence for residents outside it; decide whether that residual oracle is acceptable or whether the fetch should be scoped by resident_id in the query itself. (2) ALF_FAMILY_READ_ROLES includes 'billing' and this change inherits it onto a CLINICAL record without narrowing -- I argue narrowing here would replace one sibling disagreement with another, silently; that argument is reviewable. (3) tests/sd_data_family_mar_gate.js arm C0 is a count==1 uniqueness guard added because the test's FIRST version had a false pass -- the bare anchor matched twice and C2 was grading read's body; check the guard is actually load-bearing and not just present.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-10-06T06:14:34Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
