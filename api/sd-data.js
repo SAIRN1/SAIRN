@@ -10136,20 +10136,67 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // ── THE SET MOVED HERE FROM `:11865` (2026-10-06) ──────────────────────
+    // It was declared beside `alf_compliance_rules`, three branches below, and
+    // `alf_staff`/`read` needs the SAME set -- so referencing it from here
+    // would have been a temporal-dead-zone ReferenceError, a 500 on a live
+    // endpoint. Declared once, above its first use, rather than copied: a
+    // second role set that must equal this one is a second thing to drift, and
+    // a gate disagreeing with its sibling about one table is the #894 defect.
+    // Its three original consumers read it unchanged.
+    const ALF_CRED_READ_ROLES = roleSet({ owner: true, billing: true, nursing: true });
+
     // ── SAIRNCARE: alf_staff (2026-08-20, closing SAIRNsenior's Phase 1 gap proactively) ─────
     // Employment/certification data, not resident PHI -- lighter gate than alf_clients.
-    // Read: any authenticated employee (scheduling/coverage needs the whole roster).
     // Write: management only (owner/billing) -- staff don't self-edit their own cert
     // records through this resource, matching sen_caregivers' identical pattern.
+    //
+    // ── READ WAS UNGATED PAST THE SESSION, AND THE BLOB IS SPREAD WHOLE ────
+    // Until 2026-10-06 this branch verified the session and gated on NOTHING
+    // ELSE, then returned `Object.assign({ id: r.staff_id }, r.data)` -- the
+    // entire jsonb blob. `sairncare.html` saveStaff() writes `name`, `phone`,
+    // `position`, `cert_expiry`, `bgcheck_date`, `status` and `notes`, and
+    // alf_compliance_rules/evaluate adds `hire_date`. So a `caregiver`, a
+    // `med_aide` or an `activities` role -- none of which has any management
+    // function -- could read every colleague's PERSONAL PHONE NUMBER and
+    // BACKGROUND-CHECK DATE and whatever free text a manager typed into
+    // `notes`. docs/CRITICALITY-TIERS.md rates this resource A / A.
+    //
+    // THE COMMENT THAT USED TO SIT HERE WAS THE ARGUMENT FOR LEAVING IT OPEN:
+    // "Read: any authenticated employee (scheduling/coverage needs the whole
+    // roster)." That is TRUE and it is not an argument for the whole blob.
+    // Scheduling needs to know who exists, what they do and whether they are
+    // active. It does not need a phone number or a screening date.
+    //
+    // SO THE FIX IS A PROJECTION, NOT A REFUSAL, and that distinction is the
+    // whole design. A blanket 403 would break coverage planning for the roles
+    // that do it; self-only would be worse than useless for the same reason.
+    // Broad roles (ALF_CRED_READ_ROLES -- the SIBLING'S set, not a new one)
+    // get the roster unchanged. Everyone else gets id, name, position and
+    // status, and nothing else.
+    //
+    // `scoped_projection` IS ON EVERY RESPONSE, including the broad one, for
+    // the reason `scoped_to_self` is: a flag that appears only in the narrow
+    // case is a flag the client has to infer from its absence.
     if (resource === 'alf_staff' && action === 'read') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const broadStaffRead = !!ALF_CRED_READ_ROLES[session.role];
       const r = await fetch(rest('alf_staff?license_hash=eq.' + enc(licHash) + '&select=staff_id,data'), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false, scoped_projection: !broadStaffRead }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
-      const data = (rows || []).map((r) => Object.assign({ id: r.staff_id }, r.data));
-      res.status(200).json({ ok: true, data, provisioned: true });
+      // PROJECTED BEFORE THE RESPONSE IS BUILT, not filtered out of a finished
+      // object: the narrow shape is constructed from named fields, so a field
+      // added to the blob later is EXCLUDED by default rather than disclosed
+      // until somebody notices. That direction is the point.
+      const data = (rows || []).map((r) => {
+        const d = r.data || {};
+        if (broadStaffRead) return Object.assign({ id: r.staff_id }, d);
+        return { id: r.staff_id, name: d.name || '', position: d.position || null,
+                 status: d.status || null };
+      });
+      res.status(200).json({ ok: true, data, provisioned: true, scoped_projection: !broadStaffRead });
       return;
     }
     if (resource === 'alf_staff' && action === 'write') {
@@ -11862,7 +11909,11 @@ module.exports = async (req, res) => {
     // clinical oversight and is who actually chases an expiring certification), and a staff
     // member may always read their OWN records. Writes are management-only: a training record
     // is an assertion about someone's qualifications, and self-certification would defeat it.
-    const ALF_CRED_READ_ROLES = roleSet({ owner: true, billing: true, nursing: true });
+    // ALF_CRED_READ_ROLES IS DECLARED AT `:10147` AND NOT AGAIN HERE. It moved
+    // up on 2026-10-06 because `alf_staff`/`read` needs the same set and is
+    // three branches earlier; a second `const` with the same name in this scope
+    // is a SyntaxError, and two sets with the same contents would be two things
+    // to drift. The three consumers below are unchanged.
     const ALF_COMPLIANCE_TYPES = { staffing: true, training: true, licensure: true };
     const ALF_CRED_RECORD_TYPES = { training_hours: true, credential: true };
     if (resource === 'alf_compliance_rules' && action === 'read') {
