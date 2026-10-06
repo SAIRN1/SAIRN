@@ -579,10 +579,27 @@ label.chk input{width:auto;}
   <div class="pa"><button class="btn bo bs" onclick="csv('pos')">Export CSV</button><button class="btn bp bs" onclick="openGeneratePOModal()">Generate POs from Approved Items</button></div></div>
   <div class="krow">
     <div class="kpi"><div class="klbl">Open POs</div><div class="kval" id="po-open">0</div><div class="kt">Draft + Sent</div></div>
-    <div class="kpi"><div class="klbl">Total Committed</div><div class="kval" id="po-total">$0</div><div class="kt">Wholesale, all open POs</div></div>
+    <div class="kpi"><div class="klbl">Total Committed</div><div class="kval" id="po-total">$0</div><div class="kt">Wholesale GOODS ONLY, all open POs &mdash; freight is not in this figure</div></div>
+  </div>
+  <div id="po-routing" style="font-size:12px;margin-bottom:10px"></div>
+  <!-- SALES TAX IS REFUSED, NOT MISSING, AND THE REFUSAL IS ON SCREEN
+       (2026-10-06). docs/cloud-research/sairndesign-competitive-gap-audit-2026-10-05.md
+       finding 1: `tax` appears ZERO times in this file and the zero is
+       CONTROLLED -- sairnbiz has 6 occurrences of sales-tax vocabulary and
+       stonedesk 8, so two sibling apps on this platform model it and this one
+       does not. It still does not, deliberately: a designer buys at trade cost
+       and RESELLS, which makes the studio a reseller, so a rate this app
+       invented would be charged to a client. That is the SAIRNroofing
+       certified-payroll refusal exactly. Disclosed here so a prospect meets the
+       boundary on the screen rather than discovering it in week one. -->
+  <div style="font-size:12px;color:var(--muted);margin-bottom:12px;padding:10px;border:1px solid var(--line);border-radius:6px">
+    <strong>This app does not calculate sales tax, and will not.</strong> A studio that buys at trade and resells is a reseller:
+    tax on the resold goods depends on your state, your resale certificate and the ship-to jurisdiction, and a rate this
+    software picked for you would go onto a client invoice. Totals here are <strong>goods and freight only</strong>. Apply tax in
+    your accounting package, where the rate is yours.
   </div>
   <div class="card"><div class="cb">
-    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>PO #</th><th>Project</th><th>Vendor</th><th>Items</th><th>Total (Cost)</th><th>Status</th><th>Actions</th></tr></thead>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>PO #</th><th>Project</th><th>Vendor</th><th>Sidemark</th><th>Items</th><th>Goods</th><th>Landed</th><th>Status</th><th>Actions</th></tr></thead>
     <tbody id="potbody"></tbody></table></div>
   </div></div>
 </div>
@@ -2932,8 +2949,13 @@ async function generatePOs(){
   var created=[];
   for(var vendor in byVendor){
     var items=byVendor[vendor];
+    // PROCUREMENT FIELDS ADDED 2026-10-06, and every one of them starts EMPTY
+    // on purpose -- see the sdnPoLanded() header. A sidemark this app invented
+    // is a routing string the vendor cannot match, and a freight figure this
+    // app invented is a number billed to a client.
     var rec={id:newId('PO'),po_number:'PO-'+Date.now().toString().slice(-6),project_id:pjId,vendor:vendor,
       item_ids:items.map(function(s){return s.id;}),total_cost:items.reduce(function(s,x){return s+(Number(x.cost)||0);},0),
+      sidemark:'',ship_to:'',freight_cost:null,expected_date:'',received_date:'',received_by:'',
       status:'Draft',created_at:sdnLocalToday()};
     list.push(rec);created.push(rec);
   }
@@ -2944,6 +2966,101 @@ async function generatePOs(){
   var poMsg=created.length+' PO(s) generated: '+created.map(function(r){return r.vendor;}).join(', ');
   toast(allSynced?poMsg:poMsg+' -- server sync failed for one or more, saved on this device only',allSynced?4000:7000);
 }
+// ── THE MIDDLE OF THE PROCUREMENT CHAIN (2026-10-06) ──────────────────────
+//
+// THE GAP, from docs/cloud-research/sairndesign-competitive-gap-audit-2026-10-05.md
+// findings 2 and 3:
+//
+//   "SO THE GAP IS NOT BREADTH AND IT IS NOT MARKUP -- IT IS THE MIDDLE OF THE
+//    PROCUREMENT CHAIN. Studio Designer's advertised spine is vendor records,
+//    purchase orders, expediting, receiving, freight tracking, item-level trade
+//    pricing. SAIRNdesign has the two ends -- PO and markup -- and NONE of the
+//    three middle steps, and the absent one with a name a buyer will ask about
+//    is FREIGHT, because freight on a $12,000 sofa is not a rounding error and
+//    it is billed to the client.
+//    `sidemark` IS THE SHARPEST SINGLE ABSENCE and it is a one-word test."
+//
+// RE-DERIVED AT HEAD BEFORE BUILDING, not taken from the audit: `sidemark` 0,
+// `freight` 0, `ship_to` 0, `expedit` 0 in sairndesign.html, and the PO record
+// at :2935 carried eight fields with `total_cost` a bare sum of item costs.
+//
+// ── WHAT total_cost STILL MEANS, BECAUSE SOMETHING ALREADY READS IT ───────
+// `rPOs()` sums `total_cost` into the Total Committed KPI and `openPODetail()`
+// prints it as "Total (Wholesale)". So total_cost KEEPS ITS MEANING -- goods
+// only -- and freight is a SEPARATE field. Folding freight into total_cost
+// would silently change what an existing figure means, which is the quiet
+// wrong number this platform keeps recording.
+//
+// ── A FREIGHT THAT IS NOT ENTERED IS UNKNOWN, NEVER ZERO ─────────────────
+// `fmt(0)` renders "$0" and a $0 freight on a landed cost reads as free
+// shipping. So `freight_cost` is null until somebody types one, the landed
+// total is NULL when it is, and the screen says "not computable" instead of a
+// figure. Same call sairnlegacy's price lists already make for the same reason.
+//
+// ── AND THIS APP STILL COMPUTES NO SALES TAX, WHICH IS NOW DISCLOSED ─────
+// Finding 1 of the same audit is that `tax` appears zero times and that the
+// zero is CONTROLLED -- sairnbiz has 6 occurrences, stonedesk 8. It is still
+// zero as a capability and that is DELIBERATE: a designer resells at retail,
+// which makes the studio a reseller, and a sales-tax rate this app invented
+// would go onto a client invoice. That is the SAIRNroofing certified-payroll
+// refusal exactly -- "inventing a rate would put a fabricated number in a
+// federal filing" -- so it is REFUSED AND SAID ON SCREEN rather than left as
+// a silent absence a prospect discovers. The disclosure is on the PO panel.
+function sdnPoLanded(po){
+  var goods=Number((po||{}).total_cost);
+  if(!isFinite(goods))goods=null;
+  var raw=(po||{}).freight_cost;
+  var freight=(raw===undefined||raw===null||raw==='')?null:Number(raw);
+  if(freight!==null&&!isFinite(freight))freight=null;
+  var unknowns=[];
+  if(goods===null)unknowns.push('goods');
+  if(freight===null)unknowns.push('freight');
+  return {goods:goods,freight:freight,
+          landed:unknowns.length?null:goods+freight,
+          unknowns:unknowns};
+}
+// A PO a warehouse cannot route. Reported, never refused: a gate that blocks
+// Mark Sent on a missing sidemark is a gate somebody switches off, and the
+// finding is that nothing SAYS anything, not that nothing stops you.
+function sdnPoRoutingGaps(po){
+  var gaps=[];
+  if(!String((po||{}).sidemark||'').trim())gaps.push('no sidemark');
+  if(!String((po||{}).ship_to||'').trim())gaps.push('no ship-to');
+  return gaps;
+}
+async function savePoProcurement(id){
+  var list=purchaseOrders();
+  var po=list.find(function(x){return x.id===id;});if(!po)return;
+  po.sidemark=String($('po-sidemark').value||'').trim();
+  po.ship_to=String($('po-shipto').value||'').trim();
+  var fr=String($('po-freight').value||'').trim();
+  // EMPTY STAYS NULL. Number('') is 0, and that coercion is the whole defect.
+  po.freight_cost=fr===''?null:(isFinite(Number(fr))?Number(fr):null);
+  po.expected_date=String($('po-expected').value||'').trim();
+  st('sdn_pos',list);
+  openPODetail(id);rPOs();
+  var syncResult=await sdnData('write','sdn_pos',po);
+  toast(syncResult?'Saved':'Saved on this device only -- it did not reach the server, so no other computer can see it',syncResult?2500:6000);
+}
+async function receivePO(id){
+  var list=purchaseOrders();
+  var po=list.find(function(x){return x.id===id;});if(!po)return;
+  var when=String($('po-received-date').value||'').trim();
+  // THE ONE HARD REFUSAL HERE. Receiving is a fact with a date; recording the
+  // fact without the date is a fabricated receipt, and a receiving record is
+  // what a freight claim against a carrier rests on.
+  if(!when){
+    toast('Enter the date it was received. A receipt with no date is not a receipt -- it is what a freight claim would have to rest on.',6000);
+    return;
+  }
+  po.received_date=when;
+  po.received_by=String($('po-received-by').value||'').trim();
+  po.status='Received';
+  st('sdn_pos',list);
+  closePODetailModal();rPOs();
+  var syncResult=await sdnData('write','sdn_pos',po);
+  toast(syncResult?'PO received '+when:'Received on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
+}
 function openPODetail(id){
   var po=purchaseOrders().find(function(x){return x.id===id;});if(!po)return;
   var items=(po.item_ids||[]).map(function(iid){return specItems().find(function(s){return s.id===iid;});}).filter(Boolean);
@@ -2953,14 +3070,62 @@ function openPODetail(id){
     '<div class="ph" style="margin-bottom:12px"><div><div class="ptitle" style="font-size:17px">'+H(po.po_number)+'</div><div class="psub">'+H(po.vendor)+' &middot; '+H(projectLabel(po.project_id))+'</div></div>'+
     '<div class="pa"><span class="badge '+(statusColors[po.status]||'bx')+'">'+H(po.status)+'</span></div></div>'+
     '<table><thead><tr><th>Item</th><th>SKU</th><th>Cost</th></tr></thead><tbody>'+rows+'</tbody></table>'+
-    '<div class="srow" style="margin-top:10px"><span class="slbl">Total (Wholesale)</span><span class="sval">'+fmt(po.total_cost)+'</span></div>'+
+    '<div class="srow" style="margin-top:10px"><span class="slbl">Total (Wholesale, goods only)</span><span class="sval">'+fmt(po.total_cost)+'</span></div>'+
+    // ── ROUTING AND FREIGHT, ADDED 2026-10-06 ─────────────────────────────
+    sdnPoDetailProcurement(po)+
     '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">'+
       (po.status==='Draft'?'<button class="btn bo bs" onclick="setPOStatus(\''+po.id+'\',\'Sent\')">Mark Sent</button>':'')+
       (po.status==='Sent'?'<button class="btn bo bs" onclick="setPOStatus(\''+po.id+'\',\'Confirmed\')">Vendor Confirmed</button>':'')+
-      (po.status==='Confirmed'?'<button class="btn bp bs" onclick="setPOStatus(\''+po.id+'\',\'Received\')">Mark Received</button>':'')+
       '<button class="btn bo bs" onclick="closePODetailModal()">Close</button>'+
     '</div>';
   $('podetailmodal').classList.add('on');
+}
+// The routing / freight / receiving block inside the PO detail. Split out so
+// the suite can drive the rules without a DOM, and so this function's own
+// closing brace bounds it.
+function sdnPoDetailProcurement(po){
+  var L=sdnPoLanded(po), gaps=sdnPoRoutingGaps(po);
+  var h='';
+  if(gaps.length){
+    h+='<div style="margin-top:10px;padding:10px;border:1px solid var(--bad,#b00);border-radius:6px;font-size:12px">'
+      +'<strong>NOT ROUTABLE &mdash; '+H(gaps.join(' and '))+'.</strong> A sidemark is how '
+      +'the trade routes a shipment to the right project and client; it goes on '
+      +'every PO and every delivery. Without one, a vendor receiving this order '
+      +'cannot tell the warehouse where it belongs.</div>';
+  }
+  h+='<div class="fr" style="margin-top:12px">'
+    +'<div class="fg"><label>Sidemark</label><input id="po-sidemark" value="'+H(po.sidemark||'')+'" placeholder="HALLORAN / LIVING RM"></div>'
+    +'<div class="fg"><label>Ship to</label><input id="po-shipto" value="'+H(po.ship_to||'')+'" placeholder="Receiving warehouse or site address"></div>'
+    +'</div>'
+    +'<div class="fr">'
+    +'<div class="fg"><label>Freight ($)</label><input id="po-freight" type="number" value="'
+      +(po.freight_cost===null||po.freight_cost===undefined||po.freight_cost===''?'':H(po.freight_cost))
+      +'" placeholder="leave blank if not quoted yet"></div>'
+    +'<div class="fg"><label>Expected date</label><input id="po-expected" type="date" value="'+H(po.expected_date||'')+'"></div>'
+    +'</div>'
+    // A LANDED TOTAL WITH AN UNQUOTED FREIGHT IS NOT A SMALLER TOTAL, IT IS A
+    // WRONG ONE. It says which part is missing rather than printing a figure.
+    +'<div class="srow"><span class="slbl">Landed total (goods + freight)</span><span class="sval">'
+      +(L.landed===null
+        ? '<span style="color:var(--muted)">not computable &mdash; '+H(L.unknowns.join(' and '))+' not entered</span>'
+        : fmt(L.landed))
+      +'</span></div>'
+    +'<div style="margin-top:8px"><button class="btn bo bs" onclick="savePoProcurement(\''+po.id+'\')">Save routing &amp; freight</button></div>';
+  if(po.status==='Received'){
+    h+='<div class="srow" style="margin-top:12px"><span class="slbl">Received</span><span class="sval">'
+      +H(po.received_date||'(no date recorded)')
+      +(po.received_by?' &middot; '+H(po.received_by):'')+'</span></div>';
+  } else if(po.status==='Confirmed'){
+    h+='<div style="margin-top:14px;padding:10px;border:1px solid var(--line);border-radius:6px">'
+      +'<div style="font-weight:600;margin-bottom:6px">Receiving</div>'
+      +'<div class="fr"><div class="fg"><label>Date received</label><input id="po-received-date" type="date"></div>'
+      +'<div class="fg"><label>Received by</label><input id="po-received-by" placeholder="who checked it in"></div></div>'
+      +'<button class="btn bp bs" onclick="receivePO(\''+po.id+'\')">Mark Received</button>'
+      +'<div style="color:var(--muted);font-size:12px;margin-top:6px">A receipt with no date is not a receipt. '
+      +'The date is what a freight claim against a carrier would rest on, so it is required rather than defaulted to today.</div>'
+      +'</div>';
+  }
+  return h;
 }
 function closePODetailModal(){$('podetailmodal').classList.remove('on');}
 async function setPOStatus(id,status){
@@ -2976,14 +3141,35 @@ function rPOs(){
   var open=list.filter(function(po){return po.status==='Draft'||po.status==='Sent';});
   $('po-open').textContent=open.length;
   $('po-total').textContent=fmt(open.reduce(function(s,po){return s+(Number(po.total_cost)||0);},0));
+  // NOT ROUTABLE is counted on the panel, not only inside a modal somebody has
+  // to open. The audit's point about `sidemark` is that a designer looks for
+  // the field; a count of POs that lack it is the same answer in one number.
+  var unroutable=list.filter(function(po){
+    return po.status!=='Received'&&sdnPoRoutingGaps(po).length;
+  }).length;
+  var noFreight=list.filter(function(po){
+    return po.status!=='Received'&&sdnPoLanded(po).freight===null;
+  }).length;
+  var rb=$('po-routing');
+  if(rb){
+    rb.innerHTML=unroutable
+      ? '<strong style="color:var(--bad,#b00)">'+unroutable+' open PO(s) have no sidemark or no ship-to</strong> &mdash; a vendor cannot route them.'
+        +(noFreight?' '+noFreight+' have no freight quoted, so their landed cost is not computable.':'')
+      : (noFreight
+         ? noFreight+' open PO(s) have no freight quoted, so their landed cost is not computable. Routing is complete on all of them.'
+         : 'Every open PO carries a sidemark, a ship-to and a freight figure.');
+  }
   var statusColors={Draft:'bx',Sent:'bb',Confirmed:'bg',Received:'bg'};
   var tb=$('potbody');
   tb.innerHTML=list.length?list.slice().reverse().map(function(po){
+    var L=sdnPoLanded(po), gaps=sdnPoRoutingGaps(po);
     return '<tr><td>'+H(po.po_number)+'</td><td>'+H(projectLabel(po.project_id))+'</td><td>'+H(po.vendor)+'</td>'+
+      '<td>'+H(po.sidemark||'')+(gaps.length?'<span class="badge bw" title="'+H(gaps.join(' and '))+'">not routable</span>':'')+'</td>'+
       '<td>'+(po.item_ids||[]).length+'</td><td>'+fmt(po.total_cost)+'</td>'+
+      '<td>'+(L.landed===null?'<span style="color:var(--muted)">--</span>':fmt(L.landed))+'</td>'+
       '<td><span class="badge '+(statusColors[po.status]||'bx')+'">'+H(po.status)+'</span></td>'+
       '<td><button class="btn bo bs" onclick="openPODetail(\''+po.id+'\')">View</button></td></tr>';
-  }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No purchase orders yet</td></tr>';
+  }).join(''):'<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px;">No purchase orders yet</td></tr>';
 }
 
 // ── INVOICING ─────────────────────────────────────────────────────────────

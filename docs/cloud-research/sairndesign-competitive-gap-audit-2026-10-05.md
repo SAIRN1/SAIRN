@@ -197,3 +197,88 @@ invoicing panel's line-item structure was not read, so what `sdn_invoices`
 concept, not about a specific wrong total. (5) `sairnscape` is still unaudited
 and is now the last of the three; nothing here measures whether it should be next
 or whether it has a buyer.
+
+---
+
+## Findings 2 and 3 CLOSED at HEAD, 2026-10-06 (Fourth) — and finding 1 is now REFUSED ON SCREEN rather than silently absent
+
+**Re-derived before building, not taken from this document.** Counted in
+`sairndesign.html` the day after it was written: `sidemark` 0, `freight` 0,
+`ship_to` 0, `expedit` 0, `tax` 0 — every figure here still held, and the PO
+record at `:2935` still carried the eight fields §2 quotes.
+
+### Finding 2 — freight, receiving, expediting. **CLOSED.**
+
+The purchase order now carries `sidemark`, `ship_to`, `freight_cost`,
+`expected_date`, `received_date` and `received_by`, and **every one of them is
+seeded EMPTY**. That is the whole design decision: a sidemark this app invented
+is a routing string the vendor cannot match, and a freight figure it invented is
+a number billed to a client.
+
+* **`total_cost` KEEPS ITS MEANING — goods only.** `rPOs()` already sums it into
+  the Total Committed KPI and the detail modal already prints it as *"Total
+  (Wholesale)"*. Folding freight into it would have changed what an existing
+  figure means with nothing saying so. Freight is a separate field, the landed
+  total is derived, and the KPI label now reads *"Wholesale GOODS ONLY … freight
+  is not in this figure."*
+* **A freight that is not entered is UNKNOWN, never 0.** `fmt(0)` renders `$0`
+  and a `$0` freight reads as free shipping. `freight_cost` stays `null`, the
+  landed total is `null` with it, and both the list and the modal say *"not
+  computable — freight not entered"* instead of a figure. A genuine `0` is still
+  a price, so free shipping remains sayable.
+* **Receiving REFUSES without a date.** The old one-click
+  `setPOStatus(id,'Received')` is gone from the detail modal; receipt goes
+  through `receivePO()`, which refuses an empty date and says why — *"A receipt
+  with no date is not a receipt. The date is what a freight claim against a
+  carrier would rest on"* — and **does not default to today**, because a receipt
+  dated by the software is a fabricated fact.
+
+### Finding 3 — `sidemark`. **CLOSED, and REPORTED rather than enforced.**
+
+The sidemark is a column in the PO list, a field in the detail, and a **count on
+the panel**: *"N open PO(s) have no sidemark or no ship-to — a vendor cannot
+route them."* A per-PO `not routable` badge carries the reason.
+
+**It does not BLOCK Mark Sent, deliberately.** A gate that refuses to send a PO
+over a missing routing string is a gate somebody switches off, and this
+platform has the receipt for that pattern. The finding was that nothing *says*
+anything, not that nothing stops you.
+
+### Finding 1 — sales tax. **STILL ZERO, NOW DISCLOSED, AND THAT IS THE ANSWER.**
+
+`tax` is still 0 occurrences as a capability and this change keeps it that way
+on purpose. A studio that buys at trade and resells is a reseller: the rate
+depends on the state, the resale certificate and the ship-to jurisdiction, and a
+rate this software picked would go onto a client invoice. **That is the
+SAIRNroofing certified-payroll refusal exactly** — *"inventing a rate would put a
+fabricated number in a federal filing"* — so it is refused and said on the panel:
+
+> **This app does not calculate sales tax, and will not.** … Totals here are
+> **goods and freight only**. Apply tax in your accounting package, where the
+> rate is yours.
+
+**So finding 1 moves from UNDISCLOSED-OPEN to REFUSED-AND-DISCLOSED**, which this
+platform treats as a third state and not as closed. The buildable half of finding
+1 — if one is ever wanted — is a per-project tax RATE the studio enters itself,
+never one this app derives.
+
+### Driven
+
+`tests/sairndesign_po_procurement.js` — **21 arms, 0 failed**, extracting
+`sdnPoLanded()` and `sdnPoRoutingGaps()` from the app by their own balanced
+braces (`tests/lib/fn_span.js`). Arms include: a real `0` freight is a figure
+while `''`/`null`/`undefined`/`'soon'` are UNKNOWN; `total_cost` is still a bare
+sum with no freight term in it; the one-click Mark Received is gone so the date
+refusal cannot be walked around; the received date does not default to today;
+and the table head and the empty-state `colspan` both say 9.
+
+Siblings re-run green: `tests/sairndesign_pricing.js` 18/18,
+`tests/sairndesign_server_backup.js` 17/17,
+`api/sd-data-sdn-session-gate.test.js` 40/40.
+
+### What is still open on this app
+
+Findings 4 (per-user pricing norm) and 5 (payment-processing rates) are
+**commercial, not code**, and are untouched. The audit's own blind spot 4 — *"the
+invoicing panel's line-item structure was not read, so what `sdn_invoices` does
+model is unestablished"* — **is still unread**, and nothing above establishes it.
