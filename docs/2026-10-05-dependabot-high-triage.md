@@ -145,3 +145,106 @@ is a decision with a person's name on it, not a lockfile edit.** `npm audit fix
   knows today; it is a snapshot with a date, like every other figure here.
 - **Anything about the node-forge path.** See above — undetermined, and the one
   cheap step that would settle it is named rather than done.
+
+---
+
+# ADDENDUM 2026-10-06 (Cody) — UNDETERMINED IS NOW MEASURED: THE VULNERABLE PRIMITIVE IS NOT ON OUR PATH
+
+**The cheap step this document named rather than did has now been done, and it
+settles the question in the direction the reasoning suspected — but it is a
+measurement this time, not a reasonable guess from an advisory title.**
+
+## It did not need an install. The packages were already on disk, OUTSIDE the clone
+
+`node_modules/` is still absent from this clone, which is why the original
+triage stopped. What it missed is that Node resolves these from the user-level
+tree:
+
+```
+stripe          -> C:\Users\marsh\node_modules\stripe\...
+firebase-admin  -> C:\Users\marsh\node_modules\firebase-admin\lib\index.js
+node-forge      -> C:\Users\marsh\node_modules\node-forge\lib\index.js
+```
+
+**AND THEY ARE THE LOCKFILE'S EXACT VERSIONS, WHICH IS THE ONLY REASON THIS
+COUNTS.** Reading reachability off a different build would be the wrong-subject
+defect this platform corrects:
+
+| package | installed | `package-lock.json` |
+|---|---|---|
+| `firebase-admin` | **12.7.0** | **12.7.0** |
+| `node-forge` | **1.4.0** | **1.4.0** |
+
+## THE MEASUREMENT: one call site, and it is a PARSER, not a VERIFIER
+
+Every `forge.*` call in the whole of `firebase-admin@12.7.0`'s `lib/` — one:
+
+```
+lib/app/credential-internal.js:148   const forge = require('node-forge');
+lib/app/credential-internal.js:150   forge.pki.privateKeyFromPem(this.privateKey);
+```
+
+It sits inside `ServiceAccount`'s constructor validation, wrapped in a
+`try/catch` whose only purpose is to turn a bad key into
+`Failed to parse private key`. **The return value is discarded.**
+
+**GHSA-86w9-cpqp-85rv is about RSA PKCS#1 v1.5 signature VERIFICATION** — the
+`verify` functions in node-forge's `lib/rsa.js` (present in 1.4.0 at lines 1163
+and 1217). `pki.privateKeyFromPem` is a PEM parser. **Nothing on our path
+reaches either `verify`.**
+
+Three further checks, all negative:
+
+| question | answer |
+|---|---|
+| does anything in `api/`, `tests/` or `tools/` require `node-forge`? | **no** — the single grep hit is the English word "forge" in a test comment |
+| does any other package in the lock pull `node-forge`? | **no** — `firebase-admin` is the only declarer, `^1.3.1`, across all 195 locked packages |
+| is the input to that one call attacker-supplied? | **no** — it is our own service-account private key out of environment config |
+
+## SO THE TWO-MAJOR UPGRADE IS NOT WHAT THIS ADVISORY REQUIRES
+
+That makes this **branch 2** of the decision this document laid out, not branch
+3: accept, with a written basis and a named re-check trigger. The basis is the
+measurement above. **The upgrade was not rejected because it is inconvenient —
+it is not indicated**, and a 12.7.0 → 14.5.0 bump of the SDK that mints
+SAIRNcash's auth tokens, on a path with no test driving a real
+`mintCustomToken`, is a real risk taken for no measured gain.
+
+### THE RE-CHECK TRIGGER, because an accepted risk with no trigger is a shrug
+
+Re-open this the moment **any** of these changes, and each is cheap to check:
+
+1. **`firebase-admin` gains a second `forge.*` call site.** The whole basis is
+   that there is exactly one. `grep -rn "forge\.[a-zA-Z]" <firebase-admin>/lib`
+   must return one line.
+2. **`firebase-admin` is upgraded for any other reason.** A new major may use
+   node-forge differently; the basis is version-specific by construction.
+3. **Anything in this repo requires `node-forge` directly.**
+4. **A new advisory lands against `pki.privateKeyFromPem` itself**, which is the
+   one primitive we do use.
+
+## WHAT I COULD NOT DO, SAID PLAINLY
+
+**The upgrade path was not executed and not tested.** `npm install` is
+unavailable in this session, so `firebase-admin@14.5.0` could not be resolved,
+the lockfile could not be regenerated, and no suite could be run against it.
+**Had the measurement come out the other way, this item would be BLOCKED rather
+than closed** — and the honest order matters: the measurement is what makes the
+upgrade unnecessary, not the inability to perform it.
+
+**`api/sairncash/stripe-webhook.test.js` passes right now** (`all assertions
+passed`) against these exact installed versions, which establishes the suite is
+green on the CURRENT tree. It says nothing about 14.5.0.
+
+## WHAT THIS ADDENDUM DOES NOT ESTABLISH
+
+- **That `firebase-admin@14.5.0` is safe, or unsafe.** It was never installed.
+- **That the dependabot banner will clear.** It will not: the vulnerable version
+  is still in the tree. **Not-reachable and not-present are different states**
+  and only one of them silences a scanner.
+- **That one call site today means one tomorrow.** That is exactly why trigger 1
+  exists and why it names the command.
+- **That reading a library's `lib/` is the same as running it.** A dynamically
+  built `require` or a call through a re-export would not match that grep. The
+  grep found a literal `require('node-forge')` and one literal `forge.` use,
+  which is strong — and it is still a source read, not an execution trace.
