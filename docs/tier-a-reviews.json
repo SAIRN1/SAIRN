@@ -5655,6 +5655,26 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-06T09:46:36Z",
+      "opened_at_sha": "38a854808007c6ef823611a12c58184f57fa8921",
+      "resources": [
+        "sd_comms"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tests/run_citation_anchor_hop_sabotage.py"
+      ],
+      "what": "tests/run_citation_anchor_hop_sabotage.py -- a REPORT-ONLY sabotage control, imported-function level, added to discharge hank's open obligation over tools/citation_line_drift_check.py. It writes nothing, reads only hand-built fixture strings, and touches no app code or resource; sd_comms appears only as the SUBJECT of the review in its docstring and in the fixture resource name zz_comms. APPENDED TO docs/tier-a-reviews.json UNDER CC'S LIVE CLAIM, DELIBERATELY: that file's own merge_policy declares it append-only across four clones with a 3-way union merge by (author_session, opened_at), so appending is the sanctioned concurrent operation and not a conflicting edit. Said out loud per PR 4.3.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-06T09:46:36Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
