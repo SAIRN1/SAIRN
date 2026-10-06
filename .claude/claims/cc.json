@@ -3437,6 +3437,32 @@
         "docs/2026-10-06-cc-routed.md",
         "docs/handoff-cc-2026-10-06.md"
       ]
+    },
+    {
+      "id": "cc-1791306537",
+      "session": "cc",
+      "subject": "cc",
+      "task": "batch10: (1) checker_selftest_check.py's FALSE third-state reason -- it says COULD NOT READ or REGISTRY IS EMPTY when neither is true; (2) ROOT CAUSE of the rebase-orphaned SHA citations -- .githooks/post-rewrite already hands git's own old->new map to defect_register.py --post-rewrite but NOTHING re-seats the markdown tracking docs, so extend the capture point rather than repointing rows by hand; (3) move 6 of the 7 lazy report_only_checks imports to module level so the import-time refusal is universal; (4) re-derive SAIRN-ACTIVE-WORK-cc.md's 19 orphan citations; (5) the two locked temp dirs; (6) one methodology rule; (7) handoff. CONFLICT DECLARED PER PR 4.3, THREE SESSIONS, NONE REWORDED PAST: (a) docs/tier-a-reviews.json AND the most-overdue-first Tier A discharge are CODY'S under a live 2.2h claim whose task text is that phrase verbatim -- my 25 eligible obligations are LISTED and NOT discharged, and the oldest (hank, 2026-09-27T01:22:40Z, 230h) is named rather than taken; (b) tools/dead_rule_sweep.py is CODY'S, so it is the ONE lazy importer I do not move and it is routed with its measurement; (c) docs/SAIRN-OPEN-WORK-INDEX.md, docs/METHODOLOGY.md, docs/CRITICALITY-TIERS.md and docs/TOOLING-INVENTORY.md are HANK'S, so the new re-seat tool PROPOSES for every file outside the defect register and applies to none of them, which is discipline 11, and the methodology rule goes in a dated doc of mine; (d) docs/2026-09-13-cross-domain-disciplines.md is FOURTH'S and its item 11 heading has NO BODY -- routed, not fixed. FILES: tools/checker_selftest_check.py tools/checker_control_check.py tools/flaky_checker_quarantine.py tools/invocation_path_scan.py tools/traceability_matrix.py tests/run_export_coverage_probe.py tools/doc_sha_reseat.py tests/run_doc_sha_reseat_probe.py tools/defect_register.py .githooks/post-rewrite docs/hook-manifest.json docs/2026-10-06-cc-batch-10-inventory.md docs/2026-10-06-cc-routed.md docs/handoff-cc-2026-10-06b.md SAIRN-ACTIVE-WORK-cc.md",
+      "claimed_at": "2026-10-06T17:08:57Z",
+      "claimed_at_epoch": 1791306537.640647,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-cc.md",
+        "docs/2026-10-06-cc-batch-10-inventory.md",
+        "docs/2026-10-06-cc-routed.md",
+        "docs/handoff-cc-2026-10-06b.md",
+        "docs/hook-manifest.json",
+        "tests/run_doc_sha_reseat_probe.py",
+        "tests/run_export_coverage_probe.py",
+        "tools/checker_control_check.py",
+        "tools/checker_selftest_check.py",
+        "tools/defect_register.py",
+        "tools/doc_sha_reseat.py",
+        "tools/flaky_checker_quarantine.py",
+        "tools/invocation_path_scan.py",
+        "tools/traceability_matrix.py"
+      ]
     }
   ],
   "refusals": [
