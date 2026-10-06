@@ -345,7 +345,35 @@ def resolve(consts, entry):
         return None, old
     p = target if os.path.isabs(target) else os.path.join(REPO, target)
     if not os.path.exists(p):
-        return None, old
+        # ── A GROUP LABEL IN THE TARGET SLOT IS NOT A TYPO (2026-10-06) ─────
+        # tests/run_alf_scope_mutation_probe.py writes
+        # `(label, 'alf-mar', old, new, must_arms)` -- the second element is the
+        # SUITE GROUP, not a file, which is a fifth convention this tool had not
+        # met. Five arms came back COULD NOT READ with the message "the probe
+        # declares 1 candidate subject file (TARGET) and the arm names none of
+        # them", which is the same self-answering message the 2026-09-28 note
+        # above records: if there is exactly ONE candidate, the arm cannot mean
+        # anything else.
+        #
+        # THE DISTINCTION THAT KEEPS THIS HONEST IS PATH-SHAPE, NOT EXISTENCE.
+        # A string carrying a separator or a code extension that does not exist
+        # on disk IS a typo and stays COULD NOT READ -- a real finding, and the
+        # one this fallback must not swallow. `alf-mar` has neither, so it can
+        # only be a label.
+        #
+        # AMBIGUITY STILL REFUSES. sole_subject() returns None when more than
+        # one non-observer path remains, and guessing between them is exactly
+        # what this checker exists not to do.
+        looks_like_path = ('/' in target or '\\' in target
+                           or re.search(r'\.(py|js|html|sql|json|md)$', target))
+        if not looks_like_path:
+            sub, _c = sole_subject(consts)
+            if sub:
+                p = sub
+            else:
+                return None, old
+        else:
+            return None, old
     # THE TARGET IS RESOLVED and `countable` was decided above. A lambda, a
     # transform or a None mutation is STRUCTURAL rather than unreadable;
     # conflating the two is defect 1 in the docstring.

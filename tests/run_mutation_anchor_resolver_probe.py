@@ -22,6 +22,7 @@ is the incident recorded in the checker's own read_probe() docstring.
 """
 import io
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -177,12 +178,65 @@ try:
     check('...and reports ZERO could-not-read arms',
           'could not read               : 0' in out,
           [l for l in out.splitlines() if 'could not read' in l])
-    check('...while still REPORTING the anchors that do not match once',
-          'anchors NOT matching exactly once: 0' not in out,
-          'the checker now reports zero bad anchors. Either 16 real ANCHOR-0 '
-          'findings were fixed -- in which case update this arm -- or the '
-          'resolver has started swallowing them, which is what the fix was '
-          'most at risk of doing.')
+    # ── THE 16 WERE FIXED, AND THIS ARM ASKED TO BE UPDATED WHEN THEY WERE ──
+    # 2026-10-06. The arm required a NON-ZERO bad-anchor count, so that "the
+    # resolver started swallowing findings" and "the findings were fixed" could
+    # not be confused. Its own failure message names the two readings and says
+    # which action each needs. The second reading is the true one, and the
+    # evidence is a count that went UP, not down:
+    #
+    #   at origin/main : 527 anchors checked, 2 NOT matching once, 5 could not read
+    #   at this tip    : 533 anchors checked, 0 NOT matching once, 0 could not read
+    #
+    # The 2 bad anchors were in tests/claims/run_fileset_matcher_sabotage_probe.py
+    # and both pointed at `return ('refuse' if shared else 'clear'), shared`,
+    # which file_verdict() has not contained since the 2026-09-30 narrowing. They
+    # were RE-POINTED to the lines carrying the same decisions, not deleted, and a
+    # seventh arm was added for the narrowing itself -- hence +1. The 5
+    # could-not-reads were tests/run_alf_scope_mutation_probe.py arms whose target
+    # slot holds a SUITE GROUP label, now resolved through sole_subject(); their
+    # anchors MATCH, which is the +5 and is the proof they were not swallowed. A
+    # swallowed finding would have LOWERED the checked count, not raised it.
+    #
+    # SO THE ARM IS RE-POINTED AT THE PROPERTY IT WAS PROTECTING rather than at
+    # the number: the resolver must still be ABLE to report a bad anchor, which
+    # is checked by planting one, and the real run's checked-anchor count must not
+    # fall below the floor the fix established.
+    bad_line = [l for l in out.splitlines()
+                if 'NOT matching exactly once' in l]
+    checked = [l for l in out.splitlines() if 'anchors checked' in l]
+    n_checked = 0
+    for l in checked:
+        # NOT `m` -- that is the module alias in this file, and shadowing it
+        # turned the planted arm below into AttributeError on a re.Match.
+        _mm = re.search(r'(\d+)', l)
+        if _mm:
+            n_checked = int(_mm.group(1))
+    ANCHOR_FLOOR = 533
+    check('the real run still INSPECTS at least as many anchors as the resolver '
+          'fix established -- a swallowed finding lowers this count, it cannot '
+          'raise it', n_checked >= ANCHOR_FLOOR,
+          'anchors checked is %d, below the floor of %d: the resolver has started '
+          'dropping arms rather than reading them. %s'
+          % (n_checked, ANCHOR_FLOOR, checked))
+    check('...and the bad-anchor count is REPORTED either way, so a zero is a '
+          'measured zero rather than a missing line', bool(bad_line), out[-400:])
+    # AND THE CAPABILITY ITSELF, planted rather than inferred from the real run:
+    # a probe whose anchor cannot be found must still be reported.
+    _dead = os.path.join(tmp, 'dead_probe.py')
+    io.open(_dead, 'w', encoding='utf-8', newline='\n').write(
+        "SUBJECT = 'tools/mutation_anchor_check.py'\n"
+        "MUTATIONS = [('x. an anchor that does not exist anywhere', SUBJECT,\n"
+        "              'this text is not in that file at all zzz', 'y')]\n")
+    # read_probe() takes a PATH and resolve() takes (consts, entry) -- both of
+    # which I had the wrong way round first, and the crash said so immediately.
+    _c, _muts = m.read_probe(_dead)
+    _p, _old = m.resolve(_c, _muts[0])
+    _n = (io.open(_p, encoding='utf-8', errors='replace').read().count(_old)
+          if _p and isinstance(_old, str) else None)
+    check('PLANTED: an anchor that matches ZERO times is still counted as zero, '
+          'so the resolver has not lost the ability to report one',
+          _p and _n == 0, 'resolved=%r count=%r' % (_p, _n))
 finally:
     shutil.rmtree(tmp, ignore_errors=True)
 

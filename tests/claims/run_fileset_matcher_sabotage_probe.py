@@ -57,18 +57,38 @@ MUTATIONS = [
      "    if a is None or b is None:\n        return 'unknown', set()",
      "    if a is None or b is None:\n        return 'clear', set()"),
 
+    # ── ANCHORS 3 AND 4 WERE DEAD, AND mutation_anchor_check SAID SO ─────────
+    # Both pointed at `return ('refuse' if shared else 'clear'), shared`, which
+    # file_verdict() has not contained since the 2026-09-30 narrowing (H2 seq
+    # 418) split it into a `not shared` early return, a separator-qualified
+    # `strong` refusal and an `unknown` fallback. `mutation_anchor_check.py`
+    # reported `arms=6 bad=2` for this file and exits 2 on it -- confirmed
+    # IDENTICAL at origin/main, so the deadness predates any edit of mine.
+    #
+    # A MUTATION ARM WHOSE ANCHOR MATCHES ZERO TIMES PLANTS NOTHING, so the arm
+    # "proves" the suite catches a defect that was never introduced. Re-pointed
+    # to the lines that now carry the same DECISIONS, and each anchor is unique
+    # in the file (checked: `return 'refuse', strong` once at :560, the
+    # `not shared` early return once at :539-540 in this form).
     ("3. AN INTERSECTION STOPS REFUSING -- the strongest signal the tool has is "
      "computed and then ignored, and two sessions edit one file",
      TOOL,
-     "    return ('refuse' if shared else 'clear'), shared",
-     "    return 'clear', shared"),
+     "        return 'refuse', strong",
+     "        return 'clear', strong"),
 
     ("4. DISJOINT SETS REFUSE TOO -- every arm about a real collision still "
      "passes and the whole change is undone, which is what a blanket refusal "
      "always looks like from the blocking side",
      TOOL,
-     "    return ('refuse' if shared else 'clear'), shared",
-     "    return 'refuse', shared"),
+     "    if not shared:\n        return 'clear', shared",
+     "    if not shared:\n        return 'refuse', shared"),
+
+    ("3b. THE SEPARATOR QUALIFICATION IS DROPPED, so a shared BARE BASENAME "
+     "hard-blocks again -- the 2026-09-30 narrowing undone, which is the false "
+     "block that refused two hover auditors on a filename they did not share",
+     TOOL,
+     "    strong = {p for p in shared if '/' in p}",
+     "    strong = set(shared)"),
 
     ("5. THE DEMOTED LEXICAL MATCH STOPS BEING PRINTED -- the block is dropped "
      "AND the reason for it disappears, so a matcher that went quiet says "
