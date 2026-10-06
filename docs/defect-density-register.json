@@ -23478,7 +23478,7 @@
       "recurrence_open": "NOT CLOSED: sairnscape.html:258-261 advertises 'API access', 'Custom AI training on your business' and an 'SLA and uptime guarantee' on the Business tier. None of the three was verified in this pass and none is fixed -- they are the same class as the removed QuickBooks line, and keeping or removing them is a decision about what is sold. Nothing on this platform checks marketing surfaces at all."
     },
     {
-      "commit": "97c3c919217f",
+      "commit": "250f1b585f75",
       "date": "2026-10-06",
       "subject": "fix(exec-context): the CTO advisor carried the SAME false clause as the CFO one -- \"NO accounting integration of any kind\" -- plus a count nobody could re-derive; and tools/red_suite_register_check.py",
       "files": [
