@@ -1968,3 +1968,52 @@ export) was found **already built**, item 5 (build the highest-severity gap) is
 * **I ran the whole tree WITHOUT `--pinned`**, which is the one thing that
   would have removed the moving-target confound entirely. My mistake, and the
   cheapest of the three to avoid.
+
+---
+
+## BATCH 10 — 2026-10-06. Handoff: `docs/SAIRN-PLATFORM-2026-10-06-fourth-batch10-handoff.md`
+
+**THREE ANDON PULLS, a practice started this batch.** A pull is a halt-and-flag
+on genuine uncertainty, logged either way, never held against the puller, and
+zero pulls is not automatically good. `docs/2026-10-06-fourth-andon-log.md`.
+
+1. **Item 2 is BLOCKED on an input that does not exist.** `constraints.json` is
+   absent from this clone and from all five siblings; it can only come from the
+   live database. Verified around it instead: the preflight really does report
+   `COULD NOT CHECK   snapshot carries no _constraints key`, measured. The merge
+   command is already written in `sql/schema_snapshot_constraints_query.sql`.
+   **Needs Michael.**
+2. **The `.git/config` writer is pinned to ONE STEP and not to one command** --
+   `dry_push(probe_env=False)`. CLOSED THE SAME DAY BY CODY, who named the
+   class independently: `SHARED_CONFIG_WRITE_FROM_WORKTREE`. Root cause open,
+   routed to cc.
+3. **My nine Tier A obligations were NOT discharged.** cody holds
+   `docs/tier-a-reviews.json` and the claim's own first line is the identical
+   work. All nine are listed in the handoff with their ages; the most overdue
+   is 228h (`alf_staff`, `sen_visits`).
+
+**THE TWO CLONE-CORRUPTING PROBES.** `run_delegation_probe` is FIXED and green
+-- it left `api/sd-data.js` and a library carrying sabotage that does not
+parse, because the restore was a straight line with no `finally`. It was ALSO
+red for an unrelated undiagnosed reason: its baseline read `splitlines()[-1]`
+of another tool's output and required a PLATFORM total where it printed a
+per-seam claim. `check8_probe` is CONTAINED, not fixed, and says so.
+
+**CONVENTION 16, from this batch's own mistake:** a probe that never reached
+the code proves nothing about the code. Six isolations came back clean and all
+six exited early on "the outgoing range could not be read" -- six negative
+results from six runs that never executed the suspect.
+
+**Also:** all 26 span sites re-measured (one real silent defect, and TWO of
+batch 9's rows were my own cheap measurer, not the suites); all 35 gap docs
+checked (23 clean, 12 flagged, 5 of the 12 my sweep being wrong); 15 register
+entries diagnosed, 66 -> 50 empty `why`.
+
+### NOT REACHED / OWED
+
+* **The pinned whole-tree run did not finish** -- 447 of ~739 lines at handoff.
+  The verdict it exists to re-judge is `tests/seam_check/run_probe.py`; the
+  next step is in the handoff.
+* 50 register entries still undiagnosed; 283 tools with no `# OWNER:` line;
+  four gap-doc findings routed; cc's three methodology conventions still not
+  received.
