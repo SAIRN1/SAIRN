@@ -169,6 +169,70 @@ LOCK_FLAGS = ('--fixtures', '--selftest', '--self-check')
 # re-asked instead of becoming permanent.
 CORPUS_TIMEOUT = 45
 
+# ── PER-TOOL BOUNDS, FROM A MEASURED RUNTIME AND NOTHING ELSE ──────────────
+# A single platform-wide bound is what produced the 2026-10-06 defect: 45s for
+# every tool, and the three that need longer reported as having no evidence.
+# Raising it for all 152 is the other wrong answer -- most finish in under a
+# second and the sweep would idle.
+#
+# SO A TOOL GETS A BOUND ONLY WHEN SOMEBODY HAS TIMED IT, and the entry carries
+# the measurement, the date and the headroom. The rule is 2x the measured
+# runtime: enough that normal variance does not re-open a closed question, not
+# so much that a genuine hang waits forever. A TOOL THAT IS NOT IN HERE USES
+# THE DEFAULT AND SAYS SO -- an unmeasured bound presented as a tuned one would
+# be the same sentence problem one level up.
+TOOL_BOUNDS = {
+    # tool                              bound  measured  when
+    'cross_tenant_isolation_scope.py':  (280,   131,     '2026-10-06'),
+}
+
+
+# ── AND TWO TOOLS CANNOT BE BOUND FROM A MEASUREMENT AT ALL ────────────────
+# MEASURED 2026-10-06: run_all_tests.py and guard_ablation.py were each given
+# 420s and NEITHER FINISHED. A bound set from a measurement that did not
+# complete is an invented number, so they get none.
+#
+# AND THAT IS THE RIGHT ANSWER RATHER THAN A BIGGER ONE. Both are long-running
+# HARNESSES, not checkers: run_all_tests.py drives the whole suite and
+# guard_ablation.py builds worktrees and ablates inside them. Using "the real
+# run" as ablation evidence for a harness is structurally wrong, not merely
+# slow -- its output is dominated by what it orchestrates, so neutralising one
+# of its regexes is lost in the noise even if the run completed.
+#
+# They stay COULD NOT RUN, and the verdict now says WHY: unbounded, not unlocked.
+UNBOUNDABLE = {
+    'run_all_tests.py':   ('>420s, did not finish', '2026-10-06',
+                           'drives the whole suite; its output is dominated by '
+                           'what it orchestrates'),
+    'guard_ablation.py':  ('>420s, did not finish', '2026-10-06',
+                           'builds worktrees and ablates inside them; a '
+                           'harness, not a checker'),
+}
+NO_EVIDENCE_UNBOUNDABLE = ('COULD NOT RUN: NO BOUND CAN BE SET -- measured '
+                           '>420s without finishing on %s. A long-running '
+                           'HARNESS, not a checker: its output is dominated by '
+                           'what it orchestrates, so the real run is not '
+                           'evidence about one of its rules. NOT an absence of '
+                           'a lock')
+
+
+def tool_bound(tool, override=None):
+    """(seconds) for this tool. An override beats everything, by design."""
+    if override:
+        return override
+    e = TOOL_BOUNDS.get(tool)
+    return e[0] if e else CORPUS_TIMEOUT
+
+
+def bound_basis(tool, override=None):
+    """Why this bound -- printed, so a tuned bound is never mistaken for a default."""
+    if override:
+        return '--corpus-timeout'
+    e = TOOL_BOUNDS.get(tool)
+    if not e:
+        return 'DEFAULT, not measured for this tool'
+    return 'measured %ds on %s, 2x headroom' % (e[1], e[2])
+
 DEAD = 'DEAD TO ITS OWN EVIDENCE -- neutralise it and nothing goes red'
 LIVE = 'exercised'
 # ── A THIRD TIER, ADDED 2026-09-29 ──────────────────────────────────────────
@@ -188,10 +252,17 @@ DEAD_EVEN_ON_OUTPUT = ('DEAD EVEN ON THE REAL RUN -- no lock, no control, and '
                        'neutralising it does not change a byte of the output')
 NO_EVIDENCE = ('COULD NOT TELL -- no lock, no control, and the real run could '
                'not be compared either')
-NO_EVIDENCE_TIMEOUT = ('COULD NOT TELL -- no lock and no control, and the real '
-                       'run DID NOT FINISH inside the corpus bound. The '
-                       'evidence exists and this tool declined to wait for it: '
-                       're-ask with --corpus-timeout')
+# ── THE WORDING IS THE FIX, NOT A LABEL ON IT ──────────────────────────────
+# The first version of this verdict still OPENED with "no lock and no control",
+# which is the sentence it exists to stop printing: a reader skimming the left
+# of the line gets the same words as a genuine absence of evidence, and 21 rules
+# were read that way on 2026-10-06. A TIMEOUT IS NOT AN ABSENCE OF EVIDENCE --
+# the evidence was there and this tool refused to wait for it -- so the verdict
+# now leads with the bound and never mentions the lock at all.
+NO_EVIDENCE_TIMEOUT = ('COULD NOT RUN: bound %ds exceeded -- the real run did '
+                       'not finish. THE EVIDENCE EXISTS and this sweep declined '
+                       'to wait for it. NOT an absence of evidence: re-ask with '
+                       '--corpus-timeout at 2x')
 WRITES = ('COULD NOT TELL -- no lock, no control, and the tool REGENERATES a '
           'file when run, so its output is not a stable comparison')
 # ── THE WRITER TIER IS NOW MEASURED RATHER THAN REFUSED (2026-10-06) ────────
@@ -936,7 +1007,7 @@ def sweep_writer(tool, path, orig, pats, work, verbose=False):
     return rows
 
 
-def _bare_baseline(bare, work, timeout):
+def _bare_baseline(bare, work, timeout, tool_name=''):
     """(result, verdict_if_unusable). A TIMEOUT is told apart from a crash.
 
     `run()` returns (None, None) for both a timeout and a harness crash, so this
@@ -945,6 +1016,8 @@ def _bare_baseline(bare, work, timeout):
     and says so. Without the distinction, 21 rules reported "no evidence to
     ablate against" when the evidence was there and this tool would not wait.
     """
+    if tool_name in UNBOUNDABLE:
+        return (None, None), NO_EVIDENCE_UNBOUNDABLE % UNBOUNDABLE[tool_name][1]
     r = run(bare, work, timeout=timeout, want_output=True)
     if r[1] is not None:
         return r, None
@@ -966,6 +1039,18 @@ def sweep_tool(tool, work, verbose=False, corpus_timeout=None):
     if not pats:
         return []
     cmds = evidence_cmds(tool, orig, work)
+    # ── UNBOUNDABLE IS DECIDED BEFORE THE TIER SPLIT, AND IT HAS TO BE ─────
+    # The first version put this check inside _bare_baseline(), which is only
+    # reached by the bare tier. run_all_tests.py goes to the WRITER tier
+    # instead, so the guard never fired and the rule still printed "no fixture
+    # lock and no control to ablate against" -- the exact sentence it was added
+    # to stop. Caught by driving --tool run_all_tests.py rather than by reading.
+    #
+    # A tool WITH a lock or a control is still swept normally: being a slow
+    # harness only disqualifies the REAL RUN as evidence, not the shipped kind.
+    if not cmds and tool in UNBOUNDABLE:
+        return [(n, NO_EVIDENCE_UNBOUNDABLE % UNBOUNDABLE[tool][1])
+                for n, _ln in pats]
     bare = None
     if not cmds and writes_when_run(orig):
         # Used to return WRITES for the whole tool, unmeasured. Now the writer
@@ -980,8 +1065,8 @@ def sweep_tool(tool, work, verbose=False, corpus_timeout=None):
     base = {}
     for label, argv in cmds:
         base[label] = run(argv, work)
-    tmo = corpus_timeout or CORPUS_TIMEOUT
-    base_bare, unusable = (_bare_baseline(bare, work, tmo) if bare else (None, None))
+    tmo = tool_bound(tool, corpus_timeout)
+    base_bare, unusable = (_bare_baseline(bare, work, tmo, tool) if bare else (None, None))
     if bare and unusable is not None:
         # The baseline itself could not be taken, so nothing below is a
         # comparison. NOT folded into dead -- and the REASON is carried, because
@@ -1218,7 +1303,7 @@ def main(argv):
 
     dead, live, unknown, unreadable = [], 0, [], []
     live_corpus, dead_output, writes = 0, [], []
-    nondet, noreset, slow = [], [], []
+    nondet, noreset, slow, unbounded = [], [], [], []
     try:
         for t in tools:
             # THE SANDBOX CAN BE GONE, and it used to surface as a traceback
@@ -1268,8 +1353,10 @@ def main(argv):
                     nondet.append((t, name))
                 elif verdict == WRITES_NO_RESET:
                     noreset.append((t, name))
-                elif verdict == NO_EVIDENCE_TIMEOUT:
+                elif verdict.startswith('COULD NOT RUN: bound '):
                     slow.append((t, name))
+                elif verdict.startswith('COULD NOT RUN: NO BOUND'):
+                    unbounded.append((t, name))
                 else:
                     unknown.append((t, name))
     finally:
@@ -1277,7 +1364,7 @@ def main(argv):
 
     total = (len(dead) + live + len(unknown) + live_corpus
              + len(dead_output) + len(writes) + len(nondet) + len(noreset)
-             + len(slow))
+             + len(slow) + len(unbounded))
     if not a.quiet:
         if a.tool:
             src_label = 'named on the command line'
@@ -1290,9 +1377,14 @@ def main(argv):
                          'to this sweep before 2026-10-05' % out_of_registry)
         print('read %d tool(s) %s; %d module-level compiled rule(s)'
               % (len(tools), src_label, total))
-        print('  corpus bound: %ds per bare real run%s'
-              % (a.corpus_timeout or CORPUS_TIMEOUT,
-                 '' if a.corpus_timeout is None else ' (--corpus-timeout)'))
+        print('  corpus bound: %ds default; %d tool(s) carry a MEASURED '
+              'per-tool bound%s'
+              % (a.corpus_timeout or CORPUS_TIMEOUT, len(TOOL_BOUNDS),
+                 '' if a.corpus_timeout is None
+                 else ' -- OVERRIDDEN to %ds by --corpus-timeout' % a.corpus_timeout))
+        for _t in sorted(TOOL_BOUNDS):
+            print('    %-38s %4ds  (%s)'
+                  % (_t, tool_bound(_t, a.corpus_timeout), bound_basis(_t, a.corpus_timeout)))
         if seg_label:
             print(seg_label)
         print('\nCHECKED / UNIVERSE: %d of %d rules could be ABLATED against '
@@ -1309,7 +1401,7 @@ def main(argv):
                  live + len(dead), live, len(dead),
                  live_corpus + len(dead_output), live_corpus, len(dead_output),
                  len(unknown) + len(writes) + len(nondet) + len(noreset)
-                 + len(slow)))
+                 + len(slow) + len(unbounded)))
         if slow:
             print('  OF THOSE, %d belong to a tool whose real run DID NOT '
                   'FINISH in %ds.\n  THE EVIDENCE EXISTS and this sweep '
@@ -1345,9 +1437,11 @@ def main(argv):
            'differed' % (t, n) for t, n in nondet]
         + ['%s %s -- WRITER, the sandbox could not be reset between runs'
            % (t, n) for t, n in noreset]
-        + ['%s %s -- the real run DID NOT FINISH in %ds; re-ask with '
-           '--corpus-timeout' % (t, n, a.corpus_timeout or CORPUS_TIMEOUT)
-           for t, n in slow],
+        + ['%s %s -- COULD NOT RUN: bound %ds exceeded. NOT "no lock, no '
+           'control" -- the evidence exists; re-ask with --corpus-timeout at 2x'
+           % (t, n, 2 * tool_bound(t, a.corpus_timeout)) for t, n in slow]
+        + ['%s %s -- COULD NOT RUN: NO BOUND CAN BE SET, measured >420s without '
+           'finishing; a harness, not a checker' % (t, n) for t, n in unbounded],
         quiet=a.quiet,
         clean_line='\nCLEAN -- every module-level rule whose tool ships '
                    'evidence is exercised by it.')

@@ -754,6 +754,69 @@ check('J5. THE NEGATIVE HALF: a clone change INTERSECTING what the tool wrote '
       'says "not an escape"',
       bool(set(_churn) & _wrote_overlap))
 
+# ── K. A TIMEOUT MUST NEVER BE LABELLED "NO LOCK, NO CONTROL" ──────────────
+# Measured 2026-10-06: tools/cross_tenant_isolation_scope.py needs 131s, the
+# bound was 45, and all 21 of its rules printed "no fixture lock and no control
+# to ablate against". IT HAS NO LOCK -- and the real run WAS available and the
+# sweep declined to wait, so the sentence was false about the half that mattered
+# and 21 rules were read as unmeasurable for a week.
+#
+# K1 IS THE ARM THAT FAILS IF THAT EVER COMES BACK. It is not about the bound
+# being right; it is about the two verdicts being DISTINGUISHABLE IN TEXT, which
+# is what a reader skimming 150 findings actually sees.
+section('K. a timeout says COULD NOT RUN with its bound, never "no lock, no '
+        'control"')
+
+_T = D.NO_EVIDENCE_TIMEOUT % 45
+check('K1. THE TIMEOUT VERDICT NEVER SAYS "no lock" OR "no control" -- those '
+      'words are what made 21 rules read as having no evidence when the '
+      'evidence existed',
+      'no lock' not in _T.lower() and 'no control' not in _T.lower(), _T)
+check('K2. ...and it LEADS with COULD NOT RUN and names the bound in seconds, '
+      'so the cause is the first thing read rather than the last',
+      _T.startswith('COULD NOT RUN: bound 45s exceeded'), _T)
+check('K3. THE NEGATIVE HALF: the genuine no-evidence verdict is still the one '
+      'that says "no lock, no control" -- without this, K1 would pass if both '
+      'verdicts had simply been blanked',
+      'no lock' in D.NO_EVIDENCE and 'no control' in D.NO_EVIDENCE, D.NO_EVIDENCE)
+check('K4. and the two are not the same string, so a reader can tell them '
+      'apart at all', _T != D.NO_EVIDENCE)
+
+# The bound itself: measured entries must carry 2x headroom, and an unmeasured
+# tool must SAY it is on the default rather than look tuned.
+check('K5. every TOOL_BOUNDS entry carries a measured runtime and a date, and '
+      'the bound is at least 2x the measurement -- an entry without a '
+      'measurement is a tuned-looking guess',
+      all(isinstance(v, tuple) and len(v) == 3 and v[0] >= 2 * v[1] and v[2]
+          for v in D.TOOL_BOUNDS.values()), D.TOOL_BOUNDS)
+check('K6. bound_basis NAMES the default as not-measured, so a tuned bound and '
+      'an untouched one are never printed the same way',
+      'not measured' in D.bound_basis('a_tool_nobody_timed.py').lower()
+      and 'measured' in D.bound_basis(sorted(D.TOOL_BOUNDS)[0]).lower(),
+      (D.bound_basis('a_tool_nobody_timed.py'),
+       D.bound_basis(sorted(D.TOOL_BOUNDS)[0])))
+check('K7b. THE UNBOUNDABLE VERDICT never says "no lock" or "no control" '
+      'either, and names >420s as the measurement -- the first version of this '
+      'guard sat inside _bare_baseline(), which the WRITER tier never reaches, '
+      'so run_all_tests.py still printed "no fixture lock and no control". '
+      'Caught by DRIVING the tool, not by reading it',
+      'no lock' not in (D.NO_EVIDENCE_UNBOUNDABLE % 'x').lower()
+      and 'no control' not in (D.NO_EVIDENCE_UNBOUNDABLE % 'x').lower()
+      and '420s' in D.NO_EVIDENCE_UNBOUNDABLE,
+      D.NO_EVIDENCE_UNBOUNDABLE % 'x')
+check('K7c. every UNBOUNDABLE entry carries the measurement, the date and WHY '
+      'the real run is not evidence for it -- "it is slow" is not a reason, '
+      '"its output is dominated by what it orchestrates" is',
+      all(len(v) == 3 and 'did not finish' in v[0] and v[1] and len(v[2]) > 30
+          for v in D.UNBOUNDABLE.values()), D.UNBOUNDABLE)
+check('K7d. and UNBOUNDABLE and TOOL_BOUNDS are DISJOINT -- a tool cannot both '
+      'have a measured bound and be unmeasurable',
+      not (set(D.UNBOUNDABLE) & set(D.TOOL_BOUNDS)),
+      set(D.UNBOUNDABLE) & set(D.TOOL_BOUNDS))
+check('K7. an explicit --corpus-timeout beats a measured per-tool bound, '
+      'because re-asking a closed question is the whole point of the flag',
+      D.tool_bound(sorted(D.TOOL_BOUNDS)[0], 999) == 999)
+
 # The sabotage scratch tree, removed. Outside this clone either way, so a
 # leftover is untidy rather than dangerous -- which is the whole trade section G
 # makes: debris in temp instead of a neutralised rule in a shared repo.
