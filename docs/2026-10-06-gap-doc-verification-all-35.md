@@ -89,3 +89,87 @@ its right ones.
   not one of them has had a verdict re-derived by this pass.
 * **A count is not a capability.** `site-of-service` 3 → 0 might be a removal
   or a rename, and nothing here distinguishes them.
+
+---
+
+# BATCH 11 RE-DERIVATION — the inference removed, and then the AMBIGUITY removed
+
+**Run:** `python <scratchpad>/gapverify2.py $(cat gapdocs.txt)` at HEAD
+`762b084b`, 2026-10-06. **PROGRAM_EXIT=0** read from the program's own
+invocation. Run **three times** against this SHA — once before the ambiguity
+state, once after, once after the misattribution state — and the first run
+returned the same file-citation and count-claim totals as the last, which is
+why the citation column is the only one that moves below.
+
+**The denominator is 36, not 35.** The population was re-enumerated at HEAD and
+one document (`2026-10-06-gap-doc-verification-all-35.md` — this file) is part
+of it. The title's "35" is the batch-10 count and is left as written rather
+than rewritten over.
+
+## 36 of 36 documents verified
+
+| measure | result at `762b084b` |
+|---|---|
+| documents NAMED / READ / ABSENT | 36 / 36 / 0 |
+| file citations | 321, of which **4 missing** |
+| count claims | 47 hold, **17 broke**, 173 COULD NOT CHECK (no file named), 4 COULD NOT CHECK (several files named) |
+| line citations | 6 hold, **5 broke**, 21 COULD NOT CHECK (no file named), 1 COULD NOT CHECK (several files named), **15 MISATTRIBUTED BY THIS TOOL** |
+
+## THE SECOND LIMIT IN THE SECTION ABOVE IS NOW FIXED, AND IT WAS STILL WRONG AFTER THE FIRST FIX
+
+The limit this file already states — *"it infers which app a document is about
+from the document's FILENAME"* — was removed in batch 11 by judging each claim
+against **the file the document itself names nearest above it**, with a
+`COULD NOT CHECK (no file named)` third state.
+
+**That was not enough, and the residual produced 15 false findings.** The
+replacement rule reported:
+
+    CITE  `rf_warranty_tiers` at sairndental.html:4737 -- found at NOWHERE
+    CITE  `dnt_gfe`           at sairnroofing.html:1802 -- found at NOWHERE
+
+Ten roofing `rf_*` identifiers judged against the dental app, five dental
+`dnt_*`/`cdt_*`/`payer_enrollment` identifiers judged against the roofing app —
+all from `superpowers/specs/2026-08-26-competitive-gap-audit-roofing-dental-senior.md`,
+which interleaves three verticals. Each "NOWHERE" was *true of the file the
+tool chose*. There was a third state for ZERO candidates in the lookback
+window and none for TWO, so absence refused and ambiguity resolved silently.
+
+Two states were added and the finding count moved 21 → 5:
+
+* **AMBIGUOUS** — more than one distinct app named in the window; the claim is
+  COULD NOT CHECK, counted on its own line (4 counts, 1 citation).
+* **MISATTRIBUTED BY THIS TOOL** — the identifier is absent from the file
+  proximity picked but present in exactly one *other* app the same document
+  names. That is the tool's denominator, not the document's defect, and it now
+  prints saying so (15 citations).
+
+Promoted to `docs/2026-09-13-cross-domain-disciplines.md` **item 17**.
+
+**And the same run, invoked with no arguments, printed `TOTALS over 0
+document(s)` with every counter at zero and exited 0** — a run that read
+nothing, in the same shape and with the same exit code as a run that read all
+36. It now exits **2 COULD NOT RUN**, and the totals line states NAMED / READ /
+ABSENT separately because one number cannot carry all three.
+
+## The 5 line citations that are REALLY broken
+
+| identifier | cited at | actually at |
+|---|---|---|
+| `split_fees` | `sairnfreedom.html:647` | **NOWHERE in sairnfreedom.html** — and note the routed row above has the same identifier drifting inside `sairnlaw`; two documents cite one name against two apps |
+| `IPL_KINDS` | `sairnlegacy.html:3352` | 3446, 3468 |
+| `current_backlog_pct` | `sairnbuild.html:2455` | 3367–3370 |
+| `insurance_expiry` | `sairnbuild.html:2571` | 3483, 7251, 7266, 7276 |
+| `subComplianceIssue` | `sairnbuild.html:6229` | 6242, 7533, 7568, 7624 |
+
+## What is still NOT done, named rather than left to look finished
+
+* **The 17 broken count claims are measured, not triaged.** `applicant` 46 → 0
+  in stonedesk.html and `public catalog` 17 → 0 in sairnsenior.html are
+  capabilities going the *wrong* way and are the two worth reading first; the
+  `IIF` 0 → 39 and `rollup` 0 → 41 rows are capabilities arriving.
+* **No verdict in any of the 36 documents has been re-derived.** This pass
+  still checks arithmetic, never argument — unchanged from the limit above.
+* **173 count claims and 21 line citations name no file at all** and are
+  unreachable by any version of this tool. That is 60% of the count claims in
+  the corpus and it is the real ceiling here, not a tuning problem.
