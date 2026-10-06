@@ -785,6 +785,29 @@ category-wide-gap nuance, the SAIRNbuild contrast, and what "done" would look li
 StoneDesk already carries the two hooks this would need if it is ever picked up — an `active` flag
 on the roster and a single assignment path at `subxAssign`.
 
+> **BUILT 2026-09-01. POINTER APPENDED 2026-10-06 (Fourth), AND IT WAS OWED SINCE
+> 2026-09-15.** `docs/2026-09-15-competitive-gap-status-rederived-mechanical-and-five-apps.md`
+> §2.2 named this exact paragraph as one of *"two pieces of text a reader reaches
+> FIRST [that] still assert the superseded state"* and said both were *"fixed by
+> this commit"*. **The backlog heading was retitled; this one was not**, and the
+> paragraph above went on reading *"Nothing built"* for five weeks. Checked at
+> HEAD rather than taken from that sentence.
+>
+> **What shipped**, in `c6dcb69f` with `sql/sd_subs_compliance_2026-09-01.sql`:
+> `coi_expiry` captured at `stonedesk.html:34077` and rendered at `:33996`;
+> `licence_no` / `licence_expiry` at `:34078`; `w9_on_file` at `:34079`;
+> `subxCompliancePill()` with four real states (EXPIRED blocking, EXPIRING, NOT
+> TRACKED, COMPLIANT); and the assignment gate **at the endpoint, not the UI** —
+> `api/sd-sub-data.js` returns `409 SUB_NOT_COMPLIANT`.
+>
+> **One thing in that cluster IS still open** and is not fixed by the above:
+> the three implementations disagree on the clock. `api/sd-sub-data.js:216` and
+> `:346` take the date from `nowISO().slice(0, 10)` — UTC — and the shared
+> engine at `:62`–`:65` falls back to the same default when no `today` is
+> supplied, so a contractor in Ohio gets a different answer from the server for
+> six hours of every day. `SAIRN-BACKLOG.md`'s own 2026-09-02 correction
+> identified it; it was still there when this pointer was written.
+
 ### Row 2 — SAIRNbuild: already ahead of the commercial FSM products, and it enforces
 
 **Verified state.** `sairnbuild.html` subcontractor records already carry

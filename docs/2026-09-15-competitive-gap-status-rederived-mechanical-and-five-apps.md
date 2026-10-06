@@ -160,6 +160,33 @@ way a 1,500-line backlog and a 1,267-line audit get used — sees only the false
 claim. Both are fixed by this commit: the backlog heading is retitled and §5
 Row 1 gets a pointer.
 
+> **CHECKED AT HEAD 2026-10-06 (Fourth): ONE OF THOSE TWO HAPPENED.**
+> This sentence is a claim about a commit, and half of it did not land —
+> which is the same defect one level up from the one the section is about.
+>
+> * **The backlog heading WAS retitled.** `SAIRN-BACKLOG.md:1143` now reads
+>   *"## CLOSED 2026-09-01 — StoneDesk Subcontractor Portal compliance layer
+>   (the original title below asserted a gap that no longer exists)"*. Fixed,
+>   exactly as promised.
+> * **§5 Row 1 NEVER GOT ITS POINTER.** At HEAD,
+>   `docs/superpowers/specs/2026-08-27-sairnmechanical-shared-platform-competitive-research.md:781`
+>   still closes *"Status — decided 2026-08-27: leave it alone for now … Nothing
+>   built."* No correction was appended for three weeks. **The pointer is
+>   appended there now**, dated and naming `c6dcb69f`.
+>
+> The lesson this section states — *"nothing here is un-corrected; the
+> correction simply does not reach the two surfaces that get read"* — applied
+> to its own fix sentence. A commit message saying two surfaces were fixed is
+> not evidence that two surfaces were fixed, and nothing re-read it.
+>
+> **AND THE "SEPARATE, SMALLER, GENUINELY OPEN DEFECT" BELOW IS STILL OPEN.**
+> The UTC-clock default is at `api/sd-sub-data.js:216`
+> (`const today = nowISO().slice(0, 10);`) and `:346`
+> (`complianceStatus(subRow, nowISO().slice(0, 10))`), unchanged. The shared
+> engine's `complianceStatus(row, todayISO)` at `:62` still falls back to the
+> same UTC default at `:65` when no `today` is supplied. Measured, not
+> recalled.
+
 **Recorded, not acted on:** consolidating the three implementations. The backlog
 correction already frames it as *"a real decision rather than the obvious
 cleanup"* and names the two substantive disagreements. Repointing one gate at
@@ -206,7 +233,19 @@ why a gap matters and what the market does — which is what it is good at and
 what it was re-verified against primary sources for. Re-derive any status cell
 before building.
 
-### 3.1 The one row that is genuinely still open, in-house, and un-gated
+### 3.1 ~~The one row that is genuinely still open, in-house, and un-gated~~ — **CLOSED 2026-09-18, and this heading was the quotable sentence that outlived it**
+
+> **CORRECTED AT HEAD 2026-10-06 (Fourth).** This heading and the sentence
+> *"the only buildable, un-gated competitive-gap item this pass found across
+> all four audits"* were quoted forward into
+> `docs/2026-09-17-sairndental-competitive-gap-rederived.md` §0, which built on
+> them. **SAIRNdental B2 closed on 2026-09-18 in `b179d967`** — the owner-gated
+> panel is at `sairndental.html:2485`, the read at `:2492`, the
+> refusal-versus-empty branch at `:2498`. Re-counted today: `rollup` × 41,
+> `panel-rollup` × 1, both previously 0. The analysis below is kept as written
+> because it was right about the shape of the row and about why a half-built
+> row decays fastest — which is this document's own thesis, and B2 closing
+> three days later is evidence FOR it, not against.
 
 **SAIRNdental B2 — cross-location roll-up reporting.** It is the only row of the
 twenty that came back zero on every marker, and hand-reading confirms it is
