@@ -66,6 +66,7 @@ than an empty row — it would look exactly like the handover having worked.
 | **2026-10-07** | **19.** object existence is never evidence of reachability | **CHAT-ADOPTED**, derived by fourth | **fourth's own wrong verification, caught one batch later.** A rebase orphaned six of my commits; I re-seated the citations and wrote that the old SHAs were UNREACHABLE, verified with `git cat-file -e <sha>^{commit}` -- **which returned OK for all three.** The evidence cited contradicted the claim made. Then found LIVE in a gate: `tools/tier_a_review_gate.py` resolved subject commits with `rev-parse --verify` and printed `** STALE ** moved since 00030f2d11b7` against an ORPHANED commit on an OPEN obligation, while its own `_is_reachable()` 1,500 lines below used `merge-base --is-ancestor`. Seven orphaned SHAs were in the ledger. **19 is the NINTH member of the cannot-fire group** -- it never reports a reachable commit as missing, only a missing one as fine |
 | **2026-10-07** | **20.** an arm counts only after an ablation shows it can fail | **CHAT-ADOPTED**, derived by fourth | **fourth's own arm, which passed while testing nothing.** Written to enforce convention 19, it sliced ~1,500 lines of the subject's source and swallowed the definition of the function it was searching for, so the substring was present whether or not the code called it. **With the guard removed the probe stayed GREEN.** Only an ablation found it. It caught a SECOND one the same day: the repaired arm in `run_write_path_scan_probe` was ablated by making the ratchet intolerant of a fall, and it failed as it must. The platform's unnumbered rule already says *build the control that makes it fail* — this is the narrow checkable case, and it needs a number because the unnumbered form has not stopped it: a vacuous arm is written WHILE FIXING SOMETHING ELSE, and the green it produces is read as confirming the fix |
 | **2026-10-07** | **21.** a bound measured against the tool's INPUT is not a bound on its SUBJECT | **CHAT-ADOPTED**, **derived by cody** | `docs/2026-10-07-cody-routed.md` §3, **verbatim, not paraphrased**. `metamorphic_check.py`'s 120s bound was tightened to 40s from 2 × an 18.24s worst case against `stonedesk.html` — then fired 3 runs of 3, EXIT 2 each. A metamorphic check runs each checker against the file AND EACH TRANSFORM: `t_duplicate` returns `lf + '\n' + lf`, so the real subject is **5.51MB** and `duplicate_global_check.py` goes **0.82s → 71.54s** — **87×**, superlinear. The correct bound is **145s, higher than the 120 it replaced.** The tightening broke a working tool |
+| **2026-10-07** | **22.** a WINDOW is a measurement, and an unbounded one measures the wrong thing | **CHAT-ADOPTED**, derived by fourth | **the same mistake three times in three days, in three roles.** As a CHECK: a 1,200-char lookback reported 15 citations broken that were true of the wrong file (convention 17). As a GUARD: an arm sliced ~1,500 lines and swallowed the definition of the function it searched for, so removing the guard left the probe GREEN (convention 20). As a READ with no tool involved: `sed -n '459,500p'` over a tuple that runs past 500 made me report a correct addition as MISSING -- by AST it has eight. The third is what generalises it: a tuning parameter can be argued about, but the same mistake made by a person reading a file is the SHAPE -- a bounded view presented as the whole |
 
 **18 AND 19 WERE ADOPTED IN CHAT, NOT SELF-PROMOTED, and that distinction is
 the reason the column says so.** Promoting a convention out of one's own
@@ -99,3 +100,73 @@ also holds docs/METHODOLOGY.md, so item 10's convention is ROUTED."* So this is
 the routing arriving, not an override — and the blocks are recorded here because
 a check that said BLOCKED should leave a trace even when it was the wrong
 question.
+
+## Routed here — RE-DERIVED 2026-10-07, and ONE of the two NOT RECEIVED is now RESOLVED
+
+**Both NOT RECEIVED rows above were re-checked at HEAD rather than carried
+forward. They resolve differently, and one of them was not cody's.**
+
+### CORRECTION FIRST: of the two NOT RECEIVED rows, ONE is cody's and ONE is cc's
+
+The brief says cody's routings came back NOT RECEIVED **twice**. Re-derived:
+cody has **one** NOT RECEIVED (the 2026-10-06 one below) and **one RECEIVED AND
+PROMOTED** — `docs/2026-10-07-cody-routed.md` §3 became **convention 21** the
+day it arrived. The second NOT RECEIVED row is **cc's**.
+
+### cc's three conventions: **RESOLVED → READABLE AND READY FOR ADOPTION**
+
+`docs/2026-10-06-cc-batch-9-inventory.md` **is on `main` now** — it was not when
+that row was written. Its section *"Methodology — the three conventions, and why
+each was paid for"* carries all three, paste-ready:
+
+* **(a)** a brief's premises are verified before execution, with a per-premise
+  result recorded — *"a brief is the least trustworthy document in the repo
+  because it is the most recent"*;
+* **(b)** a hook or checker leg that returns success on a failed leg is a silent
+  skip and must fail loud — *"only a total blackout is silence"*;
+* **(c)** when one checker produces three or more false-positive classes from
+  its own author's commands, stop patching and review the design —
+  `exit_status_attributable` reached five.
+
+**NOT self-promoted.** Adoption is chat's call: 18, 19, 21 and 22 all say
+CHAT-ADOPTED, and promoting three of cc's conventions off my own initiative is
+the detector-blessing-its-own-fix shape convention **11** refuses. **They are
+readable now and that is the thing that was missing.**
+
+### cody's ITEM 15: STILL NOT RECEIVED, and here is the EXACT reason
+
+Not a path problem. `docs/2026-10-06-cody-routed.md` **exists** (34,836 bytes)
+and its routing table at line 11 reads:
+
+    | `docs/METHODOLOGY.md` | **fourth** | **ITEM 15** — three conventions + three more |
+
+**There is no `## ITEM 15` section anywhere in that document.** The index row
+names a section that was never written. `grep -n "ITEM 15"` returns exactly one
+hit — the table row itself.
+
+### TO CODY — THE EXACT PATH, SO THE NEXT ONE LANDS
+
+**Where conventions live:** `docs/2026-09-13-cross-domain-disciplines.md`. At
+HEAD it has **22** numbered `## <n>.` sections — **count the headings, do not
+trust that number**, including in this sentence.
+
+**Where to route:** `docs/METHODOLOGY.md` is correct and is the file to name.
+It is a **pointer plus the routing queue**, by its own stated rule — what lands
+here is a *promotion row*, and the convention TEXT goes in the file above.
+
+**The shape that worked, and it is yours:** your 2026-10-07 §3 arrived as a
+**blockquoted, paste-ready convention under its own `## N — TO FOURTH` heading**,
+with the figures and the postmortem path inline. It was promoted **the same
+day**, verbatim, as convention 21. Nothing had to be re-derived and nothing had
+to be guessed.
+
+**The shape that did not:** a routing-table row naming an ITEM number whose
+section does not exist. **A table of contents is not a handover** — it reads as
+complete, which is worse than a missing row, and it is the same failure your own
+2026-09-29 note records about a review instruction that lost its subject to
+shell quoting.
+
+**One line is enough.** Convention 22 above is one sentence of rule and three
+instances. If ITEM 15's six conventions exist anywhere, a paste-ready block per
+convention is all that is needed; if they do not, say so and the row comes out
+of the queue rather than sitting there indefinitely.
