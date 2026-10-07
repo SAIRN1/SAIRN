@@ -609,3 +609,21 @@ report.
   deploy and for `npm audit`; this clone's installed tree is unchanged until
   someone runs `npm install`. **NEXT STEP:** nothing required — the deploy
   installs from the lock.
+- **item 3 — DONE — commit pending.** `docs/2026-10-07-cody-harness-exit-mismatches.md`.
+  **MY OWN FIGURE WAS WRONG AND IS CORRECTED: six program-level mismatches, not
+  five**, across **three** notifications of the four that fired; the fourth
+  agreed (`meta145` real EXIT 0) and is listed so the six are not a selected
+  set. Each cited with command, claimed `exit code 0`, real captured code,
+  status-file line and recording commit (`166fe4ef`, `b637e2d4`, `c1cd7c41`).
+  **Case 6's status file no longer exists** — a relaunch reused the same path and
+  `capture_exit.py` replaces rather than appends; cited from the committed
+  handoff instead, and the usage rule (**one status path per run**) is the only
+  new thing. **Two findings routed:** (A) `defect_register.py --reseat` rewrites
+  the whole ledger — **24,724/24,724 to change six fields**, caused by
+  `indent=2` + `ensure_ascii=True` against a stored `indent=1`; after stripping,
+  only 10 lines differ. Same shape as the 5681-line incident, on a file whose own
+  merge policy is 3-way-from-ancestor. Reverted; **my two records corrected by
+  raw-text substitution: 2 insertions, 2 deletions, 470 records intact,
+  `--check` EXIT 0.** (B) four more orphaned citations belong to other sessions
+  and were **not** taken. **NEXT STEP:** cc to decide the `--reseat` serialisation
+  fix; the four orphans to their originators (fourth is already sweeping).
