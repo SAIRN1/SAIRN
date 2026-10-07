@@ -156,6 +156,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_write_path_scan_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "4c574225845dacf6d3c5cfb8dc33d613400dc632",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_assurance_case_probe.py",
    "class": "test file",
    "level": "CHANGE",
