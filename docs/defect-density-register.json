@@ -25030,7 +25030,7 @@
       "recurrence_open": "WHICH ROLE SET BELONGS ON alf_staff IS STILL OPEN. The fix projects for roles outside ALF_CRED_READ_ROLES rather than deciding a new set, because that is a product decision this batch was told not to make unilaterally -- tracked as ALF-STAFF-READ-UNGATED-HANK-2026-10-06 and as the seven role sets in ROLE-SET-SWEEP-HANK-2026-10-06. The sairncare UI still renders phone and bgcheck columns and will now show them empty for narrow roles; that is correct and visible, and nobody has changed the client half."
     },
     {
-      "commit": "d0eb2d33fc3f",
+      "commit": "1c53498df088",
       "date": "2026-10-07",
       "subject": "fix(phi cache): the arm nobody owned was the SUITE reading a comment as a write -- one arm, four rows",
       "files": [
