@@ -11,16 +11,30 @@ of Civil Procedure as published free and in full by the Trial Court Law
 Libraries at mass.gov, and every effective_from is the rule page's OWN printed
 "EFFECTIVE DATE" line.
 
-ACCESS NOTE, WORTH KEEPING: every mass.gov URL returns HTTP 403 to curl and to
-plain fetches, including its /doc/.../download PDF links, while a real browser
-(Playwright/Chromium) gets HTTP 200 on all of them. A 403 from mass.gov means
-"not a browser", NOT "page does not exist". Same shape as North Carolina's
-nccourts.gov. Do not conclude a Massachusetts rule is unpublished from a 403.
+ACCESS NOTE -- CORRECTED 2026-10-07 (cc), AND THE OLD TEXT IS NAMED RATHER THAN
+DELETED. This docstring used to read "every mass.gov URL returns HTTP 403 to
+curl and to plain fetches ... Do not conclude a Massachusetts rule is
+unpublished from a 403." That was measured false on 2026-08-27: a BARE curl, no
+user-agent and no Accept header, got 200 and the full rule text from
+/civil-procedure-rule-6-time (253,869 B) and -rule-5-service (293,422 B). The
+correction was written into the OUTPUT's own readme that day and never back
+into this file, so the generator and the seed it generates disagreed for six
+weeks about a measurable fact, and this docstring was the stale copy.
+
+The GENERAL lesson the old paragraph drew is still worth keeping and is not
+Massachusetts-specific: on a court site a 403 usually means "not a browser",
+never "page does not exist". North Carolina's nccourts.gov has NOT been
+re-tested and still stands as written; New Jersey's njcourts.gov is the live
+case and a worse one, serving an anti-bot interstitial at HTTP 200.
+
+    python tools/gen_ma_seed.py             # write the seed
+    python tools/gen_ma_seed.py --check     # compare, write nothing
+    python tools/gen_ma_seed.py --selftest  # can --check still FAIL?
 """
 import json
 import sys
 
-def _emit_or_check(path, text):
+def _emit_or_check(path, text, check=None):
     """Write `text` to `path`, or under `--check` compare and write NOTHING.
 
     READ-ONLY MODE, added 2026-10-07 (cc). This generator was one of 17 found
@@ -36,7 +50,12 @@ def _emit_or_check(path, text):
     import io as _io
     import os as _os
     import sys as _sys
-    if '--check' not in _sys.argv:
+    # `check` is a parameter and not only an argv sniff so that _selftest can
+    # drive BOTH branches without touching sys.argv -- a selftest that has to
+    # mutate global argv to reach the branch it tests is a second bug waiting.
+    if check is None:
+        check = '--check' in _sys.argv
+    if not check:
         with _io.open(path, 'w', encoding='utf-8', newline='') as _fh:
             _fh.write(text)
         print('wrote ' + path)
@@ -60,6 +79,94 @@ def _emit_or_check(path, text):
     print('  on disk  : %d bytes' % len(cur))
     print('  would be : %d bytes' % len(text))
     return 1
+
+
+def _selftest():
+    """Can `--check` still FAIL? Four arms, on a tempfile, never on the seed.
+
+    THE DEFECT THIS GUARDS is cross-domain-disciplines item 8: a generator's
+    `--check` compares a document to its own output, so the day the comparison
+    stops working it reports IDENTICAL forever and nothing announces it. An
+    exit 0 from `--check` is evidence only if the same comparison has just been
+    seen to return 1 and 2.
+
+    No arm touches sql/. Arm 2 perturbs a COPY by one byte -- which is also the
+    smallest difference the comparison must not miss.
+    """
+    import contextlib
+    import io
+    import os
+    import tempfile
+    d = tempfile.mkdtemp(prefix='gen-ma-selftest-')
+    p = os.path.join(d, 'target.json')
+    body = '{"a": 1}\n'
+    arms = []
+    # Captured, not let through. Each arm's own message names the TEMP PATH,
+    # which changes every run, so letting it through would make three runs of
+    # a deterministic selftest print three different things -- and "3 identical
+    # runs" is the evidence this batch reports. The verdicts are what matter
+    # and they are asserted below.
+    _sink = io.StringIO()
+    _cap = contextlib.redirect_stdout(_sink)
+    _cap.__enter__()
+
+    open(p, 'w', encoding='utf-8', newline='').write(body)
+    arms.append(('identical -> 0, and the target is not rewritten',
+                 (_emit_or_check(p, body, check=True),
+                  open(p, encoding='utf-8', newline='').read()),
+                 (0, body)))
+
+    arms.append(('ONE BYTE different -> 1, and the target is not rewritten',
+                 (_emit_or_check(p, '{"a": 2}\n', check=True),
+                  open(p, encoding='utf-8', newline='').read()),
+                 (1, body)))
+
+    os.remove(p)
+    arms.append(('a missing target -> 2 COULD NOT COMPARE, never 1 drift',
+                 (_emit_or_check(p, body, check=True), os.path.isfile(p)),
+                 (2, False)))
+
+    arms.append(('the write branch really does write',
+                 (_emit_or_check(p, body, check=False),
+                  open(p, encoding='utf-8', newline='').read()),
+                 (0, body)))
+
+    os.remove(p)
+    os.rmdir(d)
+    _cap.__exit__(None, None, None)
+    lines, passed = [], 0
+    for name, got, want in arms:
+        ok = got == want
+        passed += ok
+        lines.append('  %-4s %s' % ('PASS' if ok else 'FAIL', name))
+        if not ok:
+            lines.append('       wanted %r, got %r' % (want, got))
+    return passed, len(arms) - passed, lines
+
+
+_KNOWN_FLAGS = ('--check', '--selftest')
+
+# ── AN UNRECOGNISED FLAG MUST NOT MEAN "WRITE" (2026-10-07, cc) ─────────────
+# Same defect, same day, different file: tools/role_gate_mc_config.py
+# recognised one flag and fell through to the write path for everything else,
+# so `--help` regenerated two spec files. This generator had the identical
+# shape, over a LEGAL DEADLINE SEED. The guard runs before anything is built
+# and before any open(..., 'w'), and it is placed here rather than in a shared
+# helper because there is no shared helper and inventing one mid-batch is a new
+# tool. Routed as a methodology rule, not left as three local fixes.
+_unknown = [a for a in sys.argv[1:] if a not in _KNOWN_FLAGS]
+if _unknown:
+    print('COULD NOT RUN -- argument not recognised: %s' % _unknown[0])
+    print('Nothing was written. Recognised: %s' % ', '.join(_KNOWN_FLAGS))
+    sys.exit(2)
+
+if '--selftest' in sys.argv:
+    _p, _f, _lines = _selftest()
+    print('selftest: %d/%d arm(s) pass -- can --check still FAIL?'
+          % (_p, _p + _f))
+    for _ln in _lines:
+        print(_ln)
+    sys.exit(1 if _f else 0)
 
 
 BASE = "https://www.mass.gov/rules-of-civil-procedure/"
@@ -381,9 +488,35 @@ doc = {
         "commercial publisher -- the failure mode that blocked Kentucky outright",
         "and gated Arizona out is absent here.",
         "",
-        "ACCESS: every mass.gov URL returns HTTP 403 to curl and to plain fetches,",
-        "including its /doc/.../download PDF links, while a real browser gets 200.",
-        "A 403 there means 'not a browser', NOT 'page does not exist'. Same shape",
+        # The 2026-08-27 correction. It was applied to the OUTPUT by hand and
+        # never back into this generator, so for six weeks `--check` reported
+        # DRIFT and a regeneration would have reinstated the superseded
+        # paragraph -- i.e. re-published, as current, a 403 claim that had been
+        # measured false. The correction is kept VERBATIM, including the
+        # original wording it quotes, because the Suffolk-county reasoning
+        # further down this readme was written against that wording.
+        "ACCESS -- CORRECTED 2026-08-27. THIS PARAGRAPH USED TO SAY THE OPPOSITE, AND",
+        "ACTING ON THE OLD VERSION WASTES A BROWSER-AUTOMATION SETUP. It read: 'every",
+        "mass.gov URL returns HTTP 403 to curl and to plain fetches, including its",
+        "/doc/.../download PDF links, while a real browser gets 200 ... Re-reads need",
+        "Playwright or equivalent.' THAT IS NO LONGER TRUE FOR THE RULE PAGES.",
+        "",
+        "Re-tested 2026-08-27 on a BARE curl -- no user-agent, no Accept header:",
+        "  /rules-of-civil-procedure/civil-procedure-rule-6-time     200, 253,869 B",
+        "  /rules-of-civil-procedure/civil-procedure-rule-5-service  200, 293,422 B",
+        "Full rule text, no browser needed. The bare index path",
+        "mass.gov/rules-of-civil-procedure 404s, but that is a URL that does not exist",
+        "rather than a block -- do NOT read it as the old 403 returning.",
+        "",
+        "THE GENERAL LESSON THE OLD PARAGRAPH DREW IS STILL WORTH KEEPING even though",
+        "its Massachusetts example expired: on a court site a 403 usually means 'not a",
+        "browser', never 'page does not exist'. North Carolina's nccourts.gov was the",
+        "other example and has NOT been re-tested here, so it still stands as written.",
+        "NEW JERSEY IS NOW THE LIVE CASE OF THIS SHAPE, and a worse one -- njcourts.gov",
+        "serves an anti-bot interstitial at HTTP 200. See its seed readme.",
+        "",
+        "The original wording follows, kept because the Suffolk-county reasoning below",
+        "was written against it. Same shape",
         "as North Carolina's nccourts.gov. Re-reads need Playwright or equivalent.",
         "",
         "== effective_from IS REAL ON EVERY ROW =================================",
