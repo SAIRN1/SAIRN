@@ -114,6 +114,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_tier_a_review_gate_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "exempt = 0"
+    }
+   ],
+   "sha": "0ecabbb30104d77eb2bac263293614ff94e19ef8",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/run_all_tests.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0ecabbb30104d77eb2bac263293614ff94e19ef8",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/provisioning_attribution.js",
    "class": "test file",
    "level": "CHANGE",
