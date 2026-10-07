@@ -3275,8 +3275,8 @@
       "task": "batch16 item 13 ONLY: one METHODOLOGY entry from this batch plus the three promotion rows for cc's conventions 23-25. Claimed immediately before the write and released immediately after, as the dispatch requires. The batch-16 claim was RELEASED first so the record says one thing -- sairn_claim.py REFUSES a second overlapping claim from the same session, so a dedicated claim on a shared file is only possible this way. Nothing else is touched under this claim. FILES: docs/METHODOLOGY.md",
       "claimed_at": "2026-10-07T19:42:58Z",
       "claimed_at_epoch": 1791402178.2477734,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-07T19:48:09Z",
       "files": [
         "docs/METHODOLOGY.md"
       ]
