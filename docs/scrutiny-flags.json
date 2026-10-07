@@ -210,6 +210,38 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/provisioning_attribution.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "5d2b187d8bbc5dd428af60948e8362125ce0875d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_alf_mar_derive_charges_gate.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "5d2b187d8bbc5dd428af60948e8362125ce0875d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_alf_staff_read_gate.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "5d2b187d8bbc5dd428af60948e8362125ce0875d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_grd_session_gate.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "5d2b187d8bbc5dd428af60948e8362125ce0875d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/report_only_checks.py",
    "class": "push-gate logic",
    "level": "WEAKENING",
