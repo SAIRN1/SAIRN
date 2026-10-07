@@ -3165,6 +3165,34 @@
         "tools/known_red_check.py",
         "tools/tier_a_review_gate.py"
       ]
+    },
+    {
+      "id": "fourth-1791377933",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "batch13 at HEAD 6ac8fd2d, premises re-derived. (1) Tier A: discharge 4+ most-overdue-first with captured exit codes; absent subject SHAs go BACK to their originators with merge-base proof and I reclassify nothing. (2) print the constraints SQL; the merge stays BLOCKED on Michael and I do nothing on it. (3) STATUS HOOK -- chat-and-Michael infrastructure, NOT a builder tool: create C:/SAIRN-status/sairn_status_hook.py verbatim and prove it by piping a sample event. ITEM 3(b) IS NOT DONE AND NOT OVERRIDDEN: cody's live batch21 claim (0.9h) declares .claude/settings.json and says SOLE TOUCHER, permissions merge, and that merge HAS NOT LANDED -- ~/.claude/settings.json carries only a PreCompact hook and no commit has touched .claude/settings.json since 2026-10-05. The item's own instruction says to stop in exactly that case. (4) fix the SHA extractor in my existing sweep tool: min length, exclude date/UUID/all-digit shapes, selftest arm per false-positive shape, 3 identical runs, then re-derive the ABSENT counts. (5) route 100b82fc, 7c911e5c, 6984634e to the owner of each citing doc with a reproducing artifact. (6) next 10+ of the 31 empty-why rows, each run ALONE with exit code, environment stamp and cause tag. (7) more one-assertion-per-arm fixes, each verified alone, X of Y. (8) verify rows toward a census of the 83, X of 83. (9) check whether cody's run_all_tests.py change landed and record git config -l before/after ONE TARGETED run if so -- I do NOT patch that file, it is cody's. (10) confirm owner and routing seq for bare_run_write_check.py, no patch. (11) METHODOLOGY: an arm counts only after ablation shows it can fail. (12) handoff and release. NOT TOUCHED: tools/run_all_tests.py and .claude/settings.json are CODY'S. docs/METHODOLOGY.md is FREE at this HEAD and cody's own claim ROUTES item 10's convention to me, so item 11 lands here rather than colliding. No whole-tree and no --pinned run; every suite individually. I close only findings I originated. FILES: docs/tier-a-reviews.json tools/tier_a_review_gate.py docs/known-red-suites.json tools/known_red_check.py docs/METHODOLOGY.md docs/2026-09-13-cross-domain-disciplines.md tests/run_truthy_sum_probe.py tests/run_subprocess_decode_probe.py tests/run_write_path_scan_probe.py tests/run_removal_path_probe.py tests/run_completeness_probe.py tests/push_gate/preauth_exemption_anchor_probe.py docs/2026-10-07-fourth-routed.md docs/2026-10-07-fourth-coverage-ledger.md docs/handoff-fourth-2026-10-07.md SAIRN-ACTIVE-WORK-fourth.md",
+      "claimed_at": "2026-10-07T12:58:53Z",
+      "claimed_at_epoch": 1791377933.703431,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-fourth.md",
+        "docs/2026-09-13-cross-domain-disciplines.md",
+        "docs/2026-10-07-fourth-coverage-ledger.md",
+        "docs/2026-10-07-fourth-routed.md",
+        "docs/METHODOLOGY.md",
+        "docs/handoff-fourth-2026-10-07.md",
+        "docs/known-red-suites.json",
+        "docs/tier-a-reviews.json",
+        "tests/push_gate/preauth_exemption_anchor_probe.py",
+        "tests/run_completeness_probe.py",
+        "tests/run_removal_path_probe.py",
+        "tests/run_subprocess_decode_probe.py",
+        "tests/run_truthy_sum_probe.py",
+        "tests/run_write_path_scan_probe.py",
+        "tools/known_red_check.py",
+        "tools/tier_a_review_gate.py"
+      ]
     }
   ],
   "refusals": [
