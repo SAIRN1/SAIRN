@@ -68,10 +68,45 @@ def check_alf_mar(src):
                    r"\n    if \(resource ===", src, re.DOTALL)
     if not dc:
         return None, 'COULD NOT RUN: derive_charges block not found'
-    returns_raw_mar_field = 'medication_name' in dc.group(0)
+    block = dc.group(0)
+    # ── FIXED AFTER THIS TOOL'S FIRST REAL RUN (commit 7ed27c5e) ──
+    # The naive `'medication_name' in block` substring test is true BEFORE
+    # and AFTER the fix: the fix did not remove the field, it REDACTS it
+    # with a ternary keyed on ALF_MAR_ROLES (`marNameOk ? d.medication_name
+    # ... : ''`) plus a declared `mar_description_withheld` flag -- the
+    # substring is still textually present. Collect every variable the
+    # block derives directly from ALF_MAR_ROLES (e.g. `marNameOk`), then
+    # check each LINE that mentions medication_name for a guard by
+    # ALF_MAR_ROLES itself or one of those derived variables on the SAME
+    # line (a ternary spanning lines would need a smarter parse than this
+    # tool claims -- if that ever happens this check will say COULD NOT
+    # RUN via the still-unconditional branch below, not silently pass).
+    derived_vars = set(re.findall(
+        r'(\w+)\s*=\s*!{0,2}ALF_MAR_ROLES\[session\.role\]', block))
+    # `//` COMMENT LINES EXCLUDED, NAMED RATHER THAN SILENTLY MISCOUNTED:
+    # this exact file explains the finding in a comment directly above the
+    # fix ("`description` was `d.medication_name || d.name`...") -- that
+    # explanatory prose line-matches 'medication_name' same as real code
+    # would, and a line-based check with no comment filter flagged THAT
+    # line as an unconditional real return on this tool's own first run
+    # after this fix landed, a false REPRODUCES caused by the tool reading
+    # its own target's post-mortem comment as code.
+    code_lines = [ln for ln in block.splitlines() if not ln.strip().startswith('//')]
+    lines_with_field = [ln for ln in code_lines if 'medication_name' in ln]
+    unconditional_lines = [
+        ln for ln in lines_with_field
+        if 'ALF_MAR_ROLES' not in ln and not any(v in ln for v in derived_vars)
+    ]
+    returns_raw_mar_field = bool(unconditional_lines)
     reproduces = excluded_role_admitted and returns_raw_mar_field
-    detail = ('ALF_MANAGEMENT_ROLES-ALF_MAR_ROLES=%r, derive_charges returns medication_name=%r'
-               % (sorted(mgmt - mar), returns_raw_mar_field))
+    redaction_note = ''
+    if lines_with_field and not returns_raw_mar_field:
+        redaction_note = (' -- FIELD-LEVEL REDACTION FOUND: every medication_name '
+                          'line is guarded by ALF_MAR_ROLES or %r, no longer an '
+                          'unconditional return' % sorted(derived_vars))
+    detail = ('ALF_MANAGEMENT_ROLES-ALF_MAR_ROLES=%r, derive_charges returns '
+              'medication_name UNCONDITIONALLY=%r%s'
+               % (sorted(mgmt - mar), returns_raw_mar_field, redaction_note))
     return reproduces, detail
 
 
@@ -129,11 +164,47 @@ def selftest():
     }
     if (resource === 'x' && action === 'y') {
 """
+    # The REAL fix shape (commit 7ed27c5e): role sets still DIFFER (billing
+    # stays out of ALF_MAR_ROLES), but the field itself is redacted by a
+    # ternary keyed on ALF_MAR_ROLES. The naive substring check this tool
+    # shipped with first could not tell this apart from fixture_bad --
+    # both contain the literal string 'medication_name'.
+    fixture_redacted = """
+    const ALF_MANAGEMENT_ROLES = roleSet({ owner: true, billing: true });
+    const ALF_MAR_ROLES = roleSet({ owner: true, nursing: true, med_aide: true });
+    if (resource === 'alf_billing' && action === 'derive_charges') {
+      const marNameOk = !!ALF_MAR_ROLES[session.role];
+      events.push({ description: marNameOk ? (d.medication_name || '') : '' });
+      derived.mar_description_withheld = !ALF_MAR_ROLES[session.role];
+    }
+    if (resource === 'x' && action === 'y') {
+"""
+    # Same as fixture_redacted, but with the REAL file's own explanatory
+    # comment reproduced verbatim above the fix -- this is the shape that
+    # broke this tool's own first post-fix run (the comment text
+    # line-matches 'medication_name' and has no ALF_MAR_ROLES/marNameOk on
+    # its own line, so an unfiltered line check misreads a post-mortem
+    # comment as a second, unconditional return).
+    fixture_redacted_with_comment = """
+    const ALF_MANAGEMENT_ROLES = roleSet({ owner: true, billing: true });
+    const ALF_MAR_ROLES = roleSet({ owner: true, nursing: true, med_aide: true });
+    if (resource === 'alf_billing' && action === 'derive_charges') {
+      // `description` was `d.medication_name || d.name`, and it is returned
+      // on every derived charge line.
+      const marNameOk = !!ALF_MAR_ROLES[session.role];
+      events.push({ description: marNameOk ? (d.medication_name || '') : '' });
+    }
+    if (resource === 'x' && action === 'y') {
+"""
     bad, detail_bad = check_alf_mar(fixture_bad)
     good, detail_good = check_alf_mar(fixture_good)
-    ok = (bad is True) and (good is False)
-    print('SELFTEST %s: known-bad=%r (%s)  known-good=%r (%s)' %
-          ('PASS' if ok else 'FAIL', bad, detail_bad, good, detail_good))
+    redacted, detail_redacted = check_alf_mar(fixture_redacted)
+    redacted_c, detail_redacted_c = check_alf_mar(fixture_redacted_with_comment)
+    ok = (bad is True) and (good is False) and (redacted is False) and (redacted_c is False)
+    print('SELFTEST %s: known-bad=%r (%s)  known-good(roles-equalized)=%r (%s)  '
+          'known-good(field-redacted)=%r (%s)  known-good(redacted+explanatory-comment)=%r (%s)' %
+          ('PASS' if ok else 'FAIL', bad, detail_bad, good, detail_good,
+           redacted, detail_redacted, redacted_c, detail_redacted_c))
     return 0 if ok else 1
 
 
