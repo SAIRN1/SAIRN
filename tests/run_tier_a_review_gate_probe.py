@@ -2232,11 +2232,29 @@ def _subject_sha_fixture():
         stamped = json.load(io.open(ledger, encoding='utf-8'))['records'][0]
     finally:
         g.REPO, g.REVIEWS = old_repo, old_reviews
-        shutil.rmtree(base, ignore_errors=True)
-    return a_sha, b_sha, with_files, no_files, stamped
+        # ── NOT ignore_errors=True, AND THAT IS A FIX TO MY OWN MISTAKE ──────
+        # This tempdir holds a real `.git`, whose object files are READ-ONLY.
+        # `rmtree(ignore_errors=True)` cannot delete them, says nothing, and
+        # leaves the tree behind -- that exact line leaked 239 files in silence
+        # on 2026-10-07 in tools/run_all_tests.py and was fixed there with a
+        # retry handler. The other three rmtree calls in this file remove plain
+        # JSON fixtures with no .git in them, which is why they are not this
+        # shape. Same chmod-retry helper as run_committer_identity_probe.py and
+        # six other probes, rather than a seventh spelling of it.
+        def _onerror(fn, p, _exc):
+            try:
+                os.chmod(p, 0o700)
+                fn(p)
+            except Exception:                           # noqa: BLE001
+                pass                                    # a cleanup failure
+                #  must not fail the probe -- but it must not be invisible
+                #  either, which is what the arm below checks.
+        shutil.rmtree(base, onerror=_onerror)
+        _left = os.path.isdir(base)
+    return a_sha, b_sha, with_files, no_files, stamped, _left
 
 
-_A, _B, _WITH, _NOFILES, _STAMPED = _subject_sha_fixture()
+_A, _B, _WITH, _NOFILES, _STAMPED, _LEFT = _subject_sha_fixture()
 
 check('THE STAMPED SHA IS THE LAST COMMIT TOUCHING THE NAMED FILES, not HEAD -- '
       'the regression this fixture exists for',
@@ -2267,6 +2285,10 @@ check('...and the sha was derived from the SAME file list the record publishes, 
       'which is the quieter defect the first draft of the fix had',
       _STAMPED.get('files') == ['api/x.js'],
       'the record names %r' % (_STAMPED.get('files'),))
+check('THE FIXTURE CLEANED UP AFTER ITSELF -- a tempdir holding read-only git '
+      'objects left behind is the 239-file silent leak, and ignore_errors=True '
+      'would make this arm unwritable',
+      not _LEFT, 'the fixture tempdir survived rmtree')
 
 
 if fails:
