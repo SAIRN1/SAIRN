@@ -751,3 +751,36 @@ C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-cody\6f1
 lockfile before/after, `audit_before.json` / `audit_after.json`, the reseat
 output, `old.json`. `scratchpad/item4/` — the running suite.
 `scratchpad/r21/` — the six Tier A reviews from batch 21.
+- **ESCALATION — THE PUSH IS BLOCKED BY THE REMOTE, NOT BY A GATE.** Three
+  attempts, all `! [remote rejected] main -> main (Internal Server Error)`.
+  **Not a gate refusal:** 0 lines matching blocked/denied/refus in the output,
+  2 matching `Internal Server Error`. `git ls-remote` EXIT **0** and the remote
+  tip `0cefb393` **equals** my local `origin/main`, so it is not a race either —
+  I read it as one on the second attempt and that reading was wrong. Rebase is a
+  no-op (`Current branch main is up to date`). **Per the 2-round cap this is
+  ESCALATED, and the three commits are intact locally:** `145d1547` (item 2),
+  `5ab99a27` (item 3), `c568a049` (item 4). **NEXT STEP:** retry
+  `git push origin main` later; nothing needs re-doing.
+- **item 6 — DONE — commit pending.** Re-measured: **moderate 0, high 2, total
+  2** — the busboy moderate is gone, so everything left is the single
+  `node-forge` advisory counted twice. **DECISION: WAIT**, accepted, four
+  triggers unchanged. Measured basis, all re-derived: **exactly 1 of 1**
+  `forge.*` call sites in firebase-admin is
+  `pki.privateKeyFromPem` at `lib/app/credential-internal.js:150` — **a parser,
+  return value discarded**, on our own key from our own env var, while the
+  advisory is about **verification** (`rsa.js`); node-forge **1.4.0 is both
+  installed and the newest published**, so no patch exists and the major bump is
+  the only fix; and that bump is prepared but gated. **What changed since
+  addendum 3: trigger 1 is no longer a rewrite, it is a suite run** — the port
+  exists, so the andon now hangs on one condition. Written as addendum 5 of
+  `docs/2026-10-05-dependabot-high-triage.md`.
+- **item 7 — DONE — commit pending.** **"No new rule, reinforces existing"** for
+  the mismatch itself: all six share the trailing-element cause
+  `capture_exit.py` was built for, and convention **15** held all six times. Six
+  in a day is a frequency measurement, not a new shape, and nothing is proposed
+  for the conventions file on its account. **One new line IS owed, and it is
+  about the evidence rather than the number:** *a status file is evidence, so one
+  status path per run; a path reused across a relaunch destroys the first run's
+  verdict.* Paid for by case 6, the only one of the six that cannot be cited
+  from a file. Written paste-ready in `docs/2026-10-07-cody-routed.md` §5 and
+  **ROUTED** — both convention files are declared by fourth.

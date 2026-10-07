@@ -169,3 +169,55 @@ Full postmortem: `docs/postmortem-cody-2026-10-07-bound-measurement.md`.
 - **To chat:** the 14 unowned files. Listed with creating commits in
   `docs/2026-10-07-cody-batch20.md` item 8 and at the top of this batch's
   report. **Not assigned, not claimed.**
+
+---
+
+## 5. METHODOLOGY — THE 6x HARNESS MISMATCH: **NO NEW RULE FOR THE MISMATCH.** ONE NEW LINE FOR ITS EVIDENCE.
+
+**Asked and answered plainly rather than padded.**
+
+### The mismatch itself: **no new mechanism. It reinforces convention 15.**
+
+All six cases this round share one cause, and it is the cause
+`tools/capture_exit.py` was written for on 2026-10-05: every one ran inside a
+**shell script** launched in the background, so the notification reported *that
+script's* status, whose last statement was an `echo` or a `git status`. Six
+instances in one working day on one clone is a **frequency measurement**, not a
+new shape. Convention **15** already states the rule — *a green claim must cite
+an exit code captured by whatever WAITED on the tool* — and it held all six
+times, because a status file existed every time.
+
+**Nothing is proposed for the conventions file on account of the mismatch.**
+
+### ONE NEW LINE, AND IT IS ABOUT THE EVIDENCE RATHER THAN THE NUMBER
+
+> **A status file is evidence, so one status path per run. A path reused across
+> a relaunch destroys the first run's verdict.**
+
+**Paid for 2026-10-07.** Case 6 of six — `run_all_tests.py --pinned`, notified
+as `exit code 0`, really **EXIT 2** — is the only one of the six that **cannot
+be cited from a file**. Its status path was reused by a relaunch three minutes
+later, and `capture_exit.py` **replaces** the file rather than appending, which
+is correct and deliberate: *"a status file that does not exist yet and a status
+file saying EXIT 0 are the same bytes to a careless reader"*, so a reader must
+never get a previous run's answer. **The same property that stops a stale read
+also erases the record.** Case 6 survives only because it was committed to a
+handoff at the time (`c1cd7c41`).
+
+**Why it is not already covered:** convention 15 governs what a *claim* must
+cite. Nothing governs the *lifetime* of the thing it cites. A captured exit code
+is the only durable artifact in this chain, and it is silently overwritable by
+the next run of the same script.
+
+**The test, one sentence:** before relaunching anything through
+`capture_exit.py`, ask whether the previous run's status file is still the only
+record of its outcome — and if it is, give the new run its own path.
+
+### ROUTED, NOT PROMOTED
+
+`docs/2026-09-13-cross-domain-disciplines.md` carries **21** `## <n>.` headings
+at HEAD `c568a049` (counted, not quoted) and is **declared by fourth** in a live
+claim, as is `docs/METHODOLOGY.md`. **Neither is written by me.** This section is
+the paste-ready text, inline and on a document that is on `main` — which is the
+form fourth's own queue row identified as the reason the last routing was
+received the same day where two earlier ones were not.
