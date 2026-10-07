@@ -112,3 +112,77 @@ is a decision about what the boundary **means**. That is chat's.
 
 **NO NEW AGENT IS NAMED.** Nothing in the hover auditor namespace was touched,
 read for this purpose, or routed by me.
+
+---
+
+## 3. ONE METHODOLOGY RULE, ROUTED NOT PROMOTED — 2026-10-07, batch b1
+
+**`docs/METHODOLOGY.md` IS CLAIMED BY TWO OTHER SESSIONS AND I DID NOT WRITE TO
+IT.** The claims tool was run **first**, as the dispatch requires, and it
+REFUSED — so no claim was taken and none needed releasing:
+
+```
+python tools/sairn_claim.py check methodology "docs/METHODOLOGY.md one entry from batch b1"
+exit 1
+BLOCKED -- another session already claimed overlapping work:
+  cody   (1.3h ago)  blocked by: same file or resource: docs/methodology.md
+  fourth (0.8h ago)  blocked by: same file or resource: docs/methodology.md
+```
+
+**And fourth's own item 12 is verbatim this work** — *"methodology entry, claiming
+and releasing the shared file around the write."* Writing it twice is worse than
+not writing it. The rule is recorded here for chat to land, which is the same
+course cc's batch 14 item 10 was given for the same file.
+
+### RULE E — a refusal is scoped to the case that justified it, and an unscoped refusal spreads to cases it does not fit
+
+**STATEMENT.** When work is declined for a stated reason, the reason must be
+re-derived **per item**, not written once over a group. A refusal applied to a
+group is read later as a property of the group, and the items in it that the
+reason never covered are now protected by someone else's argument. **It is harder
+to catch than a wrong answer, because the reasoning reads as careful** — and
+care is the signal reviewers use to decide what not to re-check.
+
+**TWO INSTANCES, BOTH MINE, BOTH FOUND IN ONE BATCH BY RE-READING A PRIOR
+REFUSAL RATHER THAN THE CODE IT REFUSED.**
+
+**Instance 1 — a data-loss hazard that belonged to one of two paths.** Two
+SAIRNroofing write paths were left unattributed with one shared reason: *"these
+two write paths DO NOT SEND `data` at all. Adding `data: { updatedBy }` would
+REPLACE the stored blob, destroying carrier, claim_number and adjuster."*
+Re-read at HEAD, `rf_claims/write` **does** send `data: dataBlob`
+(`api/sd-data.js:7772`), built from the whole payload through `storedBlob`. It
+took the same one-line stamp as five others. Only `rf_schedule/set_status`
+matched the stated reason. **The refusal was correct once and reused once**, and
+the reuse cost a real attribution gap on a claims table.
+
+**Instance 2 — a routing decision that was really a declined decision.** Eight
+tools tracebacked on a bare run; six were fixed and **two were put on a routing
+list together**. `docs/tool-owner-map.json` makes them opposite cases:
+`gh_push.py` is `"basis": "LAST_CLAIM", "owner": "cc"` — a real target —
+while `va_rule_currency.py` is `"basis": "NONE", "owner": null`: **no owner at
+all.** A file nobody owns cannot be routed to anyone, so putting it on a routing
+list was not deferring the decision to chat, it was declining to make one *while
+looking like deferral* — and it would have sat there every batch for exactly the
+same reason.
+
+**WHY THIS IS NOT ALREADY COVERED.** Convention 7 (*byte-identical is not
+safe-in-context*) is about propagating a proven **fix** to a new target without
+re-qualifying it. This is its mirror: propagating a proven **refusal**. The
+existing conventions all police what gets DONE. Nothing polices what gets
+DECLINED — and a decline leaves no diff, no arm and no exit code, so there is
+nothing for a checker to read. The only artefact is the sentence, which is why
+the rule has to be about re-deriving per item rather than about a gate.
+
+**THE MECHANICAL FORM, so it is not just an exhortation.** A refusal covering
+more than one item must state, **per item**, the specific fact that makes the
+reason true of *that* item — a file and line, a column, a constraint name. If the
+same sentence is true of every item without a per-item citation, that is the
+signal the reason was not actually checked against each one.
+
+**HOW IT WAS CAUGHT, which is the part a rule can act on.** Not by reading the
+code — by **re-reading the previous refusal with the code open beside it**. Both
+instances survived their original batch because the next reader (me) trusted the
+stated reason and went looking for the next item instead. The cheap check is: a
+carried-forward refusal is re-derived at HEAD before it is carried forward
+again.
