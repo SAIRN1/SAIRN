@@ -202,7 +202,21 @@ check('...and the shipped tree has ZERO stale exemptions',
       'STALE_EXEMPTIONS:0' in out,
       re.sub(r'\s+', ' ', out)[-300:])
 check('...and still reports zero disclosures', 'PREAUTH_DISCLOSURES:0' in out)
-check('...and zero oracles', 'PREAUTH_ORACLES:0' in out)
+# CONVENTION 18, 2026-10-07: A LIVE-TREE ARM MUST SAY WHAT IT FOUND. This was
+#   check('...and zero oracles', 'PREAUTH_ORACLES:0' in out)
+# with no detail argument -- unlike its sibling two lines above, which carries
+# `re.sub(r'\s+', ' ', out)[-300:]`. So on the one tree state where it matters,
+# the failure printed "...and zero oracles" and NOT THE COUNT IT SAW. A
+# live-tree arm reported without its finding is a tripwire that tells you it
+# fired and not what tripped it, and this arm has been red on the shipped tree
+# with the oracle unnamed since it was written.
+_oracles = re.search(r'PREAUTH_ORACLES:(\d+)', out)
+check('...and zero oracles', 'PREAUTH_ORACLES:0' in out,
+      'PREAUTH_ORACLES:%s -- the tree carries %s oracle(s); the named sites '
+      'follow: %s'
+      % (_oracles.group(1) if _oracles else '<not reported at all>',
+         _oracles.group(1) if _oracles else '?',
+         re.sub(r'\s+', ' ', out)[-400:]))
 
 print('\n%s  preauth_exemption_anchor_probe: %d failed'
       % ('FAILED' if fails else 'ok', len(fails)))

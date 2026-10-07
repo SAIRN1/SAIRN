@@ -596,3 +596,53 @@ orphaned later. Three methods, one conclusion — and the gate's sentence *"a
 wrong sha is worse than a dangling one, because a dangling one is visibly
 broken"* is the sharpest statement of it. **Attached to cody's finding, not
 claimed; cody and cc close it.**
+
+---
+
+## SEQ 14-B — ITEM 3: nine more diagnoses, and THREE SINGLE ARMS BLOCK SIX ROWS
+
+**Empty `why` 19 → 10 of 79.** Each suite run alone at `4d4b0da5`, exit code
+from its own output, `git status` captured before and after each run and
+unchanged throughout, and `node --check api/sd-data.js` clean afterwards because
+three of them are seam probes that plant and restore.
+
+### The finding: six of the remaining rows are CHAINED off three single arms
+
+| the one arm | where it lives | rows it blocks |
+|---|---|---|
+| **`5a  SAIRNsenior: every cached key is purged OR explicitly excluded`** | `tests/phi_cache_scoped_to_user.js`, 63 passed **1 failed** | **3** — `phi_cache_scope_probe`, `sairnbuild_fault_probe`, `sairncare_fault_probe` |
+| **`the registry still holds exactly 35 resources`** | `tests/sairnfreedom_server_backup.js`, 16 passed **1 failed** | **2** — itself and `sairnfreedom_fault_probe` |
+| **`...and names the exact command that publishes the earlier entry`** | `tests/claims/run_push_verify_probe.py`, 68 passed **1 failed** | **2** — itself and `claims/run_claim_retype_mutation_control` (diagnosed last batch) |
+
+**Fix three arms, clear six rows.** And the phi-cache one is not cosmetic: its
+subject is a **PHI cache purge on SAIRNsenior**, so a cached key that is neither
+purged nor explicitly excluded is resident health data surviving a logout.
+
+### A hardcoded cardinality is wrong in every copy at once
+
+`35` is pinned in **two** suites — `sairnfreedom_server_backup.js` ("the
+registry still holds exactly 35 resources") and `schema_provisioning_probe.py`
+(`arm1_reads_35_from_the_schema`, `arm2_registry_has_35`, diagnosed last batch).
+`write_readback_shape_probe.py` pins **two numbers in one arm name**
+(`arm2_writes_33_not_81`). One registry growing reddened three suites in three
+places — which is what makes a pinned count worse than a wrong one.
+
+### `QUOTABLE` does not name `cloud`
+
+`tests/hover_quotable_session_vocab_check.py` fails with one sentence:
+*"1 session(s) exist that QUOTABLE does not name: cloud"*. **Confirmed
+independently in this batch:** `tier_a_review_gate.py --list` prints
+`ASSIGNED TO cloud` on live obligations, and one of my batch-13 discharges
+needed `--takeover` precisely because a record had moved to `cloud`. Same class
+as cc's `SELF_EXCLUDED` at eight hand-written entries (SEQ 13-C): **a list a
+human must remember to extend is wrong the first time nobody remembers.**
+
+### Two NOT CLEARED, named with the single missing fact
+
+* `seam_check/run_or_default_probe.py` — the subject emits a COULD-NOT-TELL
+  where the arms require clean. The direction is the safe one, so the question
+  is **whether the could-not-tell is justified**; its reason text was not
+  captured.
+* `seam_check/run_ref_probe.py` — `baseline_clean` is **False**, so the two arms
+  below it carry no information in either direction. **Fix order is forced: the
+  baseline first.**

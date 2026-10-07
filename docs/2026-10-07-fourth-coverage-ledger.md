@@ -354,3 +354,73 @@ answers.
 **Read-only by construction:** every git call is `rev-list`, `ls-files`,
 `cat-file`, `merge-base` or `rev-parse`. `git status` was captured before and
 after and is unchanged.
+
+---
+
+## 7. CONVENTION 18 — 4 of 8 fixed, and the two new ones are small arms with large reporting
+
+**`tests/run_removal_path_probe.py` and
+`tests/push_gate/preauth_exemption_anchor_probe.py`, 2026-10-07.** With
+`run_primitive_obsession_probe` (batch 12) and `run_write_path_scan_probe`
+(batch 13) that is **4 of 8**; **4 remain open with artifacts.**
+
+### `run_removal_path_probe.py` — one arm, two counts
+
+    check('and the counts are reported', 'A=1' in out and 'C=1' in out, True)
+
+A tool that reported `A=1` and dropped `C=1` failed an arm whose name says only
+*"the counts are reported"*, so **the output could not say which count went
+missing** — and the Tier A count and the Tier C count are not interchangeable:
+one of them is the number a reader acts on. Split in two, each carrying its own
+name.
+
+| | |
+|---|---|
+| failing arms | 1 → 1 (the live-tree baseline arm, unchanged) + the Tier A arm now **passing by name** |
+| runs | **two**, both `PROGRAM_EXIT=1`, same single arm |
+| **ablation** | C condition made unsatisfiable **in place** → **A arm `ok`, C arm `FAIL`, only the C arm failed**; file restored **byte-identical**; restored probe back to exit 1 |
+
+### `preauth_exemption_anchor_probe.py` — a live-tree arm that did not say what it found
+
+    check('...and zero oracles', 'PREAUTH_ORACLES:0' in out)
+
+**No detail argument** — unlike its sibling two lines above, which carries
+`re.sub(r'\s+', ' ', out)[-300:]`. So on the one tree state that matters the
+failure printed *"...and zero oracles"* and **not the count it saw**. A
+live-tree arm reported without its finding is a tripwire that tells you it fired
+and not what tripped it.
+
+**The fix produced the fact immediately, and it clears a NOT CLEARED from batch
+12:**
+
+    FAIL ...and zero oracles  PREAUTH_ORACLES:11 -- the tree carries 11 oracle(s)
+      ... STALE_EXEMPTIONS:0 STALE_DECLARATIONS:0 HANDLERS_SCANNED:70
+          PREAUTH_DISCLOSURES:0 PREAUTH_ORACLES:11
+          HANDLERS_WITH_NO_AUTH_BOUNDARY:27 ...
+
+**Eleven oracles, and 27 handlers with no auth boundary**, neither of which the
+arm had ever printed. Two runs, both `PROGRAM_EXIT=1`. The ablation here is the
+observed behaviour change itself: the arm fired before and after, and only after
+does it name its subject.
+
+### TWO ABLATION ATTEMPTS THAT COULD NOT RUN, AND WHY THAT MATTERS
+
+**I tried to ablate the removal-path split twice before the method that worked,
+and both attempts are recorded rather than dropped.**
+
+1. **Removing the `C=` emission from the subject tool** — `COULD NOT RUN`: there
+   is no `C=` string in `tools/removal_path_check.py`, so the count is composed
+   somewhere the ablation could not reach.
+2. **Running a modified COPY of the probe from `%TEMP%`** — ran, and printed
+   **neither arm**. The probe resolves its own paths from `__file__`, so a copy
+   outside the repo does not reach the fixture at all. **That is the
+   home-repository path class again**, in an ablation harness rather than in a
+   probe.
+
+**In-place-modify-then-restore is the method that works here**, and it is the
+one every ablation in batches 12–14 has used. A copy is not an isolation
+technique for a tool that locates itself.
+
+**Under convention 20, an attempt that could not run is not an ablation**, and
+reporting those two as if the third had been the only attempt would have been
+the easy version of this entry.
