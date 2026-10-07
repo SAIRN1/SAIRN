@@ -3353,8 +3353,8 @@
       "task": "SHORT HOLD, MINUTES NOT HOURS, ON ONE FILE: write the Tier A discharge of cc 2026-09-28T10:44:30Z (criticality_tier_check rollup dedup) and RELEASE IMMEDIATELY. The previous Tooling claim was released at 2026-10-06T22:40:01Z specifically so cc can take her ranks 7-12, and this does NOT retake it -- the record being discharged is AUTHORED BY cc and is therefore not reviewable by her, so it is not in her set. Re-derived at HEAD 095ee8a7: no live claim declares docs/tier-a-reviews.json in its FILES list. FILES: docs/tier-a-reviews.json",
       "claimed_at": "2026-10-06T22:53:35Z",
       "claimed_at_epoch": 1791327215.0394862,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-07T12:02:47Z",
       "files": [
         "docs/tier-a-reviews.json"
       ]
@@ -3366,8 +3366,8 @@
       "task": "batch20: HARDEN EXISTING TOOLS ONLY, no new ones. (5) capture_exit.py gains an optional --bound that writes an explicit COULD_NOT_RUN TIMEOUT record instead of an exit code -- cc's routed finding, re-derived from her five-run artifact in docs/2026-10-06-cc-routed.md section 16. (4) run_all_tests.py must not leave tracked files dirty in the live clone: LIVE INCIDENT FOUND THIS SESSION -- its 23463s run set core.bare=true at 2026-10-07T01:14:02Z and left api/sd-data.js and api/_lib/subcontractor-compliance.js mutated, the latter SYNTACTICALLY BROKEN, and that residue made guard_ablation.py report a FALSE COULD NOT RUN. (3) metamorphic_check.py three runs under its new 40s bound. Plus the reporting items: absent-sha classification, 27 ownerless rules, worktrees, dependabot reconciliation, one methodology rule, handoff. CONFLICTS RE-DERIVED AT HEAD dfa1ccfd: tests/push_gate/check8_probe.py and tests/seam_check/run_delegation_probe.py are FOURTH's by owner map and by his live-batch declaration, so the residue and core.bare evidence is ROUTED TO FOURTH WITH A REPRODUCING ARTIFACT AND NOT FIXED BY ME. api/sd-data.js is HANK's -- I restored probe residue to HEAD in my own working copy and made no edit. tools/checker_selftest_check.py and tools/report_only_checks.py are CC's. docs/tier-a-reviews.json is NOT in my set this time: it was released at 2026-10-06T22:40:01Z so cc can take her ranks 7-12, briefly re-held for one discharge and released again. FILES: tools/capture_exit.py tools/run_all_tests.py tools/metamorphic_check.py docs/2026-10-07-cody-batch20.md docs/2026-10-07-cody-routed-to-fourth.md docs/handoff-cody-2026-10-07.md SAIRN-ACTIVE-WORK-cody.md",
       "claimed_at": "2026-10-07T11:00:28Z",
       "claimed_at_epoch": 1791370828.3712025,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-07T12:02:47Z",
       "files": [
         "SAIRN-ACTIVE-WORK-cody.md",
         "docs/2026-10-07-cody-batch20.md",
