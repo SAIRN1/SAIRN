@@ -24026,6 +24026,61 @@
       "recurrence_open": "The tool still cannot see an override read through a helper rather than process.env directly, cannot tell whether a present override reaches the read, and does not judge the 16 CROSS_APP suites at all. Those three are named limits, not findings. And the 155 findings are now a backlog nobody owns: the fix per finding is a judgement (add the override, or say in the header that the suite is pinned), and none of the 155 has been made."
     },
     {
+      "commit": "543ffb8f5d02",
+      "date": "2026-10-07",
+      "subject": "fix(harness): --pinned builds a throwaway CLONE, not a linked worktree -- so the config write that broke this clone cannot reach it, measured byte for byte",
+      "files": [
+        "docs/2026-10-07-cody-routed.md",
+        "docs/handoff-cody-2026-10-07.md",
+        "tools/run_all_tests.py"
+      ],
+      "lines_added": 281,
+      "lines_removed": 15,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/run_all_tests.py --pinned isolated the TREE and not the CONFIG: a linked worktree shares .git/config, so a git config write with cwd inside it lands in the real clone. This clone was found core.bare=true, written 2026-10-07T01:14:02Z during a 23463s unpinned run of this file, with git status, add and commit broken afterwards and two api/ files left mutated, one of them unparseable. --pinned now builds a throwaway CLONE, which has its own config. Proved byte for byte: the exact write run inside the sandbox leaves .git/config at sha256 93070fe59db2, 506 bytes, and git config -l identical.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The worktree-based --pinned predates this session and the introducing commit was not bisected; naming one would be a guess."
+      },
+      "citation_note": "No standing rule names worktree-vs-clone config aliasing; the closest is the SHARED_CONFIG_WRITE_FROM_WORKTREE cause tag, which is a tag rather than a published rule. The methodology entry is fourth's to accept.",
+      "phase_note": "Choosing a linked worktree as the isolation mechanism isolated the working tree and left the configuration shared. The code was correct for what it was asked to do.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "A linked git worktree SHARES .git/config with the clone that owns it, so a `git config` write made with cwd inside the worktree is a write to the real clone. Nothing in the code made that aliasing visible.",
+          "action_status": "done",
+          "action": "--pinned now builds a throwaway `git clone --local --no-checkout` and checks out the pinned sha there. A clone has its own .git/config, so the write cannot reach the main clone at all. Proved byte for byte at 543ffb8f."
+        },
+        {
+          "kind": "detection",
+          "factor": "The residue check in the same file read `git status`'s stdout and never its return code, so once core.bare was set the clone reported CLEAN and the breakage stayed invisible for the rest of a 23463-second run.",
+          "action_status": "done",
+          "action": "_tree() returns (ok, lines); an unreadable tree is EXIT 2 COULD NOT RUN and outranks every other verdict; core.bare is compared before and after. Landed 166fe4ef with a 10-arm selftest."
+        },
+        {
+          "kind": "process",
+          "factor": "A whole-tree run was started UNPINNED in the live clone, so a probe that mutates tracked files had the real working tree to mutate. --pinned existed and was not used.",
+          "action_status": "planned",
+          "action": "Item 4 of this batch starts the whole suite through --pinned in the throwaway clone. A gate that refuses an unpinned whole-tree run in a live clone is NOT built and is named as the remaining gap rather than assumed."
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "The WRITER of core.bare is still unidentified. fourth's root-cause fix b23dbc2e -- which moved check8_probe's fixture to a throwaway clone -- was already present in the tree at 095ee8a7 when this incident happened, so the documented mechanism does not account for it.",
+          "action_status": "not-actionable",
+          "note": "Not mine to close. tests/push_gate/check8_probe.py and tests/seam_check/run_delegation_probe.py are fourth's by owner map and by his live declaration. Routed with the full artifact in docs/2026-10-07-cody-routed-to-fourth.md; only the originating finder closes it, and the cause tag stays writer=unknown rather than naming a guess."
+        }
+      ],
+      "recurrence_open": "OPEN. The writer of core.bare is still unidentified and fourth's root-cause fix was already in the tree when this happened, so the same breakage can recur through any other probe that runs git config from inside a linked worktree. This fix removes ONE vehicle (--pinned) and does not remove the class."
+    },
+    {
       "commit": "f2ee7be0d6da",
       "date": "2026-10-07",
       "subject": "fix(tier-a gate): CONVENTION 19 -- the freshness path decided a recorded sha was usable with an EXISTENCE test, and SEVEN live records were orphaned",
