@@ -63,9 +63,24 @@
       "task": "hover2 batch L, audit role, own-tool only: re-check open findings (dnt_, scp_, bld_draws) at current HEAD; gate-parity 8/17; undirected sweep 11/17; hard-fail rescore; chain verify; handoff",
       "claimed_at": "2026-10-07T15:26:12Z",
       "claimed_at_epoch": 1791386772.1906838,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-07T15:53:53Z",
       "files": null
+    }
+  ],
+  "refusals": [
+    {
+      "refused_at": "2026-10-07T15:27:52Z",
+      "my_subject": "hover2",
+      "my_task": "hover2 batch L",
+      "other_session": "fourth",
+      "other_subject": "fourth",
+      "other_task": "batch14 at HEAD 10521191, premises re-derived. (1) SHA sweep matcher: the dispatch says it uses width 8 -- IT NO LONGER DOES, batch13 item4 replaced it with a hex RUN of length 8-40 plus four rejection rules and 12 selftest arms. Re-run the full sweep and report corrected ABSENT and orphan counts including my own 5 batch-12 commits. (2) resolve and report exactly where the 4 ABSENT Tier A obligations land. (3) red register next slice from 19 of 79, each suite run ALONE with exit code, environment stamp and cause tag. (4) convention-18: the remaining 6 of 8, same ablation standard, full handoff after. (5) census toward 83, the log re-extracted every time and never quoted. (6) settings merge re-checked ONCE: cody's batch21 claim is RELEASED but ~/.claude/settings.json still carries only a PreCompact hook and no commit has touched .claude/settings.json since 2026-10-05, so it is STILL BLOCKED and I move on. (7) the two corrected measurements go in MY handoff for chat to route -- I edit no other session's files. (8) convention 22 from the bounded-window mistake. (9) confirm the exact path I read conventions from and give cody the correct one. (10) handoff and release. NOT TOUCHED AND NOT OVERRIDDEN: no active claim declares any file in my set -- cc (0.9h) and hover2 (1.6h) are the only active claims and neither lists one. .claude/settings.json is NOT touched regardless, per item 6. I close only findings I originated and reclassify none; hank's and cc's corrected measurements are ROUTED through my handoff, not edited into their files. Every suite runs individually; no whole-tree and no --pinned run. FILES: docs/known-red-suites.json tools/known_red_check.py docs/METHODOLOGY.md docs/2026-09-13-cross-domain-disciplines.md docs/tier-a-reviews.json tests/run_truthy_sum_probe.py tests/run_subprocess_decode_probe.py tests/run_removal_path_probe.py tests/run_completeness_probe.py tests/push_gate/preauth_exemption_anchor_probe.py docs/2026-10-07-fourth-routed.md docs/2026-10-07-fourth-coverage-ledger.md docs/handoff-fourth-2026-10-07b.md docs/handoff-fourth-2026-10-07.md SAIRN-ACTIVE-WORK-fourth.md",
+      "other_claimed_at": "2026-10-07T14:26:40Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "one task is entirely inside the other: \"batch hover2\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
 }
