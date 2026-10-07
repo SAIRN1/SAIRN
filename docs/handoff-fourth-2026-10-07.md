@@ -545,3 +545,57 @@ is a different directory -- the mistake that produced the withdrawn retraction:*
 `abl_i2.out` (the EMPTYING lever: *"COULD-NOT-RUN -- the lever never engaged"*) and
 `abl_i2c.out` (the FILLING lever: tool `1 -> 0`, probe `1 -> 0`, restored
 byte-identical).
+
+
+---
+
+# ITEM 12 RESULT -- the report gate, run as the last step, and it REFUSED FIRST
+
+Appended after the report was written, which is the one place in this file where
+the evidence post-dates its row, and the row above says so.
+
+**FIVE RUNS. The gate refused twice and the REPORT was changed both times, never
+the gate.**
+
+| run | subject | exit | what |
+|---|---|---|---|
+| 1 | a FIXTURE COPY of the report with a known orphan pasted in | **1** | **the selftest.** `gate selftest : the known orphan ... was caught as ORPHANED`. 20 citations, 14 ON-REF, 6 not. A gate that only ever sees clean input is a gate nobody has watched fail -- convention 20 |
+| 2 | the report body | **1** | **5 flagged.** One genuinely ORPHANED commit I was quoting as data, and **four that are not commits at all** -- two sha256 prefixes, a session-uuid fragment and a literal 8-character test string |
+| 3 | the body, four rewritten | **1** | one left: the dead sha convention 19 is about, still written out |
+| 4 | the body, that one cited by subject | **0** | 14 citations, **14 ON-REF**, 0 not |
+| 5 | **`G:\My Drive\SAIRN-status\SAIRN-report-ted-b1.txt`, after a fresh `git fetch`** | **0** | the delivered file. 14 extracted, 14 ON-REF |
+
+**The fix was the report, following the gate's own refusal text** -- *"Cite it by
+SUBJECT, or cite the sha only after the final push."* A full 64-character sha256
+is over the extractor's 40-char ceiling and a full uuid is rejected by shape, so
+the two hashes that mattered are written in full rather than abbreviated into
+something that looks like a commit.
+
+**AND THE GATE'S FOUR FALSE POSITIVES ARE CONVENTION 25 ARRIVING ON THE DAY IT
+LANDED.** `[0-9a-fA-F]{8,40}` cannot tell a short commit from a sha256 prefix,
+from a uuid fragment, or from a test string -- **three distinct false-positive
+classes from one predicate, which is 25's exact trigger.** The gate lives in the
+batch-14 session's scratchpad and I carried it here **unmodified**: it is
+report-only, it was right to refuse, and narrowing its pattern today would be the
+fourth patch rather than the design review 25 asks for. **Recorded as the
+finding, not fixed**, and it is the first independent instance of a convention
+this batch landed an hour earlier.
+
+## SHA SWEEP ON THE FINAL REPORT
+
+`<scratchpad>/finalize.out`. The sha256 covers every byte before the `SHA256:`
+line, LF endings, UTF-8, `hashlib`:
+
+    bytes on disk      25030
+    CR bytes present   0
+    lines              443
+    first line         'REPORT ted b1'
+    second-to-last     'SHA256: 2f4cf99b055e15a2929cef0fa61d3ab815969e98a098e24b1379b2d5e4ed12c3'
+    last line          'END-OF-REPORT'
+    MATCH              True
+
+**Recomputed FROM THE FILE ON DISK after writing, not from the buffer that was
+written** -- a hash verified against its own source proves the hash function
+works and nothing about the file. **Plus a negative control: one byte changed
+still matches == False.** Without that arm the match is a tautology, which is
+convention 20 applied to a hash.
