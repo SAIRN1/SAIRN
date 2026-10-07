@@ -441,6 +441,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_alf_read_order_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "8ac97e691bd18662cfc0075e804f45878826f8c4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_defect_register_reseat_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(d, ignore_errors=True)"
+    }
+   ],
+   "sha": "8ac97e691bd18662cfc0075e804f45878826f8c4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_py_guard_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -580,6 +601,27 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "c6a841cb9f235ac763992738ff019a47c3913718",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_alf_read_order_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ca2be255b4c72071883a8d601e4a371b1df23851",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_defect_register_reseat_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(d, ignore_errors=True)"
+    }
+   ],
+   "sha": "ca2be255b4c72071883a8d601e4a371b1df23851",
    "criteria_version": "2026-10-06.1"
   },
   {

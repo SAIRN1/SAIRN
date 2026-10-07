@@ -24026,6 +24026,61 @@
       "recurrence_open": "The tool still cannot see an override read through a helper rather than process.env directly, cannot tell whether a present override reaches the read, and does not judge the 16 CROSS_APP suites at all. Those three are named limits, not findings. And the 155 findings are now a backlog nobody owns: the fix per finding is a judgement (add the override, or say in the header that the suite is pinned), and none of the 155 has been made."
     },
     {
+      "commit": "0dcb2dafb001",
+      "date": "2026-10-07",
+      "subject": "fix(harness): --pinned builds a throwaway CLONE, not a linked worktree -- so the config write that broke this clone cannot reach it, measured byte for byte",
+      "files": [
+        "docs/2026-10-07-cody-routed.md",
+        "docs/handoff-cody-2026-10-07.md",
+        "tools/run_all_tests.py"
+      ],
+      "lines_added": 281,
+      "lines_removed": 15,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/run_all_tests.py --pinned isolated the TREE and not the CONFIG: a linked worktree shares .git/config, so a git config write with cwd inside it lands in the real clone. This clone was found core.bare=true, written 2026-10-07T01:14:02Z during a 23463s unpinned run of this file, with git status, add and commit broken afterwards and two api/ files left mutated, one of them unparseable. --pinned now builds a throwaway CLONE, which has its own config. Proved byte for byte: the exact write run inside the sandbox leaves .git/config at sha256 93070fe59db2, 506 bytes, and git config -l identical.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The worktree-based --pinned predates this session and the introducing commit was not bisected; naming one would be a guess."
+      },
+      "citation_note": "No standing rule names worktree-vs-clone config aliasing; the closest is the SHARED_CONFIG_WRITE_FROM_WORKTREE cause tag, which is a tag rather than a published rule. The methodology entry is fourth's to accept.",
+      "phase_note": "Choosing a linked worktree as the isolation mechanism isolated the working tree and left the configuration shared. The code was correct for what it was asked to do.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "A linked git worktree SHARES .git/config with the clone that owns it, so a `git config` write made with cwd inside the worktree is a write to the real clone. Nothing in the code made that aliasing visible.",
+          "action_status": "done",
+          "action": "--pinned now builds a throwaway `git clone --local --no-checkout` and checks out the pinned sha there. A clone has its own .git/config, so the write cannot reach the main clone at all. Proved byte for byte at 543ffb8f."
+        },
+        {
+          "kind": "detection",
+          "factor": "The residue check in the same file read `git status`'s stdout and never its return code, so once core.bare was set the clone reported CLEAN and the breakage stayed invisible for the rest of a 23463-second run.",
+          "action_status": "done",
+          "action": "_tree() returns (ok, lines); an unreadable tree is EXIT 2 COULD NOT RUN and outranks every other verdict; core.bare is compared before and after. Landed 166fe4ef with a 10-arm selftest."
+        },
+        {
+          "kind": "process",
+          "factor": "A whole-tree run was started UNPINNED in the live clone, so a probe that mutates tracked files had the real working tree to mutate. --pinned existed and was not used.",
+          "action_status": "planned",
+          "action": "Item 4 of this batch starts the whole suite through --pinned in the throwaway clone. A gate that refuses an unpinned whole-tree run in a live clone is NOT built and is named as the remaining gap rather than assumed."
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "The WRITER of core.bare is still unidentified. fourth's root-cause fix b23dbc2e -- which moved check8_probe's fixture to a throwaway clone -- was already present in the tree at 095ee8a7 when this incident happened, so the documented mechanism does not account for it.",
+          "action_status": "not-actionable",
+          "note": "Not mine to close. tests/push_gate/check8_probe.py and tests/seam_check/run_delegation_probe.py are fourth's by owner map and by his live declaration. Routed with the full artifact in docs/2026-10-07-cody-routed-to-fourth.md; only the originating finder closes it, and the cause tag stays writer=unknown rather than naming a guess."
+        }
+      ],
+      "recurrence_open": "OPEN. The writer of core.bare is still unidentified and fourth's root-cause fix was already in the tree when this happened, so the same breakage can recur through any other probe that runs git config from inside a linked worktree. This fix removes ONE vehicle (--pinned) and does not remove the class."
+    },
+    {
       "commit": "18078d382de8",
       "date": "2026-10-07",
       "subject": "fix(tier-a): --open stamped HEAD, and 34 of 63 checkable records anchor an obligation to a commit that never contained its subject",
@@ -24089,6 +24144,64 @@
         }
       ],
       "recurrence_open": "EVERY OTHER PLACE A SHA IS STAMPED AS 'the commit this is about' IS UNAUDITED. This fix covers one writer in one tool. docs/defect-density-register.json itself stamps an injection commit and a fix commit; the scrutiny and citation ledgers stamp shas too. None of them has a check comparing a stamped sha against the files the same record names, and that comparison is one git show per record."
+    },
+    {
+      "commit": "1c53498df088",
+      "date": "2026-10-07",
+      "subject": "fix(phi cache): the arm nobody owned was the SUITE reading a comment as a write -- one arm, four rows",
+      "files": [
+        "docs/handoff-fourth-2026-10-07.md",
+        "docs/known-red-suites.json",
+        "tests/phi_cache_scoped_to_user.js"
+      ],
+      "lines_added": 117,
+      "lines_removed": 116,
+      "app": "sairnsenior",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tests/phi_cache_scoped_to_user.js arm 5 derived the app's written cache keys by running the regex [ls][dt]\\('(<prefix>_[a-z_]+)' over the RAW file, so the comment at sairnsenior.html:5772,5774 -- which quotes st('sen_settings') in order to record that the key must never be written, because the resource is server-authoritative -- was counted as two write sites. Arm 5a then demanded a purge-or-exempt rule for a cache that does not exist and stayed red, which left tests/phi_cache_scope_probe.py refusing to plant any of its 7 mutations against the PHI purge guard, so that guard was unverified in either direction for as long as the false positive stood. Fixed by extracting write sites from tests/lib/strip_comments.js output, with arm 5e as a both-directions control that fails without it.",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "b50c2e2f9464",
+        "date": "2026-09-10",
+        "subject": "fix(care,senior,dental): the server scoped the read, the local cache outlived the person",
+        "lag_days": 27
+      },
+      "contributing_factors": [
+        {
+          "factor": "The write-site extraction was a bare regex over the raw file, and comment syntax in a single-file HTML app is context-dependent",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Extraction now runs over tests/lib/strip_comments.js output, the shared library whose own header records three earlier private versions that were each wrong in a different direction."
+        },
+        {
+          "factor": "The arm trusted its own input: nothing in the suite checked that the key-extraction step distinguished code from prose, so a parser defect was reported as a defect in the subject app",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Arm 5e added as a both-directions control on writtenKeys() -- a real st() write IS counted, the same text inside // and /* */ comments is NOT. Ablated: probe exit 0 -> 1 naming 5e in all four apps."
+        },
+        {
+          "factor": "The red arm was diagnosed in the register as a real decision about SAIRNsenior (sen_settings is the EVV configuration record) rather than as a possible defect in the arm, so the investigation pointed at the app and not at the checker",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "Write the rule into this batch methodology entry: when a checker reports a stubborn finding against a subject whose own source comments say the opposite, verify the checker INPUT before the subject. Planned rather than done because the methodology file is written later in this batch under its own claim."
+        },
+        {
+          "factor": "A red arm in a baseline suite silently disables every mutation probe gated on that baseline -- three further register rows were held shut by this one arm and nothing reported the coupling as a cost",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "The arm-0 baseline gate is correct: planting mutations against a red baseline teaches nothing. The cost is real but the alternative is worse, and convention 18 already names the shape. Not acted on here."
+        }
+      ],
+      "recurrence_open": "The other suites that derive key or symbol lists with a bare regex over a raw single-file app have NOT been audited for the same comment-as-code read. tests/lib/strip_comments.js exists and is used by some of them; which ones, and which still read raw, is unmeasured."
     },
     {
       "commit": "2281de97ff5c",
@@ -24353,109 +24466,6 @@
       "recurrence_open": "NO TEST ASSERTS THAT A SPECIFIC SEED ROW STILL CARRIES ITS trigger_document. The engine test covers behaviour GIVEN the field; a row quietly losing it stays green. 77236c2a touched 45 rows across many jurisdictions and only the 4 with generators can be checked this way at all -- the other jurisdictions' seeds have no generator and therefore no --check, so for them this class of drift is undetectable by construction. gen_mn_seed.py was measured at --check 0 and is clean today, which is three of four, not all four."
     },
     {
-      "commit": "f3267f477224",
-      "date": "2026-10-07",
-      "subject": "fix(ablation): a TIMED-OUT suite counted as proof a guard was LOAD-BEARING -- 124 is an exit code and a could-not-run is not",
-      "files": [
-        "docs/handoff-cody-2026-10-07.md",
-        "tools/guard_ablation.py"
-      ],
-      "lines_added": 137,
-      "lines_removed": 16,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "tools/guard_ablation.py run() returned 124 on a timeout and the ablation loop read 'if run(...) != 0: noticed = s', so a suite that never finished counted as proof the ablated guard was LOAD-BEARING. A fabricated positive in the safe-looking direction: the guard reads as individually necessary and nothing proved it. run() now returns None, three baseline buckets replace two, a gate whose observers all timed out is COULD-NOT-RUN rather than SILENT or LOAD-BEARING, and --bound makes the path drivable. Driven: bound 1ms returns None, old '!= 0' would have called it noticed, end-to-end --bound 0.001 exits 2 naming 0 red and 178 did-not-finish.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "Not bisected. The 124 convention has been in run() since the file was written and naming a commit would be a guess."
-      },
-      "citation_note": "The closest standing statement is the platform rule that a could-not-run is a third state and never folded into a pass (PR 1.11). That rule is about PASSES; this is the mirror case -- a could-not-run folded into a FINDING -- and no published rule names that direction.",
-      "phase_note": "The bound and the timeout handler both existed. The defect is the chosen representation of the timeout -- an integer inside the exit-code space -- and the comparison written against it.",
-      "contributing_factors": [
-        {
-          "kind": "technical",
-          "factor": "run() spelled a COULD-NOT-RUN as the exit code 124, putting it inside the exit-code space where `!= 0` could not distinguish it from a real failing suite.",
-          "action_status": "done",
-          "action": "run() returns None, which is never an exit code; both call sites now branch on `is None` explicitly."
-        },
-        {
-          "kind": "detection",
-          "factor": "Nothing drove the timeout path. Every run of this tool had finished inside the bound, so the branch that laundered a timeout into a verdict had never executed in anger.",
-          "action_status": "done",
-          "action": "--bound makes the timeout path drivable on demand; it was then driven end to end at --bound 0.001 and the output read."
-        },
-        {
-          "kind": "process",
-          "factor": "The refusal message asserted a cause (every suite is red) that the code had not established, so a correct refusal pointed the reader at the wrong remedy.",
-          "action_status": "done",
-          "action": "Both refusal messages now report the red count and the did-not-finish count separately and name which remedy belongs to which."
-        }
-      ],
-      "recurrence_open": "OPEN as a CLASS. This is the mirror of PR 1.11 -- a could-not-run laundered into a FINDING rather than into a pass -- and no standing rule names that direction, so nothing stops the next tool spelling a timeout as 124. A sweep for integer timeout sentinels across tools/ is not done and is not claimed."
-    },
-    {
-      "commit": "0dcb2dafb001",
-      "date": "2026-10-07",
-      "subject": "fix(harness): --pinned builds a throwaway CLONE, not a linked worktree -- so the config write that broke this clone cannot reach it, measured byte for byte",
-      "files": [
-        "docs/2026-10-07-cody-routed.md",
-        "docs/handoff-cody-2026-10-07.md",
-        "tools/run_all_tests.py"
-      ],
-      "lines_added": 281,
-      "lines_removed": 15,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "tools/run_all_tests.py --pinned isolated the TREE and not the CONFIG: a linked worktree shares .git/config, so a git config write with cwd inside it lands in the real clone. This clone was found core.bare=true, written 2026-10-07T01:14:02Z during a 23463s unpinned run of this file, with git status, add and commit broken afterwards and two api/ files left mutated, one of them unparseable. --pinned now builds a throwaway CLONE, which has its own config. Proved byte for byte: the exact write run inside the sandbox leaves .git/config at sha256 93070fe59db2, 506 bytes, and git config -l identical.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The worktree-based --pinned predates this session and the introducing commit was not bisected; naming one would be a guess."
-      },
-      "citation_note": "No standing rule names worktree-vs-clone config aliasing; the closest is the SHARED_CONFIG_WRITE_FROM_WORKTREE cause tag, which is a tag rather than a published rule. The methodology entry is fourth's to accept.",
-      "phase_note": "Choosing a linked worktree as the isolation mechanism isolated the working tree and left the configuration shared. The code was correct for what it was asked to do.",
-      "contributing_factors": [
-        {
-          "kind": "technical",
-          "factor": "A linked git worktree SHARES .git/config with the clone that owns it, so a `git config` write made with cwd inside the worktree is a write to the real clone. Nothing in the code made that aliasing visible.",
-          "action_status": "done",
-          "action": "--pinned now builds a throwaway `git clone --local --no-checkout` and checks out the pinned sha there. A clone has its own .git/config, so the write cannot reach the main clone at all. Proved byte for byte at 543ffb8f."
-        },
-        {
-          "kind": "detection",
-          "factor": "The residue check in the same file read `git status`'s stdout and never its return code, so once core.bare was set the clone reported CLEAN and the breakage stayed invisible for the rest of a 23463-second run.",
-          "action_status": "done",
-          "action": "_tree() returns (ok, lines); an unreadable tree is EXIT 2 COULD NOT RUN and outranks every other verdict; core.bare is compared before and after. Landed 166fe4ef with a 10-arm selftest."
-        },
-        {
-          "kind": "process",
-          "factor": "A whole-tree run was started UNPINNED in the live clone, so a probe that mutates tracked files had the real working tree to mutate. --pinned existed and was not used.",
-          "action_status": "planned",
-          "action": "Item 4 of this batch starts the whole suite through --pinned in the throwaway clone. A gate that refuses an unpinned whole-tree run in a live clone is NOT built and is named as the remaining gap rather than assumed."
-        },
-        {
-          "kind": "latent-condition",
-          "factor": "The WRITER of core.bare is still unidentified. fourth's root-cause fix b23dbc2e -- which moved check8_probe's fixture to a throwaway clone -- was already present in the tree at 095ee8a7 when this incident happened, so the documented mechanism does not account for it.",
-          "action_status": "not-actionable",
-          "note": "Not mine to close. tests/push_gate/check8_probe.py and tests/seam_check/run_delegation_probe.py are fourth's by owner map and by his live declaration. Routed with the full artifact in docs/2026-10-07-cody-routed-to-fourth.md; only the originating finder closes it, and the cause tag stays writer=unknown rather than naming a guess."
-        }
-      ],
-      "recurrence_open": "OPEN. The writer of core.bare is still unidentified and fourth's root-cause fix was already in the tree when this happened, so the same breakage can recur through any other probe that runs git config from inside a linked worktree. This fix removes ONE vehicle (--pinned) and does not remove the class."
-    },
-    {
       "commit": "56bbce5e83d5",
       "date": "2026-10-07",
       "subject": "fix(attribution): eight write paths across three apps now record WHO wrote the row -- and my own read found 15 of 49, not the 10 routed",
@@ -24501,6 +24511,62 @@
         }
       ],
       "recurrence_open": "SEVEN OF THE FIFTEEN ARE STILL UNATTRIBUTED and are named in docs/handoff-hank-2026-10-07b.md: rf_claims/write, rf_schedule/set_status, sen_authorizations, sen_branches, sen_franchise_agreements, sen_pay_rates, sen_payer_contracts. And nothing sweeps for the class platform-wide -- the probe that found these three apps is a scratchpad script, deliberately not promoted to tools/ this batch, so the other fourteen apps are unmeasured."
+    },
+    {
+      "commit": "6860aee4a4d3",
+      "date": "2026-10-07",
+      "subject": "fix(defect register): --reseat returned 0 over a register its own --check REFUSES -- two guards, and a correction to my own routed claim",
+      "files": [
+        "docs/defect-density-register.json",
+        "tests/run_defect_register_reseat_probe.py",
+        "tools/defect_register.py"
+      ],
+      "lines_added": 319,
+      "lines_removed": 4,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/defect_register.py --reseat REPORTED SUCCESS OVER A REGISTER ITS OWN --check REFUSES. Driven on a clean tree: --check 0, then --reseat re-seated 12 records and RETURNED 0 printing 're-seated 12 record(s)', then --check 1 with 'FAIL: 4 register problem(s)' -- four DUPLICATE records. The register's identity is (commit, summary) and --reseat maps a stale sha forward by SUBJECT, so where one defect was recorded twice (once before a rebase and once after) both records resolve to the same sha and collapse onto each other. An exit 0 from a repair tool is read as 'the thing is fixed', so a 0 over a register the checker rejects is worse than a crash -- and the next reader of the register has no way to tell. FIXED WITH TWO GUARDS, deliberately not the same guard twice: PREVENTION -- a record whose destination key is already taken is LEFT ALONE and named, because which of two records survives is a content question a pointer repair must not decide; and a BACKSTOP -- after the write, cmd_check() runs on what was just written and, if it fails for ANY reason, the file is restored from a BYTE pre-image and the exit is 2. A partial repair now exits 1 rather than 0. The backstop calls cmd_check rather than a private copy of the rules, which is this file's own stated argument about --add versus --check.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "No commit turned a working behaviour into this one: each site shipped with the shape it had. The nearest thing to an injection point is the commit that introduced the platform exit-code convention these predate, and naming that as the injection would blame the rule rather than the code."
+      },
+      "citation_note": "ARGUABLE. PR 1.5 is the confident line printed after the error. All three of these are its family -- a program whose OUTPUT asserts something its own evidence does not support: a repair tool printing 're-seated 12' over a register its checker rejects, a refusal printing COULD NOT RUN while exiting the code for FINDINGS, and a cleanup returning with the sandbox still registered. None is literally a line printed after an exception, so the citation is the family rather than the letter, and this note says so instead of claiming a clean match.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "action_status": "done",
+          "factor": "The subject match is many-to-one by construction and nothing checked the destination before writing to it.",
+          "action": "A key set is built before the loop and consulted per record; a taken destination is skipped and printed."
+        },
+        {
+          "kind": "detection",
+          "action_status": "done",
+          "factor": "Nothing ran the register's own validator after the repair, so the only signal was the NEXT person's --check -- or, worse, the push gate's.",
+          "action": "cmd_check() is called on the written file and a non-zero result reverts it and exits 2. 11-arm probe, with the backstop arm driven by a failure the collision guard cannot see (an invalid detection_method)."
+        },
+        {
+          "kind": "process",
+          "action_status": "done",
+          "factor": "I found this by running the tool on a real tree during batch 14 and reading --check afterwards, which is not a step anybody is told to take. A repair tool is normally trusted on its exit code.",
+          "action": "The tool now prints 'verified after writing: --check exits 0 on the register this command just wrote', so the step is in the output rather than in somebody's habit."
+        },
+        {
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "factor": "Four clones rebasing onto each other is what produces stale shas at this rate; the duplicate PAIRS exist because the same defect got recorded either side of a rebase. The re-seat need is structural, not anybody's mistake.",
+          "note": "No action: the fix is for the repair to be safe, not for rebases to stop. Named so the next person reading four duplicates does not look for carelessness."
+        }
+      ],
+      "recurrence_open": "THE FOUR COLLISIONS ARE NOT RESOLVED, only refused -- one fourth's and three hank's, routed in docs/2026-10-07-cc-routed-b15.md with the command that names them. The register still contains four duplicate PAIRS and will until their owners pick a survivor. ALSO OPEN: the identity rule (commit, summary) is shared with --add, so a change on that side could reintroduce the collapse from the other direction and no arm here would notice; and no arm covers a revert that itself FAILS -- the code reports that case and names `git checkout --`, but nothing makes the filesystem refuse a write to prove it."
     },
     {
       "commit": "6a2690bec035",
@@ -24599,6 +24665,54 @@
         }
       ],
       "recurrence_open": "THE AUDITOR REPRO NOW REPORTS A FIXED DEFECT AS LIVE and that is routed, not fixed by me: tools-hover2/alf_cross_resource_repro.py tests for the PRESENCE of medication_name in the derive_charges block, and the string is still there behind ALF_MAR_ROLES[session.role]. A presence test cannot see a role-gated redaction. That file is the auditor own. The sairncare UI is unchanged: a billing user now sees a priced medication line with an empty description and mar_description_withheld true on the payload, and rendering that honestly is a deliberate UI change nobody has made."
+    },
+    {
+      "commit": "83da8d39a19d",
+      "date": "2026-10-07",
+      "subject": "fix(condition coverage): H1's unchecked cleanup at :266 -- and the two sites NEXT TO IT that are correctly unchecked now say so",
+      "files": [
+        "tools/condition_coverage.py"
+      ],
+      "lines_added": 62,
+      "lines_removed": 4,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "tools/condition_coverage.py drop_sandbox() ran `git worktree remove --force` and DISCARDED the result, then shutil.rmtree(..., ignore_errors=True). Routed by H1 as an unchecked-cleanup call in a shared build-agent file. Three ordinary failures for that git call: a locked worktree, an open handle (routine on Windows, where a node process holding a file under the sandbox is exactly what this tool creates), and an administrative entry already pruned. AND THE COST IS NOT A STALE DIRECTORY: rmtree then deletes the FILES while git keeps the entry under .git/worktrees, which is the state that makes `git worktree add` refuse the SAME PATH on the next run -- so the failure surfaces later, elsewhere, as a sandbox that cannot be created. sandbox() already coped with a leftover DIRECTORY; it could not cope with a leftover REGISTRATION because nothing told it there was one. Fixed: drop_sandbox returns True when the sandbox is gone and False with a printed reason and the `git worktree prune` repair when it is not, and the single call site reads the verdict instead of dropping it. It REPORTS rather than raises, because this runs in a finally and a cleanup that throws replaces the real error with its own. Driven both ways: True and silent on a real sandbox created by sandbox() itself, False and loud on a non-worktree path with git's own 'is not a working tree' text.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "No commit turned a working behaviour into this one: each site shipped with the shape it had. The nearest thing to an injection point is the commit that introduced the platform exit-code convention these predate, and naming that as the injection would blame the rule rather than the code."
+      },
+      "citation_note": "ARGUABLE. PR 1.5 is the confident line printed after the error. All three of these are its family -- a program whose OUTPUT asserts something its own evidence does not support: a repair tool printing 're-seated 12' over a register its checker rejects, a refusal printing COULD NOT RUN while exiting the code for FINDINGS, and a cleanup returning with the sandbox still registered. None is literally a line printed after an exception, so the citation is the family rather than the letter, and this note says so instead of claiming a clean match.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "action_status": "done",
+          "factor": "A cleanup whose exit code is discarded, followed by an rmtree with ignore_errors=True, so BOTH halves were silent and the second hid the evidence of the first.",
+          "action": "The git call's returncode and the resulting directory are both read; the function returns a verdict and the caller consumes it."
+        },
+        {
+          "kind": "detection",
+          "action_status": "declined",
+          "factor": "The consequence appears on a LATER run, as a sandbox that cannot be created, with nothing connecting it to the cleanup that failed. That is why it survived: the symptom and the cause are in different runs.",
+          "note": "Not separately actioned. A check that correlates a failed worktree removal with a later add failure would need state across runs, and tools/cleanup_residue_check.py already owns the residue question. Named rather than half-built."
+        },
+        {
+          "kind": "process",
+          "action_status": "done",
+          "factor": "It was found by H1 reviewing a file neither of us owns, and routed. Nothing in the file's own test surface would have caught it, because the cleanup path is only exercised when it SUCCEEDS.",
+          "action": "Driven on a deliberately-wrong input (a non-worktree path) so the failure branch has actually been executed, not just written."
+        }
+      ],
+      "recurrence_open": "NINE LEFTOVER WORKTREES EXIST IN THIS CLONE RIGHT NOW, including condcov-69780 -- this tool's own residue from a run that predates the fix, which is exactly what the fix now reports. I am NOT pruning them: a worktree belonging to a run that is still going is not mine to delete, and pruning across another session's scratchpad is the destructive version of being helpful. Listed in docs/2026-10-07-cc-routed-b15.md. ALSO OPEN: the two other ignored-exit sites in this same file (:254 and :362) are CORRECTLY unchecked -- each is verified two lines later by a stronger test -- and the only fix available for them is a comment saying so, which is what they got. A static rule cannot tell handled-elsewhere from ignored, so py_guard_check.py R1 still reports both, correctly."
     },
     {
       "commit": "88d7543b2698",
@@ -24711,6 +24825,57 @@
         }
       ],
       "recurrence_open": "NO ROLE GATE WAS ADDED AND THAT IS DELIBERATE: which of owner, superintendent, manager, crew, office may write a BOQ rate or an invoice is a product decision this batch was told not to make unilaterally, so crew can still write an invoice once signed in. Logged open. The msb_* resources in the same dispatch region are a DIFFERENT app with the same licence-key-only shape and are explicitly NOT fixed -- arm D1 proves msb_products still answers without a session, which is a measurement and not an endorsement. And the auditor repro still reports REPRODUCES because it looks for verifySessionToken INSIDE each dispatch block while the gate is in the shared prelude; routed to hover2."
+    },
+    {
+      "commit": "92071d45b5bd",
+      "date": "2026-10-07",
+      "subject": "fix(exit codes): EIGHT sites reported FINDINGS where their own message said COULD NOT RUN -- all eight now exit 2, R4 goes to ZERO",
+      "files": [
+        "tests/run_alf_read_order_sabotage_probe.py",
+        "tools/load_deadline_seed.py",
+        "tools/outline.py",
+        "tools/sairn_load_state_check.py"
+      ],
+      "lines_added": 67,
+      "lines_removed": 25,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "EIGHT sites reported FINDINGS where their own message said COULD NOT RUN. sys.exit('text') and raise SystemExit('text') PRINT the string and exit 1; on this platform 1 means FINDINGS and 2 means COULD NOT RUN. THE EXPENSIVE ONE IS tools/sairn_load_state_check.py:533 -- the push gate calls that checker, so an absent SAIRNLAW_LICENSE_KEY in any clone read as SEED DRIFT in the licence: `python tools/sairn_load_state_check.py --app sairnlaw` exited 1 printing 'No license key'. tools/load_deadline_seed.py:167 and :177 the same, and :177's own first words were already 'COULD NOT RUN:' while it exited 1. tools/outline.py:34 an absent ctags DEPENDENCY, :112 a missing argument, :118 no <script> blocks. tests/run_alf_read_order_sabotage_probe.py:84 and :88 are two STALE-ANCHOR guards, and those are the sharpest: a stale anchor means the arm NEVER RAN, and exiting 1 filed that as a finding -- from a SABOTAGE probe, where a finding reads as 'the sabotage was detected', the exact opposite. All eight now print to stderr and raise SystemExit(2), each driven before and after. Rule R4 of tools/py_guard_check.py goes from 8 to ZERO over the same 711 files.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "py_guard_check.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "No commit turned a working behaviour into this one: each site shipped with the shape it had. The nearest thing to an injection point is the commit that introduced the platform exit-code convention these predate, and naming that as the injection would blame the rule rather than the code."
+      },
+      "citation_note": "ARGUABLE. PR 1.5 is the confident line printed after the error. All three of these are its family -- a program whose OUTPUT asserts something its own evidence does not support: a repair tool printing 're-seated 12' over a register its checker rejects, a refusal printing COULD NOT RUN while exiting the code for FINDINGS, and a cleanup returning with the sandbox still registered. None is literally a line printed after an exception, so the citation is the family rather than the letter, and this note says so instead of claiming a clean match.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "action_status": "done",
+          "factor": "Python's sys.exit(<string>) is a convenience that prints and exits 1. It reads like 'exit with this message' and means 'exit 1 with this message', and the difference only matters on a platform where 1 is a verdict.",
+          "action": "All eight rewritten as print(..., file=sys.stderr) plus an explicit SystemExit(2); the message stays on stderr exactly where it was."
+        },
+        {
+          "kind": "detection",
+          "action_status": "done",
+          "factor": "No check looked for it until py_guard_check.py R4 existed, one day earlier. Six of the eight had been in the tree for weeks.",
+          "action": "R4 now reports zero over tools+tests, and the scan is the artifact: `python tools/py_guard_check.py tools tests` before and after."
+        },
+        {
+          "kind": "process",
+          "action_status": "done",
+          "factor": "The item asked for SIX. Widening the scan from tools/ to tools+tests (306 files to 711) found two more, in a file nobody owns.",
+          "action": "Eight fixed, not six. Fixing the named count and leaving two known instances would have been the worse answer, and the commit says so."
+        }
+      ],
+      "recurrence_open": "NOTHING STOPS THE NINTH. The convention (0 clean, 1 findings, 2 could-not-run) is written in CLAUDE.md and in most tools' docstrings, and the only thing that now detects a violation is py_guard_check.py R4 -- which is REPORT-ONLY and whose promotion is explicitly a later decision. A new tool written tomorrow with sys.exit('message') will be found by a sweep, not by a gate. ALSO OPEN and NOT MINE: tests/run_alf_read_order_sabotage_probe.py exits 1 on a real arm failure -- 'the alf_mar read is hoisted into a local, so the arm finds ZERO list reads for that table' -- which I verified is PRE-EXISTING by stashing my own edit and re-running. That is the eighth cross-domain discipline and it is somebody else's file."
     },
     {
       "commit": "94becffb42e7",
@@ -25030,64 +25195,6 @@
       "recurrence_open": "WHICH ROLE SET BELONGS ON alf_staff IS STILL OPEN. The fix projects for roles outside ALF_CRED_READ_ROLES rather than deciding a new set, because that is a product decision this batch was told not to make unilaterally -- tracked as ALF-STAFF-READ-UNGATED-HANK-2026-10-06 and as the seven role sets in ROLE-SET-SWEEP-HANK-2026-10-06. The sairncare UI still renders phone and bgcheck columns and will now show them empty for narrow roles; that is correct and visible, and nobody has changed the client half."
     },
     {
-      "commit": "1c53498df088",
-      "date": "2026-10-07",
-      "subject": "fix(phi cache): the arm nobody owned was the SUITE reading a comment as a write -- one arm, four rows",
-      "files": [
-        "docs/handoff-fourth-2026-10-07.md",
-        "docs/known-red-suites.json",
-        "tests/phi_cache_scoped_to_user.js"
-      ],
-      "lines_added": 117,
-      "lines_removed": 116,
-      "app": "sairnsenior",
-      "layer": "test",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "tests/phi_cache_scoped_to_user.js arm 5 derived the app's written cache keys by running the regex [ls][dt]\\('(<prefix>_[a-z_]+)' over the RAW file, so the comment at sairnsenior.html:5772,5774 -- which quotes st('sen_settings') in order to record that the key must never be written, because the resource is server-authoritative -- was counted as two write sites. Arm 5a then demanded a purge-or-exempt rule for a cache that does not exist and stayed red, which left tests/phi_cache_scope_probe.py refusing to plant any of its 7 mutations against the PHI purge guard, so that guard was unverified in either direction for as long as the false positive stood. Fixed by extracting write sites from tests/lib/strip_comments.js output, with arm 5e as a both-directions control that fails without it.",
-      "rules": [
-        "1.2"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "b50c2e2f9464",
-        "date": "2026-09-10",
-        "subject": "fix(care,senior,dental): the server scoped the read, the local cache outlived the person",
-        "lag_days": 27
-      },
-      "contributing_factors": [
-        {
-          "factor": "The write-site extraction was a bare regex over the raw file, and comment syntax in a single-file HTML app is context-dependent",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Extraction now runs over tests/lib/strip_comments.js output, the shared library whose own header records three earlier private versions that were each wrong in a different direction."
-        },
-        {
-          "factor": "The arm trusted its own input: nothing in the suite checked that the key-extraction step distinguished code from prose, so a parser defect was reported as a defect in the subject app",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Arm 5e added as a both-directions control on writtenKeys() -- a real st() write IS counted, the same text inside // and /* */ comments is NOT. Ablated: probe exit 0 -> 1 naming 5e in all four apps."
-        },
-        {
-          "factor": "The red arm was diagnosed in the register as a real decision about SAIRNsenior (sen_settings is the EVV configuration record) rather than as a possible defect in the arm, so the investigation pointed at the app and not at the checker",
-          "kind": "process",
-          "action_status": "planned",
-          "action": "Write the rule into this batch methodology entry: when a checker reports a stubborn finding against a subject whose own source comments say the opposite, verify the checker INPUT before the subject. Planned rather than done because the methodology file is written later in this batch under its own claim."
-        },
-        {
-          "factor": "A red arm in a baseline suite silently disables every mutation probe gated on that baseline -- three further register rows were held shut by this one arm and nothing reported the coupling as a cost",
-          "kind": "latent-condition",
-          "action_status": "declined",
-          "note": "The arm-0 baseline gate is correct: planting mutations against a red baseline teaches nothing. The cost is real but the alternative is worse, and convention 18 already names the shape. Not acted on here."
-        }
-      ],
-      "recurrence_open": "The other suites that derive key or symbol lists with a bare regex over a raw single-file app have NOT been audited for the same comment-as-code read. tests/lib/strip_comments.js exists and is used by some of them; which ones, and which still read raw, is unmeasured."
-    },
-    {
       "commit": "da9ecbd40810",
       "date": "2026-10-07",
       "subject": "fix(gate-parity)+fix(citations): the cross-resource verdict gains a DIRECTION, and I re-seated a SHA I had FABRICATED last batch",
@@ -25353,6 +25460,54 @@
         }
       ],
       "recurrence_open": "EVERY OTHER REACHABILITY CHECK ON THE PLATFORM IS UNAUDITED. This fix covers ONE call site in ONE tool. A grep at eb430f25 finds cat-file or rev-parse --verify used in tools/conflict_marker_preflight.py, tools/credential_purge_check.py, tools/doc_sha_reseat.py, tools/gh_push.py, tools/landing_verification.py, tools/review_ledger_reseat.py, tools/sairn_push_gate_hook.py, tools/source_manifest.py, tests/claims/run_push_verify_probe.py and tests/run_tier_a_reseat_probe.py -- and NONE of them has been read to decide whether it is asking existence where it means reachability. The seven orphaned shas already in docs/tier-a-reviews.json are not reseated or retired by this fix either; the gate only reports them now."
+    },
+    {
+      "commit": "f3267f477224",
+      "date": "2026-10-07",
+      "subject": "fix(ablation): a TIMED-OUT suite counted as proof a guard was LOAD-BEARING -- 124 is an exit code and a could-not-run is not",
+      "files": [
+        "docs/handoff-cody-2026-10-07.md",
+        "tools/guard_ablation.py"
+      ],
+      "lines_added": 137,
+      "lines_removed": 16,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/guard_ablation.py run() returned 124 on a timeout and the ablation loop read 'if run(...) != 0: noticed = s', so a suite that never finished counted as proof the ablated guard was LOAD-BEARING. A fabricated positive in the safe-looking direction: the guard reads as individually necessary and nothing proved it. run() now returns None, three baseline buckets replace two, a gate whose observers all timed out is COULD-NOT-RUN rather than SILENT or LOAD-BEARING, and --bound makes the path drivable. Driven: bound 1ms returns None, old '!= 0' would have called it noticed, end-to-end --bound 0.001 exits 2 naming 0 red and 178 did-not-finish.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Not bisected. The 124 convention has been in run() since the file was written and naming a commit would be a guess."
+      },
+      "citation_note": "The closest standing statement is the platform rule that a could-not-run is a third state and never folded into a pass (PR 1.11). That rule is about PASSES; this is the mirror case -- a could-not-run folded into a FINDING -- and no published rule names that direction.",
+      "phase_note": "The bound and the timeout handler both existed. The defect is the chosen representation of the timeout -- an integer inside the exit-code space -- and the comparison written against it.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "run() spelled a COULD-NOT-RUN as the exit code 124, putting it inside the exit-code space where `!= 0` could not distinguish it from a real failing suite.",
+          "action_status": "done",
+          "action": "run() returns None, which is never an exit code; both call sites now branch on `is None` explicitly."
+        },
+        {
+          "kind": "detection",
+          "factor": "Nothing drove the timeout path. Every run of this tool had finished inside the bound, so the branch that laundered a timeout into a verdict had never executed in anger.",
+          "action_status": "done",
+          "action": "--bound makes the timeout path drivable on demand; it was then driven end to end at --bound 0.001 and the output read."
+        },
+        {
+          "kind": "process",
+          "factor": "The refusal message asserted a cause (every suite is red) that the code had not established, so a correct refusal pointed the reader at the wrong remedy.",
+          "action_status": "done",
+          "action": "Both refusal messages now report the red count and the did-not-finish count separately and name which remedy belongs to which."
+        }
+      ],
+      "recurrence_open": "OPEN as a CLASS. This is the mirror of PR 1.11 -- a could-not-run laundered into a FINDING rather than into a pass -- and no standing rule names that direction, so nothing stops the next tool spelling a timeout as 124. A sweep for integer timeout sentinels across tools/ is not done and is not claimed."
     }
   ],
   "started": "2026-09-09",
