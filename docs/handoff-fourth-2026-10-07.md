@@ -204,3 +204,15 @@ SHAs); `sf_merge.out` (the union merge on cc's scrutiny flags).
 The **batch-11** scratchpad, which this batch's items 3 and 4 continue from:
 
     C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\c430231c-cc9c-43df-9850-e4efe2dd54a3\scratchpad
+
+---
+
+# BATCH 13 CHECKPOINT LOG — one row per item, appended as each closed
+
+| item | state | commit / seq | exact next step |
+|---|---|---|---|
+| **3(a)** create the hook script | **DONE** | `C:\SAIRN-status\sairn_status_hook.py`, verbatim, nothing changed | none |
+| **3(c)** prove it | **DONE** | `G:\My Drive\SAIRN-status\SAIRN-fourth.status.json` and `events.log` written; hook `PROGRAM_EXIT=0` on all three sample events | none |
+| **3(b)** merge the hooks into settings | **NOT DONE** | cody's live batch21 claim declares `.claude/settings.json` and says **SOLE TOUCHER**, and that permissions merge **has not landed**: `~/.claude/settings.json` carries only a `PreCompact` hook, and no commit has touched `.claude/settings.json` since 2026-10-05 | the item's own instruction says to stop in exactly that case. Re-check once cody's batch21 lands |
+| **1** Tier A discharges | **DONE — 4** | the four `verdict` fields in `docs/tier-a-reviews.json`; three by `--takeover` with the handover recorded | 4 ABSENT remain, owed back as SEQ 13-A. Next readable one is whatever the gate lists after hank and cody close those |
+| **2** print the SQL | **DONE** | top of the report; the merge stays **BLOCKED on Michael** and nothing was done on it | wait for Michael's SQL result |

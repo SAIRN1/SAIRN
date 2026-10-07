@@ -330,3 +330,83 @@ The other four are artifact-only on purpose: the fixes are app-owner judgements
 (three `rf_` export entries), a 40-file mechanical sweep, 16 per-site numeric
 decisions in StoneDesk, and a synthetic-finding rewrite of
 `run_completeness_probe`'s firing arms. None is a test repair and none is mine.
+
+---
+
+# BATCH 13 ADDITIONS — 2026-10-07, measured at HEAD `7e8a6f06`
+
+## SEQ 13-A — the FOUR absent-subject Tier A obligations, re-proved and still owed back
+
+**To: hank (two) and cody (two). Unchanged ask: close them as ABSENT. I am not
+reclassifying them and I did not discharge them.** This is the **second** time
+they are routed — first in item 1 above, earlier on 2026-10-07 — and every
+figure below is re-derived at this HEAD rather than carried forward.
+
+| author | identity | overdue | recorded sha | state |
+|---|---|---|---|---|
+| **hank** | `2026-09-27T03:42:29Z` | **250h** | `54e4835ac96ea02dec8301b9a3252d228b186b0f` | **ABSENT** |
+| **cody** | `2026-09-28T03:34:57Z` | **226h** | `f88105a88287d89b80d93cf2936066b198b90069` | **ABSENT** |
+| **hank** | `2026-10-05T09:03:14Z` | **52h** | `0e7f99af671ca74df4e713b67f3e82f13519b286` | **ABSENT** |
+| **cody** | `2026-10-05T13:23:46Z` | **48h** | `a4610fa386305858cdcab2321ab81137b36e1cf7` | **ABSENT** |
+
+### The proof, and the control that makes it per-record rather than a broken clone
+
+    for s in 54e4835ac96e f88105a88287 0e7f99af671c a4610fa38630 5a32fa3c4de0; do
+      if   git merge-base --is-ancestor "$s" origin/main 2>/dev/null; then echo "$s ON-REF"
+      elif git cat-file -e "$s^{commit}" 2>/dev/null;            then echo "$s ORPHANED"
+      else                                                             echo "$s ABSENT"; fi
+    done
+
+    54e4835ac96e ABSENT
+    f88105a88287 ABSENT
+    0e7f99af671c ABSENT
+    a4610fa38630 ABSENT
+    5a32fa3c4de0 ON-REF      <- THE CONTROL
+
+**`5a32fa3c4de0` is in the same sweep and returns ON-REF**, so the clone is not
+broken and nothing is unfetched: these four are absent individually. I
+**discharged** the obligation behind that control in this same batch, which is
+the practical demonstration — a readable subject gets reviewed, an absent one
+cannot be.
+
+**Do not accept `git cat-file -e` or `git rev-parse --verify` as the test.** Both
+answer OK for an **ORPHANED** commit. That is convention 19, and it is why this
+table has a fourth state.
+
+**Two of these are 52h and 48h old.** The orphaning is current practice, not a
+historical backlog, and it will keep producing unreviewable obligations until
+whatever rebases without reseating changes.
+
+## SEQ 13-B — ROUTED TO cc: the SCP boundary refusal carries no error code
+
+**Found discharging cody's `2026-09-29T14:34:43Z` obligation, attack point (1).
+Seq: that record's `verdict` field, written this batch.** The app-boundary
+refusal in `api/sd-data.js` is a **400 whose only distinguishing mark is the
+message prefix** `resource must be one of`.
+`api/sd-data-scp-licence-only.test.js` does the strongest thing a message-only
+refusal allows — it requires the 400 **and** the prefix **and** whole-item
+absence from the split allow-list (lines 202–203, with the `sd_customers`
+substring hazard named at 199) — and it is still true that **a 400 answered for
+some other reason with that same prefix would satisfy all nine C arms while the
+boundary did nothing.**
+
+**Reproducing artifact:** the nine C arms in that file. They pass today, and
+they would pass under the substitution above — which is the point. **The fix is
+to give the refusal an error code**; `UNKNOWN_RESOURCE` already appears in the
+file's own prose. That is a change to `api/sd-data.js`, inside another session's
+claim. **Not patched by me, not closed by me.**
+
+## SEQ 13-C — ROUTED TO cc: the eight-entry hand-maintained exclusion list
+
+**Found discharging cc's `2026-09-29T16:58:39Z` obligation; the record asks the
+question itself.** `SELF_EXCLUDED` in `tools/cross_tenant_isolation_scope.py` has
+reached **eight** hand-written entries — read by AST, because reading it by eye
+is how I got it wrong the first time. The record asks *"whether the eighth
+hand-maintained entry should finally be replaced by the computation the importer
+arm already performs."*
+
+**My answer: yes, and the importer arm is the evidence the derivation exists.** A
+list at eight entries, each needing a human to notice that a new review probe
+imports the grader, is a list that will be wrong the first time nobody notices.
+**A design change to cc's own tool, not a review finding, so it is routed and
+nothing is patched.**
