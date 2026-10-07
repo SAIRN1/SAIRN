@@ -317,3 +317,17 @@ failures), `meta145.*` (the 145s confirmation), `ce_fx_r1..3.out`,
   tree, 178 did NOT FINISH"*; control `--limit 1` → **EXIT 0** twice, COULD-NOT-RUN 0.
   **The first version of the refusal said "every suite is red", a false reason on
   a correct refusal** — found by the end-to-end run and fixed. 2 of 2 rounds used.
+- **item 6 — DONE — commit pending.** Owner re-confirmed `basis: NONE,
+  owner: null`, and it is in my own declared set, so claimed rather than routed.
+  Detector widened from line-initial to **any position** as a SEPARATE class:
+  the line-initial scan keeps its measured 0-false-positives-in-2,998 and does
+  **not** lend that number to the new one. Measured on the same 3,000 commits:
+  line-initial **4**, mid-line **29** → **19** after two exclusions found by
+  hand-scoring (a digit on either side of the gap is columnar; a quote before it
+  is a literal indent). Hand-scored 19: **14 true / 4 false / 1 uncertain**, and
+  **the criteria were fitted to that corpus so 14 of 19 is an upper bound** — a
+  fresh corpus is owed, and the tool prints that. Selftest built from
+  `d59f4a3c`'s real line: **12 arms, 10 negative, 3 runs byte-identical, first
+  run EXIT 0**. End to end on the range that used to return 0:
+  **now EXIT 1**, naming body line 30 col 29. **NEXT STEP:** a fresh corpus
+  (e.g. commits 3,000–6,000) to get an unfitted precision figure.

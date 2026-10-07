@@ -24026,6 +24026,54 @@
       "recurrence_open": "The tool still cannot see an override read through a helper rather than process.env directly, cannot tell whether a present override reaches the read, and does not judge the 16 CROSS_APP suites at all. Those three are named limits, not findings. And the 155 findings are now a backlog nobody owns: the fix per finding is a judgement (add the override, or say in the header that the suite is pinned), and none of the 155 has been made."
     },
     {
+      "commit": "538451398bf0",
+      "date": "2026-10-07",
+      "subject": "fix(ablation): a TIMED-OUT suite counted as proof a guard was LOAD-BEARING -- 124 is an exit code and a could-not-run is not",
+      "files": [
+        "docs/handoff-cody-2026-10-07.md",
+        "tools/guard_ablation.py"
+      ],
+      "lines_added": 137,
+      "lines_removed": 16,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/guard_ablation.py run() returned 124 on a timeout and the ablation loop read 'if run(...) != 0: noticed = s', so a suite that never finished counted as proof the ablated guard was LOAD-BEARING. A fabricated positive in the safe-looking direction: the guard reads as individually necessary and nothing proved it. run() now returns None, three baseline buckets replace two, a gate whose observers all timed out is COULD-NOT-RUN rather than SILENT or LOAD-BEARING, and --bound makes the path drivable. Driven: bound 1ms returns None, old '!= 0' would have called it noticed, end-to-end --bound 0.001 exits 2 naming 0 red and 178 did-not-finish.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Not bisected. The 124 convention has been in run() since the file was written and naming a commit would be a guess."
+      },
+      "citation_note": "The closest standing statement is the platform rule that a could-not-run is a third state and never folded into a pass (PR 1.11). That rule is about PASSES; this is the mirror case -- a could-not-run folded into a FINDING -- and no published rule names that direction.",
+      "phase_note": "The bound and the timeout handler both existed. The defect is the chosen representation of the timeout -- an integer inside the exit-code space -- and the comparison written against it.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "run() spelled a COULD-NOT-RUN as the exit code 124, putting it inside the exit-code space where `!= 0` could not distinguish it from a real failing suite.",
+          "action_status": "done",
+          "action": "run() returns None, which is never an exit code; both call sites now branch on `is None` explicitly."
+        },
+        {
+          "kind": "detection",
+          "factor": "Nothing drove the timeout path. Every run of this tool had finished inside the bound, so the branch that laundered a timeout into a verdict had never executed in anger.",
+          "action_status": "done",
+          "action": "--bound makes the timeout path drivable on demand; it was then driven end to end at --bound 0.001 and the output read."
+        },
+        {
+          "kind": "process",
+          "factor": "The refusal message asserted a cause (every suite is red) that the code had not established, so a correct refusal pointed the reader at the wrong remedy.",
+          "action_status": "done",
+          "action": "Both refusal messages now report the red count and the did-not-finish count separately and name which remedy belongs to which."
+        }
+      ],
+      "recurrence_open": "OPEN as a CLASS. This is the mirror of PR 1.11 -- a could-not-run laundered into a FINDING rather than into a pass -- and no standing rule names that direction, so nothing stops the next tool spelling a timeout as 124. A sweep for integer timeout sentinels across tools/ is not done and is not claimed."
+    },
+    {
       "commit": "543ffb8f5d02",
       "date": "2026-10-07",
       "subject": "fix(harness): --pinned builds a throwaway CLONE, not a linked worktree -- so the config write that broke this clone cannot reach it, measured byte for byte",
