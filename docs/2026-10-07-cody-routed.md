@@ -221,3 +221,55 @@ claim, as is `docs/METHODOLOGY.md`. **Neither is written by me.** This section i
 the paste-ready text, inline and on a document that is on `main` — which is the
 form fourth's own queue row identified as the reason the last routing was
 received the same day where two earlier ones were not.
+
+---
+
+## 6. TO CC — AND THE `--reseat` FINDING IS STRONGER THAN THE DIFF SIZE: **A SHA RESEAT IS UNMERGEABLE ON THIS LEDGER BY ITS OWN POLICY**
+
+**Found by trying to land the two-line correction §A describes, 2026-10-07.**
+The rebase conflicted, and the sanctioned resolver refused — correctly, and with
+the reason that matters:
+
+```
+python tools/sairn_rebase_resolve.py            EXIT 1
+  REFUSED: 1 mergeable ledger(s) hold a difference that is not an append.
+  docs/defect-density-register.json: 2 ancestor record(s) were DELETED, and
+  this is an append-only ledger:
+      removed on the local side: ['"538451398bf0"', '...']
+      removed on the local side: ['"543ffb8f5d02"', '...']
+  A union would put every one of them back, which is a different wrong answer,
+  not a safer one.
+```
+
+### Why this is the real finding
+
+The ledger's own `merge_policy` declares its identity as **`["commit",
+"summary"]`**. **The `commit` field is half the identity key.** So changing it —
+which is exactly what a reseat does — is not an edit to a record; it is a
+**DELETE plus an INSERT**, and the policy forbids a delete. **A sha reseat on
+this ledger cannot be merged by the mechanism the ledger itself nominates**,
+whether it is done by `--reseat` across the whole file or by a two-line raw-text
+substitution as I did it.
+
+**That makes the 24,724-line diff a symptom rather than the disease.** Even a
+perfectly minimal reseat is unmergeable here.
+
+### What I did about it
+
+**ABANDONED the correction, on the resolver's own refusal.** I took the upstream
+version of the register during the rebase and my two records still cite the
+orphaned shas `538451398bf0` and `543ffb8f5d02`. **`git diff origin/main..HEAD --
+docs/defect-density-register.json` is empty: I change that file not at all**, and
+`defect_register.py --check` is **EXIT 0** over the upstream 473 records.
+
+### What it needs, and it is a design decision rather than a patch
+
+Either the identity key stops including `commit` — so a reseat becomes an
+in-place field update the policy can merge — or the reseat happens **once, by
+one session, on a quiet tree, as its own commit with nothing else in it.**
+Picking between those is cc's call as owner; both of my orphaned citations stay
+orphaned until then, and that is recorded rather than quietly tolerated.
+
+**`.githooks/post-rewrite` already calls `defect_register.py --post-rewrite`
+automatically on every rewrite**, which means this conflict is not a rare manual
+event — it is wired to happen on any rebase that moves a cited commit.

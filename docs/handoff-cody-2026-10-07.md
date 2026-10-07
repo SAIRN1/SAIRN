@@ -806,3 +806,116 @@ output, `old.json`. `scratchpad/item4/` — the running suite.
   **NEXT STEP:** `capture_exit.py --read` the status file; on `EXIT`, name every
   failing suite from `suite.out` with its first-run result, then re-run the two
   merge-tree commands and report their captured codes. Only a clean pass clears it.
+
+---
+
+# ITEM 8 — FINAL, BATCH 22. CLAIM RELEASED BELOW.
+
+## CORRECTION TO MY OWN ESCALATION NOTE ABOVE
+
+The note said the push was *"blocked by the remote, not by a gate"* after three
+`Internal Server Error` rejections. **That was true of those three attempts and
+it was NOT the whole story.** The fourth attempt revealed a **register conflict**:
+another session had appended three records, and my two-line sha correction
+collided. `git ls-remote` had been EXIT 0 the whole time, so the server errors
+were transient — and the real obstacle arrived afterwards. **Both facts are kept
+rather than the tidier one.**
+
+## A. PUSHED STATE — ALL FIVE COMMITS LANDED
+
+```
+origin/main  91f918e9     verified ahead 0 / behind 0, tree clean
+branch       cody/firebase-modular-port -> 3de3cadd   NOT an ancestor. ANDON HELD.
+```
+
+| commit | item |
+|---|---|
+| `a1386313` | 2 — the busboy lockfile fix, three lines, `package.json` untouched |
+| `43c61abc` | 3 — six mismatches, not five |
+| `5a9b6bdb` | 4 — the routing was received, promoted as convention 21 |
+| `996b6592` | 6 + 7 — the WAIT decision, and one new methodology line |
+| `91f918e9` | 5 — the andon status with captured merge-tree codes |
+
+Items **1** (`~/.claude/settings.json`) produced no repo commit by design.
+
+## B. THE SHA CORRECTION WAS ABANDONED, AND THAT IS THE RIGHT OUTCOME
+
+`tools/sairn_rebase_resolve.py` **refused** my two-line fix: the ledger's
+identity is `["commit", "summary"]`, so changing `commit` is a **DELETE plus an
+INSERT** on an append-only file. **A sha reseat is unmergeable on this ledger by
+the ledger's own policy** — minimal or whole-file alike. So the 24,724-line diff
+is a symptom, not the disease.
+
+**`git diff origin/main..HEAD -- docs/defect-density-register.json` is EMPTY —
+I change that file not at all.** `defect_register.py --check` **EXIT 0** over the
+upstream 473 records. My two records still cite `538451398bf0` and
+`543ffb8f5d02`, both orphaned, and that is recorded rather than tolerated
+quietly. Full finding: `docs/2026-10-07-cody-routed.md` §6, for **cc**.
+
+## C. OPEN, WITH THE EXACT NEXT STEP
+
+### C.1 The suite — still running, 476 reported, **0 FAIL**
+
+```
+STATUS : <SCRATCH>/item4/suite.status  ->  exit 2, RUNNING 80680 (started 13:13:23Z)
+OUTPUT : <SCRATCH>/item4/suite.out     ->  476 suites reported, 0 FAIL
+```
+**NEXT STEP:** `capture_exit.py --read` it. On `EXIT`, name every failing suite
+with its first-run result, then re-run both `merge-tree` commands and
+`merge-base --is-ancestor`, reporting captured codes. **Only a clean pass clears
+the andon.** Do not start a second whole-tree run — lock at
+`%TEMP%\sairn-suite-df228b25ddc49171.lock`.
+**Carry forward:** `suite.out` went 35 minutes without a write while children
+churned, so one test file is very slow. Not diagnosed; not guessed at.
+
+### C.2 Permissions take effect at the next session start
+
+`Edit`/`Write` are matched by no rule, so `defaultMode: acceptEdits` governs.
+**NEXT STEP:** Michael confirms the first edit of a fresh session is not
+prompted. Backups `~/.claude/settings.json.bak-20261007T143044Z` and
+`<SCRATCH>/b22/settings.json.PRE-ITEM1-20261007T143044Z`.
+
+### C.3 Routed, not mine to close
+
+- **cc** — the reseat/identity-key problem (§6) **and** the whole-file
+  serialisation (§A of the mismatches doc). `.githooks/post-rewrite` calls
+  `--post-rewrite` automatically, so this fires on any rebase that moves a cited
+  commit.
+- **cc** — a fresh corpus is owed for the mid-line eaten-substitution precision
+  (14 of 19 was fitted to commits 1–3,000).
+- **four sessions** — four orphaned register citations, mapping printed, not
+  applied.
+- **unowned** — `tools/deploy_verify_notify.py` exits 0 on an unknown flag.
+- **fourth** — the clone-corruption writer is still unidentified.
+- **chat** — the 14 unowned `tools/*.py`; whether an `# OWNER:` line gates
+  landing a tool.
+
+### C.4 The advisory position
+
+**moderate 0, high 2 (one chain), total 2. DECISION: WAIT**, four triggers
+unchanged, basis in addendum 5. Trigger 1 is now a suite run, not a rewrite.
+
+### C.5 Not mine, recorded so it is not read as collateral
+
+The top-level `model` key left `~/.claude/settings.json` between 12:44 and 14:30
+and **not by any edit of mine**. The app owns that setting; not restored.
+
+## D. TRANSCRIPT
+
+```
+C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-cody\6f1d5069-5b6c-4a9d-8e38-78d125446571
+```
+
+`scratchpad/b22/` — settings backups and both diffs, the grammar check,
+`audit_before/after/i6.json`, the lockfile before/after, the reseat and resolver
+outputs, every `*.status` beside its `*.out`. `scratchpad/item4/` — the running
+suite. `scratchpad/r21/` — batch 21's six Tier A reviews.
+
+## E. THREE COMMITS FAILED BEFORE LANDING TODAY, ALL LOUDLY
+
+`git commit -m` with backticks → **EXIT 127**, nothing landed.
+`git commit -F /dev/stdin` → **EXIT 128**, nothing landed.
+A rebase conflict on the register → resolver **EXIT 1**, change abandoned.
+**Every one failed in a way that could not be mistaken for success**, which is
+the only reason none of them became a corrupted record. The control in all three
+cases is the same: a real message file, and a resolver that refuses.
