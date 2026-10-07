@@ -627,3 +627,127 @@ report.
   `--check` EXIT 0.** (B) four more orphaned citations belong to other sessions
   and were **not** taken. **NEXT STEP:** cc to decide the `--reseat` serialisation
   fix; the four orphans to their originators (fourth is already sweeping).
+- **item 4 — DONE — the premise is overturned: THE ROUTING WAS RECEIVED.**
+  Confirmed by READING the intake rule, not guessing. `docs/METHODOLOGY.md`
+  states it itself: *"A convention goes in
+  `docs/2026-09-13-cross-domain-disciplines.md`, as a numbered section … Nowhere
+  else"*, *"a dated inventory may STATE a lesson and route it"*, and
+  *"this file records what is ROUTED HERE AND NOT YET PROMOTED"* — so the intake
+  queue is the table in METHODOLOGY.md and the home is the disciplines file.
+  **Both are DECLARED by fourth in a claim 0.5h old (fresh list), so neither is
+  writable by me** — and that is precisely why a third inlining would have been
+  the wrong move. **It was not needed:** commit `4c574225`, on origin/main,
+  promoted my rule as **convention 21** *verbatim*; the disciplines file now has
+  **21** `## <n>.` headings (counted, was 19 earlier today). fourth's own queue
+  row states the mechanism behind both earlier NOT RECEIVED verdicts:
+  *"the first routing into this file that arrived as **paste-ready text in a
+  readable document** rather than as a reference to a file not on `main`."*
+  **All four of my routed docs verified present on origin/main.** My §1 finding
+  was also received and **independently replicated by fourth 4 of 4**, and his
+  row says cody and cc close it — correct, I am the originating finder.
+  **NEXT STEP: none.** The transferable lesson is already recorded by fourth:
+  route paste-ready text in a document that is on `main`, never a reference.
+
+---
+
+# FULL HANDOFF — BATCH 22 (written after item 4, as instructed; refreshed at item 8)
+
+## A. CLAIMS HELD — one
+
+`cody / Tooling` — batch 22. **Declared FILES:** `.claude/settings.json`,
+`package-lock.json`, `tools/metamorphic_check.py`, `tools/capture_exit.py`,
+`docs/2026-10-05-dependabot-high-triage.md`, `docs/2026-10-07-cody-routed.md`,
+`docs/2026-10-07-cody-harness-exit-mismatches.md`,
+`docs/handoff-cody-2026-10-07.md`, `SAIRN-ACTIVE-WORK-cody.md`.
+
+**One file was written that is NOT in that list and it is declared here:**
+`docs/defect-density-register.json` — two of my own orphaned sha citations,
+**2 insertions / 2 deletions**. No live claim declares it; it was not in my
+originally declared set and the write is narrower than a reseat.
+
+**HELD BY OTHERS, re-derived from a FRESH claim list at `10521191`:**
+
+| file | holder | consequence |
+|---|---|---|
+| `docs/METHODOLOGY.md` | **fourth** (0.5h) | item 4 confirmed, not written |
+| `docs/2026-09-13-cross-domain-disciplines.md` | **fourth** (0.5h) | the convention was promoted BY fourth, not by me |
+| `tools/doc_sha_reseat.py`, `tools/report_only_checks.py`, `tools/sairn_push_gate_hook.py`, `docs/tool-owner-map.json` | **cc** | untouched |
+| `tools/defect_register.py` | **cc** by owner map (CONTESTED) | finding routed, tool untouched |
+
+**A STALE CLAIM LIST NEARLY COST A CONFLICT.** My first read of `--list` was
+captured before fourth re-claimed and showed **no fourth claim at all**; a fresh
+call showed fourth holding both methodology files. Every declared set in this
+batch was re-read live. **Release:**
+`python tools/sairn_claim.py release Tooling`
+
+## B. PUSHED STATE
+
+```
+origin/main at the time of writing : 10521191 + the commits below
+branch cody/firebase-modular-port  : 3de3cadd  -- NOT merged, ANDON HELD
+```
+
+| commit | item |
+|---|---|
+| `327bb513` | item 2 — the busboy lockfile fix, three lines |
+| `7786b054` | item 3 — the six mismatches, plus my two sha citations corrected |
+| *pending* | item 4's checkpoint and this handoff |
+
+Items **1** (settings.json) and **4** (confirmation only) produced no repo
+commit by design.
+
+## C. OPEN, WITH THE EXACT NEXT STEP
+
+### C.1 Item 5 — the suite is STILL RUNNING; the andon cannot be cleared yet
+
+```
+STATUS : <SCRATCH>/item4/suite.status   ->  RUNNING 80680, started 2026-10-07T13:13:23Z
+OUTPUT : <SCRATCH>/item4/suite.out      ->  471 lines
+SANDBOX: a throwaway CLONE at c1cd7c41, 0 worktree registrations
+```
+
+**NEXT STEP, in order:** `capture_exit.py --read` the status file; if `EXIT`,
+name every failing suite from `suite.out` with its first-run result, then re-run
+`git merge-tree --write-tree origin/main origin/cody/firebase-modular-port` and
+report its **captured** exit code. **Only a clean pass clears the andon.** Do
+not start a second whole-tree run — the lock is at
+`%TEMP%\sairn-suite-df228b25ddc49171.lock`.
+
+### C.2 Item 1's effect begins at the next session start
+
+`Edit`/`Write` are now matched by no rule, so `defaultMode: acceptEdits`
+governs. **NEXT STEP:** Michael confirms the first edit of a fresh session is
+not prompted. Backups:
+`~/.claude/settings.json.bak-20261007T143044Z`,
+`<SCRATCH>/b22/settings.json.PRE-ITEM1-20261007T143044Z`.
+
+### C.3 Routed and not mine to close
+
+- **cc** — `defect_register.py --reseat` rewrites the whole ledger
+  (**24,724/24,724** for six fields; `indent=2` + `ensure_ascii` against a
+  stored `indent=1`). Reproducing command in
+  `docs/2026-10-07-cody-harness-exit-mismatches.md` §A.
+- **four other sessions** — four orphaned register citations, with the correct
+  mapping printed, not applied.
+- **cc** — `tools/eaten_substitution_check.py`: a fresh corpus (commits
+  3,000–6,000) is owed for the mid-line precision figure; 14 of 19 was fitted.
+- **unowned** — `tools/deploy_verify_notify.py` exits **0** on an unknown flag.
+- **chat** — the 14 unowned `tools/*.py`, and whether an `# OWNER:` line becomes
+  a condition of landing a tool.
+
+### C.4 A separate, non-mine change to the settings file
+
+The top-level `model` key disappeared between 12:44 and 14:30 and **not by any
+edit of mine** (`LOST by THIS edit: []`). The app owns that setting; it was not
+restored. Recorded so nobody reads it as collateral from the permissions work.
+
+## D. TRANSCRIPT
+
+```
+C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-cody\6f1d5069-5b6c-4a9d-8e38-78d125446571
+```
+
+`scratchpad/b22/` — settings backups, the grammar check, both diffs, the
+lockfile before/after, `audit_before.json` / `audit_after.json`, the reseat
+output, `old.json`. `scratchpad/item4/` — the running suite.
+`scratchpad/r21/` — the six Tier A reviews from batch 21.
