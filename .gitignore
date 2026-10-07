@@ -41,3 +41,21 @@ tools/vendor/
 # The tool has no fallback and no default: if this file is absent it exits 2
 # COULD NOT RUN rather than reporting a clean sweep of nothing.
 .demo-credentials.local.json
+
+# ── PER-CLONE RUNTIME STATE FROM report_only_checks.py, 2026-10-07 (cc) ─────
+# COMMITTING THESE WAS MY MISTAKE AND THE LOOP IS WHAT SHOWED IT. The hook runs
+# one shard per push and persists which one, so EVERY push rewrites both files
+# and every push after a commit of them leaves the tree dirty again. I committed
+# them three times in a row before noticing the shape.
+#
+# THE REASON TO IGNORE RATHER THAN KEEP COMMITTING IS NOT THE NOISE, IT IS THAT
+# THEY ARE WRONG AS SHARED RECORDS. A committed rotation position makes every
+# other clone inherit MY place in the rotation on its next pull -- so two clones
+# would run the same shard and skip another, which is the opposite of what the
+# rotation is for. And the marker records whether a sweep IN THIS CLONE was
+# killed; that is a fact about this clone's last run and about nothing else.
+#
+# The REACHABILITY file stays tracked on purpose: it is a MEASUREMENT of the
+# registry, which is shared, and `--list` annotates every entry from it.
+docs/report-only-shard-state.txt
+docs/report-only-sweep-marker.txt
