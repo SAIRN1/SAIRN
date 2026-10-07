@@ -3302,8 +3302,8 @@
       "task": "batch16 CLOSE-OUT, RE-CLAIMED WIDER because a correction is owed: conventions 23's fourth-instance table and the METHODOLOGY promotion row for 23 both say the stopped session's ablation record was WRONG, and on reading that session's own evidence it was TRUE with the lever unnamed. A convention citing a wrong instance is the exact thing these conventions exist to stop, so it is corrected rather than left. Then the final handoff, the report gate plus SHA sweep, and the final report file. NOT TOUCHED this batch: .claude/settings.json (cody, live claim 2026-10-07T16:03:49Z), docs/tool-owner-map.json and tools/doc_sha_reseat.py (cc). FILES: docs/2026-09-13-cross-domain-disciplines.md docs/METHODOLOGY.md docs/handoff-fourth-2026-10-07.md SAIRN-ACTIVE-WORK-fourth.md",
       "claimed_at": "2026-10-07T19:54:42Z",
       "claimed_at_epoch": 1791402882.3093417,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-07T20:24:58Z",
       "files": [
         "SAIRN-ACTIVE-WORK-fourth.md",
         "docs/2026-09-13-cross-domain-disciplines.md",
