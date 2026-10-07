@@ -144,3 +144,18 @@ shifts these ranks again, and this table is true only as of 12:04:55Z.
 | `--register-absent` counted 11 non-citations | authoring a second mode | candidate rule | `--census` filtered them inline; the new mode re-walked the regex and did not. **The writing mode had the looser rule** |
 
 **Fix-recheck stayed inside the 2-round cap on every item.**
+
+---
+
+## 7. ADDENDUM — the final retries
+
+**ITEM 1, retried at the end as instructed: STILL BLOCKED.** `fourth` re-claimed
+`docs/tier-a-reviews.json` at **`2026-10-07T12:58:53Z`** — a *fresh* claim, 0.30h
+old and unreleased, after the one at 11:18:11Z. **Never overridden.** The
+obligation ranks in §3 are true as of 12:04:55Z and must be re-measured before
+anybody acts on them.
+
+**ITEM 10, final recheck: THE LOCK HAS RELEASED.** `scratchpad/b12wt2` is
+present, **empty (0 files)**, unregistered as a worktree, and renameable —
+probed with a rename-and-rename-back rather than a delete. **Left in place, as
+instructed.**

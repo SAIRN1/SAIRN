@@ -146,6 +146,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/report_only_checks.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "_accounted = len(timings) + len(skipped) + len(out_of_shard)"
+    }
+   ],
+   "sha": "5f9673852a61f144edb1d71184b76fab1ddf5443",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_tier_a_review_gate_probe.py",
    "class": "test file",
    "level": "CHANGE",
