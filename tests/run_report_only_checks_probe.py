@@ -784,8 +784,16 @@ _b = subprocess.run([sys.executable, os.path.join(REPO, 'tools',
                     cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=600)
 _bo = _b.stdout or ''
 check('J1 a sweep that runs out of budget says so', 'NEVER RAN' in _bo, True)
+# ── THE ANCHOR WAS A VERBATIM MESSAGE AND IT WENT STALE (2026-10-06) ──────
+# This read `'NOT RUN, the sweep reached its' in _bo`. The andon fix reworded
+# that line and the arm went red against a sweep that was behaving correctly --
+# scrubber item 26, a fixture pinned to a literal the platform is expected to
+# outgrow. Re-pointed at the PROPERTY the arm is really protecting: a skipped
+# checker is NAMED on a NOT RUN line, whatever the sentence around it says.
+_j2_named = [l for l in _bo.splitlines()
+             if 'NOT RUN' in l and l.strip().split()[0].endswith('.py')]
 check('J2 and NAMES the checkers it did not reach, never just a count',
-      'NOT RUN, the sweep reached its' in _bo, True)
+      bool(_j2_named), True)
 # THE SUMMARY BLOCK IS A SEPARATE CLAIM FROM THE `COULD NOT RUN` LIST, and it
 # needed its own arm: a mutation that blanked the per-tool print in the summary
 # SURVIVED, because J2 was reading the unrun list further down. Two places say
@@ -820,5 +828,162 @@ for k in sorted(R):
         print('         expected %r, got %r' % (expected, actual))
 bad = [k for k in R if not R[k][0]]
 print()
+# ════════════════════════════════════════════════════════════════════════════
+# ANDON ARMS, added 2026-10-06 (cc). Five `--hook` runs measured 547.6, 543.1,
+# 577.1, 679.9 and 712.4s against the 600s PostToolUse ceiling -- mean 612.0s,
+# two runs OVER it. A hook killed at its ceiling wrote NOTHING, which is
+# indistinguishable from a sweep that found nothing. These arms pin the fix.
+# ════════════════════════════════════════════════════════════════════════════
+print('')
+print('ANDON. a kill must leave a record, shards must partition, and the')
+print('budget must bound the END of the run')
+
+import signal as _signal                                          # noqa: E402
+import time as _time                                              # noqa: E402
+
+_A_FAIL = []
+
+
+def _aok(what, cond, detail=''):
+    if cond:
+        print('  ok   %s' % what)
+    else:
+        _A_FAIL.append(what)
+        print('  FAIL %s%s' % (what, ('\n         [%s]' % detail) if detail
+                               else ''))
+
+
+_MARK = os.path.join(REPO, 'docs', 'report-only-sweep-marker.txt')
+_SHST = os.path.join(REPO, 'docs', 'report-only-shard-state.txt')
+_SUBJ = os.path.join(REPO, 'tools', 'report_only_checks.py')
+
+
+def _marker_text():
+    try:
+        return io.open(_MARK, encoding='utf-8').read().strip()
+    except Exception:
+        return ''
+
+
+def _run_marker():
+    r = subprocess.run([sys.executable, _SUBJ, '--marker'],
+                       capture_output=True, text=True, encoding='utf-8',
+                       errors='replace', cwd=REPO)
+    return r
+
+
+# ── K3 first, because it establishes the ABSENT baseline ───────────────────
+_saved = _marker_text()
+try:
+    _saved_sh = io.open(_SHST, encoding='utf-8').read()         if os.path.isfile(_SHST) else None
+except Exception:
+    _saved_sh = None
+try:
+    if os.path.isfile(_MARK):
+        os.remove(_MARK)
+    r = _run_marker()
+    _aok('K3 CONTROL: with no marker file at all, --marker says ABSENT',
+         'ABSENT' in r.stdout, r.stdout[-200:])
+    _aok('K3 ...and exits 2, because ABSENT is a could-not-run and not a pass',
+         r.returncode == 2, 'exit=%d' % r.returncode)
+
+    # ── K1: kill a real sweep mid-run ──────────────────────────────────────
+    # `--hook` DELIBERATELY, not a full run: the hook path is quiet, and a
+    # quiet sweep does NOT rewrite docs/report-only-reachability.json. A probe
+    # that corrupted the repo's own reachability measurement to test a marker
+    # would be trading one standing record for another.
+    p = subprocess.Popen([sys.executable, _SUBJ, '--budget', '600', '--hook'],
+                         stdin=subprocess.DEVNULL,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                         cwd=REPO)
+    _deadline = _time.time() + 60
+    while _time.time() < _deadline and not os.path.isfile(_MARK):
+        _time.sleep(0.5)
+    _wrote_running = os.path.isfile(_MARK) and _marker_text().startswith('RUNNING')
+    p.kill()
+    p.wait(timeout=30)
+    _aok('K1 a sweep writes RUNNING BEFORE its first entry, so a kill cannot '
+         'erase the fact that it started', _wrote_running, _marker_text()[:160])
+    r = _run_marker()
+    _aok('K1 ...and after the kill --marker reports RUNNING',
+         'RUNNING' in r.stdout, r.stdout[-200:])
+    _aok('K1 ...exits 2, never 0 -- a killed sweep is a stated unknown',
+         r.returncode == 2, 'exit=%d' % r.returncode)
+    _aok('K1 ...and says in words that it is not a pass',
+         'NOT A PASS' in r.stdout, r.stdout[-200:])
+
+    # ── K2 CONTROL: a sweep allowed to FINISH must leave DONE ──────────────
+    r2 = subprocess.run([sys.executable, _SUBJ, '--budget', '3', '--hook'],
+                        input='', capture_output=True, text=True,
+                        encoding='utf-8', errors='replace', cwd=REPO)
+    _aok('K2 CONTROL: a sweep that finishes leaves DONE, so RUNNING really '
+         'does mean killed and not merely "a sweep happened"',
+         _marker_text().startswith('DONE'), _marker_text()[:160])
+    r = _run_marker()
+    _aok('K2 ...and --marker then exits 0', r.returncode == 0,
+         'exit=%d  %s' % (r.returncode, r.stdout[-160:]))
+finally:
+    try:
+        if _saved:
+            io.open(_MARK, 'w', encoding='utf-8', newline='').write(_saved + '\n')
+        elif os.path.isfile(_MARK):
+            os.remove(_MARK)
+        # THE ROTATION COUNTER IS RESTORED TOO. These arms advance it twice,
+        # and leaving it moved would skip a shard on the next real push --
+        # a probe must not change what the thing it tests will do next.
+        if _saved_sh is not None:
+            io.open(_SHST, 'w', encoding='utf-8', newline='').write(_saved_sh)
+        elif os.path.isfile(_SHST):
+            os.remove(_SHST)
+    except Exception:
+        pass
+
+# ── S1/S2: the shards must PARTITION the registry ─────────────────────────
+_N = 5
+_seen, _dupes = [], []
+_ok_spec = True
+for _k in range(1, _N + 1):
+    _sel, _why = roc.shard_of(roc.REGISTRY, '%d/%d' % (_k, _N))
+    if _sel is None:
+        _ok_spec = False
+        break
+    for _e in _sel:
+        if _e['tool'] in _seen:
+            _dupes.append(_e['tool'])
+        _seen.append(_e['tool'])
+_aok('S1 every shard spec 1..N is accepted', _ok_spec)
+_aok('S1 the %d shards cover EVERY registry entry -- none lost' % _N,
+     len(_seen) == len(roc.REGISTRY),
+     '%d covered of %d' % (len(_seen), len(roc.REGISTRY)))
+_aok('S1 ...and none DUPLICATED, so a shard rotation runs each entry once',
+     not _dupes, _dupes[:5])
+_aok('S1 the slice is by POSITION, matching what the reachability file already '
+     'records as deciding what runs',
+     [e['tool'] for e in roc.shard_of(roc.REGISTRY, '1/%d' % _N)[0]]
+     == [e['tool'] for i, e in enumerate(roc.REGISTRY) if i % _N == 0])
+for _bad in ('0/5', '6/5', 'x/5', '2', '', '5/0'):
+    _sel, _why = roc.shard_of(roc.REGISTRY, _bad)
+    _aok('S2 CONTROL: shard spec %r is REFUSED with a reason, not silently '
+         'coerced' % _bad, _sel is None and bool(_why), _why)
+
+# ── B1: the budget bounds the END, not the START ───────────────────────────
+_aok('B1 the end-bounding helper exists and returns a (durations, max) pair',
+     isinstance(roc._last_durations(), tuple)
+     and len(roc._last_durations()) == 2)
+_durs, _dmax = roc._last_durations()
+_aok('B1 an entry with NO measurement is costed at the observed MAX, which is '
+     'the fail-closed direction for a budget',
+     _dmax is None or _dmax >= max([0.0] + list(_durs.values())),
+     'max=%s' % (_dmax,))
+
+print('')
+if _A_FAIL:
+    print('ANDON ARMS: %d failure(s)' % len(_A_FAIL))
+    for _f in _A_FAIL:
+        print('  - %s' % _f)
+    bad.extend('ANDON ' + _f for _f in _A_FAIL)
+else:
+    print('ANDON ARMS: all pass')
+
 print('report-only mechanism: %d checks, %d failed' % (len(R), len(bad)))
 sys.exit(1 if bad else 0)

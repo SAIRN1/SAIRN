@@ -1345,7 +1345,24 @@ def main():
                 else:
                     _wrote, _note = _ESA.scrutiny_record(repo, _scr_sha,
                                                          _flags)
-                if not _wrote:
+                # ── "ALREADY RECORDED" IS A SUCCESS, NOT A FAILURE ──────────
+                # The first version printed "LEDGER NOT WRITTEN ... nothing
+                # downstream can pick them up until that is fixed" for EVERY
+                # falsy return, the dedup path included. It fired on this
+                # check's own second push and said something FALSE: the flags
+                # HAD been recorded, by the first pass over the same commit.
+                # A message that explains what is NOT wrong has to be true in
+                # every state that reaches it -- the rule I wrote one batch ago
+                # and then broke here. Found by reading the push output, not by
+                # reading this code.
+                if _wrote:
+                    pass
+                elif 'already recorded' in (_note or ''):
+                    sys.stderr.write(
+                        '  LEDGER: %s -- already present from an earlier run '
+                        'of this same\n  commit, so nothing was added and '
+                        'nothing is missing.\n\n' % _note)
+                else:
                     sys.stderr.write(
                         '  LEDGER NOT WRITTEN: %s -- the flags above stand, '
                         'and nothing\n  downstream can pick them up until that '
@@ -2918,10 +2935,33 @@ def main():
                     _preexisting.append((_doc_rel, _rc, _brc))
         finally:
             if _wt:
+                # ── THE ONLY GENUINELY SILENT ALLOW THE SWEEP FOUND, AND IT
+                # WAS MINE. Item 3's sweep over all 35 gate/hook paths in
+                # tools/ reported 11 with an undocumented broad except that
+                # allows; hand-reading each one left exactly ONE that was
+                # neither contract-documented, reasoned, reported downstream,
+                # nor benign by direction -- this `except Exception: pass`.
+                #
+                # IT IS NOT A BAD PUSH ADMITTED. It is a CLEANUP failure, and
+                # the cost is real anyway: a throwaway worktree that cannot be
+                # removed stays registered and on disk, and I have personally
+                # hit three leftover file-locked worktrees in one day. Saying
+                # nothing meant the next person inherited them with no idea
+                # where they came from.
+                #
+                # IT STILL DOES NOT FAIL THE GATE -- a cleanup problem must
+                # never refuse somebody's push. What changed is that it SAYS
+                # SO, with the path, so the leftover is attributable.
                 try:
                     git(repo, 'worktree', 'remove', '--force', _wt)
-                except Exception:
-                    pass
+                except Exception as _we:                   # noqa: BLE001
+                    sys.stderr.write(
+                        '\nNOTE: the gate could not remove its own temporary '
+                        'worktree\n  %s\n  (%s: %s). The push is NOT affected. '
+                        'It is still registered and on\n  disk -- run `git '
+                        'worktree remove --force` on it, or `git worktree '
+                        'prune`\n  once the holding process exits.\n\n'
+                        % (_wt, type(_we).__name__, _we))
 
         # SAID OUT LOUD EVEN THOUGH IT ALLOWS. A document another session left
         # stale is not this push's to fix, but silence here would make the gate

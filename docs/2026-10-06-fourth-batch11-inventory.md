@@ -276,4 +276,111 @@ The one genuinely new item is in the andon log as **pull 4**: `.git/config` is
 untracked, so the residue a fixed writer already left is invisible to every
 check on this platform and survives every pull. Fixed writer, no detector.
 
-*(SHA re-seat 2026-10-06: the six commits this file cites were rewritten by a `git pull --rebase` onto eleven upstream commits shortly after they landed. The pre-rebase SHAs 100b82fc, 7c911e5c and 6984634e are UNREACHABLE; the reachable equivalents 6b77545f, 326d277e and 7eabd192 are cited above. Every MEASUREMENT in this file was taken BEFORE those eleven upstream commits arrived, so the tree it describes is the rewritten commit's parent tree, not its current one. Re-seated by hand because `.githooks/post-rewrite` re-seats the defect register and the generated tracking documents, and this file is neither.)*
+*(SHA re-seat 2026-10-06: the six commits this file cites were rewritten by a `git pull --rebase` onto eleven upstream commits shortly after they landed. The pre-rebase SHAs 100b82fc, 7c911e5c and 6984634e are ORPHANED -- on no ref, absent from every other clone, and gc-eligible here; the equivalents 6b77545f, 326d277e and 7eabd192 are cited above and are verified ON `origin/main`.
+
+CORRECTED 2026-10-07, AND THE CORRECTION MATTERS MORE THAN THE WORD: this note first said those SHAs were UNREACHABLE, verified with `git cat-file -e <sha>^{commit}`. **That command tests whether the OBJECT EXISTS, not whether any ref reaches it**, and an orphaned commit's object survives until `git gc`. So `cat-file -e` answered OK for all four orphans and would have let a re-seat pass itself as verified. The test that answers the question actually being asked is `git merge-base --is-ancestor <sha> origin/main`, which distinguishes three states where `cat-file` sees two: ON a ref, ORPHANED-but-present, and ABSENT. The same mistake would have reported the two unreviewable Tier A SHAs as fine had they been orphaned here rather than genuinely absent -- `54e4835ac96e` is ABSENT, which is why `cat-file` happened to be right about it. **A reachability claim verified by an existence check is a third state collapsed into two**, which is convention 17 arriving in a second place within one batch, and it is recorded here rather than promoted to an eighteenth. Every MEASUREMENT in this file was taken BEFORE those eleven upstream commits arrived, so the tree it describes is the rewritten commit's parent tree, not its current one. Re-seated by hand because `.githooks/post-rewrite` re-seats the defect register and the generated tracking documents, and this file is neither.)*
+
+---
+
+## Item 3 — the pinned run: it DID die with the interruption; the rerun FINISHED; and it corrupted the clone
+
+### The first attempt died
+
+`<scratchpad>/pinned.status` from the interrupted session still read
+**`RUNNING 66464 2026-10-06T17:27:22Z`** with no exit line, 656 output lines
+and no final summary, stopping mid-alphabet at
+`tests/push_gate/missing_checker_probe.py`. PID 66464 was gone. **Died with the
+interruption, not finished.** Pinned rev was `8b2cde17`.
+
+### The rerun finished, at the current HEAD
+
+    python tools/run_all_tests.py --pinned --pinned-ignore-dirty
+
+**`PROGRAM_EXIT=1`**, read from the program's own stdout. Pinned at
+`762b084b`. 782 output lines. 2026-10-06 17:57 → past midnight —
+**over two hours**, against 656 lines in 22 minutes for the attempt that died.
+That slowdown is unexplained and is a measurement, not a complaint: it is why
+the strategy change this run justifies is routed rather than attempted.
+
+    RAN: 346 JS + 400 PY = 746 files (4 skipped)
+    83 FAILING TEST FILE(S)
+    EXIT 1 -- FAILURES ABOVE
+
+The 4 skipped are **named** and reported as "a precondition was not met, NOT a
+pass" — `app_session_isolation_probe.py`, `check4_probe.py`, `check7_probe.py`,
+`check9_probe.py`. The runner's third state works.
+
+### THE VERDICT I FOUND PROVABLY WRONG, CORRECTED
+
+**`tests/seam_check/run_probe.py`** — the verdict batch 10 named as the thing
+this run exists to re-judge.
+
+| run | verdict |
+|---|---|
+| 08:41, **un-pinned** | `FAIL py tests/seam_check/run_probe.py  OSError: [WinError 123] The filename, directory name, or volume label syntax is incorrect` |
+| 17:57, **pinned at `762b084b`** | **`ok   py   tests/seam_check/run_probe.py`** |
+
+**The un-pinned FAIL was not a verdict about the probe.** `WinError 123` is
+"invalid path syntax" — the probe **could not run**. It was reported in the
+**FAIL** column, where a reader counts it as a failing test. That is a
+could-not-run folded into "failed": the safer of the two directions, and still
+wrong, because nothing in that row says the probe never reached its subject.
+At the pinned rev it is green. *Why* the path derivation broke in the
+un-pinned run is **not established** — the clone was found carrying
+`core.bare = true` three times that day and that is a candidate, not a finding.
+
+**AND THE SAME SHAPE IS STILL IN THIS RUN: 7 of the 83 FAIL rows are
+could-not-runs by their own text** — `phi_cache_scope_probe`,
+`run_baseline_readiness_probe`, `run_primitive_obsession_probe`,
+`sairnfreedom_server_backup_probe`, `sairnlegacy_fault_probe`,
+`suite_control_backfill_probe`, `claims/run_registry_claim_sabotage_probe`.
+Five say *"The baseline is red, so no mutation below would mean anything.
+Stopping."* verbatim. **83 failing files is really 76 failures and 7
+could-not-runs**, and the summary line does not split them.
+
+### AND THE RUN BROKE THE CLONE — in the mode meant to prevent that
+
+Immediately after it finished, `git config --get core.bare` returned **`true`**
+and `git status` returned `fatal: this operation must be run in a work tree`.
+The `.git/config` delta against a pre-run copy was one line: `> bare = true`.
+
+**`check8_probe` is `ok` at line 655 of that run** and leaves the config
+byte-identical when run standalone, so it is not the writer. The mechanism is
+proven in two commands and the delta matches byte-for-byte:
+
+    git worktree add -q --detach <WT> HEAD
+    git -C <WT> config core.bare true        # exit 0
+    → the CLONE's .git/config gains `bare = true`
+
+A linked worktree has **no config of its own** unless
+`extensions.worktreeConfig` is on and the write is `--worktree`-scoped.
+`--pinned` isolates *files* and not *configuration*, and the banner's promise
+(*"Nothing done in <REPO> during this run can reach it"*) is **true and
+one-directional** — the direction that broke the clone is the unstated one.
+
+`b23dbc2e` already fixed this exact defect one layer down, by making
+`check8_probe`'s fixture a throwaway **clone** instead of a worktree. The
+runner still uses a worktree.
+
+**Routed with the full artifact, caller not yet identified, and how far I got
+written down:** `docs/2026-10-07-fourth-routed-pinned-worktree-shared-config.md`.
+Four bare-repo-creating candidates each came back `CONFIG UNCHANGED` standalone
+— **and that proves nothing**, because standalone means not in a worktree, so
+the mechanism cannot fire. Convention 16, for the second time on this same
+defect.
+
+### THE RESULT THAT INVALIDATES EVERY EXISTING "GREEN AT SHA X" CLAIM ABOUT THIS SUITE
+
+Two probes have **opposite verdicts** depending only on whether they ran in
+the clone or in the pinned worktree:
+
+| probe | in the pinned worktree | standalone in the live clone |
+|---|---|---|
+| `tests/seam_check/run_delegation_probe.py` | **FAIL** | **exit 0, fully green** |
+| `tests/push_gate/check8_probe.py` | **ok** | **exit 1, 2 arms failed** |
+
+Same code, same SHA, same machine, minutes apart. **A suite verdict has to name
+which of the two environments produced it**, and no current record on this
+platform does — including the red register, whose entries carry a `tail` and no
+environment. That is the single most consequential thing this run produced and
+it is bigger than the 83.

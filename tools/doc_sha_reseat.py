@@ -107,6 +107,7 @@ stale pointer in a log is visible without being silently rewritten.
 
 import argparse
 import io
+import json
 import os
 import re
 import subprocess
@@ -425,6 +426,152 @@ def cmd_census():
     return 0
 
 
+ABSENT_REGISTER = 'docs/citation-absent-register.json'
+
+
+def other_clone_gitdirs():
+    """Sibling clones on this machine, DERIVED rather than listed.
+
+    CLAUDE.md's own correction is the precedent: that file named four clones
+    for weeks after a fifth existed and was pushing commits, and the fix was to
+    COUNT THE DIRECTORIES. So this globs for a sibling holding a .git and
+    carries no roster.
+    """
+    import glob
+    here = os.path.abspath(REPO)
+    parent = os.path.dirname(here)
+    out = []
+    for d in sorted(glob.glob(os.path.join(parent, '*'))):
+        if os.path.abspath(d) == here:
+            continue
+        g = os.path.join(d, '.git')
+        if os.path.isdir(g):
+            out.append(g)
+    return out
+
+
+def cmd_register_absent():
+    """Record every PERMANENTLY ABSENT citation, with the cause ESTABLISHED.
+
+    WHY A SEPARATE RECORD AND NOT A `resolved` FIELD. An ABSENT citation is not
+    a pointer waiting to be repaired: the commit is not an object in this clone,
+    so there is nothing for `--post-rewrite` to match and nothing a subject
+    search can confirm. Writing it anywhere that reads as "handled" would be
+    this tool's own defect one level up -- a record that looks precise and is
+    not.
+
+    THE CAUSE IS TESTED, NOT ASSUMED. For each one this asks every sibling
+    clone on the machine whether IT holds the object. That is the only test
+    that separates "orphaned in a clone that still has it" -- recoverable, by
+    asking that clone -- from "orphaned in a clone that has since dropped it"
+    -- permanently gone. The answer is stored per citation so nobody re-derives
+    it.
+
+    IT NEVER WRITES `resolved`. The only states are PERMANENTLY-ABSENT and
+    RECOVERABLE-FROM-CLONE.
+    """
+    on_main, local = census_universe()
+    gitdirs = other_clone_gitdirs()
+    groups = ([(r, 'REWRITE') for r in REWRITE]
+              + [(g, 'GENERATED') for g in GENERATED]
+              + [(p, 'REPORT-ONLY') for p in report_only_paths()])
+    recs, unread = [], []
+    for rel, cls in groups:
+        path = os.path.join(REPO, rel)
+        if not os.path.isfile(path):
+            unread.append('%s -- not a file in this clone' % rel)
+            continue
+        try:
+            src = io.open(path, encoding='utf-8', errors='replace').read()
+        except Exception as e:                             # noqa: BLE001
+            unread.append('%s -- %s' % (rel, e))
+            continue
+        seen = set()
+        for m in TOKEN.finditer(src):
+            t = m.group(1)
+            if t in seen:
+                continue
+            seen.add(t)
+            if census_state(t, on_main, local) != 'ABSENT':
+                continue
+            where = None
+            for g in gitdirs:
+                try:
+                    r = subprocess.run(['git', '--git-dir', g, 'cat-file',
+                                        '-e', t], capture_output=True,
+                                       timeout=20)
+                    if r.returncode == 0:
+                        where = g
+                        break
+                except Exception:                          # noqa: BLE001
+                    continue
+            recs.append({
+                'citation': t,
+                'document': rel,
+                'document_class': cls,
+                'state': ('RECOVERABLE-FROM-CLONE' if where
+                          else 'PERMANENTLY-ABSENT'),
+                'recoverable_from': where,
+                'cause': (('the object is in %s and can be fetched from there'
+                           % where) if where else
+                          ('created and orphaned in a clone that no longer '
+                           'holds the object -- not reachable from '
+                           'origin/main, not an object in this clone, and not '
+                           'an object in any sibling clone on this machine. '
+                           'No rewrite map and no fetch can name it.')),
+            })
+    recs.sort(key=lambda r: (r['document'], r['citation']))
+    perm = [r for r in recs if r['state'] == 'PERMANENTLY-ABSENT']
+    payload = {
+        '_what_this_is':
+            'Citations in the tracking documents whose commit is NOT AN OBJECT '
+            'in this clone. Each carries its cause TESTED against every '
+            'sibling clone on this machine. These are not pending repairs -- '
+            'there is nothing for a rewrite map to match.',
+        '_what_it_does_NOT_claim':
+            'That the work the citation refers to never landed. It almost '
+            'always did, under a different sha. This records that the POINTER '
+            'is unresolvable, not that the fix is missing.',
+        '_never_written_here': 'resolved',
+        'measured_at_head': (git('rev-parse', '--short', 'HEAD') or '?'),
+        'criteria_version': CRITERIA_VERSION,
+        'sibling_clones_queried': gitdirs,
+        'counts': {'absent_total': len(recs),
+                   'permanently_absent': len(perm),
+                   'recoverable_from_a_sibling_clone': len(recs) - len(perm)},
+        'documents_not_read': unread,
+        'records': recs,
+    }
+    out = os.path.join(REPO, ABSENT_REGISTER)
+    try:
+        os.makedirs(os.path.dirname(out), exist_ok=True)
+        io.open(out, 'w', encoding='utf-8', newline='').write(
+            json.dumps(payload, indent=1) + chr(10))
+    except Exception as e:                                 # noqa: BLE001
+        print('COULD NOT WRITE %s: %s' % (ABSENT_REGISTER, e))
+        return EXIT_COULD_NOT_RUN
+    print('ABSENT CITATION REGISTER -- %s at HEAD %s'
+          % (ABSENT_REGISTER, payload['measured_at_head']))
+    print('  sibling clones queried      : %d' % len(gitdirs))
+    for g in gitdirs:
+        print('      %s' % g)
+    print('  absent citations recorded   : %d' % len(recs))
+    print('  PERMANENTLY ABSENT          : %d  (no clone on this machine '
+          'holds the object)' % len(perm))
+    print('  recoverable from a sibling  : %d' % (len(recs) - len(perm)))
+    if unread:
+        print('  COULD NOT READ, so NOT examined:')
+        for u in unread:
+            print('      %s' % u)
+    import collections as _c
+    for doc, n in _c.Counter(r['document'] for r in recs).most_common():
+        print('      %-44s %d' % (doc, n))
+    print('  THE WORD `resolved` IS NEVER WRITTEN IN THIS FILE. The only '
+          'states are')
+    print('  PERMANENTLY-ABSENT and RECOVERABLE-FROM-CLONE.')
+    return 0
+
+
 def run_fixtures(verbose=False):
     """Hand-built cases, locked before the tool was pointed at a real document.
 
@@ -537,6 +684,9 @@ def main(argv):
     ap.add_argument('--census', action='store_true',
                     help='count citations by state, with the definitions '
                          'stated; writes nothing')
+    ap.add_argument('--register-absent', action='store_true',
+                    help='record every permanently-absent citation with its '
+                         'cause TESTED against every sibling clone')
     a = ap.parse_args(argv)
 
     bad, n = run_fixtures(verbose=a.fixtures)
@@ -555,6 +705,9 @@ def main(argv):
 
     if a.census:
         return cmd_census()
+
+    if a.register_absent:
+        return cmd_register_absent()
 
     if a.post_rewrite:
         try:
