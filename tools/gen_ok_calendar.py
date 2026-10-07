@@ -70,7 +70,50 @@ Run: python tools/gen_ok_calendar.py
 
 import datetime as dt
 import json
+import sys
 import os
+
+def _emit_or_check(path, text):
+    """Write `text` to `path`, or under `--check` compare and write NOTHING.
+
+    READ-ONLY MODE, added 2026-10-07 (cc). This generator was one of 17 found
+    to WRITE TO THE TREE on a bare run, measured by running each tool in an
+    isolated worktree and asking `git status --porcelain` afterwards. Writing
+    is this tool's job -- that is not the finding. The finding was that there
+    was no way to ASK what it would write without letting it write.
+
+    EXIT CODES: 0 identical, 1 drifted, 2 could not tell. A target that cannot
+    be read is a third state and is never reported as drift, because "I could
+    not compare" and "they differ" send a reader to different places.
+    """
+    import io as _io
+    import os as _os
+    import sys as _sys
+    if '--check' not in _sys.argv:
+        with _io.open(path, 'w', encoding='utf-8', newline='') as _fh:
+            _fh.write(text)
+        print('wrote ' + path)
+        return 0
+    if not _os.path.isfile(path):
+        print('COULD NOT COMPARE: %s does not exist. This is not drift -- it '
+              'is a missing target.' % path)
+        return 2
+    try:
+        cur = _io.open(path, encoding='utf-8').read()
+    except Exception as _e:
+        print('COULD NOT COMPARE: %s is unreadable (%s). Not drift.'
+              % (path, _e))
+        return 2
+    if cur == text:
+        print('IDENTICAL: %s matches what this generator would write. '
+              'Nothing written.' % path)
+        return 0
+    print('DRIFTED: %s differs from what this generator would write. '
+          'Nothing written.' % path)
+    print('  on disk  : %d bytes' % len(cur))
+    print('  would be : %d bytes' % len(text))
+    return 1
+
 
 YEARS = [2026, 2027, 2028, 2029, 2030, 2031]
 
@@ -352,9 +395,16 @@ def main():
 
     path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                         "sql", "sairnlaw_deadline_calendars_oklahoma.json")
-    with open(path, "w", encoding="utf-8") as fh:
-        json.dump(out, fh, indent=2, ensure_ascii=False)
-        fh.write("\n")
+    _text = json.dumps(out, indent=2, ensure_ascii=False) + "\n"
+    _rc = _emit_or_check(path, _text)
+    # ── THE VERDICT HAS TO REACH THE EXIT CODE (2026-10-07, cc) ────────
+    # The first version assigned `_rc` and never used it, so `--check`
+    # printed DRIFTED and exited 0 -- a wrong number that looks
+    # authoritative, which is the exact defect this platform keeps
+    # paying for. Only the --check path exits here: the normal write
+    # path still falls through to the summary prints below it.
+    if '--check' in sys.argv:
+        sys.exit(_rc)
     for c in cals:
         mark = "  <- weekday Christmas, one day omitted" if c["year"] in ambiguous_years else ""
         print("ok %d: %2d days  %s%s" % (c["year"], len(c["dates"]),

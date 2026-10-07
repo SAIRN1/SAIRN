@@ -10,7 +10,50 @@ Every day is DERIVED from the statute's own words, quoted in the readme of the
 file this writes. Nothing here is copied from a published court schedule.
 """
 import json
+import sys
 from datetime import date, timedelta
+
+def _emit_or_check(path, text):
+    """Write `text` to `path`, or under `--check` compare and write NOTHING.
+
+    READ-ONLY MODE, added 2026-10-07 (cc). This generator was one of 17 found
+    to WRITE TO THE TREE on a bare run, measured by running each tool in an
+    isolated worktree and asking `git status --porcelain` afterwards. Writing
+    is this tool's job -- that is not the finding. The finding was that there
+    was no way to ASK what it would write without letting it write.
+
+    EXIT CODES: 0 identical, 1 drifted, 2 could not tell. A target that cannot
+    be read is a third state and is never reported as drift, because "I could
+    not compare" and "they differ" send a reader to different places.
+    """
+    import io as _io
+    import os as _os
+    import sys as _sys
+    if '--check' not in _sys.argv:
+        with _io.open(path, 'w', encoding='utf-8', newline='') as _fh:
+            _fh.write(text)
+        print('wrote ' + path)
+        return 0
+    if not _os.path.isfile(path):
+        print('COULD NOT COMPARE: %s does not exist. This is not drift -- it '
+              'is a missing target.' % path)
+        return 2
+    try:
+        cur = _io.open(path, encoding='utf-8').read()
+    except Exception as _e:
+        print('COULD NOT COMPARE: %s is unreadable (%s). Not drift.'
+              % (path, _e))
+        return 2
+    if cur == text:
+        print('IDENTICAL: %s matches what this generator would write. '
+              'Nothing written.' % path)
+        return 0
+    print('DRIFTED: %s differs from what this generator would write. '
+          'Nothing written.' % path)
+    print('  on disk  : %d bytes' % len(cur))
+    print('  would be : %d bytes' % len(text))
+    return 1
+
 
 MON, TUE, WED, THU, FRI, SAT, SUN = range(7)
 
@@ -182,9 +225,16 @@ doc = {
 }
 
 out = "sql/sairnlaw_deadline_calendars_virginia.json"
-with open(out, "w", encoding="utf-8") as f:
-    json.dump(doc, f, indent=1, ensure_ascii=False)
-    f.write("\n")
+_text = json.dumps(doc, indent=1, ensure_ascii=False) + "\n"
+_rc = _emit_or_check(out, _text)
+# ── THE VERDICT HAS TO REACH THE EXIT CODE (2026-10-07, cc) ────────
+# The first version assigned `_rc` and never used it, so `--check`
+# printed DRIFTED and exited 0 -- a wrong number that looks
+# authoritative, which is the exact defect this platform keeps
+# paying for. Only the --check path exits here: the normal write
+# path still falls through to the summary prints below it.
+if '--check' in sys.argv:
+    sys.exit(_rc)
 
 for c in calendars:
     print(c["year"], len(c["dates"]), "dates")

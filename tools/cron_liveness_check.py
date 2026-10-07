@@ -75,6 +75,45 @@ import os
 import sys
 import time
 
+def _check_or_write(path, text):
+    """Write `text`, or under `--check` compare and write NOTHING.
+
+    READ-ONLY MODE, 2026-10-07 (cc). One of 17 tools measured as writing to the
+    tree on a bare run. Writing is this tool's job; what was missing was any
+    way to ASK what it would write without letting it write -- and for a tool
+    that emits a STATUS DOCUMENT that matters more than for a generator,
+    because a status page is read as current by whoever opens it next.
+
+    0 identical, 1 drifted, 2 could not tell. An unreadable or absent target is
+    the third state and is never reported as drift.
+    """
+    import io as _io
+    import os as _os
+    import sys as _sys
+    if '--check' not in _sys.argv:
+        _io.open(path, 'w', encoding='utf-8', newline='').write(text)
+        return 0
+    if not _os.path.isfile(path):
+        print('COULD NOT COMPARE: %s does not exist -- a missing target, not '
+              'drift. NOTHING WRITTEN.' % path)
+        return 2
+    try:
+        cur = _io.open(path, encoding='utf-8').read()
+    except Exception as _e:
+        print('COULD NOT COMPARE: %s unreadable (%s). NOTHING WRITTEN.'
+              % (path, _e))
+        return 2
+    if cur == text:
+        print('IDENTICAL: %s already says what this run would say. NOTHING '
+              'WRITTEN.' % path)
+        return 0
+    print('DRIFTED: %s differs from what this run would say. NOTHING WRITTEN.'
+          % path)
+    print('  on disk  : %d bytes' % len(cur))
+    print('  would be : %d bytes' % len(text))
+    return 1
+
+
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
 
@@ -201,7 +240,7 @@ def write_status(state, lines, payload=None):
         out += ['', '<details><summary>Raw response</summary>', '',
                 '```json', json.dumps(payload, indent=2)[:8000], '```', '',
                 '</details>']
-    io.open(DOC, 'w', encoding='utf-8', newline='').write('\n'.join(out) + '\n')
+    return _check_or_write(DOC, '\n'.join(out) + '\n')
 
 
 def cannot_tell(lines, payload=None, msg=''):

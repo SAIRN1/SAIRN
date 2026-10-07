@@ -119,6 +119,45 @@ import json
 import os
 import sys
 
+def _check_or_write(path, text):
+    """Write `text`, or under `--check` compare and write NOTHING.
+
+    READ-ONLY MODE, 2026-10-07 (cc). One of 17 tools measured as writing to the
+    tree on a bare run. Writing is this tool's job; what was missing was any
+    way to ASK what it would write without letting it write -- and for a tool
+    that emits a STATUS DOCUMENT that matters more than for a generator,
+    because a status page is read as current by whoever opens it next.
+
+    0 identical, 1 drifted, 2 could not tell. An unreadable or absent target is
+    the third state and is never reported as drift.
+    """
+    import io as _io
+    import os as _os
+    import sys as _sys
+    if '--check' not in _sys.argv:
+        _io.open(path, 'w', encoding='utf-8', newline='').write(text)
+        return 0
+    if not _os.path.isfile(path):
+        print('COULD NOT COMPARE: %s does not exist -- a missing target, not '
+              'drift. NOTHING WRITTEN.' % path)
+        return 2
+    try:
+        cur = _io.open(path, encoding='utf-8').read()
+    except Exception as _e:
+        print('COULD NOT COMPARE: %s unreadable (%s). NOTHING WRITTEN.'
+              % (path, _e))
+        return 2
+    if cur == text:
+        print('IDENTICAL: %s already says what this run would say. NOTHING '
+              'WRITTEN.' % path)
+        return 0
+    print('DRIFTED: %s differs from what this run would say. NOTHING WRITTEN.'
+          % path)
+    print('  on disk  : %d bytes' % len(cur))
+    print('  would be : %d bytes' % len(text))
+    return 1
+
+
 # Columns that exist for bookkeeping and cannot change a computed result.
 INERT_COLUMNS = ['id', 'license_hash', 'app_id', 'created_at', 'updated_at', 'verified_by']
 
@@ -240,15 +279,24 @@ def build_sql(cfg, rules, dupes):
 
 def main():
     total = 0
+    _worst = 0
     for cfg in CONFIGS:
         rules, dupes = collect(cfg)
         sql = build_sql(cfg, rules, dupes)
         dest = 'sql/%s_load_gate_generated.sql' % cfg['table']
-        with io.open(dest, 'w', encoding='utf-8', newline='\n') as fh:
-            fh.write(sql)
+        # ── THE WORST VERDICT WINS, NOT THE LAST ONE ───────────────────────
+        # This writes SEVERAL files in a loop. A loop that keeps only the
+        # final status is how one drifted file hides behind four clean ones,
+        # so `_worst` is a max and never an assignment.
+        _rc = _check_or_write(dest, sql)
+        _worst = max(_worst, _rc)
         total += len(rules)
-        print('%-14s %-24s rules=%-3d dupes=%d -> %s (%d bytes)' % (
-            cfg['app'], cfg['table'], len(rules), len(dupes), dest, os.path.getsize(dest)))
+        if '--check' not in sys.argv:
+            print('%-14s %-24s rules=%-3d dupes=%d -> %s (%d bytes)' % (
+                cfg['app'], cfg['table'], len(rules), len(dupes), dest,
+                os.path.getsize(dest)))
+    if '--check' in sys.argv:
+        return _worst
     print('total rules gated: %d across %d tables' % (total, len(CONFIGS)))
     print('NOT GATED: sc_anesthesia_base_units (sairncode) -- no seed file exists in the repo,')
     print('           so there is no declared state to compare a live licence against.')
