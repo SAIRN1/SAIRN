@@ -7106,3 +7106,8 @@ flip. Not pruned (outside declared FILES, one entry locked).
 
 Batch detail: `docs/2026-10-07-cody-batch23.md`.
 Handoff: `docs/handoff-cody-2026-10-07.md`, item-12 section.
+
+**LANDED, post-rebase:** `18078d38` item 8, `764a12a4` docs, `f7fcf20e`
+register record + the cleanup fix the scrutiny flag caught, `15e56976` the
+post-rewrite re-seat, `1adbdc94` the gate rows. Remote tip read with
+`git ls-remote`: **1adbdc94**, ahead 0 / behind 0.

@@ -1147,3 +1147,65 @@ out,time}`, `abl.{status,out,time}`, `git_before.txt`, `wt_before.txt`.
 `scratchpad/i8_run1..3.out`, `i8_remeasure.txt` — the probe runs and the
 re-derivation. Previous batch's artifacts remain under
 `…\6f1d5069-5b6c-4a9d-8e38-78d125446571\scratchpad\{b22,item4,perm,r21}`.
+
+## F. THE LANDED SHAs — section B above was written BEFORE the rebase and is superseded
+
+Section B names `8ee6e7c2`. The rebase onto `origin/main` rewrote it. **These are
+the real landed shas, each confirmed an ancestor of `origin/main` with
+`git merge-base --is-ancestor` rc 0, and the remote tip read with
+`git ls-remote origin main` rather than inferred from `git push`:**
+
+```
+git ls-remote origin main   ->  1adbdc94c610a45bcd3c62b9758a02af39d4093a
+ahead 0 / behind 0, working tree clean
+```
+
+| landed sha | item |
+|---|---|
+| `18078d38` | 8 — `subject_sha()`, `opened_at_sha_basis`, 8 probe arms |
+| `764a12a4` | the batch doc, this handoff, the active-work append |
+| `f7fcf20e` | the register record the push gate asked for, **plus a fix the scrutiny flag caught** |
+| `15e56976` | the post-rebase hook's own one-line register re-seat |
+| `1adbdc94` | the gate's own scrutiny rows for `15e56976` |
+
+**THREE THINGS HAPPENED DURING THE PUSH THAT ARE PART OF THE RECORD:**
+
+1. **The push gate REFUSED the first attempt** — *"this push closes a defect and
+   does not feed the register"* — naming `8ee6e7c2`. Correct: the fix is a real
+   defect in landed tooling. A record was added
+   (`defect_register.py --add`, **EXIT 0**, *registered … tooling, moderate,
+   code-review*; `--check` **EXIT 0** over 482 records), injection
+   `4a9798dad43e`, rule 1.11, five contributing factors.
+   **A DEVIATION FROM MY OWN CLAIM TEXT, stated rather than slipped:** that claim
+   says `docs/defect-density-register.json` *"is not touched"*. It meant the sha
+   **reseat**, which stays abandoned and routed to cc. This is an **append**, 65
+   insertions / 0 deletions, and the two orphaned citations in my earlier records
+   are untouched.
+
+2. **THE SCRUTINY FLAG CAUGHT MY OWN DEFECT, AN HOUR OLD.** It flagged
+   `shutil.rmtree(base, ignore_errors=True)` in the fixture I had just written.
+   That tempdir holds a real `.git` whose object files are **read-only**:
+   `ignore_errors` cannot delete them, says nothing, and leaves the tree behind
+   — **the same line that leaked 239 files in silence from
+   `tools/run_all_tests.py` earlier the same day.** I reintroduced my own defect
+   in a new file hours after fixing it in another, and a **report-only** checker
+   caught it where a human had not. Fixed with the chmod-retry `onerror` helper
+   the other seven probes already use, plus **an arm asserting the tempdir is
+   gone** — an assertion `ignore_errors=True` makes unwritable, which is exactly
+   why the weak form had no arm against it.
+
+3. **The post-rebase hook re-seated the register and said so** rather than
+   committing for me: one line, `8ee6e7c25e5c` → `18078d382de8`, 1 insertion /
+   1 deletion, `--check` **EXIT 0**. **This narrows the finding routed to cc:**
+   `--post-rewrite` is minimal and correct; `--reseat` is the path that
+   re-serialises all 24,724 lines. Two code paths in one tool, and only one of
+   them is the problem.
+
+**Probe runs, all at the landed content:** `python
+tests/run_tier_a_review_gate_probe.py` → **EXIT 0, ALL ARMS PASS, 224 ok**.
+**5 runs total** — 3 before the cleanup fix (223 arms) and 2 after (224 arms) —
+**and the first run of each returned EXIT 0.**
+
+**Dependabot, from the remote's own push output:** *1 vulnerability on the
+default branch (1 high)* — the node-forge chain of §C.7, unchanged and
+consistent with the WAIT decision.
