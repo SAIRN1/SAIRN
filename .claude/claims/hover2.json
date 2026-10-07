@@ -52,8 +52,8 @@
       "task": "hover2 batch K, audit role, own-tool only, writes only to its own hover-audit-log and tools-hover2 directory: re-check findings, provenance-sweep unverified reclassification, claim routing, gate-parity 7, undirected sweep 10, independence grade raise, non-LLM conversions, hard-fail score, audit-trail, SOC 2 readiness frame, population testing, sampling records, evidence rubric, access evidence, seeded-defect drill, methodology, chain verify, handoff",
       "claimed_at": "2026-10-07T12:48:32Z",
       "claimed_at_epoch": 1791377312.0083866,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-07T15:09:32Z",
       "files": null
     }
   ]
