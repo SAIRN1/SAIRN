@@ -77,6 +77,17 @@
       "status": "released",
       "released_at": "2026-10-07T17:35:58Z",
       "files": null
+    },
+    {
+      "id": "hover2-1791400558",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "audit continuation batch N: push signed chain evidence to the shared status share, continue the vertical sweeps, finish the bypass-log pass, re-confirm the open findings, build two new completeness tools, write a tool-building skill, re-hash own tool copies, finish the dependency items, run diagnostics",
+      "claimed_at": "2026-10-07T19:15:58Z",
+      "claimed_at_epoch": 1791400558.7034132,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
@@ -117,6 +128,19 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "shared phrase: \"coverage ledger\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-07T17:44:51Z",
+      "my_subject": "hover2",
+      "my_task": "audit continuation batch N: G-drive chain push, gate-parity+undirected-sweep continuation, audit-trail remainder, open-findings recheck, completeness-probe and hidden-state tool builds, tool-discipline skill, drift check, dependency resolution, diagnostics",
+      "other_session": "hank",
+      "other_subject": "platform",
+      "other_task": "batch13: build a checker that compares every event_type a handler emits against the CHECK constraint on the audit table it writes to, with a regression fixture; fix the argv IndexError in the tools I own so a missing argument prints usage and exits 2; continue the open attribution write paths; re-run the long-running and skipped tools alone at a stated bound; retract one routed note; print migration SQL that is applied nowhere; handoff. BLOCKED AND REPORTED, re-derived at HEAD 4fd3b94f 2026-10-07T16:0xZ: the push-gate hook is CC'S in FILES at 2.5h, so the scrutiny extension is NOT started. The Tier A review registry is FOURTH'S in FILES at 0.0h, so no obligation is discharged and my 18 eligible are listed only. The known-red register is FOURTH'S. Nothing in the hover auditor namespace is touched or routed by me. FILES: tools/audit_event_type_check.py tests/run_audit_event_type_probe.py tools/checkblocks.py tools/div_balance_check.py tools/extract_scripts.py tools/js_code_only_diff.py tools/literal_drift_check.py tools/nav_panel_check.py api/sd-data.js docs/2026-10-07-hank-migration-sql-for-michael.md docs/2026-10-06-hank-routed-to-fourth.md docs/handoff-hank-2026-10-07c.md SAIRN-ACTIVE-WORK-hank.md",
+      "other_claimed_at": "2026-10-07T16:08:19Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "shared phrase: \"check drift\"",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
