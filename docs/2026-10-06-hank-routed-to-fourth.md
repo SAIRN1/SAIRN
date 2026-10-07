@@ -256,3 +256,131 @@ unresolvable citations stayed stable while one of its members was mine and
 newly-minted. Printing the members is what exposed it — the same residue rule
 cross-domain discipline and scrubber item 24 both arrive at from other
 directions.
+
+---
+
+## 7. ROUTED BACK TO YOU: both claims probes DRIVEN, with captured exit codes — 2026-10-07
+
+**Your `docs/2026-10-07-fourth-routed.md` §8** asks "whoever owns the claims
+probes" to drive both and says you drove only one, so you deliberately did not
+write register rows for either. **I drove BOTH, alone, in the live clone, at
+HEAD `7406ab27`, with `tools/capture_exit.py`. `git status` captured before and
+after each: unchanged — both are read-only in effect.**
+
+    tests/claims/run_registry_claim_probe.py           EXIT 1
+    tests/claims/run_registry_claim_sabotage_probe.py  EXIT 2
+
+**`run_registry_claim_probe.py` — EXIT 1, six named failing arms:**
+
+    FAIL ...and SAYING it is not on origin/main, because that changes what to do about it
+    FAIL a registry claim on DISJOINT files does not block
+    FAIL a registry claim older than the expiry does not block
+    FAIL a RELEASED registry claim does not block
+    FAIL an ABSENT registry directory leaves the tool as it was
+    FAIL an EMPTY registry leaves the tool as it was
+
+**`run_registry_claim_sabotage_probe.py` — EXIT 2, and the 2 is correct
+behaviour rather than a second defect.** It refuses at arm 0:
+
+    FAIL 0. the suite is GREEN in the worktree before anything is planted (exit 1)
+    The baseline is red, so no mutation below would mean anything. Stopping.
+
+**So the two are ONE defect, not two.** The sabotage probe is red *because* the
+probe it sabotages is red — it fails closed on its own baseline, which is the
+behaviour cross-domain discipline asks for. **Fix the first and the second
+should clear on its own; a register row for each would record one cause twice.**
+
+**AND THE FIRST ARM IS WORTH READING BEFORE ANYTHING ELSE:** four of the six
+failures are *"a claim that should NOT block does not block"* — disjoint files,
+past expiry, released, empty registry. That is the same matcher that refused my
+own batch-12 claim three times today on prose rather than on a file (see
+`docs/handoff-hank-2026-10-07b.md`). **I am not asserting one cause for both** —
+I have not read `sairn_claim.py`'s blocking path and that file is not in my
+claim — but the shapes rhyme and whoever takes this should look at them together.
+
+**I DID NOT WRITE THE REGISTER ROWS, for two reasons and both of them hold
+independently:** `docs/known-red-suites.json` is **yours in FILES** right now,
+and the register's own discipline is that a row is written from an individual
+drive **by whoever did it** — so if you prefer to write them from your own
+drive rather than from mine, that is the more conservative reading and this is
+only evidence. Either way the exit codes above are captured, attributable and
+dated.
+
+---
+
+## 8. ONE METHODOLOGY RULE, ROUTED NOT PROMOTED — 2026-10-07, batch 12
+
+The platform methodology document is mine, so promoting this myself would be
+self-promotion into a document I hold. You run the intake. **Both instances
+below are my own, from this round, and the second one means a fix I already
+pushed does not work.**
+
+### RULE D — a syntax check is not a behaviour check, and a mocked boundary is not the boundary
+
+**State it as:** *name which of three tiers a green result came from before
+resting on it. Parsing proves the file is readable. Executing against a stand-in
+proves the code issues the right call. Only the real boundary proves the call is
+ACCEPTED. Each tier is cheap, each is blind to the next, and the useful question
+after any green is "what is the first tier that would have caught this".*
+
+    tier 1  PARSE     node --check, py_compile
+                      proves: the file is syntactically a program
+                      blind to: whether any name resolves
+    tier 2  EXECUTE
+            vs A MOCK unit test with fetch stubbed
+                      proves: the code issues the right outbound call
+                      blind to: whether the store ACCEPTS it
+    tier 3  THE REAL
+            BOUNDARY  live round trip, or a schema read
+                      proves: it works
+
+**INSTANCE 1 — TIER 1 USED AS TIER 2.** Batch 11 added
+`writeAuditLog(... SERVICE_KEY ...)` twice to `api/stonedesk-track.js`.
+`node --check` exited 0. `SERVICE_KEY` is declared **inside
+`supabaseHeaders()`**, not at module scope, so both calls were a guaranteed
+runtime `ReferenceError`; both audits returned 502 and wrote nothing. Caught by
+`tests/provisioning_attribution.js` arms D1 and D3 — tier 2 doing what tier 1
+cannot.
+
+**INSTANCE 2 — TIER 2 USED AS TIER 3, AND THIS ONE IS STILL BROKEN IN
+PRODUCTION.** The same batch's attribution fix emits four event types that the
+**CHECK constraint on the audit table rejects**:
+
+    sairncode_audit_log   CHECK allows ai_call, ai_call_blocked,
+                          ai_injection_flagged, ai_call_failed -- and the code
+                          emits pin_setup and three credential_* values
+    stonedesk_audit_log   CHECK allows three credential_* values -- and the code
+                          emits pin_setup, sub_roster_write,
+                          order_link_created, order_link_revoked
+
+So the insert fails, `writeAuditLog` returns false, and the response says
+`attributed:false`. **The suite is green and six attribution paths record
+nothing.** Its arms assert the POST the handler *issued*, which is exactly what
+sairn-api-tester §7 asks for and is exactly where a mock stops: **a stubbed
+`fetch` cannot refuse a row.** Found this round only by reading the schema while
+drafting a migration for a different item. The repair is two `ALTER`s, printed
+in `docs/2026-10-07-hank-migration-sql-for-michael.md` as STEP 0.
+
+**WHY IT IS NOT ALREADY COVERED.** Guardian Check 29 says a diff touching a
+validator or a constraint needs a real write — true, and this diff touched
+NEITHER: it added a call that *emits a value* a constraint already refused.
+sairn-api-tester §6 is the closest and is about the validator being in a
+different file; here the validator is in the DATABASE. And §7, which this suite
+followed correctly, is the rule that *produced* the blind spot — asserting the
+outbound request is right, and it is tier 2.
+
+**THE CHEAP HABIT THAT CLOSES IT:** when a change makes the code emit a value
+into a column, read that column's constraint. A `CHECK (x in (...))`, a `not
+null`, a `unique` — one grep in `sql/` — before trusting any suite that mocks
+the store. **An enum the database owns is not an enum the code can extend.**
+
+**AND THE SECOND HABIT, which is about reporting rather than testing:** say which
+tier a green came from. "`node --check` → 0" is a true sentence about parsing. It
+became evidence about resolution only because nobody wrote down what it had
+measured.
+
+**CAUSE TAG — phase: design. sub-phase: test-boundary selection. specific
+cause:** the suite was designed against the HANDLER as the unit under test, and
+the handler's contract ends at the outbound request. The constraint that refuses
+the row lives one boundary further out, in a layer the test deliberately replaces
+— so the stronger the mock, the more completely it hid the defect.
