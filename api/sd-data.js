@@ -6054,6 +6054,23 @@ module.exports = async (req, res) => {
       // no such column, and copying the neighbour's list would have stripped a
       // payload field the app really stores.
       const caregiverData = storedBlob(payload, ['id']);
+      // ── WHO WROTE THIS ROW (2026-10-07) ──────────────────────────────
+      // This branch persisted sen_caregivers and recorded no acting employee: not a
+      // column, not a blob key, not an audit row. H1 routed the gap; my own
+      // read (scratchpad/attr_scan.py) reproduced it across 15 write paths in
+      // SAIRNcare, SAIRNsenior and SAIRNroofing.
+      //
+      // IN THE BLOB, SO NO MIGRATION: `data` is open jsonb. Same route as
+      // sd_sub_jobs took on 2026-10-07, and the same reason -- a column would
+      // need SQL this session cannot run.
+      //
+      // AFTER storedBlob, NOT BEFORE, AND THAT IS THE WHOLE GUARANTEE.
+      // storedBlob strips only the keys it is told to, so a caller-supplied
+      // `updatedBy` would survive into the row. These two lines overwrite
+      // whatever arrived, which is what makes the field evidence rather than a
+      // request.
+      caregiverData.updatedBy = session.employee_id;
+      caregiverData.updatedByRole = session.role;
       const r = await fetch(rest('sen_caregivers?on_conflict=license_hash,caregiver_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -6355,6 +6372,23 @@ module.exports = async (req, res) => {
       // rather than returning it under its own name, so a payload `claim_id`
       // shadows nothing and stripping it would delete real data.
       const claimData = storedBlob(payload, ['id']);
+      // ── WHO WROTE THIS ROW (2026-10-07) ──────────────────────────────
+      // This branch persisted sen_claims and recorded no acting employee: not a
+      // column, not a blob key, not an audit row. H1 routed the gap; my own
+      // read (scratchpad/attr_scan.py) reproduced it across 15 write paths in
+      // SAIRNcare, SAIRNsenior and SAIRNroofing.
+      //
+      // IN THE BLOB, SO NO MIGRATION: `data` is open jsonb. Same route as
+      // sd_sub_jobs took on 2026-10-07, and the same reason -- a column would
+      // need SQL this session cannot run.
+      //
+      // AFTER storedBlob, NOT BEFORE, AND THAT IS THE WHOLE GUARANTEE.
+      // storedBlob strips only the keys it is told to, so a caller-supplied
+      // `updatedBy` would survive into the row. These two lines overwrite
+      // whatever arrived, which is what makes the field evidence rather than a
+      // request.
+      claimData.updatedBy = session.employee_id;
+      claimData.updatedByRole = session.role;
       const r = await fetch(rest('sen_claims?on_conflict=license_hash,claim_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -9772,6 +9806,23 @@ module.exports = async (req, res) => {
       // READ PATH CHECKED (:9194): columns spread LAST over the blob, so no
       // shadow is possible; the four keys are unchanged.
       const blob = storedBlob(payload, ['id', 'name', 'active', 'entity_id']);
+      // ── WHO WROTE THIS ROW (2026-10-07) ──────────────────────────────
+      // This branch persisted rf_locations and recorded no acting employee: not a
+      // column, not a blob key, not an audit row. H1 routed the gap; my own
+      // read (scratchpad/attr_scan.py) reproduced it across 15 write paths in
+      // SAIRNcare, SAIRNsenior and SAIRNroofing.
+      //
+      // IN THE BLOB, SO NO MIGRATION: `data` is open jsonb. Same route as
+      // sd_sub_jobs took on 2026-10-07, and the same reason -- a column would
+      // need SQL this session cannot run.
+      //
+      // AFTER storedBlob, NOT BEFORE, AND THAT IS THE WHOLE GUARANTEE.
+      // storedBlob strips only the keys it is told to, so a caller-supplied
+      // `updatedBy` would survive into the row. These two lines overwrite
+      // whatever arrived, which is what makes the field evidence rather than a
+      // request.
+      blob.updatedBy = session.employee_id;
+      blob.updatedByRole = session.role;
       const locRow = {
         license_hash: licHash, app_id: 'sairnroofing', location_id: String(payload.id),
         name: String(payload.name), active: payload.active !== false,
@@ -10276,6 +10327,23 @@ module.exports = async (req, res) => {
       // whole column list. `staff_id` is not in it: the read maps that column
       // TO `id` rather than returning it under its own name.
       const staffData = storedBlob(payload, ['id']);
+      // ── WHO WROTE THIS ROW (2026-10-07) ──────────────────────────────
+      // This branch persisted alf_staff and recorded no acting employee: not a
+      // column, not a blob key, not an audit row. H1 routed the gap; my own
+      // read (scratchpad/attr_scan.py) reproduced it across 15 write paths in
+      // SAIRNcare, SAIRNsenior and SAIRNroofing.
+      //
+      // IN THE BLOB, SO NO MIGRATION: `data` is open jsonb. Same route as
+      // sd_sub_jobs took on 2026-10-07, and the same reason -- a column would
+      // need SQL this session cannot run.
+      //
+      // AFTER storedBlob, NOT BEFORE, AND THAT IS THE WHOLE GUARANTEE.
+      // storedBlob strips only the keys it is told to, so a caller-supplied
+      // `updatedBy` would survive into the row. These two lines overwrite
+      // whatever arrived, which is what makes the field evidence rather than a
+      // request.
+      staffData.updatedBy = session.employee_id;
+      staffData.updatedByRole = session.role;
       const r = await fetch(rest('alf_staff?on_conflict=license_hash,staff_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -10887,6 +10955,23 @@ module.exports = async (req, res) => {
       // resident_id: r.resident_id }, r.data)` -- BLOB LAST over exactly two
       // mapped columns, and both are stripped.
       const billingData = storedBlob(payload, ['id', 'resident_id']);
+      // ── WHO WROTE THIS ROW (2026-10-07) ──────────────────────────────
+      // This branch persisted alf_billing and recorded no acting employee: not a
+      // column, not a blob key, not an audit row. H1 routed the gap; my own
+      // read (scratchpad/attr_scan.py) reproduced it across 15 write paths in
+      // SAIRNcare, SAIRNsenior and SAIRNroofing.
+      //
+      // IN THE BLOB, SO NO MIGRATION: `data` is open jsonb. Same route as
+      // sd_sub_jobs took on 2026-10-07, and the same reason -- a column would
+      // need SQL this session cannot run.
+      //
+      // AFTER storedBlob, NOT BEFORE, AND THAT IS THE WHOLE GUARANTEE.
+      // storedBlob strips only the keys it is told to, so a caller-supplied
+      // `updatedBy` would survive into the row. These two lines overwrite
+      // whatever arrived, which is what makes the field evidence rather than a
+      // request.
+      billingData.updatedBy = session.employee_id;
+      billingData.updatedByRole = session.role;
       const r = await fetch(rest('alf_billing?on_conflict=license_hash,entry_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -11114,6 +11199,23 @@ module.exports = async (req, res) => {
       // READ PATH CHECKED (:10192): `Object.assign({ id: r.entry_id }, r.data)`
       // -- BLOB LAST over one mapped column.
       const activityData = storedBlob(payload, ['id']);
+      // ── WHO WROTE THIS ROW (2026-10-07) ──────────────────────────────
+      // This branch persisted alf_activities and recorded no acting employee: not a
+      // column, not a blob key, not an audit row. H1 routed the gap; my own
+      // read (scratchpad/attr_scan.py) reproduced it across 15 write paths in
+      // SAIRNcare, SAIRNsenior and SAIRNroofing.
+      //
+      // IN THE BLOB, SO NO MIGRATION: `data` is open jsonb. Same route as
+      // sd_sub_jobs took on 2026-10-07, and the same reason -- a column would
+      // need SQL this session cannot run.
+      //
+      // AFTER storedBlob, NOT BEFORE, AND THAT IS THE WHOLE GUARANTEE.
+      // storedBlob strips only the keys it is told to, so a caller-supplied
+      // `updatedBy` would survive into the row. These two lines overwrite
+      // whatever arrived, which is what makes the field evidence rather than a
+      // request.
+      activityData.updatedBy = session.employee_id;
+      activityData.updatedByRole = session.role;
       const r = await fetch(rest('alf_activities?on_conflict=license_hash,entry_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -11187,6 +11289,23 @@ module.exports = async (req, res) => {
       }
       if (!payload || !payload.id) { res.status(400).json({ error: { message: 'alf_facility payload.id is required' } }); return; }
       const facilityData = storedBlob(payload, ['id']);
+      // ── WHO WROTE THIS ROW (2026-10-07) ──────────────────────────────
+      // This branch persisted alf_facility and recorded no acting employee: not a
+      // column, not a blob key, not an audit row. H1 routed the gap; my own
+      // read (scratchpad/attr_scan.py) reproduced it across 15 write paths in
+      // SAIRNcare, SAIRNsenior and SAIRNroofing.
+      //
+      // IN THE BLOB, SO NO MIGRATION: `data` is open jsonb. Same route as
+      // sd_sub_jobs took on 2026-10-07, and the same reason -- a column would
+      // need SQL this session cannot run.
+      //
+      // AFTER storedBlob, NOT BEFORE, AND THAT IS THE WHOLE GUARANTEE.
+      // storedBlob strips only the keys it is told to, so a caller-supplied
+      // `updatedBy` would survive into the row. These two lines overwrite
+      // whatever arrived, which is what makes the field evidence rather than a
+      // request.
+      facilityData.updatedBy = session.employee_id;
+      facilityData.updatedByRole = session.role;
       // An EMPTY licensing_state is allowed on purpose -- a facility that has not filled it in
       // yet is a real state of the world, and refusing the whole save would block unrelated
       // profile edits. A NON-EMPTY one that is not a real USPS code is refused outright rather
@@ -11278,6 +11397,23 @@ module.exports = async (req, res) => {
       // two ALF branches below have the same read shape and stripped three of
       // five.
       const signalData = storedBlob(payload, ['id', 'resident_id', 'signal_type', 'recorded_at']);
+      // ── WHO WROTE THIS ROW (2026-10-07) ──────────────────────────────
+      // This branch persisted alf_signals and recorded no acting employee: not a
+      // column, not a blob key, not an audit row. H1 routed the gap; my own
+      // read (scratchpad/attr_scan.py) reproduced it across 15 write paths in
+      // SAIRNcare, SAIRNsenior and SAIRNroofing.
+      //
+      // IN THE BLOB, SO NO MIGRATION: `data` is open jsonb. Same route as
+      // sd_sub_jobs took on 2026-10-07, and the same reason -- a column would
+      // need SQL this session cannot run.
+      //
+      // AFTER storedBlob, NOT BEFORE, AND THAT IS THE WHOLE GUARANTEE.
+      // storedBlob strips only the keys it is told to, so a caller-supplied
+      // `updatedBy` would survive into the row. These two lines overwrite
+      // whatever arrived, which is what makes the field evidence rather than a
+      // request.
+      signalData.updatedBy = session.employee_id;
+      signalData.updatedByRole = session.role;
       const recordedAt = payload.recorded_at || nowISO();
       delete signalData.recorded_at;
       const r = await fetch(rest('alf_signals'), {
