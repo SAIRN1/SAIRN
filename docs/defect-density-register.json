@@ -24802,7 +24802,7 @@
       "recurrence_open": "EVERY OTHER REACHABILITY CHECK ON THE PLATFORM IS UNAUDITED. This fix covers ONE call site in ONE tool. A grep at eb430f25 finds cat-file or rev-parse --verify used in tools/conflict_marker_preflight.py, tools/credential_purge_check.py, tools/doc_sha_reseat.py, tools/gh_push.py, tools/landing_verification.py, tools/review_ledger_reseat.py, tools/sairn_push_gate_hook.py, tools/source_manifest.py, tests/claims/run_push_verify_probe.py and tests/run_tier_a_reseat_probe.py -- and NONE of them has been read to decide whether it is asking existence where it means reachability. The seven orphaned shas already in docs/tier-a-reviews.json are not reseated or retired by this fix either; the gate only reports them now."
     },
     {
-      "commit": "a606100b3321",
+      "commit": "33a91b5e965b",
       "date": "2026-10-07",
       "subject": "fix(gen_mo_seed): restore trigger_document -- the generator could not emit a field the ENGINE READS, so a regeneration would have deleted it",
       "files": [
@@ -24854,7 +24854,7 @@
       "recurrence_open": "NO TEST ASSERTS THAT A SPECIFIC SEED ROW STILL CARRIES ITS trigger_document. The engine test covers behaviour GIVEN the field; a row quietly losing it stays green. 77236c2a touched 45 rows across many jurisdictions and only the 4 with generators can be checked this way at all -- the other jurisdictions' seeds have no generator and therefore no --check, so for them this class of drift is undetectable by construction. gen_mn_seed.py was measured at --check 0 and is clean today, which is three of four, not all four."
     },
     {
-      "commit": "3f0c8dddd2df",
+      "commit": "2281de97ff5c",
       "date": "2026-10-07",
       "subject": "fix(gen_va_seed): the same missing trigger_document, twice -- item 3 complete, 2 of 2",
       "files": [
@@ -24906,7 +24906,7 @@
       "recurrence_open": "Same open gap as the Missouri record and NOT closed by it: no test asserts a specific seed row still carries its trigger_document, and the seeded jurisdictions with no generator have no --check at all, so for them this drift class cannot be detected. Also open: the shared off-by-one indentation means other hand-inserted blocks elsewhere in sql/ are likely non-canonical, and nothing scans for that -- it only surfaces where a generator exists to disagree."
     },
     {
-      "commit": "b4fa159f1502",
+      "commit": "339ea4eb3162",
       "date": "2026-10-07",
       "subject": "fix(role gate mc): the model had silently shrunk from 10 apps to 6 -- a THROW was being read as \"this app has no such concept\"",
       "files": [
@@ -24963,7 +24963,7 @@
       "recurrence_open": "The provenance ablation CANNOT make the real run regress, because fixing the sandbox leaves nothing unevaluable to refuse -- the refusal is only exercisable on hand-built fixtures, which is where arms 7-9 run. So the refusal is proven to work on fixtures and has never fired on real input. Nothing checks the OTHER generators and readers in tools/ for the same catch-returns-null fold, and nothing ties a change to api/_lib/auth.js's role-set spelling to the readers that parse it: dadfedf4 was a correct, deliberate platform change and it broke a consumer nine days before anybody noticed."
     },
     {
-      "commit": "adca07cfcd08",
+      "commit": "24bb3baefc27",
       "date": "2026-10-07",
       "subject": "fix(gen_ma_seed): emit the 19 lines of provenance the seed carries -- the correction was applied to the OUTPUT and never back to the generator",
       "files": [
@@ -25014,7 +25014,7 @@
       "recurrence_open": "Nothing connects a hand-correction of a GENERATED artefact to its generator. The only signal was `--check` exiting 1, and that signal had been available and unread for six weeks. The correction's own quoted superseded wording is now load-bearing in two files, which doubles the thing that can drift next time. No check asserts that a generator's module docstring agrees with the _readme it emits."
     },
     {
-      "commit": "f67cb7e57540",
+      "commit": "94c99fb350b8",
       "date": "2026-10-07",
       "subject": "fix(push gate): the SCOPED seed exemption was ungrantable -- the half that cannot push anything was eating the token",
       "files": [
@@ -25071,7 +25071,7 @@
       "recurrence_open": "THE MISLEADING NOTICE IS NOT FIXED. soft_capture_notice() still prints the same text whether the operator has pushed once or seven times, because it describes the record it just wrote rather than the operator's position. That is PR 1.5's shape and it is left open deliberately: changing a gate's refusal text is a separate change with its own verification. Also open: the probe drives both modes in ONE process by setting MODE, so anything depending on the real process boundary (locking, a partial write) is invisible; the 15-minute TTL is read and never exercised; and seed is the only exemptable check today, so no arm covers two checks held concurrently."
     },
     {
-      "commit": "d30566cb39d7",
+      "commit": "2f1a2dae7641",
       "date": "2026-10-07",
       "subject": "fix(role gate mc): an unrecognised flag was a WRITE instruction -- now exit 2 and nothing written",
       "files": [

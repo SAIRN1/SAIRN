@@ -504,6 +504,32 @@
    "shapes": [],
    "sha": "f1d2fd1988785a6e4a3f9ee00f87ab8d9d1a5456",
    "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/push_gate/graduated_exempt_consume_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "\"\"\"Only the mode that can actually let a push through may SPEND the exemption."
+    }
+   ],
+   "sha": "fe361c749cafdb165696986ac119d9d33236d61d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "def graduated_exempt(check, tip, consume=None):"
+    }
+   ],
+   "sha": "fe361c749cafdb165696986ac119d9d33236d61d",
+   "criteria_version": "2026-10-06.1"
   }
  ],
  "_corrected_2026_10_06": "NINE ROWS KEYED \"main\" WERE REMOVED. The push gate handed its prepush `tip`, which is a REF NAME, not a sha -- so the (sha, path) identity could never dedup them and no rewrite map could ever re-seat them. Found by reading this file, not by reading the code that wrote it. Guarded in two places since: the gate resolves tip to a sha, and scrutiny_record refuses a non-sha key outright."
