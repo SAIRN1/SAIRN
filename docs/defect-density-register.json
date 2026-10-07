@@ -24648,7 +24648,7 @@
       "recurrence_open": "NO ROLE GATE WAS ADDED AND THAT IS DELIBERATE: which of owner, superintendent, manager, crew, office may write a BOQ rate or an invoice is a product decision this batch was told not to make unilaterally, so crew can still write an invoice once signed in. Logged open. The msb_* resources in the same dispatch region are a DIFFERENT app with the same licence-key-only shape and are explicitly NOT fixed -- arm D1 proves msb_products still answers without a session, which is a measurement and not an endorsement. And the auditor repro still reports REPRODUCES because it looks for verifySessionToken INSIDE each dispatch block while the gate is in the shared prelude; routed to hover2."
     },
     {
-      "commit": "8ee6e7c25e5c",
+      "commit": "18078d382de8",
       "date": "2026-10-07",
       "subject": "fix(tier-a): --open stamped HEAD, and 34 of 63 checkable records anchor an obligation to a commit that never contained its subject",
       "files": [
