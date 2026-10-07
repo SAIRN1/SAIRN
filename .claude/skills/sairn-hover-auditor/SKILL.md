@@ -4450,6 +4450,23 @@ favorable, a coincidence of timing, rather than the real signal it appears
 to be. Good news earns the same "prove it, don't assume it" standard as
 anything else in this file. Full account of all three: `references/case-studies.md`.
 
+## This role's own tool-building discipline
+
+Written H1 batch Q item 9, after three new tools built in one sitting
+(`hover_completeness_probe.py`, `hover_threshold_cluster.py`,
+`hover_hidden_state.py`) each carried a real, hand-verified bug on its own
+first run against real data -- three for three, the measured base rate for
+a freshly-written text/regex-shaped scanner, not a coincidence to wave off.
+**Every new checking tool is sabotage-tested two ways before its output is
+trusted**: a bad state planted directly into a fixture, AND the same bad
+state reached via the real transition that actually creates it (right
+after a rebase completes, a claim releases, a retry fires) -- the first
+proves the tool recognises a shape, the second proves it survives contact
+with how the bug actually arrives. Full account, the three bugs found this
+way, and the related log convention (a reversal of this role's own prior
+verdict gets a `contradicts`-linked entry, never folded into a routine
+recheck): `references/tool-building-discipline.md`.
+
 ## Report to Michael only when
 
 A real finding needs a decision, or a deep pass completed with a real
