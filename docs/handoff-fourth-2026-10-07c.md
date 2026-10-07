@@ -259,7 +259,7 @@ general: a bounded view presented as the whole, with no tool involved.
 
 ## FOUR CITATIONS OF MINE ORPHANED AGAIN, AND THE PATTERN IS NOW FIVE BATCHES OLD
 
-`4d4b0da5`, `e787a6d9`, `d90463bd` and `161cb714` — four of this batch's own
+`51088830`, `8ff247a2`, `45b421f1` and `5090df1e` — four of this batch's own
 commits — were orphaned by the two rebases needed to land the final push, and
 are re-seated above by **commit subject**, each replacement verified `ON-REF`
 with `merge-base --is-ancestor` **before** the swap.
@@ -326,3 +326,62 @@ In item order: `sweep_full.py` + `sw14_1.out`–`sw14_3.out` (item 1);
 (item 3); `i4_abl.out` / `i4_abl2.out` / `i4_abl3.out` (item 4 — **two attempts
 that could not run and the one that did**); `census14.out` (item 5);
 `ck9.out` (item 9's claims-check); `final14.py` (this re-seat).
+
+---
+
+## ITEM 12 — THE METHOD IMPROVEMENT: JUDGE AN ABLATION BY THE PROBE'S EXIT CODE, NEVER BY ITS PRINTED TEXT
+
+**Earned three times in one batch, on my own harness.**
+
+### BEFORE
+
+My ablation harness decided whether an arm responded by **finding the arm's line
+in stdout and reading it**:
+
+    def armline(out):
+        for l in out.split(NL):
+            if armtext[:40] in l:
+                return l.strip()
+        return '<arm not printed>'
+    moved = armline(base.stdout) != armline(after.stdout)
+
+Two failures came out of that, in one sitting:
+
+1. **It ablated into an already-red state.** Three of four arms were already
+   failing, so "still failing" was scored as *no response* when it was *no
+   information*. An ablation asks **can this fail**; an already-failing arm
+   answers trivially.
+2. **It read a field that cannot exist on success.** When the fix worked, the
+   probe **passed** — and a passing probe prints no `FAIL` line, so
+   `<arm not printed>` was scored as *no response*. Two arms that went
+   **exit 1 → 0** were reported as NOT-FLIPPED.
+
+### AFTER
+
+    lever  = (subject_run.returncode == 0)      # did the lever even engage?
+    moved  = (base.returncode != after.returncode)
+    verdict = ('ABLATED'       if lever and moved and restored
+               else 'COULD-NOT-RUN -- the lever never engaged' if not lever
+               else 'NOT-RESPONSIVE')
+
+**Three changes, each paid for:**
+
+* **The verdict is the probe's own exit code.** The platform already requires
+  this of every green claim; I was not applying it to my own harness.
+* **A separate `lever` check asks whether the ablation engaged at all**, so
+  "the override was unreachable" reports as **COULD-NOT-RUN** instead of
+  masquerading as NOT-RESPONSIVE. That is what the `run_truthy_sum_probe` result
+  needed, and it is a third state where I had two.
+* **The direction is chosen from the arm's current colour.** A green arm is
+  ablated by breaking the subject; a **red** arm is ablated by *satisfying* the
+  condition and confirming it goes green. Same question, opposite lever.
+
+**The measurable before/after:** the same three suites scored **0 of 3**
+responsive under the old predicate and **2 of 3 ABLATED plus 1 correctly
+reported COULD-NOT-RUN** under the new one — with the subjects byte-identical
+and `git status` unchanged in both runs. **The arms never changed. Only my
+reading of them did**, which is the whole point: a harness that misreads its own
+result produces exactly the confident wrong number this platform keeps paying
+for.
+
+Folded into convention 20 as the implementation detail it was missing.

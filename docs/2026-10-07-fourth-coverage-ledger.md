@@ -424,3 +424,97 @@ technique for a tool that locates itself.
 **Under convention 20, an attempt that could not run is not an ablation**, and
 reporting those two as if the third had been the only attempt would have been
 the easy version of this entry.
+
+---
+
+## 8. ITEM 3 — ABLATION 7 of 8, AND MY PREDICATE WAS THE DEFECT TWICE
+
+**`7 of 8`.** Ablated in earlier batches: `run_primitive_obsession_probe`,
+`run_write_path_scan_probe`, `run_removal_path_probe`,
+`preauth_exemption_anchor_probe`. Ablated this batch:
+`run_subprocess_decode_probe`, `run_completeness_probe`,
+`run_export_coverage_probe`. **Outstanding: `run_truthy_sum_probe`, and the
+reason is specific rather than vague.**
+
+Every ablation modified the SUBJECT **in place** and restored it
+byte-identically, with `git status` captured before and after the whole batch
+and **unchanged**, and `node --check api/sd-data.js` clean afterwards.
+
+### Attempt 1 — I ablated into an already-red state, and learned nothing
+
+Weakened each subject's detector and asked whether the verdict moved. **1 of 4
+moved.** The other three were **already red at baseline**, so an ablation that
+leaves them red answers nothing: *an ablation asks "can this arm fail?", and an
+arm that is already failing answers that trivially.*
+
+### Attempt 2 — right lever, wrong field read
+
+Forced each subject to exit 0 — which is the condition these arms actually
+assert — and judged the result by **the arm's printed text**. Scored **0 of 3**.
+
+**That score was wrong.** `run_completeness_probe` and
+`run_export_coverage_probe` both went **probe exit 1 → 0**. A probe that PASSES
+does not print a `FAIL` line, so my predicate looked for a line that cannot
+exist on success and read the absence as no-response.
+
+### Attempt 3 — judge by the probe's own exit code
+
+    tests/run_completeness_probe.py      probe exit 1 -> 0   ABLATED
+    tests/run_export_coverage_probe.py   probe exit 1 -> 0   ABLATED
+    tests/run_truthy_sum_probe.py        probe exit 1 -> 1   outstanding
+
+**`run_truthy_sum_probe` is outstanding for a reason worth knowing.** The lever
+engaged — the subject's own run exits 0 under the override — and the probe still
+exits 1, because **its other 13 arms also drive the same subject** and expect it
+to exit 1 or 2 on planted breaks. A blunt exit-0 override breaks them too, so it
+cannot isolate the live-tree arm. **The right lever there is to empty the
+subject's BASELINE FILE, not to override its exit**, and that is the next step
+rather than a fourth attempt — the fix-recheck cap is two rounds and this is
+reported instead.
+
+---
+
+## 9. ITEM 4 — THE CENSUS: 40 of 83, unchanged this batch and stated as such
+
+Re-extracted from `pinned2_stdout.txt` and cross-checked against the log's own
+summary line, which the script refuses to proceed past on a disagreement:
+
+    re-extracted: 83   log summary line: 83
+    X of 83 VERIFIED: 40 of 83
+      by exit code: {0: 1, 1: 35, 2: 4}
+      STILL UNVERIFIED: 43
+
+**No movement this batch, and that is the honest figure.** The suites run for
+items 1 and 3 were either already counted or not members of the 83. The 43
+remain **unmeasured individually**, not presumed red.
+
+---
+
+## 10. ITEM 9 — 424 of 1214 SCRIPTS CANNOT RUN FROM A COPY
+
+`git ls-files` over `tests/`, `tools/`, `fmea/` and the `api/*.test.js` set:
+**1,214 tracked scripts.**
+
+| | |
+|---|---|
+| no `__file__` at all | 550 |
+| **derives the repo from `__file__` with NO git anchor** | **424** |
+| uses `__file__` but not to derive the repo | 186 |
+| derives from `__file__` **and** has a git anchor — worth reading | 54 |
+
+**424 of 1214**, split **236 under `tests/`** and **188 under `tools/`**.
+
+**THIS IS NOT 424 DEFECTS, and saying so would be the easy version.** A script
+that always runs from the repo is correct and cheap to write that way. What the
+number means is narrower and more useful: **424 scripts cannot be ablated,
+sandboxed or re-run from a copy**, because a copy in `%TEMP%` reaches no fixture
+at all. I hit that twice — once trying to ablate
+`run_removal_path_probe` from a copy (it printed neither arm), and once in
+`run_copy_exactly_gate_probe`, whose first arm refuses because the gate resolved
+the range against its own repo.
+
+**So the platform-wide consequence is a METHOD constraint:
+in-place-modify-then-restore is the only ablation technique that works here**,
+and any future sandbox runner has to provide the repo rather than a copy of the
+script. The 54 that carry both are the ones worth reading — they may already
+have the right answer.

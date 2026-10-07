@@ -251,7 +251,7 @@ half-finished.**
 
 ## THE LAST ORPHAN, AND THE PATTERN IT COMPLETES
 
-`bcc743db` — the HEAD I cited in the mid-batch handoff — was orphaned by the
+`2e8a59aa` — the HEAD I cited in the mid-batch handoff — was orphaned by the
 final rebase and is re-seated to `2e8a59aa`, verified `ON-REF` by
 `merge-base --is-ancestor` before the swap.
 
