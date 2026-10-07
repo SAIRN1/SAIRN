@@ -109,6 +109,29 @@ ASSIGN_PAT = re.compile(r'session\.employee_id\s*[=!]==?\s*\w|'
                         r'canSeeSchedule\(')
 
 
+def _brace_close(src, start):
+    """Returns the index of the `}` that closes the `{` this block's own
+    BLOCK_START match ended on (depth 1 at `start`). Found by this role's
+    own batch N gate-parity sweep: the prior version bounded a block by
+    the NEXT literal BLOCK_START match regardless of distance, which is
+    wrong whenever a DIFFERENT dispatch shape (e.g. `if (isScResource)
+    {`, which this tool's regex does not match) sits between two literal
+    matches -- the block absorbed hundreds of lines of a totally
+    unrelated resource's code (law_trusttx's write block this way picked
+    up SAIRNcode's SC_TIER_A_WRITE_ROLES and reported a false asymmetry
+    that did not exist). Brace-counting finds the block's REAL end
+    regardless of what dispatch shape follows it."""
+    depth = 1
+    i = start
+    while depth > 0 and i < len(src):
+        if src[i] == '{':
+            depth += 1
+        elif src[i] == '}':
+            depth -= 1
+        i += 1
+    return i if depth == 0 else len(src)
+
+
 def blocks(src, prefix):
     matches = list(BLOCK_START.finditer(src))
     out = []
@@ -117,7 +140,13 @@ def blocks(src, prefix):
         if not resource.startswith(prefix):
             continue
         start = m.end()
-        end = matches[i + 1].start() if i + 1 < len(matches) else len(src)
+        next_match_start = matches[i + 1].start() if i + 1 < len(matches) else len(src)
+        brace_end = _brace_close(src, start)
+        # The TRUE end is the brace close, UNLESS it is somehow past the
+        # next literal match (should not happen for well-formed JS, but
+        # capping here means a bug in brace-counting fails toward the
+        # OLD, already-shipped behaviour rather than a new, wider one).
+        end = min(brace_end, next_match_start)
         out.append((resource, action, src[start:end]))
     return out
 
@@ -257,6 +286,22 @@ def selftest():
       }
       if (!FX_ROLES[session.role]) { return; }
     }
+    if (resource === 'fx_boundary' && action === 'write') {
+      if (!FX_ROLES[session.role]) { return; }
+    }
+    if (isUnrelatedDispatchShape) {
+      // A DIFFERENT dispatch pattern this tool's BLOCK_START regex does
+      // not match -- found in the real file between law_trusttx's write
+      // and sc_settings (batch N). Contains an UNRELATED assignment-
+      // pattern match that must NOT be absorbed into fx_boundary's write
+      // (which has none of its own) -- under the pre-fix boundary bug
+      // this line alone would have made fx_boundary wrongly FLAG as a
+      // read/write divergence that does not exist.
+      if (otherRow.assigned_employee_id !== session.employee_id) { return; }
+    }
+    if (resource === 'fx_boundary' && action === 'read') {
+      if (!FX_ROLES[session.role]) { return; }
+    }
 """
     per_resource = analyze(fixture, 'fx_')
     groups_flagged, lines = report(per_resource)
@@ -274,8 +319,15 @@ def selftest():
           # read and must flag. Found by this role's own seeded-defect
           # drill (item 17, batch K) as a real miss on this tool's first
           # post-drill run before this ablation arm and the fix existed.
-          per_resource['fx_deadcode']['write']['assignment'] is False)
-    print('SELFTEST %s: %d group(s) flagged (expected 2: fx_a and fx_deadcode, both assignment divergence); fx_clean correctly unflagged; fx_helper, fx_argrole, fx_sched, fx_negated (four named-helper/negated-comparison shapes) correctly detected; fx_deadcode (if-false-wrapped check) correctly read as NOT present' %
+          per_resource['fx_deadcode']['write']['assignment'] is False and
+          # fx_boundary: write's own block closes on ITS OWN brace before
+          # an unrelated, non-matching dispatch shape carrying a stray
+          # assignment-pattern reference -- that reference must NOT leak
+          # into fx_boundary's write. Both read and write stay
+          # assignment=False, matching each other -- no false flag.
+          per_resource['fx_boundary']['write'] == {'role': True, 'assignment': False} and
+          per_resource['fx_boundary']['read'] == {'role': True, 'assignment': False})
+    print('SELFTEST %s: %d group(s) flagged (expected 2: fx_a and fx_deadcode, both assignment divergence); fx_clean correctly unflagged; fx_helper, fx_argrole, fx_sched, fx_negated (four named-helper/negated-comparison shapes) correctly detected; fx_deadcode (if-false-wrapped check) correctly read as NOT present; fx_boundary (brace-close vs next-literal-match, batch N) correctly ignores an unrelated non-matching block stray assignment pattern' %
           ('PASS' if ok else 'FAIL', groups_flagged))
     return 0 if ok else 1
 
