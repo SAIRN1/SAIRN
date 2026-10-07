@@ -3731,6 +3731,25 @@
         "tools/literal_drift_check.py",
         "tools/nav_panel_check.py"
       ]
+    },
+    {
+      "id": "hank-1791405094",
+      "session": "hank",
+      "subject": "platform",
+      "task": "batch18 at HEAD 4fa9843a, premises re-derived. PER-ITEM CHECKPOINT: a handoff row appended after EACH item before the next begins. (3) report the clean-worktree suite when it EXITS, per-FAIL re-run alone and classified real or cascade; NO second run while PID 31292 is alive. (4) measure ONE of the three 600s timeouts alone, unloaded, isolated worktree, 1800s ceiling, unbuffered; a bound only from that number. (5) triage the six exit-1 programs, fix or route with file and line, register record for any real SAIRN-code finding. (6) re-run the 67 could-not-run tools with a COMPLETE command line where the refusal names a missing argument. (7) Tier A re-checked ONCE, discharge only if cc has released, each from my own reading, stop at the first I cannot judge. (8) sv_audit_log added to AUDIT_TABLES with a source arm and a mutation, plus a PRINTED not applied event_type CHECK and a pre-flight distinct select. (9) PRINT not apply the rf_schedule status_changed_by column; NO code change until Michael confirms the SQL ran. (10) ownerless tools: bare run and one-argument run, fix the tracebacks and silent exit-0s I may own. (11) METHODOLOGY re-checked ONCE, Rule E landed under a single-write claim and released, or holder named and stopped. (12) rerun the three checks at final HEAD. (13) the scrutiny-flags stash stays PARKED. (15) handoff before the report. NO GATE OVERRIDE: SAIRN_SEED_GATE=off is not used. FILES: api/_lib/audit.js tests/run_audit_event_type_probe.py tools/audit_event_type_check.py docs/2026-10-07-hank-migration-sql-for-michael.md docs/2026-10-07-hank-routed.md docs/handoff-hank-2026-10-07d.md SAIRN-ACTIVE-WORK-hank.md",
+      "claimed_at": "2026-10-07T20:31:34Z",
+      "claimed_at_epoch": 1791405094.267458,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-hank.md",
+        "api/_lib/audit.js",
+        "docs/2026-10-07-hank-migration-sql-for-michael.md",
+        "docs/2026-10-07-hank-routed.md",
+        "docs/handoff-hank-2026-10-07d.md",
+        "tests/run_audit_event_type_probe.py",
+        "tools/audit_event_type_check.py"
+      ]
     }
   ],
   "refusals": [
