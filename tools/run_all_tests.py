@@ -73,6 +73,7 @@ import io
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -697,6 +698,21 @@ def _git(*args):
                           text=True, encoding='utf-8', errors='replace')
 
 
+def _force_rm(func, path, _exc):
+    """rmtree onerror: clear the read-only bit and retry once.
+
+    git marks loose objects read-only and Windows will not unlink a read-only
+    file. Without this, shutil.rmtree leaves the object store behind -- and
+    with ignore_errors it leaves it behind in SILENCE, which is how the first
+    real run of the throwaway clone leaked 239 files without saying so.
+    """
+    try:
+        os.chmod(path, 0o666)
+        func(path)
+    except OSError:
+        pass
+
+
 def provision_worktree_identity(wt):
     """Copy the clone's per-clone session marker into the worktree's git dir.
 
@@ -726,7 +742,7 @@ def provision_worktree_identity(wt):
             fh.write(name)
     except OSError as e:
         return False, 'could not write %s: %s' % (dst, e)
-    return True, 'session identity %r copied to the worktree git dir' % name.strip()
+    return True, 'session identity %r copied to the throwaway clone git dir' % name.strip()
 
 
 def pinned_main(argv):
@@ -775,14 +791,51 @@ def pinned_main(argv):
             '--pinned-ignore-dirty if they are\ngenuinely not under test.\n')
         return PINNED_COULD_NOT_RUN
 
+    # ── A THROWAWAY CLONE, NOT A LINKED WORKTREE (2026-10-07) ───────────────
+    # THE SAME LAYER AS fourth's b23dbc2e, AND FOR THE SAME MEASURED REASON.
+    # A linked worktree SHARES `.git/config` with the clone that owns it, so any
+    # `git config` write made by anything running with cwd inside the worktree
+    # lands in the REAL clone's config. On 2026-10-07 this clone was found with
+    # `core.bare = true`, written at 01:14:02Z during a 23463-second unpinned
+    # run of this very file, and `git status`, `add` and `commit` were all
+    # broken afterwards. A clone has its OWN `.git/config`, so the write cannot
+    # reach the main clone AT ALL -- regardless of who makes it and regardless
+    # of whether this process lives long enough to put anything back. That is
+    # the difference between containing and fixing.
+    #
+    # IT ALSO ENDS THIS FILE'S CONTRIBUTION TO THE LEAKED %TEMP% WORKTREES.
+    # 29 were registered at the time of the incident and `git worktree prune`
+    # would remove none, because every directory still existed. A clone has no
+    # worktree registration, so `shutil.rmtree` is the whole cleanup.
+    #
+    # `--local` HARDLINKS the object store, so this costs no measurable time
+    # and no disk on the same filesystem. `--no-checkout` is deliberate: the
+    # default branch is not the subject, and checking it out first would be two
+    # checkouts of a 2.76MB-plus tree for nothing.
+    #
+    # ALREADY MEASURED IN THIS FILE, which is why the step was available:
+    # PINNING_INCOMPATIBLE records "Verified: clone rc=0, worktree rc=2 on the
+    # same commit" for the probes that resolve sibling CLONES. Those exclusions
+    # are left in place rather than removed on an assumption -- a clone made
+    # here lives in %TEMP%, not beside the repository directory, so it is still
+    # not a sibling clone and the reason for the exclusion is unchanged.
     wt = tempfile.mkdtemp(prefix='sairn-suite-pinned-')
-    # mkdtemp CREATES the directory and `git worktree add` refuses a non-empty
-    # one, so the path is handed over empty rather than pre-made.
+    # mkdtemp CREATES the directory and `git clone` refuses a non-empty one,
+    # so the path is handed over empty rather than pre-made.
     os.rmdir(wt)
-    add = _git('worktree', 'add', '--detach', wt, sha)
+    add = _git('clone', '--local', '--no-checkout', '--quiet', REPO, wt)
     if add.returncode != 0:
-        sys.stderr.write('COULD NOT RUN: could not create a worktree at %s.\n%s\n'
-                         % (sha[:12], add.stderr.strip()))
+        sys.stderr.write('COULD NOT RUN: could not clone this repository to a '
+                         'throwaway directory.\n%s\n' % add.stderr.strip())
+        return PINNED_COULD_NOT_RUN
+    co = subprocess.run(['git', 'checkout', '--detach', sha], cwd=wt,
+                        capture_output=True, text=True, encoding='utf-8',
+                        errors='replace')
+    if co.returncode != 0:
+        shutil.rmtree(wt, ignore_errors=True)
+        sys.stderr.write('COULD NOT RUN: cloned, but could not check out %s in '
+                         'the throwaway clone.\n%s\n'
+                         % (sha[:12], co.stderr.strip()))
         return PINNED_COULD_NOT_RUN
     try:
         # PROVISION BEFORE RUNNING, or a whole class of test fails for a
@@ -795,7 +848,7 @@ def pinned_main(argv):
                              'resolves one fails for the wrong reason.'
                              + chr(10) + '  ' + pmsg + chr(10))
             return PINNED_COULD_NOT_RUN
-        print('PINNED: running in a throwaway worktree at %s' % sha[:12])
+        print('PINNED: running in a throwaway CLONE at %s' % sha[:12])
         print('    %s' % pmsg)
         print('    %s' % wt)
         print('    Nothing done in %s during this run can reach it.' % REPO)
@@ -837,14 +890,22 @@ def pinned_main(argv):
         proc.stdout.close()
         return proc.wait()
     finally:
-        rm = _git('worktree', 'remove', '--force', wt)
-        if rm.returncode != 0:
-            # Reported, never swallowed: a worktree left behind is disk and a
-            # stale entry in `git worktree list` that the next person has to
-            # explain. Naming it is cheaper than a silent leak.
-            sys.stderr.write('NOTE: the pinned worktree was left behind at %s\n'
-                             '      (git worktree remove --force %s)\n%s\n'
-                             % (wt, wt, rm.stderr.strip()))
+        # A CLONE HAS NO WORKTREE REGISTRATION, so removing the directory is
+        # the whole cleanup and there is nothing left for `git worktree prune`
+        # to forget -- the second half of the 29-leaked-worktrees problem.
+        #
+        # `ignore_errors=True` ALONE LEAKED 239 FILES ON THE FIRST REAL RUN, and
+        # it leaked them SILENTLY, which is the whole reason the check below
+        # exists. git marks loose object files READ-ONLY, Windows refuses to
+        # unlink a read-only file, and `ignore_errors` swallows every one of
+        # those refusals -- so the old `git worktree remove --force` was doing
+        # work this did not replace. Measured: `.git/objects/**` survived.
+        shutil.rmtree(wt, onerror=_force_rm)
+        if os.path.isdir(wt):
+            left = sum(1 for _r, _d, fs in os.walk(wt) for _f in fs)
+            sys.stderr.write('NOTE: the pinned clone was left behind at %s\n'
+                             '      %d file(s) remain. (rm -rf %s)\n'
+                             % (wt, left, wt))
 
 
 class _Tee(object):

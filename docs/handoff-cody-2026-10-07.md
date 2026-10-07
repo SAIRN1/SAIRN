@@ -239,3 +239,37 @@ failures), `meta145.*` (the 145s confirmation), `ce_fx_r1..3.out`,
 `corruption-evidence/{git-config-BEFORE-repair.txt,git-config-mtime.txt,residue.diff}`.
 
 **Read a status file, not a notification.** It was wrong twice in this batch.
+
+---
+
+# BATCH 21 CHECKPOINT LOG (appended one line per item, as worked)
+
+- **item 1 — PARTIAL — commit pending (reviews done, NOT landed).** fourth holds
+  `docs/tier-a-reviews.json` AND `tools/tier_a_review_gate.py`; a held claim is
+  reported, never overridden, so **no discharge was written.** All 6 of my
+  assigned-and-eligible obligations reviewed read-only with captured output;
+  **4 of the 6 carry a sha that is not on origin** (`not our ref`). My two cc
+  findings CONFIRMED landed: commit `d59f4a3c`, ancestor of origin/main, record
+  (cc, 2026-09-28T10:44:30Z) now `status: reviewed`, `reviewer_session: cody`,
+  `reviewed_at 2026-10-06T22:54:25Z`, 5677-byte verdict containing both findings
+  and the one-line ablation as the reproducing artifact. **There is no seq** —
+  seqs are the hover auditors' JSONL numbering; build-agent findings are
+  identified by commit plus record identity. **NEXT STEP:** when fourth
+  releases, paste the six verdicts from `docs/2026-10-07-cody-batch21.md` item 1
+  through `tier_a_review_gate.py --discharge --body-file`.
+- **item 2 — DONE — `~/.claude/settings.json`, no commit (outside the repo).**
+  Backed up twice: `~/.claude/settings.json.bak-20261007T124442Z` and
+  `<SCRATCH>/perm/settings.json.BACKUP-20261007T124442Z`. All **12 top-level
+  keys preserved**, `CLAUDE_CODE_FORK_SUBAGENT=0` asserted present after the
+  write. `defaultMode: acceptEdits`. allow 11→42, deny 3→25, ask 6→6 (4
+  relocated, 4 added). Syntax checked against
+  `https://code.claude.com/docs/en/permissions` read 2026-10-07: **0 grammar
+  problems**, `defaultMode` confirmed a documented value. Allow proved
+  (`git rev-parse --short HEAD` EXIT 0); a temporary deny pattern was inserted,
+  verified present, and **removed** (verified absent). **Enforcement could NOT
+  be demonstrated in-session and that is expected** — rules load at session
+  start, as the item itself says. **DEVIATION REPORTED, NOT RESOLVED:** `Edit`
+  and `Write` remain in `ask`, which outranks `defaultMode: acceptEdits`, so
+  edits will still prompt; removing them would remove existing entries, which
+  the item forbids. **NEXT STEP:** one authorisation to drop `Edit` and `Write`
+  from `ask`, or accept that acceptEdits is inert for file edits.
