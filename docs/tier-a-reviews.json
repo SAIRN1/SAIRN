@@ -5844,6 +5844,34 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-10-07T20:11:20Z",
+      "opened_at_sha": "4ec0d5d51f56c14d072bda2d8c0e6f875c617672",
+      "opened_at_sha_basis": "file-set",
+      "resources": [
+        "rf_claims",
+        "sen_authorizations",
+        "sen_branches",
+        "sen_franchise_agreements",
+        "sen_pay_rates",
+        "sen_payer_contracts",
+        "sv_audit_log"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tests/sd_data_write_attribution_three_apps.js",
+        "tools/audit_event_type_check.py"
+      ],
+      "what": "Write attribution closed on the last 7 of 15 branches in SAIRNcare/SAIRNsenior/SAIRNroofing: five sen_* and rf_claims take { updatedBy: session.employee_id, updatedByRole: session.role } as the LAST source of their Object.assign, after storedBlob, so a caller-supplied updatedBy is overwritten rather than stored. rf_schedule/set_status takes a READ-THEN-MERGE onto entry.data instead, because it PATCHes two scalar columns and a bare data:{updatedBy} would have REPLACED the window/notes blob -- that merge accepts a narrow lost-update race which is stated in the code and which a status_changed_by column would remove. WHAT A REVIEWER SHOULD ATTACK: (1) the Object.assign ARGUMENT ORDER in all six, since position and not presence is the guarantee; (2) whether the rf_schedule read-then-merge can lose a concurrent blob write in practice; (3) tools/audit_event_type_check.py's handling of sv_audit_log, which has NO event_type CHECK and NO writers and is reported separately rather than counted clean. attr_scan.py re-run at this state: UNATTRIBUTED 0 of 49, and that 0 is LEXICAL and covers THREE apps only.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-07T20:11:20Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
