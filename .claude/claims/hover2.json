@@ -74,8 +74,8 @@
       "task": "audit continuation batch M, own-tool-only scope: gate-parity sweep 9/17, undirected sweep 12/17, own save-habit disclosure, RFC3161 signed timestamp tool, audit-trail reviewer tool, build-agent claim re-derivation tool, 5 open findings routing confirm, non-LLM verdict coverage report, rotation draws, own standing-depth record update, dependency declaration, one methodology rule, hash-chain verify, final handoff",
       "claimed_at": "2026-10-07T16:25:08Z",
       "claimed_at_epoch": 1791390308.3206055,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-07T17:35:58Z",
       "files": null
     }
   ],
