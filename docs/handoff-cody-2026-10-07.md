@@ -573,3 +573,39 @@ are outside the repo and neither is a registered worktree.**
 
 `python tools/sairn_claim.py release Tooling` — result recorded in the final
 report.
+
+---
+
+# BATCH 22 CHECKPOINT LOG
+
+- **item 1 — DONE — `~/.claude/settings.json`, no commit (outside the repo).**
+  `Edit` and `Write` REMOVED from `permissions.ask` so `defaultMode:
+  acceptEdits` governs them. **Removal, not a move to `allow`** — a rule in
+  `allow` overrides a mode in the other direction and would keep auto-approving
+  if the mode were later set back to `default`; "follow the default" means
+  matched by **no** rule. The docs line that decides it, verbatim: *"An ask rule
+  like `Bash(git clean *)` still prompts you … **even in auto mode**"* — an ask
+  rule outranks a MODE, which is why acceptEdits was inert.
+  **Counts, same diff method, same 12:44 baseline:** allow **11 → 42**, deny
+  **3 → 25**, ask **6 → 4**; `defaultMode` absent → `acceptEdits`. This edit
+  alone: ask 6 → 4, two lines removed, nothing else touched. Grammar re-checked:
+  **0 problems**, `defaultMode` a documented value, `Edit`/`Write` in neither
+  list. **A SEPARATE FINDING: the top-level `model` key disappeared between
+  12:44 and 14:30 and NOT by any edit of mine** (`LOST by THIS edit: []`) — the
+  app owns that setting, so it was not restored. Backups:
+  `~/.claude/settings.json.bak-20261007T143044Z`,
+  `<SCRATCH>/b22/settings.json.PRE-ITEM1-20261007T143044Z`.
+  **NEXT STEP:** none — but enforcement still begins at the next session start,
+  so Michael should confirm the first edit of a fresh session is not prompted.
+- **item 2 — DONE — commit pending.** Claims-checked fresh first: **cody is the
+  only session declaring `package-lock.json`**; `package.json` is declared by
+  nobody and is **untouched** (`diff` → identical). Applied
+  `npm audit fix --package-lock-only --only=prod`; **three lines changed**, all
+  inside the one `@fastify/busboy` entry — `version`, `resolved`, `integrity`
+  (3.2.1 → 3.2.2). `npm audit`: **moderate 1 → 0, total 3 → 2**; the two highs
+  remain, as expected. `api/_lib/firebase-mint.test.js` still **EXIT 0**, 16/16.
+  **STATED LIMIT: `node_modules` lives OUTSIDE this clone, so the INSTALLED
+  busboy is still 3.2.1 while the LOCK now says 3.2.2.** The fix lands for the
+  deploy and for `npm audit`; this clone's installed tree is unchanged until
+  someone runs `npm install`. **NEXT STEP:** nothing required — the deploy
+  installs from the lock.
