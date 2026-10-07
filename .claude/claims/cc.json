@@ -3552,6 +3552,38 @@
         "tools/report_only_checks.py",
         "tools/sairn_build_load_gates.py"
       ]
+    },
+    {
+      "id": "cc-1791379915",
+      "session": "cc",
+      "subject": "cc",
+      "task": "batch14 at HEAD 6bfb992e, premises re-derived. (1) role_gate_mc_config.py: unknown flags fail closed, exit 2, write nothing, selftest arm that fails on the OLD behaviour; both spec files already CONFIRMED byte-identical to origin/main in worktree and at HEAD. (2) gen_ma_seed.py emits the 19 lines of provenance its output carries, proved byte-identical to the committed file; NOT regenerated blind. (3) the other two drifted generators, one at a time. (4) sairn_build_load_gates.py generated twice and hashes compared; outputs committed and drift-checked only if identical, otherwise a determinism arm and the reason recorded. (5) doc_sha_reseat.py: the WRITING mode takes the stricter census rule, the 1234abcd and other test-string entries removed from the register as MY tool's error, a selftest arm per false-positive shape, and both modes must report the same count. (6) record myself as owner of the 17 read-only tools plus role_gate_mc_config.py and the generators, via the existing docs/tool-owner-map.json mechanism, and PRINT every other ownerless tool for chat to assign without assigning any. (7) confirm each routing of the 44 absent citations with its seq and fix my own 2. (8) print the location inventory as a compact table. (9) THE PYTHON GUARD CHECKER, a one-time exception to no-new-builder-tools granted by Michael: design note committed FIRST, an ast-based static checker that NEVER executes what it reads, four mechanically-detectable rules, a planted-bad and clean example plus an ablation per rule, applied across every tools/*.py with every flag hand-verified and every false positive named, and wired REPORT-ONLY through the existing report_only_checks.REGISTRY pattern. (10) two methodology rules written into my handoff and routed to chat, NOT into the methodology file, plus a blameless postmortem on the 11-too-high count ending in one system-level fix inside an existing check. (11) handoff and release. CONFLICTS DECLARED PER PR 4.3 AND NONE OVERRIDDEN: .claude/settings.json is CODY'S, so item 9's wiring goes through report_only_checks.REGISTRY and the settings file is NOT touched; docs/METHODOLOGY.md is FOURTH'S and HANK'S and item 10 explicitly says not to edit it this round; docs/tier-a-reviews.json is FOURTH'S and is not in this batch at all. EVERY OTHER TARGET WAS CLAIMS-CHECKED FREE at 6bfb992e: role_gate_mc_config.py, gen_ma_seed.py, gen_mo_seed.py, gen_va_seed.py, sairn_build_load_gates.py, doc_sha_reseat.py, sairn_push_gate_hook.py, report_only_checks.py, docs/tool-owner-map.json, docs/spec/MCRoleGates.tla and .cfg. A tool I probe is read-only BY CONSTRUCTION and git status is captured before and after every probe. I close only findings I originated and reclassify none. I read and reference no auditor tool. FILES: tools/role_gate_mc_config.py tools/gen_ma_seed.py tools/gen_mo_seed.py tools/gen_va_seed.py tools/sairn_build_load_gates.py tools/doc_sha_reseat.py tools/py_guard_check.py tests/run_py_guard_probe.py tools/report_only_checks.py tools/sairn_push_gate_hook.py docs/tool-owner-map.json docs/citation-absent-register.json sql/alf_compliance_rules_load_gate_generated.sql sql/alf_payer_rules_load_gate_generated.sql docs/2026-10-07-cc-py-guard-design-note.md docs/2026-10-07-cc-postmortem-count-11.md docs/2026-10-07-cc-batch-14-inventory.md docs/2026-10-06-cc-routed.md docs/handoff-cc-2026-10-07c.md SAIRN-ACTIVE-WORK-cc.md",
+      "claimed_at": "2026-10-07T13:31:55Z",
+      "claimed_at_epoch": 1791379915.2016177,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-cc.md",
+        "docs/2026-10-06-cc-routed.md",
+        "docs/2026-10-07-cc-batch-14-inventory.md",
+        "docs/2026-10-07-cc-postmortem-count-11.md",
+        "docs/2026-10-07-cc-py-guard-design-note.md",
+        "docs/citation-absent-register.json",
+        "docs/handoff-cc-2026-10-07c.md",
+        "docs/tool-owner-map.json",
+        "sql/alf_compliance_rules_load_gate_generated.sql",
+        "sql/alf_payer_rules_load_gate_generated.sql",
+        "tests/run_py_guard_probe.py",
+        "tools/doc_sha_reseat.py",
+        "tools/gen_ma_seed.py",
+        "tools/gen_mo_seed.py",
+        "tools/gen_va_seed.py",
+        "tools/py_guard_check.py",
+        "tools/report_only_checks.py",
+        "tools/role_gate_mc_config.py",
+        "tools/sairn_build_load_gates.py",
+        "tools/sairn_push_gate_hook.py"
+      ]
     }
   ],
   "refusals": [
