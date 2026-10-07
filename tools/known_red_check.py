@@ -211,14 +211,87 @@ def run_fixtures():
     if err:
         wrong.append('a WELL-FORMED log with no failures was refused: %s' % err)
 
+    wrong.extend(_environment_arms())
+
     if wrong:
         print('REFUSING: the criteria do not classify their own fixtures.')
         for w in wrong:
             print('  ' + w)
         return EXIT_COULD_NOT_RUN
-    print('  %d/%d fixtures correct, plus 3 log-trust arms.'
-          % (len(FIXTURES), len(FIXTURES)))
+    print('  %d/%d fixtures correct, plus 3 log-trust arms and %d '
+          'environment-stamp arms.'
+          % (len(FIXTURES), len(FIXTURES), _ENV_ARM_COUNT))
     return EXIT_CLEAN
+
+
+# ── THE ENVIRONMENT STAMP, AND WHY ABSENCE IS NOT UNKNOWN ──────────────────
+# Two probes gave OPPOSITE verdicts in batch 11 on the SAME SHA, minutes
+# apart, differing only in where they ran:
+#
+#   tests/seam_check/run_delegation_probe.py   FAIL in a linked worktree
+#                                              exit 0 in the live clone
+#   tests/push_gate/check8_probe.py            ok   in a linked worktree
+#                                              exit 1 in the live clone
+#
+# Every row in this registry carried a `tail` and no environment, so no row
+# could be reproduced -- or contradicted. A row now carries `environment`
+# with where / pinned / tool / sha.
+#
+# AN EXPLICIT "unknown" IS ACCEPTED AND AN ABSENT KEY IS NOT. That is the
+# whole arm. A missing key reads as "never asked" and an unknown reads as
+# "asked, and the answer is not recoverable" -- the same distinction this
+# registry already makes between a blank `why` and a diagnosed one, and the
+# same one `{"_constraints": {}}` makes against a missing key. Folding them
+# together is how 57 rows would quietly inherit a stamp nobody measured.
+_ENV_KEYS = ('where', 'pinned', 'tool', 'sha')
+_ENV_ARM_COUNT = 4
+
+
+def _environment_arms():
+    """-> list of failure strings. Four arms, two of them negative."""
+    bad = []
+
+    def rows_missing(entries):
+        return [e.get('file') for e in entries
+                if not isinstance(e.get('environment'), dict)
+                or any(k not in e['environment'] for k in _ENV_KEYS)]
+
+    # 1. POSITIVE, against the REAL registry: every row carries all four keys.
+    d, err = load_registry()
+    if err:
+        bad.append('the environment arms could not read the registry: %s -- '
+                   'that is a COULD NOT RUN, not a pass' % err)
+    else:
+        miss = rows_missing(d['entries'])
+        if miss:
+            bad.append('%d registry row(s) have no complete `environment` '
+                       'stamp, so their verdicts cannot be reproduced: %s'
+                       % (len(miss), miss[:6]))
+
+    # 2. NEGATIVE: a row with the key ABSENT must be caught. Without this the
+    #    arm above could be passing because the walker never looks.
+    if not rows_missing([{'file': 'x.py', 'tail': 't'}]):
+        bad.append('a row with NO `environment` key was accepted -- the arm '
+                   'above is not checking anything')
+
+    # 3. NEGATIVE: a row with only SOME of the four keys must be caught too.
+    if not rows_missing([{'file': 'y.py',
+                          'environment': {'where': 'live-clone'}}]):
+        bad.append('a row carrying only `where` was accepted -- a partial '
+                   'stamp reads as a complete one')
+
+    # 4. THE PAIRED POSITIVE: an explicit "unknown" in every key is VALID, so
+    #    arms 2 and 3 are not a check that rejects every row. An unrecoverable
+    #    environment is a real answer and must stay writable.
+    if rows_missing([{'file': 'z.py',
+                      'environment': {'where': 'unknown', 'pinned': 'unknown',
+                                      'tool': 'unknown', 'sha': 'unknown'}}]):
+        bad.append('a row stamped "unknown" in all four keys was REFUSED -- '
+                   'unknown is a real answer and the arm must accept it, or '
+                   'the 9 rows nothing records the environment for become '
+                   'unwritable and get guessed instead')
+
+    return bad
 
 
 def main(argv):
