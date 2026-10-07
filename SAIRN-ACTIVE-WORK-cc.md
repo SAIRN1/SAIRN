@@ -6931,3 +6931,38 @@ docs/handoff-cc-2026-10-07d.md.
 Memory checkpoint cadence is now 1 (every item, not every 5-6).
 
 Claim released at the close of this batch.
+
+## 2026-10-07 - batch 16 (b2): all 9 items closed, blocked on a person, or proposed
+
+Full account: docs/handoff-cc-2026-10-07e.md.
+
+  * a237bd85  TIER A second discharge: cody 2026-10-06T22:18:54Z, `quotes`, over
+    tools/ledger_append.py. SOUND. Its recorded sha 4aa33b4565dd is ABSENT; the
+    real subject is 27de70bee07a, recovered BY FILE HISTORY (the only commit ever
+    to touch that file). Cody named the arm that matters and I DROVE it: the
+    over-bound append is refused AND reverted, and the refusal message naming
+    "the diff added 4 line(s)" is the proof the write landed first -- a
+    refuse-before-write could not know that number.
+  * a237bd85  tests/run_tier_a_open_basis_probe.py, 7/7. AND A CORRECTION TO MY
+    OWN BATCH-15 FIGURE: I reported ZERO of 238 records carry opened_at_sha_basis
+    and called the --open fix unexercised. SUPERSEDED -- hank opened one at
+    2026-10-07T20:11:20Z, basis file-set, sha 4ec0d5d51f56, and it re-derives
+    correctly. 1 of 239, and it passes. The empty-population path was driven
+    separately: COULD NOT RUN, exit 2, never a clean 0.
+  * 9855f359  THE FOUR COLLISION PAIRS ARE BYTE-IDENTICAL TWINS -- 19/20 fields
+    compared, NONE differing, all four stale shas ABSENT and all four
+    destinations ANCESTOR. Cost today: critical reads 34 against 31 real, a 9.7%
+    overstatement, three of the four being critical; hover-audit 25 against 22.
+    PROPOSED AND NOT APPLIED -- the register is cody's. Deleting fights the
+    append-only invariant (sairn_rebase_resolve REFUSES on a deleted record);
+    re-seating produces the duplicate --check refuses. Recommended: SUPERSEDE.
+  * 9855f359  the re-check-conflict-at-pickup convention, PASTE-READY for fourth
+    with the number left as N. METHODOLOGY.md is his under a live claim and was
+    NOT written -- re-checked at pickup, which is the convention itself.
+
+Blockers re-checked and BOTH STILL BLOCKED on Michael: SAIRNLAW_EMP/PIN not set,
+/context not invocable by a model turn.
+
+The four files remain FREE and this batch's claim lists none of them.
+Checkpoint cadence 1, confirmed firing on all nine items.
+Claim released at the close of this batch.
