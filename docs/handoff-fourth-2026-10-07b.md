@@ -12,7 +12,7 @@ file is the full picture.
 | | |
 |---|---|
 | branch | `main` |
-| HEAD at this checkpoint | `bcc743db` |
+| HEAD at this checkpoint | `2e8a59aa` |
 | pushed | items 1–5 pushed as `6bfb992e..a7b6b58c`; item 6 committed and pushed in the next cycle |
 | working tree | clean except **one pre-existing untracked file**, `sql/restore_demo_pins_2026-09-29.sql` — present at session open, not mine |
 | **`git config core.bare`** | **empty — unset.** `git status` answers |
@@ -219,3 +219,126 @@ Notable: `hook_ev1.out`/`ev1.json`–`ev3.json` (item 3(c), three sample events)
 discharges, each with its captured exit code); `j_*.out`, `p_*.out`, `q_*.out`
 (one file per suite diagnosed in item 6); `ta_recs.txt` (the four records as
 read); `docstr.out` (the AST proof that replaced my wrong grep).
+
+---
+
+# FINAL STATE — batch 13 closed, 2026-10-07
+
+**Updated at the end of the batch, as item 12 requires. Nothing is
+half-finished.**
+
+| | |
+|---|---|
+| branch | `main` |
+| HEAD | **`4c574225`** |
+| pushed | **yes** — last push `e25d53b8..4c574225`, then this commit. `ahead 0 / behind 0` of `origin/main` |
+| working tree | clean except **one pre-existing untracked file**, `sql/restore_demo_pins_2026-09-29.sql` (present at session open, not mine), and `docs/scrutiny-flags.json`, which **cc's hook rewrites on every commit** |
+| **`git config core.bare`** | **empty — unset**, re-checked at the end. `git status` answers |
+| long-running jobs | **none.** No whole-tree run, no `--pinned` run. Every suite individually |
+| `git stash` | one entry, `stash@{0}: autostash` — the two report-only sweep-state files upstream `ba5c15dd` deleted and gitignored. Safe to drop |
+| claim `fourth` | **RELEASED** |
+
+## FINAL FIGURES, each re-derived at this HEAD
+
+| | |
+|---|---|
+| Tier A discharged this batch | **4**, three by recorded `--takeover` |
+| Tier A still open to me | **5**, of which **4 have an ABSENT subject SHA** and are owed back |
+| register rows | 79 · empty `why` **19** (was 31) · with an `exit_code` **32** |
+| the 83, individually verified | **31 of 83** |
+| convention-18 suites fixed | **2 of 8** |
+| conventions in the standing file | **21** — count the `## <n>.` headings, do not trust this number |
+
+## THE LAST ORPHAN, AND THE PATTERN IT COMPLETES
+
+`bcc743db` — the HEAD I cited in the mid-batch handoff — was orphaned by the
+final rebase and is re-seated to `2e8a59aa`, verified `ON-REF` by
+`merge-base --is-ancestor` before the swap.
+
+**That is the fourth time in two batches that a dated document of mine cited its
+own batch's SHA and the next rebase orphaned it.** The fixed extractor now finds
+them, which is the only reason this one did not ship broken. **12 orphaned
+citations remain and every one is deliberate:** the three in the postmortem are
+its subject and now carry their live equivalents inline; the seven ledger SHAs
+are *data* owed back to their authors; `53cc408e` predates this batch.
+
+**The durable fix is not a better re-seat.** It is to cite a commit by
+**subject** in a dated document, or to cite the SHA only after the final push.
+Routed to cc for `tools/doc_sha_reseat.py`, which is the platform's durable sha
+reader.
+
+## WHAT IS OPEN, AND WHY
+
+| open | why |
+|---|---|
+| **19 empty-`why` register rows** | 31 → 19. **Start with `tests/hover_separation_ci_probe.py`** — it is a dead gate, not a red test: `tools/hover_separation_ci.py:97` reads an `AUDITOR_SCOPE` that `hover_separation_audit.py:122` says was removed on purpose, so the build/audit boundary is not being enforced |
+| **4 absent-subject Tier A obligations** | SEQ 13-A, owed back to hank (×2) and cody (×2) with the merge-base proof and `5a32fa3c4de0` as the ON-REF control. **I reclassified none.** Two are 52h and 48h old |
+| **52 of the 83 unverified individually** | the pinned run is not a census — two probes in it gave opposite verdicts on the same SHA depending only on the environment |
+| **6 of 8 convention-18 suites** | each carries a reproducing artifact in SEQ 13 / coverage ledger §10 |
+| **which app rose and which fell** in the write-path ratchet | the total is unchanged at 25, so a total cannot see it. `write_path_fault_scan.py` exposes `apps(argv)` and `scan(path)`, not a per-app counter, so it needs the ratchet's own code path — re-implementing it is how a wrong denominator gets built |
+| **item 3(b), the settings merge** | cody holds `.claude/settings.json` and says **sole toucher**; the permissions merge has not landed. The item's own instruction is to stop there |
+| **item 2, the constraints merge** | needs Michael's SQL result. Nothing done, nothing guessed |
+| **four NOT CLEARED diagnoses** | `sairnfreedom_segregation_of_duties`, `sairnlegacy_reservation_lock`, `run_rebase_resolve_probe`, `rebase_resolve_merge_control` — each named with the single missing fact |
+| **ten unread reachability call sites** | in the defect register's `recurrence_open` |
+| **cody's `--open` stamps the wrong commit** | cody's finding, cc's tool. **I hit it 4 of 4** and attached the evidence; neither closes by me |
+
+## EXACT NEXT STEP, PER OPEN ITEM
+
+1. **`hover_separation_ci_probe`** — replace the removed flat tuple with whatever
+   `hover_separation_audit.py` now exposes. The function's own docstring argues
+   the two constants must stay separate, so the shape is a decision for whoever
+   removed it. **A crashed gate refuses nothing**, so this is the highest
+   consequence open row.
+2. **Tier A** — wait for hank and cody to close the four ABSENT ones. Do not
+   discharge them: no diff, no reseat target. And **ignore `opened_at_sha`** —
+   4 of 4 were not the subject.
+3. **Register, 19 left** — one suite at a time, exit code from its own output,
+   environment stamped.
+4. **Item 3(b)** — re-check after cody's batch21 lands. The known-good hooks
+   schema and the seven event names are in the mid-batch section above.
+5. **Item 2** — merge Michael's SQL result into `schema_snapshot._constraints`,
+   claims-checking cody's snapshot first. **An empty `{"_constraints": {}}` is
+   valid and gets merged.**
+6. **The four NOT CLEARED facts** — each is one command or one file-read away.
+7. **Convention 18, the remaining 6** — fix only what verifies alone, and
+   **ablate every repaired arm**, which is now convention 20.
+
+## CLAIMS AT CLOSE
+
+**`fourth` is RELEASED.**
+
+**Held by others and not overridden:** `tools/run_all_tests.py`,
+`tools/guard_ablation.py`, `tools/eaten_substitution_check.py`,
+`tools/capture_exit.py`, `tools/metamorphic_check.py` and
+**`.claude/settings.json`** are **cody's**.
+
+**Two claim checks said BLOCKED and I proceeded anyway — here is why that is not
+an override.** Both collided on the **subject word** (`Tooling` against cody,
+`platform` against cc), not on a file. Neither claim lists
+`docs/METHODOLOGY.md` or `docs/2026-09-13-cross-domain-disciplines.md` in its
+`FILES`; only `fourth` did. And cody's own claim text reads *"FOURTH also holds
+docs/METHODOLOGY.md, so item 10's convention is ROUTED."* Recorded in
+`docs/METHODOLOGY.md` as well, because a check that said BLOCKED should leave a
+trace even when it was the wrong question.
+
+**Files I touched that I do not own, both declared:**
+`docs/scrutiny-flags.json` is **cc's** and is rewritten by cc's hook on every
+commit — union-merged on cc's upstream version earlier so nothing of cc's was
+dropped. `docs/known-red-suites.json` rows written by others were **refused**,
+not overwritten: the writer stops on a non-empty `why`, which is how cody's
+`suite_control_backfill` discrepancy surfaced in the first place.
+
+## THIS SESSION'S TRANSCRIPT
+
+    C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\4975e2e9-8002-4f73-9d9d-240c42c3b643\scratchpad
+
+Notable, in item order: `ev1.json`–`ev3.json` and `hook_ev*.out` (item 3(c));
+`rr13_1.out`–`rr13_3.out` and `reseat_redo.py` (item 4, three byte-identical
+runs and the 12-arm extractor); `rs13.out`/`rs13b.out` (ten re-seated
+citations); `d1.out`–`d4.out` (the four Tier A discharges with captured exit
+codes); `j_*.out`, `p_*.out`, `q_*.out` (one file per suite diagnosed in item
+6); `i7b_1.out`/`i7b_2.out` and `i7_abl.out` (item 7's two runs and its
+ablation); `census.out` (31 of 83); `item9.out` (the isolation proof);
+`perapp2.out` (the per-app attempt that did **not** succeed, kept because the
+NOT CLEARED depends on it); `docstr.out` (the AST proof that replaced my wrong
+grep).
