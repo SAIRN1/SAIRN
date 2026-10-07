@@ -24026,6 +24026,53 @@
       "recurrence_open": "The tool still cannot see an override read through a helper rather than process.env directly, cannot tell whether a present override reaches the read, and does not judge the 16 CROSS_APP suites at all. Those three are named limits, not findings. And the 155 findings are now a backlog nobody owns: the fix per finding is a judgement (add the override, or say in the header that the suite is pinned), and none of the 155 has been made."
     },
     {
+      "commit": "2d1057361892",
+      "date": "2026-10-07",
+      "subject": "fix(attribution): eight write paths across three apps now record WHO wrote the row -- and my own read found 15 of 49, not the 10 routed",
+      "files": [
+        "api/sd-data.js",
+        "tests/sd_data_write_attribution_three_apps.js"
+      ],
+      "lines_added": 376,
+      "lines_removed": 0,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "Fifteen of 49 write branches in SAIRNcare, SAIRNsenior and SAIRNroofing persisted a row recording no acting employee. Nothing was disclosed -- this is accountability, not confidentiality -- but the rows are the ones somebody reconstructs later: a resident activity and billing entries, a facility rate card, a fall-detection signal, staff and caregiver records, a home-care claim and a roofing location. H1 routed the gap as 10 resources; my own read with different criteria found 15, and H1 finding is NOT reclassified -- only the originating finder does that.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "unknown_reason": "These branches have never recorded an actor. There is no commit that removed one, and citing the commit that created each resource would be naming a feature as the injection of its own absent field."
+      },
+      "citation_note": "NO STANDING SECTION NAMES THIS. It is not a disclosure, not a silent failure, not a stale check -- it is a row that works correctly and cannot answer who wrote it. The closest relative is the batch-11 record on the provisioning setup paths, which is the same shape one layer over and was also filed arguable. Named as not-citable rather than stretched onto 1.11 a third time.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "Fifteen write branches across three apps persisted a row with no acting employee on it -- not a column, not a blob key, not an audit row.",
+          "action_status": "planned",
+          "action": "eight are stamped in the blob after storedBlob. The other seven build their row without a storedBlob variable and each needs an individual read; stamping them blind would write the field into the wrong object."
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "storedBlob() was introduced to stop a caller payload shadowing server columns and it solved that completely, so every branch that adopted it got a SAFE row and nobody asked whether the row was an ATTRIBUTED one.",
+          "action_status": "done",
+          "action": "the stamp is written AFTER storedBlob so a caller-supplied updatedBy is overwritten; arm C1 sends SOMEONE-ELSE on all eight and asserts every one discarded it, and arm D1 pins the ordering at source."
+        },
+        {
+          "kind": "detection",
+          "factor": "My own first scan found 8, not 15, because it filtered to eleven action names I happened to think of. The allowlist was a model of what I expected rather than the population.",
+          "action_status": "done",
+          "action": "the action allowlist is removed and the reason is a comment in the probe; the population went 38 to 49 branches and the gap 8 to 15."
+        }
+      ],
+      "recurrence_open": "SEVEN OF THE FIFTEEN ARE STILL UNATTRIBUTED and are named in docs/handoff-hank-2026-10-07b.md: rf_claims/write, rf_schedule/set_status, sen_authorizations, sen_branches, sen_franchise_agreements, sen_pay_rates, sen_payer_contracts. And nothing sweeps for the class platform-wide -- the probe that found these three apps is a scratchpad script, deliberately not promoted to tools/ this batch, so the other fourteen apps are unmeasured."
+    },
+    {
       "commit": "538451398bf0",
       "date": "2026-10-07",
       "subject": "fix(ablation): a TIMED-OUT suite counted as proof a guard was LOAD-BEARING -- 124 is an exit code and a could-not-run is not",
@@ -24176,6 +24223,55 @@
         }
       ],
       "recurrence_open": "NO ROLE GATE WAS ADDED AND THAT IS DELIBERATE: which of owner, superintendent, manager, crew, office may write a BOQ rate or an invoice is a product decision this batch was told not to make unilaterally, so crew can still write an invoice once signed in. Logged open. The msb_* resources in the same dispatch region are a DIFFERENT app with the same licence-key-only shape and are explicitly NOT fixed -- arm D1 proves msb_products still answers without a session, which is a measurement and not an endorsement. And the auditor repro still reports REPRODUCES because it looks for verifySessionToken INSIDE each dispatch block while the gate is in the shared prelude; routed to hover2."
+    },
+    {
+      "commit": "7be24c1a69d3",
+      "date": "2026-10-07",
+      "subject": "fix(tiers): the 390-vs-391 is ONE CELL, and the column it hid in is the only one the checker never compared",
+      "files": [
+        "docs/CRITICALITY-TIERS.md",
+        "tools/criticality_tier_check.py"
+      ],
+      "lines_added": 29,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "docs/CRITICALITY-TIERS.md per-app rollup TOTALS column summed to 390 while 391 detail rows exist and five other figures in the same file said 391. Localised to ONE CELL: sairnfreedom read n=35 against its own A+B+C of 36 and 36 real sf_ rows. AND THE COLUMN IT HID IN IS THE ONLY ONE THE CHECKER NEVER COMPARED -- the COUNT guard in tools/criticality_tier_check.py looped over the three TIER columns from the day it was written and never over n, while that file header claims a rollup count that does not match the rows under it is caught. Moderate rather than high: the register is a judgement document read by people, no code derives from the totals column, and the figure was wrong by one.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "unknown_reason": "The guard has looped over a, b, c since the file was written; no commit removed n from it. The data defect arrived when sf_trustee_audits was added and the A column was updated without the total, which the file own prose dates to 2026-09-29, but no single commit can be cited for an omission."
+      },
+      "citation_note": "ARGUABLE. PR 1.1 is a check that stopped checking; this is a check that never covered one column of the four it appeared to. Nearer to this batch methodology RULE D -- a green result licensing a wider claim than it measured -- which is routed and not yet a numbered section.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "The rollup row for sairnfreedom read n=35 while its own A and B columns read 27 and 9, and 36 sf_ detail rows exist. One cell, and the per-app totals column summed to 390 against 391 everywhere else in the file.",
+          "action_status": "done",
+          "action": "the cell is 36, and the prose in it that restated 35 is corrected too."
+        },
+        {
+          "kind": "detection",
+          "factor": "criticality_tier_check COUNT guard looped over the TIER columns -- for key, label in (a,A),(b,B),(c,C) -- and never compared n. Four columns, three checked, and the file header claims a rollup count that does not match its rows is caught.",
+          "action_status": "done",
+          "action": "n is now compared against the registered resources that have a row. The guard was added FIRST: the checker went EXIT 0 to EXIT 1 on unchanged data, which is the mutation proof."
+        },
+        {
+          "kind": "process",
+          "factor": "Five separate figures in this file agreed on 391 -- the headline, the A/B/C sums, RESOURCES_REGISTERED and RESOURCE_ROWS -- so every re-derivation anybody ran confirmed 391 and none of them looked at the totals column.",
+          "action_status": "not-actionable",
+          "note": "the redundancy is the register design and is worth keeping; what was missing was a guard on the one figure the redundancy did not cover, and that is now present."
+        }
+      ],
+      "recurrence_open": "The rollup LIST and the four COUNT columns are now all guarded, but nothing checks the free prose in the same cell -- the sentence reading \"all 35 rows read individually\" was wrong for the same reason and was corrected by hand, not by a check. A restatement wrapped in an argument is deliberately not machine-editable here, which is the right call and leaves this class open."
     },
     {
       "commit": "7ed27c5e78fa",
