@@ -145,3 +145,51 @@ release.** The nine rows above are listed so the work is ready to land and are
 **not** discharged; nothing in that file was written by this session.
 
 *(SHA re-seat 2026-10-06: the six commits this file cites were rewritten by a `git pull --rebase` onto eleven upstream commits shortly after they landed. The pre-rebase SHAs 100b82fc, 7c911e5c and 6984634e are UNREACHABLE; the reachable equivalents 6b77545f, 326d277e and 7eabd192 are cited above. Every MEASUREMENT in this file was taken BEFORE those eleven upstream commits arrived, so the tree it describes is the rewritten commit's parent tree, not its current one. Re-seated by hand because `.githooks/post-rewrite` re-seats the defect register and the generated tracking documents, and this file is neither.)*
+
+---
+
+## PULL 6 — the suite runner's `--pinned` mode BREAKS THE CLONE, in the mode that exists to prevent it
+
+**Halted on:** `python tools/run_all_tests.py --pinned --pinned-ignore-dirty`
+finished (**`PROGRAM_EXIT=1`**, 782 lines, pinned at `762b084b`) and left this
+clone with `core.bare = true` and `git status` answering
+`fatal: this operation must be run in a work tree`. Repaired by hand for the
+**second time in one session**.
+
+**Why it is a halt and not just a bug report.** The mechanism is proven and it
+is generic, not specific to any one probe:
+
+    git worktree add -q --detach <WT> HEAD
+    git -C <WT> config core.bare true      # exit 0
+    → the CLONE's .git/config gains `bare = true`, byte-for-byte the delta the run left
+
+A linked worktree has no config of its own. **So `--pinned` isolates files and
+does not isolate configuration, and ANY probe in the suite that writes git
+config reaches the live clone.** `check8_probe`, the known past writer, is
+`ok` in this run and leaves the config byte-identical standalone — it is not
+the cause. The caller is not yet identified and four standalone candidate runs
+came back clean, which proves nothing because standalone is not in a worktree.
+
+**AND IT MAKES EVERY EXISTING SUITE VERDICT AMBIGUOUS.** Two probes have
+opposite results depending only on the environment, same SHA, minutes apart:
+`seam_check/run_delegation_probe.py` is **FAIL** in the worktree and **exit 0
+green** in the clone; `push_gate/check8_probe.py` is **ok** in the worktree and
+**exit 1** in the clone. No record on this platform states which environment
+produced a verdict — including `docs/known-red-suites.json`, whose entries
+carry a `tail` and no environment field. **Escalated because that invalidates
+the premise of the red register itself, which is not mine to redesign.**
+
+**NOT FIXED, and the reason is a measurement:** the strategy change is a
+throwaway clone instead of a worktree — the fix `b23dbc2e` already applied one
+layer down — and it can only be verified by a full pinned run, now measured at
+**over two hours** in this environment against 22 minutes for 656 lines earlier
+the same day. Landing an unverified change to the one tool every session uses
+to ask "does the suite pass", at the end of a batch, with no way to re-run it
+before handing off, is not a trade worth making.
+`docs/2026-10-07-fourth-routed-pinned-worktree-shared-config.md` carries the
+artifact, both candidate fixes with the weaker one marked as not actually
+closing it, and the one-command-per-candidate next step.
+
+**`tools/run_all_tests.py` is in NO active claim** at `e50e9d5c` —
+`python tools/sairn_claim.py check tooling "run_all_tests pinned worktree
+isolation shared config"` → `CLEAR`. So this is unowned, not blocked.
