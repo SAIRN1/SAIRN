@@ -52,6 +52,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sd_data_write_attribution_three_apps.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "07b3fc8378350fa62e327a18208479ced347102d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/sairn_push_gate_hook.py",
    "class": "push-gate logic",
    "level": "CHANGE",
@@ -311,6 +319,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sd_data_write_attribution_three_apps.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "874fe39e3e7aeaa74de357df0461270d6ce82da6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/provisioning_attribution.js",
    "class": "test file",
    "level": "CHANGE",
@@ -340,6 +356,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "9b15a38eebe57440111004524ff86313551a8bfe",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_write_attribution_three_apps.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a0cd5149f13480b5b15a0c4d5fdf1ad3fbb8f0e4",
    "criteria_version": "2026-10-06.1"
   },
   {
