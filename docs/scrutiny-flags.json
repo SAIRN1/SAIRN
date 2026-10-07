@@ -266,6 +266,32 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/push_gate/graduated_exempt_consume_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "\"\"\"Only the mode that can actually let a push through may SPEND the exemption."
+    }
+   ],
+   "sha": "59156851bf1500c6021ac9a8ee657bd7035c86c5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "def graduated_exempt(check, tip, consume=None):"
+    }
+   ],
+   "sha": "59156851bf1500c6021ac9a8ee657bd7035c86c5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/provisioning_attribution.js",
    "class": "test file",
    "level": "CHANGE",
@@ -308,6 +334,32 @@
     }
    ],
    "sha": "5f9673852a61f144edb1d71184b76fab1ddf5443",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/push_gate/graduated_exempt_consume_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "\"\"\"Only the mode that can actually let a push through may SPEND the exemption."
+    }
+   ],
+   "sha": "7657ffbaa6db964f42fca552010b915d0c0b398a",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "def graduated_exempt(check, tip, consume=None):"
+    }
+   ],
+   "sha": "7657ffbaa6db964f42fca552010b915d0c0b398a",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -431,6 +483,32 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/push_gate/graduated_exempt_consume_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "\"\"\"Only the mode that can actually let a push through may SPEND the exemption."
+    }
+   ],
+   "sha": "dc9f16299a6e6e47da3de2b389da810a7c561910",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "def graduated_exempt(check, tip, consume=None):"
+    }
+   ],
+   "sha": "dc9f16299a6e6e47da3de2b389da810a7c561910",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/exit_status_attributable.py",
    "class": "push-gate logic",
    "level": "WEAKENING",
@@ -465,6 +543,32 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "e787a6d98d8ff4f31471380266df0e363014d353",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/push_gate/graduated_exempt_consume_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "\"\"\"Only the mode that can actually let a push through may SPEND the exemption."
+    }
+   ],
+   "sha": "eaa88c0eaa250dbc8360b8c4d77a702a22a1375f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "def graduated_exempt(check, tip, consume=None):"
+    }
+   ],
+   "sha": "eaa88c0eaa250dbc8360b8c4d77a702a22a1375f",
    "criteria_version": "2026-10-06.1"
   },
   {

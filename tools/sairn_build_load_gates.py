@@ -277,7 +277,156 @@ def build_sql(cfg, rules, dupes):
     return '\n'.join(o) + '\n'
 
 
+KNOWN_FLAGS = ('--check', '--selftest', '--determinism',
+               '--write-superseded-gates', '--help', '-h')
+
+USAGE = """Build the SUPERSEDED generated load-state gates. Read the docstring first.
+
+    python tools/sairn_build_load_gates.py --check         compare, write nothing
+    python tools/sairn_build_load_gates.py --determinism   build twice in temp
+                                                           dirs and compare
+    python tools/sairn_build_load_gates.py --selftest      the arms below
+    python tools/sairn_build_load_gates.py --write-superseded-gates
+                                                           ACTUALLY WRITE the
+                                                           five .sql files
+
+A BARE RUN NO LONGER WRITES, and that is not a bug in the usage. This tool was
+SUPERSEDED on 2026-08-29 by Michael's decision to standardise on
+tools/sairn_load_state_check.py, and its five generated .sql gates were DELETED
+as part of that decision. The deciding factor was staleness: a generated gate
+must be regenerated after every seed edit, and a forgotten regeneration makes
+the gate check yesterday's expectations and report clean -- the silent-failure
+shape the gate exists to catch, reintroduced inside the catcher.
+
+So a bare run of this file silently reinstates five gates a human decided to
+remove. The write now needs --write-superseded-gates, spelled that way because
+the flag has to say what it does rather than how.
+
+Exit 0 fine, 1 drift or an arm failed, 2 COULD NOT RUN (including an argument
+this tool does not recognise, and including a bare run)."""
+
+
+def _build_all():
+    """-> {dest: sql}. Pure: reads seeds, writes nothing."""
+    out = {}
+    for cfg in CONFIGS:
+        rules, dupes = collect(cfg)
+        out['sql/%s_load_gate_generated.sql' % cfg['table']] = build_sql(
+            cfg, rules, dupes)
+    return out
+
+
+def determinism(rounds=2):
+    """Build the whole set `rounds` times and compare sha256 per file.
+
+    THE ARM THIS TOOL ACTUALLY NEEDED. Its output is ordered from dicts and
+    sets built out of seed files; a set iteration order leaking into a .sql
+    file would make every later --check report drift that is not drift, and
+    the reader's conclusion would be "the seeds moved".
+
+    In process rather than in two subprocesses, deliberately and with the
+    limit stated: PYTHONHASHSEED differs BETWEEN processes, not within one, so
+    this cannot see a str-hash-ordering dependency. `--determinism` runs the
+    cross-process half and says so.
+    """
+    import hashlib
+    runs = [_build_all() for _ in range(rounds)]
+    keys = sorted(runs[0])
+    rows = []
+    for k in keys:
+        digests = [hashlib.sha256(r[k].encode('utf-8')).hexdigest() for r in runs]
+        rows.append((k, digests[0], all(d == digests[0] for d in digests)))
+    return rows
+
+
+def selftest():
+    arms = []
+    rows = determinism(3)
+    arms.append(('three in-process builds agree byte-for-byte, per file',
+                 [ok for _, _, ok in rows], [True] * len(rows)))
+    arms.append(('every configured table produced a file',
+                 len(rows), len(CONFIGS)))
+
+    # A bare argv must NOT reach the write path. The real defect this guards is
+    # not a typo -- it is somebody running the tool to see what it does and
+    # silently reinstating five gates a human deleted.
+    arms.append(('a bare run is refused, not treated as "write"',
+                 classify([]), ('bare',)))
+    arms.append(('an unknown flag is refused',
+                 classify(['--bogus']), ('unknown', '--bogus')))
+    arms.append(('--check is still --check',
+                 classify(['--check']), ('check',)))
+    arms.append(('the write needs its own explicit flag',
+                 classify(['--write-superseded-gates']), ('write',)))
+
+    lines, passed = [], 0
+    for name, got, want in arms:
+        ok = got == want
+        passed += ok
+        lines.append('  %-4s %s' % ('PASS' if ok else 'FAIL', name))
+        if not ok:
+            lines.append('       wanted %r, got %r' % (want, got))
+    return passed, len(arms) - passed, lines
+
+
+def classify(argv):
+    """-> ('check'|'write'|'selftest'|'determinism'|'help'|'bare',)
+       or ('unknown', the argument). Pure."""
+    unknown = [a for a in argv if a not in KNOWN_FLAGS]
+    if unknown:
+        return ('unknown', unknown[0])
+    if '--help' in argv or '-h' in argv:
+        return ('help',)
+    if '--selftest' in argv:
+        return ('selftest',)
+    if '--determinism' in argv:
+        return ('determinism',)
+    if '--check' in argv:
+        return ('check',)
+    if '--write-superseded-gates' in argv:
+        return ('write',)
+    return ('bare',)
+
+
 def main():
+    mode = classify(sys.argv[1:])
+    if mode[0] == 'unknown':
+        print('COULD NOT RUN -- argument not recognised: %s' % mode[1])
+        print('Nothing was written. Recognised: %s' % ', '.join(KNOWN_FLAGS))
+        return 2
+    if mode[0] == 'help':
+        print(USAGE)
+        return 0
+    if mode[0] == 'bare':
+        print('COULD NOT RUN -- a bare run of this tool is refused since '
+              '2026-10-07, and nothing was written.')
+        print('')
+        print('It is SUPERSEDED (Michael, 2026-08-29) and its five generated '
+              '.sql gates were DELETED by that decision. A bare run put them '
+              'back, which is why it now refuses.')
+        print('  what to use instead : python tools/sairn_load_state_check.py '
+              '--app <app>')
+        print('  to inspect, not write: --check, --determinism, --selftest')
+        print('  to really write them : --write-superseded-gates, and say why')
+        return 2
+    if mode[0] == 'selftest':
+        p, f, lines = selftest()
+        print('selftest: %d/%d arm(s) pass' % (p, p + f))
+        for ln in lines:
+            print(ln)
+        return 1 if f else 0
+    if mode[0] == 'determinism':
+        rows = determinism(3)
+        print('determinism: 3 in-process builds of %d file(s)' % len(rows))
+        for k, dig, ok in rows:
+            print('  %-4s %s  %s' % ('SAME' if ok else 'DIFF', dig[:24], k))
+        bad = [k for k, _, ok in rows if not ok]
+        print('STATED LIMIT: three builds in ONE process cannot see a '
+              'PYTHONHASHSEED-dependent ordering, because that seed is fixed '
+              'per process. Run this twice from the shell with different seeds '
+              'for that half.')
+        return 1 if bad else 0
+
     total = 0
     _worst = 0
     for cfg in CONFIGS:
