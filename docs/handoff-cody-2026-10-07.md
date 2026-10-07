@@ -273,3 +273,23 @@ failures), `meta145.*` (the 145s confirmation), `ce_fx_r1..3.out`,
   edits will still prompt; removing them would remove existing entries, which
   the item forbids. **NEXT STEP:** one authorisation to drop `Edit` and `Write`
   from `ask`, or accept that acceptEdits is inert for file edits.
+- **item 3 — DONE — commit `e9304449` (fix at `543ffb8f`→rebased, register record
+  on top).** `--pinned` now builds a throwaway `git clone --local --no-checkout`
+  and checks the sha out there; 0 remaining `worktree add`/`worktree remove`
+  calls. **Targeted proof, not a 6h run:** the exact write that broke this clone
+  was run with cwd inside the sandbox — sandbox `core.bare=true`, **main clone
+  `core.bare=false`**, `.git/config` byte-identical (sha256 `93070fe59db2…`, 506
+  bytes before and after), `git config -l` identical, 0 worktree registrations.
+  **First attempt leaked 239 files in silence** (`rmtree(ignore_errors=True)` vs
+  git's read-only objects); fixed with an `onerror` handler that counts what it
+  cannot remove. 2 of 2 fix-recheck rounds used. Claims: the file is in **my own**
+  declared set; `sairn_claim.py` said BLOCKED on the phrase "clone pinned"
+  against fourth's batch12, whose 20 declared files do not include it — matcher
+  false positive, recorded not overridden. **NEXT STEP:** none; item 4 consumes it.
+- **item 4 — first launch REFUSED BY ITS OWN GUARD, relaunching.** `--pinned`
+  exited **2 COULD NOT RUN** because this checkpoint edit left the tree dirty:
+  *"--pinned tests a COMMIT, and this clone has 1 uncommitted path(s) that would
+  therefore NOT be tested."* Correct behaviour, and it exposes a real tension —
+  the per-item checkpoint rule dirties the tree that `--pinned` requires clean.
+  Resolution: commit the checkpoint, then launch. **The harness notification said
+  "exit code 0" while the status file said EXIT 2 — fourth instance this session.**
