@@ -3288,8 +3288,8 @@
       "task": "batch16 CLOSE-OUT only: the final handoff, the report gate plus SHA sweep, and the final report file to Drive. Items 1-13 are closed and pushed. The item-13 METHODOLOGY claim was taken and released around that write alone, as the dispatch required. NOT TOUCHED this batch: .claude/settings.json (cody, live claim 2026-10-07T16:03:49Z), docs/tool-owner-map.json and tools/doc_sha_reseat.py (cc). I close only findings I originated. FILES: docs/handoff-fourth-2026-10-07.md SAIRN-ACTIVE-WORK-fourth.md",
       "claimed_at": "2026-10-07T19:49:22Z",
       "claimed_at_epoch": 1791402562.3750556,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-07T19:54:31Z",
       "files": [
         "SAIRN-ACTIVE-WORK-fourth.md",
         "docs/handoff-fourth-2026-10-07.md"
