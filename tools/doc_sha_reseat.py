@@ -657,7 +657,54 @@ def run_fixtures(verbose=False):
             bad.append('%s\n       want %r\n       got  %r' % (name, want, got))
         elif verbose:
             print('  ok   %s' % name)
-    return bad, len(cases)
+
+    # ── ONE ARM PER FALSE-POSITIVE SHAPE OF is_citation (2026-10-07, cc) ────
+    # The twelve cases above lock the SUBSTITUTION criteria. They do not touch
+    # is_citation, which is the function that decides what counts as a citation
+    # at all -- and it is the one that was wrong. Until 2026-10-07 `--census`
+    # filtered these shapes inline in its own loop and `--register-absent` did
+    # not, so the WRITING mode recorded `1234abcd` from this tool's own comment
+    # as an absent citation and reported a count 11 too high.
+    #
+    # The shared rule now exists. What was still missing is an arm per shape:
+    # a rule with no arm is a rule that can be edited back out without anything
+    # failing, which is exactly how the two modes diverged in the first place.
+    # The ANTI-arms are the point -- every one of these returned True before.
+    cases2 = [
+        # ── must NOT be treated as citations ──
+        ('an all-digit run that is valid hex is not a citation', '38471260', False),
+        ('a 12-hex register RECORD ID is not a citation', 'a1b2c3d4e5f6', False),
+        ('the documentation literal 1234abcd is not a citation', '1234abcd', False),
+        ('the documentation literal deadbeef is not a citation', 'deadbeef', False),
+        ('the 7-char literal abcdef0 is not a citation', 'abcdef0', False),
+        ('the all-zero literal 0000000 is not a citation', '0000000', False),
+        ('the 12-char literal deadbeefcafe is not a citation', 'deadbeefcafe', False),
+        ('an empty token is not a citation', '', False),
+        ('None is not a citation', None, False),
+        # A literal in the exclusion list is excluded by NAME and must stay
+        # excluded when its case changes -- the register is lower-cased hex.
+        ('an UPPERCASE documentation literal is still not a citation',
+         '1234ABCD', False),
+        # ── must still BE treated as citations ──
+        ('an ordinary 8-char sha prefix IS a citation', 'a27cd83b', True),
+        ('a 7-char sha prefix IS a citation', 'a27cd83', True),
+        ('a full 40-char sha IS a citation', 'a' * 40, True),
+        ('an 11-char prefix IS a citation -- only 12 is the record-id width',
+         'a27cd83b23e', True),
+        ('a 13-char prefix IS a citation -- the 12 exclusion is exact, not >=',
+         'a27cd83b23e34', True),
+        # The shape that makes the 12-char exclusion a real trade and not a
+        # free win. Stated as an arm so nobody "fixes" it by accident.
+        ('a REAL 12-char sha prefix is excluded TOO, and that is the known cost',
+         'a27cd83b23e3', False),
+    ]
+    for name, tok, want in cases2:
+        got = bool(is_citation(tok))
+        if got != want:
+            bad.append('%s\n       want %r\n       got  %r' % (name, want, got))
+        elif verbose:
+            print('  ok   %s' % name)
+    return bad, len(cases) + len(cases2)
 
 
 def classify(path):

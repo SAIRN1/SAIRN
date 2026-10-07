@@ -24026,51 +24026,266 @@
       "recurrence_open": "The tool still cannot see an override read through a helper rather than process.env directly, cannot tell whether a present override reaches the read, and does not judge the 16 CROSS_APP suites at all. Those three are named limits, not findings. And the 155 findings are now a backlog nobody owns: the fix per finding is a judgement (add the override, or say in the header that the suite is pinned), and none of the 155 has been made."
     },
     {
-      "commit": "56bbce5e83d5",
+      "commit": "2281de97ff5c",
       "date": "2026-10-07",
-      "subject": "fix(attribution): eight write paths across three apps now record WHO wrote the row -- and my own read found 15 of 49, not the 10 routed",
+      "subject": "fix(gen_va_seed): the same missing trigger_document, twice -- item 3 complete, 2 of 2",
       "files": [
-        "api/sd-data.js",
-        "tests/sd_data_write_attribution_three_apps.js"
+        "sql/sairnlaw_deadline_seed_virginia.json",
+        "tools/gen_va_seed.py"
       ],
-      "lines_added": 376,
-      "lines_removed": 0,
-      "app": "PLATFORM",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "hover-audit",
-      "summary": "Fifteen of 49 write branches in SAIRNcare, SAIRNsenior and SAIRNroofing persisted a row recording no acting employee. Nothing was disclosed -- this is accountability, not confidentiality -- but the rows are the ones somebody reconstructs later: a resident activity and billing entries, a facility rate card, a fall-detection signal, staff and caregiver records, a home-care claim and a roofing location. H1 routed the gap as 10 resources; my own read with different criteria found 15, and H1 finding is NOT reclassified -- only the originating finder does that.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
+      "lines_added": 143,
+      "lines_removed": 16,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "tools/gen_va_seed.py could not emit `trigger_document`, and TWO rules in the committed Virginia seed carry one: va-r-3-8b-answer-after-motions-overruled and va-r-3-8b-answer-after-jurisdiction-or-process-motion-overruled. --check read DRIFTED (28481 vs 27622 bytes) and a regeneration would have deleted both. Both record that the 21 days run from the date the clerk ENTERED the order, not the date it was signed, decided, announced in court, or mailed. THE KEY'S POSITION DIFFERS FROM MISSOURI and was taken from the file rather than assumed: here it sits between trigger_event and computation, in Missouri between count and computation, because Virginia's rule() appends count conditionally at the END. That difference is why this is a second commit and not a sweep -- one sweep would have placed the key identically in both and quietly re-drifted one of them. The seed was NOT regenerated; the only change was re-indenting 10 lines the hand-insertions had put one space too deep, json.loads proved equal before and after. deadline-trigger-document.test.js: 41 passed, 0 failed. The _readme was checked first and statically: 51 lines to 51, no difference.",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
       "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": "hover",
+      "found_by_tool": "gen_va_seed.py",
+      "found_by_session": null,
       "injection": {
-        "unknown_reason": "These branches have never recorded an actor. There is no commit that removed one, and citing the commit that created each resource would be naming a feature as the injection of its own absent field."
+        "commit": "77236c2af40e",
+        "date": "2026-09-02",
+        "subject": "feat(sairnlaw): 45 rows now declare which document their trigger date must be -- 28 refuse, 17 warn",
+        "lag_days": 35
       },
-      "citation_note": "NO STANDING SECTION NAMES THIS. It is not a disclosure, not a silent failure, not a stale check -- it is a row that works correctly and cannot answer who wrote it. The closest relative is the batch-11 record on the provisioning setup paths, which is the same shape one layer over and was also filed arguable. Named as not-citable rather than stretched onto 1.11 a third time.",
+      "citation_note": "ARGUABLE. PR 2.3's second half -- a fact needs a SINGLE SOURCE -- with a data field in place of a number: the trigger_document objects existed only in the generated seed and not in the generator that claims to produce it, so the artefact and its source of truth disagreed and the generator's own printed remedy was the destructive side of that disagreement. PR 1.8 ('a generated artefact is safe to generate; a generated GATE is not') is adjacent and does not fit: this seed is not a gate, it is DATA A GATE-LIKE ENGINE COMPUTES FROM, which is why the severity is high rather than moderate.",
       "contributing_factors": [
         {
-          "kind": "technical",
-          "factor": "Fifteen write branches across three apps persisted a row with no acting employee on it -- not a column, not a blob key, not an audit row.",
-          "action_status": "planned",
-          "action": "eight are stamped in the blob after storedBlob. The other seven build their row without a storedBlob variable and each needs an individual read; stamping them blind would write the field into the wrong object."
+          "kind": "process",
+          "action_status": "done",
+          "factor": "The same hand-edit pass (77236c2a) that broke Missouri broke Virginia, and the evidence is the SHARED OFF-BY-ONE INDENTATION: both states' inserted blocks sit at 5 spaces where json.dumps(indent=1) puts 4. One hand, one pass, two generators left behind.",
+          "action": "Both generators now emit the field; both seeds re-indented to canonical; both --check 0."
         },
         {
-          "kind": "latent-condition",
-          "factor": "storedBlob() was introduced to stop a caller payload shadowing server columns and it solved that completely, so every branch that adopted it got a SAFE row and nobody asked whether the row was an ATTRIBUTED one.",
+          "kind": "technical",
           "action_status": "done",
-          "action": "the stamp is written AFTER storedBlob so a caller-supplied updatedBy is overwritten; arm C1 sends SOMEONE-ELSE on all eight and asserts every one discarded it, and arm D1 pins the ordering at source."
+          "factor": "The key's correct position is DIFFERENT in the two files, so there is no single correct patch for both -- the thing that looks like one defect in two places is two defects that share a cause.",
+          "action": "Each generator's insertion point was read from its own committed output. Two commits, two verifications, not one sweep."
         },
         {
           "kind": "detection",
-          "factor": "My own first scan found 8, not 15, because it filtered to eleven action names I happened to think of. The allowlist was a model of what I expected rather than the population.",
-          "action_status": "done",
-          "action": "the action allowlist is removed and the reason is a comment in the probe; the population went 38 to 49 branches and the gap 8 to 15."
+          "action_status": "declined",
+          "factor": "Identical to the Missouri record: no test asserts a given seed row still carries its trigger_document, and a generator's --check drift is not routed to anyone.",
+          "note": "Deliberately not actioned twice. Writing the missing per-row assertion is real work with a real scope decision (which rows, which jurisdictions, and the jurisdictions with no generator cannot be covered this way at all) and it is recorded as open rather than half-done here."
         }
       ],
-      "recurrence_open": "SEVEN OF THE FIFTEEN ARE STILL UNATTRIBUTED and are named in docs/handoff-hank-2026-10-07b.md: rf_claims/write, rf_schedule/set_status, sen_authorizations, sen_branches, sen_franchise_agreements, sen_pay_rates, sen_payer_contracts. And nothing sweeps for the class platform-wide -- the probe that found these three apps is a scratchpad script, deliberately not promoted to tools/ this batch, so the other fourteen apps are unmeasured."
+      "recurrence_open": "Same open gap as the Missouri record and NOT closed by it: no test asserts a specific seed row still carries its trigger_document, and the seeded jurisdictions with no generator have no --check at all, so for them this drift class cannot be detected. Also open: the shared off-by-one indentation means other hand-inserted blocks elsewhere in sql/ are likely non-canonical, and nothing scans for that -- it only surfaces where a generator exists to disagree."
+    },
+    {
+      "commit": "24bb3baefc27",
+      "date": "2026-10-07",
+      "subject": "fix(gen_ma_seed): emit the 19 lines of provenance the seed carries -- the correction was applied to the OUTPUT and never back to the generator",
+      "files": [
+        "tools/gen_ma_seed.py"
+      ],
+      "lines_added": 143,
+      "lines_removed": 10,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "sql/sairnlaw_deadline_seed_massachusetts.json carries a 73-line _readme; tools/gen_ma_seed.py emitted 54. The 19-line difference was the ACCESS correction of 2026-08-27, which recorded that a BARE curl -- no user-agent, no Accept header -- gets HTTP 200 and full rule text from mass.gov (rule-6-time 253,869 B; rule-5-service 293,422 B), overturning an earlier 'every mass.gov URL returns 403' claim. e0b8e481 applied the correction to the generated OUTPUT and never back to the generator, so for six weeks --check read DRIFTED and a regeneration would have REINSTATED, as current, a 403 claim already measured false -- sending the next reader to set up browser automation they do not need, which is the cost the corrected paragraph itself names. The generator's MODULE DOCSTRING carried the same stale claim and was corrected in the same commit. The seed was NOT regenerated: the generator was brought up to the output, because the output was the corrected copy.",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "gen_ma_seed.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "e0b8e4810e4b",
+        "date": "2026-08-27",
+        "subject": "docs(sairnlaw): Illinois unknown closed, Florida carve-out recorded, two source-access notes corrected",
+        "lag_days": 41
+      },
+      "citation_note": "ARGUABLE. PR 2.3's second half -- a number needs a SINGLE SOURCE -- is the shape here, with a paragraph of measured fact in place of a number: one fact about mass.gov's HTTP behaviour existed in three places (the seed's _readme, the generator's _readme literal, and the generator's module docstring), the 2026-08-27 re-measurement corrected ONE of them, and the other two kept asserting the measured-false version. Its first half also applies -- a fact with a tense needs a read -- except that the read HAD been done; the finding is that the corrected answer reached one copy out of three.",
+      "contributing_factors": [
+        {
+          "kind": "process",
+          "action_status": "done",
+          "factor": "The correction was made where it was visible -- in the generated JSON a reader opens -- and the generator was not touched. A generated artefact edited by hand is a fork, and this one lasted six weeks.",
+          "action": "The 22-line corrected paragraph is now in the generator's _readme literal verbatim, including the superseded wording it quotes, and --check is 0."
+        },
+        {
+          "kind": "technical",
+          "action_status": "done",
+          "factor": "The same fact was asserted in a third place -- the generator's module docstring -- which nothing compares against anything. It ended 'Do not conclude a Massachusetts rule is unpublished from a 403', advice that was false when read.",
+          "action": "Rewritten to NAME the old text rather than delete it, and to keep only the part still true and not Massachusetts-specific (on a court site a 403 means 'not a browser'; NC untested; NJ is the live case, an anti-bot interstitial at HTTP 200)."
+        },
+        {
+          "kind": "detection",
+          "action_status": "done",
+          "factor": "`--check` had reported this since 2026-08-27 and nobody ran it. Worse, there was no way to be sure running it was safe: until 486afb08 an unrecognised argument to a sibling generator meant WRITE.",
+          "action": "A --selftest with 4 arms asserts that --check can still return 1 on a one-byte difference and 2 on a missing target, so a future 0 is evidence; and an unrecognised flag now exits 2."
+        }
+      ],
+      "recurrence_open": "Nothing connects a hand-correction of a GENERATED artefact to its generator. The only signal was `--check` exiting 1, and that signal had been available and unread for six weeks. The correction's own quoted superseded wording is now load-bearing in two files, which doubles the thing that can drift next time. No check asserts that a generator's module docstring agrees with the _readme it emits."
+    },
+    {
+      "commit": "2f1a2dae7641",
+      "date": "2026-10-07",
+      "subject": "fix(role gate mc): an unrecognised flag was a WRITE instruction -- now exit 2 and nothing written",
+      "files": [
+        "tools/role_gate_mc_config.py"
+      ],
+      "lines_added": 143,
+      "lines_removed": 10,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/role_gate_mc_config.py recognised exactly ONE flag, --check, and every other argument fell through to the generate-and-write path. `python tools/role_gate_mc_config.py --help` -- the first thing a reader types to find out what a tool does -- therefore REGENERATED docs/spec/MCRoleGates.tla and .cfg. Found by my own --help probe doing exactly that during a read-only tool inventory, and caught only because git status was captured before and after the probe. Fixed: KNOWN_FLAGS is a closed list, classify_argv is pure and runs BEFORE read_sets(), and an unrecognised argument exits 2 having invoked no node and opened no file for writing.",
+      "rules": [
+        "1.4"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "b9ca07e9bad1",
+        "date": "2026-09-22",
+        "subject": "feat(spec): the TLC instance goes 6 apps -> 10, and the six left out cannot be modelled without inventing an authorisation tier",
+        "lag_days": 15
+      },
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "action_status": "done",
+          "factor": "main() tested `'--check' in argv` and let everything else reach the write branch. The permissive branch was the FALL-THROUGH rather than a decision, so no argument could ever be 'unrecognised'.",
+          "action": "KNOWN_FLAGS is a closed list; classify_argv returns ('unknown', arg) and main returns 2 before read_sets() and before any open(..., 'w')."
+        },
+        {
+          "kind": "detection",
+          "action_status": "done",
+          "factor": "Nothing in the output distinguished 'did what I asked' from 'did not understand me and wrote anyway' -- the write branch printed its normal success summary either way, and the regenerated files happened to be byte-identical, so even the tree looked clean.",
+          "action": "--selftest with 6 arms; an ablation env var restores the old fall-through and 3 of the 6 then FAIL, so the arms have been observed firing rather than assumed to."
+        },
+        {
+          "kind": "latent-condition",
+          "action_status": "done",
+          "factor": "This tool is an OWNER-INTENDED BARE-RUN WRITER on tools/bare_run_writers.py's allowlist: a bare run writing IS the interface. That makes 'no flag I recognise' indistinguishable from 'the intended bare run', which is the condition that converts an unparsed argument into a write.",
+          "action": "An EMPTY argv is now the only thing that means write; unknown flags and positionals are a separate, refusing branch."
+        }
+      ],
+      "recurrence_open": "Three other bare-run writers in tools/ (gen_ma_seed.py, gen_mo_seed.py, gen_va_seed.py) had the identical shape and were fixed in the same batch, but the fix is THREE LOCAL COPIES of one guard, not a shared helper -- there is no shared helper for these scripts and adding one mid-batch would be a new tool. Every bare-run writer added after today can reintroduce this, and nothing mechanically checks for it. The rule has been ROUTED to chat as methodology rather than enforced."
+    },
+    {
+      "commit": "339ea4eb3162",
+      "date": "2026-10-07",
+      "subject": "fix(role gate mc): the model had silently shrunk from 10 apps to 6 -- a THROW was being read as \"this app has no such concept\"",
+      "files": [
+        "tools/role_gate_mc_config.py"
+      ],
+      "lines_added": 80,
+      "lines_removed": 4,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "tools/role_gate_mc_config.py silently stopped modelling 4 of 10 apps. Its node reader evaluates a non-exported role set with `vm.runInNewContext` and folded the throw into the SAME null it returns for 'no declaration found', so sairncare, sairnbuild, sairnlegacy and sairndesign -- which each declare MANAGEMENT_ROLES -- were reported as having no such concept. The trigger was dadfedf4 wrapping every internal declaration in roleSet(), which the sandbox had no binding for. Consequence: the committed MCRoleGates spec models 10 apps, the generator produced 6, --check read DRIFT, and the tool's own printed remedy -- 'Regenerate: python tools/role_gate_mc_config.py' -- would have DELETED four apps of model coverage. Anyone following the tool's instruction would have made it worse. This generator's own docstring warns about this exact mistake in these exact four apps, from an earlier version that read only module.exports; it recurred through a different door. Fixed two ways: the sandbox is handed the REAL auth.roleSet, and a found-but-unevaluable declaration now refuses the whole run with exit 2 and writes nothing. The committed spec files were never wrong and were NOT regenerated.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": "role_gate_mc_config.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "dadfedf48ac9",
+        "date": "2026-09-24",
+        "subject": "fix(platform): all 48 role membership sets get a null prototype, not just roofing",
+        "lag_days": 13
+      },
+      "citation_note": "ARGUABLE. PR 1.11 names a check that must fail CLOSED when ANOTHER TOOL is absent; here nothing was absent -- a declaration was present and could not be EVALUATED. The mechanism is the same one 1.11 exists to stop and the sentence transfers verbatim: 'could not run' is a third state and is never folded into a result. PR 1.1 (a check that stopped checking) is the closest description of the CONSEQUENCE, since the TLA+ instance went on model-checking clean about 6 apps while reading as 10.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "action_status": "done",
+          "factor": "internal() returned null both for 'no declaration matched the regex' and for 'the declaration matched and the evaluation threw'. Two different facts, one return value.",
+          "action": "internal() now returns {v} / {err} / null -- three states -- and the caller maps {err} to a distinct 'unevaluable' provenance."
+        },
+        {
+          "kind": "technical",
+          "action_status": "done",
+          "factor": "The vm sandbox was bare, so any declaration that CALLED anything was unevaluable. roleSet() is exported by the very module the reader already requires.",
+          "action": "The sandbox is given auth.roleSet itself rather than a reimplementation -- this file's premise is that executing beats parsing, and a shim is a parse with extra steps."
+        },
+        {
+          "kind": "detection",
+          "action_status": "done",
+          "factor": "The run PRINTED its own evidence and nobody could see it: 'MANAGEMENT_ROLES provenance: exported 6' with no 'internal' entry at all, where the docstring says four apps are internal. A provenance histogram missing a whole category read as a normal line.",
+          "action": "A found-but-unevaluable declaration now exits 2 and names the app, the set, the error and the source text, so the condition refuses instead of printing a short histogram."
+        },
+        {
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "factor": "--check was effectively unrunnable before today: any argument it did not recognise regenerated the files it was about to compare, so asking 'is the model stale?' destroyed the answer. The drift had been reportable since dadfedf4 and could not be safely asked for.",
+          "note": "Not separately actioned -- it is the defect recorded against 486afb08 and fixed there. Named here because it is why THIS defect survived nine days: the only tool that could report it could not be invoked without overwriting its own subject."
+        }
+      ],
+      "recurrence_open": "The provenance ablation CANNOT make the real run regress, because fixing the sandbox leaves nothing unevaluable to refuse -- the refusal is only exercisable on hand-built fixtures, which is where arms 7-9 run. So the refusal is proven to work on fixtures and has never fired on real input. Nothing checks the OTHER generators and readers in tools/ for the same catch-returns-null fold, and nothing ties a change to api/_lib/auth.js's role-set spelling to the readers that parse it: dadfedf4 was a correct, deliberate platform change and it broke a consumer nine days before anybody noticed."
+    },
+    {
+      "commit": "33a91b5e965b",
+      "date": "2026-10-07",
+      "subject": "fix(gen_mo_seed): restore trigger_document -- the generator could not emit a field the ENGINE READS, so a regeneration would have deleted it",
+      "files": [
+        "sql/sairnlaw_deadline_seed_missouri.json",
+        "tools/gen_mo_seed.py"
+      ],
+      "lines_added": 124,
+      "lines_removed": 10,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "tools/gen_mo_seed.py could not emit `trigger_document`, a field the DEADLINE ENGINE READS. The committed Missouri seed carries one on mo-r-55-25b-reply-ordered-by-court and the string trigger_document appeared nowhere in the generator, so --check read DRIFTED (39096 vs 38708 bytes) and a regeneration would have DELETED the field. It is not decoration: api/_lib/deadline-engine.js reads it, api/legal-deadlines.js surfaces it, and api/_lib/deadline-trigger-document.test.js exists for it (41 passed, 0 failed after this change). Its content is the distinction a lawyer loses money on -- the 20 days run from the date the clerk ENTERED the order, 'not the date it was signed, decided, announced in court, or mailed to the parties'. Without it the row counts from whatever date a caller happens to supply, silently. Fixed: rule() takes trigdoc and emits the key BETWEEN count and computation, where the committed file has it. The seed was NOT regenerated; the only change to it was re-indenting 5 lines the hand-insertion had put one space too deep, with json.loads proved equal before and after. The _readme was checked FIRST and statically (ast.literal_eval on the _readme literal) and matched 55 lines to 55 -- the whole gap was in the rules.",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "gen_mo_seed.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "77236c2af40e",
+        "date": "2026-09-02",
+        "subject": "feat(sairnlaw): 45 rows now declare which document their trigger date must be -- 28 refuse, 17 warn",
+        "lag_days": 35
+      },
+      "citation_note": "ARGUABLE. PR 2.3's second half -- a fact needs a SINGLE SOURCE -- with a data field in place of a number: the trigger_document objects existed only in the generated seed and not in the generator that claims to produce it, so the artefact and its source of truth disagreed and the generator's own printed remedy was the destructive side of that disagreement. PR 1.8 ('a generated artefact is safe to generate; a generated GATE is not') is adjacent and does not fit: this seed is not a gate, it is DATA A GATE-LIKE ENGINE COMPUTES FROM, which is why the severity is high rather than moderate.",
+      "contributing_factors": [
+        {
+          "kind": "process",
+          "action_status": "done",
+          "factor": "77236c2a added trigger_document to 45 seed rows across many jurisdictions by hand and updated no generator. Four of those jurisdictions have generators; two of them (mo, va) drifted immediately and silently.",
+          "action": "The Missouri generator now emits it. Virginia was fixed in a SEPARATE commit on purpose, because the key's position differs between the two files and one sweep would have put it in the wrong place in one of them."
+        },
+        {
+          "kind": "technical",
+          "action_status": "done",
+          "factor": "Key POSITION is part of the output, and rule() built the whole record as one dict literal, which cannot place a conditional key. The naive fix -- append trigger_document at the end -- would have left --check reporting drift forever on key order alone.",
+          "action": "The dict is built in two halves and .update()d, so the conditional key lands between count and computation."
+        },
+        {
+          "kind": "detection",
+          "action_status": "done",
+          "factor": "The only signal was --check exiting 1, and nothing routes a generator's drift to the owner of the DATA. A deleted trigger_document would not have failed any test -- deadline-trigger-document.test.js asserts engine behaviour given the field, not that any particular seed row carries it.",
+          "action": "A --selftest with 4 arms makes a future --check 0 mean something, and the generator's --check is now 0. The missing test -- 'this rule_id still carries a trigger_document' -- is NOT written and is named in recurrence_open."
+        }
+      ],
+      "recurrence_open": "NO TEST ASSERTS THAT A SPECIFIC SEED ROW STILL CARRIES ITS trigger_document. The engine test covers behaviour GIVEN the field; a row quietly losing it stays green. 77236c2a touched 45 rows across many jurisdictions and only the 4 with generators can be checked this way at all -- the other jurisdictions' seeds have no generator and therefore no --check, so for them this class of drift is undetectable by construction. gen_mn_seed.py was measured at --check 0 and is clean today, which is three of four, not all four."
     },
     {
       "commit": "538451398bf0",
@@ -24176,6 +24391,53 @@
       "recurrence_open": "OPEN. The writer of core.bare is still unidentified and fourth's root-cause fix was already in the tree when this happened, so the same breakage can recur through any other probe that runs git config from inside a linked worktree. This fix removes ONE vehicle (--pinned) and does not remove the class."
     },
     {
+      "commit": "56bbce5e83d5",
+      "date": "2026-10-07",
+      "subject": "fix(attribution): eight write paths across three apps now record WHO wrote the row -- and my own read found 15 of 49, not the 10 routed",
+      "files": [
+        "api/sd-data.js",
+        "tests/sd_data_write_attribution_three_apps.js"
+      ],
+      "lines_added": 376,
+      "lines_removed": 0,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "Fifteen of 49 write branches in SAIRNcare, SAIRNsenior and SAIRNroofing persisted a row recording no acting employee. Nothing was disclosed -- this is accountability, not confidentiality -- but the rows are the ones somebody reconstructs later: a resident activity and billing entries, a facility rate card, a fall-detection signal, staff and caregiver records, a home-care claim and a roofing location. H1 routed the gap as 10 resources; my own read with different criteria found 15, and H1 finding is NOT reclassified -- only the originating finder does that.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "unknown_reason": "These branches have never recorded an actor. There is no commit that removed one, and citing the commit that created each resource would be naming a feature as the injection of its own absent field."
+      },
+      "citation_note": "NO STANDING SECTION NAMES THIS. It is not a disclosure, not a silent failure, not a stale check -- it is a row that works correctly and cannot answer who wrote it. The closest relative is the batch-11 record on the provisioning setup paths, which is the same shape one layer over and was also filed arguable. Named as not-citable rather than stretched onto 1.11 a third time.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "Fifteen write branches across three apps persisted a row with no acting employee on it -- not a column, not a blob key, not an audit row.",
+          "action_status": "planned",
+          "action": "eight are stamped in the blob after storedBlob. The other seven build their row without a storedBlob variable and each needs an individual read; stamping them blind would write the field into the wrong object."
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "storedBlob() was introduced to stop a caller payload shadowing server columns and it solved that completely, so every branch that adopted it got a SAFE row and nobody asked whether the row was an ATTRIBUTED one.",
+          "action_status": "done",
+          "action": "the stamp is written AFTER storedBlob so a caller-supplied updatedBy is overwritten; arm C1 sends SOMEONE-ELSE on all eight and asserts every one discarded it, and arm D1 pins the ordering at source."
+        },
+        {
+          "kind": "detection",
+          "factor": "My own first scan found 8, not 15, because it filtered to eleven action names I happened to think of. The allowlist was a model of what I expected rather than the population.",
+          "action_status": "done",
+          "action": "the action allowlist is removed and the reason is a comment in the probe; the population went 38 to 49 branches and the gap 8 to 15."
+        }
+      ],
+      "recurrence_open": "SEVEN OF THE FIFTEEN ARE STILL UNATTRIBUTED and are named in docs/handoff-hank-2026-10-07b.md: rf_claims/write, rf_schedule/set_status, sen_authorizations, sen_branches, sen_franchise_agreements, sen_pay_rates, sen_payer_contracts. And nothing sweeps for the class platform-wide -- the probe that found these three apps is a scratchpad script, deliberately not promoted to tools/ this batch, so the other fourteen apps are unmeasured."
+    },
+    {
       "commit": "6a2690bec035",
       "date": "2026-10-07",
       "subject": "fix(sairngrounds): the LICENCE KEY ALONE reached every read and every write on 21 resources -- 16 of 17 grd_* had no session gate at all",
@@ -24223,55 +24485,6 @@
         }
       ],
       "recurrence_open": "NO ROLE GATE WAS ADDED AND THAT IS DELIBERATE: which of owner, superintendent, manager, crew, office may write a BOQ rate or an invoice is a product decision this batch was told not to make unilaterally, so crew can still write an invoice once signed in. Logged open. The msb_* resources in the same dispatch region are a DIFFERENT app with the same licence-key-only shape and are explicitly NOT fixed -- arm D1 proves msb_products still answers without a session, which is a measurement and not an endorsement. And the auditor repro still reports REPRODUCES because it looks for verifySessionToken INSIDE each dispatch block while the gate is in the shared prelude; routed to hover2."
-    },
-    {
-      "commit": "a003bf63f9b6",
-      "date": "2026-10-07",
-      "subject": "fix(tiers): the 390-vs-391 is ONE CELL, and the column it hid in is the only one the checker never compared",
-      "files": [
-        "docs/CRITICALITY-TIERS.md",
-        "tools/criticality_tier_check.py"
-      ],
-      "lines_added": 29,
-      "lines_removed": 1,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "hover-audit",
-      "summary": "docs/CRITICALITY-TIERS.md per-app rollup TOTALS column summed to 390 while 391 detail rows exist and five other figures in the same file said 391. Localised to ONE CELL: sairnfreedom read n=35 against its own A+B+C of 36 and 36 real sf_ rows. AND THE COLUMN IT HID IN IS THE ONLY ONE THE CHECKER NEVER COMPARED -- the COUNT guard in tools/criticality_tier_check.py looped over the three TIER columns from the day it was written and never over n, while that file header claims a rollup count that does not match the rows under it is caught. Moderate rather than high: the register is a judgement document read by people, no code derives from the totals column, and the figure was wrong by one.",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": "hover",
-      "injection": {
-        "unknown_reason": "The guard has looped over a, b, c since the file was written; no commit removed n from it. The data defect arrived when sf_trustee_audits was added and the A column was updated without the total, which the file own prose dates to 2026-09-29, but no single commit can be cited for an omission."
-      },
-      "citation_note": "ARGUABLE. PR 1.1 is a check that stopped checking; this is a check that never covered one column of the four it appeared to. Nearer to this batch methodology RULE D -- a green result licensing a wider claim than it measured -- which is routed and not yet a numbered section.",
-      "contributing_factors": [
-        {
-          "kind": "technical",
-          "factor": "The rollup row for sairnfreedom read n=35 while its own A and B columns read 27 and 9, and 36 sf_ detail rows exist. One cell, and the per-app totals column summed to 390 against 391 everywhere else in the file.",
-          "action_status": "done",
-          "action": "the cell is 36, and the prose in it that restated 35 is corrected too."
-        },
-        {
-          "kind": "detection",
-          "factor": "criticality_tier_check COUNT guard looped over the TIER columns -- for key, label in (a,A),(b,B),(c,C) -- and never compared n. Four columns, three checked, and the file header claims a rollup count that does not match its rows is caught.",
-          "action_status": "done",
-          "action": "n is now compared against the registered resources that have a row. The guard was added FIRST: the checker went EXIT 0 to EXIT 1 on unchanged data, which is the mutation proof."
-        },
-        {
-          "kind": "process",
-          "factor": "Five separate figures in this file agreed on 391 -- the headline, the A/B/C sums, RESOURCES_REGISTERED and RESOURCE_ROWS -- so every re-derivation anybody ran confirmed 391 and none of them looked at the totals column.",
-          "action_status": "not-actionable",
-          "note": "the redundancy is the register design and is worth keeping; what was missing was a guard on the one figure the redundancy did not cover, and that is now present."
-        }
-      ],
-      "recurrence_open": "The rollup LIST and the four COUNT columns are now all guarded, but nothing checks the free prose in the same cell -- the sentence reading \"all 35 rows read individually\" was wrong for the same reason and was corrected by hand, not by a check. A restatement wrapped in an argument is deliberately not machine-editable here, which is the right call and leaves this class open."
     },
     {
       "commit": "7ed27c5e78fa",
@@ -24542,6 +24755,167 @@
       "recurrence_open": "NOT FIXED. The two ALTERs need database access this session does not have, so the defect is OPEN and the SQL is printed for Michael rather than applied. Until then those six paths are inert. And no checker compares a handler emitted event_type literals against the CHECK constraint on its target column -- that sweep would have caught this on the day and is not built."
     },
     {
+      "commit": "94c99fb350b8",
+      "date": "2026-10-07",
+      "subject": "fix(push gate): the SCOPED seed exemption was ungrantable -- the half that cannot push anything was eating the token",
+      "files": [
+        "docs/BYPASS-LOG.jsonl",
+        "docs/defect-density-register.json",
+        "tests/push_gate/graduated_exempt_consume_probe.py",
+        "tools/sairn_push_gate_hook.py"
+      ],
+      "lines_added": 207,
+      "lines_removed": 7,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/sairn_push_gate_hook.py's SCOPED exemption (SAIRN_GATE_EXEMPT=seed) was ungrantable from the ordinary context. One `git push` from a Bash tool call runs the hook TWICE -- PreToolUse on the command text, then the real .githooks/pre-push -- and both modes read ONE store file and both DELETED the pending record on a match. The PreToolUse half, which cannot let a push through, spent the token; prepush then found an empty store, soft-captured again and denied. Observed: push 1 pretooluse soft-capture DENY; push 2 pretooluse CONSUME + allow, prepush soft-capture DENY; push 3 identical, forever. Seven attempts over ~30 minutes. AND THE OUTPUT POINTED AT OPERATOR ERROR: every attempt printed the same SOFT CAPTURE notice, which reads as 'you have not pushed twice yet', so the real cause stayed behind a plausible one -- three other sessions were pushing every ~2.5 min, so each loop also looked like a rebase race. Fixed by AUTHORITY: prepush is the mode git will not push without and is the only one that deletes; pretooluse grants on a match and leaves the token to be spent. consume defaults from MODE so a second call site cannot get it wrong. NOT widened -- one named check, one resolved sha pin, the 15-minute TTL, spent exactly once.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The two-mode design and the single store file arrived together; no commit turned a working grant into a broken one. graduated_exempt() shipped with an unconditional os.remove() on 2026-09-26 and the pretooluse call site predates it, so the feature was never grantable in this context from its first commit. There is no injection point, only a first real use thirteen days later."
+      },
+      "citation_note": "ARGUABLE, and it cites the SECOND half of this defect rather than the first. PR 1.5 is the confident line printed after the error; here the notice confidently described the state it had just created instead of the state the operator was in, the same mechanism one step over. The primary defect -- a single-use token spent by a caller without the authority to use it -- is named by no standing rule, and PR 1.11's 'could not run is a third state' is the nearest family without being a match.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "action_status": "done",
+          "factor": "graduated_exempt() deleted the pending record on every match, with no notion of which caller had the authority to spend it. Both hook modes call it and only one of them gates the push.",
+          "action": "consume defaults to (MODE == 'prepush'); pretooluse returns True without deleting."
+        },
+        {
+          "kind": "detection",
+          "action_status": "done",
+          "factor": "The feature had NEVER been exercised end to end in the mode a build agent actually pushes from. _pin()'s own docstring records that its 'pinned to main' defect was also found by first real use, in the same function -- the second defect in one function found by using it rather than by any check.",
+          "action": "tests/push_gate/graduated_exempt_consume_probe.py, 7 arms, arm 1 an ABLATION that forces the pre-fix behaviour and asserts prepush DENIES."
+        },
+        {
+          "kind": "detection",
+          "action_status": "declined",
+          "factor": "The soft-capture notice is identical on the first request and the seventh, so the output could not distinguish 'working as designed' from 'permanently stuck'.",
+          "note": "Not fixed here. Rewording a gate's refusal is a separate change needing its own verification, and bundling it would put an unverified message edit inside a verified logic fix."
+        },
+        {
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "factor": "Two hook invocations per push is the design -- PreToolUse gives an early refusal before git runs at all -- and any single-use token read by both will raise this question. The second mode was added long after the store was written.",
+          "note": "No action: removing a mode would lose the early refusal. The fix makes the asymmetry explicit rather than removing it, and this is named so the next single-use thing added to this hook starts from 'which mode may spend it'."
+        }
+      ],
+      "recurrence_open": "THE MISLEADING NOTICE IS NOT FIXED. soft_capture_notice() still prints the same text whether the operator has pushed once or seven times, because it describes the record it just wrote rather than the operator's position. That is PR 1.5's shape and it is left open deliberately: changing a gate's refusal text is a separate change with its own verification. Also open: the probe drives both modes in ONE process by setting MODE, so anything depending on the real process boundary (locking, a partial write) is invisible; the 15-minute TTL is read and never exercised; and seed is the only exemptable check today, so no arm covers two checks held concurrently."
+    },
+    {
+      "commit": "a003bf63f9b6",
+      "date": "2026-10-07",
+      "subject": "fix(tiers): the 390-vs-391 is ONE CELL, and the column it hid in is the only one the checker never compared",
+      "files": [
+        "docs/CRITICALITY-TIERS.md",
+        "tools/criticality_tier_check.py"
+      ],
+      "lines_added": 29,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "docs/CRITICALITY-TIERS.md per-app rollup TOTALS column summed to 390 while 391 detail rows exist and five other figures in the same file said 391. Localised to ONE CELL: sairnfreedom read n=35 against its own A+B+C of 36 and 36 real sf_ rows. AND THE COLUMN IT HID IN IS THE ONLY ONE THE CHECKER NEVER COMPARED -- the COUNT guard in tools/criticality_tier_check.py looped over the three TIER columns from the day it was written and never over n, while that file header claims a rollup count that does not match the rows under it is caught. Moderate rather than high: the register is a judgement document read by people, no code derives from the totals column, and the figure was wrong by one.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "unknown_reason": "The guard has looped over a, b, c since the file was written; no commit removed n from it. The data defect arrived when sf_trustee_audits was added and the A column was updated without the total, which the file own prose dates to 2026-09-29, but no single commit can be cited for an omission."
+      },
+      "citation_note": "ARGUABLE. PR 1.1 is a check that stopped checking; this is a check that never covered one column of the four it appeared to. Nearer to this batch methodology RULE D -- a green result licensing a wider claim than it measured -- which is routed and not yet a numbered section.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "The rollup row for sairnfreedom read n=35 while its own A and B columns read 27 and 9, and 36 sf_ detail rows exist. One cell, and the per-app totals column summed to 390 against 391 everywhere else in the file.",
+          "action_status": "done",
+          "action": "the cell is 36, and the prose in it that restated 35 is corrected too."
+        },
+        {
+          "kind": "detection",
+          "factor": "criticality_tier_check COUNT guard looped over the TIER columns -- for key, label in (a,A),(b,B),(c,C) -- and never compared n. Four columns, three checked, and the file header claims a rollup count that does not match its rows is caught.",
+          "action_status": "done",
+          "action": "n is now compared against the registered resources that have a row. The guard was added FIRST: the checker went EXIT 0 to EXIT 1 on unchanged data, which is the mutation proof."
+        },
+        {
+          "kind": "process",
+          "factor": "Five separate figures in this file agreed on 391 -- the headline, the A/B/C sums, RESOURCES_REGISTERED and RESOURCE_ROWS -- so every re-derivation anybody ran confirmed 391 and none of them looked at the totals column.",
+          "action_status": "not-actionable",
+          "note": "the redundancy is the register design and is worth keeping; what was missing was a guard on the one figure the redundancy did not cover, and that is now present."
+        }
+      ],
+      "recurrence_open": "The rollup LIST and the four COUNT columns are now all guarded, but nothing checks the free prose in the same cell -- the sentence reading \"all 35 rows read individually\" was wrong for the same reason and was corrected by hand, not by a check. A restatement wrapped in an argument is deliberately not machine-editable here, which is the right call and leaves this class open."
+    },
+    {
+      "commit": "a27cd83b23e3",
+      "date": "2026-10-07",
+      "subject": "fix(load gates): DETERMINISM PROVED, and the outputs are still NOT committed -- a bare run was silently reinstating five gates a human deleted",
+      "files": [
+        "docs/BYPASS-LOG.jsonl",
+        "docs/scrutiny-flags.json",
+        "tools/sairn_build_load_gates.py"
+      ],
+      "lines_added": 258,
+      "lines_removed": 0,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/sairn_build_load_gates.py WROTE FIVE .sql FILES ON A BARE RUN, and those five files had been DELETED BY A HUMAN DECISION. Michael standardised on tools/sairn_load_state_check.py on 2026-08-29 and the generated gates were removed as part of it, because a generated gate must be regenerated after every seed edit and a forgotten regeneration makes it check yesterday's expectations and report clean -- the silent-failure shape the gate exists to catch, inside the catcher. This file is KEPT rather than deleted because three of its findings are load-bearing, and its own docstring says 'read this before adding an app'. So it invites being read, and anyone who then ran it to see what it does silently reinstated all five gates into their clone, with no prompt and nothing to notice but git status. Same shape as role_gate_mc_config.py's --help the same day and one tier worse: there the write rewrote a current file, here it UNDOES A DECISION. Fixed: a bare run exits 2, writes nothing and names the replacement; the write needs --write-superseded-gates; an unknown flag exits 2; --check, --determinism and --selftest are read-only. The five outputs are still NOT committed and the drift check is NOT extended, because determinism does not answer staleness -- a byte-stable generated gate goes stale on the next seed edit just as surely. Determinism WAS proved: eight builds (two isolated sandboxes, three in-process, three under PYTHONHASHSEED 0/1/12345) gave identical sha256 for all five files. And it is FIVE tables, not the two my own claim named -- the claim understated the blast radius.",
+      "rules": [
+        "1.4"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "There is no commit that broke this: the write path is original and the SUPERSEDED decision of 2026-08-29 was recorded in prose without disarming it. The defect was created by a DECISION not being carried into the code, so the nearest thing to an injection point is the commit that wrote the SUPERSEDED header, and that commit improved the file rather than breaking it."
+      },
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "action_status": "done",
+          "factor": "An empty argv meant WRITE. There was no 'bare' state -- the write was the fall-through, so running the tool to inspect it and running it to regenerate were the same invocation.",
+          "action": "classify() returns ('bare',) for an empty argv and main() exits 2 on it; the write needs --write-superseded-gates."
+        },
+        {
+          "kind": "process",
+          "action_status": "done",
+          "factor": "The tool was marked SUPERSEDED in prose at the top of the file and kept fully armed below it. A reader who stopped at 'read this before adding an app' had a working destructive path two keystrokes away.",
+          "action": "The refusal now carries the decision, its date and the replacement command, so the prose is enforced instead of trusted."
+        },
+        {
+          "kind": "detection",
+          "action_status": "done",
+          "factor": "Nothing distinguished the deliberate absence of the five outputs from an oversight. --check reported COULD NOT COMPARE five times, which is correct, but reads identically to 'somebody forgot to generate these'.",
+          "action": "A 6-arm --selftest plus --determinism, and the refusal text states the absence is a DECISION. Three arms assert the argv classification directly."
+        },
+        {
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "factor": "The tool is on tools/bare_run_writers.py, an allowlist that exempts it from tools/bare_run_write_check.py. Being allowlisted is why no checker ever asked whether this particular bare-run write was still wanted.",
+          "note": "Not acted on. Editing the allowlist or its checker is outside this claim, and the honest fix is not a list edit but a question nobody asks yet -- 'is this tool superseded and still armed'. Recorded as open."
+        }
+      ],
+      "recurrence_open": "THE OTHER SIXTEEN BARE-RUN WRITERS ARE NOT AUDITED FOR THIS. tools/bare_run_writers.py is an allowlist of tools whose bare run writing is intended, and nothing on it is checked for whether the write is still WANTED -- this one was allowlisted while being superseded, which is the allowlist's own documented failure mode ('an allowlist nobody re-derives is how a real defect hides inside a convention') happening to it. No check asks 'is this tool superseded and still armed'. Also open: the five outputs remain uncommitted on my judgement, not Michael's; the write path is kept working precisely so that call can be reversed in one line, and until somebody makes it this tool has a live path to a state a decision removed."
+    },
+    {
       "commit": "d051c89faa16",
       "date": "2026-10-07",
       "subject": "fix(sairncare): PII -- alf_staff/read handed every care worker's PERSONAL PHONE and BACKGROUND-CHECK DATE to any authenticated role",
@@ -24800,325 +25174,6 @@
         }
       ],
       "recurrence_open": "EVERY OTHER REACHABILITY CHECK ON THE PLATFORM IS UNAUDITED. This fix covers ONE call site in ONE tool. A grep at eb430f25 finds cat-file or rev-parse --verify used in tools/conflict_marker_preflight.py, tools/credential_purge_check.py, tools/doc_sha_reseat.py, tools/gh_push.py, tools/landing_verification.py, tools/review_ledger_reseat.py, tools/sairn_push_gate_hook.py, tools/source_manifest.py, tests/claims/run_push_verify_probe.py and tests/run_tier_a_reseat_probe.py -- and NONE of them has been read to decide whether it is asking existence where it means reachability. The seven orphaned shas already in docs/tier-a-reviews.json are not reseated or retired by this fix either; the gate only reports them now."
-    },
-    {
-      "commit": "33a91b5e965b",
-      "date": "2026-10-07",
-      "subject": "fix(gen_mo_seed): restore trigger_document -- the generator could not emit a field the ENGINE READS, so a regeneration would have deleted it",
-      "files": [
-        "sql/sairnlaw_deadline_seed_missouri.json",
-        "tools/gen_mo_seed.py"
-      ],
-      "lines_added": 124,
-      "lines_removed": 10,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "static-checker",
-      "summary": "tools/gen_mo_seed.py could not emit `trigger_document`, a field the DEADLINE ENGINE READS. The committed Missouri seed carries one on mo-r-55-25b-reply-ordered-by-court and the string trigger_document appeared nowhere in the generator, so --check read DRIFTED (39096 vs 38708 bytes) and a regeneration would have DELETED the field. It is not decoration: api/_lib/deadline-engine.js reads it, api/legal-deadlines.js surfaces it, and api/_lib/deadline-trigger-document.test.js exists for it (41 passed, 0 failed after this change). Its content is the distinction a lawyer loses money on -- the 20 days run from the date the clerk ENTERED the order, 'not the date it was signed, decided, announced in court, or mailed to the parties'. Without it the row counts from whatever date a caller happens to supply, silently. Fixed: rule() takes trigdoc and emits the key BETWEEN count and computation, where the committed file has it. The seed was NOT regenerated; the only change to it was re-indenting 5 lines the hand-insertion had put one space too deep, with json.loads proved equal before and after. The _readme was checked FIRST and statically (ast.literal_eval on the _readme literal) and matched 55 lines to 55 -- the whole gap was in the rules.",
-      "rules": [
-        "2.3"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": "gen_mo_seed.py",
-      "found_by_session": null,
-      "injection": {
-        "commit": "77236c2af40e",
-        "date": "2026-09-02",
-        "subject": "feat(sairnlaw): 45 rows now declare which document their trigger date must be -- 28 refuse, 17 warn",
-        "lag_days": 35
-      },
-      "citation_note": "ARGUABLE. PR 2.3's second half -- a fact needs a SINGLE SOURCE -- with a data field in place of a number: the trigger_document objects existed only in the generated seed and not in the generator that claims to produce it, so the artefact and its source of truth disagreed and the generator's own printed remedy was the destructive side of that disagreement. PR 1.8 ('a generated artefact is safe to generate; a generated GATE is not') is adjacent and does not fit: this seed is not a gate, it is DATA A GATE-LIKE ENGINE COMPUTES FROM, which is why the severity is high rather than moderate.",
-      "contributing_factors": [
-        {
-          "kind": "process",
-          "action_status": "done",
-          "factor": "77236c2a added trigger_document to 45 seed rows across many jurisdictions by hand and updated no generator. Four of those jurisdictions have generators; two of them (mo, va) drifted immediately and silently.",
-          "action": "The Missouri generator now emits it. Virginia was fixed in a SEPARATE commit on purpose, because the key's position differs between the two files and one sweep would have put it in the wrong place in one of them."
-        },
-        {
-          "kind": "technical",
-          "action_status": "done",
-          "factor": "Key POSITION is part of the output, and rule() built the whole record as one dict literal, which cannot place a conditional key. The naive fix -- append trigger_document at the end -- would have left --check reporting drift forever on key order alone.",
-          "action": "The dict is built in two halves and .update()d, so the conditional key lands between count and computation."
-        },
-        {
-          "kind": "detection",
-          "action_status": "done",
-          "factor": "The only signal was --check exiting 1, and nothing routes a generator's drift to the owner of the DATA. A deleted trigger_document would not have failed any test -- deadline-trigger-document.test.js asserts engine behaviour given the field, not that any particular seed row carries it.",
-          "action": "A --selftest with 4 arms makes a future --check 0 mean something, and the generator's --check is now 0. The missing test -- 'this rule_id still carries a trigger_document' -- is NOT written and is named in recurrence_open."
-        }
-      ],
-      "recurrence_open": "NO TEST ASSERTS THAT A SPECIFIC SEED ROW STILL CARRIES ITS trigger_document. The engine test covers behaviour GIVEN the field; a row quietly losing it stays green. 77236c2a touched 45 rows across many jurisdictions and only the 4 with generators can be checked this way at all -- the other jurisdictions' seeds have no generator and therefore no --check, so for them this class of drift is undetectable by construction. gen_mn_seed.py was measured at --check 0 and is clean today, which is three of four, not all four."
-    },
-    {
-      "commit": "2281de97ff5c",
-      "date": "2026-10-07",
-      "subject": "fix(gen_va_seed): the same missing trigger_document, twice -- item 3 complete, 2 of 2",
-      "files": [
-        "sql/sairnlaw_deadline_seed_virginia.json",
-        "tools/gen_va_seed.py"
-      ],
-      "lines_added": 143,
-      "lines_removed": 16,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "static-checker",
-      "summary": "tools/gen_va_seed.py could not emit `trigger_document`, and TWO rules in the committed Virginia seed carry one: va-r-3-8b-answer-after-motions-overruled and va-r-3-8b-answer-after-jurisdiction-or-process-motion-overruled. --check read DRIFTED (28481 vs 27622 bytes) and a regeneration would have deleted both. Both record that the 21 days run from the date the clerk ENTERED the order, not the date it was signed, decided, announced in court, or mailed. THE KEY'S POSITION DIFFERS FROM MISSOURI and was taken from the file rather than assumed: here it sits between trigger_event and computation, in Missouri between count and computation, because Virginia's rule() appends count conditionally at the END. That difference is why this is a second commit and not a sweep -- one sweep would have placed the key identically in both and quietly re-drifted one of them. The seed was NOT regenerated; the only change was re-indenting 10 lines the hand-insertions had put one space too deep, json.loads proved equal before and after. deadline-trigger-document.test.js: 41 passed, 0 failed. The _readme was checked first and statically: 51 lines to 51, no difference.",
-      "rules": [
-        "2.3"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": "gen_va_seed.py",
-      "found_by_session": null,
-      "injection": {
-        "commit": "77236c2af40e",
-        "date": "2026-09-02",
-        "subject": "feat(sairnlaw): 45 rows now declare which document their trigger date must be -- 28 refuse, 17 warn",
-        "lag_days": 35
-      },
-      "citation_note": "ARGUABLE. PR 2.3's second half -- a fact needs a SINGLE SOURCE -- with a data field in place of a number: the trigger_document objects existed only in the generated seed and not in the generator that claims to produce it, so the artefact and its source of truth disagreed and the generator's own printed remedy was the destructive side of that disagreement. PR 1.8 ('a generated artefact is safe to generate; a generated GATE is not') is adjacent and does not fit: this seed is not a gate, it is DATA A GATE-LIKE ENGINE COMPUTES FROM, which is why the severity is high rather than moderate.",
-      "contributing_factors": [
-        {
-          "kind": "process",
-          "action_status": "done",
-          "factor": "The same hand-edit pass (77236c2a) that broke Missouri broke Virginia, and the evidence is the SHARED OFF-BY-ONE INDENTATION: both states' inserted blocks sit at 5 spaces where json.dumps(indent=1) puts 4. One hand, one pass, two generators left behind.",
-          "action": "Both generators now emit the field; both seeds re-indented to canonical; both --check 0."
-        },
-        {
-          "kind": "technical",
-          "action_status": "done",
-          "factor": "The key's correct position is DIFFERENT in the two files, so there is no single correct patch for both -- the thing that looks like one defect in two places is two defects that share a cause.",
-          "action": "Each generator's insertion point was read from its own committed output. Two commits, two verifications, not one sweep."
-        },
-        {
-          "kind": "detection",
-          "action_status": "declined",
-          "factor": "Identical to the Missouri record: no test asserts a given seed row still carries its trigger_document, and a generator's --check drift is not routed to anyone.",
-          "note": "Deliberately not actioned twice. Writing the missing per-row assertion is real work with a real scope decision (which rows, which jurisdictions, and the jurisdictions with no generator cannot be covered this way at all) and it is recorded as open rather than half-done here."
-        }
-      ],
-      "recurrence_open": "Same open gap as the Missouri record and NOT closed by it: no test asserts a specific seed row still carries its trigger_document, and the seeded jurisdictions with no generator have no --check at all, so for them this drift class cannot be detected. Also open: the shared off-by-one indentation means other hand-inserted blocks elsewhere in sql/ are likely non-canonical, and nothing scans for that -- it only surfaces where a generator exists to disagree."
-    },
-    {
-      "commit": "339ea4eb3162",
-      "date": "2026-10-07",
-      "subject": "fix(role gate mc): the model had silently shrunk from 10 apps to 6 -- a THROW was being read as \"this app has no such concept\"",
-      "files": [
-        "tools/role_gate_mc_config.py"
-      ],
-      "lines_added": 80,
-      "lines_removed": 4,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "static-checker",
-      "summary": "tools/role_gate_mc_config.py silently stopped modelling 4 of 10 apps. Its node reader evaluates a non-exported role set with `vm.runInNewContext` and folded the throw into the SAME null it returns for 'no declaration found', so sairncare, sairnbuild, sairnlegacy and sairndesign -- which each declare MANAGEMENT_ROLES -- were reported as having no such concept. The trigger was dadfedf4 wrapping every internal declaration in roleSet(), which the sandbox had no binding for. Consequence: the committed MCRoleGates spec models 10 apps, the generator produced 6, --check read DRIFT, and the tool's own printed remedy -- 'Regenerate: python tools/role_gate_mc_config.py' -- would have DELETED four apps of model coverage. Anyone following the tool's instruction would have made it worse. This generator's own docstring warns about this exact mistake in these exact four apps, from an earlier version that read only module.exports; it recurred through a different door. Fixed two ways: the sandbox is handed the REAL auth.roleSet, and a found-but-unevaluable declaration now refuses the whole run with exit 2 and writes nothing. The committed spec files were never wrong and were NOT regenerated.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": "role_gate_mc_config.py",
-      "found_by_session": null,
-      "injection": {
-        "commit": "dadfedf48ac9",
-        "date": "2026-09-24",
-        "subject": "fix(platform): all 48 role membership sets get a null prototype, not just roofing",
-        "lag_days": 13
-      },
-      "citation_note": "ARGUABLE. PR 1.11 names a check that must fail CLOSED when ANOTHER TOOL is absent; here nothing was absent -- a declaration was present and could not be EVALUATED. The mechanism is the same one 1.11 exists to stop and the sentence transfers verbatim: 'could not run' is a third state and is never folded into a result. PR 1.1 (a check that stopped checking) is the closest description of the CONSEQUENCE, since the TLA+ instance went on model-checking clean about 6 apps while reading as 10.",
-      "contributing_factors": [
-        {
-          "kind": "technical",
-          "action_status": "done",
-          "factor": "internal() returned null both for 'no declaration matched the regex' and for 'the declaration matched and the evaluation threw'. Two different facts, one return value.",
-          "action": "internal() now returns {v} / {err} / null -- three states -- and the caller maps {err} to a distinct 'unevaluable' provenance."
-        },
-        {
-          "kind": "technical",
-          "action_status": "done",
-          "factor": "The vm sandbox was bare, so any declaration that CALLED anything was unevaluable. roleSet() is exported by the very module the reader already requires.",
-          "action": "The sandbox is given auth.roleSet itself rather than a reimplementation -- this file's premise is that executing beats parsing, and a shim is a parse with extra steps."
-        },
-        {
-          "kind": "detection",
-          "action_status": "done",
-          "factor": "The run PRINTED its own evidence and nobody could see it: 'MANAGEMENT_ROLES provenance: exported 6' with no 'internal' entry at all, where the docstring says four apps are internal. A provenance histogram missing a whole category read as a normal line.",
-          "action": "A found-but-unevaluable declaration now exits 2 and names the app, the set, the error and the source text, so the condition refuses instead of printing a short histogram."
-        },
-        {
-          "kind": "latent-condition",
-          "action_status": "declined",
-          "factor": "--check was effectively unrunnable before today: any argument it did not recognise regenerated the files it was about to compare, so asking 'is the model stale?' destroyed the answer. The drift had been reportable since dadfedf4 and could not be safely asked for.",
-          "note": "Not separately actioned -- it is the defect recorded against 486afb08 and fixed there. Named here because it is why THIS defect survived nine days: the only tool that could report it could not be invoked without overwriting its own subject."
-        }
-      ],
-      "recurrence_open": "The provenance ablation CANNOT make the real run regress, because fixing the sandbox leaves nothing unevaluable to refuse -- the refusal is only exercisable on hand-built fixtures, which is where arms 7-9 run. So the refusal is proven to work on fixtures and has never fired on real input. Nothing checks the OTHER generators and readers in tools/ for the same catch-returns-null fold, and nothing ties a change to api/_lib/auth.js's role-set spelling to the readers that parse it: dadfedf4 was a correct, deliberate platform change and it broke a consumer nine days before anybody noticed."
-    },
-    {
-      "commit": "24bb3baefc27",
-      "date": "2026-10-07",
-      "subject": "fix(gen_ma_seed): emit the 19 lines of provenance the seed carries -- the correction was applied to the OUTPUT and never back to the generator",
-      "files": [
-        "tools/gen_ma_seed.py"
-      ],
-      "lines_added": 143,
-      "lines_removed": 10,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "static-checker",
-      "summary": "sql/sairnlaw_deadline_seed_massachusetts.json carries a 73-line _readme; tools/gen_ma_seed.py emitted 54. The 19-line difference was the ACCESS correction of 2026-08-27, which recorded that a BARE curl -- no user-agent, no Accept header -- gets HTTP 200 and full rule text from mass.gov (rule-6-time 253,869 B; rule-5-service 293,422 B), overturning an earlier 'every mass.gov URL returns 403' claim. e0b8e481 applied the correction to the generated OUTPUT and never back to the generator, so for six weeks --check read DRIFTED and a regeneration would have REINSTATED, as current, a 403 claim already measured false -- sending the next reader to set up browser automation they do not need, which is the cost the corrected paragraph itself names. The generator's MODULE DOCSTRING carried the same stale claim and was corrected in the same commit. The seed was NOT regenerated: the generator was brought up to the output, because the output was the corrected copy.",
-      "rules": [
-        "2.3"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": "gen_ma_seed.py",
-      "found_by_session": null,
-      "injection": {
-        "commit": "e0b8e4810e4b",
-        "date": "2026-08-27",
-        "subject": "docs(sairnlaw): Illinois unknown closed, Florida carve-out recorded, two source-access notes corrected",
-        "lag_days": 41
-      },
-      "citation_note": "ARGUABLE. PR 2.3's second half -- a number needs a SINGLE SOURCE -- is the shape here, with a paragraph of measured fact in place of a number: one fact about mass.gov's HTTP behaviour existed in three places (the seed's _readme, the generator's _readme literal, and the generator's module docstring), the 2026-08-27 re-measurement corrected ONE of them, and the other two kept asserting the measured-false version. Its first half also applies -- a fact with a tense needs a read -- except that the read HAD been done; the finding is that the corrected answer reached one copy out of three.",
-      "contributing_factors": [
-        {
-          "kind": "process",
-          "action_status": "done",
-          "factor": "The correction was made where it was visible -- in the generated JSON a reader opens -- and the generator was not touched. A generated artefact edited by hand is a fork, and this one lasted six weeks.",
-          "action": "The 22-line corrected paragraph is now in the generator's _readme literal verbatim, including the superseded wording it quotes, and --check is 0."
-        },
-        {
-          "kind": "technical",
-          "action_status": "done",
-          "factor": "The same fact was asserted in a third place -- the generator's module docstring -- which nothing compares against anything. It ended 'Do not conclude a Massachusetts rule is unpublished from a 403', advice that was false when read.",
-          "action": "Rewritten to NAME the old text rather than delete it, and to keep only the part still true and not Massachusetts-specific (on a court site a 403 means 'not a browser'; NC untested; NJ is the live case, an anti-bot interstitial at HTTP 200)."
-        },
-        {
-          "kind": "detection",
-          "action_status": "done",
-          "factor": "`--check` had reported this since 2026-08-27 and nobody ran it. Worse, there was no way to be sure running it was safe: until 486afb08 an unrecognised argument to a sibling generator meant WRITE.",
-          "action": "A --selftest with 4 arms asserts that --check can still return 1 on a one-byte difference and 2 on a missing target, so a future 0 is evidence; and an unrecognised flag now exits 2."
-        }
-      ],
-      "recurrence_open": "Nothing connects a hand-correction of a GENERATED artefact to its generator. The only signal was `--check` exiting 1, and that signal had been available and unread for six weeks. The correction's own quoted superseded wording is now load-bearing in two files, which doubles the thing that can drift next time. No check asserts that a generator's module docstring agrees with the _readme it emits."
-    },
-    {
-      "commit": "94c99fb350b8",
-      "date": "2026-10-07",
-      "subject": "fix(push gate): the SCOPED seed exemption was ungrantable -- the half that cannot push anything was eating the token",
-      "files": [
-        "docs/BYPASS-LOG.jsonl",
-        "docs/defect-density-register.json",
-        "tests/push_gate/graduated_exempt_consume_probe.py",
-        "tools/sairn_push_gate_hook.py"
-      ],
-      "lines_added": 207,
-      "lines_removed": 7,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "tools/sairn_push_gate_hook.py's SCOPED exemption (SAIRN_GATE_EXEMPT=seed) was ungrantable from the ordinary context. One `git push` from a Bash tool call runs the hook TWICE -- PreToolUse on the command text, then the real .githooks/pre-push -- and both modes read ONE store file and both DELETED the pending record on a match. The PreToolUse half, which cannot let a push through, spent the token; prepush then found an empty store, soft-captured again and denied. Observed: push 1 pretooluse soft-capture DENY; push 2 pretooluse CONSUME + allow, prepush soft-capture DENY; push 3 identical, forever. Seven attempts over ~30 minutes. AND THE OUTPUT POINTED AT OPERATOR ERROR: every attempt printed the same SOFT CAPTURE notice, which reads as 'you have not pushed twice yet', so the real cause stayed behind a plausible one -- three other sessions were pushing every ~2.5 min, so each loop also looked like a rebase race. Fixed by AUTHORITY: prepush is the mode git will not push without and is the only one that deletes; pretooluse grants on a match and leaves the token to be spent. consume defaults from MODE so a second call site cannot get it wrong. NOT widened -- one named check, one resolved sha pin, the 15-minute TTL, spent exactly once.",
-      "rules": [
-        "1.5"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The two-mode design and the single store file arrived together; no commit turned a working grant into a broken one. graduated_exempt() shipped with an unconditional os.remove() on 2026-09-26 and the pretooluse call site predates it, so the feature was never grantable in this context from its first commit. There is no injection point, only a first real use thirteen days later."
-      },
-      "citation_note": "ARGUABLE, and it cites the SECOND half of this defect rather than the first. PR 1.5 is the confident line printed after the error; here the notice confidently described the state it had just created instead of the state the operator was in, the same mechanism one step over. The primary defect -- a single-use token spent by a caller without the authority to use it -- is named by no standing rule, and PR 1.11's 'could not run is a third state' is the nearest family without being a match.",
-      "contributing_factors": [
-        {
-          "kind": "technical",
-          "action_status": "done",
-          "factor": "graduated_exempt() deleted the pending record on every match, with no notion of which caller had the authority to spend it. Both hook modes call it and only one of them gates the push.",
-          "action": "consume defaults to (MODE == 'prepush'); pretooluse returns True without deleting."
-        },
-        {
-          "kind": "detection",
-          "action_status": "done",
-          "factor": "The feature had NEVER been exercised end to end in the mode a build agent actually pushes from. _pin()'s own docstring records that its 'pinned to main' defect was also found by first real use, in the same function -- the second defect in one function found by using it rather than by any check.",
-          "action": "tests/push_gate/graduated_exempt_consume_probe.py, 7 arms, arm 1 an ABLATION that forces the pre-fix behaviour and asserts prepush DENIES."
-        },
-        {
-          "kind": "detection",
-          "action_status": "declined",
-          "factor": "The soft-capture notice is identical on the first request and the seventh, so the output could not distinguish 'working as designed' from 'permanently stuck'.",
-          "note": "Not fixed here. Rewording a gate's refusal is a separate change needing its own verification, and bundling it would put an unverified message edit inside a verified logic fix."
-        },
-        {
-          "kind": "latent-condition",
-          "action_status": "not-actionable",
-          "factor": "Two hook invocations per push is the design -- PreToolUse gives an early refusal before git runs at all -- and any single-use token read by both will raise this question. The second mode was added long after the store was written.",
-          "note": "No action: removing a mode would lose the early refusal. The fix makes the asymmetry explicit rather than removing it, and this is named so the next single-use thing added to this hook starts from 'which mode may spend it'."
-        }
-      ],
-      "recurrence_open": "THE MISLEADING NOTICE IS NOT FIXED. soft_capture_notice() still prints the same text whether the operator has pushed once or seven times, because it describes the record it just wrote rather than the operator's position. That is PR 1.5's shape and it is left open deliberately: changing a gate's refusal text is a separate change with its own verification. Also open: the probe drives both modes in ONE process by setting MODE, so anything depending on the real process boundary (locking, a partial write) is invisible; the 15-minute TTL is read and never exercised; and seed is the only exemptable check today, so no arm covers two checks held concurrently."
-    },
-    {
-      "commit": "2f1a2dae7641",
-      "date": "2026-10-07",
-      "subject": "fix(role gate mc): an unrecognised flag was a WRITE instruction -- now exit 2 and nothing written",
-      "files": [
-        "tools/role_gate_mc_config.py"
-      ],
-      "lines_added": 143,
-      "lines_removed": 10,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "tools/role_gate_mc_config.py recognised exactly ONE flag, --check, and every other argument fell through to the generate-and-write path. `python tools/role_gate_mc_config.py --help` -- the first thing a reader types to find out what a tool does -- therefore REGENERATED docs/spec/MCRoleGates.tla and .cfg. Found by my own --help probe doing exactly that during a read-only tool inventory, and caught only because git status was captured before and after the probe. Fixed: KNOWN_FLAGS is a closed list, classify_argv is pure and runs BEFORE read_sets(), and an unrecognised argument exits 2 having invoked no node and opened no file for writing.",
-      "rules": [
-        "1.4"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "b9ca07e9bad1",
-        "date": "2026-09-22",
-        "subject": "feat(spec): the TLC instance goes 6 apps -> 10, and the six left out cannot be modelled without inventing an authorisation tier",
-        "lag_days": 15
-      },
-      "contributing_factors": [
-        {
-          "kind": "technical",
-          "action_status": "done",
-          "factor": "main() tested `'--check' in argv` and let everything else reach the write branch. The permissive branch was the FALL-THROUGH rather than a decision, so no argument could ever be 'unrecognised'.",
-          "action": "KNOWN_FLAGS is a closed list; classify_argv returns ('unknown', arg) and main returns 2 before read_sets() and before any open(..., 'w')."
-        },
-        {
-          "kind": "detection",
-          "action_status": "done",
-          "factor": "Nothing in the output distinguished 'did what I asked' from 'did not understand me and wrote anyway' -- the write branch printed its normal success summary either way, and the regenerated files happened to be byte-identical, so even the tree looked clean.",
-          "action": "--selftest with 6 arms; an ablation env var restores the old fall-through and 3 of the 6 then FAIL, so the arms have been observed firing rather than assumed to."
-        },
-        {
-          "kind": "latent-condition",
-          "action_status": "done",
-          "factor": "This tool is an OWNER-INTENDED BARE-RUN WRITER on tools/bare_run_writers.py's allowlist: a bare run writing IS the interface. That makes 'no flag I recognise' indistinguishable from 'the intended bare run', which is the condition that converts an unparsed argument into a write.",
-          "action": "An EMPTY argv is now the only thing that means write; unknown flags and positionals are a separate, refusing branch."
-        }
-      ],
-      "recurrence_open": "Three other bare-run writers in tools/ (gen_ma_seed.py, gen_mo_seed.py, gen_va_seed.py) had the identical shape and were fixed in the same batch, but the fix is THREE LOCAL COPIES of one guard, not a shared helper -- there is no shared helper for these scripts and adding one mid-batch would be a new tool. Every bare-run writer added after today can reintroduce this, and nothing mechanically checks for it. The rule has been ROUTED to chat as methodology rather than enforced."
     }
   ],
   "started": "2026-09-09",

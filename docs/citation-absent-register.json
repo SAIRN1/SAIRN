@@ -2,7 +2,7 @@
  "_what_this_is": "Citations in the tracking documents whose commit is NOT AN OBJECT in this clone. Each carries its cause TESTED against every sibling clone on this machine. These are not pending repairs -- there is nothing for a rewrite map to match.",
  "_what_it_does_NOT_claim": "That the work the citation refers to never landed. It almost always did, under a different sha. This records that the POINTER is unresolvable, not that the fix is missing.",
  "_never_written_here": "resolved",
- "measured_at_head": "1b5f4369",
+ "measured_at_head": "a27cd83b",
  "criteria_version": "2026-10-06.1",
  "sibling_clones_queried": [
   "C:\\Users\\marsh\\Documents\\SAIRN\\.git",
