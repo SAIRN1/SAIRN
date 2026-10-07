@@ -28,6 +28,38 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/provisioning_attribution.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "13b7d2977538fa5438a83bf260b153f439d15123",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_alf_mar_derive_charges_gate.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "13b7d2977538fa5438a83bf260b153f439d15123",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_alf_staff_read_gate.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "13b7d2977538fa5438a83bf260b153f439d15123",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_grd_session_gate.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "13b7d2977538fa5438a83bf260b153f439d15123",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_tier_a_review_gate_probe.py",
    "class": "test file",
    "level": "CHANGE",
