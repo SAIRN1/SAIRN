@@ -171,7 +171,8 @@
     "tool": "the suite itself, invoked directly",
     "sha": "eb430f25",
     "basis": "re-run BY HAND by fourth, one process, in the live clone; exit code read from the program's own output"
-   }
+   },
+   "exit_code": 1
   },
   {
    "file": "api/sd-data-customer-soft-delete.test.js",
@@ -684,7 +685,8 @@
     "tool": "the suite itself, invoked directly",
     "sha": "762b084b",
     "basis": "re-run BY HAND by fourth, one process, in the live clone; exit code read from the program's own output"
-   }
+   },
+   "exit_code": 1
   },
   {
    "file": "tests/run_concurrency_retry_probe.py",
@@ -809,7 +811,8 @@
     "tool": "the suite itself, invoked directly",
     "sha": "762b084b",
     "basis": "re-run BY HAND by fourth, one process, in the live clone; exit code read from the program's own output"
-   }
+   },
+   "exit_code": 1
   },
   {
    "file": "tests/run_ghost_field_read_probe.py",
@@ -968,7 +971,8 @@
     "tool": "the suite itself, invoked directly",
     "sha": "762b084b",
     "basis": "re-run BY HAND by fourth, one process, in the live clone; exit code read from the program's own output"
-   }
+   },
+   "exit_code": 1
   },
   {
    "file": "tests/run_report_only_checks_probe.py",
@@ -1055,7 +1059,8 @@
     "tool": "the suite itself, invoked directly",
     "sha": "762b084b",
     "basis": "re-run BY HAND by fourth, one process, in the live clone; exit code read from the program's own output"
-   }
+   },
+   "exit_code": 1
   },
   {
    "file": "tests/run_truthy_sum_probe.py",
@@ -1072,7 +1077,8 @@
     "tool": "the suite itself, invoked directly",
     "sha": "762b084b",
     "basis": "re-run BY HAND by fourth, one process, in the live clone; exit code read from the program's own output"
-   }
+   },
+   "exit_code": 1
   },
   {
    "file": "tests/run_two_axis_tier_parser_probe.py",
@@ -1089,14 +1095,15 @@
     "tool": "the suite itself, invoked directly",
     "sha": "762b084b",
     "basis": "re-run BY HAND by fourth, one process, in the live clone; exit code read from the program's own output"
-   }
+   },
+   "exit_code": 1
   },
   {
    "file": "tests/run_write_path_scan_probe.py",
    "kind": "py",
    "tail": "2 ARM(S) FAILED: the shipped baseline PASSES today -- a ratchet that fails on a clean tree is one somebody turns off, a count that FELL is not a regression",
    "since": "2026-10-06",
-   "why": "TWO ARMS, BOTH LIVE-TREE ASSERTIONS. (1) 'the shipped baseline PASSES today -- a ratchet that fails on a clean tree is one somebody turns off' now fails, so the ratchet no longer passes on the real tree. (2) 'a count that FELL is not a regression' also fails, so a baselined count has DROPPED. The probe's mechanism arm ('a NEW blind write site FAILS the ratchet -- it can fire') PASSES, so the detector works and both reds are about tree state. The dropped count is the one worth reading: by tools/run_all_tests.py's own floor reasoning a DROP means the scanner may have stopped seeing files, and that is the failure a ratchet cannot self-diagnose. NOT CLEARED -- the specific baselined key that fell is NOT yet named, and naming it is the next step rather than an assumption.",
+   "why": "TWO ARMS, BOTH LIVE-TREE ASSERTIONS. (1) 'the shipped baseline PASSES today -- a ratchet that fails on a clean tree is one somebody turns off' now fails, so the ratchet no longer passes on the real tree. (2) 'a count that FELL is not a regression' also fails, so a baselined count has DROPPED. The probe's mechanism arm ('a NEW blind write site FAILS the ratchet -- it can fire') PASSES, so the detector works and both reds are about tree state. The dropped count is the one worth reading: by tools/run_all_tests.py's own floor reasoning a DROP means the scanner may have stopped seeing files, and that is the failure a ratchet cannot self-diagnose. NOT CLEARED -- the specific baselined key that fell is NOT yet named, and naming it is the next step rather than an assumption. || CORRECTED 2026-10-07 BY THE SESSION THAT WROTE THIS, AND THE FIRST READING WAS WRONG IN A WAY THAT MATTERS. I wrote that 'a baselined count FELL'. Measured at a7b6b58c: the shipped baseline records 25 sites (recorded 2026-09-15) and the tree measures 25 -- THE TOTAL AGREES -- and the shipped-baseline arm fails anyway. That can only mean one app ROSE while another FELL, leaving the total unchanged. A fall alone would not fail a ratchet that tolerates falls, which is the half I got backwards. The redistribution is INVISIBLE TO A TOTAL and is precisely what a per-app ratchet exists to catch, so this row is evidence FOR the tool's design. ALSO FIXED THIS BATCH, under convention 18: the sibling arm 'a count that FELL is not a regression' loosened ONLY the worst app, so its outcome depended on every OTHER app matching its baseline -- it asserted the ratchet's behaviour AND the repository's state in one arm, and it was failing for the second reason. Every app is now loosened. The probe went from 2 failing arms to 1, twice, and an ablation confirms the fixed arm still bites: making the ratchet intolerant of a fall makes it FAIL, with the subject restored byte-identical. STILL NOT CLEARED: WHICH app rose and which fell is not named. tools/write_path_fault_scan.py exposes apps(argv) and scan(path) rather than a per-app counter, so the comparison needs the ratchet's own code path rather than a re-implementation -- and a re-implementation is how a wrong denominator gets built.",
    "owner": "unassigned",
    "diagnosed": "2026-10-06",
    "diagnosed_by": "fourth",
@@ -1106,7 +1113,8 @@
     "tool": "the suite itself, invoked directly",
     "sha": "762b084b",
     "basis": "re-run BY HAND by fourth, one process, in the live clone; exit code read from the program's own output"
-   }
+   },
+   "exit_code": 1
   },
   {
    "file": "tests/sairnbuild_fault_probe.py",

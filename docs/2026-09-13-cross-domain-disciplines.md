@@ -1052,11 +1052,126 @@ rule bites wherever the word in the sentence is **still**, **current**,
 
 ---
 
-## The failure mode nine of the nineteen share
+## 20. An arm counts only after an ablation shows it can fail
+
+**Adopted in chat 2026-10-07. Derived by fourth from fourth's own arm, which
+passed while testing nothing.**
+
+**THE CONVENTION: a new arm is not evidence until the thing it guards has been
+removed and the arm has been seen to FAIL. Until then it is an assertion about
+nothing, and it reports in exactly the same shape as one that works.**
+
+**THE CASE, and it is the second-order version of item 19.** On 2026-10-07 I
+wrote an arm to enforce convention 19 — *the freshness path must ask
+reachability, not existence* — by reading the subject's own source and looking
+for `_is_reachable(`. It passed. I was about to ship a convention, a fix, and a
+guard, and report all three verified.
+
+The arm sliced the source from the resolve message to `def _file_set_index` —
+**roughly 1,500 lines** — which **swallowed the definition of `_is_reachable`
+itself.** The substring was present whether or not the freshness path called it.
+
+**With the guard removed, the probe stayed GREEN.** The ablation is the only
+reason I know.
+
+    guard removed  -> probe exit 0   <- WRONG, and indistinguishable from correct
+    guard restored -> probe exit 0
+
+After bounding the window to 3,000 bytes and truncating it at
+`def _is_reachable`:
+
+    guard removed  -> probe exit 1, naming both arms
+    guard restored -> probe exit 0
+    subject restored byte-identical
+
+**AND IT CAUGHT A SECOND ONE THE SAME DAY.** Fixing
+`tests/run_write_path_scan_probe.py` under item 18, the repaired arm was ablated
+by making the ratchet intolerant of a fall — the arm **failed**, as it must. Had
+it not, the fix would have been a second arm that could not fire, landed under a
+commit message claiming it was verified.
+
+**WHY IT IS A CONVENTION AND NOT ADVICE.** The platform already has *"build the
+control that makes it fail before you trust the run that says it passed"* as the
+unnumbered rule under the whole document. **This is the narrow, checkable case
+of it**, and it needs numbering because the unnumbered form has not stopped it:
+a vacuous arm is written *while fixing something else*, in the same commit as
+the fix, and the green it produces is read as confirming the fix. Attention is
+on the subject, not on the guard.
+
+**It is also the one failure mode an arm cannot report.** A wrong arm fails
+loudly and gets fixed. A **vacuous** arm passes, and passing is what it was
+written to do.
+
+**HOW TO IMPLEMENT IT.**
+- **Remove the guard and run the arm.** Not a mutation of the arm — a removal of
+  the thing it guards. If the arm still passes, it is not an arm.
+- **Restore and verify byte-identically.** An ablation that leaves the subject
+  changed has replaced one unverified state with another.
+- **Bound every window a source-reading arm opens**, and assert the bound in its
+  own arm. An unbounded window is the commonest way an arm becomes vacuous,
+  because it eventually contains the thing being searched for.
+- **Exercise the extraction in BOTH directions against a synthetic subject** —
+  one that has the property and one that does not. *Reject everything* and
+  *accept everything* both pass a one-sided test.
+- **Say in the commit that the ablation ran, and what it returned.** "Verified"
+  without an ablation means the arms were run, not that they can fail.
+
+**WHERE IT DOES NOT TRANSFER.** An arm whose subject is a pure function of its
+own fixture — a parser fed a literal, an arithmetic check — has nothing to
+ablate; the fixture *is* the ablation, and a wrong fixture fails immediately.
+The rule bites wherever an arm reads **live state**: source text, a repository,
+a registry, a running tool's output.
+
+**Cause tag for the defect behind it:** `test-design/arm-vacuity/unbounded-window-swallowed-the-subject`.
+
+---
+
+## 21. A bound measured against the tool's INPUT is not a bound on its SUBJECT
+
+**Adopted in chat 2026-10-07. DERIVED BY CODY, routed to fourth because fourth
+holds this file, and written here VERBATIM from
+`docs/2026-10-07-cody-routed.md` §3 rather than paraphrased.**
+
+**THE CONVENTION: before setting any timeout at 2× a measurement, identify the
+exact artifact the bounded call is handed — a transform of a file, a generated
+fixture, a worst-case payload — and measure THAT. The thing you happen to have
+on disk is a convenience sample.**
+
+**THE CASE, in cody's own figures.** `metamorphic_check.py`'s unmeasured 120s
+bound was replaced with **40s**, derived honestly as 2 × the 18.24s worst case
+of six checkers against `stonedesk.html`. It then fired on **three runs out of
+three, EXIT 2 each.**
+
+A metamorphic check runs each checker against the file **and each TRANSFORM of
+it**. `t_duplicate` returns `lf + '\n' + lf`, so the real subject is **5.51MB**,
+and `duplicate_global_check.py` goes **0.82s → 71.54s** on that 2× input —
+**87×**, superlinear in duplicate ids. **The correct bound is 145s, HIGHER than
+the 120 it replaced. The tightening broke a working tool.**
+
+**THE TEST TO APPLY: name the exact bytes the bounded call receives on its worst
+invocation. If that is not the artifact you timed, you have not measured the
+bound.**
+
+**Why it sits beside item 4** (alarm tighter than the failure point) rather than
+inside it: item 4 is about leaving margin below a *known* limit. This is about
+the limit having been measured against the wrong object, so the margin is
+computed from a number that was never the subject. A tighter alarm on a wrong
+measurement is worse than a loose one on a right measurement, which is the part
+that is not obvious.
+
+**Full postmortem:** `docs/postmortem-cody-2026-10-07-bound-measurement.md`.
+
+**Cause tag:** `measurement/denominator/bounded-call-receives-a-different-artifact`.
+
+---
+
+## The failure mode nine of the twenty-one share
 
 *(Count corrected 2026-10-06: this heading read "eight of the eleven" when the document had eleven numbered sections, and was not updated when 12 was added on 2026-09-25 or when 13, 14 and 15 were added on 2026-10-06, or when 16 followed them. The EIGHT is unchanged and is the load-bearing number -- 12, 13, 14, 15 and 16 are NOT members of that group. Carrying what it said so the correction is visible rather than invisible, per the numbering note at the end of this file.)*
 
-*(Denominator moved again 2026-10-07 when 18 and 19 were added, and the
+*(Denominator moved again 2026-10-07 when 20 and 21 were added. **NEITHER IS A MEMBER OF THE NINE, and the question was asked of both.** Item 20 is about an arm that CANNOT fire -- which sounds like the group -- but the group is about a CHECK that reads as coverage, and 20 is about the GUARD ON a check; folding them would lose the distinction between a check that cannot fire and a guard that cannot fire, and 20 exists because the second is written while fixing the first. Item 21 is a measurement error, not a check at all. The nine is unchanged.)*
+
+*(Denominator moved 2026-10-07 when 18 and 19 were added, and the
 membership question was asked of both rather than assumed. **19 IS A NINTH
 MEMBER and is the first addition since 11 that belongs in the group:** an
 existence test used as a reachability test is a check that reads as coverage

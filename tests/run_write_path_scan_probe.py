@@ -283,9 +283,24 @@ check('a NEW blind write site FAILS the ratchet -- it can fire',
       'expected exit 1 with %s tightened to %d' % (_worst, _tightened[_worst]))
 
 # The other direction: a count that FELL must not be reported as a regression.
-_loosened = dict(_shipped['counts'])
-_loosened[_worst] += 5
-check('a count that FELL is not a regression',
+#
+# CONVENTION 18, 2026-10-07: ONE ASSERTION PER ARM. This loosened ONLY the
+# worst app -- `_loosened[_worst] += 5` -- which quietly made the arm's outcome
+# depend on EVERY OTHER APP matching its baseline. It asserted two things: that
+# the ratchet tolerates a fall (its stated subject, a property of the tool) AND
+# that no other app has risen (a property of the REPOSITORY).
+#
+# MEASURED 2026-10-07: the shipped baseline records 25 sites and the tree
+# measures 25, so the TOTAL agrees -- and the shipped-baseline arm fails anyway,
+# which can only mean one app rose while another fell. That redistribution is
+# invisible to a total and is exactly what a per-app ratchet exists to catch.
+# It also silently contaminated this arm, which then failed for a reason that
+# has nothing to do with falls.
+#
+# Loosening EVERY app leaves the arm asserting only its own subject.
+_loosened = dict((k, v + 5) for k, v in _shipped['counts'].items())
+check('a count that FELL is not a regression -- EVERY app loosened, so this '
+      'arm cannot be failed by an unrelated app having risen',
       run_ratchet({'recorded': 'fixture', 'counts': _loosened}) == 0,
       'expected exit 0')
 
