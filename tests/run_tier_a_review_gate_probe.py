@@ -2168,6 +2168,107 @@ check('...and the synthetic negative is not passing because its window ran on '
       'def _is_reachable' not in (_reachability_window(_SYNTH_WEAK) or 'x'),
       'the bound did not hold on the synthetic source either')
 
+# ── THE STAMPED SHA IS THE COMMIT UNDER REVIEW, NOT HEAD (2026-10-07) ────────
+# REGRESSION FIXTURE. Before the fix `_open_record` called `head_sha()`, so the
+# stamped `opened_at_sha` was whatever commit happened to be on top -- a
+# regeneration, a chore(claims) commit, a merge. Measured 2026-10-07: cody 2 of
+# 2 records reviewed and fourth 4 of 4 obligations discharged had a sha whose
+# diff contained NONE of the files the record named.
+#
+# THE PRE-FIX RUN, CAPTURED RATHER THAN DESCRIBED. The fixture below was run
+# twice against the SAME two-commit throwaway repo: once with HEAD's
+# tools/tier_a_review_gate.py (dea44d22, pre-fix) extracted into a tempdir, once
+# with the worktree copy. Both exited 0; the shas differ between runs only
+# because each run builds its own repo.
+#
+#   pre-fix, HEAD dea44d22            post-fix, worktree
+#   A touched api/x.js  dd46bbd8      A touched api/x.js  a4d1301b
+#   B is HEAD, docs/u.md cc2b2e81     B is HEAD, docs/u.md 6c9a3146
+#   --open stamped      cc2b2e81 <-B  --open stamped      a4d1301b <-A
+#   basis field         None          basis field         'file-set'
+#   git show B -- api/x.js  EMPTY     git show B -- api/x.js  EMPTY
+#
+# So pre-fix the stamped commit's diff did not contain the one file the record
+# names. THE END-TO-END ARM BELOW IS THE ONE THAT GOES RED AGAINST THAT CODE;
+# the three subject_sha() arms cannot, because that function does not exist
+# there -- stated rather than left for a reader to discover.
+def _subject_sha_fixture():
+    base = tempfile.mkdtemp(prefix='tierA_subject_sha_')
+    r = os.path.join(base, 'repo')
+    os.makedirs(os.path.join(r, 'api'))
+    os.makedirs(os.path.join(r, 'docs'))
+
+    def gi(*a):
+        return subprocess.run(['git', '-C', r] + list(a), capture_output=True,
+                              text=True, encoding='utf-8', errors='replace')
+    for a in (['init', '-q'], ['config', 'user.email', 'f@x.invalid'],
+              ['config', 'user.name', 'f']):
+        gi(*a)
+    io.open(os.path.join(r, 'api', 'x.js'), 'w',
+            encoding='utf-8').write('// the reviewed change\n')
+    gi('add', '-A'); gi('commit', '-q', '-m', 'fix(api): the change under review')
+    a_sha = gi('rev-parse', 'HEAD').stdout.strip()
+    io.open(os.path.join(r, 'docs', 'u.md'), 'w',
+            encoding='utf-8').write('regenerated\n')
+    gi('add', '-A'); gi('commit', '-q', '-m', 'chore(generated): unrelated')
+    b_sha = gi('rev-parse', 'HEAD').stdout.strip()
+    old_repo, old_reviews = g.REPO, g.REVIEWS
+    ledger = os.path.join(base, 'reviews.json')
+    io.open(ledger, 'w', encoding='utf-8').write('{"records": []}')
+    try:
+        g.REPO = r
+        g.REVIEWS = ledger
+        with_files = g.subject_sha(['api/x.js'])
+        no_files = g.subject_sha([])
+        # ── THE END-TO-END HALF, AND IT IS THE ARM THAT FAILS PRE-FIX ───────
+        # The three arms above call subject_sha() directly, so against pre-fix
+        # code they raise AttributeError rather than failing -- a crash is not a
+        # red arm, and `_subject_sha_fixture` would not even return. This one
+        # drives the WRITER, `_open_record`, which exists in both versions, so
+        # pre-fix it writes b_sha and this arm goes RED with a real message.
+        # Measured both ways; the captured pre-fix run is in the table above.
+        g._open_record('fixture: the change under review',
+                       {'sc_claims': ['api/x.js']}, {})
+        stamped = json.load(io.open(ledger, encoding='utf-8'))['records'][0]
+    finally:
+        g.REPO, g.REVIEWS = old_repo, old_reviews
+        shutil.rmtree(base, ignore_errors=True)
+    return a_sha, b_sha, with_files, no_files, stamped
+
+
+_A, _B, _WITH, _NOFILES, _STAMPED = _subject_sha_fixture()
+
+check('THE STAMPED SHA IS THE LAST COMMIT TOUCHING THE NAMED FILES, not HEAD -- '
+      'the regression this fixture exists for',
+      _WITH[0] == _A,
+      'subject_sha returned %r, wanted the api/x.js commit %r' % (_WITH[0], _A))
+check('...and its basis says file-set, so a reader can tell which rule produced it',
+      _WITH[1] == 'file-set', 'basis was %r' % (_WITH[1],))
+check('NEGATIVE HALF: it is NOT HEAD -- without this the arm above would pass on '
+      'a one-commit repo where HEAD and the file commit coincide',
+      _WITH[0] != _B, 'subject_sha returned HEAD %r' % (_B,))
+check('A RECORD THAT NAMES NO FILES falls back to HEAD and the basis SAYS head, '
+      'rather than reporting a file-set answer it never derived',
+      _NOFILES[0] == _B and _NOFILES[1] == 'head',
+      'no-files case gave %r' % (_NOFILES,))
+check('and the two cases really differ, so the fallback is not the only path '
+      'being exercised',
+      _WITH[0] != _NOFILES[0], 'both cases returned %r' % (_WITH[0],))
+check('END TO END: the record _open_record WRITES carries the file-set sha, not '
+      'HEAD -- this is the arm that goes red against pre-fix code',
+      _STAMPED.get('opened_at_sha') == _A,
+      'the written record stamped %r; HEAD was %r and the api/x.js commit %r'
+      % (_STAMPED.get('opened_at_sha'), _B, _A))
+check('...and the written record carries the basis beside it, so a reader of the '
+      'LEDGER -- not of this probe -- can tell which rule produced the sha',
+      _STAMPED.get('opened_at_sha_basis') == 'file-set',
+      'basis on the written record was %r' % (_STAMPED.get('opened_at_sha_basis'),))
+check('...and the sha was derived from the SAME file list the record publishes, '
+      'which is the quieter defect the first draft of the fix had',
+      _STAMPED.get('files') == ['api/x.js'],
+      'the record names %r' % (_STAMPED.get('files'),))
+
+
 if fails:
     print('%d ARM(S) FAILED:' % len(fails))
     for f in fails:
