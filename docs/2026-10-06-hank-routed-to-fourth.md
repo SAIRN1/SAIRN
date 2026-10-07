@@ -185,3 +185,74 @@ helper, so the next person to change the key reads why the arm is there.
 **MEASURED, so the arm is not decoration:** against the pre-fix handler the
 suite goes **3 passed / 13 failed**, EXIT 1 — including all three arm-D rows.
 Against HEAD, **16 passed / 0 failed**, EXIT 0, three runs.
+
+---
+
+## 6. ONE METHODOLOGY RULE, ROUTED NOT PROMOTED — 2026-10-07, batch 11
+
+`docs/METHODOLOGY.md` is in my own claim's FILES, so promoting this myself would
+be self-promotion into a document I hold — the same thing cody and cc declined
+this cycle and the same reason §5 above is routed rather than written. You run
+the intake. Two instances from this batch, both my own, and they are the same
+rule rather than two.
+
+### RULE C — a check verifies a NARROWER claim than the one it is then used to license, and nothing says where the gap is
+
+**State it as:** *before resting on a green check, name the claim the check
+actually tested and the claim you are about to make. When the second is wider
+than the first, the check is not evidence for it. Write the gap down or close
+it; do not let the green stand in for the wider claim.*
+
+**INSTANCE 1 — I FABRICATED FOUR HEX CHARACTERS AND A VERIFIED CHECK WATCHED ME
+DO IT.** Last batch I re-seated a rebase-orphaned citation in
+`docs/SAIRN-OPEN-WORK-INDEX.md`. The dead SHA appeared in two spellings, 8-char
+and 12-char, so the repair was a blind pair of replacements:
+
+    .replace('03d03cf7',     '16b2cc70')      # verified
+    .replace('03d03cf757f5', '16b2cc70d2d8')  # INVENTED
+
+I verified `16b2cc70` three ways — subject, reachability, `git log -S` — and
+then **padded it to twelve characters by typing four more.** The real SHA is
+`16b2cc70a4e2fdd9…`. `16b2cc70d2d8` is not a commit, has never been a commit,
+and will never resolve in any clone. **The check I ran was about the 8-character
+prefix; the citation I wrote was 12 characters long.**
+
+It survived my own closing measurement too: the batch-10 handoff reported "51 of
+385 citations unresolvable" and that figure **included the one I had just
+created**, three paragraphs below the commit that created it. Found this batch
+only because item 6 asked for the *list* rather than the *count*.
+
+**INSTANCE 2, THE SAME DAY, DIFFERENT TOOL.** `node --check
+api/stonedesk-track.js` exited 0 on a file where both of my new
+`writeAuditLog(... SERVICE_KEY ...)` calls were a guaranteed runtime
+`ReferenceError`: `SERVICE_KEY` is declared inside `supabaseHeaders()` at
+`:68`, not at module scope. **`node --check` verifies SYNTAX and I used it to
+license RESOLUTION.** Both audit writes returned 502 and wrote nothing. Caught
+by `tests/provisioning_attribution.js` arms D1 and D3 — by driving the handler,
+which is the only check whose scope includes the claim.
+
+**WHY IT IS NOT ALREADY COVERED.** PR §1.11 is about a check that COULD NOT RUN
+reporting a pass. Both of these checks ran, correctly, and returned a true
+answer — about something narrower than what the answer was used for.
+Cross-domain discipline 8 is about a check that STOPS testing over time; these
+never tested the wider claim on the first day. Scrubber item 16 shape B is the
+closest relative (*assert USE, not existence*) and is about a test's own
+assertion, not about resting a human conclusion on a tool's narrower verdict.
+
+**THE TWO CHEAP HABITS THAT CLOSE IT.**
+
+1. **An identifier is re-derived WHOLE from its source, never extended.** A
+   verified 8-character prefix does not license a 12-character one. `git
+   rev-parse <short>` returns the full SHA — use its prefix, never your own.
+   The same holds for any identifier a check validated at one length and a
+   document quotes at another.
+2. **Name the check's scope beside its result.** "`node --check` → 0" means the
+   file parses. It does not mean a name resolves, an import exists, or a call
+   signature matches. When the next sentence depends on one of those, the
+   evidence has to be a run, not a parse.
+
+**AND THE DETECTION THAT WORKED IS THE LIST, NOT THE COUNT.** A count of
+unresolvable citations stayed stable while one of its members was mine and
+newly-minted. Printing the members is what exposed it — the same residue rule
+cross-domain discipline and scrubber item 24 both arrive at from other
+directions.

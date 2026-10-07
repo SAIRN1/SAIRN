@@ -92,7 +92,12 @@ DEFAULT_FILES = [
 # locks indistinguishable in a past report.
 # .3 -- a whole second GROUPING was added (cross-resource), so the criteria
 # changed and the stamp moves.
-CRITERIA_VERSION = '2026-10-06.3'
+# .4 -- the cross-resource verdict gains a DIRECTION (WEAKER / OWNER-UNGATED /
+# STRICTER-ONLY / NO-OWNER). Nothing is suppressed and no group stops being
+# reported, but the criteria for what counts as the HEADLINE changed, so the
+# stamp moves: a report stamped .3 listed twelve flags of equal weight and a
+# report stamped .4 does not.
+CRITERIA_VERSION = '2026-10-07.4'
 
 # ── THE THREE SIGNALS ───────────────────────────────────────────────────────
 # ROLE: the session's role is CONSULTED. `session.role` is the only way this
@@ -385,12 +390,70 @@ def cross_findings(all_units):
                              if owner else None),
             'differs_on': ([] if len(roles) == 1 else ['role'])
                           + ([] if len(assigns) == 1 else ['assignment']),
+            'direction': _direction(tbl, us, owner),
             'readers': [{'resource': u['resource'], 'action': u['action'],
                          'line': u['line'], 'role': u['role'],
                          'assign': u['assign'],
                          'owns_table': u['resource'] == tbl} for u in us],
         })
     return out
+
+
+# ── THE DIRECTION SPLIT (criteria .4, 2026-10-07) ──────────────────────────
+# WHY IT WAS ADDED: all twelve cross-resource flags were hand-verified on
+# 2026-10-07, and EIGHT of the twelve were the SAFE direction -- a sibling
+# STRICTER than the table's own reader. `len(roles) != 1` cannot tell those from
+# the dangerous ones, so a real PHI leak (alf_mar) sat in a list of twelve
+# beside eight non-findings, and one of the eight (alf_staff) was a genuine
+# defect of a DIFFERENT class -- the OWNER had no gate at all -- buried inside a
+# report about disagreement.
+#
+# THE QUESTION THE OLD CRITERIA COULD NOT ASK: not "do these branches differ"
+# but "is some branch WEAKER than the branch that owns the table". A sibling
+# that gates MORE is not a disclosure path through the sibling.
+#
+# WIDENING THE VERDICT, NOT NARROWING THE MATCH, which is recurring-bug-class
+# 24's explicit instruction. Nothing is suppressed: every group still appears,
+# with a direction that says which kind it is. Narrowing the match would have
+# cleared the eight and gone silent on the next phrasing.
+#
+#   WEAKER         some non-owner reader has role=False where the owner has
+#                  role=True, or assign=False where the owner has assign=True.
+#                  THE DISCLOSURE HAZARD. Still the headline.
+#   OWNER-UNGATED  every non-owner reader is at least as gated as the owner on
+#                  both axes, AND the owner gates on neither. The disagreement
+#                  is not the finding; the OWNER is. Reported under its own
+#                  heading because it is a different repair.
+#   STRICTER-ONLY  every non-owner reader is at least as gated, and the owner
+#                  gates on something. Lowest-signal of the three.
+#   NO-OWNER       no branch's dispatch resource IS the table, so there is no
+#                  gate to compare against. COULD NOT TELL, never folded into
+#                  a pass -- it stays in the hazard bucket.
+#
+# WHAT THIS STILL CANNOT DO, AND IT IS THREE OF THE TWELVE. The direction is
+# computed from the two BOOLEANS this tool derives lexically -- whether a role
+# check and an assignment check are present. It cannot resolve role SETS, so it
+# cannot see that every role reaching `rf_draws`/`wip` is already in
+# BROAD_READ_ROLES and therefore already gets `rf_jobs`/`read` unfiltered. Three
+# of the twelve (alf_clients, rf_claims, rf_jobs) are false positives for
+# exactly that reason and REMAIN FLAGGED as WEAKER. Suppressing them would need
+# a hardcoded list of three table names, which is recurring-bug-class 26 -- a
+# fixture that expires the day a role set legitimately changes. A lexical tool
+# must not pretend to resolve sets; the limit is printed on every run instead.
+def _direction(tbl, us, owner):
+    if not owner:
+        return 'NO-OWNER'
+    o = owner[0]
+    others = [u for u in us if u['resource'] != tbl]
+    if not others:
+        return 'STRICTER-ONLY'
+    weaker = any((o['role'] and not u['role'])
+                 or (o['assign'] and not u['assign']) for u in others)
+    if weaker:
+        return 'WEAKER'
+    if not o['role'] and not o['assign']:
+        return 'OWNER-UNGATED'
+    return 'STRICTER-ONLY'
 
 
 # ── FIXTURES. The pre-fix #877 shape must FLAG, the post-fix shape must NOT,
@@ -488,6 +551,34 @@ CROSS_894_BEFORE = """
         out = out.filter((x) => x.staff_id === session.employee_id);
       }
       res.status(200).json({ ok: true, data: out });
+      return;
+    }
+"""
+
+# ── THE OWNER-UNGATED FIXTURE (criteria .4, 2026-10-07) ────────────────────
+# The SAFE direction, and the shape that was eight of the twelve live flags: the
+# branch that OWNS the table gates on nothing, and the other reader gates MORE.
+# There is no disclosure path through the sibling -- the finding is the owner.
+# Modelled on the real `alf_staff` pair as it stood before 2026-10-07:
+# `alf_staff`/`read` consulted no role set and `alf_compliance_rules`/`evaluate`
+# consulted one.
+CROSS_OWNER_UNGATED = """
+    if (resource === 'alf_staff' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION' } }); return; }
+      const r = await fetch(rest('alf_staff?license_hash=eq.' + enc(licHash)
+        + '&select=staff_id,data'), { headers });
+      res.status(200).json({ ok: true, data: rows });
+      return;
+    }
+    if (resource === 'alf_compliance_rules' && action === 'evaluate') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      const sr = await fetch(rest('alf_staff?license_hash=eq.' + enc(licHash)
+        + '&select=staff_id,data'), { headers });
+      if (!ALF_CRED_READ_ROLES[session.role]) {
+        opts.staff = opts.staff.filter((x) => x.staff_id === session.employee_id);
+      }
+      res.status(200).json({ ok: true, data: result });
       return;
     }
 """
@@ -641,6 +732,38 @@ def selftest():
                   % (want_flag, got,
                      [(x['table'], x['differs_on']) for x in cross_findings(us)]))
 
+    # ── THE DIRECTION ARMS (criteria .4, 2026-10-07) ────────────────────────
+    # BOTH HALVES, and neither alone is worth anything. An arm that only
+    # asserted "the #894 shape is WEAKER" would pass on a function returning
+    # 'WEAKER' for everything; an arm that only asserted "the safe shape is
+    # OWNER-UNGATED" would pass on one returning 'OWNER-UNGATED' for
+    # everything. That is the same both-directions discipline X1/X2 already
+    # use for the flag itself, applied to the verdict.
+    dir_cases = [
+        ('X4. the #894 shape is directed WEAKER -- the branch that does NOT '
+         'own the table gates LESS than the one that does, which is the '
+         'disclosure hazard and is the headline bucket',
+         CROSS_894_BEFORE, 'alf_staff_credentials', 'WEAKER'),
+        ('X5. the SAFE shape is directed OWNER-UNGATED, not WEAKER. Eight of '
+         'the twelve live flags on 2026-10-07 were this, and calling them all '
+         'hazards is what buried a real PHI leak in a list of twelve. The '
+         'finding here is the OWNER gating on nothing, which is a different '
+         'repair from a sibling gating less',
+         CROSS_OWNER_UNGATED, 'alf_staff', 'OWNER-UNGATED'),
+    ]
+    for label, src, tbl, want_dir in dir_cases:
+        us = [classify(u) for u in units('fixture.js', src)]
+        fs = [f for f in cross_findings(us) if f['table'] == tbl]
+        got = fs[0].get('direction') if fs else None
+        if got == want_dir:
+            npass += 1
+            print('  ok   ' + label)
+        else:
+            nfail += 1
+            print('  FAIL ' + label)
+            print('       wanted direction=%r got %r (flagged=%s)'
+                  % (want_dir, got, bool(fs)))
+
     for label, src, want_flag, res in cases:
         us = [classify(u) for u in units('fixture.js', src)]
         fs = [f for f in findings(us) if f['resource'] == res]
@@ -728,18 +851,55 @@ def main(argv):
         return 0
 
     if xs:
-        print('CROSS-RESOURCE -- one TABLE read by branches on DIFFERENT '
-              'resources, disagreeing on a gate (#894 is this shape):')
-        for x in xs:
-            print('! %s  table %s  differs on: %s%s'
-                  % (x['file'], x['table'], ', '.join(x['differs_on']),
-                     ('   [owner: %s]' % x['owner_branch'])
-                     if x['owner_branch'] else '   [NO branch owns this table]'))
-            for r in x['readers']:
-                print('    %-34s :%-6d role=%-5s assignment=%-5s%s'
-                      % (r['resource'] + '/' + r['action'], r['line'],
-                         r['role'], r['assign'],
-                         '  <- OWNS THE TABLE' if r['owns_table'] else ''))
+        # ── GROUPED BY DIRECTION (criteria .4) ──────────────────────────────
+        # A flat list of twelve put a real PHI leak beside eight non-findings
+        # of equal apparent weight. The hazard bucket is printed FIRST and the
+        # others are printed after, with their own headings -- nothing is
+        # hidden, and the reader is told which question each group answers.
+        buckets = [
+            ('WEAKER', 'CROSS-RESOURCE, THE HAZARD -- one TABLE read by a '
+                       'branch on another resource that gates LESS than the '
+                       'branch owning it (#894 is this shape):'),
+            ('NO-OWNER', 'CROSS-RESOURCE, COULD NOT TELL -- no branch\'s '
+                         'dispatch resource IS this table, so there is no '
+                         'owning gate to compare against. NOT a pass:'),
+            ('OWNER-UNGATED', 'THE OWNER HAS NO GATE -- every other reader is '
+                              'at least as strict, so the disagreement is not '
+                              'the finding; the OWNING branch gating on '
+                              'NEITHER role nor assignment is:'),
+            ('STRICTER-ONLY', 'LOWEST SIGNAL -- every other reader gates at '
+                              'least as much as the owner. Listed so the '
+                              'population is complete, not because it is a '
+                              'finding:'),
+        ]
+        for key, heading in buckets:
+            group = [x for x in xs if x.get('direction') == key]
+            if not group:
+                continue
+            print('%s' % heading)
+            for x in group:
+                print('! %s  table %s  differs on: %s%s'
+                      % (x['file'], x['table'], ', '.join(x['differs_on']),
+                         ('   [owner: %s]' % x['owner_branch'])
+                         if x['owner_branch'] else '   [NO branch owns this table]'))
+                for r in x['readers']:
+                    print('    %-34s :%-6d role=%-5s assignment=%-5s%s'
+                          % (r['resource'] + '/' + r['action'], r['line'],
+                             r['role'], r['assign'],
+                             '  <- OWNS THE TABLE' if r['owns_table'] else ''))
+                print('')
+        # THE RESIDUE IS PRINTED RATHER THAN ASSUMED EMPTY. A direction value
+        # this loop does not know about would otherwise vanish from the report
+        # while still counting in the total -- recurring-bug-class 24's first
+        # rule, that a bucketing pattern must account for 100% of its input.
+        known = set(k for k, _ in buckets)
+        residue = [x for x in xs if x.get('direction') not in known]
+        if residue:
+            print('UNBUCKETED -- %d group(s) carry a direction this report does '
+                  'not know how to head. Listed rather than dropped:' % len(residue))
+            for x in residue:
+                print('! %s  table %s  direction=%r'
+                      % (x['file'], x['table'], x.get('direction')))
             print('')
 
     for f in fs:
@@ -749,11 +909,17 @@ def main(argv):
             print('    action %-14s :%-6d role=%-5s assignment=%s'
                   % (u['action'], u['line'], u['role'], u['assign']))
         print('')
-    print('%d same-resource group(s) and %d cross-resource table(s) flagged. '
-          'REPORT ONLY -- a flagged pair may be a '
+    byd = {}
+    for x in xs:
+        byd[x.get('direction')] = byd.get(x.get('direction'), 0) + 1
+    print('%d same-resource group(s) and %d cross-resource table(s) flagged, '
+          'by direction: %s. REPORT ONLY -- a flagged pair may be a '
           'deliberate tiering (a narrower projection can justify a weaker '
           'gate). The finding says WHAT DIFFERS, never that it is wrong.'
-          % (len(fs), len(xs)))
+          % (len(fs), len(xs),
+             ', '.join('%s=%d' % (k, v) for k, v in sorted(byd.items(),
+                                                           key=lambda kv: str(kv[0])))
+             or 'none'))
     print('')
     _limits()
     return 1
@@ -791,6 +957,22 @@ def _limits():
     print('    toward a MISS here rather than a false positive, which is the')
     print('    opposite direction from every other limit above and is the')
     print('    reason this pass is not evidence of absence.')
+    print('  * IT CANNOT RESOLVE ROLE SETS, and that is THREE OF THE')
+    print('    TWELVE. The direction above is computed from two booleans --')
+    print('    whether a role check and an assignment check are PRESENT. It')
+    print('    cannot see that every role reaching rf_draws/wip is already in')
+    print('    BROAD_READ_ROLES and therefore already gets rf_jobs/read')
+    print('    unfiltered. Hand-verified 2026-10-07: alf_clients, rf_claims')
+    print('    and rf_jobs are WEAKER-by-booleans and FALSE POSITIVES by')
+    print('    role-set containment, and they are left FLAGGED. Suppressing')
+    print('    them would need three hardcoded table names, which expires the')
+    print('    day a role set legitimately changes.')
+    print('  HAND-VERIFIED, ALL TWELVE, 2026-10-07: 1 real (alf_mar, PHI to')
+    print('  `billing` through derive_charges, fixed), 1 real of a different')
+    print('  class (alf_staff, the OWNER ungated, fixed), 10 false positives')
+    print('  for the cross-resource question -- 7 safe-direction and 3')
+    print('  role-set-containment. Precision on this file was 2 of 12. Both')
+    print('  numbers, not one.')
     print('  MEASURED ON FIRST LIVE RUN, 2026-10-05: 3 groups flagged on')
     print('  api/sd-data.js at HEAD and ALL THREE triaged as correct-by-design')
     print('  (rf_claims, rf_schedule, alf_payer_rules). The same run against')
