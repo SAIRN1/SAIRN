@@ -4059,6 +4059,69 @@ module.exports = async (req, res) => {
     // branches degrade to an empty, ok:true response with provisioned:false if that migration
     // hasn't run yet (same graceful pattern as render_usage/shared_knowledge above), so the
     // client's panels render an honest empty state instead of a hard error.
+
+    // ── EVERY SAIRNGROUNDS RESOURCE NEEDS A SESSION (2026-10-07) ────────────
+    // SAIRNgrounds HAS a per-employee auth system -- `api/grd-auth.js`, the
+    // `grd_employee_auth` table (`api/_lib/auth.js:1048`) and a five-role
+    // vocabulary (`:128`: owner, superintendent, manager, crew, office). None
+    // of these branches used it. The LICENCE KEY ALONE reached every read and
+    // every write: anybody holding it could list a golf course's properties,
+    // jobs, invoices, vendor list and bill-of-quantity rates, and WRITE to all
+    // of them, with no employee identity involved at all.
+    //
+    // MEASURED, by the auditor's own reproducing artifact rather than by
+    // reading: `.claude/skills/sairn-hover-auditor/tools-hover2/
+    // grd_session_gate_repro.py --all` reported REPRODUCES on 16 of the 17
+    // `grd_*` resources on both read and write. The seventeenth,
+    // `grd_progress_photos`, was PARTIAL -- it verifies a session only inside
+    // a `qc_status` conditional, not on its default write path. The four bare
+    // names below (`properties`, `jobs`, `quotes`, `golf_zones`) are the same
+    // app and the same gap; each is dispatched exactly once in this file and
+    // maps to a `grd_*` table, so gating them here collides with no other app.
+    //
+    // ONE SHARED PRELUDE, NOT TWENTY-ONE COPIES. `tools/gate_parity_check.py`
+    // calls a gate in the shared prelude "the single most common correct shape
+    // on this platform" and it is the shape that cannot drift: twenty-one
+    // copies of a session check are twenty-one chances to omit the
+    // twenty-second.
+    //
+    // WHAT THIS DOES NOT DO, AND IT IS NOT AN OVERSIGHT: it does not add a
+    // ROLE gate. Which of owner / superintendent / manager / crew / office may
+    // write a BOQ rate or an invoice is a product decision about a golf
+    // operation, and this batch was told not to make those unilaterally -- the
+    // same reason `alf_staff`'s role set is still an open row rather than my
+    // choice. A session gate is the whole of the routed finding and it is
+    // strictly the licence-key-only state plus an identity. The role question
+    // is logged as open.
+    //
+    // THE EXCLUSION IS DELIBERATE AND NAMED: the `msb_*` resources further
+    // down this same region are a DIFFERENT app, are not in this finding and
+    // are not in my claim. They are untouched.
+    const GRD_SESSION_RESOURCES = {
+      properties: true, jobs: true, quotes: true, golf_zones: true,
+      grd_schedule: true, grd_progress_photos: true, grd_invoices: true,
+      grd_dreamclose: true, grd_invasive_sightings: true,
+      grd_ecosystem_reports: true, grd_rounds: true, grd_cart_orders: true,
+      grd_designs: true, grd_irr_controllers: true, grd_irr_zones: true,
+      grd_irr_schedules: true, grd_water_features: true,
+      grd_training_courses: true, grd_training_completions: true,
+      grd_boq_rates: true, grd_vendors: true
+    };
+    if (Object.prototype.hasOwnProperty.call(GRD_SESSION_RESOURCES, resource)) {
+      // hasOwnProperty, NOT `GRD_SESSION_RESOURCES[resource]`: a bare object
+      // literal inherits from Object.prototype, so `['constructor']` and
+      // `['toString']` are TRUTHY on it. api/rf-auth.js:96 records that exact
+      // trap for a role set; the same hole in a RESOURCE set would make a
+      // request for resource `constructor` demand a session it then could not
+      // match, which is the harmless direction -- but the next reader would
+      // copy the pattern into a set where it is not.
+      const grdSession = verifySessionToken(tokenFromRequest(req), licHash, 'sairngrounds');
+      if (!grdSession) {
+        res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } });
+        return;
+      }
+    }
+
     if (resource === 'properties' && action === 'read') {
       const r = await fetch(rest('grd_properties?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
