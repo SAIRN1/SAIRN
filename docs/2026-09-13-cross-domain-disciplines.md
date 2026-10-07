@@ -1165,11 +1165,67 @@ that is not obvious.
 
 ---
 
-## The failure mode nine of the twenty-one share
+## 22. A WINDOW is a measurement, and an unbounded one measures the wrong thing
+
+**Adopted in chat 2026-10-07. Derived by fourth from the same mistake three
+times in three days, in three different roles.**
+
+**THE CONVENTION, in one line: any window a check opens over text — a source
+slice, a lookback, a grep context, an extraction range — is a MEASUREMENT with
+its own bound, and the bound is asserted by its own arm, because an unbounded
+window eventually contains the thing being searched for and then the check
+passes on itself.**
+
+**THREE INSTANCES, AND THE ROLE CHANGED EACH TIME, WHICH IS WHY IT IS A
+CONVENTION AND NOT A BUG.**
+
+1. **As a CHECK (convention 17).** The gap-document verifier's 1,200-character
+   lookback picked the nearest named app on a document covering three verticals,
+   and reported **15 citations as broken** that were all true of the wrong file.
+2. **As a GUARD (convention 20).** The arm written to enforce convention 19
+   sliced ~1,500 lines of source and **swallowed the definition of the function
+   it was searching for**, so the substring matched whether or not the code
+   called it. With the guard removed the probe stayed green.
+3. **As a READ, with no tool involved at all.** Reviewing cc's obligation I ran
+   `sed -n '459,500p'` over a tuple that runs past line 500, read four entries,
+   and **reported a correct addition as missing.** By AST it has eight. The
+   window was a shell argument and the subject was my own eye.
+
+**The third is the one that makes the rule general.** A tuning parameter in a
+tool can be argued about. The same mistake made by a person reading a file is
+not a parameter — it is the shape, and the shape is *a bounded view presented
+as the whole*.
+
+**HOW TO IMPLEMENT IT.**
+- **Name the bound and assert it.** Convention 19's arm now carries *"the window
+  this arm reads was LOCATED and is bounded well short of `def _is_reachable`"*
+  as an arm of its own, and it fails first.
+- **Truncate at the thing you are searching for**, not at a byte count alone, so
+  the window cannot contain its own answer.
+- **Widening is not the fix.** A longer lookback relocates the boundary; a
+  shorter one converts real checks into refusals. Any proximity heuristic fails
+  at its edge, which is why convention 17's answer was a STATE and not a bigger
+  number.
+- **For a read, prefer a parser to a window.** `ast.literal_eval` on the tuple
+  answered in one line what a `sed` range got wrong. The same holds for the
+  AST comparison that replaced my grep when checking hank's *"docstring only"*.
+
+**WHERE IT DOES NOT TRANSFER.** A window over a stream you are deliberately
+sampling — the last N lines of a log, a head of a huge file — is a sample and
+should say so. The rule bites when the window is presented as **the extent of
+the subject** rather than as a sample of it.
+
+**Cause tag:** `measurement/window/unbounded-view-presented-as-the-whole`.
+
+---
+
+## The failure mode nine of the twenty-two share
 
 *(Count corrected 2026-10-06: this heading read "eight of the eleven" when the document had eleven numbered sections, and was not updated when 12 was added on 2026-09-25 or when 13, 14 and 15 were added on 2026-10-06, or when 16 followed them. The EIGHT is unchanged and is the load-bearing number -- 12, 13, 14, 15 and 16 are NOT members of that group. Carrying what it said so the correction is visible rather than invisible, per the numbering note at the end of this file.)*
 
-*(Denominator moved again 2026-10-07 when 20 and 21 were added. **NEITHER IS A MEMBER OF THE NINE, and the question was asked of both.** Item 20 is about an arm that CANNOT fire -- which sounds like the group -- but the group is about a CHECK that reads as coverage, and 20 is about the GUARD ON a check; folding them would lose the distinction between a check that cannot fire and a guard that cannot fire, and 20 exists because the second is written while fixing the first. Item 21 is a measurement error, not a check at all. The nine is unchanged.)*
+*(Denominator moved again 2026-10-07 when 22 was added. **22 IS NOT A MEMBER of the nine, and the question was asked.** Its instances all PRODUCED an answer -- 15 findings, a green probe, a wrong review note -- so the check fired every time; what was wrong was the EXTENT it measured. That is a measurement fault like 21, not a cannot-fire fault. The nine is unchanged.)*
+
+*(Denominator moved 2026-10-07 when 20 and 21 were added. **NEITHER IS A MEMBER OF THE NINE, and the question was asked of both.** Item 20 is about an arm that CANNOT fire -- which sounds like the group -- but the group is about a CHECK that reads as coverage, and 20 is about the GUARD ON a check; folding them would lose the distinction between a check that cannot fire and a guard that cannot fire, and 20 exists because the second is written while fixing the first. Item 21 is a measurement error, not a check at all. The nine is unchanged.)*
 
 *(Denominator moved 2026-10-07 when 18 and 19 were added, and the
 membership question was asked of both rather than assumed. **19 IS A NINTH

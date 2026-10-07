@@ -143,3 +143,88 @@ run and the write); `r3_*.out` and `phi.out`/`sfb.out` (item 3, one file per
 suite plus the two baselines whose single arms block six rows);
 `i4_abl.out`/`i4_abl2.out`/`i4_abl3.out` (item 4 — **the two attempts that could
 not run and the one that did**).
+
+---
+
+## ITEM 5 — THE CENSUS: 40 of 83, re-extracted and cross-checked against the log's own summary
+
+**The 83 is re-extracted from `pinned2_stdout.txt` on every run and never
+quoted.** The script also reads the log's **own summary line** and **REFUSES if
+the two disagree** — so "83" is not a number I carry, it is a number two
+independent readings of the same file agree on.
+
+    83 re-extracted from the log: 83 row(s)
+    the log's own summary line  : 83
+
+| | |
+|---|---|
+| **X of 83 verified individually** | **40** (was 31) |
+| by exit code | **1 × exit 0**, 35 × exit 1, **4 × exit 2** |
+| verified but NOT in the 83 | 1 — `tests/push_gate/check9_probe.py`, which the pinned run **SKIPPED** |
+| still unverified of the 83 | **43** |
+
+**40 is not 40 failures.** One exits **0** (`run_primitive_obsession_probe`,
+recovered by the convention-18 fix) and four exit **2** — a could-not-run, not a
+failure. So the 83 is at most 78 failures and 5 could-not-runs *as far as
+individually verified*, and the 43 remain **unmeasured** rather than presumed
+red.
+
+---
+
+## ITEM 6 — THE SETTINGS MERGE: RE-CHECKED ONCE, STILL BLOCKED
+
+**Re-derived at `10521191`, and the blocking fact has changed shape without
+changing the answer.**
+
+* **cody's batch21 claim is now RELEASED** — `sairn_claim.py list` shows only
+  `cc` and `hover2` active. So the *claim* no longer blocks it.
+* **But the permissions merge still has not landed.** `~/.claude/settings.json`
+  carries a `hooks` block with **only `PreCompact`**, and
+  `git log -- .claude/settings.json` shows **no commit since 2026-10-05**.
+
+**BLOCKED, and reported as such rather than retried.** The item says re-check
+once and move on; one check, and nothing was written to either settings file.
+
+**For whoever lands it:** the known-good schema is already in this repo —
+`.claude/settings.json` carries a working `hooks` block with five events in the
+`{event: [{matcher, hooks: [{type, command}]}]}` shape. The seven the brief names
+are `SessionStart`, `PostToolUse` (matcher `"*"`), `PreCompact`, `Stop`,
+`SubagentStop`, `Notification`, `SessionEnd`, each with
+`python C:\SAIRN-status\sairn_status_hook.py`.
+
+---
+
+## ITEM 7 — TWO CORRECTED MEASUREMENTS, FOR CHAT TO ROUTE
+
+**I have edited neither hank's nor cc's files, and neither finding is mine to
+close.** Both were MY measurements and both were wrong; the records they were
+measuring were right. Recorded here so chat can route them to their owners.
+
+### TO HANK — the *"docstring only"* claim was CORRECT; my grep was not
+
+| | |
+|---|---|
+| **what I measured first** | `git show f9f832c1 -- tools/tier_sentence_gate.py`, counting changed lines that are not comment-or-blank → **48**, which read as code |
+| **why it was wrong** | **prose inside a triple-quoted string does not start with a quote character**, so a docstring body counts as code under that filter |
+| **the measurement that answers it** | parse both sides with `ast`, replace the **module docstring** with a placeholder using its `lineno`/`end_lineno`, compare |
+| **the result** | **CODE OUTSIDE THE MODULE DOCSTRING IS BYTE-IDENTICAL: True.** The docstring span grew 1–60 → 1–115. No criterion, threshold, field list or verdict moved |
+
+**hank's record was exact.** This correction is already inside the `verdict` I
+wrote on that obligation, so it is on the record — but hank should see it
+without having to read a discharge.
+
+### TO CC — the `SELF_EXCLUDED` addition IS present; my `sed` window was not
+
+| | |
+|---|---|
+| **what I measured first** | `sed -n '459,500p'` over `tools/cross_tenant_isolation_scope.py`, read **four** entries, concluded the probe was **missing** from `SELF_EXCLUDED` |
+| **why it was wrong** | the tuple runs **past line 500** — each entry is separated by a long comment — so the window ended before the list did |
+| **the measurement that answers it** | `ast.literal_eval` on the `SELF_EXCLUDED` assignment |
+| **the result** | **EIGHT entries, and `tests/run_cross_tenant_isolation_scope_probe.py` is the eighth.** The grader's own output names all eight. Its line 57 is `import cross_tenant_isolation_scope as S`, confirming cc's stated reason |
+
+**cc's record was exact**, and the related `12 → 17` pin figure was exact too:
+at cc's own record SHA the pin **was** 17, and `1b453253` covered one more gate
+188h later. **My premise was stale, not cc's figure.**
+
+**This is the third instance behind convention 22** and the one that makes it
+general: a bounded view presented as the whole, with no tool involved.
