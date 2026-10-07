@@ -24026,6 +24026,71 @@
       "recurrence_open": "The tool still cannot see an override read through a helper rather than process.env directly, cannot tell whether a present override reaches the read, and does not judge the 16 CROSS_APP suites at all. Those three are named limits, not findings. And the 155 findings are now a backlog nobody owns: the fix per finding is a judgement (add the override, or say in the header that the suite is pinned), and none of the 155 has been made."
     },
     {
+      "commit": "18078d382de8",
+      "date": "2026-10-07",
+      "subject": "fix(tier-a): --open stamped HEAD, and 34 of 63 checkable records anchor an obligation to a commit that never contained its subject",
+      "files": [
+        "tests/run_tier_a_review_gate_probe.py",
+        "tools/tier_a_review_gate.py"
+      ],
+      "lines_added": 186,
+      "lines_removed": 12,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/tier_a_review_gate.py stamped opened_at_sha from head_sha(), so a Tier A review obligation was anchored to whatever commit happened to be on top of the branch -- a regeneration, a chore(claims) commit, a merge -- rather than to the commit its own files were changed in. code_staleness() diffs the record's named files between that sha and HEAD, so a sha that never contained those files makes STALE/FRESH a verdict about the wrong interval, and the reviewer either reconstructs the subject by hand or reviews the wrong diff. Measured over the whole ledger at dea44d22 and again at 8ee6e7c2, identical both times: of 238 records, 63 carry both a sha that resolves here and a file list, and 34 of those 63 -- 54 percent -- stamp a commit whose diff contains NONE of the files the record names. They come from five sessions (hank 12, cody 12, hover2 4, cc 4, fourth 2), so this is five independent record sets showing one shape rather than two agreeing. subject_sha(files) now returns (sha, basis): the last commit touching the named files with basis file-set, HEAD with basis head when a record names no files, and (None, could-not-tell) when git cannot answer; the basis is written onto the record as opened_at_sha_basis rather than left to be inferred. The file list is computed before the sha and the record publishes that same list by construction. The existing 34 records are NOT re-stamped: the ledger is append-only and a sha change is a delete plus an insert under its own identity rule.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "4a9798dad43e",
+        "date": "2026-09-25",
+        "subject": "feat(review-gate): item 102 part 4 -- an obligation goes stale when the CODE moves, not only when the clock runs out",
+        "lag_days": 12
+      },
+      "citation_note": "COULD-NOT-TELL is a third state and reaches the value rather than being folded into an answer: basis could-not-tell with sha None when git cannot answer, instead of guessing HEAD, because a wrong sha makes code_staleness() report a confident FRESH or a confident STALE.",
+      "phase_note": "The field and its head_sha() source landed in the same commit that introduced code staleness; the substitution of HEAD for the subject commit is in that original code, not in a later edit.",
+      "contributing_factors": [
+        {
+          "factor": "The field's own comment asserted the property it did not have. `opened_at_sha` was documented as \"the commit the reviewer's diff is relative to\", which is true only when --open runs directly on top of the change. A reader checking whether the stamp was right read the comment and stopped.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The comment is replaced by one that states what the value IS, names the measurement that overturned the old claim, and points at subject_sha(). The old sentence is quoted inside the new block so a reader sees what was believed and why it was wrong."
+        },
+        {
+          "factor": "head_sha() was already in the file for a DIFFERENT and correct purpose -- the HEAD end of code_staleness()'s interval -- so reusing it for the SUBJECT end read as consistency rather than as substituting one commit for another. One function supplying both ends of an interval hides that the two ends are different questions.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "subject_sha() is a separate function for the subject end, and it returns the BASIS beside the sha so the two ends can no longer be confused at a call site: 'file-set' is derived from the record's files, 'head' is the fallback and says so."
+        },
+        {
+          "factor": "No check compared the two fields a record already carries. A record names its files AND its sha, so the comparison was available from the day the field landed, and nothing made it. The 145 records predating the field made the population look too sparse to be worth measuring, which is the reason the check was never written.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Eight arms added to tests/run_tier_a_review_gate_probe.py, three of them END-TO-END on the record _open_record WRITES rather than on subject_sha() in isolation -- those three are the ones that go red against the pre-fix code, which was driven and captured rather than asserted."
+        },
+        {
+          "factor": "The write ordering removed the dependency before it could exist. The file list was built INLINE inside the record dict, AFTER opened_sha had already been assigned, so there was nothing for a sha derivation to read even if somebody had wanted one.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The file set is computed above the sha assignment and the record publishes that same list by construction. The first draft of the fix derived the sha from hits+rule_hits only and would have anchored the obligation to a smaller set than the record names; caught by reading the field rather than trusting the patch."
+        },
+        {
+          "factor": "The 34 existing wrong stamps CANNOT be corrected in place. docs/tier-a-reviews.json is append-only and the defect register's own identity rule makes a commit change a DELETE plus an INSERT, so a reseat is unmergeable by policy -- the same refusal tools/sairn_rebase_resolve.py gave this batch.",
+          "kind": "process",
+          "action_status": "not-actionable",
+          "note": "Reseating those records would also be rewriting four other sessions' records, and the ledger is under another session's live claim. The fix stops NEW records being wrong; the existing 34 are reported with their count, their author split and the command that re-derives them, in docs/2026-10-07-cody-batch23.md section 8, for their authors to decide per record."
+        }
+      ],
+      "recurrence_open": "EVERY OTHER PLACE A SHA IS STAMPED AS 'the commit this is about' IS UNAUDITED. This fix covers one writer in one tool. docs/defect-density-register.json itself stamps an injection commit and a fix commit; the scrutiny and citation ledgers stamp shas too. None of them has a check comparing a stamped sha against the files the same record names, and that comparison is one git show per record."
+    },
+    {
       "commit": "2281de97ff5c",
       "date": "2026-10-07",
       "subject": "fix(gen_va_seed): the same missing trigger_document, twice -- item 3 complete, 2 of 2",
@@ -24648,71 +24713,6 @@
       "recurrence_open": "NO ROLE GATE WAS ADDED AND THAT IS DELIBERATE: which of owner, superintendent, manager, crew, office may write a BOQ rate or an invoice is a product decision this batch was told not to make unilaterally, so crew can still write an invoice once signed in. Logged open. The msb_* resources in the same dispatch region are a DIFFERENT app with the same licence-key-only shape and are explicitly NOT fixed -- arm D1 proves msb_products still answers without a session, which is a measurement and not an endorsement. And the auditor repro still reports REPRODUCES because it looks for verifySessionToken INSIDE each dispatch block while the gate is in the shared prelude; routed to hover2."
     },
     {
-      "commit": "18078d382de8",
-      "date": "2026-10-07",
-      "subject": "fix(tier-a): --open stamped HEAD, and 34 of 63 checkable records anchor an obligation to a commit that never contained its subject",
-      "files": [
-        "tests/run_tier_a_review_gate_probe.py",
-        "tools/tier_a_review_gate.py"
-      ],
-      "lines_added": 186,
-      "lines_removed": 12,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "tools/tier_a_review_gate.py stamped opened_at_sha from head_sha(), so a Tier A review obligation was anchored to whatever commit happened to be on top of the branch -- a regeneration, a chore(claims) commit, a merge -- rather than to the commit its own files were changed in. code_staleness() diffs the record's named files between that sha and HEAD, so a sha that never contained those files makes STALE/FRESH a verdict about the wrong interval, and the reviewer either reconstructs the subject by hand or reviews the wrong diff. Measured over the whole ledger at dea44d22 and again at 8ee6e7c2, identical both times: of 238 records, 63 carry both a sha that resolves here and a file list, and 34 of those 63 -- 54 percent -- stamp a commit whose diff contains NONE of the files the record names. They come from five sessions (hank 12, cody 12, hover2 4, cc 4, fourth 2), so this is five independent record sets showing one shape rather than two agreeing. subject_sha(files) now returns (sha, basis): the last commit touching the named files with basis file-set, HEAD with basis head when a record names no files, and (None, could-not-tell) when git cannot answer; the basis is written onto the record as opened_at_sha_basis rather than left to be inferred. The file list is computed before the sha and the record publishes that same list by construction. The existing 34 records are NOT re-stamped: the ledger is append-only and a sha change is a delete plus an insert under its own identity rule.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "4a9798dad43e",
-        "date": "2026-09-25",
-        "subject": "feat(review-gate): item 102 part 4 -- an obligation goes stale when the CODE moves, not only when the clock runs out",
-        "lag_days": 12
-      },
-      "citation_note": "COULD-NOT-TELL is a third state and reaches the value rather than being folded into an answer: basis could-not-tell with sha None when git cannot answer, instead of guessing HEAD, because a wrong sha makes code_staleness() report a confident FRESH or a confident STALE.",
-      "phase_note": "The field and its head_sha() source landed in the same commit that introduced code staleness; the substitution of HEAD for the subject commit is in that original code, not in a later edit.",
-      "contributing_factors": [
-        {
-          "factor": "The field's own comment asserted the property it did not have. `opened_at_sha` was documented as \"the commit the reviewer's diff is relative to\", which is true only when --open runs directly on top of the change. A reader checking whether the stamp was right read the comment and stopped.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "The comment is replaced by one that states what the value IS, names the measurement that overturned the old claim, and points at subject_sha(). The old sentence is quoted inside the new block so a reader sees what was believed and why it was wrong."
-        },
-        {
-          "factor": "head_sha() was already in the file for a DIFFERENT and correct purpose -- the HEAD end of code_staleness()'s interval -- so reusing it for the SUBJECT end read as consistency rather than as substituting one commit for another. One function supplying both ends of an interval hides that the two ends are different questions.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "subject_sha() is a separate function for the subject end, and it returns the BASIS beside the sha so the two ends can no longer be confused at a call site: 'file-set' is derived from the record's files, 'head' is the fallback and says so."
-        },
-        {
-          "factor": "No check compared the two fields a record already carries. A record names its files AND its sha, so the comparison was available from the day the field landed, and nothing made it. The 145 records predating the field made the population look too sparse to be worth measuring, which is the reason the check was never written.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Eight arms added to tests/run_tier_a_review_gate_probe.py, three of them END-TO-END on the record _open_record WRITES rather than on subject_sha() in isolation -- those three are the ones that go red against the pre-fix code, which was driven and captured rather than asserted."
-        },
-        {
-          "factor": "The write ordering removed the dependency before it could exist. The file list was built INLINE inside the record dict, AFTER opened_sha had already been assigned, so there was nothing for a sha derivation to read even if somebody had wanted one.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The file set is computed above the sha assignment and the record publishes that same list by construction. The first draft of the fix derived the sha from hits+rule_hits only and would have anchored the obligation to a smaller set than the record names; caught by reading the field rather than trusting the patch."
-        },
-        {
-          "factor": "The 34 existing wrong stamps CANNOT be corrected in place. docs/tier-a-reviews.json is append-only and the defect register's own identity rule makes a commit change a DELETE plus an INSERT, so a reseat is unmergeable by policy -- the same refusal tools/sairn_rebase_resolve.py gave this batch.",
-          "kind": "process",
-          "action_status": "not-actionable",
-          "note": "Reseating those records would also be rewriting four other sessions' records, and the ledger is under another session's live claim. The fix stops NEW records being wrong; the existing 34 are reported with their count, their author split and the command that re-derives them, in docs/2026-10-07-cody-batch23.md section 8, for their authors to decide per record."
-        }
-      ],
-      "recurrence_open": "EVERY OTHER PLACE A SHA IS STAMPED AS 'the commit this is about' IS UNAUDITED. This fix covers one writer in one tool. docs/defect-density-register.json itself stamps an injection commit and a fix commit; the scrutiny and citation ledgers stamp shas too. None of them has a check comparing a stamped sha against the files the same record names, and that comparison is one git show per record."
-    },
-    {
       "commit": "94becffb42e7",
       "date": "2026-10-07",
       "subject": "fix(attribution): GRANTING access was unrecorded while REVOKING it was audited -- 6 management-write paths now name the acting employee",
@@ -25028,6 +25028,64 @@
         }
       ],
       "recurrence_open": "WHICH ROLE SET BELONGS ON alf_staff IS STILL OPEN. The fix projects for roles outside ALF_CRED_READ_ROLES rather than deciding a new set, because that is a product decision this batch was told not to make unilaterally -- tracked as ALF-STAFF-READ-UNGATED-HANK-2026-10-06 and as the seven role sets in ROLE-SET-SWEEP-HANK-2026-10-06. The sairncare UI still renders phone and bgcheck columns and will now show them empty for narrow roles; that is correct and visible, and nobody has changed the client half."
+    },
+    {
+      "commit": "d0eb2d33fc3f",
+      "date": "2026-10-07",
+      "subject": "fix(phi cache): the arm nobody owned was the SUITE reading a comment as a write -- one arm, four rows",
+      "files": [
+        "docs/handoff-fourth-2026-10-07.md",
+        "docs/known-red-suites.json",
+        "tests/phi_cache_scoped_to_user.js"
+      ],
+      "lines_added": 117,
+      "lines_removed": 116,
+      "app": "sairnsenior",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tests/phi_cache_scoped_to_user.js arm 5 derived the app's written cache keys by running the regex [ls][dt]\\('(<prefix>_[a-z_]+)' over the RAW file, so the comment at sairnsenior.html:5772,5774 -- which quotes st('sen_settings') in order to record that the key must never be written, because the resource is server-authoritative -- was counted as two write sites. Arm 5a then demanded a purge-or-exempt rule for a cache that does not exist and stayed red, which left tests/phi_cache_scope_probe.py refusing to plant any of its 7 mutations against the PHI purge guard, so that guard was unverified in either direction for as long as the false positive stood. Fixed by extracting write sites from tests/lib/strip_comments.js output, with arm 5e as a both-directions control that fails without it.",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "b50c2e2f9464",
+        "date": "2026-09-10",
+        "subject": "fix(care,senior,dental): the server scoped the read, the local cache outlived the person",
+        "lag_days": 27
+      },
+      "contributing_factors": [
+        {
+          "factor": "The write-site extraction was a bare regex over the raw file, and comment syntax in a single-file HTML app is context-dependent",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Extraction now runs over tests/lib/strip_comments.js output, the shared library whose own header records three earlier private versions that were each wrong in a different direction."
+        },
+        {
+          "factor": "The arm trusted its own input: nothing in the suite checked that the key-extraction step distinguished code from prose, so a parser defect was reported as a defect in the subject app",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Arm 5e added as a both-directions control on writtenKeys() -- a real st() write IS counted, the same text inside // and /* */ comments is NOT. Ablated: probe exit 0 -> 1 naming 5e in all four apps."
+        },
+        {
+          "factor": "The red arm was diagnosed in the register as a real decision about SAIRNsenior (sen_settings is the EVV configuration record) rather than as a possible defect in the arm, so the investigation pointed at the app and not at the checker",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "Write the rule into this batch methodology entry: when a checker reports a stubborn finding against a subject whose own source comments say the opposite, verify the checker INPUT before the subject. Planned rather than done because the methodology file is written later in this batch under its own claim."
+        },
+        {
+          "factor": "A red arm in a baseline suite silently disables every mutation probe gated on that baseline -- three further register rows were held shut by this one arm and nothing reported the coupling as a cost",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "The arm-0 baseline gate is correct: planting mutations against a red baseline teaches nothing. The cost is real but the alternative is worse, and convention 18 already names the shape. Not acted on here."
+        }
+      ],
+      "recurrence_open": "The other suites that derive key or symbol lists with a bare regex over a raw single-file app have NOT been audited for the same comment-as-code read. tests/lib/strip_comments.js exists and is used by some of them; which ones, and which still read raw, is unmeasured."
     },
     {
       "commit": "da9ecbd40810",
