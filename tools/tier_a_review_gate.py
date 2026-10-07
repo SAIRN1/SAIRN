@@ -1411,6 +1411,36 @@ def code_staleness(rec, head=None):
                     'the recorded sha %s does not resolve in this clone -- '
                     'rebased away without a reseat, or never fetched. NOT '
                     'fresh.%s' % (sha[:12], how))
+        # CONVENTION 19, ADDED 2026-10-07: OBJECT EXISTENCE IS NEVER EVIDENCE
+        # OF REACHABILITY. The resolve above is `rev-parse --verify`, which
+        # answers OK for a commit that is ON A REF *and* for one that is
+        # ORPHANED -- present in this clone's object store but reached by
+        # nothing, gc-eligible here and ABSENT from every other clone. A diff
+        # against an orphaned commit is a diff against something no other
+        # session can reproduce, and it was being reported as a plain
+        # FRESH/STALE verdict.
+        #
+        # MEASURED, NOT HYPOTHETICAL: at eb430f25, docs/tier-a-reviews.json
+        # cited SEVEN orphaned 40-char shas -- 00030f2d11b7, 13e40c9d79b7,
+        # 773fc2189cb0, 7d15d0a27af0, a9e35feef967, c4dd292fd8a8, e4b3f21a2ceb
+        # -- and one of them, 00030f2d11b7, was the basis of a printed
+        # "** STALE ** moved since 00030f2d11b7" verdict.
+        #
+        # This function already contained the right test: _is_reachable() uses
+        # `git merge-base --is-ancestor`. The gate carried both methods and the
+        # freshness path used the weaker one.
+        #
+        # HEAD is accepted as well as PUSH_BASE_REF deliberately: a record
+        # opened at a local commit that has not been pushed yet is reachable
+        # from HEAD and not from origin/main, and that is ordinary work, not an
+        # orphan.
+        if not (_is_reachable(sha, PUSH_BASE_REF) or _is_reachable(sha, 'HEAD')):
+            return ('COULD-NOT-TELL',
+                    'the recorded sha %s RESOLVES but is ORPHANED -- no ref '
+                    'reaches it from %s or HEAD, so it is gc-eligible here and '
+                    'absent from every other clone. A diff against it is not '
+                    'reproducible. Needs a reseat, not a verdict.%s'
+                    % (sha[:12], PUSH_BASE_REF, how))
         if sha.strip() == head.strip():
             return ('FRESH',
                     'HEAD is still the commit it was opened at%s' % how)

@@ -2064,6 +2064,110 @@ check('...and the usage line names the VERDICT LAST, which is the argument a '
       bool(_doc_order) and _doc_order[-1] == 'verdict', _doc_order)
 
 
+
+# -- CONVENTION 19: OBJECT EXISTENCE IS NEVER EVIDENCE OF REACHABILITY ------
+# `git rev-parse --verify <sha>^{commit}` and `git cat-file -e <sha>^{commit}`
+# both answer OK for a commit that is ON A REF *and* for one that is ORPHANED
+# -- present in this clone's object store, reached by nothing, gc-eligible
+# here, and absent from every other clone. The freshness path used the first of
+# those to decide a recorded sha "resolves", then diffed against it and printed
+# a plain FRESH or STALE verdict.
+#
+# NOT HYPOTHETICAL. At eb430f25 docs/tier-a-reviews.json cited SEVEN orphaned
+# 40-char shas, and "** STALE ** moved since 00030f2d11b7" was printed for one
+# of them. The gate already contained the right test -- _is_reachable() uses
+# `merge-base --is-ancestor` -- so it carried BOTH methods and the freshness
+# path used the weaker one.
+#
+# THE FIRST VERSION OF THIS ARM WAS VACUOUS AND AN ABLATION CAUGHT IT. It
+# sliced the source from the resolve message to `def _file_set_index`, roughly
+# 1,500 lines, which SWALLOWED the definition of `_is_reachable` itself -- so
+# `'_is_reachable(' in slice` was true whether or not the freshness path called
+# it, and removing the guard left the probe green. The window is now bounded,
+# the bound is asserted, and the extraction is tested in BOTH directions
+# against a synthetic source.
+_GATE_SRC_PATH = os.path.join(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__))), 'tools', 'tier_a_review_gate.py')
+_RESOLVE_ANCHOR = "'the recorded sha %s does not resolve"
+_C19_WINDOW = 3000
+
+
+def _reachability_window(src):
+    """The bytes right after the existence-resolve, or None.
+
+    Bounded deliberately: anything wide enough to reach `def _is_reachable`
+    makes every arm below vacuous, which is the mistake this helper exists to
+    make impossible to repeat.
+    """
+    i = src.find(_RESOLVE_ANCHOR)
+    if i < 0:
+        return None
+    w = src[i:i + _C19_WINDOW]
+    j = w.find('def _is_reachable')
+    return w[:j] if j >= 0 else w
+
+
+def _asks_reachability(src):
+    w = _reachability_window(src)
+    if w is None:
+        return None
+    return ('_is_reachable(sha' in w) or ('--is-ancestor' in w)
+
+
+_gate_src = io.open(_GATE_SRC_PATH, encoding='utf-8', errors='replace').read()
+_c19_window = _reachability_window(_gate_src)
+
+check('NEGATIVE HALF FIRST: the window this arm reads was LOCATED and is '
+      'bounded well short of _is_reachable -- a window wide enough to contain '
+      'that definition makes every arm below vacuous',
+      _c19_window is not None and 0 < len(_c19_window) <= _C19_WINDOW
+      and 'def _is_reachable' not in _c19_window,
+      'window=%r' % (None if _c19_window is None else len(_c19_window)))
+
+check('CONVENTION 19: the freshness path does not stop at an EXISTENCE test -- '
+      'it asks REACHABILITY after resolving',
+      _asks_reachability(_gate_src) is True,
+      'the recorded-sha resolve uses rev-parse/cat-file only, so an ORPHANED '
+      'commit reads as resolvable and is given a FRESH or STALE verdict')
+
+check('...and the refusal NAMES orphaned, so a reader can tell it apart from '
+      '"never fetched" -- two causes, two sentences',
+      _c19_window is not None and 'ORPHANED' in _c19_window,
+      'both could-not-tell reasons are reported with one sentence')
+
+_SYNTH_WEAK = (
+    "def freshness(rec):\n"
+    "    try:\n"
+    "        git('rev-parse', '--verify', '--quiet', sha + '^{commit}')\n"
+    "    except CouldNotTell:\n"
+    "        return ('COULD-NOT-TELL',\n"
+    "                'the recorded sha %s does not resolve in this clone')\n"
+    "    moved = git('diff', '--name-only', sha + '..' + head)\n"
+    "    return ('STALE', moved)\n"
+    "\n\ndef _is_reachable(sha, base):\n    return True\n")
+_SYNTH_STRONG = _SYNTH_WEAK.replace(
+    "    moved = git(",
+    "    if not _is_reachable(sha, PUSH_BASE_REF):\n"
+    "        return ('COULD-NOT-TELL', 'ORPHANED')\n"
+    "    moved = git(")
+
+check('THE PAIRED NEGATIVE, ON A SYNTHETIC SOURCE: an existence-only freshness '
+      'path is REPORTED AS MISSING THE CHECK -- without this the arm above '
+      'could be passing because the extraction matches anything',
+      _asks_reachability(_SYNTH_WEAK) is False,
+      'an existence-only source was accepted as asking reachability')
+
+check('THE PAIRED POSITIVE, ON A SYNTHETIC SOURCE: the same extraction DOES '
+      'see a reachability call when one is there, so the arm above is not '
+      'rejecting every source',
+      _asks_reachability(_SYNTH_STRONG) is True,
+      'a source that does ask reachability was reported as not asking')
+
+check('...and the synthetic negative is not passing because its window ran on '
+      'into its own _is_reachable definition',
+      'def _is_reachable' not in (_reachability_window(_SYNTH_WEAK) or 'x'),
+      'the bound did not hold on the synthetic source either')
+
 if fails:
     print('%d ARM(S) FAILED:' % len(fails))
     for f in fails:
