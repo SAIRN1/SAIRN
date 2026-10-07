@@ -1,1 +1,1 @@
-DONE 2026-10-07T11:18:44Z shard=2/5 entries_run=15 findings=17 unrun=60 elapsed=119.1
+RUNNING 68572 2026-10-07T11:35:21Z shard=3/5 budget=270.0 entries=15
