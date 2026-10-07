@@ -646,3 +646,168 @@ human must remember to extend is wrong the first time nobody remembers.**
 * `seam_check/run_ref_probe.py` — `baseline_clean` is **False**, so the two arms
   below it carry no information in either direction. **Fix order is forced: the
   baseline first.**
+
+---
+
+## SEQ 15-A — ITEM 5: THE THREE ARMS THAT BLOCK SIX ROWS, WITH ARTIFACT AND OWNER
+
+**I fixed nothing in any of these files. Chat routes.** Each artifact is a
+command whose captured output is the evidence; all three were run alone in the
+live clone at HEAD `dc9f1629`, 2026-10-07, with `git status` unchanged.
+
+### ARM 1 — `tests/phi_cache_scoped_to_user.js` arm `5a` · blocks 3 rows · OWNER: **UNASSIGNED**
+
+    $ node tests/phi_cache_scoped_to_user.js
+    FAIL  5a  SAIRNsenior: every cached key is purged OR explicitly excluded
+    63 passed, 1 failed
+    PROGRAM_EXIT=1
+
+**Blocks:** `tests/phi_cache_scope_probe.py` (exit 2),
+`tests/sairnbuild_fault_probe.py` (exit 1), `tests/sairncare_fault_probe.py`
+(exit 1) — each stops on *"the shipped tree passes
+phi_cache_scoped_to_user.js"*.
+
+**OWNER: `docs/tool-owner-map.json` says `owner: None, basis: NONE`, and NO
+claim in history names this file.** The arm's text was introduced at
+**`b50c2e2f`** (2026-09-10, *"fix(care,senior,dental): the server scoped the
+read, the local cache outlived"*), so the provenance is the scoped-read
+cache-leak work — but there is no owner to route to. **That is the first thing
+chat has to settle**, because this is the highest-consequence arm on the list: a
+cached key neither purged nor explicitly excluded is **resident health data
+surviving a logout**.
+
+### ARM 2 — `tests/sairnfreedom_server_backup.js` · blocks 2 rows · OWNER: **cody**
+
+    $ node tests/sairnfreedom_server_backup.js
+    FAIL - the registry still holds exactly 35 resources
+    FAILED  sairnfreedom_server_backup: 16 passed, 1 failed
+    PROGRAM_EXIT=1
+
+**Blocks:** itself and `tests/sairnfreedom_fault_probe.py` (exit 1), which stops
+on *"the shipped tree PASSES … 16 passed, 1 failed"*.
+
+**OWNER: cody — from CLAIM HISTORY, not from the owner map.** `c1e06f33` reads
+*"chore(claims): cody claims cody -- negative control for
+tests/sairnfreedom_server_backup.js"*. **The owner map says
+`owner: None, basis: NONE` for this file**, so the map and the claim history
+disagree and the map is the one that is behind. **A second instance of the
+owner-map gap routed in SEQ 13-E.**
+
+**The defect is a hardcoded cardinality** — `35` — and the same number is pinned
+in `tests/schema_provisioning_probe.py`. Convention 14: assert a floor with
+n of N stated; a DROP is the thing worth failing on.
+
+### ARM 3 — `tests/claims/run_push_verify_probe.py` · blocks 2 rows · OWNER: **cc**
+
+    $ python tests/claims/run_push_verify_probe.py
+    FAIL ...and names the exact command that publishes the earlier entry
+    68 passed, 1 failed
+    PROGRAM_EXIT=1
+
+**Blocks:** itself and `tests/claims/run_claim_retype_mutation_control.py`
+(exit 2), whose arm 0 is *"baseline -- the probe is green against the shipped
+tool"*.
+
+**OWNER: cc** — `docs/tool-owner-map.json` gives
+`owner: cc, basis: LAST_CLAIM, last_claim: 617a9c06`. The only file of the three
+with a clean owner record.
+
+**The refusal still FIRES; it has stopped naming its remedy.** The arms around
+it pass, including *"a failed push, then a re-run -- one entry, not two"* and
+*"the rewind really unpublished it -- otherwise arm 10 is vacuous"*. **A refusal
+that does not name its remedy is the shape that gets overridden rather than
+obeyed**, which is why the arm exists.
+
+---
+
+## SEQ 15-B — ITEM 7: THE EXACT `[NO_OBJECT_IN_CLONE]` COMMAND FOR HANK
+
+**Record:** hank `2026-09-27T03:42:29Z`, **252h** overdue, resources
+`alf_staff`, `sen_visits`, recorded sha `54e4835ac96ea02dec8301b9a3252d228b186b0f`.
+
+**Why it cannot be done from here**, in the gate's own words:
+
+    REFUSED [NO_OBJECT_IN_CLONE]
+      the recorded sha is not in this clone's object store, so its subject
+      cannot be read. A dangling sha is reseatable by subject only from the
+      clone whose rebase orphaned it -- run this there, or fetch the object in
+      first; and no commit anywhere contains that file set either.
+      FILES SOUGHT: ['api/_lib/compliance-rules-staff-join.test.js',
+      'api/_resources/sairnsenior.js', 'api/sd-data-sen-evv-clock.test.js',
+      'api/sd-data.js']
+
+### THE COMMAND HANK RUNS, from `C:\Users\marsh\Documents\SAIRN-hank`
+
+    cd C:\Users\marsh\Documents\SAIRN-hank
+    git fetch origin
+    git cat-file -e 54e4835ac96ea02dec8301b9a3252d228b186b0f^{commit} && echo OBJECT PRESENT
+    python tools/tier_a_review_gate.py --reseat-shas          # DRY RUN first
+    python tools/tier_a_review_gate.py --reseat-shas --write  # only if the dry run names it
+
+**The dry run first is not optional.** If hank's clone also lacks the object the
+dry run will say `[NO_OBJECT_IN_CLONE]` again, and `--write` would then do
+nothing while looking like it worked.
+
+### THE CHECK THAT PROVES IT LANDED — three, and the third is the one that matters
+
+    # 1. the sha is now reachable, by REACHABILITY and not by existence
+    git merge-base --is-ancestor <new-sha> origin/main && echo ON-REF
+
+    # 2. the gate no longer refuses the record
+    python tools/tier_a_review_gate.py --list | grep -A3 "2026-09-27T03:42:29Z"
+    #    must NOT contain COULD-NOT-TELL or NO_OBJECT_IN_CLONE
+
+    # 3. THE SUBJECT IS READABLE, which is the whole point
+    git show --stat <new-sha> -- api/_lib/compliance-rules-staff-join.test.js \
+        api/_resources/sairnsenior.js api/sd-data-sen-evv-clock.test.js api/sd-data.js
+    #    must list at least one of those four files
+
+**Check 3 is the one that matters** and the first two can pass without it. A
+reseat that lands on a reachable commit whose diff touches **none** of the files
+the record names is the `[SHA_WRONG_WHEN_WRITTEN]` failure the gate refuses
+elsewhere — *"a wrong sha is worse than a dangling one, because a dangling one
+is visibly broken."*
+
+**If the object is absent in hank's clone too**, the record cannot be reseated
+at all and should be **retired unreviewed**, naming `alf_staff` and `sen_visits`
+so they can be re-registered. Retiring it is hank's call, not mine.
+
+---
+
+## SEQ 15-C — ITEM 6: the orphan population, and how much of it is mine to touch
+
+**Re-derived at HEAD: 84 orphans, not the 79 the brief carries** — the corpus
+grew by 4 documents and the tree moved.
+
+| | |
+|---|---|
+| orphaned citations, whole corpus | **84** |
+| **in MY documents** | **28** |
+| in OTHER sessions' documents — **not mine to edit** | **56** |
+
+**The 56 by file, with the owner implied by the filename:**
+
+    35  docs/2026-09-29-stale-branch-tips.md      <- a document ABOUT stale tips
+     7  docs/2026-10-05-register-sha-pinning-proposal.md
+     5  docs/defect-density-register.json
+     3  docs/scrutiny-flags.json                  <- cc
+     1  each: purge-evidence/…-cc.json, purge-evidence/…-hank.json,
+          SAIRN-ACTIVE-WORK-cc.md, 2026-10-05-dependabot-high-triage.md,
+          2026-10-07-cody-harness-exit-mismatches.md,
+          2026-10-06-cody-queue18-items-10-12-13.md
+
+**Of my 28, only 17 are candidates**; the other 11 are deliberate — 3 are the
+dead SHAs the convention-19 postmortem is *about*, and 8 are Tier A ledger SHAs
+I quote as data.
+
+**5 re-seated this batch**, each matched by commit subject and verified `ON-REF`
+**before** the swap, `git status` checked per file, `node --check` clean and
+`known-red-suites.json` still valid JSON afterwards:
+
+    bcc743db -> 2e8a59aa    4d4b0da5 -> 51088830    e787a6d9 -> 8ff247a2
+    d90463bd -> 45b421f1    161cb714 -> 5090df1e
+
+**Deliberately NOT re-seated: the 6 full SHAs in
+`docs/purge-evidence/2026-09-30-SAIRN-fourth.json`.** A purge-evidence record is
+append-only evidence of what was purged; rewriting it would falsify the evidence
+rather than fix a citation. Named here instead.

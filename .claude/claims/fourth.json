@@ -3228,8 +3228,8 @@
       "task": "batch15 at HEAD dc9f1629, premises re-derived. (1) Tier A: discharge the most overdue eligible records. (2) memory-checkpoint tool/habit: ANSWERED NO, nothing built. (3) finish the ablation work, remaining 4 of 8, report X of 8. (4) 83-item sweep from 40, against the REAL population re-extracted from the log. (5) the three single arms blocking six register rows -- reproducing artifact and owning agent per arm, in MY handoff only; I FIX NOTHING in another agent's files and chat routes. (6) orphan re-seat from 69 of 79, each alone with git status before and after and node --check clean. (7) the exact [NO_OBJECT_IN_CLONE] command for hank plus the check that proves it landed -- handoff only. (8) extend MY OWN existing sweep (scratchpad sweep_full.py) to run as the last step and flag any citation in the report that is not on origin/main, with a regression fixture that fails before the change. NOTE: tools/doc_sha_reseat.py is CC'S under a live 2.5h claim, so the durable home stays ROUTED and I harden my own tool instead. (9) sweep every probe that locates itself by __file__ and so breaks from a copy, X of Y. (10) settings-merge re-checked once, not attempted. (11) list cc's three readable conventions and say whether any conflicts with the 22 I hold; chat decides adoption. (12) one real method improvement with a before/after. (13) handoff. sairn-guardian-v2 before any push. NOT TOUCHED: tools/doc_sha_reseat.py (cc's) and .claude/settings.json. I close only findings I originated and reclassify none. FILES: docs/tier-a-reviews.json docs/known-red-suites.json tools/known_red_check.py docs/METHODOLOGY.md docs/2026-09-13-cross-domain-disciplines.md tests/run_truthy_sum_probe.py tests/run_subprocess_decode_probe.py tests/run_completeness_probe.py docs/2026-10-07-fourth-routed.md docs/2026-10-07-fourth-coverage-ledger.md docs/handoff-fourth-2026-10-07c.md docs/handoff-fourth-2026-10-07.md SAIRN-ACTIVE-WORK-fourth.md",
       "claimed_at": "2026-10-07T16:01:18Z",
       "claimed_at_epoch": 1791388878.6379626,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-07T16:30:56Z",
       "files": [
         "SAIRN-ACTIVE-WORK-fourth.md",
         "docs/2026-09-13-cross-domain-disciplines.md",
@@ -3244,6 +3244,28 @@
         "tests/run_subprocess_decode_probe.py",
         "tests/run_truthy_sum_probe.py",
         "tools/known_red_check.py"
+      ]
+    },
+    {
+      "id": "fourth-1791390962",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "batch16 at HEAD f49e33bc, premises re-derived. PER-ITEM CHECKPOINT: a state line appended to the handoff after EACH item before the next begins; memory directory untouched; NO tool built. (2) finish the ablation 7->8 by EMPTYING tools/truthy_sum_baseline.json rather than an exit-0 override, judged by the probe's own exit code, restored and proved restored. (3) census: next 3 slices from 40 of 83, or state why it cannot move. (4) TAKE tests/phi_cache_scoped_to_user.js arm 5a -- SAIRNsenior PHI cache purge, basis NONE, no owner, blocks three register rows -- drive it and fix it if the fix lives in that file, otherwise a failing repro naming the exact file and change. (5) the sairnfreedom_server_backup.js owner correction (owner cody, claim c1e06f33, owner map says None) goes in MY handoff for chat to route -- docs/tool-owner-map.json is CC'S under a live 3.1h claim and I do not touch it. (6) finish re-seating my own 28 orphans, one handoff line each for the 56 in other sessions' files, and LEAVE docs/purge-evidence/2026-09-30-SAIRN-fourth.json untouched. (7) __file__ sweep: next 3 slices from 424 of 1214. (8) settings-merge re-checked ONCE and the blocker recorded with a timestamp -- .claude/settings.json is CODY'S under a live 0.5h claim and is not attempted. (9) land cc's three as conventions 23-25, CREDITED TO CC. (10) rule log of my two wrong measurements with before/after. (11) report gate plus SHA sweep on the final report as the last step. (12) methodology entry, claiming and releasing the shared file around the write. (13) handoff before the report. NOT TOUCHED: .claude/settings.json (cody), docs/tool-owner-map.json and tools/doc_sha_reseat.py (cc). I close only findings I originated. FILES: tests/phi_cache_scoped_to_user.js tools/truthy_sum_baseline.json docs/known-red-suites.json docs/METHODOLOGY.md docs/2026-09-13-cross-domain-disciplines.md docs/2026-10-07-fourth-routed.md docs/2026-10-07-fourth-coverage-ledger.md docs/handoff-fourth-2026-10-07c.md docs/handoff-fourth-2026-10-07.md SAIRN-ACTIVE-WORK-fourth.md",
+      "claimed_at": "2026-10-07T16:36:02Z",
+      "claimed_at_epoch": 1791390962.2465222,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-fourth.md",
+        "docs/2026-09-13-cross-domain-disciplines.md",
+        "docs/2026-10-07-fourth-coverage-ledger.md",
+        "docs/2026-10-07-fourth-routed.md",
+        "docs/METHODOLOGY.md",
+        "docs/handoff-fourth-2026-10-07.md",
+        "docs/handoff-fourth-2026-10-07c.md",
+        "docs/known-red-suites.json",
+        "tests/phi_cache_scoped_to_user.js",
+        "tools/truthy_sum_baseline.json"
       ]
     }
   ],

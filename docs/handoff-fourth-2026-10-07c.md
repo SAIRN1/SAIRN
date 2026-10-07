@@ -259,7 +259,7 @@ general: a bounded view presented as the whole, with no tool involved.
 
 ## FOUR CITATIONS OF MINE ORPHANED AGAIN, AND THE PATTERN IS NOW FIVE BATCHES OLD
 
-`4d4b0da5`, `e787a6d9`, `d90463bd` and `161cb714` — four of this batch's own
+`51088830`, `8ff247a2`, `45b421f1` and `5090df1e` — four of this batch's own
 commits — were orphaned by the two rebases needed to land the final push, and
 are re-seated above by **commit subject**, each replacement verified `ON-REF`
 with `merge-base --is-ancestor` **before** the swap.
@@ -326,3 +326,144 @@ In item order: `sweep_full.py` + `sw14_1.out`–`sw14_3.out` (item 1);
 (item 3); `i4_abl.out` / `i4_abl2.out` / `i4_abl3.out` (item 4 — **two attempts
 that could not run and the one that did**); `census14.out` (item 5);
 `ck9.out` (item 9's claims-check); `final14.py` (this re-seat).
+
+---
+
+## ITEM 12 — THE METHOD IMPROVEMENT: JUDGE AN ABLATION BY THE PROBE'S EXIT CODE, NEVER BY ITS PRINTED TEXT
+
+**Earned three times in one batch, on my own harness.**
+
+### BEFORE
+
+My ablation harness decided whether an arm responded by **finding the arm's line
+in stdout and reading it**:
+
+    def armline(out):
+        for l in out.split(NL):
+            if armtext[:40] in l:
+                return l.strip()
+        return '<arm not printed>'
+    moved = armline(base.stdout) != armline(after.stdout)
+
+Two failures came out of that, in one sitting:
+
+1. **It ablated into an already-red state.** Three of four arms were already
+   failing, so "still failing" was scored as *no response* when it was *no
+   information*. An ablation asks **can this fail**; an already-failing arm
+   answers trivially.
+2. **It read a field that cannot exist on success.** When the fix worked, the
+   probe **passed** — and a passing probe prints no `FAIL` line, so
+   `<arm not printed>` was scored as *no response*. Two arms that went
+   **exit 1 → 0** were reported as NOT-FLIPPED.
+
+### AFTER
+
+    lever  = (subject_run.returncode == 0)      # did the lever even engage?
+    moved  = (base.returncode != after.returncode)
+    verdict = ('ABLATED'       if lever and moved and restored
+               else 'COULD-NOT-RUN -- the lever never engaged' if not lever
+               else 'NOT-RESPONSIVE')
+
+**Three changes, each paid for:**
+
+* **The verdict is the probe's own exit code.** The platform already requires
+  this of every green claim; I was not applying it to my own harness.
+* **A separate `lever` check asks whether the ablation engaged at all**, so
+  "the override was unreachable" reports as **COULD-NOT-RUN** instead of
+  masquerading as NOT-RESPONSIVE. That is what the `run_truthy_sum_probe` result
+  needed, and it is a third state where I had two.
+* **The direction is chosen from the arm's current colour.** A green arm is
+  ablated by breaking the subject; a **red** arm is ablated by *satisfying* the
+  condition and confirming it goes green. Same question, opposite lever.
+
+**The measurable before/after:** the same three suites scored **0 of 3**
+responsive under the old predicate and **2 of 3 ABLATED plus 1 correctly
+reported COULD-NOT-RUN** under the new one — with the subjects byte-identical
+and `git status` unchanged in both runs. **The arms never changed. Only my
+reading of them did**, which is the whole point: a harness that misreads its own
+result produces exactly the confident wrong number this platform keeps paying
+for.
+
+Folded into convention 20 as the implementation detail it was missing.
+
+---
+
+# FINAL STATE — batch 15 closed, 2026-10-07
+
+**Written at a point where nothing is half-finished, as item 13 requires.**
+
+| | |
+|---|---|
+| branch | `main` |
+| HEAD | **`124ef545`** |
+| pushed | **yes** — `331da1f4..124ef545`, then this commit. `ahead 0 / behind 0` |
+| working tree | clean except the pre-existing untracked `sql/restore_demo_pins_2026-09-29.sql` |
+| **`git config core.bare`** | **empty — unset** |
+| guardian v2 | run pre-push, **scoped honestly**: zero `.html` and zero `.js` in the diff, so checks 1–31 and 0b/0c/0d are **N/A and not claimed as passed**. What ran: both registers valid JSON (79 / 238 entries), `api/sd-data.js` PARSES, and the diff SHAPE — 5 files, 329 insertions, 2 deletions, all docs, nothing swept in |
+| long-running jobs | **none.** No whole-tree run, no `--pinned` run |
+| probes | `git status` before and after every probe and every ablation, unchanged throughout |
+| claim `fourth` | **RELEASED** |
+
+## FINAL FIGURES, re-derived at this HEAD
+
+| | |
+|---|---|
+| Tier A discharged this batch | **3** (190h, 55h, 51h), one by recorded takeover |
+| Tier A eligible to me now | **1** — hank `2026-09-27T03:42:29Z`, `[NO_OBJECT_IN_CLONE]`, the item-7 command |
+| register rows | 79 · empty `why` **10** |
+| the 83, individually verified | **40 of 83** (unchanged — stated, not padded) |
+| ablation | **7 of 8** |
+| orphans, whole corpus | **84** · 28 mine · 56 other sessions' |
+| `__file__` self-locating scripts | **424 of 1214** |
+| conventions I hold | **22** |
+
+## WHAT IS OPEN, AND WHY
+
+| open | why |
+|---|---|
+| **`phi_cache_scoped_to_user.js` arm 5a has NO OWNER** | owner map `None`/`basis NONE`, no claim in history. It blocks 3 rows and its subject is a **PHI cache purge**. **Chat has to assign it before anything else on this list** |
+| **the item-7 reseat** | can only run from hank's clone. Command, dry-run-first and three checks are in SEQ 15-B |
+| **cody's weak-basis record** | `2026-09-28T03:34:57Z` needs `--write-weak-basis`, a containment judgement for cody |
+| **`run_truthy_sum_probe` ablation** | its other 13 arms drive the same subject, so an exit-0 override breaks them too. Empty the subject's **baseline file** instead |
+| **10 empty-`why` register rows** | three single arms would clear six of them |
+| **43 of the 83 unverified** | unmeasured individually, not presumed red |
+| **56 orphans in other sessions' files** | not mine to edit; owners implied by filename in SEQ 15-C |
+| **424 scripts that cannot run from a copy** | a method constraint, not 424 defects: no copy-based ablation or sandbox works platform-wide |
+| **the settings merge** | **BLOCKED.** cody's claim is released but the merge has not landed — only `PreCompact`, no commit since 2026-10-05 |
+| **cc's three conventions** | readable and non-conflicting; **adoption is chat's call**, not self-promoted |
+| **no memory-checkpoint habit** | answered NO, nothing built. A decision for chat |
+
+## EXACT NEXT STEP, PER OPEN ITEM
+
+1. **Assign an owner to `phi_cache_scoped_to_user.js`.** Everything else on
+   this list is smaller than the thing nobody owns.
+2. **hank runs the item-7 command** from `SAIRN-hank`, dry run first, then
+   check 3 — the reseated diff must touch one of the four named files.
+3. **`run_truthy_sum_probe`**: ablate by emptying
+   `tools/truthy_sum_baseline.json`, not by overriding the exit.
+4. **Register, 10 left**: one suite at a time, exit code from its own output,
+   `git status` before and after.
+5. **The census**: 43 to go; re-extract the 83 from the log every time, never
+   quote it.
+6. **Run `--report-gate` as the last step before any report** — it is wired and
+   its fixture is proven to fail before the change.
+7. **The settings merge**: re-check when cody's lands.
+
+## CLAIMS AT CLOSE
+
+**`fourth` is RELEASED.** `cc` was the only other active claim throughout
+(2.5h), and it declares **`tools/doc_sha_reseat.py`** — which is why item 8
+hardened *my* sweep and the durable home for those rules stays **routed to cc**
+rather than taken. **`.claude/settings.json` was never touched.**
+
+## THIS SESSION'S TRANSCRIPT
+
+    C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\4975e2e9-8002-4f73-9d9d-240c42c3b643\scratchpad
+
+In item order: `ta15.out`, `recs15.txt`, `d15a/b/c.out` (item 1 — the three
+discharges with captured exit codes); `cld_g1.out` (hank's tool run **as
+intended**, after my bare invocation got exit 2); `abl4.out`, `abl4b.out`,
+`abl4c.out` (item 3 — **all three attempts, including the two whose predicate
+was wrong**); `census15.out` (item 4); `item9.out` (item 9 — 424 of 1214);
+`reseat15.out` (item 6); `gate_before.out` / `gate_after_1.out` (item 8 — the
+fixture failing before the change and passing after).
