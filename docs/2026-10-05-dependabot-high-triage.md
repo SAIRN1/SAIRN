@@ -604,3 +604,110 @@ git merge-base --is-ancestor origin/cody/firebase-modular-port origin/main
 
 **The blocker is no longer a rewrite. It is one clean full-suite pass**, which is
 item 4 of this batch and is running in a throwaway clone at `c1cd7c41`.
+
+---
+
+# ADDENDUM 5 — 2026-10-07 (Cody): THE MODERATE IS GONE. THE ONE REMAINING CHAIN **WAITS**, AND THE WAIT IS MEASURED.
+
+**Re-measured at HEAD `c568a049`, 2026-10-07, after the busboy lockfile fix
+landed. Nothing below is carried over from addendum 4.**
+
+```
+npm audit --json            EXIT 1
+  {info: 0, low: 0, moderate: 0, high: 2, critical: 0, total: 2}
+
+  firebase-admin   high   range 5.0.0 - 13.9.0   fix firebase-admin@14.5.0  major TRUE
+  node-forge       high   range *                fix firebase-admin@14.5.0  major TRUE
+```
+
+**moderate 1 → 0.** `@fastify/busboy` is resolved; see addendum 4 and the
+applied lockfile change. **Everything that remains is the single `node-forge`
+advisory, counted twice because npm emits one row per affected package in the
+chain.**
+
+## THE MEASURED BASIS, SAME METHOD AS THE FIREBASE DECISION
+
+### 1. Where it comes from — one declarer, nothing of ours
+
+```
+installed node-forge : 1.4.0        locked: 1.4.0
+declarers            : ['node_modules/firebase-admin', '^1.3.1']   -- the only one
+total locked         : 195 packages
+grep -rn node-forge --include=*.js api/ tests/ tools/ scripts/
+  -> 2 hits, BOTH COMMENTS in api/_lib/firebase-mint.test.js. No require anywhere.
+```
+
+### 2. Reachability — EXACTLY ONE call site in all of firebase-admin, and it is a PARSER
+
+```
+grep -rn "forge\.[a-zA-Z]" <firebase-admin>/lib        ->  1 line, total count 1
+
+lib/app/credential-internal.js:150
+    const forge = require('node-forge');
+    try {
+        forge.pki.privateKeyFromPem(this.privateKey);
+    }
+    catch (error) {
+        throw new FirebaseAppError(INVALID_CREDENTIAL, 'Failed to parse private key: ' + error);
+    }
+```
+
+**The return value is discarded.** The call exists only so a malformed key
+fails early with a readable error — re-verified by reading the enclosing block,
+not quoted from addendum 1.
+
+**THE ADVISORY IS ABOUT SIGNATURE VERIFICATION** — GHSA-86w9-cpqp-85rv,
+CWE-347, *"RSA PKCS#1 v1.5 signature verification accepts extra nested
+DigestAlgorithm elements"*, which is `rsa.js`'s `verify`. **We never call it.**
+The one primitive we do reach is `pki.privateKeyFromPem`, applied to **our own
+service-account private key out of our own environment variable** — never
+attacker-supplied, and the parse result is thrown away.
+
+### 3. There is NO patched node-forge. The major bump is the only fix that exists.
+
+```
+npm view node-forge versions
+  latest published : 1.4.0        1.3.x/1.4.x: 1.3.0 1.3.1 1.3.2 1.3.3 1.4.0
+```
+
+**1.4.0 is both what we have and the newest there is**, which is why the
+advisory range is `*` and why `fixAvailable` points at a two-major
+`firebase-admin` bump rather than at a patch. **There is no busboy-style
+one-line escape here, and that was checked rather than assumed.**
+
+## DECISION: **WAIT.** ACCEPTED, FOUR TRIGGERS UNCHANGED, AND TRIGGER 1 HAS MOVED.
+
+**Not "wait" as a shrug — wait with a measured basis and an existing trigger:**
+
+| why wait | measured |
+|---|---|
+| the vulnerable primitive is not on our path | **1 of 1** `forge.*` call sites is a parser on our own key, return value discarded |
+| no cheaper fix exists | node-forge 1.4.0 is the latest published; no patch |
+| the only fix is prepared and gated | the modular port is on `cody/firebase-modular-port`, acceptance arm green under 12.7.0 **and** 14.5.0, pre-port red under 14.5.0 |
+| upgrading now would repeat a known mistake | addendum 2 recommended 14.5.0 on *"0 of 248 suites changed verdict"* and addendum 3 withdrew it when one real arm went red |
+
+**WHAT CHANGED SINCE ADDENDUM 3, AND IT IS ONLY THIS:** trigger 1 was *"port
+`api/_lib/firebase-admin.js` to the modular API — that is what unblocks
+14.5.0"*. **The port now exists.** So trigger 1 is no longer a rewrite waiting
+to be done; it is **a suite run waiting to finish**, and the andon is held on
+that single condition:
+
+```
+git merge-base --is-ancestor origin/cody/firebase-modular-port origin/main
+  -> NOT an ancestor.  ANDON HELD.
+```
+
+**A TRIGGER-BASED UPGRADE NOW WOULD BE WRONG**, and the reason is not caution —
+it is that the condition the trigger names has not been met. A clean whole-suite
+pass against the ported tree is the condition, it is running, and its status
+file is named in `docs/handoff-cody-2026-10-07.md`.
+
+## WHAT THIS ADDENDUM DOES NOT CLAIM
+
+- **That the parse path is harmless in general.** A malformed private key still
+  reaches a parser from a vulnerable version; the claim is only that the
+  *advisory's* primitive — verification — is not reached, and that the input is
+  ours.
+- **That 1 of 1 call sites will stay 1.** That is trigger 2 and it is unchanged:
+  `grep -rn "forge[.][a-zA-Z]" <firebase-admin>/lib` must keep returning
+  exactly one line.

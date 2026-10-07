@@ -5177,7 +5177,7 @@
     {
       "author_session": "hank",
       "opened_at": "2026-10-05T09:03:14Z",
-      "opened_at_sha": "0e7f99af671ca74df4e713b67f3e82f13519b286",
+      "opened_at_sha": "9e3caeefd07f50d1433c1a46a2458cca280d6e90",
       "resources": [
         "grd_irr_zones",
         "grd_rounds"
@@ -5193,7 +5193,10 @@
       "owner_assigned_at": "2026-10-05T09:03:14Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "opened_at_sha_was": "0e7f99af671ca74df4e713b67f3e82f13519b286",
+      "opened_at_sha_reseated": true,
+      "opened_at_sha_reseat_basis": "EXACT FILE SET"
     },
     {
       "author_session": "cody",
@@ -5218,7 +5221,7 @@
     {
       "author_session": "fourth",
       "opened_at": "2026-10-05T09:50:00Z",
-      "opened_at_sha": "773fc2189cb044cc5d74d938171edf465045bbf8",
+      "opened_at_sha": "1f104fd1bffbe032e9413358c2965f6886e69020",
       "resources": [
         "invoices"
       ],
@@ -5233,7 +5236,10 @@
       "owner_assigned_at": "2026-10-05T09:50:00Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "opened_at_sha_was": "773fc2189cb044cc5d74d938171edf465045bbf8",
+      "opened_at_sha_reseated": true,
+      "opened_at_sha_reseat_basis": "SUBJECT TWIN"
     },
     {
       "author_session": "hank",
@@ -5259,7 +5265,7 @@
     {
       "author_session": "cody",
       "opened_at": "2026-10-05T13:23:46Z",
-      "opened_at_sha": "a4610fa386305858cdcab2321ab81137b36e1cf7",
+      "opened_at_sha": "5e33157ee606eb21b50be4b613c1e114ed866582",
       "resources": [
         "invoices",
         "scp_quotes",
@@ -5278,12 +5284,15 @@
       "owner_assigned_at": "2026-10-05T13:23:46Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "opened_at_sha_was": "a4610fa386305858cdcab2321ab81137b36e1cf7",
+      "opened_at_sha_reseated": true,
+      "opened_at_sha_reseat_basis": "EXACT FILE SET"
     },
     {
       "author_session": "fourth",
       "opened_at": "2026-10-05T15:02:28Z",
-      "opened_at_sha": "13e40c9d79b7ac7b7a11f52d982899a9fe6b4458",
+      "opened_at_sha": "9cc58a00fd0698b4e49f657b0027c9d8fe833427",
       "resources": [
         "quotes"
       ],
@@ -5298,7 +5307,10 @@
       "owner_assigned_at": "2026-10-05T15:02:28Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "opened_at_sha_was": "13e40c9d79b7ac7b7a11f52d982899a9fe6b4458",
+      "opened_at_sha_reseated": true,
+      "opened_at_sha_reseat_basis": "SUBJECT TWIN"
     },
     {
       "author_session": "cody",
@@ -5344,7 +5356,7 @@
     {
       "author_session": "fourth",
       "opened_at": "2026-10-05T21:25:19Z",
-      "opened_at_sha": "a9e35feef967b5c7440cd4dc13bd281f78b6ca0f",
+      "opened_at_sha": "3533324a625dcd1f4b7afb0e33f1b16faff31ffb",
       "resources": [
         "alf_activities",
         "alf_billing",
@@ -5604,7 +5616,10 @@
       "owner_assigned_at": "2026-10-05T21:25:19Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "opened_at_sha_was": "a9e35feef967b5c7440cd4dc13bd281f78b6ca0f",
+      "opened_at_sha_reseated": true,
+      "opened_at_sha_reseat_basis": "SUBJECT TWIN"
     },
     {
       "author_session": "hank",

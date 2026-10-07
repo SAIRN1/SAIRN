@@ -573,3 +573,349 @@ are outside the repo and neither is a registered worktree.**
 
 `python tools/sairn_claim.py release Tooling` — result recorded in the final
 report.
+
+---
+
+# BATCH 22 CHECKPOINT LOG
+
+- **item 1 — DONE — `~/.claude/settings.json`, no commit (outside the repo).**
+  `Edit` and `Write` REMOVED from `permissions.ask` so `defaultMode:
+  acceptEdits` governs them. **Removal, not a move to `allow`** — a rule in
+  `allow` overrides a mode in the other direction and would keep auto-approving
+  if the mode were later set back to `default`; "follow the default" means
+  matched by **no** rule. The docs line that decides it, verbatim: *"An ask rule
+  like `Bash(git clean *)` still prompts you … **even in auto mode**"* — an ask
+  rule outranks a MODE, which is why acceptEdits was inert.
+  **Counts, same diff method, same 12:44 baseline:** allow **11 → 42**, deny
+  **3 → 25**, ask **6 → 4**; `defaultMode` absent → `acceptEdits`. This edit
+  alone: ask 6 → 4, two lines removed, nothing else touched. Grammar re-checked:
+  **0 problems**, `defaultMode` a documented value, `Edit`/`Write` in neither
+  list. **A SEPARATE FINDING: the top-level `model` key disappeared between
+  12:44 and 14:30 and NOT by any edit of mine** (`LOST by THIS edit: []`) — the
+  app owns that setting, so it was not restored. Backups:
+  `~/.claude/settings.json.bak-20261007T143044Z`,
+  `<SCRATCH>/b22/settings.json.PRE-ITEM1-20261007T143044Z`.
+  **NEXT STEP:** none — but enforcement still begins at the next session start,
+  so Michael should confirm the first edit of a fresh session is not prompted.
+- **item 2 — DONE — commit pending.** Claims-checked fresh first: **cody is the
+  only session declaring `package-lock.json`**; `package.json` is declared by
+  nobody and is **untouched** (`diff` → identical). Applied
+  `npm audit fix --package-lock-only --only=prod`; **three lines changed**, all
+  inside the one `@fastify/busboy` entry — `version`, `resolved`, `integrity`
+  (3.2.1 → 3.2.2). `npm audit`: **moderate 1 → 0, total 3 → 2**; the two highs
+  remain, as expected. `api/_lib/firebase-mint.test.js` still **EXIT 0**, 16/16.
+  **STATED LIMIT: `node_modules` lives OUTSIDE this clone, so the INSTALLED
+  busboy is still 3.2.1 while the LOCK now says 3.2.2.** The fix lands for the
+  deploy and for `npm audit`; this clone's installed tree is unchanged until
+  someone runs `npm install`. **NEXT STEP:** nothing required — the deploy
+  installs from the lock.
+- **item 3 — DONE — commit pending.** `docs/2026-10-07-cody-harness-exit-mismatches.md`.
+  **MY OWN FIGURE WAS WRONG AND IS CORRECTED: six program-level mismatches, not
+  five**, across **three** notifications of the four that fired; the fourth
+  agreed (`meta145` real EXIT 0) and is listed so the six are not a selected
+  set. Each cited with command, claimed `exit code 0`, real captured code,
+  status-file line and recording commit (`166fe4ef`, `b637e2d4`, `c1cd7c41`).
+  **Case 6's status file no longer exists** — a relaunch reused the same path and
+  `capture_exit.py` replaces rather than appends; cited from the committed
+  handoff instead, and the usage rule (**one status path per run**) is the only
+  new thing. **Two findings routed:** (A) `defect_register.py --reseat` rewrites
+  the whole ledger — **24,724/24,724 to change six fields**, caused by
+  `indent=2` + `ensure_ascii=True` against a stored `indent=1`; after stripping,
+  only 10 lines differ. Same shape as the 5681-line incident, on a file whose own
+  merge policy is 3-way-from-ancestor. Reverted; **my two records corrected by
+  raw-text substitution: 2 insertions, 2 deletions, 470 records intact,
+  `--check` EXIT 0.** (B) four more orphaned citations belong to other sessions
+  and were **not** taken. **NEXT STEP:** cc to decide the `--reseat` serialisation
+  fix; the four orphans to their originators (fourth is already sweeping).
+- **item 4 — DONE — the premise is overturned: THE ROUTING WAS RECEIVED.**
+  Confirmed by READING the intake rule, not guessing. `docs/METHODOLOGY.md`
+  states it itself: *"A convention goes in
+  `docs/2026-09-13-cross-domain-disciplines.md`, as a numbered section … Nowhere
+  else"*, *"a dated inventory may STATE a lesson and route it"*, and
+  *"this file records what is ROUTED HERE AND NOT YET PROMOTED"* — so the intake
+  queue is the table in METHODOLOGY.md and the home is the disciplines file.
+  **Both are DECLARED by fourth in a claim 0.5h old (fresh list), so neither is
+  writable by me** — and that is precisely why a third inlining would have been
+  the wrong move. **It was not needed:** commit `4c574225`, on origin/main,
+  promoted my rule as **convention 21** *verbatim*; the disciplines file now has
+  **21** `## <n>.` headings (counted, was 19 earlier today). fourth's own queue
+  row states the mechanism behind both earlier NOT RECEIVED verdicts:
+  *"the first routing into this file that arrived as **paste-ready text in a
+  readable document** rather than as a reference to a file not on `main`."*
+  **All four of my routed docs verified present on origin/main.** My §1 finding
+  was also received and **independently replicated by fourth 4 of 4**, and his
+  row says cody and cc close it — correct, I am the originating finder.
+  **NEXT STEP: none.** The transferable lesson is already recorded by fourth:
+  route paste-ready text in a document that is on `main`, never a reference.
+
+---
+
+# FULL HANDOFF — BATCH 22 (written after item 4, as instructed; refreshed at item 8)
+
+## A. CLAIMS HELD — one
+
+`cody / Tooling` — batch 22. **Declared FILES:** `.claude/settings.json`,
+`package-lock.json`, `tools/metamorphic_check.py`, `tools/capture_exit.py`,
+`docs/2026-10-05-dependabot-high-triage.md`, `docs/2026-10-07-cody-routed.md`,
+`docs/2026-10-07-cody-harness-exit-mismatches.md`,
+`docs/handoff-cody-2026-10-07.md`, `SAIRN-ACTIVE-WORK-cody.md`.
+
+**One file was written that is NOT in that list and it is declared here:**
+`docs/defect-density-register.json` — two of my own orphaned sha citations,
+**2 insertions / 2 deletions**. No live claim declares it; it was not in my
+originally declared set and the write is narrower than a reseat.
+
+**HELD BY OTHERS, re-derived from a FRESH claim list at `10521191`:**
+
+| file | holder | consequence |
+|---|---|---|
+| `docs/METHODOLOGY.md` | **fourth** (0.5h) | item 4 confirmed, not written |
+| `docs/2026-09-13-cross-domain-disciplines.md` | **fourth** (0.5h) | the convention was promoted BY fourth, not by me |
+| `tools/doc_sha_reseat.py`, `tools/report_only_checks.py`, `tools/sairn_push_gate_hook.py`, `docs/tool-owner-map.json` | **cc** | untouched |
+| `tools/defect_register.py` | **cc** by owner map (CONTESTED) | finding routed, tool untouched |
+
+**A STALE CLAIM LIST NEARLY COST A CONFLICT.** My first read of `--list` was
+captured before fourth re-claimed and showed **no fourth claim at all**; a fresh
+call showed fourth holding both methodology files. Every declared set in this
+batch was re-read live. **Release:**
+`python tools/sairn_claim.py release Tooling`
+
+## B. PUSHED STATE
+
+```
+origin/main at the time of writing : 10521191 + the commits below
+branch cody/firebase-modular-port  : 3de3cadd  -- NOT merged, ANDON HELD
+```
+
+| commit | item |
+|---|---|
+| `327bb513` | item 2 — the busboy lockfile fix, three lines |
+| `7786b054` | item 3 — the six mismatches, plus my two sha citations corrected |
+| *pending* | item 4's checkpoint and this handoff |
+
+Items **1** (settings.json) and **4** (confirmation only) produced no repo
+commit by design.
+
+## C. OPEN, WITH THE EXACT NEXT STEP
+
+### C.1 Item 5 — the suite is STILL RUNNING; the andon cannot be cleared yet
+
+```
+STATUS : <SCRATCH>/item4/suite.status   ->  RUNNING 80680, started 2026-10-07T13:13:23Z
+OUTPUT : <SCRATCH>/item4/suite.out      ->  471 lines
+SANDBOX: a throwaway CLONE at c1cd7c41, 0 worktree registrations
+```
+
+**NEXT STEP, in order:** `capture_exit.py --read` the status file; if `EXIT`,
+name every failing suite from `suite.out` with its first-run result, then re-run
+`git merge-tree --write-tree origin/main origin/cody/firebase-modular-port` and
+report its **captured** exit code. **Only a clean pass clears the andon.** Do
+not start a second whole-tree run — the lock is at
+`%TEMP%\sairn-suite-df228b25ddc49171.lock`.
+
+### C.2 Item 1's effect begins at the next session start
+
+`Edit`/`Write` are now matched by no rule, so `defaultMode: acceptEdits`
+governs. **NEXT STEP:** Michael confirms the first edit of a fresh session is
+not prompted. Backups:
+`~/.claude/settings.json.bak-20261007T143044Z`,
+`<SCRATCH>/b22/settings.json.PRE-ITEM1-20261007T143044Z`.
+
+### C.3 Routed and not mine to close
+
+- **cc** — `defect_register.py --reseat` rewrites the whole ledger
+  (**24,724/24,724** for six fields; `indent=2` + `ensure_ascii` against a
+  stored `indent=1`). Reproducing command in
+  `docs/2026-10-07-cody-harness-exit-mismatches.md` §A.
+- **four other sessions** — four orphaned register citations, with the correct
+  mapping printed, not applied.
+- **cc** — `tools/eaten_substitution_check.py`: a fresh corpus (commits
+  3,000–6,000) is owed for the mid-line precision figure; 14 of 19 was fitted.
+- **unowned** — `tools/deploy_verify_notify.py` exits **0** on an unknown flag.
+- **chat** — the 14 unowned `tools/*.py`, and whether an `# OWNER:` line becomes
+  a condition of landing a tool.
+
+### C.4 A separate, non-mine change to the settings file
+
+The top-level `model` key disappeared between 12:44 and 14:30 and **not by any
+edit of mine** (`LOST by THIS edit: []`). The app owns that setting; it was not
+restored. Recorded so nobody reads it as collateral from the permissions work.
+
+## D. TRANSCRIPT
+
+```
+C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-cody\6f1d5069-5b6c-4a9d-8e38-78d125446571
+```
+
+`scratchpad/b22/` — settings backups, the grammar check, both diffs, the
+lockfile before/after, `audit_before.json` / `audit_after.json`, the reseat
+output, `old.json`. `scratchpad/item4/` — the running suite.
+`scratchpad/r21/` — the six Tier A reviews from batch 21.
+- **ESCALATION — THE PUSH IS BLOCKED BY THE REMOTE, NOT BY A GATE.** Three
+  attempts, all `! [remote rejected] main -> main (Internal Server Error)`.
+  **Not a gate refusal:** 0 lines matching blocked/denied/refus in the output,
+  2 matching `Internal Server Error`. `git ls-remote` EXIT **0** and the remote
+  tip `0cefb393` **equals** my local `origin/main`, so it is not a race either —
+  I read it as one on the second attempt and that reading was wrong. Rebase is a
+  no-op (`Current branch main is up to date`). **Per the 2-round cap this is
+  ESCALATED, and the three commits are intact locally:** `145d1547` (item 2),
+  `5ab99a27` (item 3), `c568a049` (item 4). **NEXT STEP:** retry
+  `git push origin main` later; nothing needs re-doing.
+- **item 6 — DONE — commit pending.** Re-measured: **moderate 0, high 2, total
+  2** — the busboy moderate is gone, so everything left is the single
+  `node-forge` advisory counted twice. **DECISION: WAIT**, accepted, four
+  triggers unchanged. Measured basis, all re-derived: **exactly 1 of 1**
+  `forge.*` call sites in firebase-admin is
+  `pki.privateKeyFromPem` at `lib/app/credential-internal.js:150` — **a parser,
+  return value discarded**, on our own key from our own env var, while the
+  advisory is about **verification** (`rsa.js`); node-forge **1.4.0 is both
+  installed and the newest published**, so no patch exists and the major bump is
+  the only fix; and that bump is prepared but gated. **What changed since
+  addendum 3: trigger 1 is no longer a rewrite, it is a suite run** — the port
+  exists, so the andon now hangs on one condition. Written as addendum 5 of
+  `docs/2026-10-05-dependabot-high-triage.md`.
+- **item 7 — DONE — commit pending.** **"No new rule, reinforces existing"** for
+  the mismatch itself: all six share the trailing-element cause
+  `capture_exit.py` was built for, and convention **15** held all six times. Six
+  in a day is a frequency measurement, not a new shape, and nothing is proposed
+  for the conventions file on its account. **One new line IS owed, and it is
+  about the evidence rather than the number:** *a status file is evidence, so one
+  status path per run; a path reused across a relaunch destroys the first run's
+  verdict.* Paid for by case 6, the only one of the six that cannot be cited
+  from a file. Written paste-ready in `docs/2026-10-07-cody-routed.md` §5 and
+  **ROUTED** — both convention files are declared by fourth.
+- **item 5 — PARTIAL — the suite has NOT finished, so the andon does NOT clear.**
+  Status read from the file, never a notification:
+  `capture_exit.py --read <SCRATCH>/item4/suite.status` → **exit 2, `RUNNING
+  80680`**, started 2026-10-07T13:13:23Z. **Progress confirmed, not assumed:**
+  child PIDs churned 25 → 27 with several replaced over 25s, and wrapper 80680
+  is alive. **466 suites reported, 0 FAIL so far** — a useful partial, not a
+  pass. **AND ONE OBSERVATION WORTH CARRYING: `suite.out` had not been written
+  for 35 minutes** (mtime 14:45:10Z, checked at 15:20:12Z) while children kept
+  turning over, so a single test file has been running ~35 minutes. The last
+  line is `ok py tests/run_hook_integrity_probe.py`; the next file
+  alphabetically is `tests/run_hover_audit_method_sabotage_probe.py`. **I did not
+  name the current child** — `wmic` returned no command lines and guessing it
+  would be a fabricated citation.
+  **The merge-tree check was re-run anyway, with captured codes:**
+  `git merge-tree --write-tree origin/main origin/cody/firebase-modular-port` →
+  **EXIT 0**, tree `87316631d227`; against local HEAD `e958eb50` → **EXIT 0**,
+  tree `984e042eddf7`; `git merge-base --is-ancestor <branch> origin/main` →
+  **EXIT 1**. **So the branch still applies cleanly and is still not merged.
+  ANDON HELD** — the blocker is the suite condition, not a conflict.
+  **NEXT STEP:** `capture_exit.py --read` the status file; on `EXIT`, name every
+  failing suite from `suite.out` with its first-run result, then re-run the two
+  merge-tree commands and report their captured codes. Only a clean pass clears it.
+
+---
+
+# ITEM 8 — FINAL, BATCH 22. CLAIM RELEASED BELOW.
+
+## CORRECTION TO MY OWN ESCALATION NOTE ABOVE
+
+The note said the push was *"blocked by the remote, not by a gate"* after three
+`Internal Server Error` rejections. **That was true of those three attempts and
+it was NOT the whole story.** The fourth attempt revealed a **register conflict**:
+another session had appended three records, and my two-line sha correction
+collided. `git ls-remote` had been EXIT 0 the whole time, so the server errors
+were transient — and the real obstacle arrived afterwards. **Both facts are kept
+rather than the tidier one.**
+
+## A. PUSHED STATE — ALL FIVE COMMITS LANDED
+
+```
+origin/main  91f918e9     verified ahead 0 / behind 0, tree clean
+branch       cody/firebase-modular-port -> 3de3cadd   NOT an ancestor. ANDON HELD.
+```
+
+| commit | item |
+|---|---|
+| `a1386313` | 2 — the busboy lockfile fix, three lines, `package.json` untouched |
+| `43c61abc` | 3 — six mismatches, not five |
+| `5a9b6bdb` | 4 — the routing was received, promoted as convention 21 |
+| `996b6592` | 6 + 7 — the WAIT decision, and one new methodology line |
+| `91f918e9` | 5 — the andon status with captured merge-tree codes |
+
+Items **1** (`~/.claude/settings.json`) produced no repo commit by design.
+
+## B. THE SHA CORRECTION WAS ABANDONED, AND THAT IS THE RIGHT OUTCOME
+
+`tools/sairn_rebase_resolve.py` **refused** my two-line fix: the ledger's
+identity is `["commit", "summary"]`, so changing `commit` is a **DELETE plus an
+INSERT** on an append-only file. **A sha reseat is unmergeable on this ledger by
+the ledger's own policy** — minimal or whole-file alike. So the 24,724-line diff
+is a symptom, not the disease.
+
+**`git diff origin/main..HEAD -- docs/defect-density-register.json` is EMPTY —
+I change that file not at all.** `defect_register.py --check` **EXIT 0** over the
+upstream 473 records. My two records still cite `538451398bf0` and
+`543ffb8f5d02`, both orphaned, and that is recorded rather than tolerated
+quietly. Full finding: `docs/2026-10-07-cody-routed.md` §6, for **cc**.
+
+## C. OPEN, WITH THE EXACT NEXT STEP
+
+### C.1 The suite — still running, 476 reported, **0 FAIL**
+
+```
+STATUS : <SCRATCH>/item4/suite.status  ->  exit 2, RUNNING 80680 (started 13:13:23Z)
+OUTPUT : <SCRATCH>/item4/suite.out     ->  476 suites reported, 0 FAIL
+```
+**NEXT STEP:** `capture_exit.py --read` it. On `EXIT`, name every failing suite
+with its first-run result, then re-run both `merge-tree` commands and
+`merge-base --is-ancestor`, reporting captured codes. **Only a clean pass clears
+the andon.** Do not start a second whole-tree run — lock at
+`%TEMP%\sairn-suite-df228b25ddc49171.lock`.
+**Carry forward:** `suite.out` went 35 minutes without a write while children
+churned, so one test file is very slow. Not diagnosed; not guessed at.
+
+### C.2 Permissions take effect at the next session start
+
+`Edit`/`Write` are matched by no rule, so `defaultMode: acceptEdits` governs.
+**NEXT STEP:** Michael confirms the first edit of a fresh session is not
+prompted. Backups `~/.claude/settings.json.bak-20261007T143044Z` and
+`<SCRATCH>/b22/settings.json.PRE-ITEM1-20261007T143044Z`.
+
+### C.3 Routed, not mine to close
+
+- **cc** — the reseat/identity-key problem (§6) **and** the whole-file
+  serialisation (§A of the mismatches doc). `.githooks/post-rewrite` calls
+  `--post-rewrite` automatically, so this fires on any rebase that moves a cited
+  commit.
+- **cc** — a fresh corpus is owed for the mid-line eaten-substitution precision
+  (14 of 19 was fitted to commits 1–3,000).
+- **four sessions** — four orphaned register citations, mapping printed, not
+  applied.
+- **unowned** — `tools/deploy_verify_notify.py` exits 0 on an unknown flag.
+- **fourth** — the clone-corruption writer is still unidentified.
+- **chat** — the 14 unowned `tools/*.py`; whether an `# OWNER:` line gates
+  landing a tool.
+
+### C.4 The advisory position
+
+**moderate 0, high 2 (one chain), total 2. DECISION: WAIT**, four triggers
+unchanged, basis in addendum 5. Trigger 1 is now a suite run, not a rewrite.
+
+### C.5 Not mine, recorded so it is not read as collateral
+
+The top-level `model` key left `~/.claude/settings.json` between 12:44 and 14:30
+and **not by any edit of mine**. The app owns that setting; not restored.
+
+## D. TRANSCRIPT
+
+```
+C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-cody\6f1d5069-5b6c-4a9d-8e38-78d125446571
+```
+
+`scratchpad/b22/` — settings backups and both diffs, the grammar check,
+`audit_before/after/i6.json`, the lockfile before/after, the reseat and resolver
+outputs, every `*.status` beside its `*.out`. `scratchpad/item4/` — the running
+suite. `scratchpad/r21/` — batch 21's six Tier A reviews.
+
+## E. THREE COMMITS FAILED BEFORE LANDING TODAY, ALL LOUDLY
+
+`git commit -m` with backticks → **EXIT 127**, nothing landed.
+`git commit -F /dev/stdin` → **EXIT 128**, nothing landed.
+A rebase conflict on the register → resolver **EXIT 1**, change abandoned.
+**Every one failed in a way that could not be mistaken for success**, which is
+the only reason none of them became a corrupted record. The control in all three
+cases is the same: a real message file, and a resolver that refuses.

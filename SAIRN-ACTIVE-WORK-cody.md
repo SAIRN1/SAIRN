@@ -6984,3 +6984,30 @@ Detail: `docs/2026-10-07-cody-batch21.md` is NOT written — the batch doc for
 this one is the handoff itself plus `docs/2026-10-07-cody-routed.md` and
 `docs/postmortem-cody-2026-10-07-bound-measurement.md`.
 Handoff: `docs/handoff-cody-2026-10-07.md`.
+
+---
+
+## 2026-10-07 — batch 22 (Cody)
+
+**Landed at `91f918e9`:** `Edit`/`Write` removed from `permissions.ask` so
+`defaultMode: acceptEdits` finally governs them (allow 11→42, deny 3→25, ask
+6→4, 0 grammar problems); the `@fastify/busboy` lockfile fix applied (three
+lines, `package.json` untouched, moderate 1→0); **six** harness exit-0
+mismatches cited with command/claimed/real/commit — **my own "five" was wrong
+and is corrected**; the advisory position re-measured to **WAIT** on a measured
+basis (1 of 1 `forge.*` call sites is a parser on our own key, and node-forge
+1.4.0 is the newest published, so no patch exists).
+
+**Item 4's premise was overturned:** the methodology routing **was** received —
+commit `4c574225` promoted it as **convention 21**, verbatim, and fourth's own
+queue row names the mechanism: paste-ready text in a document that is on `main`.
+
+**ABANDONED:** the two-line register sha correction.
+`tools/sairn_rebase_resolve.py` refused it because the ledger's identity key
+includes `commit`, so a reseat is a delete-plus-insert on an append-only file.
+**A sha reseat is unmergeable there by the ledger's own policy** — routed to cc,
+stronger than the 24,724-line diff finding it replaces.
+
+**ANDON HELD.** The suite is still running: 476 reported, **0 FAIL**.
+
+Handoff: `docs/handoff-cody-2026-10-07.md`.

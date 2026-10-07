@@ -258,3 +258,169 @@ baseline PASSES today"*), which is correct behaviour and stays.
 `tools/write_path_fault_scan.py` exposes `apps(argv)` and `scan(path)` rather
 than a per-app counter, so the comparison needs the ratchet's own code path — and
 re-implementing it is how a wrong denominator gets built.
+
+---
+
+## 6. THE FULL SHA SWEEP — and the width was already fixed; the CORPUS was not
+
+**Run at HEAD `94bad71e`, 2026-10-07. `PROGRAM_EXIT=0`, three runs, all three
+outputs byte-identical, `git status` unchanged before and after.**
+
+### The dispatch premise is one batch stale, and that is the first finding
+
+It says the matcher *"used a width of 8, which never matches a 12- or
+40-character sha"*. **True of the first version only.** Batch 13 item 4 already
+replaced it with a hex **run** (`[0-9a-fA-F]+`), length measured against the
+whole run, `MIN_LEN 8` / `MAX_LEN 40`. Three arms now prove the width case
+directly — a 40-char sha, a 12-char prefix, a 16-char prefix — each paired with
+an **anti-vacuity arm proving the ORIGINAL `\b[0-9a-f]{8}\b` could not have
+matched it.** Without those three, the width arms would pass whether or not the
+fix was present, which is convention 20.
+
+**What was still narrow was the corpus** — ten of my own documents. That is a
+convenience sample, which is convention 21 applied to documents instead of
+bytes. It is now **every tracked `*.md` and `*.json`** via `git ls-files`.
+
+### Corrected counts, and they move in opposite directions
+
+| | my 10 documents (batch 13) | the full corpus (now) |
+|---|---|---|
+| documents | 10 | **1,101** |
+| distinct sha-shaped tokens | 115 | **16,319** |
+| ON-REF | 82 | **2,433** |
+| **ORPHANED** | 12 | **79** |
+| ABSENT | 21 | **13,807** |
+| rejected as not-a-sha | 10 | **1,624** (1,480 all-digit, 54 date-shape, 90 over-40) |
+
+### AND THE WIDENING MADE ONE COLUMN USELESS, WHICH IS WORTH MORE THAN THE NUMBER
+
+**13,807 ABSENT is not a finding list. It is noise.** At repo scale the column
+is dominated by non-sha hex inside the JSON registers — content hashes, opaque
+ids, base64-ish fragments — and **ABSENT is the state that attracts every false
+positive**, because anything that is not a commit is trivially not in this
+clone. The rejection rules removed 1,624 of them and cannot remove the rest: an
+8-char mixed-hex token that is not a sha is indistinguishable from one that is.
+
+**So the sweep's useful output is the ORPHANED column**, which is the state that
+needs action, and **ABSENT only means something on a hand-picked corpus of prose
+that cites commits.** Quote the 79; do not quote the 13,807.
+
+### Where the 79 orphans live, and most of them are by design
+
+    35  docs/2026-09-29-stale-branch-tips.md     <- a document ABOUT stale tips
+    15  the purge-evidence documents
+     7  docs/register-sha-pinning-proposal.md
+     7  docs/2026-10-07-fourth-routed.md         <- the Tier A ledger SHAs, owed back
+     7  docs/defect-density-register.json
+     6  docs/tier-a-reviews.json
+     5  docs/SAIRN-PLATFORM-2026-10-06-fourth-batch10-handoff.md
+     3  docs/2026-10-06-fourth-andon-log.md
+     3  .claude/claims/fourth.json
+
+**A CORRECTION TO MY OWN BATCH-12 FIGURE.** I swept
+`docs/defect-density-register.json` in batch 12 and reported **0 ORPHANED / 16
+ABSENT**. It has **7 orphans**. That sweep used `[0-9a-f]{12,40}` and therefore
+**could not see an 8-character prefix** — the mirror of the defect the dispatch
+named, in a sweep I had already called clean. `docs/tier-a-reviews.json` reads 6
+rather than the 7 I reported, consistent with one having been discharged or
+re-seated since.
+
+### My own five batch-12 commits, by name
+
+    850a4849   ON-REF   docs/handoff-fourth-2026-10-07.md
+    905b1736   ON-REF   docs/handoff-fourth-2026-10-07.md
+    c74f5e6f   ON-REF   docs/handoff-fourth-2026-10-07.md
+    f2ee7be0   ON-REF   docs/2026-10-07-fourth-routed.md + 1
+    9e380383   ON-REF   4 documents
+
+**All five are ON-REF**, which is the batch-13 re-seat holding at this HEAD. It
+is the first batch in three in which none of my own cited commits is orphaned.
+
+### Why it is indexed, and why the index is cross-checked
+
+The naive form ran two git subprocesses per token and **did not finish in ten
+minutes** on 1,101 documents. Two batched calls replace it: one
+`git rev-list origin/main` (8,132 commits) for reachability, one
+`git cat-file --batch-check` for everything else.
+
+**An index is a shortcut, so it is checked against the real tests.** 29 tokens
+spanning all three states were re-tested with `merge-base --is-ancestor` and
+`cat-file -e`: **AGREES**, and the run refuses outright on any disagreement. A
+faster answer that is not the same answer is worse than a slow one — and the
+`--batch-check` path also refuses if it gets a different number of answers than
+questions, because answers that cannot be paired with their questions are not
+answers.
+
+**Read-only by construction:** every git call is `rev-list`, `ls-files`,
+`cat-file`, `merge-base` or `rev-parse`. `git status` was captured before and
+after and is unchanged.
+
+---
+
+## 7. CONVENTION 18 — 4 of 8 fixed, and the two new ones are small arms with large reporting
+
+**`tests/run_removal_path_probe.py` and
+`tests/push_gate/preauth_exemption_anchor_probe.py`, 2026-10-07.** With
+`run_primitive_obsession_probe` (batch 12) and `run_write_path_scan_probe`
+(batch 13) that is **4 of 8**; **4 remain open with artifacts.**
+
+### `run_removal_path_probe.py` — one arm, two counts
+
+    check('and the counts are reported', 'A=1' in out and 'C=1' in out, True)
+
+A tool that reported `A=1` and dropped `C=1` failed an arm whose name says only
+*"the counts are reported"*, so **the output could not say which count went
+missing** — and the Tier A count and the Tier C count are not interchangeable:
+one of them is the number a reader acts on. Split in two, each carrying its own
+name.
+
+| | |
+|---|---|
+| failing arms | 1 → 1 (the live-tree baseline arm, unchanged) + the Tier A arm now **passing by name** |
+| runs | **two**, both `PROGRAM_EXIT=1`, same single arm |
+| **ablation** | C condition made unsatisfiable **in place** → **A arm `ok`, C arm `FAIL`, only the C arm failed**; file restored **byte-identical**; restored probe back to exit 1 |
+
+### `preauth_exemption_anchor_probe.py` — a live-tree arm that did not say what it found
+
+    check('...and zero oracles', 'PREAUTH_ORACLES:0' in out)
+
+**No detail argument** — unlike its sibling two lines above, which carries
+`re.sub(r'\s+', ' ', out)[-300:]`. So on the one tree state that matters the
+failure printed *"...and zero oracles"* and **not the count it saw**. A
+live-tree arm reported without its finding is a tripwire that tells you it fired
+and not what tripped it.
+
+**The fix produced the fact immediately, and it clears a NOT CLEARED from batch
+12:**
+
+    FAIL ...and zero oracles  PREAUTH_ORACLES:11 -- the tree carries 11 oracle(s)
+      ... STALE_EXEMPTIONS:0 STALE_DECLARATIONS:0 HANDLERS_SCANNED:70
+          PREAUTH_DISCLOSURES:0 PREAUTH_ORACLES:11
+          HANDLERS_WITH_NO_AUTH_BOUNDARY:27 ...
+
+**Eleven oracles, and 27 handlers with no auth boundary**, neither of which the
+arm had ever printed. Two runs, both `PROGRAM_EXIT=1`. The ablation here is the
+observed behaviour change itself: the arm fired before and after, and only after
+does it name its subject.
+
+### TWO ABLATION ATTEMPTS THAT COULD NOT RUN, AND WHY THAT MATTERS
+
+**I tried to ablate the removal-path split twice before the method that worked,
+and both attempts are recorded rather than dropped.**
+
+1. **Removing the `C=` emission from the subject tool** — `COULD NOT RUN`: there
+   is no `C=` string in `tools/removal_path_check.py`, so the count is composed
+   somewhere the ablation could not reach.
+2. **Running a modified COPY of the probe from `%TEMP%`** — ran, and printed
+   **neither arm**. The probe resolves its own paths from `__file__`, so a copy
+   outside the repo does not reach the fixture at all. **That is the
+   home-repository path class again**, in an ablation harness rather than in a
+   probe.
+
+**In-place-modify-then-restore is the method that works here**, and it is the
+one every ablation in batches 12–14 has used. A copy is not an isolation
+technique for a tool that locates itself.
+
+**Under convention 20, an attempt that could not run is not an ablation**, and
+reporting those two as if the third had been the only attempt would have been
+the easy version of this entry.

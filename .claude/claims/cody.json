@@ -3409,8 +3409,8 @@
       "task": "batch22, no new tools. (1) .claude/settings.json: Edit and Write must FOLLOW defaultMode acceptEdits instead of outranking it from the ask list -- the whole point of the permissions work was to stop Michael being prompted, and an ask rule beats a mode. (2) apply the measured one-line lockfile fix for @fastify/busboy 3.2.1 to 3.2.2; package.json stays untouched as already determined. (3) cite all five harness-exit-0 mismatches with command, claimed code, real captured code and commit. (5) re-run merge-tree for the firebase branch when the running suite finishes, real captured exit code only. (6) the remaining high chain and the moderate: trigger-based upgrade now or wait, with a measured basis. (7) one methodology line only if the 5x mismatch has a NEW mechanism. (8) handoff and release. CONFLICTS RE-DERIVED AT HEAD 10521191 FROM A FRESH CLAIM LIST, AND ONE WAS NEARLY MISSED BY A STALE ONE: FOURTH HOLDS docs/METHODOLOGY.md AND docs/2026-09-13-cross-domain-disciplines.md, both DECLARED, so item 4 confirms the path and ROUTES rather than writing either. .claude/settings.json is mentioned in prose by fourth and by cc and DECLARED BY NEITHER, so it is mine to edit. package-lock.json and package.json are declared by nobody. docs/tool-owner-map.json, tools/report_only_checks.py and tools/sairn_push_gate_hook.py are CC'S and are not touched. ANDON HELD: cody/firebase-modular-port is not merged. FILES: .claude/settings.json package-lock.json tools/metamorphic_check.py tools/capture_exit.py docs/2026-10-05-dependabot-high-triage.md docs/2026-10-07-cody-routed.md docs/2026-10-07-cody-harness-exit-mismatches.md docs/handoff-cody-2026-10-07.md SAIRN-ACTIVE-WORK-cody.md",
       "claimed_at": "2026-10-07T14:29:16Z",
       "claimed_at_epoch": 1791383356.9219239,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-07T15:43:25Z",
       "files": [
         ".claude/settings.json",
         "SAIRN-ACTIVE-WORK-cody.md",

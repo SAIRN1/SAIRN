@@ -266,17 +266,19 @@
    "kind": "py",
    "tail": "68 passed, 1 failed",
    "since": "2026-10-06",
-   "why": "",
+   "why": "68 passed, 1 failed. The failing arm is '...and names the exact command that publishes the earlier entry' -- so the refusal still FIRES correctly and has stopped telling the reader what to do about it. The arms around it pass, including the ones that matter most: '9. a failed push, then a re-run -- one entry, not two', '...and adds NO second entry -- the defect this arm exists for', '11. a RETYPED task string after a failed push -- still one entry', and 'the rewind really unpublished it -- otherwise arm 10 is vacuous'. A REFUSAL THAT DOES NOT NAME ITS REMEDY IS THE SHAPE THAT GETS OVERRIDDEN rather than obeyed, which is why the arm exists. AND IT BLOCKS A SECOND ROW: tests/claims/run_claim_retype_mutation_control.py uses this probe as its baseline and exits 2 because of it (diagnosed last batch). FIX ONE ARM, CLEAR TWO ROWS.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly",
+    "sha": "4d4b0da5",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, git status captured before and after each run and unchanged throughout, node --check api/sd-data.js clean afterwards; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "implementation/refusal-text/stopped-naming-the-remedy"
   },
   {
    "file": "tests/faults/sd_write_faults.js",
@@ -317,17 +319,19 @@
    "kind": "py",
    "tail": "    have gone unnoticed. Add the name to QUOTABLE.",
    "since": "2026-10-06",
-   "why": "",
+   "why": "ONE SENTENCE, AND IT NAMES THE MISSING VALUE: 'FAILED: 1 session(s) exist that QUOTABLE does not name: cloud'. A hand-maintained session vocabulary that did not grow when `cloud` started holding work. CONFIRMED INDEPENDENTLY IN THIS BATCH: tools/tier_a_review_gate.py --list prints 'ASSIGNED TO cloud' on live obligations, and one of my own batch-13 discharges had to use --takeover precisely because the record had moved to cloud. So `cloud` is a real session and the list is simply behind. SAME CLASS AS cc's SELF_EXCLUDED at eight hand-written entries, routed in SEQ 13-C: a list a human must remember to extend is wrong the first time nobody remembers. FIX IS ONE ENTRY, and the better fix is to derive the vocabulary from the session registry the way the importer arm already proves is possible.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly",
+    "sha": "4d4b0da5",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, git status captured before and after each run and unchanged throughout, node --check api/sd-data.js clean afterwards; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "tooling/vocabulary/hand-maintained-list-went-stale"
   },
   {
    "file": "tests/hover_separation_ci_probe.py",
@@ -1121,17 +1125,19 @@
    "kind": "py",
    "tail": "  - ...and phi_cache_scoped_to_user.js is green again on it",
    "since": "2026-10-06",
-   "why": "",
+   "why": "CHAINED. 63 of 64 arms pass; the one failure is 'the shipped tree passes phi_cache_scoped_to_user.js'. Driving that baseline alone names the arm: node tests/phi_cache_scoped_to_user.js exits 1 with 'FAIL  5a  SAIRNsenior: every cached key is purged OR explicitly excluded', 63 passed 1 failed. THAT SINGLE ARM BLOCKS THREE ROWS IN THIS REGISTER -- this one, tests/sairncare_fault_probe.py, and tests/phi_cache_scope_probe.py (already diagnosed). And its subject is a PHI CACHE PURGE on SAIRNsenior, so the arm is not cosmetic: a cached key that is neither purged nor explicitly excluded is resident health data surviving a logout. FIX ONE ARM, CLEAR THREE ROWS. Everything this probe owns is intact -- 'both subject files are byte-identical to the working tree after every arm' passes.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly",
+    "sha": "4d4b0da5",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, git status captured before and after each run and unchanged throughout, node --check api/sd-data.js clean afterwards; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "test-design/dependency/chained-red-baseline"
   },
   {
    "file": "tests/sairncare/test-compliance-rules.js",
@@ -1176,17 +1182,19 @@
    "kind": "py",
    "tail": "  - ...and phi_cache_scoped_to_user.js is green again on it",
    "since": "2026-10-06",
-   "why": "",
+   "why": "CHAINED, AND THE SAME SINGLE ARM AS tests/sairnbuild_fault_probe.py. 63 of 64 pass; the failure is 'the shipped tree passes phi_cache_scoped_to_user.js', whose arm 5a ('SAIRNsenior: every cached key is purged OR explicitly excluded') is the one red arm in that suite. This probe's own MAR, incident and pharmacy-review gate arms all pass, including 'L1 gone: the assignee gate alone still refuses a med_aide the pharmacy order'. So nothing here is broken and nothing here can be fixed -- the row clears when phi_cache arm 5a clears. Counted as the second of the three rows that one arm blocks.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly",
+    "sha": "4d4b0da5",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, git status captured before and after each run and unchanged throughout, node --check api/sd-data.js clean afterwards; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "test-design/dependency/chained-red-baseline"
   },
   {
    "file": "tests/sairnfreedom_auth_review_probe.js",
@@ -1210,17 +1218,19 @@
    "kind": "py",
    "tail": "FAILED  sairnfreedom_fault_probe: 1 failed",
    "since": "2026-10-06",
-   "why": "",
+   "why": "CHAINED off tests/sairnfreedom_server_backup.js, which is itself a row in this register. Its single failure is 'the shipped tree PASSES ... sairnfreedom_server_backup: 16 passed, 1 failed', and that suite's one red arm is the hardcoded 'registry still holds exactly 35 resources'. This probe's own restore discipline is intact -- 'all three files restored byte for byte after every arm' passes. So the row clears when the 35 becomes a floor. Nothing here is fixable from inside this file.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly",
+    "sha": "4d4b0da5",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, git status captured before and after each run and unchanged throughout, node --check api/sd-data.js clean afterwards; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "test-design/dependency/chained-red-baseline"
   },
   {
    "file": "tests/sairnfreedom_segregation_of_duties.js",
@@ -1246,17 +1256,19 @@
    "kind": "node",
    "tail": "FAILED  sairnfreedom_server_backup: 16 passed, 1 failed",
    "since": "2026-10-06",
-   "why": "",
+   "why": "16 passed, 1 failed, and the failing arm is a HARDCODED COUNT ON A LIVE REGISTRY: 'the registry still holds exactly 35 resources'. The registry grew past 35 and the arm pins an equality. Convention 14 -- a count inferred from a sample used as evidence without stating n of N -- and the floor-not-equality correction tools/run_all_tests.py's MIN_TEST_FILES already documents. THE SAME NUMBER 35 IS PINNED IN A SECOND SUITE: tests/schema_provisioning_probe.py fails arm1_reads_35_from_the_schema and arm2_registry_has_35, diagnosed in the previous batch. So one registry growing reddened two suites in two different places, which is what makes a hardcoded cardinality worse than a wrong one -- it is wrong in every copy at once. THIS ARM ALSO BLOCKS tests/sairnfreedom_fault_probe.py, which chains off this suite as its baseline. FIX: assert a FLOOR with n of N stated; a DROP is the thing worth failing on.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly",
+    "sha": "4d4b0da5",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, git status captured before and after each run and unchanged throughout, node --check api/sd-data.js clean afterwards; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "test-design/oracle-selection/hardcoded-cardinality"
   },
   {
    "file": "tests/sairnfreedom_server_backup_probe.py",
@@ -1356,51 +1368,57 @@
    "kind": "py",
    "tail": "2 ARM(S) FAILED  [re-driven on a restored tree]",
    "since": "2026-10-06",
-   "why": "",
+   "why": "TWO ARMS: arm1_no_could_not_tell False and arm3_exit_zero False. The probe's own restore discipline is intact -- arm3_restored_clean True and sources_restored True -- so this is not residue and the tree was verified clean before and after (and node --check api/sd-data.js PARSES). The subject emits a COULD-NOT-TELL and does not exit 0 where the arms require a clean answer. THE DIRECTION IS THE SAFE ONE: a seam checker refusing rather than reporting clean is PR 1.11 working, so the question is WHETHER THE COULD-NOT-TELL IS JUSTIFIED and not whether refusing is allowed. NOT CLEARED -- the reason text behind the could-not-tell is not captured, and that is the next step: one run with the subject's own output kept rather than the probe's summary.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly",
+    "sha": "4d4b0da5",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, git status captured before and after each run and unchanged throughout, node --check api/sd-data.js clean afterwards; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "tooling/third-state/could-not-tell-where-clean-expected"
   },
   {
    "file": "tests/seam_check/run_ref_probe.py",
    "kind": "py",
    "tail": "3 ARM(S) FAILED  [re-driven on a restored tree]",
    "since": "2026-10-06",
-   "why": "",
+   "why": "THREE ARMS FALSE AND THE FIRST ONE EXPLAINS THE OTHER TWO: baseline_clean False, then arm2_ref_is_blind False and arm3_default_is_worktree False. The baseline is dirty, so arms 2 and 3 are judging something other than what they name -- the same ambiguity that made my own write-path arm fail for the wrong reason this batch (convention 18). source_restored True, and the tree was verified unchanged before and after, so this is not residue. NOT CLEARED -- WHY baseline_clean is False is not established, and until it is, the two arms below it carry no information in either direction. Fix order is forced: the baseline first.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly",
+    "sha": "4d4b0da5",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, git status captured before and after each run and unchanged throughout, node --check api/sd-data.js clean afterwards; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "test-design/dependency/chained-red-baseline"
   },
   {
    "file": "tests/write_readback_shape_probe.py",
    "kind": "py",
    "tail": "2 ARM(S) FAILED  [re-driven on a restored tree]",
    "since": "2026-10-06",
-   "why": "",
+   "why": "TWO ARMS: arm2_writes_33_not_81 False and arm5_other_apps_unchanged False. The first pins TWO hardcoded counts in a single arm name -- 33 and 81 -- on a live write-site population, which is convention 14 and also convention 18: one arm asserting two numbers cannot say which moved. arm6_planted_write_is_caught True and arm6_source_restored True, so the detector fires and the restore holds; the tree was verified unchanged and node --check passes. THIRD SUITE IN THIS SLICE WITH A PINNED CARDINALITY, after the 35 in sairnfreedom_server_backup and the 35/41 in schema_provisioning. FIX: split the arm, then assert floors with n of N stated. NOT CLEARED -- which of 33 and 81 moved is not named, and the arm as written cannot tell you.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly",
+    "sha": "4d4b0da5",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, git status captured before and after each run and unchanged throughout, node --check api/sd-data.js clean afterwards; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "test-design/oracle-selection/hardcoded-cardinality"
   }
  ],
  "_why_the_whole_tree_run_was_not_trusted": "THREE CONFOUNDS, each evidenced rather than suspected. (1) THE TREE MOVED UNDER IT: the log shows tests/sairnbiz_vendor_ytd_derivation.js PASSING, and at the time it was driven it failed at module scope -- cc pushed the anchor rename mid-run. tools/run_all_tests.py --pinned exists for exactly this and was not used. (2) THE RUN MUTATED THE TREE IT WAS MEASURING: tests/seam_check/run_delegation_probe.py left api/sd-data.js and api/_lib/subcontractor-compliance.js carrying planted sabotage, one of which is a redeclaration that does not parse. Four suites driven after it were re-driven on a restored tree and ONE of them -- tests/seam_check/run_probe.py -- went GREEN, so that confound changed at least one verdict. (3) THE RUN CORRUPTED THE CLONE: tests/push_gate/check8_probe.py left .git/config with core.bare = true and a fixture user identity, after which every git command in the clone fails with \"this operation must be run in a work tree\". Observed three times on 2026-10-06 and attributed by digesting .git/config after every suite.",

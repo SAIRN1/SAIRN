@@ -225,3 +225,17 @@ The **batch-11** scratchpad, which this batch's items 3 and 4 continue from:
 | **10** `bare_run_write_check.py` owner | **DONE** | SEQ 13-E; owner is **cody** on three pieces of evidence, and the owner map says `basis: NONE` because the file has no `OWNER:` line | cody patches it; the missing OWNER line is the 283-header backlog showing up where it costs something |
 | **11** METHODOLOGY ablation convention | **DONE** | conventions **20** (mine) and **21** (cody's, verbatim) in `docs/2026-09-13-cross-domain-disciplines.md`; promotion rows + the received-routings table in `docs/METHODOLOGY.md` | cause tags are in both sections. Two claim checks said BLOCKED on the SUBJECT WORD, not on either file — recorded in METHODOLOGY.md rather than silently proceeded past |
 | **12** final handoff + release | **DONE** | this file and the FINAL STATE section of `docs/handoff-fourth-2026-10-07b.md` | claim `fourth` released; `git config core.bare` printed in the report |
+
+# BATCH 14 CHECKPOINT LOG
+
+| item | state | commit / seq | exact next step |
+|---|---|---|---|
+| **1** full SHA sweep | **DONE** | coverage ledger §6; `<scratchpad>/sweep_full.py`, 13 arms, 3 byte-identical runs, `PROGRAM_EXIT=0` | the premise was one batch stale — the width was fixed in batch 13; the CORPUS was the narrow part. **79 orphans repo-wide; do not quote the 13,807 ABSENT** |
+| **2** the 4 ABSENT Tier A | **DONE** | SEQ 14-A; `--reseat-shas --write`, `PROGRAM_EXIT=0`, 5 reseated on a strong basis | **two are now STALE and REVIEWABLE** (hank 54h, cody 50h) — discharge those next. The weak-basis one needs `--write-weak-basis`, an explicit containment decision for cody. The 251h one is `[NO_OBJECT_IN_CLONE]` and can only be reseated from hank's own clone |
+| **3** red register next slice | **DONE — 9**, 19 → **10** of 79 | SEQ 14-B; each run alone, `git status` unchanged, `node --check` clean | **three single arms block six rows** — fix `phi_cache_scoped_to_user.js` arm 5a first; it is a PHI purge arm and it blocks three |
+| **4** convention-18 fixes | **PARTIAL — 4 of 8** | coverage ledger §7; `run_removal_path_probe` ablated in place, `preauth_exemption_anchor_probe` now reports `PREAUTH_ORACLES:11` | 4 open with artifacts. And **two ablation attempts COULD NOT RUN** before the one that worked — both recorded |
+| **5** census toward the 83 | **PARTIAL — 40 of 83** | handoff-c item 5; the log re-extracted AND cross-checked against its own summary line, which the script refuses to proceed past on a disagreement | 43 unverified. Note 1 exits 0 and 4 exit 2, so 83 is at most 78 + 5 |
+| **6** settings merge | **BLOCKED — re-checked once** | cody's claim is RELEASED but the merge has NOT landed: only `PreCompact` in `~/.claude/settings.json`, no commit to `.claude/settings.json` since 2026-10-05 | nothing written. Re-check when the merge lands |
+| **7** two corrected measurements | **DONE** | handoff-c item 7, for chat to route | I edited neither hank's nor cc's files and closed neither finding |
+| **8** convention 22 | **DONE** | `docs/2026-09-13-cross-domain-disciplines.md` §22 + a METHODOLOGY promotion row | cause-tagged `measurement/window/unbounded-view-presented-as-the-whole` |
+| **9** cody's routing path | **DONE** | METHODOLOGY *"Routed here — RE-DERIVED"* section | cc's three are now READABLE and resolved; cody's ITEM 15 has **no `## ITEM 15` section** — a table row naming a section that was never written |

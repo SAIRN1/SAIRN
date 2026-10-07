@@ -335,6 +335,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/push_gate/preauth_exemption_anchor_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "8ff247a2890edf5f3af0483030980424a17113f4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_removal_path_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "8ff247a2890edf5f3af0483030980424a17113f4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/provisioning_attribution.js",
    "class": "test file",
    "level": "CHANGE",
@@ -433,6 +449,22 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "e4d53fa8c51fba9d9027c3c412e54119876b33f1",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/push_gate/preauth_exemption_anchor_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "e787a6d98d8ff4f31471380266df0e363014d353",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_removal_path_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "e787a6d98d8ff4f31471380266df0e363014d353",
    "criteria_version": "2026-10-06.1"
   },
   {

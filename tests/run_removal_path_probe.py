@@ -212,7 +212,26 @@ io.open(os.path.join(d, 'docs', 'CRITICALITY-TIERS.md'), 'w',
     '| `b_pref` | C | a preference resets | fixture |\n')
 rc, out = run(d, '--burn-down')
 check('tiers are read from the register', rc, 0)
-check('and the counts are reported', 'A=1' in out and 'C=1' in out, True)
+# CONVENTION 18, 2026-10-07: ONE ASSERTION PER ARM. This was
+#   check('and the counts are reported', 'A=1' in out and 'C=1' in out, True)
+# -- one arm requiring TWO counts. A tool that reported `A=1` and dropped `C=1`
+# failed an arm whose name says only "the counts are reported", so the output
+# could not tell you WHICH count went missing, and the Tier A count and the
+# Tier C count are not interchangeable: one of them is the number a reader acts
+# on. Split, with the found text carried as the detail so a failure says what it
+# saw rather than only that it looked.
+#
+# AND THE SPLIT ITSELF NEEDED TWO RUNS: this file's `check(label, actual,
+# expected)` COMPARES its last two arguments, where the preauth probe's
+# `check(name, cond, detail)` only PRINTS the third. My first split passed
+# `out[:200]` as the third argument, so both halves compared a boolean against a
+# string and both failed. Two identical helper names, two different contracts,
+# one file apart -- and the only thing that caught it was running the fix rather
+# than reading it.
+check('the Tier A count is reported', 'A=1' in out, True)
+check('...and the Tier C count is reported, separately -- a dropped C is a '
+      'different fault from a dropped A and must not share an arm with it',
+      'C=1' in out, True)
 check('a resource ABSENT from the register is UNTIERED, not mis-tiered',
       'UNTIERED=1' in out, True)
 check('and Tier A is listed FIRST in the burn-down',
