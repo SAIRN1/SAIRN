@@ -246,17 +246,19 @@
    "kind": "py",
    "tail": "3 passed, 2 failed",
    "since": "2026-10-06",
-   "why": "",
+   "why": "COULD NOT RUN, exit 2, and the cause is one row away. Its arm 0 is 'baseline -- the probe is green against the shipped tool' and it fails as 'FAIL run_push_verify_probe.py passes against an unmutated copy (exit 1)'. This control's whole method is to sabotage a copy of tools/sairn_claim.py and require tests/claims/run_push_verify_probe.py to notice -- which is meaningless while that probe is ALREADY red against an unmutated copy. tests/claims/run_push_verify_probe.py is a row in this register at '68 passed, 1 failed'. ITS OWN SABOTAGE ARMS PASS ('re-running the EARLIER wording on a clean tree publishes it', 'CONTROL: once the first is published, a DIFFERENT second claim on the same subject is allowed'), so the machinery works. FIX ORDER IS FORCED: the 1 failing arm in run_push_verify_probe.py first, then this.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly",
+    "sha": "eb430f25",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process, tree checked clean before and after; exit code read from the program's own output"
+   },
+   "exit_code": 2,
+   "cause_tag": "test-design/dependency/chained-red-baseline"
   },
   {
    "file": "tests/claims/run_push_verify_probe.py",
@@ -365,17 +367,19 @@
    "kind": "py",
    "tail": "This is exit 2. Nothing was checked, and that is not a pass.",
    "since": "2026-10-06",
-   "why": "",
+   "why": "COULD NOT RUN, exit 2, and it says so in one sentence: 'COULD NOT TELL: could not find `const ROLES_BY_APP = {...};` in api/_lib/auth.js. The shape of the source of truth changed and this check no longer reads it. This is exit 2. Nothing was checked, and that is not a pass.' CONFIRMED AGAINST THE SOURCE: the check's regex is `const\\s+ROLES_BY_APP\\s*=\\s*\\{(.*?)\\n\\};` (tests/law_reconcile_role_vocab_check.py:69) and the real declaration at api/_lib/auth.js:112 is `const ROLES_BY_APP = roleSet({` -- a wrapper call was introduced between the `=` and the `{`, so the anchor can never match again. TEXTBOOK CONVENTION 8, and the check behaves exactly as convention 8 asks: it refuses rather than reporting clean. THE FIX IS SMALL AND IS NOT MINE TO MAKE BLIND -- the anchor must accept an optional wrapper, and whoever owns the vocabulary check should decide whether to parse `roleSet({...})` or to read the resolved object instead of the literal.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly",
+    "sha": "eb430f25",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process, tree checked clean before and after; exit code read from the program's own output"
+   },
+   "exit_code": 2,
+   "cause_tag": "tooling/anchor/source-shape-changed"
   },
   {
    "file": "tests/law_reconcile_role_vocab_control.py",
@@ -433,17 +437,19 @@
    "kind": "py",
    "tail": "  The baseline is red, so no mutation below would mean anything. Stopping.",
    "since": "2026-10-06",
-   "why": "",
+   "why": "COULD NOT RUN, exit 2 -- and the exit code is already right. Arm 0 is a precondition gate whose own name carries the environment: '0. the suite is GREEN in the worktree before anything is planted (exit 1)'. Its baseline subject, tests/phi_cache_scoped_to_user.js, is at '63 passed, 1 failed', so the probe stops with 'The baseline is red, so no mutation below would mean anything.' and plants nothing. NOTHING IS LEARNED ABOUT THE DETECTOR IN EITHER DIRECTION. The fix is not in this probe: the one failing arm in phi_cache_scoped_to_user.js has to be read first, and it is a separate subject. Convention 18 family -- the live suite is the fixture.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
     "tool": "the suite itself, invoked directly",
     "sha": "eb430f25",
-    "basis": "re-run BY HAND by fourth, one process, in the live clone; exit code read from the program's own output"
-   }
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process, tree checked clean before and after; exit code read from the program's own output"
+   },
+   "exit_code": 2,
+   "cause_tag": "test-design/oracle-selection/live-suite-as-baseline"
   },
   {
    "file": "tests/phi_cache_scoped_to_user.js",
@@ -518,17 +524,19 @@
    "kind": "py",
    "tail": "FAILED  preauth_exemption_anchor_probe: 1 failed",
    "since": "2026-10-06",
-   "why": "",
+   "why": "ONE ARM, AND IT IS A LIVE-TREE ASSERTION. The arms around it pass -- 'the end-to-end run reports a stale-exemption count at all', '...and the shipped tree has ZERO stale exemptions', '...and still reports zero disclosures' -- and then '...and zero oracles' fails. So the mechanism is alive and the shipped tree now carries at least one oracle where the arm requires none. Convention 18 family: the arm is a ratchet on tree state, placed last, so the rest of the probe still reports. NOT CLEARED -- the oracle the tree now carries is not yet named, and naming it is the next step rather than an assumption.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly",
+    "sha": "eb430f25",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process, tree checked clean before and after; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "test-design/oracle-selection/live-tree-as-expected-value"
   },
   {
    "file": "tests/push_gate/refspec_and_override_probe.py",
@@ -620,17 +628,19 @@
    "kind": "py",
    "tail": "  - ...and says NO ENTITY IS READY rather than printing a table and stopping",
    "since": "2026-10-06",
-   "why": "",
+   "why": "FOUR REAL FAILING ARMS, NOT A PRECONDITION STOP -- the second correction to my batch-11 shortlist. The arms are 'app is NOT READY on VOLUME -- a shortage of records, which time fixes', 'PLATFORM is excluded from app and is the majority of the register', 'with nothing ready the exit code is 1, not 0' and 'the TEXT run also exits 1 when nothing is ready'. Every one of them asserts a property of the LIVE register's current contents, and the first arm names its own cause: a shortage of records that time fixes. So the probe is red because the data has not accumulated yet, which is neither a defect in the tool nor something a fix can reach. Convention 18 family. WHAT IT NEEDS IS A DECISION, not a patch: either the arms move to a fixture with a stated record count, or the row is reclassified as expected-until-volume with a review date. Not mine to decide and NOT CLEARED.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
     "tool": "the suite itself, invoked directly",
     "sha": "eb430f25",
-    "basis": "re-run BY HAND by fourth, one process, in the live clone; exit code read from the program's own output"
-   }
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process, tree checked clean before and after; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "test-design/oracle-selection/live-data-as-expected-value"
   },
   {
    "file": "tests/run_checker_control_probe.py",
@@ -671,17 +681,19 @@
    "kind": "py",
    "tail": "B. the retry is driven with synthetic files, not the real three",
    "since": "2026-10-06",
-   "why": "",
+   "why": "A HARD CRASH, NOT AN ASSERTION FAILURE: 'ValueError: too many values to unpack (expected 3, got 4)' from `failures, skipped, retried = T._run([], ['flaky.py'], quiet=True)`. The subject's `_run()` now returns FOUR values and the probe unpacks three, so the probe dies partway through and every arm after that line is unreached. Its first arm passes -- 'the set is not empty -- an empty arm set would make every arm below vacuous' -- which is the only thing currently verified about it. SAME CLASS AS tests/law_reconcile_role_vocab_check.py one layer in: the subject changed shape and the reader was not updated. It differs in that the vocab check REFUSES with exit 2 and names the drift, while this one raises and is counted as a failing test. CHEAPEST FIX IN THE SET -- unpack four, or unpack into a tuple and index -- but the fourth value's meaning has to be read from the subject first, so it is not a mechanical edit.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly",
+    "sha": "eb430f25",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process, tree checked clean before and after; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "test-design/interface/subject-signature-changed"
   },
   {
    "file": "tests/run_copy_exactly_gate_probe.py",
@@ -756,17 +768,19 @@
    "kind": "py",
    "tail": "  - sairnmechanical declares mech_credentials in its registry, and it resolves",
    "since": "2026-10-06",
-   "why": "",
+   "why": "A LIVE-TREE ASSERTION, and the failing arm names a real coverage gap. The arm is 'sairnmechanical declares mech_credentials in its registry, and it resolves', and the run lists SAIRNroofing resources whose app HAS an export registry and which are NOT in it: rf_certifications, rf_claim_photos, rf_proposals. So the probe is red because the export coverage of the live tree changed, not because the probe is wrong -- the three rf_ resources are a genuine finding for whoever owns sairnroofing's export registry. Convention 18 family. ROUTED, NOT FIXED: adding three registry entries is an app-owner judgement about what is exportable, not a test repair.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly",
+    "sha": "eb430f25",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process, tree checked clean before and after; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "test-design/oracle-selection/live-registry-as-expected-value"
   },
   {
    "file": "tests/run_financial_invariant_probe.py",
@@ -875,17 +889,19 @@
    "kind": "py",
    "tail": "5 passed, 7 failed",
    "since": "2026-10-06",
-   "why": "",
+   "why": "SIX OF TWELVE ARMS FAIL AND THEY DESCRIBE ONE MISSING CONTRACT: a bare run must be report-only and say what it declined to do. A1 PASSES -- 'KNOWN-BAD: a bare run left a stale document untouched. Before the fix this arm failed -- the bare run rewrote it' -- so the no-write half landed. The failures are A2 'the bare run must report the staleness it declined to fix', A3 'the bare run must name --write', A4 'a report-only run must exit 0', B1 '--write must write' and B2 'a bare run on a matching document must say it matches'. So the tool stopped writing and never gained the REPORTING half, and --write does not write. A silent no-op that exits non-zero is worse than the rewriting it replaced, because nothing downstream can tell it ran. ROUTED to whoever landed A1's fix -- this is an unfinished change, not a rotted probe, and the probe is the specification.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly",
+    "sha": "eb430f25",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process, tree checked clean before and after; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "implementation/cli-contract/report-only-mode-missing"
   },
   {
    "file": "tests/run_primitive_obsession_probe.py",
@@ -994,17 +1010,19 @@
    "kind": "py",
    "tail": "2 ARM(S) FAILED: an ESCAPED pipe inside a cell is content, not a boundary, THE PAIRED POSITIVE: both real rows are still parsed and counted",
    "since": "2026-10-06",
-   "why": "",
+   "why": "A REAL PARSER DEFECT IN THE SUBJECT, and the probe is doing its job. Two arms fail: 'an ESCAPED pipe inside a cell is content, not a boundary' (reported with 'exit=0 -- counting it as a boundary turns one row into nine cells and every positional read after it is wrong') and its paired positive 'THE PAIRED POSITIVE: both real rows are still parsed and counted'. The pairing is what makes this diagnosable rather than ambiguous: the escaped-pipe row is mis-split AND the two good rows stop being counted, which is one fault with two symptoms rather than two faults. A markdown table cell containing `\\|` is being treated as a column boundary, so every positional read after it in that row is off by one. SUBJECT IS A CRITICALITY-REGISTER PARSER, so a mis-split row is a mis-read TIER. Routed with this reproduction -- the probe IS the reproducing artifact and already exits 1.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly",
+    "sha": "eb430f25",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process, tree checked clean before and after; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "implementation/parsing/escaped-delimiter"
   },
   {
    "file": "tests/run_subprocess_decode_probe.py",
@@ -1215,34 +1233,38 @@
    "kind": "py",
    "tail": "  The baseline is red, so no mutation below would mean anything. Stopping.",
    "since": "2026-10-06",
-   "why": "",
+   "why": "COULD NOT RUN, exit 2. Same shape as tests/phi_cache_scope_probe.py and the same correct exit code. Arm 0: '0. the suite is GREEN in the worktree before anything is planted (exit 1)'; the baseline subject tests/sairnfreedom_server_backup.js is at 'FAILED  sairnfreedom_server_backup: 16 passed, 1 failed' and the named failing arm is '5. hydration cannot leave the backup suppressed for the session'. The probe stops and plants nothing. tests/sairnfreedom_server_backup.js is ALSO a row in this register, so this is a CHAINED red: fix the .js arm 5 first and this probe becomes testable again. Not fixable from inside the probe.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
     "tool": "the suite itself, invoked directly",
     "sha": "eb430f25",
-    "basis": "re-run BY HAND by fourth, one process, in the live clone; exit code read from the program's own output"
-   }
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process, tree checked clean before and after; exit code read from the program's own output"
+   },
+   "exit_code": 2,
+   "cause_tag": "test-design/oracle-selection/live-suite-as-baseline"
   },
   {
    "file": "tests/sairnlegacy_fault_probe.py",
    "kind": "py",
    "tail": "  The baseline is red, so no mutation below would mean anything. Stopping.",
    "since": "2026-10-06",
-   "why": "",
+   "why": "COULD NOT RUN BY ITS OWN TEXT, BUT EXITS 1 -- and that inconsistency is the finding. It prints the identical sentence its siblings print, 'The baseline is red, so no mutation below would mean anything. Stopping.', after arm 0 ('the suite is GREEN in the worktree before anything is planted (exit 1)') fails on tests/sairnlegacy_reservation_lock.js -- whose failure is 'a reservation that wins returns 200 -- 403'. tests/phi_cache_scope_probe.py and tests/sairnfreedom_server_backup_probe.py reach the same state and exit **2**. THREE SIBLINGS, ONE SENTENCE, TWO EXIT CODES: a reader chaining on the exit code counts this one as a failure and the other two as could-not-runs. Also a chained red -- sairnlegacy_reservation_lock.js is a row in this register.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
     "tool": "the suite itself, invoked directly",
     "sha": "eb430f25",
-    "basis": "re-run BY HAND by fourth, one process, in the live clone; exit code read from the program's own output"
-   }
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process, tree checked clean before and after; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "test-design/exit-code/could-not-run-as-failure"
   },
   {
    "file": "tests/sairnlegacy_reservation_lock.js",
