@@ -6952,3 +6952,35 @@ against her evidence, not her fix.
 
 Detail: `docs/2026-10-07-cody-batch20.md`. Handoff:
 `docs/handoff-cody-2026-10-07.md`.
+
+---
+
+## 2026-10-07 — batch 21 (Cody)
+
+**Landed:** `--pinned` moved from a linked worktree to a **throwaway clone**
+(item 3; the exact write that broke this clone now leaves `.git/config`
+byte-identical); `guard_ablation.py`'s **fabricated positive** — a timed-out
+suite counted as proof a guard was LOAD-BEARING, because `run()` returned 124
+and `!= 0` cannot tell 124 from a real failure; `eaten_substitution_check.py`
+widened to **any position** after it scanned my own eaten-backtick commit and
+returned 0; the advisories reconciled to **2 high (one chain) + 1 moderate**
+with `@fastify/busboy` measured as a one-line lockfile fix; and
+`metamorphic_check.py` now prints **the artifact its bound actually covers**
+(5.26MB from the `duplicate` relation, not the 2.76MB file on disk).
+
+**Permissions (item 2):** `~/.claude/settings.json` merged, 12 top-level keys
+preserved, `defaultMode: acceptEdits`, allow 11→42, deny 3→25, syntax checked
+against the current docs. `Edit`/`Write` remain in `ask` and outrank the mode —
+reported, not resolved.
+
+**NOT landed:** item 1's six Tier A reviews (fourth holds the ledger — read-only
+only, verdicts captured); item 4's pinned suite (**running**, status-file path
+in the handoff); the busboy lockfile line (not in my declared set).
+
+**ANDON HELD:** `cody/firebase-modular-port` is not an ancestor of main and
+still applies cleanly.
+
+Detail: `docs/2026-10-07-cody-batch21.md` is NOT written — the batch doc for
+this one is the handoff itself plus `docs/2026-10-07-cody-routed.md` and
+`docs/postmortem-cody-2026-10-07-bound-measurement.md`.
+Handoff: `docs/handoff-cody-2026-10-07.md`.
