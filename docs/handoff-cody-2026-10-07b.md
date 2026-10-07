@@ -557,3 +557,108 @@ window forces it. **What must survive a compaction, in this order:**
 
 Items 1–15's own state does not need preserving in context: it is in this file,
 written per item, which is what item 2 is for.
+
+## item 11 — DONE. Every defect confirmed this batch, cause-tagged.
+
+Tags are *(lifecycle phase / sub-phase / specific cause)*. `unknown` is used where
+it is the honest answer rather than filling the column.
+
+### D1 — `tools/run_all_tests.py:835` left `ignore_errors=True` on the checkout-FAILURE path
+
+- **confirmed:** yes, by reading the site; the success path 68 lines below had
+  already been fixed on 2026-10-07 and the `_force_rm` helper sits 134 lines
+  above both.
+- **tag:** *implementation / incomplete-fix-propagation / a fix was applied to
+  the branch the author was looking at and not to the sibling branch in the same
+  function.*
+- **why it survived review:** the commit that added `_force_rm` cited the success
+  path by line and was correct about it. Nothing compared the two call sites.
+- **fixed:** yes, with the existing helper plus the same leftover-file NOTE.
+- **mechanism still open:** every other tool with two exit paths out of one
+  resource acquisition. Not swept.
+
+### D2 — my own batch-23 narrowing of the `defect_register` reseat finding was wrong
+
+- **confirmed:** yes. Both `cmd_post_rewrite` and `cmd_reseat` call the same
+  `save()`; the register is byte-identical to `json.dumps(indent=2)`.
+- **tag:** *verification / evidence-sufficiency / a structural claim about two
+  code paths drawn from one observed diff, without reading either path.*
+- **why it survived:** the observation was real and the inference was not
+  labelled as an inference. A one-line diff is consistent with both "this command
+  writes narrowly" and "the stored formatting happens to match the serialiser",
+  and only the second is true.
+- **fixed:** the claim is **reversed** in item 8(b); the routed finding is
+  restored to full width. No code change — the file is cc's.
+- **mechanism still open:** nothing checks that a narrowing in a handoff was
+  derived from more than one observation.
+
+### D3 — my own leak-class predicate over-counted by 26 calls
+
+- **confirmed:** yes, by reading two of its own hits.
+- **tag:** *detection / predicate-ordering / a positional predicate written
+  without position — "the identifier appears on a git-creating line" cannot tell
+  a pre-create delete from a post-create cleanup.*
+- **why it nearly shipped:** 26 extra findings in the *safe-looking* direction.
+  A number that is too high reads as thoroughness.
+- **fixed:** pass 3 requires the repo-creating line to precede the removal, and
+  the exclusion is stated in the output rather than silently applied.
+- **and a second correction inside the same item:** the class was narrowed again
+  by **measurement** — an `init`ed repo dir has 3 of 33 read-only files, a linked
+  worktree dir has **0 of 2** — which moved 5 more calls out.
+
+### D4 — `docs/2026-10-06-cody-routed.md` has a routing-table row for a section that does not exist
+
+- **confirmed:** yes. The table at line 11 routes ITEM 15 to
+  `docs/METHODOLOGY.md`; there is no `## ITEM 15` heading in the file.
+- **tag:** *documentation / index-body divergence / a summary table written
+  separately from the sections it indexes, with nothing checking that every row
+  has a body.*
+- **fixed:** no. The content exists in
+  `docs/2026-10-06-cody-queue17-inventory.md:182` and is restated in item 8(a).
+  The routed doc is not in this batch's declared FILES.
+- **note:** this is the same shape as the platform's own repeated
+  *"count written in prose next to a list that disagrees with it"* — an index
+  that is not derived from what it indexes.
+
+### D5 — the 20-file SQL runbook's three counts disagree (20 / 24 / 7)
+
+- **confirmed:** yes — title says 20, `grep` finds 24 distinct `sql/` paths, the
+  numbered table has 7 rows.
+- **tag:** *documentation / undefined denominator / three different populations
+  counted under one noun ("the SQL files") with no definition of which.*
+- **fixed:** no, and deliberately. Item 9 asked for **push status**, which is
+  settled; the count is a content question for the runbook's owner, and
+  "correcting" it would mean choosing which of three populations is meant.
+
+### D6 — a claim-file read reported no holder while the registry had one
+
+- **confirmed:** yes. `.claude/claims/cc.json` in this clone showed no active
+  claim; `sairn_claim.py` refused with *"cc held … (registry, not yet on origin)"*.
+- **tag:** *process / staleness-of-a-local-replica / the claim record is only as
+  fresh as the last push, while the registry is live — and a per-file read of the
+  replica cannot see the difference.*
+- **whose:** not a defect I introduced and not mine to fix. It is the exact
+  failure `CLAUDE.md` already warns about for the claim record versus the shared
+  status registry; what is new is that **my conflict check used the stale half**.
+- **fixed:** my own method, yes — the conflict check now goes through
+  `sairn_claim.py` and the file read is treated as corroboration only.
+
+### D7 — the batch's own premise about who held the Tier A ledger
+
+- **confirmed:** yes, wrong at HEAD: fourth's blocking claim was released.
+- **tag:** *process / premise-staleness / an instruction written against a claim
+  state that changed between writing and execution.*
+- **fixed:** reported and worked around; the real holder was found by the matcher
+  and not overridden.
+- **note:** this is convention 10's *no long run whose first check is at the end*
+  applied to instructions rather than to runs — the premise was re-derived before
+  acting, which is the only reason the wrong session was not blamed in a standing
+  document.
+
+### Not defects, recorded so the list is not read as exhaustive-by-silence
+
+- The **29 worktree registrations** (item 5) were abandoned state, not a defect in
+  any tool's logic; the one locked registration is an interrupted `worktree add`.
+- The **node-forge advisory** (item 6) is a real upstream vulnerability with **no
+  patched release**, not a defect in this repo. Its reachability verdict is
+  re-derived, not inherited.
