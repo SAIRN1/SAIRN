@@ -293,3 +293,27 @@ failures), `meta145.*` (the 145s confirmation), `ce_fx_r1..3.out`,
   the per-item checkpoint rule dirties the tree that `--pinned` requires clean.
   Resolution: commit the checkpoint, then launch. **The harness notification said
   "exit code 0" while the status file said EXIT 2 — fourth instance this session.**
+- **item 4 — PARTIAL — running.** Relaunched on a clean tree at `c1cd7c41`.
+  Confirmed in a **throwaway CLONE**, not a worktree: banner reads *"PINNED:
+  running in a throwaway CLONE at c1cd7c41eaf5"*, 0 worktree registrations
+  added, main clone `core.bare=false`. No concurrent whole-tree run (suite lock
+  absent, 0 `run_all_tests` processes before launch).
+  **STATUS FILE:** `<SCRATCH>/item4/suite.status`;
+  **OUTPUT:** `<SCRATCH>/item4/suite.out`; **TIMING:** `<SCRATCH>/item4/meta.txt`.
+  **NEXT STEP:** read the status file with `capture_exit.py --read`, then name
+  every failing suite from `suite.out` with its first-run result. **The previous
+  run took 23463s, so expect hours.**
+- **item 5 — DONE — commit pending.** Cause re-derived **alone** at a clean HEAD:
+  `guard_ablation.py --limit 1` → **EXIT 0**, 40 gates, 178 suites — so the
+  earlier EXIT 2 was the residue, not a drift in the ablated shape. **And a
+  worse defect was found in the same file:** `run()` returned **124** on a
+  timeout and the ablation loop read `if run(...) != 0: noticed = s`, so a
+  **timed-out suite counted as proof the guard was LOAD-BEARING** — a fabricated
+  positive. `run()` now returns `None` (never an exit code); three buckets
+  (green / red / COULD-NOT-RUN); a gate whose observers all timed out is
+  COULD-NOT-RUN, not SILENT and never LOAD-BEARING; `--bound` added. Proved:
+  `bound 1ms → None`, old `!= 0` would have called it noticed (True), new path
+  does not. End to end `--bound 0.001` → **EXIT 2** with *"0 red on the shipped
+  tree, 178 did NOT FINISH"*; control `--limit 1` → **EXIT 0** twice, COULD-NOT-RUN 0.
+  **The first version of the refusal said "every suite is red", a false reason on
+  a correct refusal** — found by the end-to-end run and fixed. 2 of 2 rounds used.

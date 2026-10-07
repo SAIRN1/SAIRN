@@ -111,19 +111,57 @@ def suites():
     return sorted(out)
 
 
-def run(wt, suite, timeout=60):
+# ── A TIMEOUT RETURNED 124, AND 124 IS AN EXIT CODE (fixed 2026-10-07) ──────
+# THIS WAS A FABRICATED POSITIVE, not a cosmetic type problem. The ablation loop
+# reads `if run(wt, s) != 0: noticed = s`, so a suite that TIMED OUT satisfied
+# "noticed the ablation" and the gate was reported LOAD-BEARING -- proven
+# necessary by a suite that never produced a verdict about it. 124 is
+# `timeout(1)`'s convention and it is indistinguishable here from a suite that
+# genuinely exited 124.
+#
+# A COULD-NOT-RUN IS NOT AN EXIT CODE, so it is no longer spelled as one. `None`
+# is returned instead and every caller has to decide what to do with it -- which
+# is the point: the old `124` let both call sites decide by accident.
+#
+# Same shape as cc's routed finding against tools/capture_exit.py, which had no
+# bound at all and therefore recorded EXIT 0 for runs the live hook would have
+# killed. There the fix was to ADD a bound and write COULD_NOT_RUN; here the
+# bound already existed and its result was being laundered into a code.
+SUITE_BOUND = 60                     # seconds per suite; --bound overrides
+
+
+def run(wt, suite, timeout=None):
+    """The suite's real exit code, or None for COULD NOT RUN.
+
+    None is NEVER an exit code and must not be compared against 0. A caller
+    that treats it as "non-zero, therefore it noticed" is the defect this
+    signature exists to make impossible to write by accident.
+    """
+    bound = SUITE_BOUND if timeout is None else timeout
     try:
         r = subprocess.run(['node', os.path.join(wt, suite)], cwd=wt,
-                           capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=timeout)
+                           capture_output=True, text=True, encoding='utf-8',
+                           errors='replace', timeout=bound)
         return r.returncode
     except subprocess.TimeoutExpired:
-        return 124
+        return None
+    except OSError:
+        return None
 
 
 def main(argv):
+    global SUITE_BOUND
     limit = None
     if '--limit' in argv:
         limit = int(argv[argv.index('--limit') + 1])
+    # --bound SECONDS: the per-suite cap. Named rather than buried, because a
+    # cap that nobody can see is a cap nobody re-measures. The default is the
+    # 60 this file has always used; it is NOT a measured figure and says so.
+    if '--bound' in argv:
+        try:
+            SUITE_BOUND = float(argv[argv.index('--bound') + 1])
+        except (IndexError, ValueError):
+            fail('--bound needs a number of seconds')
     jsonout = argv[argv.index('--json') + 1] if '--json' in argv else None
 
     src = io.open(os.path.join(REPO, SUBJECT), encoding='utf-8',
@@ -190,9 +228,29 @@ def main(argv):
         # ── BASELINE. A suite that is already red cannot report an ablation,
         #    and counting it as "did not notice" would be a lie in the safe
         #    direction. Those are dropped by name, loudly.
-        green, broken = [], []
+        # THREE BUCKETS, NOT TWO. A suite that did not finish inside the bound
+        # is not "red on the shipped tree" -- that is a claim about the suite,
+        # and nothing was learned about it. It is named on its own line.
+        green, broken, timedout = [], [], []
         for s in S:
-            (green if run(wt, s) == 0 else broken).append(s)
+            rc = run(wt, s)
+            if rc is None:
+                timedout.append(s)
+            elif rc == 0:
+                green.append(s)
+            else:
+                broken.append(s)
+        if timedout:
+            print('  %d suite(s) did NOT FINISH inside %ds on the shipped tree '
+                  '-- COULD NOT RUN, not red:' % (len(timedout), SUITE_BOUND))
+            for s in timedout[:10]:
+                print('      ' + s)
+            if len(timedout) > 10:
+                print('      ... and %d more' % (len(timedout) - 10))
+            print('      They are excluded from the observer set. A gate whose '
+                  'only observer timed out')
+            print('      cannot be called load-bearing, and is not.')
+            print()
         if broken:
             print('  %d suite(s) are NOT GREEN on the shipped tree and are '
                   'EXCLUDED -- they could not observe anything:' % len(broken))
@@ -202,19 +260,36 @@ def main(argv):
                 print('      ... and %d more' % (len(broken) - 10))
             print()
         if not green:
-            fail('every suite is red on the shipped tree -- no observer')
+            # THE REASON HAD TO BE SPLIT TOO, and the end-to-end run is what
+            # found it: with every suite timing out this said "every suite is
+            # red on the shipped tree", which is a FALSE REASON attached to a
+            # correct refusal. Red and could-not-run are different facts about
+            # the world and a reader acts differently on each -- one means fix
+            # the baseline, the other means raise --bound or find out why
+            # node is slow.
+            fail('no observing suite. %d red on the shipped tree, %d did NOT '
+                 'FINISH inside %gs. Those are different problems: red means '
+                 'fix the baseline, COULD-NOT-RUN means raise --bound or find '
+                 'out why the suites stopped finishing.'
+                 % (len(broken), len(timedout), SUITE_BOUND))
         # ── A COLLAPSED OBSERVER SET IS A FINDING, NOT A SMALLER RUN ────────
         # With most suites excluded, almost every gate comes back SILENT and the
         # report reads like a platform-wide coverage hole when the real cause is
         # that the worktree is broken. That is a false finding dressed as a
         # measurement, which is worse than no run. One third is a judgement, and
         # it is stated rather than tuned: the observed failure was 48 of 93.
-        if len(broken) * 3 > len(S):
-            fail('%d of %d suites are red on the shipped tree. The observer set '
-                 'has collapsed, so a SILENT verdict would say more about this '
-                 'worktree than about any guard. Fix the baseline first -- the '
-                 'usual cause is an uncommitted dependency the worktree does '
-                 'not have.' % (len(broken), len(S)))
+        # A could-not-run collapses the observer set exactly as a red one does,
+        # so it counts toward the threshold -- but it is reported as its own
+        # number, because the remedy is different.
+        if (len(broken) + len(timedout)) * 3 > len(S):
+            fail('%d of %d suites are unusable as observers -- %d red on the '
+                 'shipped tree and %d that did NOT FINISH inside %gs. The '
+                 'observer set has collapsed, so a SILENT verdict would say '
+                 'more about this sandbox than about any guard. Fix the '
+                 'baseline first -- the usual cause of a red one is an '
+                 'uncommitted dependency the sandbox does not have.'
+                 % (len(broken) + len(timedout), len(S), len(broken),
+                    len(timedout), SUITE_BOUND))
         print('  observing suites: %d\n' % len(green))
 
         # ── ABLATION IS BY LINE NUMBER, NOT BY STRING REPLACE ──────────────
@@ -240,9 +315,19 @@ def main(argv):
             mutated[idx] = anchor.split('if (')[0] + 'if (false) {'
             io.open(os.path.join(wt, SUBJECT), 'w', encoding='utf-8',
                     newline='').write('\n'.join(mutated))
-            noticed = None
+            # ── `!= 0` WAS THE BUG, because None != 0 is True ──────────────
+            # A timed-out suite used to satisfy "noticed the ablation" and the
+            # gate was reported LOAD-BEARING on the strength of a run that
+            # produced no verdict. Only a REAL non-zero exit code counts as
+            # noticing; a could-not-run is collected separately and makes the
+            # gate COULD-NOT-RUN rather than load-bearing.
+            noticed, could_not = None, []
             for s in green:
-                if run(wt, s) != 0:
+                rc = run(wt, s)
+                if rc is None:
+                    could_not.append(s)
+                    continue
+                if rc != 0:
                     noticed = s
                     break
             io.open(os.path.join(wt, SUBJECT), 'w', encoding='utf-8',
@@ -252,11 +337,23 @@ def main(argv):
                       % (name, line, os.path.basename(noticed)))
                 results.append({'role_table': name, 'line': line,
                                 'verdict': 'LOAD-BEARING', 'noticed_by': noticed})
-            else:
-                print('  ?      %-38s :%-6d SILENT         %d suites, none '
-                      'noticed' % (name, line, len(green)))
+            elif could_not and len(could_not) == len(green):
+                # EVERY observer failed to finish. SILENT would be a claim
+                # about the guard; this is a statement about the run.
+                print('  ?      %-38s :%-6d COULD-NOT-RUN  all %d observing '
+                      'suite(s) exceeded %ds'
+                      % (name, line, len(green), SUITE_BOUND))
                 results.append({'role_table': name, 'line': line,
-                                'verdict': 'SILENT', 'noticed_by': None})
+                                'verdict': 'COULD-NOT-RUN', 'noticed_by': None,
+                                'could_not_run': could_not})
+            else:
+                extra = ('; %d of them COULD NOT RUN and are NOT evidence'
+                         % len(could_not)) if could_not else ''
+                print('  ?      %-38s :%-6d SILENT         %d suites, none '
+                      'noticed%s' % (name, line, len(green), extra))
+                results.append({'role_table': name, 'line': line,
+                                'verdict': 'SILENT', 'noticed_by': None,
+                                'could_not_run': could_not})
             sys.stdout.flush()
 
         # The restore is itself checked -- a silent restore failure would leave
