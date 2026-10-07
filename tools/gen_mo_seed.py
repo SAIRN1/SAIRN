@@ -21,7 +21,7 @@ after mass.gov (403 to everything but a browser) and tncourts.gov (JS challenge)
 import json
 import sys
 
-def _emit_or_check(path, text):
+def _emit_or_check(path, text, check=None):
     """Write `text` to `path`, or under `--check` compare and write NOTHING.
 
     READ-ONLY MODE, added 2026-10-07 (cc). This generator was one of 17 found
@@ -37,7 +37,12 @@ def _emit_or_check(path, text):
     import io as _io
     import os as _os
     import sys as _sys
-    if '--check' not in _sys.argv:
+    # `check` is a parameter and not only an argv sniff so that _selftest can
+    # drive BOTH branches without touching sys.argv -- a selftest that has to
+    # mutate global argv to reach the branch it tests is a second bug waiting.
+    if check is None:
+        check = '--check' in _sys.argv
+    if not check:
         with _io.open(path, 'w', encoding='utf-8', newline='') as _fh:
             _fh.write(text)
         print('wrote ' + path)
@@ -65,6 +70,94 @@ def _emit_or_check(path, text):
 
 NSF = ("https://www.courts.mo.gov/courts/ClerkHandbooksP2RulesOnly.nsf/"
        "c0c6ffa99df4993f86256ba50057dcb8/")
+def _selftest():
+    """Can `--check` still FAIL? Four arms, on a tempfile, never on the seed.
+
+    THE DEFECT THIS GUARDS is cross-domain-disciplines item 8: a generator's
+    `--check` compares a document to its own output, so the day the comparison
+    stops working it reports IDENTICAL forever and nothing announces it. An
+    exit 0 from `--check` is evidence only if the same comparison has just been
+    seen to return 1 and 2.
+
+    No arm touches sql/. Arm 2 perturbs a COPY by one byte -- which is also the
+    smallest difference the comparison must not miss.
+    """
+    import contextlib
+    import io
+    import os
+    import tempfile
+    d = tempfile.mkdtemp(prefix='gen-mo-selftest-')
+    p = os.path.join(d, 'target.json')
+    body = '{"a": 1}\n'
+    arms = []
+    # Captured, not let through. Each arm's own message names the TEMP PATH,
+    # which changes every run, so letting it through would make three runs of
+    # a deterministic selftest print three different things -- and "3 identical
+    # runs" is the evidence this batch reports. The verdicts are what matter
+    # and they are asserted below.
+    _sink = io.StringIO()
+    _cap = contextlib.redirect_stdout(_sink)
+    _cap.__enter__()
+
+    open(p, 'w', encoding='utf-8', newline='').write(body)
+    arms.append(('identical -> 0, and the target is not rewritten',
+                 (_emit_or_check(p, body, check=True),
+                  open(p, encoding='utf-8', newline='').read()),
+                 (0, body)))
+
+    arms.append(('ONE BYTE different -> 1, and the target is not rewritten',
+                 (_emit_or_check(p, '{"a": 2}\n', check=True),
+                  open(p, encoding='utf-8', newline='').read()),
+                 (1, body)))
+
+    os.remove(p)
+    arms.append(('a missing target -> 2 COULD NOT COMPARE, never 1 drift',
+                 (_emit_or_check(p, body, check=True), os.path.isfile(p)),
+                 (2, False)))
+
+    arms.append(('the write branch really does write',
+                 (_emit_or_check(p, body, check=False),
+                  open(p, encoding='utf-8', newline='').read()),
+                 (0, body)))
+
+    os.remove(p)
+    os.rmdir(d)
+    _cap.__exit__(None, None, None)
+    lines, passed = [], 0
+    for name, got, want in arms:
+        ok = got == want
+        passed += ok
+        lines.append('  %-4s %s' % ('PASS' if ok else 'FAIL', name))
+        if not ok:
+            lines.append('       wanted %r, got %r' % (want, got))
+    return passed, len(arms) - passed, lines
+
+
+_KNOWN_FLAGS = ('--check', '--selftest')
+
+# ── AN UNRECOGNISED FLAG MUST NOT MEAN "WRITE" (2026-10-07, cc) ─────────────
+# Same defect, same day, different file: tools/role_gate_mc_config.py
+# recognised one flag and fell through to the write path for everything else,
+# so `--help` regenerated two spec files. This generator had the identical
+# shape, over a LEGAL DEADLINE SEED. The guard runs before anything is built
+# and before any open(..., 'w'), and it is placed here rather than in a shared
+# helper because there is no shared helper and inventing one mid-batch is a new
+# tool. Routed as a methodology rule, not left as three local fixes.
+_unknown = [a for a in sys.argv[1:] if a not in _KNOWN_FLAGS]
+if _unknown:
+    print('COULD NOT RUN -- argument not recognised: %s' % _unknown[0])
+    print('Nothing was written. Recognised: %s' % ', '.join(_KNOWN_FLAGS))
+    sys.exit(2)
+
+if '--selftest' in sys.argv:
+    _p, _f, _lines = _selftest()
+    print('selftest: %d/%d arm(s) pass -- can --check still FAIL?'
+          % (_p, _p + _f))
+    for _ln in _lines:
+        print(_ln)
+    sys.exit(1 if _f else 0)
+
+
 URL = {
     "44.01": "https://www.courts.mo.gov/courts/ClerkHandbooksP2RulesOnly.nsf/0/59231e1c136ceb1086256ca60052133a?OpenDocument=",
     "43.01": NSF + "f54a7a01ed6d17e186256ca600521339",
@@ -178,7 +271,17 @@ NO_EXT_FILING = (
 )
 
 
-def rule(rid, label, trigger, count, cite, quote, note, eff_key, ext=None, completion=None):
+def rule(rid, label, trigger, count, cite, quote, note, eff_key, ext=None,
+         completion=None, trigdoc=None):
+    # ── trigdoc, RESTORED 2026-10-07 (cc) ───────────────────────────────────
+    # `trigger_document` was present on mo-r-55-25b-reply-ordered-by-court in
+    # the committed seed and this generator had no way to emit it, so `--check`
+    # read DRIFTED and a regeneration would have DELETED the field. It is not
+    # decoration: api/_lib/deadline-engine.js reads it, api/legal-deadlines.js
+    # surfaces it, and api/_lib/deadline-trigger-document.test.js exists for it.
+    # The dict is built in two halves rather than as one literal because the
+    # key's POSITION is part of the output -- between `count` and
+    # `computation` -- and a dict literal cannot place a conditional key.
     r = {
         "rule_id": rid,
         "jurisdiction": "mo",
@@ -186,6 +289,10 @@ def rule(rid, label, trigger, count, cite, quote, note, eff_key, ext=None, compl
         "label": label,
         "trigger_event": trigger,
         "count": {"value": count, "unit": "calendar_days", "direction": "forward"},
+    }
+    if trigdoc:
+        r["trigger_document"] = trigdoc
+    r.update({
         "computation": "mo_rule_44_01_a",
         "authority": {
             "citation": cite, "url": URL[eff_key], "quote": quote, "note": note,
@@ -195,7 +302,7 @@ def rule(rid, label, trigger, count, cite, quote, note, eff_key, ext=None, compl
         "effective_to": None,
         "version": 1,
         "supersedes": None,
-    }
+    })
     if ext:
         r["service_extension"] = ext
     if completion:
@@ -318,7 +425,14 @@ rules = [
          "than flattened. "
          "\"UNLESS THE ORDER OTHERWISE DIRECTS\" -- an order the engine cannot see displaces this row." +
          NO_EXT_FILING,
-         "55.25"),
+         "55.25",
+         trigdoc={
+             "id": "entry_of_order_requiring_reply",
+             "label": "the date the clerk ENTERED the order or judgment on the docket",
+             "not_the": "the date it was signed, decided, announced in court, or mailed to the parties -- those are different events and they bear different dates",
+             "authority": "Mo. R. Civ. P. 55.25(b)",
+             "on_unconfirmed": "warn",
+         }),
 
     # ── R. 55.25(c): the two motion limbs, both with the unmodelled floor ──
     rule("mo-r-55-25c-responsive-pleading-after-motion-denied",
