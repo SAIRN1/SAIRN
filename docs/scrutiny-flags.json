@@ -20,6 +20,14 @@
  "criteria_version": "2026-10-06.1",
  "flags": [
   {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "08f078fb361fa64a35fd9c5e96816dfd0ff1ae03",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_assurance_case_probe.py",
    "class": "test file",
    "level": "CHANGE",

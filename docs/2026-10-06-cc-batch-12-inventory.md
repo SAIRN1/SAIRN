@@ -331,6 +331,149 @@ Full text in `docs/2026-10-06-cc-routed.md` **§21**. Not self-promoted;
 
 ---
 
+---
+
+## 6. ITEM 6 — 101 routed, and only 34 have an owner to route to
+
+**RE-DERIVED AT THIS HEAD. The brief's "53 reds and 46 genuine could-not-runs"
+= 99 was my own previous figure, taken with the defective mode detector.**
+Re-run with a structural detector:
+
+```
+  TOTAL 305   green(0) 193   red(1) 54   exit 2: 48   other 10
+    of the exit-2 rows, still MY SWEEP'S FAULT : 1   (was 6)
+    GENUINE could-not-run                      : 47
+  ROUTED: 54 red + 47 genuine = 101 of 101
+```
+
+**AND THE DOMINANT FACT IS NOT THE 101, IT IS WHO OWNS THEM:**
+
+| owner | red | could-not-run | total |
+|---|---|---|---|
+| **UNATTRIBUTED** | 39 | 28 | **67** |
+| hank | 5 | 7 | 12 |
+| cody | 1 | 7 | 8 |
+| fourth | 4 | 3 | 7 |
+| cc | 5 | 2 | 7 |
+
+**"ROUTE EACH TO ITS OWNER" IS ONLY 34 OF 101 ACHIEVABLE. 67 HAVE NO OWNER IN
+THE MAP** — consistent with `docs/tool-owner-map.json`'s own record that 209 of
+312 tools cannot be attributed at all. **The 67 are not routed to anyone and I
+am not inventing an owner for them;** they are listed under `UNATTRIBUTED` in
+`docs/2026-10-06-cc-routed.md` §22 so the next person with the ownership
+question has the list rather than the count.
+
+Table, per owner, with the one reproducing command shape: **§22**. Routed there
+rather than into `docs/tool-owner-map.json`, **which is cody's under a live
+claim**.
+
+### My sweep's 6 false exit-2s: 5 fixed, 1 left, and the attempt to fix the last one was DISCARDED
+
+**FIXED, 5 of 6.** The detector now requires a mode to appear as an
+`add_argument(...)` call or an explicit `argv` membership test. Prose and
+`CONTROLLED_BY` lists no longer count.
+
+**THE SIXTH IS `checker_selftest_check.py` AND IT DEFEATS THE STRUCTURAL
+PATTERN HONESTLY.** Its source contains `if '--selftest' in argv:` **twice** —
+once in a comment explaining a past defect (`:150`) and once inside a fixture
+string (`:357`) — while argparse rejects the flag. That is scrubber item 24
+with no ambiguity: a pattern matched without the context that says whose code
+it is.
+
+**MY FIX FOR IT WAS WRONG AND IS DISCARDED RATHER THAN REPORTED.** I blanked
+string-literal contents before matching and re-derived all 305 modes. The result
+said **73 modes changed, 72 of them to `(bare)`** — including
+`tooling_inventory.py --check`, `exit_status_attributable.py --selftest` and
+`traceability_matrix.py --check`, **all three of which I personally ran
+successfully earlier in this same session.** The cause is structural, not a
+tuning problem: **the flag literal in a genuine `if '--check' in argv:` IS a
+string**, so blanking strings blanks the real declarations and the quoted ones
+identically. There is no threshold that separates them.
+
+**Discarded under my own Rule A, written one batch ago:** a measurement whose
+instrument is broken is not a weak measurement, it is no measurement. Reporting
+"72 tools declare no read-only mode after all" would have been a confident,
+precise, entirely false finding.
+
+**THE NEXT STEP, for whoever takes it:** the discriminator is *nesting*, not
+*quoting* — an `ast` walk for a `Compare`/`In` whose left is a constant
+`'--mode'` and whose comparator is `argv`, plus a `Call` to `add_argument` with
+a constant flag. A fixture's copy is a string **inside** a string and an `ast`
+parse never descends into it. I did not build it: **no new tools this batch**,
+and rewriting the detector is more than hardening.
+
+**AND A SECOND SIGNAL I DID GET, which is worth keeping:** running each tool's
+own `--help` and looking for the flag in the usage it prints about itself.
+Where the source and `--help` were both consulted they **agreed 32 times and
+disagreed 7** — `hedge_carry_check.py`, `idempotence_double_run.py`,
+`live_probe_declaration_check.py`, `message_assertion_audit.py`,
+`review_ledger_reseat.py`, `sql_column_exists_check.py`,
+`tier_sentence_gate.py` each declare a mode their own `--help` does not list.
+**Those seven are a finding about the tools and not about my detector**, and
+they are **not routed**, because that comparison ran inside the discarded
+measurement and I will not carry one number out of a run I threw away. Re-run
+`--help` against the committed detector before acting on it.
+
+---
+
+## 7. ITEM 7 — 17 of 194 write to the tree when run
+
+**194, not the 188 I reported last batch** — same cause, re-derived. Method: each
+tool in an isolated worktree with `git reset --hard` and `git clean -fd` before
+it, `git status --porcelain` after. Full table and the per-tool reproducing
+command: `docs/2026-10-06-cc-routed.md` **§23**.
+
+```
+  no declared read-only mode : 194 of 305
+  WRITE TO THE TREE          :  17
+  leave it clean             : 177
+```
+
+**FIFTEEN OF THE SEVENTEEN ARE GENERATORS AND WRITING IS THEIR JOB** — the
+`gen_*` family plus `sairn_build_load_gates.py`, all emitting `sql/`.
+`tools/bare_run_writers.py` already records 21 owner-intended bare-run writers
+with the path each writes, which covers most of them.
+
+**THE TWO WORTH A SECOND LOOK BOTH EXITED 2 WHILE WRITING A DOCUMENT:**
+`audit_checkpoint_status.py` → `docs/AUDIT-CHECKPOINT-STATUS.md` and
+`cron_liveness_check.py` → `docs/CRON-LIVENESS-STATUS.md`. A generated status
+page left behind by a run that reported COULD NOT RUN is a page whose contents
+nobody has established, and it is exactly the kind a reader treats as current.
+**Not called a defect:** exit 2 may be the right answer and the page may be an
+honest could-not-tell. Cause tag for both: **phase generation, sub-phase
+outcome-vs-artefact agreement, specific cause UNKNOWN — I did not read either
+generator.** Neither is in my claim.
+
+**The 17 is a FLOOR, not a total:** a tool that writes outside the repo
+(`~/SAIRN-SESSION-LOCKS`, `%TEMP%`) is invisible to `git status`, a tool that
+writes only on a path this invocation missed counts as clean, and a row that hit
+the 60s cap has no write verdict at all.
+
+---
+
+## 10. ITEM 10 — claims held
+
+**At the start of this batch I held NONE.** `sairn_claim.py list` showed only
+`fourth` and `hover2` active; my previous claim was released at the end of batch
+11.
+
+**Now: one — subject `cc`, batch 12.** Declared in its own text: three
+conflicts, none overridden. **No claim was stacked on a path another agent
+holds.** `docs/tier-a-reviews.json` and `docs/tool-owner-map.json` are cody's
+and were read-only; `docs/METHODOLOGY.md`, `docs/SAIRN-OPEN-WORK-INDEX.md` and
+`docs/TOOLING-INVENTORY.md` are hank's and were not touched at all.
+
+---
+
+## FOUR MORE DEFECTS OF MINE, cause-tagged, added after the inventory was first written
+
+| defect | phase | sub-phase | specific cause |
+|---|---|---|---|
+| the ledger printed `LEDGER NOT WRITTEN … nothing can pick them up` on the **already-recorded** path | authoring a message | branch coverage of a reassurance | one `if not _wrote:` for two states — a real write failure and a successful dedup |
+| my items-6/7 sweep wrote its records **inside** the worktree it kept cleaning | authoring a sweep | isolation | `git clean -fdq` per tool deleted the sweep's own output directory |
+| the string-blanking mode re-derivation reported 72 false `(bare)` rows | authoring a detector fix | discriminator choice | the flag literal in a genuine `'--check' in argv` **is** a string, so blanking strings cannot separate it from a quoted copy |
+| the sweep's path column strips a fixed 3 characters from `git status --porcelain` | authoring a report | output parsing | correct for `?? ` and `M  `, wrong for one rename/copy form — cosmetic, verdicts unaffected |
+
 ## BLIND SPOTS
 
 1. **Sharding delays a finding by up to five pushes.** Named in `unrun` on
