@@ -1345,7 +1345,24 @@ def main():
                 else:
                     _wrote, _note = _ESA.scrutiny_record(repo, _scr_sha,
                                                          _flags)
-                if not _wrote:
+                # ── "ALREADY RECORDED" IS A SUCCESS, NOT A FAILURE ──────────
+                # The first version printed "LEDGER NOT WRITTEN ... nothing
+                # downstream can pick them up until that is fixed" for EVERY
+                # falsy return, the dedup path included. It fired on this
+                # check's own second push and said something FALSE: the flags
+                # HAD been recorded, by the first pass over the same commit.
+                # A message that explains what is NOT wrong has to be true in
+                # every state that reaches it -- the rule I wrote one batch ago
+                # and then broke here. Found by reading the push output, not by
+                # reading this code.
+                if _wrote:
+                    pass
+                elif 'already recorded' in (_note or ''):
+                    sys.stderr.write(
+                        '  LEDGER: %s -- already present from an earlier run '
+                        'of this same\n  commit, so nothing was added and '
+                        'nothing is missing.\n\n' % _note)
+                else:
                     sys.stderr.write(
                         '  LEDGER NOT WRITTEN: %s -- the flags above stand, '
                         'and nothing\n  downstream can pick them up until that '
