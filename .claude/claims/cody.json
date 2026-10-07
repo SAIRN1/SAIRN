@@ -3430,8 +3430,8 @@
       "task": "batch23, SCOPE NARROWED NOT REWORDED: item 1 becomes REPORT-ONLY because fourth claimed docs/tier-a-reviews.json at 2026-10-07T16:01:18Z, 0.0h before me, declares it in his FILES, and his own item 1 is the same most-overdue-eligible discharge. I do NOT discharge and I do NOT touch that ledger. Remaining work: confirm Edit and Write no longer prompt and find what removed the model key from the global settings file between 12:44 and 14:30; name the slow test with Get-CimInstance and measure the two harnesses, propose a bound, change no file; report the pinned suite result and re-check the firebase branch with captured codes; what a deploy needs for the installed busboy to match the lock; re-derive once whether a patched node-forge exists; the HEAD-stamping finding in the review gate re-derived at HEAD and either fixed with a fixture that fails first or reported already fixed; the resolver refusal as a reproducing artifact; confirm the SQL runbook is pushed; one method improvement; handoff. CONFLICTS RE-DERIVED AT HEAD 4bac2e25 FROM A LIST READ TWICE, AND THE SECOND READ IS WHY THIS IS NARROWED: fourth holds docs/tier-a-reviews.json, docs/METHODOLOGY.md, docs/2026-09-13-cross-domain-disciplines.md and docs/known-red-suites.json. cc holds tools/report_only_checks.py, tools/sairn_push_gate_hook.py, tools/doc_sha_reseat.py and docs/tool-owner-map.json. tools/tier_a_review_gate.py is declared by NEITHER. docs/defect-density-register.json is not touched: the sha reseat stays abandoned on the resolver refusal. FILES: tools/tier_a_review_gate.py tests/run_tier_a_gate_probe.py .claude/settings.json docs/2026-10-07-cody-batch23.md docs/handoff-cody-2026-10-07.md SAIRN-ACTIVE-WORK-cody.md",
       "claimed_at": "2026-10-07T16:03:49Z",
       "claimed_at_epoch": 1791389029.6837215,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-07T17:42:36Z",
       "files": [
         ".claude/settings.json",
         "SAIRN-ACTIVE-WORK-cody.md",
