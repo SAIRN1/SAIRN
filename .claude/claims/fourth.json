@@ -3133,6 +3133,38 @@
         "tests/push_gate/check8_probe.py",
         "tests/seam_check/run_delegation_probe.py"
       ]
+    },
+    {
+      "id": "fourth-1791371891",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "batch12 at HEAD eb430f25, every premise re-derived. (1) Tier A: 27 open, 8 eligible to fourth, discharge most-overdue-first; FOUR have ABSENT subject SHAs (54e4835ac96e, f88105a88287, 0e7f99af671c, a4610fa38630 -- all four ABSENT by git merge-base --is-ancestor AND by object test) so their originators get a note with the proof asking THEM to close as absent, and I reclassify none. (3) re-derive every re-seat/reachability verification I recorded using merge-base --is-ancestor and list the ones that passed on object existence alone. (5) environment stamp -- worktree-or-clone, pinned-or-not, tool, SHA -- on every verdict from now on, backfilled into the 79 register rows ONLY where provable, unknown stays unknown. (6) continue the 42 empty-why diagnoses, at least 10, each suite run ALONE. (7) convention 18 one-assertion-per-arm: a reproducing artifact per suite for the six live-tree-assertion suites, then fix as many as verify alone. (8) the 7 WinError-123/precondition rows inside the 83 moved to COULD-NOT-RUN after re-verifying each alone. (10) coverage ledger for gap docs 36/36 and span 34/34. (11) blameless postmortem on using an object-existence test as a reachability test, plus ONE system-level fix in an EXISTING check: tools/tier_a_review_gate.py line 1407 resolves a recorded sha with rev-parse --verify (existence) while its own _is_reachable() at line 2880 uses merge-base --is-ancestor (reachability) -- the gate carries both methods and the freshness path uses the wrong one; fix it and add the arm that fails on an existence-only check. (12) conventions 18 and 19 into METHODOLOGY.md as chat-adopted. (13) handoff and release. NOT TOUCHED AND NOT OVERRIDDEN: tools/run_all_tests.py IS CODY'S under a live claim taken 0.2h ago and cody's change there is the agreed fix for the core.bare leak -- I do not patch it, do not hunt the writer again, and run NO whole-tree and NO --pinned run; every suite runs individually. Item 9 constraints merge stays BLOCKED on Michael and I do nothing on it. I close only findings I originated. FILES: docs/tier-a-reviews.json tools/tier_a_review_gate.py tests/run_tier_a_review_gate_probe.py docs/known-red-suites.json tools/known_red_check.py docs/METHODOLOGY.md docs/2026-09-13-cross-domain-disciplines.md tests/run_truthy_sum_probe.py tests/run_primitive_obsession_probe.py tests/run_subprocess_decode_probe.py tests/run_write_path_scan_probe.py tests/run_removal_path_probe.py tests/run_completeness_probe.py docs/2026-10-07-fourth-batch12-inventory.md docs/2026-10-07-fourth-routed.md docs/2026-10-07-fourth-postmortem-object-existence.md docs/2026-10-07-fourth-coverage-ledger.md docs/2026-10-06-fourth-andon-log.md docs/handoff-fourth-2026-10-07.md SAIRN-ACTIVE-WORK-fourth.md",
+      "claimed_at": "2026-10-07T11:18:11Z",
+      "claimed_at_epoch": 1791371891.1452754,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-fourth.md",
+        "docs/2026-09-13-cross-domain-disciplines.md",
+        "docs/2026-10-06-fourth-andon-log.md",
+        "docs/2026-10-07-fourth-batch12-inventory.md",
+        "docs/2026-10-07-fourth-coverage-ledger.md",
+        "docs/2026-10-07-fourth-postmortem-object-existence.md",
+        "docs/2026-10-07-fourth-routed.md",
+        "docs/METHODOLOGY.md",
+        "docs/handoff-fourth-2026-10-07.md",
+        "docs/known-red-suites.json",
+        "docs/tier-a-reviews.json",
+        "tests/run_completeness_probe.py",
+        "tests/run_primitive_obsession_probe.py",
+        "tests/run_removal_path_probe.py",
+        "tests/run_subprocess_decode_probe.py",
+        "tests/run_tier_a_review_gate_probe.py",
+        "tests/run_truthy_sum_probe.py",
+        "tests/run_write_path_scan_probe.py",
+        "tools/known_red_check.py",
+        "tools/tier_a_review_gate.py"
+      ]
     }
   ],
   "refusals": [
