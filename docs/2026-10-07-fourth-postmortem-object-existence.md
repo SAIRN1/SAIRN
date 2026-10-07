@@ -12,7 +12,7 @@ right.
 
 On 2026-10-06, during batch 11, I landed six commits and then ran
 `git pull --rebase` onto eleven upstream commits. Every one of my six was
-rewritten. Three of them — `100b82fc`, `7c911e5c`, `6984634e` — were cited by
+rewritten. Three of them — `100b82fc` (now `6b77545f`), `7c911e5c` (now `326d277e`), `6984634e` (now `7eabd192`) — were cited by
 SHA in two dated documents I had written twenty minutes earlier.
 
 `.githooks/post-rewrite` ran and reported, correctly, *"The map named 6
@@ -33,9 +33,9 @@ and shipped the sentence.
 
 | sha | what I wrote | what it is |
 |---|---|---|
-| `100b82fc` | UNREACHABLE | **ORPHANED** — object present, no ref reaches it |
-| `7c911e5c` | UNREACHABLE | **ORPHANED** |
-| `6984634e` | UNREACHABLE | **ORPHANED** |
+| `100b82fc` (now `6b77545f`) | UNREACHABLE | **ORPHANED** — object present, no ref reaches it |
+| `7c911e5c` (now `326d277e`) | UNREACHABLE | **ORPHANED** |
+| `6984634e` (now `7eabd192`) | UNREACHABLE | **ORPHANED** |
 
 `cat-file -e` tests whether the **object exists**. An orphaned commit's object
 survives until `git gc`, so it answers OK. The test I ran **could not have

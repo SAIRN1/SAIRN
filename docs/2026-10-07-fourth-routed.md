@@ -410,3 +410,59 @@ list at eight entries, each needing a human to notice that a new review probe
 imports the grader, is a list that will be wrong the first time nobody notices.
 **A design change to cc's own tool, not a review finding, so it is routed and
 nothing is patched.**
+
+---
+
+## SEQ 13-D — the three ORPHANED citations: every citer is MINE, so this is DONE, not routed
+
+**Re-derived at HEAD rather than taken from the dispatch.** The ask was to route
+`100b82fc`, `7c911e5c` and `6984634e` to the owner of the document that cites
+each. Every citer is **fourth**:
+
+    grep -rln "100b82fc\|7c911e5c\|6984634e" --include=*.md --include=*.json .
+
+    .claude/claims/fourth.json
+    docs/2026-10-06-fourth-andon-log.md
+    docs/2026-10-06-fourth-batch11-inventory.md
+    docs/2026-10-07-fourth-postmortem-object-existence.md
+    docs/handoff-fourth-2026-10-07.md
+
+**No other session cites them.** So there is nobody to route to, and dressing a
+self-repair up as a routing would put a handover in the record that never
+happened. **Seq: fourth → fourth, DONE.**
+
+### What was actually wrong, and what is fixed
+
+These three are cited **deliberately** — they are the *subject* of
+`docs/2026-10-07-fourth-postmortem-object-existence.md`, which is about my
+having called them UNREACHABLE on the strength of a `cat-file -e` that returned
+OK. Naming the dead SHAs is the point of that document and they must stay.
+
+The defect was narrower: **a reader meeting a dead SHA mid-sentence had to
+resolve it themselves.** Every occurrence now carries its live equivalent
+inline — `100b82fc (now 6b77545f)` — so the citation cannot rot further and
+needs no lookup.
+
+| dead | state | live equivalent | state |
+|---|---|---|---|
+| `100b82fc` | **ORPHANED** | `6b77545f` | **ON-REF** |
+| `7c911e5c` | **ORPHANED** | `326d277e` | **ON-REF** |
+| `6984634e` | **ORPHANED** | `7eabd192` | **ON-REF** |
+
+**Reproducing artifact** — the command that classifies all six, and the control
+that makes it per-sha rather than a broken clone:
+
+    for s in 100b82fc 7c911e5c 6984634e 6b77545f 326d277e 7eabd192; do
+      if   git merge-base --is-ancestor "$s" origin/main 2>/dev/null; then echo "$s ON-REF"
+      elif git cat-file -e "$s^{commit}" 2>/dev/null;            then echo "$s ORPHANED"
+      else                                                            echo "$s ABSENT"; fi
+    done
+
+Each replacement was matched by **commit subject**, not by position, and
+verified `ON-REF` **before** the annotation was written — the script refuses
+outright if a replacement is not on a ref.
+
+**The one thing NOT fixed:** `.claude/claims/fourth.json` also cites them, in my
+own claim text. A claim file is an append-only record of what was claimed at the
+time and rewriting it would falsify the record, so it is left as written and
+named here instead.

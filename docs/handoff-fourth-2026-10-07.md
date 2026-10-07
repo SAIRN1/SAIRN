@@ -180,7 +180,7 @@ orphaned token found was a genuine 40-char SHA. Do not quote my ABSENT totals.
 **2. Six citations were ORPHANED at the end of this batch and I re-seated two.**
 `9e380383` → `9e380383` and `f2ee7be0` → `f2ee7be0`, each replacement verified
 `ON-REF` by `merge-base --is-ancestor` before the swap. The other four —
-`100b82fc`, `7c911e5c`, `6984634e`, `53cc408e` — are **deliberately left
+`100b82fc` (now `6b77545f`), `7c911e5c` (now `326d277e`), `6984634e` (now `7eabd192`), `53cc408e` — are **deliberately left
 orphaned**: the first three are the subject of the postmortem and naming the
 dead SHAs is the point, and the fourth predates this batch. **A dated document
 citing its own batch's SHAs is orphaned by the next rebase** — cite after the
@@ -217,3 +217,4 @@ The **batch-11** scratchpad, which this batch's items 3 and 4 continue from:
 | **1** Tier A discharges | **DONE — 4** | the four `verdict` fields in `docs/tier-a-reviews.json`; three by `--takeover` with the handover recorded | 4 ABSENT remain, owed back as SEQ 13-A. Next readable one is whatever the gate lists after hank and cody close those |
 | **2** print the SQL | **DONE** | top of the report; the merge stays **BLOCKED on Michael** and nothing was done on it | wait for Michael's SQL result |
 | **4** SHA extractor | **DONE** | fixed in `<scratchpad>/reseat_redo.py`, 12 selftest arms, 3 byte-identical runs; figures in `docs/2026-10-07-fourth-coverage-ledger.md` §4 | route the four rejection rules to cc for `tools/doc_sha_reseat.py`, the durable reader |
+| **5** the 3 orphaned citations | **DONE — self-repair, not a routing** | SEQ 13-D in `docs/2026-10-07-fourth-routed.md`; 15 occurrences annotated with their live equivalent | none. `.claude/claims/fourth.json` still cites them and is left alone on purpose: a claim file is a record of what was claimed |
