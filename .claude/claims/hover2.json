@@ -55,6 +55,17 @@
       "status": "released",
       "released_at": "2026-10-07T15:09:32Z",
       "files": null
+    },
+    {
+      "id": "hover2-1791386772",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "hover2 batch L, audit role, own-tool only: re-check open findings (dnt_, scp_, bld_draws) at current HEAD; gate-parity 8/17; undirected sweep 11/17; hard-fail rescore; chain verify; handoff",
+      "claimed_at": "2026-10-07T15:26:12Z",
+      "claimed_at_epoch": 1791386772.1906838,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ]
 }
