@@ -258,3 +258,99 @@ baseline PASSES today"*), which is correct behaviour and stays.
 `tools/write_path_fault_scan.py` exposes `apps(argv)` and `scan(path)` rather
 than a per-app counter, so the comparison needs the ratchet's own code path — and
 re-implementing it is how a wrong denominator gets built.
+
+---
+
+## 6. THE FULL SHA SWEEP — and the width was already fixed; the CORPUS was not
+
+**Run at HEAD `94bad71e`, 2026-10-07. `PROGRAM_EXIT=0`, three runs, all three
+outputs byte-identical, `git status` unchanged before and after.**
+
+### The dispatch premise is one batch stale, and that is the first finding
+
+It says the matcher *"used a width of 8, which never matches a 12- or
+40-character sha"*. **True of the first version only.** Batch 13 item 4 already
+replaced it with a hex **run** (`[0-9a-fA-F]+`), length measured against the
+whole run, `MIN_LEN 8` / `MAX_LEN 40`. Three arms now prove the width case
+directly — a 40-char sha, a 12-char prefix, a 16-char prefix — each paired with
+an **anti-vacuity arm proving the ORIGINAL `\b[0-9a-f]{8}\b` could not have
+matched it.** Without those three, the width arms would pass whether or not the
+fix was present, which is convention 20.
+
+**What was still narrow was the corpus** — ten of my own documents. That is a
+convenience sample, which is convention 21 applied to documents instead of
+bytes. It is now **every tracked `*.md` and `*.json`** via `git ls-files`.
+
+### Corrected counts, and they move in opposite directions
+
+| | my 10 documents (batch 13) | the full corpus (now) |
+|---|---|---|
+| documents | 10 | **1,101** |
+| distinct sha-shaped tokens | 115 | **16,319** |
+| ON-REF | 82 | **2,433** |
+| **ORPHANED** | 12 | **79** |
+| ABSENT | 21 | **13,807** |
+| rejected as not-a-sha | 10 | **1,624** (1,480 all-digit, 54 date-shape, 90 over-40) |
+
+### AND THE WIDENING MADE ONE COLUMN USELESS, WHICH IS WORTH MORE THAN THE NUMBER
+
+**13,807 ABSENT is not a finding list. It is noise.** At repo scale the column
+is dominated by non-sha hex inside the JSON registers — content hashes, opaque
+ids, base64-ish fragments — and **ABSENT is the state that attracts every false
+positive**, because anything that is not a commit is trivially not in this
+clone. The rejection rules removed 1,624 of them and cannot remove the rest: an
+8-char mixed-hex token that is not a sha is indistinguishable from one that is.
+
+**So the sweep's useful output is the ORPHANED column**, which is the state that
+needs action, and **ABSENT only means something on a hand-picked corpus of prose
+that cites commits.** Quote the 79; do not quote the 13,807.
+
+### Where the 79 orphans live, and most of them are by design
+
+    35  docs/2026-09-29-stale-branch-tips.md     <- a document ABOUT stale tips
+    15  the purge-evidence documents
+     7  docs/register-sha-pinning-proposal.md
+     7  docs/2026-10-07-fourth-routed.md         <- the Tier A ledger SHAs, owed back
+     7  docs/defect-density-register.json
+     6  docs/tier-a-reviews.json
+     5  docs/SAIRN-PLATFORM-2026-10-06-fourth-batch10-handoff.md
+     3  docs/2026-10-06-fourth-andon-log.md
+     3  .claude/claims/fourth.json
+
+**A CORRECTION TO MY OWN BATCH-12 FIGURE.** I swept
+`docs/defect-density-register.json` in batch 12 and reported **0 ORPHANED / 16
+ABSENT**. It has **7 orphans**. That sweep used `[0-9a-f]{12,40}` and therefore
+**could not see an 8-character prefix** — the mirror of the defect the dispatch
+named, in a sweep I had already called clean. `docs/tier-a-reviews.json` reads 6
+rather than the 7 I reported, consistent with one having been discharged or
+re-seated since.
+
+### My own five batch-12 commits, by name
+
+    850a4849   ON-REF   docs/handoff-fourth-2026-10-07.md
+    905b1736   ON-REF   docs/handoff-fourth-2026-10-07.md
+    c74f5e6f   ON-REF   docs/handoff-fourth-2026-10-07.md
+    f2ee7be0   ON-REF   docs/2026-10-07-fourth-routed.md + 1
+    9e380383   ON-REF   4 documents
+
+**All five are ON-REF**, which is the batch-13 re-seat holding at this HEAD. It
+is the first batch in three in which none of my own cited commits is orphaned.
+
+### Why it is indexed, and why the index is cross-checked
+
+The naive form ran two git subprocesses per token and **did not finish in ten
+minutes** on 1,101 documents. Two batched calls replace it: one
+`git rev-list origin/main` (8,132 commits) for reachability, one
+`git cat-file --batch-check` for everything else.
+
+**An index is a shortcut, so it is checked against the real tests.** 29 tokens
+spanning all three states were re-tested with `merge-base --is-ancestor` and
+`cat-file -e`: **AGREES**, and the run refuses outright on any disagreement. A
+faster answer that is not the same answer is worse than a slow one — and the
+`--batch-check` path also refuses if it gets a different number of answers than
+questions, because answers that cannot be paired with their questions are not
+answers.
+
+**Read-only by construction:** every git call is `rev-list`, `ls-files`,
+`cat-file`, `merge-base` or `rev-parse`. `git status` was captured before and
+after and is unchanged.

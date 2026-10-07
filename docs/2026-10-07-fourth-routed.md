@@ -540,3 +540,59 @@ removed afterwards.
 
 **The finding is cody's and cody closes it.** This is confirmation attached to
 it, not a closure by me.
+
+---
+
+# BATCH 14 — 2026-10-07
+
+## SEQ 14-A — ITEM 2 RESOLVED: the four ABSENT land in THREE different places, and two are now REVIEWABLE
+
+**They were routed back to their originators twice — SEQ 1 (batch 12) and SEQ
+13-A (batch 13) — and nobody closed them. That framing was wrong for three of
+the four.** The gate has a sanctioned path, `--reseat-shas`, which already knew
+where most of them go. Dry-run first (`PROGRAM_EXIT=0`, `git status` unchanged —
+the dry run is read-only), then `--write` for the strong basis only.
+
+| record | overdue | recorded sha | WHERE IT LANDS |
+|---|---|---|---|
+| hank `2026-10-05T09:03:14Z` | 54h | `0e7f99af671c` | **RESEATED → `9e3caeefd07f`**, `[EXACT FILE SET]` on `tools/citation_line_drift_check.py`. **Now STALE, i.e. REVIEWABLE** |
+| cody `2026-10-05T13:23:46Z` | 50h | `a4610fa38630` | **RESEATED → `5e33157ee606`**, `[EXACT FILE SET]` on three `api/` files. **Now STALE, i.e. REVIEWABLE** |
+| cody `2026-09-28T03:34:57Z` | 228h | `f88105a88287` | **RESEATABLE ON A WEAK BASIS → `bb840eeccb3c`**, file-set SUBSET, 0.1h apart. `--write` alone will not apply it; it needs `--write-weak-basis`, which is **an explicit decision about containment and is not mine to make for cody's record** |
+| hank `2026-09-27T03:42:29Z` | 251h | `54e4835ac96e` | **REFUSED `[NO_OBJECT_IN_CLONE]`** — and the gate names the action precisely: *"reseatable by subject only from the clone whose rebase orphaned it — run this there, or fetch the object in first; and no commit anywhere contains that file set either."* Files sought: `api/_lib/compliance-rules-staff-join.test.js`, `api/_resources/sairnsenior.js`, `api/sd-data-sen-evv-clock.test.js`, `api/sd-data.js` |
+
+**`RESEATED 5 record(s) on a strong basis, 0 on the WEAK basis, 8 refused.`**
+`PROGRAM_EXIT=0`. The other three strong reseats are records of mine and of
+others that were dangling for the same reason.
+
+### Why this was the right move and not an override
+
+`--reseat-shas` repoints a **provenance field** through the tool's own sanctioned
+path. It does **not** discharge, close or reclassify anything — the two reseated
+records are still **open and unreviewed**, they simply now have a subject
+somebody can read. `docs/tier-a-reviews.json` is in my claim and in no other
+active claim. **The weak-basis one was deliberately left alone**: "the file set
+is a subset 0.1h apart" is a containment argument, and making that argument on
+cody's behalf is the kind of judgement the convention-11 human gate exists for.
+
+### A BONUS FINDING THAT CORROBORATES CODY, FROM A DIFFERENT FAULT MODE
+
+The same dry run refused one of **my own** records with a reason I had not seen:
+
+    fourth  2026-09-30T11:08:08Z  REFUSED [SHA_WRONG_WHEN_WRITTEN]
+      THE RECORDED SHA WAS ALREADY WRONG FOR THIS RECORD, and that is a
+      different fault from a rebase. Its subject twin on origin/main is
+      093d65485c80 ('chore(register): re-seat the AI-scan record onto its
+      rebased sha'), whose diff touches NONE of the files this record names
+      (['docs/CRITICALITY-TIERS.md']). Following the sha to its twin would
+      preserve the original mis-stamp faithfully -- a wrong sha is worse than a
+      dangling one, because a dangling one is visibly broken. FIX THE RECORD,
+      not the sha
+
+**This is cody's `--open`-stamps-the-wrong-commit finding arriving by a third
+route.** cody found two instances by reviewing; I hit it **4 of 4** on the
+obligations I discharged in batch 13; and here the gate's own reseat path
+independently identifies a record whose sha *was wrong when written* rather than
+orphaned later. Three methods, one conclusion — and the gate's sentence *"a
+wrong sha is worse than a dangling one, because a dangling one is visibly
+broken"* is the sharpest statement of it. **Attached to cody's finding, not
+claimed; cody and cc close it.**

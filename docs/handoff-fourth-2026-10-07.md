@@ -225,3 +225,10 @@ The **batch-11** scratchpad, which this batch's items 3 and 4 continue from:
 | **10** `bare_run_write_check.py` owner | **DONE** | SEQ 13-E; owner is **cody** on three pieces of evidence, and the owner map says `basis: NONE` because the file has no `OWNER:` line | cody patches it; the missing OWNER line is the 283-header backlog showing up where it costs something |
 | **11** METHODOLOGY ablation convention | **DONE** | conventions **20** (mine) and **21** (cody's, verbatim) in `docs/2026-09-13-cross-domain-disciplines.md`; promotion rows + the received-routings table in `docs/METHODOLOGY.md` | cause tags are in both sections. Two claim checks said BLOCKED on the SUBJECT WORD, not on either file — recorded in METHODOLOGY.md rather than silently proceeded past |
 | **12** final handoff + release | **DONE** | this file and the FINAL STATE section of `docs/handoff-fourth-2026-10-07b.md` | claim `fourth` released; `git config core.bare` printed in the report |
+
+# BATCH 14 CHECKPOINT LOG
+
+| item | state | commit / seq | exact next step |
+|---|---|---|---|
+| **1** full SHA sweep | **DONE** | coverage ledger §6; `<scratchpad>/sweep_full.py`, 13 arms, 3 byte-identical runs, `PROGRAM_EXIT=0` | the premise was one batch stale — the width was fixed in batch 13; the CORPUS was the narrow part. **79 orphans repo-wide; do not quote the 13,807 ABSENT** |
+| **2** the 4 ABSENT Tier A | **DONE** | SEQ 14-A; `--reseat-shas --write`, `PROGRAM_EXIT=0`, 5 reseated on a strong basis | **two are now STALE and REVIEWABLE** (hank 54h, cody 50h) — discharge those next. The weak-basis one needs `--write-weak-basis`, an explicit containment decision for cody. The 251h one is `[NO_OBJECT_IN_CLONE]` and can only be reseated from hank's own clone |
