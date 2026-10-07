@@ -558,10 +558,61 @@ def _run(js, py, quiet, excluded=None):
     return failures, skipped, retried, not_run
 
 
-def _tree():
-    r = subprocess.run(['git', 'status', '--porcelain'], cwd=REPO,
+# ── THE RESIDUE CHECK FOLDED "COULD NOT ASK" INTO "CLEAN" (fixed 2026-10-07)
+# THIS IS THE DEFECT, MEASURED ON A REAL RUN OF THIS FILE. The 23463-second run
+# started 2026-10-06T18:59:17Z finished EXIT 1 with 91 failures and printed NO
+# residue warning. It had left, in this clone:
+#
+#   core.bare = true           .git/config mtime 2026-10-07T01:14:02Z,
+#                              INSIDE the run window -- git status, add and
+#                              commit all broken afterwards
+#   api/sd-data.js             mutated -- `warn_days: gateWarn` deleted from a
+#                              canAssign() call on the sub_assignments path
+#   api/_lib/subcontractor-compliance.js   mutated AND LEFT SYNTACTICALLY
+#                              BROKEN: node --check exits 1, "Identifier
+#                              'required' has already been declared"
+#
+# `_tree()` read `r.stdout` and NEVER LOOKED AT `r.returncode`. With
+# core.bare = true `git status` fails, stdout is empty, so the old function
+# returned [] -- and [] is exactly what a clean tree returns. `residue = [l for
+# l in after if l not in before]` was then empty and the section that exists to
+# shout about residue said nothing, while two product files sat mutated and one
+# of them would not parse.
+#
+# A COULD-NOT-ASK FOLDED INTO A CLEAN ANSWER, INSIDE THE CHECK WHOSE WHOLE JOB
+# IS TO NOTICE RESIDUE. PR 1.11, in my own tool, found only because the next
+# `git` command in the next session happened to be a claim release that printed
+# "fatal: this operation must be run in a work tree".
+#
+# AND IT COST A FALSE FINDING IN A SECOND TOOL. `tools/guard_ablation.py` ran
+# one second after this run ended, read the mutated api/sd-data.js, found none
+# of the `if (!X_ROLES[session.role]) {` sites it ablates and exited 2
+# "COULD NOT RUN: the shape this tool ablates has changed". That is a true
+# sentence about a file nobody meant to change. Re-run after restoring the
+# residue: 40 gates, 178 suites, EXIT 0. A negative result from a run that
+# never reached the real code is not evidence about that code.
+def _tree(where=None):
+    """(ok, lines). `ok` is False when git COULD NOT ANSWER -- never [].
+
+    Callers must not treat a could-not-ask as a clean tree. That is the whole
+    reason this returns a pair instead of a list.
+    """
+    r = subprocess.run(['git', 'status', '--porcelain'], cwd=where or REPO,
                        capture_output=True, text=True, encoding='utf-8', errors='replace')
-    return [l for l in (r.stdout or '').splitlines() if l.strip()]
+    if r.returncode != 0:
+        return (False, [('COULD NOT READ THE TREE: git status exited %d -- %s'
+                         % (r.returncode,
+                            (r.stderr or '').strip().splitlines()[:1] or ['no stderr']))])
+    return (True, [l for l in (r.stdout or '').splitlines() if l.strip()])
+
+
+def _core_bare(where=None):
+    """'true' / 'false' / None when it could not be read. None is NOT false."""
+    r = subprocess.run(['git', 'config', '--get', 'core.bare'], cwd=where or REPO,
+                       capture_output=True, text=True, encoding='utf-8', errors='replace')
+    if r.returncode not in (0, 1):          # 1 is "not set", a real answer
+        return None
+    return (r.stdout or '').strip().lower() or 'false'
 
 
 # ── TWO FLAGS ADDED 2026-09-25, BOTH PAID FOR BY ONE RUN ────────────────────
@@ -701,7 +752,17 @@ def pinned_main(argv):
         return PINNED_COULD_NOT_RUN
     sha = resolved.stdout.strip()
 
-    dirty = _tree()
+    # A tree that cannot be READ is not a clean tree, and --pinned must not
+    # proceed on one: the whole flag exists to make a long run attributable.
+    _ok, dirty = _tree()
+    if not _ok:
+        sys.stderr.write('COULD NOT RUN: the working tree could not be read, so '
+                         'whether uncommitted work would be excluded is unknown.\n'
+                         '%s\n'
+                         'If core.bare is true, `git config core.bare false` and '
+                         're-run. Could-not-tell is not a clean tree.\n'
+                         % '\n'.join(str(x) for x in dirty))
+        return PINNED_COULD_NOT_RUN
     if dirty and '--pinned-ignore-dirty' not in argv:
         sys.stderr.write(
             'COULD NOT RUN: --pinned tests a COMMIT, and this clone has %d '
@@ -810,7 +871,115 @@ class _Tee(object):
         return False
 
 
+SELFTEST_CRITERIA = '2026-10-07.1'
+
+
+def _selftest():
+    """Drive the three tree states in throwaway repos. Never touches this clone.
+
+    The arm that matters is the NEGATIVE one: a repo with core.bare = true must
+    read as COULD NOT TELL and NEVER as a clean tree. That is the exact fold
+    that let a 23463-second run break this clone and report no residue.
+    """
+    import shutil
+    ok = True
+    tally = {'n': 0, 'neg': 0}
+
+    def arm(label, cond, detail=''):
+        nonlocal ok
+        tally['n'] += 1
+        if 'negative' in label.lower() or 'NEVER' in label:
+            tally['neg'] += 1
+        if not cond:
+            ok = False
+            print('  FAIL %s%s' % (label, (' -- ' + str(detail)) if detail != '' else ''))
+        else:
+            print('  ok   %s' % label)
+
+    base = tempfile.mkdtemp(prefix='run_all_tests_fx_')
+    try:
+        r = os.path.join(base, 'repo')
+        os.makedirs(r)
+        for a in (['init', '-q'], ['config', 'user.email', 'f@x.invalid'],
+                  ['config', 'user.name', 'f']):
+            subprocess.run(['git', '-C', r] + a, capture_output=True, text=True,
+                           encoding='utf-8', errors='replace')
+        io.open(os.path.join(r, 'a.txt'), 'w', encoding='utf-8').write('x\n')
+        subprocess.run(['git', '-C', r, 'add', '-A'], capture_output=True)
+        subprocess.run(['git', '-C', r, 'commit', '-q', '-m', 'f'], capture_output=True)
+
+        okt, lines = _tree(r)
+        arm('a CLEAN repo reads ok with no lines -- the paired positive',
+            okt is True and lines == [], (okt, lines))
+        arm('core.bare on a clean repo reads false, not None',
+            _core_bare(r) == 'false', _core_bare(r))
+
+        io.open(os.path.join(r, 'a.txt'), 'w', encoding='utf-8').write('y\n')
+        okt, lines = _tree(r)
+        arm('a DIRTY repo reads ok WITH lines, so dirt and silence are different '
+            'answers', okt is True and len(lines) == 1, (okt, lines))
+        subprocess.run(['git', '-C', r, 'checkout', '--', 'a.txt'], capture_output=True)
+
+        subprocess.run(['git', '-C', r, 'config', 'core.bare', 'true'],
+                       capture_output=True)
+        okt, lines = _tree(r)
+        arm('NEGATIVE HALF: with core.bare true the tree is COULD NOT READ and '
+            'NEVER an empty clean list -- the exact fold that hid a broken '
+            'clone for 23463 seconds',
+            okt is False and lines and 'COULD NOT READ' in str(lines[0]),
+            (okt, lines))
+        arm('...and core.bare reads true in that state, so the message can name '
+            'the cause', _core_bare(r) == 'true', _core_bare(r))
+        arm('NEGATIVE: the old implementation would have returned [] here, which '
+            'is what a clean tree returns -- asserted so the fix cannot be '
+            'reverted silently',
+            okt is not True, okt)
+        subprocess.run(['git', '-C', r, 'config', 'core.bare', 'false'],
+                       capture_output=True)
+        okt, lines = _tree(r)
+        arm('repairing core.bare restores a readable clean tree, so the arm '
+            'above is not passing because the repo is simply broken',
+            okt is True and lines == [], (okt, lines))
+    finally:
+        shutil.rmtree(base, ignore_errors=True)
+
+    # ── THE GUARD MUST REACH THE EXIT CODE, not just print ─────────────────
+    # A detector that reports and still returns 0 is the thing this platform
+    # keeps switching off. _main_body's pre-run guard is driven directly with
+    # _tree() forced into its could-not-read state, because the alternative is
+    # a 23463-second run.
+    _real_tree = globals()['_tree']
+    try:
+        globals()['_tree'] = lambda where=None: (False, ['COULD NOT READ THE TREE: forced'])
+        _rc = _main_body(True)
+        arm('the pre-run guard RETURNS %d COULD NOT RUN on an unreadable tree '
+            'and NEVER runs the suite -- driven, not inspected'
+            % PINNED_COULD_NOT_RUN,
+            _rc == PINNED_COULD_NOT_RUN, 'returned %r' % (_rc,))
+        arm('NEGATIVE: and that is not 0, so a broken clone cannot be reported '
+            'as a clean run', _rc != 0, 'returned %r' % (_rc,))
+    finally:
+        globals()['_tree'] = _real_tree
+
+    # THIS CLONE, as the final arm: a selftest that dirties the tree it is run
+    # in has committed the defect it tests for.
+    live_ok, live_lines = _tree()
+    arm('and THIS run left the live clone readable and no dirtier than it found '
+        'it -- the selftest obeys its own rule',
+        live_ok is True, (live_ok, live_lines))
+    print('  live tree now: %s' % ('clean' if live_ok and not live_lines
+                                   else ('%d path(s)' % len(live_lines) if live_ok
+                                         else 'UNREADABLE')))
+    print('  criteria lock: %d arms, %d of them negative (criteria %s)'
+          % (tally['n'], tally['neg'], SELFTEST_CRITERIA))
+    return ok
+
+
 def main(argv):
+    if '--selftest' in argv:
+        print('RUN ALL TESTS -- selftest of the tree/residue guard (criteria %s)'
+              % SELFTEST_CRITERIA)
+        return 0 if _selftest() else 1
     if '--hook' in argv:
         return hook_main()
 
@@ -863,7 +1032,17 @@ def main(argv):
 
 
 def _main_body(quiet, excluded=None):
-    before = _tree()
+    before_ok, before = _tree()
+    bare_before = _core_bare()
+    if not before_ok:
+        print('COULD NOT RUN: the working tree could not be read BEFORE the run,')
+        print('so no residue comparison afterwards would mean anything.')
+        for l in before:
+            print('    %s' % l)
+        print('    core.bare reads %r. If it is true: git config core.bare false'
+              % (bare_before,))
+        print('EXIT %d -- COULD NOT RUN, not a pass' % PINNED_COULD_NOT_RUN)
+        return PINNED_COULD_NOT_RUN
     js, py, unrun = discover()
     # EXIT 3 MEANS SKIPPED, and it is reported apart from both other answers.
     # Two push-gate probes commit planted fixtures and reset, so they refuse to
@@ -884,7 +1063,8 @@ def _main_body(quiet, excluded=None):
     # tree to make a test suite happy is a far worse trade than a loud
     # sentence. Naming the files and saying results after this point may be
     # cascade is the whole job.
-    after = _tree()
+    after_ok, after = _tree()
+    bare_after = _core_bare()
     print('')
     print('RAN: %d JS + %d PY = %d files (%d skipped)'
           % (len(js), len(py), len(js) + len(py), len(skipped)))
@@ -898,7 +1078,31 @@ def _main_body(quiet, excluded=None):
         print('    would be a true sentence about a suite that has lost guards. If the '
               'removal')
         print('    was deliberate, lower MIN_TEST_FILES in the same commit and say why.')
-    residue = [l for l in after if l not in before]
+    # ── THE THIRD STATE, AND IT REACHES THE EXIT CODE ──────────────────────
+    # Before 2026-10-07 an unreadable tree produced an EMPTY residue list and
+    # this section printed nothing. A run that broke the clone reported clean.
+    unreadable_tree = not after_ok
+    bare_changed = (bare_before != bare_after)
+    if unreadable_tree:
+        print('')
+        print('THE TREE COULD NOT BE READ AFTER THE RUN -- this is NOT "no residue".')
+        for l in after:
+            print('    %s' % l)
+        print('    core.bare was %r before this run and reads %r now.'
+              % (bare_before, bare_after))
+        print('    Something in the suite broke this clone. Repair with')
+        print('        git config core.bare false')
+        print('    then `git status` and restore any mutated tracked file before')
+        print('    believing ANY verdict above -- every clean-tree probe after the')
+        print('    breakage failed or passed for a reason that is not about itself.')
+    elif bare_changed:
+        print('')
+        print('THE SUITE CHANGED core.bare: %r -> %r. A probe wrote the SHARED'
+              % (bare_before, bare_after))
+        print('    .git/config -- the usual cause is a git command run with cwd')
+        print('    inside a LINKED WORKTREE, which shares this clone\'s config.')
+        print('    Repair with `git config core.bare %s`.' % (bare_before or 'false'))
+    residue = [l for l in after if l not in before] if after_ok else []
     if residue:
         print('')
         print('THE SUITE DIRTIED THE TREE (%d path(s)) -- a probe did not clean up:'
@@ -977,7 +1181,14 @@ def _main_body(quiet, excluded=None):
     # THE FLOOR REACHES THE EXIT CODE. A shrunken suite that still exits 0 is a
     # sentence nobody acts on, which is the exact failure mode the sweep that
     # added this is about.
-    rc = 1 if (failures or shrunk) else 0
+    # A BROKEN CLONE OUTRANKS EVERY OTHER VERDICT and is exit 2, not 1: nothing
+    # above it is attributable once the tree stopped being readable, so it is a
+    # COULD NOT RUN about the whole run rather than a finding about the suite.
+    if unreadable_tree:
+        print('EXIT %d -- COULD NOT RUN: the clone was broken during this run, so '
+              'no verdict above is attributable' % PINNED_COULD_NOT_RUN)
+        return PINNED_COULD_NOT_RUN
+    rc = 1 if (failures or shrunk or bare_changed or residue) else 0
 
     # ── THE EXIT CODE IS PRINTED, BECAUSE A PIPE THROWS IT AWAY (2026-09-18) ──
     # This run reported 29 failing test files and the SHELL reported success,

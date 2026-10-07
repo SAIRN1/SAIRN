@@ -185,26 +185,48 @@ def read_raw(path):
 # about what "the fleet" means.
 from comment_sensitivity_check import CHECKERS               # noqa: E402
 
-# ── BOUND SET AT 2x A MEASUREMENT, 2026-10-06, not at a round number ───────
-# It was 120, which is a number nobody measured. What it actually bounds is ONE
-# of the six CHECKERS run against ONE target. Measured on this machine while a
-# full 249-suite run was loading it -- deliberately the loaded case, because a
-# bound calibrated on an idle box is the one that fires under load:
+# ── BOUND SET AT 2x A MEASUREMENT -- AND THE FIRST MEASUREMENT WAS OF THE
+# ── WRONG INPUT. Corrected 2026-10-07 by driving the tool, not by reading it.
 #
-#   literal_drift_check.py   stonedesk.html (2.76MB)   18.24s   <- the worst
+# WHAT I DID ON 2026-10-06. It was 120, a number nobody measured, so I timed the
+# six CHECKERS against the biggest real target and set the bound at 2x:
+#
+#   literal_drift_check.py   stonedesk.html (2.76MB)   18.24s   <- "the worst"
 #   nav_panel_check.py       stonedesk.html            14.35s
-#   key_collision_check.py   stonedesk.html             3.18s
-#   the other three                                   <1s
+#   the other four                                    <3.2s
+#   -> 2 x 18.24 = 36.5, rounded up to 40
 #
-# 2 x 18.24 = 36.5, rounded up to 40. The alarm is now ~2x the failure point
-# instead of ~6.6x, which is the whole reason for the rule: a bound that
-# generous reports a hang as a slow pass.
+# THE BOUND THEN FIRED ON EVERY RUN. Three runs, 2026-10-07, each EXIT 2 with
+# the same two timeouts:
 #
-# RE-MEASURE WHEN stonedesk.html GROWS. The worst case is dominated by one
-# 2.76MB file and that file is growing; a bound tied to a measurement inherits
-# the measurement's expiry date, which is item 8 of the cross-domain
-# disciplines in its most literal form.
-PER_RUN_TIMEOUT = 40           # seconds. A timeout is COULD-NOT-RUN, not a pass.
+#   run 1  355s  EXIT 2     duplicate_global_check.py  stonedesk.html, relation
+#   run 2  506s  EXIT 2       `duplicate`: timed out after 40s
+#   run 3  476s  EXIT 2     literal_drift_check.py     same relation, same
+#
+# BECAUSE A METAMORPHIC CHECK DOES NOT RUN THE CHECKER ON THE FILE. It runs it
+# on the file AND on each TRANSFORM of the file, and `t_duplicate` returns
+# `lf + '\n' + lf` -- so the real subject is 5.51MB, not 2.76MB, and I measured
+# the one input the tool never actually bounds. Re-measured on the duplicated
+# file, same machine:
+#
+#   duplicate_global_check.py   5.51MB   71.54s   <- the REAL worst
+#   literal_drift_check.py      5.51MB   43.64s
+#   nav_panel_check.py          5.51MB   19.89s
+#   div_balance_check.py        5.51MB    8.33s
+#   key_collision_check.py      5.51MB    7.52s
+#   panel_nesting_check.py      5.51MB    0.77s
+#
+# duplicate_global_check went 0.82s -> 71.54s on a 2x input -- 87x, superlinear
+# in duplicate ids -- which is exactly why the plain-file figure could not
+# predict it. 2 x 71.54 = 143.1, SO THE BOUND IS 145 AND IT IS HIGHER THAN THE
+# 120 I REPLACED. Said plainly: my tightening broke a working tool, and the
+# honest correction raises the bound above where it started. The old 120 was
+# not a 2x bound either -- it was simply above 71.54 by luck.
+#
+# RE-MEASURE WHEN stonedesk.html GROWS, and measure the TRANSFORMED input when
+# you do. The worst case is superlinear in the size of one growing file, so this
+# number has a shorter life than most.
+PER_RUN_TIMEOUT = 145          # seconds. A timeout is COULD-NOT-RUN, not a pass.
 
 SAME = 'SAME'
 NO_ERASE = 'NO_ERASE'

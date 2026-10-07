@@ -6919,3 +6919,36 @@ at `<scratchpad>/held/firebase-admin.ported.js`, branch
 
 Detail: `docs/2026-10-06-cody-queue19b-items-5-7-8-9-10-14.md`.
 Handoff: `docs/handoff-cody-2026-10-06d.md`.
+
+---
+
+## 2026-10-07 — batch 20 (Cody): the 6h31m run broke the clone and said nothing
+
+**LIVE INCIDENT, found and repaired.** `tools/run_all_tests.py` ran 23463s
+(EXIT 1, 745 files, 91 failures), set `core.bare = true` at 2026-10-07T01:14:02Z
+and left `api/sd-data.js` and `api/_lib/subcontractor-compliance.js` mutated --
+the latter **syntactically invalid**. Nothing warned, because `_tree()` read
+`git status`'s stdout and never its return code, so a could-not-ask was folded
+into a clean answer inside the residue check itself. Repaired 10:52:29Z,
+residue restored 10:54:42Z. Cause routed to **fourth** with the full artifact:
+`docs/2026-10-07-cody-routed-to-fourth.md` -- **his root-cause fix `b23dbc2e`
+was already in my tree when this happened**, so the cause is NOT closed.
+
+**Hardened (mine, both landed):** `run_all_tests.py` -- `_tree()` returns a
+pair, `core.bare` compared before/after, an unreadable tree is EXIT 2 and
+outranks every other verdict, `--selftest` with 10 arms. `capture_exit.py` --
+optional `--bound` writing `COULD_NOT_RUN TIMEOUT_<n>s` instead of a code
+(cc's routed finding), plus two defects in its own selftest.
+
+**`metamorphic_check.py` 40 -> 145s, and my previous tightening was wrong.** I
+had measured the 2.76MB file; the tool bounds a checker against each TRANSFORM
+of it, and `t_duplicate` doubles it -- `duplicate_global_check.py` is 0.82s
+plain and **71.54s** doubled. The 40s bound failed 3 runs of 3. 145s: one run,
+EXIT 0, 0 timeouts.
+
+**Tier A:** claim released 2026-10-06T22:40:01Z so cc could take ranks 7-12;
+one discharge by takeover (cc's 2026-09-28T10:44:30Z, 204.2h) with two findings
+against her evidence, not her fix.
+
+Detail: `docs/2026-10-07-cody-batch20.md`. Handoff:
+`docs/handoff-cody-2026-10-07.md`.
