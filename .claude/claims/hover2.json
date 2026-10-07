@@ -33,6 +33,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "hover2-1791370901",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "hover2 batch J, audit role, own-tool only, writes only to its own hover-audit-log and tools-hover2 directory: re-check open findings, hank fix verification, dnt_appointments status, provenance sweep of own history, gate-parity 6, undirected sweep 9, three self-corrected tools full-population re-run, log repo push, claim re-derivation, hard-fail score, independence grade, non-LLM coverage, audit-trail review, rotation, methodology, chain verify, handoff",
+      "claimed_at": "2026-10-07T11:01:41Z",
+      "claimed_at_epoch": 1791370901.5305407,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ]
 }
