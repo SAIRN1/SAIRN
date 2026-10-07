@@ -26,6 +26,40 @@ def iso(text):
 
 
 def main():
+    # ── A MISSING ARGUMENT IS A REFUSAL, NOT A TRACEBACK (2026-10-07) ─────
+    # This read sys.argv[1] directly, so a bare run raised IndexError and
+    # exited 1. On this platform EXIT 1 MEANS FINDINGS and exit 2 means COULD
+    # NOT RUN -- so a sweep reading exit codes could not tell "needs an
+    # argument" from "found something", while 67 other tools say so plainly.
+    # Measured 2026-10-07: 8 of 315 tools behaved this way; six were fixed at
+    # 47d69604 and this is the seventh.
+    #
+    # OWNERSHIP: docs/tool-owner-map.json records this file as
+    # `"basis": "NONE", "owner": null` -- not UNKNOWN, but NO OWNER AT ALL: no
+    # `# OWNER:` line and no claim has ever named it. It was left out of the
+    # earlier six because routing was the safe default; a file with no owner
+    # cannot be ROUTED to anyone, so leaving it was not deferring the decision,
+    # it was declining to make one. Taken here under this session's claim and
+    # said out loud rather than fixed quietly. The eighth, tools/gh_push.py:182,
+    # IS owned -- the map says `cc`, basis LAST_CLAIM 812857c0 -- and is routed,
+    # not touched.
+    #
+    # TWO ARGUMENTS ARE REQUIRED, NOT ONE. `wanted` is sys.argv[2:], and an
+    # empty `wanted` is not an error that raises: the `name not in wanted` test
+    # at the loop head matches nothing, so the tool prints NOTHING and exits 0.
+    # Silent success on a run that examined no rule is worse than the traceback
+    # this is replacing -- a caller cannot tell it from "every rule is clean".
+    if len(sys.argv) <= 2:
+        sys.stderr.write(
+            'COULD NOT RUN: %s. Nothing was read.\n'
+            % ('no rules file given' if len(sys.argv) <= 1
+               else 'a rules file was given but no rule to look for')
+            + 'usage: python tools/va_rule_currency.py <rules.txt> <rule> [rule ...]\n'
+              '  e.g. python tools/va_rule_currency.py va_rules.txt 1:4 3A:11\n'
+              '  Prints the "Last amended by Order dated ...; effective ..." line\n'
+              '  that belongs to each named rule, scoped strictly between that\n'
+              '  rule heading and the next so nothing inherits its neighbour.\n')
+        sys.exit(2)
     path, wanted = sys.argv[1], sys.argv[2:]
     lines = open(path, encoding='utf-8', errors='replace').read().splitlines()
 

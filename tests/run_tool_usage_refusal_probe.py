@@ -26,11 +26,22 @@ probe against the parent commit turns every arm red. The before-state is in
 `scratchpad/before.<tool>`.
 
 ── WHAT THIS DOES NOT COVER ────────────────────────────────────────────────
-Two of the eight are NOT in this list and are not fixed:
-`tools/gh_push.py` and `tools/va_rule_currency.py`. `tools/tool_owner_map.py`
-reports `va_rule_currency.py` as having **no `# OWNER:` line and no claim that
-has ever named it**, and `gh_push.py` as UNKNOWN rather than unowned. Neither is
-in this session's claim, so both are listed for routing instead of edited.
+**ONE of the eight is still not fixed: `tools/gh_push.py:182`.** It is OWNED --
+`docs/tool-owner-map.json` says `cc`, basis `LAST_CLAIM` `812857c0` -- so it has
+a real routing target and is routed rather than edited.
+
+`tools/va_rule_currency.py` WAS on that list and is now a subject. Its map entry
+is `"basis": "NONE", "owner": null` -- **no owner at all**, not UNKNOWN. A file
+nobody owns cannot be routed to anyone, so leaving it on a routing list was not
+deferring the decision, it was declining to make one. Taken under this session's
+claim, stated rather than done quietly.
+
+**Its refusal is the only one of the seven that needs TWO arguments**, and the
+second is not cosmetic: `wanted = sys.argv[2:]`, so an empty `wanted` does not
+raise -- the loop's `name not in wanted` test matches nothing and the tool
+prints NOTHING and exits 0. Silent success on a run that examined no rule is
+worse than the traceback it replaces, because a caller cannot tell it from
+"every rule is clean". Arm C drives that case specifically.
 
 It also does not check that a subject still WORKS with a real argument -- that is
 a different question, and it is answered separately in the commit message by
@@ -59,11 +70,20 @@ SUBJECTS = [
     'js_code_only_diff.py',
     'literal_drift_check.py',
     'nav_panel_check.py',
+    # ── THE SEVENTH, ADDED 2026-10-07 ────────────────────────────────────
+    # Previously in NOT_MINE below as "no OWNER line, no claim has ever named
+    # it". That is still true, and it is the REASON it moved here rather than
+    # an objection to it: docs/tool-owner-map.json records
+    # `"basis": "NONE", "owner": null` -- NO OWNER AT ALL, not UNKNOWN. A file
+    # with no owner cannot be routed to anyone, so leaving it on the routing
+    # list was not deferring the decision, it was declining to make one.
+    'va_rule_currency.py',
 ]
 # Named so the probe reports them every run rather than leaving them to a
-# document nobody opens.
-NOT_MINE = ['gh_push.py (owner UNKNOWN)',
-            'va_rule_currency.py (no OWNER line, no claim has ever named it)']
+# document nobody opens. ONE LEFT, not two: gh_push.py IS owned --
+# docs/tool-owner-map.json says `cc`, basis LAST_CLAIM 812857c0 -- so it has a
+# real routing target and tools/gh_push.py:182 is the line.
+NOT_MINE = ['gh_push.py:182 (owner cc, basis LAST_CLAIM 812857c0)']
 
 
 def main(argv):
@@ -105,6 +125,24 @@ def main(argv):
         ck('B. %-24s ...and does NOT traceback -- a stack trace is what makes '
            'this indistinguishable from a real failure' % s,
            'Traceback (most recent call last)' not in out, out[:200])
+
+    # ── C. THE PARTIAL-ARGUMENT CASE, WHICH ARM B CANNOT SEE ─────────────
+    # va_rule_currency.py takes TWO arguments. Given only the first, the old
+    # code did not raise -- it matched no rule, printed nothing and exited 0.
+    # Arm B drives a BARE run, which the IndexError already covered, so arm B
+    # alone would have gone green over a silent-success path. This arm is the
+    # one that would have been red.
+    p = subprocess.run([sys.executable, os.path.join('tools', 'va_rule_currency.py'),
+                        os.path.join('tests', 'run_tool_usage_refusal_probe.py')],
+                       cwd=REPO, stdout=subprocess.PIPE,
+                       stderr=subprocess.STDOUT, timeout=60)
+    out = p.stdout.decode('utf-8', 'replace')
+    ck('C. va_rule_currency.py with a FILE but NO RULE exits 2, not 0. Exit 0 '
+       'with no output is indistinguishable from "every rule is clean", and '
+       'arm B cannot reach this case at all', p.returncode == 2,
+       'exit=%d  out=%r' % (p.returncode, out[:160]))
+    ck('C. ...and names which argument is missing, not just that one is',
+       'no rule to look for' in out, out[:200])
 
     print('')
     print('%d passed, %d failed' % (npass, nfail))
