@@ -6832,3 +6832,40 @@ rule named: *a check whose verdict depends on which clone, which ref, or which
 section of the document it happens to consult is not a check.* I wrote that rule
 and then shipped three fresh instances of it in the classifier that produced the
 table it appears in.
+
+## 2026-10-07 — batch 14 (items 1–5 closed, 6–11 open)
+
+Resumed after a compaction at item 1. The claim had been committed and **not
+pushed**, so it was invisible to every other clone — PR §2.2, found by
+`sairn_claim.py list` showing no `cc` row while `.claude/claims/cc.json` held an
+active one. Rebased, pushed, and the row appeared.
+
+Landed and pushed at `dc9f1629`; `a27cd83b` and `a9e9147b` committed after it.
+
+  * `d30566cb` role_gate_mc_config.py — an unrecognised flag was a WRITE
+    instruction. `--help` regenerated both TLA+ spec files.
+  * `b4fa159f` the same tool had silently shrunk the model from **10 apps to 6**:
+    a `vm` throw was returned as the same `null` that means "no declaration", so
+    four apps that DO declare MANAGEMENT_ROLES read as having no such concept.
+    Its own printed remedy would have deleted them.
+  * `adca07cf` gen_ma_seed.py — 19 lines of provenance the seed carried and the
+    generator did not. The 2026-08-27 access correction had been applied to the
+    OUTPUT only.
+  * `a606100b`, `3f0c8ddd` gen_mo_seed.py and gen_va_seed.py could not emit
+    `trigger_document`, a field `api/_lib/deadline-engine.js` **reads**.
+  * `f67cb7e5` the push gate's SCOPED exemption was **ungrantable** — two hook
+    modes, one single-use token, and the half that cannot push was spending it.
+  * `a27cd83b` sairn_build_load_gates.py — a bare run reinstated five gates a
+    human had deleted. Determinism proved over 8 builds; the outputs stay
+    uncommitted because that was Michael's call on 2026-08-29.
+  * `a9e9147b` doc_sha_reseat.py — 16 arms, one per false-positive shape of
+    `is_citation`. Both modes agree: **100 absent, 44 permanently + 56
+    recoverable**.
+
+**CORRECTION TO MY OWN RECORD:** two citations in this file, `27d62e7b` and
+`eef02009`, are PERMANENTLY-ABSENT — created and orphaned in a clone that no
+longer holds the object. They are not recoverable from any clone on this
+machine and no rewrite map will ever name them. This file is append-only and is
+never rewritten, so the correction is this note rather than a substitution.
+
+Handoff: `docs/handoff-cc-2026-10-07c.md`.
