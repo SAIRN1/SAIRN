@@ -80,6 +80,38 @@ same underlying lesson (an untested default silently does the wrong thing
 the first time it is actually exercised) applied to this role's own
 infrastructure rather than to a subject it audits.
 
+## Resuming work: the chain log is ground truth, not the claim file
+
+Added H1 batch R item 8. Batch Q opened on an instruction framed as
+"you compacted mid-batch, resume" -- and `.claude/claims/hover.json`
+showed NOTHING active since 2026-09-30, over a week stale, which read on
+its own like there was nothing to resume. The chain log said otherwise:
+seq1109-1113 showed five real, timestamped items from the same batch
+already landed. **The claim file and the chain log are two different
+persistence mechanisms answering two different questions** -- the claim
+file is a cross-session file-lock (`sairn_claim.py`'s whole purpose is
+telling OTHER sessions not to touch the same files right now), and it is
+entirely normal for it to go unwritten or expire while this role's own
+real work continues, because nothing about resuming mid-batch requires a
+file-lock to still be held. The chain log is this role's own append-only
+record of what it actually did, and it is the one that answers "is there
+unfinished work to resume." **On every future resume, check the chain log
+first and do not treat a stale or empty claim file as evidence against
+resuming** -- it answers a different question and was never built to
+answer this one.
+
+A related, harder-edged version of the same "verify the artifact, not just
+the log entry describing it" discipline surfaced one batch later (batch R
+item 6): eleven chain-log entries across two days cited running
+`hover_cross_resource_gate_check.py` as this role's own committed tool,
+and the file has never existed in this repository's history at all --
+caught only because this batch tried to actually re-run it rather than
+trusting the citation. The chain log is ground truth about WHAT THIS ROLE
+INTENDED AND BELIEVED it did; it is not, by itself, proof that a cited
+artifact still exists to be re-verified. Trust it over the claim file for
+"is there unfinished work" -- and still check that a cited tool is
+actually present before building a re-sweep on top of it.
+
 ## The log convention this item also adds: a reversal gets its own entry
 
 A later read that **CONTRADICTS** an earlier clean verdict from this role
