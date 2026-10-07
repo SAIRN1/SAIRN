@@ -1250,10 +1250,35 @@ before execution:
 
 | premise as briefed | re-derived | verdict |
 |---|---|---|
-| ablation **7 of 8**, `truthy_sum` outstanding | a stopped session had recorded it DONE, citing an evidence file that **does not exist**, in a direction re-measurement **contradicts** | **BOTH WRONG** -- the brief and the record |
+| ablation **7 of 8**, `truthy_sum` outstanding | a stopped session had recorded it DONE; its evidence file **does** exist -- in that session's scratchpad, not the resumed session's -- and its numbers are right for the lever it pulled, which was **not** the lever the brief named | **STALE, AND MY FIRST VERDICT ON IT WAS ITSELF WRONG.** I called the evidence absent after looking in the wrong one of two directories, and called the record wrong after not reading it. Corrected in the same document rather than edited out -- see the note under this table |
 | census **40 of 83** | 40, and ten rows already edited uncommitted on a basis whose run output was gone | **STALE** -- right as a number, wrong as a state |
 | orphans **84**, 28 mine, 56 others' | **93**, 18 mine, 75 others', under a written-down predicate | **DIFFERENT DEFINITION, not drift** |
 | `__file__` sweep **424 of 1214** | **974 of 1227** under a stated predicate; the 424's predicate was never recorded | **NOT REPRODUCIBLE** |
+
+**THE FOURTH-INSTANCE TABLE ABOVE CARRIES A CORRECTION TO ITSELF, and it is left
+visible because a convention about verifying premises cannot cite a premise it got
+wrong.** As first written, the ablation row read *"BOTH WRONG -- the brief and the
+record"*. Both halves of that were mine and both were wrong:
+
+* **"the evidence file does not exist".** It exists. A resumed session gets a NEW
+  scratchpad directory; I checked the resumed one and reported absence from the
+  original. **Looking in the right SHAPE of place and the wrong place is not a
+  check** -- it is this convention's own failure mode applied to a file path.
+* **"the direction it recorded is contradicted".** It is not. The record is
+  accurate for the lever it pulled -- FILLING the baseline, 46 → 54 keys, tool
+  1 → 0, probe 1 → 0. The brief named the opposite lever, EMPTYING, and that
+  session had measured it too, in a second file, as *"COULD-NOT-RUN -- the lever
+  never engaged"*. **The record was true and its LABEL was missing.**
+
+The correction is the more useful result: emptying the baseline does nothing on a
+dirty tree and everything on a clean fixture; filling it does everything on a
+dirty tree. **The layer is only measurable from a clean baseline, in whichever
+direction you reach it** — which is convention 12 arriving as a measurement.
+
+**And it sharpens this convention rather than weakening it.** A fifth verdict
+belongs beside the four: **WRONG-BY-MY-OWN-CHECK**, where the re-derivation is
+what is faulty. A premise check is itself a measurement and gets the same
+treatment as any other — read the artefact, not the shape of where it should be.
 
 Four premises, four different failure modes, and **one of them was a record this
 same session had written an hour earlier**. Checking your own last line is not

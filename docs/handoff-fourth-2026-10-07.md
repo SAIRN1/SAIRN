@@ -303,6 +303,10 @@ carries all three results.
 
 | **10** cc's three as conventions 23-25 | **DONE -- LANDED, CREDITED TO CC** | `docs/2026-09-13-cross-domain-disciplines.md`; `## <n>.` heading count **22 -> 25**, counted rather than trusted, before and after | **23** a brief is a snapshot: re-derive each premise and record the result PER premise, with four verdicts kept apart (CONFIRMED / STALE / WRONG / NOT-REPRODUCIBLE). **24** a leg that returns success on a failed leg is a silent skip and must fail loud. **25** at three false-positive CLASSES from one checker, stop patching and review the design. Each section says **DERIVED BY CC** in its first line and carries cc's own instance first, with fourth's second and labelled as such; cc's `defect_register --reseat` measurement is attributed to cc and marked **NOT re-run by me**. **The membership question was asked of all three** rather than assumed: **24 IS A TENTH MEMBER** of the cannot-fire group (item 8 one layer out -- it never turns a passing subject red, only a failing one green), 23 and 25 are NOT, with reasons. Group heading, its denominator note and the body sentence all moved **nine -> ten** and **twenty-two -> twenty-five** rather than left to drift |
 | **11** rule log, my two wrong measurements | **DONE** | the RULE LOG section below, in this file | both re-driven at `5be55ef4` with the exit code read on its own line, not through a pipe |
+| **12** report gate + SHA sweep | **RUN AFTER THIS FILE, BY DESIGN** | `<scratchpad>/report_gate.out` | the dispatch puts the handoff **before** the report and the gate as the **last step before sending** the report, so this row is the only one in the table whose evidence post-dates it. The gate is `--report-gate <path> --known-orphan <sha>` on the batch-14 sweep, carried into this session's scratchpad from `4975e2e9-.../sweep_full.py` and **not rewritten**; it is read-only by construction and `chdir`s to the clone, so it runs from anywhere. Its selftest arm exits **2** if the named known orphan is not even extracted, so a clean pass cannot be a gate nobody watched fail |
+| **13** methodology entry | **DONE -- and the claim was taken and released around the write alone** | `6cc8f251`; `docs/METHODOLOGY.md` | claim sequence, all four commits on `origin/main`: release `fourth` (batch claim) -> claim `fourth` **FILES: docs/METHODOLOGY.md** only -> write -> commit -> push -> release. `sairn_claim.py` **REFUSES a second overlapping claim from the same session**, so a dedicated claim on a shared file is only reachable by releasing first, and that is stated in the claim text rather than worked around. **THE ENTRY: a progress metric whose numerator is counted out of a mutable register moves BACKWARD on success** -- this batch took the census 40 -> 50 of 83, then one arm fix cleared four suites, the register's own rule required deleting those four rows, and the census read **46 of 83 ten minutes after it read 50**. The four that left are the only four in the population that are **verified GREEN** rather than verified red. Routed, **not self-promoted** -- convention 11 |
+| **14** correction owed and paid | **DONE** | `09e0461b` | convention 23's own cited instance and the METHODOLOGY promotion row for 23 both called a stopped session's record WRONG. Reading that session's evidence showed it **TRUE with its lever unnamed**. Corrected in both files, left **visible** under the table rather than edited out, and it adds a fifth verdict to 23's four: **WRONG-BY-MY-OWN-CHECK** |
+| **15** final handoff | **DONE** | the FINAL STATE section below | written at a point where nothing is half-finished: `ahead 0 / behind 0`, every commit ON-REF by `merge-base --is-ancestor`, no long-running job open |
 
 ---
 
@@ -375,3 +379,169 @@ own line rather than through a pipe, which is itself convention 24.
 cases a number was available and I used a sentence instead. The first read a
 refusal as a state; the second read a narrative as a result.
 
+
+---
+
+# FINAL STATE -- batch 16, written before the report
+
+## COMMITTED AND PUSHED
+
+| | |
+|---|---|
+| branch | `main` |
+| HEAD | **`09e0461b`** |
+| pushed | **yes -- `ahead 0 / behind 0`** of `origin/main` at the time of writing |
+| working tree | clean except **one pre-existing untracked file**, `sql/restore_demo_pins_2026-09-29.sql`, which was there at session open and is not mine |
+| `git config core.bare` | **empty -- unset.** `git status` answers normally |
+| `git stash` | **one entry held: `stash@{0}: autostash`.** Pre-existing, carried from batch 15, not created by this batch |
+| long-running jobs | **none.** No whole-tree run and no `--pinned` run was started; every suite was driven individually with a 300s ceiling |
+| boundary discipline | `git status` digest, sha256 of `.git/config` and `node --check api/sd-data.js` captured **after every suite and every ablation**, not once at the end. Start digest == end digest throughout |
+
+**Commits this batch, each verified ON-REF with
+`git merge-base --is-ancestor <sha> origin/main` -- not with an existence test,
+which is convention 19:**
+
+| commit | what |
+|---|---|
+| `1c53498d` | the phi-cache fix: write sites from `strip_comments.js`, arm 5e as the control |
+| `93ed64c7` | the defect record the push gate required (layer `test`, severity `high`, rule PR 1.2) |
+| `5be55ef4` | the post-rebase hook's own re-seat of that record's commit citation |
+| `a7ca2d08` | cc's conventions **23, 24, 25**, credited to cc; 24 recorded as a TENTH member |
+| `6cc8f251` | METHODOLOGY: three promotion rows + one routed entry from this batch |
+| `0fe8dedb` | **my retraction withdrawn** -- the evidence existed and the record was true |
+| `09e0461b` | convention 23 corrects its own cited instance |
+
+Plus four `chore(claims)` commits: the batch claim released, the METHODOLOGY-only
+claim taken and released, and the close-out claim taken and re-taken wider.
+
+## FINAL FIGURES, re-derived at this HEAD
+
+| | |
+|---|---|
+| register rows | **75** (79 - 4 deleted as RECOVERED) |
+| the 83, individually verified | **50 of 83 measured this batch**; **46 of 83** when recounted off the register after the four recoveries. Both numbers are real and they mean different things -- see item 13 |
+| ablation | **8 of 8 -- and the eighth has three results, not one** |
+| orphans, whole corpus | **93** citations -- 18 mine, 75 other sessions'. **0 of mine remain re-seatable** |
+| `__file__` population | **974 of 1227** under a stated predicate. The old **424 of 1214** is NOT REPRODUCIBLE -- its predicate was never recorded |
+| scripts driven from a copy | **15**, three slices of five: **13 could not run, 2 could** |
+| conventions | **25** -- counted from `## <n>.` headings before and after, never quoted |
+| conventions I landed this batch | **3, all CREDITED TO CC** |
+| defect records | 483, `--check` **exit 0** |
+
+## THE 75 OTHER-SESSION ORPHANS -- one line each: file, owner, count
+
+Not mine to edit. Owner is taken from the filename where the filename names a
+session, and **UNASSIGNED is written where it does not** rather than guessed.
+
+| count | file | owner |
+|---|---|---|
+| 35 | `docs/2026-09-29-stale-branch-tips.md` | **UNASSIGNED** -- a document *about* stale tips, so most of these may be intentional data |
+| 8 | `docs/defect-density-register.json` | **UNASSIGNED** -- written only through `tools/defect_register.py`, which is cc's |
+| 7 | `docs/purge-evidence/2026-09-30-SAIRN-cc.json` | **cc** -- append-only purge evidence; re-seating would falsify it, same as mine |
+| 7 | `docs/tier-a-reviews.json` | **UNASSIGNED** by filename; **cc** by the live claim at 2026-10-07T17:24:00Z. These are the seven I routed in SEQ 15-C |
+| 4 | `docs/scrutiny-flags.json` | **cc** -- push-gate bookkeeping |
+| 3 | `docs/handoff-cody-2026-10-07.md` | **cody** |
+| 2 | `docs/purge-evidence/2026-09-30-SAIRN-hank.json` | **hank** -- append-only, same caveat |
+| 1 | `docs/handoff-cc-2026-10-06c.md` | **UNASSIGNED** by my matcher, **cc** by content |
+| 1 | `docs/2026-10-06-cc-batch-10-inventory.md` | **UNASSIGNED** by my matcher, **cc** by content |
+| 1 | `docs/2026-10-05-cc-batch-5-inventory.md` | **UNASSIGNED** by my matcher, **cc** by content |
+| 1 | `SAIRN-ACTIVE-WORK-cc.md` | **cc** -- append-only log, never rewritten |
+| 1 | `docs/METHODOLOGY.md` | **fourth + hank**, shared. It is `00030f2d11b7` in convention 19's own row -- the dead SHA that convention is ABOUT, so deliberate |
+| 1 | `docs/2026-10-06-cody-queue18-items-10-12-13.md` | **cody** |
+| 1 | `docs/handoff-cody-2026-10-06b.md` | **cody** |
+| 1 | `docs/2026-10-07-cody-batch20.md` | **cody** |
+| 1 | `docs/2026-10-07-cody-harness-exit-mismatches.md` | **cody** |
+
+**My matcher's own limitation, stated rather than left to be found:** three `cc`
+files above came back **UNASSIGNED** because my owner rule keys on `-cc.` /
+`SAIRN-ACTIVE-WORK-cc` and those filenames spell it `-cc-batch-` and
+`handoff-cc-`. The counts are right; the owner column under-attributes by three
+rows and I am saying so instead of hand-editing it into looking complete.
+
+## WHAT IS OPEN, AND WHY
+
+| open | why |
+|---|---|
+| **16 unbaselined `+ (x \|\| 0)` occurrences in `stonedesk.html`** | **8 distinct `file::term` keys.** They are what make `run_truthy_sum_probe` arm 11 red and the live ablation lever unmeasurable. Each needs a per-site judgement -- baseline with a stated reason if the field is provably numeric, otherwise wrap in `Number()`. **Per-site, not a sweep**, and not mine to decide unilaterally |
+| **37 of the 83 unverified** | unmeasured individually, **not presumed red** |
+| **`tests/run_primitive_obsession_probe.py` still stands as a register entry** with `exit_code 0` and RECOVERED in its own `why` | the state the register's own rule forbids: while it stands it swallows the next real failure of that file. **Flagged, not deleted** -- reported for a decision rather than acted on unasked |
+| **the owner-map gap** | `tool_owner_map.py:76` derives ownership only from `FILES:` in a claim subject. Claim `c1e06f33` names its file in PROSE, so a regeneration **today** reproduces `owner: null, basis: NONE`. Routed to cc in the block below; **`docs/tool-owner-map.json` not touched** |
+| **the settings merge** | **BLOCKED ON CODY.** Re-checked once at `2026-10-07T19:30:51Z`: `~/.claude/settings.json` carries hooks `['PreCompact']` only, the repo's carries five, last commit to `.claude/settings.json` is `3cf3d5ec` on **2026-10-05 19:02:00 -0400**, unmoved. cody's live claim at `2026-10-07T16:03:49Z` declares the file. **Nothing written to either** |
+| **the 424's predicate** | unrecorded, so the figure can be neither confirmed nor denied. **974 of 1227** is the re-derivation with its predicate written down, and the two are not comparable |
+| **2 of 15 scripts DID run from a copy** | `tools/response_shape_check.py` and `tools/write_without_readback_check.py` both exit 0 from a scratch directory, so the platform-wide method constraint is a generalisation with a **measured exception rate**, not a rule. The other 959 are unmeasured |
+| **the 6 purge-evidence SHAs in `docs/purge-evidence/2026-09-30-SAIRN-fourth.json`** | **left untouched as instructed.** Append-only evidence of what was purged; rewriting it would falsify the evidence rather than fix a citation |
+| **the fifth verdict for convention 23** | **WRONG-BY-MY-OWN-CHECK** is written into section 23's correction note but is **not** in its four-verdict list, because adding a verdict to a convention one hour after chat adopted it is a change to what was adopted. Chat's call |
+
+## EXACT NEXT STEP, PER OPEN ITEM
+
+1. **The 16 `stonedesk.html` sites** -- 8 keys, one judgement each. That is the
+   only thing standing between `run_truthy_sum_probe` and a measurable live
+   ablation, and it unblocks arm 11 for every future batch, not just this lever.
+2. **`run_primitive_obsession_probe.py`'s register row** -- decide: delete it (the
+   register's own rule) or amend the rule to carry RECOVERED as a third state.
+   **The methodology entry from this batch argues for the second**, and both are
+   one edit.
+3. **The owner-map gap** -- cc chooses: an `OWNER_LINE` in
+   `tests/sairnfreedom_server_backup.js` (the map's own vocabulary calls that
+   authoritative) or widen `tool_owner_map.py` to read paths out of claim-subject
+   prose, with a both-directions control before it is trusted.
+4. **The census** -- 37 to go. Re-extract the 83 from `pinned2_stdout.txt` every
+   time and let the script refuse on a disagreement with the log's own summary
+   line; never quote the 83 from a document.
+5. **The `__file__` population** -- either record the 424's predicate so it
+   becomes checkable, or retire the figure and adopt a stated one. 959 scripts
+   remain unmeasured empirically.
+6. **The settings merge** -- re-check when cody's lands. Do not attempt it.
+7. **Run the report gate as the last step before any report.** It is carried in
+   `<scratchpad>/sweep_full.py`, read-only, with a selftest arm that exits 2 if
+   the known orphan is not extracted.
+
+## CLAIMS HELD AT THE TIME OF WRITING
+
+**`fourth` is HELD**, as the batch-16 close-out claim, declaring
+`docs/2026-09-13-cross-domain-disciplines.md`, `docs/METHODOLOGY.md`,
+`docs/handoff-fourth-2026-10-07.md` and `SAIRN-ACTIVE-WORK-fourth.md`. **It is
+released at the very end of the batch, after the report gate.**
+
+Three other sessions were live throughout: **cody** (`Tooling`, batch 24),
+**hank** (`platform`, batch 13) and **hover2** (audit batch N). Each was
+re-derived from `sairn_claim.py list` rather than from a sibling's claim text,
+which is convention 23.
+
+**NOT TOUCHED, and each one checked rather than assumed:**
+`.claude/settings.json` (**cody**, live claim `2026-10-07T16:03:49Z`);
+`docs/tool-owner-map.json` and `tools/doc_sha_reseat.py` (**cc**);
+`docs/purge-evidence/2026-09-30-SAIRN-fourth.json` (instructed);
+`docs/tier-a-reviews.json` (**cc**, live claim `2026-10-07T17:24:00Z` -- no Tier A
+discharge was taken this batch and none was in the dispatch);
+and nothing anywhere under `.claude/skills/sairn-hover-auditor/`.
+
+**I closed only findings I originated, and reclassified none.**
+
+## THIS SESSION'S TRANSCRIPT
+
+    C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\7e379670-c1b8-4e19-9aa2-b1affe2f960e\scratchpad
+
+In item order: `abl_truthy_sum.py` / `.out` and `abl_truthy_sum_fixture.py` /
+`.out` (item 3 -- the live lever measured non-responsive, then the same lever on a
+clean fixture); `census.py`, `census_now.out`, `census_after.out`,
+`census_final.out` (the census, re-extracted from the pinned log every time);
+`census_slices.py` / `.out` and `census_slices.json` (the ten suites driven alone
+with the boundary verified after each); `chained.py` / `.out` (the four rows one
+arm cleared); `phi_cache_fixed.js` (the restore copy the ablation used **instead of
+`git checkout`**, after `git checkout` silently discarded the uncommitted fix the
+first time -- that mistake and its fix are both in this directory);
+`orphans.py` / `.out` (the orphan census, read-only); `filesweep.py` / `.out` (the
+`__file__` re-derivation and the three measured slices); `conv.py`, `meth.py`,
+`hf2.py`, `fixretract.py`, `fixretract2.py`, `corr23.py` (the document edits, each
+asserting its anchor matched exactly once before writing); `sweep_full.py` (carried
+from the batch-14 session, unmodified) and `report_gate.out`.
+
+**And the batch-14/15 session's scratchpad, which this batch had to read and which
+is a different directory -- the mistake that produced the withdrawn retraction:**
+
+    C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\4975e2e9-8002-4f73-9d9d-240c42c3b643\scratchpad
+
+`abl_i2.out` (the EMPTYING lever: *"COULD-NOT-RUN -- the lever never engaged"*) and
+`abl_i2c.out` (the FILLING lever: tool `1 -> 0`, probe `1 -> 0`, restored
+byte-identical).
