@@ -6,14 +6,31 @@
 # real defect hides inside a convention.
 """Generate docs/spec/MCRoleGates.{tla,cfg} from the REAL role sets.
 
-    python tools/role_gate_mc_config.py          # write them
-    python tools/role_gate_mc_config.py --check  # do they match the repo?
+    python tools/role_gate_mc_config.py             # write them
+    python tools/role_gate_mc_config.py --check     # do they match the repo?
+    python tools/role_gate_mc_config.py --selftest  # does the arg guard hold?
+    python tools/role_gate_mc_config.py --help
 
 Exit 0  written, or (with --check) the committed files match what this would
-        generate right now
-Exit 1  --check found drift -- the apps moved and the model did not
-Exit 2  COULD NOT RUN -- node is absent, or a module could not be read.
-        Never folded into 0: an empty instance would model-check clean.
+        generate right now, or --help, or --selftest passed
+Exit 1  --check found drift -- the apps moved and the model did not, or
+        --selftest found an arm failing
+Exit 2  COULD NOT RUN -- node is absent, a module could not be read, or AN
+        ARGUMENT WAS NOT RECOGNISED. Never folded into 0: an empty instance
+        would model-check clean.
+
+── WHY AN UNRECOGNISED FLAG EXITS 2 AND WRITES NOTHING ─────────────────────
+Until 2026-10-07 this tool recognised exactly one flag, `--check`, and every
+other argument fell through to the WRITE path. `--help` -- the one argument a
+reader types to find out what a tool does before running it -- therefore
+REGENERATED both spec files. That is the fail-open shape stated in
+CLAUDE.md/PR §1.11 wearing a different hat: the tool did not do nothing and did
+not refuse, it did the most side-effecting thing it has, in response to an
+instruction it had not understood.
+
+The guard runs BEFORE `read_sets()`, so an unrecognised argument costs no node
+invocation and cannot reach `open(..., 'w')`. There is no mode in which this
+tool both prints "not recognised" and writes.
 
 ── WHY A GENERATOR AND NOT A HAND-WRITTEN MODEL ────────────────────────────
 The constants are the whole value of the run. A model checked against invented
@@ -230,7 +247,123 @@ def render(apps, excluded, roles, vals, ids):
     return '\n'.join(L) + '\n', '\n'.join(G) + '\n'
 
 
-def main(argv):
+USAGE = """Generate docs/spec/MCRoleGates.{tla,cfg} from the REAL role sets.
+
+    python tools/role_gate_mc_config.py             write both files
+    python tools/role_gate_mc_config.py --check     compare, do not write
+    python tools/role_gate_mc_config.py --selftest  prove the arg guard holds
+    python tools/role_gate_mc_config.py --help      this text, and no write
+
+Exit 0 wrote / matched / help / selftest passed, 1 drift or arm failed,
+2 COULD NOT RUN -- including an argument this tool does not recognise."""
+
+# Every argument this tool understands. A flag absent from here is NOT a
+# synonym for "write"; see the docstring. Adding a mode means adding its
+# literal here in the same change, which is the point of a closed list.
+KNOWN_FLAGS = ('--check', '--selftest', '--help', '-h')
+
+# The ONE knob the selftest's ablation turns, and the only reader of it is
+# classify_argv. Set to '1' it restores the pre-2026-10-07 fall-through so the
+# arms below can be seen to FAIL; an arm never observed failing is not an arm.
+ABLATE_ENV = 'SAIRN_ROLE_GATE_ABLATE_ARGV_GUARD'
+
+
+def classify_argv(argv, ablate=None):
+    """-> ('check'|'write'|'help'|'selftest',) or ('unknown', the argument).
+
+    Pure: no disk, no node, no environment beyond the ablation knob. It is
+    separate from main so the selftest can assert on the DECISION rather than
+    on a side effect it would have to clean up.
+    """
+    if ablate is None:
+        ablate = os.environ.get(ABLATE_ENV) == '1'
+    unknown = [a for a in argv if a not in KNOWN_FLAGS]
+    if unknown and not ablate:
+        return ('unknown', unknown[0])
+    if '--help' in argv or '-h' in argv:
+        return ('help',)
+    if '--selftest' in argv:
+        return ('selftest',)
+    if '--check' in argv:
+        return ('check',)
+    return ('write',)
+
+
+def selftest(ablate=None):
+    """Six arms. Returns (passed, failed, lines).
+
+    Arms 1-5 assert on classify_argv. Arm 6 is end-to-end -- it calls main()
+    with an unrecognised flag and then asserts NOTHING WAS WRITTEN -- and it
+    runs against a throwaway spec directory rather than the repo's, so that
+    under ablation (where it MUST fail) the failure is a file appearing in a
+    temp directory and never a regenerated committed file.
+    """
+    import contextlib
+    import io
+    import tempfile
+    arms, lines = [], []
+
+    arms.append(('unknown flag is not a write instruction',
+                 classify_argv(['--bogus'], ablate), ('unknown', '--bogus')))
+    arms.append(('--help is recognised and is not a write',
+                 classify_argv(['--help'], ablate), ('help',)))
+    arms.append(('--check still means check',
+                 classify_argv(['--check'], ablate), ('check',)))
+    arms.append(('a bare run still writes',
+                 classify_argv([], ablate), ('write',)))
+    # The real 2026-10-07 defect was a TYPO-shaped argument, not an exotic one.
+    arms.append(('a near-miss of a real flag is unknown, not the flag',
+                 classify_argv(['--cheque'], ablate), ('unknown', '--cheque')))
+
+    tmp = tempfile.mkdtemp(prefix='rgmc-selftest-')
+    # Captured rather than let through: the inner run's own refusal text on
+    # stdout reads as THIS run refusing, which is a worse lie than silence.
+    inner = io.StringIO()
+    with contextlib.redirect_stdout(inner):
+        rc = main(['--bogus'], spec=tmp, _in_selftest=True, _ablate=ablate)
+    wrote = sorted(os.listdir(tmp))
+    for f in wrote:
+        os.remove(os.path.join(tmp, f))
+    os.rmdir(tmp)
+    arms.append(('end to end: unknown flag exits 2 and writes no file',
+                 (rc, wrote), (2, [])))
+    inner_first = (inner.getvalue().splitlines() or [''])[0]
+
+    for name, got, want in arms:
+        ok = got == want
+        lines.append('  %-4s %s' % ('PASS' if ok else 'FAIL', name))
+        if not ok:
+            lines.append('       wanted %r, got %r' % (want, got))
+    lines.append('       (inner run said: %s)' % inner_first)
+    passed = sum(1 for _, g, w in arms if g == w)
+    return passed, len(arms) - passed, lines
+
+
+def main(argv, spec=None, _in_selftest=False, _ablate=None):
+    spec = spec or SPEC
+    mode = classify_argv(argv, _ablate)
+
+    if mode[0] == 'unknown':
+        print('COULD NOT RUN -- argument not recognised: %s' % mode[1])
+        print('Nothing was written. Recognised: %s' % ', '.join(KNOWN_FLAGS))
+        print('    python tools/role_gate_mc_config.py --help')
+        return 2
+    if mode[0] == 'help':
+        print(USAGE)
+        return 0
+    if mode[0] == 'selftest':
+        if _in_selftest:                      # no recursion, by construction
+            print('COULD NOT RUN -- --selftest cannot call itself.')
+            return 2
+        passed, failed, lines = selftest(_ablate)
+        print('arg guard selftest: %d/%d arm(s) pass' % (passed, passed + failed))
+        for ln in lines:
+            print(ln)
+        if _ablate or os.environ.get(ABLATE_ENV) == '1':
+            print('ABLATED (%s=1): the pre-2026-10-07 fall-through is restored, '
+                  'so arms 1, 5 and 6 are EXPECTED to fail.' % ABLATE_ENV)
+        return 1 if failed else 0
+
     try:
         raw = read_sets()
     except Exception as e:
@@ -242,10 +375,10 @@ def main(argv):
               'instance model-checks clean and would mean nothing.')
         return 2
     tla, cfg = render(apps, excluded, roles, vals, ids)
-    tp = os.path.join(SPEC, 'MCRoleGates.tla')
-    cp = os.path.join(SPEC, 'MCRoleGates.cfg')
+    tp = os.path.join(spec, 'MCRoleGates.tla')
+    cp = os.path.join(spec, 'MCRoleGates.cfg')
 
-    if '--check' in argv:
+    if mode[0] == 'check':
         drift = []
         for path, want in ((tp, tla), (cp, cfg)):
             got = (open(path, encoding='utf-8', newline='').read()
