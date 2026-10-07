@@ -101,6 +101,30 @@ def request_timestamp(message_bytes, timeout=15):
                        + '\n  '.join(errors))
 
 
+def _print_verify_help(tsr_path, req_path=None):
+    """Single source for the verify instructions -- printed from both
+    --verify-cmd and a real successful run, and exercised by selftest's
+    own regression guard, so there is only one place to get this right."""
+    if req_path is None:
+        req_path = os.path.splitext(tsr_path)[0] + '.message.txt'
+    print('Independent verify (no dependency on this tool or any TSA library):')
+    print('  openssl ts -reply -in "%s" -token_in -text' % tsr_path)
+    print('  -token_in IS REQUIRED: rfc3161ng\'s timestamp() returns the bare')
+    print('  TimeStampToken (a PKCS#7 SignedData ContentInfo), not the full')
+    print('  TimeStampResp wrapper openssl expects by default -- without the')
+    print('  flag this fails with an ASN.1 "wrong tag" error. Caught on this')
+    print('  tool\'s own first real run (batch M) by distrusting its own')
+    print('  success message and verifying independently before trusting it.')
+    print('  (confirms the token\'s own content: TSA, serial, genTime, digest)')
+    print('')
+    print('To confirm the digest inside the token matches THIS claim, re-derive it:')
+    print('  python -c "import hashlib; print(hashlib.sha256(open(%r, encoding=%r).read().encode()).hexdigest())"'
+          % (req_path, 'utf-8'))
+    print('  then compare against the token\'s own MessageImprint (shown by the')
+    print('  openssl command above) -- a match proves the token covers exactly')
+    print('  this chain_head/seq/date triple, not a different one.')
+
+
 def selftest():
     # No network, no real TSA call -- proves the canonical-message
     # construction and digest binding are deterministic and that a
@@ -114,8 +138,23 @@ def selftest():
     d2 = hashlib.sha256(m2.encode()).digest()
     d3 = hashlib.sha256(m3.encode()).digest()
     ok = (d1 != d2) and (d1 == d3)
-    print('SELFTEST %s: same-inputs digest stable=%s, seq-changed digest differs=%s' %
-          ('PASS' if ok else 'FAIL', d1 == d3, d1 != d2))
+
+    # REGRESSION GUARD for this tool's own first real-run bug (batch M):
+    # rfc3161ng's timestamp() returns a bare TimeStampToken, not the full
+    # TimeStampResp wrapper -- the printed verify command MUST carry
+    # -token_in or a reader following it gets the same ASN.1 "wrong tag"
+    # error this tool's own author hit before checking independently.
+    import io
+    import contextlib
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        _print_verify_help('fx.tsr')
+    has_token_in = '-token_in' in buf.getvalue()
+    ok = ok and has_token_in
+
+    print('SELFTEST %s: same-inputs digest stable=%s, seq-changed digest differs=%s, '
+          'verify command carries -token_in=%s' %
+          ('PASS' if ok else 'FAIL', d1 == d3, d1 != d2, has_token_in))
     return 0 if ok else 1
 
 
@@ -131,18 +170,7 @@ def main():
         sys.exit(selftest())
 
     if args.verify_cmd:
-        tsr_path = args.verify_cmd
-        req_path = os.path.splitext(tsr_path)[0] + '.message.txt'
-        print('Independent verify (no dependency on this tool or any TSA library):')
-        print('  openssl ts -reply -in "%s" -text' % tsr_path)
-        print('  (confirms the token\'s own content: TSA, serial, genTime, digest)')
-        print('')
-        print('To confirm the digest inside the token matches THIS claim, re-derive it:')
-        print('  python -c "import hashlib; print(hashlib.sha256(open(%r, encoding=%r).read().encode()).hexdigest())"'
-              % (req_path, 'utf-8'))
-        print('  then compare against the token\'s own MessageImprint (shown by the')
-        print('  openssl command above) -- a match proves the token covers exactly')
-        print('  this chain_head/seq/date triple, not a different one.')
+        _print_verify_help(args.verify_cmd)
         sys.exit(0)
 
     log_path = args.log
@@ -176,8 +204,7 @@ def main():
     print('Saved: %s' % tsr_path)
     print('Saved: %s' % msg_path)
     print('')
-    print('Independent verify command (no dependency on this tool or any TSA library):')
-    print('  openssl ts -reply -in "%s" -text' % tsr_path)
+    _print_verify_help(tsr_path, msg_path)
     sys.exit(0)
 
 
