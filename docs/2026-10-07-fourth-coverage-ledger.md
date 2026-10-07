@@ -167,3 +167,94 @@ positives. The UUID mask catches them in a path; it cannot catch them in prose.
 tool that produced the wrong figures and therefore the tool the dispatch asked
 me to fix. The platform's durable sha reader is `tools/doc_sha_reseat.py`, which
 is **cc's**, so the rules above are routed rather than copied in.
+
+---
+
+## 5. THE 83 — a CENSUS, and it is 31 of 83
+
+**Measured 2026-10-07 at `a7b6b58c`.** The 83 is re-extracted from the pinned
+run log itself rather than quoted — `^  FAIL\s+(?:py|node)\s+(\S+)` over
+`pinned2_stdout.txt` returns **83 rows**, which is the number that log's own
+summary line states.
+
+**A row counts as individually verified when its register `environment` stamp
+carries a real SHA** — meaning somebody ran it alone and recorded which commit.
+That is a stricter test than "I ran it": it requires the commit to be written
+down.
+
+| | |
+|---|---|
+| the 83, re-extracted | **83** |
+| register rows with a SHA-stamped individual run | **32** |
+| **of those, inside the 83** | **31** |
+| still unverified of the 83 | **52** |
+
+### The one verified row that is NOT in the 83, and it confirms a diagnosis
+
+`tests/push_gate/check9_probe.py` is SHA-stamped and individually run — and it
+is **not** one of the 83. The pinned run reported it **SKIPPED**, not FAIL. That
+is exactly consistent with this batch's diagnosis of it: check 9 declines to
+judge a docs-only outgoing range, so it emits nothing. **The row is red when
+driven directly and skipped in a suite run**, which is the environment
+dependence the stamp exists to record.
+
+### What 31 of 83 does NOT mean
+
+* **It is not 31 confirmed failures.** Of the 31, **four exit 2** — a
+  could-not-run, not a failure — and **one now exits 0**
+  (`run_primitive_obsession_probe`, fixed under convention 18 and RECOVERED).
+* **The 52 are not presumed red.** They are *unmeasured individually*. The
+  pinned run is not a census for the reason this platform already recorded: two
+  probes in that very run gave opposite verdicts depending only on whether they
+  ran in the clone or in a linked worktree.
+* **Eight of the 31 carried no `exit_code` field until this batch**, only an
+  environment stamp. Backfilled from the runs recorded in their own `why`
+  text — which is why the field exists rather than being inferable from prose.
+
+---
+
+## 10. CONVENTION 18 — 2 of 8 fixed, and the second fix corrected my own diagnosis
+
+**`tests/run_write_path_scan_probe.py` fixed 2026-10-07, verified alone,
+ablated.** That makes **2 of the 8** suites in the convention-18 family fixed —
+`run_primitive_obsession_probe` in batch 12 and this one — with **6 open and
+carrying artifacts**.
+
+### The violation, and why it was not visible before
+
+    _loosened = dict(_shipped['counts'])
+    _loosened[_worst] += 5          # ONLY the worst app
+
+That arm's stated subject is *"a count that FELL is not a regression"* — a
+property of the **ratchet**. Loosening one app silently made its outcome depend
+on **every other app matching its baseline** — a property of the
+**repository**. Two assertions, one arm, and it was failing for the second one.
+
+Every app is loosened now, so the arm asserts only its own subject.
+
+### And it corrected a diagnosis I wrote in batch 12
+
+I had recorded *"a baselined count FELL"*. **Measured at `a7b6b58c`: the shipped
+baseline records 25 sites and the tree measures 25 — the TOTAL AGREES — and the
+shipped-baseline arm fails anyway.** One app **rose** while another **fell**.
+
+A fall alone could not fail a ratchet that tolerates falls, which is the half I
+had backwards. **The redistribution is invisible to a total**, and catching it
+is the whole reason the ratchet is per-app — so this row is evidence *for* the
+tool's design rather than against it.
+
+### Verification
+
+| | |
+|---|---|
+| failing arms | **2 → 1** |
+| runs | **two**, both `PROGRAM_EXIT=1`, both naming the same single arm |
+| ablation | the ratchet made intolerant of a fall → **the fixed arm FAILS**; subject restored **byte-identical** |
+
+**The one remaining failure is the genuine live-tree arm** (*"the shipped
+baseline PASSES today"*), which is correct behaviour and stays.
+
+**STILL NOT CLEARED:** which app rose and which fell is not named.
+`tools/write_path_fault_scan.py` exposes `apps(argv)` and `scan(path)` rather
+than a per-app counter, so the comparison needs the ratchet's own code path — and
+re-implementing it is how a wrong denominator gets built.

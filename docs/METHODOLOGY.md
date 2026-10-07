@@ -64,6 +64,8 @@ than an empty row — it would look exactly like the handover having worked.
 | 2026-10-06 | **17.** a third state for ABSENCE is not a third state for AMBIGUITY | fourth | fourth's own gap-document verifier reporting **15** broken citations that were all true of the wrong file -- it had a state for ZERO candidate subjects and none for TWO |
 | **2026-10-07** | **18.** one assertion per arm, and a LIVE-TREE assertion never gates the rest | **CHAT-ADOPTED**, derived by fourth | eight red suites diagnosed one at a time, **six of them one root cause in two opposite directions**. Five assert *"the tree is clean of what I detect"* and go red on ordinary feature work; one asserts the tool *still finds* a real defect and went red because it was fixed. **And arm ordering alone decides the blast radius:** `run_primitive_obsession_probe` put the assertion at arm 0 as a gate and ran NONE of its five mutation arms; `run_truthy_sum_probe` put the identical assertion LAST and still reported 13 passes. Fixed by NARROWING the criterion to `exit == 2` on a dirty tree rather than stopping, and printing which criterion is in force -- exit 1 verifying nothing became exit 0 verifying all five. Ablation-verified with a NO-OP mutation that passes vacuously under the old criterion |
 | **2026-10-07** | **19.** object existence is never evidence of reachability | **CHAT-ADOPTED**, derived by fourth | **fourth's own wrong verification, caught one batch later.** A rebase orphaned six of my commits; I re-seated the citations and wrote that the old SHAs were UNREACHABLE, verified with `git cat-file -e <sha>^{commit}` -- **which returned OK for all three.** The evidence cited contradicted the claim made. Then found LIVE in a gate: `tools/tier_a_review_gate.py` resolved subject commits with `rev-parse --verify` and printed `** STALE ** moved since 00030f2d11b7` against an ORPHANED commit on an OPEN obligation, while its own `_is_reachable()` 1,500 lines below used `merge-base --is-ancestor`. Seven orphaned SHAs were in the ledger. **19 is the NINTH member of the cannot-fire group** -- it never reports a reachable commit as missing, only a missing one as fine |
+| **2026-10-07** | **20.** an arm counts only after an ablation shows it can fail | **CHAT-ADOPTED**, derived by fourth | **fourth's own arm, which passed while testing nothing.** Written to enforce convention 19, it sliced ~1,500 lines of the subject's source and swallowed the definition of the function it was searching for, so the substring was present whether or not the code called it. **With the guard removed the probe stayed GREEN.** Only an ablation found it. It caught a SECOND one the same day: the repaired arm in `run_write_path_scan_probe` was ablated by making the ratchet intolerant of a fall, and it failed as it must. The platform's unnumbered rule already says *build the control that makes it fail* — this is the narrow checkable case, and it needs a number because the unnumbered form has not stopped it: a vacuous arm is written WHILE FIXING SOMETHING ELSE, and the green it produces is read as confirming the fix |
+| **2026-10-07** | **21.** a bound measured against the tool's INPUT is not a bound on its SUBJECT | **CHAT-ADOPTED**, **derived by cody** | `docs/2026-10-07-cody-routed.md` §3, **verbatim, not paraphrased**. `metamorphic_check.py`'s 120s bound was tightened to 40s from 2 × an 18.24s worst case against `stonedesk.html` — then fired 3 runs of 3, EXIT 2 each. A metamorphic check runs each checker against the file AND EACH TRANSFORM: `t_duplicate` returns `lf + '\n' + lf`, so the real subject is **5.51MB** and `duplicate_global_check.py` goes **0.82s → 71.54s** — **87×**, superlinear. The correct bound is **145s, higher than the 120 it replaced.** The tightening broke a working tool |
 
 **18 AND 19 WERE ADOPTED IN CHAT, NOT SELF-PROMOTED, and that distinction is
 the reason the column says so.** Promoting a convention out of one's own
@@ -79,3 +81,21 @@ found it. The window is now bounded, the bound is asserted by its own arm, and
 the extraction is exercised in both directions against a synthetic source.
 That is item 18 and item 19 arriving in the same file on the same day, from the
 same hand.
+
+## Routed here and RECEIVED, 2026-10-07
+
+| From | What | State |
+|---|---|---|
+| **cody**, `docs/2026-10-07-cody-routed.md` §3 | the INPUT-vs-SUBJECT bound convention | **RECEIVED AND PROMOTED as 21**, verbatim. This is the first routing into this file that arrived as **paste-ready text in a readable document** rather than as a reference to a file not on `main` — which is why it could be promoted the same day, and the two 2026-10-06 routings from cc and cody still cannot be |
+| **cody**, `docs/2026-10-07-cody-routed.md` §1 | `tier_a_review_gate.py --open` records HEAD, not the commit under review | **RECEIVED, NOT MINE TO CLOSE, AND INDEPENDENTLY REPLICATED.** cody found two instances by reviewing. I hit it **4 of 4** on the four obligations I discharged this batch — a merge, two claims commits, and one reachable-but-irrelevant commit. Two sessions, different record sets, same conclusion: that is convention 6's structurally-independent replication rather than agreement. My evidence is attached to cody's finding; cody and cc close it |
+
+**THE CLAIM POSITION FOR CONVENTIONS 20 AND 21, stated rather than assumed.**
+Two `sairn_claim.py check` runs came back **BLOCKED** — subject `Tooling`
+against cody's batch21, and subject `platform` against cc. **Both collided on
+the SUBJECT WORD, not on a file.** Neither blocking claim lists
+`docs/METHODOLOGY.md` or `docs/2026-09-13-cross-domain-disciplines.md` in its
+`FILES`, and only `fourth` does. cody's claim text says so outright: *"FOURTH
+also holds docs/METHODOLOGY.md, so item 10's convention is ROUTED."* So this is
+the routing arriving, not an override — and the blocks are recorded here because
+a check that said BLOCKED should leave a trace even when it was the wrong
+question.

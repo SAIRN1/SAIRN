@@ -3385,8 +3385,8 @@
       "task": "batch21, HARDEN EXISTING ONLY, no new builder tools. (2) .claude/settings.json permissions merge, sole toucher, no existing key removed. (3) run_all_tests.py --pinned moves from a linked worktree to a THROWAWAY CLONE, the same layer as fourth's b23dbc2e, so core.bare cannot be written to the main clone. (4) the whole suite in that clone as one background shell, no other whole-tree run concurrent. (5) guard_ablation.py EXIT 2 re-derived alone plus the --bound approach with COULD_NOT_RUN kept distinct from a real code. (6) eaten_substitution_check.py widened from line-initial to any position with a selftest arm built from commit d59f4a3c's shape. (8) the dependabot triage doc reconciled to 2 high plus 1 moderate, @fastify/busboy with reachability and a measured basis. (10) blameless postmortem of my own 2.76MB-vs-5.51MB bound measurement. (9) ANDON HELD: cody/firebase-modular-port is NOT merged and is re-verified with merge-base. CONFLICTS RE-DERIVED AT HEAD 596793c6 AND NONE OVERRIDDEN: FOURTH holds docs/tier-a-reviews.json AND tools/tier_a_review_gate.py, so ITEM 1 CANNOT LAND A DISCHARGE -- the review work is read-only and the verdicts are listed, not written. FOURTH also holds docs/METHODOLOGY.md, so item 10's convention is ROUTED and the postmortem lands in a dated doc of mine. tools/tier_a_review_gate.py is CC's by owner map, CONTESTED. The batch20 claim was RELEASED first so the record says one thing. FILES: tools/run_all_tests.py tools/guard_ablation.py tools/eaten_substitution_check.py tools/capture_exit.py tools/metamorphic_check.py .claude/settings.json docs/2026-10-05-dependabot-high-triage.md docs/2026-10-07-cody-batch21.md docs/postmortem-cody-2026-10-07-bound-measurement.md docs/2026-10-07-cody-routed.md docs/handoff-cody-2026-10-07.md SAIRN-ACTIVE-WORK-cody.md",
       "claimed_at": "2026-10-07T12:03:15Z",
       "claimed_at_epoch": 1791374595.6965961,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-07T14:10:28Z",
       "files": [
         ".claude/settings.json",
         "SAIRN-ACTIVE-WORK-cody.md",

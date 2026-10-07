@@ -506,3 +506,70 @@ measurements), `i8_*` (advisories), `i10_*` (the bound), plus every
 
 **Read a status file, not a notification.** The harness reported "exit code 0"
 **five** times this session for programs that exited 1 or 2.
+
+---
+
+# ITEM 11 — FINAL REFRESH, and the claim is released below
+
+**Nothing is half-finished.** Everything landed is pushed and verified at
+`b637e2d4`; the one thing still moving is item 4, which has a status-file path
+and cannot be hurried.
+
+## FINAL VERIFICATION SWEEP, all at `b637e2d4`
+
+```
+tooling_inventory.py   --check      EXIT 0
+master_plan.py         --check      EXIT 0
+traceability_matrix.py --check      EXIT 0
+run_all_tests.py       --selftest   EXIT 0
+capture_exit.py        --fixtures   EXIT 0
+eaten_substitution_check.py --selftest  EXIT 0
+clone_health_check.py               EXIT 0   core.bare false, 0 dirty paths
+merge-base --is-ancestor <branch> main  ->  ANDON HELD
+```
+
+**Item 10's confirming run landed and the fix is doing its job:**
+
+```
+capture_exit.py --read <SCRATCH>/i10_meta.status   ->  EXIT 0
+  bound subject : PER_RUN_TIMEOUT=145s applies to a LARGEST artifact of
+                  5.26MB, produced by relation 'duplicate' -- NOT to the
+                  stonedesk.html on disk. Measure THIS when changing the bound.
+  CLEAN -- every relation held on every comparison run.
+```
+
+**5.26MB is the number that was invisible when I set the bound from 2.76MB.**
+
+## ITEM 4 IS STILL RUNNING AND THAT IS THE ONE OPEN THING
+
+```
+SHA     : c1cd7c41        sandbox: a throwaway CLONE, 0 worktree registrations
+START   : 2026-10-07T13:13:23Z
+STATUS  : <SCRATCH>/item4/suite.status   ->  RUNNING 80680
+OUTPUT  : <SCRATCH>/item4/suite.out      ->  440 lines so far
+TIMING  : <SCRATCH>/item4/meta.txt
+```
+
+**PARTIAL, with the path, as the item provides for.** The previous unpinned run
+of the same suite took **23463s**, so this is expected to outlast the batch.
+
+**NEXT STEP, in order:**
+1. `python tools/capture_exit.py --read <SCRATCH>/item4/suite.status`
+2. If `EXIT`: name **every failing suite** from `suite.out` with its first-run
+   result. If `RUNNING`: it is still going — do **not** start a second
+   whole-tree run; the lock is at `%TEMP%\sairn-suite-df228b25ddc49171.lock`.
+3. Only a clean pass lifts the firebase andon. If suites fail, name each with a
+   reproducing command and **do not claim a pass**.
+
+## 29 WORKTREES REMAIN AND NONE WAS SWEPT
+
+`clone_health_check.py` EXIT 0, 29 LIVE, 0 ORPHAN. **The pinned suite added
+none** — a clone has no worktree registration, which was the point of item 3.
+Two `sairn-suite-pinned-*` directories exist in `%TEMP%`: one is the live run's
+sandbox, the other is from the launch its own dirty-tree guard refused. **Both
+are outside the repo and neither is a registered worktree.**
+
+## RELEASED
+
+`python tools/sairn_claim.py release Tooling` — result recorded in the final
+report.

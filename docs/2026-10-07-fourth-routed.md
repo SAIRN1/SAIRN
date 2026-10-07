@@ -466,3 +466,77 @@ outright if a replacement is not on a ref.
 own claim text. A claim file is an append-only record of what was claimed at the
 time and rewriting it would falsify the record, so it is left as written and
 named here instead.
+
+---
+
+## SEQ 13-E — `tools/bare_run_write_check.py`: the owner map says NOTHING, and that is the finding
+
+**Item 10, re-derived at HEAD.** The ask was to confirm the owner and the
+routing seq. Confirmed, and the owner record is the weak part:
+
+    docs/tool-owner-map.json:
+      tools/bare_run_write_check.py   -> {"owner": null, "basis": "NONE"}
+      tests/run_bare_run_write_probe.py -> {"owner": null, "basis": "NONE"}
+      tools/bare_run_writers.py       -> {"owner": "cody", "basis": "OWNER_LINE"}
+
+**The owner is cody**, on three independent pieces of evidence that are not the
+owner map:
+
+1. **cody's own Tier A record** (`2026-09-30T10:58:02Z`, which I discharged this
+   batch) describes it as cody's new work: *"(2) tools/bare_run_write_check.py
+   and tests/run_bare_run_write_probe.py — NEW."*
+2. The two commits that created it, `53972364` and `c86050b4` (2026-09-30), are
+   the same *"feat(methodology): the bare-run write sweep"* pair.
+3. Its **sibling** `tools/bare_run_writers.py` carries an `OWNER:` line naming
+   cody.
+
+**So the tool itself has NO `OWNER:` line**, which is why the map says
+`basis: NONE` — and the map therefore cannot attribute a tool whose author is
+not in doubt. That is the 283-headers backlog already recorded in
+`docs/METHODOLOGY.md`, showing up where it costs something: a routing had to be
+established from a review record and a sibling file instead of being read.
+
+**Routing seq:** the finding itself is **SEQ 3** above (batch 12, the
+linked-worktree hole with the `--git-common-dir` discriminator), re-confirmed in
+the `verdict` of cody's `2026-09-30T10:58:02Z` obligation written this batch.
+**NOT PATCHED** — the file is not in my claim and the fix is cody's.
+
+---
+
+## SEQ 13-F — ITEM 9: cody's `--pinned` change LANDED, and the isolation HOLDS
+
+**`0dcb2daf` (2026-10-07): "fix(harness): --pinned builds a throwaway CLONE, not
+a linked worktree".** It cites my `b23dbc2e` as the same layer and the same
+measured reason, and `166fe4ef` beside it is cody's andon on a 6h31m run that
+broke this clone and reported no residue.
+
+**Verified by a TARGETED run, not a `--pinned` run** — the standing instruction
+forbids whole-tree and `--pinned` runs, so this drives only the provisioning
+sequence cody's change replaced (clone, detached checkout,
+`provision_worktree_identity`), in process, and then makes the write that used
+to reach the main clone:
+
+    git clone --local --no-checkout --quiet        rc=0
+    git checkout --detach dec86b03ea3e             rc=0
+    provision_worktree_identity                    ok=True
+    git -C <throwaway clone> config core.bare true rc=0
+      the CLONE now reads core.bare = 'true'
+
+**And this clone, before and after:**
+
+    git config -l           29 line(s)  ->  29 line(s)   IDENTICAL
+    .git/config             489 bytes   ->  489 bytes    BYTE-IDENTICAL
+    core.bare               None        ->  None
+    git status still answers: True (rc=0)
+
+    cody's own residue detector:  _core_bare(main clone)      -> 'false'
+                                  _core_bare(throwaway clone) -> 'true'
+
+**ISOLATION HOLDS.** This is the exact mirror of the batch-11 proof, where
+`git -C <worktree> config core.bare true` added `bare = true` to this clone's
+`.git/config`. The same write now lands only in the throwaway clone.
+`PROGRAM_EXIT=0`, one run, first run clean, at `dec86b03`. Throwaway clone
+removed afterwards.
+
+**The finding is cody's and cody closes it.** This is confirmation attached to
+it, not a closure by me.
