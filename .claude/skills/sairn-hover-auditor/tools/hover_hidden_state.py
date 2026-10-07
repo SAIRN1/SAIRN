@@ -92,9 +92,44 @@ STOPLIST = {
     # qc_status, entry_type) still surfaces because it is not literally
     # the token 'status'.
     'status', 'active', 'id',
+    # ADDED H1 batch R item 2, hand-verifying all 37 candidates one by one
+    # against real source. 'get'/'has' are generic method-presence feature
+    # detection (`typeof r.headers.get === 'function'`), never a domain
+    # field. 'warn_days' recurred, identically, on 5 separate rf_*/sub_*
+    # resources (rf_company_programs, rf_prequal_documents,
+    # rf_warranty_tiers, sub_assignments, subcontractors) with the exact
+    # same generic optional-numeric-config shape every time -- the same
+    # "catches everything, signals nothing" pattern 'status' already named
+    # above, just one app-family wide instead of platform-wide.
+    'get', 'has', 'warn_days',
 }
 
 FIELD_RE = re.compile(r"\.([a-zA-Z_][a-zA-Z0-9_]{1,30})\s*(===|!==|==|!=)")
+
+# ADDED H1 batch R item 2. Hand-verifying all 37 real candidates against
+# live source found two more false-positive classes this tool's own
+# selftest fixtures never happened to exercise:
+#   1. A `//` comment describing example code (`dnt_txplans`'s own comment
+#      literally reads `r.direction === 'incoming'`; `sd_exec_msgs`'s reads
+#      `d.drug === drugName`) -- same bug class as
+#      hover_completeness_probe.py's first-run fix, not yet applied here
+#      until this hand-verification pass found it independently.
+#   2. A `typeof x.field === 'string'/'boolean'/.../'function'` TYPE GUARD
+#      is a generic JS idiom checking the shape of a value, never a branch
+#      on the value's actual content -- `sen_payer_contracts.state` and
+#      `rf_entities.legal_name` both matched this way and neither is a
+#      real content-based branch.
+_TYPEOF_GUARD_RE = re.compile(
+    r"typeof\s+[\w.\[\]'\"]*\.([a-zA-Z_][a-zA-Z0-9_]{1,30})\s*(===|!==)\s*"
+    r"['\"](string|boolean|number|function|object|undefined)['\"]")
+
+
+def _strip_comments(text):
+    return '\n'.join(re.sub(r'//.*$', '', line) for line in text.splitlines())
+
+
+def _typeof_guarded_fields(text):
+    return set(m.group(1) for m in _TYPEOF_GUARD_RE.finditer(text))
 
 
 def handler_regions(repo, resource_names):
@@ -140,9 +175,11 @@ def run(repo):
         report['resources_with_handler'] += 1
         fields = set()
         for text in texts:
-            for m in FIELD_RE.finditer(text):
+            code_only = _strip_comments(text)
+            typeof_guarded = _typeof_guarded_fields(code_only)
+            for m in FIELD_RE.finditer(code_only):
                 fname = m.group(1)
-                if fname in STOPLIST:
+                if fname in STOPLIST or fname in typeof_guarded:
                     continue
                 fields.add(fname)
         evidence_words = _words(evidence.replace('`', ''))
@@ -202,6 +239,8 @@ def _selftest():
                 "if (resource === 'fa_billing' && action === 'write') {\n"
                 "  if (payload.amount === 0) { return; }\n"
                 "  if (payload.medicationName !== null) { flagPHI(); }\n"
+                "  // example: r.direction === 'incoming' is display-only text\n"
+                "  const isStr = typeof payload.ownerName === 'string';\n"
                 "}\n")
         tier_a, err = tier_a_resources(td)
         check('fa_billing read as Tier A', tier_a.get('fa_billing') is not None)
@@ -212,9 +251,17 @@ def _selftest():
               'amount' not in report['hidden'].get('fa_billing', []))
         check('medicationName IS hidden (branched on, never named in evidence)',
               'medicationName' in report['hidden'].get('fa_billing', []))
+        # Regression locks for the two false-positive classes this role's
+        # own hand-verification of all 37 real candidates found (batch R
+        # item 2): a comment-embedded quoted comparison, and a `typeof`
+        # shape guard, must neither be treated as a real hidden field.
+        check("comment-embedded 'direction' is not treated as a field",
+              'direction' not in report['hidden'].get('fa_billing', []))
+        check("typeof-guarded 'ownerName' is not treated as a field",
+              'ownerName' not in report['hidden'].get('fa_billing', []))
 
     print()
-    print('SELFTEST %s (%d/%d)' % ('PASS' if not failures else 'FAIL', 5 - len(failures), 5))
+    print('SELFTEST %s (%d/%d)' % ('PASS' if not failures else 'FAIL', 7 - len(failures), 7))
     return 0 if not failures else 1
 
 

@@ -2154,3 +2154,56 @@ That is conventions 18 and 19 arriving from the same hand on the same day.
 * **`core.bare` stays cody's.** No whole-tree run, no `--pinned` run, no patch
   to `tools/run_all_tests.py`; my evidence is attached to cody's finding.
 * **Item 9 blocked on Michael** and not guessed at.
+
+
+---
+
+## 2026-10-07 -- BATCH 16 (resumed after the first attempt stopped mid-compaction)
+
+**CLOSED AND PUSHED. Full record: `docs/handoff-fourth-2026-10-07.md`, batch-16
+checkpoint table + FINAL STATE. Report: `G:\My Drive\SAIRN-status\SAIRN-report-ted-b1.txt`.**
+
+**What I touched, so nobody repeats it:** `tests/phi_cache_scoped_to_user.js`,
+`docs/known-red-suites.json`, `docs/2026-09-13-cross-domain-disciplines.md`,
+`docs/METHODOLOGY.md`, `docs/defect-density-register.json` (through
+`defect_register.py --add` only), `docs/scrutiny-flags.json` (gate bookkeeping),
+`docs/handoff-fourth-2026-10-07.md`, this file.
+
+**The one worth knowing about if you touch SAIRNsenior or any phi-cache suite:**
+arm 5a was a FALSE POSITIVE IN THE SUITE, not a defect in the app. It derived the
+app's written cache keys with a bare regex over the RAW file, so the comment at
+`sairnsenior.html:5768-5780` -- which exists to record that `sen_settings` must
+NEVER be written locally -- was counted as the write. **Do not add `sen_settings`
+to `SEN_UNSCOPED_CACHES`.** Write sites now come from
+`tests/lib/strip_comments.js`, and arm 5e is the both-directions control.
+
+**One arm cleared four register rows**, including
+`tests/phi_cache_scope_probe.py`, which had been planting NONE of its 7 mutations
+against the SAIRNsenior PHI purge guard for as long as the false positive stood.
+Register 79 -> 75; the four were deleted per the register's own RECOVERED rule and
+their diagnoses are preserved in `_recovered_2026_10_07_fourth`.
+
+**cc's three conventions landed as 23, 24, 25, CREDITED TO CC.** 24 is recorded as
+a TENTH member of the cannot-fire group. Count the `## <n>.` headings -- it is 25.
+
+### NOT REACHED / OWED
+
+* **The 16 unbaselined `+ (x || 0)` sites in `stonedesk.html`** -- 8 distinct
+  `file::term` keys. They keep `run_truthy_sum_probe` arm 11 red and the live
+  ablation lever unmeasurable. Per-site judgement, not a sweep.
+* **`tests/run_primitive_obsession_probe.py` still stands as a register entry with
+  `exit_code 0` and RECOVERED in its own `why`** -- the state that rule forbids.
+  Flagged, deliberately not deleted; it is a decision, not a cleanup.
+* **37 of the 83 still unverified individually.** Not presumed red.
+* **The owner-map gap is ROUTED TO CC with its mechanism:**
+  `tool_owner_map.py:76` reads only `FILES:` from a claim subject, and claim
+  `c1e06f33` names its file in prose, so regenerating reproduces
+  `owner: null, basis: NONE`. **`docs/tool-owner-map.json` NOT touched.**
+* **The settings merge stays CODY'S.** Re-checked once at
+  `2026-10-07T19:30:51Z`; still not landed; nothing written.
+* **The `424 of 1214` figure is NOT REPRODUCIBLE** -- its predicate was never
+  recorded. With one stated it is 974 of 1227, and 2 of 15 scripts driven from a
+  copy contradicted the claim outright.
+* **`docs/purge-evidence/2026-09-30-SAIRN-fourth.json` left untouched**, and all
+  18 of my orphaned citations turned out to be quotations OF orphans, so zero were
+  re-seatable.
