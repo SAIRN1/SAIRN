@@ -258,3 +258,20 @@ The **batch-11** scratchpad, which this batch's items 3 and 4 continue from:
 | **11** cc's three conventions | **DONE** | the report; none conflicts with the 22 | chat decides adoption |
 | **12** method improvement | **DONE** | handoff-c ITEM 12, with the before/after predicate | folded into convention 20 |
 | **13** final handoff + release | **DONE** | the FINAL STATE section of `docs/handoff-fourth-2026-10-07c.md` | claim released; report gate run as the last step |
+
+# BATCH 16 CHECKPOINT LOG -- one line per item, appended BEFORE the next item starts
+
+The first attempt at this batch was **stopped mid-compaction**. Two rows had been
+written. The numbering below is the RESUME dispatch's 1-15, and the first thing it
+does is **retract the stopped session's row 2**, because the evidence file it cited
+(`abl_i2c.out`) was in that session's scratchpad and **does not exist**, and the
+direction it recorded was re-measured and is **wrong**. A checkpoint line whose
+evidence cannot be opened is a claim, not a record — PR §5.
+
+| item | state | commit / evidence | exact next step |
+|---|---|---|---|
+| ~~**2** ablation 8 of 8 (stopped session)~~ | **RETRACTED** | cited `<scratchpad>/abl_i2c.out`, which is absent; claimed "tool exit 1→0, probe 1→0" | superseded by row 3 below, which measured **1→1→1** |
+| **1** per-item checkpointing | **DONE** | this table, one row appended before the next item starts | memory directory untouched; no tool built |
+| **2** state check | **DONE** | claims list, `git status`, `git log`, handoff read. HEAD was `f4514979`, **0 ahead / 3 behind** origin/main, fast-forwarded to `2156abb1`. Everything in my batch-15 log is PUSHED | nothing of mine is unpushed; the only uncommitted work was 10 census entries in `docs/known-red-suites.json` and the two retracted handoff rows |
+| **3** ablation 8 of 8, truthy_sum | **DONE — and the live-repo lever is INCONCLUSIVE, which is the finding** | `<scratchpad>/abl_truthy_sum.out` and `<scratchpad>/abl_truthy_sum_fixture.out` | live tree: tool `1→1→1`, probe `1→1→1`, 32 arms ok / 1 FAIL **unchanged** by emptying the baseline, because the only arm that reads it (arm 11, `run_truthy_sum_probe.py:173`) is **already red from real tree state** and exit 1 before is exit 1 after. Baseline restored, sha256 `9fa29263…` byte-identical, `git status` unchanged. Then the SAME lever on an already-clean fixture, per convention 12: **A present `0` → B EMPTIED `1` → C ABSENT `1`**. Lever engaged, emptied and absent agree. **The 16 unbaselined occurrences in `stonedesk.html` are what make the live arm unmeasurable**; they are routed, not fixed |
+| **4** census, 3 slices | **DONE -- 40 -> 50 of 83** | `<scratchpad>/census_slices.out`, `census_now.out`, `census_after.out`; register restamped at `2156abb1` | ten suites driven **alone**, 300s ceiling, boundary verified **after every one** (`git status` digest, sha256 of `.git/config`, `node --check api/sd-data.js`) -- all three unchanged start to end. All ten exit **1**; all ten AGREE with the rows the stopped session had written, so those rows are now stamped on a run whose output exists. `known_red_check.py --fixtures` **exit 0**. **33 still unverified**, and they are unmeasured-individually, not presumed red |

@@ -40,6 +40,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const { stripComments } = require('./lib/strip_comments.js');
 
 let pass = 0, fail = 0;
 function ok(name, cond, detail) {
@@ -55,6 +56,38 @@ function eq(name, actual, expected) {
 }
 
 function readApp(file) { return fs.readFileSync(path.join(__dirname, '..', file), 'utf8'); }
+
+// THE KEYS THE APP ACTUALLY WRITES -- FROM CODE, NOT FROM PROSE.
+//
+// ADDED 2026-10-07 because arm 5a was RED on a key that does not exist as a
+// write. The extraction ran over the raw file, so the two lines of
+// sairnsenior.html:5772,5774 that say -- in a comment, as a decision --
+//
+//     // no literal setItem('sen_settings') or st('sen_settings') write either
+//     // There is no `st('sen_settings')` because there must not be one
+//
+// were counted as two write sites for `sen_settings`, and arm 5a then demanded
+// that a non-existent cache be purged or exempted. THE COMMENT EXPLAINING THAT A
+// KEY IS NEVER WRITTEN WAS READ AS THE KEY BEING WRITTEN, which is the same
+// defect shape this repo already paid for in tools/truthy_sum_check.py (the
+// pattern quoted in a comment is not code) and in tools/comment_quote_check.py.
+//
+// Fixing it by naming `sen_settings` as an exclusion would have been WRONG in the
+// direction that matters: it would put a key in SEN_UNSCOPED_CACHES to satisfy a
+// checker, and the next real unpurged cache would then look like more of the
+// same. The write site is what was wrong, not the app.
+//
+// tests/lib/strip_comments.js is used rather than a fifth private version --
+// see that file's header for the three ways the private versions were wrong,
+// including the `accept="image/*"` one that opened a comment in THIS VERY APP.
+// Arm 5e is the control, in both directions, and it FAILS without this.
+function writtenKeys(src, prefix) {
+  const re = new RegExp("[ls][dt]\\('(" + prefix + "[a-z_]+)'", 'g');
+  const out = new Set();
+  let m;
+  while ((m = re.exec(stripComments(src))) !== null) out.add(m[1]);
+  return out;
+}
 
 function balancedFrom(src, start) {
   let i = src.indexOf('{', start), depth = 0;
@@ -237,10 +270,7 @@ APPS.forEach(function (app) {
   }
 
   // ── ARM 5: the purge list covers every cached collection the app writes
-  const written = new Set();
-  const re = new RegExp("[ls][dt]\\('(" + app.prefix + "[a-z_]+)'", 'g');
-  let m;
-  while ((m = re.exec(w.src)) !== null) written.add(m[1]);
+  const written = writtenKeys(w.src, app.prefix);
   // EVERY key must be in EXACTLY ONE of the two lists. An exclusion is a
   // decision with a reason beside it in the source, not an omission -- that is
   // the difference between this and the allowlists that caused the bugs this
@@ -257,6 +287,24 @@ APPS.forEach(function (app) {
   ok('5d  ' + app.name + ': the exclusion list is non-empty and reasoned',
      unscoped.size > 0 && /DELIBERATELY NOT PURGED/.test(w.src),
      [...unscoped].join(', '));
+  // 5d reads the RAW source on purpose: the reason it is looking for IS a
+  // comment. Only the write-site extraction may not see prose.
+
+  // ── ARM 5e: THE CONTROL ON THE EXTRACTOR, BOTH DIRECTIONS.
+  // Without it, arm 5a's input is trusted, and arm 5a spent a batch red over a
+  // key quoted in a comment that says the key is never written. A checker whose
+  // own input is unverified reports the defects of its parser as defects of its
+  // subject.
+  const P = app.prefix;
+  const REAL = '<script>function f(){ st(\'' + P + 'ghost\', 1); }</script>\n';
+  const QUOTED = '<script>\n'
+    + '// no literal setItem(\'' + P + 'ghost\') or st(\'' + P + 'ghost\') write either\n'
+    + '/* There is no `st(\'' + P + 'ghost\')` because there must not be one. */\n'
+    + 'function f(){ return 1; }\n</script>\n';
+  eq('5e  ' + app.name + ': a REAL st() write IS counted',
+     [...writtenKeys(REAL, P)], [P + 'ghost']);
+  eq('5e  ' + app.name + ': ...and the SAME text in // and /* */ comments is NOT',
+     [...writtenKeys(QUOTED, P)], []);
 
   // ── ARM 6: the on-screen promise this exists to make true is still there
   const promise = app.promise || (app.prefix === 'alf_'
