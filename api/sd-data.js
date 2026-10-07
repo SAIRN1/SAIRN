@@ -10610,10 +10610,32 @@ module.exports = async (req, res) => {
           // billing for care that did not happen.
           if (d.status && d.status !== 'given') return;
           const at = String(d.administered_at || d.recorded_at || '');
+          // ── THE DRUG NAME IS PHI AND THIS HANDED IT TO `billing` ─────────
+          // `description` was `d.medication_name || d.name`, and it is returned
+          // on every derived charge line. The gate on this action is
+          // ALF_MANAGEMENT_ROLES = { owner, billing }; the gate on
+          // `alf_mar`/`read`, which owns this table, is ALF_MAR_ROLES =
+          // { owner, nursing, med_aide }. The difference is exactly one role:
+          // `billing` is in the first and NOT in the second. So a billing
+          // clerk, 403'd from the MAR directly, learned which medications a
+          // NAMED resident is on by asking for their invoice -- a medication
+          // regimen is diagnostic-revealing, which is the part that makes it
+          // PHI rather than an administrative detail.
+          //
+          // NOTHING IS LOST FROM THE BILLING ANSWER. `api/_lib/care-charges.js`
+          // prices on `e.type` through `CHARGEABLE[type].rate_key` (:70, :77);
+          // `description` is carried to the line (:103) and is never priced.
+          // Read off that module rather than assumed, because "the fix costs
+          // nothing" is the claim most worth checking.
+          //
+          // AND THE REDACTION IS DECLARED -- on the RESPONSE, at `:10799`, not
+          // here. A flag set on the event is dropped by care-charges.js, which
+          // copies a fixed field list to each line; see the note at that line.
+          const marNameOk = !!ALF_MAR_ROLES[session.role];
           events.push({
             id: row.entry_id, type: 'medication_administration',
             resident_id: String(payload.resident_id), date: at.slice(0, 10),
-            description: d.medication_name || d.name || ''
+            description: marNameOk ? (d.medication_name || d.name || '') : ''
           });
         });
       }
@@ -10773,6 +10795,16 @@ module.exports = async (req, res) => {
         derived.reconciliation_vs_invoice = careCharges.reconcileAgainstInvoice(
           derived, priorLines || []);
       }
+      // ── THE REDACTION IS DECLARED ON THE RESPONSE, NOT ON THE EVENT ──────
+      // The first version of this fix set `description_withheld` on the event
+      // object and that was a SILENT NO-OP: `api/_lib/care-charges.js` copies
+      // event_id, type, label, date, quantity, unit_rate, amount and
+      // `description` to the line (:95-:104) and drops everything else, so the
+      // flag never reached the caller while the redaction did. A blank
+      // description and a withheld one look identical to a biller, which is the
+      // whole reason the flag exists -- caught by driving the test rather than
+      // by reading the edit.
+      derived.mar_description_withheld = !ALF_MAR_ROLES[session.role];
       res.status(200).json(derived);
       return;
     }
