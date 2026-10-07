@@ -240,3 +240,11 @@ The **batch-11** scratchpad, which this batch's items 3 and 4 continue from:
 | **8** convention 22 | **DONE** | `docs/2026-09-13-cross-domain-disciplines.md` §22 + a METHODOLOGY promotion row | cause-tagged `measurement/window/unbounded-view-presented-as-the-whole` |
 | **9** cody's routing path | **DONE** | METHODOLOGY *"Routed here — RE-DERIVED"* section | cc's three are now READABLE and resolved; cody's ITEM 15 has **no `## ITEM 15` section** — a table row naming a section that was never written |
 | **10** final handoff + release | **DONE** | the FINAL STATE section of `docs/handoff-fourth-2026-10-07c.md` | claim `fourth` released; `git config core.bare` printed in the report |
+
+# BATCH 15 CHECKPOINT LOG
+
+| item | state | commit / seq | exact next step |
+|---|---|---|---|
+| **1** Tier A discharges | **DONE — 3** | the three `verdict` fields; one by recorded takeover | cc 173h and cc 168h remain readable and takeover-eligible; the two ABSENT ones are items 7 and the weak-basis decision |
+| **2** memory-checkpoint tool | **DONE — answered NO** | nothing built, as instructed | see the report; a decision for chat |
+| **10** settings merge | **BLOCKED — re-checked once** | only `PreCompact` in `~/.claude/settings.json`; no commit to `.claude/settings.json` since 2026-10-05 | re-check when cody's merge lands |
