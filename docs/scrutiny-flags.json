@@ -93,6 +93,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_alf_read_order_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0d5077c739552634531fae6688f2ac24575cd52d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_defect_register_reseat_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(d, ignore_errors=True)"
+    }
+   ],
+   "sha": "0d5077c739552634531fae6688f2ac24575cd52d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/provisioning_attribution.js",
    "class": "test file",
    "level": "CHANGE",
