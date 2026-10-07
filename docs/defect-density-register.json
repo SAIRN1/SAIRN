@@ -25015,6 +25015,62 @@
       "recurrence_open": "THREE FALSE POSITIVES ARE STILL FLAGGED ON PURPOSE -- alf_clients, rf_claims, rf_jobs -- because the tool cannot resolve role sets and a hardcoded exemption list would expire. The real fix is teaching it to read roleSet(...) literals, which is a feature and is not built. And alf_mar REMAINS FLAGGED as WEAKER at this tree: the structural assignment asymmetry is still there, only the disclosure through it is closed."
     },
     {
+      "commit": "e2612fef8a55",
+      "date": "2026-10-07",
+      "subject": "feat(py guard): the python guard checker -- 4 rules, 60 arms, 91 findings every one hand-verified, and FOUR defects in my own code found by its own probes",
+      "files": [
+        "tests/run_py_guard_probe.py",
+        "tools/py_guard_check.py",
+        "tools/report_only_checks.py"
+      ],
+      "lines_added": 868,
+      "lines_removed": 0,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "probe-control",
+      "summary": "FOUR DEFECTS IN tools/py_guard_check.py ITSELF, all four found by its own controls before it ever reported on anything, and recorded rather than quietly fixed because the tool exists to find exactly this family. (1) ARM 0 asserts the tool never executes what it reads; it searched the file's TEXT for 'exec(', 'eval(', 'compile(' and FAILED ON ITS FIRST RUN on `re.compile(` -- the regex compiler. That is PR 1.2 (grep cannot tell code from text about code) inside the tool written to avoid PR 1.2. It now asks the TREE: a bare call to one of those names, or an import of importlib/subprocess. (2) Rule R1 flagged tools/outline.py:80, which is CORRECT CODE -- `check=True` IS the exit-code check, expressed as an exception rather than an if -- and `subprocess.check_call` / `check_output` were in the call list for the same reason and would have flagged correct code too, since both raise on non-zero. Found by hand-verifying every flag of the first full run, which is the step the item required. (3) Rule R4 matched any name called `status`, and SIX of the first run's eleven R4 flags were a STRING verdict compared to a string (ok rc=1, TIMEOUT, UnicodeEncodeError, DRIFTED) in cp1252_console_sweep.py, push_retry.py and register_freshness_propose.py -- all correct code. `status` and `ret` removed from the name set. (4) `--help` EXITED 1: it printed the module docstring, the docstring carried box-drawing characters, and on a cp1252 console print() raised UnicodeEncodeError. That is the class tools/cp1252_console_sweep.py exists for, in a brand new file, and it was found by the CLI probe's '--help exits 0' arm. The docstring is now ASCII AND the print is encode-safe. All four now have arms, and the near-miss set IS the false positives: R1-check-true, R1-check-call, R4-status-str, R4-status-tmo.",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "run_py_guard_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "There is no injection commit: all four were introduced and fixed before tools/py_guard_check.py was first committed. The file has no earlier version in which they could have shipped, which is why they are recorded as defects FOUND rather than as a regression -- and recording them at all is the item's own instruction to cause-tag every defect found in my own code."
+      },
+      "citation_note": "ARGUABLE, and it cites the rule the tool was built to respect. PR 1.2 is that grep cannot tell code from text that describes code; two of these four are exactly that, committed inside an AST tool whose reason for existing is that regexes cannot answer these questions. Defect 4 is a different family -- PR 1.5's neighbour, a tool that crashes where it meant to help -- and defect 2 is cross-domain disciplines item 1 (criteria locked against fixtures before the real data). One record, four defects, one commit, so the citation names the dominant shape and this note names the others.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "action_status": "done",
+          "factor": "Two of the four (ARM 0's substring test, R4's `status` name) are the same mistake: a LEXICAL test standing in for a syntactic or semantic fact. The tool's whole premise is that this is why it is an AST tool and not a regex tool, and it made the mistake twice in its own implementation.",
+          "action": "ARM 0 walks the tree; R4's name set narrowed to names that are an exit code or nothing. Both have arms, and ARM 0's second arm drives it on a source that DOES exec so it has been seen to fail."
+        },
+        {
+          "kind": "process",
+          "action_status": "done",
+          "factor": "Defects 2 and 3 were only findable by HAND-VERIFYING EVERY FLAG of the first full run against its source line. Reading the counts alone -- 29 R1, 57 R2, 11 R4 -- would have looked like a successful first run and shipped two over-wide rules.",
+          "action": "All 91 flags hand-verified, every false positive named in the commit message, and the one remaining false positive for the rule's INTENT (sabotage.py:243, a RuntimeError raised on purpose two lines above) named rather than narrowed away."
+        },
+        {
+          "kind": "detection",
+          "action_status": "done",
+          "factor": "Defect 4 was invisible to the 37 in-process arms by construction: they call scan_source() and compare return values, and nothing about --help's exit code lives in a return value.",
+          "action": "tests/run_py_guard_probe.py drives the real CLI in a subprocess and reads returncode -- a structurally different method, per cross-domain disciplines item 6. It found defect 4 on its first run, and an arm now asserts the help output has no byte above 127."
+        },
+        {
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "factor": "Every one of the four was found by a control rather than by review, in a file written carefully in one sitting. The rate is the point: four in one new file, and the only reason none shipped is that the item demanded hand verification and two independent arm sets.",
+          "note": "No action, because the action is the discipline that already caught them. Recorded so the next new tool starts from 'four, in one file, found by controls' rather than from 'review will catch it'."
+        }
+      ],
+      "recurrence_open": "THE TOOL'S 91 FINDINGS ARE NOT FIXED AND ARE NOT MINE TO FIX. They are in other sessions' and unowned tools: R1 28, R2 57 (45 UNDOCUMENTED), R4 6. They are reported, not closed, and the registry entry says the tool must stay report-only because of the COUNT rather than the precision -- every one is a real instance, which is what makes it unusable as a gate today. R4's six are the sharpest and arguably promotable on their own: `sys.exit(<string>)` exits 1 on a platform where 1 means FINDINGS and 2 means COULD NOT RUN, so a missing licence key reports as findings while its own message says COULD NOT RUN. ALSO OPEN: defect 4's class is not swept for in NEW files -- cp1252_console_sweep.py exists and did not run on this one before the probe did, and nothing ties a new tool's creation to that sweep. And the R2 documented/undocumented tag reads PHYSICAL LINES for a comment, so a reason written in a docstring below the `except` rather than a comment above it is tagged UNDOCUMENTED; that is a known imprecision in a tag that only decides reading order."
+    },
+    {
       "commit": "e90d8775c7b2",
       "date": "2026-10-07",
       "subject": "fix(sairncare): PII -- alf_staff/read handed every care worker's PERSONAL PHONE and BACKGROUND-CHECK DATE to any authenticated role",

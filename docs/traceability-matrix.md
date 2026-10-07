@@ -53,6 +53,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 |---|---|---|
 | a finding in the hover auditor's own log that was never routed into docs/SAIRN-OPEN-WORK-INDEX.md -- flagged when it is older than six hours OR past a volume threshold, OR and not AND, because a busy hour buries a finding as well as a quiet week does. | `hover_routing_gap_check.py` | THREE findings were sitting unrouted in the auditor log when this tool was written, and nothing in the repo connected that log to the index -- the gap was found by the tool, not by anybody reading either document. It found a fourth class on 2026-09-29: the supplier_lead_times row and a citation-drift row had been in the log since 11:40Z and were never in the index. ITS OWN HEADER ONCE CARRIED A HARDCODED "2 of 686 routable", which went stale immediately; that number is printed on every run now and is deliberately not written in the prose. |
 | a population derived from a NAME TEST -- startswith, a prefix glob, a hyphen convention -- with no second derivation behind it; and separately a directory where what is on disk and what git tracks DISAGREE. | `pattern_enumeration_sweep.py` | the clone count in docs/NHI-REGISTER.md was wrong THREE TIMES. The third time it was ALREADY DERIVED FROM DISK and still wrong, because the filter was startswith('SAIRN-') and one clone of the same remote has no hyphen. Deriving a population does not make it right if the FILTER encodes a habit -- which is the whole subject of this sweep. |
+| four syntactic shapes that let a program report a verdict it did not earn: R1 a subprocess/os call whose result is discarded as a bare statement; R2 a bare except, or a handler whose body is only pass; R3 an assertion that cannot fail (truthy constant, non-empty literal container, x == x); R4 an exit status taken from or compared against a string. AST only -- it never executes what it reads, and an arm asserts that against its own source. | `py_guard_check.py` | R4 is reproducible in one command: `python tools/sairn_load_state_check.py --app sairnlaw` prints "No license key. Set SAIRNLAW_LICENSE_KEY or pass --key." and exits 1 -- FINDINGS -- from a `raise SystemExit(<string>)` whose own text says COULD NOT RUN. Measured 2026-10-07. R1 includes fixture SETUP inside selftests (git init / add / commit on a throwaway repo, exit code discarded), which is the highest-value half: a fixture whose setup failed silently leaves the arms after it testing nothing while passing. Zero files failed to parse out of 306. R3 zero is a real zero, not a dead rule -- its planted-bad example fires in the criteria lock printed on every run. |
 | a sql/ statement that FILTERS on a column the table does not have, in either the declared create-table and alter-table-add-column shape or the deployed snapshot -- and, separately, a column present in one source and absent from the other, which is where an unrun migration and a stale snapshot both land. | `sql_column_exists_check.py` | docs/2026-09-29-mech-docs-gate-live-verification.md shipped a removal block naming entry_id on mech_checks and mech_takeoffs, which use check_id and takeoff_id. Reached origin/main. Every statement would error 42703 undefined_column, including the confirm step, so it could not print the 0 it existed to prove. Current run: 0 bad-column findings, 21 declared/deployed disagreements, 270 statements declared BLIND and counted. |
 | a test arm labelled "every / all / no X" that is actually asserting a floor, or a bare truthiness -- `>= 4`, or `if rows`, under a label claiming every answer carries the limits | `assertion_label_shape_check.py` | REAL RUN 2026-10-06, exit 1: CHECKED / UNIVERSE 903 of 903 suite files (100%), TIERS 26 CONFIRMED and 48 ADVISORY, printed separately and never added. The 48 are LISTED so the demotion is auditable rather than silent. Among the confirmed: tests/run_shape_search_probe.py:62 and :68, "renaming every identifier does not move the score" and "and changing every string literal does not either" -- universal labels over one-sided comparisons, in a probe about measurement stability. |
 | a tool whose several real-data entry points enumerate DIFFERENT MEMBERS OF ONE POPULATION FAMILY -- the copy a human invokes is not the copy that enforces | `entry_point_scope_check.py` | REAL RUN 2026-10-06, exit 1: CHECKED / UNIVERSE 87 of 297 tools (29%) have more than one real-data door, 1 FINDING -- tools/purge_evidence_gate.py, whose bare run and --audit enumerate DIFFERENT populations (file-tree against the audit set). The run also PRINTS ITS OWN ABLATION rather than claiming it: "doors only this resolution sees: add / list / scope / types (subcommands)", "populations only this resolution reaches: load_ledger, load_tier_a", and "VERDICT MOVED: only one real-data entry point -> no two doors enumerate different members of one population family" -- so the dispatch-table layer is shown doing work on every run instead of being asserted once. |
@@ -699,11 +700,11 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 187 test files are traced to no stated requirement
+### 188 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 722 of 909 traced, 79.4%.
+For context and not as the headline: 722 of 910 traced, 79.3%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -726,7 +727,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | kind | count | what it means | the fix |
 |---|---|---|---|
 | **bound to a subject, tied to no requirement** | 36 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 151 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **no subject binding either** | 152 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
 **These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 36 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
@@ -850,6 +851,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_primitive_obsession_probe.py`
 - `tests/run_probe_anchor_freshness_probe.py`
 - `tests/run_purge_evidence_probe.py`
+- `tests/run_py_guard_probe.py`
 - `tests/run_python_escape_hygiene_probe.py`
 - `tests/run_rebase_state_guard_probe.py`
 - `tests/run_reclassification_sweep_probe.py`
@@ -936,10 +938,10 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 909   tests/**, api/** (both walked)
+  test files on disk                 910   tests/**, api/** (both walked)
   open-work rows citing a test       392   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 10   sairn_push_gate_hook.GUARD_TESTS
-  report-only registry                75   report_only_checks.REGISTRY
+  report-only registry                76   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     81   report_only_checks.NOT_PROMOTED
   numbered gate checks                15   sairn_push_gate_hook.py
 ```
