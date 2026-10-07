@@ -5751,6 +5751,50 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-10-07T13:46:11Z",
+      "opened_at_sha": "f1d2fd1988785a6e4a3f9ee00f87ab8d9d1a5456",
+      "resources": [
+        "alf_activities",
+        "alf_billing",
+        "alf_clients",
+        "alf_compliance_rules",
+        "alf_facility",
+        "alf_mar",
+        "alf_staff",
+        "alf_staff_credentials",
+        "grd_boq_rates",
+        "grd_cart_orders",
+        "grd_designs",
+        "grd_invasive_sightings",
+        "grd_invoices",
+        "grd_irr_controllers",
+        "grd_irr_zones",
+        "grd_progress_photos",
+        "grd_rounds",
+        "grd_training_completions",
+        "grd_training_courses",
+        "msb_products",
+        "quotes"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/sd-data.js",
+        "tests/sd_data_alf_mar_derive_charges_gate.js",
+        "tests/sd_data_alf_staff_read_gate.js",
+        "tests/sd_data_grd_session_gate.js",
+        "tools/gate_parity_check.py"
+      ],
+      "what": "batch11 (hank): FIVE Tier A changes in api/sd-data.js and four api/ auth-and-write endpoints, all disclosure or accountability, all with a mutation proof. Review these five claims.\n\n(1) alf_staff/read had NO role gate -- session verified and nothing else -- and returned the whole jsonb blob spread: name, phone (personal mobile), bgcheck_date (employment screening), cert_expiry, notes (free text a manager typed about an employee), hire_date. All six sairncare roles reached it; only owner/billing could write. CLAIM TO CHECK: the fix is a PROJECTION, not a refusal -- ALF_CRED_READ_ROLES (the SIBLING'S set, moved up from :11865 so it is declared ONCE) get the roster unchanged, everyone else gets id, name, position, status. Check the projection is CONSTRUCTED from named fields rather than deleted from the blob, so a field added later is excluded by default. Check that moving the const did not break the three original consumers -- tests/sd_data_alf_compliance_staff_scope.js is 16/0 after. Suite: tests/sd_data_alf_staff_read_gate.js 18/0 at the tree, 6/12 RED against the parent.\n\n(2) alf_billing/derive_charges returned a named resident's medication names to `billing`. ALF_MANAGEMENT_ROLES minus ALF_MAR_ROLES is exactly ['billing'], and description was d.medication_name. CLAIM TO CHECK: api/_lib/care-charges.js prices on e.type through CHARGEABLE[type].rate_key and never on description, so the redaction cost the billing answer nothing -- arm C1 asserts owner and billing get the same line count and the same total. Check that claim independently; it is the one that makes the fix safe. Also check mar_description_withheld reaches the CALLER: the first version set it on the event object, which care-charges drops when it copies a fixed field list to each line, so the flag never arrived while the redaction did. Suite: tests/sd_data_alf_mar_derive_charges_gate.js 14/0, 10/4 RED against the parent.\n\n(3) TWENTY-ONE SAIRNgrounds resources required the licence key and nothing else, read and write, in an app that has had api/grd-auth.js and grd_employee_auth all along. grd_invoices, grd_boq_rates (the rates every quote is priced from), grd_vendors, grd_quotes, grd_properties, grd_jobs -- all readable AND writable on the key. CLAIM TO CHECK: ONE shared prelude gates the named set before any branch runs, membership tested with hasOwnProperty rather than SET[resource] (api/rf-auth.js:96 records that prototype trap for a role set). Check the set is EXACTLY the 21 and that the nine msb_* resources in the same region -- a DIFFERENT app -- are untouched; arm D1 drives msb_products without a session and asserts it still answers, which is a measurement and not an endorsement. NO ROLE GATE WAS ADDED: crew can still write an invoice once signed in, deliberately, because that is a product decision. Suite: tests/sd_data_grd_session_gate.js 7/0, 2/5 RED against the parent with A1 reporting 0 of 42 pairs refusing.\n\n(4) ATTRIBUTION on six management-write paths: sc-auth/sd-auth setup, stonedesk-track create and revoke, sd-sub-data roster/write and jobs/write. Measured: 16 of 17 api/*-auth.js recorded neither an audit row nor a created_by on setup, while set_active in the same files audits every outcome including its refusals. CLAIM TO CHECK: the route differs by SCHEMA not preference -- sd_sub_jobs has open jsonb so updatedBy is stamped in the blob, sd_subs and sd_order_links are all named columns so those go to the audit log. Check the stamp is SERVER-SIDE: storedBlob strips only named keys, so a caller-supplied updatedBy would survive, and the two lines are written after it. Arm E1 sends updatedBy SOMEONE-ELSE and asserts it was discarded. Also check `attributed` on every response: writeAuditLog is non-fatal and returns false, so without the flag an unrecorded attribution and a recorded one are identical to the caller. FOURTEEN APPS REMAIN OPEN -- only three audit tables exist platform-wide (api/_lib/audit.js:40) and the rest need a migration. Suite: tests/provisioning_attribution.js 10/0, 3/7 RED against the parent with A2 reporting found 1.\n\n(5) tools/gate_parity_check.py cross-resource verdict gains a DIRECTION. All twelve live flags were hand-verified: 2 real (alf_mar, alf_staff), 7 safe-direction false positives, 3 role-set-containment false positives. Precision 2 of 12, printed by the tool. CLAIM TO CHECK: the verdict was WIDENED, not the match narrowed -- nothing is suppressed, every group still reported, with an UNBUCKETED residue line. The three containment false positives are LEFT FLAGGED on purpose rather than exempted by table name, which would expire. Selftest 11/0, and the two new arms get direction=None (9/2 RED) when grafted onto the pre-fix tool.\n\nWHAT IS NOT COVERED, for the reviewer rather than for me: no live round trip on any of the five -- fetch and validateLicenseKey are mocked, the auth module is not. No UI half is changed anywhere, so sairncare.html will render empty phone and bgcheck columns for narrow roles, a billing user will see a priced medication line with an empty description, and any sairngrounds panel calling these resources before a sign-in now gets 401 instead of data. All three are visible rather than silent, and all three are deliberate UI decisions somebody else should make.\n\nAND A CONFLICT TO KNOW ABOUT WHEN YOU PICK THIS UP: docs/tier-a-reviews.json is declared by cc, cody AND fourth right now. This record is an APPEND of my own obligation, which the push gate requires and which touches none of their rows. I DISCHARGED NOTHING this batch -- 23 obligations are eligible to me, the most overdue is 236h, and all 23 are untouched for exactly that reason.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-07T13:46:11Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

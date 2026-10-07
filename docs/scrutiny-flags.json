@@ -76,6 +76,38 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/provisioning_attribution.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "338cf94c83dd01f5a5720e86d159c8a7b514c1ba",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_alf_mar_derive_charges_gate.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "338cf94c83dd01f5a5720e86d159c8a7b514c1ba",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_alf_staff_read_gate.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "338cf94c83dd01f5a5720e86d159c8a7b514c1ba",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_grd_session_gate.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "338cf94c83dd01f5a5720e86d159c8a7b514c1ba",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_tier_a_review_gate_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -303,6 +335,38 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "eb430f255b407c969b350bcec39bccd39905aea3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/provisioning_attribution.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f1d2fd1988785a6e4a3f9ee00f87ab8d9d1a5456",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_alf_mar_derive_charges_gate.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f1d2fd1988785a6e4a3f9ee00f87ab8d9d1a5456",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_alf_staff_read_gate.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f1d2fd1988785a6e4a3f9ee00f87ab8d9d1a5456",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_grd_session_gate.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f1d2fd1988785a6e4a3f9ee00f87ab8d9d1a5456",
    "criteria_version": "2026-10-06.1"
   }
  ],
