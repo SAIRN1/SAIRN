@@ -1225,7 +1225,7 @@ landed here by fourth at cc's credit, not re-derived and re-badged.
 **THE CONVENTION, in one line: every factual premise a brief carries about repo
 state -- a count, an owner, a claim, a SHA, "X is outstanding" -- is a measurement
 taken when the brief was written, and each one is re-derived and its result
-WRITTEN DOWN BEFORE the work that depends on it starts, one line per premise.**
+WRITTEN DOWN BEFORE the work that depends on it starts, one line per premise, under one of FIVE verdicts.**
 
 **WHY PER PREMISE AND NOT "I CHECKED".** A single "premises re-derived" line is
 indistinguishable from not having checked. The record has to be per premise
@@ -1275,22 +1275,36 @@ dirty tree and everything on a clean fixture; filling it does everything on a
 dirty tree. **The layer is only measurable from a clean baseline, in whichever
 direction you reach it** — which is convention 12 arriving as a measurement.
 
-**And it sharpens this convention rather than weakening it.** A fifth verdict
-belongs beside the four: **WRONG-BY-MY-OWN-CHECK**, where the re-derivation is
-what is faulty. A premise check is itself a measurement and gets the same
-treatment as any other — read the artefact, not the shape of where it should be.
+**And it sharpens this convention rather than weakening it. THE FIFTH VERDICT IS
+NOW PART OF IT: `WRONG-BY-MY-OWN-CHECK`, adopted in chat 2026-10-07, one batch
+after the rest of the section** — where the premise stands and the RE-DERIVATION is
+the faulty part. A premise check is itself a measurement and gets the same
+treatment as any other: read the artefact, not the shape of where it should be.
+
+**It was deliberately NOT self-added when it was found.** Adding a verdict to a
+convention an hour after chat adopted the convention is a change to what was
+adopted, so it sat in this note as a proposal until chat decided — which is
+convention 11 applied to a convention rather than to a tool. The credit line at the
+top of this section is unchanged: **the convention is still cc's**; the fifth
+verdict is an amendment to it, from fourth's own mistake inside it.
 
 Four premises, four different failure modes, and **one of them was a record this
 same session had written an hour earlier**. Checking your own last line is not
-paranoia; it is the cheapest of the four checks.
+paranoia; it is the cheapest check on the list. **And the fifth verdict exists
+because that same row needed TWO passes:** the premise check was wrong, and only
+re-checking the premise check found it.
 
 **HOW TO IMPLEMENT IT.**
 - **One row per premise, with the verdict in it.** The table above is the
   deliverable, not a preamble to it.
-- **Distinguish the four verdicts** and do not collapse them: CONFIRMED, STALE
-  (was true, no longer), WRONG (never true), NOT-REPRODUCIBLE (the predicate is
-  unrecorded, so it can be neither confirmed nor denied). The fourth is the one
-  that gets written down as "confirmed" when nobody is strict.
+- **Distinguish the FIVE verdicts** and do not collapse them:
+  **CONFIRMED**; **STALE** (was true, no longer); **WRONG** (never true);
+  **NOT-REPRODUCIBLE** (the predicate is unrecorded, so it can be neither
+  confirmed nor denied); and **WRONG-BY-MY-OWN-CHECK** (the premise stands and the
+  RE-DERIVATION is what is faulty). NOT-REPRODUCIBLE is the one that gets written
+  down as "confirmed" when nobody is strict. WRONG-BY-MY-OWN-CHECK is the one that
+  never gets written down at all, because the only person positioned to notice it
+  is the one who just finished being satisfied.
 - **A released claim is not a held claim, and `list` is the authority** -- not the
   claim text of a sibling session, which is itself a snapshot.
 - **Re-derive, then narrow.** Narrowing scope against a stale premise costs the

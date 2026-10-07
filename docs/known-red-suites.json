@@ -8,174 +8,6 @@
  "total_files": 411,
  "entries": [
   {
-   "file": "tests/defect_register_capa_control.py",
-   "kind": "py",
-   "tail": "3 failure(s)",
-   "since": "2026-09-17",
-   "why": "NOT MINE AND NEW SINCE THE LAST MEASUREMENT. Three arms that drive `tools/defect_register.py --factors ...` and expect exit 0 now get exit 2. 378db57e (feat(register): refuse a defect record whose commit changed nothing but bookkeeping) added a refusal that fires on the control's synthetic record, whose commit touches only the register. The CONTROL is what went red, not the tool -- the refusal looks correct and the fixture is what has to move. Left for the author of 378db57e rather than fixed here: a control rewritten by somebody who did not add the rule is a control fitted to the behaviour it found.",
-   "owner": "unassigned",
-   "diagnosed": "2026-09-17",
-   "diagnosed_by": "cody",
-   "environment": {
-    "where": "live-clone",
-    "pinned": false,
-    "tool": "the suite itself, invoked directly, one process per suite",
-    "sha": "2156abb1",
-    "basis": "RE-MEASURED 2026-10-07 by fourth at HEAD 2156abb1, each suite driven ALONE in its own process in the live clone with a 300s ceiling. THE BOUNDARY WAS VERIFIED AFTER EVERY SUITE, not once at the end (convention 10): `git status --porcelain` digest, sha256 of `.git/config` (the confound that set core.bare = true three times on 2026-10-06), and `node --check api/sd-data.js`. All three unchanged by all ten, start digest == end digest. An earlier stamp of these same ten rows said sha f4514979 on a basis whose run output no longer exists; that stamp was RE-DRIVEN rather than trusted, and all ten exit codes agreed. EXIT CODE ONLY -- no `why` written, because an exit code is not a diagnosis."
-   },
-   "exit_code": 1
-  },
-  {
-   "file": "tests/run_condition_coverage_probe.py",
-   "kind": "py",
-   "tail": "4b  and it says WHY -- a restore cannot be verified against a modified baseline",
-   "since": "2026-09-16",
-   "why": "Arms 4a and 4b: \"a dirty tree exits 2, not 0 or 1\" got exit 1. The tool is meant to report COULD-NOT-RUN when the tree is modified, because a restore cannot be verified against a moving baseline, and it is returning a finding instead. A third state collapsing into a verdict -- the exact shape PR 1.11 names.",
-   "owner": "unassigned",
-   "diagnosed": "2026-09-16",
-   "diagnosed_by": "cody",
-   "environment": {
-    "where": "unknown",
-    "pinned": "unknown",
-    "tool": "unknown",
-    "sha": "unknown",
-    "basis": "nothing in this file records how the 2026-09-16 pass was driven. All four keys unknown rather than assumed to match the 2026-10-06 pass, which was a different pass by a different session."
-   }
-  },
-  {
-   "file": "tests/run_defect_dispersion_probe.py",
-   "kind": "py",
-   "tail": "ok   layer has a population of exactly three",
-   "since": "2026-09-16",
-   "why": "The arm \"every dimension is present\" fails. The dispersion report is expected to carry every dimension it declares and one is absent. Not traced further than the arm; the dimension that went missing is the next thing to establish.",
-   "owner": "unassigned",
-   "diagnosed": "2026-09-16",
-   "diagnosed_by": "cody",
-   "environment": {
-    "where": "unknown",
-    "pinned": "unknown",
-    "tool": "unknown",
-    "sha": "unknown",
-    "basis": "nothing in this file records how the 2026-09-16 pass was driven. All four keys unknown rather than assumed to match the 2026-10-06 pass, which was a different pass by a different session."
-   }
-  },
-  {
-   "file": "tests/run_dependency_graph_probe.py",
-   "kind": "py",
-   "tail": "7e  CONTROL: the same rows marked OPEN pass -- 7d is not a checker that refuses everything",
-   "since": "2026-09-16",
-   "why": "Arm 7e reports NO BASELINE: the SPOF register fixture \"has no BASELINE: N components at or above line. Without a frozen denominator a register that shrank by four and one that never moved print the same number.\" The probe is refusing to score against an unfrozen denominator, which is correct behaviour -- the fixture or the register needs the baseline line.",
-   "owner": "unassigned",
-   "diagnosed": "2026-09-16",
-   "diagnosed_by": "cody",
-   "environment": {
-    "where": "unknown",
-    "pinned": "unknown",
-    "tool": "unknown",
-    "sha": "unknown",
-    "basis": "nothing in this file records how the 2026-09-16 pass was driven. All four keys unknown rather than assumed to match the 2026-10-06 pass, which was a different pass by a different session."
-   }
-  },
-  {
-   "file": "tests/run_first_article_probe.py",
-   "kind": "py",
-   "tail": "- NO RECORDED INSPECTION is stale, incomplete, or cites an arm that does not exist -- the half this probe controls",
-   "since": "2026-09-16",
-   "why": "The arm \"NO RECORDED INSPECTION is stale, incomplete, or cites an arm that does not exist\". Two records have drifted hashes: Hank's inspections of tools/dispatch_state.py and tools/retry_backoff_check.py, both of which were edited after being inspected. Deliberately NOT fixed by re-hashing -- re-hashing somebody else's inspection without re-inspecting would launder a stale record into a fresh-looking one. It needs those two artefacts re-inspected by a session that is not their author.",
-   "owner": "unassigned",
-   "diagnosed": "2026-09-16",
-   "diagnosed_by": "cody",
-   "environment": {
-    "where": "unknown",
-    "pinned": "unknown",
-    "tool": "unknown",
-    "sha": "unknown",
-    "basis": "nothing in this file records how the 2026-09-16 pass was driven. All four keys unknown rather than assumed to match the 2026-10-06 pass, which was a different pass by a different session."
-   }
-  },
-  {
-   "file": "tests/run_secrets_inventory_probe.py",
-   "kind": "py",
-   "tail": "6c  SILENT: against the real committed document the same entry point exits 0 -- the pair is what makes 6a evidence rather than an observation",
-   "since": "2026-09-16",
-   "why": "Two arms, 5a \"--check passes against the committed document\" and 6c \"SILENT: against the real committed document the same entry point exits 0\". Both say the committed docs/SECRETS-INVENTORY.md no longer matches what the tool generates -- a generated document that has drifted from its sources, not a defect in the probe.",
-   "owner": "unassigned",
-   "diagnosed": "2026-09-16",
-   "diagnosed_by": "cody",
-   "environment": {
-    "where": "unknown",
-    "pinned": "unknown",
-    "tool": "unknown",
-    "sha": "unknown",
-    "basis": "nothing in this file records how the 2026-09-16 pass was driven. All four keys unknown rather than assumed to match the 2026-10-06 pass, which was a different pass by a different session."
-   }
-  },
-  {
-   "file": "tests/run_selftest_sweep_probe.py",
-   "kind": "py",
-   "tail": "- ooda_phases.py --selftest exits 0",
-   "since": "2026-09-16",
-   "why": "The same ooda_phases.py --selftest exit 2 as tests/run_tool_selftest_probe.py. Recorded separately because they are two suites, cross-referenced because they are one defect.",
-   "owner": "unassigned",
-   "environment": {
-    "where": "unknown",
-    "pinned": "unknown",
-    "tool": "unknown",
-    "sha": "unknown",
-    "basis": "nothing in this file records how the 2026-09-16 pass was driven. All four keys unknown rather than assumed to match the 2026-10-06 pass, which was a different pass by a different session."
-   }
-  },
-  {
-   "file": "tests/run_tool_selftest_probe.py",
-   "kind": "py",
-   "tail": "ooda_phases.py                         exit 2 (the tool could not tell):   ARMS FAILED",
-   "since": "2026-09-16",
-   "why": "ooda_phases.py --selftest exits 2 (the tool could not tell), which this probe correctly refuses to fold into a pass. THE DEFECT IS IN ooda_phases.py, NOT IN THE PROBE, and tests/run_selftest_sweep_probe.py is red on the same underlying fact -- so these two entries are ONE defect seen from two places. Fixing ooda_phases.py should clear both, and if it clears only one that is itself a finding.",
-   "owner": "unassigned",
-   "environment": {
-    "where": "unknown",
-    "pinned": "unknown",
-    "tool": "unknown",
-    "sha": "unknown",
-    "basis": "nothing in this file records how the 2026-09-16 pass was driven. All four keys unknown rather than assumed to match the 2026-10-06 pass, which was a different pass by a different session."
-   }
-  },
-  {
-   "file": "tests/sql_preflight/run_probe.py",
-   "kind": "py",
-   "tail": "dead_bare_tables_evidence_2026-09-05.sql: UNDECLARED_TABLE webhook_events",
-   "since": "2026-09-16",
-   "why": "UNDECLARED_TABLE webhook_events in dead_bare_tables_evidence_2026-09-05.sql. The preflight refuses a table that no schema file declares. Either webhook_events needs declaring or that evidence file is stale -- and the second is likely, given its name carries a 2026-09-05 date.",
-   "owner": "unassigned",
-   "diagnosed": "2026-09-16",
-   "diagnosed_by": "cody",
-   "environment": {
-    "where": "unknown",
-    "pinned": "unknown",
-    "tool": "unknown",
-    "sha": "unknown",
-    "basis": "nothing in this file records how the 2026-09-16 pass was driven. All four keys unknown rather than assumed to match the 2026-10-06 pass, which was a different pass by a different session."
-   }
-  },
-  {
-   "file": "tests/suite_control_backfill_probe.py",
-   "kind": "py",
-   "tail": "CONTROLS THAT DID NOT BITE: ['0. green on the unmodified file']",
-   "since": "2026-09-16",
-   "why": "CONTROLS THAT DID NOT BITE: [\"0. green on the unmodified file\"]. The BASELINE arm is the one failing -- the subject is already red before any sabotage is planted -- so every verdict after it would be about two things at once. The probe is correctly refusing to report on a red baseline.",
-   "owner": "unassigned",
-   "diagnosed": "2026-09-16",
-   "diagnosed_by": "cody",
-   "environment": {
-    "where": "live-clone",
-    "pinned": false,
-    "tool": "the suite itself, invoked directly",
-    "sha": "eb430f25",
-    "basis": "re-run BY HAND by fourth, one process, in the live clone; exit code read from the program's own output"
-   },
-   "exit_code": 1
-  },
-  {
    "file": "api/sd-data-customer-soft-delete.test.js",
    "kind": "node",
    "tail": "5 passed",
@@ -223,10 +55,11 @@
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "4fa9843a",
+    "basis": "RE-MEASURED 2026-10-07 by fourth at HEAD 4fa9843a, driven ALONE in its own process in the live clone with a 300s ceiling. THE BOUNDARY WAS VERIFIED AFTER EVERY SUITE, not once at the end (convention 10): `git status --porcelain` digest, sha256 of `.git/config`, and `node --check api/sd-data.js`. All three unchanged by all six, start digest == end digest (e4e3186acdf6 / 789cfb6edb72 / 0). EXIT CODE ONLY -- the failing arm names below are recorded in `tail` where a row had none, but no `why` is written, because an exit code and an arm name are not a diagnosis."
+   },
+   "exit_code": 1
   },
   {
    "file": "api/sf-auth.test.js",
@@ -285,6 +118,60 @@
    "cause_tag": "implementation/refusal-text/stopped-naming-the-remedy"
   },
   {
+   "file": "tests/claims/run_registry_claim_probe.py",
+   "kind": "py",
+   "tail": "FAIL a registry claim on DISJOINT files does not block / FAIL a registry claim older than the expiry does not block / FAIL a RELEASED registry claim does not block",
+   "since": "2026-10-07",
+   "why": "",
+   "owner": "unassigned",
+   "diagnosed": "",
+   "diagnosed_by": "",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "4fa9843a",
+    "basis": "FIRST MEASUREMENT OF THIS ROW, 2026-10-07 by fourth at HEAD 4fa9843a, driven ALONE in its own process in the live clone with a 300s ceiling, boundary verified after it (git status digest, sha256 of .git/config, node --check api/sd-data.js -- all unchanged). THE ROW DID NOT EXIST BEFORE THIS RUN: both of these files are in the 83-item pinned FAIL list and neither had a register entry, so each was RED AND UNATTRIBUTABLE -- the state an entry exists to remove. EXIT CODE ONLY, no `why`."
+   },
+   "exit_code": 1
+  },
+  {
+   "file": "tests/claims/run_registry_claim_sabotage_probe.py",
+   "kind": "py",
+   "tail": "FAIL 0. the suite is GREEN in the worktree before anything is planted (exit 1) -- 'The baseline is red, so no mutation below would mean anything. Stopping.'",
+   "since": "2026-10-07",
+   "why": "CHAINED AND THE EXIT CODE IS ALREADY RIGHT. Arm 0 is a precondition gate on tests/claims/run_registry_claim_probe.py, which is red, so this probe plants NOTHING and exits 2 -- a could-not-run, not a failure. Nothing is learned about the detector in either direction. The fix is not in this probe: the sibling's three failing arms have to be read first. Convention 18 family -- the live suite is the fixture. Its sibling is now a row in this register too, so the chain is attributable instead of invisible.",
+   "owner": "unassigned",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "4fa9843a",
+    "basis": "FIRST MEASUREMENT OF THIS ROW, 2026-10-07 by fourth at HEAD 4fa9843a, driven ALONE in its own process in the live clone with a 300s ceiling, boundary verified after it (git status digest, sha256 of .git/config, node --check api/sd-data.js -- all unchanged). THE ROW DID NOT EXIST BEFORE THIS RUN: both of these files are in the 83-item pinned FAIL list and neither had a register entry, so each was RED AND UNATTRIBUTABLE -- the state an entry exists to remove. EXIT CODE ONLY, no `why`."
+   },
+   "exit_code": 2
+  },
+  {
+   "file": "tests/defect_register_capa_control.py",
+   "kind": "py",
+   "tail": "3 failure(s)",
+   "since": "2026-09-17",
+   "why": "NOT MINE AND NEW SINCE THE LAST MEASUREMENT. Three arms that drive `tools/defect_register.py --factors ...` and expect exit 0 now get exit 2. 378db57e (feat(register): refuse a defect record whose commit changed nothing but bookkeeping) added a refusal that fires on the control's synthetic record, whose commit touches only the register. The CONTROL is what went red, not the tool -- the refusal looks correct and the fixture is what has to move. Left for the author of 378db57e rather than fixed here: a control rewritten by somebody who did not add the rule is a control fitted to the behaviour it found.",
+   "owner": "unassigned",
+   "diagnosed": "2026-09-17",
+   "diagnosed_by": "cody",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "2156abb1",
+    "basis": "RE-MEASURED 2026-10-07 by fourth at HEAD 2156abb1, each suite driven ALONE in its own process in the live clone with a 300s ceiling. THE BOUNDARY WAS VERIFIED AFTER EVERY SUITE, not once at the end (convention 10): `git status --porcelain` digest, sha256 of `.git/config` (the confound that set core.bare = true three times on 2026-10-06), and `node --check api/sd-data.js`. All three unchanged by all ten, start digest == end digest. An earlier stamp of these same ten rows said sha f4514979 on a basis whose run output no longer exists; that stamp was RE-DRIVEN rather than trusted, and all ten exit codes agreed. EXIT CODE ONLY -- no `why` written, because an exit code is not a diagnosis."
+   },
+   "exit_code": 1
+  },
+  {
    "file": "tests/faults/sd_write_faults.js",
    "kind": "node",
    "tail": "7 passed, 11 FAILED",
@@ -296,10 +183,11 @@
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "4fa9843a",
+    "basis": "RE-MEASURED 2026-10-07 by fourth at HEAD 4fa9843a, driven ALONE in its own process in the live clone with a 300s ceiling. THE BOUNDARY WAS VERIFIED AFTER EVERY SUITE, not once at the end (convention 10): `git status --porcelain` digest, sha256 of `.git/config`, and `node --check api/sd-data.js`. All three unchanged by all six, start digest == end digest (e4e3186acdf6 / 789cfb6edb72 / 0). EXIT CODE ONLY -- the failing arm names below are recorded in `tail` where a row had none, but no `why` is written, because an exit code and an arm name are not a diagnosis."
+   },
+   "exit_code": 1
   },
   {
    "file": "tests/faults/transport_timeout_sweep.js",
@@ -313,10 +201,11 @@
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "4fa9843a",
+    "basis": "RE-MEASURED 2026-10-07 by fourth at HEAD 4fa9843a, driven ALONE in its own process in the live clone with a 300s ceiling. THE BOUNDARY WAS VERIFIED AFTER EVERY SUITE, not once at the end (convention 10): `git status --porcelain` digest, sha256 of `.git/config`, and `node --check api/sd-data.js`. All three unchanged by all six, start digest == end digest (e4e3186acdf6 / 789cfb6edb72 / 0). EXIT CODE ONLY -- the failing arm names below are recorded in `tail` where a row had none, but no `why` is written, because an exit code and an arm name are not a diagnosis."
+   },
+   "exit_code": 1
   },
   {
    "file": "tests/hover_quotable_session_vocab_check.py",
@@ -587,10 +476,11 @@
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "4fa9843a",
+    "basis": "RE-MEASURED 2026-10-07 by fourth at HEAD 4fa9843a, driven ALONE in its own process in the live clone with a 300s ceiling. THE BOUNDARY WAS VERIFIED AFTER EVERY SUITE, not once at the end (convention 10): `git status --porcelain` digest, sha256 of `.git/config`, and `node --check api/sd-data.js`. All three unchanged by all six, start digest == end digest (e4e3186acdf6 / 789cfb6edb72 / 0). EXIT CODE ONLY -- the failing arm names below are recorded in `tail` where a row had none, but no `why` is written, because an exit code and an arm name are not a diagnosis."
+   },
+   "exit_code": 1
   },
   {
    "file": "tests/run_all_tests_floor_probe.py",
@@ -685,6 +575,23 @@
    "cause_tag": "test-design/interface/subject-signature-changed"
   },
   {
+   "file": "tests/run_condition_coverage_probe.py",
+   "kind": "py",
+   "tail": "4b  and it says WHY -- a restore cannot be verified against a modified baseline",
+   "since": "2026-09-16",
+   "why": "Arms 4a and 4b: \"a dirty tree exits 2, not 0 or 1\" got exit 1. The tool is meant to report COULD-NOT-RUN when the tree is modified, because a restore cannot be verified against a moving baseline, and it is returning a finding instead. A third state collapsing into a verdict -- the exact shape PR 1.11 names.",
+   "owner": "unassigned",
+   "diagnosed": "2026-09-16",
+   "diagnosed_by": "cody",
+   "environment": {
+    "where": "unknown",
+    "pinned": "unknown",
+    "tool": "unknown",
+    "sha": "unknown",
+    "basis": "nothing in this file records how the 2026-09-16 pass was driven. All four keys unknown rather than assumed to match the 2026-10-06 pass, which was a different pass by a different session."
+   }
+  },
+  {
    "file": "tests/run_copy_exactly_gate_probe.py",
    "kind": "py",
    "tail": "0 passed, 1 failed",
@@ -718,6 +625,40 @@
     "tool": "the suite itself, driven individually, one process per suite",
     "sha": "unknown",
     "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
+   }
+  },
+  {
+   "file": "tests/run_defect_dispersion_probe.py",
+   "kind": "py",
+   "tail": "ok   layer has a population of exactly three",
+   "since": "2026-09-16",
+   "why": "The arm \"every dimension is present\" fails. The dispersion report is expected to carry every dimension it declares and one is absent. Not traced further than the arm; the dimension that went missing is the next thing to establish.",
+   "owner": "unassigned",
+   "diagnosed": "2026-09-16",
+   "diagnosed_by": "cody",
+   "environment": {
+    "where": "unknown",
+    "pinned": "unknown",
+    "tool": "unknown",
+    "sha": "unknown",
+    "basis": "nothing in this file records how the 2026-09-16 pass was driven. All four keys unknown rather than assumed to match the 2026-10-06 pass, which was a different pass by a different session."
+   }
+  },
+  {
+   "file": "tests/run_dependency_graph_probe.py",
+   "kind": "py",
+   "tail": "7e  CONTROL: the same rows marked OPEN pass -- 7d is not a checker that refuses everything",
+   "since": "2026-09-16",
+   "why": "Arm 7e reports NO BASELINE: the SPOF register fixture \"has no BASELINE: N components at or above line. Without a frozen denominator a register that shrank by four and one that never moved print the same number.\" The probe is refusing to score against an unfrozen denominator, which is correct behaviour -- the fixture or the register needs the baseline line.",
+   "owner": "unassigned",
+   "diagnosed": "2026-09-16",
+   "diagnosed_by": "cody",
+   "environment": {
+    "where": "unknown",
+    "pinned": "unknown",
+    "tool": "unknown",
+    "sha": "unknown",
+    "basis": "nothing in this file records how the 2026-09-16 pass was driven. All four keys unknown rather than assumed to match the 2026-10-06 pass, which was a different pass by a different session."
    }
   },
   {
@@ -790,6 +731,23 @@
     "basis": "re-run BY HAND by fourth, one process, in the live clone; exit code read from the program's own output"
    },
    "exit_code": 1
+  },
+  {
+   "file": "tests/run_first_article_probe.py",
+   "kind": "py",
+   "tail": "- NO RECORDED INSPECTION is stale, incomplete, or cites an arm that does not exist -- the half this probe controls",
+   "since": "2026-09-16",
+   "why": "The arm \"NO RECORDED INSPECTION is stale, incomplete, or cites an arm that does not exist\". Two records have drifted hashes: Hank's inspections of tools/dispatch_state.py and tools/retry_backoff_check.py, both of which were edited after being inspected. Deliberately NOT fixed by re-hashing -- re-hashing somebody else's inspection without re-inspecting would launder a stale record into a fresh-looking one. It needs those two artefacts re-inspected by a session that is not their author.",
+   "owner": "unassigned",
+   "diagnosed": "2026-09-16",
+   "diagnosed_by": "cody",
+   "environment": {
+    "where": "unknown",
+    "pinned": "unknown",
+    "tool": "unknown",
+    "sha": "unknown",
+    "basis": "nothing in this file records how the 2026-09-16 pass was driven. All four keys unknown rather than assumed to match the 2026-10-06 pass, which was a different pass by a different session."
+   }
   },
   {
    "file": "tests/run_ghost_field_read_probe.py",
@@ -896,25 +854,6 @@
    "cause_tag": "implementation/cli-contract/report-only-mode-missing"
   },
   {
-   "file": "tests/run_primitive_obsession_probe.py",
-   "kind": "py",
-   "tail": "  FAIL 0. baseline: the tool is not clean before anything is planted, so no mutation below means anything",
-   "since": "2026-10-06",
-   "why": "REAL TREE STATE, AND THE ARM ORDERING MAKES IT TOTAL. Arm 0 is a BASELINE GATE -- 'the tool is not clean before anything is planted, so no mutation below means anything' -- so when it fails the probe prints ONE line and runs NONE of its mutation arms. The detector's own verification is then unavailable in either direction, which is worse than a red arm. `python tools/primitive_obsession_check.py` at HEAD 762b084b exits 1 with 18 NEW unbaselined occurrences across FIVE apps: sairnbiz.html:3949,4121, sairncash.html:1280,1281,1396, stonedesk.html:25316,27783,28021,28022,28274,31844 and more -- mostly [measured-default] `Number(x)||0`, plus one [locale-date-value]. CONTRAST, and it is the whole lesson: run_truthy_sum_probe.py makes the SAME live-tree assertion as its LAST arm and still reports 13 passing arms. Same assertion, opposite blast radius, from arm ordering alone. || RECOVERED 2026-10-07 BY THE CONVENTION 18 FIX, by the same session that diagnosed it. The arm-0 GATE is gone. The live-tree check is now a reported WARN line and the per-mutation criterion NARROWS to exit==2 (the fixture lock refusing) when the tree is dirty, because exit 1 is then ambiguous between 'mutation caught' and 'real findings'. The probe now exits 0 having verified ALL FIVE mutations instead of exiting 1 having verified NONE, and it PRINTS that the claim is narrower. ABLATION-VERIFIED: a planted NO-OP mutation -- a comment word, no detector touched -- PASSES vacuously under the old rc!=0 criterion and is correctly FAILED by the narrowed one (probe exit 1, 'NOT REFUSED BY THE LOCK ... exited 1'), file restored byte-identical, probe back to exit 0. THE 18 UNBASELINED OCCURRENCES ARE STILL THERE and are still routed: this fixes the probe, not the tree.",
-   "owner": "unassigned",
-   "diagnosed": "2026-10-06",
-   "diagnosed_by": "fourth",
-   "environment": {
-    "where": "live-clone",
-    "pinned": false,
-    "tool": "the suite itself, invoked directly",
-    "sha": "eb430f25 (also re-run at 762b084b in batch 11)",
-    "basis": "re-run BY HAND by fourth, one process, in the live clone; exit code read from the program's own output"
-   },
-   "state_2026_10_07": "RECOVERED -- exits 0, run twice",
-   "exit_code": 0
-  },
-  {
    "file": "tests/run_rebase_resolve_probe.py",
    "kind": "py",
    "tail": "  - MIXED: one source + one generated -> REFUSES, exit 1",
@@ -1003,6 +942,38 @@
    }
   },
   {
+   "file": "tests/run_secrets_inventory_probe.py",
+   "kind": "py",
+   "tail": "6c  SILENT: against the real committed document the same entry point exits 0 -- the pair is what makes 6a evidence rather than an observation",
+   "since": "2026-09-16",
+   "why": "Two arms, 5a \"--check passes against the committed document\" and 6c \"SILENT: against the real committed document the same entry point exits 0\". Both say the committed docs/SECRETS-INVENTORY.md no longer matches what the tool generates -- a generated document that has drifted from its sources, not a defect in the probe.",
+   "owner": "unassigned",
+   "diagnosed": "2026-09-16",
+   "diagnosed_by": "cody",
+   "environment": {
+    "where": "unknown",
+    "pinned": "unknown",
+    "tool": "unknown",
+    "sha": "unknown",
+    "basis": "nothing in this file records how the 2026-09-16 pass was driven. All four keys unknown rather than assumed to match the 2026-10-06 pass, which was a different pass by a different session."
+   }
+  },
+  {
+   "file": "tests/run_selftest_sweep_probe.py",
+   "kind": "py",
+   "tail": "- ooda_phases.py --selftest exits 0",
+   "since": "2026-09-16",
+   "why": "The same ooda_phases.py --selftest exit 2 as tests/run_tool_selftest_probe.py. Recorded separately because they are two suites, cross-referenced because they are one defect.",
+   "owner": "unassigned",
+   "environment": {
+    "where": "unknown",
+    "pinned": "unknown",
+    "tool": "unknown",
+    "sha": "unknown",
+    "basis": "nothing in this file records how the 2026-09-16 pass was driven. All four keys unknown rather than assumed to match the 2026-10-06 pass, which was a different pass by a different session."
+   }
+  },
+  {
    "file": "tests/run_stored_data_criticality_probe.py",
    "kind": "py",
    "tail": "2 ARM(S) FAILED: an ESCAPED pipe inside a cell is content, not a boundary, THE PAIRED POSITIVE: both real rows are still parsed and counted",
@@ -1038,6 +1009,21 @@
     "basis": "re-run BY HAND by fourth, one process, in the live clone; exit code read from the program's own output"
    },
    "exit_code": 1
+  },
+  {
+   "file": "tests/run_tool_selftest_probe.py",
+   "kind": "py",
+   "tail": "ooda_phases.py                         exit 2 (the tool could not tell):   ARMS FAILED",
+   "since": "2026-09-16",
+   "why": "ooda_phases.py --selftest exits 2 (the tool could not tell), which this probe correctly refuses to fold into a pass. THE DEFECT IS IN ooda_phases.py, NOT IN THE PROBE, and tests/run_selftest_sweep_probe.py is red on the same underlying fact -- so these two entries are ONE defect seen from two places. Fixing ooda_phases.py should clear both, and if it clears only one that is itself a finding.",
+   "owner": "unassigned",
+   "environment": {
+    "where": "unknown",
+    "pinned": "unknown",
+    "tool": "unknown",
+    "sha": "unknown",
+    "basis": "nothing in this file records how the 2026-09-16 pass was driven. All four keys unknown rather than assumed to match the 2026-10-06 pass, which was a different pass by a different session."
+   }
   },
   {
    "file": "tests/run_truthy_sum_probe.py",
@@ -1337,6 +1323,41 @@
    "cause_tag": "test-design/dependency/chained-red-baseline"
   },
   {
+   "file": "tests/sql_preflight/run_probe.py",
+   "kind": "py",
+   "tail": "dead_bare_tables_evidence_2026-09-05.sql: UNDECLARED_TABLE webhook_events",
+   "since": "2026-09-16",
+   "why": "UNDECLARED_TABLE webhook_events in dead_bare_tables_evidence_2026-09-05.sql. The preflight refuses a table that no schema file declares. Either webhook_events needs declaring or that evidence file is stale -- and the second is likely, given its name carries a 2026-09-05 date.",
+   "owner": "unassigned",
+   "diagnosed": "2026-09-16",
+   "diagnosed_by": "cody",
+   "environment": {
+    "where": "unknown",
+    "pinned": "unknown",
+    "tool": "unknown",
+    "sha": "unknown",
+    "basis": "nothing in this file records how the 2026-09-16 pass was driven. All four keys unknown rather than assumed to match the 2026-10-06 pass, which was a different pass by a different session."
+   }
+  },
+  {
+   "file": "tests/suite_control_backfill_probe.py",
+   "kind": "py",
+   "tail": "CONTROLS THAT DID NOT BITE: ['0. green on the unmodified file']",
+   "since": "2026-09-16",
+   "why": "CONTROLS THAT DID NOT BITE: [\"0. green on the unmodified file\"]. The BASELINE arm is the one failing -- the subject is already red before any sabotage is planted -- so every verdict after it would be about two things at once. The probe is correctly refusing to report on a red baseline.",
+   "owner": "unassigned",
+   "diagnosed": "2026-09-16",
+   "diagnosed_by": "cody",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly",
+    "sha": "eb430f25",
+    "basis": "re-run BY HAND by fourth, one process, in the live clone; exit code read from the program's own output"
+   },
+   "exit_code": 1
+  },
+  {
    "file": "tests/write_readback_shape_probe.py",
    "kind": "py",
    "tail": "2 ARM(S) FAILED  [re-driven on a restored tree]",
@@ -1359,5 +1380,79 @@
  "_why_the_whole_tree_run_was_not_trusted": "THREE CONFOUNDS, each evidenced rather than suspected. (1) THE TREE MOVED UNDER IT: the log shows tests/sairnbiz_vendor_ytd_derivation.js PASSING, and at the time it was driven it failed at module scope -- cc pushed the anchor rename mid-run. tools/run_all_tests.py --pinned exists for exactly this and was not used. (2) THE RUN MUTATED THE TREE IT WAS MEASURING: tests/seam_check/run_delegation_probe.py left api/sd-data.js and api/_lib/subcontractor-compliance.js carrying planted sabotage, one of which is a redeclaration that does not parse. Four suites driven after it were re-driven on a restored tree and ONE of them -- tests/seam_check/run_probe.py -- went GREEN, so that confound changed at least one verdict. (3) THE RUN CORRUPTED THE CLONE: tests/push_gate/check8_probe.py left .git/config with core.bare = true and a fixture user identity, after which every git command in the clone fails with \"this operation must be run in a work tree\". Observed three times on 2026-10-06 and attributed by digesting .git/config after every suite.",
  "_scope_limit_2026_10_06": "RED IS MEASURED, DIAGNOSIS IS NOT. 66 of the entries added today carry an EMPTY `why`, which this file defines as NOT DIAGNOSED YET rather than nothing to say. That is a 66-item backlog, not a clearance, and it is the largest single addition this register has had. Every one of them was driven alone and its exit code recorded; none of them was read arm by arm. An entry makes a failure ATTRIBUTABLE, never acceptable -- and 66 undiagnosed entries is itself the finding, because tools/red_suite_register_check.py will now report any of them that recovers rather than letting the entry absorb the next real failure of that file.",
  "_environment_stamp": "ADDED 2026-10-07 (fourth). Every row carries `environment` with four keys -- where / pinned / tool / sha -- because a verdict without one cannot be reproduced or contradicted. TWO PROBES GAVE OPPOSITE VERDICTS IN BATCH 11 ON THE SAME SHA, MINUTES APART, DIFFERING ONLY IN ENVIRONMENT: tests/seam_check/run_delegation_probe.py was FAIL in a linked worktree and exit 0 in the live clone; tests/push_gate/check8_probe.py was ok in the worktree and exit 1 in the clone. UNKNOWN IS WRITTEN AS \"unknown\" AND IS NEVER GUESSED -- a row stamped unknown is one somebody has to re-run, and a row stamped wrongly is one nobody will. Of 79 rows: 13 fully stamped including the SHA (re-run by hand), 57 stamped where/pinned/tool from this file's own _how_it_was_measured with the SHA left unknown because that field records only a date, and 9 wholly unknown because nothing here records how their pass was driven. 14 of 79 carry all four keys. FROM NOW ON A NEW ROW WITHOUT AN `environment` KEY IS REFUSED BY tools/known_red_check.py --fixtures; an EXPLICIT \"unknown\" is accepted, an ABSENT key is not, because absence and unknown are the two states this register exists to keep apart.",
- "_recovered_2026_10_07_fourth": "FOUR ROWS DELETED AS RECOVERED, by this file's own rule in _what_this_is_NOT: an entry whose suite has gone GREEN must be deleted, because while it stands it swallows the next real failure of that file. ONE ARM CLEARED ALL FOUR. tests/phi_cache_scoped_to_user.js arm 5a ('SAIRNsenior: every cached key is purged OR explicitly excluded', expected [] actual [\"sen_settings\"]) was a FALSE POSITIVE IN THE SUITE, not a defect in SAIRNsenior: the arm derives the app's written cache keys with [ls][dt]\\('(sen_[a-z_]+)' over the RAW file, and sairnsenior.html:5772,5774 quote st('sen_settings') inside a COMMENT that exists to record that the key is never written -- the resource is server-authoritative and a localStorage copy of a federally-mandated EVV configuration is the exact defect that decision removed. The suite was reading the comment as the write. Fixed by extracting write sites from tests/lib/strip_comments.js output instead of the raw file, with arm 5e as a both-directions control that FAILS without it (ablated: probe 0 -> 1 naming 5e in all four apps and 5a in SAIRNsenior; restored byte-identical; probe back to 0). NOT fixed by adding sen_settings to SEN_UNSCOPED_CACHES, which would have put a key in an exemption list to satisfy a checker. The three chained rows then cleared with no further change, each driven ALONE with the boundary verified after it: phi_cache_scope_probe.py exit 0 (ALL 12 ARMS PASS, 7 mutations), sairncare_fault_probe.py exit 0, sairnbuild_fault_probe.py exit 0. Their diagnoses are preserved in docs/handoff-fourth-2026-10-07.md rather than lost with the rows. STILL STANDING AND FLAGGED, NOT TOUCHED: tests/run_primitive_obsession_probe.py carries exit_code 0 and the word RECOVERED in its own `why` and is still an entry, which is the state this rule forbids. Reported for a decision rather than deleted unasked."
+ "_recovered_2026_10_07_fourth": "FOUR ROWS DELETED AS RECOVERED, by this file's own rule in _what_this_is_NOT: an entry whose suite has gone GREEN must be deleted, because while it stands it swallows the next real failure of that file. ONE ARM CLEARED ALL FOUR. tests/phi_cache_scoped_to_user.js arm 5a ('SAIRNsenior: every cached key is purged OR explicitly excluded', expected [] actual [\"sen_settings\"]) was a FALSE POSITIVE IN THE SUITE, not a defect in SAIRNsenior: the arm derives the app's written cache keys with [ls][dt]\\('(sen_[a-z_]+)' over the RAW file, and sairnsenior.html:5772,5774 quote st('sen_settings') inside a COMMENT that exists to record that the key is never written -- the resource is server-authoritative and a localStorage copy of a federally-mandated EVV configuration is the exact defect that decision removed. The suite was reading the comment as the write. Fixed by extracting write sites from tests/lib/strip_comments.js output instead of the raw file, with arm 5e as a both-directions control that FAILS without it (ablated: probe 0 -> 1 naming 5e in all four apps and 5a in SAIRNsenior; restored byte-identical; probe back to 0). NOT fixed by adding sen_settings to SEN_UNSCOPED_CACHES, which would have put a key in an exemption list to satisfy a checker. The three chained rows then cleared with no further change, each driven ALONE with the boundary verified after it: phi_cache_scope_probe.py exit 0 (ALL 12 ARMS PASS, 7 mutations), sairncare_fault_probe.py exit 0, sairnbuild_fault_probe.py exit 0. Their diagnoses are preserved in docs/handoff-fourth-2026-10-07.md rather than lost with the rows. STILL STANDING AND FLAGGED, NOT TOUCHED: tests/run_primitive_obsession_probe.py carries exit_code 0 and the word RECOVERED in its own `why` and is still an entry, which is the state this rule forbids. Reported for a decision rather than deleted unasked.",
+ "_what_recovered_is": "THE THIRD STATE, added 2026-10-07 (fourth) and PROMOTED from the batch-16 methodology entry rather than routed, because a count cannot be derived from rows that have been deleted. `entries` means KNOWN RED. `recovered` means VERIFIED GREEN: driven alone, exit 0, at a recorded SHA. A suite in NEITHER list is UNMEASURED. WHY IT HAD TO EXIST: the register's own rule requires deleting an entry whose suite has gone green, because while it stands it swallows the next real failure of that file -- and that rule is right. But the census of individually-verified suites counts its numerator out of `entries`, so every correct deletion SUBTRACTED from a progress figure. The census read 50 of 83 and then 46 of 83 ten minutes later, on the same criterion, because four suites went green. A reader taking that number as progress saw a four-point regression caused by the best outcome available. A row here is NOT an allow-list entry and NOT a claim the file is fine forever: it records that on one named commit the suite exited 0 when driven alone, and nothing more. If it goes red again it becomes an `entries` row again and this row is deleted, the same way round. tools/known_red_check.py reads only `entries` -- verified by reading it -- so this key is additive and changes no verdict it prints.",
+ "recovered": [
+  {
+   "file": "tests/run_primitive_obsession_probe.py",
+   "exit_code": 0,
+   "recovered": "2026-10-07",
+   "recovered_by": "fourth",
+   "was_entry_since": "2026-10-06",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process",
+    "sha": "4fa9843a",
+    "basis": "RE-DRIVEN 2026-10-07 by fourth at HEAD 4fa9843a before the entry row was deleted, rather than deleted on the strength of the row's own claim. exit 0. Boundary verified after it: `git status --porcelain` unchanged and sha256 of .git/config unchanged at 789cfb6edb72. Its own closing arms report \"the tool is byte-identical again\" and \"the exit code is unchanged across the probe\"."
+   },
+   "why": "RECOVERED BY THE CONVENTION 18 FIX, 2026-10-07, by the session that diagnosed it. The arm-0 BASELINE GATE is gone: the live-tree check is now a reported WARN line, and the per-mutation criterion NARROWS to exit==2 (the fixture lock refusing) when the tree is dirty, because exit 1 is then ambiguous between \"mutation caught\" and \"real findings\". The probe now exits 0 having verified ALL FIVE mutations instead of exiting 1 having verified NONE, and it PRINTS that the claim is narrower: \"ALL 5 MUTATIONS REFUSED UNDER THE NARROWED exit==2 CRITERION, because the real tree is not clean -- a SMALLER claim than a clean-tree run makes.\" ABLATION-VERIFIED when the fix landed: a planted NO-OP mutation -- a comment word, no detector touched -- passes vacuously under the old rc!=0 criterion and is correctly FAILED by the narrowed one. WHAT IS STILL OPEN AND IS NOT CLOSED BY THIS ROW: the 18 unbaselined primitive-obsession occurrences across FIVE apps are still there -- sairnbiz.html:3949,4121, sairncash.html:1280,1281,1396, stonedesk.html:25316,27783,28021,28022,28274,31844 and more. This fixed the probe, not the tree, and the row says so rather than reading as a clearance."
+  },
+  {
+   "file": "tests/phi_cache_scoped_to_user.js",
+   "exit_code": 0,
+   "recovered": "2026-10-07",
+   "recovered_by": "fourth",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process",
+    "sha": "1c53498d",
+    "basis": "driven alone after the fix; 72 passed / 0 failed, exit 0. Arm 5e is the both-directions control and FAILS FIRST: ablated, probe exit 0 -> 1 naming 5e in all four apps and 5a in SAIRNsenior; file restored byte-identical sha256 e38eac0682378e97871253290a0040768591fa0de82487ed54770a557b8bfafa; probe back to exit 0."
+   },
+   "why": "Arm 5a was a FALSE POSITIVE IN THE SUITE, not a defect in SAIRNsenior. The arm derived the app's written cache keys with a bare regex over the RAW file, so the comment at sairnsenior.html:5768-5780 -- which exists to record that sen_settings must NEVER be written locally, because the resource is server-authoritative -- was counted as two write sites. Fixed by taking write sites from tests/lib/strip_comments.js output. NOT fixed by adding sen_settings to SEN_UNSCOPED_CACHES, which would have put a key in an exemption list to satisfy a checker."
+  },
+  {
+   "file": "tests/phi_cache_scope_probe.py",
+   "exit_code": 0,
+   "recovered": "2026-10-07",
+   "recovered_by": "fourth",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process",
+    "sha": "1c53498d",
+    "basis": "driven alone, exit 0, ALL 12 ARMS PASS with 7 mutations planted; boundary verified after it -- git status digest, sha256 of .git/config, sha256 of all four app files, all unchanged."
+   },
+   "why": "CHAINED, and the worst of the four. Its arm 0 is a baseline gate on tests/phi_cache_scoped_to_user.js, so while that suite was red this probe planted NONE of its seven mutations against the SAIRNsenior PHI purge guard and exited 2. That guard was unverified in BOTH directions for as long as the false positive stood -- not because anyone disabled it, but because a sibling suite was red over a comment. Cleared with no change to this file."
+  },
+  {
+   "file": "tests/sairncare_fault_probe.py",
+   "exit_code": 0,
+   "recovered": "2026-10-07",
+   "recovered_by": "fourth",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process",
+    "sha": "1c53498d",
+    "basis": "driven alone, exit 0, 0 failures; boundary verified after it and unchanged. Its own closing arms report \"phi_cache_scoped_to_user.js is green again on it\" and \"the throwaway worktree is gone: True\"."
+   },
+   "why": "CHAINED on the same single arm. Cleared with no change to this file."
+  },
+  {
+   "file": "tests/sairnbuild_fault_probe.py",
+   "exit_code": 0,
+   "recovered": "2026-10-07",
+   "recovered_by": "fourth",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process",
+    "sha": "1c53498d",
+    "basis": "driven alone, exit 0, 0 failures; boundary verified after it and unchanged."
+   },
+   "why": "CHAINED on the same single arm. Cleared with no change to this file."
+  }
+ ]
 }
