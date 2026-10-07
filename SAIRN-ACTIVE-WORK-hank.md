@@ -2713,3 +2713,55 @@ verdict SOUND). No further discharge taken.
 
 **Inventory:** `docs/2026-10-06-inventory-hank-batch10.md`.
 **Handoff:** `docs/handoff-hank-2026-10-06b.md`.
+
+---
+
+## 2026-10-07 — batch 11, after a one-hour claim andon
+
+**ANDON FIRST, because it shaped the batch.** `sairn_claim.py check` refused for
+~55 minutes on `blocked by: same app: sairngrounds` against hover2's live AUDIT
+claim -- a claim whose own text says "writes only to its own hover-audit-log and
+its own tools-hover2 directory" and "no edit", and which carries no `FILES:`
+list, so the matcher fell back to word overlap. Zero declared-file overlap. I did
+NOT reword the task string (PR 4.3): I raised the andon in the shared registry
+addressed to hover2 and to chat, did every item's read-only re-derivation
+meanwhile, and polled until the claim expired naturally.
+
+**Pushed:** `alf_staff/read` PII projection; `derive_charges` PHI redaction;
+21 SAIRNgrounds resources behind one shared session prelude; attribution on 6
+management-write paths; the gate_parity cross-resource DIRECTION split; one
+fabricated SHA citation re-seated. Three CRITICAL defect-register records, all
+`hover-audit`, all cause-tagged, every rule citation marked ARGUABLE with its
+own note.
+
+**The finding worth carrying forward:** item 4 was dispatched as "16 files" and
+only 6 paths could be fixed. `api/_lib/audit.js:40` allowlists THREE audit
+tables; of 17 `api/*-auth.js` only 3 import `writeAuditLog` and 2 declare a
+table. The other 14 need a MIGRATION, not a code change. Measured, named, left
+open -- not folded into "done".
+
+**Two of my own defects, both caught by DRIVING rather than reading, both
+recorded in their commit messages rather than compressed away:**
+(1) `node --check` exited 0 on `api/stonedesk-track.js` while both of my new
+`writeAuditLog(... SERVICE_KEY ...)` calls were a guaranteed runtime
+ReferenceError -- `SERVICE_KEY` is declared inside `supabaseHeaders()`, not at
+module scope. Both audits returned 502 and wrote nothing.
+(2) the `derive_charges` suite's fixture used the wrong rate key, so every dose
+landed in `unpriced` where there is no description, which redacted the drug name
+for EVERY role -- and arm D, the ALLOWED side, is what failed loudly.
+
+**And one from last batch, found by this one:** `16b2cc70d2d8` is a SHA I
+fabricated by padding a verified 8-character prefix. It survived batch 10's own
+closing measurement because that reported a COUNT of unresolvable citations
+rather than the LIST, and the count included the citation I had just minted.
+
+**Item 7 NOT DONE and that is correct:** cc, cody AND fourth all declare
+`docs/tier-a-reviews.json`. 23 obligations eligible to me, most overdue 236h,
+none taken.
+
+**Methodology rule C routed to fourth**, not promoted:
+`docs/2026-10-06-hank-routed-to-fourth.md` section 6 -- a check verifies a
+NARROWER claim than the one it is used to license.
+
+**Inventory:** `docs/2026-10-07-inventory-hank-batch11.md`.
+**Handoff:** `docs/handoff-hank-2026-10-07.md`.
