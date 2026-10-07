@@ -2,7 +2,8 @@
 
     python tools/defect_register.py --report
     python tools/defect_register.py --check
-    python tools/defect_register.py --reseat   # rewrite SHAs a rebase moved
+    python tools/defect_register.py --reseat   # rewrite SHAs a rebase moved,
+                                              # and REVERT if --check then fails
     python tools/defect_register.py --add --commit SHA --app X --layer product \\
         --severity high --method fault-injection --summary "..."
 
@@ -1703,7 +1704,20 @@ def cmd_reseat():
         print('  re-seat the whole register on the strength of not looking.')
         return 2
     print('reachability measured against %s' % base)
+    # THE PRE-IMAGE, READ BEFORE ANYTHING IS DECIDED. It is the bytes on disk,
+    # not a re-serialisation of `reg` -- a round trip through json.dumps would
+    # reformat the whole 2MB file and "restore" would mean a 50,000-line diff.
+    _p = os.path.join(REPO, REG)
+    try:
+        before = io.open(_p, encoding='utf-8', newline='').read()
+    except OSError as e:
+        print('COULD NOT RE-SEAT: the register could not be read for a '
+              'pre-image (%s). Nothing was written -- a repair with no way back '
+              'is not a repair.' % e)
+        return 2
+    keys = {(r['commit'], r.get('summary')) for r in reg['records']}
     n = 0
+    collided = 0
     for r in reg['records']:
         sha, how = resolve(r, idx)
         # ── NO `if how == 'external': continue` HERE, AND THAT IS MEASURED ──
@@ -1734,12 +1748,41 @@ def cmd_reseat():
                          'AMBIGUOUS by subject' if hits else 'no subject match'))
                 continue
         if how in ('subject', 'dangling'):
+            # ── DO NOT CREATE A DUPLICATE (2026-10-07, cc) ──────────────────
+            # The register's identity is (commit, summary) and --check REFUSES a
+            # repeat of it. Re-seating maps a stale sha forward by SUBJECT, and
+            # where the SAME defect was recorded twice -- once before a rebase
+            # and once after -- both records resolve to one sha and collapse onto
+            # each other. Measured 2026-10-07: a file-wide run re-seated 12
+            # records and took --check from 0 to `FAIL: 4 register problem(s)`,
+            # four duplicates. The repair tool was breaking the thing it repairs.
+            #
+            # PREVENTED HERE RATHER THAN DETECTED LATER. The post-write check
+            # below is the backstop; this is the fix. A record whose destination
+            # key is already taken is LEFT ALONE and named, because the right
+            # answer to a collision is a human deciding which of the two records
+            # survives -- that is a content question, not a pointer repair.
+            if (sha, r.get('summary')) in keys:
+                print('  %s  COLLIDES -- a record already exists at %s with the '
+                      'same summary. Left alone.' % (r['commit'], sha))
+                print('       Two records of one defect, from before and after a '
+                      'rebase. Deciding which survives is a content question and '
+                      'is not this command\'s to make.')
+                collided += 1
+                continue
             print('  %s -> %s  %s%s'
                   % (r['commit'], sha, r['subject'][:58],
                      '   (was dangling)' if how == 'dangling' else ''))
+            keys.discard((r['commit'], r.get('summary')))
+            keys.add((sha, r.get('summary')))
             r['commit'] = sha
             n += 1
     if not n:
+        if collided:
+            print('nothing re-seated: %d record(s) COLLIDE with an existing '
+                  'record at their destination and were left alone. That is a '
+                  'finding for a human, not a no-op.' % collided)
+            return 1
         print('nothing to re-seat -- every SHA resolves AND is reachable '
               'from %s.' % base)
         return 0
@@ -1755,8 +1798,63 @@ def cmd_reseat():
     # an add is a deliberate content change somebody is already reviewing,
     # while a re-seat is a mechanical repair that must stay legible.
     save(reg)
+
+    # ── A REPAIR THAT REPORTS SUCCESS MUST LEAVE A REGISTER THAT PASSES ─────
+    # 2026-10-07 (cc). This returned 0 after writing, with nothing asking
+    # whether the register it had just written was still valid -- and it was
+    # not: --check went from 0 to `FAIL: 4 register problem(s)`. An exit 0 from
+    # a repair tool is read as "the thing is fixed", so a 0 over a broken
+    # register is worse than a crash.
+    #
+    # IT CALLS cmd_check, NOT A SECOND COPY OF ITS RULES. This file already says
+    # why, about itself, in the note above validate-at-write: "two copies of a
+    # validation that must agree is how they stop agreeing -- a record accepted
+    # by --add and refused by --check would be a register that cannot be both
+    # written and read." The same argument forbids a private post-write
+    # validator here.
+    #
+    # ITS OUTPUT IS CAPTURED because cmd_check prints a full report and the
+    # reader of a re-seat wants the VERDICT; the report is re-printed in full
+    # only on failure, where it is the evidence.
+    _sink = io.StringIO()
+    _real = sys.stdout
+    try:
+        sys.stdout = _sink
+        rc = cmd_check()
+    except Exception as e:                                      # noqa: BLE001
+        sys.stdout = _real
+        rc, _sink = 2, io.StringIO('%s: %s' % (type(e).__name__, e))
+    finally:
+        sys.stdout = _real
+
+    if rc != 0:
+        try:
+            io.open(_p, 'w', encoding='utf-8', newline='').write(before)
+            restored = (io.open(_p, encoding='utf-8', newline='').read() == before)
+        except OSError as e:
+            print('RE-SEAT FAILED ITS OWN --check AND THE REVERT ALSO FAILED '
+                  '(%s). THE REGISTER ON DISK IS NOT THE ONE THIS COMMAND '
+                  'STARTED FROM and it does not pass --check. Restore it from '
+                  'git before doing anything else:' % e)
+            print('    git checkout -- %s' % REG)
+            return 2
+        print('RE-SEAT REVERTED -- the %d re-seat(s) made the register fail its '
+              'own --check (exit %d), so nothing was kept.' % (n, rc))
+        print('  the register on disk is byte-identical to what it was: %s'
+              % ('CONFIRMED' if restored else 'NOT CONFIRMED -- '
+                 'use `git checkout -- %s`' % REG))
+        print('  what --check said:')
+        for ln in _sink.getvalue().rstrip().split(chr(10)):
+            print('    %s' % ln)
+        return 2
+
     print('re-seated %d record(s).' % n)
-    return 0
+    if collided:
+        print('%d record(s) LEFT ALONE on a destination collision -- see above. '
+              'This run is a partial repair and says so.' % collided)
+    print('verified after writing: --check exits 0 on the register this command '
+          'just wrote.')
+    return 1 if collided else 0
 
 
 def cmd_report():

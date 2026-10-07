@@ -530,10 +530,16 @@ def main():
     args.key = args.key or os.environ.get("SAIRNLAW_LICENSE_KEY", "")
     args.endpoint = args.endpoint or os.environ.get("SAIRNLAW_DEADLINES_API", DEFAULT_ENDPOINT)
     if not args.key:
-        raise SystemExit(
-            "No license key. Set SAIRNLAW_LICENSE_KEY or pass --key.\n"
-            "Rules are stored PER LICENSE, so the key decides which tenant is\n"
-            "being checked -- it is not a formality and must not be guessed.")
+        # EXIT 2, NOT 1 (2026-10-07, cc). A string argument to SystemExit is
+        # PRINTED and exits 1, and on this platform 1 means FINDINGS -- so a
+        # missing licence key reported drift in somebody's data. 2 is COULD
+        # NOT RUN, which is what an absent credential is.
+        print("COULD NOT RUN: no license key. Set SAIRNLAW_LICENSE_KEY or "
+              "pass --key.", file=sys.stderr)
+        print("Rules are stored PER LICENSE, so the key decides which tenant "
+              "is being checked -- it is not a formality and must not be "
+              "guessed.", file=sys.stderr)
+        raise SystemExit(2)
 
     exp_rules, exp_cals, conflicts, held = seed_expectations()
     print("Seed files: %d rules, %d calendars" % (len(exp_rules), len(exp_cals)))

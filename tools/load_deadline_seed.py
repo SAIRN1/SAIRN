@@ -164,22 +164,29 @@ def main():
         return 0
 
     if not args.key:
-        raise SystemExit(
-            "No license key. Set SAIRNLAW_LICENSE_KEY or pass --key.\n"
-            "Rules and calendars are stored PER LICENSE, so the key decides which\n"
-            "tenant this lands in -- it is not a formality and must not be guessed.")
+        # EXIT 2, NOT 1 (2026-10-07, cc). Same reason as the session refusal
+        # below: a string argument exits 1, and 1 is FINDINGS on this platform.
+        print("COULD NOT RUN: no license key. Set SAIRNLAW_LICENSE_KEY or "
+              "pass --key.", file=sys.stderr)
+        print("Rules and calendars are stored PER LICENSE, so the key decides "
+              "which tenant this lands in -- it is not a formality and must "
+              "not be guessed.", file=sys.stderr)
+        raise SystemExit(2)
 
     # ── SIGN IN, BECAUSE A LICENCE KEY IS NO LONGER AUTHORITY ───────────────
     # COULD NOT RUN, never a partial load. If the sign-in fails, every write
     # would answer 401 and this would print a wall of identical failures that
     # read as a broken seed file rather than as a missing credential.
     if not args.employee or not args.pin:
-        raise SystemExit(
-            "COULD NOT RUN: add_rule and add_holidays now require an OWNER or\n"
-            "ATTORNEY session -- a licence key identifies the firm, not the person\n"
-            "asserting what a rule of procedure says. Set SAIRNLAW_EMP and\n"
-            "SAIRNLAW_PIN, or pass --employee/--pin.\n"
-            "Nothing was sent, and an unloaded seed is INERT rather than absent.")
+        # EXIT 2, NOT 1 (2026-10-07, cc). Its own first words are COULD NOT
+        # RUN and it was exiting 1, which is FINDINGS here.
+        print("COULD NOT RUN: add_rule and add_holidays require an OWNER or",
+              file=sys.stderr)
+        print("ATTORNEY session -- a licence key identifies the firm, not the "
+              "person asserting what a rule of procedure says. Set "
+              "SAIRNLAW_EMP and SAIRNLAW_PIN, or pass --employee and --pin.",
+              file=sys.stderr)
+        raise SystemExit(2)
     st, res = post(args.auth_endpoint, args.key,
                    {"action": "login", "employee_id": args.employee, "pin": args.pin})
     token = (res or {}).get("token")
