@@ -1,1 +1,1 @@
-RUNNING 80072 2026-10-07T11:36:30Z shard=4/5 budget=270.0 entries=15
+DONE 2026-10-07T11:40:56Z shard=4/5 entries_run=14 findings=21 unrun=61 elapsed=266.2
