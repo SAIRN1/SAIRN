@@ -5795,6 +5795,33 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-10-07T15:13:50Z",
+      "opened_at_sha": "07b3fc8378350fa62e327a18208479ced347102d",
+      "resources": [
+        "alf_activities",
+        "alf_billing",
+        "alf_facility",
+        "alf_signals",
+        "alf_staff",
+        "rf_locations",
+        "sen_caregivers",
+        "sen_claims"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tests/sd_data_write_attribution_three_apps.js"
+      ],
+      "what": "batch12 (hank): FOUR Tier A resources gain a server-stamped acting employee in api/sd-data.js -- alf_signals, rf_locations, sen_caregivers, sen_claims. The other four this change touches (alf_activities, alf_billing, alf_facility, alf_staff) are already covered by my batch-11 obligation; the gate correctly refused to let that one stand in for these, because an obligation covers the resources it NAMES.\n\nWHAT CHANGED, identically in all four: two lines added immediately AFTER the row's storedBlob() call --\n\n    <blobVar>.updatedBy = session.employee_id;\n    <blobVar>.updatedByRole = session.role;\n\nCLAIM 1 TO CHECK -- THE ORDERING IS THE WHOLE GUARANTEE. storedBlob() strips only the keys it is told to strip, so a caller-supplied `updatedBy` in the payload DOES reach the blob. These two lines overwrite whatever arrived. Read them in position and confirm they follow the storedBlob call rather than precede it; arm D1 of tests/sd_data_write_attribution_three_apps.js asserts that at source for all eight branches, and arm C1 drives it by sending `updatedBy: 'SOMEONE-ELSE'` and asserting every one discarded it. If either arm can pass with the lines moved above storedBlob, the arm is wrong and I want to know.\n\nCLAIM 2 TO CHECK -- THE BLOB, NOT A COLUMN, AND WHETHER THAT IS RIGHT HERE. `data` is open jsonb on all four tables, so this needs no migration; that is the same route sd_sub_jobs took on 2026-10-07. The cost is that `updatedBy` is not queryable as a column and not indexed. For alf_signals in particular -- a fall-detection signal on a named resident, Tier A -- consider whether a real column is owed later. I judged the blob acceptable because the alternative is waiting on SQL this session cannot run, and no attribution at all was the status quo. Disagree if you read it differently.\n\nCLAIM 3 TO CHECK -- THE POPULATION, which is where my number differs from the finder's. H1 routed this as a 10-resource gap. My own read (scratchpad/attr_scan.py, read-only by construction: one io.open for reading, no write mode, no subprocess, and git status captured before and after is byte-identical) found FIFTEEN of 49 persisting branches across SAIRNcare, SAIRNsenior and SAIRNroofing. I did NOT reclassify H1's finding -- only the originating finder does that. Eight are fixed. SEVEN REMAIN UNATTRIBUTED AND ARE NAMED: rf_claims/write, rf_schedule/set_status, sen_authorizations, sen_branches, sen_franchise_agreements, sen_pay_rates, sen_payer_contracts. Each builds its row without a storedBlob variable, so each needs an individual read; stamping them with the same sweep would write the field into the wrong object. If you think any of the seven is actually a false positive of my lexical scan, that is worth saying -- the scan's own header states its error direction is FALSE POSITIVE, because an actor recorded through a helper or in a shared prelude is invisible to it.\n\nAND MY FIRST COUNT WAS 8, WHICH WAS MY OWN FILTER RATHER THAN THE POPULATION: the scan began with an allowlist of eleven action names I happened to think of. Removing it took the population from 38 branches to 49 and the gap from 8 to 15. Worth knowing when you judge whether 15 is now the real number or whether some other filter of mine is still in the way.\n\nEVIDENCE: tests/sd_data_write_attribution_three_apps.js -- 11 passed, 0 failed, EXIT 0, THREE RUNS at this tree, first run included. Mutation proof against the file as it stood before the stamps: 1 passed, 10 failed, EXIT 1. api/sd-data.js restored and compared byte-for-byte after the mutation run: identical. Arm A1 asserts all eight branches ISSUE a POST or PATCH, and it earned its place twice -- it caught a wrong signal_type and then an append-only 409 in my own fixture, either of which would have made every other arm pass on a branch that never built a row.\n\nWHAT IS NOT COVERED, for the reviewer rather than for me: no live round trip -- fetch and validateLicenseKey are mocked, the auth module is not. Nothing reads `updatedBy` in any UI. And a related defect of mine is OPEN and recorded separately against 94becffb: batch 11's audit-row attribution emits four event types the audit tables' CHECK constraints REJECT, so six management-write paths record nothing while their suite is green. That one needs two ALTER statements, printed in docs/2026-10-07-hank-migration-sql-for-michael.md as STEP 0, and applied nowhere. It does not affect the blob stamps in this change, which touch no constraint.\n\nA CONFLICT TO KNOW ABOUT: docs/tier-a-reviews.json is named in cc's live claim text (not in its FILES). This record is an APPEND of my own obligation, which the push gate requires before this work can land and which touches none of cc's rows -- the file's merge policy is union-by-identity. I DISCHARGED NOTHING this batch: 18 obligations are eligible to me, the most overdue is cody's 2026-09-27T02:06:03Z at 252h, and all 18 are untouched.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-07T15:13:50Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
