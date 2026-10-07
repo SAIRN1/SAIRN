@@ -255,6 +255,18 @@ def nav_call_re(fn):
 
 
 if __name__ == '__main__':
+    # -- A MISSING ARGUMENT IS A REFUSAL, NOT A TRACEBACK (2026-10-07) -----
+    # This read sys.argv[1] directly, so a bare run raised IndexError and
+    # exited 1. On this platform EXIT 1 MEANS FINDINGS and exit 2 means COULD
+    # NOT RUN -- so a sweep reading exit codes could not tell "needs an
+    # argument" from "found something", while 67 other tools say so plainly.
+    # Measured 2026-10-07: 8 of 315 tools behaved this way.
+    if len(sys.argv) <= 1:
+        sys.stderr.write(
+            'COULD NOT RUN: no input given. Nothing was checked.\n'
+            'usage: python tools/nav_panel_check.py <file.html>\n'
+        '  Panel/sidebar reconciliation -- Guardian checks 16-18.\n')
+        sys.exit(2)
     path = sys.argv[1]
     with open(path, encoding='utf-8', errors='replace') as f:
         html = f.read()

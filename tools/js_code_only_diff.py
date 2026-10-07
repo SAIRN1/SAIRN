@@ -159,5 +159,17 @@ def strip(src):
 
 
 if __name__ == '__main__':
+    # -- A MISSING ARGUMENT IS A REFUSAL, NOT A TRACEBACK (2026-10-07) -----
+    # This read sys.argv[2] directly, so a bare run raised IndexError and
+    # exited 1. On this platform EXIT 1 MEANS FINDINGS and exit 2 means COULD
+    # NOT RUN -- so a sweep reading exit codes could not tell "needs an
+    # argument" from "found something", while 67 other tools say so plainly.
+    # Measured 2026-10-07: 8 of 315 tools behaved this way.
+    if len(sys.argv) <= 2:
+        sys.stderr.write(
+            'COULD NOT RUN: no input given. Nothing was checked.\n'
+            'usage: python tools/js_code_only_diff.py <in.js> <out.js>\n'
+        '  Strips comments and string bodies so a diff shows CODE changes only.\n')
+        sys.exit(2)
     data = open(sys.argv[1], encoding='utf-8').read()
     open(sys.argv[2], 'w', encoding='utf-8').write(strip(data))
