@@ -790,6 +790,34 @@ def main(argv):
                 t = by_name[n][1]
                 if t in counts:
                     counts[t] += 1
+            # ── THE TOTAL COLUMN WAS THE ONE NOBODY CHECKED (2026-10-07) ──
+            # This loop has compared A, B and C against the rows since the file
+            # was written. It never compared `n`, the app's TOTAL -- and the
+            # header above claims "a rollup count that does not match the rows
+            # under it" is caught, which was true of three columns out of four.
+            #
+            # SO THE ONE UNGUARDED COLUMN IS THE ONE THAT ROTTED. Measured
+            # 2026-10-07: `sairnfreedom` said n=35 while its own A+B+C said 36
+            # and 36 `sf_` rows exist. Every other figure in the document agreed
+            # on 391 -- the headline, the A/B/C sums, RESOURCES_REGISTERED and
+            # RESOURCE_ROWS -- and the totals column alone summed to 390. H1
+            # routed it as a 390-vs-391 self-consistency error; this is where it
+            # could hide.
+            #
+            # CHECKED AGAINST `present`, NOT AGAINST a+b+c. Summing the three
+            # tier columns would make this a restatement of the loop below and
+            # it would pass on a row where all four numbers were wrong together.
+            # `present` is the registered resources that actually have a row,
+            # which is the thing the column claims to count.
+            want_n = re.sub(r'[^0-9]', '', rollup[app]['n'])
+            if want_n != str(len(present)):
+                problems.append('COUNT        %s rollup says it has %s resources, '
+                                'the rows say %d. The TOTAL column was unguarded '
+                                'until 2026-10-07 while A, B and C were checked '
+                                'from the start -- so this is the column that '
+                                'drifts, and it is the 390-against-391 the '
+                                'register kept showing.'
+                                % (app, rollup[app]['n'], len(present)))
             for key, label in (('a', 'A'), ('b', 'B'), ('c', 'C')):
                 want = rollup[app][key]
                 got = str(counts[label])
