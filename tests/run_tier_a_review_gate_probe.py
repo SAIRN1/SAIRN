@@ -24,6 +24,7 @@ string; the gate's inputs are a diff and two paths, so there is no need to
 sabotage the real repo to test it -- and a probe that edits docs/ on a platform
 where four sessions share a branch is a probe that loses somebody's work.
 """
+import calendar
 import io
 import json
 import os
@@ -2289,6 +2290,271 @@ check('THE FIXTURE CLEANED UP AFTER ITSELF -- a tempdir holding read-only git '
       'objects left behind is the 239-file silent leak, and ignore_errors=True '
       'would make this arm unwritable',
       not _LEFT, 'the fixture tempdir survived rmtree')
+
+
+# ── ONE FIELD: opened_at_sha_basis, ON THE NEXT --open BY ANYBODY (2026-10-07) ─
+# The fix at 18078d38 made `_open_record` derive the stamped sha from the
+# record's own file list and WRITE THE BASIS BESIDE IT. cc's batch confirmed the
+# fix landed and recorded it as UNPROVEN, because at that moment the measurement
+# was `0 of 238 records carry the field` -- not a contradiction, just nobody had
+# run --open since. That is exactly the state in which a field quietly stops
+# being written and nothing notices: the arms above prove subject_sha() and one
+# synthetic _open_record call, and neither of them looks at what REAL --open runs
+# actually wrote.
+#
+# SO THIS SECTION IS ABOUT THE FIELD AND NOTHING ELSE, in two halves:
+#   (A) drive --open as a DIFFERENT SESSION and assert the basis is written. The
+#       phrase is "by anybody": the writer must not depend on who is running it,
+#       and `session_name()` is the only thing in that path that varies.
+#   (B) a STANDING LEDGER RULE -- every record opened after the fix landed must
+#       carry a basis that is in vocabulary and consistent with its own fields.
+#       This one goes red on the FIRST real --open that writes a record without
+#       it, which is the thing cc's report says is unproven.
+#
+# THE CUTOFF IS DERIVED FROM CONTENT, NOT FROM A HARDCODED SHA. `18078d38` was
+# itself the post-rebase sha of that fix, and this platform rebases constantly --
+# a literal sha here would resolve today and silently stop resolving later, which
+# would make the rule exempt every record and pass. `git log -S 'def
+# subject_sha('` finds the commit that introduced the function instead, and a
+# cutoff that cannot be derived is COULD NOT TELL and FAILS rather than exempting
+# everything (PR 1.11).
+#
+# IT READS docs/tier-a-reviews.json AND NEVER WRITES IT. That ledger is held by
+# another session; a read is safe and a write would not be.
+BASIS_VOCAB = ('file-set', 'head', 'could-not-tell')
+
+
+def _basis_cutoff():
+    """(epoch, how) for when the basis field became required, or (None, why)."""
+    r = subprocess.run(['git', 'log', '--reverse', '--format=%cI', '-S',
+                        'def subject_sha(', '--', 'tools/tier_a_review_gate.py'],
+                       cwd=REPO, capture_output=True, text=True,
+                       encoding='utf-8', errors='replace')
+    if r.returncode != 0:
+        return None, 'git log exited %d' % r.returncode
+    line = (r.stdout or '').strip().splitlines()
+    if not line:
+        return None, 'no commit introduces `def subject_sha(` in this clone'
+    stamp = line[0].strip()
+    try:
+        # %cI is ISO-8601 strict, e.g. 2026-10-07T13:15:02-04:00
+        base, off = stamp[:19], stamp[19:]
+        secs = calendar.timegm(time.strptime(base, '%Y-%m-%dT%H:%M:%S'))
+        if off and off[0] in '+-' and len(off) >= 6:
+            sign = 1 if off[0] == '-' else -1       # convert local -> UTC
+            secs += sign * (int(off[1:3]) * 3600 + int(off[4:6]) * 60)
+        return secs, stamp
+    except (ValueError, IndexError) as e:
+        return None, 'unparseable commit date %r (%s)' % (stamp, e)
+
+
+def _basis_violations(records, cutoff):
+    """Every post-cutoff record whose basis field is absent or inconsistent.
+
+    ONE FIELD. It does not re-check the sha against the files -- that is the
+    historical 34-of-63 problem and depends on what this clone can resolve. This
+    asks only whether the field the fix added is present and says something the
+    record's own contents agree with.
+    """
+    bad = []
+    exempt = 0
+    for r in records:
+        try:
+            when = calendar.timegm(time.strptime(r.get('opened_at') or '',
+                                                 '%Y-%m-%dT%H:%M:%SZ'))
+        except (ValueError, TypeError):
+            bad.append((r.get('opened_at'), 'opened_at is unusable, so it cannot '
+                        'be shown to predate the fix'))
+            continue
+        if when < cutoff:
+            exempt += 1
+            continue
+        basis = r.get('opened_at_sha_basis')
+        files = r.get('files')
+        if basis is None:
+            bad.append((r.get('opened_at'), 'opened_at_sha_basis ABSENT on a '
+                        'record opened after the fix landed'))
+        elif basis not in BASIS_VOCAB:
+            bad.append((r.get('opened_at'), 'basis %r is outside %r'
+                        % (basis, BASIS_VOCAB)))
+        elif basis == 'file-set' and not files:
+            bad.append((r.get('opened_at'), "basis says 'file-set' but the "
+                        'record names no files'))
+        elif basis == 'head' and files:
+            bad.append((r.get('opened_at'), "basis says 'head' but the record "
+                        'names %d file(s), so a file-set sha was derivable'
+                        % len(files)))
+        elif basis == 'could-not-tell' and r.get('opened_at_sha') is not None:
+            bad.append((r.get('opened_at'), "basis says 'could-not-tell' while a "
+                        'sha %r is stamped' % (r.get('opened_at_sha'),)))
+    return bad, exempt
+
+
+def _basis_open_fixture(as_session, files_named):
+    """Run ONE _open_record in a throwaway repo, as a named session."""
+    base = tempfile.mkdtemp(prefix='tierA_basis_')
+    r = os.path.join(base, 'repo')
+    os.makedirs(os.path.join(r, 'api'))
+
+    def gi(*a):
+        return subprocess.run(['git', '-C', r] + list(a), capture_output=True,
+                              encoding='utf-8', errors='replace')
+    for a in (['init', '-q'], ['config', 'user.email', 'b@x.invalid'],
+              ['config', 'user.name', 'b']):
+        gi(*a)
+    io.open(os.path.join(r, 'api', 'y.js'), 'w',
+            encoding='utf-8').write('// the change\n')
+    gi('add', '-A')
+    gi('commit', '-q', '-m', 'fix(api): the change under review')
+    ledger = os.path.join(base, 'reviews.json')
+    io.open(ledger, 'w', encoding='utf-8').write('{"records": []}')
+    old = (g.REPO, g.REVIEWS, g.session_name)
+    try:
+        g.REPO, g.REVIEWS = r, ledger
+        g.session_name = lambda: as_session
+        hits = {'sc_claims': ['api/y.js']} if files_named else {'sc_claims': []}
+        g._open_record('fixture: the basis field', hits, {})
+        rec = json.load(io.open(ledger, encoding='utf-8'))['records'][0]
+    finally:
+        g.REPO, g.REVIEWS, g.session_name = old
+
+        def _onerror(fn, p, _exc):
+            # NOT ignore_errors: this tree holds a real .git whose loose objects
+            # are read-only, and ignore_errors leaves them behind in silence.
+            try:
+                os.chmod(p, 0o700)
+                fn(p)
+            except Exception:                           # noqa: BLE001
+                pass
+        shutil.rmtree(base, onerror=_onerror)
+        _left = os.path.isdir(base)
+    return rec, _left
+
+
+# (A) --open BY SOMEBODY ELSE still writes the field.
+_REC_OTHER, _LEFT_A = _basis_open_fixture('somebody-else', True)
+check('THE NEXT --open BY ANYBODY writes opened_at_sha_basis -- driven as a '
+      'session that is not me, because "by anybody" is the claim',
+      _REC_OTHER.get('opened_at_sha_basis') == 'file-set',
+      'a record opened by somebody-else carries basis %r'
+      % (_REC_OTHER.get('opened_at_sha_basis'),))
+check('...and that record really was attributed to the other session, so the '
+      'arm above is not quietly testing my own name',
+      _REC_OTHER.get('author_session') == 'somebody-else',
+      'author_session was %r' % (_REC_OTHER.get('author_session'),))
+check('...and its fixture tree was removed, read-only objects and all',
+      not _LEFT_A, 'the basis fixture tempdir survived rmtree')
+
+# THE OTHER BRANCH OF THE FIELD. Without this, a writer that hardcoded
+# 'file-set' would pass every arm above.
+_REC_NOFILES, _LEFT_B = _basis_open_fixture('somebody-else', False)
+check("NEGATIVE HALF: a record naming NO files gets basis 'head', so the field "
+      'is derived and not a constant',
+      _REC_NOFILES.get('opened_at_sha_basis') == 'head',
+      'the no-files record carries basis %r'
+      % (_REC_NOFILES.get('opened_at_sha_basis'),))
+check('...and the two fixtures really did differ, so one code path is not '
+      'satisfying both arms',
+      _REC_OTHER.get('opened_at_sha_basis')
+      != _REC_NOFILES.get('opened_at_sha_basis'),
+      'both runs returned %r' % (_REC_OTHER.get('opened_at_sha_basis'),))
+check('...and that fixture tree was removed too', not _LEFT_B)
+
+# (B) THE STANDING LEDGER RULE.
+_CUTOFF, _CUTHOW = _basis_cutoff()
+check('THE CUTOFF IS DERIVABLE -- the commit that introduced `def subject_sha(` '
+      'is found by CONTENT, so a rebase cannot silently exempt every record',
+      _CUTOFF is not None,
+      'could not derive the cutoff: %s. This arm FAILS rather than exempting '
+      'the whole ledger, which is what a missing cutoff would otherwise do.'
+      % (_CUTHOW,))
+
+if _CUTOFF is not None:
+    # Built from REPO rather than read from g.REVIEWS ON PURPOSE: the fixtures
+    # above rebind g.REVIEWS to a tempdir, and a leaked override would point
+    # this rule at a two-record fixture while it reported on "the ledger".
+    _ledger_path = os.path.join(REPO, 'docs', 'tier-a-reviews.json')
+    _real = json.load(io.open(_ledger_path, encoding='utf-8'))['records']
+    _bad, _exempt = _basis_violations(_real, _CUTOFF)
+    check('EVERY RECORD OPENED SINCE THE FIX CARRIES A CONSISTENT '
+          'opened_at_sha_basis -- this is the arm that goes red on the first '
+          'real --open that drops the field (cutoff %s, %d of %d records '
+          'predate it and are exempt)'
+          % (_CUTHOW, _exempt, len(_real)),
+          not _bad, _bad[:6])
+    # ── THE COVERAGE OF THAT ARM IS DISCLOSED, NOT ASSERTED ─────────────────
+    # `0 violations` over `0 examined` is the shape this whole section exists to
+    # prevent, so it is printed with its denominator every run. It is NOT a
+    # failing arm: no code change can clear it -- only the next real --open can --
+    # and reddening a shared suite on a condition nobody can fix would get the
+    # file muted, which is strictly worse than a loud line. The proof that the
+    # rule can still say NO comes from the planted set below, which is the
+    # cheap-stand-in half of convention 9.
+    _examined = len(_real) - _exempt
+    print('  NOTE  the ledger rule examined %d of %d record(s); %d predate the '
+          'cutoff and are exempt.' % (_examined, len(_real), _exempt))
+    if _examined == 0:
+        print('        NOT YET EXERCISED BY REAL DATA -- every record predates '
+              'the fix, which is cc\'s "landed but unproven" state measured '
+              'rather than asserted. The first real --open changes this number.')
+    check('THE EXEMPTION IS NOT A BLANKET: the exempt count equals the number of '
+          'records whose opened_at really does predate the cutoff, counted a '
+          'second way',
+          _exempt == len([r for r in _real
+                          if (r.get('opened_at') or '') and
+                          r.get('opened_at')[:19] <
+                          time.strftime('%Y-%m-%dT%H:%M:%S',
+                                        time.gmtime(_CUTOFF))]),
+          'exempt=%d, independently counted=%d'
+          % (_exempt, len([r for r in _real
+                           if (r.get('opened_at') or '') and
+                           r.get('opened_at')[:19] <
+                           time.strftime('%Y-%m-%dT%H:%M:%S',
+                                         time.gmtime(_CUTOFF))])))
+
+    # (D) THE NEGATIVE HALF OF THE LEDGER RULE. Without this the arm above is
+    # satisfied by a rule that can never say no -- which is precisely the
+    # failure mode the field itself exists to prevent.
+    _post = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(_CUTOFF + 3600))
+    _planted = [
+        {'opened_at': _post, 'files': ['api/y.js']},                    # absent
+        {'opened_at': _post, 'files': ['api/y.js'],
+         'opened_at_sha_basis': 'whatever'},                            # vocab
+        {'opened_at': _post, 'files': [],
+         'opened_at_sha_basis': 'file-set'},                            # no files
+        {'opened_at': _post, 'files': ['api/y.js'],
+         'opened_at_sha_basis': 'head'},                                # derivable
+        {'opened_at': _post, 'files': ['api/y.js'], 'opened_at_sha': 'deadbeef12',
+         'opened_at_sha_basis': 'could-not-tell'},                      # contradicts
+    ]
+    _pbad, _pexempt = _basis_violations(_planted, _CUTOFF)
+    check('NEGATIVE HALF OF THE LEDGER RULE: all 5 planted shapes are caught -- '
+          'absent, out-of-vocabulary, file-set-with-no-files, '
+          'head-when-derivable, and could-not-tell-with-a-sha',
+          len(_pbad) == 5 and _pexempt == 0,
+          '%d of 5 caught, %d exempted: %s' % (len(_pbad), _pexempt, _pbad))
+    # ── THE LEDGER ARM'S OWN DATA PATH, PROVEN TO BITE ──────────────────────
+    # The planted set above proves the RULE can say no. It does not prove that
+    # the rule, fed THE REAL RECORDS, would still say no -- a real population
+    # can mask a violation (an exemption that swallows everything, a field read
+    # from the wrong key). This feeds the real list PLUS one bad record and
+    # requires exactly one more violation than the real list alone produced.
+    # The real ledger is not touched: the list is concatenated in memory.
+    _mixed_bad, _ = _basis_violations(
+        list(_real) + [{'opened_at': _post, 'files': ['api/y.js']}], _CUTOFF)
+    check('THE LEDGER ARM ITSELF BITES: the real record list plus ONE bad '
+          'post-cutoff record yields exactly one more violation than the real '
+          'list alone, so a clean verdict over real data is a measurement and '
+          'not a masked rule',
+          len(_mixed_bad) == len(_bad) + 1,
+          'real=%d, real+1 planted=%d' % (len(_bad), len(_mixed_bad)))
+    check('...and a PRE-cutoff record with no basis is NOT a violation, so the '
+          'rule does not retroactively condemn the 238 records that predate '
+          'the fix',
+          _basis_violations([{'opened_at': time.strftime(
+              '%Y-%m-%dT%H:%M:%SZ', time.gmtime(_CUTOFF - 3600)),
+              'files': ['api/y.js']}], _CUTOFF) == ([], 1),
+          'a pre-fix record was flagged')
 
 
 if fails:

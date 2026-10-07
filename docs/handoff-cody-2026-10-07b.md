@@ -662,3 +662,93 @@ it is the honest answer rather than filling the column.
 - The **node-forge advisory** (item 6) is a real upstream vulnerability with **no
   patched release**, not a defect in this repo. Its reachability verdict is
   re-derived, not inherited.
+
+## interleaved task — DONE. The one-field fixture for `opened_at_sha_basis`, 11 new arms.
+
+Asked for mid-batch, not part of the 16. cc's batch confirmed the item-8 fix
+landed and recorded it **UNPROVEN**, because at that moment the measurement was
+`0 of 238 records carry the field` — nobody had run `--open` since. That is the
+state in which a field quietly stops being written and nothing notices.
+
+```
+command : python tests/run_tier_a_review_gate_probe.py
+commit  : f8d73c48 + this change        date: 2026-10-07
+result  : EXIT 0, ALL ARMS PASS, 236 ok  -- 2 runs, first EXIT 0 each time
+          (224 arms before this change, 236 after: 11 new, +1 NOTE line)
+```
+
+**IT LIVES IN THE PROBE THAT IS ALREADY IN MY DECLARED FILES.** A new
+`tests/run_tier_a_basis_probe.py` would have been cleaner to read and would have
+widened the claim without declaring it — the same thing I declined to do for item
+10's six files an hour earlier. Consistency won.
+
+**(A) "BY ANYBODY" IS TESTED AS WRITTEN.** `session_name` is the only thing in
+the write path that varies by who runs it, so the fixture rebinds it and drives
+`_open_record` as **`somebody-else`**, then asserts both the basis *and* that the
+record really was attributed to that session — otherwise the arm would be quietly
+testing my own name.
+
+**(B) AND THE OTHER BRANCH, or a writer that hardcoded `'file-set'` would pass
+everything above:** a record naming no files must get `'head'`, and a third arm
+asserts the two fixtures really returned different values.
+
+**(C) THE STANDING LEDGER RULE — the part that answers cc.** Every record opened
+**after the fix landed** must carry a basis that is in vocabulary and consistent
+with its own fields: `file-set` ⇒ files non-empty, `head` ⇒ files empty,
+`could-not-tell` ⇒ no sha stamped. One field; it deliberately does **not**
+re-check the sha against the files, which is the historical 34-of-63 problem and
+depends on what a given clone can resolve.
+
+**THE CUTOFF IS DERIVED FROM CONTENT, NOT A HARDCODED SHA.** `18078d38` was
+itself the *post-rebase* sha of that fix, and a literal sha here would resolve
+today and silently stop resolving later — exempting every record and passing.
+`git log --reverse -S 'def subject_sha(' -- tools/tier_a_review_gate.py` finds the
+introducing commit instead; derived this run as **`2026-10-07T13:14:59-04:00`**.
+A cutoff that cannot be derived **fails** rather than exempting the ledger.
+
+**COVERAGE IS DISCLOSED, NOT ASSERTED, and this is the one judgement call.** The
+rule currently examines **0 of 238** records — all 238 predate the cutoff. The
+first version of this made that a FAILING arm; it was changed, because no code
+change can clear it (only the next real `--open` can) and reddening a shared
+suite on an unfixable condition gets the file muted, which is worse than a loud
+line. So it prints:
+
+```
+  NOTE  the ledger rule examined 0 of 238 record(s); 238 predate the cutoff and are exempt.
+        NOT YET EXERCISED BY REAL DATA -- ... the first real --open changes this number.
+```
+
+**Three arms stop that from becoming a check that tests nothing:**
+
+- the **planted set** — 5 bad shapes (absent, out-of-vocabulary,
+  `file-set`-with-no-files, `head`-when-derivable, `could-not-tell`-with-a-sha),
+  all 5 caught, which proves the rule can say NO;
+- **the ledger arm's own data path** — the real record list **plus one** bad
+  post-cutoff record must yield exactly one more violation than the real list
+  alone, so a clean verdict over real data is a measurement rather than a masked
+  rule;
+- **the exemption counted a second way** — `exempt` must equal an independently
+  computed count of records whose `opened_at` really predates the cutoff, so the
+  exemption cannot be a blanket.
+
+**ISOLATION FROM THE RUNNING PINNED SUITE, verified rather than assumed:**
+
+```
+suite.status            still RUNNING 74488, suite.out advanced 371 -> 431 lines
+worktree registrations  2 before, 2 after
+core.bare               false
+.git/config sha256      93070fe59db2... unchanged
+tierA_basis_* temp dirs left behind : none
+docs/tier-a-reviews.json : READ ONLY, never written (it is cc's)
+```
+
+The fixture uses `tempfile.mkdtemp` + `git init` — **no worktree**, so it cannot
+touch this clone's shared `.git/config` — and cleans up with the chmod-retry
+`onerror` helper rather than `ignore_errors=True`, with an arm asserting the
+tempdir is gone. The change is committed immediately so the pinned run's own
+residue check stays attributable to the suite.
+
+**ALSO SEEN, not acted on:** four `sairn-suite-pinned-*` directories exist in
+`%TEMP%`; only `w8n86z0u` is mine and live. The other three are earlier or other
+clones' leftovers, and they are **not** worktree registrations so item 5's prune
+had nothing to do with them. Reported, not deleted.
