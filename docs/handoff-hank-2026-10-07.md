@@ -76,13 +76,21 @@ cleared.
 Every figure below is from a `capture_exit` status file, never a harness
 completion status.
 
-| Fix | Commit | At this tree | Against the parent |
+| Fix | Commit, **as landed on origin/main** | At this tree | Against the parent |
 |---|---|---|---|
-| `alf_staff`/`read` PII | `23a63e30` | 18 passed / 0 failed, EXIT 0, **3 runs** | **6 passed / 12 failed, EXIT 1** |
-| `derive_charges` PHI | `d75bd00b` | 14 / 0, EXIT 0, **3 runs** | **10 / 4, EXIT 1** |
-| 21 SAIRNgrounds gates | `796e5c31` | 7 / 0, EXIT 0, **3 runs** | **2 / 5, EXIT 1** — A1 said *0 of 42 pairs refused* |
-| Attribution, 6 paths | `b0e85e11` | 10 / 0, EXIT 0, **3 runs** | **3 / 7, EXIT 1** — A2 said *found 1* |
-| gate_parity direction | `c3b61a50` | 11 / 0, EXIT 0, **3 runs** | **9 / 2, EXIT 1** — X4/X5 got `direction=None` |
+| `alf_staff`/`read` PII | **`d051c89f`** | 18 passed / 0 failed, EXIT 0, **3 runs** | **6 passed / 12 failed, EXIT 1** |
+| `derive_charges` PHI | **`7ed27c5e`** | 14 / 0, EXIT 0, **3 runs** | **10 / 4, EXIT 1** |
+| 21 SAIRNgrounds gates | **`6a2690be`** | 7 / 0, EXIT 0, **3 runs** | **2 / 5, EXIT 1** — A1 said *0 of 42 pairs refused* |
+| Attribution, 6 paths | **`94becffb`** | 10 / 0, EXIT 0, **3 runs** | **3 / 7, EXIT 1** — A2 said *found 1* |
+| gate_parity direction | **`da9ecbd4`** | 11 / 0, EXIT 0, **3 runs** | **9 / 2, EXIT 1** — X4/X5 got `direction=None` |
+
+**Pushed at `ba50a29d`, ahead 0 / behind 0.** The five SHAs above are the LANDED
+ones, re-derived with `git log --grep` after the push rather than copied from a
+commit message. **FIVE rebases moved them during this batch** — the push gate
+takes ~2 minutes and three other sessions push continuously, so every attempt
+lost the race. The defect register was re-seated surgically to match; the commit
+messages still quote intermediate SHAs in their prose and **cannot be
+re-seated**, so re-derive by `--grep`, never from a prefix in a message.
 
 **First run is included in every count above.** The `derive_charges` and
 `attribution` suites each went red on their FIRST run for a defect of mine, and
