@@ -154,6 +154,61 @@ def by_section(rc, out):
 
 
 REGISTRY = [
+    # -- ADDED 2026-10-07 (cc), REPORT-ONLY, and item 9's own instruction is
+    # that promotion to blocking is a LATER decision somebody else makes.
+    {
+        'tool': 'py_guard_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-10-07, report-only, and the reason it must stay '
+                    'report-only today is the COUNT rather than the precision. '
+                    'Its first full run on tools/ reported 91 findings in 45 of '
+                    '306 files -- R1 28, R2 57, R4 6, R3 zero. Every one was '
+                    'hand-verified and every one is a real instance of its '
+                    'shape, so this is not a false-positive problem. It is '
+                    'worse as a gate for exactly that reason: wired blocking it '
+                    'would refuse every push touching 45 existing files until '
+                    'somebody triages a backlog nobody has agreed to, which is '
+                    'how a gate gets overridden by habit. TWO SHAPES SHOULD BE '
+                    'TRIAGED BEFORE ANY PROMOTION IS DISCUSSED. R2 is split '
+                    '45 UNDOCUMENTED / 12 documented by whether a comment gives '
+                    'a reason, and the undocumented ones are the real queue. '
+                    'R4 is six `sys.exit("message")` sites that exit 1 on a '
+                    'platform where 1 means FINDINGS and 2 means COULD NOT RUN '
+                    '-- so a missing licence key reports as findings; that one '
+                    'is arguably promotable on its own once the six are fixed. '
+                    'Design note, committed BEFORE the tool: '
+                    'docs/2026-10-07-cc-py-guard-design-note.md, which also '
+                    'names three shapes REJECTED as not mechanically '
+                    'detectable. Controls: 37 arms in --selftest on the DEFAULT '
+                    'path with their result printed beside every scan, plus '
+                    'tests/run_py_guard_probe.py, 23 arms, driving the real CLI '
+                    'in a subprocess so a verdict that never reaches sys.exit '
+                    'is visible -- and that probe caught a real defect in the '
+                    'tool on its first run, --help exiting 1 because the '
+                    'docstring it printed carried box-drawing characters a '
+                    'cp1252 console cannot encode.',
+        'catches': 'four syntactic shapes that let a program report a verdict '
+                   'it did not earn: R1 a subprocess/os call whose result is '
+                   'discarded as a bare statement; R2 a bare except, or a '
+                   'handler whose body is only pass; R3 an assertion that '
+                   'cannot fail (truthy constant, non-empty literal container, '
+                   'x == x); R4 an exit status taken from or compared against a '
+                   'string. AST only -- it never executes what it reads, and an '
+                   'arm asserts that against its own source.',
+        'evidence': 'R4 is reproducible in one command: `python '
+                    'tools/sairn_load_state_check.py --app sairnlaw` prints "No '
+                    'license key. Set SAIRNLAW_LICENSE_KEY or pass --key." and '
+                    'exits 1 -- FINDINGS -- from a `raise SystemExit(<string>)` '
+                    'whose own text says COULD NOT RUN. Measured 2026-10-07. '
+                    'R1 includes fixture SETUP inside selftests (git init / add '
+                    '/ commit on a throwaway repo, exit code discarded), which '
+                    'is the highest-value half: a fixture whose setup failed '
+                    'silently leaves the arms after it testing nothing while '
+                    'passing. Zero files failed to parse out of 306. R3 zero is '
+                    'a real zero, not a dead rule -- its planted-bad example '
+                    'fires in the criteria lock printed on every run.',
+    },
     # ── THREE ENTRIES LANDED 2026-09-29 (cody) ─────────────────────────────
     # All three checkers existed with controls declared on both ends and NONE
     # was in this registry, so nothing ran them on a cadence and
