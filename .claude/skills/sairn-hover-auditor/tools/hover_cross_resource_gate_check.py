@@ -104,6 +104,64 @@ def extract_branches(path, max_region=150):
     return out, None
 
 
+def _indent(line):
+    return len(line) - len(line.lstrip(' '))
+
+
+def gated_resources_in_file(lines):
+    """Every resource name covered by a verifySessionToken/
+    credentialStillActive call ANYWHERE in the file, found by walking
+    BACKWARD from each such call to its own enclosing `if (` condition and
+    reading every `resource === 'NAME'` mentioned there -- not just a
+    forward-bounded window from the resource's own anchor.
+
+    FOUND DURING THIS TOOL'S OWN FIRST REAL RUN, HAND-VERIFIED: a gate is
+    very often declared ONCE for a GROUP of resources in an outer wrapper
+    -- `if ((resource === 'rf_prequal_documents' || resource === 'rf_bonding')
+    && ...) { const session = verifySessionToken(...); ... }` -- with the
+    individual `if (resource === 'rf_bonding' && action === ...)` branches
+    nested INSIDE it, never calling verifySessionToken themselves. A
+    forward-only scan from each inner anchor cannot see that outer call at
+    all. This was not a hypothetical risk named in advance -- it is the
+    reason the tool's first real run produced 7 flags, all 7 of which
+    turned out to be exactly this shape on hand-verification, not real
+    gate gaps."""
+    gate_line_idx = [i for i, line in enumerate(lines) if GATE_RE.search(line)]
+    gated = set()
+    for gi in gate_line_idx:
+        gate_indent = _indent(lines[gi])
+        # walk backward to the nearest shallower-or-equal-indent line that
+        # opens an `if (` -- the condition may itself span multiple lines
+        # up to the matching `{`, so once found, walk FORWARD from there
+        # to the `{` collecting every resource mention.
+        j = gi
+        cond_start = None
+        while j >= 0:
+            line = lines[j]
+            stripped = line.strip()
+            if stripped and _indent(line) < gate_indent and re.match(r'if\s*\(', stripped):
+                cond_start = j
+                break
+            if stripped and _indent(line) < gate_indent and not stripped.startswith('if'):
+                # hit an enclosing non-if line at shallower indent (e.g. a
+                # plain block or another statement) -- no if-wrapper here
+                break
+            j -= 1
+        if cond_start is None:
+            continue
+        k = cond_start
+        cond_text = ''
+        while k < len(lines):
+            cond_text += lines[k]
+            if '{' in lines[k]:
+                break
+            k += 1
+            if k - cond_start > 10:
+                break
+        gated |= set(ANCHOR_RE.findall(cond_text))
+    return gated
+
+
 def tables_in_region(text):
     """EVERY rest('TABLE...') match, not just the first -- the exact bug
     the lost original's own history (seq975) named and fixed."""
@@ -121,7 +179,12 @@ def run(repo):
         if berr:
             results[relpath] = {'error': berr}
             continue
-        gated_resources = set()
+        with open(path, encoding='utf-8') as f:
+            all_lines = f.readlines()
+        # whole-file backward-scan gate detection -- also credits a
+        # per-branch inline call directly, in case one exists with no
+        # enclosing if-wrapper at all (the simple, common case).
+        gated_resources = gated_resources_in_file(all_lines)
         for name, _, text in branches:
             if GATE_RE.search(text):
                 gated_resources.add(name)
@@ -244,8 +307,55 @@ def _selftest():
         check('removing fa_orders\' own gate (the real transition) is caught',
               any(f['branch_resource'] == 'fa_orders' for f in report_regressed['results']['api/sd-data.js']['flags']))
 
+        # Case 3, found on THIS TOOL'S OWN FIRST REAL RUN against
+        # api/sd-data.js (not anticipated in advance): a SHARED outer
+        # wrapper gates TWO resources together with one verifySessionToken
+        # call, and each resource's own `if (resource === ...)` branch is
+        # NESTED inside it rather than calling the gate itself. A
+        # forward-only per-anchor scan cannot see the outer call. Regression
+        # lock, planted DIRECTLY as the real shape (rf_prequal_documents /
+        # rf_bonding's actual structure, renamed):
+        with open(os.path.join(td, 'api', 'sd-data.js'), 'w') as f:
+            f.write(
+                "if ((resource === 'fa_orders' || resource === 'fa_billing') &&\n"
+                "    (action === 'read' || action === 'write')) {\n"
+                "  const session = verifySessionToken(tokenFromRequest(req), licHash, 'fakeapp');\n"
+                "  if (resource === 'fa_orders' && action === 'read') {\n"
+                "    const b = await fetch(rest('fa_customers?y'));\n"
+                "  }\n"
+                "  if (resource === 'fa_billing' && action === 'write') {\n"
+                "    const c = await fetch(rest('fa_billing?z'));\n"
+                "  }\n"
+                "}\n"
+                "if (resource === 'fa_customers' && action === 'read') {\n"
+                "  const session = verifySessionToken(tokenFromRequest(req), licHash, 'fakeapp');\n"
+                "  const c = await fetch(rest('fa_customers?z'));\n"
+                "}\n")
+        report_wrapped = run(td)
+        check('a resource gated only via a SHARED OUTER wrapper is not a false flag',
+              not any(f['branch_resource'] == 'fa_orders' for f in report_wrapped['results']['api/sd-data.js']['flags']))
+        # the real transition: the OUTER wrapper's gate call itself is
+        # removed (e.g. an edit that trusts the inner branches too much) --
+        # both grouped resources lose their gate at once, and the flag
+        # must reappear.
+        with open(os.path.join(td, 'api', 'sd-data.js'), 'w') as f:
+            f.write(
+                "if ((resource === 'fa_orders' || resource === 'fa_billing') &&\n"
+                "    (action === 'read' || action === 'write')) {\n"
+                "  if (resource === 'fa_orders' && action === 'read') {\n"
+                "    const b = await fetch(rest('fa_customers?y'));\n"
+                "  }\n"
+                "}\n"
+                "if (resource === 'fa_customers' && action === 'read') {\n"
+                "  const session = verifySessionToken(tokenFromRequest(req), licHash, 'fakeapp');\n"
+                "  const c = await fetch(rest('fa_customers?z'));\n"
+                "}\n")
+        report_wrapper_regressed = run(td)
+        check("removing the OUTER wrapper's gate (the real transition) is caught",
+              any(f['branch_resource'] == 'fa_orders' for f in report_wrapper_regressed['results']['api/sd-data.js']['flags']))
+
     print()
-    print('SELFTEST %s (%d/%d)' % ('PASS' if not failures else 'FAIL', 4 - len(failures), 4))
+    print('SELFTEST %s (%d/%d)' % ('PASS' if not failures else 'FAIL', 6 - len(failures), 6))
     return 0 if not failures else 1
 
 
