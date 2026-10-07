@@ -22,11 +22,11 @@ the claim is released at the end of this file.
 
 | commit | what |
 |---|---|
-| `496a90c6` | the **environment stamp** on all 79 register rows, plus 4 arms in `known_red_check.py --fixtures` |
-| `e386b122` | **11 more red-register diagnoses**, each suite run alone |
+| `850a4849` | the **environment stamp** on all 79 register rows, plus 4 arms in `known_red_check.py --fixtures` |
+| `905b1736` | **11 more red-register diagnoses**, each suite run alone |
 | `f2ee7be0` | **convention 19** — the Tier A gate's freshness path asked existence, not reachability |
 | `780004db` | the convention-19 defect registered (the push gate required it) |
-| `64310ea0` | **two Tier A discharges**, four routed back as ABSENT |
+| `c74f5e6f` | **two Tier A discharges**, four routed back as ABSENT |
 | `c6a841cb` | **convention 18**, the arm-ordering fix, the postmortem, the coverage ledger |
 | *(this one)* | SHA re-seat + this handoff |
 
@@ -36,12 +36,12 @@ the claim is released at the end of this file.
 
 | # | item | state | evidence |
 |---|---|---|---|
-| 1 | Tier A: discharge most overdue; note the absent ones | **DONE** | `64310ea0`. **2 discharged** via `--discharge`, exit 0 each; **4 routed back as ABSENT** with merge-base proof, none reclassified. `docs/tier-a-reviews.json` was **FREE** — no active claim declared it |
+| 1 | Tier A: discharge most overdue; note the absent ones | **DONE** | `c74f5e6f`. **2 discharged** via `--discharge`, exit 0 each; **4 routed back as ABSENT** with merge-base proof, none reclassified. `docs/tier-a-reviews.json` was **FREE** — no active claim declared it |
 | 2 | print the constraints SQL verbatim | **DONE** | top of the report |
-| 3 | re-seat verification redo by merge-base | **DONE** | `496a90c6` message + `<scratchpad>/reseat_redo.out`. 12 SHAs over 7 docs: 7 ON-REF, **3 ORPHANED**, 2 ABSENT. The 3 orphaned are exactly the ones an existence test answers OK for |
+| 3 | re-seat verification redo by merge-base | **DONE** | `850a4849` message + `<scratchpad>/reseat_redo.out`. 12 SHAs over 7 docs: 7 ON-REF, **3 ORPHANED**, 2 ABSENT. The 3 orphaned are exactly the ones an existence test answers OK for |
 | 4 | core.bare evidence attached to cody's finding; no hunt, no patch | **DONE** | `docs/2026-10-07-fourth-routed.md` item 6. `tools/run_all_tests.py` **untouched** — cody's live claim |
-| 5 | environment stamp, backfill where provable, X of 79 | **DONE — 70 of 79** | `496a90c6`. 13 all four keys, 57 where/pinned/tool with `sha` unknown, **9 wholly unknown and never guessed** |
-| 6 | ≥10 more empty-`why` diagnoses | **DONE — 11**, 42 → **31** of 79 | `e386b122`. Each run alone, own exit code, failing arm read |
+| 5 | environment stamp, backfill where provable, X of 79 | **DONE — 70 of 79** | `850a4849`. 13 all four keys, 57 where/pinned/tool with `sha` unknown, **9 wholly unknown and never guessed** |
+| 6 | ≥10 more empty-`why` diagnoses | **DONE — 11**, 42 → **31** of 79 | `905b1736`. Each run alone, own exit code, failing arm read |
 | 7 | convention 18: artifact per suite, then fix what verifies | **DONE — 8 artifacts, 1 fixed** | `c6a841cb` + routed doc item 9. The one fixed was the only **gate**; 3 stay **NOT CLEARED** by name |
 | 8 | the 7 "WinError 123" rows → could-not-run | **PARTIAL, and the premise does not hold** | **There is no WinError 123 row inside the 83.** That was ONE row in the 08:41 **un-pinned** run, corrected in batch 11. Of the 7 precondition-stop rows I shortlisted, **5 are could-not-runs and 2 are not**, each re-verified alone. So **83 = 78 FAIL + 5 COULD-NOT-RUN as far as individually verified** — a floor, not a census |
 | 9 | constraints merge | **BLOCKED on Michael.** Nothing done, nothing guessed | — |
@@ -178,7 +178,7 @@ purpose). The same inflation applies to the 62 ABSENT reported from
 orphaned token found was a genuine 40-char SHA. Do not quote my ABSENT totals.
 
 **2. Six citations were ORPHANED at the end of this batch and I re-seated two.**
-`e50e9d5c` → `9e380383` and `afd29524` → `f2ee7be0`, each replacement verified
+`9e380383` → `9e380383` and `f2ee7be0` → `f2ee7be0`, each replacement verified
 `ON-REF` by `merge-base --is-ancestor` before the swap. The other four —
 `100b82fc`, `7c911e5c`, `6984634e`, `53cc408e` — are **deliberately left
 orphaned**: the first three are the subject of the postmortem and naming the
@@ -216,3 +216,4 @@ The **batch-11** scratchpad, which this batch's items 3 and 4 continue from:
 | **3(b)** merge the hooks into settings | **NOT DONE** | cody's live batch21 claim declares `.claude/settings.json` and says **SOLE TOUCHER**, and that permissions merge **has not landed**: `~/.claude/settings.json` carries only a `PreCompact` hook, and no commit has touched `.claude/settings.json` since 2026-10-05 | the item's own instruction says to stop in exactly that case. Re-check once cody's batch21 lands |
 | **1** Tier A discharges | **DONE — 4** | the four `verdict` fields in `docs/tier-a-reviews.json`; three by `--takeover` with the handover recorded | 4 ABSENT remain, owed back as SEQ 13-A. Next readable one is whatever the gate lists after hank and cody close those |
 | **2** print the SQL | **DONE** | top of the report; the merge stays **BLOCKED on Michael** and nothing was done on it | wait for Michael's SQL result |
+| **4** SHA extractor | **DONE** | fixed in `<scratchpad>/reseat_redo.py`, 12 selftest arms, 3 byte-identical runs; figures in `docs/2026-10-07-fourth-coverage-ledger.md` §4 | route the four rejection rules to cc for `tools/doc_sha_reseat.py`, the durable reader |

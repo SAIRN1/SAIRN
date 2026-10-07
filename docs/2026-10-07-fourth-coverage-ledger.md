@@ -108,3 +108,62 @@ clone or in a linked worktree. Until `tools/run_all_tests.py` carries cody's
 isolation fix, **no whole-tree or `--pinned` figure belongs in a coverage
 ledger**, which is why neither is here and why every suite this batch was run
 individually.
+
+---
+
+## 4. THE SHA EXTRACTOR — the old sweep was wrong in BOTH directions, not just one
+
+**Corrected 2026-10-07.** The dispatch premise was that my 8-hex sweeps
+**over-report ABSENT**. They did. They also **under-reported ORPHANED**, which
+is the half nobody had noticed and the half that matters.
+
+| | old extractor | fixed extractor |
+|---|---|---|
+| pattern | `\b[0-9a-f]{8}\b` — exactly 8, counted as a sha | hex RUN, length 8–40 measured against the whole run, with four rejection rules |
+| distinct tokens | 87 | **111** |
+| ON-REF | 66 | **73** |
+| **ORPHANED** | 6 | **17** |
+| ABSENT | 15 | 21 |
+| rejected as not-a-sha | 0 | **10**, by reason |
+
+**Why ABSENT rose rather than fell, and it is not a regression.** Ten
+false positives were rejected — but the old `{8}` pattern also *missed* every
+12- and 40-character form, so the fixed run sees many more real shas in all
+three states. Netted out: **10 non-shas removed from ABSENT, and 11 genuine
+orphans found that the old pattern was structurally blind to.** The old sweep
+was not merely noisy; it was quiet about the state that needs action.
+
+**The ten rejected, by reason, printed by the tool itself:**
+
+    all digits -- a number, not a hex id   8   000000000000 1234567890123 40318627
+                                               4111111111111111 50000000000001 55889165
+    date shape YYYYMMDD                    2   20260318 20260825
+
+**The rules, each with its own selftest arm:** minimum length 8; all-digit
+strings rejected; `YYYYMMDD` date shapes rejected by name even though rule 2
+subsumes them, so the arm can say *why*; full 8-4-4-4-12 UUIDs masked out of the
+text **before** matching, so a scratchpad session id contributes nothing rather
+than contributing its first block; and length measured against the whole hex
+**run**, because `\b` does not separate `4111111111111111`.
+
+**12 selftest arms: 8 false-positive shapes, 4 paired positives, 1 anti-vacuity
+arm.** The paired positives (an 8-char prefix, a 40-char sha, a 12-char prefix,
+an uppercase prefix) exist because *reject everything* is the easy wrong fix
+here, and the anti-vacuity arm proves a **bare** 8-char hex token is still kept
+— so the UUID arms are not passing because the length rule rejected them.
+
+**Three identical runs:** `PROGRAM_EXIT=0` each, and all three outputs
+**byte-identical**. First run clean.
+
+**WHAT IT STILL CANNOT DO, stated rather than discovered later.** It cannot tell
+an 8-char mixed-hex token that is *not* a sha — an md5 prefix, a colour code
+without `#` — from one that is. Two such tokens remain in the ABSENT column:
+`4975e2e9` and `c430231c`, which are **scratchpad session UUIDs quoted as bare
+8-char tokens** in the batch-12 caveat paragraph that named them as false
+positives. The UUID mask catches them in a path; it cannot catch them in prose.
+**The report naming three states is the fix, not a cleverer regex.**
+
+**Where the durable version belongs:** this is my scratchpad sweep, which is the
+tool that produced the wrong figures and therefore the tool the dispatch asked
+me to fix. The platform's durable sha reader is `tools/doc_sha_reseat.py`, which
+is **cc's**, so the rules above are routed rather than copied in.
