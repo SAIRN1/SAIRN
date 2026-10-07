@@ -24288,7 +24288,7 @@
       "recurrence_open": "NO TEST ASSERTS THAT A SPECIFIC SEED ROW STILL CARRIES ITS trigger_document. The engine test covers behaviour GIVEN the field; a row quietly losing it stays green. 77236c2a touched 45 rows across many jurisdictions and only the 4 with generators can be checked this way at all -- the other jurisdictions' seeds have no generator and therefore no --check, so for them this class of drift is undetectable by construction. gen_mn_seed.py was measured at --check 0 and is clean today, which is three of four, not all four."
     },
     {
-      "commit": "538451398bf0",
+      "commit": "f3267f477224",
       "date": "2026-10-07",
       "subject": "fix(ablation): a TIMED-OUT suite counted as proof a guard was LOAD-BEARING -- 124 is an exit code and a could-not-run is not",
       "files": [
@@ -24336,7 +24336,7 @@
       "recurrence_open": "OPEN as a CLASS. This is the mirror of PR 1.11 -- a could-not-run laundered into a FINDING rather than into a pass -- and no standing rule names that direction, so nothing stops the next tool spelling a timeout as 124. A sweep for integer timeout sentinels across tools/ is not done and is not claimed."
     },
     {
-      "commit": "543ffb8f5d02",
+      "commit": "0dcb2dafb001",
       "date": "2026-10-07",
       "subject": "fix(harness): --pinned builds a throwaway CLONE, not a linked worktree -- so the config write that broke this clone cannot reach it, measured byte for byte",
       "files": [
