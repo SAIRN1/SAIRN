@@ -92,10 +92,20 @@ process.env.SUPABASE_SERVICE_ROLE_KEY=process.env.SUPABASE_SERVICE_ROLE_KEY||'k'
 process.env.SD_AUTH_SECRET=process.env.SD_AUTH_SECRET||'test-secret-do-not-use-in-prod';
 const auth=require(path.join(ROOT,'api/_lib/auth.js'));
 const RBA=auth.ROLES_BY_APP||{};
+// Returns {v} on success, {err} when a declaration IS PRESENT and could not be
+// evaluated, and null only when there is no declaration at all. Those are three
+// states and the middle one used to be folded into the last: `roleSet` arrived
+// in api/_lib/auth.js on 2026-09-28, every internal declaration became
+// `roleSet({...})`, the sandbox had no roleSet, the throw returned null, and
+// four apps that DO declare MANAGEMENT_ROLES were reported as having no such
+// concept. The model silently shrank from 10 apps to 6 and nothing said so.
+// THE SANDBOX IS GIVEN THE REAL roleSet, not a shim: this file's whole premise
+// is that executing beats parsing, and a shim is a parse with extra steps.
 function internal(src,name){
   const m=new RegExp('^const '+name+' = (.+?);\\s*$','m').exec(src);
   if(!m) return null;
-  try{ return vm.runInNewContext('('+m[1]+')'); }catch(e){ return null; }
+  try{ return {v:vm.runInNewContext('('+m[1]+')',{roleSet:auth.roleSet})}; }
+  catch(e){ return {err:String(e && e.message || e).slice(0,200), text:m[1].slice(0,120)}; }
 }
 const out={};
 for(const f of fs.readdirSync(path.join(ROOT,'api')).filter(f=>/^[a-z-]+-auth\.js$/.test(f))){
@@ -103,8 +113,13 @@ for(const f of fs.readdirSync(path.join(ROOT,'api')).filter(f=>/^[a-z-]+-auth\.j
   const src=fs.readFileSync(path.join(ROOT,'api',f),'utf8');
   const app=(src.match(/^const APP = '([a-z]+)'/m)||[])[1];
   if(!app) continue;
-  const pick=(exp,name)=>exp?{v:exp,from:'exported'}
-    :(()=>{const i=internal(src,name);return i?{v:i,from:'internal'}:{v:null,from:'absent'};})();
+  const pick=(exp,name)=>{
+    if(exp) return {v:exp,from:'exported'};
+    const i=internal(src,name);
+    if(i===null) return {v:null,from:'absent'};
+    if(i.err) return {v:null,from:'unevaluable',err:i.err,text:i.text};
+    return {v:i.v,from:'internal'};
+  };
   out[app]={
     provisioning:pick(m.PROVISIONING_ROLES,'PROVISIONING_ROLES'),
     management:pick(m.MANAGEMENT_ROLES,'MANAGEMENT_ROLES'),
@@ -152,6 +167,25 @@ def read_sets():
     if p.returncode != 0 or not p.stdout.strip():
         raise RuntimeError((p.stderr or 'node produced nothing').strip()[:300])
     return json.loads(p.stdout)
+
+
+def unevaluable(raw, ablate=None):
+    """Every (app, set, error, source) the reader FOUND and could not evaluate.
+
+    Separate from main so the selftest can drive it on hand-built input: the
+    real regression this guards is unreproducible once it is fixed, because
+    `roleSet` now resolves.
+    """
+    if ablate is None:
+        ablate = os.environ.get(ABLATE_PROV_ENV) == '1'
+    if ablate:
+        return []        # the pre-fix fold: found-and-unevaluable == absent
+    bad = []
+    for a in sorted(raw):
+        for k, s in sorted(raw[a].items()):
+            if isinstance(s, dict) and s.get('from') == 'unevaluable':
+                bad.append((a, k, s.get('err', ''), s.get('text', '')))
+    return bad
 
 
 def build(raw):
@@ -267,6 +301,12 @@ KNOWN_FLAGS = ('--check', '--selftest', '--help', '-h')
 # arms below can be seen to FAIL; an arm never observed failing is not an arm.
 ABLATE_ENV = 'SAIRN_ROLE_GATE_ABLATE_ARGV_GUARD'
 
+# The second knob, for the OTHER layer: set to '1' it restores the pre-fix fold
+# in which a declaration that was found and could not be evaluated was reported
+# as an absent concept. One knob per layer, deliberately -- a single switch that
+# removes two layers at once measures neither.
+ABLATE_PROV_ENV = 'SAIRN_ROLE_GATE_ABLATE_PROV_GUARD'
+
 
 def classify_argv(argv, ablate=None):
     """-> ('check'|'write'|'help'|'selftest',) or ('unknown', the argument).
@@ -329,6 +369,22 @@ def selftest(ablate=None):
                  (rc, wrote), (2, [])))
     inner_first = (inner.getvalue().splitlines() or [''])[0]
 
+    # Hand-built, per cross-domain-disciplines item 1: the criteria are locked
+    # against fixtures, not against today's api/ directory, so the arm keeps
+    # testing after `roleSet` is forgotten about.
+    fx_bad = {'anapp': {'management': {'v': None, 'from': 'unevaluable',
+                                       'err': 'roleSet is not defined',
+                                       'text': 'roleSet({ owner: true })'}}}
+    fx_absent = {'anapp': {'management': {'v': None, 'from': 'absent'}}}
+    fx_ok = {'anapp': {'management': {'v': ['owner'], 'from': 'internal'}}}
+    arms.append(('a found-but-unevaluable declaration is reported',
+                 [(a, k) for a, k, _, _ in unevaluable(fx_bad)],
+                 [('anapp', 'management')]))
+    arms.append(('a genuinely absent concept is NOT reported as unevaluable',
+                 unevaluable(fx_absent), []))
+    arms.append(('an evaluated set is NOT reported as unevaluable',
+                 unevaluable(fx_ok), []))
+
     for name, got, want in arms:
         ok = got == want
         lines.append('  %-4s %s' % ('PASS' if ok else 'FAIL', name))
@@ -356,12 +412,16 @@ def main(argv, spec=None, _in_selftest=False, _ablate=None):
             print('COULD NOT RUN -- --selftest cannot call itself.')
             return 2
         passed, failed, lines = selftest(_ablate)
-        print('arg guard selftest: %d/%d arm(s) pass' % (passed, passed + failed))
+        print('selftest: %d/%d arm(s) pass (arg guard 1-6, provenance 7-9)'
+              % (passed, passed + failed))
         for ln in lines:
             print(ln)
         if _ablate or os.environ.get(ABLATE_ENV) == '1':
             print('ABLATED (%s=1): the pre-2026-10-07 fall-through is restored, '
                   'so arms 1, 5 and 6 are EXPECTED to fail.' % ABLATE_ENV)
+        if os.environ.get(ABLATE_PROV_ENV) == '1':
+            print('ABLATED (%s=1): found-but-unevaluable folds back into absent, '
+                  'so arm 7 is EXPECTED to fail.' % ABLATE_PROV_ENV)
         return 1 if failed else 0
 
     try:
@@ -369,6 +429,22 @@ def main(argv, spec=None, _in_selftest=False, _ablate=None):
     except Exception as e:
         print('COULD NOT RUN -- the auth modules could not be read: %s' % e)
         return 2
+
+    # A DECLARATION THAT WAS FOUND AND COULD NOT BE EVALUATED IS NOT AN ABSENT
+    # CONCEPT, and folding the two together is how this generator lost four
+    # apps in silence. Refuse the whole run: a model built from the remainder
+    # would model-check clean about a platform that is four apps bigger.
+    bad = unevaluable(raw)
+    if bad:
+        print('COULD NOT RUN -- %d declaration(s) were found and could not be '
+              'evaluated. Not reported as absent, and nothing written:' % len(bad))
+        for a, k, err, text in bad:
+            print('  %-14s %-14s %s' % (a, k, err))
+            print('  %-14s %-14s source: %s' % ('', '', text))
+        print('Give the reader whatever the declaration calls (see the roleSet '
+              'note in READER) rather than letting the throw become an absence.')
+        return 2
+
     apps, excluded, roles, vals, ids = build(raw)
     if not apps:
         print('COULD NOT RUN -- no app yielded a complete set. An empty '
