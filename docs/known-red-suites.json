@@ -274,7 +274,7 @@
     "where": "live-clone",
     "pinned": false,
     "tool": "the suite itself, invoked directly",
-    "sha": "4d4b0da5",
+    "sha": "51088830",
     "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, git status captured before and after each run and unchanged throughout, node --check api/sd-data.js clean afterwards; exit code read from the program's own output"
    },
    "exit_code": 1,
@@ -327,7 +327,7 @@
     "where": "live-clone",
     "pinned": false,
     "tool": "the suite itself, invoked directly",
-    "sha": "4d4b0da5",
+    "sha": "51088830",
     "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, git status captured before and after each run and unchanged throughout, node --check api/sd-data.js clean afterwards; exit code read from the program's own output"
    },
    "exit_code": 1,
@@ -1133,7 +1133,7 @@
     "where": "live-clone",
     "pinned": false,
     "tool": "the suite itself, invoked directly",
-    "sha": "4d4b0da5",
+    "sha": "51088830",
     "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, git status captured before and after each run and unchanged throughout, node --check api/sd-data.js clean afterwards; exit code read from the program's own output"
    },
    "exit_code": 1,
@@ -1190,7 +1190,7 @@
     "where": "live-clone",
     "pinned": false,
     "tool": "the suite itself, invoked directly",
-    "sha": "4d4b0da5",
+    "sha": "51088830",
     "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, git status captured before and after each run and unchanged throughout, node --check api/sd-data.js clean afterwards; exit code read from the program's own output"
    },
    "exit_code": 1,
@@ -1226,7 +1226,7 @@
     "where": "live-clone",
     "pinned": false,
     "tool": "the suite itself, invoked directly",
-    "sha": "4d4b0da5",
+    "sha": "51088830",
     "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, git status captured before and after each run and unchanged throughout, node --check api/sd-data.js clean afterwards; exit code read from the program's own output"
    },
    "exit_code": 1,
@@ -1264,7 +1264,7 @@
     "where": "live-clone",
     "pinned": false,
     "tool": "the suite itself, invoked directly",
-    "sha": "4d4b0da5",
+    "sha": "51088830",
     "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, git status captured before and after each run and unchanged throughout, node --check api/sd-data.js clean afterwards; exit code read from the program's own output"
    },
    "exit_code": 1,
@@ -1376,7 +1376,7 @@
     "where": "live-clone",
     "pinned": false,
     "tool": "the suite itself, invoked directly",
-    "sha": "4d4b0da5",
+    "sha": "51088830",
     "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, git status captured before and after each run and unchanged throughout, node --check api/sd-data.js clean afterwards; exit code read from the program's own output"
    },
    "exit_code": 1,
@@ -1395,7 +1395,7 @@
     "where": "live-clone",
     "pinned": false,
     "tool": "the suite itself, invoked directly",
-    "sha": "4d4b0da5",
+    "sha": "51088830",
     "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, git status captured before and after each run and unchanged throughout, node --check api/sd-data.js clean afterwards; exit code read from the program's own output"
    },
    "exit_code": 1,
@@ -1414,7 +1414,7 @@
     "where": "live-clone",
     "pinned": false,
     "tool": "the suite itself, invoked directly",
-    "sha": "4d4b0da5",
+    "sha": "51088830",
     "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, git status captured before and after each run and unchanged throughout, node --check api/sd-data.js clean afterwards; exit code read from the program's own output"
    },
    "exit_code": 1,

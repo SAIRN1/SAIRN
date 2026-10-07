@@ -239,3 +239,4 @@ The **batch-11** scratchpad, which this batch's items 3 and 4 continue from:
 | **7** two corrected measurements | **DONE** | handoff-c item 7, for chat to route | I edited neither hank's nor cc's files and closed neither finding |
 | **8** convention 22 | **DONE** | `docs/2026-09-13-cross-domain-disciplines.md` §22 + a METHODOLOGY promotion row | cause-tagged `measurement/window/unbounded-view-presented-as-the-whole` |
 | **9** cody's routing path | **DONE** | METHODOLOGY *"Routed here — RE-DERIVED"* section | cc's three are now READABLE and resolved; cody's ITEM 15 has **no `## ITEM 15` section** — a table row naming a section that was never written |
+| **10** final handoff + release | **DONE** | the FINAL STATE section of `docs/handoff-fourth-2026-10-07c.md` | claim `fourth` released; `git config core.bare` printed in the report |

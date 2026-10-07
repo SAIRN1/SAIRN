@@ -228,3 +228,101 @@ at cc's own record SHA the pin **was** 17, and `1b453253` covered one more gate
 
 **This is the third instance behind convention 22** and the one that makes it
 general: a bounded view presented as the whole, with no tool involved.
+
+---
+
+# FINAL STATE — batch 14 closed, 2026-10-07
+
+**Updated at the end, as item 10 requires. Nothing is half-finished.**
+
+| | |
+|---|---|
+| branch | `main` |
+| HEAD | **`5090df1e`** |
+| pushed | **yes** — last push `a86d1ad1..5090df1e`, then this commit. `ahead 0 / behind 0` |
+| working tree | clean except the pre-existing untracked `sql/restore_demo_pins_2026-09-29.sql` and `docs/scrutiny-flags.json`, rewritten by **cc's** hook on every commit |
+| **`git config core.bare`** | **empty — unset**, re-checked at the end |
+| long-running jobs | **none.** No whole-tree run, no `--pinned` run; every suite individually |
+| probes | `git status` captured **before and after every probe**, unchanged throughout; `node --check api/sd-data.js` clean after the seam probes |
+| claim `fourth` | **RELEASED** |
+
+## FINAL FIGURES, each re-derived at this HEAD
+
+| | |
+|---|---|
+| register rows | 79 · **empty `why` 10** (was 19) |
+| the 83, individually verified | **40 of 83** (was 31) |
+| convention-18 suites fixed | **4 of 8** (was 2) |
+| Tier A eligible to me | **4**, of which **2 are now REVIEWABLE** because of this batch's reseat |
+| full-corpus sha sweep | 1,101 documents · **79 ORPHANED** · 13,807 ABSENT, which is noise and must not be quoted |
+| conventions in the standing file | **22** — count the `## <n>.` headings; do not trust this number |
+
+## FOUR CITATIONS OF MINE ORPHANED AGAIN, AND THE PATTERN IS NOW FIVE BATCHES OLD
+
+`4d4b0da5`, `e787a6d9`, `d90463bd` and `161cb714` — four of this batch's own
+commits — were orphaned by the two rebases needed to land the final push, and
+are re-seated above by **commit subject**, each replacement verified `ON-REF`
+with `merge-base --is-ancestor` **before** the swap.
+
+**This has now happened in every batch since 11.** The durable fix is not a
+better re-seat and not a faster one: **cite a commit by SUBJECT in a dated
+document, or cite the SHA only after the final push.** Routed to cc for
+`tools/doc_sha_reseat.py`, the platform's durable sha reader, and it is the one
+item on this list that would stop recurring rather than be handled again.
+
+## WHAT IS OPEN, AND WHY
+
+| open | why |
+|---|---|
+| **10 empty-`why` register rows** | **three single arms would clear six of them.** Start with `tests/phi_cache_scoped_to_user.js` arm `5a` — it is a PHI cache purge on SAIRNsenior and it blocks three rows |
+| **two Tier A records are now REVIEWABLE** | hank 54h and cody 50h, readable only because of this batch's reseat. **The cheapest high-value work available** |
+| **one Tier A needs a containment decision** | cody `2026-09-28T03:34:57Z` — `--write-weak-basis`, a judgement for cody |
+| **one Tier A can only be reseated elsewhere** | hank `2026-09-27T03:42:29Z`, `[NO_OBJECT_IN_CLONE]` — from hank's own clone |
+| **4 of 8 convention-18 suites** | each with an artifact; two NOT CLEARED named individually |
+| **43 of the 83 unverified** | the pinned run is not a census — two probes in it gave opposite verdicts on the same SHA depending only on the environment |
+| **the settings merge** | **BLOCKED.** cody's claim is released but the merge has not landed; only `PreCompact` in `~/.claude/settings.json`, no commit since 2026-10-05 |
+| **cody's ITEM 15** | **NOT RECEIVED**, and the reason is exact: the routing table names `ITEM 15` and the document has **no such section** |
+| **cc's three conventions** | **RESOLVED — readable now**, in `docs/2026-10-06-cc-batch-9-inventory.md`. Adoption is chat's call; not self-promoted |
+| **the two corrected measurements** | in item 7 of this file **for chat to route**. I edited neither hank's nor cc's files and closed neither finding |
+| **`QUOTABLE` does not name `cloud`** | one entry; the better fix is to derive it from the session registry |
+| **`35` pinned in two suites, `33`/`81` in one arm** | convention 14 — assert floors with n of N |
+
+## EXACT NEXT STEP, PER OPEN ITEM
+
+1. **`tests/phi_cache_scoped_to_user.js` arm `5a`** — one arm, three rows, and
+   its subject is a PHI purge. First.
+2. **Discharge the two now-readable Tier A records** — hank
+   `2026-10-05T09:03:14Z` and cody `2026-10-05T13:23:46Z`. **Ignore
+   `opened_at_sha`**; four of four were not the subject in batch 13, and the
+   reseat path independently flagged one of mine as `[SHA_WRONG_WHEN_WRITTEN]`.
+3. **Register, 10 left** — one suite at a time, exit code from its own output,
+   environment stamped, `git status` before and after.
+4. **The remaining 4 convention-18 suites** — and **ablate every repaired arm**
+   (convention 20), **in place and restored byte-identically**, because a copy
+   does not work on a tool that locates itself (convention 22).
+5. **The settings merge** — re-check when cody's permissions merge lands. The
+   schema reference and the seven event names are in the mid-batch section.
+6. **cody's ITEM 15** — ask for a paste-ready block per convention, or take the
+   row out of the queue. The shape that works is cody's own 2026-10-07 §3.
+7. **The sha-citation recurrence** — cite by subject, or cite after the final
+   push. Routed to cc.
+
+## CLAIMS AT CLOSE
+
+**`fourth` is RELEASED.** Only `cc` and `hover2` were active throughout, and
+**neither declared any file in my set** — re-derived from `sairn_claim.py list`
+at `10521191`, not assumed. **`.claude/settings.json` was never touched.**
+
+Two claim checks reported `BLOCKED` on a **subject word** rather than a file
+earlier in this sequence; this batch's item-9 check came back **CLEAR**, with
+only my own claim overlapping.
+
+## THIS SESSION'S TRANSCRIPT
+
+    C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\4975e2e9-8002-4f73-9d9d-240c42c3b643\scratchpad
+
+In item order: `sweep_full.py` + `sw14_1.out`–`sw14_3.out` (item 1);
+`reseat_dry.out` + `reseat_write.out` (item 2); `r3_*.out`, `phi.out`, `sfb.out`
+(item 3); `i4_abl.out` / `i4_abl2.out` / `i4_abl3.out` (item 4 — **two attempts
+that could not run and the one that did**); `census14.out` (item 5);
+`ck9.out` (item 9's claims-check); `final14.py` (this re-seat).

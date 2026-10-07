@@ -601,7 +601,7 @@ claimed; cody and cc close it.**
 
 ## SEQ 14-B — ITEM 3: nine more diagnoses, and THREE SINGLE ARMS BLOCK SIX ROWS
 
-**Empty `why` 19 → 10 of 79.** Each suite run alone at `4d4b0da5`, exit code
+**Empty `why` 19 → 10 of 79.** Each suite run alone at `51088830`, exit code
 from its own output, `git status` captured before and after each run and
 unchanged throughout, and `node --check api/sd-data.js` clean afterwards because
 three of them are seam probes that plant and restore.
