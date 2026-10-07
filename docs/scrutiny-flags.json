@@ -654,6 +654,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_tier_a_open_basis_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "count is printed, never silently dropped -- an exemption nobody"
+    }
+   ],
+   "sha": "da476ea4b8a41e0a5d7343f6c73b3edece570a6f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/push_gate/graduated_exempt_consume_probe.py",
    "class": "test file",
    "level": "WEAKENING",
