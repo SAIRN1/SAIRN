@@ -1,21 +1,30 @@
 #!/usr/bin/env python
-"""hover_cross_resource_gate_check.py -- does a resource's own handler
+"""hover_session_gate_parity_check.py -- does a resource's own handler
 branch reach a DIFFERENT resource's table through a side door that skips
-the gate the other resource's own branch requires.
+the SESSION gate the other resource's own branch requires.
 
-H1 batch S item 2, REBUILT. This exact tool was cited across 11 chain-log
-entries (seq975 through seq1111, 2026-10-06 and 2026-10-07) as this role's
-own committed tool -- and batch R item 6 found it had never actually been
-committed to this repository, on any branch, ever. This is a from-scratch
-rebuild from the METHOD those entries described, not a restored copy (no
-prior source was recoverable) -- committed immediately once it first
-passes, unlike whatever happened the first time.
+RENAMED FROM hover_cross_resource_gate_check.py, H1 batch S item 3.
+Batch R item 6 concluded that name was never committed to this repo and
+logged a HIGH-severity finding to that effect (seq1125) -- WRONG, found
+and corrected the same batch: the file exists and has existed since
+2026-10-06, just in this role's own EXTERNAL working directory
+(`C:\\Users\\marsh\\.claude\\projects\\...\\hover-audit-log\\`, alongside
+the chain log itself), which batch R's search never checked. That
+original tool asks a DIFFERENT question -- ROLE-check parity (does
+`session.role` get consulted) grouped by TABLE across every resource that
+touches it. THIS file (built before the discovery, under the name the
+missing-tool search was looking for) asks a narrower, different question
+-- SESSION-presence parity (does `verifySessionToken(` get called at
+all) for one resource cross-reading another's table. Both are real and
+complementary; keeping them under the same name after the original turned
+up would have made two different checks answer to one name, so this one
+was renamed rather than deleted or left colliding.
 
-INDEPENDENT OF tools/gate_parity_check.py BY DESIGN, same constraint
-seq975 stated for the original: not imported, not called, not read before
-this tool's own logic was written. That file is a build agent's tool and
-reading it would blur whether this tool's answer is independently
-derived or copied.
+INDEPENDENT OF tools/gate_parity_check.py BY DESIGN, same constraint the
+rediscovered original states for itself: not imported, not called, not
+read before this tool's own logic was written. That file is a build
+agent's tool and reading it would blur whether this tool's answer is
+independently derived or copied.
 
 METHOD:
   1. Every known resource name, read from api/_resources/*.js (the same
