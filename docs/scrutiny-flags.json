@@ -100,6 +100,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sd_data_write_attribution_three_apps.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "1e7e2e8029a9376c696d7e18e278f4679c97f60d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_tier_a_review_gate_probe.py",
    "class": "test file",
    "level": "CHANGE",

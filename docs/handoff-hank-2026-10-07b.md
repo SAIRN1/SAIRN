@@ -133,3 +133,32 @@ was 12. Item 2's "3-way hold" was one session by the time I checked. Item 4's
 ten dispatch premises had moved or were wrong, and every one of them was
 checkable in under five minutes.**
 - **item 8 — PARTIAL (in flight)** · 315 scripts under `tools/` (305 `.py` + 10 `.js`), launched in a SECOND throwaway worktree at `7406ab27` — never the live clone, because `tools/bare_run_writers.py` exists precisely because a bare run of some of them WRITES. 90s timeout each, three outcomes recorded not two (green / red / COULD-NOT-RUN), results to `scratchpad/tools_sweep.tsv`. **Still running; X of Y not yet known.** A monitor is armed. **Next step:** read `scratchpad/tools_sweep.out` for the X-of-Y and the named red/could-not-run lists.
+
+---
+
+## LANDED SHAs — pushed at `1e7e2e80`, ahead 0 / behind 0
+
+Re-derived with `git log --grep` against `origin/main` AFTER the push, never
+copied from a commit message. Three rebases moved them during this batch.
+
+| item | landed commit |
+|---|---|
+| 4 — eight write paths stamp the actor | `56bbce5e` |
+| 5 — the 390-vs-391 and the guard | `a003bf63` |
+| 1, 7, 9 — migration SQL, RULE D, the HIGH defect | `bf051ae8` |
+| 10 — handoff and checkpoint log | `042b115a` |
+| register, two records | `a00cb949` |
+| Tier A obligation for the four uncovered resources | `781fe3b4` |
+
+**The defect register re-seated itself** through `.githooks/post-rewrite`:
+`2d105736` → `56bbce5e` and `7be24c1a` → `a003bf63`. **The commit messages
+cannot be re-seated** and some quote intermediate SHAs in their prose — re-derive
+by `--grep`.
+
+## ITEM 10 — THERE IS NO CLAIM TO RELEASE
+
+**My batch-12 claim was never granted.** `sairn_claim.py claim` refused three
+times, never on a file, and I did not reword a third time. `sairn_claim.py list`
+shows no `hank` row. Nothing is held and nothing is left open for another
+session to trip over — which is also why this handoff carries the measured
+disjointness proof rather than a claim id.

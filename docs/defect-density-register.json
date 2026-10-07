@@ -24026,7 +24026,7 @@
       "recurrence_open": "The tool still cannot see an override read through a helper rather than process.env directly, cannot tell whether a present override reaches the read, and does not judge the 16 CROSS_APP suites at all. Those three are named limits, not findings. And the 155 findings are now a backlog nobody owns: the fix per finding is a judgement (add the override, or say in the header that the suite is pinned), and none of the 155 has been made."
     },
     {
-      "commit": "2d1057361892",
+      "commit": "56bbce5e83d5",
       "date": "2026-10-07",
       "subject": "fix(attribution): eight write paths across three apps now record WHO wrote the row -- and my own read found 15 of 49, not the 10 routed",
       "files": [
@@ -24225,7 +24225,7 @@
       "recurrence_open": "NO ROLE GATE WAS ADDED AND THAT IS DELIBERATE: which of owner, superintendent, manager, crew, office may write a BOQ rate or an invoice is a product decision this batch was told not to make unilaterally, so crew can still write an invoice once signed in. Logged open. The msb_* resources in the same dispatch region are a DIFFERENT app with the same licence-key-only shape and are explicitly NOT fixed -- arm D1 proves msb_products still answers without a session, which is a measurement and not an endorsement. And the auditor repro still reports REPRODUCES because it looks for verifySessionToken INSIDE each dispatch block while the gate is in the shared prelude; routed to hover2."
     },
     {
-      "commit": "7be24c1a69d3",
+      "commit": "a003bf63f9b6",
       "date": "2026-10-07",
       "subject": "fix(tiers): the 390-vs-391 is ONE CELL, and the column it hid in is the only one the checker never compared",
       "files": [
