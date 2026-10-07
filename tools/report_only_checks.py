@@ -3824,6 +3824,38 @@ def sweep(show_all=False, quiet=False, shard=None):
         unrun.append('%s -- NOT RUN, NOT IN THIS SHARD (%s). It runs on a '
                      'later push in the rotation. This is an UNKNOWN for THIS '
                      'push, not a clean result.' % (tool, shard))
+
+    # ══ THE POPULATION MUST RECONCILE ═══════════════════════════════════════
+    # THE SYSTEM-LEVEL FIX from the 2026-10-07 postmortem on sharding silently
+    # dropping 58 of 73 entries (docs/2026-10-07-cc-postmortem-shard-drop.md).
+    #
+    # THE LOCAL FIX WAS TO NAME THE OUT-OF-SHARD ENTRIES, and a local fix only
+    # protects against the one way I happened to narrow the population. THIS
+    # protects against every way: every registry entry must end up in EXACTLY
+    # ONE of ran / skipped-at-the-cut / out-of-shard, and if the three do not
+    # add up to the registry, the sweep SAYS SO INSTEAD OF REPORTING.
+    #
+    # It is the scrubber's own rule for a bucketing pattern -- account for 100%
+    # of the input and PRINT the residue -- applied to this sweep's own input.
+    # The defect it would have caught was invisible precisely because nothing
+    # ever printed "15 of 73 consulted".
+    #
+    # IT DOES NOT BLOCK. An accounting failure is a COULD-NOT-RUN added to
+    # `unrun`, which is already how this sweep reports an unknown, and
+    # main() already returns non-zero on a non-empty `unrun`.
+    _accounted = len(timings) + len(skipped) + len(out_of_shard)
+    if _accounted != len(REGISTRY):
+        _named = set(t for _, t in timings) | set(skipped) | set(out_of_shard)
+        _missing = [e['tool'] for e in REGISTRY if e['tool'] not in _named]
+        unrun.append(
+            'POPULATION DOES NOT RECONCILE: the registry holds %d entries and '
+            'this sweep accounted for %d (ran %d, stopped at the cut %d, out '
+            'of shard %d). %d entry(ies) are in NO bucket, so this run cannot '
+            'say whether they were consulted: %s. This is an accounting '
+            'failure in the sweep itself, not a result about the checkers.'
+            % (len(REGISTRY), _accounted, len(timings), len(skipped),
+               len(out_of_shard), len(REGISTRY) - _accounted,
+               ', '.join(_missing[:12]) or '(could not name them)'))
     _marker_write('DONE %s shard=%s entries_run=%d findings=%d unrun=%d '
                   'elapsed=%.1f'
                   % (time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),

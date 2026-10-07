@@ -2,7 +2,7 @@
  "_what_this_is": "Citations in the tracking documents whose commit is NOT AN OBJECT in this clone. Each carries its cause TESTED against every sibling clone on this machine. These are not pending repairs -- there is nothing for a rewrite map to match.",
  "_what_it_does_NOT_claim": "That the work the citation refers to never landed. It almost always did, under a different sha. This records that the POINTER is unresolvable, not that the fix is missing.",
  "_never_written_here": "resolved",
- "measured_at_head": "2378b22a",
+ "measured_at_head": "1b5f4369",
  "criteria_version": "2026-10-06.1",
  "sibling_clones_queried": [
   "C:\\Users\\marsh\\Documents\\SAIRN\\.git",
@@ -14,30 +14,14 @@
   "C:\\Users\\marsh\\Documents\\trading-bot\\.git"
  ],
  "counts": {
-  "absent_total": 113,
-  "permanently_absent": 55,
-  "recoverable_from_a_sibling_clone": 58
+  "absent_total": 100,
+  "permanently_absent": 44,
+  "recoverable_from_a_sibling_clone": 56
  },
  "documents_not_read": [],
  "records": [
   {
    "citation": "27d62e7b",
-   "document": "SAIRN-ACTIVE-WORK-cc.md",
-   "document_class": "REPORT-ONLY",
-   "state": "PERMANENTLY-ABSENT",
-   "recoverable_from": null,
-   "cause": "created and orphaned in a clone that no longer holds the object -- not reachable from origin/main, not an object in this clone, and not an object in any sibling clone on this machine. No rewrite map and no fetch can name it."
-  },
-  {
-   "citation": "60417293",
-   "document": "SAIRN-ACTIVE-WORK-cc.md",
-   "document_class": "REPORT-ONLY",
-   "state": "PERMANENTLY-ABSENT",
-   "recoverable_from": null,
-   "cause": "created and orphaned in a clone that no longer holds the object -- not reachable from origin/main, not an object in this clone, and not an object in any sibling clone on this machine. No rewrite map and no fetch can name it."
-  },
-  {
-   "citation": "84350271",
    "document": "SAIRN-ACTIVE-WORK-cc.md",
    "document_class": "REPORT-ONLY",
    "state": "PERMANENTLY-ABSENT",
@@ -189,22 +173,6 @@
    "cause": "the object is in C:\\Users\\marsh\\Documents\\SAIRN-fourth\\.git and can be fetched from there"
   },
   {
-   "citation": "60417293",
-   "document": "SAIRN-ACTIVE-WORK-fourth.md",
-   "document_class": "REPORT-ONLY",
-   "state": "PERMANENTLY-ABSENT",
-   "recoverable_from": null,
-   "cause": "created and orphaned in a clone that no longer holds the object -- not reachable from origin/main, not an object in this clone, and not an object in any sibling clone on this machine. No rewrite map and no fetch can name it."
-  },
-  {
-   "citation": "84350271",
-   "document": "SAIRN-ACTIVE-WORK-fourth.md",
-   "document_class": "REPORT-ONLY",
-   "state": "PERMANENTLY-ABSENT",
-   "recoverable_from": null,
-   "cause": "created and orphaned in a clone that no longer holds the object -- not reachable from origin/main, not an object in this clone, and not an object in any sibling clone on this machine. No rewrite map and no fetch can name it."
-  },
-  {
    "citation": "8d0fff5c",
    "document": "SAIRN-ACTIVE-WORK-fourth.md",
    "document_class": "REPORT-ONLY",
@@ -215,22 +183,6 @@
   {
    "citation": "defaced",
    "document": "SAIRN-ACTIVE-WORK-fourth.md",
-   "document_class": "REPORT-ONLY",
-   "state": "PERMANENTLY-ABSENT",
-   "recoverable_from": null,
-   "cause": "created and orphaned in a clone that no longer holds the object -- not reachable from origin/main, not an object in this clone, and not an object in any sibling clone on this machine. No rewrite map and no fetch can name it."
-  },
-  {
-   "citation": "06d1ff732ae0",
-   "document": "SAIRN-ACTIVE-WORK-hank.md",
-   "document_class": "REPORT-ONLY",
-   "state": "RECOVERABLE-FROM-CLONE",
-   "recoverable_from": "C:\\Users\\marsh\\Documents\\SAIRN-cody\\.git",
-   "cause": "the object is in C:\\Users\\marsh\\Documents\\SAIRN-cody\\.git and can be fetched from there"
-  },
-  {
-   "citation": "1234abcd",
-   "document": "SAIRN-ACTIVE-WORK-hank.md",
    "document_class": "REPORT-ONLY",
    "state": "PERMANENTLY-ABSENT",
    "recoverable_from": null,
@@ -283,14 +235,6 @@
    "state": "RECOVERABLE-FROM-CLONE",
    "recoverable_from": "C:\\Users\\marsh\\Documents\\SAIRN-hank\\.git",
    "cause": "the object is in C:\\Users\\marsh\\Documents\\SAIRN-hank\\.git and can be fetched from there"
-  },
-  {
-   "citation": "4612173",
-   "document": "SAIRN-ACTIVE-WORK-hank.md",
-   "document_class": "REPORT-ONLY",
-   "state": "PERMANENTLY-ABSENT",
-   "recoverable_from": null,
-   "cause": "created and orphaned in a clone that no longer holds the object -- not reachable from origin/main, not an object in this clone, and not an object in any sibling clone on this machine. No rewrite map and no fetch can name it."
   },
   {
    "citation": "48388a4",
@@ -469,22 +413,6 @@
    "cause": "created and orphaned in a clone that no longer holds the object -- not reachable from origin/main, not an object in this clone, and not an object in any sibling clone on this machine. No rewrite map and no fetch can name it."
   },
   {
-   "citation": "1234abcd",
-   "document": "docs/SAIRN-OPEN-WORK-INDEX.md",
-   "document_class": "REWRITE",
-   "state": "PERMANENTLY-ABSENT",
-   "recoverable_from": null,
-   "cause": "created and orphaned in a clone that no longer holds the object -- not reachable from origin/main, not an object in this clone, and not an object in any sibling clone on this machine. No rewrite map and no fetch can name it."
-  },
-  {
-   "citation": "16b2cc70d2d8",
-   "document": "docs/SAIRN-OPEN-WORK-INDEX.md",
-   "document_class": "REWRITE",
-   "state": "PERMANENTLY-ABSENT",
-   "recoverable_from": null,
-   "cause": "created and orphaned in a clone that no longer holds the object -- not reachable from origin/main, not an object in this clone, and not an object in any sibling clone on this machine. No rewrite map and no fetch can name it."
-  },
-  {
    "citation": "1ef35a62",
    "document": "docs/SAIRN-OPEN-WORK-INDEX.md",
    "document_class": "REWRITE",
@@ -509,28 +437,12 @@
    "cause": "the object is in C:\\Users\\marsh\\Documents\\SAIRN-hank\\.git and can be fetched from there"
   },
   {
-   "citation": "35355044141",
-   "document": "docs/SAIRN-OPEN-WORK-INDEX.md",
-   "document_class": "REWRITE",
-   "state": "PERMANENTLY-ABSENT",
-   "recoverable_from": null,
-   "cause": "created and orphaned in a clone that no longer holds the object -- not reachable from origin/main, not an object in this clone, and not an object in any sibling clone on this machine. No rewrite map and no fetch can name it."
-  },
-  {
    "citation": "37dd111a",
    "document": "docs/SAIRN-OPEN-WORK-INDEX.md",
    "document_class": "REWRITE",
    "state": "RECOVERABLE-FROM-CLONE",
    "recoverable_from": "C:\\Users\\marsh\\Documents\\SAIRN-cody\\.git",
    "cause": "the object is in C:\\Users\\marsh\\Documents\\SAIRN-cody\\.git and can be fetched from there"
-  },
-  {
-   "citation": "38471260",
-   "document": "docs/SAIRN-OPEN-WORK-INDEX.md",
-   "document_class": "REWRITE",
-   "state": "PERMANENTLY-ABSENT",
-   "recoverable_from": null,
-   "cause": "created and orphaned in a clone that no longer holds the object -- not reachable from origin/main, not an object in this clone, and not an object in any sibling clone on this machine. No rewrite map and no fetch can name it."
   },
   {
    "citation": "411ee97",
@@ -566,14 +478,6 @@
   },
   {
    "citation": "57017e71",
-   "document": "docs/SAIRN-OPEN-WORK-INDEX.md",
-   "document_class": "REWRITE",
-   "state": "RECOVERABLE-FROM-CLONE",
-   "recoverable_from": "C:\\Users\\marsh\\Documents\\SAIRN-hank\\.git",
-   "cause": "the object is in C:\\Users\\marsh\\Documents\\SAIRN-hank\\.git and can be fetched from there"
-  },
-  {
-   "citation": "57017e71eb4e",
    "document": "docs/SAIRN-OPEN-WORK-INDEX.md",
    "document_class": "REWRITE",
    "state": "RECOVERABLE-FROM-CLONE",
@@ -798,14 +702,6 @@
   },
   {
    "citation": "0cc22581",
-   "document": "docs/traceability-matrix.md",
-   "document_class": "GENERATED",
-   "state": "PERMANENTLY-ABSENT",
-   "recoverable_from": null,
-   "cause": "created and orphaned in a clone that no longer holds the object -- not reachable from origin/main, not an object in this clone, and not an object in any sibling clone on this machine. No rewrite map and no fetch can name it."
-  },
-  {
-   "citation": "35355044141",
    "document": "docs/traceability-matrix.md",
    "document_class": "GENERATED",
    "state": "PERMANENTLY-ABSENT",

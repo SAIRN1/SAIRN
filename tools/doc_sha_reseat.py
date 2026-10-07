@@ -172,6 +172,36 @@ REPORT_ONLY_GLOBS = (
 # 900-line standing document is not one anybody should run.
 TOKEN = re.compile(r'`([0-9a-f]{7,12})`')
 
+# ── ONE CANDIDATE RULE FOR EVERY MODE, 2026-10-07 (cc) ──────────────────────
+# `--census` excluded all-digit tokens, 12-hex register record ids and the
+# illustrative literal `1234abcd` in a filter written inline in its own loop.
+# `--register-absent` did not -- so the register listed `1234abcd` from
+# SAIRN-ACTIVE-WORK-hank.md as a PERMANENTLY ABSENT citation, which is a
+# finding about nothing: it is a documentation example and was never a commit.
+#
+# TWO MODES OF ONE TOOL WERE USING TWO CANDIDATE RULES, and the one that WRITES
+# A STANDING RECORD had the looser one. Found by reading the register's own
+# output rather than the code. The rule now lives in one function that both
+# modes call.
+NOT_A_CITATION = frozenset(('1234abcd', 'deadbeef', 'abcdef0', '0000000',
+                            'deadbeefcafe'))
+
+
+def is_citation(tok):
+    """True when this token could be a commit citation at all.
+
+    EXCLUDES: an all-digit run (a figure that happens to be valid hex), a
+    12-character token (this repo's register RECORD IDs are 12 hex and are not
+    commits), and the documentation literals above. Everything excluded here is
+    excluded from EVERY mode, which is the point.
+    """
+    t = str(tok or '').lower()
+    if not t or t.isdigit():
+        return False
+    if len(t) == 12:
+        return False
+    return t not in NOT_A_CITATION
+
 
 def git(*args):
     try:
@@ -370,7 +400,7 @@ def cmd_census():
         seen, c = set(), {'ON-MAIN': 0, 'ORPHAN': 0, 'ABSENT': 0}
         for m in TOKEN.finditer(src):
             t = m.group(1)
-            if t in seen:
+            if t in seen or not is_citation(t):
                 continue
             seen.add(t)
             s = census_state(t, on_main, local)
@@ -489,7 +519,7 @@ def cmd_register_absent():
         seen = set()
         for m in TOKEN.finditer(src):
             t = m.group(1)
-            if t in seen:
+            if t in seen or not is_citation(t):
                 continue
             seen.add(t)
             if census_state(t, on_main, local) != 'ABSENT':
