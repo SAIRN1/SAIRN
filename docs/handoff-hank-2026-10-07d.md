@@ -211,3 +211,122 @@ at `<scratchpad>/i6.damage.cron.diff` and `i6.damage.audit.diff`.
 
 Routed, not fixed — whether a could-not-tell should overwrite a dated OK is a
 judgement about those documents, not a mechanical repair.
+
+### item 8 — sv_audit_log — **THE ONE-LINE CHANGE WAS NOT MADE, AND THE REASON IS THE FINDING**
+
+**Chat decided to add `sv_audit_log` to `AUDIT_TABLES`. That decision rests on a
+false premise, and the premise is MINE — STEP 0d of my own migration document
+called it "one line of JavaScript".**
+
+Confirmed first, as the item asked: **no writer exists.** 28 `writeAuditLog`
+call sites; the only `AUDIT_TABLE` constants are `sairncode_audit_log`
+(`sc-ai.js:61`, `sc-auth.js:46`), `stonedesk_audit_log` (`sd-auth.js:47`,
+`sd-sub-data.js:45`, `stonedesk-track.js:50`) and the `sairnlaw_audit_log`
+default (`_lib/audit.js:41`). Nothing targets `sv_audit_log`.
+
+**AND IN CONFIRMING THAT, THE DEEPER FACT:**
+
+| `writeAuditLog` POSTs (`api/_lib/audit.js:59-64`) | `sv_audit_log` HAS (`sql/sairnvet_data_schema.sql:60-70`) |
+|---|---|
+| `license_hash` | `license_hash` ✓ |
+| `employee_id` · `role` · `event_type` · `detail` | **all four ABSENT** |
+| — | `audit_log_id` **`not null`, no default**, which writeAuditLog never sends |
+
+**`sv_audit_log` HAS NO `event_type` COLUMN AT ALL.** Adding it to the allowlist
+would send every SAIRNvet audit write to a table that cannot take the row:
+PostgREST refuses, `writeAuditLog` is **non-fatal and returns false**, the
+caller carries on, and **the row is absent** — visible only in a server log.
+That is the exact defect this batch exists to remove, created in one line. And
+there is nothing for the five-value CHECK to constrain.
+
+**IT IS NOT AN AUDIT LOG IN THIS MODULE'S SENSE.** It is the SAIRNvet
+controlled-substance **DOSING** trail — a per-app data table written through
+`api/sd-data.js`'s `SV_RESOURCES` dispatcher (`api/sd-data.js:13100`, keyed
+`audit_log_id`), declared as an app resource in `api/_resources/sairnvet.js:67`,
+and carrying **`grant select, insert, update`**. The three real audit logs grant
+only `select, insert`, and that grant pair *is* their immutability control
+because `service_role` bypasses RLS. It is not in the allowlist because it is
+not that kind of table, not because a line was forgotten.
+
+**WHAT WAS BUILT INSTEAD — a guard, which is worth more than the edit was.**
+`tests/run_audit_event_type_probe.py` gains **H0 / H1 / H2**: a table may be in
+`AUDIT_TABLES` only if it has the columns `writeAuditLog` posts.
+
+```
+python -u tests/run_audit_event_type_probe.py      EXIT 0   11 passed, 0 failed
+  ok   H0  the allowlist is found and parsed at all -- without this, H1 and H2
+           would pass on an empty list
+  ok   H1  every allowlisted table whose DDL is in sql/ has the four columns
+  ok   H2  THE PAIRED NEGATIVE, measured off the real DDL: sv_audit_log really
+           does lack all four, so H1 WOULD fail if it were added
+```
+
+**MUTATION — the asked-for change made, then shown red, then reverted:**
+
+```
+api/_lib/audit.js:40  + sv_audit_log: true
+node --check          0
+probe                 EXIT 1   10 passed, 1 failed
+  FAIL H1  sv_audit_log lacks employee_id, role, event_type, detail
+restored              byte-identical by sha256
+                      9d56583113ddf404672a039bad73203f303259eacc858a98c0ff2abdc60a9e37
+probe after restore   EXIT 0   11 passed, 0 failed
+```
+
+So the arm is not decoration: it goes red on exactly the change it exists to
+refuse, and green again when it is undone.
+
+**PRINTED, NOT APPLIED — `docs/2026-10-07-hank-migration-sql-for-michael.md`
+STEP 13**, with three pre-flight queries. The first is designed to FAIL, and its
+failure is the evidence:
+
+```sql
+select distinct event_type from public.sv_audit_log order by 1;
+-- EXPECTED: ERROR 42703 undefined_column: column "event_type" does not exist
+```
+
+plus the `information_schema.columns` query that does run, a row count, and a
+`jsonb_object_keys(data)` tally — the nearest thing to an event vocabulary that
+exists in that table today.
+
+STEP 13a/13b/13c print what the decision costs if it still stands: four
+`add column` statements, a default for `audit_log_id`, and a CHECK in the
+`event_type is null or event_type in (...)` form — **the strict form the twelve
+new tables use cannot be added to a table with existing rows.** 13c prints the
+`revoke update` and explicitly does **not** recommend it: revoking it breaks the
+dosing write path, so one table cannot be both.
+
+**STEP 13-ALT is the option I would put in front of chat first:** a new
+`sairnvet_audit_log` in exactly the form of the twelve — more SQL, zero
+judgement calls, and the dosing trail left alone.
+
+### item 9 — rf_schedule.status_changed_by — PRINTED, NOT APPLIED, AND NO CODE CHANGED
+
+`docs/2026-10-07-hank-migration-sql-for-michael.md` **STEP 14**. Three
+`add column if not exists` statements — `status_changed_by text`,
+`status_changed_by_role text`, `status_changed_at timestamptz` — **all
+nullable**, plus the `information_schema` verification query.
+
+**NULLABLE ON PURPOSE.** Every existing row had its status set before the column
+did. `not null` would either reject them or need a backfill naming an employee
+who did not do it — **a fabricated actor, which is worse than an honest null.**
+NULL means "set before this column existed".
+
+**`created_by` IS UNTOUCHED** and no statement in STEP 14 alters, drops or
+backfills it. It is `not null` and means who **created** the day
+(`sql/sairnroofing_locations_schema.sql:92`); overwriting it on a status change
+would destroy the creation record to record an edit. That is the whole reason
+this is a migration rather than a code change.
+
+**`api/sd-data.js` IS NOT TOUCHED and keeps the b1 read-then-merge until Michael
+confirms STEP 14 has run.** Writing the column before it exists makes every
+`set_status` PATCH fail `42703 undefined_column`; PostgREST returns 400 and the
+branch answers 502 `Data store error`. **A status change that silently stops
+working is worse than the lost-update window it was meant to close.**
+
+STEP 14 also carries the exact four-step code change for whoever takes it after
+the SQL lands — including that **arm D3 of
+`tests/sd_data_write_attribution_three_apps.js` must be rewritten in the same
+commit.** It currently pins the read-then-merge, which is right until the column
+exists and wrong afterwards, and a stale arm that passes is how the next reader
+concludes the merge is still needed.
