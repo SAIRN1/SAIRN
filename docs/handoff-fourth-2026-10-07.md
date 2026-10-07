@@ -262,18 +262,36 @@ The **batch-11** scratchpad, which this batch's items 3 and 4 continue from:
 # BATCH 16 CHECKPOINT LOG -- one line per item, appended BEFORE the next item starts
 
 The first attempt at this batch was **stopped mid-compaction**. Two rows had been
-written. The numbering below is the RESUME dispatch's 1-15, and the first thing it
-does is **retract the stopped session's row 2**, because the evidence file it cited
-(`abl_i2c.out`) was in that session's scratchpad and **does not exist**, and the
-direction it recorded was re-measured and is **wrong**. A checkpoint line whose
-evidence cannot be opened is a claim, not a record — PR §5.
+written. The numbering below is the RESUME dispatch's 1-15.
+
+**MY FIRST RETRACTION OF ROW 2 WAS ITSELF WRONG, AND IT IS CORRECTED HERE RATHER
+THAN QUIETLY EDITED.** I retracted it on two grounds. I checked **my own**
+scratchpad, found it empty, and wrote that the cited `abl_i2c.out` *"does not
+exist"*. It exists -- in the **stopped session's** scratchpad
+(`4975e2e9-8002-4f73-9d9d-240c42c3b643`), which is a different directory from mine
+(`7e379670-...`) because a resumed session gets a new one. I looked in the right
+SHAPE of place and the wrong place, and reported absence. Same defect class as
+everything else in this batch: **a cheap way to check was available and a narrower
+view was used instead.**
+
+The second ground was also wrong, and reading the file is what settled it. Row 2's
+*"tool exit 1->0, probe 1->0"* is an **accurate record of the lever it actually
+pulled**, which was **ADDING the 16 occurrences to the baseline (46 -> 54 keys)**,
+not emptying it. `abl_i2.out`, written minutes earlier, records the EMPTYING lever
+as **tool 1, probe 1 -- no response**, and says so in its own verdict line:
+*"COULD-NOT-RUN -- the lever never engaged"*.
+
+**So the row was TRUE and the LABEL was missing**, and the correction runs in the
+useful direction: two sessions independently measured the emptying lever as
+non-responsive, and the opposite lever is the one that moves it. Row 3 below
+carries all three results.
 
 | item | state | commit / evidence | exact next step |
 |---|---|---|---|
-| ~~**2** ablation 8 of 8 (stopped session)~~ | **RETRACTED** | cited `<scratchpad>/abl_i2c.out`, which is absent; claimed "tool exit 1→0, probe 1→0" | superseded by row 3 below, which measured **1→1→1** |
+| **2** ablation 8 of 8 (stopped session) | **STANDS, with the lever NAMED -- my retraction of it is WITHDRAWN** | `4975e2e9-.../scratchpad/abl_i2c.out` and `abl_i2.out`, both present and readable | the row's "tool 1->0, probe 1->0" is correct **for the lever it used: ADDING the 16 occurrences to the baseline, 46 -> 54 keys**. The EMPTYING lever the dispatch named was measured in the same hour and recorded as `COULD-NOT-RUN -- the lever never engaged`. The row was true; what was missing was WHICH LEVER. See the correction above |
 | **1** per-item checkpointing | **DONE** | this table, one row appended before the next item starts | memory directory untouched; no tool built |
 | **2** state check | **DONE** | claims list, `git status`, `git log`, handoff read. HEAD was `f4514979`, **0 ahead / 3 behind** origin/main, fast-forwarded to `2156abb1`. Everything in my batch-15 log is PUSHED | nothing of mine is unpushed; the only uncommitted work was 10 census entries in `docs/known-red-suites.json` and the two retracted handoff rows |
-| **3** ablation 8 of 8, truthy_sum | **DONE — and the live-repo lever is INCONCLUSIVE, which is the finding** | `<scratchpad>/abl_truthy_sum.out` and `<scratchpad>/abl_truthy_sum_fixture.out` | live tree: tool `1→1→1`, probe `1→1→1`, 32 arms ok / 1 FAIL **unchanged** by emptying the baseline, because the only arm that reads it (arm 11, `run_truthy_sum_probe.py:173`) is **already red from real tree state** and exit 1 before is exit 1 after. Baseline restored, sha256 `9fa29263…` byte-identical, `git status` unchanged. Then the SAME lever on an already-clean fixture, per convention 12: **A present `0` → B EMPTIED `1` → C ABSENT `1`**. Lever engaged, emptied and absent agree. **The 16 unbaselined occurrences in `stonedesk.html` are what make the live arm unmeasurable**; they are routed, not fixed |
+| **3** ablation 8 of 8, truthy_sum | **DONE — and the live-repo lever is INCONCLUSIVE, which is the finding** | `<scratchpad>/abl_truthy_sum.out` and `<scratchpad>/abl_truthy_sum_fixture.out` | live tree: tool `1→1→1`, probe `1→1→1`, 32 arms ok / 1 FAIL **unchanged** by emptying the baseline, because the only arm that reads it (arm 11, `run_truthy_sum_probe.py:173`) is **already red from real tree state** and exit 1 before is exit 1 after. Baseline restored, sha256 `9fa29263…` byte-identical, `git status` unchanged. Then the SAME lever on an already-clean fixture, per convention 12: **A present `0` → B EMPTIED `1` → C ABSENT `1`**. Lever engaged, emptied and absent agree. **The 16 unbaselined occurrences in `stonedesk.html` are what make the live arm unmeasurable**; they are routed, not fixed. **AND THE THIRD RESULT, from the stopped session's own evidence read after the fact: the lever that DOES move the live probe is the opposite one.** Adding those 16 to the baseline (46 -> 54 keys -- `key()` is `file::term`, so **16 occurrences are 8 distinct keys**) takes the tool **1 -> 0** and the probe **1 -> 0**, restored byte-identical. So: **emptying does nothing on a dirty tree and everything on a clean fixture; filling does everything on a dirty tree.** The layer's effect is only visible from a clean baseline, in whichever direction you reach it -- convention 12's already-clean-code requirement arriving as a measurement rather than as a rule |
 | **4** census, 3 slices | **DONE -- 40 -> 50 of 83** | `<scratchpad>/census_slices.out`, `census_now.out`, `census_after.out`; register restamped at `2156abb1` | ten suites driven **alone**, 300s ceiling, boundary verified **after every one** (`git status` digest, sha256 of `.git/config`, `node --check api/sd-data.js`) -- all three unchanged start to end. All ten exit **1**; all ten AGREE with the rows the stopped session had written, so those rows are now stamped on a run whose output exists. `known_red_check.py --fixtures` **exit 0**. **33 still unverified**, and they are unmeasured-individually, not presumed red |
 | **5** phi_cache arm 5a | **DONE -- FIXED, and it was the SUITE, not the app. ONE ARM CLEARED FOUR ROWS** | `1c53498d` (fix), `93ed64c7` (defect record), `5be55ef4` (post-rebase re-seat) -- all three **ON-REF** by `merge-base --is-ancestor` | claim-checked CLEAR, carried under my existing `fourth` claim rather than re-claimed (the tool REFUSES a second overlapping claim from the same session, so a new one would have been a reworded duplicate). Arm 5a expected `[]`, got `["sen_settings"]`. **`sen_settings` is not an unpurged PHI cache**: it is server-authoritative, and `sairnsenior.html:5768-5780` is a comment that exists to stop anyone re-creating the local copy -- and to say that, it has to quote `st('sen_settings')`. Arm 5 ran `[ls][dt]\('(sen_[a-z_]+)'` over the **raw** file, so **the comment explaining the key is never written was counted as the key being written, twice**. Fix is in `tests/phi_cache_scoped_to_user.js`: write sites now come from `tests/lib/strip_comments.js`. **NOT** fixed by adding one word to `SEN_UNSCOPED_CACHES`. Measured: stripping changes exactly one key in one of four apps, so 5b/5c cannot regress. **Arm 5e is the control and it FAILS FIRST** -- ablated, probe `0 -> 1` naming 5e in all four apps and 5a in SAIRNsenior, restored byte-identical `e38eac06`, back to `0`. 63/1 -> **72 passed, 0 failed** |
 | **5b** the chained rows | **DONE -- 4 register rows deleted as RECOVERED** | `<scratchpad>/chained.out`; register 79 -> 75 entries, `known_red_check.py --fixtures` **exit 0** | each driven ALONE with the boundary verified after it: `phi_cache_scoped_to_user.js` **1->0**, `phi_cache_scope_probe.py` **2->0** (ALL 12 ARMS PASS, 7 mutations -- it had been planting nothing), `sairncare_fault_probe.py` **1->0**, `sairnbuild_fault_probe.py` **1->0**. Deleted per the register's own rule; diagnoses preserved in `_recovered_2026_10_07_fourth`. **AND THE CENSUS GOES DOWN BECAUSE OF IT: 50 of 83 measured, then 4 verified rows deleted on recovery, so the register-derived recount reads 46 of 83.** The 4 are verified GREEN, not unverified. **FLAGGED NOT TOUCHED:** `tests/run_primitive_obsession_probe.py` still stands as an entry with `exit_code 0` and RECOVERED in its own `why` -- the state that rule forbids |
