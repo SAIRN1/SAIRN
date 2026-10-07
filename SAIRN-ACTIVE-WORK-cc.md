@@ -6869,3 +6869,32 @@ machine and no rewrite map will ever name them. This file is append-only and is
 never rewritten, so the correction is this note rather than a substitution.
 
 Handoff: `docs/handoff-cc-2026-10-07c.md`.
+
+## 2026-10-07 - batch 14 FINAL (items 1-11 closed)
+
+Items 6-11 closed after the item-5 checkpoint. Full account:
+docs/handoff-cc-2026-10-07c.md.
+
+  * 4fd17ae3  EIGHTEEN authoritative `# OWNER: cc` lines. OWNER_LINE 28 -> 46,
+    LAST_CLAIM 243 -> 225, nothing else moved. 164 ownerless tools/*.py PRINTED
+    with what each writes, for chat to assign -- I assigned none.
+  * cac280cc  item 7's 44 routings RE-DERIVED at a later HEAD, not quoted:
+    hank 28, fourth 5, generated 9, mine 2. Four findings routed with a
+    reproducing artifact each.
+  * 9bc8bba5  the python guard checker's design note, committed BEFORE the tool.
+  * e2612fef  tools/py_guard_check.py -- 4 AST rules, 60 arms across two
+    structurally different methods, 306 of 306 files parsed, 91 findings EVERY
+    ONE HAND-VERIFIED, wired REPORT-ONLY through report_only_checks.REGISTRY.
+    FOUR DEFECTS IN MY OWN CODE found by its own controls and cause-tagged.
+  * 0eadb937  the blameless postmortem on the 11-too-high count. Its
+    system-level fix is SIXTEEN ARMS inside doc_sha_reseat.py's existing
+    --fixtures lock (a9e9147b, 12/12 -> 28/28), because the shared rule closed
+    the instance and only an arm closes the class.
+
+THE SHARPEST THING FOUND THIS BATCH, for whoever picks it up: six
+`sys.exit(<string>)` sites exit 1 on a platform where 1 means FINDINGS and 2
+means COULD NOT RUN. `python tools/sairn_load_state_check.py --app sairnlaw`
+exits 1 printing "No license key...", and load_deadline_seed.py's own message
+begins "COULD NOT RUN".
+
+Claim released at the close of this batch.
