@@ -20,6 +20,38 @@
  "criteria_version": "2026-10-06.1",
  "flags": [
   {
+   "path": "tests/provisioning_attribution.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0254860b40e9f082eb10cf79a07d516ea350c677",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_alf_mar_derive_charges_gate.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0254860b40e9f082eb10cf79a07d516ea350c677",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_alf_staff_read_gate.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0254860b40e9f082eb10cf79a07d516ea350c677",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_grd_session_gate.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0254860b40e9f082eb10cf79a07d516ea350c677",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/sairn_push_gate_hook.py",
    "class": "push-gate logic",
    "level": "CHANGE",
@@ -300,6 +332,38 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "9b15a38eebe57440111004524ff86313551a8bfe",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/provisioning_attribution.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ba50a29d55bb788b25d44798246b74d76f9a948b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_alf_mar_derive_charges_gate.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ba50a29d55bb788b25d44798246b74d76f9a948b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_alf_staff_read_gate.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ba50a29d55bb788b25d44798246b74d76f9a948b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_grd_session_gate.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "ba50a29d55bb788b25d44798246b74d76f9a948b",
    "criteria_version": "2026-10-06.1"
   },
   {

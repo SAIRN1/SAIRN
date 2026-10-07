@@ -476,3 +476,131 @@ companion, unchanged, and is not one of the two HIGHs.
   `rtdbUpdate` and `rtdbGet` break on the same namespace removal, established
   by reading the exports rather than by driving them — they need a live
   database URL.
+
+---
+
+# ADDENDUM 4 — 2026-10-07 (Cody): RECONCILED TO **2 HIGH (ONE CHAIN) + 1 MODERATE**, and the moderate is a ONE-LINE LOCKFILE FIX
+
+**Every figure below re-measured at HEAD `fa560504` on 2026-10-07. Nothing is
+carried over from an earlier addendum.**
+
+```
+npm audit --json            EXIT 1
+  {info: 0, low: 0, moderate: 1, high: 2, critical: 0, total: 3}
+
+  firebase-admin    high      via node-forge   range 5.0.0 - 13.9.0
+                    fix firebase-admin@14.5.0  isSemVerMajor TRUE
+  node-forge        high      via node-forge   range *
+                    fix firebase-admin@14.5.0  isSemVerMajor TRUE
+    GHSA-86w9-cpqp-85rv  CWE-347
+    "RSA PKCS#1 v1.5 signature verification accepts extra nested
+     DigestAlgorithm elements"
+
+  @fastify/busboy   moderate                   range <3.2.2
+                    fix TRUE  (NOT major)
+    GHSA-gxm5-99cw-xjw9  CWE-93
+    "vulnerable to CRLF injection via multipart Content-Disposition
+     filename and name"
+```
+
+## THE RECONCILIATION AGAINST THIS DOCUMENT'S ORIGINAL THREE
+
+| this doc's original row | measured 2026-10-07 | verdict |
+|---|---|---|
+| `@grpc/grpc-js` **high + a companion low** | **absent from `npm audit` entirely**, and `low: 0` | **RESOLVED by the 1.14.5 patch — and this document was STALE about the low. There is no low.** |
+| `node-forge` high | present, unchanged | unchanged |
+| `firebase-admin` high (via `node-forge`) | present, unchanged | unchanged |
+| *"the two HIGHs are one problem"* | **confirmed**: same `via`, same `fixAvailable`, same `isSemVerMajor` | holds |
+| — | **`@fastify/busboy` moderate, which this document never mentioned** | **NEW ROW, added below** |
+
+**So the correct standing count is 2 high (one chain) + 1 moderate = 3 total**,
+and the "3 advisories" this document opened with is a *different* three.
+
+## GITHUB SAYS 1 HIGH AND `npm audit` SAYS 2 — ADVISORY-VERSUS-PACKAGE COUNTING
+
+The push banner reads *"GitHub found 1 vulnerability … (1 high)"*. `npm audit`
+reports **2 high**. **These do not disagree.** Dependabot counts one row per
+ADVISORY — there is a single `node-forge` advisory, GHSA-86w9-cpqp-85rv — while
+`npm audit` emits one row per AFFECTED PACKAGE IN THE CHAIN, so the declarer
+(`firebase-admin`) and the vulnerable package (`node-forge`) are two rows for
+one advisory. Recorded because reading them as a contradiction is how an hour
+goes missing.
+
+## THE NEW ROW: `@fastify/busboy` — REACHABILITY MEASURED, AND THE FIX IS ONE LINE
+
+### Where it comes from
+
+```
+package-lock.json: declarers of @fastify/busboy -> ['node_modules/firebase-admin', '^3.0.0']
+locked at        : node_modules/@fastify/busboy 3.2.1
+total locked     : 195 packages
+grep -rn fastify --include=*.js api/ tests/ tools/ scripts/   ->  NO MATCHES
+```
+
+**Nothing in this repo requires it, directly or by name.** It arrives solely
+through `firebase-admin`.
+
+### Reachability: ONE call site, and it parses a RESPONSE
+
+```
+firebase-admin/lib/utils/api-request.js:400
+  const busboy = require('@fastify/busboy');
+  const multipartParser = new busboy.Dicer({ boundary });
+
+enclosing function : handleMultipartResponse(response, respStream, boundary)
+reached only when  : the response content-type startsWith('multipart/')   (:381)
+```
+
+**The advisory needs an attacker-controlled multipart body.** This call site
+parses a multipart **response from a Google API over TLS**, not a client upload.
+Our whole use of `firebase-admin` is `mintCustomToken` and the two RTDB helpers;
+**no path in this repo parses a client-supplied multipart payload through
+busboy**, and no SAIRN endpoint accepts multipart at all through this library.
+Exploiting it would require Google's own endpoint returning an attacker-chosen
+multipart response.
+
+### DECISION: **FIX, not accept-with-triggers.** It is a patch the existing range already permits.
+
+`package.json` declares nothing about busboy; `firebase-admin` asks for
+`^3.0.0`, and **3.2.2 is published**, so the vulnerable 3.2.1 is a stale LOCK
+rather than a constraint. Measured in a scratch copy of `package.json` +
+`package-lock.json`, **outside the repo**:
+
+```
+npm audit fix --package-lock-only --only=prod
+
+the ONLY lockfile change:
+  - node_modules/@fastify/busboy 3.2.1
+  + node_modules/@fastify/busboy 3.2.2
+
+package.json : IDENTICAL -- no declared-range change
+npm audit after: {moderate: 0, high: 2, total: 2}
+```
+
+**One line. No major bump. No code change. No API-surface change.**
+
+**NOT APPLIED HERE, and the reason is scope rather than risk:**
+`package-lock.json` is not in this batch's declared file set, and the
+249/745-suite run that would evidence it is still in flight (item 4). **The
+command and its measured diff are above so the next session can apply it in one
+step and re-run `npm audit`.**
+
+## THE TWO HIGHS: UNCHANGED — ACCEPTED, SAME BASIS, SAME FOUR TRIGGERS
+
+Nothing in this addendum changes addendum 3's decision. The only offered fix is
+still `firebase-admin@14.5.0`, still `isSemVerMajor: true`, and it still breaks
+the auth path on the legacy namespace.
+
+**TRIGGER 1 IS NOW SATISFIABLE AND IS NOT SATISFIED.** The modular port exists
+on branch `cody/firebase-modular-port` at `3de3cadd`, its acceptance arm is
+green under **both** 12.7.0 and 14.5.0, the pre-port wrapper is red under
+14.5.0, and `git merge-tree --write-tree origin/main 3de3cadd` exits 0 — **it
+still applies on current main with no conflict.** It is **NOT merged**:
+
+```
+git merge-base --is-ancestor origin/cody/firebase-modular-port origin/main
+  -> NOT an ancestor.  ANDON HELD.
+```
+
+**The blocker is no longer a rewrite. It is one clean full-suite pass**, which is
+item 4 of this batch and is running in a throwaway clone at `c1cd7c41`.

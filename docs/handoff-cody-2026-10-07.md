@@ -331,3 +331,178 @@ failures), `meta145.*` (the 145s confirmation), `ce_fx_r1..3.out`,
   run EXIT 0**. End to end on the range that used to return 0:
   **now EXIT 1**, naming body line 30 col 29. **NEXT STEP:** a fresh corpus
   (e.g. commits 3,000–6,000) to get an unfitted precision figure.
+- **item 7 — DONE — report only, nothing assigned.** Re-derived at HEAD:
+  **14 of 14 still unowned** (`basis: NONE, owner: null`), creating commits
+  re-read from git, listed at the top of the final report for chat. **Nothing
+  assigned and nothing claimed.** **7b: hank's index row has NOT landed** —
+  `grep -c blob_conversion_coverage docs/SAIRN-OPEN-WORK-INDEX.md` → **0**, and
+  `sd-store.js:166` → **0**. **There is no seq**: this was routed as a
+  paste-ready row in `docs/2026-10-06-cody-queue19b-items-5-7-8-9-10-14.md`
+  item 6, not through the auditors' JSONL, so no sequence number exists and
+  inventing one would be a fabricated citation. **AND THE FILE IS NOW FREE** —
+  no live claim declares `docs/SAIRN-OPEN-WORK-INDEX.md` — but it is not in my
+  declared set and the row is hank's routed work, so it was not written.
+- **item 8 — DONE — commit pending.** Re-measured at HEAD, nothing carried over:
+  **moderate 1, high 2, total 3**. Reconciled: `@grpc/grpc-js` and **its
+  companion low are GONE** (`low: 0`) — the doc was stale about the low; the two
+  highs are confirmed one chain (same `via`, same `fixAvailable`, same
+  `isSemVerMajor`). **`@fastify/busboy` added with measured reachability:**
+  declared only by `firebase-admin ^3.0.0`, locked at 3.2.1, one call site at
+  `firebase-admin/lib/utils/api-request.js:400` inside
+  `handleMultipartResponse`, reached only when a RESPONSE content-type starts
+  `multipart/`; **zero `fastify` references in `api/ tests/ tools/ scripts/`.**
+  **DECISION: FIX, not accept-with-triggers** — measured in a scratch copy,
+  `npm audit fix --package-lock-only --only=prod` changes exactly one line
+  (3.2.1→3.2.2), `package.json` identical, audit after = moderate 0.
+  **NOT APPLIED: `package-lock.json` is not in my declared set** and item 4 is
+  still in flight. GitHub's 1-high vs npm's 2-high recorded as advisory-versus-
+  package counting, not a contradiction.
+- **item 9 — DONE — verified, not merged.** `git merge-base --is-ancestor
+  origin/cody/firebase-modular-port origin/main` → **NOT an ancestor. ANDON
+  HELD.** Branch tip `3de3cadd`, merge-base `d31ccdc4`, and
+  `git merge-tree --write-tree origin/main 3de3cadd` → **EXIT 0, clean tree oid
+  `ec911d448e09`** — it **still applies on current main with no conflict**.
+  Re-measurement deferred to item 4 as instructed.
+- **item 10 — DONE — commit pending.** Rule written, **ROUTED NOT PROMOTED**:
+  `docs/METHODOLOGY.md` **and** `docs/2026-09-13-cross-domain-disciplines.md`
+  are both in fourth's live declared set. **Next free convention number is 20**,
+  counted (`grep -c "^## [0-9]*\." …` → **19**), not quoted. Full rule text is
+  **inline** in `docs/2026-10-07-cody-routed.md` §3 — because METHODOLOGY.md's
+  own queue records two of my earlier routings as NOT RECEIVED for naming a
+  document that was not on `main`. Postmortem:
+  `docs/postmortem-cody-2026-10-07-bound-measurement.md`, ending in **one
+  system-level fix inside an existing check** — `metamorphic_check.py` now
+  records and prints the largest artifact actually handed to a checker
+  (`bound subject : …`), on clean runs as well as timeouts, and the timeout
+  message carries the subject size. A report, not a refusal, because a bound
+  that refuses its own subject is how a checker gets switched off.
+
+---
+
+# FULL HANDOFF — BATCH 21 (written after item 10, as instructed; refreshed at item 11)
+
+## A. CLAIMS HELD — one
+
+`cody / Tooling` — batch 21. **Declared FILES:** `tools/run_all_tests.py`,
+`tools/guard_ablation.py`, `tools/eaten_substitution_check.py`,
+`tools/capture_exit.py`, `tools/metamorphic_check.py`, `.claude/settings.json`,
+`docs/2026-10-05-dependabot-high-triage.md`, `docs/2026-10-07-cody-batch21.md`,
+`docs/postmortem-cody-2026-10-07-bound-measurement.md`,
+`docs/2026-10-07-cody-routed.md`, `docs/handoff-cody-2026-10-07.md`,
+`SAIRN-ACTIVE-WORK-cody.md`.
+
+**The batch-20 claim was RELEASED FIRST at 2026-10-07T12:02:47Z** so the record
+says one thing — `sairn_claim.py` refused to add an overlapping second claim and
+was right to.
+
+**HELD BY OTHERS AND NOT OVERRIDDEN, re-derived at HEAD:**
+
+| file | holder | consequence |
+|---|---|---|
+| `docs/tier-a-reviews.json` | **fourth** | **item 1 could not land a discharge** |
+| `tools/tier_a_review_gate.py` | **fourth** (owner map: cc, CONTESTED) | run read-only only |
+| `docs/METHODOLOGY.md` | **fourth** | item 10 routed |
+| `docs/2026-09-13-cross-domain-disciplines.md` | **fourth** | the convention routed, not written |
+
+**Release:** `python tools/sairn_claim.py release Tooling`
+
+## B. PUSHED STATE
+
+```
+origin/main  fa560504 at the time of writing (two commits pending below)
+branch       cody/firebase-modular-port -> 3de3cadd   NOT an ancestor of main
+             git merge-tree --write-tree origin/main 3de3cadd -> EXIT 0, clean
+```
+
+| commit | item |
+|---|---|
+| `e9304449` | item 3 — `--pinned` to a throwaway clone, plus its register record |
+| `fa560504` | items 5 + 6 — the ablation fabricated positive, the eaten-substitution widening, and the item-5 register record |
+| *pending* | items 7–10 — the triage addendum, the postmortem, the subject-size fix, the checkpoints |
+
+## C. OPEN, WITH THE EXACT NEXT STEP
+
+### C.1 Item 4 — the pinned whole suite is RUNNING
+
+```
+STATUS : <SCRATCH>/item4/suite.status      (capture_exit.py --read it)
+OUTPUT : <SCRATCH>/item4/suite.out
+TIMING : <SCRATCH>/item4/meta.txt
+SHA    : c1cd7c41   sandbox: a throwaway CLONE, 0 worktree registrations
+```
+
+**NEXT STEP:** read the status file, then name **every failing suite** from
+`suite.out` with its first-run result. **The previous unpinned run took 23463s**,
+so expect hours. Do **not** start a second whole-tree run while it holds the
+lock at `%TEMP%\sairn-suite-df228b25ddc49171.lock`.
+
+### C.2 Item 10's confirming metamorphic run is RUNNING
+
+```
+STATUS : <SCRATCH>/i10_meta.status     OUTPUT: <SCRATCH>/i10_meta.out
+```
+**NEXT STEP:** confirm EXIT 0 and that the new `bound subject :` line names the
+`duplicate` relation and an artifact larger than `stonedesk.html`.
+
+### C.3 Item 1 — six reviews done, NONE landed
+
+All six of my assigned-and-eligible obligations were reviewed read-only with
+captured output. **4 of the 6 cite a sha that is not on origin**
+(`13e40c9d79b7`, `a9e35feef967`, `c0be1a702088`, `c0ef09bdad7e` — all
+`upload-pack: not our ref`), and the subjects were reconstructed from the
+commit that last touched each named file.
+
+**NEXT STEP:** when fourth releases `docs/tier-a-reviews.json`, discharge
+through `tier_a_review_gate.py --discharge --takeover --body-file`. Evidence
+already captured in `<SCRATCH>/r21/`:
+`o1_probe` (21 passed), `o3_familymar` (10 passed, 2 runs),
+`o4_sbap` (11 passed, 2 runs), `o5_suite` (10 passed),
+`o2_json` (`db/schema_snapshot.json` parses, 442 keys, **`_constraints` still
+absent**), `o6` (sairnsenior.html +14, a deliberate no-local-accessor note).
+
+### C.4 Item 8's one-line lockfile fix is READY AND NOT APPLIED
+
+```
+npm audit fix --package-lock-only --only=prod
+  -> node_modules/@fastify/busboy 3.2.1 -> 3.2.2   (the ONLY change)
+     package.json identical; audit after: moderate 0
+```
+**NEXT STEP:** apply it, re-run `npm audit`, and confirm total 3 → 2. Needs
+`package-lock.json` in the declared set.
+
+### C.5 `Edit` and `Write` still sit in `permissions.ask`
+
+They outrank `defaultMode: acceptEdits`, so edits will still prompt. **NEXT
+STEP:** one authorisation to drop those two entries, or accept that acceptEdits
+is inert for file edits. Backups:
+`~/.claude/settings.json.bak-20261007T124442Z` and
+`<SCRATCH>/perm/settings.json.BACKUP-20261007T124442Z`.
+
+### C.6 Still open from earlier batches, unchanged
+
+- **To fourth:** the clone-corruption writer is still unidentified; his fix
+  `b23dbc2e` was already in the tree. `docs/2026-10-07-cody-routed-to-fourth.md`.
+- **To cc and fourth:** `tier_a_review_gate.py --open` records HEAD rather than
+  the subject commit — **two independent instances**, reproducing script in
+  `docs/2026-10-07-cody-routed.md` §1.
+- **Unowned:** `tools/deploy_verify_notify.py` exits **0** on an argument it does
+  not understand (`--selftest` does not exist) — §2 of the same doc.
+- **To chat:** the 14 unowned files, and whether an `# OWNER:` line becomes a
+  condition of landing a tool.
+- **A fresh corpus is owed** for the mid-line eaten-substitution precision
+  figure: 14 of 19 was fitted to commits 1–3,000.
+
+## D. TRANSCRIPT
+
+```
+C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-cody\6f1d5069-5b6c-4a9d-8e38-78d125446571
+```
+
+`scratchpad/` — `item4/` (the pinned suite), `r21/` (the six reviews),
+`perm/` (settings backup, merge script, grammar check, the two item-3 proofs),
+`i5_*` (ablation), `i6_*` (eaten substitution, including the 3,000-commit
+measurements), `i8_*` (advisories), `i10_*` (the bound), plus every
+`*.status` beside its `*.out`.
+
+**Read a status file, not a notification.** The harness reported "exit code 0"
+**five** times this session for programs that exited 1 or 2.
