@@ -2089,3 +2089,68 @@ either direction; `truthy_sum` puts it last and still reports 13 passes.
 * 3 span sites not repointed; 17 broken gap-doc count claims measured, not
   triaged; the 40-file `encoding=` sweep and the 16 + 18 unbaselined numeric
   occurrences routed, not run.
+
+---
+
+## BATCH 12 — 2026-10-07. Handoff: `docs/handoff-fourth-2026-10-07.md`
+
+**THE TIER A GATE WAS PRINTING VERDICTS COMPUTED AGAINST COMMITS NO OTHER CLONE
+HAS.** `tools/tier_a_review_gate.py` resolved each record's subject sha with
+`git rev-parse --verify` -- an EXISTENCE test -- then diffed against it and
+printed an ordinary FRESH or STALE verdict. `docs/tier-a-reviews.json` cited
+**seven orphaned 40-char shas**, and `** STALE ** moved since 00030f2d11b7` was
+printed on an OPEN obligation. **The gate already contained the right test**:
+its own `_is_reachable()` uses `merge-base --is-ancestor`, 1,500 lines below.
+Fixed; four open records now report `COULD-NOT-TELL ... ORPHANED`.
+
+**AND THE FIRST ARM I WROTE TO ENFORCE IT WAS VACUOUS.** It sliced ~1,500 lines
+and swallowed the definition of the function it was looking for, so the
+substring matched whether or not the code called it -- **with the guard removed
+the probe stayed GREEN**. An ablation caught it. Bounded window, bound asserted
+by its own arm, extraction exercised both directions against synthetic sources.
+That is conventions 18 and 19 arriving from the same hand on the same day.
+
+**Landed and pushed:**
+
+* **Items 11, 12 -- conventions 18 and 19**, full sections in
+  `docs/2026-09-13-cross-domain-disciplines.md`, recorded in
+  `docs/METHODOLOGY.md` as **CHAT-ADOPTED** rather than self-promoted. 19 is
+  argued into the cannot-fire group as its NINTH member; 18 is argued OUT. The
+  file's title said *eleven* while it held **nineteen** -- the number is
+  REMOVED rather than corrected, because a count in a title goes stale on the
+  next addition.
+* **Item 5 -- the environment stamp, 70 of 79 with a provable `where`.** 13 all
+  four keys, 57 with `sha` unknown because the register records only a date, and
+  **9 wholly unknown and never guessed**. `known_red_check.py --fixtures` gains
+  4 arms that REFUSE an absent key while ACCEPTING an explicit "unknown";
+  ablated in-process against a copy.
+* **Item 6 -- 11 more diagnoses, 42 -> 31** of 79, each suite run ALONE.
+  Sharpest: `law_reconcile_role_vocab_check` exits 2 because its anchor is
+  `const\s+ROLES_BY_APP\s*=\s*\{` and `api/_lib/auth.js:112` now reads
+  `const ROLES_BY_APP = roleSet({`; `run_concurrency_retry_probe` is a HARD
+  CRASH (`too many values to unpack (expected 3, got 4)`).
+* **Item 7 -- convention 18: 8 artifacts, ONE fixed.**
+  `run_primitive_obsession_probe` went from exit 1 verifying NOTHING to exit 0
+  verifying ALL FIVE mutations. The fix is a NARROWING (exit==2 when the tree is
+  dirty), not a deletion -- removing the gate alone would have passed five arms
+  vacuously. Ablated with a NO-OP mutation.
+* **Item 1 -- 2 Tier A discharged, 4 routed back ABSENT.** In BOTH records I
+  discharged, `opened_at_sha` was NOT the subject: cc's is a merge, cody's is a
+  claims commit. Reviewed against the real commits instead.
+* **Item 3 -- the re-seat redo**: 12 shas over 7 documents, 7 ON-REF, 3
+  ORPHANED, 2 ABSENT. No REACHABLE claim turned out false, so no conclusion
+  changed -- only the method.
+* **Item 10 -- the coverage ledger**, with the depth named beside each ratio.
+
+### NOT REACHED / OWED
+
+* **31 register rows undiagnosed**, and 5 named facts still NOT CLEARED across
+  `write_path_scan`, `removal_path` and `preauth_exemption_anchor`.
+* **6 Tier A obligations open to me**, 4 of them unreviewable until their
+  authors close them as absent -- two are only **51h and 47h** old, so the
+  orphaning is current, not historical.
+* **Ten other `cat-file` / `rev-parse --verify` call sites unread.** Recorded as
+  `recurrence_open`; this batch fixed ONE call site in ONE tool.
+* **`core.bare` stays cody's.** No whole-tree run, no `--pinned` run, no patch
+  to `tools/run_all_tests.py`; my evidence is attached to cody's finding.
+* **Item 9 blocked on Michael** and not guessed at.
