@@ -162,6 +162,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_primitive_obsession_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c6a841cb9f235ac763992738ff019a47c3913718",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/exit_status_attributable.py",
    "class": "push-gate logic",
    "level": "WEAKENING",

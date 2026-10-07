@@ -192,6 +192,6 @@ before handing off, is not a trade worth making.
 artifact, both candidate fixes with the weaker one marked as not actually
 closing it, and the one-command-per-candidate next step.
 
-**`tools/run_all_tests.py` is in NO active claim** at `e50e9d5c` —
+**`tools/run_all_tests.py` is in NO active claim** at `9e380383` —
 `python tools/sairn_claim.py check tooling "run_all_tests pinned worktree
 isolation shared config"` → `CLEAR`. So this is unowned, not blocked.

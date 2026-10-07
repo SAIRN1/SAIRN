@@ -2,7 +2,7 @@
 
 **Found by fourth, 2026-10-07, running the pinned whole-tree suite that item 3
 of batch 11 existed to finish. Routed as an ARTIFACT, not a patch.**
-`tools/run_all_tests.py` is in **no active claim** at `e50e9d5c`
+`tools/run_all_tests.py` is in **no active claim** at `9e380383`
 (`python tools/sairn_claim.py check tooling "run_all_tests pinned worktree
 isolation shared config"` → `CLEAR`), so this is routed for scheduling rather
 than ownership, and the reason it is not fixed here is stated at the bottom.

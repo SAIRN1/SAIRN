@@ -58,7 +58,7 @@ still wants eyes on them. A reseat is not available: there is nothing to reseat
 ## 2. SEVEN orphaned shas in `docs/tier-a-reviews.json`, and one of them was the basis of a printed STALE verdict
 
 **To: whoever owns the ledger's provenance (cody holds the file most often).
-The gate half is FIXED BY ME at `afd29524` and is not routed — this row is the
+The gate half is FIXED BY ME at `f2ee7be0` and is not routed — this row is the
 LEDGER DATA, which I did not touch.**
 
     00030f2d11b7b1e426724f90d1a3fb69c3cfcf6b
@@ -70,7 +70,7 @@ LEDGER DATA, which I did not touch.**
     e4b3f21a2ceb371e7364613665f004be58645749
 
 All seven are 40-char, all seven `ORPHANED` by the command above. Before
-`afd29524` the gate resolved them with `rev-parse --verify`, found them, diffed
+`f2ee7be0` the gate resolved them with `rev-parse --verify`, found them, diffed
 against them and printed ordinary verdicts — including
 **`** STALE ** moved since 00030f2d11b7`** on an open obligation. After the
 fix, four open records report `COULD-NOT-TELL … ORPHANED`; the other three sit

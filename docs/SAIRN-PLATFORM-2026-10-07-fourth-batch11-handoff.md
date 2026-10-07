@@ -84,7 +84,7 @@ runner still uses a worktree.
 Full artifact, both candidate fixes (with the weaker one marked as **not**
 actually closing it), and the one-command-per-candidate next step:
 **`docs/2026-10-07-fourth-routed-pinned-worktree-shared-config.md`**.
-`tools/run_all_tests.py` is in **no active claim** — `CLEAR` at `e50e9d5c`.
+`tools/run_all_tests.py` is in **no active claim** — `CLEAR` at `9e380383`.
 
 ### 2. EVERY EXISTING "GREEN AT SHA X" CLAIM ABOUT THIS SUITE IS AMBIGUOUS
 
