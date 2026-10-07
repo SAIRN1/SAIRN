@@ -257,3 +257,4 @@ The **batch-11** scratchpad, which this batch's items 3 and 4 continue from:
 | **9** `__file__` sweep | **DONE — 424 of 1214** | coverage ledger §10 | not 424 defects — 424 that cannot be ablated or sandboxed from a copy |
 | **11** cc's three conventions | **DONE** | the report; none conflicts with the 22 | chat decides adoption |
 | **12** method improvement | **DONE** | handoff-c ITEM 12, with the before/after predicate | folded into convention 20 |
+| **13** final handoff + release | **DONE** | the FINAL STATE section of `docs/handoff-fourth-2026-10-07c.md` | claim released; report gate run as the last step |

@@ -385,3 +385,85 @@ result produces exactly the confident wrong number this platform keeps paying
 for.
 
 Folded into convention 20 as the implementation detail it was missing.
+
+---
+
+# FINAL STATE — batch 15 closed, 2026-10-07
+
+**Written at a point where nothing is half-finished, as item 13 requires.**
+
+| | |
+|---|---|
+| branch | `main` |
+| HEAD | **`124ef545`** |
+| pushed | **yes** — `331da1f4..124ef545`, then this commit. `ahead 0 / behind 0` |
+| working tree | clean except the pre-existing untracked `sql/restore_demo_pins_2026-09-29.sql` |
+| **`git config core.bare`** | **empty — unset** |
+| guardian v2 | run pre-push, **scoped honestly**: zero `.html` and zero `.js` in the diff, so checks 1–31 and 0b/0c/0d are **N/A and not claimed as passed**. What ran: both registers valid JSON (79 / 238 entries), `api/sd-data.js` PARSES, and the diff SHAPE — 5 files, 329 insertions, 2 deletions, all docs, nothing swept in |
+| long-running jobs | **none.** No whole-tree run, no `--pinned` run |
+| probes | `git status` before and after every probe and every ablation, unchanged throughout |
+| claim `fourth` | **RELEASED** |
+
+## FINAL FIGURES, re-derived at this HEAD
+
+| | |
+|---|---|
+| Tier A discharged this batch | **3** (190h, 55h, 51h), one by recorded takeover |
+| Tier A eligible to me now | **1** — hank `2026-09-27T03:42:29Z`, `[NO_OBJECT_IN_CLONE]`, the item-7 command |
+| register rows | 79 · empty `why` **10** |
+| the 83, individually verified | **40 of 83** (unchanged — stated, not padded) |
+| ablation | **7 of 8** |
+| orphans, whole corpus | **84** · 28 mine · 56 other sessions' |
+| `__file__` self-locating scripts | **424 of 1214** |
+| conventions I hold | **22** |
+
+## WHAT IS OPEN, AND WHY
+
+| open | why |
+|---|---|
+| **`phi_cache_scoped_to_user.js` arm 5a has NO OWNER** | owner map `None`/`basis NONE`, no claim in history. It blocks 3 rows and its subject is a **PHI cache purge**. **Chat has to assign it before anything else on this list** |
+| **the item-7 reseat** | can only run from hank's clone. Command, dry-run-first and three checks are in SEQ 15-B |
+| **cody's weak-basis record** | `2026-09-28T03:34:57Z` needs `--write-weak-basis`, a containment judgement for cody |
+| **`run_truthy_sum_probe` ablation** | its other 13 arms drive the same subject, so an exit-0 override breaks them too. Empty the subject's **baseline file** instead |
+| **10 empty-`why` register rows** | three single arms would clear six of them |
+| **43 of the 83 unverified** | unmeasured individually, not presumed red |
+| **56 orphans in other sessions' files** | not mine to edit; owners implied by filename in SEQ 15-C |
+| **424 scripts that cannot run from a copy** | a method constraint, not 424 defects: no copy-based ablation or sandbox works platform-wide |
+| **the settings merge** | **BLOCKED.** cody's claim is released but the merge has not landed — only `PreCompact`, no commit since 2026-10-05 |
+| **cc's three conventions** | readable and non-conflicting; **adoption is chat's call**, not self-promoted |
+| **no memory-checkpoint habit** | answered NO, nothing built. A decision for chat |
+
+## EXACT NEXT STEP, PER OPEN ITEM
+
+1. **Assign an owner to `phi_cache_scoped_to_user.js`.** Everything else on
+   this list is smaller than the thing nobody owns.
+2. **hank runs the item-7 command** from `SAIRN-hank`, dry run first, then
+   check 3 — the reseated diff must touch one of the four named files.
+3. **`run_truthy_sum_probe`**: ablate by emptying
+   `tools/truthy_sum_baseline.json`, not by overriding the exit.
+4. **Register, 10 left**: one suite at a time, exit code from its own output,
+   `git status` before and after.
+5. **The census**: 43 to go; re-extract the 83 from the log every time, never
+   quote it.
+6. **Run `--report-gate` as the last step before any report** — it is wired and
+   its fixture is proven to fail before the change.
+7. **The settings merge**: re-check when cody's lands.
+
+## CLAIMS AT CLOSE
+
+**`fourth` is RELEASED.** `cc` was the only other active claim throughout
+(2.5h), and it declares **`tools/doc_sha_reseat.py`** — which is why item 8
+hardened *my* sweep and the durable home for those rules stays **routed to cc**
+rather than taken. **`.claude/settings.json` was never touched.**
+
+## THIS SESSION'S TRANSCRIPT
+
+    C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\4975e2e9-8002-4f73-9d9d-240c42c3b643\scratchpad
+
+In item order: `ta15.out`, `recs15.txt`, `d15a/b/c.out` (item 1 — the three
+discharges with captured exit codes); `cld_g1.out` (hank's tool run **as
+intended**, after my bare invocation got exit 2); `abl4.out`, `abl4b.out`,
+`abl4c.out` (item 3 — **all three attempts, including the two whose predicate
+was wrong**); `census15.out` (item 4); `item9.out` (item 9 — 424 of 1214);
+`reseat15.out` (item 6); `gate_before.out` / `gate_after_1.out` (item 8 — the
+fixture failing before the change and passing after).
