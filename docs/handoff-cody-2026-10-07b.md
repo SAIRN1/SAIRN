@@ -752,3 +752,339 @@ residue check stays attributable to the suite.
 `%TEMP%`; only `w8n86z0u` is mine and live. The other three are earlier or other
 clones' leftovers, and they are **not** worktree registrations so item 5's prune
 had nothing to do with them. Reported, not deleted.
+
+## item 3 — NOT DONE. The run was **KILLED**, not completed. The andon stays HELD.
+
+```
+command : python tools/capture_exit.py --status <D>/suite.status -- \
+            python tools/run_all_tests.py --pinned --out <D>/suite.out
+commit  : 7ce70c6c21a7dc36550d94e4a834ff2b00cea491   (from meta.txt, written at launch)
+START   : 2026-10-07T19:27:29Z        last output: 21:42Z        checked: 22:38Z
+RUNS AT THIS SHA : 1.  FIRST RUN RETURNED: no exit code at all.
+```
+
+**THE STATUS FILE NEVER GOT AN EXIT LINE, and that is the whole finding:**
+
+```
+suite.status  ->  RUNNING 74488 2026-10-07T19:27:29Z python tools/run_all_tests.py --pinned ...
+meta.txt      ->  SHA + START only. NO END, NO WALL_SECONDS.
+done marker   ->  absent
+```
+
+The three background shells — the run, the condition sampler and the per-file
+timer — were **all stopped at once**, which is a harness-level stop and not three
+independent failures. Confirmed dead rather than assumed:
+
+```
+pid 74488 (capture_exit wrapper) alive: False
+pid 79500 (the pinned runner)    alive: False
+pid 82036 (the inner python)     alive: False
+the only live run_all_tests.py on the machine is HANK'S, pid 31292, in hank's own
+worktree, started 15:17:00 -- not mine
+```
+
+**WHAT THE PARTIAL DOES SAY, and it is a partial and labelled one:**
+
+```
+592 lines written, of which
+  586  ok      (336 node + 250 py)
+    0  FAIL
+    0  RAN: summary, 0 EXIT line, 0 COULD NOT RUN line
+first line : PINNED: running in a throwaway CLONE at 7ce70c6c21a7
+last  line : ok py tests/run_tier_a_review_gate_probe.py
+```
+
+**586 of ~748 files, zero failures, then killed.** The failure monitor armed on
+that file emitted **zero events across the full 2h15m**, which corroborates the
+zero — a monitor whose filter covered `FAIL`, `EXIT`, `COULD NOT RUN`,
+`FAILING TEST FILE`, `Traceback` and `SKIPPED`, so silence there is coverage and
+not luck.
+
+**THE ANDON DOES NOT CLEAR.** Only a clean *completed* pass clears it, and this is
+the **second consecutive void run with a different cause** — batch 23's was
+`EXIT 2 / 0xC0000142`, this one is an external kill. Neither is a red suite and
+neither is a pass.
+
+**AND THE KILL LEFT 215 MB BEHIND, WHICH IS WHERE ITEM 10's FIX EARNED ITSELF.**
+The clone the run was using was still on disk because the kill pre-empted the
+cleanup:
+
+```
+C:\...\Temp\sairn-suite-pinned-w8n86z0u
+  files before      : 4047
+  read-only files   :   38   <- exactly what ignore_errors cannot unlink
+  removed with the chmod-retry handler -> still on disk: False, files left: 0
+```
+
+**NEXT STEP, and it needs a different launch shape:** re-run `--pinned` in a way
+that survives a harness stop — a detached `start /b` or a scheduled task writing
+the same `.status` file — because a 3h run inside a managed background shell has
+now been stopped twice. Do **not** read the existing `suite.status`: it says
+RUNNING for a process that is dead, which is the one state `capture_exit.py`
+cannot distinguish and is worth its own finding.
+
+## item 4 — DONE. 0xC0000142 did NOT recur. Verdict: **UNKNOWN**, with two candidates NOT SUPPORTED.
+
+```
+command : scratchpad/b24/sampler.py, 30s interval, against Win32_Process + Win32_OperatingSystem
+commit  : 7ce70c6c     date: 2026-10-07
+window  : 2026-10-07T19:27:44Z -> 21:44:25Z   (2h16m41s, 262 samples)
+```
+
+| measure | baseline, pre-run | min | max | mean |
+|---|---|---|---|---|
+| processes | 378 | 372 | 419 | 391 |
+| `python` | 2 | 6 | 27 | 11 |
+| **`git`** | 3 | **0** | **9** | **1** |
+| `node` | 1 | 0 | 3 | 0 |
+| total handles | 501,017 | 496,806 | 506,322 | 501,250 |
+| free physical MB | 3,067 | 1,771 | 4,170 | 3,335 |
+| free commit MB | 4,462 | 2,785 | 5,178 | 4,641 |
+
+**`launch_fail_hits`: 0 across all 262 samples** — the sampler counted
+occurrences of `3221225794` / `0xC0000142` in the suite's own output every 30
+seconds and never saw one.
+
+**HANDLE EXHAUSTION — NOT SUPPORTED.** Total handles moved by **1.9%** across the
+whole run and the maximum (506,322) is 1.1% above the pre-run baseline. The
+machine's handle count is dominated by one unrelated process —
+**`MMSSHOST` pid 7420 holding 288,035 handles, 57% of all 501,017** — which was
+there before, during and after and has nothing to do with the suite. The suite's
+own contribution is in the noise.
+
+**COMMIT / MEMORY EXHAUSTION — NOT SUPPORTED.** Free commit never fell below
+2,785 MB of a 29,662 MB limit. Free physical dipped to 1,771 MB, which is real
+pressure and nowhere near exhaustion.
+
+**GIT PROCESS COUNT — MEASURED AND SMALL.** Peak **9** concurrent `git`
+processes, mean 1. The item asked for this specifically; a launch failure from
+git-process pressure would need far more than 9.
+
+**DESKTOP HEAP — NOT MEASURED, AND I AM NOT CLEARING IT.** The configuration is
+the Windows default, read from the registry:
+
+```
+HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\SubSystems\Windows
+  SharedSection=1024,20480,768
+    1024 KB  system-wide heap
+   20480 KB  interactive desktop heap   <- the suite's console children live here
+     768 KB  non-interactive desktop heap
+```
+
+**Windows exposes no counter for desktop-heap *usage*.** Measuring it needs
+`dheapmon` or a kernel debugger, neither of which is on this machine. So
+desktop-heap exhaustion is **unmeasured**, not excluded — and reporting it as
+excluded on the strength of the other numbers would be the guess the item
+forbids.
+
+**VERDICT: UNKNOWN.** 0xC0000142 is `STATUS_DLL_INIT_FAILED` — a process that
+could not initialise, so `git` could not be *launched* rather than git running
+and finding a broken repo. It happened **once**, at the very end of a 3h10m run,
+and did **not** reproduce in 2h17m of the same workload under measured conditions
+that rule out the two candidates the item named. The remaining hypothesis is
+transient pressure at process-launch; a hypothesis is not a cause, so this stays
+**UNKNOWN** rather than being written up as one.
+
+**ONE THING THE ORIGINAL EVENT COST THAT IS WORTH FIXING SEPARATELY:** the
+throwaway clone is deleted on exit, so the single place that could have
+distinguished *"git could not launch"* from *"the repo is broken"* was gone before
+anybody could look. A `--pinned` run that fails its post-run tree read should
+**keep** the clone and say where it is.
+
+## item 7 — NOT DONE. The method worked; the KILL destroyed its output. The bound stays UNSET.
+
+**WHAT WAS BUILT AND WHY IT IS THE RIGHT METHOD.** `scratchpad/b24/childwatch.py`
+samples `Win32_Process` for the suite's grandchildren every 15s and records
+first-seen/last-seen per command line, so **every file is timed as the suite
+itself runs it**. The alternative — a second timed run of 748 files alongside a
+748-file run — measures CPU contention, not files; and a file run *alone* can
+take a different path, which is exactly why batch 23's 567 s figure for
+`run_hover_audit_method_sabotage_probe.py` was reported as a lower bound on a
+different path and the file was **not** named.
+
+**AND THE WATCHER LOST EVERYTHING, FOR A REASON I HAD ALREADY WRITTEN DOWN.** It
+accumulated in memory and wrote `i7_child_times.txt` **once, at the end**. The
+kill arrived first, so the file does not exist. That is convention 10 —
+*no long run whose first check is at the end* — committed by me, in a watcher
+built to measure a long run. **The fix is one line: append each sample.**
+
+**WHAT SURVIVED, from live process reads taken by hand during the run:**
+
+```
+command : Get-CimInstance Win32_Process -Filter "ParentProcessId=79500"
+  15:46:05  tests/grader_exclusion_parser_review_probe.py   observed ~4-5 min
+  15:56:09  tests/intake_link_no_credential_probe.py        finished 15:58:22 -> 133 s
+  15:58:26  tests/law_custody_attribution_probe.py
+```
+
+**AND ONE REAL RESULT THAT RULES OUT THE OBVIOUS EXPLANATION.** Batch 22's
+*"`suite.out` not written for 35 minutes while children churned"* could have been
+output buffering rather than slow files. **Measured and excluded:**
+
+```
+t=15:57:00  suite.out 370 lines mtime 15:51:15   wrapper.out 370 lines mtime 15:51:15
+t=15:57:42  suite.out 370 lines mtime 15:51:15   wrapper.out 370 lines mtime 15:51:15
+t=15:58:25  suite.out 371 lines mtime 15:58:22   wrapper.out 371 lines mtime 15:58:22
+```
+
+Both sinks advance **together, line by line, as each file completes**. So the
+stalls are genuinely slow files, not a buffer — and a 7-minute gap between two
+consecutive lines is one or two files taking minutes each.
+
+**THE 35-MINUTE FILE IS STILL NOT NAMED.** I will not name it from adjacency, and
+that is the second batch running in which the honest answer is "not yet".
+
+**THE BOUND STAYS UNSET, as the item instructs.** 900 s per file and 14,400 s per
+run remain a *proposal* from one measured run (batch 23's 11,427 s). This batch
+produced **no second completed run**, so there is no second measurement to
+support them and nothing was written to any file.
+
+**NEXT STEP:** one line in `childwatch.py` to append per sample instead of
+writing at the end, then re-run it against the next `--pinned` attempt. The
+timing data is then durable against a kill, which is the only thing that stopped
+this item twice.
+
+## THE BASIS FIXTURE IS A SECOND COPY, AND THE DISCOVERY IS THE FINDING
+
+Found at the close of the batch, after the fixture was already committed:
+**`tests/run_tier_a_open_basis_probe.py` already exists on `origin/main`**, added
+by cc at `a237bd85` — *"the --open fix is now PROVEN by a real record"*. It does
+substantially what my 11 arms do: reads the real ledger, partitions it by a
+cutoff, checks `opened_at_sha_basis` for presence and consistency, and carries
+planted negatives.
+
+**BOTH PASS, measured just now, and they agree:**
+
+```
+python tests/run_tier_a_review_gate_probe.py  -> EXIT 0, ALL ARMS PASS, 236 ok
+    NOTE the ledger rule examined 1 of 239 record(s); 238 predate the cutoff
+python tests/run_tier_a_open_basis_probe.py   -> EXIT 0, 7/7 arms
+    PASS REAL: hank 2026-10-07T20:11:20Z is stamped from its FILE SET
+```
+
+**THE FIX IS NOW PROVEN, AND NOT BY ME.** cc's second discharge wrote the first
+real post-fix record, so the coverage line that read *"examined 0 of 238, NOT YET
+EXERCISED BY REAL DATA"* when I wrote it now reads **1 of 239**. The field is
+being written by a real `--open` run by a session that is not me — which is
+exactly the claim the task asked me to make testable, confirmed by data rather
+than by my fixture agreeing with itself.
+
+**ONE REAL DIFFERENCE, AND IT IS THE ONLY REASON EITHER IS WORTH KEEPING OVER THE
+OTHER.** cc **pins the cutoff by SHA** and guards the pin by checking the
+commit's subject — its own comment calls a stale pin *"a silently wrong cutoff"*.
+Mine **derives the cutoff from content** (`git log --reverse -S 'def
+subject_sha('`), so it cannot go stale at all: `18078d38` was itself the
+post-rebase sha of that fix, and this platform rebases constantly. A guard
+against a failure mode is weaker than not having the failure mode.
+
+**ROUTED TO CHAT, NOT RESOLVED UNILATERALLY.** `tests/run_tier_a_open_basis_probe.py`
+is **cc's** file. Recommendation: **keep cc's as the dedicated probe**, port the
+content-derived cutoff into it, and drop my duplicate *ledger* arms from
+`run_tier_a_review_gate_probe.py` — leaving there only the `subject_sha` and
+`_open_record` unit arms, which belong beside that tool. Until chat decides,
+**two copies exist and both pass, and that is disclosed here rather than left for
+somebody to find.**
+
+**WHY IT HAPPENED, cause-tagged like the rest:** *process / routing-without-a-check
+/ a fixture was routed to me in cc's report while cc also built it, and neither
+of us checked `git ls-tree` for the name before writing.* The platform's own rule
+— *when a second copy is discovered, that discovery is the finding* — is the one
+that applies, and the cheap check that would have prevented it is one
+`git ls-tree -r --name-only origin/main | grep basis` **before** writing, which is
+the same pre-build duplication check Guardian Check 0e already requires for tables
+and routes and does not yet require for test files.
+
+---
+
+# ITEM 16 — HANDOFF. Nothing is half-finished at this point.
+
+## A. COMMITTED AND PUSHED STATE
+
+```
+HEAD            812901ed  (rebased cleanly onto origin/main, rc 0)
+tree            clean apart from this handoff, committed below
+origin/main     703b8ee8 at fetch; 64 commits arrived during this batch
+branch          cody/firebase-modular-port -> 3de3cadd   ANDON HELD
+```
+
+| commit | item |
+|---|---|
+| `7ce70c6c` | handoff: items 1, 2, 5 |
+| `29c02acf` | handoff: items 6, 8, 9, 10 and the four diagnostics |
+| `f8d73c48` | handoff: item 11, seven defects cause-tagged |
+| `eca8626f` | the `opened_at_sha_basis` fixture, 11 arms |
+| `812901ed` | `run_all_tests.py` checkout-failure leak, item 10's one in-scope fix |
+| *this one* | items 3, 4, 7, the duplication finding, and this handoff |
+
+Items **1, 2, 4, 6, 8, 9, 12–15** produce no code commit **by design** — each is
+a report, a measurement, or an explicit do-not-touch.
+
+## B. WHAT IS OPEN, AND WHY
+
+| item | state | why |
+|---|---|---|
+| **1** Tier A discharge | **OPEN — 0 of 6** | blocked by cc's live claim for the whole batch; **cc released at the close**, so the ledger is FREE now. I did not start a 52.3h adversarial review in the final minutes of a batch: a review written to close an item is the tick the gate itself refuses. |
+| **3** clean-worktree suite | **OPEN — run KILLED** | 586 of ~748 files, **0 FAIL**, no exit line. Second consecutive void run, different cause. **Andon HELD.** |
+| **7** the 35-minute file | **OPEN — not named** | the watcher's output was lost to the same kill; method proven, data gone. Bound stays **UNSET**. |
+| **10** six more leak sites | **OPEN — routed** | mine, but not in this batch's declared FILES. |
+| **8(a)** the six methodology conventions | **OPEN — routed** | `docs/METHODOLOGY.md` is fourth's. |
+| the duplicate basis probe | **OPEN — routed** | cc's file; recommendation above. |
+
+## C. EXACT NEXT STEP, PER OPEN ITEM
+
+1. **Tier A** — the ledger is free (`sairn_claim.py check` → CLEAR). Declare
+   `docs/tier-a-reviews.json`, then discharge **fourth, `2026-10-05T15:02:28Z`,
+   `quotes`, 52.3h** first and work down the six. **hank's batch18 item 7 is
+   queued on the same discharge** — check before starting.
+2. **The suite** — re-launch `--pinned` in a shape that survives a harness stop
+   (detached, or a scheduled task) writing the same `.status` file. **Do not read
+   the current `suite.status`:** it says `RUNNING` for a dead process, and that
+   state is its own finding — `capture_exit.py` cannot tell a live run from a
+   killed one.
+3. **Item 7** — `childwatch.py` is already fixed to append per sample
+   (`<OUT>.live`); re-run it against that attempt.
+4. **Item 10's six** — declare `tests/claims/run_freshness_probe.py`,
+   `tests/push_gate/redaction_base_probe.py`,
+   `tests/push_gate/refspec_and_override_probe.py`,
+   `tests/run_bare_run_write_probe.py`, `tools/clone_health_check.py`, then apply
+   the patch shape proven in `run_all_tests.py`.
+5. **The 36 not-mine leak calls** — `scratchpad/b24/i10_ordered.txt` has the full
+   list; chat assigns.
+6. **The basis probe duplication** — chat decides which copy survives.
+7. **`run_all_tests.py` should keep the clone when its post-run tree read fails**
+   — the one fix that would have let item 4 reach a cause instead of UNKNOWN.
+
+## D. CLAIMS HELD
+
+`cody / Tooling`, batch 24. **Declared FILES, all touched or deliberately not:**
+`tools/run_all_tests.py` ✎, `tests/run_tier_a_review_gate_probe.py` ✎,
+`package-lock.json` (read, byte-verified unchanged),
+`docs/defect-density-register.json` (not written this batch),
+`docs/scrutiny-flags.json` (gate-written only),
+`docs/2026-10-07-cody-batch24.md` (**not created** — the per-item handoff replaced
+it, and that is a deviation from my own claim, stated),
+`docs/handoff-cody-2026-10-07b.md` ✎, `SAIRN-ACTIVE-WORK-cody.md` (pending).
+
+**NOT TOUCHED, held by others:** `docs/tier-a-reviews.json` (cc — **read only**),
+`tests/run_tier_a_open_basis_probe.py` (cc — read only),
+`tools/defect_register.py`, `tools/condition_coverage.py` (cc),
+`docs/METHODOLOGY.md`, `docs/2026-09-13-cross-domain-disciplines.md` (fourth),
+`api/sd-data.js` (hank), `.claude/settings.json`.
+**I closed no finding I did not originate and reclassified none.**
+
+**AND ONE PIECE OF GOOD NEWS FROM ANOTHER CLONE:** fourth's batch17 item 11 is
+*"cody's sandbox-redirect finding as the next convention, DERIVED BY CODY AND
+CREDITED TO CODY"* — batch 23's method improvement was received and is being
+promoted, with the credit intact.
+
+## E. TRANSCRIPT
+
+```
+C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-cody\20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e
+```
+
+`scratchpad/b24/` — 29 raw artefacts, 224,970 bytes. `i3/` the killed run
+(`suite.out` 592 lines, `suite.status` still saying RUNNING, `meta.txt` with no
+END). `i4_samples.csv` 262 samples. `i10_ordered.txt` the full leak population.
+`sampler.py`, `childwatch.py`, `write_report.py`, `i10_*.py` the scanners.
+`cc_basis_probe.py` cc's probe as fetched, for the comparison above.

@@ -7111,3 +7111,39 @@ Handoff: `docs/handoff-cody-2026-10-07.md`, item-12 section.
 register record + the cleanup fix the scrutiny flag caught, `15e56976` the
 post-rewrite re-seat, `1adbdc94` the gate rows. Remote tip read with
 `git ls-remote`: **1adbdc94**, ahead 0 / behind 0.
+
+## 2026-10-07 — batch 24 (cody)
+
+Per-item checkpoint habit ON (item 2): the handoff is written as each item closes,
+not in one pass at the end. Full detail: `docs/handoff-cody-2026-10-07b.md`.
+
+**Two batch premises were wrong and both are corrected.** Item 1 said fourth held
+the Tier A ledger; fourth had RELEASED it and the real holder was **cc**, claimed
+17 minutes before my attempt — my claim was REFUSED and the refusal recorded, not
+overridden. Item 6 said one high and one moderate; there is **no moderate** — both
+remaining highs are one node-forge advisory counted twice, unreachable
+(`forge.pki.privateKeyFromPem`, return value discarded) with **no patched release**
+and no lockfile-only fix, lock byte-verified unchanged.
+
+**And one of my own batch-23 claims is REVERSED:** `--post-rewrite` is NOT the
+minimal path. Both it and `--reseat` call the same `save()`, which is
+`json.dumps(indent=2)` over the whole register; the one-line diff I saw was the
+stored formatting matching the serialiser. The routed finding stands at full width.
+
+**Item 3 is OPEN — the pinned run was KILLED at 586 of ~748 files with 0 FAIL and
+no exit line. Second consecutive void run, different cause. ANDON HELD.** Item 4
+is **UNKNOWN**: 0xC0000142 did not recur in 262 samples over 2h17m; handle and
+commit exhaustion NOT SUPPORTED by measurement, desktop heap **unmeasured** and
+not cleared. Item 7 still does **not** name the 35-minute file — but buffering is
+ruled out by measurement, and the bound stays UNSET.
+
+**Item 5:** 30 worktree registrations → 2, `.git/config` sha256 byte-identical,
+`core.bare` false; the locked one is an interrupted `worktree add`. **Item 10:**
+53 of 322 calls in the real leak class, 17 mine, **7 genuine**, 1 fixed — and the
+predicate was wrong twice before it was right. **Item 8:** ITEM 15 found in the
+documents (three conventions + three owed, all fourth's file).
+
+**The basis fixture I was asked for is a SECOND COPY** — cc had already landed
+`tests/run_tier_a_open_basis_probe.py`. Both pass and agree; mine derives its
+cutoff from content where cc's pins a sha. Routed to chat, not resolved
+unilaterally.
