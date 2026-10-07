@@ -3422,6 +3422,24 @@
         "tools/capture_exit.py",
         "tools/metamorphic_check.py"
       ]
+    },
+    {
+      "id": "cody-1791389029",
+      "session": "cody",
+      "subject": "Tooling",
+      "task": "batch23, SCOPE NARROWED NOT REWORDED: item 1 becomes REPORT-ONLY because fourth claimed docs/tier-a-reviews.json at 2026-10-07T16:01:18Z, 0.0h before me, declares it in his FILES, and his own item 1 is the same most-overdue-eligible discharge. I do NOT discharge and I do NOT touch that ledger. Remaining work: confirm Edit and Write no longer prompt and find what removed the model key from the global settings file between 12:44 and 14:30; name the slow test with Get-CimInstance and measure the two harnesses, propose a bound, change no file; report the pinned suite result and re-check the firebase branch with captured codes; what a deploy needs for the installed busboy to match the lock; re-derive once whether a patched node-forge exists; the HEAD-stamping finding in the review gate re-derived at HEAD and either fixed with a fixture that fails first or reported already fixed; the resolver refusal as a reproducing artifact; confirm the SQL runbook is pushed; one method improvement; handoff. CONFLICTS RE-DERIVED AT HEAD 4bac2e25 FROM A LIST READ TWICE, AND THE SECOND READ IS WHY THIS IS NARROWED: fourth holds docs/tier-a-reviews.json, docs/METHODOLOGY.md, docs/2026-09-13-cross-domain-disciplines.md and docs/known-red-suites.json. cc holds tools/report_only_checks.py, tools/sairn_push_gate_hook.py, tools/doc_sha_reseat.py and docs/tool-owner-map.json. tools/tier_a_review_gate.py is declared by NEITHER. docs/defect-density-register.json is not touched: the sha reseat stays abandoned on the resolver refusal. FILES: tools/tier_a_review_gate.py tests/run_tier_a_gate_probe.py .claude/settings.json docs/2026-10-07-cody-batch23.md docs/handoff-cody-2026-10-07.md SAIRN-ACTIVE-WORK-cody.md",
+      "claimed_at": "2026-10-07T16:03:49Z",
+      "claimed_at_epoch": 1791389029.6837215,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        ".claude/settings.json",
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/2026-10-07-cody-batch23.md",
+        "docs/handoff-cody-2026-10-07.md",
+        "tests/run_tier_a_gate_probe.py",
+        "tools/tier_a_review_gate.py"
+      ]
     }
   ],
   "refusals": [
@@ -3689,6 +3707,21 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "shared phrase: \"citation drift\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-07T16:02:13Z",
+      "my_subject": "Tooling",
+      "my_task": "batch23: (1) discharge the most overdue ELIGIBLE Tier A obligations, oldest first, read-only review with captured output. (3) confirm Edit/Write no longer prompt and find what removed the model key from .claude/settings.json between 12:44 and 14:30. (4) name the slow suite with Get-CimInstance and measure run_all_tests and guard_ablation, propose a bound, change no file. (5) report the suite first-run result and re-check the firebase andon. (6) what a deploy needs for installed busboy 3.2.2 to match the lock. (7) re-derive once whether a patched node-forge exists. (8) the --open HEAD-stamping finding re-derived at HEAD and fixed with a regression fixture that fails before the fix, or reported already fixed. (9) the sairn_rebase_resolve refusal as a reproducing artifact in the handoff, no fix. (10) confirm the SQL runbook doc is pushed. (11) one methodology improvement with a before/after. (12) handoff. CONFLICTS RE-DERIVED AT HEAD 4bac2e25 FROM A FRESH LIST: cc holds 20 files and docs/tier-a-reviews.json and tools/tier_a_review_gate.py are NOT among them, so both are free. docs/defect-density-register.json is NOT touched this batch -- my sha reseat was abandoned last batch on sairn_rebase_resolve's refusal and stays abandoned. ANDON HELD: cody/firebase-modular-port is not merged. FILES: docs/tier-a-reviews.json tools/tier_a_review_gate.py tests/run_tier_a_gate_probe.py .claude/settings.json docs/2026-10-07-cody-batch23.md docs/handoff-cody-2026-10-07.md SAIRN-ACTIVE-WORK-cody.md",
+      "other_session": "fourth",
+      "other_subject": "fourth",
+      "other_task": "batch15 at HEAD dc9f1629, premises re-derived. (1) Tier A: discharge the most overdue eligible records. (2) memory-checkpoint tool/habit: ANSWERED NO, nothing built. (3) finish the ablation work, remaining 4 of 8, report X of 8. (4) 83-item sweep from 40, against the REAL population re-extracted from the log. (5) the three single arms blocking six register rows -- reproducing artifact and owning agent per arm, in MY handoff only; I FIX NOTHING in another agent's files and chat routes. (6) orphan re-seat from 69 of 79, each alone with git status before and after and node --check clean. (7) the exact [NO_OBJECT_IN_CLONE] command for hank plus the check that proves it landed -- handoff only. (8) extend MY OWN existing sweep (scratchpad sweep_full.py) to run as the last step and flag any citation in the report that is not on origin/main, with a regression fixture that fails before the change. NOTE: tools/doc_sha_reseat.py is CC'S under a live 2.5h claim, so the durable home stays ROUTED and I harden my own tool instead. (9) sweep every probe that locates itself by __file__ and so breaks from a copy, X of Y. (10) settings-merge re-checked once, not attempted. (11) list cc's three readable conventions and say whether any conflicts with the 22 I hold; chat decides adoption. (12) one real method improvement with a before/after. (13) handoff. sairn-guardian-v2 before any push. NOT TOUCHED: tools/doc_sha_reseat.py (cc's) and .claude/settings.json. I close only findings I originated and reclassify none. FILES: docs/tier-a-reviews.json docs/known-red-suites.json tools/known_red_check.py docs/METHODOLOGY.md docs/2026-09-13-cross-domain-disciplines.md tests/run_truthy_sum_probe.py tests/run_subprocess_decode_probe.py tests/run_completeness_probe.py docs/2026-10-07-fourth-routed.md docs/2026-10-07-fourth-coverage-ledger.md docs/handoff-fourth-2026-10-07c.md docs/handoff-fourth-2026-10-07.md SAIRN-ACTIVE-WORK-fourth.md",
+      "other_claimed_at": "2026-10-07T16:01:18Z",
+      "shared_files": [
+        "docs/tier-a-reviews.json"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
