@@ -1377,6 +1377,61 @@ def head_sha():
     return git('rev-parse', 'HEAD').strip()
 
 
+# ── --open STAMPED HEAD, AND HEAD IS NOT THE COMMIT UNDER REVIEW (2026-10-07)
+# THE COMMENT ABOVE _open_record SAYS the stamp is "the commit the reviewer's
+# diff is relative to". That is only true when --open runs on top of the change
+# commit and nothing else. In practice it runs after a regeneration, a
+# chore(claims) commit, or a merge -- and then the stamped sha contains NONE of
+# the files the record names.
+#
+# MEASURED AGAINST THE WHOLE LEDGER AT HEAD dea44d22, 2026-10-07, not against
+# the two records that first showed it. 238 records; for each one that carries
+# both a sha and a file list, `git show --format= --name-only <sha> -- <files>`:
+#
+#   145  no opened_at_sha at all -- the field postdates them, not a defect here
+#    30  sha is not an object in this clone -- unfetched branch, CANNOT TELL
+#    24  CONTAINS      the stamped commit really did touch the named files
+#     5  EMPTY, merge  a merge's diff is empty by default, so also cannot tell
+#    34  EMPTY, NON-MERGE -- the stamped commit's diff contains NONE of them
+#
+# So 34 of the 63 checkable records -- 54% -- anchor an obligation to a commit
+# that never contained its subject, and they come from FIVE different sessions
+# (hank 12, cody 12, hover2 4, cc 4, fourth 2). That spread is the replication:
+# not two sessions agreeing, five independent record sets showing the same shape.
+#
+# IT IS NOT A COSMETIC FIELD. code_staleness() diffs the named files between
+# this sha and HEAD, so a sha that never contained them makes STALE/FRESH a
+# verdict about the wrong interval -- and the reviewer either reconstructs the
+# subject by hand (what both of us did) or reviews the wrong diff.
+#
+# THE BASIS IS RECORDED BESIDE THE SHA rather than inferred, because a reader
+# who cannot tell which rule produced a value has to trust it. `file-set` is the
+# real answer; `head` is the honest fallback when there are no files to go on;
+# and a git failure yields None, never a guess, for the reason head_sha()'s own
+# callers already state -- a wrong sha reports a confident FRESH or STALE.
+def subject_sha(files):
+    """(sha, basis) for the commit a review is really about.
+
+    basis is 'file-set' when the sha is the last commit touching the named
+    files, 'head' when the record names no files, and the sha is None with
+    basis 'could-not-tell' when git cannot answer.
+    """
+    paths = sorted({f for f in (files or []) if f})
+    if paths:
+        try:
+            out = git('log', '-1', '--format=%H', '--', *paths).strip()
+        except Exception:
+            out = ''
+        if out:
+            return (out, 'file-set')
+        # No commit has ever touched them -- a brand-new untracked file. HEAD is
+        # then the only honest anchor and the basis says so.
+    try:
+        return (head_sha(), 'head')
+    except CouldNotTell:
+        return (None, 'could-not-tell')
+
+
 def code_staleness(rec, head=None):
     """-> (state, detail). state in FRESH | STALE | UNSTAMPED | COULD-NOT-TELL."""
     sha = rec.get('opened_at_sha')
@@ -1913,19 +1968,38 @@ def _open_record(why, hits, rule_hits, irr_hits=None):
     author = session_name()
     owner, owner_note = assign_owner(author, data)
     # ── THE SHA THE OBLIGATION IS ABOUT (item 102 part 4) ──────────────────
-    # Stamped at open, never later: it is the commit the reviewer's diff is
-    # relative to, and code_staleness() has nothing to compare without it.
-    # None rather than a guess when git cannot answer -- an UNSTAMPED record
-    # reports as could-not-compute, which is honest, where a wrong sha would
-    # report a confident FRESH or a confident STALE.
-    try:
-        opened_sha = head_sha()
-    except CouldNotTell:
-        opened_sha = None
+    # Stamped at open, never later, because code_staleness() has nothing to
+    # compare without it. None rather than a guess when git cannot answer -- an
+    # UNSTAMPED record reports as could-not-compute, which is honest, where a
+    # wrong sha would report a confident FRESH or a confident STALE.
+    #
+    # IT USED TO BE head_sha(), AND THE COMMENT HERE CLAIMED head was "the
+    # commit the reviewer's diff is relative to" -- true only when --open runs
+    # directly on top of the change. See subject_sha() for the measurement that
+    # overturned it. The dead `opened_sha = head_sha()` that this fix left
+    # sitting above the real assignment is gone with it; a value computed and
+    # then unconditionally overwritten reads as a fallback that is never taken.
+    # ── THE FILE SET IS COMPUTED FIRST so the sha can be derived FROM it ────
+    # It used to be computed inline in the dict below, which is why the sha had
+    # nothing to go on and HEAD was the only thing available. See subject_sha().
+    # ALL THREE SOURCES, and the first draft of this used only two. The record's
+    # own `files` field is built from hits, rule_hits AND irr_hits; deriving the
+    # sha from a SMALLER set than the record publishes would have anchored the
+    # obligation to a different file set than the one it names -- a quieter
+    # version of the defect being fixed. Caught by reading the field rather than
+    # trusting the patch.
+    _files = sorted(set(list(f for fs in hits.values() for f in fs)
+                        + list(f for fs in rule_hits.values() for f in fs)
+                        + list(f for fs in (irr_hits or {}).values() for f in fs)))
+    opened_sha, opened_basis = subject_sha(_files)
     rec = {
         'author_session': author,
         'opened_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
         'opened_at_sha': opened_sha,
+        # Recorded beside the sha, never inferred: 'file-set' is the real
+        # answer, 'head' the honest fallback when a record names no files, and
+        # 'could-not-tell' a refusal rather than a guess.
+        'opened_at_sha_basis': opened_basis,
         'resources': sorted(hits),
         # ── ALWAYS PRESENT, EVEN WHEN EMPTY (2026-09-24) ───────────────────
         # A field that appears only when non-empty is a field every reader has
@@ -1935,9 +2009,8 @@ def _open_record(why, hits, rule_hits, irr_hits=None):
         'rules': sorted(rule_hits),
         # Same always-present rule as `rules` above, for the same reason.
         'irreversible': sorted(irr_hits or {}),
-        'files': sorted(set(list(f for fs in hits.values() for f in fs)
-                            + list(f for fs in rule_hits.values() for f in fs)
-                            + list(f for fs in (irr_hits or {}).values() for f in fs))),
+        # The SAME list the sha was derived from, by construction.
+        'files': _files,
         'what': why,
         'status': 'open',
         # ── THE OWNER IS STAMPED NOW, NOT WHEN SOMEBODY CLAIMS IT ──────────

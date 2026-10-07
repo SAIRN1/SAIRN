@@ -919,3 +919,293 @@ A rebase conflict on the register → resolver **EXIT 1**, change abandoned.
 **Every one failed in a way that could not be mistaken for success**, which is
 the only reason none of them became a corrupted record. The control in all three
 cases is the same: a real message file, and a resolver that refuses.
+
+---
+
+# ITEM 12 — FINAL, BATCH 23. Written at a point where nothing is half-finished.
+
+Resumed from a stopped terminal with no memory of the batch. Everything below
+was re-derived; nothing was carried from the sections above without a re-check.
+Full per-item detail: **`docs/2026-10-07-cody-batch23.md`**.
+
+## A. CORRECTION TO THE BATCH 22 SECTION ABOVE
+
+Batch 22 left `tools/tier_a_review_gate.py` and
+`tests/run_tier_a_review_gate_probe.py` **modified in the working tree and
+uncommitted**, and **the probe did not compile**: two string literals contained
+a real newline (`SyntaxError: unterminated string literal`, line 2198). A probe
+that cannot be imported reports nothing, and the handoff did not say the work
+was in that state. Fixed first, before anything else in this batch.
+
+The batch-22 note *"the top-level `model` key disappeared … not by any edit of
+mine"* **stands**, and the window narrows from 12:44→14:30 to
+**12:48:04Z→14:30:44Z**. See §C.2.
+
+## B. PUSHED STATE
+
+```
+HEAD          8ee6e7c2   rebased onto origin/main (4263ed6b) cleanly, rc 0
+branch        cody/firebase-modular-port -> 3de3cadd   NOT an ancestor. ANDON HELD.
+```
+
+| commit | item |
+|---|---|
+| `8ee6e7c2` | 8 — `subject_sha()`, the basis field, and 8 probe arms |
+| the docs commit beside it | the batch doc, this handoff, the active-work append |
+
+Items **1, 2, 3, 4, 5, 6, 7, 9, 10, 11** produce no code commit **by design** —
+each is a report, a measurement, or an explicit do-not-touch.
+
+## C. OPEN, WITH THE EXACT NEXT STEP
+
+### C.1 The firebase andon — HELD, and the suite run is VOID not red
+
+The run finished and **its own last line voids it**:
+
+```
+capture_exit.py --read <OLD-SCRATCH>/item4/suite.status
+  -> EXIT 2 2026-10-07T16:23:49Z python tools/run_all_tests.py --pinned
+suite.out last line:
+  EXIT 2 -- COULD NOT RUN: the clone was broken during this run,
+            so no verdict above is attributable
+```
+
+**1 run at `c1cd7c41eaf5`, and the first run returned EXIT 2.** 748 files ran,
+183 reported FAIL, **none attributable**. Wall time **11,427 s**.
+
+The guard fired on `git status exited 3221225794` = **`0xC0000142`, a process
+that failed to INITIALISE** — git could not be launched. That is a genuine
+could-not-tell, but the message's *"something in the suite broke this clone"* is
+a cause it did not demonstrate. The live clone reads `core.bare=false` rc 0; the
+throwaway clone `sairn-suite-pinned-9nb6j88c` **is gone**, so the one place that
+could settle it no longer exists.
+
+**NEXT STEP:** re-run `python tools/run_all_tests.py --pinned` once, alone, and
+treat EXIT 2 as a harness problem rather than a suite verdict if it recurs.
+**Only a clean pass clears the andon.** Captured codes this batch, each from its
+own `.status` file:
+
+```
+merge-tree origin/main .. branch            -> EXIT 0  tree f4ebb446d0fa
+merge-tree HEAD        .. branch            -> EXIT 0  tree f2b7bb72c578
+merge-base --is-ancestor branch origin/main -> EXIT 1
+```
+
+### C.2 `~/.claude/settings.json` — Edit/Write CONFIRMED; the `model` key NARROWED
+
+**Edit/Write no longer prompt. Confirmed in this fresh session:** every `Edit`
+and `Write` call completed with **zero prompts** — **10 `Edit` and 3 `Write`**
+by the time this line was written, the first before any settings work. `ask`
+holds only the four `rm -rf` / `reset --hard` / `clean` / `branch -D` rules;
+`defaultMode: acceptEdits`. Batch 22's prediction held.
+
+**The `model` key: cause narrowed to the Claude Code application's own settings
+writer**, by exclusion plus file shape — not unknown, and not provable to the
+keystroke. Replaying batch 22's `merge.py` against a copy of the 12:44:42Z
+backup reproduces the 14:30:44Z file **except that the replay keeps
+`"model": "sonnet"`** — one key, nothing else. `final.diff` at 12:48:04Z still
+shows no model line, so the window is **12:48:04Z → 14:30:44Z**. Ruled out:
+another clone's session (no other handoff records a write), a migration into
+`.claude.json` (no model key there), collateral on other keys (the replay
+proves one key). No app-side audit trail exists: `~/.claude/logs` absent,
+`~/.claude/backups` holds only `.claude.json.backup.*`, oldest **15:57Z — after
+the window**. **Not restored; the app owns that setting.**
+
+**AND A WRITE I DID NOT INTEND, verified and reported:** a failed `sed`
+substitution left the replay pointed at the live file and it **rewrote
+`~/.claude/settings.json`**. Content verified identical afterwards (3700 bytes,
+11 keys, allow 42 / deny 25 / ask 4, `defaultMode acceptEdits`,
+`CLAUDE_CODE_FORK_SUBAGENT=0`, diff vs the 14:30:44Z snapshot still exactly the
+two `Edit`/`Write` lines); **only the mtime moved**. The write was idempotent.
+Generalised as the method improvement, §C.6.
+
+**NEXT STEP:** none. If Michael wants `model` back it is a `/model` selection,
+not a file edit.
+
+### C.3 The 35-minute test file is STILL NOT NAMED, and why
+
+`Get-CimInstance Win32_Process … Select CommandLine` **works** where `wmic`
+returned nothing — but my suite had already ended when I ran it, so every
+process it listed was hank's. Measured instead:
+
+| program | measured | source |
+|---|---|---|
+| `run_all_tests.py --pinned` | **11,427 s**, 748 files | `item4/meta.txt` |
+| `guard_ablation.py --limit 1` | **328 s**, EXIT 0 | `t4/abl.status` |
+| `run_hover_audit_method_sabotage_probe.py` alone | **567 s**, EXIT **2** | `t4/hover.status` |
+
+The alphabetically-next file after the last written suite line is
+`run_hover_audit_method_sabotage_probe.py`, and run alone it stopped early on a
+red baseline (EXIT 2, 567 s) — a **lower bound on a different code path**.
+Adjacency plus a lower bound is not an identification, so it is not named.
+
+**PROPOSED BOUND, basis one measured run, labelled weak: 900 s per test file,
+14,400 s for a whole `--pinned` run. NO FILE WAS CHANGED.**
+
+**NEXT STEP:** to name it, run `--pinned` with `Get-CimInstance` sampled on a
+timer *while it runs*, or add per-file timing to `run_all_tests.py` (my file,
+not in this batch's declared FILES).
+
+### C.4 Routed, not mine to close
+
+- **cc — `tools/sairn_rebase_resolve.py` refusal.** Reproducing artifact
+  complete in `docs/2026-10-07-cody-batch23.md` §9: the exact command, the
+  captured `EXIT 1 2026-10-07T15:32:27Z` status line, the full REFUSED output
+  naming both deleted ancestor records, and the ledger's own identity-key line
+  at `docs/defect-density-register.json:3-9` showing **`"identity": ["commit",
+  "summary"]`** — so changing a `commit` is a DELETE plus an INSERT on an
+  append-only ledger. **Not fixed. `git diff origin/main..HEAD --
+  docs/defect-density-register.json` is EMPTY.**
+- **cc** — the whole-file serialisation of `defect_register.py --reseat`
+  (24,724 lines for six fields), a symptom of the same identity rule.
+- **chat** — the method improvement in §C.6, because both convention files are
+  declared by fourth.
+- **me, next batch** — the `run_all_tests.py` third-state message names a cause
+  it did not establish (`0xC0000142` is a launch failure), and the harness
+  deletes the throwaway clone that would settle it.
+
+### C.5 Tier A obligations — 6 eligible, discharged NONE, and that is deliberate
+
+`tools/tier_a_review_gate.py --list` → **EXIT 1**, 26 open. **6** are authored
+by somebody else and assigned to cody: 49.7h `quotes` (fourth), 43.4h `alf_*`
+(fourth), 34.5h `alf_clients…` (hank), 34.5h `quotes, sb_ap` (cc), 33.3h
+`sdn_projects` (hank), 32.8h `sen_settings` (hank). A further 13 are
+takeover-eligible past 48h.
+
+**fourth's active claim declares `docs/tier-a-reviews.json` in its FILES**, and
+a discharge writes that file. **NEXT STEP:** when fourth releases, discharge
+most-overdue-first starting with the 49.7h `quotes` record.
+
+### C.6 Method improvement — routed to chat
+
+*A redirection that fails must not leave the program pointed at production.*
+Paid for by §C.2's accidental write: the `sed` that was supposed to aim a replay
+at a sandbox silently did not match, exited 0, and the **default on failure was
+the real file**. The uniqueness-guard half (`count(anchor) != 1`) is
+reinforcement of an existing convention I failed to apply. The new half is
+structural: **take the path as a required argument with no default**, so a
+redirection that does not happen crashes instead of writing to production.
+
+### C.7 Dependencies
+
+- **busboy** — **the deploy already matches the lock, measured on a real
+  build.** `dpl_3eBAEBXL1fM4pxZAGzJBG4SgQc5F` (commit `4263ed6b`, build
+  `bld_7y25kav6y`) printed `Installing dependencies…` → **`up to date in
+  836ms`**; no `installCommand` in `vercel.json`, and npm would have reported a
+  change had the cached tree disagreed with the lock. The 3.2.1 is only in the
+  shared `C:\Users\marsh\node_modules`, which this lockfile does not govern
+  (no `package.json` there). **Michael's optional one-liner, local probes only:
+  `cd C:\Users\marsh && npm install @fastify/busboy@3.2.2`.**
+- **node-forge — WAIT HOLDS. `npm view node-forge version` → 1.4.0, which is
+  what is installed; `npm view node-forge time` shows 1.4.0 published
+  2026-03-24 and nothing newer.** No patched release exists.
+  **WAIT TRIGGER, written here as instructed:** re-run
+  `npm view node-forge version` and act only when it returns **anything above
+  1.4.0**, OR when `firebase-admin` publishes a release whose tree drops
+  node-forge or moves it off the 1.4.x line. Until one of those is true there is
+  nothing to apply and the major bump stays prepared and gated.
+
+### C.8 Not an item, found while working: 30 stale worktree registrations
+
+`git worktree list` in this clone shows **30 entries**, 29 of them temp-dir
+probe leftovers (`sairn-abl-*`, `check4-probe-*`, `gate12-*`, `condcov-*`,
+`defreg-probe-*`, …), one `locked`. A linked worktree **shares this clone's
+`.git/config`**, which is the exact mechanism `run_all_tests.py`'s own guard
+names for a `core.bare` flip. **Not pruned** — `git worktree prune` is a repo
+state change outside this batch's declared FILES, and one entry is locked.
+**NEXT STEP for whoever owns this:** `git worktree prune` after checking the
+locked one.
+
+## D. CLAIMS HELD
+
+`cody / Tooling` — batch 23, the narrowed claim committed at `dea44d22`.
+**Declared FILES actually touched:** `tools/tier_a_review_gate.py`,
+`tests/run_tier_a_review_gate_probe.py` (the claim's FILES line spells it
+`tests/run_tier_a_gate_probe.py` — the real file is
+`run_tier_a_review_gate_probe.py`, recorded rather than silently reconciled),
+`docs/2026-10-07-cody-batch23.md`, `docs/handoff-cody-2026-10-07.md`,
+`SAIRN-ACTIVE-WORK-cody.md`. `.claude/settings.json` (the repo one) was **NOT**
+touched; the settings work is all in `~/.claude/settings.json`, outside the
+repo. **NOT TOUCHED, held by others:** `docs/tier-a-reviews.json`,
+`docs/METHODOLOGY.md`, `docs/2026-09-13-cross-domain-disciplines.md`,
+`docs/known-red-suites.json` (fourth); `tools/report_only_checks.py`,
+`tools/sairn_push_gate_hook.py`, `tools/doc_sha_reseat.py`,
+`docs/tool-owner-map.json` (cc). **I closed no finding I did not originate and
+reclassified none.**
+
+## E. TRANSCRIPT
+
+```
+C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-cody\20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e
+```
+
+`scratchpad/prefix_demo.py` — the pre-fix/post-fix fixture driver, with
+`pre.txt` and `post.txt`. `scratchpad/i3/` — `merge_replay.py`, `replay.out`,
+`replay_input.json` (the settings replay). `scratchpad/t4/` — `hover.{status,
+out,time}`, `abl.{status,out,time}`, `git_before.txt`, `wt_before.txt`.
+`scratchpad/i5/` — `mt1`, `mt2`, `anc` status files for the andon.
+`scratchpad/i8_run1..3.out`, `i8_remeasure.txt` — the probe runs and the
+re-derivation. Previous batch's artifacts remain under
+`…\6f1d5069-5b6c-4a9d-8e38-78d125446571\scratchpad\{b22,item4,perm,r21}`.
+
+## F. THE LANDED SHAs — section B above was written BEFORE the rebase and is superseded
+
+Section B names `8ee6e7c2`. The rebase onto `origin/main` rewrote it. **These are
+the real landed shas, each confirmed an ancestor of `origin/main` with
+`git merge-base --is-ancestor` rc 0, and the remote tip read with
+`git ls-remote origin main` rather than inferred from `git push`:**
+
+```
+git ls-remote origin main   ->  1adbdc94c610a45bcd3c62b9758a02af39d4093a
+ahead 0 / behind 0, working tree clean
+```
+
+| landed sha | item |
+|---|---|
+| `18078d38` | 8 — `subject_sha()`, `opened_at_sha_basis`, 8 probe arms |
+| `764a12a4` | the batch doc, this handoff, the active-work append |
+| `f7fcf20e` | the register record the push gate asked for, **plus a fix the scrutiny flag caught** |
+| `15e56976` | the post-rebase hook's own one-line register re-seat |
+| `1adbdc94` | the gate's own scrutiny rows for `15e56976` |
+
+**THREE THINGS HAPPENED DURING THE PUSH THAT ARE PART OF THE RECORD:**
+
+1. **The push gate REFUSED the first attempt** — *"this push closes a defect and
+   does not feed the register"* — naming `8ee6e7c2`. Correct: the fix is a real
+   defect in landed tooling. A record was added
+   (`defect_register.py --add`, **EXIT 0**, *registered … tooling, moderate,
+   code-review*; `--check` **EXIT 0** over 482 records), injection
+   `4a9798dad43e`, rule 1.11, five contributing factors.
+   **A DEVIATION FROM MY OWN CLAIM TEXT, stated rather than slipped:** that claim
+   says `docs/defect-density-register.json` *"is not touched"*. It meant the sha
+   **reseat**, which stays abandoned and routed to cc. This is an **append**, 65
+   insertions / 0 deletions, and the two orphaned citations in my earlier records
+   are untouched.
+
+2. **THE SCRUTINY FLAG CAUGHT MY OWN DEFECT, AN HOUR OLD.** It flagged
+   `shutil.rmtree(base, ignore_errors=True)` in the fixture I had just written.
+   That tempdir holds a real `.git` whose object files are **read-only**:
+   `ignore_errors` cannot delete them, says nothing, and leaves the tree behind
+   — **the same line that leaked 239 files in silence from
+   `tools/run_all_tests.py` earlier the same day.** I reintroduced my own defect
+   in a new file hours after fixing it in another, and a **report-only** checker
+   caught it where a human had not. Fixed with the chmod-retry `onerror` helper
+   the other seven probes already use, plus **an arm asserting the tempdir is
+   gone** — an assertion `ignore_errors=True` makes unwritable, which is exactly
+   why the weak form had no arm against it.
+
+3. **The post-rebase hook re-seated the register and said so** rather than
+   committing for me: one line, `8ee6e7c25e5c` → `18078d382de8`, 1 insertion /
+   1 deletion, `--check` **EXIT 0**. **This narrows the finding routed to cc:**
+   `--post-rewrite` is minimal and correct; `--reseat` is the path that
+   re-serialises all 24,724 lines. Two code paths in one tool, and only one of
+   them is the problem.
+
+**Probe runs, all at the landed content:** `python
+tests/run_tier_a_review_gate_probe.py` → **EXIT 0, ALL ARMS PASS, 224 ok**.
+**5 runs total** — 3 before the cleanup fix (223 arms) and 2 after (224 arms) —
+**and the first run of each returned EXIT 0.**
+
+**Dependabot, from the remote's own push output:** *1 vulnerability on the
+default branch (1 high)* — the node-forge chain of §C.7, unchanged and
+consistent with the WAIT decision.

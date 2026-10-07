@@ -7011,3 +7011,103 @@ stronger than the 24,724-line diff finding it replaces.
 **ANDON HELD.** The suite is still running: 476 reported, **0 FAIL**.
 
 Handoff: `docs/handoff-cody-2026-10-07.md`.
+
+## 2026-10-07 — batch 23 (cody), resumed after a stopped terminal
+
+**Found first, before any item:** batch 22 left the review-gate fix uncommitted
+AND the probe **not compiling** — two string literals with a real newline,
+`SyntaxError` at line 2198. A probe that cannot be imported reports nothing.
+Fixed, then the batch.
+
+**Item 8 — DONE — `8ee6e7c2`.** `--open` stamped `head_sha()`. Re-derived over
+the WHOLE ledger instead of the two records that showed it: of 238 records, 63
+are checkable and **34 of those 63 (54%) anchor an obligation to a commit whose
+diff contains none of the files the record names** — hank 12, cody 12, hover2 4,
+cc 4, fourth 2, so **five** independent record sets, not two agreeing. Same
+figure at `dea44d22` and at `8ee6e7c2`. `subject_sha(files)` now returns
+`(sha, basis)` and the basis is written onto the record as
+`opened_at_sha_basis`: `file-set` the real answer, `head` the honest fallback,
+`could-not-tell` a refusal. The file list is computed BEFORE the sha and the
+record publishes that same list by construction — the first draft derived it
+from a smaller set, a quieter version of the same defect. **The fixture fails
+before the fix and the pre-fix run is captured, not described:** HEAD's pre-fix
+module was extracted to a tempdir and driven against the same two-commit repo
+(pre-fix stamped HEAD `cc2b2e81`, post-fix stamped the file's commit
+`a4d1301b`, `git show HEAD -- api/x.js` EMPTY in both). The end-to-end arm
+drives `_open_record`, which exists in both versions, so it goes red there;
+the three `subject_sha` arms cannot, and the probe says so. Probe **EXIT 0, ALL
+ARMS PASS, 223 ok — 3 runs, 2 of them at `8ee6e7c2`, first run EXIT 0.**
+
+**Item 5 — the suite FINISHED and the run is VOID.** `EXIT 2 -- COULD NOT RUN:
+the clone was broken during this run, so no verdict above is attributable`, 1
+run at `c1cd7c41`, 748 files, 183 reported FAIL and **none attributable**,
+11,427 s. The trigger was `git status exited 3221225794` = `0xC0000142`, a
+process that failed to INITIALISE — **git could not be launched**, which is not
+what the message's "something broke this clone" claims. **ANDON HELD** with
+captured codes: merge-tree vs origin/main EXIT 0 `f4ebb446d0fa`, vs HEAD EXIT 0
+`f2b7bb72c578`, `--is-ancestor` EXIT 1.
+
+**Item 3 — Edit/Write CONFIRMED unprompted** in this fresh session, 10 Edits
+and 3 Writes, zero prompts. **The `model` key: NARROWED to the app's own
+settings writer**, window tightened to 12:48:04Z–14:30:44Z. Replaying batch
+22's `merge.py` against the 12:44:42Z backup reproduces the 14:30:44Z file
+except that the replay **keeps** `"model": "sonnet"` — one key, nothing else.
+Not provable to the keystroke: no app-side audit log exists.
+**AND A WRITE I DID NOT INTEND:** a failed `sed` left that replay pointed at the
+live `~/.claude/settings.json` and rewrote it. Verified identical afterwards,
+only the mtime moved. Reported, not buried.
+
+**Item 4 — measured, and one name NOT claimed.** `Get-CimInstance
+Win32_Process` returns the command lines `wmic` would not — but my suite had
+already ended, so it showed only hank's processes. `--pinned` **11,427 s**;
+`guard_ablation.py --limit 1` **328 s EXIT 0**;
+`run_hover_audit_method_sabotage_probe.py` alone **567 s EXIT 2** (stopped
+early on a red baseline, so a lower bound on a DIFFERENT path). Alphabetical
+adjacency plus a lower bound is not an identification, so the 35-minute file is
+**not named**. Bound PROPOSED from one measured run and labelled weak: 900 s
+per file, 14,400 s per run. **No file changed.**
+
+**Item 6 — busboy: the deploy ALREADY matches the lock, read off a real build.**
+`dpl_3eBAEBXL1fM4pxZAGzJBG4SgQc5F` printed `Installing dependencies… up to date
+in 836ms`; npm would have reported a change had the cached tree disagreed with
+the lock. The 3.2.1 is only in the shared `C:\Users\marsh\node_modules`, which
+this lockfile does not govern.
+
+**Item 7 — node-forge: 1.4.0 is both installed and newest published. WAIT
+holds, trigger written into the handoff. No code change.**
+
+**Item 1 — REPORT ONLY.** 26 open, **6 authored by others and assigned to me**
+(49.7h down to 32.8h), 13 more takeover-eligible. **Discharged none**: fourth's
+live claim declares the ledger.
+
+**Item 2 — NO memory-checkpoint tool, and NOTHING BUILT.** `tools/` has only
+`audit_checkpoint_status.py`, which is about the audit record. The per-item
+`CHECKPOINT LOG` habit is real and already per-item, but it writes to the
+handoff in the repo, not to the memory directory, and nothing triggers it but
+discipline.
+
+**Item 9 — reproducing artifact only, NOT fixed, routed to cc.** Resolver
+`EXIT 1 2026-10-07T15:32:27Z`, full REFUSED output, and the ledger's own
+`"identity": ["commit", "summary"]` at
+`docs/defect-density-register.json:3-9` — so a sha change is a DELETE plus an
+INSERT on an append-only ledger. That file is untouched.
+
+**Item 10 — the SQL runbook is PUSHED:** `d8bc39e4`, `--is-ancestor`
+rc 0; the follow-on `ae47c86a` likewise.
+
+**Item 11 — method improvement, routed to chat:** *a redirection that fails must
+not leave the program pointed at production.* Take the sandbox path as a
+required argument with no default, so a failed redirection crashes instead of
+writing to the real file.
+
+**Also found, not an item:** 30 stale worktree registrations in this clone — the
+exact `.git/config`-sharing mechanism the suite guard names for a `core.bare`
+flip. Not pruned (outside declared FILES, one entry locked).
+
+Batch detail: `docs/2026-10-07-cody-batch23.md`.
+Handoff: `docs/handoff-cody-2026-10-07.md`, item-12 section.
+
+**LANDED, post-rebase:** `18078d38` item 8, `764a12a4` docs, `f7fcf20e`
+register record + the cleanup fix the scrutiny flag caught, `15e56976` the
+post-rewrite re-seat, `1adbdc94` the gate rows. Remote tip read with
+`git ls-remote`: **1adbdc94**, ahead 0 / behind 0.
