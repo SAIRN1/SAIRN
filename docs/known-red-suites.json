@@ -908,7 +908,7 @@
    "kind": "py",
    "tail": "  FAIL 0. baseline: the tool is not clean before anything is planted, so no mutation below means anything",
    "since": "2026-10-06",
-   "why": "REAL TREE STATE, AND THE ARM ORDERING MAKES IT TOTAL. Arm 0 is a BASELINE GATE -- 'the tool is not clean before anything is planted, so no mutation below means anything' -- so when it fails the probe prints ONE line and runs NONE of its mutation arms. The detector's own verification is then unavailable in either direction, which is worse than a red arm. `python tools/primitive_obsession_check.py` at HEAD 762b084b exits 1 with 18 NEW unbaselined occurrences across FIVE apps: sairnbiz.html:3949,4121, sairncash.html:1280,1281,1396, stonedesk.html:25316,27783,28021,28022,28274,31844 and more -- mostly [measured-default] `Number(x)||0`, plus one [locale-date-value]. CONTRAST, and it is the whole lesson: run_truthy_sum_probe.py makes the SAME live-tree assertion as its LAST arm and still reports 13 passing arms. Same assertion, opposite blast radius, from arm ordering alone.",
+   "why": "REAL TREE STATE, AND THE ARM ORDERING MAKES IT TOTAL. Arm 0 is a BASELINE GATE -- 'the tool is not clean before anything is planted, so no mutation below means anything' -- so when it fails the probe prints ONE line and runs NONE of its mutation arms. The detector's own verification is then unavailable in either direction, which is worse than a red arm. `python tools/primitive_obsession_check.py` at HEAD 762b084b exits 1 with 18 NEW unbaselined occurrences across FIVE apps: sairnbiz.html:3949,4121, sairncash.html:1280,1281,1396, stonedesk.html:25316,27783,28021,28022,28274,31844 and more -- mostly [measured-default] `Number(x)||0`, plus one [locale-date-value]. CONTRAST, and it is the whole lesson: run_truthy_sum_probe.py makes the SAME live-tree assertion as its LAST arm and still reports 13 passing arms. Same assertion, opposite blast radius, from arm ordering alone. || RECOVERED 2026-10-07 BY THE CONVENTION 18 FIX, by the same session that diagnosed it. The arm-0 GATE is gone. The live-tree check is now a reported WARN line and the per-mutation criterion NARROWS to exit==2 (the fixture lock refusing) when the tree is dirty, because exit 1 is then ambiguous between 'mutation caught' and 'real findings'. The probe now exits 0 having verified ALL FIVE mutations instead of exiting 1 having verified NONE, and it PRINTS that the claim is narrower. ABLATION-VERIFIED: a planted NO-OP mutation -- a comment word, no detector touched -- PASSES vacuously under the old rc!=0 criterion and is correctly FAILED by the narrowed one (probe exit 1, 'NOT REFUSED BY THE LOCK ... exited 1'), file restored byte-identical, probe back to exit 0. THE 18 UNBASELINED OCCURRENCES ARE STILL THERE and are still routed: this fixes the probe, not the tree.",
    "owner": "unassigned",
    "diagnosed": "2026-10-06",
    "diagnosed_by": "fourth",
@@ -918,7 +918,9 @@
     "tool": "the suite itself, invoked directly",
     "sha": "eb430f25 (also re-run at 762b084b in batch 11)",
     "basis": "re-run BY HAND by fourth, one process, in the live clone; exit code read from the program's own output"
-   }
+   },
+   "state_2026_10_07": "RECOVERED -- exits 0, run twice",
+   "exit_code": 0
   },
   {
    "file": "tests/run_rebase_resolve_probe.py",

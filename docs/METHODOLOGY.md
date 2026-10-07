@@ -60,3 +60,22 @@ than an empty row — it would look exactly like the handover having worked.
 | 2026-10-06 | **13.** an edit is verified by reading the file, never by the editor's diff counts | fourth | two of fourth's own stale-fact corrections the same morning |
 | 2026-10-06 | **14.** a convention inferred from a sample states n of N before use as evidence | fourth | the `LEG_HTML` void A/B (2 of 7), plus two of fourth's own sampling mistakes the same day |
 | 2026-10-06 | **15.** a green claim must cite a captured exit code | fourth, **derived by cody** | `docs/2026-10-06-cody-queue16-inventory.md` §8 |
+| 2026-10-06 | **16.** a probe that never reached the code proves nothing about it | fourth | six isolations that all came back clean and all six exited early on *"the outgoing range could not be read"* |
+| 2026-10-06 | **17.** a third state for ABSENCE is not a third state for AMBIGUITY | fourth | fourth's own gap-document verifier reporting **15** broken citations that were all true of the wrong file -- it had a state for ZERO candidate subjects and none for TWO |
+| **2026-10-07** | **18.** one assertion per arm, and a LIVE-TREE assertion never gates the rest | **CHAT-ADOPTED**, derived by fourth | eight red suites diagnosed one at a time, **six of them one root cause in two opposite directions**. Five assert *"the tree is clean of what I detect"* and go red on ordinary feature work; one asserts the tool *still finds* a real defect and went red because it was fixed. **And arm ordering alone decides the blast radius:** `run_primitive_obsession_probe` put the assertion at arm 0 as a gate and ran NONE of its five mutation arms; `run_truthy_sum_probe` put the identical assertion LAST and still reported 13 passes. Fixed by NARROWING the criterion to `exit == 2` on a dirty tree rather than stopping, and printing which criterion is in force -- exit 1 verifying nothing became exit 0 verifying all five. Ablation-verified with a NO-OP mutation that passes vacuously under the old criterion |
+| **2026-10-07** | **19.** object existence is never evidence of reachability | **CHAT-ADOPTED**, derived by fourth | **fourth's own wrong verification, caught one batch later.** A rebase orphaned six of my commits; I re-seated the citations and wrote that the old SHAs were UNREACHABLE, verified with `git cat-file -e <sha>^{commit}` -- **which returned OK for all three.** The evidence cited contradicted the claim made. Then found LIVE in a gate: `tools/tier_a_review_gate.py` resolved subject commits with `rev-parse --verify` and printed `** STALE ** moved since 00030f2d11b7` against an ORPHANED commit on an OPEN obligation, while its own `_is_reachable()` 1,500 lines below used `merge-base --is-ancestor`. Seven orphaned SHAs were in the ledger. **19 is the NINTH member of the cannot-fire group** -- it never reports a reachable commit as missing, only a missing one as fine |
+
+**18 AND 19 WERE ADOPTED IN CHAT, NOT SELF-PROMOTED, and that distinction is
+the reason the column says so.** Promoting a convention out of one's own
+defects is the detector-blessing-its-own-fix shape convention **11** refuses;
+both of these came from fourth's own mistakes, which is exactly when the
+adoption has to come from outside.
+
+**AND 19 CAUGHT ITS OWN ARM.** The first arm written to enforce it was
+**vacuous** -- it sliced ~1,500 lines of source and swallowed the definition of
+the function it was looking for, so the substring matched whether or not the
+code called it, and **removing the guard left the probe green.** An ablation
+found it. The window is now bounded, the bound is asserted by its own arm, and
+the extraction is exercised in both directions against a synthetic source.
+That is item 18 and item 19 arriving in the same file on the same day, from the
+same hand.

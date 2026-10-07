@@ -266,3 +266,67 @@ nothing planted.
 I did not add rows for them: the register's discipline is that a row is
 written from an individual drive by whoever did it, and I drove only one of the
 two.
+
+---
+
+## 9. CONVENTION 18 — the reproducing artifact per suite, and which one is FIXED
+
+**Chat adopted convention 18 (one assertion per arm) from these eight. Written
+into `docs/2026-09-13-cross-domain-disciplines.md` as item 18 and recorded in
+`docs/METHODOLOGY.md` as chat-adopted.** Each suite below was run **alone**, in
+the live clone, no worktree, at `eb430f25`, exit code from its own output. The
+command *is* the artifact — none of these needs a fixture to reproduce.
+
+| suite | command | exit | the live-tree arm | arm position | state |
+|---|---|---|---|---|---|
+| `tests/run_primitive_obsession_probe.py` | `python tests/run_primitive_obsession_probe.py` | **was 1, now 0** | the detector is clean on the tree — 18 new occurrences across 5 apps | **arm 0, a GATE** | **FIXED** |
+| `tests/run_truthy_sum_probe.py` | `python tests/run_truthy_sum_probe.py` | 1 | no unbaselined `\|\| 0` addition — 16 in `stonedesk.html:25471–28942` | last | OPEN, artifact only |
+| `tests/run_subprocess_decode_probe.py` | `python tests/run_subprocess_decode_probe.py` | 1 | no text-mode subprocess call without `encoding=` — 40 files | last | OPEN, artifact only |
+| `tests/run_write_path_scan_probe.py` | `python tests/run_write_path_scan_probe.py` | 1 | the shipped baseline passes — **and a baselined count FELL** | last, two arms | OPEN, **NOT CLEARED** |
+| `tests/run_removal_path_probe.py` | `python tests/run_removal_path_probe.py` | 1 | every resource has a removal path — one does not | last | OPEN, **NOT CLEARED** |
+| `tests/run_completeness_probe.py` | `python tests/run_completeness_probe.py` | 1 | the tool STILL FINDS `api/sen-portal.js MANAGEMENT_ROLES` — it exits 0 | arms 2d, 6a, 6b | OPEN, artifact only |
+| `tests/run_export_coverage_probe.py` | `python tests/run_export_coverage_probe.py` | 1 | the export registries resolve — 3 `rf_` resources missing | — | OPEN, routed to the app owner |
+| `tests/push_gate/preauth_exemption_anchor_probe.py` | `python tests/push_gate/preauth_exemption_anchor_probe.py` | 1 | the tree carries zero oracles — it carries ≥1 | last | OPEN, **NOT CLEARED** |
+
+### The one FIXED, and why only one
+
+`tests/run_primitive_obsession_probe.py` was the only **gate**. The other seven
+place the assertion last, so they already comply with the half of convention 18
+that matters: the detector is still verified and one line says the tree drifted.
+
+**The fix is a narrowing, not a deletion, and that distinction is load-bearing.**
+The gate was not gratuitous: the per-mutation criterion was `rc != 0`, and on a
+dirty tree the *unmutated* tool already exits 1, so removing the gate alone
+would have replaced a loud stop with five arms passing **vacuously** — strictly
+worse. So the criterion narrows to `exit == 2` (the fixture lock refusing,
+unambiguous because real findings give 1 and never 2), the probe runs, and the
+criterion in force is **printed**.
+
+    was:  FAIL 0. baseline: the tool is not clean ...        -> exit 1, FIVE arms unrun
+    now:  WARN 0. ... the criterion NARROWS to exit==2 ...   -> exit 0, all five verified
+
+**Ablation-verified**, because a narrowed criterion that cannot fail is the same
+defect again. A NO-OP mutation — one comment word in the tool, no detector
+touched — **passes vacuously** under `rc != 0` and is correctly failed under the
+narrowed one (`NOT REFUSED BY THE LOCK -- the tool exited 1`, probe exit 1).
+File restored byte-identical; probe back to exit 0. **Run twice at this SHA,
+both exit 0.**
+
+A second live-tree gate in the same file (`if run_tool() != 0: return 1` after
+the restore) is now a reported line comparing the exit code **before and after**
+the probe — a CHANGE across the probe is the real finding there, because it
+would mean the probe moved the tree it was measuring.
+
+### The three NOT CLEARED, named rather than left to look handled
+
+* `run_write_path_scan_probe` — **which baselined key fell** is not identified.
+  A drop means the scanner may have stopped seeing files, which a ratchet cannot
+  self-diagnose.
+* `run_removal_path_probe` — the unaccounted resource is not named.
+* `preauth_exemption_anchor_probe` — the oracle the tree now carries is not
+  named.
+
+The other four are artifact-only on purpose: the fixes are app-owner judgements
+(three `rf_` export entries), a 40-file mechanical sweep, 16 per-site numeric
+decisions in StoneDesk, and a synthetic-finding rewrite of
+`run_completeness_probe`'s firing arms. None is a test repair and none is mine.

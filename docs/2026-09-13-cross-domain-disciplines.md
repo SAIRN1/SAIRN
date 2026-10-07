@@ -1,4 +1,13 @@
-# Cross-domain disciplines — eleven standing conventions for any checker built here
+# Cross-domain disciplines — standing conventions for any checker built here
+
+**COUNT THE `## <n>.` HEADINGS BELOW. DO NOT TRUST A NUMBER IN THIS TITLE OR
+ANYWHERE ELSE.** This heading read *"eleven standing conventions"* until
+2026-10-07, while the file held **nineteen** — it was last correct on
+2026-09-25 and nothing announced the day it stopped being. The number is
+removed from the title rather than corrected to 19, because a count in a title
+is a fact that goes stale on the next addition and this file's own item 8 is
+about exactly that. `CLAUDE.md` already says to count rather than trust, and
+so does `docs/METHODOLOGY.md`.
 
 **Read this before building any checker, probe, gate or tool.**  These are not
 aspirations. Each one is a convention every new tool must satisfy, and each was
@@ -888,13 +897,179 @@ because it usually works.
 
 ---
 
-## The failure mode eight of the seventeen share
+## 18. One assertion per arm — and a LIVE-TREE assertion never gates the rest
+
+**Adopted in chat 2026-10-07. Derived by fourth from eight red suites
+diagnosed one at a time, six of which turned out to be the same root cause
+running in two opposite directions.**
+
+**THE CONVENTION: an arm asserts exactly one thing, and an arm whose subject
+is the state of the REPOSITORY is reported, never a precondition. If a live
+state genuinely invalidates the arms below it, NARROW THE CRITERION AND SAY SO
+— do not stop.**
+
+**THE CASE, measured at `eb430f25`, each suite run alone with its own exit
+code.** A probe arm that asserts something about the live tree is a drift
+tripwire, not a test of the detector, and it goes red on ordinary feature work:
+
+| suite | what the live-tree arm asserts |
+|---|---|
+| `run_truthy_sum_probe` | the tree has no unbaselined `\|\| 0` addition — 16 appeared in `stonedesk.html:25471–28942` |
+| `run_primitive_obsession_probe` | the detector is clean on the tree — 18 new occurrences across five apps |
+| `run_subprocess_decode_probe` | no text-mode subprocess call lacks `encoding=` — 40 files do |
+| `run_write_path_scan_probe` | the shipped baseline still passes — and a baselined count **fell** |
+| `run_removal_path_probe` | every resource has a removal path — one does not |
+| `run_export_coverage_probe` | the export registries resolve — three `rf_` resources are missing |
+| `preauth_exemption_anchor_probe` | the tree carries zero oracles — it carries at least one |
+
+**And one runs the other way.** `run_completeness_probe` asserts the tool
+**still finds** `api/sen-portal.js MANAGEMENT_ROLES`; the tool exits 0 because
+that was fixed. A probe pinned to a current defect rots the moment the defect
+is fixed — which `tools/run_all_tests.py`'s own header already documents for
+two other probes. **Both directions are one defect: the live tree used as the
+fixture.**
+
+**ARM ORDERING DECIDES THE BLAST RADIUS FROM AN IDENTICAL ASSERTION, and that
+is the half worth paying attention to.** `run_truthy_sum_probe` places the
+assertion **last** and still reports 13 passing arms, so the detector is
+verified and one line says the tree drifted. `run_primitive_obsession_probe`
+placed the identical assertion at **arm 0 as a gate** — `if run_tool() != 0:
+print FAIL; return 1` — so it printed one line and ran **none** of its five
+mutation arms. **The detector was unverified in either direction, which is
+worse than a red arm**, because a red arm is a fact and an unrun arm is a
+silence.
+
+**THE GATE WAS NOT GRATUITOUS, AND THE FIX IS THEREFORE NOT A DELETION.** That
+probe's per-mutation criterion was `rc != 0`; on a dirty tree the *unmutated*
+tool already exits 1, so `rc != 0` is satisfied whether or not the mutation was
+caught. Removing the gate alone would have replaced a loud stop with five arms
+passing vacuously — strictly worse.
+
+**So the criterion narrows instead of the probe stopping.** Exit **2** is the
+fixture lock refusing, and it is unambiguous on a dirty tree because real
+findings produce 1 and never 2. When the baseline is dirty every mutation must
+produce exactly 2; when it is clean the original `rc != 0` stands; **and the
+criterion in force is printed.** The probe went from exit 1 having verified
+**nothing** to exit 0 having verified **all five**, while saying out loud that
+the claim is smaller.
+
+**ABLATION, because a narrowed criterion that cannot fail is the same defect
+again.** A NO-OP mutation — one comment word in the tool, no detector touched —
+was planted. Under the old `rc != 0` it **passes vacuously**. Under the
+narrowed `exit == 2` it is correctly reported `NOT REFUSED BY THE LOCK -- the
+tool exited 1`, probe exit 1. File restored byte-identical, probe back to
+exit 0.
+
+**HOW TO IMPLEMENT IT.**
+- **One subject per arm.** `run_two_axis_tier_parser_probe` arm 2 says *"raises
+  no ROW-LEVEL problem"* and its helper collects HEADLINE-scope problems too,
+  so it fails on a fixture that parses perfectly. Two scopes, one arm.
+- **An arm must not assert a conditional section unconditionally.**
+  `run_financial_invariant_probe` arm 7f requires the literal
+  `JUDGED BUT NO LONGER UNGUARDED`, which its subject prints under `if stale:`
+  only — so the arm is red **precisely because the register is in order.**
+- **If the live state must be asserted, assert it LAST, on its own line, and
+  let the rest report.**
+- **If it genuinely invalidates what follows, narrow and announce.** Never
+  stop silently and never stop loudly-but-totally.
+
+**WHERE IT DOES NOT TRANSFER.** A precondition on the **fixture** — "the
+scratch repo was created", "the anchor was found" — is a legitimate gate and
+should stop everything, because the arms below really are meaningless and the
+fixture is the probe's own responsibility. The line is **whose state it is**:
+the probe owns its fixture and does not own the repository.
+
+---
+
+## 19. Object existence is never evidence of reachability
+
+**Adopted in chat 2026-10-07. Derived by fourth from fourth's own wrong
+verification, caught one batch later.**
+
+**THE CONVENTION: a claim that a commit is REACHABLE must be tested with
+`git merge-base --is-ancestor <sha> <ref>`. `git cat-file -e <sha>^{commit}`
+and `git rev-parse --verify <sha>^{commit}` answer a DIFFERENT question —
+does the object exist — and they answer OK for a commit no ref reaches.**
+
+**THREE STATES, and an existence test sees two:**
+
+| state | `cat-file -e` | `merge-base --is-ancestor` |
+|---|---|---|
+| **ON-REF** — reachable | OK | yes |
+| **ORPHANED** — in the object store, reached by nothing, gc-eligible here, **absent from every other clone** | **OK** | **no** |
+| **ABSENT** — not in this clone at all | fails | no |
+
+**THE FIRST CASE, and it is mine.** On 2026-10-06 a rebase orphaned six of my
+own commits twenty minutes after I wrote documents citing them. I re-seated the
+citations and wrote that the old SHAs were *UNREACHABLE*, **verified with
+`git cat-file -e <sha>^{commit}`** — which returned **OK for all three**. The
+evidence I cited contradicted the claim I made and I read the exit code as
+confirming it. The conclusion happened to be right; the verification was not,
+and **a verification that cannot fail would have let the next re-seat pass
+itself as verified.**
+
+**THE SECOND CASE, and it was live in a gate.** `tools/tier_a_review_gate.py`
+resolved each review record's subject commit with `rev-parse --verify`, then
+diffed against it and printed an ordinary FRESH or STALE verdict. At
+`eb430f25` `docs/tier-a-reviews.json` cited **seven orphaned 40-character
+SHAs**, and `** STALE ** moved since 00030f2d11b7` was printed on an **open**
+obligation — a diff against a commit no other clone has, reported as a plain
+verdict. **The gate already contained the right test**: its own
+`_is_reachable()` uses `merge-base --is-ancestor`, about 1,500 lines below.
+The file carried both methods and the path that mattered used the weaker one.
+
+**WHY IT IS A CONVENTION AND NOT A GIT TIP.** The two commands are
+indistinguishable at the call site: same shape, same exit convention, neither
+name says which question it answered. And the failure is **silent and
+one-directional** — it never reports a reachable commit as missing, only a
+missing one as fine, so it always errs toward "this is OK to use".
+
+**HOW TO IMPLEMENT IT.**
+- **Reachability uses `merge-base --is-ancestor`.** Existence tests are for
+  "can I read this object", never for "is this still on a branch".
+- **Accept more than one base when local work is legitimate.** The gate accepts
+  `origin/main` **or** `HEAD`, because a record opened at an unpushed commit is
+  ordinary work and not an orphan.
+- **Name ORPHANED separately from ABSENT.** They need different actions: an
+  orphan can be re-seated to its rewritten equivalent; an absent commit cannot
+  be re-seated to anything and the record has to be retired.
+- **Put an arm on the METHOD, not only on the verdict.** A verdict computed
+  against an orphaned commit looks exactly like a correct one, so no
+  verdict-level arm can catch this.
+- **AND BOUND THE WINDOW OF A SOURCE-READING ARM.** The first version of that
+  arm sliced ~1,500 lines and swallowed the definition of `_is_reachable`
+  itself, so the substring matched whether or not the freshness path called it
+  — **with the guard removed the probe stayed green.** An ablation caught it.
+  A source-reading arm needs a bounded window, an assertion that the bound
+  held, and the extraction exercised in both directions against a synthetic
+  source.
+
+**WHERE IT DOES NOT TRANSFER.** When the question really is *"can I read this
+blob"* — a cache lookup, a `git show` that is allowed to work on a dangling
+object — existence is the right test and reachability is the wrong one. The
+rule bites wherever the word in the sentence is **still**, **current**,
+**landed**, or **on main**.
+
+---
+
+## The failure mode nine of the nineteen share
 
 *(Count corrected 2026-10-06: this heading read "eight of the eleven" when the document had eleven numbered sections, and was not updated when 12 was added on 2026-09-25 or when 13, 14 and 15 were added on 2026-10-06, or when 16 followed them. The EIGHT is unchanged and is the load-bearing number -- 12, 13, 14, 15 and 16 are NOT members of that group. Carrying what it said so the correction is visible rather than invisible, per the numbering note at the end of this file.)*
 
-*(Denominator moved again 2026-10-06 when 17 was added. 17 is NOT a ninth member and the question was asked rather than assumed: the shared failure mode is a check that reads as coverage and STRUCTURALLY CANNOT FIRE, and item 17's check fires -- it fires on the wrong subject and reports a guess in the shape of a measurement. That is adjacent to item 8's loss of independence, not identical to the eight. Left out of the group deliberately; putting it in would have been the easier edit and the wrong one.)*
+*(Denominator moved again 2026-10-07 when 18 and 19 were added, and the
+membership question was asked of both rather than assumed. **19 IS A NINTH
+MEMBER and is the first addition since 11 that belongs in the group:** an
+existence test used as a reachability test is a check that reads as coverage
+and structurally cannot fail in the direction that matters -- it never reports
+a reachable commit as missing, only a missing one as fine. **18 is NOT a
+member:** its arms fire, loudly; its defect is that one of them takes the
+others down with it, which is a blast-radius property and not an inability to
+fire. The EIGHT is therefore now a NINE, and the sentence below has been
+changed from "eight" to "nine" rather than left to drift.)*
 
-Eight of these conventions defend against the same thing: **a check that reads as
+*(Denominator moved 2026-10-06 when 17 was added. 17 is NOT a ninth member and the question was asked rather than assumed: the shared failure mode is a check that reads as coverage and STRUCTURALLY CANNOT FIRE, and item 17's check fires -- it fires on the wrong subject and reports a guess in the shape of a measurement. That is adjacent to item 8's loss of independence, not identical to the eight. Left out of the group deliberately; putting it in would have been the easier edit and the wrong one.)*
+
+Nine of these conventions defend against the same thing: **a check that reads as
 coverage and structurally cannot fire.** (Items 7, 9 and 10 are the exceptions
 and are worth holding separately. Item 7 defends against a correct thing moved
 into a context where its assumptions no longer hold, which none of the others
@@ -908,8 +1083,20 @@ nobody stated. An alarm set at the cliff edge. A validation fed by its own
 subject. A replication that shares a blind spot. An anchor that quietly stopped
 matching.
 
-**Item 11 is the eighth member, and it arrives last because it is the newest
-spelling of the oldest failure here:** a fixer that applies its own repair
+**Item 19 is the NINTH member, added 2026-10-07, and it is the cheapest of
+the nine to commit by accident:** `git cat-file -e <sha>^{commit}` and
+`git merge-base --is-ancestor <sha> origin/main` have the same shape, the same
+exit convention, and neither name says which question it answered. An
+existence test used as a reachability test **never reports a reachable commit
+as missing, only a missing one as fine** -- it cannot fail in the direction
+that matters, which is this group's definition. It was found twice in one
+batch: once in fourth's own re-seat verification, where the evidence cited
+contradicted the claim made, and once live in `tools/tier_a_review_gate.py`,
+which printed `** STALE ** moved since 00030f2d11b7` against an ORPHANED
+commit on an open obligation.
+
+**Item 11 is the eighth member, and it arrives last among the original eight
+because it is the newest spelling of the oldest failure here:** a fixer that applies its own repair
 produces output indistinguishable from a check that passed, for the same
 reason item 8's `--check` did when it compared a document to its own output.
 The comparison is real; the independence is gone.

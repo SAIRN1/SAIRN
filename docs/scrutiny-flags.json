@@ -146,6 +146,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_tier_a_review_gate_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "780004db9bf5126a89a2231fb6beaa400bca5759",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/tier_a_review_gate.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "780004db9bf5126a89a2231fb6beaa400bca5759",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/exit_status_attributable.py",
    "class": "push-gate logic",
    "level": "WEAKENING",

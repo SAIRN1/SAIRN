@@ -24026,7 +24026,7 @@
       "recurrence_open": "The tool still cannot see an override read through a helper rather than process.env directly, cannot tell whether a present override reaches the read, and does not judge the 16 CROSS_APP suites at all. Those three are named limits, not findings. And the 155 findings are now a backlog nobody owns: the fix per finding is a judgement (add the override, or say in the header that the suite is pinned), and none of the 155 has been made."
     },
     {
-      "commit": "88d7543b2698",
+      "commit": "f2ee7be0d6da",
       "date": "2026-10-07",
       "subject": "fix(tier-a gate): CONVENTION 19 -- the freshness path decided a recorded sha was usable with an EXISTENCE test, and SEVEN live records were orphaned",
       "files": [

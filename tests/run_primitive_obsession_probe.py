@@ -77,11 +77,44 @@ def main():
     print('primitive-obsession check: a broken detector must REFUSE to judge, '
           'never report CLEAN\n')
 
-    if run_tool() != 0:
-        print('  FAIL 0. baseline: the tool is not clean before anything is '
-              'planted, so no mutation below means anything')
-        return 1
-    print('  ok   0. the tool is CLEAN in the worktree before anything is planted')
+    # CONVENTION 18, 2026-10-07: ONE ASSERTION PER ARM, AND A LIVE-TREE ARM
+    # NEVER GATES THE REST.
+    #
+    # This block used to be `if run_tool() != 0: print FAIL 0; return 1` -- a
+    # precondition gate on the state of the REAL REPOSITORY. Ordinary feature
+    # work makes the tool exit 1 (18 new unbaselined occurrences across five
+    # apps at eb430f25), and the probe then printed ONE line and ran NONE of
+    # its mutation arms. The detector was unverified in either direction, which
+    # is worse than a red arm, and it is worse than the identical assertion in
+    # tests/run_truthy_sum_probe.py, which sits LAST and still reports 13
+    # passing arms. Same assertion, opposite blast radius, from ordering alone.
+    #
+    # THE GATE WAS NOT GRATUITOUS and that is why this is a degrade, not a
+    # deletion. The per-mutation criterion below is `rc != 0`, and on a dirty
+    # tree the UNMUTATED tool already exits 1 -- so `rc != 0` would be
+    # satisfied whether or not the mutation was caught. The arm would pass
+    # vacuously.
+    #
+    # SO THE CRITERION NARROWS INSTEAD OF THE PROBE STOPPING. Exit 2 is the
+    # fixture lock refusing, and it is unambiguous on a dirty tree because the
+    # real run's findings produce 1, never 2. When the baseline is dirty every
+    # mutation must produce exactly 2; when it is clean the original `rc != 0`
+    # stands. The criterion in force is PRINTED, because a narrower test
+    # reported as the wider one is the thing this whole file exists to prevent.
+    _baseline = run_tool()
+    _strict = _baseline != 0
+    if _strict:
+        print('  WARN 0. the tool is NOT clean on the real tree (exit %d), so '
+              'the mutation criterion NARROWS to exit==2 (the fixture lock '
+              'refusing) rather than exit!=0 -- on a dirty tree exit 1 is '
+              'ambiguous between "mutation caught" and "real findings".'
+              % _baseline)
+        print('       THIS IS NOT A PASS AND NOT A STOP. The arms below still '
+              'run and still mean something; they mean something NARROWER, '
+              'and the exit code at the end reflects only what was tested.')
+    else:
+        print('  ok   0. the tool is CLEAN on the real tree before anything is '
+              'planted, so the criterion is the full exit!=0')
 
     for i, (title, old, new) in enumerate(MUTATIONS, 1):
         if old not in src:
@@ -96,29 +129,54 @@ def main():
             rc = run_tool()
         finally:
             io.open(TOOL, 'w', encoding='utf-8', newline='').write(src)
-        if rc == 0:
+        _caught = (rc == 2) if _strict else (rc != 0)
+        if not _caught:
             failures.append(title)
-            print('  FAIL %d. SILENT -- the tool exited 0 with this defect '
-                  'planted: %s' % (i, title[:100]))
+            print('  FAIL %d. %s -- the tool exited %d with this defect '
+                  'planted%s: %s'
+                  % (i,
+                     'NOT REFUSED BY THE LOCK' if _strict else 'SILENT',
+                     rc,
+                     ' (criterion: exit==2, because the baseline is dirty)'
+                     if _strict else '',
+                     title[:100]))
         else:
             ok += 1
-            print('  ok   %d. refused (exit %d): %s' % (i, rc, title[:100]))
+            print('  ok   %d. refused (exit %d%s): %s'
+                  % (i, rc, ', lock' if _strict else '', title[:100]))
 
     if io.open(TOOL, encoding='utf-8').read() != src:
         print('  FAIL restore -- the tool is not byte-identical after the probe')
         return 1
     print('  ok   the tool is byte-identical again')
-    if run_tool() != 0:
-        print('  FAIL the tool is not clean after restore')
-        return 1
-    print('  ok   and CLEAN again with everything restored')
+    # ALSO CONVENTION 18: this was a second live-tree gate with a `return 1`.
+    # Whether the restored tool is CLEAN is a fact about the REPOSITORY, so it
+    # is reported as its own line and compared against the baseline taken at
+    # the top. A CHANGE between the two is the real finding, because that would
+    # mean the probe moved the tree it was measuring.
+    _after = run_tool()
+    if _after != _baseline:
+        failures.append('the tool exits %d after restore but exited %d before '
+                        '-- the probe changed the tree it was measuring'
+                        % (_after, _baseline))
+        print('  FAIL the exit code MOVED across the probe: %d before, %d '
+              'after. Byte-identical source with a different verdict means '
+              'something else moved.' % (_baseline, _after))
+    else:
+        print('  ok   and the exit code is unchanged across the probe (%d '
+              'before, %d after), so whatever the tree state, this probe did '
+              'not alter it' % (_baseline, _after))
 
     if failures:
         print('\n%d MUTATION(S) SURVIVED:' % len(failures))
         for t in failures:
             print('  - ' + t[:110])
         return 1
-    print('\nALL %d MUTATIONS REFUSED.' % len(MUTATIONS))
+    print('\nALL %d MUTATIONS REFUSED%s.'
+          % (len(MUTATIONS),
+             ' UNDER THE NARROWED exit==2 CRITERION, because the real tree is '
+             'not clean -- a SMALLER claim than a clean-tree run makes'
+             if _strict else ''))
     return 0
 
 
