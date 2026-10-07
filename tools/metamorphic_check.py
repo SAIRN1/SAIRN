@@ -345,8 +345,56 @@ def normalise(out, path):
     return out
 
 
-def run(tool_path, target):
+# ── THE SYSTEM-LEVEL FIX FOR THE 2.76MB-vs-5.51MB BOUND (2026-10-07) ────────
+# THE DEFECT, IN ONE SENTENCE: PER_RUN_TIMEOUT was set at 2x the time six
+# checkers took on stonedesk.html, and this function never hands a checker
+# stonedesk.html. It hands it a TRANSFORM of it, and `t_duplicate` returns
+# `lf + '\n' + lf` -- 5.51MB, not 2.76MB. duplicate_global_check.py is 0.82s on
+# the file and 71.54s on the doubled one, superlinear in duplicate ids, so the
+# figure the bound was derived from could not have predicted the figure the
+# bound had to cover. The 40s bound then fired on three runs of three.
+#
+# THE FIX IS NOT A BIGGER NUMBER. A number is what went wrong. What was missing
+# is that NOTHING IN THE OUTPUT EVER SHOWED THE SIZE OF THE ARTIFACT THE BOUND
+# APPLIES TO, so the only size available to anybody setting it was the one on
+# disk. This records the real subject on every run: the largest bytes ever
+# handed to a checker, and which relation produced it.
+#
+# It is a REPORT and not a refusal, deliberately. Refusing on a ratio would be
+# a second guessed threshold sitting on top of the first, and a bound that
+# refuses its own subject is how a checker gets switched off. The next person to
+# touch PER_RUN_TIMEOUT now reads the number they actually need, in the output
+# of the tool they are tuning, instead of measuring the wrong file as I did.
+_SUBJECT_MAX = {'bytes': 0, 'relation': None, 'target': None}
+
+
+def note_subject(relation, target):
+    """Record the size of an artifact actually handed to a checker."""
+    try:
+        n = os.path.getsize(target)
+    except OSError:
+        return
+    if n > _SUBJECT_MAX['bytes']:
+        _SUBJECT_MAX.update(bytes=n, relation=relation, target=target)
+
+
+def subject_line():
+    """One line naming the artifact the bound really has to cover."""
+    if not _SUBJECT_MAX['bytes']:
+        return ('  bound subject : NOT RECORDED -- no artifact was handed to a '
+                'checker, so PER_RUN_TIMEOUT=%ds covered nothing'
+                % PER_RUN_TIMEOUT)
+    return ('  bound subject : PER_RUN_TIMEOUT=%ds applies to a LARGEST '
+            'artifact of %.2fMB, produced by relation %r -- NOT to the %s on '
+            'disk. Measure THIS when changing the bound.'
+            % (PER_RUN_TIMEOUT, _SUBJECT_MAX['bytes'] / 1048576.0,
+               _SUBJECT_MAX['relation'],
+               os.path.basename(_SUBJECT_MAX['target'] or '?')))
+
+
+def run(tool_path, target, relation=None):
     """(exit, normalised_output) or (None, reason) when it did not run."""
+    note_subject(relation, target)
     try:
         p = subprocess.run([sys.executable, tool_path, target],
                            capture_output=True, text=True, encoding='utf-8',
@@ -354,7 +402,16 @@ def run(tool_path, target):
                            env=dict(os.environ, PYTHONIOENCODING='utf-8',
                                     PYTHONUTF8='1'))
     except subprocess.TimeoutExpired:
-        return None, 'timed out after %ds' % PER_RUN_TIMEOUT
+        # THE SUBJECT SIZE IS NAMED IN THE TIMEOUT ITSELF, because this is the
+        # one moment somebody is certain to read it.
+        try:
+            mb = os.path.getsize(target) / 1048576.0
+        except OSError:
+            mb = -1.0
+        return None, ('timed out after %ds on a %.2fMB artifact%s -- the bound '
+                      'applies to THIS, not to the file on disk'
+                      % (PER_RUN_TIMEOUT, mb,
+                         (' from relation %r' % relation) if relation else ''))
     except OSError as e:
         return None, 'could not launch: %s' % e
     return p.returncode, normalise((p.stdout or '') + (p.stderr or ''), target)
@@ -467,7 +524,7 @@ def blind_lock():
                 os.makedirs(sub, exist_ok=True)
                 dst = os.path.join(sub, os.path.basename(target))
                 io.open(dst, 'w', encoding='utf-8', newline='').write(fn(_FIXTURE_TARGET))
-                trans = run(tool_path, dst)
+                trans = run(tool_path, dst, relation=name)
                 if trans[0] is None:
                     problems.append('fixture %s/%s would not run: %s'
                                     % (label, name, trans[1]))
@@ -679,7 +736,7 @@ def measure(targets, checkers=None, tools_dir=None, target_root=None):
                 continue
             for t in targets:
                 src = read_raw(os.path.join(target_root, t))
-                base = run(tool_path, os.path.join(target_root, t))
+                base = run(tool_path, os.path.join(target_root, t), relation='identity-base')
                 if base[0] is None:
                     could_not_run.append('%s on %s (baseline): %s' % (tool, t, base[1]))
                     continue
@@ -698,7 +755,7 @@ def measure(targets, checkers=None, tools_dir=None, target_root=None):
                     os.makedirs(sub, exist_ok=True)
                     dst = os.path.join(sub, os.path.basename(t))
                     io.open(dst, 'w', encoding='utf-8', newline='').write(fn(src))
-                    trans = run(tool_path, dst)
+                    trans = run(tool_path, dst, relation=name)
                     if trans[0] is None:
                         could_not_run.append('%s on %s, relation %s: %s'
                                              % (tool, t, name, trans[1]))
@@ -1301,6 +1358,12 @@ def main(argv):
         findings = findings + p_findings
         could_not_run = could_not_run + p_cnr
 
+    # THE BOUND'S REAL SUBJECT, on every run, clean or not. Printed here rather
+    # than only on a timeout because the person who sets PER_RUN_TIMEOUT is
+    # usually reading a SUCCESSFUL run, which is exactly when the wrong number
+    # is available and the right one is not.
+    if not (quiet or args.json):
+        print(subject_line())
     return finish(
         findings, could_not_run, quiet=quiet,
         clean_line='\nCLEAN -- every relation held on every comparison run. '
