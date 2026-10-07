@@ -122,12 +122,44 @@ def blocks(src, prefix):
     return out
 
 
+DEAD_GUARD_RE = re.compile(r'if\s*\(\s*(?:false|0)\s*\)\s*\{')
+
+
+def strip_dead_code(body):
+    """Removes the body of any `if (false) { ... }` / `if (0) { ... }`
+    block before pattern-matching -- found by this role's OWN seeded-
+    defect drill (item 17, batch K): a role/assignment check wrapped in
+    an always-false guard is textually present but never executes, and
+    the plain presence-check this tool used before this fix cannot tell
+    that apart from live code. Brace-counts from the guard's own open
+    brace to find the matching close -- a real mini-parse, not another
+    regex guess, because getting this wrong silently in the OTHER
+    direction (stripping a brace it should not) would make a real check
+    invisible, which is worse than the gap this fixes."""
+    out = []
+    i = 0
+    for m in DEAD_GUARD_RE.finditer(body):
+        out.append(body[i:m.start()])
+        depth = 1
+        j = m.end()
+        while depth > 0 and j < len(body):
+            if body[j] == '{':
+                depth += 1
+            elif body[j] == '}':
+                depth -= 1
+            j += 1
+        i = j
+    out.append(body[i:])
+    return ''.join(out)
+
+
 def analyze(src, prefix):
     per_resource = {}
     for resource, action, body in blocks(src, prefix):
+        live_body = strip_dead_code(body)
         per_resource.setdefault(resource, {})[action] = {
-            'role': bool(ROLE_PAT.search(body)),
-            'assignment': bool(ASSIGN_PAT.search(body)),
+            'role': bool(ROLE_PAT.search(live_body)),
+            'assignment': bool(ASSIGN_PAT.search(live_body)),
         }
     return per_resource
 
@@ -215,18 +247,35 @@ def selftest():
     if (resource === 'fx_negated' && action === 'write') {
       if (existingRow.assigned_employee_id !== session.employee_id) { return; }
     }
+    if (resource === 'fx_deadcode' && action === 'read') {
+      if (!FX_ROLES[session.role]) { return; }
+      const ok = row.assigned_employee_id === session.employee_id;
+    }
+    if (resource === 'fx_deadcode' && action === 'write') {
+      if (false) {
+        if (existingRow.assigned_employee_id !== session.employee_id) { return; }
+      }
+      if (!FX_ROLES[session.role]) { return; }
+    }
 """
     per_resource = analyze(fixture, 'fx_')
     groups_flagged, lines = report(per_resource)
-    ok = (groups_flagged == 1 and
+    ok = (groups_flagged == 2 and
           per_resource['fx_a']['read'] == {'role': True, 'assignment': True} and
           per_resource['fx_a']['write'] == {'role': True, 'assignment': False} and
           per_resource['fx_clean']['read'] == per_resource['fx_clean']['write'] and
           per_resource['fx_helper']['read']['assignment'] is True and
           per_resource['fx_argrole']['read']['role'] is True and
           per_resource['fx_sched']['read'] == {'role': True, 'assignment': True} and
-          per_resource['fx_negated']['write']['assignment'] is True)
-    print('SELFTEST %s: %d group(s) flagged (expected 1: fx_a, assignment divergence); fx_clean correctly unflagged; fx_helper, fx_argrole, fx_sched, fx_negated (four named-helper/negated-comparison shapes) correctly detected' %
+          per_resource['fx_negated']['write']['assignment'] is True and
+          # fx_deadcode's write-side assignment check is wrapped in `if
+          # (false)` -- unreachable, must read as NOT present (False),
+          # same as fx_a's write, which is a REAL divergence from its own
+          # read and must flag. Found by this role's own seeded-defect
+          # drill (item 17, batch K) as a real miss on this tool's first
+          # post-drill run before this ablation arm and the fix existed.
+          per_resource['fx_deadcode']['write']['assignment'] is False)
+    print('SELFTEST %s: %d group(s) flagged (expected 2: fx_a and fx_deadcode, both assignment divergence); fx_clean correctly unflagged; fx_helper, fx_argrole, fx_sched, fx_negated (four named-helper/negated-comparison shapes) correctly detected; fx_deadcode (if-false-wrapped check) correctly read as NOT present' %
           ('PASS' if ok else 'FAIL', groups_flagged))
     return 0 if ok else 1
 
