@@ -251,6 +251,13 @@ def sandbox():
     d = os.path.join(tempfile.gettempdir(),
                      'condcov-%d' % os.getpid())
     if os.path.isdir(d):
+        # EXIT CODE DELIBERATELY NOT READ, AND THAT IS CHECKED TWO LINES DOWN
+        # rather than assumed. This is a best-effort pre-clean of a leftover from
+        # an earlier run; whether it worked is answered by the `worktree add`
+        # below, whose returncode AND resulting directory are both tested. If the
+        # remove failed in a way that matters, the add fails and sandbox()
+        # returns (None, reason). Said out loud because a reader cannot otherwise
+        # tell this from the ignored exit code H1 routed at drop_sandbox.
         subprocess.run(['git', 'worktree', 'remove', '--force', d], cwd=REPO,
                        capture_output=True, text=True, encoding='utf-8',
                        errors='replace')
@@ -263,10 +270,49 @@ def sandbox():
 
 
 def drop_sandbox(d):
-    subprocess.run(['git', 'worktree', 'remove', '--force', d], cwd=REPO,
-                   capture_output=True, text=True, encoding='utf-8',
-                   errors='replace')
+    """Remove the sandbox worktree, and SAY SO if it could not be removed.
+
+    ── H1's ROUTED FINDING, FIXED 2026-10-07 (cc) ───────────────────────────
+    Both calls here discarded their result. The git one is the one that matters:
+    `git worktree remove --force` fails on a locked worktree, on an open handle
+    (routine on Windows, where a node process holding a file under the sandbox is
+    exactly what this tool creates), and when the administrative entry under
+    .git/worktrees has already been pruned. On every one of those the exit code
+    said so and nothing read it.
+
+    WHAT THE SILENCE COSTS, and it is not just a stale directory. `shutil.rmtree`
+    with ignore_errors=True then deletes the FILES while git keeps the
+    administrative entry, which is the state that makes `git worktree add` refuse
+    the same path on the NEXT run -- so the failure surfaces later, somewhere
+    else, as a sandbox that cannot be created. sandbox() above already handles a
+    leftover directory by trying a remove first; it could not handle a leftover
+    REGISTRATION because nothing told it there was one.
+
+    IT REPORTS AND DOES NOT RAISE. This is cleanup, usually in a finally, and a
+    cleanup that throws replaces the real error with its own -- the shape PR 1.5
+    is about. So the contract is: return True when the sandbox is gone, False
+    with a printed reason when it is not, and let the caller decide. `git
+    worktree prune` is named in the message because it is the one-line repair.
+    """
+    rc = subprocess.run(['git', 'worktree', 'remove', '--force', d], cwd=REPO,
+                        capture_output=True, text=True, encoding='utf-8',
+                        errors='replace')
     shutil.rmtree(d, ignore_errors=True)
+    still_there = os.path.isdir(d)
+    if rc.returncode == 0 and not still_there:
+        return True
+    why = ((rc.stderr or rc.stdout) or '').strip().split(chr(10))
+    print('SANDBOX NOT FULLY REMOVED -- %s' % d)
+    if rc.returncode != 0:
+        print('  `git worktree remove --force` exited %d: %s'
+              % (rc.returncode, why[-1] if why and why[-1] else '(no output)'))
+        print('  The ADMINISTRATIVE ENTRY may survive even though the files are '
+              'gone, and that is what makes the NEXT run unable to create a '
+              'sandbox at this path. Repair: git worktree prune')
+    if still_there:
+        print('  and the directory is still on disk, so a later run will try to '
+              'remove it again rather than failing outright.')
+    return False
 
 
 def sweep(key, engine, suite, limit=None, root=None):
@@ -320,6 +366,14 @@ def sweep(key, engine, suite, limit=None, root=None):
     if not restored:
         # Last resort, and LOUD: take the file back from git rather than leave
         # a mutated engine on disk because a hash check was inconclusive.
+        #
+        # EXIT CODE DELIBERATELY NOT READ, AND THE NEXT LINE IS WHY: the question
+        # is not whether git reported success, it is whether the file on disk is
+        # byte-identical to what it was, and `sha(path) == before_hash` answers
+        # that DIRECTLY. A returncode 0 from a checkout that somehow left the
+        # file wrong would be the worse evidence of the two. Stated because this
+        # is the same shape as the ignored exit code H1 routed, with the opposite
+        # conclusion, and a reader has to be able to tell them apart.
         subprocess.run(['git', 'checkout', '--', engine], cwd=root,
                        capture_output=True, text=True, encoding='utf-8', errors='replace')
         restored = sha(path) == before_hash
@@ -430,7 +484,11 @@ def main(argv):
                 continue
             out.append(sweep(key, engine, suite, limit, root=root))
     finally:
-        drop_sandbox(root)
+        # THE VERDICT IS READ (2026-10-07, cc). drop_sandbox now returns False
+        # with a printed reason when the worktree survived, and a cleanup whose
+        # answer nobody reads is the defect H1 routed in the first place -- one
+        # level up from the subprocess call it was about.
+        _clean = drop_sandbox(root)
 
     if report:
         rp = report if os.path.isabs(report) else os.path.join(REPO, report)
