@@ -172,9 +172,9 @@ def main():
 def selftest():
     import tempfile
     d = tempfile.mkdtemp()
-    subprocess.run(['git', 'init', '-q', d])
-    subprocess.run(['git', '-C', d, 'config', 'user.email', 'x@example.invalid'])
-    subprocess.run(['git', '-C', d, 'config', 'user.name', 'fixture'])
+    subprocess.run(['git', 'init', '-q', d], check=True)
+    subprocess.run(['git', '-C', d, 'config', 'user.email', 'x@example.invalid'], check=True)
+    subprocess.run(['git', '-C', d, 'config', 'user.name', 'fixture'], check=True)
     os.makedirs(os.path.join(d, 'docs'))
     os.makedirs(os.path.join(d, '.claude', 'claims'))
 
@@ -184,8 +184,8 @@ def selftest():
                             'reason': 'fixture reason', 'blanket': True, 'command': 'x'}) + '\n')
     with open(os.path.join(d, 'README.md'), 'w') as f:
         f.write('seed\n')
-    subprocess.run(['git', '-C', d, 'add', '-A'])
-    subprocess.run(['git', '-C', d, 'commit', '-q', '-m', 'seed'])
+    subprocess.run(['git', '-C', d, 'add', '-A'], check=True)
+    subprocess.run(['git', '-C', d, 'commit', '-q', '-m', 'seed'], check=True)
 
     import datetime
     env = dict(os.environ)
@@ -195,8 +195,8 @@ def selftest():
     env['GIT_COMMITTER_DATE'] = commit_dt
     with open(os.path.join(d, 'marker.txt'), 'w') as f:
         f.write('the resolving commit\n')
-    subprocess.run(['git', '-C', d, 'add', '-A'])
-    subprocess.run(['git', '-C', d, 'commit', '-q', '-m', 'marker commit, 5 min after the bypass'], env=env)
+    subprocess.run(['git', '-C', d, 'add', '-A'], check=True)
+    subprocess.run(['git', '-C', d, 'commit', '-q', '-m', 'marker commit, 5 min after the bypass'], env=env, check=True)
 
     entries, err = load_entries(d)
     ok1 = err is None and len(entries) == 1
