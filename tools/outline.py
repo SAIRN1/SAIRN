@@ -31,11 +31,17 @@ def find_ctags():
     from shutil import which
     exe = which('ctags') or which('ctags.exe')
     if not exe:
-        sys.exit(
-            "ERROR: ctags not found on PATH.\n"
-            "Install Universal Ctags: https://github.com/universal-ctags/ctags-win32/releases\n"
-            "(Windows) or `brew install universal-ctags` / `apt install universal-ctags`."
-        )
+        # EXIT 2, NOT 1 (2026-10-07, cc). An absent DEPENDENCY is the
+        # canonical could-not-run. sys.exit(<string>) prints and exits 1,
+        # which is FINDINGS here -- so "ctags is not installed" was reporting
+        # a finding about the code it never read.
+        print("COULD NOT RUN: ctags not found on PATH.", file=sys.stderr)
+        print("Install Universal Ctags: "
+              "https://github.com/universal-ctags/ctags-win32/releases",
+              file=sys.stderr)
+        print("(Windows) or `brew install universal-ctags` / "
+              "`apt install universal-ctags`.", file=sys.stderr)
+        raise SystemExit(2)
     return exe
 
 
@@ -109,13 +115,27 @@ def parse_tags(lines):
 
 def main():
     if len(sys.argv) < 2:
-        sys.exit("Usage: python tools/outline.py <path-to-html-file>")
+        # EXIT 2: a missing argument is COULD NOT RUN, not a finding. Same
+        # rule as "an unrecognised flag fails closed".
+        print("COULD NOT RUN: no path given.", file=sys.stderr)
+        print("Usage: python tools/outline.py <path-to-html-file>",
+              file=sys.stderr)
+        raise SystemExit(2)
     html_path = sys.argv[1]
 
     ctags_exe = find_ctags()
     blocks = extract_blocks(html_path)
     if not blocks:
-        sys.exit(f"No <script> blocks found in {html_path}")
+        # EXIT 2, AND THIS ONE IS A JUDGEMENT RATHER THAN AN OBVIOUS CASE.
+        # Zero <script> blocks could be read as a true answer -- there are
+        # none. It is COULD NOT RUN because this tool's entire output is an
+        # outline of JavaScript, and "outline complete, zero symbols" and
+        # "there was no JavaScript to outline" are different facts that a 0
+        # would merge into one.
+        print("COULD NOT RUN: no <script> blocks found in %s, so there is "
+              "nothing to outline. This is not an empty outline." % html_path,
+              file=sys.stderr)
+        raise SystemExit(2)
 
     combined_js, offsets = build_combined_js(blocks)
 

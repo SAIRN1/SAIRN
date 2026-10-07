@@ -81,12 +81,21 @@ MAR_READ = _mar_read(SRC)
 _i = MAR_READ.find("'&select=")
 _j = MAR_READ.find("'", _i + 1)
 if _i < 0 or _j < 0:
-    raise SystemExit('ANCHOR STALE: no quoted &select=... argument inside the '
-                     'alf_mar read that was just matched.')
+    # EXIT 2, NOT 1 (2026-10-07, cc). A STALE ANCHOR is the canonical
+    # could-not-run of this repo -- the arm did not fail, it never ran.
+    # Exiting 1 filed it as a FINDING, and for a SABOTAGE probe that is the
+    # one reading that must not happen: a finding reads as "the sabotage was
+    # detected", which is the opposite of "no arm ran".
+    print('COULD NOT RUN -- ANCHOR STALE: no quoted &select=... argument '
+          'inside the alf_mar read that was just matched. No arm ran.',
+          file=sys.stderr)
+    raise SystemExit(2)
 MAR_SELECT_DESC = MAR_READ[_i:_j + 1]
 if '&order=created_at.desc' not in MAR_SELECT_DESC:
-    raise SystemExit('ANCHOR STALE: the alf_mar select argument carries no '
-                     '&order=created_at.desc, so arm 4 would flip nothing.')
+    print('COULD NOT RUN -- ANCHOR STALE: the alf_mar select argument '
+          'carries no &order=created_at.desc, so arm 4 would flip nothing. '
+          'No arm ran.', file=sys.stderr)
+    raise SystemExit(2)
 MAR_SELECT_ASC = MAR_SELECT_DESC.replace('created_at.desc', 'created_at.asc')
 MAR_SELECT_NONE = MAR_SELECT_DESC.replace('&order=created_at.desc', '')
 
