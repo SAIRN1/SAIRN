@@ -201,3 +201,50 @@ the batch — and that is correct.
 is NOT the one on origin/main."* True and expected — I had just changed the
 gate. **That push's clean pass is a could-not-tell, not a full pass.** The push
 after it got the real answer.
+
+---
+
+## 10. ADDENDUM — written after the push, because three things only happened there
+
+### The control-byte check refused the gitignore commit, and the refusal was a real defect
+
+`tools/control_char_check.py` reported two files **deleted by the push** as
+`COULD NOT READ ... this is NOT a pass` and denied. The gate was right to deny a
+could-not-run; the could-not-run was wrong — a deleted file ships no bytes.
+**Gitignoring a previously-tracked file is routine and this refused every push
+that did it.** Split into `AbsentAtRev` and `IOError`, three arms driven,
+**`596793c6`**.
+
+**I DID NOT USE `SAIRN_SEED_GATE=off`.** The refusal was pointing at a real
+defect, so the override would have buried a finding to land a commit. The file
+was FREE at that HEAD and extending my scope to it is stated in the commit.
+
+**AND MY FIRST VERSION OF THAT FIX WAS A FAIL-OPEN INSIDE A FIX FOR A
+FAIL-CLOSED OVER-REPORT** — asking only `cat-file -e <rev>:<path>` cannot tell
+a missing path from a missing revision, so a bogus `--rev` reported CLEAN at
+exit 0. Caught by the control arm.
+
+### Committing the shard rotation state was my mistake
+
+Every push rewrites `docs/report-only-shard-state.txt` and
+`docs/report-only-sweep-marker.txt`, so every commit of them left the tree dirty
+again — **I committed them three times before reading the shape.** Both are now
+gitignored, and the reason is not the noise: **a committed rotation position
+makes every other clone inherit MY place in the rotation on its next pull**, so
+two clones would run the same shard and skip another. The marker records whether
+a sweep *in this clone* was killed. `docs/report-only-reachability.json` stays
+tracked on purpose — it measures the registry, which is shared.
+
+### State at the end
+
+    git fetch origin && git rev-list --left-right --count origin/main...HEAD   # 0 0
+    python tools/capture_exit.py --status /tmp/h.st -- python tools/hook_integrity_check.py
+    python tools/capture_exit.py --read /tmp/h.st                              # EXIT 0
+
+**All six batch-12 commits are on `origin/main`:** `eb430f25`, `08f078fb`,
+`c6b2341a`, `2310f44b`, `e8bfdf0d`, `596793c6`. Tree clean.
+`hook_integrity_check` **EXIT 0**.
+
+**One leftover:** `…/scratchpad/b12wt2` is file-locked in `%TEMP%` — outside
+every clone, registration already pruned, same transient Windows lock as the
+three before it.
