@@ -24255,7 +24255,7 @@
    "recurrence_open": "EVERY OTHER REACHABILITY CHECK ON THE PLATFORM IS UNAUDITED. This fix covers ONE call site in ONE tool. A grep at eb430f25 finds cat-file or rev-parse --verify used in tools/conflict_marker_preflight.py, tools/credential_purge_check.py, tools/doc_sha_reseat.py, tools/gh_push.py, tools/landing_verification.py, tools/review_ledger_reseat.py, tools/sairn_push_gate_hook.py, tools/source_manifest.py, tests/claims/run_push_verify_probe.py and tests/run_tier_a_reseat_probe.py -- and NONE of them has been read to decide whether it is asking existence where it means reachability. The seven orphaned shas already in docs/tier-a-reviews.json are not reseated or retired by this fix either; the gate only reports them now."
   },
   {
-   "commit": "55c853cd10b7",
+   "commit": "7ed27c5e78fa",
    "date": "2026-10-07",
    "subject": "fix(sairncare): PHI -- derive_charges handed a named resident's MEDICATION NAMES to `billing`, the one role alf_mar/read refuses",
    "files": [
@@ -24304,7 +24304,7 @@
    "recurrence_open": "THE AUDITOR REPRO NOW REPORTS A FIXED DEFECT AS LIVE and that is routed, not fixed by me: tools-hover2/alf_cross_resource_repro.py tests for the PRESENCE of medication_name in the derive_charges block, and the string is still there behind ALF_MAR_ROLES[session.role]. A presence test cannot see a role-gated redaction. That file is the auditor own. The sairncare UI is unchanged: a billing user now sees a priced medication line with an empty description and mar_description_withheld true on the payload, and rendering that honestly is a deliberate UI change nobody has made."
   },
   {
-   "commit": "7f4c2d1955e1",
+   "commit": "6a2690bec035",
    "date": "2026-10-07",
    "subject": "fix(sairngrounds): the LICENCE KEY ALONE reached every read and every write on 21 resources -- 16 of 17 grd_* had no session gate at all",
    "files": [
@@ -24353,7 +24353,7 @@
    "recurrence_open": "NO ROLE GATE WAS ADDED AND THAT IS DELIBERATE: which of owner, superintendent, manager, crew, office may write a BOQ rate or an invoice is a product decision this batch was told not to make unilaterally, so crew can still write an invoice once signed in. Logged open. The msb_* resources in the same dispatch region are a DIFFERENT app with the same licence-key-only shape and are explicitly NOT fixed -- arm D1 proves msb_products still answers without a session, which is a measurement and not an endorsement. And the auditor repro still reports REPRODUCES because it looks for verifySessionToken INSIDE each dispatch block while the gate is in the shared prelude; routed to hover2."
   },
   {
-   "commit": "bca41c4be557",
+   "commit": "d051c89faa16",
    "date": "2026-10-07",
    "subject": "fix(sairncare): PII -- alf_staff/read handed every care worker's PERSONAL PHONE and BACKGROUND-CHECK DATE to any authenticated role",
    "files": [
@@ -24402,7 +24402,7 @@
    "recurrence_open": "WHICH ROLE SET BELONGS ON alf_staff IS STILL OPEN. The fix projects for roles outside ALF_CRED_READ_ROLES rather than deciding a new set, because that is a product decision this batch was told not to make unilaterally -- tracked as ALF-STAFF-READ-UNGATED-HANK-2026-10-06 and as the seven role sets in ROLE-SET-SWEEP-HANK-2026-10-06. The sairncare UI still renders phone and bgcheck columns and will now show them empty for narrow roles; that is correct and visible, and nobody has changed the client half."
   },
   {
-   "commit": "66377e60fd56",
+   "commit": "da9ecbd40810",
    "date": "2026-10-07",
    "subject": "fix(gate-parity)+fix(citations): the cross-resource verdict gains a DIRECTION, and I re-seated a SHA I had FABRICATED last batch",
    "files": [
@@ -24452,7 +24452,7 @@
    "recurrence_open": "THREE FALSE POSITIVES ARE STILL FLAGGED ON PURPOSE -- alf_clients, rf_claims, rf_jobs -- because the tool cannot resolve role sets and a hardcoded exemption list would expire. The real fix is teaching it to read roleSet(...) literals, which is a feature and is not built. And alf_mar REMAINS FLAGGED as WEAKER at this tree: the structural assignment asymmetry is still there, only the disclosure through it is closed."
   },
   {
-   "commit": "6864a666939a",
+   "commit": "94becffb42e7",
    "date": "2026-10-07",
    "subject": "fix(attribution): GRANTING access was unrecorded while REVOKING it was audited -- 6 management-write paths now name the acting employee",
    "files": [
