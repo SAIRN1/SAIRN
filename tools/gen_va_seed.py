@@ -15,7 +15,7 @@ effective ..." line, extracted per rule by tools/va_rule_currency.py.
 import json
 import sys
 
-def _emit_or_check(path, text):
+def _emit_or_check(path, text, check=None):
     """Write `text` to `path`, or under `--check` compare and write NOTHING.
 
     READ-ONLY MODE, added 2026-10-07 (cc). This generator was one of 17 found
@@ -31,7 +31,12 @@ def _emit_or_check(path, text):
     import io as _io
     import os as _os
     import sys as _sys
-    if '--check' not in _sys.argv:
+    # `check` is a parameter and not only an argv sniff so that _selftest can
+    # drive BOTH branches without touching sys.argv -- a selftest that has to
+    # mutate global argv to reach the branch it tests is a second bug waiting.
+    if check is None:
+        check = '--check' in _sys.argv
+    if not check:
         with _io.open(path, 'w', encoding='utf-8', newline='') as _fh:
             _fh.write(text)
         print('wrote ' + path)
@@ -55,6 +60,94 @@ def _emit_or_check(path, text):
     print('  on disk  : %d bytes' % len(cur))
     print('  would be : %d bytes' % len(text))
     return 1
+
+
+def _selftest():
+    """Can `--check` still FAIL? Four arms, on a tempfile, never on the seed.
+
+    THE DEFECT THIS GUARDS is cross-domain-disciplines item 8: a generator's
+    `--check` compares a document to its own output, so the day the comparison
+    stops working it reports IDENTICAL forever and nothing announces it. An
+    exit 0 from `--check` is evidence only if the same comparison has just been
+    seen to return 1 and 2.
+
+    No arm touches sql/. Arm 2 perturbs a COPY by one byte -- which is also the
+    smallest difference the comparison must not miss.
+    """
+    import contextlib
+    import io
+    import os
+    import tempfile
+    d = tempfile.mkdtemp(prefix='gen-va-selftest-')
+    p = os.path.join(d, 'target.json')
+    body = '{"a": 1}\n'
+    arms = []
+    # Captured, not let through. Each arm's own message names the TEMP PATH,
+    # which changes every run, so letting it through would make three runs of
+    # a deterministic selftest print three different things -- and "3 identical
+    # runs" is the evidence this batch reports. The verdicts are what matter
+    # and they are asserted below.
+    _sink = io.StringIO()
+    _cap = contextlib.redirect_stdout(_sink)
+    _cap.__enter__()
+
+    open(p, 'w', encoding='utf-8', newline='').write(body)
+    arms.append(('identical -> 0, and the target is not rewritten',
+                 (_emit_or_check(p, body, check=True),
+                  open(p, encoding='utf-8', newline='').read()),
+                 (0, body)))
+
+    arms.append(('ONE BYTE different -> 1, and the target is not rewritten',
+                 (_emit_or_check(p, '{"a": 2}\n', check=True),
+                  open(p, encoding='utf-8', newline='').read()),
+                 (1, body)))
+
+    os.remove(p)
+    arms.append(('a missing target -> 2 COULD NOT COMPARE, never 1 drift',
+                 (_emit_or_check(p, body, check=True), os.path.isfile(p)),
+                 (2, False)))
+
+    arms.append(('the write branch really does write',
+                 (_emit_or_check(p, body, check=False),
+                  open(p, encoding='utf-8', newline='').read()),
+                 (0, body)))
+
+    os.remove(p)
+    os.rmdir(d)
+    _cap.__exit__(None, None, None)
+    lines, passed = [], 0
+    for name, got, want in arms:
+        ok = got == want
+        passed += ok
+        lines.append('  %-4s %s' % ('PASS' if ok else 'FAIL', name))
+        if not ok:
+            lines.append('       wanted %r, got %r' % (want, got))
+    return passed, len(arms) - passed, lines
+
+
+_KNOWN_FLAGS = ('--check', '--selftest')
+
+# ── AN UNRECOGNISED FLAG MUST NOT MEAN "WRITE" (2026-10-07, cc) ─────────────
+# Same defect, same day, different file: tools/role_gate_mc_config.py
+# recognised one flag and fell through to the write path for everything else,
+# so `--help` regenerated two spec files. This generator had the identical
+# shape, over a LEGAL DEADLINE SEED. The guard runs before anything is built
+# and before any open(..., 'w'), and it is placed here rather than in a shared
+# helper because there is no shared helper and inventing one mid-batch is a new
+# tool. Routed as a methodology rule, not left as three local fixes.
+_unknown = [a for a in sys.argv[1:] if a not in _KNOWN_FLAGS]
+if _unknown:
+    print('COULD NOT RUN -- argument not recognised: %s' % _unknown[0])
+    print('Nothing was written. Recognised: %s' % ', '.join(_KNOWN_FLAGS))
+    sys.exit(2)
+
+if '--selftest' in sys.argv:
+    _p, _f, _lines = _selftest()
+    print('selftest: %d/%d arm(s) pass -- can --check still FAIL?'
+          % (_p, _p + _f))
+    for _ln in _lines:
+        print(_ln)
+    sys.exit(1 if _f else 0)
 
 
 URL = "https://www.vacourts.gov/courts/scv/rules"
@@ -90,13 +183,33 @@ NO_EXT_ORDER = (
 )
 
 
-def rule(rid, label, trigger, count, cite, quote, note, eff_key, ext=None):
+def rule(rid, label, trigger, count, cite, quote, note, eff_key, ext=None,
+         trigdoc=None):
+    # ── trigdoc, RESTORED 2026-10-07 (cc) ───────────────────────────────────
+    # Two rules in the committed seed -- va-r-3-8b-answer-after-motions-
+    # overruled and va-r-3-8b-answer-after-jurisdiction-or-process-motion-
+    # overruled -- carry a `trigger_document` this generator had no way to
+    # emit, so `--check` read DRIFTED and a regeneration would have DELETED
+    # both. api/_lib/deadline-engine.js reads the field and
+    # api/_lib/deadline-trigger-document.test.js exists for it. Same defect as
+    # tools/gen_mo_seed.py (15edabb7), found the same way, one state later.
+    #
+    # NOTE THE POSITION DIFFERS FROM MISSOURI: here it sits between
+    # `trigger_event` and `computation`, there between `count` and
+    # `computation`, because Virginia's rule() emits `count` conditionally at
+    # the END. The position is taken from each committed file rather than
+    # assumed to be shared, which is the whole reason this is two commits and
+    # not one sweep.
     r = {
         "rule_id": rid,
         "jurisdiction": "va",
         "domain": "civil-litigation",
         "label": label,
         "trigger_event": trigger,
+    }
+    if trigdoc:
+        r["trigger_document"] = trigdoc
+    r.update({
         "computation": "va_code_1_210",
         "authority": {
             "citation": cite,
@@ -109,7 +222,7 @@ def rule(rid, label, trigger, count, cite, quote, note, eff_key, ext=None):
         "effective_to": None,
         "version": 1,
         "supersedes": None,
-    }
+    })
     if count is not None:
         r["count"] = {"value": count, "unit": "calendar_days", "direction": "forward"}
     if ext:
@@ -220,7 +333,14 @@ rules = [
          "trigger date as the date it became true. "
          "\"OR WITHIN SUCH OTHER TIME AS THE COURT MAY PRESCRIBE\" -- an order the engine cannot see "
          "displaces this row entirely. " + NO_EXT_ORDER,
-         "3:8"),
+         "3:8",
+         trigdoc={
+             "id": "entry_of_order_overruling_all_motions_demurrers_and_pleas",
+             "label": "the date the clerk ENTERED the order or judgment on the docket",
+             "not_the": "the date it was signed, decided, announced in court, or mailed to the parties -- those are different events and they bear different dates",
+             "authority": "Va. Sup. Ct. R. 3:8(b)",
+             "on_unconfirmed": "warn",
+         }),
 
     rule("va-r-3-8b-answer-after-oyer-documents-filed",
          "Answer after the plaintiff files documents for which oyer was granted (Virginia)",
@@ -253,7 +373,14 @@ rules = [
          "distinction changes no arithmetic today -- it is preserved because the rule draws it and a "
          "future amendment to either limb would silently corrupt the other if they were merged. " +
          NO_EXT_ORDER,
-         "3:8"),
+         "3:8",
+         trigdoc={
+             "id": "entry_of_order_overruling_motion_objecting_to_personal_jurisdiction_or_defective_process",
+             "label": "the date the clerk ENTERED the order or judgment on the docket",
+             "not_the": "the date it was signed, decided, announced in court, or mailed to the parties -- those are different events and they bear different dates",
+             "authority": "Va. Sup. Ct. R. 3:8(b)",
+             "on_unconfirmed": "warn",
+         }),
 
     rule("va-r-4-8d-interrogatory-answers",
          "Answers and objections to interrogatories (Virginia)",
