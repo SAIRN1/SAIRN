@@ -24400,6 +24400,255 @@
     }
    ],
    "recurrence_open": "WHICH ROLE SET BELONGS ON alf_staff IS STILL OPEN. The fix projects for roles outside ALF_CRED_READ_ROLES rather than deciding a new set, because that is a product decision this batch was told not to make unilaterally -- tracked as ALF-STAFF-READ-UNGATED-HANK-2026-10-06 and as the seven role sets in ROLE-SET-SWEEP-HANK-2026-10-06. The sairncare UI still renders phone and bgcheck columns and will now show them empty for narrow roles; that is correct and visible, and nobody has changed the client half."
+  },
+  {
+   "commit": "66377e60fd56",
+   "date": "2026-10-07",
+   "subject": "fix(gate-parity)+fix(citations): the cross-resource verdict gains a DIRECTION, and I re-seated a SHA I had FABRICATED last batch",
+   "files": [
+    "docs/2026-10-06-hank-routed-to-fourth.md",
+    "docs/SAIRN-OPEN-WORK-INDEX.md",
+    "tools/gate_parity_check.py"
+   ],
+   "lines_added": 270,
+   "lines_removed": 17,
+   "app": "tooling",
+   "layer": "tooling",
+   "severity": "moderate",
+   "detection_method": "code-review",
+   "summary": "tools/gate_parity_check.py cross-resource pass flagged a table whenever two branches reading it DISAGREED on a role or assignment gate, with no notion of WHICH WAY. Hand-verifying all twelve live flags on 2026-10-07: two were real (alf_mar, PHI to billing through derive_charges; alf_staff, the OWNING branch gating on nothing) and ten were false positives for the cross-resource question -- seven safe-direction and three role-set containment. So a correct answer to the wrong question put a real PHI leak in a list of twelve items of equal apparent weight, and buried a second real defect of a DIFFERENT CLASS inside a report about disagreement. Precision on api/sd-data.js was 2 of 12.",
+   "rules": [
+    "1.2"
+   ],
+   "citation_confidence": "arguable",
+   "injection_phase": "design",
+   "phase_confidence": "stated",
+   "found_by_tool": null,
+   "found_by_session": null,
+   "injection": {
+    "unknown_reason": "The cross-resource pass shipped with this criterion on 2026-10-06; no commit changed a working verdict into this one. It is the design of the check as first written."
+   },
+   "citation_note": "ARGUABLE. PR 1.2 is that grep cannot tell code from text about code; this is its sibling one level up -- a lexical signal that is correctly computed and then asked to answer a question it does not contain. recurring-bug-class 24 is the closest full match (bucketing on a signal with no context to say what it means) and its instruction is the fix applied here: WIDEN THE VERDICT rather than narrow the match.",
+   "contributing_factors": [
+    {
+     "kind": "technical",
+     "factor": "The cross-resource verdict was `len(roles) != 1 or len(assigns) != 1` -- a test for DISAGREEMENT. The question that matters is whether some branch is WEAKER than the branch owning the table, which disagreement cannot answer.",
+     "action_status": "done",
+     "action": "each group now carries a direction: WEAKER, OWNER-UNGATED, STRICTER-ONLY or NO-OWNER, with the hazard bucket printed first and an UNBUCKETED residue line so an unknown direction is listed rather than silently dropped."
+    },
+    {
+     "kind": "detection",
+     "factor": "A flat list of twelve put a real PHI leak (alf_mar) and a real ungated owner (alf_staff) beside ten non-findings of equal apparent weight. Nothing in the output said which kind each was, so the signal depended on somebody hand-verifying all twelve -- which is what finally happened.",
+     "action_status": "done",
+     "action": "all twelve hand-verified and the result published in the tool own limits: precision 2 of 12, both numbers."
+    },
+    {
+     "kind": "latent-condition",
+     "factor": "The tool is LEXICAL and cannot resolve role sets, so it cannot see that every role reaching rf_draws/wip is already inside BROAD_READ_ROLES and therefore already gets rf_jobs/read unfiltered.",
+     "action_status": "declined",
+     "note": "three tables (alf_clients, rf_claims, rf_jobs) are left FLAGGED as false positives rather than suppressed. Suppressing them needs three hardcoded table names, which expires the day a role set legitimately changes -- recurring-bug-class 26. A lexical tool must not pretend to resolve sets; the limit is printed on every run instead."
+    }
+   ],
+   "recurrence_open": "THREE FALSE POSITIVES ARE STILL FLAGGED ON PURPOSE -- alf_clients, rf_claims, rf_jobs -- because the tool cannot resolve role sets and a hardcoded exemption list would expire. The real fix is teaching it to read roleSet(...) literals, which is a feature and is not built. And alf_mar REMAINS FLAGGED as WEAKER at this tree: the structural assignment asymmetry is still there, only the disclosure through it is closed."
+  },
+  {
+   "commit": "6864a666939a",
+   "date": "2026-10-07",
+   "subject": "fix(attribution): GRANTING access was unrecorded while REVOKING it was audited -- 6 management-write paths now name the acting employee",
+   "files": [
+    "api/sc-auth.js",
+    "api/sd-auth.js",
+    "api/sd-sub-data.js",
+    "api/stonedesk-track.js",
+    "tests/provisioning_attribution.js"
+   ],
+   "lines_added": 457,
+   "lines_removed": 4,
+   "app": "PLATFORM",
+   "layer": "product",
+   "severity": "moderate",
+   "detection_method": "code-review",
+   "summary": "Sixteen of seventeen api/*-auth.js files recorded NEITHER an audit row NOR a created_by on `setup` -- the act of CREATING a credential, which is the act of granting somebody access. The same files audit `set_active` on every outcome including its refusals, so REVOKING access was reconstructible months later and GRANTING it was not. Same gap on api/stonedesk-track.js create and revoke, which issue and withdraw a PUBLIC UNAUTHENTICATED URL into a customer order, and on api/sd-sub-data.js roster/write and jobs/write, where a pay-status change had no author while progress_photos/write in the SAME FILE already stored captured_by_id three branches away. Nothing was disclosed: this is an accountability gap, not a confidentiality one, which is why it is moderate and not critical. SIX paths fixed; FOURTEEN remain open because only three audit tables exist platform-wide and the rest need a migration.",
+   "rules": [
+    "1.11"
+   ],
+   "citation_confidence": "arguable",
+   "injection_phase": "design",
+   "phase_confidence": "stated",
+   "found_by_tool": null,
+   "found_by_session": null,
+   "injection": {
+    "unknown_reason": "No commit removed an audit call. The creation branches were written before the audit infrastructure existed in those files and were never revisited; naming the commit that created `setup` would be citing a feature as the injection of its own absent guard."
+   },
+   "citation_note": "NOTED AS ARGUABLE. The nearest standing text is scrubber item 22, borrowed safety reasoning never re-verified -- but nothing was borrowed here; a requirement was simply never applied to the mirror branch. The closest named shape is this week own duplicate-PURPOSES-key defect: loud in one direction, silent on its mirror. That is a methodology candidate rather than an existing section, and routing it is recorded in the commit.",
+   "contributing_factors": [
+    {
+     "kind": "technical",
+     "factor": "The credential-creation path wrote a row and returned, with no audit call and no author column, while the deactivation path in the same file audited every outcome including its refusals.",
+     "action_status": "done",
+     "action": "six management-write paths now record the acting employee -- five as an audit row, one (sd_sub_jobs) as a server-stamped field in the open jsonb blob."
+    },
+    {
+     "kind": "process",
+     "factor": "The lifecycle was specified revocation-first. The deactivation branch was designed WITH an audit requirement -- its own comment calls a deactivation \"the thing someone will be trying to reconstruct months later\" -- and the creation branch predates it and was never revisited when the audit infrastructure landed beside it.",
+     "action_status": "done",
+     "action": "the asymmetry is now an arm: tests/provisioning_attribution.js A2 measures how many setup branches attribute, as a FLOOR so it does not go red as the rest land."
+    },
+    {
+     "kind": "latent-condition",
+     "factor": "Only THREE audit tables exist on the whole platform (api/_lib/audit.js:40 allowlists sairnlaw, sairncode, stonedesk), so fourteen of the seventeen apps have nowhere to write an attribution row and no column to write an author into.",
+     "action_status": "planned",
+     "action": "a per-app audit table, or an author column on each *_employee_auth table. Both are migrations and neither can be done from a session with no database access. NOT done."
+    }
+   ],
+   "recurrence_open": "FOURTEEN OF SEVENTEEN APPS ARE STILL UNATTRIBUTED ON `setup` and the blocker is a schema, not effort. There is no code-only route. And the per-row answer for sd_subs -- an updated_by column -- is still the better one than the audit row that landed: reconstructing who last touched a subcontractor now means scanning a log where jobs/write can answer from the row."
+  },
+  {
+   "commit": "8ae20da10239",
+   "date": "2026-10-07",
+   "subject": "fix(sairngrounds): the LICENCE KEY ALONE reached every read and every write on 21 resources -- 16 of 17 grd_* had no session gate at all",
+   "files": [
+    "api/sd-data.js",
+    "tests/sd_data_grd_session_gate.js"
+   ],
+   "lines_added": 303,
+   "lines_removed": 0,
+   "app": "sairngrounds",
+   "layer": "product",
+   "severity": "critical",
+   "detection_method": "hover-audit",
+   "summary": "Twenty-one SAIRNgrounds resources in api/sd-data.js required the licence key and NOTHING ELSE on both read and write -- no employee session at all, in an app that has had api/grd-auth.js, a grd_employee_auth table and a five-role vocabulary the whole time. Reachable and WRITABLE on the key alone: grd_invoices (money), grd_boq_rates (the rates every quote is priced from), grd_vendors, grd_quotes, grd_properties, grd_jobs and the rest. No personal data is on these rows; what was exposed is a golf operation commercial interior, and a former employee holding one key could rewrite the rate card. Measured by the auditor own artifact: 16 of 17 grd_* resources REPRODUCES on both actions, the seventeenth PARTIAL. CRITICAL on integrity rather than confidentiality: the write half is the severe half.",
+   "rules": [
+    "1.11"
+   ],
+   "citation_confidence": "arguable",
+   "injection_phase": "design",
+   "phase_confidence": "stated",
+   "found_by_tool": null,
+   "found_by_session": "hover2",
+   "injection": {
+    "unknown_reason": "The region own comment says these resources followed the sd_slabs pattern verbatim, at a time when that pattern was licence-key-only. The employee-auth system arrived later for this app. There is no commit that removed a gate, so naming one would be inventing an injection."
+   },
+   "citation_note": "NOTED AS ARGUABLE. The nearest standing text is sairn-api-tester section 1, when an auth gate changes the test file is part of the blast radius -- here the AUTH SYSTEM arrived for this app and the already-shipped branches were never part of the blast radius anybody considered. That is about scope of a change rather than about a check reporting a pass, so the 1.11 citation is a stretch and is written down as one.",
+   "contributing_factors": [
+    {
+     "kind": "technical",
+     "factor": "Twenty-one dispatch branches each verified the licence and none verified an employee, so there was no single place where the question was asked and no place where its absence was visible.",
+     "action_status": "done",
+     "action": "ONE shared prelude gates the named set before any branch runs, which gate_parity_check.py calls the single most common correct shape on this platform."
+    },
+    {
+     "kind": "process",
+     "factor": "Employee auth arrived for this app AFTER these branches shipped, and the blast radius of adding it was never treated as including the branches already written.",
+     "action_status": "planned",
+     "action": "nothing yet sweeps for an app that HAS an auth module and has dispatch branches that never call it. That sweep is the generalisation and it is not built."
+    },
+    {
+     "kind": "detection",
+     "factor": "The auditor probe found it; no build-side checker did. role_gate_invariants.js checks the role SETS the modules export and says so -- 63 checks, 22 it could not make -- and a branch that consults no set at all is outside its model.",
+     "action_status": "planned",
+     "action": "routed: the gap is a resource-to-session sweep, not a role-set invariant, and it belongs beside gate_parity_check.py rather than inside it."
+    }
+   ],
+   "recurrence_open": "NO ROLE GATE WAS ADDED AND THAT IS DELIBERATE: which of owner, superintendent, manager, crew, office may write a BOQ rate or an invoice is a product decision this batch was told not to make unilaterally, so crew can still write an invoice once signed in. Logged open. The msb_* resources in the same dispatch region are a DIFFERENT app with the same licence-key-only shape and are explicitly NOT fixed -- arm D1 proves msb_products still answers without a session, which is a measurement and not an endorsement. And the auditor repro still reports REPRODUCES because it looks for verifySessionToken INSIDE each dispatch block while the gate is in the shared prelude; routed to hover2."
+  },
+  {
+   "commit": "e90d8775c7b2",
+   "date": "2026-10-07",
+   "subject": "fix(sairncare): PII -- alf_staff/read handed every care worker's PERSONAL PHONE and BACKGROUND-CHECK DATE to any authenticated role",
+   "files": [
+    "api/sd-data.js",
+    "tests/sd_data_alf_staff_read_gate.js"
+   ],
+   "lines_added": 353,
+   "lines_removed": 5,
+   "app": "sairncare",
+   "layer": "product",
+   "severity": "critical",
+   "detection_method": "hover-audit",
+   "summary": "alf_staff/read verified the session and gated on NOTHING ELSE, then returned Object.assign({ id: r.staff_id }, r.data) -- the entire jsonb blob, spread. sairncare.html saveStaff() stores name, phone (a personal mobile), position, cert_expiry, bgcheck_date (an employment-screening date), status and free-text notes a manager typed about an employee; alf_compliance_rules/evaluate adds hire_date. The sairncare role vocabulary is six long, so caregiver, med_aide and activities -- none with any management function -- read every colleague PII field on the licence. docs/CRITICALITY-TIERS.md rates the resource A / A. CRITICAL because it is personal data of every employee, reachable by every employee, on a resource the register already rated A on both axes.",
+   "rules": [
+    "1.11"
+   ],
+   "citation_confidence": "arguable",
+   "injection_phase": "design",
+   "phase_confidence": "stated",
+   "found_by_tool": null,
+   "found_by_session": "hover",
+   "injection": {
+    "unknown_reason": "The branch has had no role gate since it was written on 2026-08-20; there is no commit that REMOVED one. Naming the commit that created the resource would be citing a feature as the injection of its own absent guard."
+   },
+   "citation_note": "NOTED AS ARGUABLE. 1.11 is about a check that could not run reporting a pass; here a SESSION check stood in for an AUTHORISATION check, so the gate ran and answered the wrong question. The same substitution is recorded on this platform for family_mar (a consent check standing in for an authorisation check) and no section names it yet. Routed as this batch methodology rather than cited clean.",
+   "contributing_factors": [
+    {
+     "kind": "technical",
+     "factor": "The response was built by spreading the stored blob (Object.assign({ id }, r.data)), so the field list was whatever the writer happened to store -- the branch had no opinion about what it disclosed.",
+     "action_status": "done",
+     "action": "the narrow shape is now CONSTRUCTED from named fields, so a field added to alf_staff later is excluded by default rather than disclosed until somebody notices."
+    },
+    {
+     "kind": "process",
+     "factor": "A true statement about an access NEED -- the branch own comment, scheduling and coverage needs the whole roster -- was accepted as a decision about access SCOPE, and it sat above the code as the standing justification for leaving it open.",
+     "action_status": "done",
+     "action": "the need is honoured and the scope is not: broad roles get the roster, narrow roles get id, name, position and status, so coverage planning still works."
+    },
+    {
+     "kind": "detection",
+     "factor": "gate_parity_check.py DID flag alf_staff, and flagged it as the SAFE direction -- the sibling evaluate branch being STRICTER than the owner -- so the signal that the OWNER had no gate was buried inside a cross-resource disagreement report.",
+     "action_status": "planned",
+     "action": "batch 11 item 5 splits the cross-resource verdict by direction so an ungated OWNER is reported as its own named finding instead of as a disagreement."
+    }
+   ],
+   "recurrence_open": "WHICH ROLE SET BELONGS ON alf_staff IS STILL OPEN. The fix projects for roles outside ALF_CRED_READ_ROLES rather than deciding a new set, because that is a product decision this batch was told not to make unilaterally -- tracked as ALF-STAFF-READ-UNGATED-HANK-2026-10-06 and as the seven role sets in ROLE-SET-SWEEP-HANK-2026-10-06. The sairncare UI still renders phone and bgcheck columns and will now show them empty for narrow roles; that is correct and visible, and nobody has changed the client half."
+  },
+  {
+   "commit": "f13f4f4982d3",
+   "date": "2026-10-07",
+   "subject": "fix(sairncare): PHI -- derive_charges handed a named resident's MEDICATION NAMES to `billing`, the one role alf_mar/read refuses",
+   "files": [
+    "api/sd-data.js",
+    "tests/sd_data_alf_mar_derive_charges_gate.js"
+   ],
+   "lines_added": 305,
+   "lines_removed": 1,
+   "app": "sairncare",
+   "layer": "product",
+   "severity": "critical",
+   "detection_method": "hover-audit",
+   "summary": "alf_billing/derive_charges set description to d.medication_name on every medication_administration charge line. The gate on that action is ALF_MANAGEMENT_ROLES = { owner, billing }; the gate on alf_mar/read, which owns the table, is ALF_MAR_ROLES = { owner, nursing, med_aide }. The difference is exactly one role: billing. So a billing clerk, 403ed from the MAR directly, read which medications a NAMED resident is on by asking for that resident derived invoice. A medication regimen is diagnostic-revealing, which is what makes it PHI rather than an administrative detail. api/_lib/care-charges.js prices on e.type through CHARGEABLE[type].rate_key and never on description, so the redaction costs the billing answer nothing -- proven by an arm, not assumed.",
+   "rules": [
+    "1.11"
+   ],
+   "citation_confidence": "arguable",
+   "injection_phase": "coding",
+   "phase_confidence": "stated",
+   "found_by_tool": null,
+   "found_by_session": "hover2",
+   "injection": {
+    "unknown_reason": "derive_charges carried the medication name from the commit that introduced it; no commit added the leak to a previously-clean branch. The defect is the shape it was written in, not a regression."
+   },
+   "citation_note": "NOTED AS ARGUABLE, same stretch as the alf_staff record in this batch: a derived figure carried a RAW FIELD from a table the caller role does not read. 1.11 is about a check that could not run; this is a derivation written against the table content rather than against the caller entitlement to it. Third instance of the family this week after 877 and 894, and still unnamed by any section.",
+   "contributing_factors": [
+    {
+     "kind": "technical",
+     "factor": "The charge-line builder copied a raw MAR field into description because that is the human-readable label for the line; nothing in the derivation asked whether the caller may read the source table.",
+     "action_status": "done",
+     "action": "the name is included only when ALF_MAR_ROLES admits the caller, and the response carries mar_description_withheld."
+    },
+    {
+     "kind": "latent-condition",
+     "factor": "Two role sets gate the same table through two actions and neither names the other. ALF_MANAGEMENT_ROLES and ALF_MAR_ROLES are independent literals that differ by one member, and nothing in the file says they are related.",
+     "action_status": "not-actionable",
+     "note": "merging them would be wrong -- they answer different questions -- and this batch does not redesign the sairncare role model. The condition stands; what changed is that the derive_charges branch now consults the table own set."
+    },
+    {
+     "kind": "detection",
+     "factor": "The first version of the declared flag was a SILENT NO-OP: set on the event object, which care-charges.js drops when it copies a fixed field list to each line. Reading the edit would never have shown it.",
+     "action_status": "done",
+     "action": "arm G2 asserts the flag is NOT on the event, and arm B3 asserts it reaches the caller. Caught by driving the test."
+    }
+   ],
+   "recurrence_open": "THE AUDITOR REPRO NOW REPORTS A FIXED DEFECT AS LIVE and that is routed, not fixed by me: tools-hover2/alf_cross_resource_repro.py tests for the PRESENCE of medication_name in the derive_charges block, and the string is still there behind ALF_MAR_ROLES[session.role]. A presence test cannot see a role-gated redaction. That file is the auditor own. The sairncare UI is unchanged: a billing user now sees a priced medication line with an empty description and mar_description_withheld true on the payload, and rendering that honestly is a deliberate UI change nobody has made."
   }
  ],
  "started": "2026-09-09",
