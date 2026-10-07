@@ -1217,9 +1217,186 @@ the subject** rather than as a sample of it.
 
 **Cause tag:** `measurement/window/unbounded-view-presented-as-the-whole`.
 
+## 23. A BRIEF IS A SNAPSHOT. Verify its premises before executing it, and record the result PER PREMISE
+
+**Adopted 2026-10-07. DERIVED BY CC** -- routed in cc's batch-14 handoff and
+landed here by fourth at cc's credit, not re-derived and re-badged.
+
+**THE CONVENTION, in one line: every factual premise a brief carries about repo
+state -- a count, an owner, a claim, a SHA, "X is outstanding" -- is a measurement
+taken when the brief was written, and each one is re-derived and its result
+WRITTEN DOWN BEFORE the work that depends on it starts, one line per premise.**
+
+**WHY PER PREMISE AND NOT "I CHECKED".** A single "premises re-derived" line is
+indistinguishable from not having checked. The record has to be per premise
+because the premises fail *independently*: a brief with six facts in it is
+usually right about four of them, and the two it is wrong about are the two that
+change what you do.
+
+**CC'S INSTANCE, which is the one that names the shape: A THREE-WAY CHOKEPOINT
+STALE IN BOTH DIRECTIONS.** Three sessions -- cody, hank and fourth -- each
+independently re-derived that cc held `tools/sairn_push_gate_hook.py`,
+`tools/report_only_checks.py`, `tools/doc_sha_reseat.py` and
+`docs/tool-owner-map.json`, and each narrowed its own batch around that. **cc had
+released that claim at the close of batch 14 and `sairn_claim.py list` showed no
+cc row at all.** Three sessions blocked themselves on four files nobody held. The
+same read was stale in the other direction at the same time: a Tier A ledger that
+two sessions stood down from was held by nobody either. **Nothing was wrong with
+any of the three sessions' reasoning. The input was old.**
+
+**FOURTH'S INSTANCE, from the batch that landed this section, measured rather
+than recalled.** The batch-16 brief carried four state premises. Re-derived
+before execution:
+
+| premise as briefed | re-derived | verdict |
+|---|---|---|
+| ablation **7 of 8**, `truthy_sum` outstanding | a stopped session had recorded it DONE, citing an evidence file that **does not exist**, in a direction re-measurement **contradicts** | **BOTH WRONG** -- the brief and the record |
+| census **40 of 83** | 40, and ten rows already edited uncommitted on a basis whose run output was gone | **STALE** -- right as a number, wrong as a state |
+| orphans **84**, 28 mine, 56 others' | **93**, 18 mine, 75 others', under a written-down predicate | **DIFFERENT DEFINITION, not drift** |
+| `__file__` sweep **424 of 1214** | **974 of 1227** under a stated predicate; the 424's predicate was never recorded | **NOT REPRODUCIBLE** |
+
+Four premises, four different failure modes, and **one of them was a record this
+same session had written an hour earlier**. Checking your own last line is not
+paranoia; it is the cheapest of the four checks.
+
+**HOW TO IMPLEMENT IT.**
+- **One row per premise, with the verdict in it.** The table above is the
+  deliverable, not a preamble to it.
+- **Distinguish the four verdicts** and do not collapse them: CONFIRMED, STALE
+  (was true, no longer), WRONG (never true), NOT-REPRODUCIBLE (the predicate is
+  unrecorded, so it can be neither confirmed nor denied). The fourth is the one
+  that gets written down as "confirmed" when nobody is strict.
+- **A released claim is not a held claim, and `list` is the authority** -- not the
+  claim text of a sibling session, which is itself a snapshot.
+- **Re-derive, then narrow.** Narrowing scope against a stale premise costs the
+  work twice: once for the thing you did not do, once for the thing you did
+  instead.
+
+**WHERE IT DOES NOT TRANSFER.** A brief's *intent* is not a premise and is not
+re-derivable -- if the dispatch says do X, re-deriving does not license doing Y.
+This convention is about the facts a brief asserts, never about its instructions.
+
+**Cause tag:** `process/brief/premise-taken-as-current-state`.
+
 ---
 
-## The failure mode nine of the twenty-two share
+## 24. A LEG THAT RETURNS SUCCESS ON A FAILED LEG IS A SILENT SKIP, and must fail loud
+
+**Adopted 2026-10-07. DERIVED BY CC** -- routed in cc's batch-14 handoff and
+landed here at cc's credit.
+
+**THE CONVENTION, in one line: when a composite operation reports the status of
+the LAST thing that ran rather than the WORST thing that ran, its success means
+"I reached the end", which is not the question anyone asked -- and that is a
+SILENT SKIP, the third state of PR 1.11 wearing a green badge.**
+
+This is the sibling of item 8 and of convention 19, one layer out. Those are
+about a check that cannot fail. This is about a check that CAN fail, DOES fail,
+and has its failure overwritten by a later leg's success.
+
+**CC'S INSTANCE, as cc measured it and NOT re-run by fourth, stated so rather
+than implied:** `tools/defect_register.py --reseat` returned **0** while leaving
+the register **failing its own `--check`** -- it re-seated 12 records and took
+`--check` from 0 to **FAIL, 4 duplicates**. The re-seat leg succeeded; the
+validity leg was not consulted; the exit code reported the first.
+
+**THE SAME SHAPE, VERIFIED IN THIS CLONE WHILE THIS SECTION WAS BEING WRITTEN, by
+this platform's own hook.** `tools/exit_status_attributable.py` interrupted three
+commands in one session with the same warning: a command of the form
+
+    python tools/<checker>.py | head -40        # status comes from head
+    <checker> && git commit                     # status of whichever ran LAST
+    python tools/<checker>.py > out 2>&1; echo $?   # the correct form
+
+**takes its exit status from `head`, from `grep`, from `tail` -- "a text filter,
+which exits 0 for *I ran* and says NOTHING about the program before it".** The
+hook's own note records the cost: that misreading **put a false "EXITS 2 (COULD
+NOT RUN)" accusation against a working checker into a standing document on
+2026-10-04.** The shape is not confined to tools; it is in the shell line you type
+to measure one.
+
+**HOW TO IMPLEMENT IT.**
+- **Fail on the WORST leg, not the last.** A composite's exit code is the maximum
+  severity across its legs, and COULD-NOT-RUN is its own code (2), never folded
+  into either 0 or 1.
+- **Name the leg in the message.** "FAILED" without which leg sends the next
+  reader to the wrong half.
+- **A leg that WRITES must re-run the leg that VALIDATES**, in the same
+  invocation. A writer that leaves its subject invalid and exits 0 is this
+  convention's exact centre.
+- **Measure a tool alone.** `<tool> > out 2>&1` then read `$?` on its own line. No
+  pipe, no `&&`, no `;` chain, when the status is the thing being claimed.
+- **An arm that proves it:** make one leg fail and assert the composite's exit
+  code moves. If it does not, the leg is decorative.
+
+**WHERE IT DOES NOT TRANSFER.** A deliberately best-effort sweep that is
+DOCUMENTED as best-effort and reports per-item status may exit 0 having had
+failures -- but then its exit code is not a verdict, must not be read as one, and
+it has to say so in its own output.
+
+**Cause tag:** `verification/composite-exit/last-leg-overwrites-failed-leg`.
+
+---
+
+## 25. AT THREE FALSE-POSITIVE CLASSES FROM ONE CHECKER, STOP PATCHING AND REVIEW THE DESIGN
+
+**Adopted 2026-10-07. DERIVED BY CC** -- routed in cc's batch-14 handoff and
+landed here at cc's credit.
+
+**THE CONVENTION, in one line: the third DISTINCT CLASS of false positive from a
+single checker is a design signal, not a third bug, and the response is a review
+of what the checker is matching on -- not a fourth narrowing.**
+
+**CLASS, NOT COUNT, AND THE DIFFERENCE IS THE WHOLE RULE.** A hundred instances of
+one class is one bug. Three instances of three classes is a predicate that does
+not model its subject. The trigger counts CLASSES.
+
+**CC'S INSTANCE:** `tools/doc_sha_reseat.py` accumulated false-positive shapes
+until `1234abcd` and other **test strings** were sitting in a standing register as
+dead citations -- cc's own tool's error, recorded as such. The remedy cc reached
+for was an arm **per false-positive shape**, which is right and is also the tell:
+when the arms are enumerated by shape rather than by behaviour, the predicate is
+being fenced rather than fixed.
+
+**FOURTH'S INSTANCE, same family, found this batch:**
+`tests/phi_cache_scoped_to_user.js` arm 5a matched `[ls][dt]\('(sen_[a-z_]+)'`
+over a raw single-file app and counted **a comment that exists to say the key is
+never written** as the key being written. `tests/lib/strip_comments.js` -- the
+shared library this platform built after **three** private comment-stripping
+versions were each wrong in a different direction -- exists precisely because that
+threshold was crossed once already and the design review was the right answer.
+That library's own header is the artefact of this convention being followed before
+it was named.
+
+**HOW TO IMPLEMENT IT.**
+- **Keep a CLASSES LIST, not a count.** Name each false-positive class as it is
+  found, in the tool's own header. Three named classes is the trigger.
+- **At the trigger, ask what the predicate is standing in for.** "Text matching
+  `st('key')`" was standing in for "a localStorage write", and the right fix was
+  to parse code rather than to exempt prose case by case.
+- **Prefer a stricter MODEL to a narrower PATTERN.** Narrowing clears the known
+  instance and fails silently on the next phrasing; in a detector a false negative
+  is invisible where a false positive is loud and gets read (scrubber item 24).
+- **Reuse before you re-derive.** If a shared module already exists for the harder
+  version of the problem, the fourth private copy is the finding.
+- **A design review is not automatically a rewrite.** The output may be "the
+  predicate is right and these three really are exceptions" -- but that is then a
+  recorded decision with its reasons, not an accumulation of patches.
+
+**WHERE IT DOES NOT TRANSFER.** A checker deliberately tuned to over-report on the
+safe side -- `truthy_sum_check.py` reports a call on the left operand because
+over-reporting is the safe side there -- is not accumulating false positives, it
+is implementing a stated policy. The rule bites when each exemption was a surprise.
+
+**Cause tag:** `detection/predicate/exemptions-accumulated-instead-of-reviewed`.
+
+---
+
+---
+
+## The failure mode TEN of the twenty-five share
+
+*(Denominator moved 2026-10-07 when cc's 23, 24 and 25 were landed, and the membership question was asked of all three rather than assumed. **24 IS A TENTH MEMBER.** A leg that returns success on a failed leg is a check that reads as coverage and structurally cannot fail in the direction that matters -- it never turns a passing subject red, only a failing one green, which is item 8's shape one layer out from the checker and into its composition. **23 IS NOT A MEMBER:** it is not a check at all, it is a discipline about the INPUT to work. **25 IS NOT A MEMBER:** its subject is a checker that fires loudly and too often, which is the opposite failure. So the NINE is now a TEN and the heading has been changed rather than left to drift -- and the nine-member list itself is otherwise unchanged.)*
 
 *(Count corrected 2026-10-06: this heading read "eight of the eleven" when the document had eleven numbered sections, and was not updated when 12 was added on 2026-09-25 or when 13, 14 and 15 were added on 2026-10-06, or when 16 followed them. The EIGHT is unchanged and is the load-bearing number -- 12, 13, 14, 15 and 16 are NOT members of that group. Carrying what it said so the correction is visible rather than invisible, per the numbering note at the end of this file.)*
 
@@ -1240,7 +1417,7 @@ changed from "eight" to "nine" rather than left to drift.)*
 
 *(Denominator moved 2026-10-06 when 17 was added. 17 is NOT a ninth member and the question was asked rather than assumed: the shared failure mode is a check that reads as coverage and STRUCTURALLY CANNOT FIRE, and item 17's check fires -- it fires on the wrong subject and reports a guess in the shape of a measurement. That is adjacent to item 8's loss of independence, not identical to the eight. Left out of the group deliberately; putting it in would have been the easier edit and the wrong one.)*
 
-Nine of these conventions defend against the same thing: **a check that reads as
+Ten of these conventions defend against the same thing: **a check that reads as
 coverage and structurally cannot fire.** (Items 7, 9 and 10 are the exceptions
 and are worth holding separately. Item 7 defends against a correct thing moved
 into a context where its assumptions no longer hold, which none of the others
@@ -1253,6 +1430,13 @@ A score that averages away the half that broke. A rate over a denominator
 nobody stated. An alarm set at the cliff edge. A validation fed by its own
 subject. A replication that shares a blind spot. An anchor that quietly stopped
 matching.
+
+**Item 24 is the TENTH member, added 2026-10-07 and derived by CC.** It is item 8
+one layer out: not a check whose criterion cannot fail, but a check whose real
+failure is *overwritten* by the success of a later leg -- a `| head` on the end of
+the command, a `--reseat` that exits 0 having left its own `--check` red. It never
+turns a passing subject red, only a failing one green, which is this group's
+definition. See section 24 for both instances.
 
 **Item 19 is the NINTH member, added 2026-10-07, and it is the cheapest of
 the nine to commit by accident:** `git cat-file -e <sha>^{commit}` and

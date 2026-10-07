@@ -275,3 +275,85 @@ evidence cannot be opened is a claim, not a record — PR §5.
 | **2** state check | **DONE** | claims list, `git status`, `git log`, handoff read. HEAD was `f4514979`, **0 ahead / 3 behind** origin/main, fast-forwarded to `2156abb1`. Everything in my batch-15 log is PUSHED | nothing of mine is unpushed; the only uncommitted work was 10 census entries in `docs/known-red-suites.json` and the two retracted handoff rows |
 | **3** ablation 8 of 8, truthy_sum | **DONE — and the live-repo lever is INCONCLUSIVE, which is the finding** | `<scratchpad>/abl_truthy_sum.out` and `<scratchpad>/abl_truthy_sum_fixture.out` | live tree: tool `1→1→1`, probe `1→1→1`, 32 arms ok / 1 FAIL **unchanged** by emptying the baseline, because the only arm that reads it (arm 11, `run_truthy_sum_probe.py:173`) is **already red from real tree state** and exit 1 before is exit 1 after. Baseline restored, sha256 `9fa29263…` byte-identical, `git status` unchanged. Then the SAME lever on an already-clean fixture, per convention 12: **A present `0` → B EMPTIED `1` → C ABSENT `1`**. Lever engaged, emptied and absent agree. **The 16 unbaselined occurrences in `stonedesk.html` are what make the live arm unmeasurable**; they are routed, not fixed |
 | **4** census, 3 slices | **DONE -- 40 -> 50 of 83** | `<scratchpad>/census_slices.out`, `census_now.out`, `census_after.out`; register restamped at `2156abb1` | ten suites driven **alone**, 300s ceiling, boundary verified **after every one** (`git status` digest, sha256 of `.git/config`, `node --check api/sd-data.js`) -- all three unchanged start to end. All ten exit **1**; all ten AGREE with the rows the stopped session had written, so those rows are now stamped on a run whose output exists. `known_red_check.py --fixtures` **exit 0**. **33 still unverified**, and they are unmeasured-individually, not presumed red |
+| **5** phi_cache arm 5a | **DONE -- FIXED, and it was the SUITE, not the app. ONE ARM CLEARED FOUR ROWS** | `1c53498d` (fix), `93ed64c7` (defect record), `5be55ef4` (post-rebase re-seat) -- all three **ON-REF** by `merge-base --is-ancestor` | claim-checked CLEAR, carried under my existing `fourth` claim rather than re-claimed (the tool REFUSES a second overlapping claim from the same session, so a new one would have been a reworded duplicate). Arm 5a expected `[]`, got `["sen_settings"]`. **`sen_settings` is not an unpurged PHI cache**: it is server-authoritative, and `sairnsenior.html:5768-5780` is a comment that exists to stop anyone re-creating the local copy -- and to say that, it has to quote `st('sen_settings')`. Arm 5 ran `[ls][dt]\('(sen_[a-z_]+)'` over the **raw** file, so **the comment explaining the key is never written was counted as the key being written, twice**. Fix is in `tests/phi_cache_scoped_to_user.js`: write sites now come from `tests/lib/strip_comments.js`. **NOT** fixed by adding one word to `SEN_UNSCOPED_CACHES`. Measured: stripping changes exactly one key in one of four apps, so 5b/5c cannot regress. **Arm 5e is the control and it FAILS FIRST** -- ablated, probe `0 -> 1` naming 5e in all four apps and 5a in SAIRNsenior, restored byte-identical `e38eac06`, back to `0`. 63/1 -> **72 passed, 0 failed** |
+| **5b** the chained rows | **DONE -- 4 register rows deleted as RECOVERED** | `<scratchpad>/chained.out`; register 79 -> 75 entries, `known_red_check.py --fixtures` **exit 0** | each driven ALONE with the boundary verified after it: `phi_cache_scoped_to_user.js` **1->0**, `phi_cache_scope_probe.py` **2->0** (ALL 12 ARMS PASS, 7 mutations -- it had been planting nothing), `sairncare_fault_probe.py` **1->0**, `sairnbuild_fault_probe.py` **1->0**. Deleted per the register's own rule; diagnoses preserved in `_recovered_2026_10_07_fourth`. **AND THE CENSUS GOES DOWN BECAUSE OF IT: 50 of 83 measured, then 4 verified rows deleted on recovery, so the register-derived recount reads 46 of 83.** The 4 are verified GREEN, not unverified. **FLAGGED NOT TOUCHED:** `tests/run_primitive_obsession_probe.py` still stands as an entry with `exit_code 0` and RECOVERED in its own `why` -- the state that rule forbids |
+| **6** sairnfreedom owner correction | **DONE -- routed, not applied** | the ROUTE TO CC block above, in this file | premise re-derived both ways at `5be55ef4`: the map really does say `owner: null, basis: NONE`, and claim `c1e06f33` really does name the file. **And the cause is not staleness** -- `tool_owner_map.py:76` reads only `FILES:` out of the claim subject, and that claim has no `FILES:` list, so a regeneration today reproduces `NONE`. `docs/tool-owner-map.json` **not touched** |
+| **7** orphan re-seat | **DONE -- FINISHED, and the remaining re-seatable set is EMPTY.** Not 28-minus-5: **zero** | `<scratchpad>/orphans.py`, `<scratchpad>/orphans.out` (read-only, writes nothing) | re-derived at `5be55ef4` with the predicate WRITTEN DOWN, which is why it disagrees with the 84/28/56: a citation is a **40-char or 12-char** lowercase-hex token, word-bounded, in a tracked `.md`/`.json`; 7-11 char abbreviations are excluded because `9fa29263` is a sha256 prefix and `1234abcd` was a test string. **93 orphaned citations, 18 in my documents, 75 in other sessions'.** ORPHANED cannot contain a false positive -- a non-SHA resolves to no object. **ALL 18 OF MINE ARE QUOTATIONS OF AN ORPHAN, NOT CITATIONS TO FOLLOW**, so re-seating any of them would falsify the document: 8 in `docs/2026-10-07-fourth-routed.md` ARE the seven orphaned Tier A ledger SHAs that document reports plus the short form inside the quoted `** STALE ** moved since 00030f2d11b7` verdict; 6 in `docs/purge-evidence/2026-09-30-SAIRN-fourth.json`, **left untouched as instructed**; 4 are `00030f2d11b7` in the handoff, the conventions file, `SAIRN-ACTIVE-WORK-fourth.md` and the postmortem -- **the dead SHA convention 19 is ABOUT**. A 19th, also `00030f2d11b7`, is in `docs/METHODOLOGY.md:66` in convention 19's own row, same reason |
+| **8** `__file__` sweep | **MEASURED -- and the 424 is NOT REPRODUCIBLE, which is the finding** | `<scratchpad>/filesweep.out` | the script population itself moved **1214 -> 1227**. Re-derived with a STATED predicate: `none` 172, **`derives-repo-from-__file__-with-no-git-anchor` 974**, `uses-but-does-not-derive` 3, `derives-and-anchored` 78, sum 1227. **974, not 424** -- and the ledger records the four BUCKET NAMES but never the predicate, so the 424 can be neither confirmed nor denied. Then the half that had never been done: **three slices of five, each script copied ALONE into a scratch directory and run there, deterministic evenly-spaced selection.** 13 of 15 could NOT run from a copy (exit 1 or 2) and **2 DID -- `tools/response_shape_check.py` and `tools/write_without_readback_check.py` both exit 0** -- so the static claim is wrong for 2 of 15 and the method constraint derived from it is a generalisation with a measured exception rate, not a rule |
+
+| **9** settings merge | **STILL BLOCKED ON CODY -- re-checked ONCE, as instructed, and not attempted** | re-checked **2026-10-07T19:30:51Z**; blocker recorded here | `~/.claude/settings.json` carries hooks `['PreCompact']` only; the repo's `.claude/settings.json` carries `['PostToolUse','PreToolUse','PreCompact','SessionStart','UserPromptSubmit']`, so the merge has **not** landed. Last commit to `.claude/settings.json` is `3cf3d5ec`, **2026-10-05 19:02:00 -0400** -- unmoved. cody's claim at **2026-10-07T16:03:49Z** declares `.claude/settings.json` and is LIVE, so this is blocked on cody by a live claim, not by a released one as batch 15 recorded. **Nothing written to either file.** Re-check when cody's merge lands |
+
+| **10** cc's three as conventions 23-25 | **DONE -- LANDED, CREDITED TO CC** | `docs/2026-09-13-cross-domain-disciplines.md`; `## <n>.` heading count **22 -> 25**, counted rather than trusted, before and after | **23** a brief is a snapshot: re-derive each premise and record the result PER premise, with four verdicts kept apart (CONFIRMED / STALE / WRONG / NOT-REPRODUCIBLE). **24** a leg that returns success on a failed leg is a silent skip and must fail loud. **25** at three false-positive CLASSES from one checker, stop patching and review the design. Each section says **DERIVED BY CC** in its first line and carries cc's own instance first, with fourth's second and labelled as such; cc's `defect_register --reseat` measurement is attributed to cc and marked **NOT re-run by me**. **The membership question was asked of all three** rather than assumed: **24 IS A TENTH MEMBER** of the cannot-fire group (item 8 one layer out -- it never turns a passing subject red, only a failing one green), 23 and 25 are NOT, with reasons. Group heading, its denominator note and the body sentence all moved **nine -> ten** and **twenty-two -> twenty-five** rather than left to drift |
+| **11** rule log, my two wrong measurements | **DONE** | the RULE LOG section below, in this file | both re-driven at `5be55ef4` with the exit code read on its own line, not through a pipe |
+
+---
+
+# ROUTE TO CC: ONE OWNER-MAP CORRECTION, WITH ITS MECHANISM
+
+`docs/tool-owner-map.json` is **not edited by me**. It is a GENERATED file
+(`python tools/tool_owner_map.py`) and its owner is cc by the batch-14 claim; cc's
+batch-15 claim says that claim was released and the file is now declared by nobody.
+Either way the fix is one regeneration plus one decision, and it is cc's to make.
+
+| field | value |
+|---|---|
+| **file** | `tests/sairnfreedom_server_backup.js` |
+| **owner map says** | `{"owner": null, "basis": "NONE", "also_claimed_by": [], }` -- and `NONE` in that file's own `_basis_vocabulary` means **UNKNOWN, not unowned** |
+| **real owner** | **cody** |
+| **basis** | `LAST_CLAIM` |
+| **claim id** | `c1e06f332925120a213927449843b1289cdd13db` (`c1e06f33`) |
+| **claim subject, verbatim** | `chore(claims): cody claims cody -- negative control for tests/sairnfreedom_server_backup.js -- sf_ledger sf_disbursements tier A` |
+| **what it blocks** | itself (exit 1, `FAIL - the registry still holds exactly 35 resources`, 16 passed 1 failed) and `tests/sairnfreedom_fault_probe.py` (exit 1), which stops on *"the shipped tree PASSES ... 16 passed, 1 failed"* |
+
+**THE MECHANISM, WHICH IS THE PART WORTH ROUTING.** This is not a stale
+regeneration -- regenerating today would produce `NONE` again.
+`tools/tool_owner_map.py:76` derives ownership from `FILES:\s*(.*)$` in the claim
+commit **subject**. Claim `c1e06f33` names the file **in prose** and carries **no
+`FILES:` list at all**, so the generator sees no file and writes `NONE`. Every
+claim that names its subject in prose rather than in a `FILES:` list is invisible
+to that map, and the map reports the result as UNKNOWN rather than as
+NOT-DERIVABLE-FROM-THIS-SOURCE.
+
+**Two options, and the choice is cc's:** an `OWNER_LINE` in the file itself (the
+map's own vocabulary calls that *authoritative*), or widen the generator to also
+read file paths out of claim-subject prose -- which is a looser match and will
+want its own both-directions control before it is trusted.
+
+**This is the SECOND instance of this gap**, the first routed in SEQ 13-E, so the
+shape is recurring rather than a one-off.
+
+---
+
+
+---
+
+# RULE LOG -- TWO MEASUREMENTS I GOT WRONG, each with its before and after
+
+Both were mine. Both were re-driven at `5be55ef4` with the exit code read on its
+own line rather than through a pipe, which is itself convention 24.
+
+## 1. A bare `citation_line_drift_check.py` exiting 2 is a MISSING ARGUMENT, not a regression
+
+| | |
+|---|---|
+| **BEFORE -- what I measured and reported** | `python tools/citation_line_drift_check.py` → **exit 2**, read and reported as the tool being in a COULD-NOT-RUN state, i.e. as a regression in the tool |
+| **AFTER -- what it actually is** | exit 2 is the tool's **own argument refusal**, printed in its own words: *"--app and --prefix are both required. Neither is guessed from the other: an app file and a resource prefix do not follow one rule, and a guess would measure the wrong file."* |
+| **the measurement that settles it** | `--app sairnsenior` alone → **still exit 2** (BOTH are required, which is the part I had not established). `--app sairnsenior.html --prefix sen_` → **exit 1** with a real result: ANCHORED **9**, SOUND **0**, DRIFTED **7**, INCONCLUSIVE **2** |
+| **what was wrong with the method, not the tool** | I read a 2 as a STATE of the tool when it was a verdict on MY INVOCATION. The tool was behaving exactly as designed, and its design is the thing this platform asks for -- a third state for could-not-run, refusing rather than guessing |
+| **the rule** | **An exit 2 from a tool that takes required arguments is a claim about the command line until the command line is shown to be complete.** Before reporting a tool as broken, run it with every required argument and read the refusal text it printed; the refusal usually names the missing argument. This is the inverse direction of PR 1.11 -- that rule stops a missing dependency being read as a pass; this one stops a refusal being read as a failure |
+
+## 2. An ablation scored by PRINTED TEXT instead of by the exit code
+
+| | |
+|---|---|
+| **BEFORE -- what was recorded** | the stopped session's batch-16 row: *"ablation 8 of 8 **DONE** -- lever engaged (tool exit 1→0), arm responded (probe 1→0)"*, citing `<scratchpad>/abl_i2c.out` |
+| **why it was wrong, twice over** | (a) the evidence file was in that session's scratchpad and **does not exist**, so the claim could not be checked by anybody including me; (b) the direction it recorded is **contradicted by re-measurement** |
+| **AFTER -- scored by exit code alone, each read on its own line** | live tree: tool **1 → 1 → 1**, probe **1 → 1 → 1**, probe arms **32 ok / 1 FAIL unchanged** by emptying the baseline. The lever does not move the probe's exit code at all, because the only arm that reads the repo baseline (arm 11, `run_truthy_sum_probe.py:173`) is **already red from real tree state**, and exit 1 before is exit 1 after |
+| **and the lever DOES work where it can be seen** | same lever on an already-clean fixture, per convention 12: baseline present **0** → baseline EMPTIED **1** → baseline ABSENT **1**. Emptied and absent agree |
+| **what was wrong with the method** | printed text is produced by the arm that is still running; an exit code is produced by the whole program. Reading the text let a plausible narrative stand in for a measurement, and the narrative was in the right shape and the wrong direction |
+| **the rule** | **An ablation's verdict is the subject's exit code before, during and after, printed as three numbers on one line, and the restored state is proved by hash and not by the absence of a complaint.** If the exit code cannot move -- because the arm that reads the ablated layer is already red -- the honest verdict is INCONCLUSIVE, and the ablation moves to a clean fixture rather than being written up from the text |
+
+**What the two share, and it is the reason they are logged together:** in both
+cases a number was available and I used a sentence instead. The first read a
+refusal as a state; the second read a narrative as a result.
+
