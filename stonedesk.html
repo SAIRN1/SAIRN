@@ -25468,7 +25468,7 @@ function computePricingInsight() {
 }
 function computePipelinePatterns() {
   var byStage = {};
-  sdCustomers.forEach(function(c) { byStage[c.status] = (byStage[c.status] || 0) + (c.quote || 0); });
+  sdCustomers.forEach(function(c) { byStage[c.status] = (byStage[c.status] || 0) + Number(c.quote || 0); });
   var byMaterial = {};
   sdCustomers.forEach(function(c) { if (c.material) byMaterial[c.material] = (byMaterial[c.material] || 0) + 1; });
   var topMaterials = Object.entries(byMaterial).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 3);
@@ -25572,7 +25572,7 @@ function renderWarrantyAlertZone(alerts) {
 function updateCustomerKPIs() {
   const total = sdCustomers.length;
   const active90 = sdCustomers.filter(c => c.createdAt && (Date.now()-new Date(c.createdAt).getTime()) < 90*24*3600*1000).length;
-  const avgLtv = total ? Math.round(sdCustomers.reduce((s,c)=>s+(c.quote||0),0)/total) : 0;
+  const avgLtv = total ? Math.round(sdCustomers.reduce((s,c)=>s+Number(c.quote||0),0)/total) : 0;
   const nameCounts = {};
   sdCustomers.forEach(c => { var k=(c.name||'').toLowerCase(); if(k) nameCounts[k]=(nameCounts[k]||0)+1; });
   const repeat = Object.values(nameCounts).filter(n => n>1).length;
@@ -25703,7 +25703,7 @@ function custOpenDetail(id) {
   var invoices = (typeof sd_invoices!=='undefined') ? sd_invoices.filter(function(i){return i.customer&&i.customer.toLowerCase()===c.name.toLowerCase();}) : [];
   var slabs = (typeof sdSlabs!=='undefined') ? sdSlabs.filter(function(s){return s.reservedFor&&s.reservedFor.toLowerCase()===c.name.toLowerCase();}) : [];
   var photos = (typeof sdPhotos!=='undefined') ? sdPhotos.filter(function(p){return p.job&&p.job.toLowerCase().includes(c.name.toLowerCase());}) : [];
-  var totalPaid = invoices.filter(function(i){return i.status==='Paid';}).reduce(function(s,i){return s+(i.amount||0);},0);
+  var totalPaid = invoices.filter(function(i){return i.status==='Paid';}).reduce(function(s,i){return s+Number(i.amount||0);},0);
   var totalOwed = invoices.filter(function(i){return i.status!=='Paid';}).reduce(function(s,i){return s+(i.balance||0);},0);
   var score=100, daysSince=c.updatedAt?(Date.now()-new Date(c.updatedAt).getTime())/86400000:0;
   if(daysSince>14)score-=20;
@@ -25875,7 +25875,7 @@ function renderCustKanban(){
   ];
   cols.innerHTML=stages.map(function(stage){
     var cards=sdCustomers.filter(function(c){return c.status===stage.key;});
-    var value=cards.reduce(function(s,c){return s+(c.quote||0);},0);
+    var value=cards.reduce(function(s,c){return s+Number(c.quote||0);},0);
     return '<div style="min-width:180px;flex:1;background:var(--card);border-radius:12px;padding:12px">'+
       '<div style="font-size:12px;font-weight:800;color:'+stage.color+';margin-bottom:4px">'+stage.label+'</div>'+
       '<div style="font-size:11px;color:var(--muted);margin-bottom:10px">'+cards.length+' &middot; $'+value.toLocaleString()+'</div>'+
@@ -25899,7 +25899,7 @@ function custExportCSV(){
 }
 
 function custUpdateLTV(){
-  var total=sdCustomers.reduce(function(s,c){return s+(c.quote||0);},0);
+  var total=sdCustomers.reduce(function(s,c){return s+Number(c.quote||0);},0);
   var el=document.getElementById('cust-ltv');if(el)el.textContent='$'+total.toLocaleString('en-US',{minimumFractionDigits:0});
 }
 
@@ -27457,7 +27457,7 @@ function vendorUpdateKPIs() {
       if(effective < p.price) { totalSavings += (p.price - effective); dealCount++; }
     });
   });
-  var ytd = sdOrderHistory.reduce(function(s,o){return s+(o.total||0);},0);
+  var ytd = sdOrderHistory.reduce(function(s,o){return s+Number(o.total||0);},0);
   var lowStock = typeof sdInventory!=='undefined' ? sdInventory.filter(function(i){return typeof invLevelColor==='function'&&invLevelColor(i)==='red';}).length : 0;
   function s(id,v){var el=document.getElementById(id);if(el)el.textContent=v;}
   s('vend-kpi-savings','$'+totalSavings.toFixed(0));
@@ -27502,15 +27502,15 @@ function vendorSpendReport() {
   var monthSpend = {};
   sdOrderHistory.forEach(function(order) {
     var vname = order.vendor || 'Unknown';
-    vendorSpend[vname] = (vendorSpend[vname]||0) + (order.total||0);
+    vendorSpend[vname] = (vendorSpend[vname]||0) + Number(order.total||0);
     (order.items||[]).forEach(function(item) {
       catSpend[item.cat||'other'] = (catSpend[item.cat||'other']||0) + (item.price*(item.qty||1));
     });
     var month = (order.date||'').slice(0,7);
-    if(month) monthSpend[month] = (monthSpend[month]||0) + (order.total||0);
+    if(month) monthSpend[month] = (monthSpend[month]||0) + Number(order.total||0);
   });
 
-  var ytd = sdOrderHistory.reduce(function(s,o){return s+(o.total||0);},0);
+  var ytd = sdOrderHistory.reduce(function(s,o){return s+Number(o.total||0);},0);
   var totalSavings = 0;
   Object.keys(VENDORS).forEach(function(vk){
     VENDORS[vk].products.forEach(function(p){
@@ -27603,7 +27603,7 @@ function vendorOrderDelete(id){
 }
 
 function vendorSpendAI() {
-  var ytd = sdOrderHistory.reduce(function(s,o){return s+(o.total||0);},0);
+  var ytd = sdOrderHistory.reduce(function(s,o){return s+Number(o.total||0);},0);
   var deals = Object.keys(sdPricingRules.productOverrides).length + Object.keys(sdNegotiatedPrices).length;
   var vendorDiscounts = Object.entries(sdPricingRules.vendorDiscounts).filter(function(e){return e[1]>0;}).map(function(e){return VENDORS[e[0]].name+' '+e[1]+'% off';}).join(', ');
   sbNav('ai');
