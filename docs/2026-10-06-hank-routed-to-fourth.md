@@ -384,3 +384,105 @@ cause:** the suite was designed against the HANDLER as the unit under test, and
 the handler's contract ends at the outbound request. The constraint that refuses
 the row lives one boundary further out, in a layer the test deliberately replaces
 — so the stronger the mock, the more completely it hid the defect.
+
+---
+
+## 9. ROUTED: the hover-separation CI wrapper has been CRASHING, and it is the DETECT half of the build/audit boundary — 2026-10-07
+
+**`tools/hover_separation_ci.py` raises on every run, in the live clone and in a
+clean worktree, at HEAD `760b4696`:**
+
+    python tools/hover_separation_ci.py
+    AttributeError: module 'hover_separation_audit' has no attribute 'AUDITOR_SCOPE'
+    exit 1
+
+**REPRODUCING COMMAND is that one line.** `git status` captured before and after:
+unchanged, so the failure is not a side effect of state.
+
+**THE CAUSE IS A DELIBERATE REMOVAL WITH AN UNUPDATED CALLER, and the subject
+documents the removal in its own words.** `tools/hover_separation_audit.py:118-125`:
+
+> *"the shared prefixes are a constant and the claim half is a PREDICATE. There
+> is deliberately no `AUDITOR_SCOPE` tuple any more: a flat tuple cannot express
+> 'any auditor's claim file' without listing them, which is the pair this
+> replaced."*
+
+It now exports `AUDITOR_SHARED_SCOPE = AuditorScope.SHARED`. The caller at
+`tools/hover_separation_ci.py:97` still does `set(A.AUDITOR_SCOPE)`.
+
+**WHY THIS MATTERS MORE THAN AN ORDINARY BROKEN TOOL.** `CLAUDE.md` names
+`tools/hover_separation_audit.py` as the **detect** half of the build/audit
+boundary (`tools/hover_separation_scope_gate.py` being prevent). The CI wrapper
+is how that detection runs unattended. **Either CI runs it and the job has been
+failing, or CI does not run it and the boundary has been undetected — and the
+crash cannot tell you which.** I have not read the workflow files; that is the
+first thing whoever takes this should check.
+
+**AND THE FUNCTION IT DIES IN IS THE ONE THAT MATTERS.** The call sits inside a
+comparison whose own docstring says it is *"necessary rather than optional"* —
+it checks that the gate's `ALLOWED` set and the audit's scope set have not
+drifted apart. So the drift check between the prevent half and the detect half
+is itself the thing that cannot run.
+
+**I AM ROUTING, NOT PATCHING, and the reason is not timidity.** The fix is not
+`A.AUDITOR_SHARED_SCOPE` substituted blind: the old name was a flat tuple and the
+new API is a constant **plus a predicate**, precisely because a tuple could not
+express the claim-file half. Comparing `G.ALLOWED` against only the SHARED half
+would make the equality check pass while silently dropping what the predicate
+covers — a green that means less than the red it replaced. **Whoever owns these
+two tools knows which comparison is intended; I would be guessing.**
+
+**FOUND BY:** running every script under `tools/` once in a throwaway worktree
+(batch 12 item 8). **It was one of 9 crashes in 315, and the only one that is not
+a missing-argument `IndexError`** — see §10.
+
+---
+
+## 10. ROUTED: EIGHT tools traceback on a bare run where 67 refuse cleanly — 2026-10-07
+
+**MEASURED, all 315 scripts under `tools/`, run once each in a detached worktree
+at `7406ab27`, 90s timeout, exit codes captured with `tools/capture_exit.py`:**
+
+    green      exit 0, nothing to report        153
+    findings   exit 1, report-only convention    69
+    refused    COULD NOT RUN, fail-closed        67
+    skipped    exit 3                             2
+    timeout    hit MY 90s bound                  15
+    CRASHED    a traceback                        9
+                                                ---
+                                                315
+
+**`X OF Y GREEN: 153 of 315`** is the literal answer and on its own it reads as
+162 broken tools, which is false. **69 exit 1 because they FOUND something** --
+that is this platform's report-only convention -- and **67 refused in words**
+because a secret or an argument was absent, which is the fail-closed behaviour
+the platform asks for.
+
+**ONLY 9 ARE ACTUALLY BROKEN, and 8 of those are one defect class:**
+
+    checkblocks.py          div_balance_check.py    extract_scripts.py
+    gh_push.py              js_code_only_diff.py    literal_drift_check.py
+    nav_panel_check.py      va_rule_currency.py
+
+All eight: **`IndexError: list index out of range`** — they read `sys.argv[1]`
+without checking it exists. **The ninth is §9 above.**
+
+**THE POINT IS NOT THAT THEY NEED AN ARGUMENT. It is that 67 OTHER TOOLS SAY SO
+AND THESE EIGHT TRACEBACK.** A traceback is indistinguishable from a broken tool
+to anything reading an exit code, and both are exit 1 — so a sweep like this one
+cannot separate "needs an argument" from "is broken" for these eight, while it
+can for the 67. That is the same third-state collapse PR §1.11 names, arriving
+through a missing `len(sys.argv)` check.
+
+**CHEAP AND MECHANICAL:** each needs the refusal the other 67 already write --
+name what is missing, say nothing was checked, exit 2. Not exit 1, because exit 1
+on this platform means findings.
+
+**THE 15 TIMEOUTS ARE MY BOUND, NOT A VERDICT** and are not routed as defects:
+`assurance_case.py`, `comment_sensitivity_check.py`, `cp1252_console_sweep.py`,
+`cross_tenant_isolation_scope.py`, `dead_rule_sweep.py` and ten others exceeded
+90 seconds. Several are known long sweeps. Whoever re-runs this should raise the
+bound and report the real distribution rather than inheriting my number.
+
+**Full per-script results: `scratchpad/tools_sweep.tsv` (315 rows,
+`name<TAB>exit<TAB>first-3-lines`).**

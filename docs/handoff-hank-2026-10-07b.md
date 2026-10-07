@@ -132,7 +132,7 @@ was 12. Item 2's "3-way hold" was one session by the time I checked. Item 4's
 "10 resources" was 15 by my criteria and 8 by my first, narrower ones. **Four of
 ten dispatch premises had moved or were wrong, and every one of them was
 checkable in under five minutes.**
-- **item 8 — PARTIAL (in flight)** · 315 scripts under `tools/` (305 `.py` + 10 `.js`), launched in a SECOND throwaway worktree at `7406ab27` — never the live clone, because `tools/bare_run_writers.py` exists precisely because a bare run of some of them WRITES. 90s timeout each, three outcomes recorded not two (green / red / COULD-NOT-RUN), results to `scratchpad/tools_sweep.tsv`. **Still running; X of Y not yet known.** A monitor is armed. **Next step:** read `scratchpad/tools_sweep.out` for the X-of-Y and the named red/could-not-run lists.
+- **item 8 — DONE** · **X OF Y GREEN: 153 of 315.** All 315 `tools/` scripts run once each in a throwaway worktree at `7406ab27`, exit codes captured with `capture_exit.py`, 90s bound. **153 green / 69 findings (exit 1 is the report-only convention) / 67 COULD NOT RUN (fail-closed, in words) / 2 exit 3 / 15 timeout at MY bound / 9 CRASHED.** **Only the 9 are actually broken**, and 8 of those are one class: `IndexError` on `sys.argv[1]` where 67 other tools refuse cleanly. **The 9th is the serious one:** `tools/hover_separation_ci.py` raises `AttributeError: module 'hover_separation_audit' has no attribute 'AUDITOR_SCOPE'` — the subject deliberately removed that name and the caller was never updated, so **the DETECT half of the build/audit boundary cannot run**. Both routed with reproducing commands in `docs/2026-10-06-hank-routed-to-fourth.md` §9 and §10; full results in `scratchpad/tools_sweep.tsv`. **Next step:** check whether CI invokes `hover_separation_ci.py` — if it does, that job has been failing; if it does not, the boundary has been undetected. The crash cannot tell you which.
 
 ---
 
@@ -162,3 +162,41 @@ times, never on a file, and I did not reword a third time. `sairn_claim.py list`
 shows no `hank` row. Nothing is held and nothing is left open for another
 session to trip over — which is also why this handoff carries the measured
 disjointness proof rather than a claim id.
+
+---
+
+## POSTSCRIPT — the two in-flight runs, closed out honestly
+
+**ITEM 8 LANDED: 153 of 315 green.** The breakdown is in the checkpoint line
+above and matters more than the ratio: 69 of the non-green exit 1 because they
+**found something**, 67 **refused in words**, and only **9 are broken**. Reading
+"153 of 315" as 162 failures would be wrong, and reporting it that way would have
+been the easier sentence.
+
+**TWO FINDINGS CAME OUT OF IT, both routed with a reproducing command and
+NEITHER FIXED BY ME** (no claim held, and the first one's correct fix is a
+judgement I would have been guessing at):
+
+1. **`tools/hover_separation_ci.py` has been crashing** — the DETECT half of the
+   build/audit boundary. The subject deliberately replaced `AUDITOR_SCOPE` with a
+   constant **plus a predicate** and said so in its own comment; the caller still
+   asks for the tuple. **Substituting the new name blind would make the equality
+   check pass while dropping what the predicate covers** — a green that means
+   less than the red it replaces. `docs/2026-10-06-hank-routed-to-fourth.md` §9.
+2. **Eight tools traceback where 67 refuse cleanly** — `IndexError` on
+   `sys.argv[1]`. Both are exit 1, so nothing reading an exit code can separate
+   "needs an argument" from "is broken" for those eight. §10.
+
+**ITEM 3 IS STILL IN FLIGHT AND THAT IS ITS FINAL STATE FOR THIS BATCH.** The
+clean worktree run (PID 82732, started 14:26:05Z) has its `capture_exit` status
+file at **`RUNNING`** after well over an hour, zero bytes flushed. **Per that
+tool's contract RUNNING is the third state: not a pass, not a fail, not yet
+known.** It is not reported as green and it is not reported as red.
+
+**Next step for item 3:** read `scratchpad/wt.rat.status`. If it reads `EXIT 3`
+that is SKIPPED-because-another-run-holds-the-lock, **not a failure** —
+`LOCK_MAX_AGE` is 900s and the lock is keyed on the repo path, so the worktree's
+is separate from the live clone's. The worktree is at
+`…/16753c01-…/wt-suite` and is disposable; `git worktree remove` it when the
+run ends or is abandoned. A second worktree, `…/wt-tools`, served item 8 and is
+also disposable.
