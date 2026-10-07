@@ -333,17 +333,19 @@
    "kind": "py",
    "tail": "    audit = set(A.AUDITOR_SCOPE)",
    "since": "2026-10-06",
-   "why": "",
+   "why": "THE GATE CRASHES, SO IT IS NOT ENFORCING -- and the subject is the BUILD/AUDIT BOUNDARY. AttributeError at tools/hover_separation_ci.py:97, inside scope_definitions_agree(), on 'audit = set(A.AUDITOR_SCOPE)' -- which is verbatim the `tail` this register row already carried. tools/hover_separation_audit.py:122 explains why it fails: 'there is deliberately no AUDITOR_SCOPE tuple any more: a flat tuple cannot express...'. SO ONE MODULE REMOVED A CONSTANT ON PURPOSE AND A CONSUMER IN ANOTHER MODULE STILL READS IT. The probe's arms report the consequence honestly -- 'a commit inside the auditor's own directory PASSES' and '...and the refusal NAMES the offending path' both FAIL -- because a crashed gate refuses nothing. THIS IS THE HIGHEST-CONSEQUENCE ROW IN THIS BATCH: the hover auditor's separation is enforced by prevent-and-detect, and the prevent half is dead. ROUTED, NOT PATCHED: the fix is to replace the removed flat tuple with whatever hover_separation_audit.py now exposes, and the function's own docstring argues the two constants must stay separate, so the right shape is a decision for whoever removed it.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly",
+    "sha": "a7b6b58c",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, tree verified clean before and after the batch; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "tooling/consumer/deliberate-removal-broke-a-caller"
   },
   {
    "file": "tests/install_git_hooks_check_probe.py",
@@ -386,17 +388,19 @@
    "kind": "py",
    "tail": "CRITERIA LOCKED BEFORE THE REAL RUN",
    "since": "2026-10-06",
-   "why": "",
+   "why": "THE SAME ROOT CAUSE AS tests/law_reconcile_role_vocab_check.py, WHICH I DIAGNOSED IN THE PREVIOUS BATCH, AND IT IS THE SAME WRAPPER. AssertionError: 'fixture did not rewrite the allow-list' at line 47. The fixture's regex is const\\s+LAW_RECONCILE_ROLES\\s*=\\s*\\{[^}]*\\}\\s*; and api/sd-data.js:15368 now reads 'const LAW_RECONCILE_ROLES = roleSet({ owner: true });' -- verified by running the control's own pattern against the file: MATCHES = False. A roleSet( wrapper was introduced between the = and the {, exactly as it was for ROLES_BY_APP at api/_lib/auth.js:112. ONE WRAPPER INTRODUCTION BROKE BOTH THE CHECK AND ITS CONTROL, and the two failed with DIFFERENT QUALITY: the check exits 2 and names the drift in one sentence, the control raises a bare AssertionError. The check obeys convention 8 and the control does not, which is worth more than the fix: a hard assert in a fixture builder reports a drift as a crash. FIX: both anchors must tolerate an optional wrapper, and the control's assert should become a refusal with a reason.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly",
+    "sha": "a7b6b58c",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, tree verified clean before and after the batch; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "tooling/anchor/source-shape-changed"
   },
   {
    "file": "tests/local_only_self_evidence_probe.py",
@@ -507,17 +511,19 @@
    "kind": "py",
    "tail": "FAILED  check9_probe: 10 failed",
    "since": "2026-10-06",
-   "why": "",
+   "why": "TEN ARMS FAIL AND THE DIAGNOSTIC IS IN THE FIRST ONE: 'exactly one hookSpecificOutput object is emitted, never two and never ZERO -- zero is the gate answering nothing   objects=0 raw='. The gate emits NOTHING AT ALL, and a later arm confirms it: 'exit 1 still BLOCKS   check9-blocked=False decision=None reason='. Check 9 is the guard-test gate, and it SKIPS by design when the outgoing range is docs-only -- the exact line appears in this session's own push output: 'Guard-test gate (check 9) SKIPPED: every outgoing file is under docs/'. So the probe drives a range the gate correctly declines to judge, and then asserts it produced a verdict. THE PROBE DOES NOT CONTROL THE INPUT IT IS TESTING. Two arms still pass, including the one that matters most -- 'docs-only: an EMPTY range is NOT docs-only' -- so the gate's own third-state handling is intact. FIX: the probe must construct an outgoing range containing a code file, or assert the SKIP.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly",
+    "sha": "a7b6b58c",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, tree verified clean before and after the batch; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "test-design/fixture/probe-does-not-control-its-input"
   },
   {
    "file": "tests/push_gate/preauth_exemption_anchor_probe.py",
@@ -560,34 +566,38 @@
    "kind": "py",
    "tail": " a1_clean_append",
    "since": "2026-10-06",
-   "why": "",
+   "why": "A HARD CRASH, NOT AN ASSERTION: json.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: line 18 column 1 (char 258). It dies in the section headed 'BEHAVIOUR ARMS -- real repo, real rebase, real conflict', so the control has created a real repository, run a real rebase and produced a real conflict, and then JSON-parses a file. LIKELY CAUSE, STATED AS A LIKELIHOOD: a conflicted file carries <<<<<<< / ======= / >>>>>>> markers, and 'property name enclosed in double quotes' at the START of a line is exactly what a marker line produces. NOT ESTABLISHED -- I did not identify the file being parsed, and the control may be parsing a tool's OUTPUT rather than the conflicted file. Either way it is an unguarded parse of something that can legitimately not be JSON, in a control whose whole purpose is to survive a conflict.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly",
+    "sha": "a7b6b58c",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, tree verified clean before and after the batch; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "test-design/fixture/json-parsed-while-conflicted"
   },
   {
    "file": "tests/run_adversarial_prompt_corpus_probe.py",
    "kind": "py",
    "tail": "3 arm(s) FAILED: 4. the sweep runs and classifies: zero unfenced, 5 reported as fenced, 8. emptying the untrusted-field list cannot produce a CLEAN sweep -- the",
    "since": "2026-10-06",
-   "why": "",
+   "why": "A FIXTURE-LOCK REFUSAL, AND IT SAYS SO: 'COULD NOT RUN: 2 fixture(s) misclassified, so NOTHING was scanned. This is not a pass.' The probe prints that sentence and then exits 1 rather than 2, which is the only thing wrong with its reporting. The drift is named precisely: {'literal': 0, 'interp': 1, 'at_risk': 1, 'delimited': 0} != {'interp': 1, 'at_risk': 0, 'delimited': 1} -- a fixture that must classify as DELIMITED now classifies as AT_RISK. Three more arms fail downstream of that, including the two ablations (8: emptying the untrusted-field list cannot produce a CLEAN sweep; 10: emptying the fence-call hints moves all 5 fenced sites to at-risk), which is correct behaviour -- an ablation on a tool whose criteria do not hold its own fixtures proves nothing. CONVENTION 1 WORKING AS INTENDED: the lock refused before judging real data. FIX: re-derive the delimited criterion, then re-run the two ablations.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly",
+    "sha": "a7b6b58c",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, tree verified clean before and after the batch; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "tooling/fixture-lock/criteria-drifted-from-fixtures"
   },
   {
    "file": "tests/run_alf_read_order_sabotage_probe.py",
@@ -700,17 +710,19 @@
    "kind": "py",
    "tail": "0 passed, 1 failed",
    "since": "2026-10-06",
-   "why": "",
+   "why": "0 passed, 1 failed -- THE FIRST ARM, so nothing below it ran. 'the gate reads the range in the CURRENT WORKING DIRECTORY's repo ... the gate resolved the range against its OWN repo instead, so every arm below would be judging the SAIRN repository and not the fixture: COULD NOT RUN: 80eeb32131bbe0ca1040df4eb59047315b027cd4 does not resolve in this clone, so the range cannot be read and nothing was checked (PR 1.11).' This is the __file__-FALLBACK-LANDS-ON-THE-HOME-REPOSITORY class that hank fixed in THREE other probes at 6a4ee580 -- tools/probe_public_book_guardian.py, rf_claim_gate_live_probe.py and rf_roundtrip_probe.py -- and this one was not in that set. The probe is RIGHT and it refuses rather than judging the wrong repository, which is the behaviour PR 1.11 asks for. FIX: the same rev-parse-anchored derivation hank already landed, applied to the copy-exactly gate. ROUTED to hank, who owns that fix and tools/worktree_root.py.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly",
+    "sha": "a7b6b58c",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, tree verified clean before and after the batch; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "tooling/path-derivation/file-fallback-reads-the-home-repo"
   },
   {
    "file": "tests/run_cron_liveness_probe.py",
@@ -927,17 +939,19 @@
    "kind": "py",
    "tail": "  - MIXED: one source + one generated -> REFUSES, exit 1",
    "since": "2026-10-06",
-   "why": "",
+   "why": "FOUR ARMS AND THEY ARE ONE DEFECT IN THE SUBJECT: '...and the tool REFUSES it, exit 1' FAIL, '...and names the file' FAIL, '...and classifies it SOURCE, not generated' FAIL, '--dry reports it as GENERATED and changes nothing' FAIL. The tool calls a SOURCE file GENERATED and therefore does not refuse it. The direction is the dangerous one: a generated file may be regenerated without asking, a source file may not, so misclassifying source AS generated is the classification that loses somebody's work during a rebase resolution. The arms are consistent with each other, which is what makes this one defect rather than four. NOT CLEARED -- I did not read the classifier to find WHICH rule admits the file, and that is the next step.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly",
+    "sha": "a7b6b58c",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, tree verified clean before and after the batch; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "implementation/classifier/source-reported-as-generated"
   },
   {
    "file": "tests/run_removal_path_probe.py",
@@ -1116,34 +1130,38 @@
    "kind": "node",
    "tail": "47 passed, 3 failed",
    "since": "2026-10-06",
-   "why": "",
+   "why": "THREE ARMS OF 50, AND TWO OF THEM ARE THE SAME PIN. 'coverage reports all four states complete across all three requirement types: expected 4 got 5' and 'every correction found during verification is recorded in the rule itself -- all four states had at least one correction: expected 4 got 5'. A FIFTH STATE was added to the compliance rules and both arms pin FOUR. That is convention 14 -- a count inferred from a sample used as evidence without stating n of N. The third, 'a PCH secured-unit worker owes 18 annual hours (12 + 6), computed not asserted -- mismatch: expected false got null', is a DIFFERENT failure: null is not false, so the computation returned nothing rather than returning the wrong number, which points at the new state's data being absent for the PCH path rather than at the arithmetic. 47 arms pass. FIX IS THE AUTHOR'S: the two cardinality arms should read the state list and say n of N; the PCH arm needs the fifth state's data before it can be judged.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly",
+    "sha": "a7b6b58c",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, tree verified clean before and after the batch; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "test-design/oracle-selection/hardcoded-cardinality"
   },
   {
    "file": "tests/sairncare/test-op-audit.js",
    "kind": "node",
    "tail": "12 passed, 14 failed",
    "since": "2026-10-06",
-   "why": "",
+   "why": "FOURTEEN ARMS FAIL AND EVERY ONE IS 'expected 200 got 502' OR 'expected 400 got 502'. NOT an absent network: the file MOCKS fetch at line 30 and throws 'Unmocked fetch: ' + method + ' ' + url for anything it does not recognise (line 50), with a fake SUPABASE_URL set at line 14. So the 502 is the handler answering after its upstream call hit the mock's unrecognised branch -- THE MOCK NO LONGER COVERS THE ROUTES THE HANDLER TAKES. The handler changed shape and the fixture did not follow. 12 arms still pass, so the harness itself works. This is the fixture-tidier-than-production class from hank's routed convention, in its other direction: the fixture is not tidier, it is STALE. FIX: re-derive the mock's route table from the handler rather than patching the fourteen expectations.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly",
+    "sha": "a7b6b58c",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, tree verified clean before and after the batch; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "test-design/fixture/mock-drifted-from-handler"
   },
   {
    "file": "tests/sairncare_fault_probe.py",
@@ -1201,17 +1219,19 @@
    "kind": "node",
    "tail": "FAIL -- 25 passed, 1 failed",
    "since": "2026-10-06",
-   "why": "",
+   "why": "ONE ARM OF 26, AND IT IS A CLAIM MADE TO THE USER. 'FAIL D4. sf_trustee_audits is NOT in SF_SYNCED -- the panel TELLS the user this record is device-only, and a claim about a limitation has to be true.' 25 arms pass. sairnfreedom.html carries 'device only' wording at three places (1616, 2042, 2048) and 'not synced' at 7621, and sf_trustee_audits appears twice in the file. So either the resource gained sync and the panel's disclaimer is now false, or the disclaimer was always about a different resource. EITHER WAY THE DIRECTION IS THE BAD ONE: a panel telling a trustee their audit record is device-only, when it is synced, is a privacy statement that is wrong rather than a feature that is missing. NOT CLEARED -- which of the two it is needs the SF_SYNCED list read against the three disclaimer sites, and that is app-owner work.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly",
+    "sha": "a7b6b58c",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, tree verified clean before and after the batch; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "implementation/ui-claim/limitation-no-longer-true"
   },
   {
    "file": "tests/sairnfreedom_server_backup.js",
@@ -1273,34 +1293,38 @@
    "kind": "node",
    "tail": "1. reserving is an atomic conditional PATCH, not a read-then-write",
    "since": "2026-10-06",
-   "why": "",
+   "why": "THE FIRST BEHAVIOUR ARM FAILS AND EVERYTHING AFTER IT IS UNREACHED: 'a reservation that wins returns 200 -- 403'. The test is NOT missing a session -- it signs a real SAIRNlegacy employee token (lines 78-80, 124-130) with role 'director', and the mock supplies a 200 reply with the row. A 403 with a valid session is an AUTHORIZATION refusal reached BEFORE the upstream PATCH, so the atomicity arms below it (exactly one upstream call, method is PATCH) never run. api/sd-data.js:13592 is the leg_merch_units reserve branch. The shape matches a role gate having landed whose allow-list does not include 'director'. NOT CLEARED -- I did not read the allow-list, and whether the right fix is widening the gate or changing the test's role is a product decision about who may reserve a unit, not a test repair. THIS IS ALSO THE BASELINE that tests/sairnlegacy_fault_probe.py stops on, so fixing it unblocks two rows.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly",
+    "sha": "a7b6b58c",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, tree verified clean before and after the batch; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "implementation/role-gate/allow-list-excludes-the-caller"
   },
   {
    "file": "tests/schema_provisioning_probe.py",
    "kind": "py",
    "tail": "3 ARM(S) FAILED",
    "since": "2026-10-06",
-   "why": "",
+   "why": "THREE ARMS FALSE, ALL THREE A HARDCODED COUNT: arm1_reads_35_from_the_schema False, arm1_reads_41_for_sairnvet False, arm2_registry_has_35 False. The two shape arms PASS -- arm1_names_are_tables_not_prose True, arm2_no_prose_words True -- so the parser works and only the NUMBERS are wrong. 35 and 41 are pinned in the arm NAMES, which is the worst place for a number that moves: the schema and the registry grew and the arm's own label is now a false statement about the platform. Convention 14 exactly. FIX: the arms must read the count and assert a FLOOR with n of N stated, never an equality -- the same correction tools/run_all_tests.py's MIN_TEST_FILES already documents, and a DROP is the thing worth failing on.",
    "owner": "unassigned",
-   "diagnosed": "",
-   "diagnosed_by": "",
+   "diagnosed": "2026-10-07",
+   "diagnosed_by": "fourth",
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly",
+    "sha": "a7b6b58c",
+    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, tree verified clean before and after the batch; exit code read from the program's own output"
+   },
+   "exit_code": 1,
+   "cause_tag": "test-design/oracle-selection/hardcoded-count-on-live-schema"
   },
   {
    "file": "tests/scp_quotes_review_probe.js",
