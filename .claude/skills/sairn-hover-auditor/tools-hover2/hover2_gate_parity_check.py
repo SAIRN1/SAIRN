@@ -77,9 +77,19 @@ ROLE_PAT = re.compile(r'\b[A-Z][A-Z0-9_]*_ROLES\b')
 # deliberately: an audit tool that under-detects a gate manufactures the
 # exact false asymmetry it exists to rule out, which is worse than a rare
 # over-detection (a _ROLES identifier referenced for an unrelated reason).
-ASSIGN_PAT = re.compile(r'session\.employee_id\s*===?\s*\w|'
-                        r'\w\.assigned_employee_id\s*===?\s*session\.employee_id|'
-                        r'session\.employee_id\s*===?\s*\w*\.?assigned_employee_id|'
+ASSIGN_PAT = re.compile(r'session\.employee_id\s*[=!]==?\s*\w|'
+                        r'\w+\.assigned_employee_id\s*[=!]==?\s*session\.employee_id|'
+                        r'session\.employee_id\s*[=!]==?\s*\w*\.?assigned_employee_id|'
+                        # WIDENED batch J, sen_clients' write (api/sd-data.js:5834):
+                        # `existingRow.assigned_employee_id !== session.employee_id`
+                        # -- a NEGATED comparison, found on this tool's first real run
+                        # against a fourth vertical (sen_). The three patterns above
+                        # only matched `===`/`==`; a refusal written as "if NOT equal,
+                        # forbid" is the equally common inverse phrasing and was
+                        # invisible to an equality-only regex. Same discipline as every
+                        # other widening here: under-detecting a real assignment check
+                        # manufactures a false asymmetry, which is worse than the rare
+                        # case of `!=` appearing for an unrelated reason.
                         # NAMED helper, found on this tool's own first real run against
                         # rf_claims: rfAuth.ownsRow(session, claim) reads as an inline
                         # assignment check (api/sd-data.js:8899), invisible to the three
@@ -202,6 +212,9 @@ def selftest():
     if (resource === 'fx_sched' && action === 'read') {
       const ok = canSeeSchedule(session, row, assignee, xyAuth.MANAGEMENT_ROLES);
     }
+    if (resource === 'fx_negated' && action === 'write') {
+      if (existingRow.assigned_employee_id !== session.employee_id) { return; }
+    }
 """
     per_resource = analyze(fixture, 'fx_')
     groups_flagged, lines = report(per_resource)
@@ -211,8 +224,9 @@ def selftest():
           per_resource['fx_clean']['read'] == per_resource['fx_clean']['write'] and
           per_resource['fx_helper']['read']['assignment'] is True and
           per_resource['fx_argrole']['read']['role'] is True and
-          per_resource['fx_sched']['read'] == {'role': True, 'assignment': True})
-    print('SELFTEST %s: %d group(s) flagged (expected 1: fx_a, assignment divergence); fx_clean correctly unflagged; fx_helper, fx_argrole, fx_sched (three named-helper shapes) correctly detected' %
+          per_resource['fx_sched']['read'] == {'role': True, 'assignment': True} and
+          per_resource['fx_negated']['write']['assignment'] is True)
+    print('SELFTEST %s: %d group(s) flagged (expected 1: fx_a, assignment divergence); fx_clean correctly unflagged; fx_helper, fx_argrole, fx_sched, fx_negated (four named-helper/negated-comparison shapes) correctly detected' %
           ('PASS' if ok else 'FAIL', groups_flagged))
     return 0 if ok else 1
 
