@@ -68,6 +68,31 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_py_guard_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "(discipline 1) and also the limit."
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(TMP, ignore_errors=True)"
+    }
+   ],
+   "sha": "0aef490f55622b93d9aea3cfe4fe671052a8d8e2",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/report_only_checks.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0aef490f55622b93d9aea3cfe4fe671052a8d8e2",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/provisioning_attribution.js",
    "class": "test file",
    "level": "CHANGE",
@@ -384,6 +409,31 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "874fe39e3e7aeaa74de357df0461270d6ce82da6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_py_guard_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "(discipline 1) and also the limit."
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(TMP, ignore_errors=True)"
+    }
+   ],
+   "sha": "8f566598d04cb984a41ef089e59b678aa94c7b5a",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/report_only_checks.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "8f566598d04cb984a41ef089e59b678aa94c7b5a",
    "criteria_version": "2026-10-06.1"
   },
   {

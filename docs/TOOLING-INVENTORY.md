@@ -21,12 +21,12 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**318 files in `tools/`.** By what actually invokes them:
+**319 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 18 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 80 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 81 | runs automatically on every push, never blocks |
 | **ADVISORY** | 5 | session-start or prompt hooks, informational |
 | **DECIDED** | 79 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 71 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
@@ -37,7 +37,7 @@ By what they are, independent of wiring:
 | Kind | Count |
 |---|---:|
 | ADVISORY | 3 |
-| CHECKER | 227 |
+| CHECKER | 228 |
 | GATE | 1 |
 | GENERATOR | 19 |
 | GUARD | 1 |
@@ -186,7 +186,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (80)
+## REPORT-ONLY (81)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -250,6 +250,7 @@ quiet in practice.
 | `parse_zero_third_state_check.py` | 2026-09-29, report-only, and it PROPOSES rather than applies (discipline 11 -- a detector that blesses its own fix is the fail-open one step later). SOME OF THE CORPORA IT NAMES ARE ALLOWED TO BE EMPTY: an outgoing-file list is empty on a clean push and must not fail, so every proposed guard needs a human decision before it lands. Control: tests/run_parse_zero_third_state_probe.py. | a checker whose corpus enumeration returns nothing, which it then reports as a clean sweep -- "read 0 file(s) / CLEAN" |
 | `pattern_enumeration_sweep.py` | REGISTERED 2026-10-05 AND IT DOES NOT RUN -- index 72 of 73, the very last entry, inside the 29-entry tail the sweep never reaches (measured, see the block above). ACCOUNTED FOR, not wired. ON THE MERITS: measured 1.4s over 285 files under tools/, and CLEAN on its first half -- CORROBORATED (58), i.e. 58 name tests that also have a non-name derivation behind them. PROMOTED ON THE SECOND HALF, which is a genuine ratchet: it cross-checks filesystem membership against git membership per directory and flags a disagreement. ITS ONLY FINDING ON THIS RUN WAS THIS SESSION'S OWN UNTRACKED FILE (tests/run_gh_token_live_probe.py, disk=624 tracked=623), which is the tool working and is the strongest argument for wiring it after a push: an untracked tool is how docs/NHI-REGISTER.md once named a live tool as deleted. Control: tests/run_pattern_enumeration_probe.py, which drives it against fixtures -- necessary here because the tool EXCLUDES ITSELF by name (its NAME_TESTS table is regexes about name tests, so it matches its own every row). | a population derived from a NAME TEST -- startswith, a prefix glob, a hyphen convention -- with no second derivation behind it; and separately a directory where what is on disk and what git tracks DISAGREE. |
 | `probe_anchor_freshness.py` | 2026-09-27, report-only. 0.4 seconds over 315 probe files and 100 anchors, which is the ONLY reason this can run on a cadence at all -- the probes it watches take MINUTES each, and that is exactly why they are run when somebody remembers and why two of them had been dead for days. WIRED BECAUSE A POINT-IN-TIME RUN IS NOT THE POINT: an anchor does not rot when somebody looks at it, it rots when a REFACTOR MOVES THE SUBJECT, and that happens between runs. Registering it makes the question get asked after every Bash turn instead of after a dispatch remembers to ask. | a fault probe whose sabotage anchor no longer matches its subject the way the probe assumes -- VANISHED (0 matches), AMBIGUOUS (>1 with no declared count), or COUNT DISAGREES (the edit declares N and the subject no longer has N) |
+| `py_guard_check.py` | 2026-10-07, report-only, and the reason it must stay report-only today is the COUNT rather than the precision. Its first full run on tools/ reported 91 findings in 45 of 306 files -- R1 28, R2 57, R4 6, R3 zero. Every one was hand-verified and every one is a real instance of its shape, so this is not a false-positive problem. It is worse as a gate for exactly that reason: wired blocking it would refuse every push touching 45 existing files until somebody triages a backlog nobody has agreed to, which is how a gate gets overridden by habit. TWO SHAPES SHOULD BE TRIAGED BEFORE ANY PROMOTION IS DISCUSSED. R2 is split 45 UNDOCUMENTED / 12 documented by whether a comment gives a reason, and the undocumented ones are the real queue. R4 is six `sys.exit("message")` sites that exit 1 on a platform where 1 means FINDINGS and 2 means COULD NOT RUN -- so a missing licence key reports as findings; that one is arguably promotable on its own once the six are fixed. Design note, committed BEFORE the tool: docs/2026-10-07-cc-py-guard-design-note.md, which also names three shapes REJECTED as not mechanically detectable. Controls: 37 arms in --selftest on the DEFAULT path with their result printed beside every scan, plus tests/run_py_guard_probe.py, 23 arms, driving the real CLI in a subprocess so a verdict that never reaches sys.exit is visible -- and that probe caught a real defect in the tool on its first run, --help exiting 1 because the docstring it printed carried box-drawing characters a cp1252 console cannot encode. | four syntactic shapes that let a program report a verdict it did not earn: R1 a subprocess/os call whose result is discarded as a bare statement; R2 a bare except, or a handler whose body is only pass; R3 an assertion that cannot fail (truthy constant, non-empty literal container, x == x); R4 an exit status taken from or compared against a string. AST only -- it never executes what it reads, and an arm asserts that against its own source. |
 | `register_feed_gate.py` | 2026-09-15 as --backlog, report-only, ALONGSIDE its BLOCKING pre-push half. The two halves answer different questions: the gate refuses a NEW defect closure that does not feed the register, and this keeps the HISTORICAL gap visible so the requirement date cannot quietly forgive it | the defect register starving -- a `fix(` commit touching code that no register record cites. The blocking half applies only from its requirement date; this one counts everything before it |
 | `register_freshness_check.py` | 2026-09-24, report-only and ADVISORY PER ITEM by decision -- a register with one stale cell must not freeze every unrelated push, the same scoping check 12 already established for generated documents. It is registered rather than left unrun because the drift it finds is currently only caught when an auditor happens to individually read that exact row: all NINE line citations on sc_anesthesia_base_units were 30-45 lines stale within a DAY, found only because a review obligation sent a reader there. | a citation in docs/CRITICALITY-TIERS.md or docs/tier-a-reviews.json that no longer points at what it says: a file:line whose named identifier has moved out of the +/-8-line window, a cite past EOF, a path or files[] pointer that is gone, a prose sha that does not resolve. UNVERIFIABLE (a cite with no adjacent identifier) is a third state, counted and printed, never folded into pass |
 | `removal_path_check.py` | 2026-09-10, the day it was built | a NEWLY registered resource the product cannot remove a record from -- no delete and no soft_delete verb -- that is not in tools/removal_path_baseline.json with a reason |
@@ -576,11 +577,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      318   git ls-files tools/
+  tools on disk                      319   git ls-files tools/
   hook entries                        18   .claude\settings.json
   push-gate invocations               12   tools\sairn_push_gate_hook.py
-  report-only registry                75   report_only_checks.REGISTRY
-  tools invoked by tests/            226   tests/**/*.py, *.js
+  report-only registry                76   report_only_checks.REGISTRY
+  tools invoked by tests/            227   tests/**/*.py, *.js
   recorded NOT-promoted decisions     86   report_only_checks.NOT_PROMOTED
   numbered gate checks                15   tools\sairn_push_gate_hook.py
 ```

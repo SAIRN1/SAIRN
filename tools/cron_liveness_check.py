@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# OWNER: cc
 # OWNER-INTENDED BARE-RUN WRITER. A bare run of this tool WRITES, and that is
 # its interface rather than a defect: see tools/bare_run_writers.py for the
 # path it writes and why. tools/bare_run_write_check.py reads that list and

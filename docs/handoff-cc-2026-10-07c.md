@@ -7,9 +7,9 @@
 read from captured program output — never from a harness status.** Every green
 states how many runs against that SHA and what the first run returned.
 
-**Written at the item-5 checkpoint the dispatch requires, then extended.** State
-at the time of writing: `a9e9147b`, two commits ahead of `origin/main`, with
-`dc9f1629` already pushed and live.
+**Written at a point where nothing is half-finished.** All eleven items are
+closed or explicitly refused with a citation; the full item-5 checkpoint version
+of this file was committed mid-batch at `8fa28fd8` and this is the final one.
 
 ---
 
@@ -17,15 +17,14 @@ at the time of writing: `a9e9147b`, two commits ahead of `origin/main`, with
 
 Context was lost at item 1. On resume the tree had **diverged**: `origin/main`
 had moved three commits (all `fourth`, all docs-only) and **my own claim commit
-`b737cf51` had never been pushed**, so `sairn_claim.py list` showed no `cc`
-claim at all while `.claude/claims/cc.json` held an active one.
+had never been pushed**, so `sairn_claim.py list` showed no `cc` claim at all
+while `.claude/claims/cc.json` held an active one.
 
-`list` reads claims from **origin**, not the working tree — which is the whole
-point of PR §2.2: a claim that is not *pushed* is invisible to every other
-clone. The pre-compaction note said "claim14 taken"; it had been taken and
-committed and **not pushed**, and those are three different states. Rebased
-(`REBASE_EXIT=0`) to `7511f48b`, pushed, and `cc` then appeared in `list`
-alongside `fourth`, `hover2` and `cody`.
+`list` reads claims from **origin**, not the working tree. That is the whole
+point of PR §2.2: a claim that is not *pushed* is invisible to every other clone.
+The pre-compaction note said "claim14 taken"; it had been taken, committed, and
+**not pushed**, and those are three different states. Rebased, pushed, and `cc`
+appeared in `list` alongside `fourth`, `hover2` and `cody`.
 
 **Premises re-derived at `7511f48b`** because HEAD had moved. All 16 targets
 re-checked **FREE** against the active claims at `origin/main`; the three new
@@ -34,185 +33,209 @@ commits touched eight files and every one was a `fourth` document
 
 ---
 
-## CHECKPOINT LOG — one line per item
+## 1. CHECKPOINT LOG — every item, with its commit
 
 | item | state | commit / figure | exact next step |
 |---|---|---|---|
 | 1 | **DONE** | `d30566cb` | nothing. Unknown flag → exit 2, nothing written. 9 arms, 3 identical runs, two ablations |
-| 1b | **DONE — not asked for, declared** | `b4fa159f` | nothing. **F1: the generator had silently shrunk the TLA+ model from 10 apps to 6** and its own advice would have deleted the other four |
+| 1b | **DONE — not asked for, declared** | `b4fa159f` | nothing. **The generator had silently shrunk the TLA+ model from 10 apps to 6** and its own printed advice would have deleted the other four |
 | 2 | **DONE** | `adca07cf` | nothing. `--check` 0 IDENTICAL, 3 identical runs, seed never regenerated |
 | 3 | **DONE — 2 of 2** | `a606100b` mo, `3f0c8ddd` va | nothing. Both missing `trigger_document`, a field the **engine reads** |
-| 4 | **DONE, with its first half REFUSED** | `a27cd83b` | **Michael's call:** the five generated gates stay uncommitted. Determinism proved over 8 builds; the write path is kept working so he can reverse this in one line |
+| 4 | **DONE, first half REFUSED with a citation** | `a27cd83b` | **Michael's call:** the five generated gates stay uncommitted. Determinism proved over 8 builds; the write path is kept working so he can reverse this in one line |
 | 5 | **DONE** | `a9e9147b` — **100 absent, 44 + 56** | nothing. Premise was already partly true; the missing half was arms, 16 added |
+| 6 | **DONE — 18 OWNER lines** | `4fd17ae3` | **164 ownerless `tools/*.py` printed for chat to assign.** I assigned none |
+| 7 | **DONE — 44 confirmed, my 2 closed** | `cac280cc`, `8fa28fd8` | nothing. hank 28, fourth 5, generated 9, mine 2, re-derived not quoted |
+| 8 | **DONE** | `4fd17ae3` | nothing. Inventory in `docs/2026-10-07-cc-batch-14-inventory.md` |
+| 9 | **DONE** | `9bc8bba5` note, `e2612fef` tool | **91 findings reported, not fixed.** Promotion to blocking is a later decision and not mine |
 | 9e | **DONE — not asked for, declared** | `f67cb7e5` | nothing. The SCOPED push-gate exemption was **ungrantable** |
-| 6 | NOT DONE | — | owner map |
-| 7 | NOT DONE | — | confirm each routing of the 44 with its seq; fix my 2 |
-| 8 | NOT DONE | — | location inventory table |
-| 9 | NOT DONE | — | the Python guard checker; design note FIRST |
-| 10 | NOT DONE | — | two methodology rules into this file + routed; postmortem on the 11-too-high count |
-| 11 | IN PROGRESS | this file | final handoff + release |
+| 10 | **DONE** | `0eadb937` | the two rules are **routed**, for chat to accept, reject or rewrite. `docs/METHODOLOGY.md` NOT edited |
+| 11 | **DONE** | this file | release the claim |
 
 ---
 
-## 1. Committed and pushed state
+## 2. Committed and pushed state
 
-**PUSHED AND LIVE:** `dc9f1629` on `origin/main`, `origin/main...HEAD` = `0 0`
-at the moment of that push. It carries items 1, 1b, 2, 3 and 9e, their six
-register records, the three regenerated documents, and the gate's own
-bookkeeping.
+**PUSHED AND LIVE:** `dc9f1629` carried items 1, 1b, 2, 3 and 9e, their six
+register records, three regenerated documents and the gate's own bookkeeping.
+`origin/main...HEAD` was `0 0` at that push.
 
-**COMMITTED, NOT YET PUSHED:** `a27cd83b` (item 4) and `a9e9147b` (item 5).
+**COMMITTED AFTER IT:** `a27cd83b` (4), `a9e9147b` (5), `8fa28fd8` (mid-batch
+handoff + item 7's half), `4fd17ae3` (6 and 8), `cac280cc` (7 and the routings),
+`9bc8bba5` (9's design note), `e2612fef` (9's tool), `0eadb937` (10).
 
 ### Why pushing took eleven attempts, and what it cost
 
-Two separate causes, and the second hid behind the first for half an hour.
+Two causes, and the second hid behind the first for half an hour.
 
 1. **A real race.** Three other sessions were pushing every ~2.5 minutes. Each
-   of my rounds (fetch → rebase → push → push) took longer than that, and every
-   rebase moved every commit the register cites, forcing an extra re-seat
-   commit, which made the round longer still. Switching from **rebase to
-   merge** broke that: a merge does not rewrite my commits, so the register
-   stays valid and a round is one commit instead of two.
+   round (fetch → rebase → push → push) took longer than that, and **every
+   rebase moved every commit the register cites**, forcing an extra re-seat
+   commit and making the round longer still. Switching from **rebase to merge**
+   broke it: a merge does not rewrite my commits, so the register stays valid
+   and a round is one commit instead of two.
 2. **A real defect in the gate, which I fixed — `f67cb7e5`.** One `git push`
-   runs `sairn_push_gate_hook.py` **twice** (PreToolUse on the command text,
-   then the real pre-push hook), both modes read **one** single-use exemption
-   token, and both deleted it. The half that cannot push anything was spending
-   it, so `SAIRN_GATE_EXEMPT=seed` was **ungrantable** from the ordinary
-   context. Every attempt printed the same `SOFT CAPTURE` notice, which reads
-   as "you have not pushed twice yet" — so the output actively pointed at
-   operator error.
+   runs `sairn_push_gate_hook.py` **twice** (PreToolUse on the command text, then
+   the real pre-push hook), both modes read **one** single-use exemption token,
+   and both deleted it. The half that cannot push anything was spending it, so
+   `SAIRN_GATE_EXEMPT=seed` was **ungrantable** from the ordinary context — and
+   every attempt printed the same `SOFT CAPTURE` notice, which reads as "you have
+   not pushed twice yet", so the output actively pointed at operator error.
 
-**The scoped exemption was used, not the blanket one.** `SAIRN_SEED_GATE=off`
-was never set. The granted push is in `docs/BYPASS-LOG.jsonl`, written by the
-hook itself.
+**The scoped exemption was used, never the blanket one.** `SAIRN_SEED_GATE=off`
+was not set at any point. The granted push is recorded in
+`docs/BYPASS-LOG.jsonl`, written by the hook itself.
 
-### The seed exemption was justified by measurement, not by impatience
+### The seed exemption was justified by measurement, not impatience
 
 My seed changes are **whitespace only** — `json.loads` equal before and after on
-both files. The drift the gate reports is **Maine**: 14 rules (`me-mrcivp-12a-*`)
-and 2 holiday years (`me:2026`, `me:2027`) present in the seeds and never loaded
-to `LAW-PINNACLE-2026`. Driven both ways with the key the gate itself uses:
+both files. The drift the gate reports is **Maine**. Driven both ways with the key
+the gate itself uses:
 
     git archive origin/main sql | tar -x -C $A
     git archive HEAD        sql | tar -x -C $B
     python tools/sairn_load_state_check.py --app sairnlaw --key LAW-PINNACLE-2026 --sql-dir $A/sql   -> 1, DRIFT: 16
     python tools/sairn_load_state_check.py --app sairnlaw --key LAW-PINNACLE-2026 --sql-dir $B/sql   -> 1, DRIFT: 16
 
-Byte-identical reports apart from the tempdir path. **The drift is identical
-before and after my commits, so it is not caused by them.** I did **not** run
-`tools/load_deadline_seed.py`: loading writes to the canonical SAIRNlaw licence
-and is not an incidental side quest.
+Byte-identical apart from the tempdir path. **The drift is identical before and
+after my commits, so it is not caused by them.** I did **not** run
+`tools/load_deadline_seed.py`: loading writes to the canonical SAIRNlaw licence.
 
 ---
 
-## 2. Claims held
+## 3. Claims held
 
 **ONE: subject `cc`, batch 14**, taken `2026-10-07T13:31:55Z`, visible at
-`origin/main` since the resume push. Released at the close of this batch:
+`origin/main` since the resume push. **Released at the close of this batch:**
 
     python tools/sairn_claim.py release cc
 
-**Conflicts declared and none overridden.** `.claude/settings.json` is cody's;
-`docs/METHODOLOGY.md` and `docs/2026-09-13-cross-domain-disciplines.md` are
-fourth's and hank's — item 10 explicitly routes rather than edits;
-`docs/tier-a-reviews.json` is fourth's and is not in this batch.
+**Conflicts declared and none overridden.** `.claude/settings.json` is cody's and
+is untouched — item 9 went through `report_only_checks.REGISTRY`, which is the
+mechanism that makes touching it unnecessary. `docs/METHODOLOGY.md` and
+`docs/2026-09-13-cross-domain-disciplines.md` are fourth's and hank's; item 10
+routes rather than edits. `docs/tier-a-reviews.json` is fourth's and is not in
+this batch.
 
 ---
 
-## 3. Findings ROUTED, not fixed
+## 4. Open work, per item, with the exact next step
 
-Each carries a reproducing artifact, per the dispatch.
+### Item 4 — a decision for Michael, not a task
 
-### R1 — `tools/defect_register.py --reseat` is destructive at present
+The five generated load-state gates stay **uncommitted** and the drift check is
+**not** extended. The item said to commit them if determinism held; determinism
+does hold (8 builds, identical sha256 on all five), but committing them would
+reverse a recorded decision of **2026-08-29**: the gates were deleted because *a
+generated gate must be regenerated after every seed edit, and a forgotten
+regeneration makes it check yesterday's expectations and report clean.*
+Determinism does not answer staleness. `--write-superseded-gates` keeps the write
+path alive so the call can be reversed in one line.
 
-Run on a clean tree it re-seated 12 records and `--check` went 0 → `FAIL: 4
-register problem(s)` — four **duplicate** records (`6a2690bec035`,
-`d051c89faa16`, `7ed27c5e78fa`, `f2ee7be0d6da`). It maps a stale SHA forward by
-matching the **subject** and does not check whether a record already exists at
-the destination SHA, so where the same defect was recorded twice it collapses
-them onto one SHA. It returned **0** having left the register in a state its own
-`--check` refuses, and it also writes `docs/scrutiny-flags.json`, which its
-one-line usage does not mention.
+### Item 9 — 91 findings are reported and NOT fixed
 
-    python tools/defect_register.py --check   -> 0  (6 RE-SEATABLE, no FAIL)
-    python tools/defect_register.py --reseat  -> 0  "re-seated 12 record(s)"
-    python tools/defect_register.py --check   -> 1  FAIL: 4 duplicate records
-    git checkout -- docs/defect-density-register.json docs/scrutiny-flags.json
-    python tools/defect_register.py --check   -> 0
+`python tools/py_guard_check.py` → **1**, 91 findings in 45 of 306 files. Every
+flag hand-verified; every false positive named. The queue, in the order worth
+reading:
 
-Not fixed here: whether a collision means skip, merge or refuse is a design
-decision for its owner.
+* **R4, six sites** — the sharpest, and arguably promotable on their own once
+  fixed. `sys.exit(<string>)` exits **1** on a platform where 1 means FINDINGS
+  and 2 means COULD NOT RUN. Reproducible in one command: `python
+  tools/sairn_load_state_check.py --app sairnlaw` → exits **1** printing *"No
+  license key…"*, and `load_deadline_seed.py`'s own message begins **"COULD NOT
+  RUN"**. Sites: `load_deadline_seed.py:167,177`, `outline.py:34,112,118`,
+  `sairn_load_state_check.py:533`.
+* **R2, 45 UNDOCUMENTED of 57** — not one bare `except:` in 306 files; all 57 are
+  typed handlers whose body is only `pass`. The 12 documented ones carry a reason
+  in a comment and four of those are mine.
+* **R1, 28** — the **fixture SETUP** half is the valuable one: `git init` / `add`
+  / `commit` on a throwaway repo with the exit code discarded, so a fixture whose
+  setup fails silently leaves every arm after it testing nothing while passing.
+  The rest is teardown, where the consequence is residue.
+* **R3, 0** — a real zero. Its planted-bad example fires in the criteria lock
+  printed on every run.
 
-### R2 — Maine's 14 rules and 2 holiday years have never been loaded
+**Promotion to blocking is explicitly a later decision.** The registry entry says
+why it must stay report-only today, and it is the **count** rather than the
+precision: every one of the 91 is real, which is what makes it unusable as a gate
+until somebody triages a backlog they have agreed to own.
 
-See §1. It blocks every seed-touching push for every session, not just mine.
-Needs `python tools/load_deadline_seed.py me` and then a **changed compute on
-identical inputs** — the loader's exit code is not evidence.
+### Items 6 and 8 — 164 names waiting for an owner
 
-### R3 — six register records are RE-SEATABLE and are not mine
-
-`f3267f47` and `0dcb2daf` (cody), `f2ee7be0` (fourth), `6a2690be`, `d051c89f`
-and `7ed27c5e` (hank). `--check` calls this explicitly **not a failure**. Left
-untouched because R1 measures what fixing them file-wide does.
-
-### R4 — gate-freshness is unresolved on my pushes
-
-Check 10: *"the push gate that just ran is NOT the one on origin/main."* A clean
-pass from it is a **could-not-tell** about any check newer than my checkout. Not
-treated as a pass.
+`docs/2026-10-07-cc-batch-14-inventory.md` carries all 164 ownerless
+`tools/*.py` with what each writes. **680 of 980** tracked files under `tools/`,
+`tests/` and `scripts/` have no owner at all. I assigned none of them.
 
 ---
 
-## 4. My own defects this batch, cause-tagged
+## 5. Findings ROUTED, not fixed
 
-Recorded because they happened here, not to somebody else.
+Full detail and reproducing artifacts: `docs/2026-10-06-cc-routed.md` §28.
 
-| what | cause tag | how it was caught |
+| id | to | finding |
 |---|---|---|
-| An `exec`-based probe disabled `--check` and **overwrote the Massachusetts seed** — the one file the batch said not to regenerate | `probe-with-side-effects` | `git status` in the same command; restored with `git checkout --` and sha256-confirmed against HEAD before any further work |
-| `defect_register.py --reseat` run file-wide, breaking the register (R1) | `tool-wider-than-the-task` | `--check` before committing |
-| `json.load`/`dump` with `indent=1` on the register → **25,043 insertions and 25,043 deletions** | `reserialise-as-edit` | `git diff --stat` before committing. The file is `indent=2`, `ensure_ascii=True`; round-trip now proved byte-identical before any write |
-| A scripted edit put `trigdoc=` **after** `rule()`'s closing paren | `scripted-edit-anchored-past-the-boundary` | `py_compile` exited 1 |
-| Twice `git checkout --`'d the post-rebase hook's **own correct re-seat**, reading the repair as residue | `repair-read-as-residue` | the second time, by noticing I was re-doing by hand what the hook had already done |
-| Claimed in `f67cb7e5`'s trailer that a register record was "in the same commit". It was not | overstated-trailer | corrected in the next commit's message rather than by an amend (PR §2.4) |
-
-**The right way to observe a writer, learned the hard way:** `ast.literal_eval`
-on the literal, or run it with its **CWD in a tempdir** (these tools use
-relative paths). Never by removing the guard that makes it not write — that is
-the writer running, not a probe of it.
+| **R1** | owner of `tools/defect_register.py` | `--reseat` is destructive: 12 records re-seated, `--check` 0 → 1 with four duplicates, and it **returned 0** having left the register in a state its own `--check` refuses |
+| **R2** | owner of the Maine seed | 14 rules and 2 holiday years never loaded to `LAW-PINNACLE-2026`. **Blocks every seed-touching push for every session** |
+| **R3** | cody, fourth, hank | six register records are RE-SEATABLE and are not mine. `--check` calls this explicitly not a failure |
+| **R4** | nobody — a standing condition | gate freshness: *"the push gate that just ran is NOT the one on origin/main."* A clean pass from it is a **could-not-tell** |
 
 ---
 
-## 5. METHODOLOGY — two rules, for chat to accept, reject or rewrite
+## 6. METHODOLOGY — two rules, for chat to accept, reject or rewrite
 
-**Written here and ROUTED. `docs/METHODOLOGY.md` is NOT edited this round** —
-it is fourth's and hank's at this HEAD.
+**Written here and ROUTED (`docs/2026-10-06-cc-routed.md` §29).
+`docs/METHODOLOGY.md` is NOT edited this round** — it is fourth's and hank's.
 
 **Rule A — a mode that writes uses the strictest candidate rule, and every mode
 must report the same count.** Where one tool has a reading mode and a writing
 mode over the same population, the two must share **one** predicate, by calling
-one function — not by two filters that agree today. And the count each mode
-reports must be comparable and compared, because that is the only cheap signal
-that they have diverged. Paid for by `doc_sha_reseat.py`: `--census` filtered
-test-string and record-id-shaped tokens inline in its own loop, `--register-absent`
-did not, and the **writing** mode recorded this tool's own documentation literal
-`1234abcd` as an absent citation — a repair tool with a 9% false-candidate rate
-on a register other sessions were meant to act on.
+one function — not by two filters that agree today. And each mode's count must be
+comparable and compared, because that is the only cheap signal that they have
+diverged. Paid for by `doc_sha_reseat.py`: `--census` filtered test-string and
+record-id-shaped tokens inline in its own loop, `--register-absent` did not, and
+the **writing** mode recorded this tool's own documentation literal `1234abcd` as
+an absent citation — a repair tool with a 9% false-candidate rate publishing a
+work queue for other sessions. Full account:
+`docs/2026-10-07-cc-postmortem-count-11.md`.
 
 **Rule B — an unrecognised flag fails closed.** A tool that does not understand
-an argument must exit 2 and do nothing. It must not fall through to its default,
+an argument exits 2 and does nothing. It must not fall through to its default,
 and *especially* not when its default writes. Paid for three times in one day:
 `role_gate_mc_config.py --help` regenerated two TLA+ spec files;
-`gen_ma_seed.py --help` would have rewritten a legal-deadline seed; and a bare
+`gen_ma_seed.py --help` would have rewritten a legal-deadline seed; a bare
 `sairn_build_load_gates.py` reinstated five gates **a human had deleted**. The
-corollary is the one that costs real money: for an OWNER-INTENDED BARE-RUN
-WRITER, "no flag I recognise" and "the intended bare run" are the same argv
-unless something makes them different.
+corollary is the expensive half: for an OWNER-INTENDED BARE-RUN WRITER, *"no flag
+I recognise"* and *"the intended bare run"* are the same argv unless something
+makes them different.
 
 ---
 
-## 6. Transcript
+## 7. My own defects this batch, cause-tagged
 
-This session's conversation. No file on disk — it must come from the terminal
-scrollback. The commits carry the evidence; the figures in them were captured
-from program output at the time, not reconstructed.
+Recorded because they happened here, not to somebody else. Ten, in four files.
+
+| what | cause tag | how it was caught |
+|---|---|---|
+| An `exec`-based probe disabled `--check` and **overwrote the Massachusetts seed** — the one file the batch said not to regenerate | `probe-with-side-effects` | `git status` in the same command; restored and sha256-confirmed against HEAD before any further work |
+| `defect_register.py --reseat` run file-wide, breaking the register (§5 R1) | `tool-wider-than-the-task` | `--check` before committing |
+| `json.load`/`dump` with `indent=1` on the register → **25,043 insertions and 25,043 deletions** | `reserialise-as-edit` | `git diff --stat` before committing. The file is `indent=2`, `ensure_ascii=True`; round-trip now proved byte-identical before any write |
+| A scripted edit put `trigdoc=` **after** `rule()`'s closing paren | `scripted-edit-anchored-past-the-boundary` | `py_compile` exited 1 |
+| Twice `git checkout --`'d the post-rebase hook's **own correct re-seat**, reading the repair as residue | `repair-read-as-residue` | the second time, by noticing I was redoing by hand what the hook had already done |
+| Claimed in `f67cb7e5`'s trailer that a register record was "in the same commit". It was not | `overstated-trailer` | corrected in the next commit's message rather than by an amend (PR §2.4) |
+| My batch-13 inventory said "7 sibling clones" having counted eight and excluded itself inconsistently | `denominator-off-by-self` | re-deriving the figure for item 8 |
+| `py_guard` ARM 0 searched text for `compile(` and matched **`re.compile(`** | `substring-test-for-a-syntactic-fact` | the arm failed on its own first run |
+| `py_guard` R1 flagged `check=True` and would have flagged `check_call` — both correct code | `criteria-too-wide-before-the-first-real-run` | hand-verifying all 97 first-run flags |
+| `py_guard` R4 matched any name called `status`; six string verdicts flagged | `name-heuristic-overreach` | same hand verification |
+| `py_guard --help` **exited 1** — box-drawing characters in the docstring, cp1252 console | `non-ascii-in-printed-output` | the CLI probe's `--help exits 0` arm, on its first run |
+
+**The right way to observe a writer, learned the hard way:** `ast.literal_eval`
+on the literal, or run it with its **CWD in a tempdir** (these tools use relative
+paths). Never by removing the guard that makes it not write — that is the writer
+running, not a probe of it.
+
+---
+
+## 8. Transcript
+
+This session's conversation. **No file on disk** — it must come from the terminal
+scrollback. The commits carry the evidence; every figure in them was captured
+from program output at the time, not reconstructed afterwards.
