@@ -1,0 +1,256 @@
+#!/usr/bin/env python
+"""hover_cross_resource_gate_check.py -- does a resource's own handler
+branch reach a DIFFERENT resource's table through a side door that skips
+the gate the other resource's own branch requires.
+
+H1 batch S item 2, REBUILT. This exact tool was cited across 11 chain-log
+entries (seq975 through seq1111, 2026-10-06 and 2026-10-07) as this role's
+own committed tool -- and batch R item 6 found it had never actually been
+committed to this repository, on any branch, ever. This is a from-scratch
+rebuild from the METHOD those entries described, not a restored copy (no
+prior source was recoverable) -- committed immediately once it first
+passes, unlike whatever happened the first time.
+
+INDEPENDENT OF tools/gate_parity_check.py BY DESIGN, same constraint
+seq975 stated for the original: not imported, not called, not read before
+this tool's own logic was written. That file is a build agent's tool and
+reading it would blur whether this tool's answer is independently
+derived or copied.
+
+METHOD:
+  1. Every known resource name, read from api/_resources/*.js (the same
+     live registry hover_completeness_probe.py already reads).
+  2. Every `resource === 'NAME'` branch in api/sd-data.js and
+     api/sd-sub-data.js, bounded the same way hover_hidden_state.py
+     bounds a handler region (next anchor or +150 lines).
+  3. CREDITS EVERY `rest('TABLE?...')` CALL IN THE REGION, NOT JUST THE
+     FIRST -- this is the exact bug the original tool's own history (seq975)
+     named and fixed: a first-match-only scan made a branch's SECOND table
+     read invisible. Fixture-locked here so it cannot regress unnoticed a
+     second time.
+  4. A table reference is CROSS-RESOURCE if its name is itself a known
+     resource name (step 1) and differs from the branch's own resource.
+  5. GATE PRESENCE for a resource = true if ANY of its own branches contain
+     `verifySessionToken(` or `credentialStillActive(`. A FLAG is a branch
+     for resource R, UNGATED, that cross-reads a table belonging to
+     resource T, where T's OWN branches ARE gated -- the side door: T is
+     supposed to need a session, and reaching T's data through R's branch
+     does not go through that check.
+
+NOT the same question as hover_hidden_state.py (branches on an unnamed
+field) or hover_completeness_probe.py (a resource missing from the
+register entirely) -- this is specifically about GATE COVERAGE leaking
+across a table boundary.
+
+Read-only.
+"""
+import json
+import os
+import re
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+
+
+def discover_repo():
+    for cand in (os.environ.get('HOVER_PROBE_REPO'),
+                 r'C:\Users\marsh\Documents\SAIRN-hover'):
+        if cand and os.path.isdir(os.path.join(cand, '.git')):
+            return cand
+    return None
+
+
+def all_known_resources(repo):
+    res_dir = os.path.join(repo, 'api', '_resources')
+    names = set()
+    if not os.path.isdir(res_dir):
+        return names, 'api/_resources not found'
+    for fname in sorted(os.listdir(res_dir)):
+        if not fname.endswith('.js') or fname.endswith('.test.js') or fname == 'index.js':
+            continue
+        with open(os.path.join(res_dir, fname), encoding='utf-8') as f:
+            src = f.read()
+        m = re.search(r"resources:\s*\[(.*?)\]", src, re.S)
+        if not m:
+            continue
+        code_only = '\n'.join(re.sub(r'//.*$', '', line) for line in m.group(1).splitlines())
+        names |= set(re.findall(r"'([a-z][a-z0-9_]+)'", code_only))
+    return names, None
+
+
+ANCHOR_RE = re.compile(r"resource\s*===\s*'([a-z][a-z0-9_]+)'")
+REST_RE = re.compile(r"rest\(\s*'([a-z][a-z0-9_]+)")
+GATE_RE = re.compile(r"verifySessionToken\(|credentialStillActive\(")
+
+
+def extract_branches(path, max_region=150):
+    """[(resource, start_line, region_text), ...] -- EVERY anchor, not
+    deduped by resource, because gate presence is evaluated per-resource
+    across ALL its branches, and table reads must be credited per-branch."""
+    if not os.path.isfile(path):
+        return None, 'not found'
+    with open(path, encoding='utf-8') as f:
+        lines = f.readlines()
+    anchors = []
+    for i, line in enumerate(lines):
+        m = ANCHOR_RE.search(line)
+        if m:
+            anchors.append((i, m.group(1)))
+    out = []
+    for idx, (start, name) in enumerate(anchors):
+        end = anchors[idx + 1][0] if idx + 1 < len(anchors) else len(lines)
+        end = min(end, start + max_region)
+        out.append((name, start + 1, ''.join(lines[start:end])))
+    return out, None
+
+
+def tables_in_region(text):
+    """EVERY rest('TABLE...') match, not just the first -- the exact bug
+    the lost original's own history (seq975) named and fixed."""
+    return set(REST_RE.findall(text))
+
+
+def run(repo):
+    known, err = all_known_resources(repo)
+    if err:
+        return {'error': err}
+    results = {}
+    for relpath in ('api/sd-data.js', 'api/sd-sub-data.js'):
+        path = os.path.join(repo, relpath)
+        branches, berr = extract_branches(path)
+        if berr:
+            results[relpath] = {'error': berr}
+            continue
+        gated_resources = set()
+        for name, _, text in branches:
+            if GATE_RE.search(text):
+                gated_resources.add(name)
+        flags = []
+        for name, line, text in branches:
+            tables = tables_in_region(text)
+            own_gated = name in gated_resources
+            for t in tables:
+                if t == name or t not in known:
+                    continue
+                # cross-resource: t is itself a known resource, != name
+                target_gated = t in gated_resources
+                if target_gated and not own_gated:
+                    flags.append({
+                        'branch_resource': name, 'branch_line': line,
+                        'foreign_table': t, 'branch_gated': own_gated,
+                        'foreign_resource_gated': target_gated,
+                    })
+        results[relpath] = {
+            'branches': len(branches),
+            'distinct_resources': len(set(b[0] for b in branches)),
+            'flags': flags,
+        }
+    return {'results': results}
+
+
+def main(argv):
+    repo = discover_repo()
+    if not repo:
+        print('COULD NOT RUN: no known hover-visible clone found on disk.')
+        return 2
+    report = run(repo)
+    if report.get('error'):
+        print('COULD NOT RUN: %s' % report['error'])
+        return 2
+    total_flags = 0
+    for relpath, r in report['results'].items():
+        if r.get('error'):
+            print('%s: COULD NOT RUN (%s)' % (relpath, r['error']))
+            continue
+        print('%s: %d branches, %d distinct resources, %d flagged' %
+              (relpath, r['branches'], r['distinct_resources'], len(r['flags'])))
+        total_flags += len(r['flags'])
+        for fl in r['flags']:
+            print('  FLAG resource=%s (line %d, gated=%s) reads table %s (that resource IS gated)'
+                  % (fl['branch_resource'], fl['branch_line'], fl['branch_gated'], fl['foreign_table']))
+    if '--json' in argv:
+        print(json.dumps(report, indent=1))
+    return 1 if total_flags else 0
+
+
+def _selftest():
+    import tempfile
+    failures = []
+
+    def check(label, cond):
+        print(('ok  ' if cond else 'FAIL') + '  ' + label)
+        if not cond:
+            failures.append(label)
+
+    with tempfile.TemporaryDirectory() as td:
+        os.makedirs(os.path.join(td, '.git'))
+        os.makedirs(os.path.join(td, 'api', '_resources'))
+        with open(os.path.join(td, 'api', '_resources', 'fakeapp.js'), 'w') as f:
+            f.write("module.exports = {\n  app: 'fakeapp',\n  resources: [\n    'fa_orders',\n    'fa_customers',\n  ],\n};\n")
+
+        # Case 1: planted DIRECTLY -- fa_orders' branch is ungated and
+        # reads fa_customers (a SECOND table, not the first) which IS
+        # gated elsewhere. Regression lock for the real "first-match-only"
+        # bug the lost original's history named: fa_orders reads
+        # fa_orders_meta FIRST, then fa_customers SECOND.
+        with open(os.path.join(td, 'api', 'sd-data.js'), 'w') as f:
+            f.write(
+                "if (resource === 'fa_orders' && action === 'read') {\n"
+                "  const a = await fetch(rest('fa_orders_meta?x'));\n"
+                "  const b = await fetch(rest('fa_customers?y'));\n"
+                "}\n"
+                "if (resource === 'fa_customers' && action === 'read') {\n"
+                "  const session = verifySessionToken(tokenFromRequest(req), licHash, 'fakeapp');\n"
+                "  const c = await fetch(rest('fa_customers?z'));\n"
+                "}\n")
+        report = run(td)
+        flags = report['results']['api/sd-data.js']['flags']
+        check('fa_orders flagged for reading gated fa_customers',
+              any(f['branch_resource'] == 'fa_orders' and f['foreign_table'] == 'fa_customers' for f in flags))
+        check('the SECOND table read (fa_customers) was credited, not just the first (fa_orders_meta)',
+              not any(f['foreign_table'] == 'fa_orders_meta' for f in flags))
+
+        # Case 2: reached via the REAL TRANSITION -- start from a CLEAN
+        # state (fa_orders gated, matching fa_customers' own gate), then
+        # apply the same kind of edit that creates the bug for real: a
+        # session-gate line REMOVED from fa_orders' own branch while its
+        # cross-read of fa_customers stays, same shape as a gate
+        # regressing out from under an existing cross-table read rather
+        # than a hand-built bad fixture.
+        with open(os.path.join(td, 'api', 'sd-data.js'), 'w') as f:
+            f.write(
+                "if (resource === 'fa_orders' && action === 'read') {\n"
+                "  const session = verifySessionToken(tokenFromRequest(req), licHash, 'fakeapp');\n"
+                "  const b = await fetch(rest('fa_customers?y'));\n"
+                "}\n"
+                "if (resource === 'fa_customers' && action === 'read') {\n"
+                "  const session = verifySessionToken(tokenFromRequest(req), licHash, 'fakeapp');\n"
+                "  const c = await fetch(rest('fa_customers?z'));\n"
+                "}\n")
+        report_clean = run(td)
+        check('clean state (both gated) has 0 flags',
+              len(report_clean['results']['api/sd-data.js']['flags']) == 0)
+        # the real transition: the gate line is removed from fa_orders only
+        with open(os.path.join(td, 'api', 'sd-data.js'), 'w') as f:
+            f.write(
+                "if (resource === 'fa_orders' && action === 'read') {\n"
+                "  const b = await fetch(rest('fa_customers?y'));\n"
+                "}\n"
+                "if (resource === 'fa_customers' && action === 'read') {\n"
+                "  const session = verifySessionToken(tokenFromRequest(req), licHash, 'fakeapp');\n"
+                "  const c = await fetch(rest('fa_customers?z'));\n"
+                "}\n")
+        report_regressed = run(td)
+        check('removing fa_orders\' own gate (the real transition) is caught',
+              any(f['branch_resource'] == 'fa_orders' for f in report_regressed['results']['api/sd-data.js']['flags']))
+
+    print()
+    print('SELFTEST %s (%d/%d)' % ('PASS' if not failures else 'FAIL', 4 - len(failures), 4))
+    return 0 if not failures else 1
+
+
+if __name__ == '__main__':
+    argv = sys.argv[1:]
+    if '--selftest' in argv:
+        sys.exit(_selftest())
+    sys.exit(main(argv))
