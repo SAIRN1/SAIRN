@@ -125,6 +125,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_tier_a_review_gate_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "'objects left behind is the 239-file silent leak, and ignore_errors=True '"
+    }
+   ],
+   "sha": "15e569769bc9320768bf21aaeff883da2bfbf105",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/tier_a_review_gate.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "15e569769bc9320768bf21aaeff883da2bfbf105",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sd_data_write_attribution_three_apps.js",
    "class": "test file",
    "level": "CHANGE",
