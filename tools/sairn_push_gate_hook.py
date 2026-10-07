@@ -916,12 +916,43 @@ def _pin(tip):
         return 'UNRESOLVABLE:%s' % tip
 
 
-def graduated_exempt(check, tip):
+def graduated_exempt(check, tip, consume=None):
     """-> True to SKIP this check (hard capture), False to deny as normal.
 
     Writing the pending record is the soft-capture half and happens on the
     False path, so the caller denies and the operator sees why.
+
+    ── ONLY THE MODE THAT ACTUALLY GATES THE PUSH MAY CONSUME (2026-10-07, cc)
+    FOUND BY USING IT, like the `pinned to main` defect in _pin() above, and it
+    made the scoped exemption UNGRANTABLE in the ordinary case. One
+    `git push` from a Bash tool call runs this hook TWICE -- once as PreToolUse
+    on the command text, once as the real .githooks/pre-push -- and both modes
+    read one store file. The observed sequence was:
+
+        push 1   pretooluse: no record -> soft capture, writes, DENIES
+                 (prepush never runs; the command was refused)
+        push 2   pretooluse: record matches -> CONSUMES it, allows
+                 prepush:    store now empty -> soft capture, writes, DENIES
+        push 3   identical to push 2, forever
+
+    Two modes, one token, and the half that cannot actually let a push through
+    was eating it. The exemption was reachable only from a context where the
+    PreToolUse half does not run, which is not a property anybody could see
+    from the message -- it just said SOFT CAPTURE every time, which reads as
+    "you have not pushed twice yet".
+
+    So consumption follows AUTHORITY: `prepush` is the mode git will not push
+    without, and it is the only one that deletes the record. `pretooluse` reads
+    the same record, grants on a match, and leaves it for prepush to spend.
+    Default taken from MODE rather than passed at the call site, so a second
+    call site cannot get it wrong.
+
+    This does NOT widen the exemption. It is still one check, still pinned to
+    one resolved sha, still inside the 15-minute window, and still spent
+    exactly once -- by prepush. A pretooluse grant on its own pushes nothing.
     """
+    if consume is None:
+        consume = (MODE == 'prepush')
     tip = _pin(tip)
     if tip.startswith('UNRESOLVABLE'):
         # No pin means no settling phase, and an exemption without one is the
@@ -937,7 +968,8 @@ def graduated_exempt(check, tip):
             rec = json.load(fh)
         if (rec.get('check') == check and rec.get('tip') == tip
                 and (now - float(rec.get('at') or 0)) <= EXEMPT_TTL_SECONDS):
-            os.remove(path)
+            if consume:
+                os.remove(path)
             return True
     except Exception:                                   # noqa: BLE001
         # Unreadable, absent, or malformed -- all of them mean NO exemption.
