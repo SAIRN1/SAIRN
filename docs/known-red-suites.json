@@ -17,12 +17,13 @@
    "diagnosed": "2026-09-17",
    "diagnosed_by": "cody",
    "environment": {
-    "where": "unknown",
-    "pinned": "unknown",
-    "tool": "unknown",
-    "sha": "unknown",
-    "basis": "nothing in this file records how the 2026-09-17 pass was driven. All four keys unknown rather than assumed to match the 2026-10-06 pass, which was a different pass by a different session."
-   }
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "2156abb1",
+    "basis": "RE-MEASURED 2026-10-07 by fourth at HEAD 2156abb1, each suite driven ALONE in its own process in the live clone with a 300s ceiling. THE BOUNDARY WAS VERIFIED AFTER EVERY SUITE, not once at the end (convention 10): `git status --porcelain` digest, sha256 of `.git/config` (the confound that set core.bare = true three times on 2026-10-06), and `node --check api/sd-data.js`. All three unchanged by all ten, start digest == end digest. An earlier stamp of these same ten rows said sha f4514979 on a basis whose run output no longer exists; that stamp was RE-DRIVEN rather than trusted, and all ten exit codes agreed. EXIT CODE ONLY -- no `why` written, because an exit code is not a diagnosis."
+   },
+   "exit_code": 1
   },
   {
    "file": "tests/run_condition_coverage_probe.py",
@@ -186,10 +187,11 @@
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "2156abb1",
+    "basis": "RE-MEASURED 2026-10-07 by fourth at HEAD 2156abb1, each suite driven ALONE in its own process in the live clone with a 300s ceiling. THE BOUNDARY WAS VERIFIED AFTER EVERY SUITE, not once at the end (convention 10): `git status --porcelain` digest, sha256 of `.git/config` (the confound that set core.bare = true three times on 2026-10-06), and `node --check api/sd-data.js`. All three unchanged by all ten, start digest == end digest. An earlier stamp of these same ten rows said sha f4514979 on a basis whose run output no longer exists; that stamp was RE-DRIVEN rather than trusted, and all ten exit codes agreed. EXIT CODE ONLY -- no `why` written, because an exit code is not a diagnosis."
+   },
+   "exit_code": 1
   },
   {
    "file": "api/sd-data-family-contacts.test.js",
@@ -203,10 +205,11 @@
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "2156abb1",
+    "basis": "RE-MEASURED 2026-10-07 by fourth at HEAD 2156abb1, each suite driven ALONE in its own process in the live clone with a 300s ceiling. THE BOUNDARY WAS VERIFIED AFTER EVERY SUITE, not once at the end (convention 10): `git status --porcelain` digest, sha256 of `.git/config` (the confound that set core.bare = true three times on 2026-10-06), and `node --check api/sd-data.js`. All three unchanged by all ten, start digest == end digest. An earlier stamp of these same ten rows said sha f4514979 on a basis whose run output no longer exists; that stamp was RE-DRIVEN rather than trusted, and all ten exit codes agreed. EXIT CODE ONLY -- no `why` written, because an exit code is not a diagnosis."
+   },
+   "exit_code": 1
   },
   {
    "file": "api/sd-data-scp-licence-only.test.js",
@@ -237,10 +240,11 @@
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "2156abb1",
+    "basis": "RE-MEASURED 2026-10-07 by fourth at HEAD 2156abb1, each suite driven ALONE in its own process in the live clone with a 300s ceiling. THE BOUNDARY WAS VERIFIED AFTER EVERY SUITE, not once at the end (convention 10): `git status --porcelain` digest, sha256 of `.git/config` (the confound that set core.bare = true three times on 2026-10-06), and `node --check api/sd-data.js`. All three unchanged by all ten, start digest == end digest. An earlier stamp of these same ten rows said sha f4514979 on a basis whose run output no longer exists; that stamp was RE-DRIVEN rather than trusted, and all ten exit codes agreed. EXIT CODE ONLY -- no `why` written, because an exit code is not a diagnosis."
+   },
+   "exit_code": 1
   },
   {
    "file": "tests/claims/run_claim_retype_mutation_control.py",
@@ -364,10 +368,11 @@
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "2156abb1",
+    "basis": "RE-MEASURED 2026-10-07 by fourth at HEAD 2156abb1, each suite driven ALONE in its own process in the live clone with a 300s ceiling. THE BOUNDARY WAS VERIFIED AFTER EVERY SUITE, not once at the end (convention 10): `git status --porcelain` digest, sha256 of `.git/config` (the confound that set core.bare = true three times on 2026-10-06), and `node --check api/sd-data.js`. All three unchanged by all ten, start digest == end digest. An earlier stamp of these same ten rows said sha f4514979 on a basis whose run output no longer exists; that stamp was RE-DRIVEN rather than trusted, and all ten exit codes agreed. EXIT CODE ONLY -- no `why` written, because an exit code is not a diagnosis."
+   },
+   "exit_code": 1
   },
   {
    "file": "tests/law_reconcile_role_vocab_check.py",
@@ -419,10 +424,11 @@
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "2156abb1",
+    "basis": "RE-MEASURED 2026-10-07 by fourth at HEAD 2156abb1, each suite driven ALONE in its own process in the live clone with a 300s ceiling. THE BOUNDARY WAS VERIFIED AFTER EVERY SUITE, not once at the end (convention 10): `git status --porcelain` digest, sha256 of `.git/config` (the confound that set core.bare = true three times on 2026-10-06), and `node --check api/sd-data.js`. All three unchanged by all ten, start digest == end digest. An earlier stamp of these same ten rows said sha f4514979 on a basis whose run output no longer exists; that stamp was RE-DRIVEN rather than trusted, and all ten exit codes agreed. EXIT CODE ONLY -- no `why` written, because an exit code is not a diagnosis."
+   },
+   "exit_code": 1
   },
   {
    "file": "tests/local_only_shape_probe.py",
@@ -436,46 +442,11 @@
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
-  },
-  {
-   "file": "tests/phi_cache_scope_probe.py",
-   "kind": "py",
-   "tail": "  The baseline is red, so no mutation below would mean anything. Stopping.",
-   "since": "2026-10-06",
-   "why": "COULD NOT RUN, exit 2 -- and the exit code is already right. Arm 0 is a precondition gate whose own name carries the environment: '0. the suite is GREEN in the worktree before anything is planted (exit 1)'. Its baseline subject, tests/phi_cache_scoped_to_user.js, is at '63 passed, 1 failed', so the probe stops with 'The baseline is red, so no mutation below would mean anything.' and plants nothing. NOTHING IS LEARNED ABOUT THE DETECTOR IN EITHER DIRECTION. The fix is not in this probe: the one failing arm in phi_cache_scoped_to_user.js has to be read first, and it is a separate subject. Convention 18 family -- the live suite is the fixture.",
-   "owner": "unassigned",
-   "diagnosed": "2026-10-07",
-   "diagnosed_by": "fourth",
-   "environment": {
-    "where": "live-clone",
-    "pinned": false,
-    "tool": "the suite itself, invoked directly",
-    "sha": "eb430f25",
-    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process, tree checked clean before and after; exit code read from the program's own output"
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "2156abb1",
+    "basis": "RE-MEASURED 2026-10-07 by fourth at HEAD 2156abb1, each suite driven ALONE in its own process in the live clone with a 300s ceiling. THE BOUNDARY WAS VERIFIED AFTER EVERY SUITE, not once at the end (convention 10): `git status --porcelain` digest, sha256 of `.git/config` (the confound that set core.bare = true three times on 2026-10-06), and `node --check api/sd-data.js`. All three unchanged by all ten, start digest == end digest. An earlier stamp of these same ten rows said sha f4514979 on a basis whose run output no longer exists; that stamp was RE-DRIVEN rather than trusted, and all ten exit codes agreed. EXIT CODE ONLY -- no `why` written, because an exit code is not a diagnosis."
    },
-   "exit_code": 2,
-   "cause_tag": "test-design/oracle-selection/live-suite-as-baseline"
-  },
-  {
-   "file": "tests/phi_cache_scoped_to_user.js",
-   "kind": "node",
-   "tail": "63 passed, 1 failed",
-   "since": "2026-10-06",
-   "why": "ONE CACHE KEY, NAMED. Arm 5a 'SAIRNsenior: every cached key is purged OR explicitly excluded' expects [] and gets [\"sen_settings\"]. 5b and 5c pass, so the purge list names nothing imaginary and nothing is in both lists -- it is a single key that was added to the cache and to neither list. sen_settings is the EVV configuration record, which is the resource a 2026-09-02 status row calls out as having been device-local; leaving it in a per-user cache without a purge rule is a real decision, not an oversight to assume. 63 of 64 arms pass.",
-   "owner": "unassigned",
-   "diagnosed": "2026-10-06",
-   "diagnosed_by": "fourth",
-   "environment": {
-    "where": "live-clone",
-    "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+   "exit_code": 1
   },
   {
    "file": "tests/push_gate/check12_probe.py",
@@ -633,10 +604,11 @@
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "2156abb1",
+    "basis": "RE-MEASURED 2026-10-07 by fourth at HEAD 2156abb1, each suite driven ALONE in its own process in the live clone with a 300s ceiling. THE BOUNDARY WAS VERIFIED AFTER EVERY SUITE, not once at the end (convention 10): `git status --porcelain` digest, sha256 of `.git/config` (the confound that set core.bare = true three times on 2026-10-06), and `node --check api/sd-data.js`. All three unchanged by all ten, start digest == end digest. An earlier stamp of these same ten rows said sha f4514979 on a basis whose run output no longer exists; that stamp was RE-DRIVEN rather than trusted, and all ten exit codes agreed. EXIT CODE ONLY -- no `why` written, because an exit code is not a diagnosis."
+   },
+   "exit_code": 1
   },
   {
    "file": "tests/run_baseline_readiness_probe.py",
@@ -669,10 +641,11 @@
    "environment": {
     "where": "live-clone",
     "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "2156abb1",
+    "basis": "RE-MEASURED 2026-10-07 by fourth at HEAD 2156abb1, each suite driven ALONE in its own process in the live clone with a 300s ceiling. THE BOUNDARY WAS VERIFIED AFTER EVERY SUITE, not once at the end (convention 10): `git status --porcelain` digest, sha256 of `.git/config` (the confound that set core.bare = true three times on 2026-10-06), and `node --check api/sd-data.js`. All three unchanged by all ten, start digest == end digest. An earlier stamp of these same ten rows said sha f4514979 on a basis whose run output no longer exists; that stamp was RE-DRIVEN rather than trusted, and all ten exit codes agreed. EXIT CODE ONLY -- no `why` written, because an exit code is not a diagnosis."
+   },
+   "exit_code": 1
   },
   {
    "file": "tests/run_completeness_probe.py",
@@ -1121,25 +1094,6 @@
    "exit_code": 1
   },
   {
-   "file": "tests/sairnbuild_fault_probe.py",
-   "kind": "py",
-   "tail": "  - ...and phi_cache_scoped_to_user.js is green again on it",
-   "since": "2026-10-06",
-   "why": "CHAINED. 63 of 64 arms pass; the one failure is 'the shipped tree passes phi_cache_scoped_to_user.js'. Driving that baseline alone names the arm: node tests/phi_cache_scoped_to_user.js exits 1 with 'FAIL  5a  SAIRNsenior: every cached key is purged OR explicitly excluded', 63 passed 1 failed. THAT SINGLE ARM BLOCKS THREE ROWS IN THIS REGISTER -- this one, tests/sairncare_fault_probe.py, and tests/phi_cache_scope_probe.py (already diagnosed). And its subject is a PHI CACHE PURGE on SAIRNsenior, so the arm is not cosmetic: a cached key that is neither purged nor explicitly excluded is resident health data surviving a logout. FIX ONE ARM, CLEAR THREE ROWS. Everything this probe owns is intact -- 'both subject files are byte-identical to the working tree after every arm' passes.",
-   "owner": "unassigned",
-   "diagnosed": "2026-10-07",
-   "diagnosed_by": "fourth",
-   "environment": {
-    "where": "live-clone",
-    "pinned": false,
-    "tool": "the suite itself, invoked directly",
-    "sha": "51088830",
-    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, git status captured before and after each run and unchanged throughout, node --check api/sd-data.js clean afterwards; exit code read from the program's own output"
-   },
-   "exit_code": 1,
-   "cause_tag": "test-design/dependency/chained-red-baseline"
-  },
-  {
    "file": "tests/sairncare/test-compliance-rules.js",
    "kind": "node",
    "tail": "47 passed, 3 failed",
@@ -1176,25 +1130,6 @@
    },
    "exit_code": 1,
    "cause_tag": "test-design/fixture/mock-drifted-from-handler"
-  },
-  {
-   "file": "tests/sairncare_fault_probe.py",
-   "kind": "py",
-   "tail": "  - ...and phi_cache_scoped_to_user.js is green again on it",
-   "since": "2026-10-06",
-   "why": "CHAINED, AND THE SAME SINGLE ARM AS tests/sairnbuild_fault_probe.py. 63 of 64 pass; the failure is 'the shipped tree passes phi_cache_scoped_to_user.js', whose arm 5a ('SAIRNsenior: every cached key is purged OR explicitly excluded') is the one red arm in that suite. This probe's own MAR, incident and pharmacy-review gate arms all pass, including 'L1 gone: the assignee gate alone still refuses a med_aide the pharmacy order'. So nothing here is broken and nothing here can be fixed -- the row clears when phi_cache arm 5a clears. Counted as the second of the three rows that one arm blocks.",
-   "owner": "unassigned",
-   "diagnosed": "2026-10-07",
-   "diagnosed_by": "fourth",
-   "environment": {
-    "where": "live-clone",
-    "pinned": false,
-    "tool": "the suite itself, invoked directly",
-    "sha": "51088830",
-    "basis": "run ALONE by fourth 2026-10-07 in the live clone, one process each, git status captured before and after each run and unchanged throughout, node --check api/sd-data.js clean afterwards; exit code read from the program's own output"
-   },
-   "exit_code": 1,
-   "cause_tag": "test-design/dependency/chained-red-baseline"
   },
   {
    "file": "tests/sairnfreedom_auth_review_probe.js",
@@ -1423,5 +1358,6 @@
  ],
  "_why_the_whole_tree_run_was_not_trusted": "THREE CONFOUNDS, each evidenced rather than suspected. (1) THE TREE MOVED UNDER IT: the log shows tests/sairnbiz_vendor_ytd_derivation.js PASSING, and at the time it was driven it failed at module scope -- cc pushed the anchor rename mid-run. tools/run_all_tests.py --pinned exists for exactly this and was not used. (2) THE RUN MUTATED THE TREE IT WAS MEASURING: tests/seam_check/run_delegation_probe.py left api/sd-data.js and api/_lib/subcontractor-compliance.js carrying planted sabotage, one of which is a redeclaration that does not parse. Four suites driven after it were re-driven on a restored tree and ONE of them -- tests/seam_check/run_probe.py -- went GREEN, so that confound changed at least one verdict. (3) THE RUN CORRUPTED THE CLONE: tests/push_gate/check8_probe.py left .git/config with core.bare = true and a fixture user identity, after which every git command in the clone fails with \"this operation must be run in a work tree\". Observed three times on 2026-10-06 and attributed by digesting .git/config after every suite.",
  "_scope_limit_2026_10_06": "RED IS MEASURED, DIAGNOSIS IS NOT. 66 of the entries added today carry an EMPTY `why`, which this file defines as NOT DIAGNOSED YET rather than nothing to say. That is a 66-item backlog, not a clearance, and it is the largest single addition this register has had. Every one of them was driven alone and its exit code recorded; none of them was read arm by arm. An entry makes a failure ATTRIBUTABLE, never acceptable -- and 66 undiagnosed entries is itself the finding, because tools/red_suite_register_check.py will now report any of them that recovers rather than letting the entry absorb the next real failure of that file.",
- "_environment_stamp": "ADDED 2026-10-07 (fourth). Every row carries `environment` with four keys -- where / pinned / tool / sha -- because a verdict without one cannot be reproduced or contradicted. TWO PROBES GAVE OPPOSITE VERDICTS IN BATCH 11 ON THE SAME SHA, MINUTES APART, DIFFERING ONLY IN ENVIRONMENT: tests/seam_check/run_delegation_probe.py was FAIL in a linked worktree and exit 0 in the live clone; tests/push_gate/check8_probe.py was ok in the worktree and exit 1 in the clone. UNKNOWN IS WRITTEN AS \"unknown\" AND IS NEVER GUESSED -- a row stamped unknown is one somebody has to re-run, and a row stamped wrongly is one nobody will. Of 79 rows: 13 fully stamped including the SHA (re-run by hand), 57 stamped where/pinned/tool from this file's own _how_it_was_measured with the SHA left unknown because that field records only a date, and 9 wholly unknown because nothing here records how their pass was driven. 14 of 79 carry all four keys. FROM NOW ON A NEW ROW WITHOUT AN `environment` KEY IS REFUSED BY tools/known_red_check.py --fixtures; an EXPLICIT \"unknown\" is accepted, an ABSENT key is not, because absence and unknown are the two states this register exists to keep apart."
+ "_environment_stamp": "ADDED 2026-10-07 (fourth). Every row carries `environment` with four keys -- where / pinned / tool / sha -- because a verdict without one cannot be reproduced or contradicted. TWO PROBES GAVE OPPOSITE VERDICTS IN BATCH 11 ON THE SAME SHA, MINUTES APART, DIFFERING ONLY IN ENVIRONMENT: tests/seam_check/run_delegation_probe.py was FAIL in a linked worktree and exit 0 in the live clone; tests/push_gate/check8_probe.py was ok in the worktree and exit 1 in the clone. UNKNOWN IS WRITTEN AS \"unknown\" AND IS NEVER GUESSED -- a row stamped unknown is one somebody has to re-run, and a row stamped wrongly is one nobody will. Of 79 rows: 13 fully stamped including the SHA (re-run by hand), 57 stamped where/pinned/tool from this file's own _how_it_was_measured with the SHA left unknown because that field records only a date, and 9 wholly unknown because nothing here records how their pass was driven. 14 of 79 carry all four keys. FROM NOW ON A NEW ROW WITHOUT AN `environment` KEY IS REFUSED BY tools/known_red_check.py --fixtures; an EXPLICIT \"unknown\" is accepted, an ABSENT key is not, because absence and unknown are the two states this register exists to keep apart.",
+ "_recovered_2026_10_07_fourth": "FOUR ROWS DELETED AS RECOVERED, by this file's own rule in _what_this_is_NOT: an entry whose suite has gone GREEN must be deleted, because while it stands it swallows the next real failure of that file. ONE ARM CLEARED ALL FOUR. tests/phi_cache_scoped_to_user.js arm 5a ('SAIRNsenior: every cached key is purged OR explicitly excluded', expected [] actual [\"sen_settings\"]) was a FALSE POSITIVE IN THE SUITE, not a defect in SAIRNsenior: the arm derives the app's written cache keys with [ls][dt]\\('(sen_[a-z_]+)' over the RAW file, and sairnsenior.html:5772,5774 quote st('sen_settings') inside a COMMENT that exists to record that the key is never written -- the resource is server-authoritative and a localStorage copy of a federally-mandated EVV configuration is the exact defect that decision removed. The suite was reading the comment as the write. Fixed by extracting write sites from tests/lib/strip_comments.js output instead of the raw file, with arm 5e as a both-directions control that FAILS without it (ablated: probe 0 -> 1 naming 5e in all four apps and 5a in SAIRNsenior; restored byte-identical; probe back to 0). NOT fixed by adding sen_settings to SEN_UNSCOPED_CACHES, which would have put a key in an exemption list to satisfy a checker. The three chained rows then cleared with no further change, each driven ALONE with the boundary verified after it: phi_cache_scope_probe.py exit 0 (ALL 12 ARMS PASS, 7 mutations), sairncare_fault_probe.py exit 0, sairnbuild_fault_probe.py exit 0. Their diagnoses are preserved in docs/handoff-fourth-2026-10-07.md rather than lost with the rows. STILL STANDING AND FLAGGED, NOT TOUCHED: tests/run_primitive_obsession_probe.py carries exit_code 0 and the word RECOVERED in its own `why` and is still an entry, which is the state this rule forbids. Reported for a decision rather than deleted unasked."
 }

@@ -338,6 +338,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/phi_cache_scoped_to_user.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "5be55ef44c046bb3d14f4c3b15ea158cfad67253",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/provisioning_attribution.js",
    "class": "test file",
    "level": "CHANGE",
@@ -572,6 +580,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "c6a841cb9f235ac763992738ff019a47c3913718",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/phi_cache_scoped_to_user.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d0eb2d33fc3fd864306baf0ee1cb262da08c43f5",
    "criteria_version": "2026-10-06.1"
   },
   {
