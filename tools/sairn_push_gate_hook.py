@@ -2918,10 +2918,33 @@ def main():
                     _preexisting.append((_doc_rel, _rc, _brc))
         finally:
             if _wt:
+                # ── THE ONLY GENUINELY SILENT ALLOW THE SWEEP FOUND, AND IT
+                # WAS MINE. Item 3's sweep over all 35 gate/hook paths in
+                # tools/ reported 11 with an undocumented broad except that
+                # allows; hand-reading each one left exactly ONE that was
+                # neither contract-documented, reasoned, reported downstream,
+                # nor benign by direction -- this `except Exception: pass`.
+                #
+                # IT IS NOT A BAD PUSH ADMITTED. It is a CLEANUP failure, and
+                # the cost is real anyway: a throwaway worktree that cannot be
+                # removed stays registered and on disk, and I have personally
+                # hit three leftover file-locked worktrees in one day. Saying
+                # nothing meant the next person inherited them with no idea
+                # where they came from.
+                #
+                # IT STILL DOES NOT FAIL THE GATE -- a cleanup problem must
+                # never refuse somebody's push. What changed is that it SAYS
+                # SO, with the path, so the leftover is attributable.
                 try:
                     git(repo, 'worktree', 'remove', '--force', _wt)
-                except Exception:
-                    pass
+                except Exception as _we:                   # noqa: BLE001
+                    sys.stderr.write(
+                        '\nNOTE: the gate could not remove its own temporary '
+                        'worktree\n  %s\n  (%s: %s). The push is NOT affected. '
+                        'It is still registered and on\n  disk -- run `git '
+                        'worktree remove --force` on it, or `git worktree '
+                        'prune`\n  once the holding process exits.\n\n'
+                        % (_wt, type(_we).__name__, _we))
 
         # SAID OUT LOUD EVEN THOUGH IT ALLOWS. A document another session left
         # stale is not this push's to fix, but silence here would make the gate

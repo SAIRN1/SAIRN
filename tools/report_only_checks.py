@@ -3517,6 +3517,139 @@ HOOK_TIMEOUT_SECONDS = _hook_timeout() or 300
 SWEEP_BUDGET_SECONDS = HOOK_TIMEOUT_SECONDS
 
 
+# ── THE SWEEP MARKER: A KILL MUST NOT BE SILENT (ANDON, 2026-10-06) ─────────
+# MEASURED: five runs of `--hook` at 547.6, 543.1, 577.1, 679.9 and 712.4s
+# against the 600s PostToolUse ceiling. Mean 612.0s. Two runs over the ceiling.
+# A hook killed at its ceiling writes NOTHING -- no partial result, no list of
+# what it never reached -- and that silence is indistinguishable from a sweep
+# that found nothing. The sweep already names what it SKIPS ITSELF; it had no
+# way to say anything at all when it was killed from outside.
+#
+# So the outcome is written to a file TWICE, the shape capture_exit.py uses:
+#   RUNNING <pid> <iso> shard=<k/n> budget=<s>     before the first entry
+#   DONE <iso> entries=<n> findings=<n> unrun=<n>  after the last one
+# A reader that finds RUNNING knows the answer is NOT YET KNOWN. A reader that
+# finds no file knows the sweep never started. Neither can be read as clean.
+# ── SHARD ROTATION, PERSISTED (ANDON, 2026-10-06) ───────────────────────────
+# A shard index kept in a variable is a counter nobody can read afterwards.
+# This records which shard ran last, beside the marker, so the next hook
+# invocation advances it and a reader can tell how far round the rotation has
+# got. DEFAULT_SHARDS is derived from the measurement rather than chosen: the
+# full registry measured 553.2s for 39 of 73 entries on 2026-10-06, so the
+# whole pass is comfortably over 1000s, and a 270s shard budget (45% of the
+# 600s ceiling) needs at least four passes to cover it. Five is used so a shard
+# has headroom when a slow checker lands in it.
+SHARD_STATE = os.path.join(REPO, 'docs', 'report-only-shard-state.txt')
+DEFAULT_SHARDS = 5
+
+
+def _next_shard(n=DEFAULT_SHARDS):
+    """(spec, note). Never raises -- an unreadable state file starts at 1."""
+    last = 0
+    note = ''
+    try:
+        if os.path.isfile(SHARD_STATE):
+            last = int(open(SHARD_STATE, encoding='utf-8').read().split()[0])
+    except Exception as e:                                 # noqa: BLE001
+        note = ('the shard rotation state was unreadable (%s), so this run '
+                'starts at shard 1 and may repeat work rather than skip it'
+                % e)
+        last = 0
+    k = (last % n) + 1
+    try:
+        os.makedirs(os.path.dirname(SHARD_STATE), exist_ok=True)
+        with open(SHARD_STATE, 'w', encoding='utf-8', newline='') as fh:
+            fh.write('%d of %d  last run %s' % (
+                k, n, time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())))
+    except Exception as e:                                 # noqa: BLE001
+        note = (note + ' | ' if note else '') + (
+            'the shard rotation state could not be WRITTEN (%s), so the next '
+            'run will repeat this shard instead of advancing -- that repeats '
+            'work, it does not skip any' % e)
+    return '%d/%d' % (k, n), note
+
+
+SWEEP_MARKER = os.path.join(REPO, 'docs', 'report-only-sweep-marker.txt')
+
+
+def _marker_write(text):
+    """Never raises: a marker that cannot be written must not kill the sweep."""
+    try:
+        os.makedirs(os.path.dirname(SWEEP_MARKER), exist_ok=True)
+        with open(SWEEP_MARKER, 'w', encoding='utf-8', newline='') as fh:
+            fh.write(text + chr(10))
+        return True
+    except Exception as e:                                 # noqa: BLE001
+        print('NOTE: could not write %s (%s: %s), so a kill of this sweep '
+              'would leave no record. The sweep itself is unaffected.'
+              % (SWEEP_MARKER, type(e).__name__, e))
+        return False
+
+
+def sweep_marker_state():
+    """(state, text) -- RUNNING / DONE / ABSENT / UNREADABLE.
+
+    ABSENT and RUNNING are BOTH could-not-run and neither is a pass. Callers
+    must not fold either into a clean result -- PR 1.11.
+    """
+    try:
+        if not os.path.isfile(SWEEP_MARKER):
+            return 'ABSENT', ''
+        t = open(SWEEP_MARKER, encoding='utf-8').read().strip()
+    except Exception as e:                                 # noqa: BLE001
+        return 'UNREADABLE', str(e)
+    return (t.split()[0] if t else 'UNREADABLE'), t
+
+
+def shard_of(registry, spec):
+    """A deterministic slice. `spec` is "K/N", 1-based K.
+
+    DETERMINISTIC BY POSITION and not by hash: the reachability file already
+    records that POSITION IN REGISTRY decides what runs, and two different
+    slicing rules would make that record unreadable.
+    """
+    try:
+        k, n = spec.split('/')
+        k, n = int(k), int(n)
+    except Exception:                                      # noqa: BLE001
+        return None, 'shard spec %r is not K/N' % (spec,)
+    if n < 1 or k < 1 or k > n:
+        return None, 'shard %r out of range' % (spec,)
+    return [e for i, e in enumerate(registry) if i % n == (k - 1)], None
+
+
+def _last_durations():
+    """tool -> last measured seconds, from the reachability file.
+
+    USED TO BOUND THE END OF THE RUN RATHER THAN ITS START. Absent or
+    unreadable means every entry is assumed to cost the observed MAX, which
+    refuses to start more entries sooner rather than later -- the fail-closed
+    direction for a budget.
+    """
+    out, mx = {}, 0.0
+    try:
+        d = json.load(open(REACHABILITY_FILE, encoding='utf-8'))
+        # ── A MEASUREMENT TAKEN UNDER A SMALLER BUDGET UNDER-MEASURES, and
+        # this repo's own probe writes one: its J section runs a full sweep at
+        # `--budget 20`, which records five entries and leaves 68 unmeasured.
+        # Reading that as "most entries are cheap" would let the end-bounding
+        # start an expensive entry it should have refused -- the exact failure
+        # this helper exists to prevent, fed by a stale file rather than by a
+        # bug. So if the recorded budget is smaller than the budget in force,
+        # EVERY entry is treated as unmeasured and costed at the observed max.
+        _mb = d.get('measured_budget_seconds')
+        if isinstance(_mb, (int, float)) and SWEEP_BUDGET_SECONDS                 and _mb < SWEEP_BUDGET_SECONDS:
+            return {}, None
+        for e in (d.get('entries') or []):
+            t, s = e.get('tool'), e.get('seconds')
+            if t and isinstance(s, (int, float)):
+                out[t] = float(s)
+                mx = max(mx, float(s))
+    except Exception:                                      # noqa: BLE001
+        return {}, None
+    return out, (mx or None)
+
+
 REACHABILITY_FILE = os.path.join(REPO, 'docs', 'report-only-reachability.json')
 
 
@@ -3579,7 +3712,7 @@ def _read_reachability():
                       for e in data.get('entries') or [])
 
 
-def sweep(show_all=False, quiet=False):
+def sweep(show_all=False, quiet=False, shard=None):
     """Run every promoted checker, TIMING EACH ONE.
 
     THE TIMING IS NOT DECORATION. This sweep is wired as a PostToolUse hook
@@ -3593,20 +3726,83 @@ def sweep(show_all=False, quiet=False):
     """
     findings, unrun, timings = [], [], []
     budget = SWEEP_BUDGET_SECONDS
+    # ── A SHARD GETS 45% OF THE CEILING SO IT LANDS UNDER 50% BY
+    # CONSTRUCTION, not by hoping the entries are small. A full pass cannot
+    # meet 50%: 39 of 73 entries measured 553.2s on 2026-10-06.
+    entries = REGISTRY
+    shard_note = ''
+    out_of_shard = []
+    if shard:
+        sel, why = shard_of(REGISTRY, shard)
+        if sel is None:
+            print('COULD NOT RUN -- %s. Nothing was swept.' % why)
+            return [], ['the sweep could not run: %s' % why]
+        # ── FEWER ENTRIES THAN SHARDS MEANS THERE IS NOTHING TO SPREAD ─────
+        # Every shard would be 0 or 1 entries. Sharding then only decides
+        # WHICH single checker runs, which is worse than running all of them.
+        # Found by the probe: its H7 fixture has 2 entries, the dirty one fell
+        # outside the shard that ran, and hook_main() reported nothing -- so
+        # two arms failed and would have failed for a real 2-entry registry
+        # too.
+        try:
+            _n_shards = int(str(shard).split('/')[1])
+        except Exception:                                  # noqa: BLE001
+            _n_shards = 1
+        if len(REGISTRY) <= _n_shards:
+            shard_note = (' shard=%s IGNORED: %d entries is not more than %d '
+                          'shards, so the whole registry ran'
+                          % (shard, len(REGISTRY), _n_shards))
+            # QUIET MEANS QUIET. This print was unconditional and it broke
+            # the probe's H6 arm -- "a genuinely clean sweep stays silent"
+            # -- because hook_main() runs the sweep with quiet=True and a
+            # single NOTE line is not silence. The hook path's whole
+            # contract is that a clean push produces NO output, so one
+            # informational line from a shard decision is a regression in
+            # the thing the arm exists to protect. Found by running the
+            # probe, not by reading the patch.
+            if not quiet:
+                print('NOTE:%s' % shard_note)
+        else:
+            entries = sel
+            # ── THE ENTRIES THIS SHARD DOES NOT COVER ARE NAMED, NOT DROPPED
+            # The first version removed them from the loop and from `skipped`,
+            # so nothing said they had not been consulted. A sweep that looks
+            # at 15 of 73 checkers and reports silence about the other 58 is
+            # the same defect the budget logic above exists to prevent.
+            _in = set(id(e) for e in sel)
+            out_of_shard = [e['tool'] for e in REGISTRY if id(e) not in _in]
+            budget = (SWEEP_BUDGET_SECONDS or 0) * 0.45 or None
+            shard_note = ' shard=%s of %d entries' % (shard, len(entries))
     started = time.time()
     skipped = []
     reach = []          # (tool, seconds, cumulative, reached) -- persisted below
-    for i, entry in enumerate(REGISTRY):
+    _durs, _dmax = _last_durations()
+    _cut = (budget * 0.9) if budget else None
+    _marker_write('RUNNING %d %s shard=%s budget=%s entries=%d'
+                  % (os.getpid(),
+                     time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+                     shard or 'all', budget, len(entries)))
+    for i, entry in enumerate(entries):
         # ── THE BUDGET IS SPENT: STOP AND SAY WHAT WAS NOT RUN ──────────────
         # A hook killed at its timeout reports NOTHING -- no partial result, no
         # list of what it never reached, and the only trace is somebody's probe
         # calling it a failure. Stopping ourselves converts a silent kill into a
         # STATED UNKNOWN, which is the whole difference between "clean" and "I
         # did not look". The remaining checkers are named, never just counted.
-        if budget and (time.time() - started) >= budget * 0.9:
-            skipped = [e['tool'] for e in REGISTRY[i:]]
-            _cum = time.time() - started
-            for e in REGISTRY[i:]:
+        # ── THE BUDGET NOW BOUNDS THE END OF THE RUN, NOT THE START OF THE
+        # LAST ENTRY. The old line was `elapsed >= budget * 0.9` checked
+        # BEFORE starting, so a 137s entry beginning at 539s finished at 676s
+        # -- within a second of the 679.9s measured on 2026-10-06, and the
+        # reason the total "climbed" on an unchanged tree: the overshoot is
+        # whichever checker straddles the cut, and that varies.
+        _el_now = time.time() - started
+        _cost = _durs.get(entry['tool'], _dmax)
+        _would_overrun = (_cut is not None and _cost is not None
+                          and (_el_now + _cost) > _cut)
+        if _cut is not None and (_el_now >= _cut or _would_overrun):
+            skipped = [e['tool'] for e in entries[i:]]
+            _cum = _el_now
+            for e in entries[i:]:
                 reach.append((e['tool'], None, _cum, False))
             break
         if not quiet:
@@ -3621,8 +3817,18 @@ def sweep(show_all=False, quiet=False):
         if not quiet:
             print('   %d finding(s), %d could not run   %.1fs' % (len(f), len(u), _el))
     for tool in skipped:
-        unrun.append('%s -- NOT RUN, the sweep reached its %ds budget first. '
-                     'This is an UNKNOWN, not a clean result.' % (tool, budget))
+        unrun.append('%s -- NOT RUN, the sweep reached its %ss cut first to '
+                     'stay inside the hook ceiling. This is an UNKNOWN, not a '
+                     'clean result.' % (tool, _cut))
+    for tool in out_of_shard:
+        unrun.append('%s -- NOT RUN, NOT IN THIS SHARD (%s). It runs on a '
+                     'later push in the rotation. This is an UNKNOWN for THIS '
+                     'push, not a clean result.' % (tool, shard))
+    _marker_write('DONE %s shard=%s entries_run=%d findings=%d unrun=%d '
+                  'elapsed=%.1f'
+                  % (time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+                     shard or 'all', len(timings), len(findings), len(unrun),
+                     time.time() - started))
     # ── THE SILENCE WAS BETWEEN SURFACES, NOT INSIDE THIS FUNCTION ─────────
     # Measured 2026-10-05: 29 of 73 entries never run, a contiguous tail from
     # index 44. This loop was ALREADY honest about it -- it names every skipped
@@ -3688,7 +3894,16 @@ def hook_main():
     resp = payload.get('tool_response') or {}
     if isinstance(resp, dict) and resp.get('success') is False:
         return 0
-    findings, unrun = sweep(quiet=True)
+    # ── SHARDED, BECAUSE A FULL PASS CANNOT MEET THE CEILING ───────────
+    # MEASURED 2026-10-06: five full `--hook` runs at 547.6, 543.1, 577.1,
+    # 679.9 and 712.4s against a 600s ceiling, mean 612.0s, two of them OVER
+    # the ceiling. 39 of 73 entries accounted for 553.2s and two checkers for
+    # 248.9s of that. No amount of tuning makes one pass fit under 50%, so the
+    # hook path runs ONE SHARD at 45% of the ceiling and rotates.
+    _spec, _rot_note = _next_shard()
+    findings, unrun = sweep(quiet=True, shard=_spec)
+    if _rot_note:
+        unrun.append('shard rotation: %s' % _rot_note)
     if not findings and not unrun:
         return 0
     lines = []
@@ -3720,6 +3935,20 @@ def main(argv):
     # reproducible by waiting for the real six-minute run to grow past 300s.
     if '--budget' in argv:
         globals()['SWEEP_BUDGET_SECONDS'] = float(argv[argv.index('--budget') + 1])
+    _shard = None
+    if '--shard' in argv:
+        _shard = argv[argv.index('--shard') + 1]
+    if '--marker' in argv:
+        _st, _txt = sweep_marker_state()
+        print('SWEEP MARKER: %s' % _st)
+        print('  %s' % (_txt or '(no file)'))
+        if _st in ('RUNNING', 'ABSENT', 'UNREADABLE'):
+            print('  THIS IS A COULD-NOT-RUN, NOT A PASS. RUNNING means a '
+                  'sweep started and never\n  finished -- which is what a '
+                  'hook killed at its ceiling leaves behind. ABSENT\n  means '
+                  'no sweep has ever recorded an outcome here.')
+            return EXIT_COULD_NOT_RUN if 'EXIT_COULD_NOT_RUN' in globals() else 2
+        return 0
     if '--hook' in argv:
         return hook_main()
     if '--list' in argv:
@@ -3851,7 +4080,8 @@ def main(argv):
         # caller could read the registry and be told nothing was wrong while
         # 40% of it had never executed.
         return 1 if unreached else 0
-    findings, unrun = sweep(show_all='--all-sections' in argv)
+    findings, unrun = sweep(show_all='--all-sections' in argv,
+                            shard=_shard)
     print('')
     if unrun:
         print('COULD NOT RUN (%d) -- not a pass:' % len(unrun))
