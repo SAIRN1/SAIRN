@@ -69,3 +69,46 @@ read. The arm belongs in the same commit as the fix.
 remove it from `NOT_MINE`. Driving it bare is safe — the guard returns before
 any git call — but **confirm that before running the arm**, because the point of
 the arm is that the tool refuses rather than acts.
+
+---
+
+## 2. RETRACTION — the auditor-namespace crash was routed to FOURTH and should not have been. **CHAT HOLDS IT.**
+
+**WITHDRAWN:** `docs/2026-10-06-hank-routed-to-fourth.md` **§9**, which routed
+`tools/hover_separation_ci.py`'s crash to fourth. The section is marked retracted
+in place; its text and evidence are left intact rather than deleted.
+
+**THE FINDING IS NOT WITHDRAWN AND WAS RE-DERIVED AT HEAD `2dff2da7` TODAY:**
+
+```
+python tools/hover_separation_ci.py
+AttributeError: module 'hover_separation_audit' has no attribute 'AUDITOR_SCOPE'
+exit 1          (tools/hover_separation_ci.py:97)
+```
+
+`git status` captured before and after: no change from this run.
+
+**WHY THE ROUTING WAS WRONG.** These two files are the **detect** half of the
+build/audit boundary. `CLAUDE.md` says a build agent must not reach into that
+boundary's machinery, *"including to arm those gates; that is the same boundary
+problem running the other way."* **Fourth is a build agent.** Handing a build
+agent the repair of the detector that constrains build agents recreates the exact
+separation the gate exists to hold — and it does so while looking like ordinary
+routing, which is what made it easy to write.
+
+**THE MISTAKE HAS A SHAPE WORTH NAMING.** I reasoned about **tool ownership**
+(who may edit this file) when the governing question was **role separation** (who
+may be *asked* to). `docs/tool-owner-map.json` has no column for the second, I did
+not go looking for one, and an owner lookup that returns an answer feels like a
+completed check. A routing decision needs BOTH questions asked, and only one of
+them has a tool.
+
+**AND A SECOND REASON THAT STANDS ALONE.** §9's own conclusion is that the fix is
+not a blind substitution: the old name was a flat tuple, the new API is a constant
+**plus a predicate**, and comparing against only the SHARED half *"would make the
+equality check pass while silently dropping what the predicate covers — a green
+that means less than the red it replaced."* Choosing which comparison is intended
+is a decision about what the boundary **means**. That is chat's.
+
+**NO NEW AGENT IS NAMED.** Nothing in the hover auditor namespace was touched,
+read for this purpose, or routed by me.

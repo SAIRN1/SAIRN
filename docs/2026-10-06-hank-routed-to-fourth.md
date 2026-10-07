@@ -387,6 +387,43 @@ the row lives one boundary further out, in a layer the test deliberately replace
 
 ---
 
+## 9. ~~ROUTED~~ **RETRACTED 2026-10-07 — CHAT HOLDS THIS, NOT FOURTH**
+
+> **THE ROUTING BELOW IS WITHDRAWN. THE FINDING IS NOT.** The crash is real and
+> was re-derived at HEAD `2dff2da7` this batch — `python tools/hover_separation_ci.py`
+> still exits 1 with `AttributeError: module 'hover_separation_audit' has no
+> attribute 'AUDITOR_SCOPE'` at `tools/hover_separation_ci.py:97`. Nothing below
+> is corrected except **who it was handed to**.
+>
+> **WHY IT WAS WRONG TO SEND IT TO FOURTH.** `tools/hover_separation_audit.py`
+> and `tools/hover_separation_ci.py` are the **detect** half of the build/audit
+> boundary. `CLAUDE.md` is explicit that a build agent must not reach into that
+> boundary's machinery, *"including to arm those gates; that is the same boundary
+> problem running the other way."* Fourth is a **build** agent. Handing a build
+> agent the repair of the detector that constrains build agents recreates exactly
+> the separation this gate exists to hold — and it does so while looking like
+> ordinary routing, which is what made it easy to write.
+>
+> I did not catch it because I was reasoning about **tool ownership** (who edits
+> this file) when the governing question was **role separation** (who may be
+> asked to). The owner map has no column for that, and I did not go looking for
+> one.
+>
+> **THE SECOND REASON, which stands on its own.** Section 9's own closing
+> paragraph says the fix is not a blind substitution — the old name was a flat
+> tuple, the new API is a constant **plus a predicate**, and comparing against
+> only the SHARED half *"would make the equality check pass while silently
+> dropping what the predicate covers — a green that means less than the red it
+> replaced."* Deciding which comparison is intended is a decision about what the
+> boundary means. **That is chat's, not any build agent's.**
+>
+> **WHERE IT GOES: chat.** No agent is named, no new routing is created, and I
+> have touched nothing in the hover auditor namespace. The reproducing command
+> and the full analysis below stay exactly as written so whoever picks it up gets
+> the evidence rather than a summary of it.
+
+### (original text, unchanged, for the evidence)
+
 ## 9. ROUTED: the hover-separation CI wrapper has been CRASHING, and it is the DETECT half of the build/audit boundary — 2026-10-07
 
 **`tools/hover_separation_ci.py` raises on every run, in the live clone and in a
