@@ -30,7 +30,14 @@ import os
 import re
 import sys
 
-ROUTED_MARKER = re.compile(r'HOVER-H2-(\d+)')
+ROUTED_MARKER = re.compile(r'HOVER-H2-([\d-]+?)-ROUTED')
+# Was `HOVER-H2-(\d+)`, which only captured the FIRST number in a marker
+# naming several at once -- found on this tool's own first real run,
+# which reported 150 of 168 unrouted. Markers like
+# "HOVER-H2-551-556-564-ROUTED" name THREE seqs in one comment (one row
+# routing several findings together); the single-number pattern silently
+# dropped the other two. Widened to capture the whole hyphen-run before
+# "-ROUTED" and split it into individual numbers.
 
 
 def load_findings(log_path):
@@ -50,7 +57,12 @@ def load_routed_from_index(index_path):
     if not os.path.isfile(index_path):
         return set()
     text = open(index_path, encoding='utf-8').read()
-    return set(int(m) for m in ROUTED_MARKER.findall(text))
+    routed = set()
+    for run in ROUTED_MARKER.findall(text):
+        for part in run.split('-'):
+            if part.isdigit():
+                routed.add(int(part))
+    return routed
 
 
 def load_routed_from_own_docs(repo):
@@ -108,6 +120,7 @@ def selftest():
     index_path = os.path.join(d, 'index.md')
     with open(index_path, 'w', encoding='utf-8') as f:
         f.write('<!-- HOVER-H2-1-ROUTED-HANK-2026-01-01 -->\n')
+        f.write('<!-- HOVER-H2-5-6-7-ROUTED-HANK-2026-01-02 -->\n')
 
     os.makedirs(os.path.join(d, 'docs'))
     with open(os.path.join(d, 'docs', '2026-01-01-hover2-fx-routing.md'), 'w', encoding='utf-8') as f:
@@ -119,7 +132,7 @@ def selftest():
     routed = routed_idx | routed_own
     unrouted = [s for s in findings if s not in routed]
 
-    ok = (findings == [1, 2, 4] and routed_idx == {1} and
+    ok = (findings == [1, 2, 4] and routed_idx == {1, 5, 6, 7} and
           routed_own == {2} and unrouted == [4])
     print('SELFTEST %s: findings=%r routed_idx=%r routed_own=%r unrouted=%r' %
           ('PASS' if ok else 'FAIL', findings, routed_idx, routed_own, unrouted))
