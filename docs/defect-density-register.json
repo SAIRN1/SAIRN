@@ -24570,6 +24570,71 @@
       "recurrence_open": "NO TEST ASSERTS THAT A SPECIFIC SEED ROW STILL CARRIES ITS trigger_document. The engine test covers behaviour GIVEN the field; a row quietly losing it stays green. 77236c2a touched 45 rows across many jurisdictions and only the 4 with generators can be checked this way at all -- the other jurisdictions' seeds have no generator and therefore no --check, so for them this class of drift is undetectable by construction. gen_mn_seed.py was measured at --check 0 and is clean today, which is three of four, not all four."
     },
     {
+      "commit": "41421fe3eca5",
+      "date": "2026-10-07",
+      "subject": "fix(run_all_tests): the checkout-FAILURE path leaked the whole throwaway clone in silence -- item 10's one in-scope fix, re-applied",
+      "files": [
+        "tools/run_all_tests.py"
+      ],
+      "lines_added": 16,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "tools/run_all_tests.py --pinned removes its throwaway clone on two paths out of one acquisition, and only the SUCCESS path was fixed. The checkout-FAILURE path kept shutil.rmtree(wt, ignore_errors=True) while the success path 68 lines below had been changed to onerror=_force_rm on the same day, for this exact reason, with the helper sitting 134 lines above both call sites. git marks loose objects read-only and Windows refuses to unlink a read-only file, so ignore_errors abandons the object store in silence -- the original incident leaked 239 files without saying so. MEASURED on the clone this batch's KILLED run left behind: 4,047 files of which 38 were read-only, which is exactly the set ignore_errors cannot remove; removed cleanly with the retry handler, 0 left, 215 MB. Severity low because the failure path is rarely reached -- it needs a checkout to fail inside a clone that was just created successfully -- and the consequence is abandoned disk rather than a wrong verdict; but it is the same silent-failure shape and it sits in the harness every suite run goes through. METHOD: the 53-of-322 population was derived by a one-off scanner in the session scratchpad, not by any landed checker, and the verdict that this specific site is genuine came from reading it -- which is why this record says code-review and names no tool. The class was swept: 53 of 322 rmtree(ignore_errors=True) calls under tests/ and tools/ are in the real leak class once pre-create deletes are excluded and linked-worktree directories are measured out, 17 are attributable to me, and 7 are genuine after reading every one. This commit fixes the only one of the 7 inside this batch's declared FILES; the other six, and 36 not mine, are routed.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "0dcb2dafb001",
+        "date": "2026-10-07",
+        "subject": "fix(harness): --pinned builds a throwaway CLONE, not a linked worktree -- so the config write that broke this clone cannot reach it, measured byte for byte",
+        "lag_days": 0
+      },
+      "citation_note": "A cleanup that CANNOT report failure is the third state folded into success: ignore_errors=True makes could-not-remove indistinguishable from removed. Both paths now use a retry handler and print the directory and the file count when anything survives, so the third state reaches the operator.",
+      "phase_note": "The ignore_errors call arrived with the commit that replaced the linked worktree with a throwaway clone; before that commit there was no clone to leak. The success path was corrected later the same day and the failure path was not.",
+      "contributing_factors": [
+        {
+          "factor": "The fix for this exact class was applied to the SIBLING path in the same function on the same day, 68 lines below, and the retry helper _force_rm was added 134 lines above BOTH call sites. Nothing compared the two removals of the same resource.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Both removals now read shutil.rmtree(wt, onerror=_force_rm) and both print the leftover-file NOTE, so the two paths out of one clone acquisition are spelled identically."
+        },
+        {
+          "factor": "The failure path is the one nobody exercises. A --pinned run only reaches it when `git checkout --detach` fails inside a clone that was just made successfully, which is rare -- so the leak could sit there indefinitely while the success path was observed working.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The NOTE now names the directory and counts the files left, so if the path is ever taken the leak is reported by the run itself rather than discovered by a disk-space check later."
+        },
+        {
+          "factor": "ignore_errors=True cannot fail loudly BY DESIGN, and the thing it silences is specific and measurable: git marks loose objects read-only and Windows refuses to unlink a read-only file. Measured 2026-10-07 on the clone this batch's killed run left behind: 38 of 4,047 files were read-only.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Proven in the opposite direction too: a fresh `git init` fixture has 3 of 33 files read-only while a LINKED WORKTREE directory has 0 of 2 and its .git is a FILE, so worktree removals are not in this class and were excluded rather than swept in."
+        },
+        {
+          "factor": "MY OWN DETECTOR FOR THIS CLASS WAS WRONG TWICE BEFORE IT WAS RIGHT, both times overcounting in the safe-looking direction. A per-file predicate flagged 85 of 160 files; a per-call predicate flagged 87 calls including 26 that run BEFORE the repo exists -- the mkdtemp-then-delete idiom `git worktree add` requires, where ignore_errors is correct.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The predicate is now ordered -- the repo-creating line must precede the removal -- and the 26 exclusions are printed with their reason rather than silently dropped. Final population: 53 of 322 calls, 17 attributable to me, 7 genuine after reading every one."
+        },
+        {
+          "factor": "SIX OF THE SEVEN GENUINE SITES ARE NOT FIXED. They are mine by my own records but none is in this batch's declared FILES, so editing them would widen a claim without declaring it.",
+          "kind": "process",
+          "action_status": "planned",
+          "note": "Routed in docs/handoff-cody-2026-10-07b.md item 10 with file and line: tests/claims/run_freshness_probe.py:536, tests/push_gate/redaction_base_probe.py:200, tests/push_gate/refspec_and_override_probe.py:219 and :453, tests/run_bare_run_write_probe.py:267, tools/clone_health_check.py:399. A further 36 calls in other sessions' files are listed in the batch artefacts for chat to assign.",
+          "action": "ROUTED with file and line rather than left as an intention: tests/claims/run_freshness_probe.py:536, tests/push_gate/redaction_base_probe.py:200, tests/push_gate/refspec_and_override_probe.py:219 and :453, tests/run_bare_run_write_probe.py:267, tools/clone_health_check.py:399 -- each to be declared in the next batch's FILES and given the identical onerror change, whose patch shape is already proven in this commit. The 36 calls in other sessions' files are enumerated in the batch artefacts for chat to assign."
+        }
+      ],
+      "recurrence_open": "THE SHAPE IS TWO EXIT PATHS OUT OF ONE RESOURCE ACQUISITION, AND ONLY THIS FILE HAS BEEN CHECKED. Nothing sweeps for a function that acquires a resource and releases it differently on its success and failure paths. The six remaining genuine sites of mine are routed with file and line, and 36 more calls in other sessions' files are listed for assignment -- so the class is open by count, not merely in principle."
+    },
+    {
       "commit": "4ec0d5d51f56",
       "date": "2026-10-07",
       "subject": "fix(attribution): the last SEVEN write paths record WHO wrote the row -- 0 of 49 unattributed, and one of the two \"blocked\" refusals was borrowed from the other path",
