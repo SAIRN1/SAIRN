@@ -148,8 +148,51 @@ def scan(path):
 # `if not os.path.exists(...): continue` -- silently -- while still counting
 # that file in `files scanned`, so the printed number was a claim about files
 # nobody opened (PR 1.11).
+class AbsentAtRev(Exception):
+    """The path is not in that revision at all. NOT the same as unreadable."""
+
+
 def scan_at_rev(rev, path):
-    """Hits in `path` AS REVISION `rev` HOLDS IT. Raises on an unreadable blob."""
+    """Hits in `path` AS REVISION `rev` HOLDS IT.
+
+    RAISES AbsentAtRev WHEN THE PATH IS NOT IN THAT REVISION, AND IOError FOR
+    EVERYTHING ELSE. Added 2026-10-07 (cc), and the distinction is one the
+    comment above was already making in prose without acting on it: it says a
+    `git show` failure means *"the path does not exist at that revision OR the
+    revision is unreadable, and neither is 'no control bytes'"*. The second
+    half is right. THE FIRST HALF IS NOT -- a path this push DELETES ships no
+    bytes, so "no control bytes at this revision" is a FACT about it rather
+    than an unknown.
+
+    FOUND BY BEING BLOCKED BY IT. A push that gitignored two previously-tracked
+    files was refused with `COULD NOT READ 2 FILE(S) -- this is NOT a pass`,
+    naming `fatal: path '...' exists on disk, but not in <rev>`. The gate was
+    right to deny on a could-not-run and the could-not-run was wrong: the files
+    were DELETED by that very push. Gitignoring a tracked file is a routine
+    operation and it would have refused every such push.
+
+    THE FAIL-CLOSED PROPERTY IS UNCHANGED FOR THE REAL UNKNOWN. An unreadable
+    revision, a corrupt blob, a permissions failure -- all still IOError, all
+    still exit 2, all still named. Only genuine absence is reclassified, and it
+    is reported in its own list rather than silently dropped, because a file
+    nobody scanned must never be invisible (PR 1.11).
+    """
+    # ── THE REVISION IS CHECKED FIRST, AND MY FIRST VERSION DID NOT DO IT.
+    # Asking only `cat-file -e <rev>:<path>` cannot tell "this revision does
+    # not have that path" from "this revision does not exist" -- both fail the
+    # same way. The first version therefore reported a BOGUS REVISION as
+    # "deleted by this change" and exited 0 CLEAN, which is a fail-open I
+    # introduced inside the fix for a fail-closed over-report. Driven with
+    # `--rev deadbeef...` and caught there, not by reading.
+    rv = subprocess.run(['git', 'cat-file', '-e', '%s^{commit}' % rev],
+                        cwd=REPO, capture_output=True)
+    if rv.returncode != 0:
+        raise IOError('revision %s does not resolve to a commit -- this is a '
+                      'COULD NOT RUN, not an absent path' % rev[:12])
+    e = subprocess.run(['git', 'cat-file', '-e', '%s:%s' % (rev, path)],
+                       cwd=REPO, capture_output=True)
+    if e.returncode != 0:
+        raise AbsentAtRev('not present in %s -- nothing to scan' % rev[:12])
     r = subprocess.run(['git', 'show', '%s:%s' % (rev, path)],
                        cwd=REPO, capture_output=True)
     if r.returncode != 0:
@@ -213,12 +256,21 @@ def main(argv):
                   'Exit 2, not a pass.')
             return 2
     unreadable = []
+    absent = []
     for f in files:
         if f.lower().endswith(BINARY_EXT):
             skipped.append(f)
             continue
         try:
             hits = scan_at_rev(rev, f) if rev else scan(f)
+        except AbsentAtRev as e:
+            # ── DELETED BY THIS CHANGE: NO BYTES, THEREFORE NO CONTROL BYTES
+            # Kept in its OWN list, never folded into `unreadable` and never
+            # silently dropped. See scan_at_rev for the push this was found
+            # by: gitignoring two previously-tracked files was refused as a
+            # could-not-run, and gitignoring a tracked file is routine.
+            absent.append((f, str(e)))
+            continue
         except (IOError, OSError) as e:
             # ── A FILE NOBODY OPENED IS NOT A FILE WITH NO CONTROL BYTES ───
             # This was `continue`, silently, while `files scanned` still
@@ -246,6 +298,12 @@ def main(argv):
         if skipped:
             print('  skipped as binary (%d, NOT silently): %s'
                   % (len(skipped), ', '.join(sorted(skipped))[:160]))
+        if absent:
+            print('\n%d FILE(S) ARE NOT IN THIS REVISION -- deleted by this '
+                  'change, so there are no\nbytes to scan. NAMED rather than '
+                  'dropped, and NOT counted as unreadable:' % len(absent))
+            for f, why in absent:
+                print('  - %s -- %s' % (f, why[:140]))
         if unreadable:
             print('\nCOULD NOT READ %d FILE(S) -- this is NOT a pass:'
                   % len(unreadable))
