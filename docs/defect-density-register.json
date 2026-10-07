@@ -24570,7 +24570,7 @@
       "recurrence_open": "NO TEST ASSERTS THAT A SPECIFIC SEED ROW STILL CARRIES ITS trigger_document. The engine test covers behaviour GIVEN the field; a row quietly losing it stays green. 77236c2a touched 45 rows across many jurisdictions and only the 4 with generators can be checked this way at all -- the other jurisdictions' seeds have no generator and therefore no --check, so for them this class of drift is undetectable by construction. gen_mn_seed.py was measured at --check 0 and is clean today, which is three of four, not all four."
     },
     {
-      "commit": "41421fe3eca5",
+      "commit": "7df1fa6ae038",
       "date": "2026-10-07",
       "subject": "fix(run_all_tests): the checkout-FAILURE path leaked the whole throwaway clone in silence -- item 10's one in-scope fix, re-applied",
       "files": [
