@@ -784,3 +784,25 @@ output, `old.json`. `scratchpad/item4/` — the running suite.
   verdict.* Paid for by case 6, the only one of the six that cannot be cited
   from a file. Written paste-ready in `docs/2026-10-07-cody-routed.md` §5 and
   **ROUTED** — both convention files are declared by fourth.
+- **item 5 — PARTIAL — the suite has NOT finished, so the andon does NOT clear.**
+  Status read from the file, never a notification:
+  `capture_exit.py --read <SCRATCH>/item4/suite.status` → **exit 2, `RUNNING
+  80680`**, started 2026-10-07T13:13:23Z. **Progress confirmed, not assumed:**
+  child PIDs churned 25 → 27 with several replaced over 25s, and wrapper 80680
+  is alive. **466 suites reported, 0 FAIL so far** — a useful partial, not a
+  pass. **AND ONE OBSERVATION WORTH CARRYING: `suite.out` had not been written
+  for 35 minutes** (mtime 14:45:10Z, checked at 15:20:12Z) while children kept
+  turning over, so a single test file has been running ~35 minutes. The last
+  line is `ok py tests/run_hook_integrity_probe.py`; the next file
+  alphabetically is `tests/run_hover_audit_method_sabotage_probe.py`. **I did not
+  name the current child** — `wmic` returned no command lines and guessing it
+  would be a fabricated citation.
+  **The merge-tree check was re-run anyway, with captured codes:**
+  `git merge-tree --write-tree origin/main origin/cody/firebase-modular-port` →
+  **EXIT 0**, tree `87316631d227`; against local HEAD `e958eb50` → **EXIT 0**,
+  tree `984e042eddf7`; `git merge-base --is-ancestor <branch> origin/main` →
+  **EXIT 1**. **So the branch still applies cleanly and is still not merged.
+  ANDON HELD** — the blocker is the suite condition, not a conflict.
+  **NEXT STEP:** `capture_exit.py --read` the status file; on `EXIT`, name every
+  failing suite from `suite.out` with its first-run result, then re-run the two
+  merge-tree commands and report their captured codes. Only a clean pass clears it.
