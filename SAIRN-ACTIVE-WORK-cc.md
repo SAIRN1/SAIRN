@@ -6898,3 +6898,36 @@ exits 1 printing "No license key...", and load_deadline_seed.py's own message
 begins "COULD NOT RUN".
 
 Claim released at the close of this batch.
+
+## 2026-10-07 - batch 15 (all 14 items closed or blocked with a named blocker)
+
+Pushed through 0d5077c7, origin/main 0 0. Full account:
+docs/handoff-cc-2026-10-07d.md.
+
+  * 486634b3  TIER A: one discharged, the most overdue of my four (cody,
+    sd_comms, SOUND WITH LIMITS). AND THE CHOKEPOINT WAS STALE BOTH WAYS:
+    docs/tier-a-reviews.json was DECLARED BY NOBODY -- fourth's hold on it was
+    released and replaced 35 minutes before cody and hank each stood down citing
+    it. The other half: all three sessions believed cc still held
+    sairn_push_gate_hook.py, report_only_checks.py, doc_sha_reseat.py and
+    tool-owner-map.json. I RELEASED those at the close of batch 14 and this
+    batch did not re-take them. THEY ARE FREE.
+  * 6860aee4  --reseat returned 0 over a register its own --check REFUSES.
+    Prevention (a taken destination is left alone and named) plus a BACKSTOP
+    (post-write cmd_check, revert from a byte pre-image, exit 2). 11 arms.
+  * 92071d45  EIGHT sites, not six, exited 1 (FINDINGS) where their message said
+    COULD NOT RUN. py_guard R4 goes 8 -> ZERO over 711 files.
+  * 83da8d39  H1's unchecked cleanup at condition_coverage.py:266, driven both
+    ways; the two sites beside it are correctly unchecked and now say so.
+  * f97831ff  ITEM 5 BLOCKED: Maine is ready (14 rules, 2 calendar years) and
+    needs SAIRNLAW_EMP / SAIRNLAW_PIN, which only Michael has. ITEM 6 is cody's
+    and is ALREADY FIXED by 18078d38 -- and UNPROVEN: zero of 238 records carry
+    opened_at_sha_basis, because the newest record predates the fix by 1h39m.
+  * 02d2569e  diagnostics. The context risk here is a DOCUMENT, not an app:
+    docs/SAIRN-OPEN-WORK-INDEX.md is 2,379,765 bytes, ~643k tokens, so ONE
+    whole-file read is two thirds of the window -- and CLAUDE.md points a fresh
+    session at it.
+
+Memory checkpoint cadence is now 1 (every item, not every 5-6).
+
+Claim released at the close of this batch.
