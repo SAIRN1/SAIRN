@@ -6581,7 +6581,16 @@ module.exports = async (req, res) => {
       // so `id` is the only real column and the blob is spread LAST over it.
       // This replaces `delete brBody.id` and adds the scope-key strip the hand
       // written delete never did.
-      const brBody = Object.assign(storedBlob(payload, ['id']), { state: brState });
+      const brBody = Object.assign(storedBlob(payload, ['id']), { state: brState },
+        // -- WHO WROTE THIS ROW (2026-10-07) --------------------------------
+        // sen_branches persisted with no acting employee: not a column, not a
+        // blob key, not an audit row. LAST ARGUMENT TO Object.assign ON
+        // PURPOSE -- sources apply left to right, so a later one wins, and
+        // storedBlob strips only the keys it is told to. A caller-supplied
+        // `updatedBy` in the payload therefore survives into the blob and is
+        // overwritten HERE. First position would let the payload win.
+        { updatedBy: session.employee_id, updatedByRole: session.role }
+      );
       const r = await fetch(rest('sen_branches?on_conflict=license_hash,branch_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -6639,7 +6648,16 @@ module.exports = async (req, res) => {
       // storedBlob: COLUMN LIST VERIFIED AGAINST THE READ (:6060) -- selects
       // contract_id,data and reconstructs `Object.assign({ id: x.contract_id }, x.data)`.
       const pcBody = Object.assign(storedBlob(payload, ['id']),
-        { state: pcState, rate_per_hour: Number(payload.rate_per_hour) });
+        { state: pcState, rate_per_hour: Number(payload.rate_per_hour) },
+        // -- WHO WROTE THIS ROW (2026-10-07) --------------------------------
+        // sen_payer_contracts persisted with no acting employee: not a column, not a
+        // blob key, not an audit row. LAST ARGUMENT TO Object.assign ON
+        // PURPOSE -- sources apply left to right, so a later one wins, and
+        // storedBlob strips only the keys it is told to. A caller-supplied
+        // `updatedBy` in the payload therefore survives into the blob and is
+        // overwritten HERE. First position would let the payload win.
+        { updatedBy: session.employee_id, updatedByRole: session.role }
+      );
       const r = await fetch(rest('sen_payer_contracts?on_conflict=license_hash,contract_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -6716,7 +6734,16 @@ module.exports = async (req, res) => {
         units_authorized: Number(payload.units_authorized),
         minutes_per_unit: Number(payload.minutes_per_unit),
         auth_number: String(payload.auth_number).trim()
-      });
+      },
+        // -- WHO WROTE THIS ROW (2026-10-07) --------------------------------
+        // sen_authorizations persisted with no acting employee: not a column, not a
+        // blob key, not an audit row. LAST ARGUMENT TO Object.assign ON
+        // PURPOSE -- sources apply left to right, so a later one wins, and
+        // storedBlob strips only the keys it is told to. A caller-supplied
+        // `updatedBy` in the payload therefore survives into the blob and is
+        // overwritten HERE. First position would let the payload win.
+        { updatedBy: session.employee_id, updatedByRole: session.role }
+      );
       // Stripped rather than ignored. A client that posts one would otherwise
       // have it stored on the row and read back by the next device, where it
       // reads exactly like a figure the server computed -- and it is the one
@@ -6791,7 +6818,16 @@ module.exports = async (req, res) => {
         employee_id: String(payload.employee_id).trim(),
         rate_per_hour: Number(payload.rate_per_hour),
         burden_pct: prBurden
-      });
+      },
+        // -- WHO WROTE THIS ROW (2026-10-07) --------------------------------
+        // sen_pay_rates persisted with no acting employee: not a column, not a
+        // blob key, not an audit row. LAST ARGUMENT TO Object.assign ON
+        // PURPOSE -- sources apply left to right, so a later one wins, and
+        // storedBlob strips only the keys it is told to. A caller-supplied
+        // `updatedBy` in the payload therefore survives into the blob and is
+        // overwritten HERE. First position would let the payload win.
+        { updatedBy: session.employee_id, updatedByRole: session.role }
+      );
       const r = await fetch(rest('sen_pay_rates?on_conflict=license_hash,rate_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -6865,7 +6901,16 @@ module.exports = async (req, res) => {
         royalty_pct: frRoyalty,
         ad_fund_pct: frAdFund,
         royalty_base: String(payload.royalty_base)
-      });
+      },
+        // -- WHO WROTE THIS ROW (2026-10-07) --------------------------------
+        // sen_franchise_agreements persisted with no acting employee: not a column, not a
+        // blob key, not an audit row. LAST ARGUMENT TO Object.assign ON
+        // PURPOSE -- sources apply left to right, so a later one wins, and
+        // storedBlob strips only the keys it is told to. A caller-supplied
+        // `updatedBy` in the payload therefore survives into the blob and is
+        // overwritten HERE. First position would let the payload win.
+        { updatedBy: session.employee_id, updatedByRole: session.role }
+      );
       // Stripped rather than ignored, same reason as sen_authorizations'
       // units_used: stored, it would be read back by the next device looking
       // exactly like a figure the server computed, and it is the one number
@@ -7697,7 +7742,23 @@ module.exports = async (req, res) => {
       // list whose meaning is "this is a real column".
       const dataBlob = Object.assign(
         storedBlob(payload, ['id', 'job_id', 'assigned_employee_id', 'status']),
-        norm.money);
+        norm.money,
+        // -- WHO WROTE THIS ROW (2026-10-07) --------------------------------
+        // THE EARLIER READ OF THIS BRANCH WAS WRONG AND IS CORRECTED HERE.
+        // It was recorded as "does not send `data` at all, so stamping would
+        // REPLACE the stored blob and destroy carrier/claim_number/adjuster".
+        // It DOES send `data: dataBlob` (:7772) and that blob is built from
+        // the whole payload -- so the stamp is the SAME one-line change the
+        // five SAIRNsenior branches took, not a read-then-merge. The hazard
+        // was real for ONE of the two paths, not both, and leaving this one
+        // unstamped on a reason that belonged to the other is how a correct
+        // refusal spreads to a case it does not fit.
+        //
+        // LAST ARGUMENT ON PURPOSE -- Object.assign applies sources left to
+        // right, so a later one wins. storedBlob strips only the keys it is
+        // told to, so a caller-supplied `updatedBy` surviving in the payload
+        // is overwritten HERE. First position would let the payload win.
+        { updatedBy: session.employee_id, updatedByRole: session.role });
       delete dataBlob.money_summary;
       // assigned_employee_id IS A REAL COLUMN AND MUST NOT ALSO LIVE IN THE BLOB
       // (2026-09-24). `assignee` above is the authorised value -- a narrow role
@@ -10001,7 +10062,10 @@ module.exports = async (req, res) => {
       const status = payload && payload.status;
       if (!schedId) { res.status(400).json({ error: { message: 'set_status requires payload.schedule_id' } }); return; }
       if (roofingLocations.SCHEDULE_STATUSES.indexOf(status) === -1) { res.status(400).json({ error: { message: 'status must be one of: ' + roofingLocations.SCHEDULE_STATUSES.join(', ') } }); return; }
-      const sr = await fetch(rest('rf_schedule?license_hash=eq.' + enc(licHash) + '&schedule_id=eq.' + enc(schedId) + '&select=schedule_id,job_id,crew'), { headers });
+      // `data` IS SELECTED HERE FOR THE ATTRIBUTION STAMP BELOW, and the read
+      // it is added to already happens for the canSeeSchedule gate -- one more
+      // column, not one more round trip.
+      const sr = await fetch(rest('rf_schedule?license_hash=eq.' + enc(licHash) + '&schedule_id=eq.' + enc(schedId) + '&select=schedule_id,job_id,crew,data'), { headers });
       if (sr.status === 404 || sr.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Scheduling is not set up yet — run sql/sairnroofing_locations_schema.sql in Supabase first.' } }); return; }
       const sRows = await sr.json();
       const entry = Array.isArray(sRows) && sRows[0];
@@ -10013,10 +10077,38 @@ module.exports = async (req, res) => {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: 'You are not on that day' } });
         return;
       }
+      // ── WHO CHANGED THIS STATUS (2026-10-07) ─────────────────────────────
+      // THE ONLY ONE OF THE SEVEN THAT GENUINELY COULD NOT TAKE THE ONE-LINE
+      // STAMP. This is a PATCH of two scalar columns; it sends no `data` at
+      // all, and `rf_schedule.data` is `jsonb not null default '{}'` carrying
+      // the window and notes. A bare `data: { updatedBy }` would REPLACE that
+      // blob and destroy them -- which is how a mechanical sweep deletes
+      // production data.
+      //
+      // `created_by` IS A COLUMN AND IS NOT USABLE HERE. It is `not null` and
+      // means who CREATED the day; overwriting it on a status change would
+      // destroy the creation record to record a later edit. A second column
+      // (`status_changed_by`) is the clean answer and is a MIGRATION, which
+      // this round deliberately excludes.
+      //
+      // So: READ-THEN-MERGE, onto the row this branch ALREADY read for the
+      // canSeeSchedule gate. `entry.data` is spread FIRST so the stamp wins on
+      // its own two keys and nothing else is touched.
+      //
+      // THE RACE IS STATED RATHER THAN HIDDEN: a concurrent writer that
+      // changes `data` between the select above and this PATCH has its blob
+      // change overwritten. The window is the two awaits in between, the only
+      // other writer of this blob is `rf_schedule/write` (management only),
+      // and `wroteRow()` below still detects a PATCH that matched nothing.
+      // This trades a narrow lost-update window for an attribution that was
+      // previously absent entirely; a `status_changed_by` column removes the
+      // trade and is named in the handoff as the follow-up.
+      const schedBlob = Object.assign({}, entry.data || {},
+        { updatedBy: session.employee_id, updatedByRole: session.role });
       const r = await fetch(rest('rf_schedule?license_hash=eq.' + enc(licHash) + '&schedule_id=eq.' + enc(schedId)), {
         method: 'PATCH',
         headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
-        body: JSON.stringify({ status: status, updated_at: nowISO() })
+        body: JSON.stringify({ status: status, data: schedBlob, updated_at: nowISO() })
       });
       // ── IT ECHOED BACK THE STATUS THE CALLER ASKED FOR (2026-09-21) ──────
       // `saved ? saved.status : status` is the worst spelling of this defect in

@@ -14,10 +14,18 @@
 // originating finder closes or reclassifies one. The 15 is what my criteria
 // found; the difference is reported and theirs stays open.
 //
-// EIGHT ARE FIXED HERE — the ones whose row is built through `storedBlob()`,
-// where the stamp is two lines and needs no migration. The other seven build
-// their row differently and each needs an individual read; they are listed as
-// open in the handoff rather than stamped blind.
+// ALL FIFTEEN ARE FIXED HERE, in three passes and the order is the record:
+//   8  the rows built on a `const x = storedBlob(` line of its own.
+//   5  the SAIRNsenior rows built as `const xBody = Object.assign(storedBlob(
+//      ...), {...})` -- missed by the first scan because of MY pattern, not a
+//      property of the code.
+//   2  the SAIRNroofing pair recorded as BLOCKED on a data-loss hazard. The
+//      hazard was real for ONE of them. `rf_claims/write` does send `data` and
+//      took the same one-line stamp; `rf_schedule/set_status` does not and
+//      took a read-then-merge onto the row it already reads.
+// `scratchpad/attr_scan.py` re-run at this state: UNATTRIBUTED 0 of 49.
+// NONE of the fifteen needed the audit-table migration -- that migration is
+// about AUDIT tables, and all fifteen of these are DATA tables.
 //
 // IN THE BLOB, AFTER storedBlob, AND THAT ORDER IS THE GUARANTEE. storedBlob
 // strips only the keys it is told to, so a caller-supplied `updatedBy` would
@@ -108,13 +116,44 @@ const CASES = [
   { res: 'sen_caregivers', app: 'sairnsenior', role: 'owner', table: 'sen_caregivers' },
   { res: 'sen_claims', app: 'sairnsenior', role: 'owner', table: 'sen_claims' },
   { res: 'rf_locations', app: 'sairnroofing', role: 'owner', table: 'rf_locations' },
+  // ── THE FIVE ADDED 2026-10-07 ────────────────────────────────────────
+  // These build their row as `const xBody = Object.assign(storedBlob(...),
+  // {...})` rather than on a `const x = storedBlob(...)` line of its own,
+  // which is why the first scan did not see them as stampable. The stamp
+  // goes in as the LAST argument to Object.assign: sources apply left to
+  // right, so a later one wins, and a caller-supplied updatedBy that
+  // survived storedBlob is overwritten there.
+  { res: 'sen_branches', app: 'sairnsenior', role: 'owner', table: 'sen_branches' },
+  { res: 'sen_payer_contracts', app: 'sairnsenior', role: 'owner', table: 'sen_payer_contracts' },
+  { res: 'sen_authorizations', app: 'sairnsenior', role: 'owner', table: 'sen_authorizations' },
+  { res: 'sen_pay_rates', app: 'sairnsenior', role: 'owner', table: 'sen_pay_rates' },
+  { res: 'sen_franchise_agreements', app: 'sairnsenior', role: 'owner', table: 'sen_franchise_agreements' },
+  // ── THE LAST TWO OF THE SEVEN, ADDED 2026-10-07 ──────────────────────
+  // These were recorded as BLOCKED on a data-loss hazard: "neither sends
+  // `data`, so stamping would REPLACE the stored blob". Re-read at HEAD,
+  // that is true of ONE of them and FALSE of the other.
+  //
+  //   rf_claims/write        DOES send `data: dataBlob` (sd-data.js:7772),
+  //                          built from the whole payload via storedBlob.
+  //                          It takes the SAME one-line stamp as the five
+  //                          above. The refusal belonged to the other path.
+  //   rf_schedule/set_status genuinely does not -- it PATCHes two scalar
+  //                          columns. It takes a READ-THEN-MERGE onto the
+  //                          row the branch ALREADY reads for its gate, so
+  //                          the window/notes blob survives. `created_by`
+  //                          is not usable (it is `not null` and means who
+  //                          CREATED the day); a `status_changed_by` column
+  //                          would be cleaner and is a MIGRATION.
+  { res: 'rf_claims', app: 'sairnroofing', role: 'owner', table: 'rf_claims' },
+  { res: 'rf_schedule', app: 'sairnroofing', role: 'owner', table: 'rf_schedule',
+    action: 'set_status' },
 ];
 
 // One permissive payload. Branch preconditions differ; the fields they ask for
 // are supplied together so a 400 on a missing id does not masquerade as a
 // missing stamp. THE HOSTILE VALUES ARE THE POINT of arm C.
 function payloadFor(res) {
-  return {
+  const p = {
     id: 'X1', resident_id: 'R1', client_id: 'C1', staff_id: 'S1',
     claim_id: 'CL1', entity_id: 'E1', location_id: 'L1',
     name: 'A Name',
@@ -126,8 +165,53 @@ function payloadFor(res) {
     // there to catch and did.
     signal_type: 'fall_detection', recorded_at: '2026-09-01T10:00:00Z',
     hours: 1, amount: 10, active: true, date: '2026-09-01',
+    // ── THE SAIRNsenior VALIDATORS, READ OFF THEIR OWN REFUSALS ─────────
+    // Five fields added because five branches 400ed on the first run and
+    // arm A1 caught every one. The messages were READ, not guessed at:
+    //   sen_payer_contracts      payer, rate_per_hour > 0, effective_on
+    //   sen_authorizations       auth_number, units_authorized > 0,
+    //                            minutes_per_unit in 15/30/60, start_on, end_on
+    //   sen_pay_rates            rate_per_hour > 0, effective_on
+    //   sen_franchise_agreements branch_id, royalty_base in billed/collected,
+    //                            effective_on
+    // `royalty_base` has NO DEFAULT on purpose -- the handler says so:
+    // "there is no default, because guessing picks a side of the agreement".
+    payer: 'A Payer', rate_per_hour: 42, effective_on: '2026-01-01',
+    auth_number: 'AUTH-1', units_authorized: 10, minutes_per_unit: 30,
+    start_on: '2026-01-01', end_on: '2026-12-31',
+    branch_id: 'BR-1', royalty_base: 'billed',
+    // `state` for sen_branches -- its validator says why: "It is what a
+    // per-state EVV or training rule is matched on."
+    state: 'OH',
+    // `employee_id` for sen_pay_rates is the SUBJECT of the rate -- WHOSE
+    // pay it is -- and NOT the actor. The actor is the session, which is
+    // the whole distinction this suite exists to pin: arm C1 proves the
+    // caller cannot supply the actor, while this field is a legitimate
+    // caller-supplied subject and must keep working.
+    employee_id: 'SUBJECT-EMP-1',
     updatedBy: 'SOMEONE-ELSE', updatedByRole: 'owner'
   };
+  // ── PER-RESOURCE EXTRAS, NOT ADDED TO THE SHARED PAYLOAD ─────────────
+  // `status` is the reason this is per-resource rather than global.
+  // rf_schedule/set_status requires one from SCHEDULE_STATUSES
+  // (roofing-locations.js:56) and rf_claims validates its own against
+  // CLAIM_STATUSES (roofing-claims.js:41). The two lists are DISJOINT, so
+  // one shared `status` would 400 the other branch -- and a branch that
+  // 400s before it builds a row is exactly the vacuous pass arm A1 exists
+  // to catch.
+  if (res === 'rf_claims') {
+    // validateClaim (roofing-claims.js:133) requires id, job_id, carrier,
+    // claim_number. `status` deliberately OMITTED so the handler's own
+    // default ('loss_reported') applies.
+    p.job_id = 'JOB-1';
+    p.carrier = 'A Carrier';
+    p.claim_number = 'CLM-0001';
+  }
+  if (res === 'rf_schedule') {
+    p.schedule_id = 'RFSCH-1';
+    p.status = 'confirmed';
+  }
+  return p;
 }
 
 async function write(c) {
@@ -139,8 +223,10 @@ async function write(c) {
       app: c.app, employee_id: 'ACTOR-42', role: c.role,
       license_hash: LIC_HASH })
   };
+  // `c.action` defaults to 'write'. rf_schedule's attribution gap is on
+  // 'set_status', a PATCH -- a suite that can only drive 'write' cannot see it.
   const req = { method: 'POST', headers: headers, body: {
-    action: 'write', resource: c.res, payload: payloadFor(c.res) } };
+    action: c.action || 'write', resource: c.res, payload: payloadFor(c.res) } };
   const res = fakeRes();
   await handler(req, res);
   const w = sent.filter((q) => (q.method === 'POST' || q.method === 'PATCH')
@@ -160,7 +246,7 @@ function bad(l, why) {
   console.log('WRITE ATTRIBUTION -- SAIRNcare / SAIRNsenior / SAIRNroofing '
     + '-- criteria 2026-10-07.1\n');
 
-  console.log('A. EVERY ONE OF THE EIGHT REACHES ITS POST');
+  console.log('A. EVERY ONE OF THE ' + CASES.length + ' REACHES ITS WRITE');
   const reached = [];
   const missed = [];
   for (const c of CASES) {
@@ -233,6 +319,68 @@ function bad(l, why) {
   } else {
     bad('D1. every stamp must follow its storedBlob -- ' + after + ' of 8',
         before.join(' | '));
+  }
+
+  // ── D2: THE SEVEN Object.assign STAMPS, PINNED THE SAME WAY ──────────
+  // D1 pins the `x.updatedBy = session.employee_id` spelling the first eight
+  // use. The seven added since are stamped as the LAST ARGUMENT to an
+  // Object.assign, which D1's string cannot see at all -- so without this arm
+  // seven of fifteen stamps are behaviour-tested and NOT source-pinned, and a
+  // future edit that moves one to the FIRST argument would keep every B and C
+  // arm green while the payload silently won again.
+  //
+  // The assertion is ORDER WITHIN THE STATEMENT: the stamp text must appear
+  // AFTER the `storedBlob(` call that builds the row it lands on.
+  const ASSIGN_STAMPED = [
+    { v: 'brBody', res: 'sen_branches' },
+    { v: 'pcBody', res: 'sen_payer_contracts' },
+    { v: 'azBody', res: 'sen_authorizations' },
+    { v: 'prBody', res: 'sen_pay_rates' },
+    { v: 'frBody', res: 'sen_franchise_agreements' },
+    { v: 'dataBlob', res: 'rf_claims' },
+  ];
+  const STAMP = '{ updatedBy: session.employee_id, updatedByRole: session.role }';
+  let assignOk = 0;
+  const assignBad = [];
+  for (const a of ASSIGN_STAMPED) {
+    const decl = CODE.indexOf('const ' + a.v + ' = Object.assign(');
+    if (decl === -1) { assignBad.push(a.v + ' decl not found'); continue; }
+    // The next `const ` declaration bounds the statement, so a stamp belonging
+    // to a LATER branch cannot be miscounted as this one's.
+    let end = CODE.indexOf('\n      const ', decl + 1);
+    if (end === -1) end = CODE.length;
+    const stmt = CODE.slice(decl, end);
+    const sb = stmt.indexOf('storedBlob(');
+    const st = stmt.indexOf(STAMP);
+    if (sb !== -1 && st !== -1 && st > sb) assignOk++;
+    else assignBad.push(a.v + ' storedBlob=' + sb + ' stamp=' + st);
+  }
+  if (assignOk === ASSIGN_STAMPED.length) {
+    ok('D2. all ' + ASSIGN_STAMPED.length + ' Object.assign stamps are the LAST '
+       + 'source, after their storedBlob. Object.assign applies sources left to '
+       + 'right, so this ordering -- not the presence of the field -- is what '
+       + 'makes a caller-supplied updatedBy lose');
+  } else {
+    bad('D2. every Object.assign stamp must follow its storedBlob -- '
+        + assignOk + ' of ' + ASSIGN_STAMPED.length, assignBad.join(' | '));
+  }
+
+  // ── D3: rf_schedule/set_status PRESERVES THE BLOB IT MERGES INTO ─────
+  // The ONE path that could not take the one-line stamp. The hazard being
+  // guarded is not a missing field -- it is `data: { updatedBy }` REPLACING a
+  // blob that holds the window and notes. So the arm asserts the existing blob
+  // is spread FIRST and the stamp lands after it.
+  const merge = CODE.indexOf('const schedBlob = Object.assign({}, entry.data || {}');
+  const mergeStamp = CODE.indexOf(STAMP, merge === -1 ? 0 : merge);
+  if (merge !== -1 && mergeStamp > merge && CODE.indexOf('data: schedBlob') !== -1) {
+    ok('D3. rf_schedule/set_status spreads the STORED blob first, stamps after '
+       + 'it, and PATCHes the merged value. A bare `data: { updatedBy }` here '
+       + 'would pass every B and C arm above while destroying the window and '
+       + 'notes on every status change');
+  } else {
+    bad('D3. rf_schedule/set_status must merge onto the stored blob',
+        'merge=' + merge + ' stamp=' + mergeStamp
+        + ' patches=' + (CODE.indexOf('data: schedBlob') !== -1));
   }
 
   console.log('\n' + pass + ' passed, ' + fail + ' failed');
