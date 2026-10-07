@@ -83,6 +83,16 @@ GATE = os.path.join('tools', 'sairn_push_gate_hook.py')
 # LIVE means it makes a real network or database request, so it cannot be wired
 # into a hook without making every push talk to the outside world.
 PURPOSES = {
+    'audit_event_type_check.py': ('CHECKER',
+        'an event_type the code EMITS that the CHECK constraint on its '
+        'target audit table REJECTS -- so the insert fails, '
+        'writeAuditLog returns false, and the row is simply absent. '
+        'Built 2026-10-07 after six attribution write paths recorded '
+        'NOTHING for a day while their suite stayed green: a stubbed '
+        'fetch cannot refuse a row, so the constraint was invisible to '
+        'the one test that covered them. First live run found 3 of 3 '
+        'tables with a CHECK rejecting at least one emitted value, 11 '
+        'distinct values across 7 api files'),
     'fail_open_scan.py': ('CHECKER',
         'a gate that reports SUCCESS when it could not run. FROM A GIT HOOK '
         '`exit 0` MEANS ALLOW, so `ROOT=$(git rev-parse ...) || exit 0` and '
