@@ -192,8 +192,13 @@ def main():
         print('NO SUBSTITUTE ATTEMPTED, per standing instruction.')
         sys.exit(2)
 
-    tsr_path = os.path.join(args.out_dir, 'chain-tip-seq%s.tsr' % seq)
-    msg_path = os.path.join(args.out_dir, 'chain-tip-seq%s.message.txt' % seq)
+    # STABLE filename, not per-seq -- same pattern as this role's existing
+    # TIP-BEACON.md (overwritten on each publish, a single current-state
+    # fact, not an accumulating list this mirror would otherwise grow
+    # forever). The seq/date/hash are INSIDE the message, so the single
+    # file still names exactly which claim it covers.
+    tsr_path = os.path.join(args.out_dir, 'chain-tip-timestamp.tsr')
+    msg_path = os.path.join(args.out_dir, 'chain-tip-timestamp.message.txt')
     with open(tsr_path, 'wb') as f:
         f.write(tsr)
     with open(msg_path, 'w', encoding='utf-8') as f:
