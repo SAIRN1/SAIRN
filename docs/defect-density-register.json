@@ -23638,60 +23638,6 @@
       "recurrence_open": "The sweep for remaining raw 'data: payload' write branches across api/sd-data.js is NOT done and is not claimed by this change. Nothing mechanical requires a write branch to route its blob through api/_lib/blob.js, so the next branch added can reintroduce this with every suite green -- the new test asserts the SDN branch and nothing generalises it. Separately, the twelve sensitive resources' save-site line numbers in the routed index row are hover's and were NOT re-derived at HEAD; only the handler branch was."
     },
     {
-      "commit": "8f15f7c5fc57",
-      "date": "2026-10-06",
-      "subject": "fix(exec-context): the CTO advisor carried the SAME false clause as the CFO one -- \"NO accounting integration of any kind\" -- plus a count nobody could re-derive; and tools/red_suite_register_check.py",
-      "files": [
-        "api/_lib/exec-context.js",
-        "tools/red_suite_register_check.py"
-      ],
-      "lines_added": 368,
-      "lines_removed": 1,
-      "app": "PLATFORM",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "The CTO exec-context statement asserted 'There is NO accounting integration of any kind' while api/accounting.js, api/_lib/accounting-connector.js and sql/accounting_connector_schema.sql exist at HEAD -- the same false-premise-true-conclusion shape as the CFO line in the same file, found by the sweep that followed it. It also claimed 'Supabase Postgres (78 API functions)'; counted at HEAD there are 70 serverless route files under api/ excluding tests, _lib and _resources, 60 of which touch Supabase, and the figure said nothing about what it counted so it could not be re-derived.",
-      "rules": [
-        "2.3"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The accounting clause went false when api/accounting.js landed (27a2404d) and the 78 count went false gradually as routes were added; one sha would be a guess between a single commit and a slow drift."
-      },
-      "contributing_factors": [
-        {
-          "factor": "The statement carried a dated verification and nothing re-reads any of them on a cadence, so both of these decayed in the same way the CFO line did -- in the same file, with the same fix, found only because somebody swept the file deliberately.",
-          "kind": "detection",
-          "action_status": "planned",
-          "action": "A standing re-check of every dated 'verified' statement in api/_lib/exec-context.js is still owed. This sweep was a one-off."
-        },
-        {
-          "factor": "'78 API functions' never said what it counted. A bare number with no stated denominator cannot be re-derived, so nobody could tell it had drifted.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "The replacement states the population (serverless route files under api/, excluding *.test.js, _lib/ and _resources/) and the sub-count that touches Supabase."
-        },
-        {
-          "factor": "The accounting clause was written as an absolute ('NO accounting integration of any kind') rather than as the conclusion it was defending, so a later commit adding a refusing endpoint made it false without changing anything a reader cares about.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Rewritten to state what exists AND why nothing is connected, so the sentence survives the endpoint existing."
-        },
-        {
-          "factor": "The suite pins the exact architecture sentence, which is why my own incorrect 'improvement' to a CORRECT count could not land silently -- but there is no equivalent arm pinning the integrations sentence, which is the one that was actually wrong.",
-          "kind": "latent-condition",
-          "action_status": "planned",
-          "action": "An arm pinning the integrations sentence against a measured route count is owed. Named rather than added here: the count it would pin is the thing that drifts, so the arm has to compute it rather than quote it."
-        }
-      ],
-      "recurrence_open": "Nothing re-reads the remaining dated statements in api/_lib/exec-context.js on a cadence, and no arm pins the integrations sentence the way :206 pins the architecture one. The HIPAA-for-SAIRNcomm line was NOT verified in this pass -- SAIRNcomm has no app file in this repo, so there is nothing to check it against, and that is stated rather than counted as clean."
-    },
-    {
       "commit": "6a4ee580b47e",
       "date": "2026-10-06",
       "subject": "fix(paths): the three probes' __file__ FALLBACK landed on the HOME REPOSITORY -- the exact answer the rev-parse anchoring exists to avoid",
@@ -23744,6 +23690,60 @@
         }
       ],
       "recurrence_open": "ONLY THESE THREE ARE FIXED. Any other tool on this platform that derives a clone root from __file__, or from an unanchored rev-parse, is still fooled by the home repository in exactly the same way, and nothing sweeps for the shape. tools/git_discovery_anchoring_check.py covers the unanchored-rev-parse half; the unchecked-__file__-fallback half has no sweep. And the probes themselves are not driven here -- only their root derivation."
+    },
+    {
+      "commit": "8f15f7c5fc57",
+      "date": "2026-10-06",
+      "subject": "fix(exec-context): the CTO advisor carried the SAME false clause as the CFO one -- \"NO accounting integration of any kind\" -- plus a count nobody could re-derive; and tools/red_suite_register_check.py",
+      "files": [
+        "api/_lib/exec-context.js",
+        "tools/red_suite_register_check.py"
+      ],
+      "lines_added": 368,
+      "lines_removed": 1,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "The CTO exec-context statement asserted 'There is NO accounting integration of any kind' while api/accounting.js, api/_lib/accounting-connector.js and sql/accounting_connector_schema.sql exist at HEAD -- the same false-premise-true-conclusion shape as the CFO line in the same file, found by the sweep that followed it. It also claimed 'Supabase Postgres (78 API functions)'; counted at HEAD there are 70 serverless route files under api/ excluding tests, _lib and _resources, 60 of which touch Supabase, and the figure said nothing about what it counted so it could not be re-derived.",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The accounting clause went false when api/accounting.js landed (27a2404d) and the 78 count went false gradually as routes were added; one sha would be a guess between a single commit and a slow drift."
+      },
+      "contributing_factors": [
+        {
+          "factor": "The statement carried a dated verification and nothing re-reads any of them on a cadence, so both of these decayed in the same way the CFO line did -- in the same file, with the same fix, found only because somebody swept the file deliberately.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "A standing re-check of every dated 'verified' statement in api/_lib/exec-context.js is still owed. This sweep was a one-off."
+        },
+        {
+          "factor": "'78 API functions' never said what it counted. A bare number with no stated denominator cannot be re-derived, so nobody could tell it had drifted.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The replacement states the population (serverless route files under api/, excluding *.test.js, _lib/ and _resources/) and the sub-count that touches Supabase."
+        },
+        {
+          "factor": "The accounting clause was written as an absolute ('NO accounting integration of any kind') rather than as the conclusion it was defending, so a later commit adding a refusing endpoint made it false without changing anything a reader cares about.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Rewritten to state what exists AND why nothing is connected, so the sentence survives the endpoint existing."
+        },
+        {
+          "factor": "The suite pins the exact architecture sentence, which is why my own incorrect 'improvement' to a CORRECT count could not land silently -- but there is no equivalent arm pinning the integrations sentence, which is the one that was actually wrong.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "An arm pinning the integrations sentence against a measured route count is owed. Named rather than added here: the count it would pin is the thing that drifts, so the arm has to compute it rather than quote it."
+        }
+      ],
+      "recurrence_open": "Nothing re-reads the remaining dated statements in api/_lib/exec-context.js on a cadence, and no arm pins the integrations sentence the way :206 pins the architecture one. The HIPAA-for-SAIRNcomm line was NOT verified in this pass -- SAIRNcomm has no app file in this repo, so there is nothing to check it against, and that is stated rather than counted as clean."
     },
     {
       "commit": "d8392f805969",
@@ -24024,6 +24024,69 @@
         }
       ],
       "recurrence_open": "The tool still cannot see an override read through a helper rather than process.env directly, cannot tell whether a present override reaches the read, and does not judge the 16 CROSS_APP suites at all. Those three are named limits, not findings. And the 155 findings are now a backlog nobody owns: the fix per finding is a judgement (add the override, or say in the header that the suite is pinned), and none of the 155 has been made."
+    },
+    {
+      "commit": "88d7543b2698",
+      "date": "2026-10-07",
+      "subject": "fix(tier-a gate): CONVENTION 19 -- the freshness path decided a recorded sha was usable with an EXISTENCE test, and SEVEN live records were orphaned",
+      "files": [
+        "tests/run_tier_a_review_gate_probe.py",
+        "tools/tier_a_review_gate.py"
+      ],
+      "lines_added": 134,
+      "lines_removed": 0,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/tier_a_review_gate.py decided a review record's subject commit was usable with an EXISTENCE test -- `git rev-parse --verify --quiet <sha>^{commit}` -- and then diffed against it and printed an ordinary FRESH or STALE verdict. That command answers OK for a commit that is on a ref AND for one that is ORPHANED: present in this clone's object store, reached by nothing, gc-eligible here, absent from every other clone. The gate ALREADY contained the correct test -- its own _is_reachable() uses `git merge-base --is-ancestor` -- so it carried both methods and the freshness path used the weaker one. Measured at eb430f25: docs/tier-a-reviews.json cites SEVEN orphaned 40-char shas (00030f2d11b7 13e40c9d79b7 773fc2189cb0 7d15d0a27af0 a9e35feef967 c4dd292fd8a8 e4b3f21a2ceb) and one of them, 00030f2d11b7, was the basis of a printed \"** STALE ** moved since 00030f2d11b7\" verdict on an OPEN Tier A obligation -- a diff against a commit no other clone has, reported as a plain verdict. FIXED by asking reachability from origin/main or HEAD after the resolve and refusing with a distinct COULD-NOT-TELL that NAMES orphaned, so it reads differently from \"never fetched\"; after the fix four open records report it correctly. HEAD is accepted alongside origin/main deliberately, because a record opened at an unpushed local commit is ordinary work and not an orphan. GUARDED BY FOUR NEW ARMS in tests/run_tier_a_review_gate_probe.py, two of them negative plus a paired positive on a synthetic source. THE FIRST VERSION OF THE ARM WAS VACUOUS AND AN ABLATION CAUGHT IT: it sliced ~1500 lines of source and swallowed the definition of _is_reachable itself, so the substring matched whether or not the freshness path called it, and removing the guard left the probe green. The window is now bounded to 3000 bytes, truncated at `def _is_reachable`, and the bound is asserted by its own arm. Re-ablated: guard removed -> probe exit 1 naming both arms; file restored byte-identical; guard back -> exit 0.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "4a9798dad43e",
+        "date": "2026-09-25",
+        "subject": "feat(review-gate): item 102 part 4 -- an obligation goes stale when the CODE moves, not only when the clock runs out",
+        "lag_days": 12
+      },
+      "contributing_factors": [
+        {
+          "factor": "git exposes two commands that look like the same question. `rev-parse --verify <sha>^{commit}` and `cat-file -e <sha>^{commit}` both answer OK for an ON-REF commit and for an ORPHANED one, so object existence and ref reachability are indistinguishable at the call site. Nothing in either command's name or output says which question it answered.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The freshness path now asks `merge-base --is-ancestor` against origin/main or HEAD after the resolve, and refuses with a COULD-NOT-TELL that NAMES orphaned so it reads differently from 'never fetched'."
+        },
+        {
+          "factor": "The correct test was ALREADY IN THE SAME FILE. _is_reachable() uses merge-base --is-ancestor and sits about 1500 lines below the freshness path, which used rev-parse. A file carrying both a strong and a weak form of one check will be read by whoever is nearest, and nothing flagged the inconsistency.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The freshness path now calls _is_reachable() itself, so there is one method in the file rather than two."
+        },
+        {
+          "factor": "No arm asserted the METHOD. Every existing arm tested the gate's verdicts, and a verdict computed against an orphaned commit looks exactly like a correct one, so the whole probe could pass with the wrong test underneath it.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Four arms added to tests/run_tier_a_review_gate_probe.py reading the freshness path's own source -- two negative, plus a paired positive on a synthetic source -- and ABLATION-VERIFIED: guard removed gives probe exit 1 naming both arms, restored byte-identical, guard back gives exit 0."
+        },
+        {
+          "factor": "THE FIRST VERSION OF THAT ARM WAS ITSELF VACUOUS, and this is the same defect one level up. It sliced the source from the resolve message to `def _file_set_index`, which swallowed the definition of _is_reachable, so the substring matched whether or not the freshness path called it. Removing the guard left the probe GREEN. A source-reading arm with an unbounded window tests nothing and reports a pass.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The window is bounded to 3000 bytes and truncated at `def _is_reachable`, the bound is asserted by its own arm, and the extraction is exercised in both directions against a synthetic existence-only source and a synthetic reachability-asking one."
+        },
+        {
+          "factor": "Rebases on this platform orphan commits routinely and nothing reseats a ledger that cites them. Seven orphaned shas accumulated in docs/tier-a-reviews.json without anything reporting it; the .githooks/post-rewrite reseat covers the defect register and the generated tracking documents, not that ledger.",
+          "kind": "process",
+          "action_status": "not-actionable",
+          "note": "Routed in docs/2026-10-07-fourth-routed.md item 2. Whether each of the seven records is reseated to its rewritten equivalent or retired is a per-record decision for its author, and reseating them here would be reclassifying other sessions' records. The gate now REPORTS the condition instead of hiding it, which is the part that was mine to do."
+        }
+      ],
+      "recurrence_open": "EVERY OTHER REACHABILITY CHECK ON THE PLATFORM IS UNAUDITED. This fix covers ONE call site in ONE tool. A grep at eb430f25 finds cat-file or rev-parse --verify used in tools/conflict_marker_preflight.py, tools/credential_purge_check.py, tools/doc_sha_reseat.py, tools/gh_push.py, tools/landing_verification.py, tools/review_ledger_reseat.py, tools/sairn_push_gate_hook.py, tools/source_manifest.py, tests/claims/run_push_verify_probe.py and tests/run_tier_a_reseat_probe.py -- and NONE of them has been read to decide whether it is asking existence where it means reachability. The seven orphaned shas already in docs/tier-a-reviews.json are not reseated or retired by this fix either; the gate only reports them now."
     }
   ],
   "started": "2026-09-09",
