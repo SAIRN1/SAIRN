@@ -38,6 +38,11 @@ const { verifySessionToken, tokenFromRequest, roleSet } = require('./_lib/auth')
 // See api/_lib/blob.js -- COLUMN keys stay per-branch here because which payload
 // fields are real columns is a fact about each table.
 const { storedBlob } = require('./_lib/blob');
+// Attribution for the two management-write branches -- see the notes at
+// `roster`/`write` and `jobs`/`write`. StoneDesk's audit table already exists
+// and is allowlisted in api/_lib/audit.js:40.
+const { writeAuditLog } = require('./_lib/audit');
+const AUDIT_TABLE = 'stonedesk_audit_log';
 
 const RESOURCES = { roster: true, jobs: true, progress_photos: true };
 const WRITE_ALLOWED_ROLES = roleSet({ owner: true, admin: true });
@@ -272,10 +277,35 @@ module.exports = async (req, res) => {
       }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
+      // ── WHO CHANGED THE ROSTER (2026-10-07) ──────────────────────────────
+      // Management-gated, and it recorded no acting employee. Adding a
+      // subcontractor, deactivating one, or editing a COI expiry had no author.
+      //
+      // AN AUDIT ROW HERE AND A BLOB FIELD ON `jobs`, AND THE DIFFERENCE IS THE
+      // SCHEMA, NOT A PREFERENCE. `sd_sub_jobs` has an open `data` jsonb, so
+      // the jobs branch stamps `updatedBy` into it with no migration.
+      // `sd_subs` is all NAMED COLUMNS -- sub_id, name, phone, email, trade,
+      // active, plus the compliance set -- with no blob, so there is nowhere to
+      // put it without a column. `stonedesk_audit_log` already exists and is
+      // allowlisted (api/_lib/audit.js:40), so the trail goes there instead of
+      // waiting on a migration this session cannot run.
+      //
+      // THE PER-ROW VERSION IS STILL THE BETTER ANSWER and is NOT done:
+      // reconstructing "who last touched this sub" from a log means scanning
+      // the log, where `jobs` can answer from the row. A `updated_by` column on
+      // `sd_subs` is the real fix and is logged as open.
+      const rosterAudited = await writeAuditLog(process.env.SUPABASE_URL, SERVICE_KEY, {
+        license_hash: licHash, employee_id: employeeCaller.employee_id,
+        role: employeeCaller.role, event_type: 'sub_roster_write',
+        detail: { sub_id: sub_id, active: payload.active !== false,
+                  compliance_written: complianceWritten },
+        table: AUDIT_TABLE
+      });
       res.status(200).json({
         ok: true,
         data: (Array.isArray(rows) && rows[0]) || payload,
         compliance_provisioned: complianceWritten,
+        attributed: rosterAudited,
         warning: complianceWritten ? undefined
           : 'Saved, but compliance fields were NOT stored — run sql/sd_subs_compliance_2026-09-01.sql'
       });
@@ -376,6 +406,26 @@ module.exports = async (req, res) => {
       // the way back out, which is the sharper half of why they were deleted.
       const jobData = storedBlob(payload, ['sub_id', 'id']);
       jobData.updatedAt = nowISO();
+      // ── WHO ASSIGNED THE JOB OR MARKED IT PAID (2026-10-07) ──────────────
+      // This branch is management-gated and recorded no acting employee:
+      // `sd_sub_jobs` carries only license_hash, sub_id and this blob, so a
+      // pay-status change -- money -- had no author. `jobData.updatedAt` was
+      // already here, which is the half that says WHEN with no half that says
+      // WHO.
+      //
+      // IN THE BLOB, NOT A COLUMN: `data` is open jsonb, so this needs no
+      // migration. And THE PATTERN WAS ALREADY IN THIS FILE three branches
+      // down -- `progress_photos`/`write` stores `captured_by_type` and
+      // `captured_by_id` as real columns. The management branches simply did
+      // not use it.
+      //
+      // SERVER-STAMPED, AND storedBlob CANNOT PROTECT THIS. storedBlob only
+      // strips the keys named above, so a caller-supplied `updatedBy` would
+      // survive into the blob -- these two lines are written AFTER it and
+      // overwrite whatever arrived, which is the only thing that makes the
+      // field evidence rather than a request.
+      jobData.updatedBy = employeeCaller.employee_id;
+      jobData.updatedByRole = employeeCaller.role;
 
       if (payload.id) {
         // Update an existing assignment (e.g. office marking it paid) —

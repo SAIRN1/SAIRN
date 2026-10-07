@@ -357,7 +357,32 @@ module.exports = async (req, res) => {
       });
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
-      res.status(200).json({ ok: true, employee_id, role });
+      // ── WHO GRANTED THE ACCESS WAS NOT RECORDED (2026-10-07) ─────────────
+      // Same fix and same reasoning as api/sc-auth.js's `setup`, and the
+      // PREMISE is re-checked here rather than carried over: StoneDesk has its
+      // own audit table (`stonedesk_audit_log`, allowlisted in
+      // api/_lib/audit.js:40), `set_active` in this file already audits every
+      // outcome including refusals, and `setup` audited nothing while writing
+      // no `created_by`. So revoking access here was reconstructible and
+      // granting it was not.
+      //
+      // ONE DIFFERENCE FROM SAIRNCODE, and it is why the premise had to be
+      // re-read: StoneDesk has TWO provisioning roles (owner and admin), not
+      // one. That is the exact distinction that made the last-admin guard wrong
+      // when its justification was copied into this file, so `granted_role` and
+      // the caller's own role are BOTH recorded -- an `admin` provisioning an
+      // `owner` is the case somebody will want to reconstruct.
+      //
+      // `attributed` is surfaced because writeAuditLog is non-fatal and returns
+      // false on failure: an unrecorded attribution and a recorded one are
+      // otherwise indistinguishable to the caller.
+      const setupAudited = await writeAuditLog(SUPABASE_URL, SERVICE_KEY, {
+        license_hash: licHash, employee_id: caller.employee_id, role: caller.role,
+        event_type: 'pin_setup',
+        detail: { target: employee_id, granted_role: role },
+        table: AUDIT_TABLE
+      });
+      res.status(200).json({ ok: true, employee_id, role, attributed: setupAudited });
       return;
     }
 

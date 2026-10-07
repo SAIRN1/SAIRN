@@ -254,7 +254,32 @@ module.exports = async (req, res) => {
       });
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
-      res.status(200).json({ ok: true, employee_id, role });
+      // ── WHO GRANTED THE ACCESS WAS NOT RECORDED (2026-10-07) ─────────────
+      // `set_active` below audits every outcome, including its refusals.
+      // `setup` -- the act of CREATING a credential, which is the act of
+      // granting somebody access to a HIPAA-relevant app -- audited nothing,
+      // and the row it writes carries no `created_by`. So revoking access was
+      // reconstructible months later and GRANTING it was not. That is the
+      // loud-one-direction-silent-on-its-mirror shape, inside the one branch
+      // where the asymmetry matters most.
+      //
+      // AN AUDIT ROW, NOT A COLUMN, because a column needs a migration this
+      // session cannot run and the audit table already exists
+      // (`sairncode_audit_log`, allowlisted in api/_lib/audit.js:40).
+      //
+      // AND THE OUTCOME IS SURFACED. writeAuditLog is deliberately non-fatal
+      // and returns false on failure, so an unrecorded attribution and a
+      // recorded one are indistinguishable to the caller -- which is the defect
+      // being fixed, one level down. The provisioning still succeeds: an
+      // unavailable audit log must not stop a legitimate grant. `attributed`
+      // says which happened.
+      const setupAudited = await writeAuditLog(SUPABASE_URL, SERVICE_KEY, {
+        license_hash: licHash, employee_id: caller.employee_id, role: caller.role,
+        event_type: 'pin_setup',
+        detail: { target: employee_id, granted_role: role },
+        table: AUDIT_TABLE
+      });
+      res.status(200).json({ ok: true, employee_id, role, attributed: setupAudited });
       return;
     }
 

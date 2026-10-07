@@ -36,6 +36,18 @@
 const crypto = require('crypto');
 const { verifySessionToken, tokenFromRequest } = require('./_lib/auth');
 const { validateLicenseKey } = require('./_lib/license');
+// ── ATTRIBUTION (2026-10-07) ────────────────────────────────────────────────
+// `create` issues a PUBLIC, UNAUTHENTICATED URL into a customer's order, and
+// `revoke` takes one away. Both are management-gated and NEITHER recorded which
+// employee did it: `sd_order_links` has no `created_by` and no `revoked_by`
+// column (sql/stonedesk_public_surface_schema.sql:122-135) and this file made
+// no audit call at all. So "who gave out that link" had no answer.
+//
+// AN AUDIT ROW, NOT A COLUMN: a column needs a migration this session cannot
+// run, and `stonedesk_audit_log` already exists and is allowlisted
+// (api/_lib/audit.js:40). Same route as the `setup` fix in api/sd-auth.js.
+const { writeAuditLog } = require('./_lib/audit');
+const AUDIT_TABLE = 'stonedesk_audit_log';
 
 const MANAGEMENT = { owner: true, admin: true };
 
@@ -239,9 +251,26 @@ module.exports = async (req, res) => {
         return;
       }
       if (!w.ok) { res.status(502).json({ error: { message: 'Could not create the link' } }); return; }
+      // THE ACTING EMPLOYEE, recorded. `attributed` is surfaced because
+      // writeAuditLog is deliberately non-fatal and returns false on failure:
+      // an unrecorded attribution and a recorded one would otherwise look
+      // identical to the caller, which is the defect being fixed one level
+      // down. The link is still issued -- an unavailable audit log must not
+      // stop legitimate work -- and the flag says which happened.
+      //
+      // THE TOKEN IS NOT IN THE DETAIL. It is a bearer secret for an
+      // unauthenticated URL, and an audit log is read by more people than the
+      // one who issued it; `link_id` identifies the row without reproducing
+      // the credential. Same never-re-display-a-secret rule as the PIN hashes.
+      const createAudited = await writeAuditLog(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+        license_hash: licHash, employee_id: session.employee_id, role: session.role,
+        event_type: 'order_link_created',
+        detail: { link_id: linkId, customer_id: customerId },
+        table: AUDIT_TABLE
+      });
       // The token is returned EXACTLY ONCE, here. 'list' never returns it
       // again -- the same never-re-display-a-secret rule the PIN hashes follow.
-      res.status(200).json({ ok: true, link_id: linkId, token: token });
+      res.status(200).json({ ok: true, link_id: linkId, token: token, attributed: createAudited });
       return;
     }
 
@@ -258,7 +287,16 @@ module.exports = async (req, res) => {
         res.status(404).json({ error: { code: 'NOT_FOUND', message: 'That link is not on this license' } });
         return;
       }
-      res.status(200).json({ ok: true, link_id: linkId });
+      // REVOKE IS AUDITED TOO, and it is audited AFTER the 404 check rather
+      // than before: a revoke that matched no row did not happen, and logging
+      // it would put an event in the trail for an action that never occurred.
+      const revokeAudited = await writeAuditLog(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+        license_hash: licHash, employee_id: session.employee_id, role: session.role,
+        event_type: 'order_link_revoked',
+        detail: { link_id: linkId },
+        table: AUDIT_TABLE
+      });
+      res.status(200).json({ ok: true, link_id: linkId, attributed: revokeAudited });
       return;
     }
 
