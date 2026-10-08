@@ -3318,8 +3318,8 @@
       "task": "batch17 at HEAD 4fa9843a, premises re-derived and every batch-16 commit re-verified ON-REF with merge-base --is-ancestor. PER-ITEM CHECKPOINT: one handoff row appended before the next item starts. (3) convention 23 gets a FIFTH verdict WRONG-BY-MY-OWN-CHECK with every count, heading and denominator note that depends on it moved, credit unchanged. (4) delete the run_primitive_obsession_probe row and make the census report THREE counts -- verified green RECOVERED, verified red, unmeasured -- re-extracting the 83 from pinned2_stdout.txt and refusing on disagreement with the log summary line. (5) next census slice driven ALONE, 300s each, boundary verified after EVERY one. (6) PR 1.2 sweep: every test or tool deriving a key set or identifier list by regex over a RAW app file without strip_comments.js, measured both ways per file, mine fixed and the rest ROUTED with the exact line. (7) stonedesk.html 16 unbaselined + (x || 0) occurrences, 8 file::term keys -- claims-checked CLEAR and declared by nobody at this HEAD -- per-site decision, no sweep, then arm 11 and the ablation lever re-measured from a clean baseline. (8) the four __file__ bucket PREDICATES written into the coverage ledger plus three more slices of five at different offsets. (9) citation_line_drift_check with BOTH --app and --prefix for four apps. (10) owner-matcher fixed for -cc-batch- and handoff-cc-, orphan owner column completed, one routing line per owner file. (11) cody's sandbox-redirect finding as the next convention, DERIVED BY CODY AND CREDITED TO CODY, plus a sweep of every tool that redirects to a sandbox for a default or a live-path fallback. (12) settings merge re-checked ONCE only. (13) methodology entry plus promote-or-route the RECOVERED third-state entry. (14) known_red_check --fixtures and the defect-record check at final HEAD, each exit code captured on its own line. (15) handoff before the report. NOT TOUCHED: docs/tier-a-reviews.json and tests/run_tier_a_open_basis_probe.py (CC, live); tools/run_all_tests.py, docs/defect-density-register.json and docs/scrutiny-flags.json are CODY'S in FILES so the defect-record check is READ-ONLY and no record is added by me; .claude/settings.json (cody); api/sd-data.js (hank). I close only findings I originated and reclassify none. No tool is built and my memory directory is untouched. FILES: docs/2026-09-13-cross-domain-disciplines.md docs/METHODOLOGY.md docs/known-red-suites.json docs/2026-10-07-fourth-coverage-ledger.md docs/2026-10-07-fourth-routed.md stonedesk.html tools/truthy_sum_baseline.json tests/phi_cache_scoped_to_user.js docs/handoff-fourth-2026-10-07.md SAIRN-ACTIVE-WORK-fourth.md",
       "claimed_at": "2026-10-07T20:30:06Z",
       "claimed_at_epoch": 1791405006.5950086,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-08T00:37:32Z",
       "files": [
         "SAIRN-ACTIVE-WORK-fourth.md",
         "docs/2026-09-13-cross-domain-disciplines.md",
@@ -3331,6 +3331,46 @@
         "stonedesk.html",
         "tests/phi_cache_scoped_to_user.js",
         "tools/truthy_sum_baseline.json"
+      ]
+    },
+    {
+      "id": "fourth-1791444685",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "batch b3 item 2 ONLY: land the global settings merge. Make ~/.claude/settings.json a superset of the repo's five hook types while KEEPING its own PreCompact hook, prove it with a test, print the diff; then in the same file set the autocompact knob chosen by the measured claude --version and env BASH_MAX_OUTPUT_LENGTH=10000. THAT FILE IS SHARED BY ALL SIX AGENTS SO NOTHING ELSE IN IT IS TOUCHED, and this claim is released immediately after. Claims-checked CLEAR at HEAD 398328fc: no active claim declares .claude/settings.json -- cody's live batch25 FILES and cc's live batch17 FILES were both read in full and neither names it, and cody's earlier claim on it is released. FILES: .claude/settings.json",
+      "claimed_at": "2026-10-08T07:31:25Z",
+      "claimed_at_epoch": 1791444685.213977,
+      "status": "released",
+      "released_at": "2026-10-08T07:39:29Z",
+      "files": [
+        ".claude/settings.json"
+      ]
+    },
+    {
+      "id": "fourth-1791445322",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "batch b3 items 3-7. (3) SEQ 17-B: fix tools/truthy_sum_check.py for the LEFT operand of a *, one control arm per direction in tests/run_truthy_sum_probe.py, and remove the three baseline entries that say to remove them when the checker handles it. (4) SEQ 17-A at the four NAMED sites only -- tools/stale_row_sweep.py:240, tests/sairnvet_seed_never_syncs.js:98, tools/orphan_register_check.py:163, tests/demo_seed_licence_scope.js:216 -- resolving write sites from comment-stripped output with NO phantom member exempted and a control arm each, the same one-line change in tools/citation_line_drift_check.py, and my own 48th instance in coverage-ledger section 11. (5) reconcile the citation-drift table arithmetic, the entries-vs-census unit difference, and drive the 3 deferred UNMEASURED suites in a THROWAWAY CLONE restoring nothing here. (6) land cody's six methodology conventions and cc's declared-conflict-is-a-snapshot convention at the next free numbers, counting before and after. (7) one measured lesson from this batch. EVERY TARGET CLAIMS-CHECKED FREE at HEAD 398328fc against both live claims read in full: cody batch25-b2 and cc batch17-b3 declare NONE of them. NOT TOUCHED: docs/tier-a-reviews.json, tools/defect_register.py, tools/tool_owner_map.py, docs/tool-owner-map.json, tools/tooling_inventory.py, CLAUDE.md and docs/scrutiny-flags.json (CC, live) -- so the Tier A discharge is FLAGGED BACK and the push gate's scrutiny-flags write is RESTORED rather than committed; tools/run_all_tests.py, tools/capture_exit.py, tests/run_bare_run_write_probe.py, tools/clone_health_check.py, docs/defect-density-register.json and docs/SAIRN-PROCESS-RULES.md (CODY, live) -- so run_bare_run_write_probe is RUN READ-ONLY in a throwaway clone and never edited, and no defect record is added by me. I close only findings I originated. FILES: tools/truthy_sum_check.py tests/run_truthy_sum_probe.py tools/truthy_sum_baseline.json tools/stale_row_sweep.py tests/sairnvet_seed_never_syncs.js tools/orphan_register_check.py tests/demo_seed_licence_scope.js tools/citation_line_drift_check.py docs/2026-10-07-fourth-coverage-ledger.md docs/2026-10-07-fourth-routed.md docs/METHODOLOGY.md docs/2026-09-13-cross-domain-disciplines.md docs/known-red-suites.json docs/handoff-fourth-2026-10-08.md SAIRN-ACTIVE-WORK-fourth.md",
+      "claimed_at": "2026-10-08T07:42:02Z",
+      "claimed_at_epoch": 1791445322.02631,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-fourth.md",
+        "docs/2026-09-13-cross-domain-disciplines.md",
+        "docs/2026-10-07-fourth-coverage-ledger.md",
+        "docs/2026-10-07-fourth-routed.md",
+        "docs/METHODOLOGY.md",
+        "docs/handoff-fourth-2026-10-08.md",
+        "docs/known-red-suites.json",
+        "tests/demo_seed_licence_scope.js",
+        "tests/run_truthy_sum_probe.py",
+        "tests/sairnvet_seed_never_syncs.js",
+        "tools/citation_line_drift_check.py",
+        "tools/orphan_register_check.py",
+        "tools/stale_row_sweep.py",
+        "tools/truthy_sum_baseline.json",
+        "tools/truthy_sum_check.py"
       ]
     }
   ],

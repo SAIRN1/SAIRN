@@ -75,6 +75,19 @@ import sys
 from datetime import datetime, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+
+# CITATION GUARD, wired in H1 batch S item 5 -- the prevention half of the
+# same batch that found seq1125 was itself wrong about
+# hover_cross_resource_gate_check.py being uncommitted (it existed, just
+# externally) and that 18 more of this role's own tools are, right now,
+# cited in this very log while living ONLY outside git. See
+# hover_citation_guard.py's own docstring for the two-tier precision
+# design (a naive scan would refuse this role's own deliberate
+# sabotage-fixture narration, e.g. seq172/seq706). Imported lazily inside
+# cmd_add(), not at module load, so a clone missing the guard file
+# entirely (or one of its own fixture/test runs importing hover_log in
+# isolation) does not fail to import hover_log at all -- it fails the
+# SPECIFIC --add call instead, with a clear reason.
 # HOVER_LOG_PATH_OVERRIDE, added 2026-09-23. Real incident: a DIFFERENT
 # tool's selftest shelled out to `python hover_log.py --add` as a real
 # subprocess to test end-to-end, monkey-patching its OWN in-process LOG_PATH
@@ -829,6 +842,37 @@ def cmd_add(argv):
               'this is NOT the same as confirmed fresh:' % len(unresolved_paths))
         for p in unresolved_paths:
             print('  %s: %s' % (p, staleness_verdict[p]['detail']))
+
+    # CITATION GUARD -- refuse rather than append an entry citing a tool
+    # that cannot be independently verified. See the module-level comment
+    # near the top of this file and hover_citation_guard.py's own
+    # docstring for why this exists and how it avoids flagging this
+    # role's own deliberate sabotage-fixture narration.
+    try:
+        sys.path.insert(0, HERE)
+        import hover_citation_guard
+        guard_ok, guard_missing, guard_err = hover_citation_guard.check(ref, summary, repo)
+    except Exception as e:
+        guard_ok, guard_missing, guard_err = False, [], 'guard import/call failed: %s' % e
+    if guard_err:
+        # SAME PHILOSOPHY the staleness check just above already applies,
+        # and for the same reason: fail OPEN on ambiguity (git unreachable,
+        # no repo found), fail CLOSED only on a CONFIRMED missing
+        # citation. A gate that blocks every single --add call whenever
+        # git is briefly unreachable is the "gate people learn to talk
+        # past" shape CLAUDE.md already names -- disclosed here, not
+        # silently skipped, but never a hard refusal on its own.
+        print('CITATION GUARD COULD NOT RUN: %s -- logging anyway (fail-open on '
+              'ambiguity, same as the staleness check above), but this entry\'s '
+              'citations are NOT verified.' % guard_err)
+    elif not guard_ok:
+        print('CITATION GUARD REFUSED -- this entry cites a tool/script/path that '
+              'does not resolve on origin/main:')
+        for name, tier in guard_missing:
+            print('  %s (%s)' % (name, tier))
+        print('Commit it first (and push), or remove the citation if it was never '
+              'actually run against a real, verifiable copy.')
+        return EXIT_COULD_NOT_RUN
 
     prev_hash = prior[-1]['hash'] if prior else GENESIS
     seq = (prior[-1]['seq'] + 1) if prior else 1

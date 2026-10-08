@@ -614,3 +614,141 @@ convention 20 applied to a hash.
 | **5** next census slice | **DONE -- 50 -> 56 of 83 individually verified** | `<scratchpad>/b17_slice.py`, `b17_slice.out`, `b17_slice.json`, `census3_i5.out`; `known_red_check.py --fixtures` **exit 0** | six driven **ALONE**, 300s ceiling, boundary verified **after every one** -- start digest == end digest (`e4e3186acdf6` / `789cfb6edb72` / `0`). Exit codes: `api/sd-data-scp-licence-only.test.js` **1**, `tests/claims/run_registry_claim_probe.py` **1**, `tests/claims/run_registry_claim_sabotage_probe.py` **2**, `tests/faults/sd_write_faults.js` **1**, `tests/faults/transport_timeout_sweep.js` **1**, `tests/run_alf_read_order_sabotage_probe.py` **1**. **None went green, so no row was deleted.** **AND TWO OF THE SIX HAD NO REGISTER ROW AT ALL** -- both in the 83-item pinned FAIL list, both RED AND UNATTRIBUTABLE, which is the state an entry exists to remove; rows added, `entries` **74 -> 76**, one of them diagnosed as a CHAINED exit-2 whose gate is its own sibling. **THREE OF THE 33 DEFERRED AND NAMED, not silently skipped:** the two `seam_check` delegation suites (the register's own `_why_the_whole_tree_run_was_not_trusted` records that the delegation probe leaves planted sabotage in `api/sd-data.js`, which is **HANK'S** under a live claim) and `tests/run_bare_run_write_probe.py` (same family as the sibling that set `core.bare = true` three times). Census now **GREEN 5 · RED 51 · UNMEASURED 27**, summing to 83 |
 | **6** PR 1.2 sweep | **DONE -- 47 findings, 0 fixed by me because I own NONE of them, all 47 ROUTED with the exact line** | `docs/2026-10-07-fourth-routed.md` **SEQ 17-A**; `<scratchpad>/pr12_sweep.out`, `pr12_js.out`, `pr12_py.out`, `pr12_report.out`, `pr12_owners.out` | population derived from a STATED three-part predicate: reads an app by literal name **AND** extracts an identifier/key set by regex **AND** imports no comment-stripper. **983 scripts -> 53 candidates**, against **45** that already use a stripper. **234 patterns measured BOTH WAYS** (JS 188, PY 46) against the **same** `stripComments()` bytes -- written once per app and read by the python half, because two strippers would be two things to drift. **47 patterns' derived sets SHRINK when comments go.** Sharpest two: **`tools/stale_row_sweep.py:240` set 29 -> 0** and **`tests/sairnvet_seed_never_syncs.js:98` set 1 -> 0** -- 100% phantom, asserting entirely about prose; then **`tools/orphan_register_check.py:163`** and **`tests/demo_seed_licence_scope.js:216`** each lose ~21-25 real `sd_*` STORAGE KEYS. **OWNERSHIP RE-DERIVED TWO WAYS and neither makes any of them mine:** the owner map says `None`/`NONE` for all but two, and `NONE` there means UNKNOWN -- so I also read **all 1,265 claim task strings across all seven clone claim files**, which is the prose-naming path the owner map's generator cannot see. Result: **0 mine**, 5 named by cc/cody/hank, the rest never claimed by anyone. **4 patterns named as UNMEASURED, not clean** (assembled across more than one source line, so a single-line extraction cannot rebuild them) and **`sairncash.html` named as unmeasured** because no JS candidate reads it. Routing includes the one-line fix and the required control arm, and says plainly **do not fix it by exempting the phantom members** |
 | **7** the 16 `stonedesk.html` sites | **DONE -- 10 wrapped in `Number()`, 6 baselined with a stated reason, per site, no sweep. Tool now CLEAN, arm 11 GREEN, lever measurable** | `stonedesk.html` (10 edits), `tools/truthy_sum_baseline.json` (+4 keys); `<scratchpad>/b17_i7.out`, `abl_truthy_clean2.out` | claims-checked CLEAR and declared by nobody. **Every key traced to its WRITE sites before anything changed.** BASELINED (provably numeric): `c.x`, `c.y`, `i.qty` -- the term is the **LEFT operand of a `*`**, and `*` coerces both ways, so the product is a number whatever the field holds; `u.cost` -- accumulated at `stonedesk.html:25316` as `(Number(r.cost)||0)` and `unmatched` is built and consumed inside `sdMaterialRisk()`, never persisted, never hydrated. **`Number()`-WRAPPED (not provable)**: `c.quote`, `i.amount`, `o.total`, `order.total` -- every one read back out of a PERSISTED collection, and `c.quote` is decisive: one writer coerces (`parseFloat(...)||0` at `:25608`) and another copies a hydrated row wholesale (`quote: j.quote` at `:4666`). **ONE uncoerced writer fails the test.** `checkblocks.py` **131 blocks / 0 failed BEFORE and AFTER**. Tool **1 -> 0 CLEAN**; probe `exit 0`, **33 arms ok / 0 FAIL**, arm 11 *"the real SAIRN tree currently has no UNBASELINED occurrence"* now **ok**. **ABLATION FROM THE CLEAN BASELINE, three numbers per line: tool `0 -> 1 -> 0`, probe `0 -> 1 -> 0`, arms `33 -> 32 -> 33`**, restore byte-identical `d075a92c`, `git status` unchanged. **AND I REPEATED A MISTAKE I HAD ALREADY RECORDED:** the ablation script restored with `git checkout`, which discarded the four uncommitted baseline entries on its first run; the script was carried forward unfixed from batch 16, where the same `git checkout` wiped the uncommitted phi-cache fix. It now restores from captured bytes and the comment says why. The run above is the re-run. **ROUTED as SEQ 17-B**: the left-operand case is a FALSE-POSITIVE CLASS in `tools/truthy_sum_check.py` (UNASSIGNED -- owner map `None`, never claimed), proved in one expression at `:26732` where `i.qty` is reported and `i.cost` is not; each baseline entry ends *"Remove this entry when the checker handles the left operand"* |
+| **8** `__file__` predicates + 3 more slices | **DONE -- the figure is now checkable, and the claim measures 93% accurate** | `docs/2026-10-07-fourth-coverage-ledger.md` **11**; `<scratchpad>/filesweep2.py`, `filesweep2.out`, `filesweep2.json` | **all four bucket predicates written down verbatim** -- the population rule, the per-extension marker (`__file__` for `.py`, `__dirname` for `.js`, chosen per extension because each is prose when it appears in the other), the DERIVES regex, the ANCHORED regex, and the four buckets as exhaustive and mutually exclusive with **the sum asserted every run**. Counts stamped at two commits: `172 / 974 / 3 / 78 = 1227` at `4fa9843a`, `172 / 978 / 3 / 79 = 1232` after this batch's own files landed, **so the denominator moves and is stamped rather than quoted**. **THREE LIMITATIONS WRITTEN IN, not left to be found:** the predicate is lexical, so an ANCHORED match inside a comment counts -- **the same PR 1.2 defect this batch routed 47 instances of, and this predicate has it too**; DERIVES is a floor; and the bucket predicts nothing about running from a copy on its own. **Three more slices of five at phases 0.25 / 0.5 / 0.75 of the same 15-point spacing, excluding the batch-16 draw, so they interleave rather than cluster: 15 of 15 could NOT run from a copy.** Cumulative **30 of 978 -- 28 could not, 2 could**, so the claim is **93% accurate on this sample** and *"cannot be ablated or sandboxed from a copy"* is a generalisation with a measured exception rate. The 2 counter-examples are named: `tools/response_shape_check.py`, `tools/write_without_readback_check.py`. **948 remain unmeasured, not presumed** |
+| **9** citation drift, four apps | **DONE -- 0 fixed, 24 routed, and the tool proposes repointing a citation AT A COMMENT** | `docs/2026-10-07-fourth-routed.md` **SEQ 17-C**; `<scratchpad>/cld_alf.out`, `cld_sen.out`, `cld_dnt.out`, `cld_bld.out`, `b17_i9.out` | **both flags every time**, as the tool requires (it exits 2 on either alone, which is the misread in my batch-16 rule log). `alf_` **11/6/9/3**, `sen_` **9/0/7/2**, `dnt_` **3/1/1/20**, `bld_` **24/4/7/0**; all four **47 ANCHORED / 11 SOUND / 24 DRIFTED / 25 INCONCLUSIVE**, and the 24 extracted line-by-line AGREE with the four summary lines. **Attributed PER CELL, not per file:** `docs/CRITICALITY-TIERS.md` has been named in claims by five sessions, is in no live claim's FILES, and its rows are authored per resource -- so the attribution comes from each cell's own prose. **8 to `hank`/H1 (all `alf_staff`), 4 to `hank`, 12 UNATTRIBUTED** (the cell names no session and no finding id). **0 fixed: no cell is attributed to fourth**, and the tool's own output says the arrow is a CANDIDATE and that a cell may cite a render site deliberately -- repointing 24 on an arrow is the mechanical edit that warning exists to stop. **THE FINDING THAT IS NOT A ROUTING: `sen_settings :6355 -> :5774` and `:6359 -> :5774` point at `sairnsenior.html:5774`, which is the COMMENT `// There is no st('sen_settings') because there must not be one` -- the tool offers, as the write site, the line that says there is no write site.** That is the THIRD independent PR 1.2 instance this batch and the SAME comment block as the first: batch 16's phi-cache arm read it as two writes, SEQ 17-A found 47 more, and now a third checker resolves INTO it. One comment, three checkers, three wrong answers -- **convention 25's trigger met by the platform rather than by one tool**. The tool is simultaneously RIGHT on its refusal path (`INCONCLUSIVE` for the `api/sd-data.js` citations, with the reason the comment block itself predicted). Also reported so nobody misreads it: **`dnt_` has 20 of 25 INCONCLUSIVE and only 1 DRIFTED -- a low drift count that is an absence of anchors, not health** |
+| **10** owner-matcher fixed; orphans regenerated | **DONE -- owner column COMPLETE, 0 rows unassigned by gap** | `<scratchpad>/orphans2.py`, `orphans2.out` | **the matcher was mine and it was wrong, and the fix is structural rather than three more fragments.** It keyed on a hand-listed set (`-cc.`, `SAIRN-ACTIVE-WORK-cc`, `-hank`, `-cody`, ...), so `-cc-batch-` and `handoff-cc-` fell through -- and last batch I reported *"the owner column is short by three rows"* instead of fixing it. It is now **ONE RULE PER SESSION applied to all seven sessions**: the four real SAIRN filename shapes (`handoff-<s>-`, `<date>-<s>-`, `SAIRN-ACTIVE-WORK-<s>.`, `-SAIRN-<s>.`) plus two more, generated per session rather than listed. A FIFTH case -- a file OWNED by a session without NAMING it -- is a short explicit DECLARED list with the reason on each row, so a reader can tell a derived owner from a declared one, and each verdict says which it is. Re-derived at this HEAD: **97 orphaned citations, 18 mine, 79 other sessions', 20 files, owner column complete.** By owner: **cc 26 across 11 files**, UNASSIGNED-by-decision **35 in one file** (`docs/2026-09-29-stale-branch-tips.md`, a document ABOUT stale tips, so most of its SHAs are probably intentional data), SHARED-via-`defect_register.py` **8**, **cody 7 across 5**, **hank 2**, SHARED fourth+hank **1**. My 18 are unchanged and still all QUOTATIONS of an orphan |
+| **11** cody's sandbox-redirect convention | **DONE -- landed as 26, DERIVED BY CODY AND CREDITED TO CODY** | `docs/2026-09-13-cross-domain-disciplines.md` 26; `docs/METHODOLOGY.md` promotion row; `<scratchpad>/sandbox_sweep.out` | cody's instance first and in cody's own terms, quoted rather than paraphrased on the point that matters: *"A uniqueness guard catches the mistake; a required argument makes the mistake unable to reach production at all."* **cody separates the two halves and claims only one as new** -- the uniqueness guard is reinforcement of an existing convention cody did not apply; the new half is what the failure FALLS BACK TO. **The membership question was asked: 26 is NOT a member of the cannot-fire group** -- that group is about a check whose VERDICT cannot fire, and 26 is about where the WORK lands; the `sed` exiting 0 inside cody's instance IS a convention-24 instance, which is why 26 names both halves and claims only the second. Heading count **25 -> 26**, counted; group denominator moved **twenty-five -> twenty-six** with the reason, and no stale `twenty-five` remains. **THE SWEEP: 983 scripts, 334 aimable at a sandbox, 2 with a fallback to a live path, 25 already taking it as a required argument.** The two by name, **both cody's**: `tools/nhi_register.py:614` and `tools/rework_tracker.py:312`, both `repo = repo or REPO`. **`nhi_register.py` is the sharp one** -- its own docstring says `repo` exists so a control can avoid this machine, and it defaults to this machine, so a control passing a falsy value agrees with whatever the code already does and reports a pass. **Both are READ paths and the convention says so rather than glossing it:** the consequence is a measurement taken against production, not a write to it. Routed to cody, not patched |
+| **12** settings merge | **RE-CHECKED ONCE. CODY'S CLAIM IS RELEASED, THE MERGE STILL HAS NOT LANDED, AND I STOPPED** | re-checked **2026-10-08T00:09:30Z**; nothing written to either file | `sairn_claim.py list` shows **4 active claims (cody, cc, hank, fourth) and NOT ONE declares `.claude/settings.json`** -- cody has a LIVE batch-24 claim but it does not include that file, so the specific claim that blocked this is RELEASED. **The merge is still not done:** `~/.claude/settings.json` carries hooks `['PreCompact']` only, the repo's carries `['PostToolUse','PreToolUse','PreCompact','SessionStart','UserPromptSubmit']`, repo-is-subset-of-global is **False**, and the last commit to `.claude/settings.json` is `3cf3d5ec`, **2026-10-05 19:02:00 -0400**, unmoved for a third batch. **Reported and STOPPED, as instructed -- not attempted.** It is now blocked on nobody, which makes it a decision rather than a conflict |
+| **13** methodology | **DONE -- the batch-16 RECOVERED entry is PROMOTED (and implemented), and this batch's own entry is ROUTED** | `docs/METHODOLOGY.md` | **WHICH: PROMOTED, and promotion meant a STRUCTURE rather than a sentence.** It was routed and not self-promoted when found (convention 11); chat then asked the census for three counts, a count cannot come from deleted rows, so the promotion is the `recovered` list + `_what_recovered_is` now in the register. The queue row records that, the resulting **GREEN 5 / RED 51 / UNMEASURED 27 = 83**, and that the 18 primitive-obsession occurrences stay open rather than being closed with it. **THIS BATCH'S ENTRY, routed and NOT self-promoted for the same reason:** convention **25**'s trigger should count false-positive CLASSES against a SOURCE CONSTRUCT across every checker, not within one checker. **One comment block, `sairnsenior.html:5768-5780`, produced three different wrong answers from three different checkers** -- the phi-cache arm read it as two writes, SEQ 17-A found 47 more sets that shrink when comments go (two of them 100% phantom), and `citation_line_drift_check.py` offers line 5774 of that same block as the write site. **Under 25 as written each tool has ONE class, nothing reaches the trigger, and the design review never fires.** Not self-promoted because it AMENDS A CONVENTION THAT IS CC'S on evidence that is mostly mine. **And it has a second instance inside this batch: the `__file__` ANCHORED predicate I wrote into the coverage ledger matches inside comments too -- I wrote the 48th instance into the document that routes the other 47**, and said so in the ledger rather than waiting to be told |
+| **14** both checks at final HEAD | **DONE -- both exit 0, each measured ALONE** | `<scratchpad>/i14_known_red.out`, `i14_defect.out` | run at **`8d1f1c12`**, each as its own command with `$?` read on the next line and **no pipe, no `&&`, no `;` chain** -- which is convention 24 applied to the measurement of a convention-24 subject. `KNOWN_RED_CHECK_FIXTURES_EXIT=0` (*6/6 fixtures correct, plus 3 log-trust arms and 4 environment-stamp arms*) and `DEFECT_REGISTER_CHECK_EXIT=0` (*490 records, every commit resolves and every field is in vocabulary*). Also re-verified at the same HEAD because the tree moved under a rebase: the census still reads **5 / 51 / 27 = 83** and `run_truthy_sum_probe.py` still **exit 0, ALL PASS** |
+| **15** handoff before the report | **DONE** | the BATCH 17 FINAL STATE section below | written at a point where nothing is half-finished: `ahead 0 / behind 0`, all three batch-17 commits **ON-REF** by `merge-base --is-ancestor`, no long-running job open |
+
+
+---
+
+# BATCH 17 FINAL STATE -- written before the report
+
+## COMMITTED AND PUSHED
+
+| | |
+|---|---|
+| branch | `main` |
+| HEAD | **`8d1f1c12`** |
+| pushed | **yes -- `ahead 0 / behind 0`** of `origin/main` at the time of writing |
+| working tree | clean except **one pre-existing untracked file**, `sql/restore_demo_pins_2026-09-29.sql`, there at session open across three batches now and not mine |
+| `git config core.bare` | **empty -- unset.** `git status` answers normally |
+| `git stash` | **one entry: `stash@{0}: autostash`.** Pre-existing, carried from batch 15, not created here |
+| long-running jobs | **none.** No whole-tree run and no `--pinned` run started; every suite driven individually with a 300s ceiling |
+| boundary discipline | `git status` digest, sha256 of `.git/config` and `node --check api/sd-data.js` captured **after every suite**; `checkblocks.py` before AND after the `stonedesk.html` edits |
+
+**Commits this batch, each verified ON-REF with `merge-base --is-ancestor`:**
+
+| commit | what |
+|---|---|
+| `f6f70f13` | convention 23's fifth verdict; the RECOVERED row deleted and the third state added; the census in three counts; the next slice |
+| `7e455168` | the 16 `stonedesk.html` folds decided per site; the PR 1.2 sweep routed |
+| `8d1f1c12` | cody's convention 26; the `__file__` predicates; the citation-drift routing; the methodology entries |
+
+## FINAL FIGURES, re-derived at this HEAD
+
+| | |
+|---|---|
+| **the 83, in three counts** | **VERIFIED GREEN 5 · VERIFIED RED 51 · UNMEASURED 27 = 83** |
+| individually verified, either way | **56 of 83** -- the figure that only ever goes up |
+| register | `entries` **76**, `recovered` **5**, undiagnosed `why` **11** |
+| standing conventions | **26** -- counted from `## <n>.` headings, never quoted |
+| conventions landed this batch | **1** (cody's 26), plus an amendment to cc's 23 |
+| `truthy_sum_check` | **CLEAN, exit 0** -- first time; baseline **50** keys |
+| `run_truthy_sum_probe` | **exit 0, ALL PASS**, arm 11 green for the first time |
+| PR 1.2 findings routed | **47** across 13 files, **0 mine** |
+| orphaned citations | **97** -- 18 mine, 79 others' across 20 files, owner column complete |
+| `__file__` population | **978 of 1232**, predicate now written down; **30 driven from a copy, 28 could not, 2 could** |
+| `known_red_check.py --fixtures` | **exit 0** |
+| `defect_register.py --check` | **exit 0**, 490 records |
+
+## WHAT IS OPEN, AND WHY
+
+| open | why |
+|---|---|
+| **47 PR 1.2 findings in 13 files** | **none of them mine**, by the owner map AND by a read of all 1,265 claim task strings. Routed with the exact line in **SEQ 17-A**. Sharpest: `tools/stale_row_sweep.py:240` **set 29 → 0** and `tests/sairnvet_seed_never_syncs.js:98` **set 1 → 0** -- 100% phantom, asserting entirely about prose |
+| **`tools/truthy_sum_check.py` reports the LEFT operand of a `*`** | a false-positive class, proved in ONE expression at `stonedesk.html:26732` where it reports `i.qty` and correctly ignores `i.cost`. The tool is **UNASSIGNED** -- owner map `None`, never named in any claim. Routed as **SEQ 17-B**; three baseline entries end *"Remove this entry when the checker handles the left operand"* |
+| **`tools/citation_line_drift_check.py` proposes repointing a citation AT A COMMENT** | `sen_settings :6355 → :5774`, and `sairnsenior.html:5774` is the line that says there is no write site. Routed as **SEQ 17-C**. Its refusal path is sound at the same time, which is why this is a repointing bug and not a broken tool |
+| **24 DRIFTED citations across four apps** | attributed per CELL: 8 `hank`/H1, 4 `hank`, 12 UNATTRIBUTED. **0 fixed** -- no cell is fourth's, and the tool says the arrow is a CANDIDATE |
+| **27 of the 83 unmeasured** | unmeasured individually, **not presumed red**. Three of them are DEFERRED AND NAMED: the two `seam_check` delegation suites (they leave planted sabotage in `api/sd-data.js`, which is **hank's**) and `run_bare_run_write_probe.py` |
+| **11 register rows with an empty `why`** | NOT DIAGNOSED YET, which this register defines as a backlog rather than a shrug |
+| **the settings merge** | **BLOCKED ON NOBODY NOW.** cody's claim on it is released, no live claim declares it, and it still has not landed -- last commit `3cf3d5ec`, 2026-10-05, unmoved for three batches. A decision, not a conflict |
+| **948 of the 978 `__file__` scripts** | empirically unmeasured. The 30 measured put the static claim at **93%**, with two named counter-examples, so it is a generalisation with a rate and not a rule |
+| **the convention-25 scope amendment** | routed, **not self-promoted** -- it amends a convention that is **cc's** on evidence that is mostly mine |
+| **the 48th PR 1.2 instance is mine** | the `__file__` ANCHORED predicate I wrote into coverage-ledger §11 matches inside comments too. Named in the ledger itself rather than left to be found. **Not fixed this batch** |
+
+## EXACT NEXT STEP, PER OPEN ITEM
+
+1. **`tools/stale_row_sweep.py:240` first** -- a 29-member derived set that is 29/29
+   phantom is a checker asserting entirely about prose, and it is one line plus the
+   control arm. `tests/sairnvet_seed_never_syncs.js:98` is the same and is 1/1.
+2. **`truthy_sum_check.py`'s left operand** -- the classifier already decides
+   "right operand of a `*`"; the same test on the preceding significant character
+   answers this. **An arm per direction**, because a one-sided fix is what produced
+   the one-sided bug.
+3. **`citation_line_drift_check.py`** -- same one-line change as SEQ 17-A, not a
+   separate fix: resolve write sites from `stripComments()` output.
+4. **The 24 drifted citations** -- per cell, by the cell's author, reading the cell's
+   prose against the cited line. Not by applying the arrows.
+5. **The census** -- 27 to go. Re-extract the 83 from `pinned2_stdout.txt` every
+   time and let the script refuse on a disagreement; never quote it from a document.
+6. **The settings merge** -- it is now blocked on nobody. Somebody decides.
+7. **My own 48th instance** -- fix coverage-ledger §11's ANCHORED predicate when
+   SEQ 17-A is taken, not before, so it is one change and one control.
+
+## CLAIMS HELD
+
+**`fourth` is HELD** as the batch-17 claim, declaring
+`docs/2026-09-13-cross-domain-disciplines.md`, `docs/METHODOLOGY.md`,
+`docs/known-red-suites.json`, `docs/2026-10-07-fourth-coverage-ledger.md`,
+`docs/2026-10-07-fourth-routed.md`, `stonedesk.html`,
+`tools/truthy_sum_baseline.json`, `tests/phi_cache_scoped_to_user.js`,
+`docs/handoff-fourth-2026-10-07.md` and `SAIRN-ACTIVE-WORK-fourth.md`.
+**Released at the end of the batch, after the report.**
+
+Three other sessions were live throughout -- **cc** (batch16-b2), **cody**
+(batch 24) and **hank** (batch 13) -- each re-derived from `sairn_claim.py list`
+rather than from a sibling's claim text, which is convention 23.
+
+**NOT TOUCHED, each checked rather than assumed:** `docs/tier-a-reviews.json` and
+`tests/run_tier_a_open_basis_probe.py` (**cc**, live); `tools/run_all_tests.py`,
+`docs/defect-density-register.json` and `docs/scrutiny-flags.json` (**cody**, live
+-- so the defect-record check was run **READ-ONLY** and **no record was added by
+me** this batch); `.claude/settings.json`; `api/sd-data.js` (**hank**);
+`docs/CRITICALITY-TIERS.md`; `docs/tool-owner-map.json`; and nothing anywhere under
+`.claude/skills/sairn-hover-auditor/`. **No tool was built and my memory directory
+was not touched.**
+
+**I closed only findings I originated, and reclassified none.**
+
+## TRANSCRIPT
+
+    C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\7e379670-c1b8-4e19-9aa2-b1affe2f960e\scratchpad
+
+Batch 17, in item order: `census3.py` + `census3_i4.out` / `census3_i5.out` /
+`census3_final.out` (the three-count census, refusing on disagreement with the log);
+`b17_i4.py` (the RECOVERED row re-driven, then deleted, then the third state added);
+`b17_slice.py` / `.out` / `.json` (six suites alone, boundary after every one);
+`pr12_sweep.py`, `pr12_measure.js`, `pr12_measure_py.py`, `pr12_report.py`,
+`pr12_own.py`, `pr12_route.py` and their `.out`/`.json` (the PR 1.2 sweep end to
+end, including the stripped app copies both halves shared); `b17_i7.py` / `.out`
+(the ten `Number()` edits, line-checked before each replace); `abl_truthy_sum.py`
+**now restoring from captured bytes** + `abl_truthy_clean.out` (the run where
+`git checkout` discarded four uncommitted entries) and `abl_truthy_clean2.out` (the
+correct re-run); `filesweep2.py` / `.out` / `.json`; `cld_alf.out`, `cld_sen.out`,
+`cld_dnt.out`, `cld_bld.out`, `b17_i9.py` / `.out`; `orphans2.py` / `.out`;
+`sandbox_sweep.py` / `.out`; `i14_known_red.out`, `i14_defect.out`,
+`i14_truthy_probe.out`.
+
+**And the batch-14/15 session's scratchpad, a DIFFERENT directory, which batch 16's
+withdrawn retraction came from looking in the wrong one of the two:**
+
+    C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\4975e2e9-8002-4f73-9d9d-240c42c3b643\scratchpad
+
+It holds `sweep_full.py` (the report gate, carried here unmodified),
+`pinned2_stdout.txt` (the pinned run the 83 is re-extracted from every time, and the
+only copy), `abl_i2.out` and `abl_i2c.out`.

@@ -1431,11 +1431,109 @@ is implementing a stated policy. The rule bites when each exemption was a surpri
 
 ---
 
+## 26. A FAILED REDIRECTION MUST NOT LEAVE THE PROGRAM POINTED AT PRODUCTION
+
+**Adopted 2026-10-07. DERIVED BY CODY** -- `docs/2026-10-07-cody-batch23.md` 11,
+routed because both convention files are fourth's. Landed here at cody's credit,
+with cody's own instance first and in cody's own terms.
+
+**THE CONVENTION, in one line: when a program is being aimed at a sandbox, the
+sandbox path is a REQUIRED argument with no default, so a redirection that does not
+happen is an immediate crash rather than a write to production.**
+
+**CODY'S INSTANCE, and it is two independent failures lining up.** To replay a
+one-shot script against a sandbox copy, cody rewrote its target path and ran the
+result:
+
+    sed "s|P = r'C:\\Users\\marsh\\.claude\\settings.json'|P = r'$SP/i3/replay_input.json'|" \
+        "$OLD/merge.py" > "$SP/i3/merge_replay.py"
+    python "$SP/i3/merge_replay.py"
+
+The pattern did not match -- backslashes -- **`sed` exited 0**, the script's path
+stayed as written, and **the replay ran against the live
+`~/.claude/settings.json`.** Two failures, and they are different kinds: the
+substitution was SILENT, and the DEFAULT ON FAILURE WAS PRODUCTION.
+
+**AND THE SECOND HALF IS THE NEW ONE. Cody says so explicitly and it is worth
+quoting rather than paraphrasing:** *"The platform already has the
+uniqueness-guard convention (`count(anchor) != 1`) and I did not apply it -- that
+half is reinforcement. The half that is new is about what the failure falls back
+to."* And: *"A uniqueness guard catches the mistake; a required argument makes the
+mistake unable to reach production at all."*
+
+That is the distinction this section exists for. A guard is a DETECTOR and shares
+every detector's weakness -- it has to be applied, and cody did not apply it. A
+required argument is a STRUCTURAL property: the wrong thing is not reachable, so
+remembering is not part of the mechanism.
+
+**WHY THIS IS NOT CONVENTION 24 AND THE QUESTION WAS ASKED.** 24 is about a
+composite whose exit code reports the last leg instead of the worst -- the program
+tells you it succeeded. Here the program may report everything correctly and still
+have done its work in the wrong place. 24 is about the VERDICT; 26 is about the
+TARGET. `sed` exiting 0 on a non-match is a 24 instance *inside* this one, which is
+why both halves are named.
+
+**HOW TO IMPLEMENT IT.**
+- **No default on a target path.** Refuse with a named exit code and say which
+  argument is missing. `tools/bare_run_write_check.py` is the worked example on this
+  platform: *"--repo is required and must be a SCRATCH clone."*
+- **Assert the redirection happened, in the same breath as doing it.**
+  `assert src.count(old) == 1` before the write, and PRINT that it was replaced
+  once -- a silent success and a silent failure look identical.
+- **Then read the redirected artefact back and confirm the new target**, before
+  running it. cody's fix did exactly this: `grep -n "^P = "` on the rewritten file
+  printed the sandbox path.
+- **Prove the real target was untouched afterwards**, by mtime or by hash. A
+  redirection that is believed is not a redirection that is verified.
+- **`x = x or <live>` IS THE SHAPE, in one line.** Any falsy argument -- `None`,
+  `''`, an unset variable -- silently selects production.
+
+**WHERE IT DOES NOT TRANSFER.** A tool whose ONLY sane target is the live clone and
+which never claims otherwise does not need an argument it would ignore; the rule
+bites where a sandbox is *offered*, because that is where a caller believes it is
+safe. And a read-only program falling back to the live path is a weaker failure than
+a writing one -- it corrupts a MEASUREMENT rather than a file -- but it is still a
+failure, because a control that silently reads production proves nothing about the
+sandbox it was meant to exercise.
+
+**THE SWEEP, measured 2026-10-07 at the request of this convention.** 983 tracked
+scripts under `tools/`, `tests/` and `fmea/`; **334** mention a sandbox, scratch,
+worktree or redirectable target at all; **2** carry a default or a fallback to a
+live path; **25** take the path as a required argument and print the refusal, which
+is cody's structural form already in use.
+
+**The two, by name, and both are cody's own tools:**
+
+| tool | line | shape |
+|---|---|---|
+| `tools/nhi_register.py` | `:614` | `repo = repo or REPO` in `sibling_clones(repo=None)` |
+| `tools/rework_tracker.py` | `:312` | `repo = repo or REPO` in `collect(repo=None)` |
+
+**And `nhi_register.py` is the sharper of the two, because its own docstring states
+the purpose the fallback defeats:** *"`repo` exists so the control can drive this
+against a throwaway parent directory of REAL repositories instead of against this
+machine -- the whole defect was about what the enumeration does with directories on
+disk, and a mocked listdir would have agreed with whatever the code already did."*
+A control that passes a falsy `repo` gets this machine, agrees with whatever the
+code already does, and reports a pass. **The parameter was added to stop exactly
+that and defaults to exactly that.**
+
+**Both are READ paths, which is said rather than glossed:** the consequence is a
+measurement taken against production, not a write to it. Lower severity than
+cody's instance and the same shape. **Routed to cody, not patched** -- the owner map
+gives `cody/LAST_CLAIM` and `cody/OWNER_LINE`.
+
+**Cause tag:** `safety/redirection/failure-falls-back-to-the-live-target`.
+
 ---
 
-## The failure mode TEN of the twenty-five share
+---
+
+## The failure mode TEN of the twenty-six share
 
 *(Denominator moved 2026-10-07 when cc's 23, 24 and 25 were landed, and the membership question was asked of all three rather than assumed. **24 IS A TENTH MEMBER.** A leg that returns success on a failed leg is a check that reads as coverage and structurally cannot fail in the direction that matters -- it never turns a passing subject red, only a failing one green, which is item 8's shape one layer out from the checker and into its composition. **23 IS NOT A MEMBER:** it is not a check at all, it is a discipline about the INPUT to work. **25 IS NOT A MEMBER:** its subject is a checker that fires loudly and too often, which is the opposite failure. So the NINE is now a TEN and the heading has been changed rather than left to drift -- and the nine-member list itself is otherwise unchanged.)*
+
+*(Denominator moved 2026-10-07 when cody's 26 was landed, and the membership question was asked rather than assumed. **26 IS NOT A MEMBER.** The group is a CHECK THAT READS AS COVERAGE AND STRUCTURALLY CANNOT FIRE. 26's subject is not a check at all -- it is where a program's WORK lands when a redirection fails, and the program may report that work perfectly well. It is adjacent to 24 and the two are deliberately kept apart: 24 is about the VERDICT being wrong, 26 is about the TARGET being wrong. The `sed` exiting 0 on a non-match inside cody's instance IS a 24 instance, which is why 26 names both halves and claims only the second as new. The TEN is unchanged.)*
 
 *(Count corrected 2026-10-06: this heading read "eight of the eleven" when the document had eleven numbered sections, and was not updated when 12 was added on 2026-09-25 or when 13, 14 and 15 were added on 2026-10-06, or when 16 followed them. The EIGHT is unchanged and is the load-bearing number -- 12, 13, 14, 15 and 16 are NOT members of that group. Carrying what it said so the correction is visible rather than invisible, per the numbering note at the end of this file.)*
 
