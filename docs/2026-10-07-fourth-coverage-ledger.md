@@ -518,3 +518,103 @@ in-place-modify-then-restore is the only ablation technique that works here**,
 and any future sandbox runner has to provide the repo rather than a copy of the
 script. The 54 that carry both are the ones worth reading — they may already
 have the right answer.
+
+---
+
+## 11. THE `__file__` BUCKETS -- THE PREDICATES, WRITTEN DOWN SO THE FIGURE IS CHECKABLE
+
+**Added 2026-10-07 (batch 17), and it exists because §10's `424 of 1214` could be
+neither confirmed nor denied.** That section recorded the four BUCKET NAMES and
+never the rule that sorted a script into one, so re-deriving it a batch later gave
+**974 of 1227** and there was no way to tell a definition difference from drift.
+A figure whose predicate is unrecorded is **NOT-REPRODUCIBLE**, which is its own
+verdict under convention 23 and is not the same as wrong.
+
+### The population
+
+`git ls-files` over `tests/`, `tools/`, `fmea/` and the `api/*.test.js` set,
+keeping only paths ending `.py` or `.js`. **It moves with the repo** -- 1,214 when
+§10 was written, 1,227 at `4fa9843a`, **1,232** after this batch's own files
+landed -- so the denominator is stamped with a commit every time it is quoted.
+
+### The marker
+
+    .py  ->  the literal string  __file__
+    .js  ->  the literal string  __dirname
+
+Chosen per extension rather than searched for both, because `__file__` inside a JS
+string is prose about python and `__dirname` in a python file is the same in
+reverse.
+
+### The two tests, applied in this order
+
+**DERIVES** -- does the script compute a path from its own location? True when the
+source matches any of:
+
+    (dirname|abspath|realpath|resolve|join)\s*\([^)]*__file__
+    __file__[^\n]*dirname
+    path\.dirname\s*\(\s*__dirname
+    __dirname
+
+**ANCHORED** -- does it ask git where the repo is, rather than assuming? True when
+the source matches any of:
+
+    rev-parse        --show-toplevel        --git-dir
+    --git-common-dir git_common_dir         GIT_DIR
+
+### The four buckets, which are exhaustive and mutually exclusive by construction
+
+| bucket | predicate | at `4fa9843a` | after batch 17 |
+|---|---|---|---|
+| **none** | the marker does not appear in the source at all | 172 | 172 |
+| **derives_no_anchor** | marker present **AND** DERIVES **AND NOT** ANCHORED | **974** | **978** |
+| **uses_not_derive** | marker present **AND NOT** DERIVES | 3 | 3 |
+| **derives_with_anchor** | marker present **AND** DERIVES **AND** ANCHORED | 78 | 79 |
+| | **sum, asserted every run** | **1227** | **1232** |
+
+The sum is asserted rather than assumed: a script that fell into no bucket would be
+invisible, which is the shape §10's own missing predicate had.
+
+### What the predicate CANNOT tell, stated rather than discovered later
+
+* It is **lexical, not semantic**. A script that matches ANCHORED inside a comment
+  or a string is counted as anchored. That is the same PR 1.2 defect this batch
+  routed 47 instances of in SEQ 17-A, and **this predicate has it too** -- named
+  here rather than left for somebody else to find.
+* **DERIVES is a floor, not an equality.** A script that reaches a fixture by some
+  other route is not detected, so `none` over-counts and `derives_no_anchor`
+  under-counts.
+* **It predicts nothing on its own.** `derives_no_anchor` says *this script
+  computes paths from its own location and never asks git* -- it does not say the
+  script fails from a copy. That is the empirical half below, and it has already
+  produced two counter-examples.
+
+### The empirical half: 30 of 978 driven from a copy, and the claim is 93% right
+
+Each script is copied **alone** into its own scratch directory and run there with
+`cwd` set to it. Selection is a deterministic function of the sorted population, so
+the exact scripts are reproducible: batch 16 drew 15 positions at **phase 0** of a
+15-point even spacing; batch 17 drew 15 more at **phases 0.25, 0.5 and 0.75** of the
+same spacing, excluding the first draw, so the two sets interleave instead of
+clustering.
+
+| | |
+|---|---|
+| driven from a copy, batch 16 | **15** -- 13 could not run, **2 could** |
+| driven from a copy, batch 17 | **15** -- 15 could not run, 0 could |
+| **cumulative** | **30 of 978**, **28 could not run, 2 could** |
+| the claim's measured accuracy on this sample | **28/30 = 93%** |
+
+**THE TWO COUNTER-EXAMPLES ARE THE POINT, and they are named:**
+`tools/response_shape_check.py` and `tools/write_without_readback_check.py` both
+**exit 0** from a scratch directory. So *"424 scripts cannot be ablated, sandboxed
+or re-run from a copy"* is a **generalisation with a measured exception rate**, not
+a rule, and the platform-wide method constraint that was derived from it inherits
+that rate. **948 of the 978 remain empirically unmeasured** -- unmeasured, not
+presumed.
+
+**How to re-derive any figure here:** `<scratchpad>/filesweep.py` (batch 16, the
+classification plus phase-0 draw) and `<scratchpad>/filesweep2.py` (batch 17,
+phases 0.25/0.5/0.75, excluding the first draw). Both print the bucket counts, the
+asserted sum, and one exit code per script.
+

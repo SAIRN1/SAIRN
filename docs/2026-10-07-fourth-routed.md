@@ -1385,3 +1385,110 @@ significant character answers the left-operand case. **Add an arm per direction*
 `s + (a||0) * b` (left, currently reported) -- because a one-sided fix here is what
 produced the one-sided bug.
 
+---
+
+## SEQ 17-C -- 24 DRIFTED citations across four apps, attributed PER CELL, and NONE repointed
+
+**`tools/citation_line_drift_check.py` run with BOTH required flags every time** --
+`--app` and `--prefix`, because the tool refuses with exit 2 on either alone and
+*"neither is guessed from the other"*. That refusal is what I misread as a regression
+last batch; it is in the batch-16 rule log.
+
+| app | prefix | ANCHORED | SOUND | DRIFTED | INCONCLUSIVE |
+|---|---|---|---|---|---|
+| `sairncare.html` | `alf_` | 11 | 6 | **9** | 3 |
+| `sairnsenior.html` | `sen_` | 9 | 0 | **7** | 2 |
+| `sairndental.html` | `dnt_` | 3 | 1 | **1** | **20** |
+| `sairnbuild.html` | `bld_` | 24 | 4 | **7** | 0 |
+| **all four** | | **47** | **11** | **24** | **25** |
+
+The 24 extracted line-by-line AGREE with the four summary lines, checked rather than
+assumed.
+
+### Why this is attributed per CELL and not per file
+
+`docs/CRITICALITY-TIERS.md` is one file and it is not one author's: it has been named
+in claims by **cc, cody, fourth, hank and hover**, it is in **no live claim's FILES**
+at this HEAD, and its rows are authored per RESOURCE by whoever read that resource out
+of the app. So *"files you own"* has no useful answer and *"cells you own"* does --
+and the attribution is in each cell's own prose, which is where this register already
+records it.
+
+### NOTHING WAS REPOINTED, and the tool is the reason
+
+Its own output says *"the arrow is a CANDIDATE, not a correction to apply"* and
+*"a cell may cite a render or field-construction site DELIBERATELY ... this resolves
+write sites only, so it cannot tell those from a stale citation."* Repointing 24
+citations on the strength of an arrow is exactly the mechanical edit that warning
+exists to stop. **0 fixed: no cell among the 24 is attributed to fourth.**
+
+### THE ONE FINDING THAT IS NOT A ROUTING: the tool proposes repointing a citation AT A COMMENT
+
+**`sen_settings :6355 -> :5774` and `:6359 -> :5774`.** `sairnsenior.html:5774` reads:
+
+      // There is no `st('sen_settings')` because there must not be one: this
+
+It is a **comment**, and it is the comment that exists specifically to record that the
+write does not exist. The tool is offering, as the write site, the line that says there
+is no write site.
+
+**THIS IS THE THIRD INDEPENDENT INSTANCE OF PR 1.2 THIS BATCH, AND IT IS THE SAME
+COMMENT BLOCK AS THE FIRST.** Batch 16's phi-cache arm counted that block as two
+writes to `sen_settings`; SEQ 17-A found 47 more derived sets that shrink when
+comments go; and this is a third tool, `citation_line_drift_check.py`, resolving a
+write site INTO that same block. One comment, three checkers, three different wrong
+answers -- which is **convention 25's trigger met by the platform rather than by one
+tool**: three false-positive classes is a design signal, not three bugs.
+
+**Note the tool is RIGHT in the other direction at the same time:** it also reports
+`sen_settings` as INCONCLUSIVE for the `api/sd-data.js` citations, with the correct
+reason, and the comment block itself predicted that verdict and says it is correct.
+So the tool's refusal path is sound and its repointing path is not.
+
+**Routed, not patched:** `tools/citation_line_drift_check.py` is not in my FILES and
+the fix belongs with the SEQ 17-A sweep rather than as a one-off -- it is the same
+one-line change (`stripComments()` before resolving) plus the same both-directions
+control arm.
+
+### The 24, by cell owner
+
+```
+OWNER: H1, hank   -- 8 citation(s)
+  alf_staff                    :1908    -> :3357    offset +1449     register row line 256
+        (the cited line is INSIDE a declaration block, which is why the first detector called it sound)
+  alf_staff                    :1908    -> :3357    offset +1449     register row line 256
+        (the cited line is INSIDE a declaration block, which is why the first detector called it sound)
+  alf_staff                    :4393    -> :3383    offset -1010     register row line 256
+  alf_staff                    :4393    -> :3383    offset -1010     register row line 256
+  alf_staff                    :4441    -> :3383    offset -1058     register row line 256
+  alf_staff                    :4441    -> :3383    offset -1058     register row line 256
+  alf_staff                    :4582    -> :3383    offset -1199     register row line 256
+  alf_staff                    :4582    -> :3383    offset -1199     register row line 256
+
+OWNER: UNATTRIBUTED -- the cell names no session and no finding id   -- 12 citation(s)
+  bld_comm_log                 :299     -> :3415    offset +3116     register row line 210
+  bld_comm_log                 :6811    -> :6864    offset +53       register row line 210
+  bld_deliveries               :813     -> :3325    offset +2512     register row line 213
+  bld_warranty                 :1053    -> :3424    offset +2371     register row line 238
+  bld_warranty                 :1053    -> :3424    offset +2371     register row line 238
+  bld_warranty                 :6887    -> :6953    offset +66       register row line 238
+  bld_warranty                 :6904    -> :6953    offset +49       register row line 238
+  sen_branches                 :4036    -> :5388    offset +1352     register row line 554
+  sen_branches                 :4368    -> :5388    offset +1020     register row line 554
+  sen_caregivers               :5476    -> :2693    offset -2783     register row line 555
+  sen_franchise_agreements     :4567    -> :4790    offset +223      register row line 558
+  sen_training_rules           :3432    -> :3589    offset +157      register row line 565
+
+OWNER: hank   -- 4 citation(s)
+  alf_activities               :4634    -> :4686    offset +52       register row line 244
+  dnt_vendor_contacts          :6044    -> :6124    offset +80       register row line 318
+  sen_settings                 :6355    -> :5774    offset -581      register row line 563
+  sen_settings                 :6359    -> :5774    offset -585      register row line 563
+```
+
+**`dnt_` is the row worth a second look for a different reason:** 20 of its 25
+citations are INCONCLUSIVE, against 0 for `bld_`. That is not drift and is not a
+defect in the register -- it is a resource family with no local write site to anchor
+to, which is the same honest state `sen_settings` is in. Reported so nobody reads the
+low DRIFTED count as health.
+
