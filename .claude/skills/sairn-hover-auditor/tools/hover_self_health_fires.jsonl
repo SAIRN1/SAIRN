@@ -38,3 +38,5 @@
 {"ts": "2026-09-29T11:34:30Z", "pid": 37340, "cwd": "C:\\Users\\marsh\\Documents\\SAIRN-hover", "verdict": "fail"}
 {"ts": "2026-09-29T12:06:59Z", "pid": 58496, "cwd": "C:\\Users\\marsh\\AppData\\Local\\Temp\\hover_hook_foreign_clone_rtyaqywi", "verdict": "could-not-run"}
 {"ts": "2026-09-29T12:07:00Z", "pid": 51928, "cwd": "C:\\Users\\marsh\\Documents\\SAIRN-hover", "verdict": "fail"}
+{"ts": "2026-10-08T14:36:32Z", "pid": 87336, "cwd": "C:\\Users\\marsh\\AppData\\Local\\Temp\\hover_hook_foreign_clone_7nb90p6m", "verdict": "could-not-run"}
+{"ts": "2026-10-08T14:36:33Z", "pid": 50964, "cwd": "C:\\Users\\marsh\\Documents\\SAIRN-hover", "verdict": "could-not-run"}

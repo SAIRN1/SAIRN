@@ -246,10 +246,35 @@ def main():
     # again inside the ordinary fired list below.
     fired = [f for f in report['failures'] if not f.startswith('CONTROL:')]
 
+    # UNINDEXED-EXTERNAL-FILE COUNT, wired in H1 batch X item 2. Runs this
+    # clone's own hover_external_unindexed_check.py (committed in the
+    # repo, read-only, never writes) and folds its count into the same
+    # head line everything else here already reports through -- a FOURTH
+    # failure condition, not a separate, easily-ignored message.
+    unindexed_note = ''
+    try:
+        repo = r'C:\Users\marsh\Documents\SAIRN-hover'
+        tool = os.path.join(repo, '.claude', 'skills', 'sairn-hover-auditor',
+                             'tools', 'hover_external_unindexed_check.py')
+        r_un = subprocess.run([sys.executable, tool], capture_output=True,
+                               text=True, encoding='utf-8', errors='replace',
+                               timeout=30, cwd=repo)
+        m = None
+        for line in (r_un.stdout or '').splitlines():
+            if line.startswith('UNINDEXED COUNT:'):
+                m = line.split(':', 1)[1].strip()
+                break
+        if m is None:
+            unindexed_note = ' UNINDEXED EXTERNAL FILES: COULD NOT RUN.'
+        else:
+            unindexed_note = ' UNINDEXED EXTERNAL FILES: %s.' % m
+    except Exception as e:
+        unindexed_note = ' UNINDEXED EXTERNAL FILES: COULD NOT RUN (%s).' % e
+
     head = ('HOVER SELF-HEALTH ran automatically at session start (%d entries, '
-            'classifier control %d/%d). ' % (len(entries), control['fixtures_run']
+            'classifier control %d/%d).%s ' % (len(entries), control['fixtures_run']
                                              - len(control['fixtures_failed']),
-                                             control['fixtures_run']))
+                                             control['fixtures_run'], unindexed_note))
     if fired:
         emit(head + 'FAILING CONDITIONS -- each is a real finding to address, not '
                     'a notice to dismiss:\n  - ' + '\n  - '.join(fired) +
