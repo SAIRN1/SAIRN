@@ -15,42 +15,13 @@
   "identity": [
    "sha",
    "path"
+  ],
+  "validator": [
+   "tools/scrutiny_ledger_check.py"
   ]
  },
  "criteria_version": "2026-10-06.1",
  "flags": [
-  {
-   "path": "tests/provisioning_attribution.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "0254860b40e9f082eb10cf79a07d516ea350c677",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/sd_data_alf_mar_derive_charges_gate.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "0254860b40e9f082eb10cf79a07d516ea350c677",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/sd_data_alf_staff_read_gate.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "0254860b40e9f082eb10cf79a07d516ea350c677",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/sd_data_grd_session_gate.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "0254860b40e9f082eb10cf79a07d516ea350c677",
-   "criteria_version": "2026-10-06.1"
-  },
   {
    "path": "tests/sd_data_write_attribution_three_apps.js",
    "class": "test file",
@@ -68,73 +39,6 @@
    "criteria_version": "2026-10-06.1"
   },
   {
-   "path": "tests/run_py_guard_probe.py",
-   "class": "test file",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a bound or threshold ADDED",
-     "detail": "(discipline 1) and also the limit."
-    },
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "shutil.rmtree(TMP, ignore_errors=True)"
-    }
-   ],
-   "sha": "0aef490f55622b93d9aea3cfe4fe671052a8d8e2",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tools/report_only_checks.py",
-   "class": "push-gate logic",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "0aef490f55622b93d9aea3cfe4fe671052a8d8e2",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/run_alf_read_order_sabotage_probe.py",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "0d5077c739552634531fae6688f2ac24575cd52d",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/run_defect_register_reseat_probe.py",
-   "class": "test file",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "shutil.rmtree(d, ignore_errors=True)"
-    }
-   ],
-   "sha": "0d5077c739552634531fae6688f2ac24575cd52d",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/run_tier_a_review_gate_probe.py",
-   "class": "test file",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "exempt = 0"
-    }
-   ],
-   "sha": "0ecabbb30104d77eb2bac263293614ff94e19ef8",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tools/run_all_tests.py",
-   "class": "push-gate logic",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "0ecabbb30104d77eb2bac263293614ff94e19ef8",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
    "path": "tests/provisioning_attribution.js",
    "class": "test file",
    "level": "CHANGE",
@@ -164,48 +68,6 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "13b7d2977538fa5438a83bf260b153f439d15123",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/run_tier_a_open_basis_probe.py",
-   "class": "test file",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "count is printed, never silently dropped -- an exemption nobody"
-    }
-   ],
-   "sha": "155d63a6a4be620b3db09d9bd7763e98e3c37d6e",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/run_tier_a_review_gate_probe.py",
-   "class": "test file",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "'objects left behind is the 239-file silent leak, and ignore_errors=True '"
-    }
-   ],
-   "sha": "15e569769bc9320768bf21aaeff883da2bfbf105",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tools/tier_a_review_gate.py",
-   "class": "push-gate logic",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "15e569769bc9320768bf21aaeff883da2bfbf105",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/sd_data_write_attribution_three_apps.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "1e7e2e8029a9376c696d7e18e278f4679c97f60d",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -331,67 +193,6 @@
    "criteria_version": "2026-10-06.1"
   },
   {
-   "path": "tests/run_assurance_case_probe.py",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "5080cf60737544eb5f95cff4aa390a50ef9673e4",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/run_baseline_readiness_probe.py",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "5080cf60737544eb5f95cff4aa390a50ef9673e4",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/run_dora_metrics_probe.py",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "5080cf60737544eb5f95cff4aa390a50ef9673e4",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/run_literal_drift_control_probe.py",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "5080cf60737544eb5f95cff4aa390a50ef9673e4",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/run_optimistic_success_probe.py",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "5080cf60737544eb5f95cff4aa390a50ef9673e4",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/run_risk_event_tree_probe.py",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "5080cf60737544eb5f95cff4aa390a50ef9673e4",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/run_scrutiny_flag_probe.py",
-   "class": "test file",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "appears on every push is a flag that gets ignored."
-    }
-   ],
-   "sha": "5080cf60737544eb5f95cff4aa390a50ef9673e4",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
    "path": "tools/exit_status_attributable.py",
    "class": "push-gate logic",
    "level": "WEAKENING",
@@ -405,14 +206,6 @@
      "detail": "_EXEMPTION_HINTS = ('skip', 'xfail', 'exempt', 'allowlist', 'whitelist',"
     }
    ],
-   "sha": "5080cf60737544eb5f95cff4aa390a50ef9673e4",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tools/sairn_push_gate_hook.py",
-   "class": "push-gate logic",
-   "level": "CHANGE",
-   "shapes": [],
    "sha": "5080cf60737544eb5f95cff4aa390a50ef9673e4",
    "criteria_version": "2026-10-06.1"
   },
@@ -443,40 +236,6 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "56bbce5e83d519e21e621382084d6b18eb02a989",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/push_gate/graduated_exempt_consume_probe.py",
-   "class": "test file",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "\"\"\"Only the mode that can actually let a push through may SPEND the exemption."
-    }
-   ],
-   "sha": "59156851bf1500c6021ac9a8ee657bd7035c86c5",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tools/sairn_push_gate_hook.py",
-   "class": "push-gate logic",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "def graduated_exempt(check, tip, consume=None):"
-    }
-   ],
-   "sha": "59156851bf1500c6021ac9a8ee657bd7035c86c5",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/phi_cache_scoped_to_user.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "5be55ef44c046bb3d14f4c3b15ea158cfad67253",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -555,48 +314,6 @@
    "criteria_version": "2026-10-06.1"
   },
   {
-   "path": "tests/push_gate/graduated_exempt_consume_probe.py",
-   "class": "test file",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "\"\"\"Only the mode that can actually let a push through may SPEND the exemption."
-    }
-   ],
-   "sha": "7657ffbaa6db964f42fca552010b915d0c0b398a",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tools/sairn_push_gate_hook.py",
-   "class": "push-gate logic",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "def graduated_exempt(check, tip, consume=None):"
-    }
-   ],
-   "sha": "7657ffbaa6db964f42fca552010b915d0c0b398a",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/run_tier_a_review_gate_probe.py",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "780004db9bf5126a89a2231fb6beaa400bca5759",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tools/tier_a_review_gate.py",
-   "class": "push-gate logic",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "780004db9bf5126a89a2231fb6beaa400bca5759",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
    "path": "tests/run_scrutiny_flag_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -623,52 +340,6 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "874fe39e3e7aeaa74de357df0461270d6ce82da6",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/run_alf_read_order_sabotage_probe.py",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "8ac97e691bd18662cfc0075e804f45878826f8c4",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/run_defect_register_reseat_probe.py",
-   "class": "test file",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "shutil.rmtree(d, ignore_errors=True)"
-    }
-   ],
-   "sha": "8ac97e691bd18662cfc0075e804f45878826f8c4",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/run_py_guard_probe.py",
-   "class": "test file",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a bound or threshold ADDED",
-     "detail": "(discipline 1) and also the limit."
-    },
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "shutil.rmtree(TMP, ignore_errors=True)"
-    }
-   ],
-   "sha": "8f566598d04cb984a41ef089e59b678aa94c7b5a",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tools/report_only_checks.py",
-   "class": "push-gate logic",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "8f566598d04cb984a41ef089e59b678aa94c7b5a",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -804,38 +475,6 @@
    "criteria_version": "2026-10-06.1"
   },
   {
-   "path": "tests/provisioning_attribution.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "ba50a29d55bb788b25d44798246b74d76f9a948b",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/sd_data_alf_mar_derive_charges_gate.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "ba50a29d55bb788b25d44798246b74d76f9a948b",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/sd_data_alf_staff_read_gate.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "ba50a29d55bb788b25d44798246b74d76f9a948b",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/sd_data_grd_session_gate.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "ba50a29d55bb788b25d44798246b74d76f9a948b",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
    "path": "tests/run_scrutiny_flag_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -868,71 +507,11 @@
    "criteria_version": "2026-10-06.1"
   },
   {
-   "path": "tests/run_alf_read_order_sabotage_probe.py",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "ca2be255b4c72071883a8d601e4a371b1df23851",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/run_defect_register_reseat_probe.py",
-   "class": "test file",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "shutil.rmtree(d, ignore_errors=True)"
-    }
-   ],
-   "sha": "ca2be255b4c72071883a8d601e4a371b1df23851",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
    "path": "tests/phi_cache_scoped_to_user.js",
    "class": "test file",
    "level": "CHANGE",
    "shapes": [],
    "sha": "d0eb2d33fc3fd864306baf0ee1cb262da08c43f5",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/run_tier_a_open_basis_probe.py",
-   "class": "test file",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "count is printed, never silently dropped -- an exemption nobody"
-    }
-   ],
-   "sha": "da476ea4b8a41e0a5d7343f6c73b3edece570a6f",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/push_gate/graduated_exempt_consume_probe.py",
-   "class": "test file",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "\"\"\"Only the mode that can actually let a push through may SPEND the exemption."
-    }
-   ],
-   "sha": "dc9f16299a6e6e47da3de2b389da810a7c561910",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tools/sairn_push_gate_hook.py",
-   "class": "push-gate logic",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "def graduated_exempt(check, tip, consume=None):"
-    }
-   ],
-   "sha": "dc9f16299a6e6e47da3de2b389da810a7c561910",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -973,32 +552,6 @@
    "criteria_version": "2026-10-06.1"
   },
   {
-   "path": "tests/push_gate/graduated_exempt_consume_probe.py",
-   "class": "test file",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "\"\"\"Only the mode that can actually let a push through may SPEND the exemption."
-    }
-   ],
-   "sha": "eaa88c0eaa250dbc8360b8c4d77a702a22a1375f",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tools/sairn_push_gate_hook.py",
-   "class": "push-gate logic",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "def graduated_exempt(check, tip, consume=None):"
-    }
-   ],
-   "sha": "eaa88c0eaa250dbc8360b8c4d77a702a22a1375f",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
    "path": "tests/run_report_only_checks_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -1034,27 +587,6 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "eb430f255b407c969b350bcec39bccd39905aea3",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/run_alf_read_order_sabotage_probe.py",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "ed52b09d66e7f2e8432cd5f20666255ce8b09bcd",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/run_defect_register_reseat_probe.py",
-   "class": "test file",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "shutil.rmtree(d, ignore_errors=True)"
-    }
-   ],
-   "sha": "ed52b09d66e7f2e8432cd5f20666255ce8b09bcd",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -1109,34 +641,9 @@
    "shapes": [],
    "sha": "f8fade035082ab5b6f6b6e9f529e667ff5bf6fd4",
    "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/push_gate/graduated_exempt_consume_probe.py",
-   "class": "test file",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "\"\"\"Only the mode that can actually let a push through may SPEND the exemption."
-    }
-   ],
-   "sha": "fe361c749cafdb165696986ac119d9d33236d61d",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tools/sairn_push_gate_hook.py",
-   "class": "push-gate logic",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "def graduated_exempt(check, tip, consume=None):"
-    }
-   ],
-   "sha": "fe361c749cafdb165696986ac119d9d33236d61d",
-   "criteria_version": "2026-10-06.1"
   }
  ],
  "_corrected_2026_10_08": "THE SAME BUG ONE LEVEL DEEPER, AND THE 2026-10-06 FIX IS WHY IT SURVIVED. That fix made the key a real SHA and left the REFERENT wrong: the gate recorded flags computed over the WHOLE PUSH RANGE under the push TIP. So a row asserted that the tip commit changed files it does not contain, while the commit that really changed them got no row. DISCARDED, NOT APPLIED: 20 rows parked across five stashes in Documents/SAIRN-hank (\"cc scrutiny rows\", rounds 2-6). They are 3 distinct paths re-keyed against 7 shas -- the same push refused and rewritten six times. 6 of the 7 shas are ORPHANED in hank's OWN clone (verified there, not inferred from absence here). The 7th, bf174f30, resolves and is an ancestor of origin/main, and its 3 rows are still WRONG: it changes five docs files and NONE of the three paths they name. Subject-matching the orphans to their landed replacements is provably ambiguous -- two orphans share the subject \"the three records this batch's fixes owe\" and no landed commit carries it -- so no re-seat was attempted and none was guessed. BACKFILLED FROM THE REAL COMMITS INSTEAD, which is stronger than copying a stashed row: the classifier was run against each landed commit's OWN diff. The 20 rows reduce to FOUR facts -- 320ddabe tests/run_tool_usage_refusal_probe.py WEAKENING, 72d757ef tests/run_audit_event_type_probe.py WEAKENING, 4ec0d5d5 and 56bbce5e tests/sd_data_write_attribution_three_apps.js CHANGE. Every one is self-verifiable: git show <sha> -- <path> produces a diff. NOT RETROACTIVELY COMPLETE, SAID PLAINLY: only the commits those stashes were about were backfilled. Earlier origin/main commits that touched a self-checking file while the tip-keyed bug was live are still unflagged, and this file does not know which. FIXED IN THE GENERATOR: tools/sairn_push_gate_hook.py now keys per COMMIT from that commit's own diff, and prints COULD NOT ATTRIBUTE rather than keying to the tip when no single commit produces the flags. Locked by tests/run_scrutiny_flag_probe.py arm G -- a two-commit push with the weakening in the first and a docs-only tip -- which every arm before it could not express, because they all pushed exactly one commit so `tip` and `the commit that changed it` were the same object. Ablated against the pre-fix gate via SCRUT_PROBE_GATE: 4 of arm G's 9 checks go red and the row sha comes back equal to the tip.",
+ "_corrected_2026_10_08b": "FORTY-EIGHT ROWS REMOVED AS PROVABLY FALSE, and a validator added so this cannot accumulate again. The 2026-10-08 correction above fixed the GENERATOR -- flags are now keyed per commit from that commit's own diff -- and said plainly that it was NOT retroactive. This is the retroactive half, done with a check rather than by hand. MEASURED by tools/scrutiny_ledger_check.py over all 114 rows: HOLDS 24, CONTRADICTED 30, MERGE_KEYED 18, UNRESOLVABLE 42, MALFORMED 0, duplicate identities 0. The 48 findings were removed; the 24 that hold and the 42 that cannot be checked in this clone were kept. CONTRADICTED means the sha resolves, is a single-parent commit, and its diff for that path is EMPTY -- the row accuses a commit of a change it does not contain. MERGE_KEYED IS REPORTED SEPARATELY AND THAT MATTERS: `git show` prints no diff for a merge commit, so an empty result there proves nothing either way, and calling it a contradiction would be a true sentence pointing at the wrong cause -- the same misdiagnosis fixed in the D9 gate message this same day. A merge authors no change, so it is never the commit in which a checker was edited; the row is wrong for that reason instead. The dropped rows were overwhelmingly keyed to merge commits, handoff commits and bookkeeping commits -- i.e. to push TIPS -- which is the signature of the defect the generator fix removed. NOTHING TRUE WAS LOST: a row whose named commit does not contain the named change is false, and deleting a false row discards no information. What IS still missing is the flags those pushes really owed, and they are not recoverable from here -- the same disclosure the 2026-10-08 note already carries. UNRESOLVABLE IS NOT A FINDING AND IS KEPT: a row can legitimately name a commit this clone has never fetched, and a validator that failed on one would be out of the merge policy within a week. VALIDATOR NOW DECLARED in merge_policy, which closes the gap that made tools/sairn_rebase_resolve.py exit 2 on this file's conflicts and forced a hand merge on 2026-10-08.",
  "_corrected_2026_10_06": "NINE ROWS KEYED \"main\" WERE REMOVED. The push gate handed its prepush `tip`, which is a REF NAME, not a sha -- so the (sha, path) identity could never dedup them and no rewrite map could ever re-seat them. Found by reading this file, not by reading the code that wrote it. Guarded in two places since: the gate resolves tip to a sha, and scrutiny_record refuses a non-sha key outright."
 }
