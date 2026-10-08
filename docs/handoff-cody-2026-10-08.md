@@ -228,3 +228,82 @@ cost of being wrong is losing a scrutiny record nobody can reconstruct.
 **NEXT STEP for cc:** `git stash show -p stash@{0}` in `Documents/SAIRN-cody`,
 keep anything not already in the committed 102, then `git stash drop` the rest.
 I will drop them on one word from cc or chat.
+
+## item 6 — DONE. 64 scripts outside git: **6 committed, 58 registered.** Two loose docs rescued.
+
+```
+command : tools/scratch-archive/inventory2.py then scratchpad/b26/build_index.py
+commit  : 22202012 + this change        date: 2026-10-08
+-> docs/external-files-index.json : 6 directories, 4 loose home files, 64 scripts
+```
+
+### The first count was wrong in the inflating direction, and the correction is the point
+
+```
+pass 1 : 2,521 "code files across all scratchpads"
+         -- 2,140 of them in ONE session. Reading three of the paths showed what
+            they are: COPIES OF THE REPO'S OWN api/ AND tests/ TREES inside the
+            fa12/ and fa14/ firebase-admin sandboxes from batch 20.
+pass 2 : prune sandbox dirs by name  -> 376
+         subtract the 311 whose basename is ALREADY a tracked repo file (copies of
+         tools/ inside sandbox dirs)  -> 65, newest-per-name 64
+```
+
+**A count that includes a copy of the thing it is meant to be distinguished from
+is not a measurement.** Both numbers are in the index so the correction is
+visible rather than replaced.
+
+### The admission rule, fixed before the sorting
+
+A script is **committed** only if **both** hold: it is named in a committed
+document, **and** that mention is an **open NEXT STEP** rather than a record of
+something done.
+
+```
+authored outside git                      : 64
+cited by name in some committed document  : 26
+meeting BOTH conditions -> committed       :  6
+```
+
+**Committed to `tools/scratch-archive/`** with a README stating they are archived
+one-shots and not supported tools: `childwatch.py` (the fixed watcher, never yet
+run against a full suite), `launch_suite.ps1` (the only launch shape that has
+produced a completed run), `triage86.py`, `analyse_times.py`,
+`prove_childwatch.py`, `inventory2.py`.
+
+**Not wired into any suite or gate, deliberately** — `run_all_tests.py` discovers
+`tests/`, so nothing there can fail a suite or be mistaken for a check.
+
+**Five of the 26 citations were NAME COLLISIONS and were excluded by reading
+them:** `inventory.py` (cited in `.claude/agents/*.md`, a different thing),
+`run.sh`, `triage.py` and `guard.py` (cc's and the hover auditor's), and
+`cc_basis_probe.py` (my copy of cc's file). Committing on a basename match would
+have pulled in four other sessions' work.
+
+### Two loose files rescued from the home directory
+
+`CLAUDE.md` says handoffs live only in a real clone and **never** in
+`C:\Users\marsh\`. Two were sitting there, in the repo **nowhere**, neither
+byte-identical nor present in `docs/` history:
+
+```
+docs/archive-from-home/SAIRN-SESSION66-HANDOFF.md                        10,881 b  sha256-16 48caa52d86256fac
+docs/archive-from-home/OLD-uncommitted-sairnlaw-trust-disbursement-2026-08-18.md  12,404 b  sha256-16 1363d3c182644bf6
+```
+
+**Copied verbatim — no header added, no content altered.** They are not mine and
+the provenance belongs in the commit message and the index, not inside somebody
+else's document. The two `*_live_check.html` files are **generated app snapshots**
+whose first lines *do* appear in docs history: registered, not committed.
+
+### The directories, with their volatility
+
+| path | role | volatility |
+|---|---|---|
+| 4 session scratchpads under `%TEMP%\claude\…SAIRN-cody` | transcript + working files | **HIGH** — cleared without warning |
+| `~\SAIRN-SESSION-LOCKS` | shared status registry, outside every clone | MEDIUM |
+| `G:\My Drive\SAIRN-status` | the reports Michael reads | LOW — synced off-machine |
+
+**The index is DERIVED and says so**, with the regeneration command in its own
+header: a hand-maintained index of files that move is exactly the drift this
+platform keeps paying for.

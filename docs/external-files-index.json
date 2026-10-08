@@ -1,0 +1,906 @@
+{
+  "_what_this_is": "Everything cody keeps OUTSIDE git: scratchpad directories, the shared status registry, the Drive report directory, loose home-directory files, and every script authored only outside the repo. Written so a figure quoted from one of them can be traced after the directory is gone.",
+  "_derived_not_hand_written": "Regenerate: python tools/scratch-archive/inventory2.py, then scratchpad/b26/build_index.py. A hand-maintained index of files that move is the drift this platform keeps paying for, so this one is derived and the command is recorded here rather than in a handoff.",
+  "_the_admission_rule": "A script is COMMITTED to tools/scratch-archive/ only if it is named in a committed document AND that mention is an open NEXT STEP. Everything else is REGISTERED here and left where it is.",
+  "_measured": {
+    "scripts_authored_outside_git": 64,
+    "of_those_cited_in_a_committed_doc": 26,
+    "of_those_committed_to_the_repo": 6,
+    "first_count_was_wrong": "A first pass reported 2,521 code files across all scratchpads. 2,140 of them were in one session and reading three paths showed what they are: copies of the repo own api/ and tests/ trees inside the fa12 and fa14 firebase sandboxes. A second pass pruning sandbox directories by name, then subtracting the 311 whose basename is already a tracked repo file, gives 64. A count that includes a copy of the thing it is meant to be distinguished from is not a measurement."
+  },
+  "generated_at": "2026-10-08T14:11:01Z",
+  "generated_at_commit": "22202012",
+  "session": "cody",
+  "directories": [
+    {
+      "path": "C:\\Users\\marsh\\AppData\\Local\\Temp\\claude\\C--Users-marsh-Documents-SAIRN-cody\\0031bd18-e9b8-4680-ac88-e24a9d40aaed",
+      "role": "session transcript + scratchpad",
+      "files": 2263,
+      "bytes": 34085927,
+      "newest_mtime": "2026-10-06T18:33:49Z",
+      "volatility": "HIGH -- %TEMP%, cleared without warning"
+    },
+    {
+      "path": "C:\\Users\\marsh\\AppData\\Local\\Temp\\claude\\C--Users-marsh-Documents-SAIRN-cody\\0b3a248f-affe-4aba-9469-545a0a44eb40",
+      "role": "session transcript + scratchpad",
+      "files": 117,
+      "bytes": 790065,
+      "newest_mtime": "2026-10-05T21:52:40Z",
+      "volatility": "HIGH -- %TEMP%, cleared without warning"
+    },
+    {
+      "path": "C:\\Users\\marsh\\AppData\\Local\\Temp\\claude\\C--Users-marsh-Documents-SAIRN-cody\\20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e",
+      "role": "session transcript + scratchpad",
+      "files": 623,
+      "bytes": 10036448,
+      "newest_mtime": "2026-10-08T14:03:33Z",
+      "volatility": "HIGH -- %TEMP%, cleared without warning"
+    },
+    {
+      "path": "C:\\Users\\marsh\\AppData\\Local\\Temp\\claude\\C--Users-marsh-Documents-SAIRN-cody\\6f1d5069-5b6c-4a9d-8e38-78d125446571",
+      "role": "session transcript + scratchpad",
+      "files": 439,
+      "bytes": 5150829,
+      "newest_mtime": "2026-10-07T16:23:50Z",
+      "volatility": "HIGH -- %TEMP%, cleared without warning"
+    },
+    {
+      "path": "C:\\Users\\marsh\\SAIRN-SESSION-LOCKS",
+      "role": "shared status registry (outside every clone)",
+      "files": 21,
+      "bytes": 65095,
+      "newest_mtime": "2026-10-08T14:03:29Z",
+      "volatility": "MEDIUM -- outside every clone, survives a clone wipe"
+    },
+    {
+      "path": "G:\\My Drive\\SAIRN-status",
+      "role": "Drive report directory Michael reads",
+      "files": 40,
+      "bytes": 5770668,
+      "newest_mtime": "2026-10-08T13:58:54Z",
+      "volatility": "LOW -- Google Drive, synced off-machine"
+    }
+  ],
+  "loose_home_files": [
+    {
+      "path": "C:\\Users\\marsh\\OLD-uncommitted-sairnlaw-trust-disbursement-2026-08-18.md",
+      "bytes": 12404,
+      "sha256_16": "1363d3c182644bf6",
+      "in_repo_byte_identical": false,
+      "first_line_seen_in_docs_history": false,
+      "verdict": "RESCUED into docs/archive-from-home/ by this batch"
+    },
+    {
+      "path": "C:\\Users\\marsh\\SAIRN-SESSION66-HANDOFF.md",
+      "bytes": 10881,
+      "sha256_16": "48caa52d86256fac",
+      "in_repo_byte_identical": false,
+      "first_line_seen_in_docs_history": false,
+      "verdict": "RESCUED into docs/archive-from-home/ by this batch"
+    },
+    {
+      "path": "C:\\Users\\marsh\\sairnbiz_live_check.html",
+      "bytes": 102279,
+      "sha256_16": "972d5c6c182b3536",
+      "in_repo_byte_identical": false,
+      "first_line_seen_in_docs_history": true,
+      "verdict": "GENERATED app snapshot -- registered, not committed"
+    },
+    {
+      "path": "C:\\Users\\marsh\\sairnbuild_live_check.html",
+      "bytes": 392692,
+      "sha256_16": "d77dfb004b2ea02f",
+      "in_repo_byte_identical": false,
+      "first_line_seen_in_docs_history": true,
+      "verdict": "GENERATED app snapshot -- registered, not committed"
+    }
+  ],
+  "scripts": [
+    {
+      "name": "abl_r1.sh",
+      "newest_copy": "0b3a248f-affe-4aba-9469-545a0a44eb40/scratchpad/abl_r1.sh",
+      "bytes": 195,
+      "sha256_16": "48229ef6c11b5ba8",
+      "mtime": "2026-10-05T13:34:37Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "add_record36.py",
+      "newest_copy": "20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e/scratchpad/b25/add_record36.py",
+      "bytes": 6419,
+      "sha256_16": "fddb8ce44864c047",
+      "mtime": "2026-10-08T08:33:22Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [
+        "docs/handoff-cody-2026-10-07c.md"
+      ],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "add_records.py",
+      "newest_copy": "20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e/scratchpad/b25/add_records.py",
+      "bytes": 17989,
+      "sha256_16": "8d9294187c83a885",
+      "mtime": "2026-10-08T07:56:37Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [
+        "docs/handoff-cody-2026-10-07c.md"
+      ],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "alsc_at_347b49ad.py",
+      "newest_copy": "0b3a248f-affe-4aba-9469-545a0a44eb40/scratchpad/alsc_at_347b49ad.py",
+      "bytes": 70771,
+      "sha256_16": "9751aa3e2b30a218",
+      "mtime": "2026-10-05T09:01:43Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "analyse_times.py",
+      "newest_copy": "20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e/scratchpad/b25/analyse_times.py",
+      "bytes": 1523,
+      "sha256_16": "6c55811fbd84b632",
+      "mtime": "2026-10-08T07:38:17Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [
+        "docs/handoff-cody-2026-10-07c.md"
+      ],
+      "status": "COMMITTED to tools/scratch-archive/"
+    },
+    {
+      "name": "apply_onerror.py",
+      "newest_copy": "20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e/scratchpad/b25/apply_onerror.py",
+      "bytes": 3305,
+      "sha256_16": "3d595d18538202dd",
+      "mtime": "2026-10-08T07:43:06Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [
+        "docs/handoff-cody-2026-10-07c.md"
+      ],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "apply_onerror_36.py",
+      "newest_copy": "20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e/scratchpad/b25/apply_onerror_36.py",
+      "bytes": 3411,
+      "sha256_16": "b98d58765cb13bf3",
+      "mtime": "2026-10-08T08:02:20Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [
+        "docs/handoff-cody-2026-10-07c.md"
+      ],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "cc_basis_probe.py",
+      "newest_copy": "20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e/scratchpad/b24/cc_basis_probe.py",
+      "bytes": 11174,
+      "sha256_16": "3977cb15c71a1bd3",
+      "mtime": "2026-10-07T23:15:17Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [
+        "docs/handoff-cody-2026-10-07b.md"
+      ],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "childwatch.py",
+      "newest_copy": "20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e/scratchpad/b25/childwatch.py",
+      "bytes": 5161,
+      "sha256_16": "2b8ed304e6e04929",
+      "mtime": "2026-10-08T07:39:08Z",
+      "copies_in_n_sessions": 2,
+      "cited_in_committed_docs": [
+        "docs/handoff-cody-2026-10-07b.md",
+        "docs/handoff-cody-2026-10-07c.md"
+      ],
+      "status": "COMMITTED to tools/scratch-archive/"
+    },
+    {
+      "name": "chk13.py",
+      "newest_copy": "0b3a248f-affe-4aba-9469-545a0a44eb40/scratchpad/chk13.py",
+      "bytes": 1812,
+      "sha256_16": "006c3fda6f91ebda",
+      "mtime": "2026-10-05T12:15:53Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "clean_artifacts.py",
+      "newest_copy": "20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e/scratchpad/b25/clean_artifacts.py",
+      "bytes": 3057,
+      "sha256_16": "2c97d60d3f830b14",
+      "mtime": "2026-10-08T08:05:51Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [
+        "docs/handoff-cody-2026-10-07c.md"
+      ],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "drive.py",
+      "newest_copy": "0031bd18-e9b8-4680-ac88-e24a9d40aaed/scratchpad/drive.py",
+      "bytes": 902,
+      "sha256_16": "42d989b03745c951",
+      "mtime": "2026-10-06T08:33:23Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "esc_demo.py",
+      "newest_copy": "0b3a248f-affe-4aba-9469-545a0a44eb40/scratchpad/esc_demo.py",
+      "bytes": 33,
+      "sha256_16": "05a2a56f1682cb6d",
+      "mtime": "2026-10-05T09:01:27Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "fb.py",
+      "newest_copy": "0b3a248f-affe-4aba-9469-545a0a44eb40/scratchpad/fb.py",
+      "bytes": 1005,
+      "sha256_16": "5c4d0064e2563f0e",
+      "mtime": "2026-10-05T14:53:15Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "gate1_signed.py",
+      "newest_copy": "0b3a248f-affe-4aba-9469-545a0a44eb40/scratchpad/gate1_signed.py",
+      "bytes": 4851,
+      "sha256_16": "71ffb07329f92b5a",
+      "mtime": "2026-10-05T10:54:31Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "gate1_sweep.py",
+      "newest_copy": "0b3a248f-affe-4aba-9469-545a0a44eb40/scratchpad/gate1_sweep.py",
+      "bytes": 4666,
+      "sha256_16": "39efe368df2dd8ee",
+      "mtime": "2026-10-05T10:07:17Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "gen101213.py",
+      "newest_copy": "0031bd18-e9b8-4680-ac88-e24a9d40aaed/scratchpad/gen101213.py",
+      "bytes": 8996,
+      "sha256_16": "598d6ac184dd95ef",
+      "mtime": "2026-10-06T16:37:42Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "gen234.py",
+      "newest_copy": "0031bd18-e9b8-4680-ac88-e24a9d40aaed/scratchpad/gen234.py",
+      "bytes": 13889,
+      "sha256_16": "5b7dcdb5d0c015f2",
+      "mtime": "2026-10-06T18:03:59Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "gen8.py",
+      "newest_copy": "0031bd18-e9b8-4680-ac88-e24a9d40aaed/scratchpad/gen8.py",
+      "bytes": 7862,
+      "sha256_16": "2241894803f60ffd",
+      "mtime": "2026-10-06T16:56:16Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "gen81113.py",
+      "newest_copy": "0031bd18-e9b8-4680-ac88-e24a9d40aaed/scratchpad/gen81113.py",
+      "bytes": 11178,
+      "sha256_16": "b3d53be65198d7fc",
+      "mtime": "2026-10-06T18:33:49Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "gen_copyexactly.py",
+      "newest_copy": "20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e/scratchpad/b25/gen_copyexactly.py",
+      "bytes": 3690,
+      "sha256_16": "52857021733352af",
+      "mtime": "2026-10-08T08:39:16Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [
+        "docs/handoff-cody-2026-10-07c.md"
+      ],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "guard.py",
+      "newest_copy": "0b3a248f-affe-4aba-9469-545a0a44eb40/scratchpad/ccrepro/guard.py",
+      "bytes": 30,
+      "sha256_16": "9e88a6593c608fdd",
+      "mtime": "2026-10-05T09:22:29Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [
+        ".claude/skills/sairn-hover-auditor/EXTERNAL-TOOLS-INDEX.md",
+        ".claude/skills/sairn-hover-auditor/handoffs/2026-10-08-h1-batch-s-handoff.md",
+        ".claude/skills/sairn-hover-auditor/handoffs/2026-10-08-h1-batch-t-handoff.md",
+        ".claude/skills/sairn-hover-auditor/handoffs/handoff-h1-2026-10-07-o.md",
+        ".claude/skills/sairn-hover-auditor/handoffs/handoff-h1-2026-10-07-p.md",
+        ".claude/skills/sairn-hover-auditor/references/tool-building-discipline.md",
+        "SAIRN-ACTIVE-WORK-cc.md",
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "SAIRN-ACTIVE-WORK-hank.md",
+        "SAIRN-BACKLOG.md",
+        "SAIRN-SESSION69-HANDOFF.md",
+        "docs/2026-09-09-tooling-inventory.md",
+        "docs/2026-09-28-reporting-rules.md",
+        "docs/2026-09-29-stale-branch-tips.md",
+        "docs/2026-10-05-cc-batch-4-inventory.md",
+        "docs/2026-10-05-cc-batch-6-inventory.md",
+        "docs/2026-10-05-cc-batch-inventory.md",
+        "docs/2026-10-05-cody-queue13-report.md",
+        "docs/2026-10-05-dead-rule-universe-delta.md",
+        "docs/2026-10-05-inventory-hank.md",
+        "docs/2026-10-06-cc-batch-12-inventory.md",
+        "docs/2026-10-06-cc-routed.md",
+        "docs/2026-10-07-cc-batch-14-inventory.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/handoff-hank-2026-10-07d.md",
+        "docs/traceability-matrix.md"
+      ],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "held_blob_scope_sabotage.py",
+      "newest_copy": "0031bd18-e9b8-4680-ac88-e24a9d40aaed/scratchpad/held_blob_scope_sabotage.py",
+      "bytes": 7815,
+      "sha256_16": "579e0f6df4a46d51",
+      "mtime": "2026-10-06T15:00:13Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [
+        "docs/handoff-cody-2026-10-06b.md"
+      ],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "i10_ordered.py",
+      "newest_copy": "20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e/scratchpad/b24/i10_ordered.py",
+      "bytes": 5168,
+      "sha256_16": "38b6f5b634f6fdca",
+      "mtime": "2026-10-07T19:37:43Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [
+        "docs/handoff-cody-2026-10-07b.md"
+      ],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "i10_percall.py",
+      "newest_copy": "20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e/scratchpad/b24/i10_percall.py",
+      "bytes": 3973,
+      "sha256_16": "5d90bb08d5a89f1e",
+      "mtime": "2026-10-07T19:33:23Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [
+        "docs/handoff-cody-2026-10-07b.md"
+      ],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "i10_scan.py",
+      "newest_copy": "20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e/scratchpad/b24/i10_scan.py",
+      "bytes": 2274,
+      "sha256_16": "f47869241b99af38",
+      "mtime": "2026-10-07T19:30:35Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [
+        "docs/handoff-cody-2026-10-07b.md"
+      ],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "i10_scan2.py",
+      "newest_copy": "20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e/scratchpad/b24/i10_scan2.py",
+      "bytes": 4006,
+      "sha256_16": "37499ac081b8c30d",
+      "mtime": "2026-10-07T19:31:47Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [
+        "docs/handoff-cody-2026-10-07b.md"
+      ],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "i10run.sh",
+      "newest_copy": "6f1d5069-5b6c-4a9d-8e38-78d125446571/scratchpad/i10run.sh",
+      "bytes": 357,
+      "sha256_16": "d762f0dbdd7274a2",
+      "mtime": "2026-10-07T13:55:20Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "i4_measure.py",
+      "newest_copy": "20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e/scratchpad/b26/i4_measure.py",
+      "bytes": 2564,
+      "sha256_16": "beadfe5176d5f9d2",
+      "mtime": "2026-10-08T13:50:19Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [
+        "docs/handoff-cody-2026-10-08.md"
+      ],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "i4a.py",
+      "newest_copy": "0b3a248f-affe-4aba-9469-545a0a44eb40/scratchpad/i4a.py",
+      "bytes": 935,
+      "sha256_16": "6e66477181e64684",
+      "mtime": "2026-10-05T21:17:08Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "inventory.py",
+      "newest_copy": "20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e/scratchpad/b26/inventory.py",
+      "bytes": 4039,
+      "sha256_16": "4d3cc7f3dc544233",
+      "mtime": "2026-10-08T14:03:02Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [
+        ".claude/agents/README.md",
+        ".claude/agents/citation-verifier.md",
+        ".claude/agents/panel-auditor.md",
+        ".claude/agents/register-cell-reader.md",
+        ".claude/agents/suite-driver.md",
+        ".claude/agents/sweep-runner.md",
+        "SAIRN-ACTIVE-WORK-cc.md",
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "SAIRN-ACTIVE-WORK-fourth.md",
+        "SAIRN-ACTIVE-WORK-hank.md",
+        "docs/2026-09-13-cross-domain-disciplines.md",
+        "docs/2026-09-13-stackup-traverse-drift-scoping.md",
+        "docs/2026-09-15-incident-response-plan.md",
+        "docs/2026-09-15-item64-check-precedence.md",
+        "docs/2026-09-26-invocation-path-sweep.md",
+        "docs/2026-09-29-actor-derivation-fourth.md",
+        "docs/2026-09-29-hover-path-visibility.md",
+        "docs/2026-09-29-methodology-self-audit-cody.md",
+        "docs/2026-09-29-parse-history-sweep-cody.md",
+        "docs/2026-09-29-result-rederivation.md",
+        "docs/2026-09-29-rewrite-map-fourth.md",
+        "docs/2026-09-29-selftest-triage-cody.md",
+        "docs/2026-09-30-tier-a-obligation-cody-queue.md",
+        "docs/2026-10-05-cc-batch-4-inventory.md",
+        "docs/2026-10-05-cc-batch-6-inventory.md",
+        "docs/2026-10-05-cody-queue13-report.md",
+        "docs/2026-10-05-dead-rule-universe-delta.md",
+        "docs/2026-10-05-hank-routed-to-fourth.md",
+        "docs/2026-10-05-inventory-hank-batch8.md",
+        "docs/2026-10-05-push-failure-reason-handoff.md",
+        "docs/2026-10-06-cc-batch-11-design-notes.md",
+        "docs/2026-10-06-cc-batch-12-inventory.md",
+        "docs/2026-10-06-cc-routed.md",
+        "docs/2026-10-06-cody-queue16-inventory.md",
+        "docs/2026-10-06-cody-queue19-items-2-3-4.md",
+        "docs/2026-10-06-cody-queue19-items-8-11-13.md",
+        "docs/2026-10-06-cody-queue19b-items-5-7-8-9-10-14.md",
+        "docs/2026-10-06-cody-routed.md",
+        "docs/2026-10-06-hank-routed-to-fourth.md",
+        "docs/2026-10-06-inventory-hank-batch10.md",
+        "docs/2026-10-06-inventory-hank-batch9.md",
+        "docs/2026-10-07-cc-batch-14-inventory.md",
+        "docs/2026-10-07-cody-batch23.md",
+        "docs/FACT-SHEET-2026-09-29.md",
+        "docs/METHODOLOGY.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/SAIRN-PLATFORM-2026-10-07-fourth-batch11-handoff.md",
+        "docs/SAIRN-PROCESS-RULES.md",
+        "docs/SECRETS-INVENTORY.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/blind-review-worksheet.md",
+        "docs/handoff-cc-2026-10-06b.md",
+        "docs/handoff-cc-2026-10-06c.md",
+        "docs/handoff-cc-2026-10-07.md",
+        "docs/handoff-cody-2026-10-06.md",
+        "docs/handoff-cody-2026-10-06b.md",
+        "docs/handoff-cody-2026-10-07.md",
+        "docs/handoff-hank-2026-10-06.md",
+        "docs/handoff-hank-2026-10-06b.md",
+        "docs/handoff-hank-2026-10-07d.md",
+        "docs/postmortem-cody-2026-10-06b.md",
+        "docs/traceability-matrix.md"
+      ],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "inventory2.py",
+      "newest_copy": "20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e/scratchpad/b26/inventory2.py",
+      "bytes": 4760,
+      "sha256_16": "7c1cc9a2a4be0a40",
+      "mtime": "2026-10-08T14:05:14Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "COMMITTED to tools/scratch-archive/"
+    },
+    {
+      "name": "item9.py",
+      "newest_copy": "0031bd18-e9b8-4680-ac88-e24a9d40aaed/scratchpad/item9.py",
+      "bytes": 831,
+      "sha256_16": "0cd25983ae01ab63",
+      "mtime": "2026-10-06T18:08:30Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "launch_suite.ps1",
+      "newest_copy": "20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e/scratchpad/b25/launch_suite.ps1",
+      "bytes": 2154,
+      "sha256_16": "897e658e56f6fe63",
+      "mtime": "2026-10-08T00:07:53Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [
+        "docs/handoff-cody-2026-10-07c.md"
+      ],
+      "status": "COMMITTED to tools/scratch-archive/"
+    },
+    {
+      "name": "measure2.py",
+      "newest_copy": "0b3a248f-affe-4aba-9469-545a0a44eb40/scratchpad/measure2.py",
+      "bytes": 3500,
+      "sha256_16": "02d18d69b471310b",
+      "mtime": "2026-10-05T08:58:43Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "measure3.py",
+      "newest_copy": "0b3a248f-affe-4aba-9469-545a0a44eb40/scratchpad/measure3.py",
+      "bytes": 3651,
+      "sha256_16": "6cd8c87c7bf5653c",
+      "mtime": "2026-10-05T09:05:27Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "measure_blocker.py",
+      "newest_copy": "0b3a248f-affe-4aba-9469-545a0a44eb40/scratchpad/measure_blocker.py",
+      "bytes": 4253,
+      "sha256_16": "ccb03cde163d8a0e",
+      "mtime": "2026-10-05T08:57:59Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "merge.py",
+      "newest_copy": "6f1d5069-5b6c-4a9d-8e38-78d125446571/scratchpad/perm/merge.py",
+      "bytes": 6126,
+      "sha256_16": "af8ad16b26b5ca51",
+      "mtime": "2026-10-07T12:45:43Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/2026-09-13-cross-domain-disciplines.md",
+        "docs/2026-10-07-cody-batch23.md",
+        "docs/handoff-cody-2026-10-07.md"
+      ],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "merge_replay.py",
+      "newest_copy": "20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e/scratchpad/i3/merge_replay.py",
+      "bytes": 6235,
+      "sha256_16": "4036df1bce97f8f7",
+      "mtime": "2026-10-07T16:44:38Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [
+        "docs/2026-09-13-cross-domain-disciplines.md",
+        "docs/2026-10-07-cody-batch23.md",
+        "docs/handoff-cody-2026-10-07.md"
+      ],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "meta145.sh",
+      "newest_copy": "6f1d5069-5b6c-4a9d-8e38-78d125446571/scratchpad/meta145.sh",
+      "bytes": 477,
+      "sha256_16": "4ec96a561c3517a9",
+      "mtime": "2026-10-07T11:23:37Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "missedglob.py",
+      "newest_copy": "0b3a248f-affe-4aba-9469-545a0a44eb40/scratchpad/missedglob.py",
+      "bytes": 1293,
+      "sha256_16": "72d6abc9fe3f0334",
+      "mtime": "2026-10-05T12:11:44Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "nopol.py",
+      "newest_copy": "0b3a248f-affe-4aba-9469-545a0a44eb40/scratchpad/nopol.py",
+      "bytes": 1011,
+      "sha256_16": "9deb37252366e4fe",
+      "mtime": "2026-10-05T11:20:37Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "orig.py",
+      "newest_copy": "20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e/scratchpad/b25/pp/orig.py",
+      "bytes": 8310,
+      "sha256_16": "96f281111aa4b59e",
+      "mtime": "2026-10-08T08:07:04Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "overrun_orig.py",
+      "newest_copy": "6f1d5069-5b6c-4a9d-8e38-78d125446571/scratchpad/origver/overrun_orig.py",
+      "bytes": 13383,
+      "sha256_16": "b49149b517daddb0",
+      "mtime": "2026-10-06T21:40:40Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "ownerderive.py",
+      "newest_copy": "0031bd18-e9b8-4680-ac88-e24a9d40aaed/scratchpad/ownerderive.py",
+      "bytes": 804,
+      "sha256_16": "ad3fecc638479fdb",
+      "mtime": "2026-10-06T08:44:23Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "prefix_demo.py",
+      "newest_copy": "20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e/scratchpad/prefix_demo.py",
+      "bytes": 2981,
+      "sha256_16": "9aa6dc88fd2f99cc",
+      "mtime": "2026-10-07T16:31:25Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [
+        "docs/handoff-cody-2026-10-07.md"
+      ],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "probe_before_i4.py",
+      "newest_copy": "20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e/scratchpad/b25/probe_before_i4.py",
+      "bytes": 135696,
+      "sha256_16": "0f638f7ae5754952",
+      "mtime": "2026-10-08T00:14:58Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "prove_childwatch.py",
+      "newest_copy": "20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e/scratchpad/b25/prove_childwatch.py",
+      "bytes": 1596,
+      "sha256_16": "f11a0ed7e9816c4d",
+      "mtime": "2026-10-08T07:39:41Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [
+        "docs/handoff-cody-2026-10-07c.md"
+      ],
+      "status": "COMMITTED to tools/scratch-archive/"
+    },
+    {
+      "name": "r2.py",
+      "newest_copy": "0b3a248f-affe-4aba-9469-545a0a44eb40/scratchpad/r2.py",
+      "bytes": 1359,
+      "sha256_16": "6c50165ec37cecf1",
+      "mtime": "2026-10-05T13:37:14Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "r2b.py",
+      "newest_copy": "0b3a248f-affe-4aba-9469-545a0a44eb40/scratchpad/r2b.py",
+      "bytes": 879,
+      "sha256_16": "094942b1c745f123",
+      "mtime": "2026-10-05T13:38:12Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "r3.py",
+      "newest_copy": "0b3a248f-affe-4aba-9469-545a0a44eb40/scratchpad/r3.py",
+      "bytes": 1546,
+      "sha256_16": "5921de3d297abc1f",
+      "mtime": "2026-10-05T13:41:06Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "remeasure.py",
+      "newest_copy": "0b3a248f-affe-4aba-9469-545a0a44eb40/scratchpad/remeasure.py",
+      "bytes": 973,
+      "sha256_16": "62760e64718385e2",
+      "mtime": "2026-10-05T12:25:40Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "run.sh",
+      "newest_copy": "6f1d5069-5b6c-4a9d-8e38-78d125446571/scratchpad/item4/run.sh",
+      "bytes": 786,
+      "sha256_16": "3bc1fae991853d5b",
+      "mtime": "2026-10-07T13:08:15Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [
+        "SAIRN-ACTIVE-WORK-fourth.md",
+        "SAIRN-ACTIVE-WORK-hank.md",
+        "docs/2026-09-04-stonedesk-seed-fallback-audit.md",
+        "docs/2026-09-15-item64-check-precedence.md",
+        "docs/2026-09-25-clickthrough-render-trigger-fixed.md",
+        "docs/2026-09-26-ablation-gated-resource-header.md",
+        "docs/2026-09-29-message-assertion-sweep-hank.md",
+        "docs/2026-10-06-whole-tree-run-and-the-runner-that-corrupts-its-clone.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/sairnlaw-delaware-deadline-seed-gate.md",
+        "docs/sairnlaw-newhampshire-deadline-seed-gate.md",
+        "docs/sairnlaw-oregon-deadline-seed-gate.md",
+        "docs/sairnlaw-wisconsin-deadline-seed-gate.md",
+        "docs/skill-backups/claude-api/shared/tool-use-concepts.md",
+        "docs/skill-backups/skill-vetter/SKILL.md",
+        "docs/traceability-matrix.md"
+      ],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "sampler.py",
+      "newest_copy": "20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e/scratchpad/b24/sampler.py",
+      "bytes": 2872,
+      "sha256_16": "81304eccf89e1e7f",
+      "mtime": "2026-10-07T19:26:47Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [
+        "docs/handoff-cody-2026-10-07b.md"
+      ],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "slt.py",
+      "newest_copy": "0b3a248f-affe-4aba-9469-545a0a44eb40/scratchpad/slt.py",
+      "bytes": 1400,
+      "sha256_16": "dc22ceaac788e0db",
+      "mtime": "2026-10-05T12:08:51Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "snap.py",
+      "newest_copy": "0b3a248f-affe-4aba-9469-545a0a44eb40/scratchpad/snap.py",
+      "bytes": 1431,
+      "sha256_16": "c24b9fada793ac72",
+      "mtime": "2026-10-05T11:20:59Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "sweep34.py",
+      "newest_copy": "0b3a248f-affe-4aba-9469-545a0a44eb40/scratchpad/sweep34.py",
+      "bytes": 2587,
+      "sha256_16": "b26b97a480289bbd",
+      "mtime": "2026-10-05T12:12:20Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "time_harnesses.sh",
+      "newest_copy": "6f1d5069-5b6c-4a9d-8e38-78d125446571/scratchpad/time_harnesses.sh",
+      "bytes": 963,
+      "sha256_16": "0a1a0507510b1298",
+      "mtime": "2026-10-06T18:58:56Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "time_meta.sh",
+      "newest_copy": "6f1d5069-5b6c-4a9d-8e38-78d125446571/scratchpad/time_meta.sh",
+      "bytes": 573,
+      "sha256_16": "4683f9b7773ae220",
+      "mtime": "2026-10-07T10:58:17Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "triage.py",
+      "newest_copy": "0b3a248f-affe-4aba-9469-545a0a44eb40/scratchpad/triage.py",
+      "bytes": 4212,
+      "sha256_16": "af0211aadf9fc3a9",
+      "mtime": "2026-10-05T11:18:31Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [
+        ".claude/skills/sairn-hover-auditor/EXTERNAL-TOOLS-INDEX.md",
+        "SAIRN-ACTIVE-WORK-cc.md",
+        "docs/2026-10-05-dead-rule-universe-delta.md",
+        "docs/2026-10-07-cc-batch-14-inventory.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/traceability-matrix.md"
+      ],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "triage86.py",
+      "newest_copy": "20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e/scratchpad/b26/triage86.py",
+      "bytes": 4249,
+      "sha256_16": "e6227145b234c556",
+      "mtime": "2026-10-08T13:24:44Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "COMMITTED to tools/scratch-archive/"
+    },
+    {
+      "name": "unqual.py",
+      "newest_copy": "0b3a248f-affe-4aba-9469-545a0a44eb40/scratchpad/unqual.py",
+      "bytes": 902,
+      "sha256_16": "7a4a20c7f86f5a06",
+      "mtime": "2026-10-05T12:16:27Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "verify_scp.py",
+      "newest_copy": "0b3a248f-affe-4aba-9469-545a0a44eb40/scratchpad/verify_scp.py",
+      "bytes": 3859,
+      "sha256_16": "68daff046237e2af",
+      "mtime": "2026-10-05T13:31:15Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "write_report.py",
+      "newest_copy": "20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e/scratchpad/b24/write_report.py",
+      "bytes": 2026,
+      "sha256_16": "dc6e3c0a0cc90655",
+      "mtime": "2026-10-07T19:52:17Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [
+        "docs/handoff-cody-2026-10-07b.md"
+      ],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    }
+  ]
+}
