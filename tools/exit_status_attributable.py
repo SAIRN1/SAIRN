@@ -678,23 +678,7 @@ def hook():
             'fact about that tool; measure it alone:  <tool> > /tmp/out 2>&1  '
             'then read $? on its own line. (Recorded because that misreading '
             'put a false "EXITS 2 (COULD NOT RUN)" accusation against a '
-            'working checker into a standing document on 2026-10-04.) '
-            # ── ADDED 2026-10-08, AND IT ADDS NO NEW FIRINGS ─────────────────
-            # The advice above is correct in the FOREGROUND and stops being
-            # correct the moment the run is backgrounded -- the `$?` line is then
-            # the wrapper's, not the program's. That is not a gap this tool can
-            # close: whether a run is backgrounded is decided by the harness
-            # AFTER the command text exists, and text is the only input here.
-            # tools/capture_exit.py was built for it and its own docstring names
-            # this tool as right about the foreground case.
-            # So the pointer rides on a warning that was already firing rather
-            # than becoming a new one -- measured 2026-10-08: a standalone
-            # backgrounding warning would be new output on 106 of 107 distinct
-            # documented commands, 99%, and a hook that warns on everything gets
-            # switched off.
-            'AND IF THIS RUN MAY BE BACKGROUNDED, `$?` will be the wrapper\'s '
-            'and not the program\'s: use  python tools/capture_exit.py --status '
-            '<file> -- <command>  and read the status FILE.'
+            'working checker into a standing document on 2026-10-04.)'
             % (subj, owner, note)}}))
     return 0
 
