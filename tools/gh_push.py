@@ -178,8 +178,53 @@ def run_the_real_gate(repo, files, branch, remote_sha):
     return head
 
 
+USAGE = """Commit and push via the GitHub REST API, through the push gate.
+
+    python tools/gh_push.py "<commit message>" [extra repo-relative path ...]
+
+With no arguments it does NOTHING and exits 2. Exit 0 pushed, 2 COULD NOT RUN
+(including a missing commit message), otherwise the gate's own refusal code."""
+
+
+def usage_and_refuse():
+    """A BARE RUN OF A PUSHING TOOL MUST NOT CRASH, IT MUST REFUSE.
+
+    ── WHAT IT DID BEFORE (2026-10-07, cc) ──────────────────────────────────
+    `commit_message = sys.argv[1]` was the first statement in main(), so a bare
+    run raised
+
+        IndexError: list index out of range
+
+    at tools/gh_push.py:182. THIS TOOL PUSHES. An unhandled IndexError is the
+    right OUTCOME here by luck rather than by design -- it happens to crash
+    before the first network write, and nothing in the code said so or kept it
+    that way. A later edit that moved one line above it would have turned a
+    typo-shaped mistake into a push of HEAD with a traceback for a message.
+
+    MEASURED, BOTH SIDES, BEFORE THE FIX: `git ls-remote origin` captured before
+    and after a bare run is BYTE-IDENTICAL, 63 refs, so nothing was in fact sent.
+    That is the evidence the refusal preserves -- it is not a claim about a crash
+    being safe, it is a measurement of what the crash did and a guard that makes
+    it deliberate.
+
+    EXIT 2, NOT 1: a missing argument is COULD NOT RUN, not a finding. Same rule
+    as the eight sites corrected in 92071d45.
+    """
+    sys.stderr.write('COULD NOT RUN: no commit message.' + chr(10))
+    sys.stderr.write(USAGE + chr(10))
+    sys.stderr.write('Nothing was sent. The remote was not contacted.' + chr(10))
+    return 2
+
+
 def main():
+    if len(sys.argv) <= 1:
+        return usage_and_refuse()
     commit_message = sys.argv[1]
+    if not str(commit_message).strip():
+        # AN EMPTY MESSAGE IS THE SAME REFUSAL. `gh_push.py ""` passes the
+        # len() guard and would have committed with no subject at all, which is
+        # worse than a crash because it succeeds.
+        return usage_and_refuse()
     extra = sys.argv[2:] if len(sys.argv) > 2 else EXTRA_FILES
     token = get_token()
 
@@ -237,4 +282,8 @@ def main():
     print("PUSHED:", new_commit_sha)
 
 if __name__ == "__main__":
-    main()
+    # THE RETURN VALUE MUST REACH THE SHELL. `main()` alone discards it, so the
+    # refusal above would print COULD NOT RUN and exit 0 -- a verdict computed
+    # and not delivered, which is the defect class this repo has paid for most
+    # (gen_ma_seed.py printed DRIFTED while exiting 0, fixed 2026-10-07).
+    sys.exit(main() or 0)
