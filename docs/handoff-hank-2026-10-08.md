@@ -723,3 +723,114 @@ convention 10 inside the tool being measured — a long run whose first check is
 the end. A progress line per tool would turn the next measurement into both a
 number *and* a profile of where the time goes, which is what a tighter bound
 actually needs.
+
+---
+
+## item 12 — COMMITTED AND PUSHED STATE
+
+**Eight commits written for batch 19, in item order.** The authoritative sha
+list, each verified with `git merge-base --is-ancestor` **after** the push, is in
+the final report — **RULE F is why**: the landing rebase (63 incoming commits at
+the time this section was written) rewrites every sha below, and a handoff that
+names pre-rebase shas names commits that no longer exist. **This batch proved that
+on itself in batch 18 and the correction is not repeated here.**
+
+| sha at write time | item | what |
+|---|---|---|
+| `52c874fc` | 2 | STEP 13 → 13-ALT, a new `sairnvet_audit_log`; STEP 0d marked SUPERSEDED |
+| `71cc4c83` | 3 | the 101 suite failures split by owner |
+| `cd838b9f` | 4 | locks and worktrees: 2 removed, 1 refused on its own rule, 0 of 13 |
+| `ab561a68` | 5 | a missing secret can no longer destroy a good record — exit 3 |
+| `659fb5cd` | 6, 7 | the bare-run sweep at the widened scope; 5 Tier A obligations discharged |
+| `66e09bdb` | 9, 10 | RULE G; `docs/hank-evidence/`; `docs/external-files-index.json` |
+| `49d82b30` | 11 | the session-start check |
+| `b9323a83` | 8 | `dead_rule_sweep` = 4923.3 s and the proposed bound |
+
+`core.bare` = `false`. **14 worktree registrations** (down from 19 in batch 18
+after I pruned my own five; the remaining 13 are other sessions' and item 4
+explains why none qualified for removal).
+
+**NO GATE OVERRIDDEN. `SAIRN_SEED_GATE=off` was never used, in any form.**
+
+## CLAIMS HELD, AND WHAT WAS NOT TOUCHED
+
+**HELD:** `hank` / `platform`, batch 19 — pushed and verified on `origin/main` at
+claim time.
+
+**READ-ONLY, NEVER WRITTEN** — each declared in a live claim by somebody else and
+each checked against the FILES lists rather than inferred:
+
+| file | holder | what I did instead |
+|---|---|---|
+| `tests/run_bare_run_write_probe.py` | **cody** (×2 claims) | item 6's arms went into the tool's own `--selftest` |
+| `docs/defect-density-register.json` | **cody** (×2) | appended **only** through `defect_register.py --add` |
+| `docs/METHODOLOGY.md` | **fourth** | RULE G routed into my own file |
+| `docs/known-red-suites.json` | **fourth** | the 30-unrecorded-red finding is reported, not written |
+| `docs/tool-owner-map.json` | — | read for item 3's owner column and item 10's population; nothing written back |
+
+**WRITTEN, AND FREE AT THIS HEAD** — `docs/tier-a-reviews.json` was cc's through
+batch 18 and is **declared by nobody** now, which is the only reason item 7 could
+discharge anything.
+
+**ANYTHING UNDER `.claude/skills/sairn-hover-auditor/` WAS NOT READ, NOT ROUTED
+AND NOT REVIEWED.** Two Tier A obligations were refused for exactly that reason.
+
+## OPEN WORK — EXACT NEXT STEP PER ITEM
+
+| # | open | exact next step | owner |
+|---|---|---|---|
+| 1 | **`check4_probe.py` / `check7_probe.py` corrupt a live clone's `.git/config`** | replace `git worktree add` with `git clone --local --no-hardlinks`, exactly as `check8_probe.py` did on 2026-10-06. Owner map: `basis NONE, owner null` | **chat to assign** |
+| 2 | **`tools/condition_coverage.py` leaks a worktree registration** — bare run *and* `--help` | same fix. Three abandoned `condcov-*` dirs are the evidence | **chat to assign** |
+| 3 | **13 leaked worktree registrations**, 0 removable under the rule | the four worst have 1,664–2,563 uncommitted paths and 295–621 h untouched. **Give removal a second criterion that can tell probe litter from work, or decide those four by hand** | **chat** |
+| 4 | **`b12wt2.lock`** | its process is gone; at 21.57 h it failed the 24 h test **by 2.4 hours**. It qualifies on its own now — re-run `docs/hank-evidence/b3_item4_evidence.py` and remove if it reports removable | next hank |
+| 5 | **4 more locks meet the criteria** — `repo.lock` (48 h), 3× `sairn_idem_*` (199–208 h) | outside the three the dispatch named and their owners are not established | **chat** |
+| 6 | **89 REAL suite failures**, now split by owner | `docs/2026-10-08-hank-suite-failure-owners.md`. **62 are UNOWNED and cannot be routed to anybody** | **chat to split** |
+| 7 | **4 suite files TIMEOUT alone at 240 s** | re-run each with no ceiling on a quiet box, as item 8 did | next hank |
+| 8 | **The suite dirties its own tree** (5 generated docs), so 8 of 101 failures were cascade | make the generators write to a copy, or have the harness restore between files | **chat → harness owner** |
+| 9 | **30 suites RED AND NOT RECORDED** (registry 75, this run 101) | `known_red_check.py --from-run <log>` reproduces it. Register is **fourth's** | **fourth** |
+| 10 | **7 Tier A obligations assigned to cloud/fourth/cody**, held 56–276 h | all past 48 h so `--takeover` is permitted. **Four already have written verdicts** in `scratchpad/verdict_*.txt`, including the gh_push finding | **chat to decide takeover** |
+| 11 | **2 Tier A obligations in the hover namespace** | a build agent may not review them. Needs somebody outside the build role | **chat** |
+| 12 | **10 of 17 open obligations are NOT FRESH** — the recorded sha does not resolve, or resolves ORPHANED | a reviewer cannot see the change. Re-seat or re-open them | **chat** |
+| 13 | **`tools/deploy_verify_notify.py` misses a fifth pushing entrypoint** | add `gh_push.py` to `PUSHING_TOOLS`; it publishes through the REST API so `classify_command` scores it `unsure` and performs no deploy check. **`gh_push.py` is in cc's FILES** | **cc / fourth** |
+| 14 | **STEP 0's three ALTERs** | still repair code that is pushed and inert. Run the PRE-FLIGHT `pg_constraint` query, then 0a / 0b / 0c | **Michael** |
+| 15 | **STEP 13 (13-ALT)** | run 13-PRE (a)(b)(c), the DDL, then 13-V (a)–(d). **Then** the five code steps — `api/_lib/audit.js` and `api/sv-auth.js` are untouched until you confirm | **Michael, then a build session** |
+| 16 | **STEP 14** `rf_schedule.status_changed_by` | run the SQL, then the four code steps **including rewriting arm D3** of `sd_data_write_attribution_three_apps.js` in the same commit | **Michael, then a build session** |
+| 17 | **`guard_ablation.py`, `red_suite_register_check.py`** | still only `> 600 s`. Not measured this batch and not guessed at | next hank |
+| 18 | **`dead_rule_sweep.py` bound is PROVISIONAL** | one sample. Add a progress line per tool first, then three runs | next hank |
+| 19 | **RULE E, F and G are routed, not landed** | into `docs/METHODOLOGY.md` when it is unclaimed. **F and G belong in the process rules**, not as cross-domain conventions | chat / fourth |
+| 20 | **39 skills left model-invocable on a guess-free decision** | `/skill-doctor` is the only real cost measurement and is client-side. A human run of it would let the set be widened honestly | **Michael / chat** |
+| 21 | **10 account-level MCP connector families loaded, 0 used this batch** | disabled in the claude.ai account or the Chrome extension — **no file a model turn can write** | **Michael** |
+| 22 | **a local `playwright` MCP server** at the `~` project scope | not loaded for this project and costs nothing here; removing it changes any session started in `~` | **chat** |
+| 23 | **other sessions cite scratchpad files from committed docs** — `gapverify.py`, `verify_specs.py`, `prefix_demo.py`, `grd_enum.py`, `cite_measure.py`, `sfdrift.py` (one from inside the defect register) | same dangling-citation defect as mine; `docs/hank-evidence/` is the pattern | **cc / cody / fourth** |
+| 24 | **`docs/scrutiny-flags.json` stashes** | still cc's file, still parked. Match on the stash **message**, not the index | **cc** |
+
+## TRANSCRIPT AND ARTEFACTS
+
+**Session scratchpad** — every captured exit code, every sweep, every backup:
+
+```
+C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\a517bec7-3fd2-4475-835c-6432b2acaa34\scratchpad
+```
+
+**EVERYTHING A COMMITTED DOCUMENT CITES IS NOW IN THE REPO** at
+`docs/hank-evidence/` (16 files + README), and **every directory I keep outside
+git is registered** in `docs/external-files-index.json` — 11 directories, each
+measured by walking it. That index is the map; the scratchpad path above is
+ephemeral.
+
+| artefact | what |
+|---|---|
+| `i8.log`, `i8.samples.json`, `i8.dead_rule_sweep.py.out` | the 4923.3 s measurement, its 286 load samples and the tool's 157 findings |
+| `i6.sweep.out`, `i6.self.out` | the widened bare-run sweep and its 8-arm selftest |
+| `i4ev.json`, `i4ev.log`, `removed.*.bak` | lock/worktree evidence and the two removed locks' contents |
+| `i7.list.out`, `i7.full.txt`, `verdict_*.txt` | the Tier A assignments, the full obligation texts and all 12 written verdicts |
+| `i7.v1.out`–`i7.v3.out` | the command output behind every Tier A verdict |
+| `i11.settings.out`, `settings.json.bak.*`, `SKILL.*.bak.*` | the settings merge with its key-set diff, and every skill backup |
+| `i3.rerun.json`, `i3.table.txt` | the 101 per-file re-runs behind the owner table |
+
+**Previous handoffs:** `docs/handoff-hank-2026-10-07d.md` (batch 18, `5c9dc265`),
+`docs/handoff-hank-2026-10-07c.md` (batch b1, `afe526b2`).
+**Routed:** `docs/2026-10-07-hank-routed.md` — §1 gh_push (taken by cc), §2 the
+auditor-namespace retraction, §3 RULE E, §4 RULE F **and RULE G**.
+**Printed SQL:** `docs/2026-10-07-hank-migration-sql-for-michael.md` — STEP 0
+(three ALTERs), STEP 1–12 (twelve tables), **STEP 13 (13-ALT)**, STEP 14.
