@@ -329,3 +329,85 @@ the guard, 100 lines early. The needle is now assembled at run time from
 asserted to have a **direction**. A source-reading arm that contains its own
 subject measures the wrong file position — which is a defect shape already in my
 own notes, committed again anyway.
+
+## item 5 — DONE as a launch; the run **COMPLETED**. EXIT 1, 86 failures. NOT a clean pass.
+
+**The detached launch worked.** Three batches tried to get a `--pinned` run to
+finish; this is the first that did. Nothing killed it.
+
+```
+command : powershell Start-Process python tools/capture_exit.py --status <D>/suite.status
+          -- python tools/run_all_tests.py --pinned --out <D>/suite.out
+commit  : aa2f014dd21b088711944b5675104471c43b0502   (meta.txt, stamped at launch)
+START   : 2026-10-08T00:08:09Z     EXIT at 2026-10-08T03:21:50Z     3h 13m 41s
+RUNS AT THIS SHA : 1.   FIRST RUN RETURNED: **EXIT 1**.
+```
+
+```
+RAN: 351 JS + 408 PY = 759 files (1 skipped)
+671 ok        86 FAIL        86 FAILING TEST FILE(S)
+EXIT 1 -- FAILURES ABOVE
+```
+
+**`EXIT 1` IS A COMPLETED RED RUN, NOT A VOID ONE** — and that distinction is the
+point of the last two batches. `EXIT 2` would be COULD-NOT-RUN; the status file
+says `EXIT 1`, the `RAN:` summary printed, and the clone was cleaned up normally
+because the post-run tree read **succeeded**. So these 86 are a real verdict.
+
+**NO CLEAN PASS, SO NOTHING IS CLEARED.** The firebase andon needs a clean
+completed pass. 86 failures is not that. **ANDON HELD** — on a measurement this
+time rather than on a void run.
+
+**ONE RESIDUE PATH, AND IT BOUNDS HOW MUCH OF THE 86 IS BELIEVABLE:**
+
+```
+THE SUITE DIRTIED THE TREE (1 path(s)) -- a probe did not clean up:
+     M docs/report-only-reachability.json
+```
+
+The runner's own warning applies: a modified tracked file fails every clean-tree
+probe after it, so some of the 86 may be **cascade** rather than real. **2 of the
+86 carry `FAILED TWICE`** — the runner re-ran them alone and they failed again,
+which is the only subset proven real without further work.
+
+**NEXT STEP:** restore `docs/report-only-reachability.json`, then re-run the 86
+individually and split real from cascade. Do not quote 86 as a defect count.
+
+### AND THE WATCHER BESIDE IT WAS **BLIND FOR 3h13m AND LOOKED LIKE IT WAS WORKING**
+
+```
+command : scratchpad/b25/analyse_times.py over child_times.txt.live
+samples parsed        : 14,976
+samples with EMPTY cmd: 14,976  (100%)
+distinct subjects     : 6   -- pids 0, 4, 236, 276, 1000, 4416
+distinct REAL test files observed : 0
+```
+
+Its summary file reported *"6 distinct children, longest 11635s TIMEOUT"*, which
+**reads like a finding** and is an artefact of watching the kernel.
+
+**ROOT CAUSE, found and fixed.** It invoked
+`powershell -NoProfile -Command <script> -root <pid>`, and with `-Command` the
+trailing arguments are **not bound to a `param()` block**. `$root` was `$null`,
+the filter became `ParentProcessId=` and matched the few processes whose parent
+is 0. The pid never reached the script.
+
+**FIXED AND PROVED, not asserted:** the pid is now interpolated into the script
+text, and the watcher **refuses** (`SystemExit`) if the placeholder is still
+present rather than watching pid 0. Driven against a parent with a known named
+child:
+
+```
+samples naming the child  : 1 of 3
+2026-10-08T07:40:03Z  pid 33452  C:\Python314\python.exe tests/run_tier_a_review_gate_probe.py
+VERDICT: the watcher now sees the real child
+```
+
+**THE b24 APPEND-AS-YOU-GO FIX IS WHY THIS WAS DIAGNOSABLE AT ALL.** The summary
+was written at the end and was misleading; the 382 KB live log was written per
+sample and is what proved the watcher saw nothing. A fix made for crash-safety
+turned out to be what made the instrument auditable.
+
+**So the 35-minute-file question is STILL open**, and for a new reason: the run
+completed, but the instrument measuring it was pointed at the wrong process tree.
+The 900 s / 14,400 s bound stays **UNSET**.
