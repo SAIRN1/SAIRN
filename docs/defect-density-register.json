@@ -25726,7 +25726,7 @@
       "recurrence_open": "OPEN as a CLASS. This is the mirror of PR 1.11 -- a could-not-run laundered into a FINDING rather than into a pass -- and no standing rule names that direction, so nothing stops the next tool spelling a timeout as 124. A sweep for integer timeout sentinels across tools/ is not done and is not claimed."
     },
     {
-      "commit": "c32c1815701e",
+      "commit": "85d2e852f0c0",
       "date": "2026-10-08",
       "subject": "fix(leak class): the 36 not-mine sites, 36 of 36 patched -- and the stale artifacts cleaned with .git/config proved unchanged",
       "files": [
