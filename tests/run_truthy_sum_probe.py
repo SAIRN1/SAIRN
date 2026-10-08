@@ -228,9 +228,68 @@ check('a baseline key with nothing behind it is counted',
       'no longer present   : 1' in out, True)
 check('...and the live one is not counted stale', rc, 0)
 
+# ── 14. MULTIPLICATION IS SAFE ON *BOTH* SIDES -- one arm per direction ───
+# ADDED 2026-10-08, AND THE LEFT ONE FAILS WITHOUT THE FIX IT GUARDS.
+#
+# Section 2 above has always asserted that a `*` term on the RIGHT is not
+# reported. The identical shape on the LEFT was reported, and the proof was a
+# single expression in the real tree:
+#
+#     stonedesk.html:26732   var stockValue=all.reduce((s,i)=>s+(i.qty||0)*(i.cost||0),0);
+#
+# `i.qty` reported, `i.cost` correctly ignored -- same line, same operator,
+# opposite verdicts. One side of the rule existed and the other did not, and
+# because section 2 only ever tested the side that worked, nothing here could
+# see it. THAT is why this section is a PAIR: a one-sided arm is what let a
+# one-sided classifier look verified.
+#
+# Three baseline entries were carried for months to silence those five
+# occurrences, each ending "Remove this entry when the checker handles the left
+# operand". They are gone, and the tool reports them as stale if they come back.
+BODY_L = 'var v = rows.reduce(function (s, i) { return s + (i.qty || 0) * i.cost; }, 0);\n'
+BODY_R = 'var v = rows.reduce(function (s, i) { return s + i.qty * (i.cost || 0); }, 0);\n'
+
+rc, out = case('mult-left', {'app.js': BODY_L})
+check('14a LEFT operand of a `*` is NOT reported -- (a||0)*b is a number',
+      (rc, 'i.qty' in out), (0, False))
+rc, out = case('mult-right', {'app.js': BODY_R})
+check('14b RIGHT operand of a `*` is NOT reported -- the other half of one rule',
+      (rc, 'i.cost' in out), (0, False))
+
+# AND THE EXCLUSION MUST NOT OVER-REACH. These two are the anti-vacuity half:
+# if the new rule ever widened from "the next significant character" to
+# "anywhere on the line", both of these would go silent and a real defect would
+# be excluded by the fix for a false positive.
+rc, out = case('mult-then-plus', {
+    'app.js': 'var v = rows.reduce(function (s, i) { return s + (i.qty || 0) + i.cost; }, 0);\n'})
+check('14c a `+` after the term is STILL REPORTED -- the exclusion is the next '
+      'significant character, not the line', (rc, 'i.qty' in out), (1, True))
+rc, out = case('mult-elsewhere-on-line', {
+    'app.js': 'var v = a * b + rows.reduce(function (s, i) { return s + (i.qty || 0); }, 0);\n'})
+check('14d a `*` EARLIER on the line does not excuse the term',
+      (rc, 'i.qty' in out), (1, True))
+
+# `/` and `%` are the same operator class and are asserted rather than assumed.
+for op in ('/', '%'):
+    rc, out = case('mult-%s' % ('div' if op == '/' else 'mod'), {
+        'app.js': 'var v = rows.reduce(function (s, i) { return s + (i.qty || 0) %s i.cost; }, 0);\n' % op})
+    check('14e `%s` after the term is numeric too, so NOT reported' % op,
+          (rc, 'i.qty' in out), (0, False))
+
+# `-` IS DELIBERATELY STILL REPORTED. It is equally numeric in JS, and the
+# classifier does not claim it: over-reporting is this tool's stated safe
+# direction, and widening past the measured instance is how a classifier picks
+# up its next false negative. The arm exists so the decision is visible rather
+# than looking like an oversight.
+rc, out = case('minus-after', {
+    'app.js': 'var v = rows.reduce(function (s, i) { return s + (i.qty || 0) - i.cost; }, 0);\n'})
+check('14f `-` after the term is STILL REPORTED -- numeric, but deliberately '
+      'not in the exclusion set', (rc, 'i.qty' in out), (1, True))
+
 print()
 if fails:
     print('%d FAILED' % fails)
     sys.exit(1)
 print('ALL PASS -- a new uncoerced numeric fold cannot be added silently, and '
-      'the tool does not report multiplication, coercion, comments or prose.')
+      'the tool does not report multiplication on either side, coercion, '
+      'comments or prose.')

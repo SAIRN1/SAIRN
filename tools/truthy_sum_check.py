@@ -199,11 +199,30 @@ def occurrences():
     HAZARD and is not derivable here; `f('$') + (x || 0)` ends in `)` and is
     still reported. Over-reporting is the safe direction for this tool.
 
+    A MULTIPLICATIVE OPERATOR AFTER THE TERM MAKES IT SAFE TOO, AND ON THE
+    LEFT (2026-10-08). This tool already ignored a `*` term on the RIGHT -- arm 2
+    of its probe asserts it -- and reported the identical shape on the LEFT. The
+    proof was one expression:
+
+        stonedesk.html:26732   s+(i.qty||0)*(i.cost||0)
+
+    `i.qty` was reported and `i.cost` correctly ignored, same line, same
+    operator, opposite verdicts. `*` has no string overload in either direction,
+    so `(a||0)*b` is a NUMBER whatever `a` holds -- `('500'||0)*2` is 1000, not
+    '5002' -- and the product is what gets added. `/` and `%` are the same, and
+    `**` is reached by the same `*`.
+
+    `-` IS DELIBERATELY NOT IN THAT SET even though it is equally numeric.
+    Over-reporting is the safe direction for this tool, by its own docstring two
+    paragraphs up, and widening past the measured instance is how a classifier
+    acquires the next false negative. A `-` case will be reported until somebody
+    measures one.
+
     THEY ARE RETURNED, NOT DROPPED. A silent exclusion reads as "covered
     everything" when it did not, so main() prints the count on every run the
     same way the archive/ exclusion is printed.
     """
-    found, concat = [], []
+    found, concat, mult = [], [], []
     for f in tracked():
         path = os.path.join(REPO, f)
         if not os.path.exists(path):
@@ -219,11 +238,22 @@ def occurrences():
                 continue
             head = code[:m.start()]
             row = (f, head.count('\n') + 1, m.group(1))
+            # THE NEXT SIGNIFICANT CHARACTER AFTER THE CLOSING `)`. If it is
+            # multiplicative the term is the LEFT operand of a product and the
+            # value actually added is numeric. Comments are already stripped
+            # here, and the match requires `+ (` before it, so a `/` in this
+            # position is division and never a regex or a comment.
+            k = m.end()
+            while k < len(code) and code[k] in ' \t\r\n':
+                k += 1
+            if k < len(code) and code[k] in '*/%':
+                mult.append(row)
+                continue
             j = m.start()
             while j > 0 and code[j - 1] in ' \t\r\n':
                 j -= 1
             (concat if j in lit_ends else found).append(row)
-    return found, concat
+    return found, concat, mult
 
 
 def key(f, line, term):
@@ -239,7 +269,7 @@ def key(f, line, term):
 
 def main(argv):
     quiet, full = '--quiet' in argv, '--full' in argv
-    found, concat = occurrences()
+    found, concat, mult = occurrences()
     baseline = {}
     if os.path.exists(BASELINE):
         with io.open(BASELINE, encoding='utf-8') as fh:
@@ -254,7 +284,7 @@ def main(argv):
         # THE HONEST "DID IT LOOK AT ANYTHING" NUMBER. The candidate count below
         # moves when the CLASSIFIER changes, which is not the same question -- a
         # floor pinned to it went red the day concatenation was split out.
-        print('  raw `+ (x || 0)` matches inspected : %d' % (len(found) + len(concat)))
+        print('  raw `+ (x || 0)` matches inspected : %d' % (len(found) + len(concat) + len(mult)))
         print('  uncoerced `+ (x || 0)` occurrences : %d' % len(found))
         print('  distinct file+field keys           : %d'
               % len({key(f, l, t) for f, l, t in found}))
@@ -263,6 +293,11 @@ def main(argv):
         # sees reads as coverage. `--full` names every one of them.
         print('  string-literal concatenation, not a fold, so not counted : %d'
               % len(concat))
+        # THE SECOND EXCLUSION, PRINTED FOR THE SAME REASON AS THE FIRST.
+        # Added 2026-10-08 with the left-operand fix: an exclusion nobody sees
+        # reads as coverage. `--full` names every one.
+        print('  left operand of a `*`, `/` or `%%`, so numeric, not counted : %d'
+              % len(mult))
         # A BASELINE ENTRY THAT CAN NO LONGER MATCH IS A CLAIM NOBODY IS
         # CHECKING. It costs nothing to carry and it makes the file look like it
         # is holding back more than it is. Reported, never auto-pruned -- a key
@@ -284,6 +319,11 @@ def main(argv):
                 print('\n--- string-literal concatenation, excluded ---')
                 for f, ln, t in concat:
                     print('  c %-24s :%-6d %s' % (f, ln, t))
+            if mult:
+                print('\n--- left operand of a multiplicative operator, '
+                      'excluded ---')
+                for f, ln, t in mult:
+                    print('  m %-24s :%-6d %s' % (f, ln, t))
         if new:
             print('\n%d NEW OCCURRENCE(S):' % len(new))
             for f, ln, t in new:
