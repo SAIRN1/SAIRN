@@ -120,6 +120,79 @@ check('4b  and it compared a real number of pairs',
       'comparisons run   : 0' not in p.stdout and 'comparisons run' in p.stdout,
       [l.strip() for l in p.stdout.split('\n') if 'comparisons run' in l][:1])
 
+# ── 5. THE FINDING THIS DETECTOR PRODUCED, LOCKED SO IT CANNOT COME BACK ──
+# ADDED 2026-10-07, batch 18. Arms 1-4 prove the DETECTOR works. This one
+# proves the DEFECT IT FOUND is fixed, which is a different claim and the one
+# that regresses.
+#
+# What it found: `nav_panel_check.py on sairncode.html -- exit 1 raw vs 0
+# stripped. It is matching text that describes code rather than code.`
+# sairncode.html has THREE `mr-kx-ytd` and only ONE is a live element; the
+# second sits in a `<!-- -->` block documenting an input that was removed on
+# purpose. `FAIL:DUPLICATE_IDS` was a false positive produced by a comment
+# explaining a past fix.
+#
+# A SYNTHETIC FIXTURE, NOT sairncode.html. Pointing this arm at the real app
+# would make it pass or fail on whatever somebody edits in that file next --
+# the stale-anchor shape cross-domain convention 8 names. The fixture carries
+# the SHAPE: one live id, one id inside a comment, nothing else.
+_fx = tempfile.mkdtemp(prefix='navpanel_comment_')
+try:
+    _html = (
+        '<html><body>\n'
+        '<div class="sidebar">\n'
+        '  <button onclick="nav(\'alpha\')">Alpha</button>\n'
+        '</div>\n'
+        '<div class="panel" id="panel-alpha">\n'
+        '  <!-- THE FIELD WAS REMOVED ON PURPOSE.\n'
+        '       It was `<input id="dup-me">` and nothing backed the number. -->\n'
+        '  <input id="dup-me">\n'
+        '</div>\n'
+        '<script>function nav(x){}</script>\n'
+        '</body></html>\n')
+    _p = os.path.join(_fx, 'fixture.html')
+    io.open(_p, 'w', encoding='utf-8', newline='\n').write(_html)
+    _r = subprocess.run([sys.executable, os.path.join(REPO, 'tools',
+                                                      'nav_panel_check.py'), _p],
+                        capture_output=True, text=True, encoding='utf-8',
+                        errors='replace', cwd=REPO)
+    check('5a  nav_panel_check does NOT report DUPLICATE_IDS when the second '
+          'occurrence is inside an HTML comment. One live element is not a '
+          'duplicate, and a comment that explains a REMOVED element is the '
+          'commonest way this file acquires a false positive',
+          'DUPLICATE_IDS' not in _r.stdout,
+          _r.stdout.strip()[-200:])
+    # STATIC_IDS:2 is `panel-alpha` plus the ONE live `dup-me`. The commented
+    # `dup-me` must not be counted, so 3 would be the old behaviour and 1 would
+    # mean the tool stopped seeing the panel container as well -- the number is
+    # asserted exactly rather than as "non-zero" for that reason.
+    check('5b  ...and the fixture is not vacuous: the tool really read it and '
+          'counted exactly the TWO live ids (panel-alpha and dup-me), not the '
+          'commented third. Without this, 5a would pass on a file the tool '
+          'failed to parse at all',
+          'STATIC_IDS:2' in _r.stdout, _r.stdout.strip()[:200])
+
+    # THE PAIRED POSITIVE. Two LIVE ids with the same name must still FAIL --
+    # otherwise 5a could be satisfied by a tool that stopped checking.
+    _html2 = _html.replace(
+        '  <!-- THE FIELD WAS REMOVED ON PURPOSE.\n'
+        '       It was `<input id="dup-me">` and nothing backed the number. -->\n',
+        '  <input id="dup-me">\n')
+    _p2 = os.path.join(_fx, 'fixture_real_dupe.html')
+    io.open(_p2, 'w', encoding='utf-8', newline='\n').write(_html2)
+    _r2 = subprocess.run([sys.executable, os.path.join(REPO, 'tools',
+                                                       'nav_panel_check.py'), _p2],
+                         capture_output=True, text=True, encoding='utf-8',
+                         errors='replace', cwd=REPO)
+    check('5c  THE PAIRED POSITIVE: two LIVE ids with the same name DO still '
+          'fail. Stripping comments must not turn the duplicate-id check off, '
+          'and sairncare.html fc-name and sairnfreedom.html ac-name are real '
+          'duplicates this must keep catching',
+          'DUPLICATE_IDS' in _r2.stdout and _r2.returncode == 1,
+          'exit=%d %s' % (_r2.returncode, _r2.stdout.strip()[-200:]))
+finally:
+    shutil.rmtree(_fx, ignore_errors=True)
+
 print('\n%d arm(s) failed' % len(failures))
 for f in failures:
     print('  %s' % f)

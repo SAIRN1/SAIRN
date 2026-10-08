@@ -579,7 +579,47 @@ def cmd_status():
 
 
 if __name__ == '__main__':
-    action = sys.argv[1] if len(sys.argv) > 1 else 'start'
+    # ── A BARE RUN NO LONGER DEFAULTS TO `start` (2026-10-07) ───────────────
+    # It did: `sys.argv[1] if len(sys.argv) > 1 else 'start'`. So running this
+    # file with no argument ACQUIRED A SESSION LOCK, printed NOTHING, and exited
+    # 0 -- a side-effecting default, silent, and reported as success.
+    #
+    # FOUND by sweeping all 175 ownerless tools bare at 2026-10-07 and looking
+    # for "exit 0 with no output". It was the only one of the fifteen flagged
+    # where the silence hid an ACTION rather than an absence of findings.
+    #
+    # AND THE REPO'S OWN DETECTOR FOR THIS CANNOT SEE IT, which is the part
+    # worth keeping. tools/bare_run_write_check.py exists to catch exactly a
+    # bare run that mutates -- and it checks THE REPO. This writes to
+    # ~/SAIRN-SESSION-LOCKS/, deliberately OUTSIDE every clone, which is why
+    # that registry is current without a fetch. So the write is real, it matters
+    # to every other session that reads the registry, and it is invisible to the
+    # one tool built to find it. That blind spot is named rather than left.
+    #
+    # THE EVIDENCE IS THE LITTER. ~/SAIRN-SESSION-LOCKS/ holds locks named after
+    # throwaway clones that no longer exist -- bare_scratch.lock (2026-09-30),
+    # b11wt2.lock (2026-10-06), b12wt2.lock (2026-10-07 07:18) -- each one a
+    # bare run of this file inside a scratch copy, recorded in a registry other
+    # sessions consult to decide whether somebody is working.
+    #
+    # `start` STAYS AVAILABLE AND UNCHANGED; it just has to be asked for. A
+    # verb that takes a lock is not a safe default for a file somebody runs to
+    # see what it does.
+    if len(sys.argv) <= 1:
+        sys.stderr.write(
+            'COULD NOT RUN: no action given. NOTHING WAS DONE and no lock was '
+            'taken.\n'
+            'usage: python tools/session_lock_check.py '
+            '<start|heartbeat|guard|status>\n'
+            '  status     read-only: who holds this clone\'s lock, if anybody\n'
+            '  start      ACQUIRES the lock for this clone -- a real side '
+            'effect, which is why it is no longer the default\n'
+            '  heartbeat  refresh a lock this clone already holds\n'
+            '  guard      reclaim a lock whose owner process is gone\n'
+            'A bare run used to default to `start`, take the lock, print '
+            'nothing and exit 0.\n')
+        sys.exit(2)
+    action = sys.argv[1]
     if action == 'start':
         cmd_start()
     elif action == 'heartbeat':

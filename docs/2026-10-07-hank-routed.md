@@ -186,3 +186,72 @@ instances survived their original batch because the next reader (me) trusted the
 stated reason and went looking for the next item instead. The cheap check is: a
 carried-forward refusal is re-derived at HEAD before it is carried forward
 again.
+
+---
+
+## 4. ONE METHODOLOGY RULE, ROUTED NOT PROMOTED — 2026-10-07, batch 18
+
+**`docs/METHODOLOGY.md` IS HELD BY TWO SESSIONS AND I DID NOT WRITE TO IT.** The
+claims tool was run **once**, as the dispatch requires, and refused:
+
+```
+python tools/sairn_claim.py check methodology "land Rule E into docs/METHODOLOGY.md single write"
+exit 1   BLOCKED
+  cc      2026-10-07T23:20:05Z  (0.6h)  same file or resource: docs/methodology.md
+  fourth  2026-10-07T20:30:06Z  (3.4h)  same file or resource: docs/methodology.md
+```
+
+**RULE E therefore stays where it is — section 3 of this file — unlanded.** No
+second retry was made this batch. cc's own claim says its methodology item is
+*"paste-ready because the target is held"*, which is the same answer arrived at
+independently.
+
+### RULE F — a rebase invalidates every artefact that CITES A SHA or is DERIVED FROM THE OUTGOING RANGE, and it does so WITHOUT A CONFLICT
+
+**STATE IT AS:** *anything whose content is a function of the commits being
+pushed — a register record naming a sha, a review obligation derived from the
+outgoing range — must be produced AFTER the final rebase. A rebase rewrites
+those shas and moves that range. The artefact does not conflict, does not look
+damaged, and points at a commit that no longer exists.*
+
+**WHY IT IS NOT ALREADY COVERED, checked rather than assumed.** PR §2.1 and the
+generated-document section of the process rules cover the adjacent case well:
+a **generated** document must be **regenerated** after a rebase, never
+hand-merged, because a resolved hunk is the generating function evaluated *at no
+state at all*. That section even carries the `docs/tier-a-reviews.json`
+incident, where a hand-resolved conflict took the wrong side of one record's
+status fields.
+
+**Both of those are CONFLICT cases. This one has no conflict.** `git rebase`
+replays my commits onto new upstream work and hands back new shas with a clean
+tree and nothing to resolve. A `defect-density-register.json` record written
+before that replay is still valid JSON, still passes every shape check, and its
+`commit` field now resolves to nothing. **There is no hunk, no marker, and no
+moment where anybody is asked a question.** §2.1's instruction — rebuild the row
+whole — cannot fire, because the row was never touched.
+
+**PAID FOR 2026-10-07, batch b1, three times in one push.** The push gate
+refused for an unfed register; three records were added citing `38839e5f`,
+`a53153bd`, `e86c57ed`; a rebase onto 22 incoming commits rewrote all three;
+the records were re-added against `aba0e0a9`, `469eec19`, `1c8a395c`; another
+race rewrote those too. **A register record whose `commit` resolves to nothing
+is exactly the vacuous row that file exists to prevent**, and
+`defect_register.py --check` would have caught it only *after* the push landed.
+The same applies to a `tier_a_review_gate.py --open` obligation, which is
+derived from the outgoing range rather than from any file.
+
+**THE MECHANICAL FORM.** Order the landing as **rebase → derive → commit →
+push**, and re-derive on every retry rather than remembering. In batch 18 that
+is `scratchpad/land.sh`, which recomputes the shas and re-runs `--open` on each
+cycle and landed on cycle 1 once the order was right.
+
+**AND THE SMALLER FACT THAT COST A WHOLE CYCLE, worth one line wherever this
+lands:** after `git reset --soft`, the INDEX still holds the change, so
+`git checkout -- <path>` restores the worktree *from the change* and leaves the
+file **staged** — the next rebase then refuses on an unclean index.
+`git restore --source=HEAD --staged --worktree -- <path>` is the one that works.
+
+**WHERE IT BELONGS:** alongside the generated-document rule in the process
+rules, as its no-conflict sibling — not as a 26th cross-domain convention. The
+cross-domain conventions are about how a CHECK can be wrong; this is about the
+order of operations in a push.

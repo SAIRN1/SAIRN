@@ -31,6 +31,7 @@ the subject. The scratch tree is removed in a `finally`.
 """
 import io
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -195,6 +196,87 @@ def main(argv):
         ck('G1. the tool\'s own --selftest exits 0 when driven as a program, '
            'not just when its functions are called',
            rc == 0, 'exit=%d' % rc)
+
+        # ── H. THE ALLOWLIST MAY NOT NAME A TABLE THAT CANNOT TAKE THE ROW ──
+        # ADDED 2026-10-07, batch 18, INSTEAD OF the change the dispatch asked
+        # for -- and the reason it replaces it is the finding.
+        #
+        # The instruction was: add `sv_audit_log` to AUDIT_TABLES. Doing that
+        # would create, in one line, the exact defect the rest of this batch
+        # exists to remove.
+        #
+        #   writeAuditLog POSTs  license_hash, employee_id, role, event_type,
+        #                        detail            (api/_lib/audit.js:59-64)
+        #   sv_audit_log HAS     id, license_hash, app_id, audit_log_id, data,
+        #                        created_at, updated_at
+        #                        (sql/sairnvet_data_schema.sql:60-70)
+        #
+        # FOUR OF THE FIVE POSTED COLUMNS DO NOT EXIST, and `audit_log_id` is
+        # `not null` with no default. Every write would be refused by Postgres;
+        # writeAuditLog is non-fatal and returns false, so the row would simply
+        # be ABSENT and nothing would say so. There is no `event_type` column
+        # at all, so there is also nothing for a CHECK constraint to constrain.
+        #
+        # sv_audit_log is NOT an audit log in this module's sense. It is the
+        # SAIRNvet controlled-substance DOSING trail, a per-app data table
+        # written through api/sd-data.js's SV_RESOURCES dispatcher
+        # (api/sd-data.js:13100) and carrying `grant ... update` -- which the
+        # three real audit logs deliberately do not. It is not in the allowlist
+        # because it is not that kind of table, which is the thing my own batch
+        # b1 report got wrong when it said the addition was "one line of
+        # JavaScript".
+        #
+        # So the arm is the GUARD rather than the edit: a table may be in
+        # AUDIT_TABLES only if it has the columns writeAuditLog posts. That
+        # makes the refused change fail LOUDLY if anybody makes it later,
+        # which is worth more than the change was.
+        audit_js = io.open(os.path.join(REPO, 'api', '_lib', 'audit.js'),
+                           encoding='utf-8').read()
+        m = re.search(r'const AUDIT_TABLES = \{([^}]*)\}', audit_js)
+        listed = (sorted(re.findall(r'(\w+)\s*:\s*true', m.group(1)))
+                  if m else [])
+        ck('H0. the AUDIT_TABLES allowlist is found and parsed at all. Without '
+           'this the two arms below would pass on an empty list',
+           bool(listed), listed)
+
+        POSTED = ['employee_id', 'role', 'event_type', 'detail']
+        sql_all = ''
+        sqldir = os.path.join(REPO, 'sql')
+        for f in sorted(os.listdir(sqldir)):
+            if f.endswith('.sql'):
+                sql_all += io.open(os.path.join(sqldir, f), encoding='utf-8',
+                                   errors='replace').read()
+
+        def columns_of(table):
+            mm = re.search(r'create table if not exists (?:public\.)?'
+                           + re.escape(table) + r'\s*\((.*?)\n\);',
+                           sql_all, re.S)
+            return mm.group(1) if mm else None
+
+        bad = []
+        for t in listed:
+            body = columns_of(t)
+            if body is None:
+                continue          # no DDL in sql/ is a different question
+            missing = [c for c in POSTED
+                       if not re.search(r'^\s*' + c + r'\s', body, re.M)]
+            if missing:
+                bad.append('%s lacks %s' % (t, ', '.join(missing)))
+        ck('H1. every table in AUDIT_TABLES whose DDL is in sql/ HAS the '
+           'columns writeAuditLog posts. A table in the allowlist that cannot '
+           'take the row records NOTHING and says so only in a server log '
+           '-- the silent-failure shape this whole checker exists for',
+           not bad, '; '.join(bad))
+
+        ck('H2. THE PAIRED NEGATIVE, so H1 is evidence and not a tautology: '
+           'sv_audit_log really does lack all four, so H1 WOULD fail if it '
+           'were added. Measured off the real DDL, not asserted',
+           columns_of('sv_audit_log') is not None
+           and all(not re.search(r'^\s*' + c + r'\s',
+                                 columns_of('sv_audit_log') or '', re.M)
+                   for c in POSTED),
+           'sv_audit_log DDL found=%s'
+           % (columns_of('sv_audit_log') is not None))
     finally:
         shutil.rmtree(base, ignore_errors=True)
 
