@@ -25726,7 +25726,7 @@
       "recurrence_open": "OPEN as a CLASS. This is the mirror of PR 1.11 -- a could-not-run laundered into a FINDING rather than into a pass -- and no standing rule names that direction, so nothing stops the next tool spelling a timeout as 124. A sweep for integer timeout sentinels across tools/ is not done and is not claimed."
     },
     {
-      "commit": "578767d43db6",
+      "commit": "6372c94318ee",
       "date": "2026-10-08",
       "subject": "fix(run_all_tests): --pinned KEEPS the throwaway clone when the post-run tree read fails, and prints its path",
       "files": [
@@ -25782,7 +25782,7 @@
       "recurrence_open": "ANY TOOL THAT REPORTS COULD-NOT-RUN AND THEN CLEANS UP IS THE SAME SHAPE, and none has been swept. The question to ask of each is whether the evidence for the refusal survives the refusal."
     },
     {
-      "commit": "bad131e0249d",
+      "commit": "35ec89c5dd8d",
       "date": "2026-10-08",
       "subject": "fix(capture-exit): a RUNNING status for a DEAD pid now reads DEAD, never RUNNING -- fixture-locked with a pid that is dead by construction",
       "files": [
@@ -25838,7 +25838,7 @@
       "recurrence_open": "EVERY OTHER STATUS-FILE READER ON THIS PLATFORM IS UNAUDITED for the same question. This fix covers one tool. Any file that records a pid and is read later -- lock files, andon records, the suite lock in run_all_tests.py -- can report a live holder that is gone, and nothing sweeps for it."
     },
     {
-      "commit": "e47263e2f90d",
+      "commit": "fa1f22d2bb41",
       "date": "2026-10-08",
       "subject": "fix(leak class): the six remaining genuine rmtree(ignore_errors=True) sites get the proven onerror patch",
       "files": [
