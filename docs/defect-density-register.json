@@ -24570,71 +24570,6 @@
       "recurrence_open": "NO TEST ASSERTS THAT A SPECIFIC SEED ROW STILL CARRIES ITS trigger_document. The engine test covers behaviour GIVEN the field; a row quietly losing it stays green. 77236c2a touched 45 rows across many jurisdictions and only the 4 with generators can be checked this way at all -- the other jurisdictions' seeds have no generator and therefore no --check, so for them this class of drift is undetectable by construction. gen_mn_seed.py was measured at --check 0 and is clean today, which is three of four, not all four."
     },
     {
-      "commit": "6ca2e3a5d88c",
-      "date": "2026-10-07",
-      "subject": "fix(run_all_tests): the checkout-FAILURE path leaked the whole throwaway clone in silence -- item 10's one in-scope fix, re-applied",
-      "files": [
-        "tools/run_all_tests.py"
-      ],
-      "lines_added": 16,
-      "lines_removed": 1,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "low",
-      "detection_method": "code-review",
-      "summary": "tools/run_all_tests.py --pinned removes its throwaway clone on two paths out of one acquisition, and only the SUCCESS path was fixed. The checkout-FAILURE path kept shutil.rmtree(wt, ignore_errors=True) while the success path 68 lines below had been changed to onerror=_force_rm on the same day, for this exact reason, with the helper sitting 134 lines above both call sites. git marks loose objects read-only and Windows refuses to unlink a read-only file, so ignore_errors abandons the object store in silence -- the original incident leaked 239 files without saying so. MEASURED on the clone this batch's KILLED run left behind: 4,047 files of which 38 were read-only, which is exactly the set ignore_errors cannot remove; removed cleanly with the retry handler, 0 left, 215 MB. Severity low because the failure path is rarely reached -- it needs a checkout to fail inside a clone that was just created successfully -- and the consequence is abandoned disk rather than a wrong verdict; but it is the same silent-failure shape and it sits in the harness every suite run goes through. METHOD: the 53-of-322 population was derived by a one-off scanner in the session scratchpad, not by any landed checker, and the verdict that this specific site is genuine came from reading it -- which is why this record says code-review and names no tool. The class was swept: 53 of 322 rmtree(ignore_errors=True) calls under tests/ and tools/ are in the real leak class once pre-create deletes are excluded and linked-worktree directories are measured out, 17 are attributable to me, and 7 are genuine after reading every one. This commit fixes the only one of the 7 inside this batch's declared FILES; the other six, and 36 not mine, are routed.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "0dcb2dafb001",
-        "date": "2026-10-07",
-        "subject": "fix(harness): --pinned builds a throwaway CLONE, not a linked worktree -- so the config write that broke this clone cannot reach it, measured byte for byte",
-        "lag_days": 0
-      },
-      "citation_note": "A cleanup that CANNOT report failure is the third state folded into success: ignore_errors=True makes could-not-remove indistinguishable from removed. Both paths now use a retry handler and print the directory and the file count when anything survives, so the third state reaches the operator.",
-      "phase_note": "The ignore_errors call arrived with the commit that replaced the linked worktree with a throwaway clone; before that commit there was no clone to leak. The success path was corrected later the same day and the failure path was not.",
-      "contributing_factors": [
-        {
-          "factor": "The fix for this exact class was applied to the SIBLING path in the same function on the same day, 68 lines below, and the retry helper _force_rm was added 134 lines above BOTH call sites. Nothing compared the two removals of the same resource.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Both removals now read shutil.rmtree(wt, onerror=_force_rm) and both print the leftover-file NOTE, so the two paths out of one clone acquisition are spelled identically."
-        },
-        {
-          "factor": "The failure path is the one nobody exercises. A --pinned run only reaches it when `git checkout --detach` fails inside a clone that was just made successfully, which is rare -- so the leak could sit there indefinitely while the success path was observed working.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "The NOTE now names the directory and counts the files left, so if the path is ever taken the leak is reported by the run itself rather than discovered by a disk-space check later."
-        },
-        {
-          "factor": "ignore_errors=True cannot fail loudly BY DESIGN, and the thing it silences is specific and measurable: git marks loose objects read-only and Windows refuses to unlink a read-only file. Measured 2026-10-07 on the clone this batch's killed run left behind: 38 of 4,047 files were read-only.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "Proven in the opposite direction too: a fresh `git init` fixture has 3 of 33 files read-only while a LINKED WORKTREE directory has 0 of 2 and its .git is a FILE, so worktree removals are not in this class and were excluded rather than swept in."
-        },
-        {
-          "factor": "MY OWN DETECTOR FOR THIS CLASS WAS WRONG TWICE BEFORE IT WAS RIGHT, both times overcounting in the safe-looking direction. A per-file predicate flagged 85 of 160 files; a per-call predicate flagged 87 calls including 26 that run BEFORE the repo exists -- the mkdtemp-then-delete idiom `git worktree add` requires, where ignore_errors is correct.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "The predicate is now ordered -- the repo-creating line must precede the removal -- and the 26 exclusions are printed with their reason rather than silently dropped. Final population: 53 of 322 calls, 17 attributable to me, 7 genuine after reading every one."
-        },
-        {
-          "factor": "SIX OF THE SEVEN GENUINE SITES ARE NOT FIXED. They are mine by my own records but none is in this batch's declared FILES, so editing them would widen a claim without declaring it.",
-          "kind": "process",
-          "action_status": "planned",
-          "note": "Routed in docs/handoff-cody-2026-10-07b.md item 10 with file and line: tests/claims/run_freshness_probe.py:536, tests/push_gate/redaction_base_probe.py:200, tests/push_gate/refspec_and_override_probe.py:219 and :453, tests/run_bare_run_write_probe.py:267, tools/clone_health_check.py:399. A further 36 calls in other sessions' files are listed in the batch artefacts for chat to assign.",
-          "action": "ROUTED with file and line rather than left as an intention: tests/claims/run_freshness_probe.py:536, tests/push_gate/redaction_base_probe.py:200, tests/push_gate/refspec_and_override_probe.py:219 and :453, tests/run_bare_run_write_probe.py:267, tools/clone_health_check.py:399 -- each to be declared in the next batch's FILES and given the identical onerror change, whose patch shape is already proven in this commit. The 36 calls in other sessions' files are enumerated in the batch artefacts for chat to assign."
-        }
-      ],
-      "recurrence_open": "THE SHAPE IS TWO EXIT PATHS OUT OF ONE RESOURCE ACQUISITION, AND ONLY THIS FILE HAS BEEN CHECKED. Nothing sweeps for a function that acquires a resource and releases it differently on its success and failure paths. The six remaining genuine sites of mine are routed with file and line, and 36 more calls in other sessions' files are listed for assignment -- so the class is open by count, not merely in principle."
-    },
-    {
       "commit": "4ec0d5d51f56",
       "date": "2026-10-07",
       "subject": "fix(attribution): the last SEVEN write paths record WHO wrote the row -- 0 of 49 unattributed, and one of the two \"blocked\" refusals was borrowed from the other path",
@@ -24832,6 +24767,71 @@
         }
       ],
       "recurrence_open": "NO ROLE GATE WAS ADDED AND THAT IS DELIBERATE: which of owner, superintendent, manager, crew, office may write a BOQ rate or an invoice is a product decision this batch was told not to make unilaterally, so crew can still write an invoice once signed in. Logged open. The msb_* resources in the same dispatch region are a DIFFERENT app with the same licence-key-only shape and are explicitly NOT fixed -- arm D1 proves msb_products still answers without a session, which is a measurement and not an endorsement. And the auditor repro still reports REPRODUCES because it looks for verifySessionToken INSIDE each dispatch block while the gate is in the shared prelude; routed to hover2."
+    },
+    {
+      "commit": "6ca2e3a5d88c",
+      "date": "2026-10-07",
+      "subject": "fix(run_all_tests): the checkout-FAILURE path leaked the whole throwaway clone in silence -- item 10's one in-scope fix, re-applied",
+      "files": [
+        "tools/run_all_tests.py"
+      ],
+      "lines_added": 16,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "tools/run_all_tests.py --pinned removes its throwaway clone on two paths out of one acquisition, and only the SUCCESS path was fixed. The checkout-FAILURE path kept shutil.rmtree(wt, ignore_errors=True) while the success path 68 lines below had been changed to onerror=_force_rm on the same day, for this exact reason, with the helper sitting 134 lines above both call sites. git marks loose objects read-only and Windows refuses to unlink a read-only file, so ignore_errors abandons the object store in silence -- the original incident leaked 239 files without saying so. MEASURED on the clone this batch's KILLED run left behind: 4,047 files of which 38 were read-only, which is exactly the set ignore_errors cannot remove; removed cleanly with the retry handler, 0 left, 215 MB. Severity low because the failure path is rarely reached -- it needs a checkout to fail inside a clone that was just created successfully -- and the consequence is abandoned disk rather than a wrong verdict; but it is the same silent-failure shape and it sits in the harness every suite run goes through. METHOD: the 53-of-322 population was derived by a one-off scanner in the session scratchpad, not by any landed checker, and the verdict that this specific site is genuine came from reading it -- which is why this record says code-review and names no tool. The class was swept: 53 of 322 rmtree(ignore_errors=True) calls under tests/ and tools/ are in the real leak class once pre-create deletes are excluded and linked-worktree directories are measured out, 17 are attributable to me, and 7 are genuine after reading every one. This commit fixes the only one of the 7 inside this batch's declared FILES; the other six, and 36 not mine, are routed.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "0dcb2dafb001",
+        "date": "2026-10-07",
+        "subject": "fix(harness): --pinned builds a throwaway CLONE, not a linked worktree -- so the config write that broke this clone cannot reach it, measured byte for byte",
+        "lag_days": 0
+      },
+      "citation_note": "A cleanup that CANNOT report failure is the third state folded into success: ignore_errors=True makes could-not-remove indistinguishable from removed. Both paths now use a retry handler and print the directory and the file count when anything survives, so the third state reaches the operator.",
+      "phase_note": "The ignore_errors call arrived with the commit that replaced the linked worktree with a throwaway clone; before that commit there was no clone to leak. The success path was corrected later the same day and the failure path was not.",
+      "contributing_factors": [
+        {
+          "factor": "The fix for this exact class was applied to the SIBLING path in the same function on the same day, 68 lines below, and the retry helper _force_rm was added 134 lines above BOTH call sites. Nothing compared the two removals of the same resource.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Both removals now read shutil.rmtree(wt, onerror=_force_rm) and both print the leftover-file NOTE, so the two paths out of one clone acquisition are spelled identically."
+        },
+        {
+          "factor": "The failure path is the one nobody exercises. A --pinned run only reaches it when `git checkout --detach` fails inside a clone that was just made successfully, which is rare -- so the leak could sit there indefinitely while the success path was observed working.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The NOTE now names the directory and counts the files left, so if the path is ever taken the leak is reported by the run itself rather than discovered by a disk-space check later."
+        },
+        {
+          "factor": "ignore_errors=True cannot fail loudly BY DESIGN, and the thing it silences is specific and measurable: git marks loose objects read-only and Windows refuses to unlink a read-only file. Measured 2026-10-07 on the clone this batch's killed run left behind: 38 of 4,047 files were read-only.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Proven in the opposite direction too: a fresh `git init` fixture has 3 of 33 files read-only while a LINKED WORKTREE directory has 0 of 2 and its .git is a FILE, so worktree removals are not in this class and were excluded rather than swept in."
+        },
+        {
+          "factor": "MY OWN DETECTOR FOR THIS CLASS WAS WRONG TWICE BEFORE IT WAS RIGHT, both times overcounting in the safe-looking direction. A per-file predicate flagged 85 of 160 files; a per-call predicate flagged 87 calls including 26 that run BEFORE the repo exists -- the mkdtemp-then-delete idiom `git worktree add` requires, where ignore_errors is correct.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The predicate is now ordered -- the repo-creating line must precede the removal -- and the 26 exclusions are printed with their reason rather than silently dropped. Final population: 53 of 322 calls, 17 attributable to me, 7 genuine after reading every one."
+        },
+        {
+          "factor": "SIX OF THE SEVEN GENUINE SITES ARE NOT FIXED. They are mine by my own records but none is in this batch's declared FILES, so editing them would widen a claim without declaring it.",
+          "kind": "process",
+          "action_status": "planned",
+          "note": "Routed in docs/handoff-cody-2026-10-07b.md item 10 with file and line: tests/claims/run_freshness_probe.py:536, tests/push_gate/redaction_base_probe.py:200, tests/push_gate/refspec_and_override_probe.py:219 and :453, tests/run_bare_run_write_probe.py:267, tools/clone_health_check.py:399. A further 36 calls in other sessions' files are listed in the batch artefacts for chat to assign.",
+          "action": "ROUTED with file and line rather than left as an intention: tests/claims/run_freshness_probe.py:536, tests/push_gate/redaction_base_probe.py:200, tests/push_gate/refspec_and_override_probe.py:219 and :453, tests/run_bare_run_write_probe.py:267, tools/clone_health_check.py:399 -- each to be declared in the next batch's FILES and given the identical onerror change, whose patch shape is already proven in this commit. The 36 calls in other sessions' files are enumerated in the batch artefacts for chat to assign."
+        }
+      ],
+      "recurrence_open": "THE SHAPE IS TWO EXIT PATHS OUT OF ONE RESOURCE ACQUISITION, AND ONLY THIS FILE HAS BEEN CHECKED. Nothing sweeps for a function that acquires a resource and releases it differently on its success and failure paths. The six remaining genuine sites of mine are routed with file and line, and 36 more calls in other sessions' files are listed for assignment -- so the class is open by count, not merely in principle."
     },
     {
       "commit": "7ed27c5e78fa",
@@ -25724,6 +25724,177 @@
         }
       ],
       "recurrence_open": "OPEN as a CLASS. This is the mirror of PR 1.11 -- a could-not-run laundered into a FINDING rather than into a pass -- and no standing rule names that direction, so nothing stops the next tool spelling a timeout as 124. A sweep for integer timeout sentinels across tools/ is not done and is not claimed."
+    },
+    {
+      "commit": "578767d43db6",
+      "date": "2026-10-08",
+      "subject": "fix(run_all_tests): --pinned KEEPS the throwaway clone when the post-run tree read fails, and prints its path",
+      "files": [
+        "docs/handoff-cody-2026-10-07c.md",
+        "tools/run_all_tests.py"
+      ],
+      "lines_added": 246,
+      "lines_removed": 17,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "tools/run_all_tests.py --pinned deleted its throwaway clone unconditionally in a finally, including when the post-run tree read had FAILED -- which is the one case where that directory is the only evidence of why. Measured cost, 2026-10-07: a run ended EXIT 2 COULD NOT RUN reporting 'the clone was broken during this run', on git status exiting 3221225794 = 0xC0000142, which is a process that failed to INITIALISE, i.e. git could not be LAUNCHED. Whether the clone was really broken or git merely could not start was answerable in that directory and nowhere else, and the cleanup had already removed it; the batch had to report the cause as UNKNOWN for want of evidence the tool destroyed on its way out. The inner run now writes a .sairn-tree-unreadable marker when the tree read fails and _drop_pinned_clone() keeps the directory and prints its path. Kept for that ONE cause only -- clean runs, red runs and every other COULD-NOT-RUN still clean up, because keeping 215 MB per run would get the behaviour switched off and 29 abandoned directories is the failure in the other direction. The signal is a FILE and not a phrase in stdout, because the two halves are one tool but separate processes and a text contract between them is one rewording away from silently keeping nothing.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the call shipped with the file and no earlier commit introduced it"
+      },
+      "citation_note": "The tool reported COULD NOT RUN and then destroyed the only thing that could turn could-not-run into a cause. A third state that deletes its own evidence is a third state nobody can act on.",
+      "phase_note": "The unconditional cleanup arrived with the throwaway-clone design; before that commit there was no clone to keep.",
+      "contributing_factors": [
+        {
+          "factor": "The cleanup lived inline in a finally, so it could not be driven by a fixture without a three-hour run. An untestable cleanup is an unchecked cleanup.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Extracted as _drop_pinned_clone(wt) returning 'KEPT' or 'REMOVED', so arms assert WHICH BRANCH RAN rather than inferring it from whether a directory exists -- an existing directory is also what a failed delete looks like."
+        },
+        {
+          "factor": "The guard that detects the unreadable tree and the cleanup that deletes the evidence are in DIFFERENT PROCESSES -- inner run and outer wrapper -- so neither could see the other's state.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "A marker file written by the half that knows, read by the half that acts, with the marker name a single named constant so writer and reader cannot drift apart."
+        },
+        {
+          "factor": "MY OWN FIXTURE ARM FOR THIS FAILED TWICE BEFORE IT WAS RIGHT, both times because a source-reading arm contained its own subject. First it compared _src.index(guard) with _src.index(write) while the fixture a few lines above also writes the marker, so index found the fixture. Rewritten as a bounded window, the arm spelled the guard out as a literal and became a second occurrence of it, so find landed on the arm 100 lines early.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The needle is assembled at run time from chr(39), the guard must occur EXACTLY ONCE, and the window is asserted to have a DIRECTION -- the write is in the 400 chars after the guard and not the 400 before. Plus a behavioural arm that reads disk rather than source: the live clone carries no marker."
+        },
+        {
+          "factor": "Writing a marker into REPO is safe in a throwaway clone and is RESIDUE in the developer's own clone, which is exactly what the guard it sits inside exists to report.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The write is guarded by SAIRN_PINNED_RUN == '1', and an arm asserts the guard occurs once and precedes the write inside a bounded window."
+        }
+      ],
+      "recurrence_open": "ANY TOOL THAT REPORTS COULD-NOT-RUN AND THEN CLEANS UP IS THE SAME SHAPE, and none has been swept. The question to ask of each is whether the evidence for the refusal survives the refusal."
+    },
+    {
+      "commit": "bad131e0249d",
+      "date": "2026-10-08",
+      "subject": "fix(capture-exit): a RUNNING status for a DEAD pid now reads DEAD, never RUNNING -- fixture-locked with a pid that is dead by construction",
+      "files": [
+        "docs/handoff-cody-2026-10-07c.md",
+        "tools/capture_exit.py"
+      ],
+      "lines_added": 229,
+      "lines_removed": 7,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/capture_exit.py read a status file saying RUNNING <pid> and reported RUNNING without ever asking whether that pid still existed. Measured twice on 2026-10-07: two --pinned suite runs were stopped from outside, one by a harness stop that killed the whole process tree, and both left RUNNING on disk for a process that no longer existed. --read reported RUNNING for hours afterwards, so a reader waiting on it waits forever and a reader reporting it says a run is in progress that ended before lunch. The file's own docstring says a reader who finds RUNNING knows the answer is NOT YET KNOWN, which is true only while the writer is alive. read_status() now resolves liveness into three states -- RUNNING when the pid is alive, DEAD when it is gone, COULD-NOT-TELL-PID when liveness cannot be determined -- none of which is EXIT and none of which exits 0, and a RUNNING line whose pid will not parse is UNREADABLE. os.kill(pid, 0) is deliberately NOT used on Windows because there it calls TerminateProcess, a liveness check that kills what it asks about; OpenProcess with PROCESS_QUERY_LIMITED_INFORMATION plus GetExitCodeProcess can only read. Proved against the real stale file from the killed run, which now reads DEAD and exits 2, while the live run read in the same minute still reads RUNNING. STATED LIMIT, in the code: a recycled pid reads as alive, so DEAD is sound and RUNNING means alive-or-recycled; closing that needs the process start time compared against the status timestamp and this does not do it.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the call shipped with the file and no earlier commit introduced it"
+      },
+      "citation_note": "A status that cannot distinguish a live writer from a dead one folds the third state into an answer. The fix adds states rather than guessing, and none of them is success.",
+      "phase_note": "The RUNNING line and its reader landed together; no later edit introduced the gap, so the omission is in the original design.",
+      "contributing_factors": [
+        {
+          "factor": "The arm that was supposed to cover this was PASSING FOR THE WRONG REASON. It planted pid 999 and asserted RUNNING -- and 999 is almost certainly not a live process, so the arm was asserting that a status for a DEAD writer reads as RUNNING, which is the defect itself.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Replaced rather than kept beside the new arm, because the two statements cannot both be true. The planted pid is now dead BY CONSTRUCTION -- a child is spawned, reaped, and its number reused -- and a pid alive by construction sits beside it so the DEAD arm cannot be satisfied by a checker that answers False to everything."
+        },
+        {
+          "factor": "The docstring asserted the property the code did not have: 'a reader that finds RUNNING knows the answer is NOT YET KNOWN'. A reader checking whether that held read the sentence and stopped.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The sentence is now qualified in the file and the CLI prints a different line per state -- 'not yet known' is true of RUNNING and false of DEAD, and telling an operator to wait for a verdict that will never arrive is the same misdirection as reporting RUNNING."
+        },
+        {
+          "factor": "Liveness is platform-specific and the obvious idiom is actively dangerous here: os.kill(pid, 0) terminates on Windows. A correct POSIX habit would have silently killed the thing being asked about.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "OpenProcess with PROCESS_QUERY_LIMITED_INFORMATION (0x1000) plus GetExitCodeProcess, which can only read; POSIX keeps os.kill. The reasoning is in the code so the next reader does not reach for os.kill."
+        },
+        {
+          "factor": "A strong lock over read_status() says nothing about the --read CLI that wraps it, and this file had already been bitten by exactly that: a .strip() bound to a tuple raised on --read's first real use while every function-level arm passed.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Two of the new arms go through the CLI, and one of them asserts the word RUNNING appears NOWHERE in the DEAD output -- the half a startswith check alone would not catch."
+        }
+      ],
+      "recurrence_open": "EVERY OTHER STATUS-FILE READER ON THIS PLATFORM IS UNAUDITED for the same question. This fix covers one tool. Any file that records a pid and is read later -- lock files, andon records, the suite lock in run_all_tests.py -- can report a live holder that is gone, and nothing sweeps for it."
+    },
+    {
+      "commit": "e47263e2f90d",
+      "date": "2026-10-08",
+      "subject": "fix(leak class): the six remaining genuine rmtree(ignore_errors=True) sites get the proven onerror patch",
+      "files": [
+        "tests/claims/run_freshness_probe.py",
+        "tests/push_gate/redaction_base_probe.py",
+        "tests/push_gate/refspec_and_override_probe.py",
+        "tests/run_bare_run_write_probe.py",
+        "tools/clone_health_check.py"
+      ],
+      "lines_added": 86,
+      "lines_removed": 6,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "Six rmtree(..., ignore_errors=True) calls across five of my files removed directories that hold a real .git, where git marks loose object files READ-ONLY and Windows refuses to unlink a read-only file -- so the removal fails, ignore_errors swallows the refusal, and the tree is left behind in silence. Measured 2026-10-07 on the clone a killed run abandoned: 4,047 files of which 38 were read-only, which is exactly the set ignore_errors cannot remove; the retry handler removed all of them with 0 left. The class was swept across tests/ and tools/: 322 such calls, 53 in the real leak class once pre-create deletes are excluded and linked-worktree directories are measured out (an init'ed repo dir carries 3 of 33 read-only files, a linked worktree 0 of 2 and its .git is a FILE), 17 attributable to me and 7 genuine after reading every one. This commit fixes the six that remained after the seventh landed earlier. Each edit was anchored on an exact string whose occurrence count was asserted to be 1 before the write. tools/clone_health_check.py:328 was deliberately NOT touched: it removes a linked worktree and the next line is an arm asserting it is gone. Verified after patching: run_freshness_probe EXIT 0, redaction_base_probe EXIT 0, refspec_and_override_probe EXIT 0, run_bare_run_write_probe EXIT 0, clone_health_check --fixtures EXIT 0 with 11 arms, every code read from a capture_exit .status file or measured alone.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the call shipped with the file and no earlier commit introduced it"
+      },
+      "citation_note": "ignore_errors=True cannot report failure by construction, so could-not-remove and removed are the same observable outcome. The retry handler plus a leftover-file count makes the third state reachable.",
+      "phase_note": "Each call was written with ignore_errors from the start; no later edit introduced it.",
+      "contributing_factors": [
+        {
+          "factor": "My own detector for this class was WRONG TWICE before it was right, both times overcounting in the safe-looking direction -- 85 of 160 files on a per-file predicate, then 87 calls per-call including 26 that run BEFORE the repo exists.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The predicate is ordered: the repo-creating line must precede the removal, and the 26 exclusions are printed with their reason rather than silently dropped. A number that is too high reads as thoroughness, which is why it nearly shipped."
+        },
+        {
+          "factor": "The class is narrower than 'a tree with a repo in it', and the difference was MEASURED rather than reasoned: a linked worktree directory has no read-only files at all.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A throwaway git init plus worktree add, counting files without S_IWRITE: 3 of 33 in the repo dir, 0 of 2 in the worktree. Five candidate calls moved out of the class on that measurement."
+        },
+        {
+          "factor": "A scripted edit across five files needs a unique anchor per site or it lands in the wrong place -- a failure this session had already hit twice in a different file the same day.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The applier asserts the anchor count is exactly 1 per site and REFUSES that site otherwise, printing the count. 6 of 6 applied, 0 refused."
+        },
+        {
+          "factor": "The remaining 36 calls are in 25 files I do not own, so fixing them silently would widen a claim without declaring it.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "All 25 were claim-checked against the live registry at 2026-10-08T07:5xZ and are declared by nobody; they are added to my FILES in a re-stated claim and given the same patch, with the argument recorded that the patch is strictly-safer-equivalent -- ignore_errors and a swallowing onerror retry differ only in that the retry clears the read-only bit first."
+        }
+      ],
+      "recurrence_open": "36 CALLS IN 25 FILES NOT MINE REMAIN, enumerated with file and line in the batch artefacts, and all 25 files were claim-checked free at 2026-10-08. They are the same shape and the same one-line patch."
     }
   ],
   "started": "2026-09-09",
