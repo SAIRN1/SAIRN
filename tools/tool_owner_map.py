@@ -40,8 +40,10 @@ the output says so per row:
                names the path and no FILES list does. A subject is prose, not a
                declaration of scope, and the row cites the commit.
   UNRECORDED   no OWNER line, no claim -- but the file HAS git history, so
-               ownership is unrecorded rather than absent and the first/last
-               commits say where to start. ROUTABLE.
+               ownership is unrecorded rather than absent and `first_commit`,
+               the commit that INTRODUCED it, says where to start. ROUTABLE.
+               There is deliberately no `last_commit`: see build(), it made
+               `--check` red on every commit touching any of these files.
   UNKNOWN      no OWNER line, no claim, and NO resolvable history here. A
                genuine could-not-tell.
 
@@ -275,8 +277,24 @@ def build():
             # AttributeError: 'list' object has no attribute 'get'.
             fhist = history.get(rel) or []
             if ownerless_basis(fhist) == 'UNRECORDED':
+                # ── `last_commit` WAS HERE AND WAS REMOVED THE SAME DAY ─────
+                # It made `--check` go red on EVERY commit touching ANY of the
+                # 614 UNRECORDED files -- so the map became a
+                # regenerate-after-each-commit obligation, and a check that is
+                # red for a benign reason is a check people learn to ignore.
+                # Caught by this batch's own verification sweep: `--check` went
+                # 0 at the commit that added the field and 1 three commits
+                # later, and the entire diff was one row's last_commit moving
+                # because I had edited that file.
+                #
+                # `first_commit` is kept because it is the one that ANSWERS THE
+                # QUESTION: ownership is UNRECORDED, so the routing target is
+                # whoever introduced the file. That sha does not move unless
+                # history is rewritten. `last_commit` named the most recent
+                # toucher, which is not a routing target and changes constantly
+                # -- churn with no answer in it.
                 rows[rel] = {'owner': None, 'basis': 'UNRECORDED',
-                             'first_commit': fhist[-1], 'last_commit': fhist[0],
+                             'first_commit': fhist[-1],
                              'also_claimed_by': []}
             else:
                 rows[rel] = {'owner': None, 'basis': 'UNKNOWN',
@@ -530,7 +548,8 @@ def main(argv=None):
         print('\n  UNRECORDED (%d) -- routable: the commits are named in the map'
               % len(_u))
         for rel in _u:
-            print('    %-62s last %s' % (rel, (rows[rel].get('last_commit') or '?')))
+            print('    %-62s added %s'
+                  % (rel, (rows[rel].get('first_commit') or '?')))
         print('\n  UNKNOWN (%d) -- a COULD-NOT-TELL: no resolvable history here'
               % len(_k))
         for rel in _k:
@@ -550,7 +569,9 @@ def main(argv=None):
                    'UNRECORDED':
                        'no OWNER line and no claim, but the file HAS git '
                        'history -- so ownership is UNRECORDED rather than '
-                       'absent, and `first_commit`/`last_commit` say where to '
+                       'absent, and `first_commit` -- the commit that '
+                       'INTRODUCED it, which is the routing target -- says '
+                       'where to '
                        'start. ROUTABLE.',
                    'UNKNOWN':
                        'no OWNER line, no claim, and NO resolvable history in '
