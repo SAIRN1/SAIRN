@@ -1394,12 +1394,63 @@ def cmd_check(argv=()):
                        'which is a list.' % r['commit'])
         bad.extend(factor_problems(r, r['commit']))
 
+    # ── SUPERSEDED RECORDS, AND THE SKIP IS EARNED (2026-10-07, cc) ────────
+    # A record may carry `superseded_by: <survivor sha>` to retire itself from
+    # the duplicate test WITHOUT being deleted -- deletion fights this ledger's
+    # append-only invariant, which sairn_rebase_resolve.py enforces by refusing
+    # on a deleted record. The skip is honoured ONLY when the named survivor
+    # EXISTS and is an ANCESTOR of the base. Every other state is a FINDING, and
+    # it is a worse finding than the duplicate it was trying to clear: a
+    # duplicate double-counts a real defect, while a superseded record with no
+    # live survivor DROPS one out of every figure.
+    _sup_base, _sup_why = reseat_base()
+    _sup_live = 0
+    for r in reg['records']:
+        sur, st = superseded_survivor(r, _sup_base) if _sup_base else (
+            str(r.get(SUPERSEDED_FIELD) or '') or None,
+            'could-not-tell' if SUPERSEDED_FIELD in r else 'absent')
+        if st == 'absent':
+            continue
+        if st == 'live':
+            _sup_live += 1
+        elif st == 'self':
+            bad.append('%s -- superseded_by names ITSELF (%s). A record cannot '
+                       'be its own surviving twin, and this would drop a real '
+                       'defect out of every figure with nothing carrying it.'
+                       % (r['commit'], sur))
+        elif st == 'missing':
+            bad.append('%s -- superseded_by names %r, which does not resolve as '
+                       'an object in this clone. The skip is NOT granted: a '
+                       'superseded record with no survivor is worse than a '
+                       'duplicate.' % (r['commit'], sur))
+        elif st == 'unreachable':
+            bad.append('%s -- superseded_by names %s, which resolves but is NOT '
+                       'an ancestor of %s. A dangling survivor would retire a '
+                       'real record in favour of one that is not on the branch.'
+                       % (r['commit'], str(sur)[:12], _sup_base))
+        elif st == 'could-not-tell':
+            bad.append('%s -- carries superseded_by and reachability COULD NOT '
+                       'BE MEASURED (%s). Not folded into clean: an unchecked '
+                       'exemption is the thing this field must never become.'
+                       % (r['commit'], _sup_why))
+
+    def _skips_duplicate_test(rec):
+        if SUPERSEDED_FIELD not in rec or not _sup_base:
+            return False
+        return superseded_survivor(rec, _sup_base)[1] == 'live'
+
     seen = set()
     for r in reg['records']:
         k = (r['commit'], r['summary'])
+        if _skips_duplicate_test(r):
+            continue
         if k in seen:
             bad.append('%s -- duplicate record' % r['commit'])
         seen.add(k)
+    if _sup_live:
+        print('SUPERSEDED (%d): retired from the duplicate test, each with a '
+              'survivor that EXISTS and is an ancestor of %s. Not deleted -- '
+              'this ledger is append-only.' % (_sup_live, _sup_base))
     # REPORTED, NOT SILENT, AND NOT A FAILURE. A re-seated record is sound --
     # the commit is really there under a new hash -- but a reader deserves to
     # know the register's SHAs have drifted from `main`, and `--reseat` is one
@@ -1571,6 +1622,64 @@ def reseat_base():
     return None, 'neither origin/main nor HEAD could be read'
 
 
+SUPERSEDED_FIELD = 'superseded_by'
+
+
+def superseded_survivor(rec, base):
+    """-> (survivor_sha, state) for a record carrying superseded_by.
+
+    state is one of:
+      'live'        the survivor EXISTS and is an ANCESTOR of `base`. Only this
+                    state lets --check skip the duplicate test.
+      'missing'     the named survivor does not resolve as an object at all.
+      'unreachable' it resolves but is NOT an ancestor -- a dangling object, so
+                    pointing a superseded record at it would retire a real
+                    record in favour of one that is not on the branch.
+      'self'        the record names ITSELF. A record cannot be its own twin,
+                    and this is the shape that would silently delete a defect
+                    from every figure with no survivor to carry it.
+      'absent'      no superseded_by field. Not a state to act on.
+
+    ── WHY THE SKIP IS CONDITIONAL AND NOT A FLAG (2026-10-07, cc) ──────────
+    The four duplicate PAIRS in this register are byte-identical apart from
+    `commit`, so retiring one of each pair loses nothing -- but DELETING it
+    fights this ledger's own append-only invariant, which
+    tools/sairn_rebase_resolve.py enforces by REFUSING on a deleted record. So
+    the stale twin stays and carries a pointer to the survivor instead.
+    THE POINTER IS ONLY HONOURED WHEN THE SURVIVOR IS REALLY THERE. An
+    unconditional `if rec.get('superseded_by'): continue` would be a
+    self-certifying exemption: one field, typed by anybody, and the record
+    leaves every count with nothing checked. A superseded record whose survivor
+    is missing, dangling or itself is WORSE than a duplicate, because a
+    duplicate at least double-counts a real defect while this would drop one.
+    """
+    if SUPERSEDED_FIELD not in rec:
+        return (None, 'absent')
+    sur = str(rec.get(SUPERSEDED_FIELD) or '').strip()
+    if not sur:
+        return (sur, 'missing')
+    own = str(rec.get('commit') or '').strip()
+    # SELF-REFERENCE BY PREFIX, not by equality: the register stores 12-char
+    # shas and a 40-char self-reference is still a self-reference.
+    if own and (sur.startswith(own) or own.startswith(sur)):
+        return (sur, 'self')
+    if not resolves(sur):
+        return (sur, 'missing')
+    if not reachable(sur, base):
+        return (sur, 'unreachable')
+    return (sur, 'live')
+
+
+def resolves(sha):
+    """Does this name an object in THIS clone? Separate from reachable()."""
+    try:
+        out = subprocess.run(['git', 'cat-file', '-e', str(sha) + '^{commit}'],
+                             cwd=REPO, capture_output=True)
+        return out.returncode == 0
+    except Exception:                                           # noqa: BLE001
+        return False
+
+
 def reachable(sha, base):
     """Is this commit an ancestor of `base`?
 
@@ -1718,6 +1827,7 @@ def cmd_reseat():
     keys = {(r['commit'], r.get('summary')) for r in reg['records']}
     n = 0
     collided = 0
+    superseded_skipped = 0
     for r in reg['records']:
         sha, how = resolve(r, idx)
         # ── NO `if how == 'external': continue` HERE, AND THAT IS MEASURED ──
@@ -1747,6 +1857,19 @@ def cmd_reseat():
                       % (r['commit'],
                          'AMBIGUOUS by subject' if hits else 'no subject match'))
                 continue
+        # ── A SUPERSEDED RECORD IS NEVER RE-SEATED (2026-10-07, cc) ────────
+        # It has been retired. Re-pointing its sha would either recreate the
+        # duplicate it was retired to avoid, or move a pointer nobody reads --
+        # and either way the run must not count it as work done, because a
+        # "re-seated 1 record" line over a retired record is a success report
+        # about nothing. Skipped BEFORE the collision guard so it cannot be
+        # mistaken for a collision either.
+        if SUPERSEDED_FIELD in r:
+            if how in ('subject', 'dangling'):
+                print('  %s  SUPERSEDED by %s -- not re-seated, and not counted'
+                      % (r['commit'], str(r.get(SUPERSEDED_FIELD))[:12]))
+                superseded_skipped += 1
+            continue
         if how in ('subject', 'dangling'):
             # ── DO NOT CREATE A DUPLICATE (2026-10-07, cc) ──────────────────
             # The register's identity is (commit, summary) and --check REFUSES a
@@ -1778,6 +1901,11 @@ def cmd_reseat():
             r['commit'] = sha
             n += 1
     if not n:
+        if superseded_skipped and not collided:
+            print('nothing re-seated: %d record(s) are SUPERSEDED and are never '
+                  're-seated. That is not a no-op to report as success.'
+                  % superseded_skipped)
+            return 1
         if collided:
             print('nothing re-seated: %d record(s) COLLIDE with an existing '
                   'record at their destination and were left alone. That is a '
@@ -1849,6 +1977,9 @@ def cmd_reseat():
         return 2
 
     print('re-seated %d record(s).' % n)
+    if superseded_skipped:
+        print('%d SUPERSEDED record(s) were skipped and are NOT in that count.'
+              % superseded_skipped)
     if collided:
         print('%d record(s) LEFT ALONE on a destination collision -- see above. '
               'This run is a partial repair and says so.' % collided)
