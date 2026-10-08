@@ -114,6 +114,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_tier_a_review_gate_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "exempt = 0"
+    }
+   ],
+   "sha": "0ecabbb30104d77eb2bac263293614ff94e19ef8",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/run_all_tests.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0ecabbb30104d77eb2bac263293614ff94e19ef8",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/provisioning_attribution.js",
    "class": "test file",
    "level": "CHANGE",
@@ -238,6 +259,27 @@
   {
    "path": "tests/run_tier_a_review_gate_probe.py",
    "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "exempt = 0"
+    }
+   ],
+   "sha": "3e16e048305094a0daad61c8609ad21c376e15cf",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/run_all_tests.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "3e16e048305094a0daad61c8609ad21c376e15cf",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_tier_a_review_gate_probe.py",
+   "class": "test file",
    "level": "CHANGE",
    "shapes": [],
    "sha": "3ead2e8618e14e0d62a54200cdfdfee591183b85",
@@ -343,6 +385,27 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "5080cf60737544eb5f95cff4aa390a50ef9673e4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_tier_a_review_gate_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "exempt = 0"
+    }
+   ],
+   "sha": "535c261c04ac198ad825b34d57cfb8fb62374892",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/run_all_tests.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "535c261c04ac198ad825b34d57cfb8fb62374892",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -537,6 +600,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_tier_a_review_gate_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "exempt = 0"
+    }
+   ],
+   "sha": "94debed9d4f3d0ae1d093c560a51a337966ee3c4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/run_all_tests.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "94debed9d4f3d0ae1d093c560a51a337966ee3c4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/provisioning_attribution.js",
    "class": "test file",
    "level": "CHANGE",
@@ -566,6 +650,27 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "9b15a38eebe57440111004524ff86313551a8bfe",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_tier_a_review_gate_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "exempt = 0"
+    }
+   ],
+   "sha": "9e8f0dc7a0eedc61e5610cb48081141a675f6a78",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/run_all_tests.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9e8f0dc7a0eedc61e5610cb48081141a675f6a78",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -857,6 +962,27 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "f1d2fd1988785a6e4a3f9ee00f87ab8d9d1a5456",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_tier_a_review_gate_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "exempt = 0"
+    }
+   ],
+   "sha": "f8fade035082ab5b6f6b6e9f529e667ff5bf6fd4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/run_all_tests.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f8fade035082ab5b6f6b6e9f529e667ff5bf6fd4",
    "criteria_version": "2026-10-06.1"
   },
   {

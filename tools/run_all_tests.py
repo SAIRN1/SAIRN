@@ -832,7 +832,22 @@ def pinned_main(argv):
                         capture_output=True, text=True, encoding='utf-8',
                         errors='replace')
     if co.returncode != 0:
-        shutil.rmtree(wt, ignore_errors=True)
+        # ── THE SAME FIX AS THE SUCCESS PATH BELOW, WHICH THIS ONE MISSED ───
+        # This is the checkout-FAILURE path and it still said
+        # `ignore_errors=True`, 68 lines above the success path that was fixed
+        # for exactly this reason on 2026-10-07. The clone is already on disk
+        # when a checkout fails, `.git/objects` is already populated, and git
+        # marks loose objects READ-ONLY -- measured 2026-10-07: 3 of 33 files
+        # in a freshly-initialised repo. So the failure path leaked the whole
+        # clone and said COULD NOT RUN while doing it. One file, two removals,
+        # one of them fixed: the shape worth naming is that a fix applied to
+        # the path somebody was looking at does not reach the sibling path.
+        shutil.rmtree(wt, onerror=_force_rm)
+        if os.path.isdir(wt):
+            _left = sum(1 for _r, _d, fs in os.walk(wt) for _f in fs)
+            sys.stderr.write('NOTE: the throwaway clone was left behind at %s\n'
+                             '      %d file(s) remain. (rm -rf %s)\n'
+                             % (wt, _left, wt))
         sys.stderr.write('COULD NOT RUN: cloned, but could not check out %s in '
                          'the throwaway clone.\n%s\n'
                          % (sha[:12], co.stderr.strip()))

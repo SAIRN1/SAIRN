@@ -3448,8 +3448,8 @@
       "task": "batch24 at HEAD 81bd8814, SCOPE NARROWED NOT REWORDED, and the item premise is WRONG IN A DIFFERENT WAY THAN THE ITEM SAYS. Item 1 says my 6 eligible Tier A obligations are blocked by FOURTH. They are not: fourth batch15 claim that declared docs/tier-a-reviews.json was RELEASED and his live claim fourth-1791390962 at 1.1h does not declare it, and the two hank claims that declare it are EXPIRED at 24.9h and 19.0h. THE REAL HOLDER IS CC, claimed 2026-10-07T17:24:00Z, 17 minutes before my first claim attempt, declaring docs/tier-a-reviews.json in FILES, with its own item 0 being the identical most-overdue-first discharge. My first claim attempt was REFUSED on exactly that overlap and the refusal is recorded rather than overridden. SO ITEM 1 IS REPORT-ONLY: I list my eligible obligations with their ages and I discharge NONE, and the ledger is NOT in my FILES. Remaining work: (2) per-ITEM checkpoint habit, one line to the handoff before the next item begins, NO tool built. (3) re-run the pinned suite from a fresh throwaway clone with capture_exit, state run count and first-run result, clear the andon ONLY on a clean run. (4) diagnose 0xC0000142 BEFORE item 3 runs: desktop heap, handles, git process count during the run; cause or unknown, never a guess. (5) prune every UNLOCKED stale worktree registration, report what holds the locked one, hash .git/config before and after and confirm core.bare stays false. (6) triage the 2 remaining dependabot advisories beyond busboy, fix whichever is lockfile-only and byte-verify the lock. (7) name the 35-minute file by TIMED per-file runs with a hard timeout, not adjacency; the 900s/14400s bound stays UNSET until a second measured run supports it. (8) find the missing ITEM 15 in docs/2026-10-06-cody-routed.md from the transcript and handoffs, do not guess; then re-derive the weak-basis reseat call and report keep or reverse. (9) confirm the 20-file SQL runbook push status with path and sha. (10) sweep every fixture and test I authored for rmtree(ignore_errors=True) and the same leak class, X of Y, fix mine and route the rest. (11) cause-tag every defect confirmed this batch. (12-15) four diagnostics: context breakdown, CLAUDE.md size, whether tool output is filtered or raw, and whether any read over 1000 lines is whole-file. (16) handoff plus the report file on Drive. CONFLICTS RE-DERIVED AT 81bd8814 FROM A LIVE READ OF ALL SEVEN CLAIM FILES WITH EXPIRY APPLIED, THEN CORRECTED BY THE MATCHER ITSELF: docs/tier-a-reviews.json is CC S and is NOT in my FILES and NOT touched. tools/defect_register.py, tools/condition_coverage.py, tools/outline.py, tools/sairn_load_state_check.py and tools/load_deadline_seed.py are CC S. docs/METHODOLOGY.md, docs/2026-09-13-cross-domain-disciplines.md, docs/known-red-suites.json, tools/truthy_sum_baseline.json and tests/phi_cache_scoped_to_user.js are FOURTH S. api/sd-data.js is HANK S. tools/run_all_tests.py, tests/run_tier_a_review_gate_probe.py, package-lock.json, docs/scrutiny-flags.json and tools/capture_exit.py were each checked against every live claim FILES section and are declared by nobody. docs/defect-density-register.json is declared by nobody BUT tools/defect_register.py is CC S and cc item 3 is about that tool, so I only APPEND through the tool and I do not edit it. I close only findings I originated and reclassify none. I read and reference no auditor tool. FILES: tools/run_all_tests.py tests/run_tier_a_review_gate_probe.py package-lock.json docs/defect-density-register.json docs/scrutiny-flags.json docs/2026-10-07-cody-batch24.md docs/handoff-cody-2026-10-07b.md SAIRN-ACTIVE-WORK-cody.md",
       "claimed_at": "2026-10-07T19:15:55Z",
       "claimed_at_epoch": 1791400555.0068364,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-07T23:55:44Z",
       "files": [
         "SAIRN-ACTIVE-WORK-cody.md",
         "docs/2026-10-07-cody-batch24.md",
@@ -3458,6 +3458,35 @@
         "docs/scrutiny-flags.json",
         "package-lock.json",
         "tests/run_tier_a_review_gate_probe.py",
+        "tools/run_all_tests.py"
+      ]
+    },
+    {
+      "id": "cody-1791418021",
+      "session": "cody",
+      "subject": "Tooling",
+      "task": "batch25 (b2) at HEAD b3ce8f23, every premise re-derived AT PICKUP from the registry via sairn_claim.py and from origin/main, and TWO ITEMS ARE SKIPPED ON MEASURED PREMISES. (1) Tier A is BLOCKED: docs/tier-a-reviews.json is DECLARED IN FILES by CC, claimed 2026-10-07T23:20:05Z, whose own item 1 is the same most-overdue-first discharge. I print the holder and discharge NOTHING. The ledger is not in my FILES. (2) SKIPPED AND SAID SO: cc superseded_by support has NOT landed -- git show origin/main:tools/defect_register.py has zero superseded hits and no superseded probe exists on origin/main -- so the four stale records are NOT touched and no 34->31 / 194->193 / 25->22 figure is reported. tools/defect_register.py is CC S and I only INVOKE it. (3) re-seat my own 4aa33b4565dd record THROUGH THE TOOL after verifying 27de70bee07a myself with git log --diff-filter=A; docs/defect-density-register.json is declared by nobody. (4) remove my duplicate LEDGER arms from tests/run_tier_a_review_gate_probe.py, keep the subject_sha and _open_record unit arms, cc tests/run_tier_a_open_basis_probe.py survives and is not edited. (5) relaunch the pinned suite DETACHED so a harness stop cannot kill it, childwatch alongside, liveness by pid, NO result claimed before a completed pass. (6) capture_exit.py must report DEAD for a RUNNING status whose pid is gone, fixture-locked with a planted dead pid. (7) run_all_tests.py --pinned keeps the clone and prints its path when the post-run tree read fails, fixture-locked. (8) the six remaining genuine leak sites declared and fixed, then the 36 not mine checked per file and either fixed if free or routed to the holder, X of 36 reported. (9) delete the stale sairn-suite-pinned-* dirs with no live pid and the interrupted newchk-27740 worktree, with .git/config sha256 proved unchanged. (10) write the missing ITEM 15 section into docs/2026-10-06-cody-routed.md and list every routing row with no body. (11) a reconciliation header on the SQL runbook listing every sql/ path with each count against its denominator, picking none. (12) the atomic push loop into docs/SAIRN-PROCESS-RULES.md. (13) paste-ready text extending the pre-build name check to test files, for that rule owner. (14) handoff then the report file. CONFLICTS RE-DERIVED AT PICKUP ON THE FILES SEGMENT ONLY, BECAUSE A COARSE READ OF THE WHOLE TASK TEXT REPORTED THE DEFECT REGISTER AS HELD BY TWO SESSIONS THAT ONLY DISCUSS IT: docs/tier-a-reviews.json, tools/defect_register.py and docs/scrutiny-flags.json are DECLARED by CC and are not written by me -- scrutiny-flags rows the push gate writes are STASHED and reported to cc, not committed into her file. docs/METHODOLOGY.md is FOURTH S and item 13 is paste-ready text, not an edit. tools/run_all_tests.py, tools/capture_exit.py, tests/run_tier_a_review_gate_probe.py, docs/2026-10-06-cody-routed.md, docs/2026-10-05-michael-sql-runbook.md, docs/SAIRN-PROCESS-RULES.md, docs/defect-density-register.json and the five leak-site test files are DECLARED BY NOBODY at this HEAD. sairn-guardian-v2 is NOT loaded: no item edits an app file. I close only findings I originated and reclassify none. I read and reference no auditor tool. FILES: tools/run_all_tests.py tools/capture_exit.py tests/run_all_tests_pinned_probe.py tests/run_capture_exit_probe.py tests/run_tier_a_review_gate_probe.py tests/claims/run_freshness_probe.py tests/push_gate/redaction_base_probe.py tests/push_gate/refspec_and_override_probe.py tests/run_bare_run_write_probe.py tools/clone_health_check.py docs/defect-density-register.json docs/2026-10-06-cody-routed.md docs/2026-10-05-michael-sql-runbook.md docs/SAIRN-PROCESS-RULES.md docs/2026-10-07-cody-b25-routed.md docs/handoff-cody-2026-10-07c.md SAIRN-ACTIVE-WORK-cody.md",
+      "claimed_at": "2026-10-08T00:07:01Z",
+      "claimed_at_epoch": 1791418021.7234893,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/2026-10-05-michael-sql-runbook.md",
+        "docs/2026-10-06-cody-routed.md",
+        "docs/2026-10-07-cody-b25-routed.md",
+        "docs/SAIRN-PROCESS-RULES.md",
+        "docs/defect-density-register.json",
+        "docs/handoff-cody-2026-10-07c.md",
+        "tests/claims/run_freshness_probe.py",
+        "tests/push_gate/redaction_base_probe.py",
+        "tests/push_gate/refspec_and_override_probe.py",
+        "tests/run_all_tests_pinned_probe.py",
+        "tests/run_bare_run_write_probe.py",
+        "tests/run_capture_exit_probe.py",
+        "tests/run_tier_a_review_gate_probe.py",
+        "tools/capture_exit.py",
+        "tools/clone_health_check.py",
         "tools/run_all_tests.py"
       ]
     }

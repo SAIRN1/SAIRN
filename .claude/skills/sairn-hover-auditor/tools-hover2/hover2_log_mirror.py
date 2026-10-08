@@ -115,9 +115,20 @@ ANCHOR_OUTBOX = os.path.join(HERE, '.mirror2-anchor-outbox.jsonl')
 # platform repo, .claude/skills/sairn-hover-auditor/tools-hover2/). Staged
 # with -f because the anchor outbox is deliberately gitignored against the
 # LOCAL repo's own snapshots; the mirror carries it per this decision.
+#
+# WIDENED 2026-10-07 (batch M), BY THE SAME STANDING AUTHORITY, NOT
+# UNILATERALLY: the dispatching instruction for this batch directly asked
+# for "push the token alongside your mirror so Michael can see it exists",
+# which is this scope decision being updated by the same party who made
+# it, not this role reaching past it. Two files added, same STABLE-FILE
+# shape as TIP-BEACON.md (overwritten per publish, not an accumulating
+# per-seq list): the current RFC 3161 token over the chain tip and the
+# exact message it covers. Still no tool scripts.
 MIRROR_ALLOWLIST = ('hover-audit-log.jsonl',
                     '.mirror2-anchor-outbox.jsonl',
-                    'TIP-BEACON.md')
+                    'TIP-BEACON.md',
+                    'chain-tip-timestamp.tsr',
+                    'chain-tip-timestamp.message.txt')
 PROPOSED_REPO = 'SAIRN-1/hover2-log-mirror'
 H1_MIRROR_REPO = ('sairn-1', 'hover-log-mirror')
 EXPIRY_WARN_DAYS = 14

@@ -85,8 +85,8 @@
       "task": "audit continuation batch N: push signed chain evidence to the shared status share, continue the vertical sweeps, finish the bypass-log pass, re-confirm the open findings, build two new completeness tools, write a tool-building skill, re-hash own tool copies, finish the dependency items, run diagnostics",
       "claimed_at": "2026-10-07T19:15:58Z",
       "claimed_at_epoch": 1791400558.7034132,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-07T23:53:28Z",
       "files": null
     }
   ],

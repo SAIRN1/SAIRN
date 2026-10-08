@@ -811,3 +811,577 @@ I quote as data.
 `docs/purge-evidence/2026-09-30-SAIRN-fourth.json`.** A purge-evidence record is
 append-only evidence of what was purged; rewriting it would falsify the evidence
 rather than fix a citation. Named here instead.
+
+---
+
+## SEQ 17-A -- THE PR 1.2 SWEEP: every checker that derives a key set by regex over a RAW app file
+
+**To: whoever owns each file below. NOTHING HERE IS FIXED BY ME -- **I own none of them**, by the owner map AND by a read of all 1,265 claim task strings across all seven clone claim files. Measured, classified and routed with the exact line.**
+
+PR 1.2 is *"Grep cannot tell code from text that describes code."* Batch 16 paid for it once: `tests/phi_cache_scoped_to_user.js` arm 5a counted a comment that exists to say a key is never written as the key being written, and that one arm held four register rows shut. This is the sweep for the same shape everywhere else.
+
+### How the population was derived, so the figure is checkable
+
+A file is a CANDIDATE when all three hold: it reads a single-file SAIRN app by literal name; it applies a regex that extracts an identifier or key set (a capture group plus an identifier character class or a storage-accessor shape); and it does **not** import `tests/lib/strip_comments.js` or any comment-stripper. (c) is the defect condition; (a) and (b) are what make it reachable.
+
+| | |
+|---|---|
+| tracked scripts under `tests/`, `tools/`, `fmea/` | **983** |
+| candidates -- read an app, derive identifiers, **no stripper** | **53** |
+| for contrast: read an app and **do** use a stripper | **45** |
+| patterns measured both ways (JS **188** + PY **46**) | **234** |
+| patterns that would not compile out of their literal, named below | **4** |
+| **patterns whose DERIVED SET SHRINKS when comments go** | **47** |
+
+**Measured both ways against the SAME stripped bytes.** `stripComments()` output was written to scratch once per app and the python half read those files rather than implementing a second stripper -- two strippers would be two things to drift, which is the reason `tests/lib/strip_comments.js` exists at all.
+
+### The findings, ranked by how much of the derived set is PHANTOM
+
+A PHANTOM MEMBER is a set member that exists only inside a comment. The fraction is the blast radius: a checker whose set is 100% phantom is asserting entirely about prose.
+
+#### `tests/sairnvet_seed_never_syncs.js:98` — **100% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairnvet.html` — derived set **1 raw → 0 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      const call = /\b(\w+)\(\s*(seed\w*|demo\w*)\s*\)\s*;/.exec(body);
+
+* **phantom members:** `["saveX"]`
+
+#### `tools/stale_row_sweep.py:240` — **100% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairnvet.html` — derived set **29 raw → 0 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      SYMBOL_RE = re.compile(r'`([A-Za-z_][A-Za-z0-9_]{4,})(?:\(\))?`')
+
+* **phantom members:** `["SpeechRecognition", "_svAuditRows", "active", "aquatic", "author", "before", "check_license", "companion", "defaults", "derived", "exotic", "exportTableCSV", "kennelCount", "label_sourced", "large", "lastTransaction", "provisioned", "reference", "setTimeout", "shared_knowledge", "species", "svPushOne", "sv_controlled", "today", "tools", "total", "typeof", "verify_required", "wantEnvelope"]`
+
+#### `tests/seed_never_syncs_platform.js:105` — **50% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairnbuild.html` — derived set **2 raw → 1 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      const hm = /\b(\w*SyncCollection)\s*\(/.exec(b.body);
+
+* **phantom members:** `["sfSyncCollection"]`
+
+#### `tests/seed_never_syncs_platform.js:105` — **50% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `stonedesk.html` — derived set **2 raw → 1 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      const hm = /\b(\w*SyncCollection)\s*\(/.exec(b.body);
+
+* **phantom members:** `["sfSyncCollection"]`
+
+#### `tests/seed_never_syncs_platform.js:274` — **50% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairnfreedom.html` — derived set **2 raw → 1 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      /(Suppress|Paused|Seeding)\w*\s*=\s*true/.test(b.body);
+
+* **phantom members:** `["Paused"]`
+
+#### `tests/seed_never_syncs_platform.js:274` — **50% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `stonedesk.html` — derived set **2 raw → 1 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      /(Suppress|Paused|Seeding)\w*\s*=\s*true/.test(b.body);
+
+* **phantom members:** `["Paused"]`
+
+#### `tests/licence_rekey_isolation.js:400` — **40% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairnbiz.html` — derived set **6121 raw → 3653 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      const keys = (expr.match(/'([A-Za-z0-9_]+)'/g) || [])
+
+* **phantom members:** `["004", "040", "0b", "0fa5fc6", "112k", "12h", "13", "134", "17867", "17x", "1954", "1a", "1f1705e", "200aaba8", "211", "240", "262", "271", "284", "286", "2xx", "300A", "304", "308", "32", "32h", "339", "345", "35", "3828", "400s", "402", "404s", "43", "44", "47", "4700000000003", "500ms", "503s", "507", "508", "517", "54", "558", "592", "5e", "60s", "62", "64", "66666666666667", "67", "72", "7cd`
+
+#### `tests/seed_never_syncs_platform.js:147` — **40% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairnbiz.html` — derived set **6121 raw → 3653 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      return (m[2].match(/'([\w]+)'/g) || []).map((s) => s.replace(/'/g, ''));
+
+* **phantom members:** `["004", "040", "0b", "0fa5fc6", "112k", "12h", "13", "134", "17867", "17x", "1954", "1a", "1f1705e", "200aaba8", "211", "240", "262", "271", "284", "286", "2xx", "300A", "304", "308", "32", "32h", "339", "345", "35", "3828", "400s", "402", "404s", "43", "44", "47", "4700000000003", "500ms", "503s", "507", "508", "517", "54", "558", "592", "5e", "60s", "62", "64", "66666666666667", "67", "72", "7cd`
+
+#### `tests/licence_rekey_isolation.js:400` — **38% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairnsenior.html` — derived set **4973 raw → 3070 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      const keys = (expr.match(/'([A-Za-z0-9_]+)'/g) || [])
+
+* **phantom members:** `["03", "04", "05", "0b", "1099", "13", "1339", "134", "1396b", "15s", "17", "180", "1a", "21", "2540", "256", "26", "27", "2964", "2x", "32", "3416", "3429", "3925", "3964", "3971", "400s", "403", "404s", "427", "428", "4675", "517c47b1", "518", "5252", "5837", "6052", "64", "64KB", "72", "7cd70f83", "8pm", "999", "A0", "A2", "A3", "A5", "A6", "A7", "ABOUT", "ABOVE", "ABSENT", "ABSOLUTE", "ACCESS"`
+
+#### `tests/licence_rekey_isolation.js:400` — **36% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairncare.html` — derived set **4720 raw → 2999 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      const keys = (expr.match(/'([A-Za-z0-9_]+)'/g) || [])
+
+* **phantom members:** `["02", "05", "09", "134", "14219", "149", "15s", "17", "1a", "24hr", "26", "27", "28", "33", "39c", "400", "404", "404s", "409", "4xx", "502", "503", "5xx", "64", "72", "75b9c07", "7cd70f83", "8pm", "A0", "ABSENT", "ACCEPTED", "ACCEPTS", "ACCESS", "ACCIDENT", "ACTION", "ACTIVE", "ACTIVITIES", "ADD", "ADDED", "ADDING", "ADDITIVE", "ADDS", "ADOPTING", "ADOPTS", "ADVICE", "AFTER", "AGAIN", "AL", "ALE`
+
+#### `tests/licence_rekey_isolation.js:400` — **36% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairndesign.html` — derived set **4363 raw → 2773 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      const keys = (expr.match(/'([A-Za-z0-9_]+)'/g) || [])
+
+* **phantom members:** `["04", "05", "07", "13", "134", "135", "1461", "1471", "17867", "1a", "21", "29", "2935", "2xx", "403s", "404s", "4th", "500ms", "60s", "64", "72", "75b9c07", "7cd70f83", "999", "9db14368", "A0", "A1", "ABOUT", "ABSENCE", "ABSENT", "ACCESS", "ACCESSORS", "ADDED", "ADDITIVE", "ADMIN", "ADOPTS", "AFFECTED", "AFTER", "AGREEMENT", "ALL", "ALREADY", "ALSO", "AN", "ANALYTICS", "ANSWER", "ANY", "APP", "A`
+
+#### `tests/licence_rekey_isolation.js:400` — **35% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairndental.html` — derived set **5646 raw → 3661 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      const keys = (expr.match(/'([A-Za-z0-9_]+)'/g) || [])
+
+* **phantom members:** `["02", "03", "05", "06", "09", "0b", "134", "18th", "1a", "2016", "233", "256", "317", "39c", "403", "404s", "4715", "4xx", "503", "569b2689", "5MB", "5xx", "6103", "72", "7cd70f83", "A0", "A4", "A7", "A8", "A9", "ABANDONED", "ABOVE", "ABSENCE", "ACCEPTANCE", "ACCESS", "ACCESSORS", "ACT", "ACTUALLY", "ADDED", "ADOPTS", "AGAIN", "AGAINST", "AGEING", "AGGREGATE", "ALREADY", "ALREADY_PROVISIONED", "A`
+
+#### `tests/licence_rekey_isolation.js:400` — **34% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairnscape.html` — derived set **4171 raw → 2746 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      const keys = (expr.match(/'([A-Za-z0-9_]+)'/g) || [])
+
+* **phantom members:** `["11", "13", "134", "1530", "17", "17867", "18", "19", "193", "1a", "201", "21", "258", "2877", "3137", "3491", "3567", "3639", "403", "404", "404ing", "404s", "44", "4xx", "500ms", "64", "64KB", "72", "7cd70f83", "ABSENT", "ACCESS", "ADOPTS", "ADVICE", "ALL", "ALREADY", "ALWAYS", "AN", "ANALYTICS", "AND", "ANY", "ARE", "AS", "ASSIGNMENT", "ASSISTANT", "ASSUMED", "AT", "Adopt", "Agentic", "An", "A`
+
+#### `tests/faults/grd_write_faults.js:385` — **33% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairngrounds.html` — derived set **3 raw → 2 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      const re = /(function\s+|\w+\s*=\s*|await\s+|return\s+)?cmSavePoints\s*\(/g;
+
+* **phantom members:** `["cmSavePoints("]`
+
+#### `tests/faults/grd_write_faults.js:396` — **33% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairngrounds.html` — derived set **3 raw → 2 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      const re = /(function\s+|\w+\s*=\s*|await\s+|return\s+)?cmSavePoints\s*\(/g;
+
+* **phantom members:** `["cmSavePoints("]`
+
+#### `tests/licence_rekey_isolation.js:400` — **32% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairnlaw.html` — derived set **6454 raw → 4376 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      const keys = (expr.match(/'([A-Za-z0-9_]+)'/g) || [])
+
+* **phantom members:** `["000", "04", "106", "12439", "13", "134", "14", "143", "14th", "1575", "17", "1712", "178", "17867", "1a", "1cd64840", "20th", "21", "22T13", "29", "2nd", "31", "31Z", "33", "3372", "341", "342", "3588", "36", "38", "401", "403", "404s", "409", "46", "47", "48", "500ms", "503s", "5724", "5853", "60s", "64", "68", "75b9c07", "799d78db", "7cd70f83", "90", "999", "ABA", "ABCDEF", "ABOUT", "ABSENT", `
+
+#### `tests/licence_rekey_isolation.js:400` — **31% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairnlegacy.html` — derived set **4795 raw → 3321 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      const keys = (expr.match(/'([A-Za-z0-9_]+)'/g) || [])
+
+* **phantom members:** `["13", "134", "1a", "20", "200", "208", "21", "228", "2xx", "36", "37", "38", "401", "403", "404s", "4th", "4xx", "56", "57", "58", "5xx", "64", "72", "75b9c07", "7cd70f83", "999", "ABOUT", "ABOVE", "ABSENT", "ACCESS", "ACCESSORS", "ACCOUNTING", "ADDED", "ADDITIVE", "ADDS", "ADOPTS", "AFTER", "AFTERCARE", "ALREADY", "AN", "ANALYTICS", "ANSWER", "ANY", "APP", "ARE", "ARGUMENT", "AS", "ASSERTS", "AS`
+
+#### `tests/sairnlegacy_write_failure_voice.js:197` — **31% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairnlegacy.html` — derived set **4795 raw → 3321 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      const names = [...m[1].matchAll(/'(\w+)'/g)].map((x) => x[1]);
+
+* **phantom members:** `["13", "134", "1a", "20", "200", "208", "21", "228", "2xx", "36", "37", "38", "401", "403", "404s", "4th", "4xx", "56", "57", "58", "5xx", "64", "72", "75b9c07", "7cd70f83", "999", "ABOUT", "ABOVE", "ABSENT", "ACCESS", "ACCESSORS", "ACCOUNTING", "ADDED", "ADDITIVE", "ADDS", "ADOPTS", "AFTER", "AFTERCARE", "ALREADY", "AN", "ANALYTICS", "ANSWER", "ANY", "APP", "ARE", "ARGUMENT", "AS", "ASSERTS", "AS`
+
+#### `tests/licence_rekey_isolation.js:400` — **28% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairngrounds.html` — derived set **5070 raw → 3645 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      const keys = (expr.match(/'([A-Za-z0-9_]+)'/g) || [])
+
+* **phantom members:** `["03", "06", "0e", "11", "13", "134", "147", "15m", "1725", "19", "1a", "223", "25m", "27", "304", "3077", "308", "3414", "404s", "43", "4m", "56", "5a", "64", "64KB", "65536", "72", "8s", "9th", "A0", "ACADEMY", "ACCEPTED", "ACCESS", "ADOPTS", "ALL", "ALREADY", "ALWAYS", "AN", "ANALYTICS", "ANY", "APP", "ARRIVED", "ASSISTANT", "AT", "AUDIT", "AUTO", "AWAIT", "AbortController", "Adding", "Adopt", `
+
+#### `tests/licence_rekey_isolation.js:400` — **27% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairnbuild.html` — derived set **6877 raw → 5018 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      const keys = (expr.match(/'([A-Za-z0-9_]+)'/g) || [])
+
+* **phantom members:** `["000", "04500780", "0b", "130", "134", "17867", "1928", "1a", "3516", "3590", "37", "403s", "404s", "4074", "409", "44", "4th", "500ms", "503", "60s", "64", "7287", "7cd70f83", "84", "86", "A0", "ABOVE", "ABSENT", "ACCEPTED", "ACCESS", "ACCRUAL", "ADA", "ADDITIVE", "ADOPTS", "ADVISOR", "AFFORDANCE", "ALL", "ALONE", "ALREADY", "AN", "ANALYSIS", "ANALYTICS", "AND", "ANSWER", "ANSWERS", "ANY", "ANYT`
+
+#### `tests/seed_never_syncs_platform.js:147` — **27% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairnbuild.html` — derived set **6877 raw → 5018 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      return (m[2].match(/'([\w]+)'/g) || []).map((s) => s.replace(/'/g, ''));
+
+* **phantom members:** `["000", "04500780", "0b", "130", "134", "17867", "1928", "1a", "3516", "3590", "37", "403s", "404s", "4074", "409", "44", "4th", "500ms", "503", "60s", "64", "7287", "7cd70f83", "84", "86", "A0", "ABOVE", "ABSENT", "ACCEPTED", "ACCESS", "ACCRUAL", "ADA", "ADDITIVE", "ADOPTS", "ADVISOR", "AFFORDANCE", "ALL", "ALONE", "ALREADY", "AN", "ANALYSIS", "ANALYTICS", "AND", "ANSWER", "ANSWERS", "ANY", "ANYT`
+
+#### `tests/licence_rekey_isolation.js:400` — **26% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairnroofing.html` — derived set **4664 raw → 3446 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      const keys = (expr.match(/'([A-Za-z0-9_]+)'/g) || [])
+
+* **phantom members:** `["05", "13", "134", "163", "17", "1a", "200", "2011", "2015", "2031", "23", "2495", "26", "28", "2994", "304", "31e0337", "33", "39c", "3a", "3b", "3c", "40", "403", "404s", "4102", "4180", "4712", "4a", "4b", "4c", "4d", "5MB", "626", "64", "72", "806", "854", "8pm", "983", "A1", "A2", "A3", "A5", "ABOUT", "ABOVE", "ABSENT", "ACCESS", "ACCOUNTING", "ACROSS", "ADOPTS", "AGREEMENT", "ALREADY", "AMO`
+
+#### `tests/licence_rekey_isolation.js:400` — **24% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairnfreedom.html` — derived set **5664 raw → 4319 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      const keys = (expr.match(/'([A-Za-z0-9_]+)'/g) || [])
+
+* **phantom members:** `["007", "06", "0b", "1042", "1106", "119", "12h", "134", "14th", "15s", "1c", "2021", "2a", "2b", "3839", "3A", "401", "403", "404s", "409", "42", "420", "45", "4834", "503", "526", "55889165", "62", "64", "67", "75b9c07", "78", "7cd70f83", "87", "900", "9a", "9d", "ABOUT", "ABOVE", "ABSENT", "ACCESS", "ACCOUNT", "ACCOUNTS", "ACCREDITATION", "ACTIVE", "ADDED", "ADDITIVE", "ADJUSTED", "ADOPTS", "AF`
+
+#### `tests/seed_never_syncs_platform.js:147` — **24% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairnfreedom.html` — derived set **5664 raw → 4319 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      return (m[2].match(/'([\w]+)'/g) || []).map((s) => s.replace(/'/g, ''));
+
+* **phantom members:** `["007", "06", "0b", "1042", "1106", "119", "12h", "134", "14th", "15s", "1c", "2021", "2a", "2b", "3839", "3A", "401", "403", "404s", "409", "42", "420", "45", "4834", "503", "526", "55889165", "62", "64", "67", "75b9c07", "78", "7cd70f83", "87", "900", "9a", "9d", "ABOUT", "ABOVE", "ABSENT", "ACCESS", "ACCOUNT", "ACCOUNTS", "ACCREDITATION", "ACTIVE", "ADDED", "ADDITIVE", "ADJUSTED", "ADOPTS", "AF`
+
+#### `tests/stonedesk_server_backup.js:55` — **23% of the derived set is phantom**
+
+* **owner:** **hank** (owner map, LAST_CLAIM)
+* **app:** `stonedesk.html` — derived set **10263 raw → 7884 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      return (body.match(/'([a-z_]+)'/g) || []).map((x) => x.slice(1, -1));
+
+* **phantom members:** `["_deleted_at", "_lib", "_resources", "abandoned", "abelled", "aborted", "abricated", "absence", "abstract", "accard", "acceptance", "accepting", "accepts", "accessibility", "accessor", "accidental", "accidentally", "accumulate", "accumulation", "acknowledgement", "acting", "activity", "acts", "additionally", "additive", "addressed", "ade", "adjoining", "adjustable", "adjusted", "adopt", "adopted"`
+
+#### `tests/licence_rekey_isolation.js:400` — **23% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `stonedesk.html` — derived set **17752 raw → 13701 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      const keys = (expr.match(/'([A-Za-z0-9_]+)'/g) || [])
+
+* **phantom members:** `["0039", "0040", "0072", "00in", "086", "0b", "0d", "0sqin", "101", "1079", "10ft", "10in", "11410", "11420", "12964", "1308", "1310", "134", "14855", "1494", "150ms", "17329", "1842", "1886", "18d63d6", "19348", "1D", "1a", "1b", "1e", "1k", "1st", "1x", "20046", "200KB", "200k", "2016", "201st", "2028", "2029", "20386", "20ft", "21179", "21644", "2208", "22686", "22790", "25441", "25450", "258",`
+
+#### `tests/seed_never_syncs_platform.js:147` — **23% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `stonedesk.html` — derived set **17752 raw → 13701 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      return (m[2].match(/'([\w]+)'/g) || []).map((s) => s.replace(/'/g, ''));
+
+* **phantom members:** `["0039", "0040", "0072", "00in", "086", "0b", "0d", "0sqin", "101", "1079", "10ft", "10in", "11410", "11420", "12964", "1308", "1310", "134", "14855", "1494", "150ms", "17329", "1842", "1886", "18d63d6", "19348", "1D", "1a", "1b", "1e", "1k", "1st", "1x", "20046", "200KB", "200k", "2016", "201st", "2028", "2029", "20386", "20ft", "21179", "21644", "2208", "22686", "22790", "25441", "25450", "258",`
+
+#### `tests/sairncode_gates.js:301` — **21% of the derived set is phantom**
+
+* **owner:** **cc** (owner map, LAST_CLAIM)
+* **app:** `sairncode.html` — derived set **34 raw → 27 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      const re = /(\w+)\s*:\s*\[([^\]]*)\]/g;
+
+* **phantom members:** `["codes", "cq_applied_codes", "data", "evidence", "rtm_codes", "same_day_codes", "shape"]`
+
+#### `tests/licence_rekey_isolation.js:400` — **19% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairncode.html` — derived set **8108 raw → 6529 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      const keys = (expr.match(/'([A-Za-z0-9_]+)'/g) || [])
+
+* **phantom members:** `["0a", "0b", "118", "12h", "134", "155", "1a", "2400", "2601", "2608", "27", "2c", "2xx", "34", "404s", "47", "502", "503", "64", "68", "71", "7cd70f83", "80", "82", "909xx", "93000", "96401", "96450", "A0", "A2", "AAPC", "ABSENT", "ACCEPTED", "ACCESS", "ACCUMULATOR", "ACTUALLY", "ADDED", "ADMINISTRATION", "ADOPTS", "ADVISORY", "AGAINST", "AGGREGATE", "AIR", "ALS", "AN", "ANALYTICS", "ANESTHESIA",`
+
+#### `tools/citation_drift_hook.py:411` — **19% of the derived set is phantom**
+
+* **owner:** **cc** (owner map, LAST_CLAIM)
+* **app:** `sairnvet.html` — derived set **6378 raw → 5194 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      for w in _re.findall(r'\b([A-Za-z_][A-Za-z0-9_]{5,40})\b', line):
+
+* **phantom members:** `["ABSENCE", "ACCEPTED", "ACCEPTING", "ACCESS", "ACROSS", "ACTIVE", "ACTUAL", "ACTUALLY", "ADDITIVE", "AFFIRMATIONS", "ALWAYS", "ANALYTICS", "ANYTHING", "ANYWHERE", "APPLIES", "APPOINTMENT", "ARITHMETIC", "ARRIVAL", "AVAILABLE", "AbortError", "Adding", "Additive", "America", "Anthropic", "Ariane", "Auditor", "Author", "BACKED", "BACKGROUND", "BACKUP", "BACKWARDS", "BECAUSE", "BEFORE", "BEHIND", "BE`
+
+#### `tools/citation_drift_hook.py:416` — **19% of the derived set is phantom**
+
+* **owner:** **cc** (owner map, LAST_CLAIM)
+* **app:** `sairnvet.html` — derived set **6378 raw → 5194 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      for w in _re.findall(r'\b([A-Za-z_][A-Za-z0-9_]{5,40})\b', line):
+
+* **phantom members:** `["ABSENCE", "ACCEPTED", "ACCEPTING", "ACCESS", "ACROSS", "ACTIVE", "ACTUAL", "ACTUALLY", "ADDITIVE", "AFFIRMATIONS", "ALWAYS", "ANALYTICS", "ANYTHING", "ANYWHERE", "APPLIES", "APPOINTMENT", "ARITHMETIC", "ARRIVAL", "AVAILABLE", "AbortError", "Adding", "Additive", "America", "Anthropic", "Ariane", "Auditor", "Author", "BACKED", "BACKGROUND", "BACKUP", "BACKWARDS", "BECAUSE", "BEFORE", "BEHIND", "BE`
+
+#### `tests/seed_never_syncs_platform.js:147` — **19% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairnvet.html` — derived set **9434 raw → 7683 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      return (m[2].match(/'([\w]+)'/g) || []).map((s) => s.replace(/'/g, ''));
+
+* **phantom members:** `["0b", "114", "119", "1234", "12h", "13", "134", "137", "156K", "171", "172", "176", "177", "1886", "18K", "198K", "1b", "200KB", "21", "284", "295", "315", "401s", "403", "404s", "409", "41", "43", "482", "503", "52K", "54", "55889165", "6257", "64K", "64KB", "65536", "72", "76K", "7cd70f83", "847", "866", "89K", "8pm", "A0", "ABOUT", "ABOVE", "ABSENCE", "ACCEPTED", "ACCEPTING", "ACCESS", "ACROSS`
+
+#### `tests/demo_seed_licence_scope.js:216` — **18% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `stonedesk.html` — derived set **141 raw → 116 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      const safe = new Set((html.slice(i, html.indexOf('];', i)).match(/'(sd_[a-z_]+)'/g) || [])
+
+* **phantom members:** `["sd_ap_bills", "sd_bidboard_v", "sd_cg_history", "sd_damage_claims", "sd_employee_auth", "sd_employee_profiles", "sd_equipment_v", "sd_hr_employees", "sd_manifest_stops", "sd_pin_", "sd_progress_photos", "sd_rec_log", "sd_remnants", "sd_shared_knowledge_schema", "sd_slab_lineage_schema", "sd_stoneyard_v", "sd_sub_auth", "sd_sub_portal_schema", "sd_subcontractors_v", "sd_training_records", "sd_ts_`
+
+#### `tools/orphan_register_check.py:163` — **16% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `stonedesk.html` — derived set **132 raw → 111 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      names |= set(re.findall(r'\b(sd_[a-z_]{3,})\b', read(os.path.join(d, fn))))
+
+* **phantom members:** `["sd_ap_bills", "sd_cg_history", "sd_damage_claims", "sd_employee_auth", "sd_employee_profiles", "sd_hr_employees", "sd_manifest_stops", "sd_pin_", "sd_progress_photos", "sd_rec_log", "sd_remnants", "sd_shared_knowledge_schema", "sd_slab_lineage_schema", "sd_sub_auth", "sd_sub_portal_schema", "sd_training_records", "sd_ts_active", "sd_ts_entries", "sd_warranties", "sd_waste_events", "sd_write_faul`
+
+#### `tests/sen_hydrate_comparator_review_probe.js:209` — **7% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairnsenior.html` — derived set **14 raw → 13 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      const lit = (names[0] || '').match(/'(senHydrate\w+)'/g) || [];
+
+* **phantom members:** `["senHydrateX"]`
+
+#### `tests/sen_hydrate_comparator_review_probe.js:210` — **7% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairnsenior.html` — derived set **14 raw → 13 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      const vr = (names[1] || '').match(/'(senHydrate\w+)'/g) || [];
+
+* **phantom members:** `["senHydrateX"]`
+
+#### `tests/sairnlegacy_session_gate_review_probe.js:202` — **7% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairnlegacy.html` — derived set **15 raw → 14 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      const p = m.match(/var (\w+)\s*=\s*'([^']+)'/);
+
+* **phantom members:** `["prole"]`
+
+#### `tests/local_only_shape_probe.py:102` — **6% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairndental.html` — derived set **16 raw → 15 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      OLD_WRITE_RE = re.compile(r"\w*Data\(\s*'write'\s*,\s*'(\w+)'")
+
+* **phantom members:** `["dnt_complaints"]`
+
+#### `tests/local_only_shape_probe.py:102` — **5% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairndesign.html` — derived set **20 raw → 19 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      OLD_WRITE_RE = re.compile(r"\w*Data\(\s*'write'\s*,\s*'(\w+)'")
+
+* **phantom members:** `["specitems_bulk"]`
+
+#### `tests/sairnbiz_incidents_kpi.js:264` — **3% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairnbiz.html` — derived set **33 raw → 32 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      const names = (m[1].match(/'(sb_\w+)'/g) || []).map((x) => x.replace(/'/g, ''));
+
+* **phantom members:** `["sb_employee_auth_schema"]`
+
+#### `tests/sairnbiz_server_backup.js:191` — **3% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `sairnbiz.html` — derived set **33 raw → 32 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      const client = (clientList.match(/'(sb_[a-z_]+)'/g) || []).map((s) => s.replace(/'/g, '')).sort();
+
+* **phantom members:** `["sb_employee_auth_schema"]`
+
+#### `tools/orphan_register_check.py:134` — **1% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `stonedesk.html` — derived set **1852 raw → 1832 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      for m in re.finditer(r'(\w+)=([^\s]*)', line[len('// @REGISTER '):]):
+
+* **phantom members:** `["0", "A", "SAIRN_AI_RATE_LIMIT_MODE", "_deleted_at", "canonical", "canonical_key", "dcCtx", "dcMode", "dcZoomLevel", "deleted", "module", "offsetIn", "orphan_keys", "py", "removed", "reservedFor", "retired_keys", "sbSyncPaused", "scope", "scoreMatch"]`
+
+#### `tests/sairnlegacy_processions_isolation.js:72` — **1% of the derived set is phantom**
+
+* **owner:** **hank** (named in a hank claim; owner map says NONE = UNKNOWN)
+* **app:** `sairnlegacy.html` — derived set **144 raw → 143 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      const gated = [...mapBlock.matchAll(/([a-z_]+):\s*'/g)].map((m) => m[1]);
+
+* **phantom members:** `["u"]`
+
+#### `tests/stonedesk_server_backup.js:47` — **1% of the derived set is phantom**
+
+* **owner:** **hank** (owner map, LAST_CLAIM)
+* **app:** `stonedesk.html` — derived set **166 raw → 165 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      for (const m of body.matchAll(/(\w+):\s*'(\w+)'/g)) out[m[1]] = m[2];
+
+* **phantom members:** `["_src"]`
+
+#### `tools/duplicate_global_check.py:69` — **0% of the derived set is phantom**
+
+* **owner:** **cc** (named in a cc claim; owner map says NONE = UNKNOWN)
+* **app:** `stonedesk.html` — derived set **342 raw → 341 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      WINDOW_ASSIGN_RE = re.compile(r'window\.([A-Za-z_$][\w$]*)\s*=\s*function\s*\(')
+
+* **phantom members:** `["renderMarkdown"]`
+
+#### `tests/seed_never_syncs_platform.js:250` — **0% of the derived set is phantom**
+
+* **owner:** **UNASSIGNED** -- owner map `None`/`NONE`, and NO session has ever named it in a claim
+* **app:** `stonedesk.html` — derived set **553 raw → 552 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      const getRe = /function (\w+)\s*\(\s*\)\s*\{/g;
+
+* **phantom members:** `["saUnlock"]`
+
+#### `tools/duplicate_global_check.py:68` — **0% of the derived set is phantom**
+
+* **owner:** **cc** (named in a cc claim; owner map says NONE = UNKNOWN)
+* **app:** `stonedesk.html` — derived set **1093 raw → 1092 stripped**
+* **the exact line, read from the file at HEAD:**
+
+      FUNC_DECL_RE = re.compile(r'function\s+([A-Za-z_$][\w$]*)\s*\(')
+
+* **phantom members:** `["saUnlock"]`
+
+### The four patterns that would not compile out of their literal
+
+Named rather than dropped. Each is a regex assembled across more than one source line, so a single-line extraction cannot rebuild it — **these are NOT cleared, they are UNMEASURED**, and that is a different verdict.
+
+* `tests/licence_rekey_isolation.js:178` — Invalid regular expression: /(setItem\('/g: Unterminated group
+
+      const storeRe = new RegExp(
+
+* `tools/csv_formula_injection_check.py:203` — missing ), unterminated subpattern at position 36
+
+      defined = set(re.findall(
+
+* `tools/sairn_ai_fact_scan.py:99` — missing ), unterminated subpattern at position 0
+
+      PROMPT_MARKER = re.compile(
+
+* `tools/stale_row_sweep.py:124` — missing ), unterminated subpattern at position 1
+
+      PATH_RE = re.compile(r'`([A-Za-z0-9_][A-Za-z0-9_./-]*\.'
+
+### One app could not be measured at all, and it is named
+
+`sairncash.html` — no JS candidate reads it, so no stripped copy was written, so the python patterns that do read it were skipped. **UNMEASURED, not clean.**
+
+### The fix, for whoever takes each one
+
+One line, and the library already exists:
+
+    const { stripComments } = require('./lib/strip_comments.js');
+    // then derive from stripComments(src), never from src
+
+**And add the control, because the fix without it is unverifiable:** an arm that runs the extractor over a synthetic source carrying the same text in code AND in a `//` and a `/* */` comment, asserting the first IS found and the second is NOT. `tests/phi_cache_scoped_to_user.js` arm 5e is the worked example — ablated, it takes the probe from exit 0 to exit 1 in all four apps.
+
+**Do not fix it by exempting the phantom members.** That was the tempting fix in batch 16 and it would have put a key into an exemption list to satisfy a checker, after which the next real one looks like more of the same.
+
+---
+
+## SEQ 17-B -- A FALSE-POSITIVE CLASS IN `tools/truthy_sum_check.py`: the LEFT operand of a `*`
+
+**To: whoever owns `tools/truthy_sum_check.py`. The owner map says
+`owner: None, basis: NONE` and no session has ever named it in a claim, so this is
+UNASSIGNED rather than anyone's. `tests/run_truthy_sum_probe.py` IS mine
+(`owner: fourth, basis: LAST_CLAIM`) and I did not change it either, because the
+defect is in the subject and not in the probe.**
+
+**THE CLASS.** The checker reports a term that is the LEFT operand of a `*`, where
+the product is always a number and therefore safe:
+
+    stonedesk.html:26732   var stockValue=all.reduce((s,i)=>s+(i.qty||0)*(i.cost||0),0);
+    stonedesk.html:28063   var x=sc.ox+(c.x||0)*sc.sx, y=sc.oy+(c.y||0)*sc.sy;
+    stonedesk.html:28094   var x=sc.ox+(c.x||0)*sc.sx, y=sc.oy+(c.y||0)*sc.sy, ...
+
+**AND LINE 26732 IS THE PROOF, IN ONE EXPRESSION.** In
+`s+(i.qty||0)*(i.cost||0)` the checker reports **`i.qty`** and correctly ignores
+**`i.cost`**. Same line, same operator, same shape, opposite verdicts -- so the
+handling exists for the RIGHT operand and is absent for the LEFT. Its own arm 2
+*("a `*` term alone is NOT reported -- `*` coerces, `+` does not")* asserts exactly
+the rule it is failing to apply on this side.
+
+`*` coerces in **both** directions: `('500'||0) * 2` is `1000`, a number, so
+`s + that` is numeric addition no matter what the field holds. There is no
+arithmetic judgement to make here.
+
+**WHAT I DID INSTEAD OF PATCHING IT.** All five occurrences (3 keys: `c.x`, `c.y`,
+`i.qty`) are now baselined with the reason written into
+`tools/truthy_sum_baseline.json`, each entry ending **"Remove this entry when the
+checker handles the left operand."** That is a baseline standing in for a checker
+fix, and the entry says so rather than reading as a judgement about the app.
+
+**THE FIX, and it needs an arm in both directions.** The classifier already decides
+"is this term the right operand of a `*`"; the same test applied to the following
+significant character answers the left-operand case. **Add an arm per direction** --
+`s + Number(a||0) * (b||0)` (right, already covered by arm 2) and
+`s + (a||0) * b` (left, currently reported) -- because a one-sided fix here is what
+produced the one-sided bug.
+

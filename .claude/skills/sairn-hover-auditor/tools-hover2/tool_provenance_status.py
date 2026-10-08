@@ -59,12 +59,23 @@ MY_SESSION = 'hover2'
 # not discovery, because the sibling's project dir cannot be derived from
 # this one mechanically -- if a third instance appears, add its line and
 # the ABSENT reporting below will name it until the file exists.
+# BUG FIXED 2026-10-07 (batch O, item 6): both lines below used to derive a
+# path relative to HERE (inside the GIT CLONE's .claude/skills/... tree).
+# The real ledgers -- for BOTH instances -- live outside every clone, under
+# ~/.claude/projects/<project-dir>/hover-audit-log/ (see this role's own
+# memory note "hover-self-log-location"). The old 'hover' line additionally
+# nested H1's full project-dir name UNDER tools-hover2/, producing a path
+# that could never exist regardless of the clone-relative mistake. Verified
+# BOTH corrected paths exist on disk before trusting this fix (ls -la on
+# each, 2026-10-07) -- not assumed from the naming convention alone.
+_CLAUDE_PROJECTS = os.path.join(os.path.expanduser('~'), '.claude', 'projects')
 LEDGERS = [
-    ('hover2', os.path.join(HERE, 'tool_provenance_validations.jsonl')),
+    ('hover2', os.path.join(
+        _CLAUDE_PROJECTS, 'C--Users-marsh-Documents-SAIRN-hover2',
+        'hover-audit-log', 'tool_provenance_validations.jsonl')),
     ('hover', os.path.join(
-        os.path.dirname(os.path.dirname(HERE)),
-        'C--Users-marsh-Documents-SAIRN-hover', 'hover-audit-log',
-        'tool_provenance_validations.jsonl')),
+        _CLAUDE_PROJECTS, 'C--Users-marsh-Documents-SAIRN-hover',
+        'hover-audit-log', 'tool_provenance_validations.jsonl')),
 ]
 SKIP = {'tool_provenance_status.py', 'hover_tool_index.py', 'hover_log.py',
         '__pycache__'}
