@@ -124,3 +124,58 @@ typo becomes *"already fine"*.
 python tests/run_tier_a_review_gate_probe.py -> EXIT 0, ALL ARMS PASS, 242 ok
 2 runs, first EXIT 0 each time.
 ```
+
+## item 4 — DONE. The row is **CLOSED as not needed**, with the reasoning measured, plus one change that costs no new noise.
+
+### Why there is no new check, and it is not a judgement call
+
+```
+command : scratchpad/b26/i4_measure.py over every `python tools/...` /
+          `node tests/...` command line in docs/*.md
+commit  : f7bab1b0        date: 2026-10-08
+corpus  : 398 command lines, 107 distinct
+  already flagged by the EXISTING rules : 0
+  already route through capture_exit.py : 1
+  judged attributable, no status file   : 106
+A STANDALONE BACKGROUNDING WARNING WOULD BE NEW OUTPUT ON 106 OF 107 (99%).
+```
+
+And the hook fires on **every** Bash call, not only documented ones, so 99% is a
+**floor** on the live rate rather than an estimate of it.
+
+**THREE REASONS, IN ORDER OF WEIGHT:**
+
+1. **IT IS OUTSIDE THE TOOL'S INPUT.** This tool reads command **text**. Whether
+   a run is backgrounded is decided by the harness **after** the text exists.
+   `grep -cin background tools/exit_status_attributable.py` → **0**, and that is
+   correct rather than an omission: the signal is not in its input.
+2. **THE GAP IS ALREADY CLOSED BY ANOTHER TOOL, and that tool says so.**
+   `tools/capture_exit.py`'s own docstring reads: *"That advice is CORRECT and
+   `tools/exit_status_attributable.py` is right to give it. IT STOPS BEING
+   CORRECT THE MOMENT THE RUN IS BACKGROUNDED."* The division of labour is
+   recorded; what was missing was a **pointer**, not a checker.
+3. **A 99% FIRING RATE IS HOW A HOOK GETS SWITCHED OFF**, and a disabled hook
+   protects nothing. That is this platform's own stated failure mode, and it
+   would trade a real warning for a wall of text.
+
+### The one change made instead — zero new firings
+
+The existing warning now ends with:
+
+> *AND IF THIS RUN MAY BE BACKGROUNDED, `$?` will be the wrapper's and not the
+> program's: use `python tools/capture_exit.py --status <file> -- <command>` and
+> read the status FILE.*
+
+**It rides on a warning that was already firing**, so it adds words to an
+existing message and **no new messages**. Verified by driving the hook:
+
+```
+echo '{"tool_name":"Bash","tool_input":{"command":"python tools/metamorphic_check.py | tail -5"}}' \
+  | python tools/exit_status_attributable.py --hook
+  -> names "capture_exit.py --status" and "read the status FILE", 775 bytes
+python tools/exit_status_attributable.py --selftest -> EXIT 0, 40 ok, 0 FAIL
+```
+
+**ROW CLOSED.** `docs/2026-10-08-cody-b26-routed.md` records the close so the
+routing table in `docs/2026-10-06-cody-routed.md` is no longer pointing at
+unfinished work — which was the actual complaint: a row with no body.
