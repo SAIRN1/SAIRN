@@ -2207,3 +2207,59 @@ a TENTH member of the cannot-fire group. Count the `## <n>.` headings -- it is 2
 * **`docs/purge-evidence/2026-09-30-SAIRN-fourth.json` left untouched**, and all
   18 of my orphaned citations turned out to be quotations OF orphans, so zero were
   re-seatable.
+
+
+---
+
+## 2026-10-07 -- BATCH 17
+
+**CLOSED AND PUSHED at `8d1f1c12`. Full record: `docs/handoff-fourth-2026-10-07.md`,
+batch-17 checkpoint table + FINAL STATE. Report:
+`G:\My Drive\SAIRN-status\SAIRN-report-ted-b2.txt`.**
+
+**What I touched:** `stonedesk.html`, `tools/truthy_sum_baseline.json`,
+`docs/known-red-suites.json`, `docs/2026-09-13-cross-domain-disciplines.md`,
+`docs/METHODOLOGY.md`, `docs/2026-10-07-fourth-coverage-ledger.md`,
+`docs/2026-10-07-fourth-routed.md`, `docs/handoff-fourth-2026-10-07.md`, this file.
+
+**THE THING TO KNOW IF YOU OWN A CHECKER THAT READS AN APP FILE.** One comment block
+at `sairnsenior.html:5768-5780` produced three different wrong answers from three
+different checkers. **47 derived sets across 13 files shrink when comments are
+stripped** -- two of them are 100% phantom: `tools/stale_row_sweep.py:240` goes
+**29 -> 0** and `tests/sairnvet_seed_never_syncs.js:98` goes **1 -> 0**, asserting
+entirely about prose. All 47 are routed with the exact line in
+`docs/2026-10-07-fourth-routed.md` **SEQ 17-A**. **I own none of them** -- checked
+against the owner map AND all 1,265 claim task strings. The fix is one line
+(`tests/lib/strip_comments.js`) plus a both-directions control arm, and **do not fix
+it by exempting the phantom members.**
+
+**`stonedesk.html` IS NOW CLEAN FOR `truthy_sum_check` and arm 11 is green for the
+first time.** 10 folds wrapped in `Number()`, 6 baselined with the reason, decided
+per site. **Do not re-wrap `c.x`, `c.y`, `i.qty` or `u.cost`** -- the first three are
+the LEFT operand of a `*` and the fourth is already `Number()`-coerced upstream and
+never persisted.
+
+**cody's convention 26 landed, CREDITED TO CODY**, with the sweep it asked for.
+**cc's convention 23 now holds FIVE verdicts.** Count the `## <n>.` headings -- it is
+**26**.
+
+### NOT REACHED / OWED
+
+* **`tools/truthy_sum_check.py` reports the LEFT operand of a `*`** -- a
+  false-positive class, proved at `stonedesk.html:26732` where it reports `i.qty` and
+  ignores `i.cost` in the same expression. UNASSIGNED. **SEQ 17-B.**
+* **`tools/citation_line_drift_check.py` offers a COMMENT as a write site** --
+  `sen_settings :6355 -> :5774`. **SEQ 17-C.**
+* **24 DRIFTED citations in `docs/CRITICALITY-TIERS.md`**, attributed per cell: 8
+  `hank`/H1, 4 `hank`, 12 UNATTRIBUTED. **0 fixed, 0 repointed** -- the tool says the
+  arrow is a candidate.
+* **27 of the 83 unmeasured**, three of them DEFERRED AND NAMED: the two `seam_check`
+  delegation suites (they leave planted sabotage in `api/sd-data.js`, **hank's**) and
+  `run_bare_run_write_probe.py`.
+* **The settings merge is now blocked on NOBODY** -- cody's claim on it is released,
+  no live claim declares it, and it still has not landed. A decision, not a conflict.
+* **My own 48th PR 1.2 instance**: the ANCHORED predicate in coverage-ledger 11
+  matches inside comments too. Named there, not fixed.
+* **The 18 primitive-obsession occurrences across five apps** are still open. The
+  `run_primitive_obsession_probe` row moved to `recovered`; that fixed a probe, not a
+  tree.
