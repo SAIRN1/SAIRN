@@ -229,11 +229,24 @@ def main():
         sys.exit(2)
 
     repo = args.repo or os.getcwd()
-    if not os.path.isfile(args.doc):
-        print("COULD NOT RUN: doc not found: %s" % args.doc)
+    # BUG FIXED 2026-10-08 (batch Q item 5): `doc` used to be checked and
+    # opened exactly as typed, against the PROCESS'S CWD -- so a repo-
+    # relative path (the normal way every other tool here takes one) only
+    # worked when cwd happened to already equal --repo. Resolve relative
+    # paths against --repo explicitly, the same way a reader expects
+    # "--repo X, doc inside X" to behave. An already-absolute doc path (or
+    # one that resolves from the real cwd, e.g. '.' during selftest-style
+    # calls) is left alone.
+    doc_path = args.doc
+    if not os.path.isabs(doc_path) and not os.path.isfile(doc_path):
+        joined = os.path.join(repo, doc_path)
+        if os.path.isfile(joined):
+            doc_path = joined
+    if not os.path.isfile(doc_path):
+        print("COULD NOT RUN: doc not found: %s (also tried joined with --repo)" % args.doc)
         sys.exit(2)
 
-    result = verify_doc(args.doc, repo)
+    result = verify_doc(doc_path, repo)
     sys.exit(report(result))
 
 

@@ -24,8 +24,46 @@ import sys
 BUILD_COMMAND_LIMIT = 256  # Vercel's documented schema ceiling
 
 def check(path):
+    # ── A FILE THAT IS NOT JSON IS COULD-NOT-RUN, NOT A FAILED CHECK ────────
+    # (2026-10-07) This did `json.load(f)` bare, so pointing it at anything that
+    # is not JSON -- or at a path that does not exist -- raised, and an uncaught
+    # exception exits **1**. On this platform EXIT 1 MEANS FINDINGS, so a sweep
+    # reading exit codes could not tell "vercel.json is over the buildCommand
+    # limit" from "I was handed a file I cannot parse".
+    #
+    # Measured 2026-10-07 across the 175 ownerless tools, bare run and
+    # one-argument run: this was one of only TWO tracebacks, and the only one
+    # that tracebacks on an ARGUMENT while its bare run is clean. The bare run
+    # is clean because the default path is the real `vercel.json`, which parses
+    # -- so every bare-run-only check in this repo was blind to it.
+    #
+    # It also mattered more than the other: the message a traceback replaces is
+    # "Vercel will reject this at deploy time and silently keep serving the last
+    # successful build". A reader who gets a JSONDecodeError instead has been
+    # told nothing about the deploy.
+    if not os.path.isfile(path):
+        sys.stderr.write(
+            'COULD NOT RUN: %s does not exist. Nothing was checked.\n'
+            'usage: python tools/vercel_config_check.py [path/to/vercel.json]\n'
+            '  Default is vercel.json in the current directory.\n' % path)
+        sys.exit(2)
     with open(path, encoding='utf-8') as f:
-        cfg = json.load(f)
+        raw = f.read()
+    try:
+        cfg = json.loads(raw)
+    except ValueError as e:
+        sys.stderr.write(
+            'COULD NOT RUN: %s is not valid JSON (%s). Nothing was checked, '
+            'and that is NOT the same as the configuration being fine.\n'
+            'usage: python tools/vercel_config_check.py [path/to/vercel.json]\n'
+            % (path, e))
+        sys.exit(2)
+    if not isinstance(cfg, dict):
+        sys.stderr.write(
+            'COULD NOT RUN: %s parsed as %s, not an object. A Vercel config is '
+            'a JSON object; nothing below could be read from this.\n'
+            % (path, type(cfg).__name__))
+        sys.exit(2)
 
     failures = []
 

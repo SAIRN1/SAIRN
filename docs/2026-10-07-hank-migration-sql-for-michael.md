@@ -705,3 +705,262 @@ write cannot look like a successful one.
 1 and names the table and the value when a `setup` branch emits an event the
 new CHECK does not list — which is the defect STEP 0 exists to repair,
 arriving twelve more times if nobody looks.
+
+---
+
+# APPENDIX, ADDED 2026-10-07 (batch 18) — STEP 13 and STEP 14
+
+**Still applied nowhere.** Same rule as the rest of this file: every statement
+below is printed for Michael to run, and nothing has been run.
+
+---
+
+## ■ STEP 13 — SAIRNvet. **THE DECISION TO ADD `sv_audit_log` TO `AUDIT_TABLES` RESTS ON A FALSE PREMISE, AND THE ONE-LINE CHANGE WAS NOT MADE**
+
+**STEP 0d of this file said the addition was "one line of JavaScript". THAT WAS
+MINE AND IT WAS WRONG.** Re-derived at HEAD by reading both halves instead of
+one:
+
+| what `writeAuditLog` POSTs (`api/_lib/audit.js:59-64`) | what `sv_audit_log` HAS (`sql/sairnvet_data_schema.sql:60-70`) |
+|---|---|
+| `license_hash` | `license_hash` ✓ |
+| `employee_id` | **absent** |
+| `role` | **absent** |
+| `event_type` | **absent** |
+| `detail` | **absent** |
+| — | `audit_log_id` **`not null`, no default** |
+| — | `id`, `app_id`, `data jsonb`, `created_at`, `updated_at` |
+
+**FOUR OF THE FIVE POSTED COLUMNS DO NOT EXIST.** Adding `sv_audit_log` to the
+allowlist would send every SAIRNvet audit write to a table that cannot take the
+row: PostgREST refuses it, `writeAuditLog` is **non-fatal and returns false**,
+the calling code carries on, and **the row is simply absent** — reported only in
+a server log. That is the exact defect STEP 0 of this file exists to repair,
+created in one line.
+
+**AND THERE IS NOTHING FOR A CHECK CONSTRAINT TO CONSTRAIN.** `sv_audit_log` has
+no `event_type` column, so the five-value CHECK this step was asked to print
+cannot be written against the table as it stands. The pre-flight select proves
+it rather than asserting it:
+
+```sql
+-- STEP 13 PRE-FLIGHT (a) -- THIS IS EXPECTED TO FAIL, and the failure is the
+-- answer. Run it first so the conclusion below is yours and not mine.
+select distinct event_type
+  from public.sv_audit_log
+ order by 1;
+-- EXPECTED: ERROR 42703 undefined_column: column "event_type" does not exist
+```
+
+```sql
+-- STEP 13 PRE-FLIGHT (b) -- the query that DOES run, and the one to read.
+select column_name, data_type, is_nullable, column_default
+  from information_schema.columns
+ where table_schema = 'public' and table_name = 'sv_audit_log'
+ order by ordinal_position;
+```
+
+```sql
+-- STEP 13 PRE-FLIGHT (c) -- how much is in there, and what shape it already is.
+-- `data` is the blob the app writes through api/sd-data.js; its keys are the
+-- nearest thing to an event vocabulary that exists today.
+select count(*) as rows_total,
+       min(created_at) as oldest,
+       max(created_at) as newest
+  from public.sv_audit_log;
+
+select k as data_key, count(*) as n
+  from public.sv_audit_log, jsonb_object_keys(data) as k
+ group by k order by n desc limit 40;
+```
+
+### WHY IT IS NOT AN AUDIT LOG IN THIS MODULE'S SENSE
+
+`sv_audit_log` is the SAIRNvet **controlled-substance DOSING trail**. It is a
+per-app data table written through `api/sd-data.js`'s `SV_RESOURCES` dispatcher
+(`api/sd-data.js:13100`, keyed `audit_log_id`), declared as an app resource in
+`api/_resources/sairnvet.js:67`, and it carries:
+
+```sql
+grant select, insert, update on public.sv_audit_log to service_role;
+```
+
+**`update` is granted.** The three real audit logs deliberately grant only
+`select, insert` — that grant pair *is* their immutability control, because
+`service_role` bypasses RLS. So `sv_audit_log` is not in `AUDIT_TABLES` because
+**it is not that kind of table**, not because somebody forgot a line.
+
+### IF THE DECISION STILL STANDS, THIS IS WHAT IT COSTS — PRINTED, NOT APPLIED
+
+```sql
+-- STEP 13a -- the columns writeAuditLog posts. WITHOUT ALL FOUR, adding
+-- sv_audit_log to AUDIT_TABLES records nothing.
+-- `audit_log_id` is `not null` with no default and writeAuditLog does NOT
+-- send it, so it needs a default as well or every insert violates not-null.
+alter table public.sv_audit_log add column if not exists employee_id text;
+alter table public.sv_audit_log add column if not exists role text;
+alter table public.sv_audit_log add column if not exists event_type text;
+alter table public.sv_audit_log add column if not exists detail jsonb;
+alter table public.sv_audit_log
+  alter column audit_log_id set default gen_random_uuid()::text;
+
+-- STEP 13b -- THE FIVE-VALUE CREDENTIAL VOCABULARY, same form as the twelve
+-- new tables in this file. NOT NULL is deliberately NOT added: 1,000+ existing
+-- dosing rows have no event_type and a not-null column would reject them.
+alter table public.sv_audit_log
+  drop constraint if exists sv_audit_log_event_type_check;
+alter table public.sv_audit_log
+  add constraint sv_audit_log_event_type_check
+  check (event_type is null or event_type in (
+    'pin_bootstrap',
+    'pin_setup',
+    'credential_deactivated',
+    'credential_reactivated',
+    'credential_change_refused'
+  ));
+
+-- STEP 13c -- THE GRANT, and this is the part that is a real decision.
+-- An audit log on this platform is select+insert only; that grant pair is the
+-- immutability control, because service_role BYPASSES RLS. sv_audit_log has
+-- `update` today because the dosing trail is updated through sd-data.js.
+-- REVOKING IT WOULD BREAK THAT WRITE PATH. So one table cannot be both, and
+-- this statement is printed to make the conflict visible, NOT recommended:
+-- revoke update on public.sv_audit_log from service_role;
+```
+
+**`event_type is null or event_type in (...)`** rather than a bare `in (...)`
+is the only form that can be added to a table with existing rows — a plain
+CHECK would be rejected outright by the rows already there. Said here because
+the twelve new tables in this file use the strict form and this one cannot.
+
+### THE ALTERNATIVE, AND IT IS THE ONE I WOULD PUT IN FRONT OF CHAT FIRST
+
+A new `sairnvet_audit_log`, in exactly the form of the twelve above, leaving the
+dosing trail alone. It is more SQL and no judgement calls: no mixed-purpose
+table, no `update` grant to argue about, no nullable `event_type`, and the
+existing dosing rows keep their meaning.
+
+```sql
+-- STEP 13-ALT -- a real audit log for SAIRNvet, identical in form to STEP 1-12.
+create table if not exists public.sairnvet_audit_log (
+  id uuid primary key default gen_random_uuid(),
+  license_hash text not null,
+  employee_id text,
+  role text,
+  event_type text not null check (event_type in (
+    'pin_bootstrap',
+    'pin_setup',
+    'credential_deactivated',
+    'credential_reactivated',
+    'credential_change_refused'
+  )),
+  detail jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_sairnvet_audit_log_license_time
+  on public.sairnvet_audit_log (license_hash, created_at desc);
+
+alter table public.sairnvet_audit_log enable row level security;
+drop policy if exists "svc insert only sairnvet_audit_log" on public.sairnvet_audit_log;
+create policy "svc insert only sairnvet_audit_log" on public.sairnvet_audit_log for insert with check (true);
+
+-- THE ACTUAL IMMUTABILITY CONTROL: select + insert only, no update, no delete.
+-- service_role BYPASSES RLS, so the policy above is NOT what enforces
+-- immutability -- these grants are.
+revoke all on public.sairnvet_audit_log from anon, authenticated;
+revoke all on public.sairnvet_audit_log from service_role;
+grant select, insert on public.sairnvet_audit_log to service_role;
+
+-- Verify after running (expect 0 rows, no error):
+--   select count(*) from public.sairnvet_audit_log;
+```
+
+**NO WRITER EXISTS EITHER WAY, AND THAT WAS CONFIRMED FIRST.** 28 `writeAuditLog`
+call sites across `api/`; the only `AUDIT_TABLE` constants are
+`sairncode_audit_log` (`api/sc-ai.js:61`, `api/sc-auth.js:46`),
+`stonedesk_audit_log` (`api/sd-auth.js:47`, `api/sd-sub-data.js:45`,
+`api/stonedesk-track.js:50`) and the `sairnlaw_audit_log` default
+(`api/_lib/audit.js:41`). **Nothing targets `sv_audit_log`**, and
+`tools/audit_event_type_check.py` reports it under *"tables WITHOUT one"* with
+no writers found.
+
+**WHAT WAS BUILT INSTEAD OF THE ONE-LINE EDIT:** `tests/run_audit_event_type_probe.py`
+arms **H0 / H1 / H2** — a table may be in `AUDIT_TABLES` only if it has the
+columns `writeAuditLog` posts, with the paired negative measured off
+`sv_audit_log`'s real DDL so H1 is evidence rather than a tautology. **If
+anybody makes this change later, that arm goes red.** That is worth more than
+the change was.
+
+---
+
+## ■ STEP 14 — `rf_schedule.status_changed_by`, which closes the lost-update window batch b1 accepted
+
+**WHAT IT IS FOR.** `rf_schedule/set_status` (`api/sd-data.js`) PATCHes two
+scalar columns and sends no `data`, so batch b1 attributed it with a
+**read-then-merge** onto the row the branch already reads for its
+`canSeeSchedule` gate. That merge accepts a narrow lost-update window: a
+concurrent writer changing `rf_schedule.data` between the select and the PATCH
+has its blob change overwritten. The window is two awaits, the only other
+writer of that blob is `rf_schedule/write` (management only), and `wroteRow()`
+still detects a PATCH that matched nothing — but the trade is real and it was
+named rather than hidden.
+
+**A dedicated column removes the trade entirely**: the status change writes its
+own scalar column and never touches the blob, so there is nothing to lose.
+
+**`created_by` IS NOT REUSABLE AND THAT IS THE WHOLE REASON THIS IS A
+MIGRATION.** `sql/sairnroofing_locations_schema.sql:92` is
+`created_by text not null, -- server-stamped from the session`. It means who
+**created** the day. Overwriting it on a status change would destroy the
+creation record in order to record an edit.
+
+```sql
+-- STEP 14 -- rf_schedule gains status_changed_by. NULLABLE on purpose.
+-- Every row that exists today had its status set before this column did, and
+-- a `not null` column would either reject them or need a backfilled value
+-- that names an employee who did not do it -- a fabricated actor, which is
+-- worse than an honest null. NULL means "set before this column existed".
+alter table public.rf_schedule
+  add column if not exists status_changed_by text;
+
+alter table public.rf_schedule
+  add column if not exists status_changed_by_role text;
+
+alter table public.rf_schedule
+  add column if not exists status_changed_at timestamptz;
+
+-- created_by IS UNTOUCHED. It is `not null` and means who CREATED the day.
+-- No statement in this step alters, drops or backfills it.
+
+-- Verify after running -- expect the three new columns present and nullable,
+-- and created_by still NOT NULL:
+--   select column_name, data_type, is_nullable
+--     from information_schema.columns
+--    where table_schema = 'public' and table_name = 'rf_schedule'
+--      and column_name in ('created_by', 'status_changed_by',
+--                          'status_changed_by_role', 'status_changed_at')
+--    order by column_name;
+```
+
+**THE CODE CHANGE IS NOT IN THIS BATCH AND IS NOT WRITTEN.** `api/sd-data.js`
+keeps the read-then-merge until **Michael confirms STEP 14 has run**. Writing
+the column before it exists would make every `set_status` PATCH fail with
+`42703 undefined_column` — PostgREST returns 400, and `rf_schedule/set_status`
+answers 502 `Data store error`. **A status change that silently stops working
+is a worse outcome than the lost-update window it was meant to close.**
+
+**THE EXACT CODE CHANGE, FOR WHOEVER TAKES IT AFTER THE SQL LANDS:**
+
+1. In `rf_schedule/set_status`, drop `data` from the select added in b1 and drop
+   the `schedBlob` merge entirely.
+2. Send `status_changed_by: session.employee_id`,
+   `status_changed_by_role: session.role`, `status_changed_at: nowISO()`
+   alongside `status` and `updated_at`.
+3. Add `status_changed_by` to the `rf_schedule/read` select and to the row the
+   read reconstructs, so the field is visible rather than write-only.
+4. `tests/sd_data_write_attribution_three_apps.js` arm **D3** asserts the merge
+   exists and MUST be rewritten in the same commit — it currently pins the
+   read-then-merge, which is the right thing to pin until the column exists and
+   the wrong thing afterwards. **A stale arm that passes is how the next reader
+   concludes the merge is still needed.**

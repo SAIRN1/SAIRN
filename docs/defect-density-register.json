@@ -25726,6 +25726,62 @@
       "recurrence_open": "OPEN as a CLASS. This is the mirror of PR 1.11 -- a could-not-run laundered into a FINDING rather than into a pass -- and no standing rule names that direction, so nothing stops the next tool spelling a timeout as 124. A sweep for integer timeout sentinels across tools/ is not done and is not claimed."
     },
     {
+      "commit": "35ec89c5dd8d",
+      "date": "2026-10-08",
+      "subject": "fix(capture-exit): a RUNNING status for a DEAD pid now reads DEAD, never RUNNING -- fixture-locked with a pid that is dead by construction",
+      "files": [
+        "docs/handoff-cody-2026-10-07c.md",
+        "tools/capture_exit.py"
+      ],
+      "lines_added": 229,
+      "lines_removed": 7,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/capture_exit.py read a status file saying RUNNING <pid> and reported RUNNING without ever asking whether that pid still existed. Measured twice on 2026-10-07: two --pinned suite runs were stopped from outside, one by a harness stop that killed the whole process tree, and both left RUNNING on disk for a process that no longer existed. --read reported RUNNING for hours afterwards, so a reader waiting on it waits forever and a reader reporting it says a run is in progress that ended before lunch. The file's own docstring says a reader who finds RUNNING knows the answer is NOT YET KNOWN, which is true only while the writer is alive. read_status() now resolves liveness into three states -- RUNNING when the pid is alive, DEAD when it is gone, COULD-NOT-TELL-PID when liveness cannot be determined -- none of which is EXIT and none of which exits 0, and a RUNNING line whose pid will not parse is UNREADABLE. os.kill(pid, 0) is deliberately NOT used on Windows because there it calls TerminateProcess, a liveness check that kills what it asks about; OpenProcess with PROCESS_QUERY_LIMITED_INFORMATION plus GetExitCodeProcess can only read. Proved against the real stale file from the killed run, which now reads DEAD and exits 2, while the live run read in the same minute still reads RUNNING. STATED LIMIT, in the code: a recycled pid reads as alive, so DEAD is sound and RUNNING means alive-or-recycled; closing that needs the process start time compared against the status timestamp and this does not do it.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the call shipped with the file and no earlier commit introduced it"
+      },
+      "citation_note": "A status that cannot distinguish a live writer from a dead one folds the third state into an answer. The fix adds states rather than guessing, and none of them is success.",
+      "phase_note": "The RUNNING line and its reader landed together; no later edit introduced the gap, so the omission is in the original design.",
+      "contributing_factors": [
+        {
+          "factor": "The arm that was supposed to cover this was PASSING FOR THE WRONG REASON. It planted pid 999 and asserted RUNNING -- and 999 is almost certainly not a live process, so the arm was asserting that a status for a DEAD writer reads as RUNNING, which is the defect itself.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Replaced rather than kept beside the new arm, because the two statements cannot both be true. The planted pid is now dead BY CONSTRUCTION -- a child is spawned, reaped, and its number reused -- and a pid alive by construction sits beside it so the DEAD arm cannot be satisfied by a checker that answers False to everything."
+        },
+        {
+          "factor": "The docstring asserted the property the code did not have: 'a reader that finds RUNNING knows the answer is NOT YET KNOWN'. A reader checking whether that held read the sentence and stopped.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The sentence is now qualified in the file and the CLI prints a different line per state -- 'not yet known' is true of RUNNING and false of DEAD, and telling an operator to wait for a verdict that will never arrive is the same misdirection as reporting RUNNING."
+        },
+        {
+          "factor": "Liveness is platform-specific and the obvious idiom is actively dangerous here: os.kill(pid, 0) terminates on Windows. A correct POSIX habit would have silently killed the thing being asked about.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "OpenProcess with PROCESS_QUERY_LIMITED_INFORMATION (0x1000) plus GetExitCodeProcess, which can only read; POSIX keeps os.kill. The reasoning is in the code so the next reader does not reach for os.kill."
+        },
+        {
+          "factor": "A strong lock over read_status() says nothing about the --read CLI that wraps it, and this file had already been bitten by exactly that: a .strip() bound to a tuple raised on --read's first real use while every function-level arm passed.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Two of the new arms go through the CLI, and one of them asserts the word RUNNING appears NOWHERE in the DEAD output -- the half a startswith check alone would not catch."
+        }
+      ],
+      "recurrence_open": "EVERY OTHER STATUS-FILE READER ON THIS PLATFORM IS UNAUDITED for the same question. This fix covers one tool. Any file that records a pid and is read later -- lock files, andon records, the suite lock in run_all_tests.py -- can report a live holder that is gone, and nothing sweeps for it."
+    },
+    {
       "commit": "6372c94318ee",
       "date": "2026-10-08",
       "subject": "fix(run_all_tests): --pinned KEEPS the throwaway clone when the post-run tree read fails, and prints its path",
@@ -25782,60 +25838,63 @@
       "recurrence_open": "ANY TOOL THAT REPORTS COULD-NOT-RUN AND THEN CLEANS UP IS THE SAME SHAPE, and none has been swept. The question to ask of each is whether the evidence for the refusal survives the refusal."
     },
     {
-      "commit": "35ec89c5dd8d",
+      "commit": "83e59bd0b591",
       "date": "2026-10-08",
-      "subject": "fix(capture-exit): a RUNNING status for a DEAD pid now reads DEAD, never RUNNING -- fixture-locked with a pid that is dead by construction",
+      "subject": "fix(tools): a bare run was TAKING A SESSION LOCK silently, and the detector built to catch that cannot see outside the repo",
       "files": [
-        "docs/handoff-cody-2026-10-07c.md",
-        "tools/capture_exit.py"
+        "docs/2026-10-07-hank-routed.md",
+        "docs/handoff-hank-2026-10-07d.md",
+        "tests/run_comment_sensitivity_probe.py",
+        "tools/nav_panel_check.py",
+        "tools/session_lock_check.py",
+        "tools/vercel_config_check.py"
       ],
-      "lines_added": 229,
-      "lines_removed": 7,
+      "lines_added": 489,
+      "lines_removed": 2,
       "app": "tooling",
       "layer": "tooling",
       "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "tools/capture_exit.py read a status file saying RUNNING <pid> and reported RUNNING without ever asking whether that pid still existed. Measured twice on 2026-10-07: two --pinned suite runs were stopped from outside, one by a harness stop that killed the whole process tree, and both left RUNNING on disk for a process that no longer existed. --read reported RUNNING for hours afterwards, so a reader waiting on it waits forever and a reader reporting it says a run is in progress that ended before lunch. The file's own docstring says a reader who finds RUNNING knows the answer is NOT YET KNOWN, which is true only while the writer is alive. read_status() now resolves liveness into three states -- RUNNING when the pid is alive, DEAD when it is gone, COULD-NOT-TELL-PID when liveness cannot be determined -- none of which is EXIT and none of which exits 0, and a RUNNING line whose pid will not parse is UNREADABLE. os.kill(pid, 0) is deliberately NOT used on Windows because there it calls TerminateProcess, a liveness check that kills what it asks about; OpenProcess with PROCESS_QUERY_LIMITED_INFORMATION plus GetExitCodeProcess can only read. Proved against the real stale file from the killed run, which now reads DEAD and exits 2, while the live run read in the same minute still reads RUNNING. STATED LIMIT, in the code: a recycled pid reads as alive, so DEAD is sound and RUNNING means alive-or-recycled; closing that needs the process start time compared against the status timestamp and this does not do it.",
+      "detection_method": "static-checker",
+      "summary": "Three tool defects closed in one commit, each found by a different sweep. (1) tools/session_lock_check.py read `sys.argv[1] if len(sys.argv) > 1 else \"start\"`, so a BARE RUN ACQUIRED A SESSION LOCK, printed nothing and exited 0 -- measured by running it bare in a throwaway clone, which created ~/SAIRN-SESSION-LOCKS/b2-i6-clone.lock. Of 15 tools flagged across the 175 ownerless ones, it was the only one whose silence hid an ACTION rather than an absence of findings, and the repo own detector for this (bare_run_write_check.py) cannot see it because that registry lives OUTSIDE every clone by design. Stale locks named after throwaway clones -- bare_scratch, b11wt2, b12wt2 -- are the evidence it has been happening. (2) tools/vercel_config_check.py called json.load bare, so a missing or non-JSON path raised and exited 1 = FINDINGS; its BARE run is clean because the default path is the real vercel.json, so only the one-argument run could find it. (3) tools/nav_panel_check.py counted id attributes inside HTML comments, reporting FAIL:DUPLICATE_IDS on sairncode.html for mr-kx-ytd where one of the two occurrences is inside a comment documenting a REMOVED input -- a false positive produced by a comment that explains a past fix.",
       "rules": [
         "1.11"
       ],
       "citation_confidence": "arguable",
       "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
+      "phase_confidence": "stated",
+      "found_by_tool": "comment_sensitivity_check.py",
       "found_by_session": null,
       "injection": {
-        "unknown_reason": "the call shipped with the file and no earlier commit introduced it"
+        "unknown_reason": "All three predate any commit that could be named as the injection. session_lock_check has defaulted to `start` since it was written; vercel_config_check has called json.load bare since its first version; nav_panel_check never had the comment strip that div_balance_check gained in 2026-08. Citing the commit that created each file would name a feature as the injection of its own absent guard."
       },
-      "citation_note": "A status that cannot distinguish a live writer from a dead one folds the third state into an answer. The fix adds states rather than guessing, and none of them is success.",
-      "phase_note": "The RUNNING line and its reader landed together; no later edit introduced the gap, so the omission is in the original design.",
+      "citation_note": "ARGUABLE, and it covers two of the three cleanly. session_lock_check and vercel_config_check are both third-state collapses: one folded a side-effecting action into a silent exit 0, the other folded a could-not-parse into exit 1 FINDINGS. nav_panel_check is NOT 1.11 at all -- it is cross-domain convention 8 (a check matching text that DESCRIBES code rather than code) and the identical defect was closed in tools/div_balance_check.py on 2026-08-07 without this file ever getting the fix. Filed under 1.11 with that stated rather than split into a second record for one commit.",
       "contributing_factors": [
         {
-          "factor": "The arm that was supposed to cover this was PASSING FOR THE WRONG REASON. It planted pid 999 and asserted RUNNING -- and 999 is almost certainly not a live process, so the arm was asserting that a status for a DEAD writer reads as RUNNING, which is the defect itself.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Replaced rather than kept beside the new arm, because the two statements cannot both be true. The planted pid is now dead BY CONSTRUCTION -- a child is spawned, reaped, and its number reused -- and a pid alive by construction sits beside it so the DEAD arm cannot be satisfied by a checker that answers False to everything."
-        },
-        {
-          "factor": "The docstring asserted the property the code did not have: 'a reader that finds RUNNING knows the answer is NOT YET KNOWN'. A reader checking whether that held read the sentence and stopped.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "The sentence is now qualified in the file and the CLI prints a different line per state -- 'not yet known' is true of RUNNING and false of DEAD, and telling an operator to wait for a verdict that will never arrive is the same misdirection as reporting RUNNING."
-        },
-        {
-          "factor": "Liveness is platform-specific and the obvious idiom is actively dangerous here: os.kill(pid, 0) terminates on Windows. A correct POSIX habit would have silently killed the thing being asked about.",
           "kind": "technical",
+          "factor": "A side-effecting verb was the DEFAULT for a bare run, a parse was unguarded, and a text match was not comment-blind.",
           "action_status": "done",
-          "action": "OpenProcess with PROCESS_QUERY_LIMITED_INFORMATION (0x1000) plus GetExitCodeProcess, which can only read; POSIX keeps os.kill. The reasoning is in the code so the next reader does not reach for os.kill."
+          "action": "session_lock_check refuses a bare run with exit 2 and a usage block naming which verb takes a lock; vercel_config_check exits 2 with a named reason for a missing file, invalid JSON and non-object JSON; nav_panel_check strips HTML comments once at read time, line-preserving, the same way div_balance_check does."
         },
         {
-          "factor": "A strong lock over read_status() says nothing about the --read CLI that wraps it, and this file had already been bitten by exactly that: a .strip() bound to a tuple raised on --read's first real use while every function-level arm passed.",
           "kind": "detection",
+          "factor": "Every existing sweep drove tools BARE ONLY. vercel_config_check bare run is clean, so it was invisible to all of them, and the only reason it surfaced is that this sweep also drove ONE ARGUMENT.",
           "action_status": "done",
-          "action": "Two of the new arms go through the CLI, and one of them asserts the word RUNNING appears NOWHERE in the DEAD output -- the half a startswith check alone would not catch."
+          "action": "The 175 ownerless tools were driven bare AND with one argument, 350 runs, looking for two shapes: a traceback, and exit 0 with no output. 15 flagged, 12 of them correctly silent (6 modules with no __main__, 6 hooks)."
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "bare_run_write_check.py, the tool built to catch a mutating bare run, checks THE REPO -- and ~/SAIRN-SESSION-LOCKS/ is outside every clone on purpose, so a write there is invisible to it.",
+          "action_status": "planned",
+          "action": "Named in the handoff for chat to assign: either widen its scope to the lock registry or declare the blind spot in its own output. Not changed here -- widening a detector scope is its owner call."
+        },
+        {
+          "kind": "process",
+          "factor": "A fix proven on one checker was never propagated to its siblings. div_balance_check closed the comment-matching defect on 2026-08-07 and wrote up why; nav_panel_check, in the same directory and over the same files, kept it for two months.",
+          "action_status": "done",
+          "action": "comment_sensitivity_check.py is the control that found it, and it now reports 0 answers that change across 6 checkers x 22 apps, down from 1. Arms 5a/5b/5c lock the specific finding on a synthetic fixture."
         }
       ],
-      "recurrence_open": "EVERY OTHER STATUS-FILE READER ON THIS PLATFORM IS UNAUDITED for the same question. This fix covers one tool. Any file that records a pid and is read later -- lock files, andon records, the suite lock in run_all_tests.py -- can report a live holder that is gone, and nothing sweeps for it."
+      "recurrence_open": "THE SWEEP IS NOT A GATE. 175 ownerless tools were driven once, by hand, at a 25s bound; nothing re-runs it and a tool added tomorrow with either shape is not caught. The one-argument probe used a single argument (CLAUDE.md) -- a tool that needs TWO, like va_rule_currency did, can still exit 0 silently on one. And the detector blind spot above is open: a bare run that writes outside the repo is still invisible to the tool built to find mutating bare runs."
     },
     {
       "commit": "fa1f22d2bb41",
