@@ -96,8 +96,8 @@
       "task": "batch Q: external-file inventory and index, own-tool path-bug sweep, sf_officers site detail, citation triage, settings merge",
       "claimed_at": "2026-10-08T07:57:00Z",
       "claimed_at_epoch": 1791446220.3653076,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-08T08:34:21Z",
       "files": null
     }
   ],
