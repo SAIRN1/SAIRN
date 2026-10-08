@@ -6966,3 +6966,67 @@ Blockers re-checked and BOTH STILL BLOCKED on Michael: SAIRNLAW_EMP/PIN not set,
 The four files remain FREE and this batch's claim lists none of them.
 Checkpoint cadence 1, confirmed firing on all nine items.
 Claim released at the close of this batch.
+
+---
+
+## 2026-10-08 — batch 17 (b3), cc. Final local HEAD `c5cae242`. NOT PUSHED.
+
+Full handoff: `docs/handoff-cc-2026-10-08.md`. Verification sweep and run
+history: `docs/2026-10-08-cc-routed-b17.md`. Methodology (paste-ready, fourth
+holds both target files): `docs/2026-10-08-cc-methodology-b17.md`.
+
+**12 commits are local only — `main` is 12 ahead / 66 behind `origin/main`.**
+`sairn_claim.py claim cc` exited **3 NOT CLAIMED**: the claim committed locally
+(`40dfac5c`) and the push's rebase could not apply `5f0eb6cb`, which touches
+`docs/scrutiny-flags.json` — a ledger cody's push gate also writes. That file's
+own `merge_policy` is union-by-identity on `(sha, path)` and
+`tools/sairn_rebase_resolve.py` already merges that shape. **Do not hand-merge
+it.** Nothing below is a claim about `origin/main`.
+
+All 13 dispatch items are complete:
+
+| item | result | commit |
+|---|---|---|
+| 2 Tier A, mine, most overdue first | 3 discharged, cc-owned open 3 → 0 | `609af817` |
+| 3 Maine seed | **503 NOT_PROVISIONED → 200, deadline 2026-12-10**, inputs byte-identical (`cmp`); load-state check exit 1 MISSING 14+2 → exit 0 MISSING 0. `SAIRN_SEED_GATE=off` NEVER set | live write |
+| 4 `superseded_by` Option A | 12/12, 3 runs byte-identical; register NOT touched | `e9780ea3` |
+| 5 `gh_push.py:182` guard | 9/9; remote byte-identical before and after a bare run | `cd8b815b` |
+| 6 owner map NONE split | UNRECORDED 614 / UNKNOWN 0 + total; lock 7/7 → 18/18 | `7b82997b` |
+| 7 hank's scrutiny stash | **all 20 rows DISCARDED with cause**; root cause fixed in the gate | `5f0eb6cb` |
+| 8 Tier A takeover | the two oldest past 48h, both at 261h | `475a2ed9` |
+| 9 `SELF_EXCLUDED` = 8 | 3 stale counts fixed, **none bumped to 8** | `9e4ea398` |
+| 10 index read ceiling | 2 CLAUDE.md pointers + `--standing-doc-sizes`; **7 docs over, not 1** | `785a8c99` |
+| 11 + 12 sweep and run history | 13 checks alone; **found a defect in item 6** | `d562e53f`, `b0a128bc` |
+| 13 methodology | 5 paste-ready entries + 1 self-finding | `c5cae242` |
+
+**The three findings worth carrying forward:**
+
+1. **The scrutiny ledger was accusing the wrong commits.** Flags computed over a
+   whole push range were recorded under the push **tip**. `bf174f30` carried
+   rows naming three test files it does not contain. The 2026-10-06 fix had
+   corrected the key's **shape** and left its **referent** wrong. Fixed to key
+   per commit from that commit's own diff; locked by new arm G (a two-commit
+   push, which no previous arm could express because they all pushed one);
+   ablated against the pre-fix gate — 4 of 9 go red and the row sha comes back
+   equal to the tip.
+2. **The sweep found a defect in work I had already reported green.**
+   `tool_owner_map.py --check` was exit 0 at `7b82997b` and exit 1 three commits
+   later. A `last_commit` field I added moved on every commit touching any of
+   614 `UNRECORDED` files. Removed; ablation proves the field was the cause.
+3. **A NEXT ACTION row was dispatching a review of five of eight.**
+   `SELF_EXCLUDED` has eight entries; the open-work index asked a reviewer to
+   check "each of the five". A reviewer could have answered honestly and still
+   never looked at three.
+
+**Declared against myself: my claim expired mid-run and items 6–12 landed under
+an expired claim.** Found at item 13 while checking somebody else's holder, not
+my own. No collision — every target was re-checked against the live claim list
+before writing — but that is per-item checks plus luck. The per-item checkpoint
+should re-check my own claim's age.
+
+**Files written that were not in my original FILES list**, all declared in the
+handoff: `tools/va_rule_currency.py`, `tests/run_tool_usage_refusal_probe.py`,
+`tools/sairn_push_gate_hook.py`, `tests/run_scrutiny_flag_probe.py`,
+`tools/cross_tenant_isolation_scope.py`, and `docs/SAIRN-OPEN-WORK-INDEX.md` —
+the last being a direct deviation from my own claim text, one line, PR §2.1
+respected (unique-substring edit, pipe count 8 before and 8 after).
