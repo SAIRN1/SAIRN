@@ -25918,6 +25918,64 @@
       "recurrence_open": "ANY TOOL THAT REPORTS COULD-NOT-RUN AND THEN CLEANS UP IS THE SAME SHAPE, and none has been swept. The question to ask of each is whether the evidence for the refusal survives the refusal."
     },
     {
+      "commit": "7eb134585c02",
+      "date": "2026-10-08",
+      "subject": "fix(tier-a reseat): reviewed records were SILENTLY outside the population -- 72 carry a sha and 32 of them dangle",
+      "files": [
+        "docs/handoff-cody-2026-10-08.md",
+        "docs/tier-a-reviews.json",
+        "tests/run_tier_a_review_gate_probe.py",
+        "tools/tier_a_review_gate.py"
+      ],
+      "lines_added": 352,
+      "lines_removed": 10,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/tier_a_review_gate.py reseat_shas() filtered its population to status=='open' and disclosed nothing about the filter, so a reviewed record carrying an orphaned opened_at_sha was not refused, not listed and not counted -- it was absent, and the tool exited 0 reporting a true count of a population it had silently chosen. Adding the disclosure made the size visible on its first run: 72 REVIEWED records carry a sha and 32 of them are NOT reachable from origin/main. One record was the symptom; thirty-two is the finding, and none of it was visible before. Three changes: the excluded population is printed on every run whether or not the new flag is used; --include-reviewed widens the population, says it widened, and recomputes the walk window from the widened set because an index built from the open set alone cannot contain a reviewed record's survivor; and --only <opened_at> because --write repoints every fixable record in one keystroke, 11 across four sessions at that HEAD. The default count is deliberately unchanged at 22 before and after. 4aa33b4565dd was then reseated to survivor 27de70bee07a, established three independent ways that agree -- cc's file-history recovery, my own git log --diff-filter=A in batch 25, and the tool's own SUBJECT TWIN match -- with the old sha kept in opened_at_sha_was so the reseat is reversible rather than a silent overwrite. 12 new arms, the fail-first one being the disclosure arm; tests/run_tier_a_review_gate_probe.py EXIT 0, 242 ok, re-run EXIT 0 after a 36-commit rebase.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the open-only filter shipped with the function and no earlier commit introduced it"
+      },
+      "citation_note": "A check that silently narrows its population reports a pass it never performed over the excluded part: 'could not tell' folded into 'passed', which is 1.11's shape one level out -- here the missing tool is the missing POPULATION.",
+      "phase_note": "The filter was in the first line of reseat_shas() as written; no later edit introduced it.",
+      "contributing_factors": [
+        {
+          "factor": "reseat_shas() opened with a filter to status=='open' and printed nothing about what the filter removed, so a reviewed record with an orphaned sha was not refused, not listed and not counted -- it was ABSENT, and a default run was indistinguishable from one where no reviewed record had a problem.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The excluded population is now printed on EVERY run whether or not the new flag is used: the reviewed count, how many of those are unreachable from origin/main, and a line saying the run says nothing about them. First run of the disclosure reported 72 reviewed records carrying a sha and 32 dangling."
+        },
+        {
+          "factor": "Widening the population needed the walk window recomputed from the widened set, not just the filter loosened: an index built from the open records alone cannot contain a reviewed record's survivor, so the record would have been REFUSED for 'nothing matched' rather than reseated -- a wrong answer that looks like a careful one.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "--include-reviewed recomputes the window from the widened set and says it widened. The default count is unchanged at 22 open records before and after, deliberately, because widening it silently would change the meaning of every figure this tool has ever printed."
+        },
+        {
+          "factor": "--write repoints EVERY fixable record in one keystroke -- 11 of them across four sessions at that HEAD -- and reseating another session's record is editing their finding.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "--only <opened_at> added. A selector matching nothing REFUSES with exit 2 rather than printing '0 reseated' as success, which is how a mistyped timestamp becomes 'already fine', and a reviewed record selected without --include-reviewed refuses while NAMING the flag that would find it."
+        },
+        {
+          "factor": "Nothing would have caught this: the tool exited 0 and reported a true count of the population it had chosen, so there was no failing signal of any kind. It was found only because one named record could not be reseated and the reason had to be read out of the source.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "12 new arms in tests/run_tier_a_review_gate_probe.py. The FAIL-FIRST arm is the disclosure arm -- it asserts the default run prints the reviewed count and pre-fix there is no such line. The --include-reviewed arms CANNOT fail that way pre-fix (the keyword does not exist and raises TypeError) and the probe says so in a comment rather than leaving a reader to discover it."
+        }
+      ],
+      "recurrence_open": "The 32 dangling reviewed records are now VISIBLE and are NOT fixed. 11 fixable records span four sessions and reseating another session's finding is not mine to do, so they are disclosed and left. The default population is still open-only by design."
+    },
+    {
       "commit": "83e59bd0b591",
       "date": "2026-10-08",
       "subject": "fix(tools): a bare run was TAKING A SESSION LOCK silently, and the detector built to catch that cannot see outside the repo",
@@ -25975,6 +26033,56 @@
         }
       ],
       "recurrence_open": "THE SWEEP IS NOT A GATE. 175 ownerless tools were driven once, by hand, at a 25s bound; nothing re-runs it and a tool added tomorrow with either shape is not caught. The one-argument probe used a single argument (CLAUDE.md) -- a tool that needs TWO, like va_rule_currency did, can still exit 0 silently on one. And the detector blind spot above is open: a bare run that writes outside the repo is still invisible to the tool built to find mutating bare runs."
+    },
+    {
+      "commit": "f67fed680b86",
+      "date": "2026-10-08",
+      "subject": "fix(exit-status): name capture_exit.py in the warning, and CLOSE the backgrounding-check row with a measured reason",
+      "files": [
+        "docs/handoff-cody-2026-10-08.md",
+        "tools/exit_status_attributable.py"
+      ],
+      "lines_added": 72,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "tools/exit_status_attributable.py warns that a piped command's exit status comes from the text filter and tells the reader to measure the program alone and read $?. That advice is correct for a foreground run and WRONG the moment the run is backgrounded, when $? is the wrapper's -- a false negative the tool cannot detect because the signal is not in its input: it reads command TEXT and backgrounding is decided by the harness afterwards. The routing row asking for a standalone backgrounding check is CLOSED AS NOT NEEDED on a measurement taken before anything was written: over 398 command lines in docs/*.md, 107 distinct, such a warning would have been NEW OUTPUT ON 106 OF 107, and since the hook fires on every Bash call rather than only documented ones, 99% is a floor on the live rate. A 99% firing rate is how a hook gets switched off. The change made instead rides on the warning that was already firing -- it now names capture_exit.py --status and says to read the status FILE -- so it adds words and no new messages; driven by feeding the hook a piped command, 775 bytes, --selftest EXIT 0, 40 ok. THEN REVERTED: the file carries '# OWNER: cc' on line 1 and docs/tool-owner-map.json records cc on basis OWNER_LINE, and I wrote to it without checking, so 1e60f011 backed it out and the text is routed to cc as a proposal instead.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the advice shipped with the hook's first version and no earlier commit introduced the backgrounding blind spot"
+      },
+      "citation_note": "The warning told the reader to read a status that, under backgrounding, belongs to the wrapper and not the program -- advice that is confidently wrong in a case it cannot detect, which is 'could not tell' presented as a fact.",
+      "phase_note": "The tool reads command TEXT by design; backgrounding is decided by the harness after that text exists, so the gap is in the division of labour between two tools rather than in either one's code.",
+      "contributing_factors": [
+        {
+          "factor": "The hook's advice -- read $? after the command -- is CORRECT for a foreground run and WRONG the moment the run is backgrounded, when $? is the wrapper's and not the program's. The division of labour with capture_exit.py was already recorded in capture_exit.py's own docstring; what was missing was a POINTER from the warning that fires, not a checker.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The existing warning now names capture_exit.py --status and says to read the status FILE. It rides on a message that was already firing, so it adds words and NO new messages. Driven by feeding the hook a piped command: it names both and the message is 775 bytes."
+        },
+        {
+          "factor": "The obvious fix -- a standalone backgrounding check -- was measured before being written and would have been new output on 106 of 107 distinct documented command lines, 99%. The hook fires on EVERY Bash call and not only documented ones, so 99% is a FLOOR on the live rate rather than an estimate of it. A 99% firing rate is how a hook gets switched off, and a disabled hook protects nothing.",
+          "kind": "detection",
+          "action_status": "declined",
+          "note": "The routing row asking for the check is CLOSED as not needed rather than left open, with the measurement recorded. The signal is also outside the tool's input: it reads command TEXT, and whether a run is backgrounded is decided by the harness after the text exists -- grep -cin background over the tool returns 0, which is correct rather than an omission."
+        },
+        {
+          "factor": "I EDITED A FILE I DO NOT OWN. tools/exit_status_attributable.py carries '# OWNER: cc' on line 1 and docs/tool-owner-map.json records owner cc on basis OWNER_LINE, the strongest basis it holds -- and I wrote to it without checking either.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Reverted two commits later in 1e60f011, 1 insertion and 17 deletions, restoring cc's file. The warning-text improvement is recorded here and in docs/2026-10-08-cody-b26-routed.md as a routed proposal for cc rather than a landed change. The durable-ownership check was then applied to item 5 BEFORE touching anything, which is why docs/scrutiny-flags.json was left alone."
+        }
+      ],
+      "recurrence_open": "THE CODE HALF OF THIS COMMIT WAS REVERTED and is NOT in the tree. tools/exit_status_attributable.py is cc's by its OWNER line and I edited it without checking; 1e60f011 backs that out. What survives from this commit is the routing-row close in docs/2026-10-08-cody-b26-routed.md. The warning text is a ROUTED PROPOSAL for cc, not a landed fix, so the backgrounding blind spot is still live in the hook every session sees."
     },
     {
       "commit": "fa1f22d2bb41",
