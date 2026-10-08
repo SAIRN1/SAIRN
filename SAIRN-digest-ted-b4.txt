@@ -1,12 +1,19 @@
 DIGEST ted b4 -- 2026-10-08
 
 HEAD / PUSH STATUS
-  HEAD              f25e2f82a6695260307f9a5caabe22d54372a567
-  origin/main       f25e2f82a6695260307f9a5caabe22d54372a567  (git ls-remote, not the cached ref)
-  ahead / behind    0 / 0
-  ON-REF            yes, by merge-base --is-ancestor as well as by equality
+  last work commit  f25e2f82a6695260307f9a5caabe22d54372a567 (item 8, the handoff).
+                    At the moment it landed: git ls-remote origin refs/heads/main
+                    returned the same hash, ahead 0 / behind 0, ON-REF by
+                    merge-base --is-ancestor as well as by equality.
+  current tip       NOT STATED HERE ON PURPOSE. This digest is itself committed, so
+                    the tip is a later commit this file cannot name. Other sessions
+                    pushed throughout the batch -- three of my four pushes needed a
+                    re-fetch and rebase first -- so re-derive it:
+                      git ls-remote origin refs/heads/main
+                      git log --oneline -- SAIRN-digest-ted-b4.txt
   commits this run  5b2d36f4 (items 4-7), f25e2f82 (item 8, the handoff)
                     2a8ab911 (item 3) was pushed before the compaction
+                    all three re-checked after the last rebase: hashes UNCHANGED
   uncommitted        sql/restore_demo_pins_2026-09-29.sql -- untracked, NOT MINE,
                     present for seven batches, carried not adopted
   gate at close     tools/tooling_inventory.py --standing-doc-sizes EXITS 1,

@@ -1,8 +1,13 @@
 REPORT ted b4
-SHA256 8158421679bf160e5baeb60ec952805c77f78a2cf3a8797be46948061419e7d7
+SHA256 56761a261c6bee9a0117b5ee3696d7baf5eeefa67fcfb77207ff27f2d692e16e
 
 BATCH 18 (b4) -- fourth / Ted -- 2026-10-08
-Closed at HEAD f25e2f82a6695260307f9a5caabe22d54372a567, pushed, remote tip.
+Last work commit: f25e2f82a6695260307f9a5caabe22d54372a567, pushed and verified
+against the remote. That is NOT the current remote tip and is not claimed to be:
+this file is carried by a LATER commit, and a file cannot name the hash of the
+commit that contains it. Find that commit with
+
+  git log --oneline -- SAIRN-report-ted-b4.txt
 
 HASH RULE, so this is checkable rather than decorative: line 1 is the title
 line, line 2 is the SHA line, and the BODY is every byte from line 3 to the end
@@ -343,11 +348,22 @@ both cc's and cody's to change, not mine.
   5b2d36f4  items 4-7 -- conventions 31/32, the 24 external claims, the
             skill-directory refusal, the two committed documents. Pushed.
   f25e2f82  item 8 -- the handoff, written and pushed BEFORE this report.
-            Remote tip.
 
-  git ls-remote origin refs/heads/main
-  -> f25e2f82a6695260307f9a5caabe22d54372a567, identical to local HEAD.
-  ahead 0 / behind 0. merge-base --is-ancestor confirms ON-REF.
+  At the moment the handoff landed: git ls-remote origin refs/heads/main ->
+  f25e2f82a6695260307f9a5caabe22d54372a567, identical to local HEAD, ahead 0 /
+  behind 0, merge-base --is-ancestor confirming ON-REF.
+
+  THE TIP HAS MOVED SINCE, AND SAYING SO IS THE POINT. This report and
+  SAIRN-digest-ted-b4.txt are themselves committed, and other sessions pushed
+  during the batch -- three of my four pushes needed a re-fetch and rebase first.
+  So a hash written into a report is true as of its writing and nothing more.
+  Re-derive rather than trusting this line:
+
+    git log --oneline -- SAIRN-report-ted-b4.txt     # the commit carrying this file
+    git ls-remote origin refs/heads/main             # the real current tip
+
+  All three work commits above were re-checked after the last rebase and all
+  three hashes are UNCHANGED, so nothing above was rewritten under me.
 
 THE FIRST PUSH REFUSAL WAS CORRECT AND IS WORTH RECORDING AS A PASS, NOT A FAULT.
 The gate said "the outgoing range cc0ee901..2b52d09f could not be read" and
