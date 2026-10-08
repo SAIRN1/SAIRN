@@ -307,3 +307,99 @@ whose first lines *do* appear in docs history: registered, not committed.
 **The index is DERIVED and says so**, with the regeneration command in its own
 header: a hand-maintained index of files that move is exactly the drift this
 platform keeps paying for.
+
+## item 7 — DONE in parts, and **two sub-items were already satisfied by somebody else**.
+
+### (a)+(b) settings — ALREADY CORRECT, so nothing was merged
+
+```
+command : read ~/.claude/settings.json (backed up first to
+          settings.json.bak-b26-20261008T141329Z and to scratchpad)
+BEFORE sha256 9894b829333e0749cc0b64d1, 9,063 bytes, 12 top-level keys
+  autoCompactWindow           = 150000      <- the value the item asks for
+  env.BASH_MAX_OUTPUT_LENGTH  = '10000'     <- the value the item asks for
+```
+
+**Both targets were already present and already correct**, so **nothing was
+written** — a merge that changes nothing still risks the key-loss this file
+suffered on 2026-10-07, when `model` vanished from it during an unrelated edit.
+Also present and not mine: `autoCompactEnabled = false`,
+`CLAUDE_AUTOCOMPACT_PCT_OVERRIDE = '75'`.
+
+**QUESTION FOR MICHAEL:** `autoCompactWindow = 150000` sits beside
+`autoCompactEnabled = false`. If auto-compaction is off, does the window do
+anything? One of the two is probably not what you intended, and I did not guess.
+
+### (c) version — `claude --version` → **2.1.222 (Claude Code)**, exit 0
+
+### (d) `/context` and `/mcp` — I CANNOT INVOKE THEM. Asked, not estimated.
+
+Both are **client-side commands**; a model turn has no tool for either. This is
+the third batch in which that is true, and inventing a breakdown would be the
+fabricated-KPI shape Check 0b exists for. **ASK: run `/context` and `/mcp` and
+paste the output.**
+
+**AND THE SERVERS CANNOT BE DISABLED FROM A FILE — measured, not assumed:**
+
+```
+.mcp.json                                    : does not exist (repo or ~/.claude)
+mcpServers / disabledMcpjsonServers in either settings.json : absent
+~/.claude.json                               : only claudeAiMcpEverConnected, a LIST
+```
+
+The integrations are **account-level**, so `/mcp` in the client is the only lever.
+What I can give you is the evidence, so each decision is one click:
+
+```
+command : scratchpad/b26/usage_evidence.py over 30 transcripts, 124,706 lines, 0 unparseable
+  claude-in-chrome      386 calls
+  claude_ai_Vercel       15 calls
+  ZERO CALLS, EVER      : Gmail, Google_Drive, Claude_Docs, Canva, Netlify,
+                          Notion, Stripe, Ironclad_Contracts   (8 of 10)
+```
+
+### (e) skills — **one gated, 47 routed**, and the restraint is the point
+
+```
+62 skills on disk. 16 ever invoked. 6 already carried disable-model-invocation.
+```
+
+**GATED: `graphify` only.** The global `CLAUDE.md` defines it as a `/graphify`
+slash-command trigger, so model auto-invocation is **redundant by design**, and
+the flag does not stop explicit invocation — proved by `domain-check` and
+`sairn-skill-vetter`, which carry the flag and still appear in my invocation
+counts. Largest never-invoked skill in scope: **43,292 bytes**.
+
+**NOT GATED, DELIBERATELY —** `~/.claude/skills/` is **shared by all five
+clones**. Gating `sairn-employee-auth-scaffold`, `email-diagnostics` or
+`transactional-email` could stop hank, cc or fourth auto-invoking something they
+need, and SAIRN does send email through Resend. **That decision is not
+unilaterally mine.** `sairn-hover-auditor` (283,729 bytes, the largest on disk and
+never invoked by me) is **structurally out of my scope** and is not touched.
+
+### (f) the session-start check — BUILT: `tools/session_surface_check.py`
+
+```
+python tools/session_surface_check.py --selftest -> EXIT 0, 7 arms, 2 negative
+python tools/session_surface_check.py            -> EXIT 0, 4s (walks 197 MB)
+python tools/session_surface_check.py --no-usage -> EXIT 0, 0s (the hook path)
+```
+
+It lists skills with their gating, the reachable MCP servers **with the source of
+that list named**, and measured usage. **It says what it is not:** not `/context`,
+not `/mcp` — it reads disk and transcripts, which is a smaller claim, and it
+cannot see the live prompt or its token cost.
+
+**`--no-usage` exists because a 4-second SessionStart hook is a hook somebody
+removes** — the same failure as a warning that fires on everything. In that mode
+it prints *"TRANSCRIPTS: NOT READ … every 'never invoked' below is
+COULD-NOT-TELL rather than zero"*, so the missing counts cannot read as zeros.
+
+**NOT WIRED, and that is a scope call:** `.claude/settings.json` is not in this
+batch's declared FILES. Paste-ready entry is in
+`docs/2026-10-08-cody-b26-routed.md`.
+
+**One discrepancy worth knowing:** the tool reports **6** reachable servers while
+my prompt lists **10**. `claudeAiMcpEverConnected` only records servers that have
+*ever connected*, so Canva, Notion, Stripe and Ironclad are reachable-but-never-
+connected. The tool names its source rather than claiming completeness.
