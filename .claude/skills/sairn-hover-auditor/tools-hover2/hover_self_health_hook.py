@@ -44,6 +44,38 @@ HEALTH = os.path.join(HERE, 'hover_self_health.py')
 FIRES = os.environ.get('HOVER_FIRES_LOG_OVERRIDE') or os.path.join(
     HERE, 'hover_self_health_fires.jsonl')
 MARKER = 'sairn-hover-auditor-clone'
+# ADDED 2026-10-08 (batch R item 6): hover2_external_file_check.py's own
+# unindexed-file count, appended to the SAME single emit() the health
+# report already makes -- a SECOND emit() call would print a second JSON
+# line, and nothing here confirms the shim reads more than the first one.
+# Lives in the git clone's tools-hover2/ (the committed copy; THIS
+# directory is the log repo, which has no copy of its own -- a file this
+# check is itself built to report on, named here rather than assumed).
+
+
+def _ext_file_check_path():
+    """Resolves the real platform-repo path from this hook's own location,
+    the same '..'-climb convention the committed tools-hover2/ copies of
+    citation_resolve_check.py and hover2_external_file_check.py already
+    use from their OWN location -- here climbing from the log-repo
+    directory instead, which sits beside the clone rather than under it,
+    so the real repo root has to be read rather than assumed. NOT
+    hardcoded as an absolute string: this hook already carries one
+    location-dependent lesson (own_project_slug's docstring) about exactly
+    that mistake."""
+    try:
+        r = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
+                           cwd=os.getcwd(), capture_output=True, text=True,
+                           timeout=8)
+        if r.returncode != 0:
+            return None
+        top = r.stdout.strip()
+    except Exception:
+        return None
+    cand = os.path.join(
+        top, '.claude', 'skills', 'sairn-hover-auditor', 'tools-hover2',
+        'hover2_external_file_check.py')
+    return cand if os.path.isfile(cand) else None
 
 
 def is_hover_clone():
@@ -157,16 +189,42 @@ def main():
              'The check did not run; that is a third state, not a pass.' % e)
         return 0
     out = (r.stdout or '').strip()
+    ext_suffix = _run_ext_file_check()
     if r.returncode != 0:
         record_fire('ran-and-failed')
         emit('HOVER2 SELF-HEALTH: ran and exited %d -- read this, it is not '
-             'a pass.\n%s\nstderr: %s'
-             % (r.returncode, out[:3000], (r.stderr or '').strip()[:400]))
+             'a pass.\n%s\nstderr: %s%s'
+             % (r.returncode, out[:3000], (r.stderr or '').strip()[:400],
+                ext_suffix))
         return 0
     record_fire('ran-and-passed')
     emit('HOVER2 SELF-HEALTH (this clone\'s own log, checked by this '
-         'clone\'s own hook):\n%s' % out[:3500])
+         'clone\'s own hook):\n%s%s' % (out[:3500], ext_suffix))
     return 0
+
+
+def _run_ext_file_check():
+    """Returns a '\\n'-prefixed suffix string reporting
+    hover2_external_file_check.py's own unindexed count, or naming why it
+    could not run -- a THIRD, independent check appended to the SAME
+    emit() call rather than a second emit(). Never raises: any failure
+    here must not take down the health report it is appended to."""
+    try:
+        path = _ext_file_check_path()
+        if not path:
+            return ('\n\nEXTERNAL-FILE CHECK: COULD NOT RUN -- '
+                    'hover2_external_file_check.py not found under this '
+                    'clone\'s tools-hover2/ (or the platform repo root '
+                    'could not be resolved from cwd).')
+        r = subprocess.run([sys.executable, path], capture_output=True,
+                           text=True, encoding='utf-8', errors='replace',
+                           timeout=20)
+        out = (r.stdout or '').strip()
+        if r.returncode == 2:
+            return '\n\nEXTERNAL-FILE CHECK: COULD NOT RUN -- %s' % out[:500]
+        return '\n\nEXTERNAL-FILE CHECK: %s' % out[:500]
+    except Exception as e:
+        return '\n\nEXTERNAL-FILE CHECK: COULD NOT RUN (%s)' % e
 
 
 def _selftest():
@@ -276,6 +334,53 @@ def _selftest():
     else:
         chk('KNOWN-BAD CONTROL: (H1 clone not present -- cannot prove the '
             'old gate passes there; FAIL rather than skip)', False)
+
+    # ADDED 2026-10-08 (batch R item 6): the external-file-check suffix
+    # must actually land in the SAME envelope the real hook emits from
+    # THIS clone's own cwd -- a real subprocess run, not an in-process
+    # call, so this exercises the exact invocation path main() takes.
+    _fires_fd2, _fires_tmp2 = None, None
+    try:
+        import tempfile as _tf4
+        _fires_fd2, _fires_tmp2 = _tf4.mkstemp(suffix='.jsonl', prefix='selftest_fires2_')
+        os.close(_fires_fd2)
+        _env2 = dict(os.environ, HOVER_FIRES_LOG_OVERRIDE=_fires_tmp2)
+        # cwd MUST be the real platform clone, not HERE (the log-repo
+        # directory this file physically lives in) -- is_hover_clone()
+        # checks for a marker file inside cwd's OWN .git/, and the log
+        # repo's own git history (used for the mirror push) has no such
+        # marker. Running this positive-path check from HERE would silently
+        # hit the "build clone or foreign cwd: zero output by design" exit
+        # and prove nothing -- caught on this test's own first real run,
+        # before trusting it, the same discipline this role's own
+        # tool-building-discipline.md names as Rule 1.
+        r3 = subprocess.run([sys.executable, os.path.abspath(__file__)],
+                            capture_output=True, text=True,
+                            cwd=r'C:\Users\marsh\Documents\SAIRN-hover2',
+                            timeout=30, env=_env2)
+        chk('WIRING: the real hook, run from this clone\'s own cwd, '
+            'includes an EXTERNAL-FILE CHECK section in the SAME emitted '
+            'envelope as the health report (one JSON line, not two)',
+            'EXTERNAL-FILE CHECK' in r3.stdout
+            and r3.stdout.count('"hookEventName"') == 1)
+    finally:
+        if _fires_tmp2 and os.path.isfile(_fires_tmp2):
+            os.remove(_fires_tmp2)
+
+    # KNOWN-BAD CONTROL: if _ext_file_check_path() is forced to return a
+    # path that cannot exist, the suffix must say COULD NOT RUN, not go
+    # silent or raise -- proves the "never raises" contract is real, not
+    # merely hoped for, the same standard the rest of this file already
+    # holds its own guards to.
+    _orig = globals()['_ext_file_check_path']
+    try:
+        globals()['_ext_file_check_path'] = lambda: r'C:\does\not\exist.py'
+        suffix = _run_ext_file_check()
+        chk('KNOWN-BAD CONTROL: a forced-nonexistent check path reports '
+            'COULD NOT RUN in the suffix rather than raising or going '
+            'silent', 'COULD NOT RUN' in suffix)
+    finally:
+        globals()['_ext_file_check_path'] = _orig
 
     print()
     if fails:
