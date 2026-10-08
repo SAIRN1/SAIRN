@@ -1416,8 +1416,17 @@ def main():
                             # `show`, not `diff _c^ _c`: a ROOT commit has no
                             # parent and `_c^` fails, which would silently
                             # drop the first commit of a new repository.
-                            _cd[_q] = git(repo, 'show', '--format=',
-                                          '--unified=0', _c, '--', _q) or ''
+                            _d = git(repo, 'show', '--format=',
+                                     '--unified=0', _c, '--', _q) or ''
+                            # ── ONLY PATHS THIS COMMIT ACTUALLY TOUCHED ────
+                            # An EMPTY diff produced a row at level CHANGE
+                            # claiming the commit touched a file it did not.
+                            # MEASURED ON A REAL PUSH: 20 rows over 4 commits
+                            # x 5 paths, 15 of them naming a pair with no diff
+                            # between them. The per-commit key was right and
+                            # this was wrong in the same breath.
+                            if _d.strip():
+                                _cd[_q] = _d
                         if not any(_cd.values()):
                             continue
                         _cf = _ESA.scrutiny_flags(_cd)

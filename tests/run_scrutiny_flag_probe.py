@@ -275,6 +275,26 @@ try:
     shutil.copy(ESA, os.path.join(wd, 'tools', 'exit_status_attributable.py'))
     PP = os.path.join(wd, 'tests', 'run_planted_probe.py')
     io.open(PP, 'w', encoding='utf-8', newline='').write(WEAK_A)
+    # ── A SECOND IN-CLASS PATH, CHANGED BY A DIFFERENT COMMIT ──────────────
+    # THE FIXTURE PROPERTY THAT WAS MISSING, and its absence cost a real
+    # push. Arm G's first version had exactly ONE in-class path, so a
+    # (commit, path) pair with an EMPTY diff could not exist in it -- and the
+    # per-commit recorder passed EVERY in-class path to the classifier, which
+    # returned a CHANGE row for an empty diff. On the first real push it wrote
+    # 20 rows over 4 commits x 5 paths and 15 of them named a pair with NO
+    # DIFF between them.
+    #
+    # AND THE FIRST ATTEMPT AT THIS FIXTURE ALSO HAD NO TEETH, which is
+    # recorded because it is the same mistake one level down: a bystander
+    # committed in the BASE and never touched again is not in the outgoing
+    # range at all, so it never reaches `_in_class` and the empty-diff path is
+    # still unreachable. ABLATION SAID SO -- the arms passed against the
+    # pre-fix code. The property needs TWO in-class files that BOTH change in
+    # the push, in DIFFERENT commits, so each one's diff is empty for the
+    # other's commit.
+    BY = os.path.join(wd, 'tests', 'run_second_probe.py')
+    io.open(BY, 'w', encoding='utf-8', newline='').write(
+        'def test_second():\n    assert 1 == 1\n')
     git(wd, 'add', '-A')
     git(wd, 'commit', '-q', '-m', 'base')
     git(wd, 'remote', 'add', 'origin', bare)
@@ -285,7 +305,14 @@ try:
     git(wd, 'add', '-A')
     git(wd, 'commit', '-q', '-m', 'the commit that weakened the checker')
     culprit = (git(wd, 'rev-parse', 'HEAD').stdout or '').strip()
-    # COMMIT 2 -- the tip, a docs-only change touching no checker at all.
+    # COMMIT 2 -- the SECOND in-class file, so both are in the outgoing range
+    # and each one's diff is EMPTY for the other one's commit.
+    io.open(BY, 'w', encoding='utf-8', newline='').write(
+        'def test_second():\n    assert 1 == 1\n    assert 2 == 2\n')
+    git(wd, 'add', '-A')
+    git(wd, 'commit', '-q', '-m', 'the OTHER in-class file, a different commit')
+    second = (git(wd, 'rev-parse', 'HEAD').stdout or '').strip()
+    # COMMIT 3 -- the tip, a docs-only change touching no checker at all.
     # This is the shape of hank's bf174f30.
     io.open(os.path.join(wd, 'docs', 'note.md'), 'w',
             encoding='utf-8', newline='').write('# unrelated\n')
@@ -323,6 +350,34 @@ try:
                      'tests/run_planted_probe.py').stdout or '')
         ok('and the row is SELF-VERIFIABLE -- git show <row sha> -- <row path> '
            'produces a real diff', bool(shown.strip()), repr(shown[:120]))
+        # ── THE SECOND IN-CLASS FILE, AND EVERY ROW SELF-VERIFIED ───────────
+        bys = [f for f in d['flags']
+               if f['path'] == 'tests/run_second_probe.py']
+        ok('the SECOND in-class file gets exactly ONE row, not one per commit '
+           '-- 2 files x 3 commits is 6 pairs and only 2 of them have a diff',
+           len(bys) == 1, bys)
+        ok('...and that row names ITS OWN commit (%s), not the first file\'s '
+           'and not the tip\'s' % second[:12],
+           bool(bys) and bys[0]['sha'] == second,
+           repr((bys[0]['sha'][:12] if bys else None, second[:12],
+                 culprit[:12])))
+        ok('the planted path gets NO row against the second commit -- a CHANGE '
+           'row from an empty diff is a commit accused of touching a file it '
+           'did not touch',
+           not [f for f in d['flags']
+                if f['path'] == 'tests/run_planted_probe.py'
+                and f['sha'] == second], d['flags'])
+        ok('and the ledger holds exactly 2 rows in total, one per real '
+           '(commit, path) pair', len(d['flags']) == 2,
+           [(f['sha'][:12], f['path']) for f in d['flags']])
+        unverifiable = []
+        for f in d['flags']:
+            t = (git(wd, 'show', '--format=', '--unified=0', f['sha'], '--',
+                     f['path']).stdout or '')
+            if not t.strip():
+                unverifiable.append((f['sha'][:12], f['path']))
+        ok('EVERY row in the ledger self-verifies, not just the one this arm '
+           'went looking for', not unverifiable, unverifiable)
         ok('the gate says out loud that it keyed per COMMIT rather than to the '
            'tip', 'keyed per COMMIT' in r.stderr, r.stderr[-500:])
 finally:

@@ -1031,6 +1031,25 @@ def scrutiny_flags(per_file_diffs):
         cls = scrutiny_class(path)
         if not cls:
             continue
+        # ── AN EMPTY DIFF IS NOT A CHANGE (2026-10-08) ─────────────────────
+        # Without this, a path whose diff body is empty still got a row at
+        # level CHANGE -- a flag asserting a commit touched a file it did not
+        # touch, invented from nothing.
+        #
+        # IT WAS INVISIBLE TO THE ORIGINAL CALLER AND FATAL TO THE NEW ONE.
+        # The range caller only ever passed paths it had already selected as
+        # changed, so every diff had content. The per-commit caller added the
+        # same day passes ALL in-class paths per commit, and most are empty
+        # for any given commit. MEASURED ON A REAL PUSH, not a probe: 20 rows
+        # written across 4 commits and 5 paths, of which 15 named a
+        # (commit, path) pair with no diff between them. Only 5 were real --
+        # one per commit.
+        #
+        # Guarded HERE as well as in the caller, because a row invented from
+        # an empty diff is wrong from every caller, and the caller is the
+        # thing a future change is likeliest to get wrong again.
+        if not (per_file_diffs[path] or '').strip():
+            continue
         shapes = weakening_shapes(per_file_diffs[path])
         flags.append({
             'path': path,
