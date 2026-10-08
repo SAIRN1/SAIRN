@@ -632,3 +632,104 @@ at `CREATE`; a duplicate **probe passes**, so nothing ever forces the question.
 **ADOPTED IMMEDIATELY rather than waiting for the rule to land.** This batch
 wrote **no new test file** — item 4 removed arms from an existing one — so the
 adoption has not been exercised yet, and that is stated rather than implied.
+
+---
+
+# ITEM 14 — HANDOFF. Written at a point where nothing is half-finished.
+
+## A. PUSHED STATE — read from `git ls-remote`, not from a push message
+
+```
+git ls-remote origin main  ->  6869a151892345bb4e8557e6c7cb7051250af9e8
+ahead 0 / behind 0, working tree clean
+```
+
+**Every batch-25 commit confirmed an ancestor of `origin/main` with
+`git merge-base --is-ancestor`, rc 0 each:**
+
+| sha | item |
+|---|---|
+| `59e1b196`¹ | handoff items 1, 2, 3 |
+| `2505c5aa` | items 8 + 9 — the 36 leak sites and the artifact cleanup |
+| `b6d2c160` | item 10 — the missing ITEM 15 section and the row audit |
+| `14ba6c7a` | item 11 — the runbook count reconciliation |
+| `37791630` | items 12 + 13 — `PROCESS-RULES` §3.5 and the routed notes |
+| `05934efb` | the register record for the 36 sites |
+| `b938cf3b` | the **copy-exactly re-qualification**, 25 blocks |
+| `149874f1`, `294ede9c`, `6869a151` | gate bookkeeping and post-rewrite re-seats |
+
+¹ earlier shas in this batch were rewritten by the rebases; the ones above are
+the landed values.
+
+**The commits for items 4, 5, 6, 7 landed in the same series** (the probe
+surgery, the DEAD-pid read, the kept clone) and are ancestors likewise.
+
+## B. OPEN, AND WHY — with the exact next step
+
+| item | state | why |
+|---|---|---|
+| **1** Tier A | **0 of 6 discharged** | `docs/tier-a-reviews.json` is declared in **cc's** FILES, claimed 2026-10-07T23:20:05Z, and cc's own item 1 is the same discharge. hank was checked too: **8.0h since last activity, past the 4h expiry, not live**. |
+| **2** `superseded_by` | **SKIPPED** | cc's support is **not on `origin/main`** — zero `superseded` hits in `origin/main:tools/defect_register.py`, no probe in the tree. The four records are untouched and **no count delta is reported**. |
+| **3** the orphaned sha | **ROUTED to cc** | the file is cc's, **and** the tool cannot reach the record: `reseat_shas()` filters to `status == 'open'` and this one is `reviewed`. |
+| **5** the suite | **COMPLETED, EXIT 1** | 759 files, 671 ok, **86 FAIL**, 1 residue path. A completed red run, not a void one. **No clean pass, so the andon is HELD.** |
+| **7** the 35-min file | **still unnamed** | the childwatch was blind for the whole run; fixed and proved, but there is no second run to measure with. Bound stays **UNSET**. |
+| §5 of the routed doc | **named gap** | `tools/exit_status_attributable.py` — "the backgrounding false negative" has no body anywhere and was **not** reconstructed from memory. |
+
+## C. EXACT NEXT STEP, PER OPEN ITEM
+
+1. **Tier A** — `sairn_claim.py check` first. When cc releases, declare the
+   ledger and discharge **fourth `2026-10-05T15:02:28Z` `quotes` (57.1h)**,
+   freshness check *before* the verdict, then down the six. **hank's queue
+   targets the same discharge — check before starting.**
+2. **`superseded_by`** — when cc's support is on `origin/main`, apply the four
+   values through the tool and report the three deltas **measured**, not
+   predicted.
+3. **The 86 failures** — restore `docs/report-only-reachability.json` first (it
+   is the residue path, so part of the 86 may be cascade), then re-run them
+   individually and split real from cascade. **2 of the 86 carry `FAILED TWICE`**
+   and are the only subset proven real so far. **Do not quote 86 as a defect
+   count.**
+4. **The slow file** — re-launch `--pinned` detached and start the **fixed**
+   `childwatch.py` with it. The fix is proved; it has never been run against a
+   full suite.
+5. **The leak class** — the predicate is a scratchpad scanner, not a landed
+   check. What is owed is a **standing check**, not another sweep.
+6. **cc's scrutiny rows** — **4 stashes** are parked in this clone holding
+   `docs/scrutiny-flags.json` writes the push gate made. That file is cc's; they
+   were never committed. `git stash list` shows them; cc decides.
+
+## D. CLAIMS HELD
+
+`cody / Tooling`, batch 25, **40 files declared** — the original 15 plus the 25
+that hold the 36 leak sites, all claim-checked **FREE** against the live registry
+before being added.
+
+**NOT TOUCHED, held by others:** `docs/tier-a-reviews.json`,
+`tools/defect_register.py` (invoked, never edited), `docs/scrutiny-flags.json`
+(**stashed, never committed**) — all **cc**; `docs/METHODOLOGY.md` — **fourth**,
+and item 13 is paste-ready text rather than an edit.
+
+**TWO HOUSEKEEPING FACTS WORTH CARRYING:** `sairn_claim.py list` shows **two
+active `cody / Tooling` rows** — the first claim attempt was committed locally
+and could not push (the tree was dirty with the very patch it was claiming), and
+the retry added a second. The tool says a retry does not duplicate; it did.
+**And the claim could not be made until the patch was committed**, which is a
+chicken-and-egg worth naming: claiming work requires a clean tree, and the work
+dirties it.
+
+**`sairn-guardian-v2` was NOT loaded**, as instructed — no item edited an app
+file.
+
+## E. TRANSCRIPT
+
+```
+C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-cody\20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e
+```
+
+`scratchpad/b25/` — every artefact of this batch. `i5/` the completed detached
+run (`suite.out` 793 lines, `suite.status` `EXIT 1`, `meta.txt`,
+`child_times.txt.live` 382 KB). `apply_onerror.py`, `apply_onerror_36.py`,
+`clean_artifacts.py`, `add_records.py`, `add_record36.py`,
+`gen_copyexactly.py`, `prove_childwatch.py`, `analyse_times.py`,
+`launch_suite.ps1`, `childwatch.py` (fixed). `i8s/` the six-probe sample with a
+`.status` per probe. `push_loop*.out` the six refusals and the two that landed.

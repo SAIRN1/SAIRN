@@ -3593,6 +3593,29 @@
         "tools/clone_health_check.py",
         "tools/run_all_tests.py"
       ]
+    },
+    {
+      "id": "cody-1791465776",
+      "session": "cody",
+      "subject": "Tooling",
+      "task": "batch26 (b3) at HEAD 3f67fc16, resume confirmed against docs/handoff-cody-2026-10-07c.md and origin/main. THE REGISTRY HAS NO ACTIVE CLAIMS AT ALL at pickup -- sairn_claim.py list prints \"No active claims.\" -- so every target is declared by nobody and two item premises change: docs/tier-a-reviews.json is FREE so item 3 can reseat rather than route, and docs/scrutiny-flags.json is FREE BY CLAIM but item 5 says to act only if it is not exclusively cc S, so DURABLE ownership is checked (tool-owner-map plus the file S own header) before anything is touched and the default is to leave it named for cc. ALSO CORRECTED AT PICKUP: item 5 says 4 parked stashes; git stash list shows SEVEN, all b25 gate rows. Work: (1) claim and resume check. (2) triage all 86 pinned-suite failures one by one, real or artifact of the docs/report-only-reachability.json tree contamination, committed as a table with test name, verdict and evidence, re-running clean only if a case stays ambiguous. (3) make the reseat path able to reach a reviewed-status record, with a fixture that fails first, then reseat 4aa33b4565dd to the survivor 27de70bee07a which I verified myself with git log --diff-filter=A. (4) tools/exit_status_attributable.py: write the backgrounding false-negative check or CLOSE the routing row as not needed, with the reasoning either way. (5) the parked stashes, ownership-gated as above. (6) inventory every tool, script and handoff I keep outside git and register them plus my directories in docs/external-files-index.json, committing what belongs in the repo. (7) compaction and session hygiene: MERGE autoCompactWindow 150000 into the global settings without overwriting, BASH_MAX_OUTPUT_LENGTH, confirm claude --version, context and mcp, disable unused MCP servers, disable-model-invocation on rarely-used skills WITH usage evidence, and a session-start check that lists my enabled skills and MCP servers. (8) one methodology item under my own section in docs/METHODOLOGY.md from a real recurring pattern in this batch. (9) handoff BEFORE the two report files. sairn-guardian-v2 is NOT loaded unless an item edits an app file and none does. I close only findings I originated and reclassify none. I read and reference no auditor tool. FILES: tools/tier_a_review_gate.py tests/run_tier_a_review_gate_probe.py docs/tier-a-reviews.json tools/exit_status_attributable.py docs/METHODOLOGY.md docs/external-files-index.json docs/2026-10-08-cody-suite-86-triage.md docs/2026-10-08-cody-b26-routed.md docs/handoff-cody-2026-10-08.md docs/defect-density-register.json SAIRN-ACTIVE-WORK-cody.md",
+      "claimed_at": "2026-10-08T13:22:56Z",
+      "claimed_at_epoch": 1791465776.6421344,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/2026-10-08-cody-b26-routed.md",
+        "docs/2026-10-08-cody-suite-86-triage.md",
+        "docs/METHODOLOGY.md",
+        "docs/defect-density-register.json",
+        "docs/external-files-index.json",
+        "docs/handoff-cody-2026-10-08.md",
+        "docs/tier-a-reviews.json",
+        "tests/run_tier_a_review_gate_probe.py",
+        "tools/exit_status_attributable.py",
+        "tools/tier_a_review_gate.py"
+      ]
     }
   ],
   "refusals": [

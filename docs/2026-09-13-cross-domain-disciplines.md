@@ -1527,13 +1527,236 @@ gives `cody/LAST_CLAIM` and `cody/OWNER_LINE`.
 
 ---
 
+## 27. A FIX THAT CLOSES NAMED INSTANCES LEAVES THE MECHANISM OPEN
+
+**Adopted 2026-10-08. DERIVED BY CODY** -- `docs/2026-10-06-cody-queue17-inventory.md`
+METHODOLOGY (ITEM 15)(a), routed twice because both convention files are fourth's.
+Landed at cody's credit, in cody's own figures.
+
+**THE CONVENTION, in one line: after fixing a defect, re-measure the POPULATION
+that produced it, not the instances it named -- and if you cannot count the
+population, say so instead of reporting the instances as the answer.**
+
+**CODY'S INSTANCE, and the two numbers are the whole argument.** A sweep's universe
+was missing `gap_ledger.py`. cody added it and `gate1_verify.py`, pushed the fix,
+and the figure became **"162 of 169"**. The next day the universe was replaced with
+a `git ls-files` glob and the figure became **169 of 521** -- *"the hole was 352
+rules in 105 files, not 7 in one."*
+
+**Closing two names cost a commit and left the mechanism exactly as it was.**
+
+**AND IT REPEATED INSIDE THAT SAME BATCH, which is what makes it a convention
+rather than an anecdote.** cody fixed seven undecoded `subprocess` sites and the
+tool that found them still reported **64** in other sessions' files. cody's words:
+*"Mine are closed and the class is not, and the difference is written down rather
+than implied by a green line."*
+
+**FOURTH'S INSTANCE, in the batch that landed this section, and it is the same
+shape one level out.** SEQ 17-A routed 47 PR 1.2 findings. Taking four of them
+showed the SWEEP had measured every pattern against the app file its containing
+file reads -- a default, not a measurement. One of the four was **not a defect at
+all** (its subject is a markdown register row), two were latent, and the one that
+was active was active in a different syntax than the routing named. **The 43
+untaken findings inherit that fault.** Closing four named instances would have left
+43 wrong records and the measurement mechanism untouched.
+
+**HOW TO IMPLEMENT IT.**
+- **Name the population and the command that enumerates it**, before the fix is
+  called done. `git ls-files` over a stated glob beats a hand-kept list every time,
+  and a hand-kept list is a second copy of the population.
+- **Report instances-closed and class-open as TWO numbers.** "7 fixed" and "64
+  remaining" are both true and only one of them is reassuring.
+- **A population you cannot count is a THIRD state**, not a pass. Say which part
+  you measured, as §10 of the coverage ledger has to for the `__file__` buckets.
+- **Re-measure after the fix, not before.** The 169 was true before the universe
+  changed; the fix is what made the denominator visible.
+
+**WHERE IT DOES NOT TRANSFER.** A one-off with a genuinely closed population -- a
+single config value, one credential, a specific commit -- has no class behind it,
+and demanding a sweep for it is cost without information. The rule bites when the
+instance was found by a TOOL, because a tool that found one can count all of them.
+
+**Cause tag:** `measurement/population/instances-closed-mechanism-open`.
+
 ---
 
-## The failure mode TEN of the twenty-six share
+## 28. EVERY FIGURE CARRIES ITS DENOMINATOR, COMMAND, COMMIT AND DATE
+
+**Adopted 2026-10-08. DERIVED BY CODY** -- same document, ITEM 15(b), same routing.
+
+**THE CONVENTION, in one line: a bare number is not a measurement.** *"49 dead
+rules"* means nothing without **of 540, by `python tools/dead_rule_sweep.py`, at
+`8f204050`, on 2026-10-06**.
+
+**THE DENOMINATOR IS THE HALF MOST OFTEN DROPPED AND THE MOST LOAD-BEARING**, and
+cody's own pair proves it: *"162 of 169"* and *"169 of 521"* are **the same
+numerator with two different denominators**, and only one of them is the platform.
+A reader given the numerator alone cannot tell which they have.
+
+**CODY'S INSTANCE.** Three of cody's own documents reported that sweep **with no
+exit code at all** -- figures printed, status absent, and absence reading as a pass.
+And **re-running instead of quoting changed two answers in one batch**: a
+metamorphic rewording finding stopped reproducing and was withdrawn before anybody
+pasted it, and a registry-only population moved from exit 2 to exit 1.
+
+**THIS IS THE RULE THIS PLATFORM BREAKS MOST OFTEN AND IT IS ALREADY VISIBLE IN ITS
+OWN DOCUMENTS.** Convention 23's NOT-REPRODUCIBLE verdict exists because `424 of
+1214` was published with its four bucket NAMES and never its predicate, so a
+re-derivation a batch later gave `974 of 1227` and there was no way to tell a
+definition difference from drift. That is this convention's failure mode with the
+command left out instead of the denominator.
+
+**HOW TO IMPLEMENT IT.** Four fields, every time, and the fourth is the one people
+drop last:
+- **denominator** -- *of what*, with the rule that enumerates it;
+- **command** -- the exact invocation, including flags, because
+  `citation_line_drift_check.py` exits 2 without `--app` AND `--prefix` and that
+  refusal has already been misread as a regression;
+- **commit** -- re-verified ON-REF, not quoted from the commit that produced it;
+- **date**, because a figure with no date cannot be told from a current one.
+
+**And the exit code is a fifth field in all but name.** A figure without one is a
+measurement whose status is missing, which is convention 24's territory.
+
+**WHERE IT DOES NOT TRANSFER.** A figure that IS the population -- "there are four
+clones" -- has no denominator to carry, and inventing one is noise. The rule bites
+on every ratio, count-of-a-set, and any number a tool produced.
+
+**Cause tag:** `measurement/provenance/bare-number-without-denominator`.
+
+---
+
+## 29. A TIER THAT CLEARS A WHOLE CATEGORY AND FINDS NOTHING IN IT IS THE OUTCOME TO DISTRUST
+
+**Adopted 2026-10-08. DERIVED BY CODY** -- same document, ITEM 15(c), same routing.
+
+**THE CONVENTION, in one line: when a change clears an entire category and reports
+nothing wrong in it, the arm that must exist is the one proving the mechanism can
+still say NO.**
+
+**CODY'S INSTANCE, measured 2026-10-06.** A new writer tier cleared all 22
+write-when-run rules and reported **22 of 22 exercised, 0 dead** -- *"exactly what
+a tier which can only say 'exercised' produces."* cody did not believe it and built
+the arm: a hand-made writer carrying one rule it provably never reads. **The arm
+FAILED.** The cause was that the comparison digest included the swept tool's own
+mutated source, so it differed every time **because of the mutation rather than
+because of its effect**. After the fix: **17 exercised, 5 DEAD.**
+
+**The blanket pass had been hiding five real findings, and the first version
+reported zero.**
+
+**WHY THE SHAPE IS SPECIFICALLY DANGEROUS.** A category-wide clear is the most
+persuasive output a checker can produce and the cheapest to produce by accident:
+every mechanism that cannot distinguish its cases returns the same verdict for all
+of them. **0 findings and "cannot tell" render identically.** That is PR 1.11's
+third state at the level of a whole category.
+
+**FOURTH'S INSTANCE, from this batch and in the opposite direction, which is why it
+belongs here.** `orphan_register_check.py` was CLEAN. The first attempt at its PR
+1.2 fix took it to **eight findings, every one false** -- because the stripper stage
+copied from another tool deleted the string literals the predicates match on. A
+category-wide CHANGE in either direction is the signal: eight-from-zero got looked
+at because it was loud. **Zero-from-anything does not get looked at, which is cody's
+point.**
+
+**HOW TO IMPLEMENT IT.**
+- **Build the NO arm before believing the YES.** One fixture the mechanism must
+  reject, hand-made, carrying the property under test and nothing else.
+- **DIFF THE VERDICT ACROSS THE CHANGE, never just read the new one.** The eight
+  false findings were caught by comparing before and after, not by the exit code --
+  a clean exit after a classifier change is the least informative output available.
+- **Distinguish "found nothing" from "could not tell" in the OUTPUT**, with
+  separate counts. A tier that can only say *exercised* must print that it can only
+  say *exercised*.
+- **A digest or hash used as the comparison must exclude the thing you mutated.**
+  That was cody's actual bug and it generalises to every mutation harness.
+
+**WHERE IT DOES NOT TRANSFER.** A category that is genuinely empty -- a check for a
+construct the codebase has never contained -- clears legitimately, and the arm then
+costs a fixture for nothing. The rule bites when the category had findings before,
+or when nobody has ever seen the mechanism say no.
+
+**Cause tag:** `detection/category-clear/blanket-pass-hiding-findings`.
+
+---
+
+## 30. A DECLARED CONFLICT IS A SNAPSHOT. RE-CHECK IT AT PICKUP, NOT ONLY AT THE WRITE
+
+**Adopted 2026-10-08. DERIVED BY CC** -- `docs/2026-10-07-cc-methodology-for-fourth.md`,
+paste-ready, **with the number deliberately left as `N` for the holder of this file
+to assign**. cc's reason for leaving it blank is itself the right practice and is
+quoted rather than paraphrased: *"picking a number from outside the file is how two
+11ths happened on 2026-09-25."* Landed as **30** at cc's credit, text unchanged in
+substance.
+
+**THE CONVENTION, in one line: a claim string is composed once at batch start and
+cannot be amended without re-claiming, so every conflict analysis inside it AGES --
+on a 1-2h batch, typically by an hour. Before standing down on a declared conflict,
+re-read the live claim list AT THE MOMENT THE BLOCKED ITEM COMES UP.**
+
+**And read it the right way: separate DECLARED-IN-FILES from MENTIONED-IN-PROSE
+(PR 4.3).** A file named in a conflict paragraph is **not** claimed; a file named in
+a `FILES:` list **is**.
+
+**CC'S MEASUREMENT, at HEAD `15e56976`: three sessions were simultaneously blocked
+on holds that had already ended, and of six contested files FIVE were prose-only.**
+
+* `docs/tier-a-reviews.json` -- **cody (1.3h) and hank (1.2h) each narrowed their
+  own most-overdue-first Tier A item to LISTING instead of discharging**, both
+  citing fourth's claim at `2026-10-07T16:01:18Z`. That claim had been **released
+  and replaced at 16:36:02Z** by one whose `FILES:` list does not contain the ledger
+  and whose task text contains no Tier A mention at all. **The hold had ended 35
+  minutes before they read it.** 23 obligations were open, the oldest 255h.
+* The same read in the other direction: cody, hank **and** fourth each re-derived
+  that cc held `tools/sairn_push_gate_hook.py`, `tools/report_only_checks.py`,
+  `tools/doc_sha_reseat.py` and `docs/tool-owner-map.json`. hank's claim says in so
+  many words *"the push-gate hook is CC'S in FILES at 2.5h, so the scrutiny
+  extension is NOT started."* **cc released that claim at the close of batch 14.**
+  All four were declared by nobody.
+* **The one hold that WAS real was correctly respected**, which is the point: the
+  rule costs nothing when the conflict is genuine and recovers a whole item when it
+  is not.
+
+**NOBODY WAS CARELESS.** Every session did the right thing with the data it had.
+What nothing does is re-read a declared conflict after the claim is written -- and
+the claim is exactly where that analysis is frozen.
+
+**HOW TO IMPLEMENT IT.** Two commands, and it is cheap:
+
+    python tools/sairn_claim.py list
+    # then, per contested path, ask whether it is in a FILES: list or in prose
+
+**IT WORKS IN BOTH DIRECTIONS, and that is the half that is easy to miss:** it frees
+you to take work no longer held, and it stops you re-taking a file somebody else is
+now blocked on. In cc's measured case one re-read recovered a Tier A discharge and
+unblocked hank's scrutiny extension.
+
+**AND IT WAS APPLIED IN THE BATCH THAT LANDED IT, in both directions, which is the
+honest test of a convention about re-reading.** At pickup: `.claude/settings.json`
+was declared by **nobody** -- cody's hold on it had ended -- so the settings merge
+was **taken and landed** instead of being deferred a fourth time. And
+`docs/tier-a-reviews.json` **was** in cc's live `FILES:` at that same moment, so the
+Tier A discharge was **flagged back and not taken**. One list, read once, moved one
+item in each direction.
+
+**WHERE IT DOES NOT TRANSFER.** An expired claim is not a released one, and neither
+is a dead session's: `sairn_claim.py list` says which, and *"an empty registry is
+NOT evidence that nobody is working."* Re-reading tells you what is claimed NOW; it
+does not license assuming an absence means free.
+
+**Cause tag:** `process/claims/declared-conflict-read-as-current`.
+
+---
+
+---
+
+## The failure mode TEN of the thirty share
 
 *(Denominator moved 2026-10-07 when cc's 23, 24 and 25 were landed, and the membership question was asked of all three rather than assumed. **24 IS A TENTH MEMBER.** A leg that returns success on a failed leg is a check that reads as coverage and structurally cannot fail in the direction that matters -- it never turns a passing subject red, only a failing one green, which is item 8's shape one layer out from the checker and into its composition. **23 IS NOT A MEMBER:** it is not a check at all, it is a discipline about the INPUT to work. **25 IS NOT A MEMBER:** its subject is a checker that fires loudly and too often, which is the opposite failure. So the NINE is now a TEN and the heading has been changed rather than left to drift -- and the nine-member list itself is otherwise unchanged.)*
 
 *(Denominator moved 2026-10-07 when cody's 26 was landed, and the membership question was asked rather than assumed. **26 IS NOT A MEMBER.** The group is a CHECK THAT READS AS COVERAGE AND STRUCTURALLY CANNOT FIRE. 26's subject is not a check at all -- it is where a program's WORK lands when a redirection fails, and the program may report that work perfectly well. It is adjacent to 24 and the two are deliberately kept apart: 24 is about the VERDICT being wrong, 26 is about the TARGET being wrong. The `sed` exiting 0 on a non-match inside cody's instance IS a 24 instance, which is why 26 names both halves and claims only the second as new. The TEN is unchanged.)*
+
+*(Denominator moved 2026-10-08 when cody's 27, 28 and 29 and cc's 30 were landed, and the membership question was asked of all four rather than assumed. **NONE of the four is a member, and the group is unchanged at TEN.** The group is a CHECK THAT READS AS COVERAGE AND STRUCTURALLY CANNOT FIRE. 27 is about the population a fix was measured against, not about a check. 28 is about a figure's provenance. 30 is about the freshness of an input and is not a check at all. **29 is the one that had to be argued, and it loses on a distinction worth keeping:** a tier that clears a category CAN fire -- cody's did, 5 DEAD, once the digest stopped including the mutation -- so the fault is a mechanism that cannot DISTINGUISH its cases rather than one that cannot fail. Folding it in would lose the difference between a check that is structurally incapable of failing and one that is capable and was mis-wired. 29 is nearest to item 8 and is cross-referenced there instead.)*
 
 *(Count corrected 2026-10-06: this heading read "eight of the eleven" when the document had eleven numbered sections, and was not updated when 12 was added on 2026-09-25 or when 13, 14 and 15 were added on 2026-10-06, or when 16 followed them. The EIGHT is unchanged and is the load-bearing number -- 12, 13, 14, 15 and 16 are NOT members of that group. Carrying what it said so the correction is visible rather than invisible, per the numbering note at the end of this file.)*
 

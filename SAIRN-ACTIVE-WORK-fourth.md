@@ -2263,3 +2263,70 @@ never persisted.
 * **The 18 primitive-obsession occurrences across five apps** are still open. The
   `run_primitive_obsession_probe` row moved to `recovered`; that fixed a probe, not a
   tree.
+
+
+---
+
+## 2026-10-08 -- BATCH b3
+
+**CLOSED AND PUSHED at `4c3d24a2`. Full record:
+`docs/handoff-fourth-2026-10-08.md`. Report:
+`G:\My Drive\SAIRN-status\SAIRN-report-ted-b3.txt`.**
+
+**What I touched:** `tools/truthy_sum_check.py`,
+`tests/run_truthy_sum_probe.py`, `tools/truthy_sum_baseline.json`,
+`tools/orphan_register_check.py`, `tools/citation_line_drift_check.py`,
+`tests/sairnvet_seed_never_syncs.js`, `tests/demo_seed_licence_scope.js`,
+`tests/run_citation_line_drift_probe.py`, `docs/known-red-suites.json`,
+`docs/2026-09-13-cross-domain-disciplines.md`, `docs/METHODOLOGY.md`,
+`docs/2026-10-07-fourth-coverage-ledger.md`, `docs/2026-10-07-fourth-routed.md`,
+`docs/handoff-fourth-2026-10-08.md`, this file. **And
+`~/.claude/settings.json`**, outside the repo, under its own claim, released
+straight after.
+
+**THE SETTINGS MERGE IS LANDED.** The global file now carries all **five** repo
+hook types, its own PreCompact survives and **fires once** (the repo's command is
+the global's plus exactly `, Documents/SAIRN-fourth`, proved by
+`difflib.SequenceMatcher`, so one entry supersedes the other rather than
+double-firing). `claude --version` is **2.1.222**, OLDER than 2.1.288, so
+**`CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=75`** and **`autoCompactWindow` is NOT set**;
+plus **`BASH_MAX_OUTPUT_LENGTH=10000`**. Nothing else in that file moved and a
+14-arm test asserts it.
+
+**IF YOU OWN A CHECKER THAT READS AN APP FILE, read SEQ 17-A CORRECTED before
+acting on any of its 47 findings.** The sweep measured every pattern against the
+app file its containing file reads -- a DEFAULT, not a measurement. Of the four
+taken this batch, **one was not a defect at all**
+(`tools/stale_row_sweep.py:240` applies its pattern to a markdown register row)
+and two were latent. **The 43 untaken ones inherit the fault.**
+
+**`truthy_sum_check.py` no longer reports the LEFT operand of a `*`.** Arm 14 is a
+PAIR, and only the left half failed without the fix -- section 2 had been testing
+the side that already worked. The three baseline entries that said to remove them
+are gone; **`u.cost` stays, it is not a multiplicative case.**
+
+**Conventions are now 30**: 27/28/29 derived by **cody**, 30 derived by **cc**.
+Count the `## <n>.` headings.
+
+### NOT REACHED / OWED
+
+* **The Tier A discharge is BLOCKED, not skipped** -- `--discharge` writes
+  `docs/tier-a-reviews.json`, which is in **cc's live claim FILES**. Three
+  obligations are mine; **hover2 `2026-09-30T13:59:56Z` (179h) is the only one
+  with no freshness complaint** and is the one to take when cc's claim clears.
+* **Two of cody's six methodology conventions are NOT LOCATABLE** and were not
+  invented. Queue-16's inventory has exactly one `## METHODOLOGY` section across
+  17 headings, and it is already convention **15**.
+* **`tools/jscomments.py` has no `strip_js`**, so a bare `.py`/`.js` handed to its
+  `strip_comments` is stripped **silently, not at all**. Worked around twice here;
+  routed as a gap, not patched.
+* **4 pinned FAIL names still have NO register row** --
+  `run_citation_anchor_hop_sabotage.py`, `run_committer_identity_probe.py`,
+  `run_purge_evidence_probe.py`, `stale_row_sweep_control.py`. Red and
+  unattributable.
+* **`docs/scrutiny-flags.json` is cc's and the push gate WRITES IT on every
+  push.** Restored, never committed, three times this batch. A gate that writes
+  another session's file makes every push a choice between a dirty tree and
+  touching it.
+* Census **GREEN 8 / RED 51 / UNMEASURED 24 = 83**; 20 register rows in the 83
+  still carry no sha-stamped run.
