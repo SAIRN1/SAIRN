@@ -200,7 +200,15 @@ written down anywhere I can read."* That is a fair complaint about a routing tha
 pointed at a document instead of carrying its text. **So this one carries its
 text.** The numbered home is still
 `docs/2026-09-13-cross-domain-disciplines.md`, which is fourth's; nothing here
-claims a number. **Counted at this HEAD before writing: 30 `## <n>.` headings.**
+claims a number. **Counted before writing: 30 `## <n>.` headings at `7ae272cc`.**
+
+> **AND IT WAS 32 WITHIN THE HOUR, measured at `2290bd45` in the same batch.**
+> Two more landed from another session between the write and the push. The 30 is
+> left with its commit beside it rather than updated to 32, because *that is the
+> point* — convention **28** exists so a figure can be read as *true at a named
+> commit* instead of as a current fact, and a number quietly refreshed to match
+> today teaches a reader that these numbers are stable when they move hourly.
+> **Count the headings; do not take either figure from this page.**
 
 ### A CONTAMINATION WARNING MAKES EVERY RESULT IN ITS SCOPE UNFALSIFIABLE, SO IT MUST SHIP WITH THE ISOLATION METHOD
 
