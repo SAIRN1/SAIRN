@@ -83,11 +83,51 @@ every time — a vague "no ledger found" is unfalsifiable by the next reader,
 while a printed wrong path is falsifiable in one `ls` command, which is
 exactly how item 6's bug was confirmed rather than merely suspected.
 
-## Scope note
+## Rule 4 (batch P, items 6/9/12) — "where do MY OWN files live" is the single most common first-run bug this role's tools have, and it keeps recurring because the fix was never made reusable
 
-Unlike H1's file, this one does not (yet) have a "three tools, three
-first-run bugs" base-rate measurement — hover2 has not built three brand-new
-detection tools in one sitting this session. When that happens, measure the
-same way H1 did (hand-verify every new tool's first real run against real
-source before trusting its output) and add the rate here rather than
-starting a separate document.
+THREE SEPARATE TOOLS got this wrong on first contact with reality, in one
+batch: `tool_provenance_status.py` derived both ledger paths relative to
+the git clone instead of `~/.claude/projects/<project>/hover-audit-log/`
+(item 6). The very next tool built to fix THAT class of bug,
+`citation_resolve_check.py`, computed its own `DEFAULT_LOG` the SAME wrong
+way — `os.path.join(HERE, 'hover-audit-log.jsonl')` — and crashed
+`FileNotFoundError` on its first real `--recheck` run (item 9), fixed in
+the same cycle because the crash was loud rather than silently wrong.
+`hover2_sha_citation_verify.py`, built in an EARLIER batch, has a related
+but distinct version: it resolves its `doc` argument against the process's
+current working directory rather than joining it with `--repo`, so it
+fails `COULD NOT RUN` unless invoked from exactly the right cwd (item 12).
+
+**Three different symptoms, one root cause: this role's own tools keep
+RE-DERIVING "where do my real external files live" from scratch, by hand,
+each time, instead of importing one answer.** Item 6 found and fixed the
+first instance and wrote it up as a one-off bug fix. Item 9's own tool,
+built minutes later by the SAME session that had just fixed item 6, made
+the identical mistake — the lesson from item 6 was recorded as a FIX, not
+as a REUSABLE FACT, so the next tool never consulted it.
+
+**Applying lesson, concretely:** this role's own `hover-self-log-location`
+path logic (both ledgers, the log itself, any future per-instance file)
+should live in ONE small shared module (or at minimum one copy-pasted
+constant block with a single canonical comment, consistently reused rather
+than re-typed) that every new tools-hover2/ script imports or copies
+verbatim — not re-derived from "the pattern" by memory each time. Until
+that consolidation happens, **every new tool that needs its own external
+file path is assumed guilty until its first real run proves otherwise** —
+run it for real, against the real path, before trusting any output,
+exactly as items 6/9/12 did. The crash-loud failures (9, 12) were caught
+fast for free; the silent-wrong one (6, reporting COULD-NOT-RUN rather than
+crashing) took a deliberate fail-closed check. A tool whose "could not
+find my own data" failure mode is a crash rather than a swallowed
+exception is easier to catch by accident — worth preferring on purpose in
+any future tool here.
+
+## Base rate, measured this batch: 3 of 3 own-location-dependent tools touched this batch had this exact bug on sight
+
+Not a coincidence worth leaving unnamed, same standard H1's own file sets:
+`tool_provenance_status.py` (existing tool, found broken), `citation_resolve_check.py`
+(brand new, broke immediately), `hover2_sha_citation_verify.py` (existing
+tool, found broken under a cwd this role had never happened to run it from
+before). 3 for 3. The measured base rate for "a tools-hover2/ script that
+needs to locate a file outside the git clone" on THIS role, as of
+2026-10-08, is: assume it is wrong until run.
