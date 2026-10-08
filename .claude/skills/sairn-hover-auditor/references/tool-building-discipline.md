@@ -112,6 +112,70 @@ artifact still exists to be re-verified. Trust it over the claim file for
 "is there unfinished work" -- and still check that a cited tool is
 actually present before building a re-sweep on top of it.
 
+## "Missing" means "not found where I looked," never more than that
+
+Added H1 batch S item 14, after batch R's own HIGH-severity finding that
+`hover_cross_resource_gate_check.py` was "never committed to this
+repository, on any branch, ever" turned out to be WRONG -- the file had
+lived in this role's own external working directory since the day it was
+built, and batch R's search checked the git-tracked repo and `git log
+--all` but never looked in the one place this role's own operational
+tooling actually lives. **Before concluding an artifact does not exist,
+enumerate every place it plausibly would be — including this role's own
+external directory, which is easy to forget precisely because it is
+outside the repository the rest of a search naturally centers on — and
+say which places were checked, not just the verdict.** "Could not find it
+in git" and "does not exist" are different claims; batch R's finding
+quietly upgraded the first into the second.
+
+## A register's load-bearing prose is not always in the column with that job
+
+`hover_ai_redaction_field_check.py`'s own first real run flagged
+`mech_docs` for not naming the field it redacts -- except it does, in
+exhaustive detail, just in the "worst consequence if read by the wrong
+person" column rather than "Evidence," which is the column every other
+tool in this role's toolset checks. **A register's own authors do not
+reliably put the sentence that matters in the same cell every row** --
+check the union of a row's free-text columns before concluding a row says
+nothing, not whichever one column convention assumes carries the answer.
+
+## An external refactor can silently break a dependent script's API, and nothing finds this by routine
+
+`tools/hover_separation_ci.py` called `hover_separation_audit.AUDITOR_SCOPE`
+for an unknown number of days after that attribute was deliberately
+removed in favour of a session-parameterized class -- every single
+invocation crashed with an `AttributeError`, meaning the server-side
+separation check (the one that catches a missing or bypassed local hook)
+simply never ran, silently, for as long as nobody happened to invoke the
+CI script directly. Nothing in this role's standing sweeps would have
+caught it on its own -- it surfaced only because a direct instruction
+named the file and asked this role to run it. **Two files with a real
+import/call dependency between them are a pair that can drift the moment
+either one changes alone**, the same shape `hover_auditor_scope_gate.py`
+and `hover_separation_audit.py` already guard against for THEIR OWN
+mutual agreement (per-session, across several names, in
+`tests/run_hover_separation_probe.py`) -- but that guard only covers the
+two files that explicitly maintain it against each other. A THIRD file
+consuming either one's API has no such guard unless someone adds one, and
+this role does not currently have a standing sweep that asks "does
+anything import a name this file used to export."
+
+## Prevention, not just detection: commit before you cite, checked at write time
+
+`hover_citation_guard.py` (batch S item 5) is the standing answer to the
+"missing tool" lesson above: before any chain-log entry is written, every
+tool/script/path it names must resolve in git on `origin/main`, or the
+append is refused. Built narrow on purpose -- a blanket scan of free
+prose would refuse this role's own legitimate sabotage-fixture narration
+(inventing a fictional tool name to test ANOTHER tool's parser is not a
+false citation), so only `--ref` (structured, always checked) and
+invocation-shaped `--summary` prose (a path within 60 chars of an EXIT
+code or `--selftest`) are checked. **A write-time guard only prevents the
+NEXT mistake of this shape; it does not retroactively clean history** --
+its own `--recheck-log` mode found 67 citations across 57 pre-existing
+entries that do not resolve today, left as a disclosed backlog rather
+than edited (the log is append-only) or implied clean.
+
 ## The log convention this item also adds: a reversal gets its own entry
 
 A later read that **CONTRADICTS** an earlier clean verdict from this role
