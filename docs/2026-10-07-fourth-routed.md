@@ -1565,3 +1565,102 @@ comment only inside a `<script>` element and the fixtures were bare JS. A bare
 `.js` file handed to that library is stripped **silently, not at all**. The same
 default bit the `__file__` bucket re-derivation an hour later.
 
+---
+
+## SEQ b3-A -- THREE RECONCILIATIONS, AND THE FIRST PREMISE DOES NOT HOLD
+
+### (a) The citation-drift table is ARITHMETICALLY CORRECT. The reading of it was not.
+
+**The challenge:** *per-app columns do not sum to the ANCHORED totals (alf_ 11 vs
+6+9+3, dnt_ 3 vs 1+1+20, bld_ 24 vs 4+7+0), and 11+24+25 is not 47.*
+
+Every one of those comparisons treats **ANCHORED as a row total** and the other
+three as its parts. **It is not a total.** The four are PEER VERDICTS -- mutually
+exclusive, exactly one per citation -- so the sums that have to hold are the COLUMN
+sums and the per-row sum against the citation count. Both were re-derived from the
+tool output, not from the published table:
+
+| check | result |
+|---|---|
+| every published cell vs the tool's own summary line, all 16 | **MATCH** |
+| column sums: ANCHORED 11+9+3+24 | **47** ✓ |
+| column sums: SOUND 6+0+1+4 | **11** ✓ |
+| column sums: DRIFTED 9+7+1+7 | **24** ✓ |
+| column sums: INCONCLUSIVE 3+2+20+0 | **25** ✓ |
+| per row: the four verdicts vs the individual verdict LINES the tool printed | **consistent for all four apps** (29/29, 18/18, 25/25, 35/35) |
+
+**The challenged equalities, evaluated as asked:** `alf_` 11 vs 18, `dnt_` 3 vs 22,
+`bld_` 24 vs 11, all-four 47 vs 60. **None are equal and none should be.**
+(`sen_` 9 vs 9 is equal by coincidence, which is how a reading like this survives.)
+
+**BUT THE TABLE INVITED THE READING AND THAT IS A REAL DEFECT IN IT.** Four peer
+columns, no total, and one of them happened to tie on one row. It is republished
+below **with an explicit ROW SUM column**, so it cannot be read as a total and its
+parts again.
+
+**AND IT WAS STALE: item 4's fix moved it.** Both tables, so the movement is
+visible rather than silently replacing the old one:
+
+| app | prefix | ANCHORED | SOUND | DRIFTED | INCONCLUSIVE | **ROW SUM** |
+|---|---|---|---|---|---|---|
+| `sairncare.html` | `alf_` | 11 | 6 | 9 | 3 | **29** |
+| `sairnsenior.html` | `sen_` | **7** | 0 | **5** | **6** | **18** |
+| `sairndental.html` | `dnt_` | 3 | 1 | 1 | 20 | **25** |
+| `sairnbuild.html` | `bld_` | 24 | 4 | 7 | 0 | **35** |
+| **all four** | | **45** | **11** | **22** | **29** | **107** |
+
+Movement, batch 17 → now: ANCHORED **47 → 45**, DRIFTED **24 → 22**, INCONCLUSIVE
+**25 → 29**, SOUND unchanged, **total 107 → 107**. All of it is the `sen_settings`
+citations ceasing to resolve onto a comment.
+
+### (b) `entries` 76 and census VERIFIED RED 51 are different units, and the gap decomposes exactly
+
+    entries                                              76   every known-red row, REPO-WIDE
+    - rows NOT in the 83-item pinned FAIL list             5
+    - rows in the 83 with NO sha-stamped individual run   20
+    ----------------------------------------------------
+    = census VERIFIED RED                                 51   identity holds: True
+
+**The 5 not in the 83**, by name: `tests/push_gate/check12_probe.py`,
+`check8_probe.py`, `check9_probe.py`, `refspec_and_override_probe.py`,
+`tests/run_report_only_checks_probe.py`. (`check9_probe.py` is the one the pinned
+run reported SKIPPED rather than FAIL, which is the environment dependence the
+`environment` stamp exists to record.)
+
+**The 20 in the 83 with no stamped run** are listed in
+`<scratchpad>/b3_i5b_final.out` -- they are the remaining census work.
+
+**AND THE OTHER DIRECTION, which is the half nobody asked about: the 83 is not a
+subset of `entries` either.** **7 pinned FAIL names had no register row at all** --
+red and unattributable. Three of them are now `recovered` rows (see (c)); the other
+four are `run_citation_anchor_hop_sabotage.py`, `run_committer_identity_probe.py`,
+`run_purge_evidence_probe.py` and `stale_row_sweep_control.py`.
+
+### (c) The three deferred suites are GREEN, driven in a THROWAWAY CLONE
+
+A clone, **not a worktree**: a linked worktree shares `.git/config`, which is how
+`core.bare = true` reached the live clone twice on 2026-10-06, and these three were
+deferred for that family of reasons.
+
+| suite | exit | left the tree dirty | moved `.git/config` |
+|---|---|---|---|
+| `tests/seam_check/run_delegation_probe.py` | **0** | no | no |
+| `tests/seam_check/run_delegation_residue_control.py` | **0** | no | no |
+| `tests/run_bare_run_write_probe.py` | **0** | no | no |
+
+**All three were in the 83-item pinned FAIL list with NO register row, and all three
+PASS when driven alone.** The delegation probe's own closing arms report
+`arm3_stops True`, `arm4_no_residue True`, `restored_baseline True (96 clean, 0
+not-forwarded, 19 could-not-tell)` -- so **the mutation confound the register
+records for this family is HISTORICAL, not current**, and that is worth more than
+the three exit codes.
+
+**NOTHING WAS RESTORED IN THE MAIN CLONE BECAUSE NOTHING WAS TOUCHED IN IT**, and
+that is evidenced rather than asserted: its `git status` digest (`2eeda7ffde63`) and
+the sha256 of its `.git/config` (`789cfb6edb72`) are identical before and after.
+`tests/run_bare_run_write_probe.py` is in **cody's live claim FILES**, so it was run
+read-only and never edited.
+
+Census after: **VERIFIED GREEN 8 · VERIFIED RED 51 · UNMEASURED 24 = 83**,
+individually verified **59 of 83**.
+

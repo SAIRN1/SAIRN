@@ -1384,19 +1384,18 @@
  "_what_recovered_is": "THE THIRD STATE, added 2026-10-07 (fourth) and PROMOTED from the batch-16 methodology entry rather than routed, because a count cannot be derived from rows that have been deleted. `entries` means KNOWN RED. `recovered` means VERIFIED GREEN: driven alone, exit 0, at a recorded SHA. A suite in NEITHER list is UNMEASURED. WHY IT HAD TO EXIST: the register's own rule requires deleting an entry whose suite has gone green, because while it stands it swallows the next real failure of that file -- and that rule is right. But the census of individually-verified suites counts its numerator out of `entries`, so every correct deletion SUBTRACTED from a progress figure. The census read 50 of 83 and then 46 of 83 ten minutes later, on the same criterion, because four suites went green. A reader taking that number as progress saw a four-point regression caused by the best outcome available. A row here is NOT an allow-list entry and NOT a claim the file is fine forever: it records that on one named commit the suite exited 0 when driven alone, and nothing more. If it goes red again it becomes an `entries` row again and this row is deleted, the same way round. tools/known_red_check.py reads only `entries` -- verified by reading it -- so this key is additive and changes no verdict it prints.",
  "recovered": [
   {
-   "file": "tests/run_primitive_obsession_probe.py",
+   "file": "tests/phi_cache_scope_probe.py",
    "exit_code": 0,
    "recovered": "2026-10-07",
    "recovered_by": "fourth",
-   "was_entry_since": "2026-10-06",
    "environment": {
     "where": "live-clone",
     "pinned": false,
     "tool": "the suite itself, invoked directly, one process",
-    "sha": "4fa9843a",
-    "basis": "RE-DRIVEN 2026-10-07 by fourth at HEAD 4fa9843a before the entry row was deleted, rather than deleted on the strength of the row's own claim. exit 0. Boundary verified after it: `git status --porcelain` unchanged and sha256 of .git/config unchanged at 789cfb6edb72. Its own closing arms report \"the tool is byte-identical again\" and \"the exit code is unchanged across the probe\"."
+    "sha": "1c53498d",
+    "basis": "driven alone, exit 0, ALL 12 ARMS PASS with 7 mutations planted; boundary verified after it -- git status digest, sha256 of .git/config, sha256 of all four app files, all unchanged."
    },
-   "why": "RECOVERED BY THE CONVENTION 18 FIX, 2026-10-07, by the session that diagnosed it. The arm-0 BASELINE GATE is gone: the live-tree check is now a reported WARN line, and the per-mutation criterion NARROWS to exit==2 (the fixture lock refusing) when the tree is dirty, because exit 1 is then ambiguous between \"mutation caught\" and \"real findings\". The probe now exits 0 having verified ALL FIVE mutations instead of exiting 1 having verified NONE, and it PRINTS that the claim is narrower: \"ALL 5 MUTATIONS REFUSED UNDER THE NARROWED exit==2 CRITERION, because the real tree is not clean -- a SMALLER claim than a clean-tree run makes.\" ABLATION-VERIFIED when the fix landed: a planted NO-OP mutation -- a comment word, no detector touched -- passes vacuously under the old rc!=0 criterion and is correctly FAILED by the narrowed one. WHAT IS STILL OPEN AND IS NOT CLOSED BY THIS ROW: the 18 unbaselined primitive-obsession occurrences across FIVE apps are still there -- sairnbiz.html:3949,4121, sairncash.html:1280,1281,1396, stonedesk.html:25316,27783,28021,28022,28274,31844 and more. This fixed the probe, not the tree, and the row says so rather than reading as a clearance."
+   "why": "CHAINED, and the worst of the four. Its arm 0 is a baseline gate on tests/phi_cache_scoped_to_user.js, so while that suite was red this probe planted NONE of its seven mutations against the SAIRNsenior PHI purge guard and exited 2. That guard was unverified in BOTH directions for as long as the false positive stood -- not because anyone disabled it, but because a sibling suite was red over a comment. Cleared with no change to this file."
   },
   {
    "file": "tests/phi_cache_scoped_to_user.js",
@@ -1413,7 +1412,36 @@
    "why": "Arm 5a was a FALSE POSITIVE IN THE SUITE, not a defect in SAIRNsenior. The arm derived the app's written cache keys with a bare regex over the RAW file, so the comment at sairnsenior.html:5768-5780 -- which exists to record that sen_settings must NEVER be written locally, because the resource is server-authoritative -- was counted as two write sites. Fixed by taking write sites from tests/lib/strip_comments.js output. NOT fixed by adding sen_settings to SEN_UNSCOPED_CACHES, which would have put a key in an exemption list to satisfy a checker."
   },
   {
-   "file": "tests/phi_cache_scope_probe.py",
+   "file": "tests/run_bare_run_write_probe.py",
+   "exit_code": 0,
+   "recovered": "2026-10-08",
+   "recovered_by": "fourth",
+   "environment": {
+    "where": "throwaway-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process",
+    "sha": "e502a628",
+    "basis": "DRIVEN ALONE IN A THROWAWAY CLONE, 2026-10-08 by fourth, at the same content as HEAD e502a628. A CLONE AND NOT A WORKTREE, deliberately: a linked worktree SHARES .git/config, which is how core.bare = true reached the live clone twice on 2026-10-06, and these three were deferred in batch 17 for exactly that family of reasons. 300s ceiling. Evidence that the main clone was untouched rather than restored: its `git status --porcelain` digest and the sha256 of its .git/config were captured before and after and are identical (2eeda7ffde63 / 789cfb6edb72). In the throwaway clone none of the three left the tree dirty and none moved .git/config -- so the mutation confound the register records for this family is HISTORICAL, not current."
+   },
+   "why": "DEFERRED IN BATCH 17 because its subject is the bare-run WRITE checker and the sibling that set core.bare = true three times in this clone lives in that family. ALSO DECLARED IN CODY'S LIVE CLAIM FILES at this HEAD, so it was RUN READ-ONLY in the throwaway clone and never edited. exit 0, 15 passed / 0 failed. No register row before this."
+  },
+  {
+   "file": "tests/run_primitive_obsession_probe.py",
+   "exit_code": 0,
+   "recovered": "2026-10-07",
+   "recovered_by": "fourth",
+   "was_entry_since": "2026-10-06",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process",
+    "sha": "4fa9843a",
+    "basis": "RE-DRIVEN 2026-10-07 by fourth at HEAD 4fa9843a before the entry row was deleted, rather than deleted on the strength of the row's own claim. exit 0. Boundary verified after it: `git status --porcelain` unchanged and sha256 of .git/config unchanged at 789cfb6edb72. Its own closing arms report \"the tool is byte-identical again\" and \"the exit code is unchanged across the probe\"."
+   },
+   "why": "RECOVERED BY THE CONVENTION 18 FIX, 2026-10-07, by the session that diagnosed it. The arm-0 BASELINE GATE is gone: the live-tree check is now a reported WARN line, and the per-mutation criterion NARROWS to exit==2 (the fixture lock refusing) when the tree is dirty, because exit 1 is then ambiguous between \"mutation caught\" and \"real findings\". The probe now exits 0 having verified ALL FIVE mutations instead of exiting 1 having verified NONE, and it PRINTS that the claim is narrower: \"ALL 5 MUTATIONS REFUSED UNDER THE NARROWED exit==2 CRITERION, because the real tree is not clean -- a SMALLER claim than a clean-tree run makes.\" ABLATION-VERIFIED when the fix landed: a planted NO-OP mutation -- a comment word, no detector touched -- passes vacuously under the old rc!=0 criterion and is correctly FAILED by the narrowed one. WHAT IS STILL OPEN AND IS NOT CLOSED BY THIS ROW: the 18 unbaselined primitive-obsession occurrences across FIVE apps are still there -- sairnbiz.html:3949,4121, sairncash.html:1280,1281,1396, stonedesk.html:25316,27783,28021,28022,28274,31844 and more. This fixed the probe, not the tree, and the row says so rather than reading as a clearance."
+  },
+  {
+   "file": "tests/sairnbuild_fault_probe.py",
    "exit_code": 0,
    "recovered": "2026-10-07",
    "recovered_by": "fourth",
@@ -1422,9 +1450,9 @@
     "pinned": false,
     "tool": "the suite itself, invoked directly, one process",
     "sha": "1c53498d",
-    "basis": "driven alone, exit 0, ALL 12 ARMS PASS with 7 mutations planted; boundary verified after it -- git status digest, sha256 of .git/config, sha256 of all four app files, all unchanged."
+    "basis": "driven alone, exit 0, 0 failures; boundary verified after it and unchanged."
    },
-   "why": "CHAINED, and the worst of the four. Its arm 0 is a baseline gate on tests/phi_cache_scoped_to_user.js, so while that suite was red this probe planted NONE of its seven mutations against the SAIRNsenior PHI purge guard and exited 2. That guard was unverified in BOTH directions for as long as the false positive stood -- not because anyone disabled it, but because a sibling suite was red over a comment. Cleared with no change to this file."
+   "why": "CHAINED on the same single arm. Cleared with no change to this file."
   },
   {
    "file": "tests/sairncare_fault_probe.py",
@@ -1441,18 +1469,32 @@
    "why": "CHAINED on the same single arm. Cleared with no change to this file."
   },
   {
-   "file": "tests/sairnbuild_fault_probe.py",
+   "file": "tests/seam_check/run_delegation_probe.py",
    "exit_code": 0,
-   "recovered": "2026-10-07",
+   "recovered": "2026-10-08",
    "recovered_by": "fourth",
    "environment": {
-    "where": "live-clone",
+    "where": "throwaway-clone",
     "pinned": false,
     "tool": "the suite itself, invoked directly, one process",
-    "sha": "1c53498d",
-    "basis": "driven alone, exit 0, 0 failures; boundary verified after it and unchanged."
+    "sha": "e502a628",
+    "basis": "DRIVEN ALONE IN A THROWAWAY CLONE, 2026-10-08 by fourth, at the same content as HEAD e502a628. A CLONE AND NOT A WORKTREE, deliberately: a linked worktree SHARES .git/config, which is how core.bare = true reached the live clone twice on 2026-10-06, and these three were deferred in batch 17 for exactly that family of reasons. 300s ceiling. Evidence that the main clone was untouched rather than restored: its `git status --porcelain` digest and the sha256 of its .git/config were captured before and after and are identical (2eeda7ffde63 / 789cfb6edb72). In the throwaway clone none of the three left the tree dirty and none moved .git/config -- so the mutation confound the register records for this family is HISTORICAL, not current."
    },
-   "why": "CHAINED on the same single arm. Cleared with no change to this file."
+   "why": "DEFERRED IN BATCH 17 AND NOT SKIPPED SILENTLY: the register's own _why_the_whole_tree_run_was_not_trusted records that this probe left api/sd-data.js and api/_lib/subcontractor-compliance.js carrying planted sabotage, one of which does not parse -- and api/sd-data.js is HANK'S under a live claim, so a residue I would have to restore is a residue in his file. Driven in a throwaway clone instead: exit 0, and its own closing arms report arm3_stops True, arm4_no_residue True and restored_baseline True (96 clean, 0 not-forwarded, 19 could-not-tell). It had NO register row before this, despite being in the 83-item pinned FAIL list -- so it was red-and-unattributable, the state an entry exists to remove, and it turns out to be GREEN when driven alone."
+  },
+  {
+   "file": "tests/seam_check/run_delegation_residue_control.py",
+   "exit_code": 0,
+   "recovered": "2026-10-08",
+   "recovered_by": "fourth",
+   "environment": {
+    "where": "throwaway-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process",
+    "sha": "e502a628",
+    "basis": "DRIVEN ALONE IN A THROWAWAY CLONE, 2026-10-08 by fourth, at the same content as HEAD e502a628. A CLONE AND NOT A WORKTREE, deliberately: a linked worktree SHARES .git/config, which is how core.bare = true reached the live clone twice on 2026-10-06, and these three were deferred in batch 17 for exactly that family of reasons. 300s ceiling. Evidence that the main clone was untouched rather than restored: its `git status --porcelain` digest and the sha256 of its .git/config were captured before and after and are identical (2eeda7ffde63 / 789cfb6edb72). In the throwaway clone none of the three left the tree dirty and none moved .git/config -- so the mutation confound the register records for this family is HISTORICAL, not current."
+   },
+   "why": "Same subject pair as the delegation probe and deferred with it. Driven in a throwaway clone: exit 0, 10 passed / 0 failed, including its own ablation arm -- 'the same exception WITHOUT the guard leaves the plant'. No register row before this either."
   }
  ]
 }
