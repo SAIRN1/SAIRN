@@ -459,3 +459,111 @@ at HEAD, which is stated in each verdict). For the other ten, a reviewer cannot
 see the change the obligation is about.
 
 **State now: 239 records, 222 reviewed, 17 open, 0 assigned to hank.**
+
+### item 9 — RULE G ROUTED, beside RULE F
+
+`docs/2026-10-07-hank-routed.md` §4 now carries **RULE E, RULE F and RULE G**.
+`docs/METHODOLOGY.md` is **fourth's** under a live claim and is not touched.
+`md_table_check`: **EXIT 0, 0 malformed, 0 uncheckable.**
+
+> **RULE G — test and probe infrastructure must not mutate the clone or the
+> shared state it runs in.** A probe, gate, sweep or fixture may read anything
+> and may write only inside a throwaway it created. It must not touch the clone
+> it runs in, and must not touch state SHARED with other clones — `.git/config`,
+> the worktree registration list, the cross-clone lock registry, or a generated
+> document recording somebody else's measurement. **If it needs a dirty tree, it
+> builds one.**
+
+**THREE INSTANCES, cited, and they are the same defect wearing three faces — in
+every one the damage landed on somebody who was not running the tool:**
+
+1. **`.git/config`** — `tests/push_gate/check4_probe.py` and `check7_probe.py`
+   plant a fixture in a **linked worktree** (`check4_probe.py:93`) then
+   `git push --dry-run` from it (`:171-172`). A worktree **shares `.git/config`**,
+   so that put **`core.bare = true`** into a live clone and every git command
+   afterwards answered *"fatal: this operation must be run in a work tree"*.
+   `check8_probe.py` had the identical defect and was moved to a throwaway clone
+   on 2026-10-06 — **the fix is proven in-repo and was never propagated to its two
+   siblings.**
+2. **The lock registry** — a bare run of `tools/session_lock_check.py` acquired a
+   session lock, printed nothing and exited 0, in a registry that lives **outside
+   every clone on purpose**. Litter proves the history: `bare_scratch.lock`,
+   `b11wt2.lock`, `b12wt2.lock`. **And this batch found the same shape again** —
+   `tools/condition_coverage.py` registers a worktree and leaves it registered,
+   corroborated by three abandoned `condcov-*` registrations found independently.
+3. **Generated documents** — `cron_liveness_check.py` and
+   `audit_checkpoint_status.py` destroyed a real **OK** whenever `CRON_SECRET` was
+   absent. **And the suite does it at scale**: the clean-worktree run dirtied five
+   generated documents and **8 of its 101 failures were cascade**.
+
+**THE MECHANICAL FORM** is four lines: build a throwaway **clone**, not a
+worktree; give anything written outside the repo an env override **and propagate
+it to every child**; a tool that cannot measure **writes nothing** and uses a
+distinct exit code; and prove it with a before/after snapshot **plus a paired
+negative**, because an alarm that always fires is not a detector.
+
+**WHY IT IS NOT ALREADY COVERED:** PR §1.11 is a check that could not run
+reporting a pass — here the checks ran and reported *correctly* while damaging
+something else. Convention 8 is a check that stops testing — these never stopped.
+**Nothing governs a tool's SIDE EFFECTS on the world it is measuring**, and the
+proof is that `bare_run_write_check.py` existed for exactly this and missed all
+three, because its scope was the working tree.
+
+### item 10 — EVERYTHING I KEEP OUTSIDE GIT — audited, 12 files committed, the rest registered
+
+**THE LINE I USED, stated before the list:** *anything a COMMITTED artefact CITES
+BY NAME belongs in the repo.* A committed document, test header or
+defect-register record pointing at `%TEMP%` is **a dangling citation the moment
+that directory is cleared** — and this platform already keeps
+`docs/citation-absent-register.json` because that has happened before.
+
+**MEASURED, not recalled** — `docs/hank-evidence/b3_item10_index.py` walks every
+directory, sizes and dates every file, and records anything unreadable as
+UNREADABLE rather than skipping it.
+
+**COMMITTED: `docs/hank-evidence/`, 12 files.** A grep over committed docs, tests
+and tools found **six of my scratchpad files cited by name**: `attr_scan.py`
+(3 citations — the suite header, two register records), `audit_gap.py`,
+`tools_sweep.tsv`, `land.sh`, `reg_add.py`, `b3_item4_evidence.py`. Those plus
+the **generators of committed documents** are now in the repo —
+`b3_item3.py` generates `docs/2026-10-08-hank-suite-failure-owners.md`, and
+**a committed document whose generator is not committed cannot be regenerated.**
+
+**DELIBERATELY NOT IN `tools/`.** These are one-off evidence scripts. `tools/`
+enrols a file in four governance populations — the tool inventory,
+`report_only_checks.REGISTRY`, `first_article_inspection`'s header-claim
+population and the bare-run sweep — all of which exist to govern tools somebody
+depends on. `docs/purge-evidence/` is the in-repo precedent for evidence that is
+not a tool.
+
+**REGISTERED: `docs/external-files-index.json`, 11 directories.** Created with the
+`{"agents": {"hank": {...}}}` shape and written by a **merge**, so an agent
+registering later cannot lose me and I cannot lose them.
+
+| kind | path | files |
+|---|---|---|
+| scratchpad | this session (batches 18-19) | 226 |
+| scratchpad | previous session (b1) | 455 |
+| home | `~/SAIRN-SESSION-LOCKS` — **SHARED, not mine alone** | 21 |
+| drive | `G:\My Drive\SAIRN-status` — the report files, outside git on purpose | 40 |
+| temp | 6 throwaway clones + 1 linked worktree | ~3,200 each |
+
+**THE CLONE LISTINGS ARE OMITTED ON PURPOSE AND THE OMISSION IS RECORDED.** Naming
+19,000 files that are just copies of this repo made the index 147KB and buried the
+226 scratchpad files that are the point. Count and size are kept;
+`listing_omitted_reason` says why, per directory. 24.7KB instead.
+
+**THE INDEX CARRIES ITS OWN LIMITS:** everything under `%TEMP%` is ephemeral and
+this records what existed at audit time, not a promise it still does; listings are
+capped with `listing_truncated` per directory; `G:\My Drive` is a Drive mount
+where a file can be a placeholder until it hydrates; and
+`~/SAIRN-SESSION-LOCKS` is **shared** — listed because I write to it, not because
+it is mine to clear.
+
+**THE SAME DEFECT EXISTS IN OTHER SESSIONS' FILES AND IS NOT MINE TO FIX.** The
+same grep found `gapverify.py`, `verify_specs.py`, `prefix_demo.py`,
+`grd_enum.py`, `cite_measure.py` and `sfdrift.py` cited from scratchpad by cc's,
+cody's and fourth's committed documents — including one inside
+`docs/defect-density-register.json`. **Named for their owners, not relocated by
+me**, and recorded in the index under
+`other_sessions_have_the_same_defect_and_it_is_not_mine_to_fix`.

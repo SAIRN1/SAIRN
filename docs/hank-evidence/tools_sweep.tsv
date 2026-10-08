@@ -1,0 +1,315 @@
+accepted_risk_expiry_audit.py	0	ACCEPTED RISKS AND WHETHER THEIR EXPIRY CAN FIRE -- report only | population : 21 accept/defer decisions found in the index and the PAUSED docs
+accepted_risk_scan.py	0	ACCEPTED-RISK SCAN -- report only, nothing was written | source files read            : 728 | carrying acceptance language : 299
+accepted_risk_trigger_check.py	0	ACCEPTED-RISK TRIGGER CHECK -- criteria 2026-09-15.1 | 4 entry(ies) in the register, 1 claiming a MECHANICAL trigger.
+adversarial_prompt_corpus.py	0	ADVERSARIAL PROMPT CORPUS CHECK -- report only, never gates | THE BLIND LOCK RUNS FIRST. Criteria that cannot classify a known case cannot | classify an unknown
+advisory_lock_isolation_check.py	1	advisory-lock isolation: 10 function(s) take an advisory lock | GUARDED     8 | SAFE_SHAPE  2
+ai_action_approval_audit.py	0	AI-PROPOSED ACTIONS AND WHETHER A HUMAN HAS TO APPROVE THEM | report only -- the count is a READ-LIST, not a score
+ai_output_resource_scan.py	1	AI-OUTPUT RESOURCE DERIVATION -- two independent directions | apps scanned  : 22  (*.html under C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Document
+ai_prompt_refusal_check.py	1	BLIND LOCK -- 14 fixture(s), judged before any real file is opened | 14/14 fixtures correct.
+alf_facility_role_gate_live_probe.py	2	UNVERIFIED -- ALF_LICENSE is not set, so NOTHING was driven. | The role gate sits BELOW the licence check and below the session check, so it is unreachable with
+allan_deviation_check.py	2	THE BLIND LOCK -- synthetic series whose answer is known, both ways | ok   white noise -> negative slope              slope=-0.50 | ok   linear drift -> strongl
+append_only_read_order_scan.py	0	APPEND-ONLY TRAIL READS WITHOUT AN ORDER -- a scan, not a gate | POPULATION, derived twice because one derivation is wrong both ways:
+assertion_label_shape_check.py	1	ASSERTION LABEL vs COMPARISON SHAPE -- criteria 2026-09-29.2 | criteria lock: 63/63 fixtures classify correctly (31 shape, 13 tier, 15 javascript), on hand-buil
+assurance_case.py	TIMEOUT	
+audit_checkpoint_status.py	2	COULD NOT RUN: CRON_SECRET is not set. docs\AUDIT-CHECKPOINT-STATUS.md says so rather than keeping a stale OK.
+audit_licence.py	0	
+auth_header_name_sweep.py	1	AUTH HEADER NAME SWEEP | expected header, DERIVED from api/_lib/auth.js tokenFromRequest(): 'x-sd-auth'
+bare_run_write_check.py	2	--repo is required and must be a SCRATCH clone. | This tool runs every tool it finds; there is no safe default. | git clone --local --no-hardlinks . <scratch pa
+bare_run_writers.py	0	OWNER-INTENDED BARE-RUN WRITERS -- 21 tool(s) | These are not exempted, they are EXPLAINED. Every entry names the | path it writes and why its bare run is its i
+benford_check.py	2	BENFORD DIGIT DISTRIBUTION -- a POINTER, never a verdict | blind lock: LOCKED | expected first digits: 1=30.1%  2=17.6%  3=12.5%  4=9.7%  5=7.9%  6=6.7%  7=5.8%
+blind_review.py	0	Item 79 -- the reviewer judges FIRST, and only then sees what the tool said. | --start N          write a blind worksheet
+blob_conversion_coverage.py	0	STORED-BLOB CONVERSION COVERAGE (api/_lib/blob.js, item 94) | 256 stored-blob site(s) across api/, by shape: | CONVERTED   33
+blob_overrides_column_scan.py	0	BLOB-OVERRIDES-COLUMN SCAN | Object.assign applies sources LEFT TO RIGHT, so a stored blob spread | AFTER the columns overwrites the authoritative value with th
+bypass_log.py	0	BYPASS LOG -- item 86, the battleshort pattern. Report only. | overrides recorded : 56   (55 still stand, 1 retracted) | blanket (ALL)      : 54   <- a switch l
+bypassed_constant_check.py	0	BYPASSED CONSTANT CHECK -- app HTML, distinctive decimals only | files scanned            : 22 | distinctive constants    : 2
+capture_exit.py	2	usage: capture_exit.py [-h] [--status STATUS] [--fixtures] [--bound SECONDS] | [--read FILE] | ...
+check_precedence.py	1	check precedence: 75 subject(s) with more than one claim | FINDING        1 | COULD_NOT_RUN  29
+checkblocks.py	1	Traceback (most recent call last): | File "C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\16753c01-e018-4c71-af08-342c1baa72e6\wt-
+checker_confidence.py	2	CHECKER CONFIDENCE -- report only | corrector self-check: SAFE (16 pairs, exhaustive) | checkers scored : 75
+checker_control_check.py	1	CHECKER CONTROL CHECK -- nothing was executed | promoted checkers : 75 | test files read   : 753
+checker_denominator.py	0	CHECKER DENOMINATOR -- checked over universe, and a ratchet on the gap | criteria 2026-09-28.2
+checker_estimate_fusion.py	2	CHECKER ESTIMATE FUSION -- item 52, report only | 75 checkers · corrector readable: yes
+checker_kit.py	0	
+checker_selftest_check.py	1	KNOWN-POSITIVE SELF-TEST ON THE REAL RUN -- criteria 2026-09-29.1 | criteria lock: 10/10 fixtures classify correctly, on hand-built sources only | read 75 tool(
+citation_arm_depth_check.py	0	CITED TEST / SUBJECT DEPTH -- does a co-located test LOAD its subject? | co-located pairs found          86 | test loads its subject          86
+citation_drift_hook.py	2	ERROR: empty stdin and no file argument. NO CITATION WAS CHECKED. | --- citation_drift_hook: runs register_freshness_check on an edit to a citation-bearing docu
+citation_line_drift_check.py	2	--app and --prefix are both required. Neither is guessed from the other: an app file and a resource prefix do not follow one rule, and a guess would measure the
+citation_no_source_report.py	1	CITATION COVERAGE -- a row that asserts a basis and cites nothing | criteria : 2026-09-29.2 | document : docs\CRITICALITY-TIERS.md
+claim_activity_check.py	0	CLAIM ACTIVITY -- an active claim whose declared files have been quiet | criteria 2026-09-28.2, window 6h
+claim_provenance.py	2	claim_provenance.py -- record HOW a Tier A claim was established. | commands: add, list, scope, types
+claim_search.py	0	claim_search.py -- plain English in, the REAL implementation out. | --verify "<claim>"   retrieve the real implementation to CHECK it against
+cleanup_confirm_check.py	0	OK   sql/rbac_test_artifact_cleanup.sql                       5 live, 0 offered | OK   sql/sairnbiz_syncemps_probe_cleanup_2026-09-10.sql       1 live, 0 offere
+cleanup_residue_check.py	2	CLEANUP RESIDUE -- READ ONLY, nothing was written | files seen    : 27 | RESIDUE       : 0  (these still have work to do)
+clone_health_check.py	0	CLONE HEALTH -- criteria 2026-10-06.2 | clone            : C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\16753c01-e018-4c71-af08-
+closing_error.py	0	
+coding_rule_discovery.py	0	CODING RULE DISCOVERY -- report only, derived from the codebase's own conventions | sairncode.html -- 41 candidate(s), 39 unregistered
+comment_quote_check.py	0	COMMENT-QUOTE CHECK -- report only, nothing was written | assertions inspected      : 7 | COMMENT-ONLY, undeclared  : 0  (the assertion is testing a comment)
+comment_sensitivity_check.py	TIMEOUT	
+committer_identity_check.py	0	committer identity check | this clone commits as : Michael Dibert <mikied68@gmail.com> | probe identities found in tests/ : 18
+completeness_check.py	0	COMPLETENESS -- item 38: a rule declared, then not applied everywhere | blind lock: 13 synthetic sources classify as written, including the four | narrowings ea
+condition_coverage.py	1	MUTATION-DERIVED CONDITION COVERAGE -- criteria 2026-09-13.1 | NOT MC/DC, and deliberately not called it: this proves the suite would | NOTICE a wrong operand, 
+confidentiality_candidate_flagger.py	0	CONFIDENTIALITY CANDIDATE FLAGGER -- it flags, it does not score | register      : docs\CRITICALITY-TIERS.md
+conflict_marker_check.py	0	UNRESOLVED CONFLICT MARKERS -- every tracked file (3171) | files with a marker at the start of a line : 0 | skipped as binary (3, NOT silently)        : archive
+conflict_marker_preflight.py	0	CONFLICT PRE-FLIGHT (markers delegated to conflict_marker_check.py) | 3171 path(s).
+conflict_marker_preflight_hook.py	0	
+control_char_check.py	0	control character check | tracked files scanned : 3167 | skipped as binary (4, NOT silently): archive/branch-lucid-ptolemy-b73vu0/SAIRN_All_Apps_Deploy.zip, arc
+copy_exactly_check.py	0	COPY-EXACTLY DRIFT CHECK -- report only, nothing was written | source: SAIRNVET-FINAL-SPEC.md  ->  target: sairnvet.html | functions in the block: 5
+copy_exactly_gate.py	0	COPY-EXACTLY (item 43 / Ariane 5) -- criteria 2026-09-26.1 | no propagation detected in this range.
+cp1252_console_sweep.py	TIMEOUT	
+credential_purge_check.py	2	COULD NOT RUN: no local credential file was found to search FOR. | A search for nothing finds nothing, and that is indistinguishable from a clean object store i
+criticality_tier_check.py	0	criteria lock: 6/6 fixtures classify correctly, on hand-built rows only | APPS_WITH_REGISTRIES:17
+cron_beat_refusal_check.py	0	CRON REFUSAL WITHOUT A HEARTBEAT -- criteria 2026-09-28.1 | criteria lock: 6/6 fixtures classify correctly, on hand-built sources only | read 4 cron handler(s) 
+cron_liveness_check.py	2	COULD NOT RUN: CRON_SECRET is not set. docs\CRON-LIVENESS-STATUS.md says so rather than keeping a stale OK.
+cross_tenant_isolation_scope.py	TIMEOUT	
+csv_formula_injection_check.py	0	CSV FORMULA INJECTION CHECK -- criteria 2026-09-18.2, report only | blind lock: 32/32 fixtures correct | files with a CSV cell path : 13
+dead_rule_sweep.py	TIMEOUT	
+defect_budget.py	0	DEFECT BUDGET BY STANDING RULE -- report only, nothing is blocked | records                     : 470 | distinct rules cited        : 15
+defect_budget_gate.py	1	DEFECT BUDGET GATE -- item 20 | window decided : rolling | budget decided : yes
+defect_budget_policy.py	0	DEFECT BUDGET POLICY -- item 20, criteria 2026-09-15.1 | register: 470 records, digest 02229d1e75588c50 | budget  : 60 weighted defects per 30-day window  (DECI
+defect_dispersion.py	2	DEFECT DISPERSION -- report only, nothing gates on this | 470 confirmed defects, register opens 2026-08-08
+defect_register.py	0	DEFECT REGISTER -- 470 confirmed record(s) since 2026-09-09 | CONFIRMED CLEAN -- 5, a SEPARATE population and in NO figure below | 2026-09-17 363b8304a91e sound
+demo_credentials_check.py	2	COULD NOT RUN: .demo-credentials.local.json is absent, unreadable, or has no "apps" list. | This tool has NO fallback and NO default on purpose -- a fallback is
+dep_surface_check.py	2	usage: dep_surface_check.py [-h] [--package PACKAGE] [--version VERSION] | [--enumerate-only] [--json] [--fixtures] | dep_surface_check.py: error: --package is 
+dependency_graph.py	0	DEPENDENCY GRAPH -- single points of failure, and pairs (items 88, 53) | blind lock: 5 synthetic graphs classify as written, plus the blast-radius | and comment
+deploy_verify_notify.py	0	
+discarded_verdict_check.py	0	discarded verdicts found: 0   (to read 0, accepted 0) | NOTE: this cannot see across files -- a verdict returned by a required | module and dropped in another f
+discarded_verdict_crossfile.py	0	VERDICT_SHAPED_EXPORTS:101 | BARE_STATEMENT_CROSS_FILE:0 | ASSIGNED_NEVER_READ_CROSS_FILE:0
+dispatch_state.py	0	DISPATCH STATE -- 324 open row(s) of 813, 4 active claim(s) | ACTIVE CLAIMS, which is the half a per-item `check` cannot show you:
+div_balance_check.py	1	Traceback (most recent call last): | File "C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\16753c01-e018-4c71-af08-342c1baa72e6\wt-
+doc_checker_coverage.py	0	DOC CHECKER COVERAGE -- working tree (staged + unstaged) | DENOMINATOR, published rather than implied: | 305 tools/*.py parsed, 13 declared doc paths, 0 UNPARSE
+doc_sha_reseat.py	2	usage: doc_sha_reseat.py [-h] [--check] [--post-rewrite] [--fixtures] | [--census] [--register-absent]
+dora_metrics.py	1	DORA METRICS -- measured from this repository, report only | 2026-06-22 to 2026-10-07, 84 day(s) with at least one commit
+duplicate_global_check.py	0	TOTAL_DEPTH0_GLOBALS:822 | DISTINCT_NAMES:822 | DUPLICATE_NAMES:0
+eaten_substitution_check.py	2	COULD NOT RUN: this branch has no upstream, so there is no "about to be pushed" range to read. Nothing was scanned. Pass --range or -n explicitly.
+employee_auth_guard_check.py	0	employee_auth writers checked: 29 | guarded         : 10 | grandfathered   : 19  (predate 2026-08-29; not fixed, just visible)
+entitlement_freshness_check.py	1	ENTITLEMENT FRESHNESS -- item 100, the pre-signed-remedy question | authority : api/_lib/license.js
+entity_baseline_readiness.py	0	PER-ENTITY BASELINE READINESS -- item 51, report only | 470 records in the register | BAR: 20 records per unit, 2 units minimum. A JUDGEMENT, pre-registered,
+entry_point_scope_check.py	1	ENTRY-POINT SCOPE DIVERGENCE -- criteria 2026-09-29.1 | criteria lock: 21/21 fixtures classify correctly, on hand-built sources only | read 305 tool(s); 90 have
+exit_status_attributable.py	2	python tools/exit_status_attributable.py 'python tools/x.py | tail -3' | python tools/exit_status_attributable.py --stdin   < command.txt | python tools/exit_st
+export_coverage_check.py	0	EXPORT COVERAGE OF THE CLASS A SET -- can the record be produced as a FILE | Class A resources parsed from the scoping doc : 11
+extract_panels.py	2	Usage: python tools/extract_panels.py <file.html>
+extract_scripts.py	1	Traceback (most recent call last): | File "C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\16753c01-e018-4c71-af08-342c1baa72e6\wt-
+fact_sheet_regenerates.py	1	FACT SHEET REGENERATES -- a published figure must still be true | criteria          : 2026-09-28.2 | sheet             : docs\FACT-SHEET-2026-09-29.md
+fail_open_check.py	0	fail-open reads found: 12   (decision-shaped 0, untriaged 2, accepted 10) | NOTE: a clean decision-shaped list means no hit matched a KNOWN shape. | It does not
+fail_open_scan.py	1	FAIL-OPEN SCAN -- a gate reporting SUCCESS when it could not run | DEPENDENCY-shaped (could not check -> reported clean) : 19
+first_article_check.py	1	FIRST ARTICLE INSPECTION -- item 47, report only | required of anything first committed on or after 2026-09-16 | 170 artefact(s) pre-date that and are UNINSPECT
+first_article_inspection.py	TIMEOUT	
+flaky_checker_quarantine.py	1	FLAKY-CHECKER QUARANTINE -- criteria 2026-09-13.1 | blind lock: 16/16 fixtures correct, run before any checker was measured. | checkers with evidence: 46 of 75 
+fmea_draft.py	2	usage: python tools/fmea_draft.py <path> [--json] [--save] [--rates]
+fmea_prediction_check.py	0	FMEA PREDICTION CHECK -- report only, nothing was written | drafts on disk        : 112 | defects considered    : 470
+gap_ledger.py	1	GAP LEDGER -- derived, report only (criteria 2026-10-05.1) | criteria lock: 6 document + 4 filename + 2 as-of + 4 is-it-an-audit fixtures, | hand-built and REPO
+gate1_verify.py	1	GATE 1 RUNBOOK VERIFY -- READ ONLY (criteria 2026-10-05.1) | criteria lock: 7 verdict fixtures + the derived table count
+gate_caller_impact.py	2	COULD NOT RUN: name the action(s) you are about to gate with --action, or pass --survey. | A caller-impact report with no gate in mind is a directory listing.
+gate_column_check.py	1	GATE COLUMN CHECK -- report only, nothing was written | schema snapshot   : db/schema_snapshot.json, 439 tables | generated 2026-10-05 15:10:30.844856+00 (47.9 
+gate_parity_check.py	1	GATE PARITY -- sibling actions on one resource -- criteria 2026-10-07.4 | FILES READ (printed because a silent universe reports clean for a file it never opened
+gen_ma_calendar.py	0	wrote sql/sairnlaw_deadline_calendars_massachusetts.json | 2026 12 dates | 2027 12 dates
+gen_ma_seed.py	0	wrote sql/sairnlaw_deadline_seed_massachusetts.json | wrote sql/sairnlaw_deadline_seed_massachusetts.json with 11 rules | ma-r-12-a1-answer-to-complaint eff 200
+gen_mn_calendar.py	0	wrote sql/sairnlaw_deadline_calendars_minnesota.json | 2026 11 dates | 2027 12 dates
+gen_mn_seed.py	0	wrote sql/sairnlaw_deadline_seed_minnesota.json | wrote sql/sairnlaw_deadline_seed_minnesota.json with 11 rules | mn-r-12-01-answer-to-summons eff 2020-01-01
+gen_mo_calendar.py	0	wrote sql/sairnlaw_deadline_calendars_missouri.json | 2026 13 dates | 2027 13 dates
+gen_mo_seed.py	0	wrote sql/sairnlaw_deadline_seed_missouri.json | wrote sql/sairnlaw_deadline_seed_missouri.json with 14 rules | mo-r-55-25a-answer-after-personal-service eff 19
+gen_nj_calendar.py	0	wrote sql/sairnlaw_deadline_calendars_newjersey.json | 2026  13 dates  (from 2025-2026 and 2026-2027) | 2027  14 dates  (from 2026-2027 and 2027-2028)
+gen_nv_calendar.py	0	wrote C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\16753c01-e018-4c71-af08-342c1baa72e6\wt-tools\sql\sairnlaw_deadline_calendars
+gen_ok_calendar.py	0	wrote C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\16753c01-e018-4c71-af08-342c1baa72e6\wt-tools\sql\sairnlaw_deadline_calendars
+gen_or_calendar.py	0	wrote C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\16753c01-e018-4c71-af08-342c1baa72e6\wt-tools\sql\sairnlaw_deadline_calendars
+gen_sc_calendar.py	0	wrote C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\16753c01-e018-4c71-af08-342c1baa72e6\wt-tools\sql\sairnlaw_deadline_calendars
+gen_ut_calendar.py	0	wrote C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\16753c01-e018-4c71-af08-342c1baa72e6\wt-tools\sql\sairnlaw_deadline_calendars
+gen_va_calendar.py	0	wrote sql/sairnlaw_deadline_calendars_virginia.json | 2026 13 dates | 2027 14 dates
+gen_va_seed.py	0	wrote sql/sairnlaw_deadline_seed_virginia.json | wrote sql/sairnlaw_deadline_seed_virginia.json with 12 rules | va-r-3-8a-answer-to-complaint eff 2025-08-17
+gh_push.py	1	Traceback (most recent call last): | File "C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\16753c01-e018-4c71-af08-342c1baa72e6\wt-
+gh_token.py	0	token source : git credential manager | token length : 40 characters (the value is never printed)
+gh_verify.py	0	token source: git credential manager | remote_commit: 0cefb3930875081006e5594c58f40a58bee69ca0 | local_size: 2755227 local_sha256: bf48e4d61d6f941d908cee712f1fe
+ghost_field_read_scan.py	1	GHOST FIELD READ SCAN -- a branch gated on a name nothing sets | criteria                 : 2026-09-27.1 | files scanned for gates  : 717
+git_discovery_anchoring_check.py	1	GIT-DISCOVERY ANCHORING | C:/Users/marsh/.git exists, so an unanchored git call does not FAIL -- | it answers about the home repository. That is the hazard bein
+git_push_master_guard.py	0	
+guard_ablation.py	TIMEOUT	
+hedge_carry_check.py	2	COULD NOT RUN: no dispatched text was given. Pass --item or --item-file. An empty item yields no hedges, which would read as "nothing was dropped".
+hook_integrity_check.py	1	HOOK INTEGRITY -- an edited hook is trusted like a correct one | criteria : 2026-09-29.1 | repo     : C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Do
+hover_auditor_scope_gate.py	0	armed in this clone: no
+hover_eqa_escalation.py	2	HOVER INDEPENDENT-VALIDATION CHECKPOINT -- asked from OUTSIDE the auditor's clone | ========================================================================
+hover_process_pass_freshness.py	1	HOVER PROCESS-PASS FRESHNESS -- asked from the build side | -- C--Users-marsh-Documents-SAIRN-hover --
+hover_routing_gap_check.py	1	C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\16753c01-e018-4c71-af08-342c1baa72e6\wt-tools\tools\hover_routing_gap_check.py:252:
+hover_self_health_shim.py	0	
+hover_separation_audit.py	2	HOVER AUDITOR SEPARATION -- AUDIT TRAIL FROM REAL HISTORY | ========================================================================
+hover_separation_ci.py	1	Traceback (most recent call last): | File "C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\16753c01-e018-4c71-af08-342c1baa72e6\wt-
+html_script_check.py	2	ERROR: empty stdin and no file argument. Nothing was checked. | --- html_script_check: block preview + duplicate-global + missing-DOM. NOT a JS syntax check. --
+idempotence_double_run.py	TIMEOUT	
+idempotency_check.py	1	IDEMPOTENCY CHECK -- criteria 2026-09-13.1, report only | blind lock: 5/5 fixtures correct -- 3 synthetic plus the REAL api/ledger.js and api/sairndental/public
+independence_check.py	1	INDEPENDENCE CHECK -- criteria 2026-09-13.1, report only | blind lock: 13/13 fixtures correct, run before the index was read. | rows claiming an independent rev
+index_duplicate_check.py	1	INDEX DUPLICATE CHECK -- report only, nothing was written | rows compared            : 835 | near-duplicate pairs     : 3  (same app, >= 0.92 similar with numbe
+index_duplicate_hook.py	2	ERROR: empty stdin and no file argument. NO DUPLICATE CHECK RAN. | --- index_duplicate_hook: runs index_duplicate_check on an edit to the open-work index. ADVIS
+install_git_hooks.py	TIMEOUT	
+invariant_registry.js	0	
+invariant_runner.js	0	FINANCIAL INVARIANT RUNNER -- registry 2026-09-13.1, report only | blind lock: 11/11 synthetic fixtures correct, run in isolation before any engine was called. 
+invisible_in_pattern_check.py	0	BLIND LOCK -- 10 fixture(s), judged before any real file is opened | 10/10 fixtures correct.
+invocation_path_scan.py	1	INVOCATION PATH SCAN -- a check whose only trigger cannot fire for what it checks | THE STRUCTURAL FACT THIS ALL RESTS ON, read from the source and not assumed:
+js_code_only_diff.py	1	Traceback (most recent call last): | File "C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\16753c01-e018-4c71-af08-342c1baa72e6\wt-
+jscomments.py	0	ok   a line comment goes | ok   a block comment goes | ok   an HTML comment goes
+key_collision_check.py	1	DETECTED_STORAGE_WRAPPERS:['st', 'stRaw'] | TOTAL_KEY_WRITES:102 | DISTINCT_KEYS:79
+known_red_check.py	2	COULD NOT RUN: pass --from-run <log> or --run. This tool compares a run against the registry and will not invent one.
+landing_verification.py	TIMEOUT	
+law_billing_code_trim_live_probe.py	2	UNVERIFIED -- LAW_LICENSE, LAW_EMP and LAW_PIN must all be set. | The normalisation sits BELOW SAIRNlaw's session gate, so it | cannot be reached without a real
+ledger_append.py	2	COULD NOT RUN -- --ledger is required | LEDGER APPEND -- criteria 2026-10-06.2; structural allowance 2 line(s)
+leg_session_gate_live_probe.py	2	UNVERIFIED -- LEG_LICENSE is not set. The gate sits BELOW the | licence check, so it cannot be reached without a real licence. | LEG_LICENSE=... python tools/le
+licence_recoverability_check.py	0	APP              LICENCE                STATE          rows / active provisioners | ----------------------------------------------------------------------------
+line_endings.py	2	python tools/line_endings.py <path> [<path2>]   # describe, or compare two
+literal_drift_check.py	1	Traceback (most recent call last): | File "C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\16753c01-e018-4c71-af08-342c1baa72e6\wt-
+live_probe_declaration_check.py	0	LIVE PROBE DECLARATION READABILITY -- can the auditor parse what this tool says? | mode                        : working tree | candidate files             : 97
+live_probe_residue_audit.py	0	LIVE PROBE RESIDUE AUDIT | criteria                    : 2026-09-29.1 | CHECKED / UNIVERSE          : 53 / 977 files under tools/ tests/ scripts/
+load_compliance_seed.py	2	COULD NOT RUN: this endpoint needs a LICENCE KEY and a signed-in MANAGEMENT session -- alf_compliance_rules write is management only. Set SAIRNCARE_LICENSE_KEY,
+load_deadline_seed.py	2	usage: load_deadline_seed.py [-h] [--file FILE] [--key KEY] | [--endpoint ENDPOINT] | [--auth-endpoint AUTH_ENDPOINT]
+load_schema_snapshot.py	2	python tools/load_schema_snapshot.py <path-to-candidate.json> | python tools/load_schema_snapshot.py <path> --write | python tools/load_schema_snapshot.py <path
+local_only_collection_check.py	1	SCANNED-BY-NAME: the storage setter is discovered per file and named below. A file with no setter and no bare setItem collection is reported as NOTHING TO CHECK
+log_cluster.py	0	THE BLIND LOCK -- fixtures whose answer is known, both directions | ok   same template, different numbers -> HIGH             1.000 | ok   same template, differ
+master_plan.py	0	CLOSING ERROR -- docs\MASTER-PLAN.md derives from 6 source(s): | app files                         22   git ls-files '*.html' | apps owning a resource          
+md_table_check.py	0	docs/SAIRN-OPEN-WORK-INDEX.md: OK  (850/850 rows checked) | CLAUDE.md: OK  (6/6 rows checked) | docs/SAIRN-PROCESS-RULES.md: OK  (4/4 rows checked)
+mech_gate_live_probe.py	0	C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\16753c01-e018-4c71-af08-342c1baa72e6\wt-tools\tools\mech_gate_live_probe.py:225: De
+mech_panels_live_check.py	0	SAIRNmechanical -- do the two panels actually READ AND WRITE the real tables | run id 20261007T151735Z
+message_assertion_audit.py	1	MESSAGE ASSERTION AUDIT -- an arm that asserts on a message passes when the behaviour is gone | criteria : 2026-09-29.2
+metamorphic_check.py	TIMEOUT	
+missing_dom_target_check.py	1	DETECTED_DOM_WRAPPERS:['badge', 'fmEnsureDateDefault', 'fmRenderMap', 'gN', 'getCBV', 'miDrawChart', 'pcEl', 's', 'sdFillProjectSelect', 'sdFillTierSelect', 'sd
+mutation_anchor_check.py	0	criteria lock: 6/6 fixtures classify correctly, on hand-built sources only | MUTATION ANCHOR CHECK -- report only, nothing was run and nothing written | probes 
+nav_panel_check.py	1	Traceback (most recent call last): | File "C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\16753c01-e018-4c71-af08-342c1baa72e6\wt-
+negated_status_assertion_scan.py	1	NEGATED STATUS ASSERTIONS -- a READ-LIST, not a verdict | 506 suite file(s) scanned, comment-stripped | 2 asserted `!== <status>` occurrence(s)
+new_checker.py	2	new_checker.py -- scaffold a checker that CANNOT report clean until it works. | usage: python tools/new_checker.py <name> "<what it catches>" [--dry-run]
+nhi_register.py	0	REPORT ONLY -- nothing written. 23 identities rendered. | docs\NHI-REGISTER.md DIFFERS from the repo -- an identity, a credential or a created role has changed.
+npm_audit_check.py	1	npm audit check | advisories reported : 3 across 3 package(s)
+numeric_default_coalesce_scan.py	1	NUMERIC-DEFAULT COALESCE SCAN | files scanned : 1540  (.html, .js, .py) | skipped dirs  : __pycache__, node_modules, .git, graphify-out, archive
+ooda_phases.py	0	OODA PHASE ISOLATION -- item 67, report only | phase     boundary                                 recorded?
+optimistic_success_scan.py	1	OPTIMISTIC SUCCESS SCAN -- criteria 2026-09-16.1 | 12 fixture arms passed before any app was read. | 22 app(s) scanned, 8 candidate(s).
+orphan_register_check.py	0	REGISTER_ENTRIES:12 | DELETED_NAMES:38  DEAD_KEYS:7 | OPEN_INDEX_ROWS:354
+out_of_service_register.py	0	OUT-OF-SERVICE CONTROL REGISTER | criteria        : 2026-09-28.1 | date            : 2026-10-07  (system clock)
+outline.py	1	Usage: python tools/outline.py <path-to-html-file>
+overrun_inversion_scan.py	1	OVERRUN INVERSION SCAN -- a cap on a ratio that turns an overrun into completion | criteria 2026-09-28.1 | HIGH   3
+ownership_evidence_drift.py	1	OWNERSHIP EVIDENCE DRIFT -- schema public | last MEASURED     : 2026-08-26  by Michael, via sql/supabase_admin_default_acl_check_2026-08-26.sql Section 1 | tabl
+panel_depth.py	2	PANEL DEPTH -- criteria 2026-09-26.2 | fixture lock: 12/12 classify correctly | usage: python tools/panel_depth.py <app> <panel> [panel ...]
+panel_nesting_check.py	0	DETECTED_PANEL_ID_PREFIX:'panel-' | TOTAL_PANELS:64 | SAFE_SHELL_PARENT_PANELS:64 (any parent shared by 2+ panels)
+parse_zero_third_state_check.py	1	ZERO-ITEM CORPUS AS A CLEAN SWEEP -- criteria 2026-09-29.1 | criteria lock: 9/9 fixtures classify correctly, on hand-built sources only | read 305 tool(s) in to
+pattern_enumeration_sweep.py	1	PATTERN ENUMERATION SWEEP -- a population derived by NAME is still a guess about the name | criteria : 2026-09-29.1 | swept    : 304 file(s) under tools/
+pinned_list_drift_check.py	0	HAND-WRITTEN LISTS OF RESOURCE NAMES -- report only, nothing is blocked | literal lists found            : 166 | Tier A resources in the register: 275
+plugin_upgrade_check.py	0	PLUGIN UPGRADES -- compared by VERSION, never by commit sha | CURRENT   postgres-grant-sweep@sairn-skills        0.1.0 -> 0.1.0 | CURRENT   superpowers@claude-p
+pra_event_tree.py	0	PRA EVENT TREE -- item 84 | blind lock: 4 end-state fixtures plus the ordering claim, decided | before any real component was read.
+preauth_oracle_check.py	0	NO AUTH BOUNDARY  api/audit-checkpoint.js  -- declared cron-secret: Refuses unless the Authorization header equals 'Bearer ' + CRON_SECRET, checked FIRST -- b |
+primitive_obsession_check.py	1	primitive-obsession check (CRITERIA_VERSION 1) -- three shapes, each paid for on this platform | env-number                8 occurrence(s) | locale-date-value  
+probe_anchor_freshness.py	0	self-test: 20/20 known-positive arm(s) classify correctly, on hand-built sources only | PROBE ANCHOR FRESHNESS -- a sabotage anchor that no longer matches | cri
+probe_public_book_guardian.py	0	OK   minor, NO guardian -> 400 GUARDIAN_REQUIRED  -> 400 GUARDIAN_REQUIRED | OK   minor, guardian NAME but no contact -> 400  -> 400 GUARDIAN_REQUIRED | OK   mi
+probe_selector.py	0	No changed files given. Selecting NOTHING -- an empty change set is not a reason to run the corpus.
+purge_evidence_gate.py	2	usage: purge_evidence_gate.py [-h] (--audit | --record | --require-record) | [--root ROOT] [--dir DIR] [--repo REPO] | purge_evidence_gate.py: error: one of the
+purpose_expired_measure.py	0	PURPOSE EXPIRED -- three designed signals, re-measured. Report only. | R5a  a guard that can never be true            : 0 across 197 files
+push_failure_reason.py	0	PUSHED | no failure signature in the output
+push_retry.py	0	REFUSES TO AMEND A COMMIT THAT IS NOT SAFE TO AMEND, and runs the | fetch -> rebase -> regenerate -> push retry loop on top of that refusal.
+pycomments.py	0	pycomments selftest | ok   'x = 1  # REGISTERED AND DEAD' token='REGISTERED AND DEAD'  present=False want=False | ok   "s = '# not a comment'"        token='# n
+rate_limit_race_model.js	0	RATE LIMIT INTERLEAVINGS -- docs/spec/RateLimitConsume.tla | requests in flight : 3 | limit              : 2
+rebase_state_guard.py	0	
+reclassification_sweep.py	0	corpus: C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\16753c01-e018-4c71-af08-342c1baa72e6\wt-tools\docs\sources | files: 32
+red_suite_register_check.py	TIMEOUT	
+redaction_check.py	0	
+register_feed_gate.py	2	register_feed_gate.py -- a defect closure cannot complete without feeding | the register. Item 41's prevent-by-construction pattern, applied to the | measuremen
+register_freshness_check.py	1	REGISTER FRESHNESS -- committed evidence vs freshly-recomputed truth | citations verified OK    827 | UNVERIFIABLE             263   <- counted, never folded in
+register_freshness_propose.py	0	REGISTER FRESHNESS -- PROPOSALS (nothing is applied to this branch) | drifted citations that are REPOINTABLE   44 | left for a HUMAN READ                    21
+reliability_growth.py	1	RELIABILITY GROWTH -- item 80 | blind lock: both fitters recover parameters from their own curves, the | gate ADMITS a long falling series and REFUSES a long fl
+removal_path_check.py	1	removal path check | registered resources            : 398 | declare delete or soft_delete   : 52
+report_only_checks.py	TIMEOUT	
+required_write_permission_check.py	1	REQUIRED-VS-PERMITTED WRITES -- criteria 2026-09-30.1 | REQUIREMENTS:3  (declared, and each anchored in its tool) | SESSIONS_CHECKED:7  cc, cloud, cody, fourth,
+reservation_lock_invariants.js	0	RESERVATION LOCK -- mutual exclusion over every interleaving | subject: api/sd-data.js leg_merch_units status->Reserved (PATCH with | &data->>status=eq.Availabl
+resource_reachability_check.py	0	RESOURCE REACHABILITY -- does any client NAME each registered resource? | registries read : 17 apps | resources       : 391 (excluding `shared`, reported separa
+response_shape_check.py	0	THE BLIND LOCK -- both directions, every run | ok   MUST FLAG -- the exact cron_liveness shape | ok   MUST FLAG -- .get() on the response
+restore_coherence_check.js	2	COULD NOT RUN: set SAIRN_TARGET_URL and SAIRN_TARGET_KEY (or SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY) to the database you want checked. Nothing was checked, 
+retry_backoff_check.py	1	RETRY / BACKOFF / BREAKER -- report only, nothing gates on this | 379 source unit(s) scanned (every api/**.js and every <script> block in the app HTML) | 15 out
+retry_policy_audit.py	1	RETRY POLICY AUDIT -- item 81, report only | blind lock: LOCKED (16 fixtures, both directions) | 463 file(s) scanned, 130 archived file(s) excluded (--all inclu
+review_ledger_reseat.py	1	reachability measured against origin/main | live        10 | frozen      4
+rework_tracker.py	0	REWORK TRACKER (criteria 2026-10-06.1) | 165 event(s) across 5 source(s); 0 source(s) COULD NOT BE READ
+rewrite_convergence_map.py	2	usage: rewrite_convergence_map.py [-h] (--map | --verify | --simulate | | --derive) [--json] [--root ROOT] | [--steps STEPS] [--without WITHOUT]
+rf_claim_gate_live_probe.py	2	Set RF_EMP, RF_PIN and RF_NARROW_PIN in the environment.
+rf_roundtrip_probe.py	2	Set RF_EMP and RF_PIN in the environment. They are deliberately not in this file.
+risk_event_tree.py	0	PROBABILISTIC RISK ASSESSMENT -- item 84, report only | INITIATING EVENT: a Tier A write goes wrong. | Four barriers in series, carried as four separate open it
+role_gate_invariants.js	0	ROLE GATE INVARIANTS -- docs/spec/RoleGates.tla | auth modules on disk : 17 | invariant checks RUN : 63
+role_gate_mc_config.py	0	wrote MCRoleGates.tla and .cfg | modelled : 6 apps | MANAGEMENT_ROLES provenance: exported 6
+role_gate_negative_coverage.py	0	ROLE-GATE NEGATIVE COVERAGE (api/sd-data.js) | 27 role set(s) declared, 31 resource branch(es) gated on one.
+rotation_blast_radius.py	1	ROTATION AND BLAST RADIUS -- item 61, criteria 2026-09-15.3 | 22 fixture arms passed before the register was read. | 23 identity(ies) in tools/nhi_register.py
+row_count_baseline.js	2	COULD NOT RUN: set SAIRN_BASELINE_URL and SAIRN_BASELINE_KEY to the PRODUCTION database. Nothing was captured, and an absent baseline is not an empty one. | The
+run_all_tests.py	TIMEOUT	
+run_semgrep.py	1	SEMGREP -- config C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\16753c01-e018-4c71-af08-342c1baa72e6\wt-tools\tools\semgrep | fin
+run_tlc.py	2	COULD NOT RUN -- C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\16753c01-e018-4c71-af08-342c1baa72e6\wt-tools\tools\vendor\tla2too
+sabotage.py	2	sabotage.py -- plant a defect so that FAILING TO PLANT IT IS LOUD.
+sabotage_control_check.py	1	SABOTAGE CONTROL CHECK -- criteria 2026-09-24.2, report only | blind lock: 32/32 fixtures correct, run before the tests tree was read. | probes that sabotage a 
+sairn_ai_fact_scan.py	0	--- SHAPE A: 5 hit(s) --- | sairnbiz.html:1557  asserts app state as fact in a tool_description (get_payroll_anomalies) | le, this tool simply does not read the
+sairn_app_map_check.py	0	FILE                           ROUTE                  MAPPED AS        LIVE | sairnbiz.html                  /sairnbiz$             SAIRNbiz         (not checke
+sairn_build_load_gates.py	0	sairncare      alf_compliance_rules     rules=19  dupes=0 -> sql/alf_compliance_rules_load_gate_generated.sql (59657 bytes) | sairncare      alf_payer_rules    
+sairn_claim.py	2	usage: sairn_claim.py [-h] {check,claim,release,list,audit} ... | sairn_claim.py: error: the following arguments are required: cmd
+sairn_claim_doc_freshness.py	0	sairn_claim.py DOCUMENTATION FRESHNESS -- report only, never gates | re-referenced against the SOURCE on every run; "could not check" is a third state
+sairn_claim_hook.py	0	
+sairn_clickthrough_driver.js	1	C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\16753c01-e018-4c71-af08-342c1baa72e6\wt-tools\tools\sairn_clickthrough_driver.js:10
+sairn_dead_button_audit.py	1	sairn_dead_button_audit.py -- non-functional-button audit for SAIRN apps.
+sairn_dead_function_sweep.py	0	FILES SWEPT: 22 | WARNING sairnbiz.html: comment stripping blanked 30.6% of the file -- a delimiter has almost certainly run away. Findings below are NOT trustw
+sairn_dom_snapshot.js	1	C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\16753c01-e018-4c71-af08-342c1baa72e6\wt-tools\tools\sairn_dom_snapshot.js:41 | url:
+sairn_http.py	0	
+sairn_load_state_check.py	1	No license key. Set SAIRNLAW_LICENSE_KEY or pass --key. | Rules are stored PER LICENSE, so the key decides which tenant is | being checked -- it is not a formal
+sairn_push_gate_hook.py	0	
+sairn_reachability_check.py	0	=== R6: IS THE RESOURCE ASKED FOR? (report only, never gates) === | registered resources : 392 across 16 app registr(y/ies)
+sairn_reachability_probe.py	0	FILES PROBED: 22 | FLAG C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\16753c01-e018-4c71-af08-342c1baa72e6\wt-tools\sairnbiz.html
+sairn_rebase_resolve.py	0	No conflicted files. Nothing to do.
+sairn_seam_check.py	2	SAIRN endpoint/engine seam check | ======================================================================== | OK          api/accounting.js              -> api/
+sairn_self_state.py	2	COULD NOT RUN: THIS CLONE IS NOT PROVISIONED. C:/Users/marsh/Documents/SAIRN-hank/.git/worktrees/wt-tools\sairn-session does not exist, and the session name is 
+sairn_session_identity.py	2	NO IDENTITY: THIS CLONE IS NOT PROVISIONED. C:/Users/marsh/Documents/SAIRN-hank/.git/worktrees/wt-tools\sairn-session does not exist, and the session name is NO
+sairn_source_fetch.py	2	usage: sairn_source_fetch.py [-h] [--state STATE] [--slug SLUG] [--url URL] | [--note NOTE] [--respect-note RESPECT_NOTE] | [--from-file FROM_FILE] [--list]
+sairn_sql_preflight.py	3	Does this SQL file reference a table or column that does not exist? | WHY THIS EXISTS. A SQL file on this platform is written in a clone, reviewed as
+sairn_stale_snapshot_scan.py	0	== sairnbiz.html | UTC calendar derivations: none  (0 bare instant timestamps, which are correct)
+sairn_status.py	0	SAIRN STATUS REGISTRY -- live, outside git, no push/pull needed | C:\Users\marsh\SAIRN-SESSION-LOCKS\status | 6 session(s) have reported
+sairn_strict_args_check.py	0	clean -- no mutate-then-forward-arguments sites under strict mode | in 22 file(s)
+sairnlaw_citation_audit.py	0	SAIRNlaw citation audit -- 44 computation standards, 33 service-extension standards | == 1. DORMANT STANDARDS (declared, used by no seeded rule)
+sc_tier_a_write_gate_live_probe.py	2	SAIRNcode -- the Tier A billing write gate, against the LIVE endpoint
+schema_provisioning_check.py	3	--app and --schema are both required, and neither is | guessed from the other -- schema filenames do not follow | one rule, so a guess would check the wrong fil
+schema_snapshot_freshness.py	1	SCHEMA SNAPSHOT FRESHNESS -- report only, nothing was written | snapshot captured : 2026-10-05 15:10:30.844856+00 (generated); last committed 2026-10-05 | table
+scp_session_gate_live_probe.py	2	UNVERIFIED -- SCP_LICENSE is not set. The gate sits BELOW the | licence check, so it cannot be reached without a real licence. | SCP_LICENSE=... python tools/sc
+seam_cannot_tell_watch.py	0	SEAM COULD-NOT-TELL WATCH | denominator, published rather than implied: | 96 clean, 0 not-forwarded, 19 could-not-tell  (115 seams total)
+second_pass_coverage_scan.py	1	SECOND-PASS COVERAGE -- is a flow ever retried after being refused? | The 737 MAX VNAV defect needed a missed approach and THEN an altered | path. First-pass te
+secrets_inventory.py	2	SECRETS INVENTORY -- item 61 | blind lock: 5 synthetic sources classify as written, run before the real tree was read. | REFUSING: the hand-written half does no
+service_role_tier_a_gate_check.py	2	275 Tier A resource(s) declared; 68 api/ module(s) read SUPABASE_SERVICE_ROLE_KEY | 15 of them name a Tier A resource IN CODE (comments and strings blanked firs
+session_lock_check.py	0	
+session_recheck_coverage.py	0	SESSION-GATE RE-CHECK COVERAGE | file                            gates  explicit  by-route  verdict | api/sd-data.js                    136         1         1 
+shape_antipattern_check.py	1	BLIND LOCK -- 10 fixture(s), judged before any real file is opened | 10/10 fixtures correct.
+shape_search.py	0	shape_search.py -- find the same BUG SHAPE written completely differently. | --validate   measure it before trusting it (two numbers)
+soup_register_check.py	0	SOUP register check | npm direct dependencies : 3 | CDN scripts in root apps: 3
+source_manifest.py	0	{ | "commit": "7406ab27b1746ed7e2089db7dd7f8a4db9d54016", | "file_count": 24,
+sql_column_exists_check.py	0	SQL COLUMN EXISTENCE -- does a filtered column exist on its table? | sql files scanned            : 263 | tables with a DECLARED shape : 459
+staged_conflict_marker_check.py	0	
+staged_credential_check.py	0	staged-credential: nothing staged. That is not a pass about this commit, it is an empty question.
+staged_parse_check.py	2	No files given. COULD NOT RUN -- an empty run reporting "everything parses" is a measurement that did not happen, and this tool is called from a gate where exit
+staging_discipline_scan.py	0	STAGING DISCIPLINE SCAN | criteria                  : 2026-09-29.1 | CHECKED / UNIVERSE        : 983 / 983 file(s) under tools/ tests/ scripts/ .githooks/
+stale_row_sweep.py	TIMEOUT	
+stonedesk_storefront_live_check.py	0	StoneDesk public storefront -- live provisioning check against https://sairn.vercel.app | POST /api/stonedesk-public {catalog}  -> HTTP 404 NOT_FOUND | POST /ap
+stored_data_criticality_check.py	0	criteria lock: 14/14 fixtures classify correctly (CRITERIA_VERSION 1), on hand-built rows only | STORED_DATA_ROWS:6
+strict_args_harness.js	0	Part 1: does reassigning a parameter update `arguments`? | ok   non-strict function                          got MUTATED   want MUTATED
+subprocess_decode_check.py	1	SUBPROCESS TEXT DECODE -- the locale default here is cp1252 | text-mode subprocess calls with NO explicit encoding= : 65 | tests/criticality_rollup_list_review_
+suite_control_coverage.py	1	SUITE CONTROL COVERAGE -- report only, nothing gates on this | 299 suite(s) -- tests/*.js and api/*.test.js | 100 have a negative control (a probe that BREAKS t
+suite_control_triage.py	0	UNCONTROLLED SUITE TRIAGE -- report only, nothing gates on this | 299 suite(s); 100 have a negative control; 199 do not. | 391 tiered resources read from CRITIC
+suite_override_consistency.py	1	SUITE OVERRIDE CONSISTENCY -- does one suite ignore what its siblings honour? | JS suites examined      497   tests/**.js + api/**/*.test.js | app families exam
+sync_write_result_check.py	1	sairnbiz.html            2 write(s): 1 read, 0 returned-to-caller, 0 DISCARDED, 0 unreadable, 1 benign-sink | benign sink   sairnbiz.html:5643  sbData('write', 
+temporary_state_check.py	0	TEMPORARY STATE -- report only, nothing was written | files read                    : 1434 | declarations found            : 2
+testability_criteria.py	0	
+testability_gate.py	1	TESTABILITY GATE -- criteria 2026-09-13.2, report only | fixtures: 17/17 correct -- the criteria are locked and were not | tuned against the corpus below.
+text_gate_literal_sweep.py	1	TEXT-GATE LITERAL SWEEP -- can a decoy in a comment or a string | change this gate's verdict?
+three_way_match_check.py	2	BLIND LOCK: 9 structural + 9 data fixture(s) correct, judged before any real file was read. | THREE-WAY MATCH -- report only, it never refuses a payment | struc
+tier_a_bypass_check.py	0	TIER A BYPASS CHECK -- report only, nothing was written | Tier A resources known to docs\CRITICALITY-TIERS.md : 275 | handlers under api/ (not tests, not _lib):
+tier_a_replaceability_check.py	0	TIER A REPLACEABILITY -- item 97, report only, nothing is blocked | Tier A resources              : 275 | can be HARD DELETED           : 0
+tier_a_review_gate.py	2	COULD NOT TELL -- the Tier A review gate raised an unexpected exception, so NOTHING WAS CHECKED. This is NOT a pass, and it is NOT a finding either: | NoIdentit
+tier_sentence_gate.py	1	TIER SENTENCE GATE -- a row may not assert the money clause over a field called `amount` | criteria : 2026-09-30.1
+tiering_recheck.py	0	TIERING RE-CHECK -- methodology item 26 phase 2 | Correlating 237 review record(s) -- 1327 record-resource pair(s) across 274 resource(s), NOT 1327 reviews -- a
+tool_owner_header_check.py	2	No files given. COULD NOT RUN -- an empty run reporting "every new tool declares an owner" is a measurement that did not happen, and this is called from a gate 
+tool_owner_map.py	1	TOOL OWNER MAP -- criteria 2026-10-06.1 | criteria lock: 9/9 fixtures classify correctly, on hand-built subjects only | tracked files in tools,tests,scripts  97
+tooling_inventory.py	0	CLOSING ERROR -- docs\TOOLING-INVENTORY.md derives from 7 source(s): | tools on disk                      318   git ls-files tools/ | hook entries              
+traceability_matrix.py	0	CLOSING ERROR -- docs\traceability-matrix.md derives from 7 source(s): | app files                           22   git ls-files '*.html' | test files on disk    
+trend_alarm.py	1	TREND ALARM -- item 45, criteria 2026-09-15.1 | P is what this platform already has. I and D are what it does not. | 20 fixture arms passed before any real seri
+truthy_sum_check.py	1	truthy-sum check | not scanned: archive/ (the preserved ancestor branch) and docs/skill-backups/ (a vendored third-party viewer) | raw `+ (x || 0)` matches insp
+unreachable_failure_path_scan.py	0	UNREACHABLE FAILURE PATH -- a value the caller tests for and the callee cannot return | files scanned                  106 | CONFIRMED unreachable            0
+va_rule_currency.py	1	Traceback (most recent call last): | File "C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\16753c01-e018-4c71-af08-342c1baa72e6\wt-
+vercel_config_check.py	0	buildCommand length: 92 (limit 256) | PASS: vercel.json config within known limits
+verification_owed_report.py	0	VERIFICATION OWED -- commits that said a live run was owed | window: last 21 days
+verification_plan_staleness_check.py	1	VERIFICATION-PLAN STALENESS -- docs\verification-methodology-implementation-plan.md | measured against 8125 commit(s) and 619 claim record(s)
+verify_review_gates.py	2	Usage: python tools/verify_review_gates.py <plan_file.md> [ledger_file.md]
+waf_rule_check.py	0	WAF CHECK OK -- 2 rule(s) live and matching the spec, firewall enabled, all on-exceed actions still observe-only. | NOTE: this proves the rule is CONFIGURED as 
+wait_for.py	2	COULD NOT RUN: give --file, --pid, or both. With neither there is nothing to wait for.
+weakness_combination.py	1	WEAKNESS COMBINATION -- item 53, criteria 2026-09-15.1 | 34 fixture arms passed before the register was read. | 4 accepted risk(s), 6 pair(s) examined, 3 with a
+write_path_fault_scan.py	0	WRITE-PATH FAULT HAZARDS -- a pointer, not a verdict. Read every site. | app                          handled await/ret then-only  fire&for  timeout?
+write_without_readback_check.py	0	SCANNED-BY-NAME: only calls to a wrapper matching \w*Data( are seen. | app                      writes  read    declared read set(s) | sairnbiz.html            
