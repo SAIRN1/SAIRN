@@ -834,3 +834,73 @@ ephemeral.
 auditor-namespace retraction, §3 RULE E, §4 RULE F **and RULE G**.
 **Printed SQL:** `docs/2026-10-07-hank-migration-sql-for-michael.md` — STEP 0
 (three ALTERs), STEP 1–12 (twelve tables), **STEP 13 (13-ALT)**, STEP 14.
+
+---
+
+## PUSHED STATE — VERIFIED, replacing the write-time list above
+
+`origin/main` is at **`6aa60dae`**. `git fetch` then
+`git log origin/main..HEAD` → **ahead 0, behind 0**. `core.bare` = `false`.
+
+**Eleven commits, `42bb56ad..6aa60dae`, and EACH was confirmed an ancestor of
+`origin/main` with `git merge-base --is-ancestor` AFTER the push:**
+
+| sha | item | what |
+|---|---|---|
+| `657badb1` | 2 | STEP 13 → 13-ALT; STEP 0d marked SUPERSEDED |
+| `1300c1e9` | 3 | the 101 suite failures split by owner |
+| `fe6aa8d4` | 4 | locks and worktrees, with per-item evidence |
+| `09e54de5` | 5 | **a missing secret can no longer destroy a good record** |
+| `4f3267a7` | 6, 7 | **the bare-run sweep at the widened scope**; 5 Tier A discharged |
+| `d8a7e38d` | 9, 10 | RULE G; `docs/hank-evidence/`; `docs/external-files-index.json` |
+| `146d43a2` | 11 | the session-start check |
+| `05a2c8a7` | 8 | `dead_rule_sweep` = 4923.3 s, bound proposed |
+| `886c9823` | 12 | the handoff |
+| `92273f6c` | — | the PURPOSES entry the generator refused without |
+| `6aa60dae` | — | the derived artefacts: 2 register records + 3 generated docs |
+
+**The write-time list earlier in this file named `52c874fc`, `71cc4c83`,
+`cd838b9f`, `ab561a68`, `659fb5cd`, `66e09bdb`, `49d82b30` and `b9323a83`. Those
+shas no longer exist** — rewritten by a rebase over **75 incoming commits**.
+That is RULE F, which this batch routed, happening to the document that routes
+it. **Read this table, not that one**; the earlier list is left in place because a
+handoff that quietly rewrites its own history is worse than one that shows the
+correction.
+
+### THE LANDING TOOK THREE REFUSALS AND A DEFECT OF MY OWN
+
+1. **`tooling_inventory.py` exited 2** — *"REFUSING to generate — the hand-written
+   half has drifted. 1 tool(s) with no PURPOSES entry: hank_session_start_check.py"*.
+   Correct, and it is why a new tool cannot be added quietly. Entry written
+   (`92273f6c`).
+2. **TWO REBASE CONFLICTS, both add/add, both resolved by KEEPING BOTH SIDES.**
+   - `docs/external-files-index.json`: **cody created the same file concurrently,
+     with a different schema** — `_what_this_is`, `_measured`, `directories`,
+     `scripts`, plus `tools/external_file_index_audit.py` that reads it. My
+     dispatch specified `{"agents": {"hank": …}}`. **Taking either side would have
+     destroyed the other session's work**, so I took cody's upstream version and
+     re-ran my generator on it, which MERGES — that is what the merge-not-overwrite
+     design was for. **Verified: cody's auditor still exits 0**, *"all 8 COMMITTED
+     rows resolve to a tracked path"*, with `agents.hank` added.
+   - `tools/tooling_inventory.py`: cody added nine `PURPOSES` entries in the same
+     place I added one. **Taking either side deletes the other's entries, and the
+     generator REFUSES while any tool lacks one** — so a one-sided resolution
+     would have made the generator reject a tool that is on disk. Both kept: 240
+     entries, generator exit 0.
+3. **MY OWN REGISTER SCRIPT HAD A SYNTAX ERROR AND THE LANDING LOOP CAUGHT IT.**
+   `reg_add_b3.py` was missing **one closing paren on each of its two records** —
+   `RECS.append(dict(…))` closed `dict(` and `recurrence_open(` but not
+   `append(`. The loop reported `reg_add exit=1` while
+   `defect_register --check exit=0`, **and that combination is the tell**: the
+   check passed because the register was *unchanged*, not because the records were
+   good. The push gate then named the one commit with no record. Fixed, re-landed,
+   **both records registered on cycle 1**.
+
+   **The loop is what made this cheap.** A script that silently added nothing
+   would have pushed a defect-closing commit with no record and satisfied every
+   local check.
+
+**NO GATE OVERRIDDEN. `SAIRN_SEED_GATE=off` was never used.**
+
+**STILL DIRTY AND STILL NOT MINE:** `docs/scrutiny-flags.json`, rewritten by cc's
+tool during this push and parked. Match on the stash **message**, not the index.
