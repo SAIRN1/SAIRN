@@ -69,6 +69,22 @@ import sys
 import tempfile
 import time
 
+
+def _rm_ro(fn, path, _exc):
+    """rmtree onerror: clear the read-only bit and retry once.
+
+    git marks loose object files READ-ONLY and Windows will not unlink a
+    read-only file, so `ignore_errors=True` leaves the object store behind and
+    says nothing. Measured 2026-10-07: a cleanup that swallowed those refusals
+    left 4,047 files, 38 of them read-only, in one abandoned clone.
+    """
+    import os as _os
+    try:
+        _os.chmod(path, 0o700)
+        fn(path)
+    except Exception:                                   # noqa: BLE001
+        pass
+
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 TOOL = os.path.join(ROOT, 'tools', 'sairn_claim.py')
 
@@ -533,7 +549,7 @@ def main():
               after == shipped, 'clone differs from tools/sairn_claim.py')
 
     finally:
-        shutil.rmtree(tmp, ignore_errors=True)
+        shutil.rmtree(tmp, onerror=_rm_ro)
 
     print('\n%d passed, %d failed' % (passed, failed))
     if failed:
