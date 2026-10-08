@@ -1748,15 +1748,117 @@ does not license assuming an absence means free.
 
 ---
 
+## 31. A STATUS ARTEFACT MUST DISTINGUISH ABSENT FROM RUNNING FROM EXIT 0
+
+**Adopted 2026-10-08. DERIVED BY CODY** --
+`docs/2026-10-06-cody-queue16-inventory.md`, the `### The third state is the hard
+part, one level down` subsection of `## METHODOLOGY (ITEM 8)`. Landed at cody's
+credit.
+
+**AND THIS IS ONE OF THE TWO I REPORTED AS "NOT LOCATABLE" IN BATCH b3. It was
+there the whole time.** My search keyed on `## METHODOLOGY` HEADINGS and found one
+in that file, so I counted one convention. These two live as `###` SUBSECTIONS
+underneath it. **I searched by the wrong unit** -- the same defect I spent that
+batch fixing in other people's checkers, committed in my own search, and reported
+as an absence. The correction is in the record rather than quietly fixed: cody's
+six are **3 new + 3 from queue 16**, of which **one was already convention 15**, so
+**two were genuinely owed and these are them.**
+
+**THE CONVENTION, in one line: a file or field that carries a STATUS must be able
+to say ABSENT, RUNNING and FINISHED as three different things, and a reader must
+not be able to confuse "not written yet" with "finished, code 0".**
+
+**CODY'S INSTANCE, and it is PR 1.11 one level down.** *"A status file that does
+not exist yet and one saying `EXIT 0` are the same bytes to a careless reader:
+nothing, then zero."* So `tools/capture_exit.py` writes the file **twice** --
+`RUNNING <pid>` before the child starts, `EXIT <code>` after it is reaped,
+`COULD_NOT_RUN` when it never started -- and **`--read` exits 2, never 0, on
+ABSENT / RUNNING / UNREADABLE**.
+
+**WHY THIS IS NOT JUST 1.11 RESTATED, and the question was asked.** PR 1.11 is
+about a CHECK that cannot run because a dependency is missing: it must say so
+rather than pass. This is about the ARTEFACT that carries the answer -- a file, a
+JSON field, a registry row -- and the failure is a READER, not a check. The check
+can be perfect and still leave behind a byte sequence whose absence and whose
+success are indistinguishable. 1.11 governs the verdict; 31 governs its container.
+
+**HOW TO IMPLEMENT IT.**
+- **Write the artefact before the work starts, not only after.** A `RUNNING`
+  marker is what makes absence mean something.
+- **Three states minimum, named in the file**, and `COULD_NOT_RUN` is a state and
+  not an empty file.
+- **The reader exits NON-ZERO on every state that is not a finished success**,
+  including RUNNING and UNREADABLE. A reader that returns 0 for "not yet" is the
+  whole defect.
+- **A missing field is not a false field.** `docs/known-red-suites.json` enforces
+  the same rule one level over: *"an EXPLICIT 'unknown' is accepted, an ABSENT key
+  is not, because absence and unknown are the two states this register exists to
+  keep apart."*
+
+**WHERE IT DOES NOT TRANSFER.** A value whose absence genuinely has no meaning --
+an optional label, a cache -- does not need three states, and demanding them is
+ceremony. The rule bites the moment anything DOWNSTREAM branches on the value.
+
+**Cause tag:** `verification/status-artefact/absent-indistinguishable-from-zero`.
+
 ---
 
-## The failure mode TEN of the thirty share
+## 32. THE EXIT CODE OF A PAST RUN IS NOT RECOVERABLE, AND MUST NOT BE INVENTED
+
+**Adopted 2026-10-08. DERIVED BY CODY** -- same file, the `### And the corollary
+this batch paid for twice` subsection. **The second of the two I wrongly reported
+as not locatable; see the note in 31.**
+
+**THE CONVENTION, in one line: reporting a run's figures WITHOUT its exit code is
+the same defect as reporting a wrong one, arriving quietly -- and once the run is
+over the status cannot be reconstructed, so the only honest repairs are a RE-RUN or
+a recorded gap.**
+
+**CODY'S INSTANCE, and it is cody's own documents.** Three of them -- `queue13`,
+`queue14` and `2026-09-29-dead-rules` -- printed a sweep's figures **with no status
+anywhere in the file**. That sweep exits **2** whenever rules stay uncleared, so
+**none of those runs was ever green and nothing said so**. All three now carry a
+dated correction, and the part that makes this a convention rather than a cleanup:
+*"the exit code of a past run is not recoverable and was not invented -- each says
+so and records a re-run instead."*
+
+**THE RELATIONSHIP TO 28 IS NAMED RATHER THAN LEFT TO A READER.** Convention 28
+(also cody's) says every figure carries its denominator, command, commit and date,
+and calls the exit code *"a fifth field in all but name"*. 32 is the part 28 does
+not cover: **what to do when the figure is already published and the status is
+gone.** 28 is a rule for writing; 32 is a rule for repairing, and its answer is
+that you cannot -- you re-run, or you record the absence as an absence.
+
+**HOW TO IMPLEMENT IT.**
+- **Never back-fill a status.** An exit code written from recollection is
+  indistinguishable from a measured one and strictly worse than a blank.
+- **Correct by RE-RUNNING and dating the new run**, leaving the old figure visible
+  with the correction beside it rather than overwritten.
+- **If a re-run is impossible** -- the tree moved, the input is gone -- say
+  COULD-NOT-RECOVER and leave the figure marked unverified. That is convention 31's
+  third state applied to history.
+- **A figure with no status is not a pass**, and a document full of them is not
+  evidence of anything. Three of cody's were, for weeks.
+
+**WHERE IT DOES NOT TRANSFER.** A figure that is not a tool's output -- a count of
+files somebody enumerated by hand, a decision, a date -- has no exit code to carry
+and inventing the field is noise.
+
+**Cause tag:** `measurement/provenance/status-of-a-past-run-reconstructed`.
+
+---
+
+---
+
+## The failure mode TEN of the thirty-two share
 
 *(Denominator moved 2026-10-07 when cc's 23, 24 and 25 were landed, and the membership question was asked of all three rather than assumed. **24 IS A TENTH MEMBER.** A leg that returns success on a failed leg is a check that reads as coverage and structurally cannot fail in the direction that matters -- it never turns a passing subject red, only a failing one green, which is item 8's shape one layer out from the checker and into its composition. **23 IS NOT A MEMBER:** it is not a check at all, it is a discipline about the INPUT to work. **25 IS NOT A MEMBER:** its subject is a checker that fires loudly and too often, which is the opposite failure. So the NINE is now a TEN and the heading has been changed rather than left to drift -- and the nine-member list itself is otherwise unchanged.)*
 
 *(Denominator moved 2026-10-07 when cody's 26 was landed, and the membership question was asked rather than assumed. **26 IS NOT A MEMBER.** The group is a CHECK THAT READS AS COVERAGE AND STRUCTURALLY CANNOT FIRE. 26's subject is not a check at all -- it is where a program's WORK lands when a redirection fails, and the program may report that work perfectly well. It is adjacent to 24 and the two are deliberately kept apart: 24 is about the VERDICT being wrong, 26 is about the TARGET being wrong. The `sed` exiting 0 on a non-match inside cody's instance IS a 24 instance, which is why 26 names both halves and claims only the second as new. The TEN is unchanged.)*
 
 *(Denominator moved 2026-10-08 when cody's 27, 28 and 29 and cc's 30 were landed, and the membership question was asked of all four rather than assumed. **NONE of the four is a member, and the group is unchanged at TEN.** The group is a CHECK THAT READS AS COVERAGE AND STRUCTURALLY CANNOT FIRE. 27 is about the population a fix was measured against, not about a check. 28 is about a figure's provenance. 30 is about the freshness of an input and is not a check at all. **29 is the one that had to be argued, and it loses on a distinction worth keeping:** a tier that clears a category CAN fire -- cody's did, 5 DEAD, once the digest stopped including the mutation -- so the fault is a mechanism that cannot DISTINGUISH its cases rather than one that cannot fail. Folding it in would lose the difference between a check that is structurally incapable of failing and one that is capable and was mis-wired. 29 is nearest to item 8 and is cross-referenced there instead.)*
+
+*(Denominator moved 2026-10-08 when cody's 31 and 32 were landed -- the two I had reported as NOT LOCATABLE in batch b3, which were sub-sections of a heading my search counted once. The membership question was asked of both and **NEITHER is a member; the group stays at TEN.** 31's subject is the ARTEFACT that carries a verdict, not a check -- its failure mode is a READER confusing absence with zero, and the check behind it may be perfect. 32 is a rule about repairing an already-published figure. Both are adjacent to PR 1.11 and to item 8 and both stay outside the group, for the same reason 28 does: a provenance fault is not an inability to fire.)*
 
 *(Count corrected 2026-10-06: this heading read "eight of the eleven" when the document had eleven numbered sections, and was not updated when 12 was added on 2026-09-25 or when 13, 14 and 15 were added on 2026-10-06, or when 16 followed them. The EIGHT is unchanged and is the load-bearing number -- 12, 13, 14, 15 and 16 are NOT members of that group. Carrying what it said so the correction is visible rather than invisible, per the numbering note at the end of this file.)*
 
