@@ -403,3 +403,40 @@ batch's declared FILES. Paste-ready entry is in
 my prompt lists **10**. `claudeAiMcpEverConnected` only records servers that have
 *ever connected*, so Canva, Notion, Stripe and Ironclad are reachable-but-never-
 connected. The tool names its source rather than claiming completeness.
+
+## item 2 — DONE. **The hypothesis is overturned: 76 of 86 are REAL.**
+
+```
+command : tools/scratch-archive/triage86.py -- every one of the 86 re-run ALONE in a
+          `git clone --local` at aa2f014d, the same commit the suite ran, 420s bound each
+commit  : ae70cf24        date: 2026-10-08
+  REAL            76 of 86     fails alone on a clean tree
+  COULD-NOT-RUN    7 of 86     exit 2 or the 420s bound; never folded into either
+  ARTIFACT         3 of 86     passes alone
+```
+
+**The `docs/report-only-reachability.json` contamination accounts for 3 of 86.**
+The verdict rule was fixed before the run so it could not be fitted afterwards,
+and even the three artifacts are recorded as *"not reproducible in isolation"*
+rather than *proven contaminated* — the weaker claim, and the one the evidence
+supports.
+
+**`git status --porcelain` was taken after EVERY probe and 0 of 86 dirtied the
+clean clone** — so no probe inherited another one's mess, which is precisely what
+the whole-tree run could not guarantee.
+
+**420 s IS THE BOUND, NOT A MEASUREMENT.**
+`tests/run_hover_audit_method_sabotage_probe.py` is the **only** probe to hit the
+ceiling, so its isolated runtime is **at least** 420 s and unknown above that —
+which is why it is COULD-NOT-RUN and not REAL. Best-evidenced candidate yet for
+the long stall, and still **not named**: the stall could equally sit among the 671
+probes that passed, which this run did not time.
+
+**Committed:** `docs/2026-10-08-cody-suite-86-triage.md` (the table, per test, with
+the isolated rc, the seconds and the suite's own one-line reason side by side) and
+`docs/2026-10-08-cody-suite-86-triage.tsv` (the raw measurement).
+
+**WHAT IT DOES NOT ESTABLISH, stated in the document:** not that the 76 are 76
+*distinct* defects — several share a cause and nothing here clusters them; not
+that the suite run was sound — the residue is still a real finding against
+whichever probe wrote that file mid-run; and a single isolated run is one run.

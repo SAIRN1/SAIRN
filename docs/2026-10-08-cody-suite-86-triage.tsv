@@ -1,0 +1,87 @@
+kind	test	verdict	rc	seconds	dirtied	suite_reason
+node	tests/app_session_isolation.js	REAL	1	1.8	0	ok   sairnscape: measured SOME, recorded SOME -- GAP CLOSED 2026-09-25 (Cody): the TWO Tier A resources (invoices, scp_q
+node	tests/sairnfreedom_auth_review_probe.js	REAL	1	0.6	0	? 15:11 (2) -- the sf-auth setup guard anchor has moved -- this arm is not reporting agreement it did not check
+node	tests/sairnfreedom_segregation_of_duties.js	REAL	1	0.5	0	FAIL -- 25 passed, 1 failed
+node	tests/sairnfreedom_server_backup.js	REAL	1	0.2	0	FAILED  sairnfreedom_server_backup: 16 passed, 1 failed
+node	tests/sairnlegacy_reservation_lock.js	REAL	1	0.3	0	1. reserving is an atomic conditional PATCH, not a read-then-write
+node	tests/scp_quotes_review_probe.js	REAL	1	0.2	0	NOT REPRODUCED -- this finding appears to be closed.
+node	tests/sd_tax_money_coercion.js	REAL	1	0.2	0	12 passed, 1 failed
+node	tests/faults/sd_write_faults.js	REAL	1	0.3	0	7 passed, 11 FAILED
+node	tests/faults/transport_timeout_sweep.js	REAL	1	1.0	0	77 passed, 4 FAILED
+node	tests/sairncare/test-alf-alerts-endpoint.js	ARTIFACT	0	0.3	0	19 passed, 1 failed
+node	tests/sairncare/test-compliance-rules.js	REAL	1	0.1	0	47 passed, 3 failed
+node	tests/sairncare/test-op-audit.js	REAL	1	0.3	0	12 passed, 14 failed
+node	api/sd-data-cross-tenant-dispatchers.test.js	REAL	1	3.0	0	405 passed, 14 failed
+node	api/sd-data-customer-soft-delete.test.js	REAL	1	0.3	0	5 passed
+node	api/sd-data-family-contacts.test.js	REAL	1	0.5	0	FAILURES ABOVE
+node	api/sd-data-scp-licence-only.test.js	REAL	1	0.5	0	23 passed, 1 failed
+node	api/sf-auth.test.js	REAL	1	4.3	0	37 passed, 1 failed
+py	tests/app_session_isolation_probe.py	COULD-NOT-RUN	2	21.1	0	COULD NOT RUN: the pre-fix suite is not green against current source, so BLIND would mean nothing. Exit 3.
+py	tests/defect_register_capa_control.py	REAL	1	0.4	0	ok   malformed JSON is refused rather than stored as a string
+py	tests/hover_quotable_session_vocab_check.py	REAL	1	0.2	0	have gone unnoticed. Add the name to QUOTABLE.
+py	tests/hover_separation_ci_probe.py	REAL	1	3.4	0	audit = set(A.AUDITOR_SCOPE)
+py	tests/install_git_hooks_check_probe.py	REAL	1	256.6	0	2 ARM(S) FAILED
+py	tests/law_reconcile_role_vocab_check.py	COULD-NOT-RUN	2	0.1	0	This is exit 2. Nothing was checked, and that is not a pass.
+py	tests/law_reconcile_role_vocab_control.py	REAL	1	0.1	0	CRITERIA LOCKED BEFORE THE REAL RUN
+py	tests/local_only_self_evidence_probe.py	REAL	1	21.7	0	1 ARM(S) FAILED
+py	tests/local_only_shape_probe.py	REAL	1	20.4	0	2 ARM(S) FAILED
+py	tests/rebase_resolve_merge_control.py	REAL	1	2.3	0	a1_clean_append
+py	tests/run_adversarial_prompt_corpus_probe.py	REAL	1	3.4	0	3 arm(s) FAILED: 4. the sweep runs and classifies: zero unfenced, 5 reported as fenced, 8. emptying the untrusted-field 
+py	tests/run_alf_read_order_sabotage_probe.py	REAL	1	8.1	0	- 5. THE FIX IS STILL THERE BUT THE ARM CAN NO LONGER SEE IT: the alf_mar read is hoisted into a local, so the arm finds
+py	tests/run_all_tests_floor_probe.py	REAL	1	0.3	0	2. _main_body() -- THE COPY A HUMAN RUNS
+py	tests/run_all_tests_pinned_probe.py	REAL	1	31.7	0	Nothing don
+py	tests/run_baseline_readiness_probe.py	REAL	1	0.7	0	- ...and says NO ENTITY IS READY rather than printing a table and stopping
+py	tests/run_blob_coverage_scope_sabotage.py	REAL	1	0.1	0	FAIL -- 3 passed, 2 failed
+py	tests/run_checker_control_probe.py	REAL	1	10.8	0	EVERY CONTROLS_FOR under tests/ parses to a subject (these declare nothing: ['tests/criticality_rollup_list_review_probe
+py	tests/run_citation_anchor_hop_sabotage.py	REAL	1	0.1	0	FAIL -- 2 passed, 4 failed
+py	tests/run_completeness_probe.py	REAL	1	6.5	0	6b  ...and the finding it exits 1 for is the real one, not any line that happens to be printed
+py	tests/run_concurrency_retry_probe.py	REAL	1	0.3	0	B. the retry is driven with synthetic files, not the real three
+py	tests/run_condition_coverage_probe.py	REAL	1	28.6	0	5. THE PLANTED GAP -- it must find an operand no test covers
+py	tests/run_copy_exactly_gate_probe.py	REAL	1	4.6	0	0 passed, 1 failed
+py	tests/run_cron_liveness_probe.py	REAL	1	4.7	0	FAILED: the pre-change workflow had NO commit step -- only the artifact upload, which is the gap this closes
+py	tests/run_cross_tenant_dispatchers_sabotage_probe.py	COULD-NOT-RUN	2	4.1	0	405 passed, 14 failed
+py	tests/run_defect_dispersion_probe.py	REAL	1	1.1	0	ok   layer has a population of exactly three
+py	tests/run_defect_register_probe.py	REAL	1	364.9	0	defect-register: 149 checks, 2 failed
+py	tests/run_dependency_graph_probe.py	REAL	1	17.3	0	7q  a PAST-DUE date prints REVIEW DUE and does NOT fail -- failing a push because a calendar date passed punishes whoeve
+py	tests/run_dispatch_state_probe.py	REAL	1	4.5	0	FAILED: ...and NO subprocess.run, so it never invokes sairn_claim.py to ask the claim matcher
+py	tests/run_eaten_substitution_probe.py	REAL	1	0.9	0	eaten_substitution_check: 2 ARM(S) FAILED
+py	tests/run_export_coverage_probe.py	REAL	1	0.5	0	- sairnmechanical declares mech_credentials in its registry, and it resolves
+py	tests/run_financial_invariant_probe.py	REAL	1	2.0	0	7f  a judgment for a file the checker no longer flags is called out as stale, not left to look current
+py	tests/run_first_article_probe.py	REAL	1	79.6	0	- NO RECORDED INSPECTION is stale, incomplete, or cites an arm that does not exist -- the half this probe controls
+py	tests/run_ghost_field_read_probe.py	REAL	1	89.2	0	11 passed, 5 failed
+py	tests/run_githook_install_probe.py	REAL	1	82.6	0	- --check passes once the clone is really installed
+py	tests/run_graduated_exemption_probe.py	REAL	1	0.9	0	- ...proven: the third push is refused again
+py	tests/run_harness_stage_diagnosis_probe.py	REAL	1	7.9	0	1 failure(s)
+py	tests/run_hover_audit_method_sabotage_probe.py	COULD-NOT-RUN	TIMEOUT	420.0	0	The baseline is red, so no mutation below would mean anything. Stopping.
+py	tests/run_index_duplicate_probe.py	REAL	1	64.1	0	7a  the real index has no undeclared duplicate pairs
+py	tests/run_nhi_clone_enumeration_probe.py	REAL	1	1.9	0	4 passed, 4 failed
+py	tests/run_nhi_register_write_flag_probe.py	REAL	1	10.2	0	4 passed, 8 failed
+py	tests/run_push_gate_preflight_probe.py	ARTIFACT	0	42.7	0	ok   P6. preflight reads the OUTGOING range like a real push, not the working tree -- otherwise it would preview a diffe
+py	tests/run_rebase_resolve_probe.py	REAL	1	34.0	0	- ...and says nothing was staged
+py	tests/run_removal_path_probe.py	REAL	1	4.8	0	1 FAILED
+py	tests/run_rewrite_convergence_probe.py	REAL	1	31.8	0	FAILED: E1 --derive: nothing is derived that is neither declared nor exempted
+py	tests/run_role_gate_negative_coverage_probe.py	REAL	1	6.0	0	FAILED  run_role_gate_negative_coverage_probe: 4 failed
+py	tests/run_secrets_inventory_probe.py	REAL	1	9.8	0	6c  SILENT: against the real committed document the same entry point exits 0 -- the pair is what makes 6a evidence rathe
+py	tests/run_selftest_sweep_probe.py	REAL	1	233.8	0	- subprocess_decode_check.py --selftest exits 0
+py	tests/run_stored_data_criticality_probe.py	REAL	1	7.6	0	2 ARM(S) FAILED: an ESCAPED pipe inside a cell is content, not a boundary, THE PAIRED POSITIVE: both real rows are still
+py	tests/run_subprocess_decode_probe.py	REAL	1	5.6	0	- zero text-mode subprocess calls without an explicit encoding
+py	tests/run_tool_selftest_probe.py	REAL	1	173.1	0	FAILING (1): hover_separation_ci.py
+py	tests/run_two_axis_tier_parser_probe.py	REAL	1	1.4	0	- 2. the NEW six-cell shape parses, raises no row-level problem, and counts as migrated
+py	tests/run_write_path_scan_probe.py	REAL	1	33.7	0	1 ARM(S) FAILED: the shipped baseline PASSES today -- a ratchet that fails on a clean tree is one somebody turns off
+py	tests/sairnfreedom_fault_probe.py	REAL	1	7.2	0	FAILED  sairnfreedom_fault_probe: 1 failed
+py	tests/sairnfreedom_server_backup_probe.py	COULD-NOT-RUN	2	7.4	0	The baseline is red, so no mutation below would mean anything. Stopping.
+py	tests/sairnlegacy_fault_probe.py	REAL	1	8.6	0	The baseline is red, so no mutation below would mean anything. Stopping.
+py	tests/schema_provisioning_probe.py	REAL	1	0.8	0	3 ARM(S) FAILED
+py	tests/stale_row_sweep_control.py	ARTIFACT	0	408.1	0	...and NAMES 1348466a, the finally fix
+py	tests/suite_control_backfill_probe.py	REAL	1	16.2	0	CONTROLS THAT DID NOT BITE: ['2. a failed read is treated as an empty one', '3. the server copy clobbers local records i
+py	tests/write_readback_shape_probe.py	REAL	1	74.6	0	2 ARM(S) FAILED
+py	tests/claims/run_claim_retype_mutation_control.py	COULD-NOT-RUN	2	38.0	0	3 passed, 2 failed
+py	tests/claims/run_push_verify_probe.py	REAL	1	34.2	0	68 passed, 1 failed
+py	tests/claims/run_registry_claim_probe.py	REAL	1	4.1	0	- end to end: a registry claim whose PROCESS IS GONE does not block, however recently it was taken
+py	tests/claims/run_registry_claim_sabotage_probe.py	COULD-NOT-RUN	2	9.7	0	The baseline is red, so no mutation below would mean anything. Stopping.
+py	tests/push_gate/check4_probe.py	REAL	1	6.8	0	FAILED TWICE, the second time on its own: CHECK 4 VERIFIED (planted blocks by seam + names the field, clean not blocked 
+py	tests/push_gate/check7_probe.py	REAL	1	7.9	0	FAILED TWICE, the second time on its own: FAILED  check7_probe: 11 checks, 5 failed
+py	tests/push_gate/preauth_exemption_anchor_probe.py	REAL	1	1.2	0	FAILED  preauth_exemption_anchor_probe: 1 failed
+py	tests/seam_check/run_or_default_probe.py	REAL	1	46.5	0	2 ARM(S) FAILED
+py	tests/seam_check/run_ref_probe.py	REAL	1	74.6	0	3 ARM(S) FAILED
+py	tests/sql_preflight/run_probe.py	REAL	1	5.3	0	sairn_circuit_breaker_schema.sql: UNDECLARED_TABLE sairn_circuit_breaker_step
