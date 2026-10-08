@@ -15,7 +15,8 @@ not invented, and not generalised beyond what those three already do.
 | first printing | now | why |
 |---|---|---|
 | **two** ALTERs in STEP 0 | **THREE** | the sweep that found the first two was run by hand on two tables. Run over the whole population it found **3 of 3** tables carrying an `event_type` CHECK reject at least one value the code emits — **`sairnlaw_audit_log` was the one I missed**, and it is the biggest of the three. |
-| SAIRNvet "needs a decision" | **DECIDED: reuse `sv_audit_log`** | and it needs **no SQL at all** — `sv_audit_log` carries **no `event_type` CHECK**, so there is nothing to alter. One line of JavaScript, in STEP 0d. |
+| SAIRNvet "needs a decision" | **SUPERSEDED 2026-10-08 — see STEP 13** | The row below is left as written so the correction is visible. It said *"reuse `sv_audit_log`, no SQL at all, one line of JavaScript"*. **That was wrong and it was mine.** `sv_audit_log` has no `event_type` column AT ALL, and four of the five columns `writeAuditLog` posts are absent, so the one line would have made every SAIRNvet audit write record nothing. **CHAT DECIDED 13-ALT: a new `sairnvet_audit_log`.** |
+| ~~SAIRNvet reuses `sv_audit_log`~~ | ~~no SQL, one line of JS~~ | ~~`sv_audit_log` carries no `event_type` CHECK so there is nothing to alter~~ — **the premise, kept struck through rather than removed** |
 | StoneDesk | **no table**, unchanged | its app id is `stonedesk`, whose table already exists and is allowlisted. Code only. |
 
 **HOW `sairnlaw_audit_log` HID:** its four writers pass **no `table:`
@@ -128,7 +129,31 @@ alter table public.sairnlaw_audit_log
   ));
 ```
 
-### ■ STEP 0d — SAIRNvet: NO SQL. One line of JavaScript.
+### ■ STEP 0d — **SUPERSEDED 2026-10-08. THE ANSWER IS STEP 13 (13-ALT).**
+
+> **DO NOT RUN THE JAVASCRIPT BELOW.** This step said SAIRNvet needed no SQL
+> and one line of JavaScript. **It is wrong.** `sv_audit_log` has no
+> `event_type` column, and `employee_id`, `role`, `event_type` and `detail`
+> — four of the five columns `writeAuditLog` posts — are all absent, while
+> `audit_log_id` is `not null` with no default and is never sent. The one
+> line would have sent every SAIRNvet audit write to a table that cannot
+> take the row; `writeAuditLog` is non-fatal and returns false, so the row
+> would be ABSENT with only a server log to say so.
+>
+> **`sv_audit_log` is the controlled-substance DOSING trail**, a per-app
+> data table written through `api/sd-data.js`'s `SV_RESOURCES` dispatcher
+> and carrying `grant ... update`, which the three real audit logs
+> deliberately do not. It is not in the allowlist because it is not that
+> kind of table.
+>
+> **GO TO STEP 13.** It creates `sairnvet_audit_log` with pre-flight and
+> verify queries, and leaves the dosing trail alone.
+>
+> The original text is kept below, unedited. A superseded step that is
+> deleted is a step somebody re-derives from scratch; a superseded step that
+> is silently corrected is one nobody knows was ever wrong.
+
+#### (superseded original, kept for the record)
 
 `sv_audit_log` already exists (`sql/sairnvet_data_schema.sql:60`) and carries
 **no `event_type` CHECK**, so there is nothing to alter and no new table to
@@ -143,9 +168,9 @@ const AUDIT_TABLES = { sairnlaw_audit_log: true, sairncode_audit_log: true, ston
 ```
 
 **NOT DONE BY ME, and the reason is worth stating:** `sv_audit_log` has no
-`event_type` CHECK, which means it accepts *any* event name. Adding it to the
-allowlist is correct and is also the moment to decide whether that table
-should GAIN a CHECK — an open `text` column lets any future caller invent an
+`event_type` CHECK, which means it accepts *any* event name. ~~Adding it to the
+allowlist is correct~~ — **IT IS NOT CORRECT; see the box above** — and is also
+the moment to decide whether that table should GAIN a CHECK — an open `text` column lets any future caller invent an
 event name and quietly change what the log means, which is the reason
 `sql/stonedesk_audit_log_schema.sql` gives for keeping its own list narrow.
 That is a judgement about SAIRNvet, not a mechanical edit.
@@ -715,133 +740,98 @@ below is printed for Michael to run, and nothing has been run.
 
 ---
 
-## ■ STEP 13 — SAIRNvet. **THE DECISION TO ADD `sv_audit_log` TO `AUDIT_TABLES` RESTS ON A FALSE PREMISE, AND THE ONE-LINE CHANGE WAS NOT MADE**
+## ■ STEP 13 — SAIRNvet gets its OWN audit log. **DECIDED 2026-10-08: 13-ALT.**
 
-**STEP 0d of this file said the addition was "one line of JavaScript". THAT WAS
-MINE AND IT WAS WRONG.** Re-derived at HEAD by reading both halves instead of
-one:
+**CHAT DECIDED 13-ALT.** The earlier version of this step is replaced, not
+amended: `sv_audit_log` is **left alone** and SAIRNvet gets a new
+`sairnvet_audit_log` in exactly the form of the twelve tables above.
 
-| what `writeAuditLog` POSTs (`api/_lib/audit.js:59-64`) | what `sv_audit_log` HAS (`sql/sairnvet_data_schema.sql:60-70`) |
+**WHY THE OTHER OPTION IS GONE, kept short because the long version is in
+`docs/handoff-hank-2026-10-07d.md` item 8.** The original STEP 0d of this file
+called adding `sv_audit_log` to `AUDIT_TABLES` *"one line of JavaScript"*. That
+was wrong:
+
+| `writeAuditLog` POSTs (`api/_lib/audit.js:59-64`) | `sv_audit_log` HAS (`sql/sairnvet_data_schema.sql:60-70`) |
 |---|---|
 | `license_hash` | `license_hash` ✓ |
-| `employee_id` | **absent** |
-| `role` | **absent** |
-| `event_type` | **absent** |
-| `detail` | **absent** |
-| — | `audit_log_id` **`not null`, no default** |
-| — | `id`, `app_id`, `data jsonb`, `created_at`, `updated_at` |
+| `employee_id` · `role` · `event_type` · `detail` | **all four ABSENT** |
+| — | `audit_log_id` **`not null`, no default**, which `writeAuditLog` never sends |
 
-**FOUR OF THE FIVE POSTED COLUMNS DO NOT EXIST.** Adding `sv_audit_log` to the
-allowlist would send every SAIRNvet audit write to a table that cannot take the
-row: PostgREST refuses it, `writeAuditLog` is **non-fatal and returns false**,
-the calling code carries on, and **the row is simply absent** — reported only in
-a server log. That is the exact defect STEP 0 of this file exists to repair,
-created in one line.
+Four of five posted columns do not exist, so every write would be refused by
+Postgres — and `writeAuditLog` is **non-fatal and returns false**, so the row
+would simply be absent with only a server log to say so.
 
-**AND THERE IS NOTHING FOR A CHECK CONSTRAINT TO CONSTRAIN.** `sv_audit_log` has
-no `event_type` column, so the five-value CHECK this step was asked to print
-cannot be written against the table as it stands. The pre-flight select proves
-it rather than asserting it:
+**AND `sv_audit_log` IS NOT THAT KIND OF TABLE.** It is the SAIRNvet
+controlled-substance **DOSING** trail: a per-app data table written through
+`api/sd-data.js`'s `SV_RESOURCES` dispatcher (`api/sd-data.js:13100`, keyed
+`audit_log_id`), declared as an app resource in `api/_resources/sairnvet.js:67`,
+and carrying **`grant select, insert, update`**. The three real audit logs grant
+only `select, insert`, and that grant pair *is* their immutability control
+because `service_role` bypasses RLS. **One table cannot be both an immutable
+audit log and a mutable dosing trail**, which is the whole reason 13-ALT wins:
+it needs no `revoke update` argument, no nullable `event_type`, and no backfill.
+
+**`tests/run_audit_event_type_probe.py` arms H0/H1/H2 enforce this decision
+mechanically** — a table may be in `AUDIT_TABLES` only if it has the columns
+`writeAuditLog` posts — so the rejected option now fails a probe rather than
+living in prose.
+
+---
+
+### ■ STEP 13 PRE-FLIGHT — run all three BEFORE the DDL
 
 ```sql
--- STEP 13 PRE-FLIGHT (a) -- THIS IS EXPECTED TO FAIL, and the failure is the
--- answer. Run it first so the conclusion below is yours and not mine.
-select distinct event_type
-  from public.sv_audit_log
- order by 1;
--- EXPECTED: ERROR 42703 undefined_column: column "event_type" does not exist
+-- 13-PRE (a) -- DOES THE NEW NAME COLLIDE WITH ANYTHING? Expect 0 rows.
+-- `create table if not exists` is silent on a name that already exists, which
+-- would leave you believing you made a table you did not. Ask first.
+select table_name
+  from information_schema.tables
+ where table_schema = 'public'
+   and table_name in ('sairnvet_audit_log', 'sv_audit_log')
+ order by table_name;
+-- EXPECTED: exactly ONE row, sv_audit_log. If sairnvet_audit_log is already
+-- there, STOP and read it before running the DDL below.
 ```
 
 ```sql
--- STEP 13 PRE-FLIGHT (b) -- the query that DOES run, and the one to read.
+-- 13-PRE (b) -- THE DOSING TRAIL IS THE THING BEING PROTECTED, so record its
+-- shape and size BEFORE touching anything, and compare after. Nothing in this
+-- step writes to it; this is the evidence that nothing did.
+select count(*)              as rows_total,
+       min(created_at)       as oldest,
+       max(created_at)       as newest
+  from public.sv_audit_log;
+
 select column_name, data_type, is_nullable, column_default
   from information_schema.columns
  where table_schema = 'public' and table_name = 'sv_audit_log'
  order by ordinal_position;
+
+select grantee, privilege_type
+  from information_schema.role_table_grants
+ where table_schema = 'public' and table_name = 'sv_audit_log'
+ order by grantee, privilege_type;
+-- EXPECTED on the last one: service_role with SELECT, INSERT and UPDATE.
+-- UPDATE is correct here and must still be there afterwards -- the dosing trail
+-- is updated through sd-data.js. If it is gone, something revoked it.
 ```
 
 ```sql
--- STEP 13 PRE-FLIGHT (c) -- how much is in there, and what shape it already is.
--- `data` is the blob the app writes through api/sd-data.js; its keys are the
--- nearest thing to an event vocabulary that exists today.
-select count(*) as rows_total,
-       min(created_at) as oldest,
-       max(created_at) as newest
-  from public.sv_audit_log;
-
-select k as data_key, count(*) as n
-  from public.sv_audit_log, jsonb_object_keys(data) as k
- group by k order by n desc limit 40;
+-- 13-PRE (c) -- pgcrypto, because the DDL below defaults a uuid primary key.
+-- sql/sairnvet_data_schema.sql already does `create extension if not exists
+-- pgcrypto`, so this is almost certainly present -- asked rather than assumed,
+-- because the failure mode is the DDL erroring half way through.
+select extname from pg_extension where extname = 'pgcrypto';
+-- EXPECTED: one row. If empty: create extension if not exists pgcrypto;
 ```
 
-### WHY IT IS NOT AN AUDIT LOG IN THIS MODULE'S SENSE
+---
 
-`sv_audit_log` is the SAIRNvet **controlled-substance DOSING trail**. It is a
-per-app data table written through `api/sd-data.js`'s `SV_RESOURCES` dispatcher
-(`api/sd-data.js:13100`, keyed `audit_log_id`), declared as an app resource in
-`api/_resources/sairnvet.js:67`, and it carries:
+### ■ STEP 13 — THE DDL
 
 ```sql
-grant select, insert, update on public.sv_audit_log to service_role;
-```
-
-**`update` is granted.** The three real audit logs deliberately grant only
-`select, insert` — that grant pair *is* their immutability control, because
-`service_role` bypasses RLS. So `sv_audit_log` is not in `AUDIT_TABLES` because
-**it is not that kind of table**, not because somebody forgot a line.
-
-### IF THE DECISION STILL STANDS, THIS IS WHAT IT COSTS — PRINTED, NOT APPLIED
-
-```sql
--- STEP 13a -- the columns writeAuditLog posts. WITHOUT ALL FOUR, adding
--- sv_audit_log to AUDIT_TABLES records nothing.
--- `audit_log_id` is `not null` with no default and writeAuditLog does NOT
--- send it, so it needs a default as well or every insert violates not-null.
-alter table public.sv_audit_log add column if not exists employee_id text;
-alter table public.sv_audit_log add column if not exists role text;
-alter table public.sv_audit_log add column if not exists event_type text;
-alter table public.sv_audit_log add column if not exists detail jsonb;
-alter table public.sv_audit_log
-  alter column audit_log_id set default gen_random_uuid()::text;
-
--- STEP 13b -- THE FIVE-VALUE CREDENTIAL VOCABULARY, same form as the twelve
--- new tables in this file. NOT NULL is deliberately NOT added: 1,000+ existing
--- dosing rows have no event_type and a not-null column would reject them.
-alter table public.sv_audit_log
-  drop constraint if exists sv_audit_log_event_type_check;
-alter table public.sv_audit_log
-  add constraint sv_audit_log_event_type_check
-  check (event_type is null or event_type in (
-    'pin_bootstrap',
-    'pin_setup',
-    'credential_deactivated',
-    'credential_reactivated',
-    'credential_change_refused'
-  ));
-
--- STEP 13c -- THE GRANT, and this is the part that is a real decision.
--- An audit log on this platform is select+insert only; that grant pair is the
--- immutability control, because service_role BYPASSES RLS. sv_audit_log has
--- `update` today because the dosing trail is updated through sd-data.js.
--- REVOKING IT WOULD BREAK THAT WRITE PATH. So one table cannot be both, and
--- this statement is printed to make the conflict visible, NOT recommended:
--- revoke update on public.sv_audit_log from service_role;
-```
-
-**`event_type is null or event_type in (...)`** rather than a bare `in (...)`
-is the only form that can be added to a table with existing rows — a plain
-CHECK would be rejected outright by the rows already there. Said here because
-the twelve new tables in this file use the strict form and this one cannot.
-
-### THE ALTERNATIVE, AND IT IS THE ONE I WOULD PUT IN FRONT OF CHAT FIRST
-
-A new `sairnvet_audit_log`, in exactly the form of the twelve above, leaving the
-dosing trail alone. It is more SQL and no judgement calls: no mixed-purpose
-table, no `update` grant to argue about, no nullable `event_type`, and the
-existing dosing rows keep their meaning.
-
-```sql
--- STEP 13-ALT -- a real audit log for SAIRNvet, identical in form to STEP 1-12.
+-- A real audit log for SAIRNvet, identical in form to STEP 1-12.
+-- sv_audit_log IS NOT TOUCHED BY ANY STATEMENT IN THIS STEP.
 create table if not exists public.sairnvet_audit_log (
   id uuid primary key default gen_random_uuid(),
   license_hash text not null,
@@ -867,30 +857,93 @@ create policy "svc insert only sairnvet_audit_log" on public.sairnvet_audit_log 
 
 -- THE ACTUAL IMMUTABILITY CONTROL: select + insert only, no update, no delete.
 -- service_role BYPASSES RLS, so the policy above is NOT what enforces
--- immutability -- these grants are.
+-- immutability -- these grants are. RLS is the second layer against anon and
+-- authenticated, which have no grants at all.
 revoke all on public.sairnvet_audit_log from anon, authenticated;
 revoke all on public.sairnvet_audit_log from service_role;
 grant select, insert on public.sairnvet_audit_log to service_role;
-
--- Verify after running (expect 0 rows, no error):
---   select count(*) from public.sairnvet_audit_log;
 ```
 
-**NO WRITER EXISTS EITHER WAY, AND THAT WAS CONFIRMED FIRST.** 28 `writeAuditLog`
-call sites across `api/`; the only `AUDIT_TABLE` constants are
-`sairncode_audit_log` (`api/sc-ai.js:61`, `api/sc-auth.js:46`),
-`stonedesk_audit_log` (`api/sd-auth.js:47`, `api/sd-sub-data.js:45`,
-`api/stonedesk-track.js:50`) and the `sairnlaw_audit_log` default
-(`api/_lib/audit.js:41`). **Nothing targets `sv_audit_log`**, and
-`tools/audit_event_type_check.py` reports it under *"tables WITHOUT one"* with
-no writers found.
+**THE EVENT VOCABULARY IS THE SAME FIVE AS STEP 1-12** and `event_type` is
+`not null` with the **strict** `in (...)` — which is only possible because the
+table is new and empty. (The rejected option could not use the strict form: 
+`sv_audit_log`'s existing rows have no `event_type`, so it would have needed
+`event_type is null or event_type in (...)`, a weaker constraint arrived at by
+accident of history.)
 
-**WHAT WAS BUILT INSTEAD OF THE ONE-LINE EDIT:** `tests/run_audit_event_type_probe.py`
-arms **H0 / H1 / H2** — a table may be in `AUDIT_TABLES` only if it has the
-columns `writeAuditLog` posts, with the paired negative measured off
-`sv_audit_log`'s real DDL so H1 is evidence rather than a tautology. **If
-anybody makes this change later, that arm goes red.** That is worth more than
-the change was.
+---
+
+### ■ STEP 13 VERIFY — four queries, and what each one would catch
+
+```sql
+-- 13-V (a) -- the table exists and is readable. Expect 0, no error.
+select count(*) from public.sairnvet_audit_log;
+```
+
+```sql
+-- 13-V (b) -- THE GRANTS, which are the immutability control and the one thing
+-- most likely to be wrong. Expect EXACTLY two rows for service_role:
+-- INSERT and SELECT. UPDATE or DELETE here means the revoke did not take.
+select grantee, privilege_type
+  from information_schema.role_table_grants
+ where table_schema = 'public' and table_name = 'sairnvet_audit_log'
+ order by grantee, privilege_type;
+```
+
+```sql
+-- 13-V (c) -- THE CHECK CONSTRAINT IS REALLY THERE AND LISTS FIVE VALUES.
+-- A table created before the constraint was added would accept any event name
+-- and nothing downstream would notice.
+select conname, pg_get_constraintdef(oid)
+  from pg_constraint
+ where conrelid = 'public.sairnvet_audit_log'::regclass
+   and contype = 'c'
+ order by conname;
+-- EXPECTED: sairnvet_audit_log_event_type_check, listing the five values.
+```
+
+```sql
+-- 13-V (d) -- THE DOSING TRAIL IS UNCHANGED. Compare both numbers to 13-PRE(b).
+-- This is the verify that matters most, because the whole point of 13-ALT is
+-- that sv_audit_log was not the table to change.
+select count(*) as rows_total, max(created_at) as newest
+  from public.sv_audit_log;
+
+select grantee, privilege_type
+  from information_schema.role_table_grants
+ where table_schema = 'public' and table_name = 'sv_audit_log'
+ order by grantee, privilege_type;
+-- EXPECTED: identical to 13-PRE(b), INCLUDING service_role's UPDATE.
+```
+
+---
+
+### ■ STEP 13 — THE CODE HALF, AND IT IS NOT IN THIS BATCH
+
+**NOTHING IN `api/` WAS CHANGED, AND NOTHING WILL BE UNTIL MICHAEL CONFIRMS
+STEP 13 HAS RUN.** Writing the code first makes every SAIRNvet audit write hit
+a table that does not exist: PostgREST answers 404, `writeAuditLog` returns
+false non-fatally, and **the row is absent with nothing on screen to say so** —
+the exact defect this whole sequence exists to remove.
+
+In order, after the SQL lands:
+
+1. `api/_lib/audit.js:40` — add `sairnvet_audit_log: true` to `AUDIT_TABLES`.
+   **The allowlist is not optional bookkeeping**: an unknown table is refused
+   with `audit log write refused: unknown table` and the write records nothing.
+2. `api/sv-auth.js` — `const { writeAuditLog } = require('./_lib/audit');` and
+   `const AUDIT_TABLE = 'sairnvet_audit_log';`
+3. The `setup` branch gets the same six lines `api/sc-auth.js` and
+   `api/sd-auth.js` already carry, **including `attributed` on the response** so
+   a failed write cannot look like a successful one.
+4. `python tools/audit_event_type_check.py` — it must stay EXIT 0 for the new
+   table. It exits 1 and names the table and the value if a branch emits an
+   event the CHECK does not list.
+5. `python tests/run_audit_event_type_probe.py` — **arm H1 is the one to watch.**
+   It asserts every table in `AUDIT_TABLES` has the four columns
+   `writeAuditLog` posts. `sairnvet_audit_log` has them by construction, so H1
+   should stay green; if it goes red, the DDL above did not run the way step 1
+   assumes.
 
 ---
 
