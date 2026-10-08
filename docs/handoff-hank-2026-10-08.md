@@ -567,3 +567,89 @@ cody's and fourth's committed documents — including one inside
 `docs/defect-density-register.json`. **Named for their owners, not relocated by
 me**, and recorded in the index under
 `other_sessions_have_the_same_defect_and_it_is_not_mine_to_fix`.
+
+### item 11 — COMPACTION AND CONTEXT — two settings were ALREADY SET, one MCP server found that I had missed, and three sub-items a model turn cannot do
+
+**`claude --version` → `2.1.222 (Claude Code)`.**
+
+**BOTH SETTINGS WERE ALREADY IN PLACE. I VERIFIED THEM; I DID NOT SET THEM.**
+
+```
+autoCompactWindow            150000  ->  150000      (already)
+env.BASH_MAX_OUTPUT_LENGTH   "10000" ->  "10000"     (already)
+keys before 31   keys after 31   gained []   lost none
+permissions.allow 42 kept   permissions.deny 25 kept
+hooks kept: PostToolUse, PreCompact, PreToolUse, SessionStart, UserPromptSubmit
+```
+
+**THE MERGE WAS WRITTEN AS A MERGE ANYWAY, and the guard is not decoration.**
+`~/.claude/settings.json` is 9KB of permissions, deny rules and hooks that five
+sessions depend on, and **cody's batch 23 spent a whole item on *"find what
+removed the model key from the global settings file between 12:44 and 14:30"*.**
+A whole-file write is how that happens. So: timestamped backup, set exactly two
+keys, re-read from disk, and **diff the recursive key sets — any key present
+before and absent after restores the backup and fails.** Zero lost.
+
+**MCP — AND THE CHECK FOUND ONE I HAD MISSED.** My first read of `~/.claude.json`
+said *"global mcpServers: 0, project mcpServers: 0"* and I was about to report
+"none configured". The session-start tool, walking every project entry rather
+than just this one, found:
+
+```
+C:/Users/marsh   {'servers': ['playwright'], 'enabled': [], 'disabled': []}
+```
+
+A **local, editable** `playwright` server declared at the **home-directory**
+project scope. **NOT DISABLED, and the reason is the measurement:** no
+`mcp__playwright__*` tool appears in this session, so it is **not loaded for this
+project** and costs me nothing. Removing it would change the environment of any
+session started in `~`, which is not mine to do for a saving of zero. Reported.
+
+**TEN ACCOUNT-LEVEL CONNECTOR FAMILIES ARE LOADED AND NONE OF THEM IS IN ANY
+LOCAL FILE** — `claude-in-chrome`, Vercel, Gmail, Google Drive, Claude Docs,
+Canva, Notion, Stripe, Netlify, Ironclad. **These are the expensive ones**, and
+`mcpServers: 0` read from the config alone is *true and misleading*. **I used
+exactly zero of them this batch.** They are disabled in the claude.ai account or
+the Chrome extension — **not by any file a model turn can write**, so this is a
+recommendation with evidence, not a task I skipped.
+
+**SKILLS: `disable-model-invocation: true` added to FOUR, deliberately narrow.**
+62 skills carry a `SKILL.md`; **57 are model-invocable and cost context on every
+turn.** `/skill-doctor`, which gives the real per-skill cost, is client-side. So
+the set was limited to skills whose irrelevance is **documented or checkable**:
+
+| skill | why |
+|---|---|
+| `design-taste-frontend` | **CLAUDE.md's own words**: *"scoped to marketing sites and rarely applies"* |
+| `ui-ux-pro-max` | **CLAUDE.md's own words**: *"a lookup table, not a competitor"* |
+| `domain-check` | domain availability / WHOIS / RDAP. No SAIRN app does this; nothing in the repo calls it |
+| `playwright-devops` | Playwright **CI workflow** debugging. This platform drives Playwright directly and `sairn-visual-review` owns that use |
+
+Each merged into existing frontmatter with a timestamped backup, and the body
+verified **byte-identical** afterwards. A skill with no frontmatter would have
+been **refused**, not given one.
+
+**THE OTHER 39 "not named in a CLAUDE.md" SKILLS WERE LEFT ALONE, and that is a
+decision rather than an omission.** That list includes `sairn-session-handoff`,
+`sairn-master-orientation` and `sairn-silent-failure-sweep` — **"not named in
+CLAUDE.md" is not a usage measurement** and treating it as one would disable
+things that matter. The real measurement needs `/skill-doctor`.
+
+**`tools/hank_session_start_check.py` — the session-start check, EXIT 0.** It
+derives from files what `/context`, `/mcp` and `/skill-doctor` would show, and
+**it splits MCP into LOCAL (declared, countable, editable) and ACCOUNT-LEVEL (in
+no file, not editable from here)** because conflating them is the trap I nearly
+fell into. It **fails closed**: an unreadable skills directory is COULD NOT RUN
+exit 2, never "no skills", and it prints its own limits every run — the connector
+list is hand-kept, it counts what is on disk rather than what loaded, and **it
+measures no cost at all**.
+
+**IT IS ALREADY MORE PRECISE THAN MY OWN GREP.** `grep -l
+disable-model-invocation` reported **6** skills; the tool reports **5**.
+`sairn-skill-vetter` matches at **line 58 — in its BODY**, explaining what the
+flag means. The tool parses frontmatter only, which is the correct population.
+
+**COMPACT ONLY AT TASK BOUNDARIES; NEVER SWITCH MODEL OR TOGGLE MCP MID-TASK** —
+observed for the whole batch. No model switch, no connector change, and every
+compaction point fell between items, which is what the per-item checkpoint
+structure produces for free.

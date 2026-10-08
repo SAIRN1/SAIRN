@@ -974,7 +974,7 @@
  ],
  "agents": {
   "hank": {
-   "audited_at": "2026-10-08T15:36:23Z",
+   "audited_at": "2026-10-08T15:39:35Z",
    "audited_by": "hank, batch 19 item 10",
    "how": "every directory WALKED and every file sized and dated; anything unreadable is recorded as UNREADABLE rather than skipped. Nothing here is listed from memory.",
    "what_was_committed_instead_of_registered": {
@@ -989,6 +989,8 @@
      "b2_item3_rerun.py",
      "b2_item6_pass2.py",
      "b3_item10_index.py",
+     "b3_item11_settings.py",
+     "b3_item11_skills.py",
      "b3_item3.py",
      "b3_item4_evidence.py",
      "b3_item8.py",
@@ -1014,8 +1016,8 @@
      "path": "C:/Users/marsh/AppData/Local/Temp/claude/C--Users-marsh-Documents-SAIRN-hank/a517bec7-3fd2-4475-835c-6432b2acaa34/scratchpad",
      "kind": "scratchpad",
      "exists_at_audit": true,
-     "file_count": 250,
-     "bytes_total": 6100555,
+     "file_count": 251,
+     "bytes_total": 6102675,
      "listing_truncated": false,
      "note": "batch 18 and 19 working directory: every captured exit code, sweep script, mutation backup and verdict body. EPHEMERAL -- under %TEMP% and cleared without notice. Anything here that a committed document cites has been copied to docs/hank-evidence/.",
      "files": [
@@ -1057,6 +1059,7 @@
       "dead.pid",
       "dr.check",
       "dr.check2",
+      "efia.out",
       "efia.py",
       "fix_step0d.py",
       "frag.md",
@@ -1689,7 +1692,7 @@
      "kind": "home",
      "exists_at_audit": true,
      "file_count": 21,
-     "bytes_total": 64954,
+     "bytes_total": 63927,
      "listing_truncated": false,
      "note": "SHARED, NOT MINE ALONE -- the cross-clone lock and status registry every session reads. Outside every clone on purpose, which is why it is current without a fetch, and why a write here is invisible to a repo-scoped check. Listed so it is on the map; I own only hank.lock and the rows I write.",
      "files": [
@@ -1721,11 +1724,12 @@
      "path": "G:/My Drive/SAIRN-status",
      "kind": "drive",
      "exists_at_audit": true,
-     "file_count": 46,
-     "bytes_total": 5832828,
+     "file_count": 48,
+     "bytes_total": 5876882,
      "listing_truncated": false,
      "note": "the per-batch final report files. OUTSIDE GIT ON PURPOSE -- they carry a SHA256 of their own body and are handed to Michael, not merged.",
      "files": [
+      "SAIRN-digest-cody-b3.txt",
       "SAIRN-digest-h1-b5.txt",
       "SAIRN-digest-h2-b6.txt",
       "SAIRN-digest-h2-b7.txt",
@@ -1735,6 +1739,7 @@
       "SAIRN-report-cc-b3.txt",
       "SAIRN-report-cody-b1.txt",
       "SAIRN-report-cody-b2.txt",
+      "SAIRN-report-cody-b3.txt",
       "SAIRN-report-h1-b1.txt",
       "SAIRN-report-h1-b2.txt",
       "SAIRN-report-h1-b3.txt",
