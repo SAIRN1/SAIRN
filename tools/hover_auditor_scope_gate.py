@@ -360,7 +360,38 @@ def changed_outgoing(stdin_text):
     paths, notes = [], []
     lines = [l for l in (stdin_text or '').split('\n') if l.strip()]
     if not lines:
-        return None, 'no ref lines on stdin -- cannot tell what is being pushed'
+        # ── D9: THIS MESSAGE NAMED A SYMPTOM AND NOT ONE OF ITS TWO CAUSES ──
+        # (2026-10-08.) It read "no ref lines on stdin -- cannot tell what is
+        # being pushed", above a REFUSAL that says "not knowing what is in a
+        # change is not the same as knowing it is clean". Both sentences are
+        # true and together they describe a BAD PUSH, which is the less likely
+        # of the two things that actually produce them:
+        #
+        #   1. somebody ran this file BY HAND to see what it does. `main()`
+        #      passes '' deliberately when stdin is a tty, so the empty input
+        #      is this tool's own doing and the refusal is about nothing.
+        #   2. git invoked it as a pre-push hook and supplied no ref lines,
+        #      which is a real anomaly worth the refusal.
+        #
+        # The old text could not tell them apart, and the identical sentence
+        # appears in THREE gates, so a reader could not even tell which one
+        # spoke. Both are fixed: the cause is distinguished and the gate names
+        # itself.
+        if sys.stdin.isatty():
+            return None, ('hover_auditor_scope_gate --pre-push was run BY HAND '
+                          'with no ref lines on stdin.\n  Nothing is being '
+                          'pushed, so there is nothing to judge -- this is a '
+                          'COULD-NOT-RUN,\n  not a finding about a push. For '
+                          'what this clone may change:\n'
+                          '      python tools/hover_auditor_scope_gate.py '
+                          '--explain\n  To check the working tree instead:\n'
+                          '      python tools/hover_auditor_scope_gate.py '
+                          '--worktree')
+        return None, ('hover_auditor_scope_gate: git invoked this as a pre-push '
+                      'hook and supplied NO\n  ref lines on stdin. That is not '
+                      'an empty push -- git always writes one line per\n  ref '
+                      '-- so the range cannot be built and nothing was '
+                      'examined.')
     for line in lines:
         parts = line.split()
         if len(parts) < 4:

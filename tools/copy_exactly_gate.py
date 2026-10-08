@@ -357,10 +357,39 @@ def prepush_range():
         data = sys.stdin.read()
     except Exception:
         return None, None, 'stdin could not be read'
-    refs = [p.split() for p in data.splitlines() if p.split()]
-    refs = [p for p in refs if len(p) == 4]
+    all_refs = [p.split() for p in data.splitlines() if p.split()]
+    refs = [p for p in all_refs if len(p) == 4]
     if not refs:
-        return None, None, 'no ref lines on stdin -- cannot tell what is being pushed'
+        # ── D9: ONE SENTENCE FOR THREE DIFFERENT CAUSES (2026-10-08) ────────
+        # "no ref lines on stdin -- cannot tell what is being pushed" was
+        # emitted for all of: a by-hand run with no input, a hook run git
+        # supplied nothing for, and ref lines that ARRIVED but were the wrong
+        # SHAPE -- the last silently dropped by `len(p) == 4` one line above,
+        # so malformed input reported itself as absent input. The identical
+        # sentence also appears in two other gates, so a reader could not tell
+        # which one spoke. All three causes are now distinguished and the gate
+        # names itself.
+        if all_refs:
+            return None, None, (
+                'copy_exactly_gate: %d ref line(s) arrived on stdin and NONE '
+                'had the four fields\n  git writes (<local ref> <local sha> '
+                '<remote ref> <remote sha>). Not absent input --\n  '
+                'MALFORMED input, which the old message reported as absent. '
+                'First line: %r'
+                % (len(all_refs), ' '.join(all_refs[0])[:120]))
+        if sys.stdin.isatty():
+            return None, None, (
+                'copy_exactly_gate was run BY HAND with no ref lines on '
+                'stdin. Nothing is\n  being pushed, so there is nothing to '
+                'judge -- a COULD-NOT-RUN, not a finding\n  about a push. To '
+                'exercise it, pipe a pre-push line in:\n      echo '
+                '"refs/heads/main <local sha> refs/heads/main <remote sha>" '
+                '| \\\n        python tools/copy_exactly_gate.py --pre-push')
+        return None, None, (
+            'copy_exactly_gate: git invoked this as a pre-push hook and '
+            'supplied NO ref lines\n  on stdin. That is not an empty push -- '
+            'git always writes one line per ref -- so\n  the range cannot be '
+            'built and nothing was examined.')
     if all(set(p[1]) == {'0'} for p in refs):
         return None, None, 'DELETE_ONLY'
     local = next((p[1] for p in refs if set(p[1]) != {'0'}), None)
