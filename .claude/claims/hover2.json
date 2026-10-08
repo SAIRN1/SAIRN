@@ -118,8 +118,8 @@
       "task": "confirm sairnfreedom.html's sfRecordResults body line by line, add a new tools-hover2 file printing which skills and connectors this role currently has loaded, never writing the global config",
       "claimed_at": "2026-10-08T14:52:22Z",
       "claimed_at_epoch": 1791471142.5140831,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-08T15:14:01Z",
       "files": null
     }
   ],
