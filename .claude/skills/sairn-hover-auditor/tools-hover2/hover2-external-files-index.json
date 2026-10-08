@@ -1,0 +1,52 @@
+{
+  "built": "2026-10-08",
+  "built_by": "batch Q item 3/4",
+  "directories": [
+    {
+      "key": "log_repo",
+      "path_template": "~/.claude/projects/C--Users-marsh-Documents-SAIRN-hover2/hover-audit-log",
+      "indexed": [
+        ".gitignore", ".mirror-token", ".mirror2-anchor-outbox.jsonl",
+        ".mirror2-askpass-empty.bat", ".mirror2-askpass-empty.py",
+        ".mirror2-askpass-real.bat", ".mirror2-askpass-real.py",
+        ".mirror2-token-meta.json",
+        "TIP-BEACON.md", "chain-tip-timestamp.message.txt",
+        "chain-tip-timestamp.tsr", "h1-h2-disagreement-protocol.md",
+        "h1-h2-disagreements.jsonl", "hover-audit-log.jsonl",
+        "hover2_coverage_ledger_own.md", "hover2_unverified_ledger.md",
+        "hover_self_health_fires.jsonl", "methodology-h2.md",
+        "nongit_integrity_baseline.json", "predictive-drift-state.json",
+        "tool_provenance_validations.jsonl",
+        "claim_collision_scan.py", "defect_density_weighting.py",
+        "dependency_health_check.py", "hover2_claim_reexecute.py",
+        "hover2_code_normalize.py", "hover2_hardfail_score.py",
+        "hover2_log_mirror.py", "hover2_timestamp.py",
+        "hover_citation_linter.py", "hover_cold_scan_pool.py",
+        "hover_coverage_ledger.py", "hover_duplicate_finding_check.py",
+        "hover_editor_review.py", "hover_log.py",
+        "hover_log_rotation_control.py", "hover_nongit_integrity_check.py",
+        "hover_predictive_drift_check.py", "hover_register_key_sweep.py",
+        "hover_self_health.py", "hover_self_health_hook.py",
+        "hover_tier0_exec.py", "hover_tier1_live.py", "hover_tip_beacon.py",
+        "hover_tool_index.py", "hover_validation_freshness_check.py",
+        "presync_tier_a_dryrun.py", "routing_field_shape_audit.py",
+        "sabotage_claim_verify.py", "sabotage_closed_system_check.py",
+        "scope_narrowing_check.py", "stale_basis_check.py",
+        "tool_provenance_status.py", "undirected_sweep_freshness.py"
+      ],
+      "handoff_glob_prefix": "handoff-h2-"
+    },
+    {
+      "key": "memory",
+      "path_template": "~/.claude/projects/C--Users-marsh-Documents-SAIRN-hover2/memory",
+      "blanket_exempt": true,
+      "blanket_reason": "Claude's own auto-memory system, a different owner/purpose, not individually indexed"
+    },
+    {
+      "key": "scratchpad",
+      "path_template": "AppData/Local/Temp/claude/*/scratchpad",
+      "blanket_exempt": true,
+      "blanket_reason": "per-session throwaway staging, cleared with the session, never meant to persist"
+    }
+  ]
+}

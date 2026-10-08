@@ -356,7 +356,18 @@ def main():
 
     paths = []
     if args.file:
-        paths = [args.file]
+        # BUG FIXED 2026-10-08 (batch Q item 5 sweep): --file was used
+        # exactly as typed, never joined with --repo, unlike the --glob
+        # branch two lines below which already does this correctly --
+        # the same class of bug just fixed in hover2_sha_citation_verify.py,
+        # found here by re-running that fix as a sweep over every tool
+        # taking a file/doc argument, not assumed absent elsewhere.
+        f = args.file
+        if not os.path.isabs(f) and not os.path.isfile(f):
+            joined = os.path.join(args.repo, f)
+            if os.path.isfile(joined):
+                f = joined
+        paths = [f]
     elif args.glob:
         paths = sorted(globmod.glob(os.path.join(args.repo, args.glob), recursive=True))
     else:
