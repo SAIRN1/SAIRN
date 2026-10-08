@@ -905,22 +905,66 @@ def pinned_main(argv):
         proc.stdout.close()
         return proc.wait()
     finally:
-        # A CLONE HAS NO WORKTREE REGISTRATION, so removing the directory is
-        # the whole cleanup and there is nothing left for `git worktree prune`
-        # to forget -- the second half of the 29-leaked-worktrees problem.
-        #
-        # `ignore_errors=True` ALONE LEAKED 239 FILES ON THE FIRST REAL RUN, and
-        # it leaked them SILENTLY, which is the whole reason the check below
-        # exists. git marks loose object files READ-ONLY, Windows refuses to
-        # unlink a read-only file, and `ignore_errors` swallows every one of
-        # those refusals -- so the old `git worktree remove --force` was doing
-        # work this did not replace. Measured: `.git/objects/**` survived.
-        shutil.rmtree(wt, onerror=_force_rm)
-        if os.path.isdir(wt):
-            left = sum(1 for _r, _d, fs in os.walk(wt) for _f in fs)
-            sys.stderr.write('NOTE: the pinned clone was left behind at %s\n'
-                             '      %d file(s) remain. (rm -rf %s)\n'
-                             % (wt, left, wt))
+        _drop_pinned_clone(wt)
+
+
+# ── THE CLONE IS KEPT WHEN THE TREE READ FAILED (2026-10-08) ────────────────
+# MEASURED COST, 2026-10-07: a run ended `EXIT 2 -- COULD NOT RUN: the clone was
+# broken during this run`, on `git status exited 3221225794` = 0xC0000142, which
+# is a process that failed to INITIALISE -- git could not be LAUNCHED. Whether
+# the clone was actually broken or git merely could not start was answerable in
+# that directory and NOWHERE ELSE, and the directory had already been deleted by
+# the cleanup below. The diagnosis stayed UNKNOWN for want of evidence this tool
+# destroyed on its way out.
+#
+# SO THE INNER RUN LEAVES A MARKER AND THE CLEANUP READS IT. Not a phrase in the
+# child's stdout -- a file, written by the half that knows its own state, because
+# a text dependency between two halves of one tool is one rewording away from
+# silently keeping nothing.
+#
+# IT IS KEPT ONLY FOR THAT ONE CAUSE. A clean run, a red run, and every other
+# COULD-NOT-RUN still clean up: keeping 215 MB per run would get this disabled,
+# and the 29-abandoned-directories problem is the failure in the other direction.
+TREE_UNREADABLE_MARKER = '.sairn-tree-unreadable'
+
+
+def _drop_pinned_clone(wt):
+    """Remove the throwaway clone -- unless the run left the keep-marker.
+
+    A CLONE HAS NO WORKTREE REGISTRATION, so removing the directory is the whole
+    cleanup and there is nothing left for `git worktree prune` to forget -- the
+    second half of the 29-leaked-worktrees problem.
+
+    `ignore_errors=True` ALONE LEAKED 239 FILES ON THE FIRST REAL RUN, and it
+    leaked them SILENTLY. git marks loose object files READ-ONLY, Windows refuses
+    to unlink a read-only file, and `ignore_errors` swallows every one of those
+    refusals. Measured: `.git/objects/**` survived. Hence `onerror=_force_rm`.
+
+    Returns 'KEPT' or 'REMOVED' so a fixture can assert WHICH branch ran, rather
+    than inferring it from whether a directory happens to exist.
+    """
+    marker = os.path.join(wt, TREE_UNREADABLE_MARKER)
+    if os.path.isfile(marker):
+        try:
+            why = io.open(marker, encoding='utf-8', errors='replace').read().strip()
+        except OSError:
+            why = '(the marker could not be read)'
+        sys.stderr.write(
+            '\nTHE PINNED CLONE WAS **KEPT**, ON PURPOSE:\n'
+            '    %s\n'
+            '  The post-run tree read FAILED, and this directory is the only\n'
+            '  place that can say whether the clone was really broken or git\n'
+            '  merely could not start. It is NOT deleted.\n'
+            '    %s\n'
+            '  Diagnose there, then remove it by hand:  rm -rf %s\n' % (wt, why, wt))
+        return 'KEPT'
+    shutil.rmtree(wt, onerror=_force_rm)
+    if os.path.isdir(wt):
+        left = sum(1 for _r, _d, fs in os.walk(wt) for _f in fs)
+        sys.stderr.write('NOTE: the pinned clone was left behind at %s\n'
+                         '      %d file(s) remain. (rm -rf %s)\n'
+                         % (wt, left, wt))
+    return 'REMOVED'
 
 
 class _Tee(object):
@@ -947,7 +991,7 @@ class _Tee(object):
         return False
 
 
-SELFTEST_CRITERIA = '2026-10-07.1'
+SELFTEST_CRITERIA = '2026-10-08.1'
 
 
 def _selftest():
@@ -1036,6 +1080,111 @@ def _selftest():
             'as a clean run', _rc != 0, 'returned %r' % (_rc,))
     finally:
         globals()['_tree'] = _real_tree
+
+    # ── THE KEEP-THE-CLONE LOCK (2026-10-08) ───────────────────────────────
+    # The cleanup is driven DIRECTLY rather than through a 3-hour run, and it
+    # returns 'KEPT' or 'REMOVED' precisely so these arms can assert WHICH BRANCH
+    # RAN instead of inferring it from whether a directory happens to exist --
+    # an existing directory is also what a failed delete looks like.
+    _src = io.open(os.path.abspath(__file__), encoding='utf-8',
+                   errors='replace').read()
+    _kb = tempfile.mkdtemp(prefix='sairn-keepclone-')
+    try:
+        # (1) WITH the marker: kept, and the path is printed where an operator
+        #     will see it.
+        _k1 = os.path.join(_kb, 'withmarker')
+        os.makedirs(os.path.join(_k1, 'sub'))
+        io.open(os.path.join(_k1, TREE_UNREADABLE_MARKER), 'w',
+                encoding='utf-8').write('the post-run tree read failed: forced')
+        io.open(os.path.join(_k1, 'sub', 'payload.txt'), 'w',
+                encoding='utf-8').write('evidence\n')
+        _err = io.StringIO()
+        _real_err, sys.stderr = sys.stderr, _err
+        try:
+            _verdict = _drop_pinned_clone(_k1)
+        finally:
+            sys.stderr = _real_err
+        arm('THE PINNED CLONE IS **KEPT** WHEN THE TREE READ FAILED -- the '
+            '2026-10-07 case, where the one directory that could say whether '
+            'the clone was broken or git merely could not start was deleted '
+            'before anybody could look',
+            _verdict == 'KEPT' and os.path.isdir(_k1)
+            and os.path.isfile(os.path.join(_k1, 'sub', 'payload.txt')),
+            'verdict %r, dir %s' % (_verdict, os.path.isdir(_k1)))
+        arm('...and it PRINTS THE PATH, so the evidence is findable rather than '
+            'merely undeleted',
+            _k1 in _err.getvalue() and 'KEPT' in _err.getvalue(),
+            _err.getvalue()[:200])
+
+        # (2) NEGATIVE HALF, and it is the arm that matters: without the marker
+        #     the clone is still REMOVED. Keeping 215 MB per run would get this
+        #     switched off, and 29 abandoned directories is the failure in the
+        #     other direction.
+        _k2 = os.path.join(_kb, 'nomarker')
+        os.makedirs(os.path.join(_k2, 'sub'))
+        io.open(os.path.join(_k2, 'sub', 'payload.txt'), 'w',
+                encoding='utf-8').write('ordinary\n')
+        _verdict2 = _drop_pinned_clone(_k2)
+        arm('NEGATIVE: with NO marker the clone is still REMOVED -- a clean run, '
+            'a red run and every other COULD-NOT-RUN clean up as before',
+            _verdict2 == 'REMOVED' and not os.path.isdir(_k2),
+            'verdict %r, dir %s' % (_verdict2, os.path.isdir(_k2)))
+        arm('...and the two branches really differ, so one of them is not '
+            'satisfying both arms', _verdict != _verdict2,
+            'both returned %r' % (_verdict,))
+
+        # (3) The marker name is a NAMED CONSTANT, so the writer and the reader
+        #     cannot drift apart silently -- which is the whole reason this is a
+        #     file and not a phrase in stdout.
+        arm('the keep-marker is a named constant, not a literal spelled twice',
+            isinstance(TREE_UNREADABLE_MARKER, str)
+            and TREE_UNREADABLE_MARKER.startswith('.')
+            and _src.count("'" + TREE_UNREADABLE_MARKER + "'") == 1,
+            'occurrences of the literal: %d'
+            % _src.count("'" + TREE_UNREADABLE_MARKER + "'"))
+
+        # (4) And the WRITE side is guarded by SAIRN_PINNED_RUN, so an ordinary
+        #     run cannot drop an untracked file into the developer's own clone --
+        #     which would be residue of exactly the kind the guard reports.
+        # (4) The WRITE side is guarded by SAIRN_PINNED_RUN, so an ordinary run
+        #     cannot drop an untracked file into the developer's own clone --
+        #     residue of exactly the kind the guard above exists to report.
+        #
+        # THE FIRST VERSION OF THIS ARM WAS WRONG AND FAILED, which is the only
+        # reason it is trustworthy now. It compared `_src.index(guard)` with
+        # `_src.index(write)` -- and the FIXTURE a few lines above writes the
+        # marker too, so `index` found the fixture's write first and the
+        # comparison was between two unrelated positions. A bounded window
+        # anchored on the guard cannot be fooled that way.
+        # THE NEEDLE IS ASSEMBLED AT RUN TIME and that is not a flourish. The
+        # first version spelled the guard out as a literal, so THIS LINE became a
+        # second occurrence of it -- `_src.index` found the arm's own text, 100
+        # lines above the real guard, and the arm failed on itself. A source-
+        # reading arm that contains its own subject is measuring the wrong file
+        # position, which is a defect shape already in my own notes.
+        _q = chr(39)
+        _g = ('if os.environ.get(%sSAIRN_PINNED_RUN%s) == %s1%s:'
+              % (_q, _q, _q, _q))
+        _at = _src.find(_g)
+        _window = _src[_at:_at + 400] if _at >= 0 else ''
+        _before = _src[max(0, _at - 400):_at] if _at >= 0 else ''
+        arm('the marker is only WRITTEN under SAIRN_PINNED_RUN -- the write sits '
+            'inside a BOUNDED 400-char window AFTER that guard, so an ordinary '
+            'run cannot leave residue in the live clone',
+            _at >= 0 and _src.count(_g) == 1
+            and 'TREE_UNREADABLE_MARKER' in _window,
+            'guard occurrences %d; window %r' % (_src.count(_g), _window[:120]))
+        arm('...and the window has a DIRECTION: the write is not in the 400 '
+            'chars BEFORE the guard, so "inside the window" is a real position '
+            'and not a coincidence of a file that mentions the name everywhere',
+            _at >= 0 and 'TREE_UNREADABLE_MARKER' not in _before,
+            'the marker name also appears just before the guard')
+        arm('AND THE LIVE CLONE CARRIES NO MARKER RIGHT NOW, which is the '
+            'behavioural half: the arms above read source, this one reads disk',
+            not os.path.isfile(os.path.join(REPO, TREE_UNREADABLE_MARKER)),
+            'a keep-marker is sitting in %s' % REPO)
+    finally:
+        shutil.rmtree(_kb, onerror=_force_rm)
 
     # THIS CLONE, as the final arm: a selftest that dirties the tree it is run
     # in has committed the defect it tests for.
@@ -1166,6 +1315,26 @@ def _main_body(quiet, excluded=None):
             print('    %s' % l)
         print('    core.bare was %r before this run and reads %r now.'
               % (bare_before, bare_after))
+        # ── ASK THE OUTER WRAPPER TO KEEP THIS DIRECTORY ───────────────────
+        # Written HERE, by the half that knows the tree read failed, and read by
+        # _drop_pinned_clone(). A marker file rather than a phrase in stdout: the
+        # two halves are one tool but separate processes, and a text contract
+        # between them is one rewording away from silently keeping nothing.
+        #
+        # Written under SAIRN_PINNED_RUN only. On an ordinary run this IS the
+        # developer's clone and dropping an untracked file into it would be
+        # residue of exactly the kind the section above exists to report.
+        if os.environ.get('SAIRN_PINNED_RUN') == '1':
+            try:
+                io.open(os.path.join(REPO, TREE_UNREADABLE_MARKER), 'w',
+                        encoding='utf-8', newline='\n').write(
+                    'the post-run tree read failed: %s'
+                    % ('; '.join(after) if after else '(no detail)'))
+                print('    THIS CLONE IS BEING KEPT so the cause can be read '
+                      'here; see the wrapper\'s note at the end.')
+            except OSError as e:
+                print('    could NOT write the keep-marker (%s), so the wrapper '
+                      'will clean up and this directory will be gone' % e)
         print('    Something in the suite broke this clone. Repair with')
         print('        git config core.bare false')
         print('    then `git status` and restore any mutated tracked file before')

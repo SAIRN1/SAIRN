@@ -27,6 +27,22 @@ REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 sys.path.insert(0, os.path.join(REPO, 'tools'))
 import sairn_push_gate_hook as H  # noqa: E402
 
+
+def _rm_ro(fn, path, _exc):
+    """rmtree onerror: clear the read-only bit and retry once.
+
+    git marks loose object files READ-ONLY and Windows will not unlink a
+    read-only file, so `ignore_errors=True` leaves the object store behind and
+    says nothing. Measured 2026-10-07: a cleanup that swallowed those refusals
+    left 4,047 files, 38 of them read-only, in one abandoned clone.
+    """
+    import os as _os
+    try:
+        _os.chmod(path, 0o700)
+        fn(path)
+    except Exception:                                   # noqa: BLE001
+        pass
+
 # ── DO NOT WRITE TO THE REAL BYPASS LOG (added 2026-09-16) ─────────────
 # This probe drives the hook with a real SAIRN_SEED_GATE=off payload, which
 # is its job. Since item 86 wired override logging into that site, an
@@ -216,7 +232,7 @@ try:
               H.outgoing_files(_clone, '0' * 40, _tip2), [])
 finally:
     import shutil as _sh
-    _sh.rmtree(_sand, ignore_errors=True)
+    _sh.rmtree(_sand, onerror=_rm_ro)
 
 # ── A3: export_sql_at reproduces sql/ as of a commit ────────────────────────
 print("\nA3. export_sql_at() reads seeds from the commit, not the working tree")
@@ -450,7 +466,7 @@ try:
           os.path.exists(argv_file), False)
 finally:
     import shutil
-    shutil.rmtree(sandbox, ignore_errors=True)
+    shutil.rmtree(sandbox, onerror=_rm_ro)
 
 # ── command_pushes(): A PUSH NAMED IN TEXT IS NOT A PUSH (2026-10-06) ────────
 # The PreToolUse entry point matched `\bgit\s+push\b` anywhere in the command

@@ -76,7 +76,7 @@ import time
 # .3 -- the optional --bound. cc's routed finding, 2026-10-06: with no bound
 # this file recorded EXIT 0 for runs the live 600s hook ceiling would have
 # killed. The criteria really changed, so the stamp moves.
-CRITERIA_VERSION = '2026-10-07.3'
+CRITERIA_VERSION = '2026-10-08.1'
 
 RUNNING = 'RUNNING'
 EXIT = 'EXIT'
@@ -109,11 +109,83 @@ def _write(path, text):
         raise
 
 
+# ── A RUNNING STATUS FOR A DEAD PID IS NOT "RUNNING" (2026-10-08) ───────────
+# MEASURED, TWICE, THE SAME DAY. On 2026-10-07 two `--pinned` suite runs were
+# stopped from outside -- once by a harness stop that killed the whole process
+# tree. Both times the status file was left reading
+#
+#     RUNNING 74488 2026-10-07T19:27:29Z python tools/run_all_tests.py --pinned
+#
+# for a process that no longer existed, and `--read` reported RUNNING for hours
+# afterwards. A reader that waits on RUNNING waits forever; a reader that reports
+# it says a run is in progress that ended before lunch. The file's own docstring
+# says "a reader that finds RUNNING knows the answer is NOT YET KNOWN" -- which is
+# only true while the writer is alive.
+#
+# SO LIVENESS IS NOW PART OF READING THE FILE, and it has THREE outcomes, not two:
+# the pid is alive (RUNNING), the pid is gone (DEAD -- the run ended without
+# writing its outcome), or liveness could not be determined (COULD-NOT-TELL-PID).
+# None of the three is EXIT and none of them exits 0.
+#
+# os.kill(pid, 0) IS NOT USED AND MUST NOT BE. On Windows os.kill does not test
+# liveness, it calls TerminateProcess -- a liveness check that kills the thing it
+# asks about. `tools/run_all_tests.py` already records that trap for its own lock
+# staleness. OpenProcess with PROCESS_QUERY_LIMITED_INFORMATION (0x1000) can only
+# read, and on POSIX os.kill(pid, 0) is the correct idiom and is used there.
+#
+# STATED LIMIT: a RECYCLED pid reads as alive. Windows reuses pids, so a status
+# whose writer died and whose number was handed to something else reports
+# RUNNING. Closing that needs the process start time compared against the status
+# timestamp, which this does not do -- so DEAD is sound and RUNNING is "alive or
+# recycled", and that asymmetry is deliberate: a false DEAD would be worse.
+DEAD = 'DEAD'
+COULD_NOT_TELL_PID = 'COULD-NOT-TELL-PID'
+
+
+def pid_alive(pid):
+    """True / False / None. None is "could not tell" and is never False."""
+    if pid is None or pid <= 0:
+        return None
+    if os.name == 'nt':
+        try:
+            import ctypes
+            PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+            k = ctypes.windll.kernel32
+            h = k.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, int(pid))
+            if h:
+                # An exited-but-unreaped process can still be opened, so ask for
+                # its exit code: STILL_ACTIVE (259) means running.
+                code = ctypes.c_ulong(0)
+                ok = k.GetExitCodeProcess(h, ctypes.byref(code))
+                k.CloseHandle(h)
+                if not ok:
+                    return None
+                return code.value == 259
+            err = k.GetLastError()
+            if err == 87:            # ERROR_INVALID_PARAMETER -- no such pid
+                return False
+            if err == 5:             # ERROR_ACCESS_DENIED -- it exists, not ours
+                return True
+            return None
+        except Exception:            # noqa: BLE001 -- ctypes absent or refused
+            return None
+    try:
+        os.kill(int(pid), 0)         # POSIX only: 0 really is a liveness probe
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except Exception:                # noqa: BLE001
+        return None
+
+
 def read_status(path):
     """(state, code, rest) from a status file. code is None unless state is EXIT.
 
     A missing file is ('ABSENT', None, '') -- NOT an exit 0. An unparseable one
-    is ('UNREADABLE', None, <the line>), also not an exit 0.
+    is ('UNREADABLE', None, <the line>), also not an exit 0. A RUNNING line whose
+    pid is gone is ('DEAD', None, rest) -- see the block above.
     """
     if not os.path.isfile(path):
         return ('ABSENT', None, '')
@@ -129,7 +201,22 @@ def read_status(path):
             return (EXIT, int(bits[0]), bits[1] if len(bits) > 1 else '')
         except (ValueError, IndexError):
             return ('UNREADABLE', None, line)
-    if state in (RUNNING, COULD_NOT_RUN):
+    if state == RUNNING:
+        bits = rest.split(None, 1)
+        try:
+            pid = int(bits[0])
+        except (ValueError, IndexError):
+            # A RUNNING line with no readable pid cannot be checked at all. That
+            # is not RUNNING either -- it is unreadable, and saying so is the
+            # point of this whole function.
+            return ('UNREADABLE', None, line)
+        alive = pid_alive(pid)
+        if alive is True:
+            return (RUNNING, None, rest)
+        if alive is False:
+            return (DEAD, None, rest)
+        return (COULD_NOT_TELL_PID, None, rest)
+    if state == COULD_NOT_RUN:
         return (state, None, rest)
     return ('UNREADABLE', None, line)
 
@@ -287,11 +374,50 @@ def _fixtures():
         arm('and COULD_NOT_RUN carries no code at all -- the negative half',
             filed is None, 'file code %r' % (filed,))
 
+        # ── THE DEAD-PID LOCK (2026-10-08) ───────────────────────────────────
+        # THE ARM THAT USED TO BE HERE PLANTED PID 999 AND ASSERTED `RUNNING`.
+        # It passed for the wrong reason: 999 is almost certainly not a live
+        # process, so the arm was asserting that a status for a DEAD writer reads
+        # as RUNNING -- the exact defect this section now locks against. It is
+        # replaced rather than kept beside the new one, because the two cannot
+        # both be true.
         sp2 = os.path.join(tmp, 'b.status')
-        _write(sp2, '%s 999 %s sleeping' % (RUNNING, _now()))
+
+        # A pid that is alive BY CONSTRUCTION: this interpreter.
+        _write(sp2, '%s %d %s sleeping' % (RUNNING, os.getpid(), _now()))
         state, filed, _ = read_status(sp2)
-        arm('a RUNNING file is NOT YET KNOWN, never EXIT 0',
+        arm('a RUNNING file whose pid IS ALIVE is NOT YET KNOWN, never EXIT 0',
             state == RUNNING and filed is None, 'got %s/%r' % (state, filed))
+
+        # A pid that is DEAD BY CONSTRUCTION: spawn a child, reap it, reuse its
+        # number. Not a guessed-unused number -- a pid that provably existed and
+        # provably does not now, which is the real shape of a killed run.
+        _dead = subprocess.Popen([sys.executable, '-c', 'pass'])
+        _dead.wait()
+        _write(sp2, '%s %d %s python tools/run_all_tests.py --pinned'
+               % (RUNNING, _dead.pid, _now()))
+        state, filed, _ = read_status(sp2)
+        arm('A RUNNING FILE WHOSE PID IS GONE READS **DEAD**, NEVER RUNNING -- '
+            'the 2026-10-07 case, where two killed suite runs left RUNNING on '
+            'disk for hours',
+            state == DEAD and filed is None, 'got %s/%r' % (state, filed))
+        arm('...and pid_alive() says so directly for that reaped pid',
+            pid_alive(_dead.pid) is False, pid_alive(_dead.pid))
+        arm('...and says True for a pid that is alive, so the arm above is not '
+            'satisfied by a checker that answers False to everything',
+            pid_alive(os.getpid()) is True, pid_alive(os.getpid()))
+        arm('...and COULD-NOT-TELL for a nonsense pid, rather than guessing '
+            'either way', pid_alive(0) is None and pid_alive(-1) is None,
+            '%r / %r' % (pid_alive(0), pid_alive(-1)))
+
+        # A RUNNING line with no readable pid cannot be checked, and that is
+        # UNREADABLE rather than RUNNING.
+        _write(sp2, '%s notanumber %s cmd' % (RUNNING, _now()))
+        state, filed, _ = read_status(sp2)
+        arm('a RUNNING line with an unparseable pid is UNREADABLE, not RUNNING',
+            state == 'UNREADABLE' and filed is None, 'got %s/%r' % (state, filed))
+
+        _dead_pid = _dead.pid          # kept for the CLI arm, which needs _cli
 
         _write(sp2, 'garbage from somewhere else')
         state, filed, _ = read_status(sp2)
@@ -339,6 +465,19 @@ def _fixtures():
         rc, out = _cli('--read', sp2)          # left UNREADABLE above
         arm('--read on an UNREADABLE file exits 2, not 0 and not 1',
             rc == 2, 'rc=%r' % (rc,))
+
+        # ── THE DEAD-PID CASE THROUGH THE CLI, for the reason in the block
+        # above: read_status() being right says nothing about --read being right,
+        # and --read is what every caller on this platform actually runs.
+        _write(sp2, '%s %d %s python tools/run_all_tests.py --pinned'
+               % (RUNNING, _dead_pid, _now()))
+        rc, out = _cli('--read', sp2)
+        arm('--read ON A DEAD STATUS PRINTS **DEAD** AND EXITS 2 -- an operator '
+            'reading the terminal is never told a dead run is still in progress',
+            rc == 2 and out.strip().startswith(DEAD), 'rc=%r out=%r' % (rc, out[:160]))
+        arm('...and the word RUNNING appears nowhere in that output, which is the '
+            'half a `startswith` alone would not catch',
+            RUNNING not in out, out[:160])
 
         rc, out = _cli('--status', os.path.join(tmp, 'z.status'))
         arm('a run with --status and NOTHING TO RUN is an argument error, not a '
@@ -444,8 +583,23 @@ def main():
             return code
         # NOT 0. "I cannot tell you the status" is the third state and folding
         # it into success is the defect this file was written against.
-        print('  NOT a verdict about the program -- the status is not yet known',
-              file=sys.stderr)
+        #
+        # AND THE SENTENCE MUST MATCH THE STATE. "not yet known" is true of
+        # RUNNING and FALSE of DEAD -- a dead writer's status will never become
+        # known, and telling an operator to wait for it is the same misdirection
+        # as reporting RUNNING. One line per state, said plainly.
+        if state == DEAD:
+            print('  the writer is GONE: this run ENDED WITHOUT RECORDING AN '
+                  'OUTCOME, so there is no verdict and there never will be.\n'
+                  '  Do not wait on it. Re-run, and treat the partial output as '
+                  'a partial.', file=sys.stderr)
+        elif state == COULD_NOT_TELL_PID:
+            print('  the recorded pid could not be checked, so whether this run '
+                  'is alive is UNKNOWN -- not running, and not finished either.',
+                  file=sys.stderr)
+        else:
+            print('  NOT a verdict about the program -- the status is not yet '
+                  'known', file=sys.stderr)
         return 2
 
     argv = [x for x in a.cmd if x != '--'] if a.cmd and a.cmd[0] == '--' else a.cmd

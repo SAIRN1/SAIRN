@@ -51,6 +51,22 @@ import subprocess
 import sys
 import time
 
+
+def _rm_ro(fn, path, _exc):
+    """rmtree onerror: clear the read-only bit and retry once.
+
+    git marks loose object files READ-ONLY and Windows will not unlink a
+    read-only file, so `ignore_errors=True` leaves the object store behind and
+    says nothing. Measured 2026-10-07: a cleanup that swallowed those refusals
+    left 4,047 files, 38 of them read-only, in one abandoned clone.
+    """
+    import os as _os
+    try:
+        _os.chmod(path, 0o700)
+        fn(path)
+    except Exception:                                   # noqa: BLE001
+        pass
+
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
 
@@ -396,7 +412,7 @@ def _fixtures():
         subprocess.run(['git', '-C', base, 'worktree', 'prune'],
                        capture_output=True, text=True, encoding='utf-8',
                        errors='replace')
-        shutil.rmtree(base, ignore_errors=True)
+        shutil.rmtree(base, onerror=_rm_ro)
 
     print('  criteria lock: %d arms, %d of them negative (criteria %s)'
           % (tally['n'], tally['neg'], CRITERIA_VERSION))
