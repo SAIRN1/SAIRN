@@ -3666,6 +3666,38 @@
         "docs/2026-10-08-cc-routed-b17.md",
         "docs/handoff-cc-2026-10-08.md"
       ]
+    },
+    {
+      "id": "cc-1791468379",
+      "session": "cc",
+      "subject": "cc",
+      "task": "batch W (b4) at HEAD 119920b3, every premise re-derived AT PICKUP from a fresh claim read -- AND FIVE OF MY TARGETS ARE IN CODY'S LIVE CLAIM, so two items change shape and NOTHING IS OVERRIDDEN. (a) docs/tier-a-reviews.json, tools/tier_a_review_gate.py and tests/run_tier_a_review_gate_probe.py are CODY'S: item 11 discharges NOTHING and becomes a READ-ONLY open-count-by-owner report plus a routing line. (b) docs/external-files-index.json is CODY'S and does not exist yet, so item 2's index is HIS to create -- I inventory my own external files, commit what belongs in git, and hand him my registration block as paste-ready content with the exact schema my gate reads. (c) tools/exit_status_attributable.py carries my OWNER line but CODY DECLARES IT, so items 5 and 7 touch it only if the fix lives elsewhere; if it must go there it is ROUTED with the line. (d) docs/METHODOLOGY.md is FOURTH'S -- item 14 is paste-ready, as the item already says. (1) find why my claim expired mid-run last batch and make sairn_claim.py warn or REFUSE a write under an expired claim; renew before long work. (2) external-file inventory, commit what belongs, register my dirs. (3) push gate REFUSES when a tool/script/handoff sits in a declared external dir and is neither git-tracked nor indexed, plus a SessionStart hook printing the unindexed count, both sabotage-tested. (4) land the staged tools/hover_separation_ci.py fix by the MINIMAL change to the ALLOWED allowlist in tools/hover_auditor_scope_gate.py, which I own, then 148/148 on tests/run_hover_separation_probe.py. (5) the D9 no-ref-lines-on-stdin message. (6) gh_push.py must REFUSE a branch name as its commit message, with a fixture. (7) a validator key for docs/scrutiny-flags.json's merge policy, with a fixture. (8) sairn_claim.py's word matcher must read the FILES declaration so CLEAR means something, with FILES-only-overlap fixtures. (9) SELF_EXCLUDED derived, not hand-counted. (10) convention 25 trigger amended to count classes per source construct, the content-derived cutoff ported into tests/run_tier_a_open_basis_probe.py, condition_coverage.py:266 if open. (12) bld_draws seq664 to an exact file:line, fixed or routed WITH the line. (13) SAIRN-OPEN-WORK-INDEX.md split into a short current index plus an archive, and the other 6 docs over 400KB routed to their owners with sizes. (14) methodology: per defect, the check that would have caught it, added if absent. (15) compaction settings, each path printed. (16) handoff BEFORE the report. CONFLICTS DECLARED PER PR 4.3 AND NONE OVERRIDDEN. I close only findings I originated and reclassify none. I read and reference no auditor tool -- item 4 is a change to MY OWN gate so another clone's commit can land, and I do not enter that clone to arm anything. FILES: tools/sairn_claim.py tests/claims/run_matcher_probe.py tools/hover_auditor_scope_gate.py tools/gh_push.py tests/run_gh_push_argv_probe.py tools/sairn_push_gate_hook.py tests/run_scrutiny_flag_probe.py docs/scrutiny-flags.json tools/sairn_rebase_resolve.py tools/cross_tenant_isolation_scope.py tests/run_tier_a_open_basis_probe.py tools/external_file_index_check.py tests/run_external_file_index_probe.py docs/SAIRN-OPEN-WORK-INDEX.md docs/SAIRN-OPEN-WORK-ARCHIVE.md .claude/settings.json docs/2026-10-08-cc-routed-b4.md docs/2026-10-08-cc-methodology-b4.md docs/handoff-cc-2026-10-08b.md SAIRN-ACTIVE-WORK-cc.md",
+      "claimed_at": "2026-10-08T14:06:19Z",
+      "claimed_at_epoch": 1791468379.0319738,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        ".claude/settings.json",
+        "SAIRN-ACTIVE-WORK-cc.md",
+        "docs/2026-10-08-cc-methodology-b4.md",
+        "docs/2026-10-08-cc-routed-b4.md",
+        "docs/SAIRN-OPEN-WORK-ARCHIVE.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/handoff-cc-2026-10-08b.md",
+        "docs/scrutiny-flags.json",
+        "tests/claims/run_matcher_probe.py",
+        "tests/run_external_file_index_probe.py",
+        "tests/run_gh_push_argv_probe.py",
+        "tests/run_scrutiny_flag_probe.py",
+        "tests/run_tier_a_open_basis_probe.py",
+        "tools/cross_tenant_isolation_scope.py",
+        "tools/external_file_index_check.py",
+        "tools/gh_push.py",
+        "tools/hover_auditor_scope_gate.py",
+        "tools/sairn_claim.py",
+        "tools/sairn_push_gate_hook.py",
+        "tools/sairn_rebase_resolve.py"
+      ]
     }
   ],
   "refusals": [
