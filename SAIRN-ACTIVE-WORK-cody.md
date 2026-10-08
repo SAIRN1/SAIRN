@@ -7147,3 +7147,41 @@ documents (three conventions + three owed, all fourth's file).
 `tests/run_tier_a_open_basis_probe.py`. Both pass and agree; mine derives its
 cutoff from content where cc's pins a sha. Routed to chat, not resolved
 unilaterally.
+
+## 2026-10-08 — batch 25 (b2, cody)
+
+Per-item checkpoint, committed per item. Full detail:
+`docs/handoff-cody-2026-10-07c.md`. Routed: `docs/2026-10-08-cody-b25-routed.md`.
+
+**THE PINNED SUITE COMPLETED FOR THE FIRST TIME IN THREE BATCHES** — launched
+detached so a harness stop could not kill it. `EXIT 1` at 03:21:50Z after
+3h13m41s, 759 files, 671 ok, **86 FAIL**, one residue path. A completed RED run,
+not a void one. **No clean pass, so the andon is HELD** — on a measurement this
+time. **And the watcher beside it was BLIND for the whole run and looked like it
+was working:** 14,976 samples, 100% with an empty command line, zero test files,
+because `powershell -Command` does not bind trailing args to `param()`. Fixed and
+proved.
+
+**Three premises were re-derived and corrected.** Item 1 is blocked by **cc**,
+not hank (hank is 8.0h stale, not live). Item 2 is **skipped**: cc's
+`superseded_by` support is not on origin/main, so no count delta is reported.
+Item 3's sha **does resolve** — it is **orphaned**, not missing — the record is
+in the Tier A ledger and not the defect register, and **the reseat tool cannot
+reach it at all** because it filters to `status == `open``.
+
+**Items 4, 6, 7 landed with fixtures.** Duplicate ledger arms removed (cc's
+probe survives). `capture_exit` now reports **DEAD** for a RUNNING status whose
+pid is gone — proved against the real stale file from the killed run.
+`--pinned` now **KEEPS** the clone when the post-run tree read fails, which is
+the evidence batch 24 had to report UNKNOWN for want of.
+
+**Item 8: 6 of 6 mine and 36 of 36 not-mine, 0 refused.** All 25 files
+claim-checked FREE first. **Item 9:** four stale artifacts gone, `.git/config`
+sha256 byte-identical. **Items 10–13:** the missing ITEM 15 written, one more
+bodyless row found, the runbook's four counts reconciled without picking one,
+§3.5 added, and the pre-build name check extended to test files as paste-ready
+text.
+
+**And the push took six refusals**, every one correct: three for missing register
+records, one for a race, and one for **copy-exactly** — 25 propagations of a
+12-line helper with no recorded re-qualification. All answered.
