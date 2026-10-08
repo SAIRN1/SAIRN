@@ -562,8 +562,8 @@
       "task": "H1 batch X (b6): mechanical external-file check wired into session start, patch export for the staged hover_auditor_scope_gate.py+hover_separation_ci.py fix (owner CC already actively landing it per CC's own live claim, this is corroborating documentation not a duplicate routing action), 15-row owner proposals for the routing doc, CRITICALITY-TIERS.md status report (not claimed -- structurally cannot edit docs/, stated why), 53-skill never-mentioned list plus official-docs check for a per-skill disable key, MCP server audit scoped to this project only, session-start skill/MCP check, re-run of 5 oldest open findings, hover2 tools-dir asymmetry report (read-only, no edits to hover2's files), RFC3161 token republish if due, handoff. FILES: .claude/skills/sairn-hover-auditor/ (tools, handoffs, routing, references, EXTERNAL-TOOLS-INDEX.md).",
       "claimed_at": "2026-10-08T14:20:27Z",
       "claimed_at_epoch": 1791469227.0878243,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-08T15:39:29Z",
       "files": [
         "EXTERNAL-TOOLS-INDEX.md"
       ]
