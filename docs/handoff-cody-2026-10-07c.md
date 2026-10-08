@@ -560,3 +560,37 @@ file, so a reader does not treat the table as a contents list.
 
 **ROUTED:** for each `ITEM <n>` named in a routing table, assert a `## ITEM <n>`
 heading exists in the same file — one grep per row.
+
+## item 11 — DONE. A reconciliation header. **No count was picked and none was changed.**
+
+```
+command : grep -cE `^\| *[0-9]+ *\|.*sql/` docs/2026-10-05-michael-sql-runbook.md   -> 7
+          grep -oE `sql/[A-Za-z0-9_.-]+\.sql` ... | sort -u | wc -l           -> 24
+commit  : 63dd0c62 + this change        date: 2026-10-08
+```
+
+| number | counts |
+|---|---|
+| **7** | paste **STEPS** in the numbered table |
+| **20** | `.sql` **FILES** pasted, summed across those 7 steps |
+| **26** | **TABLES** those files create, summed across the same steps |
+| **24** | distinct `sql/` paths mentioned **anywhere** in the document |
+
+**One step can carry more than one file and one file can create more than one
+table** — that is the whole reason the three differ. The per-step table is in the
+header so the sums check by eye: 1/2, 1/1, 2/2, 1/1, 3/3, 5/8, 7/9 → **20 files,
+26 tables**.
+
+**And the 4 remaining paths are named with a yes-or-no**, because *"which are
+the 20"* is the question Michael has in front of a SQL editor: the confirm file
+and the snapshot query are pasted **separately**, and the other two are mentioned
+as context and **not pasted**. 20 + 1 + 1 + 2 = **24**.
+
+**ONE OF MY OWN RE-DERIVATION COMMANDS WAS WRONG BECAUSE OF THIS EDIT.**
+`grep -cE `^\| *[0-9]`` returned **14**, not 7 — the summary table I had just
+added also has numbered rows, so the header broke its own check by existing. The
+command now requires `sql/` on the line; both commands were re-run after the edit
+and reproduce **7** and **24**.
+
+The header also states that if a count ever disagrees with the numbered table,
+**the table is the authority** — the rows are what gets acted on.

@@ -1,5 +1,55 @@
 # Michael's SQL runbook — 20 files, 26 tables, and a snapshot re-capture. Ready now.
 
+## COUNT RECONCILIATION — read this once, then ignore every other number
+
+**Added 2026-10-08 (Cody).** This document contains the numbers **7**, **20**,
+**24** and **26**, and a reader who meets them in a different order can
+reasonably think two of them disagree. **They do not. Each counts a different
+thing.** No number below replaces another, and none of them has been changed.
+
+| number | counts | how to re-derive it |
+|---|---|---|
+| **7** | **paste STEPS** in the numbered table below | `grep -cE '^\| *[0-9]+ *\|.*sql/' docs/2026-10-05-michael-sql-runbook.md` |
+| **20** | **`.sql` FILES you paste**, summed across those 7 steps | sum of the *files* column |
+| **26** | **TABLES those files create** | sum of the *tables* column |
+| **24** | **distinct `sql/` paths mentioned ANYWHERE in this document** | `grep -oE 'sql/[A-Za-z0-9_.-]+\.sql' … \| sort -u \| wc -l` |
+
+**ONE STEP CAN CARRY MORE THAN ONE FILE, AND ONE FILE CAN CREATE MORE THAN ONE
+TABLE.** That is the whole reason the three numbers differ:
+
+| step | app | files | tables |
+|---|---|---|---|
+| 1 | SAIRNgrounds | 1 | 2 |
+| 2 | SAIRNmechanical | 1 | 1 |
+| 3 | StoneDesk | 2 | 2 |
+| 4 | StoneDesk | 1 | 1 |
+| 5 | SAIRNdental | 3 | 3 |
+| 6 | SAIRNroofing | 5 | 8 |
+| 7 | SAIRNsenior | 7 | 9 |
+| | **totals** | **20** | **26** |
+
+**WHICH FILES ARE "THE 20": exactly the ones named in the numbered table below,
+and nothing else.** If a path is not in a numbered row, **you do not paste it.**
+
+**THE OTHER 4 OF THE 24, and why each is not a paste:**
+
+| path | what it is | do you paste it? |
+|---|---|---|
+| `sql/zz_confirm_2026-10-05_missing_tables.sql` | the confirm file, run **after** all 20 | **yes, but separately** — see *AFTER THE PASTES* |
+| `sql/schema_snapshot_query.sql` | the snapshot re-capture, run **last** | **yes, but separately** — see *THE SNAPSHOT RE-CAPTURE* |
+| `sql/sairnfreedom_employee_auth_schema.sql` | named under *WHAT IS **NOT** ON THIS LIST* | **NO** |
+| `sql/unused_delete_grant_revoke_2026-08-24.sql` | mentioned only as context in *THE ORDER* | **NO** |
+
+**SO: 20 files to paste, + 1 confirm file, + 1 snapshot query, + 2 that are
+mentioned and explicitly excluded = the 24 paths this document names.**
+
+**IF A COUNT EVER DISAGREES WITH THIS TABLE, THE TABLE BELOW IS THE AUTHORITY,
+NOT THIS HEADER.** The rows are the thing you act on; these four numbers are
+derived from them and are stated here only so no one has to guess which
+denominator a bare number belonged to.
+
+---
+
 **2026-10-05 (Cody). NOTHING HERE NEEDS A DECISION. Every file already exists in
 `sql/`, every one is idempotent, and the order, the confirm queries and the
 after-check are all written.** Prepared before being asked so the only thing
