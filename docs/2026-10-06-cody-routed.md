@@ -633,3 +633,93 @@ the output.
 now**, so two sweeps at different bounds can never be confused in a past report.
 
 **Added to cc's total: 9 + 4 = 13 dead rules across 6 tools.**
+
+---
+
+## ITEM 15 — SIX METHODOLOGY CONVENTIONS, ROUTED TO **fourth**
+
+**Written 2026-10-08, two days after the row above promised it.** The routing
+table at the top of this file has named `docs/METHODOLOGY.md | fourth | ITEM 15 —
+three conventions + three more` since this document was created, and **no
+`## ITEM 15` section ever existed underneath it.** The row pointed at a heading
+that was not there. The content was never lost — it is in
+**`docs/2026-10-06-cody-queue17-inventory.md:182`, under
+`## METHODOLOGY (ITEM 15)`** — but a reader of *this* file, which is the file
+holders are asked to read, found a promise and no text.
+
+**This section is the body. It does not restate the conventions in new words**,
+because a second wording of a standing rule is a second rule to keep in sync.
+The three new ones, in the inventory doc at the lines given:
+
+| # | convention | where |
+|---|---|---|
+| **(a)** | **A fix that closes named instances leaves the mechanism open.** Re-measure the *population* that produced the defect, not the instances it named. | `:184` |
+| **(b)** | **Every figure carries its denominator, command, commit and date.** A bare number is not a measurement. | `:202` |
+| **(c)** | **A tier that clears a category and finds nothing in it is the outcome to distrust.** | `:217` |
+
+*(Each line number above was checked by reading that line, not inferred. `:218`
+was written first and is wrong — it is a blank line; `(c)` is at `:217`. The
+three-from-queue-16 gap is reported at `:241`.)*
+
+Each is paid for by a measurement recorded beside it in that file — *"162 of
+169"* becoming **169 of 521** once the universe was a `git ls-files` glob, so the
+hole was **352 rules in 105 files** and not 7 in one; three of my own documents
+reporting a sweep **with no exit code at all**; and a writer tier that first
+reported **22 of 22 exercised, 0 dead** and after the fix reported **17
+exercised, 5 DEAD**, the blanket pass having hidden five real findings.
+
+**AND THE THREE FROM QUEUE 16 ARE STILL OWED**, which that document reports
+against itself: they were written into a dated inventory, routed for promotion,
+and were still sitting there — the trailing-echo rule among them.
+
+**FOR fourth:** `docs/METHODOLOGY.md` is yours. These six are paste-ready at the
+lines above and need no editing by me. **Nothing here is promoted by cody**, and
+the numbering is yours to assign.
+
+---
+
+## ROUTING-TABLE AUDIT — every row checked for a body, 2026-10-08
+
+Asked for because the ITEM 15 row above pointed at a section that did not exist,
+and nothing in this document could have told anybody that. **Six rows in the
+table at the top; here is what each one actually has.**
+
+| row | target | has a body? |
+|---|---|---|
+| `docs/SAIRN-OPEN-WORK-INDEX.md` → hank | **ITEM 2** | **YES** — `## ITEM 2`, and it ends in a `⚠ WITHDRAWN` block |
+| `docs/tier-a-reviews.json` → cc | **ITEM 11** | **YES** — `## ITEM 11` |
+| `tools/tooling_inventory.py` → fourth | **ITEM 13** | **YES** — `## ITEM 13` |
+| `docs/METHODOLOGY.md` → fourth | **ITEM 15** | **WAS MISSING — written above, today** |
+| `tools/exit_status_attributable.py` → cc | the backgrounding false negative | **NO BODY** |
+| `fmea/alf_facility_role_gate_live_probe.py` → cc | the metamorphic rewording subject | **PARTIAL** — no heading of its own |
+
+**THE ONE STILL WITHOUT A BODY: `tools/exit_status_attributable.py`, "the
+backgrounding false negative".** The phrase appears **once in this file, in the
+table**, and nowhere else; the only other mention of that filename is an
+unrelated separators row in ITEM 3's output. A holder reading this document
+learns that cc owes something on that tool and **cannot learn what**. It is left
+as a named gap rather than reconstructed from memory — writing a body from
+recollection is how a routed note becomes fiction. **Chat or cc should say what
+it was; the subject is almost certainly the same shape
+`tools/capture_exit.py` exists for, since that tool reads command TEXT before a
+run and cannot see a status produced by a backgrounded one.**
+
+**THE PARTIAL: the metamorphic rewording subject IS covered** — in the pasted
+index row inside `## ITEM 2` (the `metamorphic_check.py --prose` reproduction and
+the two opposite hypotheses) and again inside `## ITEM 8` at the
+`alf_facility_role_gate_live_probe.py` discussion. So the content exists but
+**under another item's heading**, which is why a heading-level scan reports it
+missing. Recorded as partial rather than counted either way.
+
+**AND THE TABLE IS NOT AN INDEX OF THIS FILE, which is worth saying once:** six
+rows, nine `## ITEM` sections. `ITEM 8`, `ITEM 9`, `ITEM 12`, `ITEM 3`, `ITEM 6`
+and `ITEM 4 ADDENDUM` have bodies and **no row**, because they are findings that
+landed in files of mine rather than routings. A reader who treats the table as a
+contents list will miss two thirds of the document.
+
+**THE CHEAP CHECK THAT WOULD HAVE CAUGHT THE ITEM 15 GAP**, for whoever owns the
+doc-consistency tooling: for each `ITEM <n>` named in a routing table, assert a
+`## ITEM <n>` heading exists in the same file. One grep per row. The defect class
+is an index written separately from the sections it indexes, with nothing
+requiring every row to have one — the same shape this platform has corrected in
+its own skill files and app map more than once.

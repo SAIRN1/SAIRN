@@ -527,3 +527,36 @@ worktree registrations now: just this clone
 That file is the one a worktree operation can reach, and a `core.bare` flip in it
 is what broke this clone on 2026-10-07 — which is why the hash is the evidence
 rather than the absence of a complaint.
+
+## item 10 — DONE. ITEM 15 written, and the audit found **one more** row with no body.
+
+The routing table had named `docs/METHODOLOGY.md | fourth | ITEM 15` since the
+file was created with **no `## ITEM 15` section underneath it**. Written now,
+pointing at `docs/2026-10-06-cody-queue17-inventory.md` lines `:184`, `:202`,
+`:217` and `:241` rather than restating the conventions — a second wording of a
+standing rule is a second rule to keep in sync.
+
+**And the line numbers were checked by reading the lines.** I wrote `:218` for
+convention (c) first; that line is **blank**, and (c) is at `:217`. The wrong
+number is left visible in the file with the correction beside it, because a
+silently fixed citation teaches nobody and that document is about citation drift.
+
+**ROUTING-TABLE AUDIT — 6 rows:** ITEM 2 **YES**, ITEM 11 **YES**, ITEM 13
+**YES**, ITEM 15 **was missing, written now**,
+`tools/exit_status_attributable.py` → *"the backgrounding false negative"*
+**NO BODY**, `fmea/alf_facility_role_gate_live_probe.py` → *"the metamorphic
+rewording subject"* **PARTIAL** (covered inside ITEM 2 and ITEM 8, no heading of
+its own).
+
+**THE ONE STILL WITHOUT A BODY is left as a named gap, not reconstructed.** The
+phrase appears once in the whole file — in the table — and nowhere else. A holder
+learns cc owes something on that tool and cannot learn what. Writing a body from
+recollection is how a routed note becomes fiction; the likely subject is noted
+as a hypothesis and labelled as one.
+
+**And the table is not an index:** 6 rows, 9 `## ITEM` sections. Six sections
+have bodies and no row because they landed in files of mine. Said once in the
+file, so a reader does not treat the table as a contents list.
+
+**ROUTED:** for each `ITEM <n>` named in a routing table, assert a `## ITEM <n>`
+heading exists in the same file — one grep per row.
