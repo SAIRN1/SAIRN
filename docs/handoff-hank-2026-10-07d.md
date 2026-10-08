@@ -562,3 +562,238 @@ element is unreachable:
 | `sairnfreedom.html` | `ac-tbody` | 380 and 1461 |
 
 Both are app HTML in no claim of mine. Routed with file and line.
+
+### item 4 — ONE of the three 1800 s measurements — **IT DID NOT FINISH, SO NO BOUND IS PROPOSED**
+
+**SUBJECT: `tools/dead_rule_sweep.py`.** Chosen because `sairn_claim.py check`
+returned CLEAR, it has no entry in `docs/tool-owner-map.json`, and cody's open
+row disputes its *findings* (*"a re-run of dead_rule_sweep finds 35 dead rules
+where the claim…"*) — so a real wall time is worth having for a tool somebody is
+about to argue about.
+
+**CONDITIONS, waited for rather than assumed.** The script polls until no other
+python/node process is on the box, records the count at the start and at the
+end, and reports both:
+
+```
+box is quiet after 12s of waiting
+SUBJECT  tools/dead_rule_sweep.py
+CLONE    C:/Users/marsh/AppData/Local/Temp/b2-i6-clone   (a CLONE, not a worktree)
+CEILING  1800s, unbuffered
+LOAD at start : 0 other python/node process(es)
+
+EXIT      TIMEOUT-AT-1800
+WALL TIME 1800.0s  (30.0 min)
+LOAD at end   : 12 other python/node process(es)
+```
+
+**THE ANSWER IS A LOWER BOUND, NOT A NUMBER: > 1800 s.** The item says *"propose
+a bound only from that number"* — and there is no number, so **no bound is
+proposed.** Inventing one from a run that did not finish is the thing that rule
+exists to prevent.
+
+**AND THE RUN IS CONTAMINATED IN ITS SECOND HALF, which is stated rather than
+buried:** the box went from **0 to 12** other python/node processes while it ran.
+Other clones' push-gate hooks fire whenever their sessions push and I cannot
+stop them. So even a completed run on this box would need the load curve printed
+beside the number.
+
+**WHAT 30 MINUTES PRODUCED: THREE LINES.**
+
+```
+DEAD RULE SWEEP -- criteria 2026-09-29.1
+criteria lock: 6/6 fixtures classify correctly, on hand-built sources only
+sandbox: C:\Users\marsh\AppData\Local\Temp\drs-sandbox-uu8ey11x
+```
+
+Then nothing, for 29 minutes, under `python -u` — so this is the subject's own
+silence, not buffering. **That is cross-domain convention 10 inside the tool
+being measured: a long run whose first check is at the end.** It cannot be
+bounded because it cannot be observed, and the fix is to the TOOL before the
+bound: emit a progress line per unit of work, and the first completed run then
+gives a real number *and* tells you where the time goes.
+
+**THE MEASUREMENT THAT WOULD ALLOW A BOUND, named instead of a guess:** one run
+with **no ceiling** on a quiet box, after the tool emits progress, repeated
+**three** times — a bound from a single sample has no variance behind it, and
+`assurance_case.py` was failing a 90 s bound at 86.8 s on variance alone.
+
+**THE OTHER TWO ARE NOT MEASURED AND ARE NOT GUESSED AT.**
+`guard_ablation.py` and `red_suite_register_check.py` keep their only honest
+figure: **> 600 s**. The item said measure ONE and that is what was done.
+
+### item 4a — THE SWEEP LEAKS SANDBOX WORKTREES, AND THAT IS ITEM 6a's MECHANISM WITH 18 LIVE INSTANCES
+
+`dead_rule_sweep.py` builds its sandbox as a **linked worktree** and leaves it
+registered. **15 `drs-sandbox-*` directories are on disk**, and the run above
+added `drs-sandbox-uu8ey11x` to the clone's registration list.
+
+**It is not alone.** My live clone had **19 registered worktrees, 18 of them
+leaked probe sandboxes** — `check4-probe-*`, `condcov-*`, `defreg-probe-*`,
+`gate12-*`, `r5-*`, `sairn-abl-*`, `sairn-sab-*`.
+
+**THAT IS THE SAME FINDING AS ITEM 6a, WITH A COUNT.** A linked worktree shares
+`.git/config` with the clone that owns it, so every one of those 18 is a live
+path by which a tool's `git config` write lands in the real clone's config. 6a
+proved the write happens; this says there were **18 doors open** at the time.
+
+**I pruned the FIVE that are mine** — `wt-i3`, `wt-suite2`, `wt9` from this
+session and `wt-suite`, `wt-tools` from the previous one — taking the clone from
+19 registrations to 14. `core.bare` confirmed `false` after. **The other 13 are
+other sessions' probe leaks and I did not touch them**: pruning another session's
+worktree registration while its probe may still be running is the same
+cross-clone reach I refused in item 5's landing_verification entry.
+
+Routed: the leak is per-probe and the fix is per-probe — a throwaway **clone**,
+as `tests/push_gate/check8_probe.py` already does, or `shutil.rmtree` plus
+`git worktree prune` in a `finally`.
+
+### item 12 — THE THREE CHECKS AT FINAL HEAD, each exit captured on its own line
+
+```
+python -u tools/audit_event_type_check.py        EXIT 1
+python -u scratchpad/attr_scan.py               EXIT 0
+python -u tools/defect_register.py --check      EXIT 0
+```
+
+| check | headline | reading |
+|---|---|---|
+| `audit_event_type_check.py` | **3 of 3 tables with a CHECK reject at least one emitted value, 11 distinct values** | **EXIT 1 IS THE CORRECT ANSWER AND NOT A REGRESSION.** The repair is the three STEP 0 `ALTER`s and they are **printed, applied nowhere**. This number will not move until Michael runs them, and if it ever reads 0 without that having happened, the checker is what broke. |
+| `attr_scan.py` | **UNATTRIBUTED: 0 of 49** | holds at this HEAD, as batch b1 left it. LEXICAL and over THREE apps — "0 of 49" is 0 of those three by that criterion. |
+| `defect_register.py --check` | **OK: 489 records, every commit resolves, every field in vocabulary** | 486 at the close of b1; +3. 1 external and unverified by construction. |
+
+### item 13 — THE scrutiny-flags STASHES — PARKED. Not dropped, not committed.
+
+`docs/scrutiny-flags.json` is **CC'S FILE** — declared in cc's live batch-17
+FILES. The rows in it were written by **cc's own `scrutiny_flag` tool**,
+recording MY commits. I will not commit a file I do not own and I will not
+revert a record another session's tool just wrote.
+
+**FOUR PARKED STASH ENTRIES, all `docs/scrutiny-flags.json` only:**
+
+```
+stash@{0}   "cc scrutiny rows (round 6)"
+stash@{2}   "cc scrutiny rows (round 4)"
+stash@{4}   "cc scrutiny rows (round 3)"
+stash@{5}   "cc scrutiny rows (round 2)"
+```
+
+`stash@{1}` and `stash@{3}` are my own (a round-5 park and the b1 register
+records); they are not cc's and are not part of this item.
+
+**OWNER: cc. ACTION: cc decides.** cc's own batch-17 item 6 says it will *"READ
+them read-only and decide with a stated reason; I do not pop or write another
+clone's stash"* — which is the right posture from the other side and means this
+is already in hand. **The stash indices shift as entries are added**, so cc
+should match on the MESSAGE (`cc scrutiny rows (round N)`) rather than the index.
+
+---
+
+## PUSHED STATE
+
+**`origin/main` and my commits are reported in the final report with
+`merge-base --is-ancestor` verification taken AFTER the push, not from this
+file.** At the moment this section was written the batch's commits were:
+
+| sha at write time | what |
+|---|---|
+| `7829e3f0` | the batch-18 claim |
+| `db7558e8` | handoff rows for items 1, 3, 6, 6a, 6b |
+| `293152da` | the `sv_audit_log` refusal + H0/H1/H2 + STEP 13/14 SQL |
+| `6c66f0e9` | the three tool fixes + RULE F |
+
+**Shas later than `6c66f0e9` were rewritten by the landing rebase** — which is
+RULE F's whole subject — so the authoritative list, verified against
+`origin/main`, is in the final report and not here.
+
+**NO GATE WAS OVERRIDDEN. `SAIRN_SEED_GATE=off` was never used.**
+
+## CLAIMS HELD, AND WHAT WAS REFUSED
+
+**HELD:** `hank` / `platform`, batch 18. My b1 claim had **expired** at session
+start and was re-taken.
+
+| work | state | holder and timestamp |
+|---|---|---|
+| Tier A discharge | **BLOCKED, nothing discharged** | **cc, 2026-10-07T23:20:05Z** — declares `docs/tier-a-reviews.json` FIRST in FILES |
+| `docs/METHODOLOGY.md` | **BLOCKED, not touched** | **cc 2026-10-07T23:20:05Z** and **fourth 2026-10-07T20:30:06Z** |
+
+Each re-checked **once**. No retry on either.
+
+**AND ONE TRAP WORTH THE SPACE:** `sairn_claim.py check platform "tier a review
+discharge oldest eligible"` returned **CLEAR**. The word matcher does not read a
+FILES declaration. Taking that CLEAR as permission would have put two sessions
+into the same ledger. **A CLEAR from the matcher is not a clear from PR §4.3.**
+
+**READ ONLY, NEVER WRITTEN:** `docs/tool-owner-map.json` (cc's) —
+the item 10 population came out of it and nothing went back in.
+
+**APPENDED THROUGH A TOOL, NEVER EDITED:** `docs/defect-density-register.json`
+via `defect_register.py --add` (the same posture as b1).
+
+**NOT TOUCHED AT ALL:** `docs/METHODOLOGY.md`, `docs/tier-a-reviews.json`,
+`docs/known-red-suites.json`, `docs/scrutiny-flags.json`, and **anything under
+`.claude/skills/sairn-hover-auditor/`**.
+
+## OPEN WORK, WITH THE EXACT NEXT STEP PER ITEM
+
+| # | open item | exact next step | owner |
+|---|---|---|---|
+| 1 | **89 REAL suite failures** | they are real, alone, on a restored tree. Triage by owner from `<scratchpad>/i3.table.txt`; nothing here claims they are new | chat to split |
+| 2 | 4 suite files **TIMEOUT alone at 240 s** | `run_defect_register_probe.py`, `run_hover_audit_method_sabotage_probe.py`, `stale_row_sweep_control.py`, `push_gate/check12_probe.py` — re-run each with no ceiling on a quiet box | next hank |
+| 3 | **THE SUITE DIRTIES ITS OWN TREE** (5 paths) | so "run it in a clean worktree" does not produce a clean verdict; only per-file runs do. Either make the generators run in a copy or have the harness restore between files | chat → harness owner |
+| 4 | **`core.bare` writer: `tests/push_gate/check4_probe.py` and `check7_probe.py`** | replace `git worktree add` with `git clone --local --no-hardlinks`, exactly as `check8_probe.py` did on 2026-10-06. Owner map: `basis NONE, owner null` | **chat to assign** |
+| 5 | **13 leaked worktree registrations** on the live clone | each is a live door for a shared-config write. Per-probe fix: throwaway clone, or `rmtree` + `git worktree prune` in a `finally`. I pruned only my own 5 | **chat to assign** |
+| 6 | `cron_liveness_check.py` / `audit_checkpoint_status.py` **destroy a good record** when their secret is absent | decide whether a could-not-tell may overwrite a dated OK. Both are in the bare-run-writers allowlist, so this is a design call, not a leak | **chat** |
+| 7 | **3 stale session locks** — `bare_scratch.lock`, `b11wt2.lock`, `b12wt2.lock` | named after throwaway clones that no longer exist, in a registry other sessions read. Not mine to clear | **chat** |
+| 8 | **`bare_run_write_check.py` cannot see outside the repo** | `~/SAIRN-SESSION-LOCKS/` is outside every clone by design, so a bare-run write there is invisible to it. Either widen the scope or declare the blind spot in its own output | **chat to assign** |
+| 9 | **STEP 0 — THREE `ALTER`s** | run the PRE-FLIGHT `pg_constraint` query, then 0a / 0b / 0c. They repair code already pushed and currently inert | **Michael** |
+| 10 | **STEP 13 — `sv_audit_log`** | decide between 13a/13b/13c (make the table take the row, and argue about `revoke update`) and **13-ALT, a new `sairnvet_audit_log`**, which I would put first | **chat → Michael** |
+| 11 | **STEP 14 — `rf_schedule.status_changed_by`** | run the SQL, then the four-step code change, **including rewriting arm D3** of `sd_data_write_attribution_three_apps.js` in the same commit | **Michael, then a build session** |
+| 12 | `dead_rule_sweep.py` **> 1800 s, no bound proposable** | make the tool emit progress FIRST, then one uncapped run on a quiet box, three times | next hank |
+| 13 | `guard_ablation.py`, `red_suite_register_check.py` | still only **> 600 s**. Not measured this batch and not guessed at | next hank |
+| 14 | **30 suites RED AND NOT RECORDED** in `docs/known-red-suites.json` (registry says 75, this run says 101) | `known_red_check.py --from-run <log>` reproduces it. Register is **fourth's** | **fourth** |
+| 15 | **3 real duplicate DOM ids** | `sairncare.html` `fc-name` (:320, :1082); `sairnfreedom.html` `ac-name` (:371, :1444) and `ac-tbody` (:380, :1461). `getElementById` returns the first, so the second element is unreachable | **chat to assign** |
+| 16 | `api/sd-data-exec-context-isolation.test.js` **declares cross-tenant coverage and grades NONE** | read it; either the declaration is wrong or the test is | **chat to assign** |
+| 17 | **14+ tools with header claims and NO suite** | `first_article_inspection.py` names them. Coverage owed, not a defect | chat |
+| 18 | **RULE E and RULE F** | land into `docs/METHODOLOGY.md` when it is unclaimed. RULE F belongs beside the generated-document rule in the **process rules**, as its no-conflict sibling | chat / fourth |
+| 19 | `tools/gh_push.py:182` | **already taken by cc's batch 17 item 4** — routed from my b1 and picked up. Nothing owed by me | cc |
+| 20 | `tools/hover_separation_ci.py:97` | unchanged from b1: decide which comparison the constant-plus-predicate API is meant to make | **chat** |
+| 21 | `docs/scrutiny-flags.json` stashes | 4 parked entries, match on the MESSAGE not the index | **cc** |
+
+## TRANSCRIPT AND ARTEFACTS
+
+**This session's scratchpad** — every captured exit code, every sweep script,
+every mutation backup:
+
+```
+C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\a517bec7-3fd2-4475-835c-6432b2acaa34\scratchpad
+```
+
+| file | what |
+|---|---|
+| `suite.clean.out` | the clean-worktree suite run, unbuffered, with `SUITE_EXIT=1` on its last line |
+| `i3.rerun.json` / `i3.table.txt` | all 101 FAILs re-run alone, with verdict and first failing line |
+| `i4.log` / `i4.dead_rule_sweep.py.out` | the 1800 s measurement and the three lines it produced |
+| `i6.pass1.json` / `i6.refusals.txt` / `i6.table.txt` | the 62 bare re-runs, every refusal text, the four-bucket accounting |
+| `b2_item6_pass2.py` | every complete command line, written out |
+| `i10.json` / `i10.log` | 175 ownerless tools × 2 runs, 15 flagged |
+| `barehunt.out` / `barehunt2.out` | the two negative controls that eliminated the 62 tools as the `core.bare` writer |
+| `gitconfig.bare-true.bak` | the corrupted `.git/config`, kept |
+| `i6.damage.cron.diff` / `i6.damage.audit.diff` | the two status documents a bare run destroyed, before restoring them |
+| `i5.nav.before.txt` / `i5.nav.after.txt` | nav_panel_check over all 22 apps, before and after |
+| `land.sh` / `repoint.py` / `reg_add.py` | the landing order RULE F describes |
+
+**Previous session's scratchpad**, which holds `tools_sweep.tsv` (the 315-script
+sweep this batch's items 5, 6 and 9 all read from) and `f.rat.out`:
+
+```
+C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\16753c01-e018-4c71-af08-342c1baa72e6\scratchpad
+```
+
+**Previous handoff:** `docs/handoff-hank-2026-10-07c.md` (batch b1, `afe526b2`).
+**Routed findings:** `docs/2026-10-07-hank-routed.md` — §1 gh_push (taken by cc),
+§2 the auditor-namespace retraction, §3 RULE E, §4 RULE F.
+**Printed SQL:** `docs/2026-10-07-hank-migration-sql-for-michael.md` — STEP 0
+(three ALTERs), STEP 1-12 (twelve tables), **STEP 13** (sv_audit_log, with
+13-ALT), **STEP 14** (rf_schedule).
