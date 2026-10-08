@@ -21,3 +21,161 @@ so a stop mid-batch loses nothing.
 | **5** three reconciliations | **DONE — and premise (a) does NOT hold** | `<scratchpad>/b3_i5a.out`, `b3_i5b_final.out`, `b3_i5c.out`, `b3_census_i5.out`; routed as **SEQ b3-A** | **(a) THE TABLE IS ARITHMETICALLY CORRECT; THE READING OF IT WAS NOT.** All 16 published cells MATCH the tool's own summary lines, and every column sums: `11+9+3+24=47`, `6+0+1+4=11`, `9+7+1+7=24`, `3+2+20+0=25`. The challenged equalities compare **ANCHORED against the sum of the other three as if it were a row total** — it is a PEER VERDICT, one of four mutually exclusive outcomes per citation. Evaluated as asked: `alf_` 11 vs 18, `dnt_` 3 vs 22, `bld_` 24 vs 11, all-four 47 vs 60, **none equal and none should be** — and **`sen_` 9 vs 9 IS equal by coincidence**, which is how such a reading survives. **BUT THE TABLE INVITED IT, so that is fixed:** republished with an explicit **ROW SUM** column. **The per-row sum that DOES have to hold was checked too and holds** (29/29, 18/18, 25/25, 35/35) — **and my first row-counter was wrong by exactly 4 per app** because `^  ANCHORED\s+\S` also matched the summary line; corrected, with the tell recorded. **The table was also STALE:** item 4 moved it — ANCHORED **47→45**, DRIFTED **24→22**, INCONCLUSIVE **25→29**, total **107→107**, all of it `sen_settings` ceasing to resolve onto a comment. **(b) THE UNITS DIFFER AND THE GAP DECOMPOSES EXACTLY: `entries` 76 − 5 rows not in the 83 − 20 rows in the 83 with no sha-stamped run = 51 VERIFIED RED, identity True.** The 5 are named; `check9_probe.py` is the one the pinned run reported SKIPPED not FAIL. **And the other direction nobody asked about: 7 pinned FAIL names had NO register row at all** — red and unattributable. **(c) ALL THREE DEFERRED SUITES ARE GREEN**, driven in a **throwaway CLONE, not a worktree** (a worktree shares `.git/config`, which is how `core.bare` leaked twice): exit **0 / 0 / 0**, none left the tree dirty, none moved `.git/config` — so **the mutation confound the register records for this family is HISTORICAL, not current**. `run_bare_run_write_probe.py` is in **cody's live claim**, so read-only, never edited. **NOTHING RESTORED IN THE MAIN CLONE BECAUSE NOTHING WAS TOUCHED:** status digest `2eeda7ffde63` and `.git/config` `789cfb6edb72` identical before and after. Three `recovered` rows added (5→8); census now **GREEN 8 · RED 51 · UNMEASURED 24 = 83**, individually verified **59 of 83** |
 | **6** METHODOLOGY: cody's and cc's conventions | **DONE — 4 landed as 27–30; TWO of cody's claimed six are NOT LOCATABLE and are NOT invented** | `docs/2026-09-13-cross-domain-disciplines.md` 27–30; `docs/METHODOLOGY.md` 4 promotion rows; `<scratchpad>/b3_i6.out` | **COUNTED BEFORE AND AFTER, not trusted: 26 → 30, highest 26 → 30, numbers contiguous 1..30, and zero stale `twenty-five`/`twenty-six` strings left anywhere.** Group heading, denominator note and body all moved **twenty-six → thirty**. **CODY'S SIX, ACCOUNTED FOR HONESTLY.** Three are locatable verbatim in `docs/2026-10-06-cody-queue17-inventory.md` METHODOLOGY (ITEM 15) and are landed in cody's own figures: **27** a fix that closes named instances leaves the mechanism open (*162 of 169* → **169 of 521**; the hole was 352 rules in 105 files, not 7 in one), **28** every figure carries its denominator, command, commit and date (three of cody's own documents reported a sweep with **no exit code at all**), **29** a tier that clears a whole category and finds nothing in it is the outcome to distrust (**22 of 22 exercised, 0 dead** → **17 exercised, 5 DEAD** after the digest stopped including the mutation). **A FOURTH was already landed and had been double-counted:** the queue-16 rule is **convention 15**, *derived by cody*, with that exact document cited in `METHODOLOGY.md` lines 44 and 64. **THE REMAINING TWO CANNOT BE LOCATED AND ARE NOT INVENTED.** cody's handoff says *"plus the three from queue 16"*, but `docs/2026-10-06-cody-queue16-inventory.md` has **exactly one** `## METHODOLOGY` section across all 17 of its headings — ITEM 8, the captured-exit-code rule, which is convention 15. Searched: that file's full heading list, every `docs/handoff-cody-*.md`, and every `docs/2026-10-0*-cody-*.md`. **CC'S ONE landed as 30**, text unchanged in substance, **with cc's reason for leaving the number blank quoted rather than paraphrased** (*"picking a number from outside the file is how two 11ths happened on 2026-09-25"*). **The membership question was asked of all four and all four are OUTSIDE the cannot-fire group, which stays at TEN** — 29 is the one that needed arguing and it loses on a real distinction: cody's tier CAN fire, so the fault is a mechanism that cannot DISTINGUISH, not one that cannot fail. **Bonus, because cc's file said so and `METHODOLOGY.md` is mine: cc's half of cody's `--open` row is CLOSED**, including cc's own correction from *ZERO of 238* to **1 of 239 post-fix, and it passes**; cody's half stays open; `docs/tier-a-reviews.json` untouched |
 | **7** one measured lesson | **DONE — routed, not self-promoted** | `docs/METHODOLOGY.md`, routed queue | **SHARING A HELPER DOES NOT SHARE ITS CONFIGURATION: a stripper's stage set and its input contract are properties of the CALLER, and carrying either across gives a wrong answer silently.** Reuse was the right call — `jscomments.py` exists because seven private strippers destroyed up to 90% of their input, `strip_comments.js` because three were each wrong differently — **and it is not the end of the problem. Measured FOUR times in this one batch, every one a DEFAULT: (1)** `blank_string_bodies` carried from `truthy_sum_check.py` into `orphan_register_check.py` took it **CLEAN → 8 FINDINGS, all false**, because there the pattern is code-also-in-prose and here the pattern **IS** a string literal — caught **only by diffing the verdict**, the exit code read as a successful fix; **(2)** `strip_comments` on a bare-JS fixture **stripped nothing, silently** (outside `<script>` only `<!-- -->` is a comment) — caught because the new control arms **FAILED on their first run**, and the arm that failed was the **anti-vacuity** one; **(3)** the same assumption an hour later on the `__file__` re-derivation, where `jscomments` has no `strip_js` at all — caught by an `AttributeError`, i.e. **by luck**; **(4)** the same shape one level out, the SEQ 17-A sweep's default SUBJECT, which made *"set 29 → 0, 100% phantom"* an artefact of my harness and one of the four named sites **not a defect at all**. **THE RULE: re-derive and ASSERT a shared helper's input contract and stage set for the new caller rather than inheriting them** — say what the caller's pattern is (code / string literal / prose), assert the helper did something on the new input, and diff the subject's verdict across the adoption. **THE SECOND-ORDER LESSON IS WORTH MORE: three of four were caught by an arm or a diff and the fourth by an accident — the anti-vacuity arm is the difference between a fix and a fix certified by a vacuous test.** Routed because every instance is mine; it sits beside **cody's 29** rather than inside it (29 distrusts a category-wide CLEAR; case 1 is the same mechanism loudly in the opposite direction, and **zero-from-anything is the one nobody looks at**) |
+| **8** handoff before the report | **DONE** | the BATCH b3 FINAL STATE section below | written at a point where nothing is half-finished: `ahead 0 / behind 0`, all three b3 commits **ON-REF** by `merge-base --is-ancestor`, every touched suite re-run alone at the final HEAD and all **exit 0**, no long-running job open |
+
+
+---
+
+# BATCH b3 FINAL STATE -- written before the report
+
+## COMMITTED AND PUSHED
+
+| | |
+|---|---|
+| branch | `main` |
+| HEAD | **`4c3d24a2`** |
+| pushed | **yes -- `ahead 0 / behind 0`** of `origin/main` at the time of writing |
+| working tree | clean except **one pre-existing untracked file**, `sql/restore_demo_pins_2026-09-29.sql`, there at session open for five batches and not mine |
+| `git config core.bare` | **empty -- unset.** `git status` answers normally |
+| `git stash` | **one entry: `stash@{0}: autostash`.** Pre-existing since batch 15, not created here |
+| long-running jobs | **none.** No whole-tree run and no `--pinned` run started; every suite driven individually |
+| the global settings file | **`~/.claude/settings.json` was WRITTEN this batch** -- outside the repo, under its own claim, released straight after. Pre-write bytes are in `<scratchpad>/b3_settings_BEFORE.json` |
+
+**Commits this batch, each verified ON-REF with `merge-base --is-ancestor`:**
+
+| commit | what |
+|---|---|
+| `c7e2f6fb` | SEQ 17-B: the left-operand fix, arm 14 as a pair, three baseline entries removed |
+| `e502a628` | SEQ 17-A at four sites: three checkers read code instead of prose, one finding withdrawn |
+| `4c3d24a2` | conventions 27-30, the three reconciliations, the measured lesson |
+
+Plus four `chore(claims)` commits: the settings-only claim taken and released, and
+the items 3-7 claim taken (released after the report).
+
+## EVERY SUITE RE-RUN ALONE AT THE FINAL HEAD
+
+Each as its own command with `$?` read on the next line -- no pipe, no `&&`, no
+`;` chain, which is convention 24 applied to the measurement:
+
+    TRUTHY_SUM_CHECK_EXIT=0          CLEAN, 47 baseline keys
+    TRUTHY_SUM_PROBE_EXIT=0          40 arms
+    ORPHAN_SELFTEST_EXIT=0           11 arms
+    ORPHAN_REGISTER_CHECK_EXIT=0     verdict identical to pre-fix
+    SAIRNVET_SUITE_EXIT=0            23 arms
+    DEMO_SEED_SUITE_EXIT=0           20 arms
+    CITATION_DRIFT_PROBE_EXIT=0      24 arms
+    KNOWN_RED_CHECK_FIXTURES_EXIT=0
+
+## FINAL FIGURES, re-derived at this HEAD
+
+| | |
+|---|---|
+| standing conventions | **30** -- counted from `## <n>.` headings, contiguous 1..30 |
+| conventions landed this batch | **4**: 27/28/29 **derived by cody**, 30 **derived by cc** |
+| **the 83, in three counts** | **VERIFIED GREEN 8 · VERIFIED RED 51 · UNMEASURED 24 = 83** |
+| individually verified, either way | **59 of 83** -- the figure that only goes up |
+| register | `entries` **76**, `recovered` **8**, empty `why` **11** |
+| `truthy_sum` baseline | **47** keys (50 - the 3 that said to remove them) |
+| citation drift, four apps | ANCHORED **45** · SOUND **11** · DRIFTED **22** · INCONCLUSIVE **29** · row sums **107** |
+| `__file__` population | **979 of 1232** code-only (was published as 978 raw) |
+| control arms added | **22** across four files, every set with an anti-vacuity arm |
+| global settings hooks | all **five** repo hook types present; PreCompact fires **once** |
+
+## WHAT IS OPEN, AND WHY
+
+| open | why |
+|---|---|
+| **the Tier A discharge** | **BLOCKED, not skipped.** `--discharge` writes `docs/tier-a-reviews.json`, which is in **cc's live claim FILES**. Three obligations are assigned to me; two are COULD-NOT-TELL (their subject shas do not resolve in this clone) and **hover2 `2026-09-30T13:59:56Z`, 179h, is the only one with no freshness complaint** -- the one to take the moment cc's claim clears |
+| **43 of the 47 SEQ 17-A findings** | and they **inherit a measurement fault**: the sweep measured every pattern against the app file its containing file reads. Of the four taken, **one was not a defect at all**. Each remaining one needs its real subject read **before** it is actioned |
+| **2 of cody's 6 methodology conventions** | **NOT LOCATABLE and not invented.** Searched the full heading list of `docs/2026-10-06-cody-queue16-inventory.md` (one `## METHODOLOGY` section, already convention 15), every `docs/handoff-cody-*.md` and every `docs/2026-10-0*-cody-*.md` |
+| **24 of the 83 unmeasured** | down from 27. Unmeasured individually, **not presumed red** |
+| **20 register rows in the 83 with no sha-stamped run** | the remaining census work, named in `<scratchpad>/b3_i5b_final.out` |
+| **7 pinned FAIL names with no register row at all** | three became `recovered` rows this batch; the other four -- `run_citation_anchor_hop_sabotage.py`, `run_committer_identity_probe.py`, `run_purge_evidence_probe.py`, `stale_row_sweep_control.py` -- are **red and unattributable**, the state an entry exists to remove |
+| **11 register rows with an empty `why`** | NOT DIAGNOSED YET, which this register defines as a backlog rather than a shrug |
+| **`tools/jscomments.py` has no `strip_js`** | so a bare `.py` or `.js` handed to its `strip_comments` is stripped **silently, not at all**. Worked around twice this batch (a `<script>` wrapper, and `pycomments` for `.py`). **Routed as a gap, not patched** -- that file is not in my claim |
+| **the `__file__` predicate is still lexical inside STRINGS** | comments are handled now; a `rev-parse` inside a string literal still counts as anchored, and the effect is unmeasured |
+| **cody's half of the `--open` finding** | cc's half is closed and recorded. cody's remains open |
+
+## EXACT NEXT STEP, PER OPEN ITEM
+
+1. **The Tier A discharge: hover2 `2026-09-30T13:59:56Z`** (`leg_insurance`,
+   `mech_checks`), the moment `docs/tier-a-reviews.json` leaves cc's FILES. The
+   other two of mine cannot be reviewed from this clone at all -- their subject
+   shas do not resolve here.
+2. **Before taking ANY of the 43:** read the pattern's real subject out of the
+   source and measure against THAT. `<scratchpad>/b3_i4_subjects.py` is the
+   worked example and it is four lines of work per site.
+3. **The four unattributable pinned names** -- one register row each, from a run
+   whose output exists. They are cheap and they remove an unattributable red.
+4. **The census** -- 24 to go. Re-extract the 83 from `pinned2_stdout.txt` every
+   time and let the script refuse on a disagreement; never quote the 83.
+5. **`jscomments.strip_js`** -- route it to that file's owner, or wrap at every
+   call site and say so. Two call sites already do the latter.
+6. **The `__file__` predicate inside strings** -- measure the effect before
+   deciding whether to fix it; it may be zero.
+
+## CLAIMS HELD
+
+**`fourth` is HELD** as the items 3-7 claim, declaring
+`tools/truthy_sum_check.py`, `tests/run_truthy_sum_probe.py`,
+`tools/truthy_sum_baseline.json`, `tools/stale_row_sweep.py`,
+`tests/sairnvet_seed_never_syncs.js`, `tools/orphan_register_check.py`,
+`tests/demo_seed_licence_scope.js`, `tools/citation_line_drift_check.py`,
+`docs/2026-10-07-fourth-coverage-ledger.md`, `docs/2026-10-07-fourth-routed.md`,
+`docs/METHODOLOGY.md`, `docs/2026-09-13-cross-domain-disciplines.md`,
+`docs/known-red-suites.json`, `docs/handoff-fourth-2026-10-08.md` and
+`SAIRN-ACTIVE-WORK-fourth.md`. **Released after the report.**
+
+The settings-only claim on `.claude/settings.json` was **taken before that write
+and released immediately after it**, as instructed.
+
+Two other sessions live throughout: **cody** (batch25-b2) and **cc** (batch17-b3),
+both re-read from `sairn_claim.py list` at pickup -- which is convention 30, landed
+this batch and applied in it.
+
+**NOT TOUCHED, each checked rather than assumed:** `docs/tier-a-reviews.json`,
+`tools/defect_register.py`, `tools/tool_owner_map.py`, `docs/tool-owner-map.json`,
+`tools/tooling_inventory.py`, `CLAUDE.md` and `docs/scrutiny-flags.json` (**cc**,
+live); `tools/run_all_tests.py`, `tools/capture_exit.py`,
+`tests/run_bare_run_write_probe.py`, `tools/clone_health_check.py`,
+`docs/defect-density-register.json` and `docs/SAIRN-PROCESS-RULES.md` (**cody**,
+live); `docs/CRITICALITY-TIERS.md`; and nothing anywhere under
+`.claude/skills/sairn-hover-auditor/`. **No defect record was added by me** -- both
+register paths are inside other sessions' live claims.
+
+**`docs/scrutiny-flags.json` is cc's and the push gate WRITES IT on every push.** It
+was **restored, never committed**, three times this batch. That is standing friction
+worth naming: a gate that writes a file another session owns makes every push a
+choice between a dirty tree and touching somebody else's file.
+
+**I closed only findings I originated, and reclassified none.**
+
+## TRANSCRIPT
+
+    C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\7e379670-c1b8-4e19-9aa2-b1affe2f960e\scratchpad
+
+Batch b3, in item order: `b3_claims.txt`, `b3_tiera.txt` (item 1);
+`b3_i2_merge.py` / `b3_i2_patch.py` / `b3_i2_dryrun2.out` / `b3_i2_apply.out`,
+`b3_i2_test.py` with `b3_i2_test_before.out` (**6 of 14 arms FAIL**) and
+`b3_i2_test_after.out` (**14/14 pass**), `b3_settings_BEFORE.json` /
+`b3_settings_AFTER.json` (item 2); `b3_i3_fix.py`, `b3_i3_tool_prebaseline.out`,
+`b3_i3_tool_after.out`, `b3_i3_probe_after.out`, `b3_i3_ablate.py` / `.out`,
+`truthy_sum_check.PREFIX.py` / `.FIXED.py` (item 3); `b3_i4_subjects.py` / `.out` --
+**the script that found one of the four named sites is not a defect** --
+`b3_orphan_*.out`, `b3_vet_control.out` (**the control arms failing**) and
+`b3_vet_control3.out` (passing), `b3_dsl_after.out`, `b3_cld_sen_after.out`,
+`b3_cld_probe_H2.out`, `b3_i4_ledger.py` / `.out` (item 4); `b3_i5a.py` / `.out`,
+`b3_i5b.py` / `b3_i5b_final.out`, `b3_i5c.py` / `.out`, `b3_census_i5.out`
+(item 5); `b3_i6.py` / `.out` (item 6); `b3_i7.py` (item 7);
+`b3_final_krc.out`, `scrutiny-flags.GATE-WROTE.json`.
+
+**And the batch-14/15 session's scratchpad, a DIFFERENT directory**, which holds
+`pinned2_stdout.txt` -- the only copy of the pinned run the 83 is re-extracted from
+every time -- and `sweep_full.py`, the report gate:
+
+    C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-fourth\4975e2e9-8002-4f73-9d9d-240c42c3b643\scratchpad
+
+**And the memory directory**, which carries a per-item checkpoint of this batch
+updated after every single item:
+
+    C:\Users\marsh\.claude\projects\C--Users-marsh-Documents-SAIRN-fourth\memory\batch-b3-progress.md
