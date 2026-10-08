@@ -2330,3 +2330,19 @@ Count the `## <n>.` headings.
   touching it.
 * Census **GREEN 8 / RED 51 / UNMEASURED 24 = 83**; 20 register rows in the 83
   still carry no sha-stamped run.
+
+
+## batch b4 (18) -- 2026-10-08, CLOSED at `5b2d36f4`
+
+Resumed after a compaction that landed between item 4 and item 5; the resume point
+was derived from `git log -1`, `git status` and the memory checkpoint agreeing,
+not from the brief. Items 1-4 were already done (3 pushed as `2a8ab911`).
+
+- **item 5, external claims** -- **24 held, 23 released.** 24 git worktrees were registered in this clone with nothing on the platform counting them. Every dirty tree read first; `ted-c8-dev` looked like unlanded work and was diffed against HEAD (0 lines, landed as `b23dbc2e`). All holder PIDs confirmed dead. `cc-review-0a_4251m` HELD because it is git-locked and another agent's. Autostash dropped after proving its two files are gitignored run markers superseded on disk. **10 orphan locks REPORTED, NOT RELEASED** -- the lock format has no holder field, 8 of 10 are unattributable, routed to the owner of `sairn_self_state.py` / `session_lock_check.py`.
+- **item 6, skill paths** -- every candidate path printed; **nothing disabled.** `.claude/skills/` is git-tracked (192 files), 159 of them the hover auditor's scope, and that skill diverges from its user-level copy, so disabling would silently swap a live record store for a stale one. Zero-use measured two ways: 9 of 34 by transcript, 11 of 34 by CLI telemetry, **4 under both**. Shared user-level store read only.
+- **item 7, external files** -- 369 home-root candidates classified individually; **2 documents of record committed** (`SAIRN-SESSION66-HANDOFF.md`, the only gap in a tracked 63-69 series, and the renamed SAIRNlaw collider). Index and mechanical check flagged back to cody and cc respectively; registration block paste-ready in `docs/2026-10-07-fourth-routed.md` SEQ b4-C.
+- **compaction settings** -- in the brief, not in my claim's items. **No write needed: already satisfied.** `autoCompactWindow 150000` and `BASH_MAX_OUTPUT_LENGTH 10000` both already set, the latter verified live in this session's env. Claim check BLOCKED by cc and cody, exit 1. No MCP servers configured, nothing to disable.
+- **open by design** -- 36 real SEQ 17-A findings across 17 sites, routed with their real subject rather than fixed.
+- **this file is 1,008,974 bytes, over the 400,000 ceiling.** `tooling_inventory.py --standing-doc-sizes` exits 1 with 7 documents over; the split arrives routed from cc's batch W item 13.
+
+Full account: `docs/handoff-fourth-2026-10-08.md`, `docs/2026-10-07-fourth-routed.md` SEQ b4-A..b4-D.
