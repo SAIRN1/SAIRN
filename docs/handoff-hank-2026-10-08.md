@@ -653,3 +653,73 @@ flag means. The tool parses frontmatter only, which is the correct population.
 observed for the whole batch. No model switch, no connector change, and every
 compaction point fell between items, which is what the per-item checkpoint
 structure produces for free.
+
+### item 8 — `dead_rule_sweep.py` TIMED TO COMPLETION — **4923.3 s**, and a bound is proposed from that number
+
+Batch 18 got a **lower bound and refused to name a bound**: TIMEOUT at 1800 s
+after printing three lines in thirty minutes. This run removed the ceiling far
+enough to get an actual figure.
+
+```
+SUBJECT    tools/dead_rule_sweep.py
+CLONE      a throwaway CLONE -- this tool REGISTERS A WORKTREE and leaves it
+           registered (item 6), so running it anywhere that matters leaks one
+CEILING    7200 s, unbuffered
+
+EXIT       2
+WALL TIME  4923.3 s   (82.05 min)
+```
+
+**IT RAN TO ITS OWN END.** Exit 2 is the tool's verdict, not a timeout: its last
+line is *"The findings above are a FLOOR, not a total — part of this run did not
+happen."* **157 findings** over **158 tools / 562 compiled rules**, and four
+`sairn_reachability_check.py` rules came back
+*"COULD NOT RUN: bound 90 s exceeded … the evidence exists; re-ask with
+--corpus-timeout at 2x"* — the tool keeping its own could-not-tell separate from
+"no lock, no control", which is PR §1.11 applied internally.
+
+**LOAD, SAMPLED EVERY 15 s FOR THE WHOLE RUN — 286 samples, 0 unreadable.**
+Windows has no load average, so the honest equivalent was recorded:
+
+| | other python/node processes | system CPU % |
+|---|---|---|
+| min | 3 | 9 |
+| **mean** | **7.1** | **61.9** |
+| max | 20 | 99 |
+| first 10 min | 9.5 | 68 |
+| last 10 min | 11.9 | 77 |
+
+**"NOTHING ELSE OF MINE" HELD; "AN IDLE BOX" DID NOT, and the difference matters
+for the bound.** No other hank process ran. But four other sessions were working
+throughout — the box never dropped below 3 competing processes and averaged
+**62 % CPU**, rising over the run rather than falling. **So 4923 s is a loaded-box
+figure, which is the realistic one to bound against**, not an optimistic floor.
+
+#### THE PROPOSED BOUND: 7200 s (2 hours)
+
+**Derived from the measurement and nothing else:** 7200 / 4923 = **1.46×
+headroom**.
+
+**WHY 1.46× AND NOT TIGHTER.** This platform has already been bitten at **1.04×**:
+`assurance_case.py` was failing a 90 s bound at a measured **86.8 s** — timing out
+on variance alone, with no defect behind it. A bound set just above a single
+measurement is a bound that reports a timeout on a busy afternoon.
+
+**WHY NOT LOOSER.** A bound exists to distinguish "slow" from "hung". At 2 h it
+still fires inside a working session, and the tool's own per-rule bound (45 s
+default, 90 s where measured) already fails fast on the individual rule.
+
+**WHAT WOULD MAKE THIS MORE THAN PROVISIONAL, stated rather than implied: THIS IS
+ONE SAMPLE.** A bound from one run has no variance behind it. Three runs on
+comparable load would give a spread; until then 7200 s is a **provisional** bound
+whose only justification is 1.46× over a single loaded-box measurement. I did not
+run it three times — at 82 minutes each that is four hours, and the batch had
+eleven other items.
+
+**AND THE TOOL SHOULD BE FIXED BEFORE THE BOUND IS TIGHTENED.** It emitted its
+first substantive line and then went quiet for most of 82 minutes under
+`python -u`, so the silence is the subject's, not buffering. That is cross-domain
+convention 10 inside the tool being measured — a long run whose first check is at
+the end. A progress line per tool would turn the next measurement into both a
+number *and* a profile of where the time goes, which is what a tighter bound
+actually needs.
