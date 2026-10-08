@@ -3372,6 +3372,24 @@
         "tools/truthy_sum_baseline.json",
         "tools/truthy_sum_check.py"
       ]
+    },
+    {
+      "id": "fourth-1791467672",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "batch b4 (18) at HEAD 10f5e431, premises re-derived AT PICKUP per convention 30. (2) re-check the remaining 43 of 47 SEQ 17-A findings with the subject-verification method, real vs withdrawn counts. (3) tools/jscomments.py gains strip_js so a bare .py/.js input cannot silently no-op, plus a sweep of every call site for the same blind spot. (4) recount cody's claimed six queue16 conventions -- READ-ONLY measurement, because docs/METHODOLOGY.md is CODY'S in FILES at 0.5h and nothing is landed into it. (5) state and release my own external claims with evidence. (6) skill resolution path printed per candidate; project-level .claude/skills/ in this clone may be disabled with zero-use evidence, user-level ~/.claude/skills/ is SHARED and is LOGGED ONLY, never edited. (7) inventory every tool, script and handoff I keep outside git and COMMIT what belongs in the repo -- but docs/external-files-index.json is CODY'S in FILES at 0.5h, so the registration half is FLAGGED BACK and written into my own routed doc instead, not into cody's file. (8) handoff before the two report files. CONFLICTS RE-DERIVED AT PICKUP FROM A LIVE sairn_claim.py list, NOT from a claim written earlier: cody batch26 declares docs/METHODOLOGY.md, docs/external-files-index.json, docs/tier-a-reviews.json, tools/tier_a_review_gate.py, tools/exit_status_attributable.py, docs/defect-density-register.json and tests/run_tier_a_review_gate_probe.py -- NONE of them is touched by me, so items 4 and 7 are narrowed and the narrowing is declared rather than reworded past. tools/jscomments.py, docs/2026-09-13-cross-domain-disciplines.md, docs/2026-10-07-fourth-routed.md and .claude/skills/ were each checked against that same live list and are declared by nobody. I close only findings I originated and reclassify none. FILES: tools/jscomments.py docs/2026-09-13-cross-domain-disciplines.md docs/2026-10-07-fourth-routed.md docs/2026-10-07-fourth-coverage-ledger.md docs/handoff-fourth-2026-10-08.md SAIRN-ACTIVE-WORK-fourth.md",
+      "claimed_at": "2026-10-08T13:54:32Z",
+      "claimed_at_epoch": 1791467672.160174,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-fourth.md",
+        "docs/2026-09-13-cross-domain-disciplines.md",
+        "docs/2026-10-07-fourth-coverage-ledger.md",
+        "docs/2026-10-07-fourth-routed.md",
+        "docs/handoff-fourth-2026-10-08.md",
+        "tools/jscomments.py"
+      ]
     }
   ],
   "refusals": [
