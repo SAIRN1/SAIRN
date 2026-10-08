@@ -7185,3 +7185,44 @@ text.
 **And the push took six refusals**, every one correct: three for missing register
 records, one for a race, and one for **copy-exactly** — 25 propagations of a
 12-line helper with no recorded re-qualification. All answered.
+
+---
+
+## 2026-10-08 — batch 26 (b3), RESUMED after a compaction stop. All 9 items closed.
+
+Resumed at HEAD `7803870b` with items 1–7 already landed, so nothing finished was
+re-done and nothing unfinished was skipped. Claim still live at 1.5h; rebased 36
+commits onto `origin/main`, rc 0, no conflicts, and **both of my declared files
+that had moved upstream were re-verified rather than trusted** — the tier-A probe
+EXIT 0 and the `4aa33b4565dd` reseat still reachable from `origin/main`.
+
+**Item 2 overturned its own hypothesis: 76 of 86 pinned-suite failures are REAL**,
+3 ARTIFACT, 7 COULD-NOT-RUN, 0 of 86 dirtied the clean clone. The contamination
+explained **3**, not 86. **Item 3 was bigger than one record** — `reseat_shas()`
+silently filtered to `status == 'open'`, and disclosing the excluded population
+showed **72 reviewed records carrying a sha, 32 of them dangling**. **Item 4
+CLOSED as not needed**, measured: a standalone backgrounding warning would be new
+output on 106 of 107 command lines. **Item 5 NOT TOUCHED** — `scrutiny-flags.json`
+is cc's by its writer's `# OWNER` line, and there are **seven** parked stashes, not
+the four the item said.
+
+**Item 6's own mechanical check found that the generator had excluded itself from
+its own population.** The index declared itself derived and named
+`scratchpad/b26/build_index.py` as the regeneration path — not tracked, not in its
+own 64-script register, living only in a directory the index itself marks *HIGH —
+cleared without warning*. All three chain links are committed now and the index was
+**regenerated rather than hand-edited**; `tools/external_file_index_audit.py` went
+EXIT 1 → **EXIT 0 CLEAN**, 13 arms, 5 negative. **Convention 26 applied against a
+file I had committed myself one commit earlier**: `inventory2.py` dropped its raw
+beside itself, which became a live-path fallback the moment it was tracked.
+
+**Item 8** landed as full text in its own section of `docs/METHODOLOGY.md` —
+*a contamination warning makes every result in its scope unfalsifiable, so it must
+ship with the isolation method* — routed to fourth for a number, not self-promoted,
+with every figure re-derived from the TSV rather than quoted.
+
+**Still open and named:** `/context` and `/mcp` need Michael; `autoCompactWindow`
+sits beside `autoCompactEnabled = false`; the seven stashes are cc's call; the
+session-start check is built and unwired because `.claude/settings.json` is in cc's
+FILES; and the long stall is still **not named** — 420 s is the bound, not a
+measurement.
