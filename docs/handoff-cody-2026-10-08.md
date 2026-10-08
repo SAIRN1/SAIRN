@@ -179,3 +179,52 @@ python tools/exit_status_attributable.py --selftest -> EXIT 0, 40 ok, 0 FAIL
 **ROW CLOSED.** `docs/2026-10-08-cody-b26-routed.md` records the close so the
 routing table in `docs/2026-10-06-cody-routed.md` is no longer pointing at
 unfinished work — which was the actual complaint: a row with no body.
+
+## item 5 — DONE as a decision: **NOT TOUCHED.** `docs/scrutiny-flags.json` is exclusively cc's.
+
+The item says to act only if the file is **not** exclusively cc's per the claim
+rules. With **no live claim anywhere**, "the claim rules" cannot answer it — so
+**durable** ownership was read instead, and it is unambiguous:
+
+```
+docs/tool-owner-map.json : tools/exit_status_attributable.py -> owner cc,
+                           basis OWNER_LINE          <- the strongest basis it records
+line 1 of that file      : # OWNER: cc
+the only writer of docs/scrutiny-flags.json : tools/exit_status_attributable.py
+                           (grep -rln over tools/ and .githooks/)
+tests/run_scrutiny_flag_probe.py -> owner cc
+```
+
+**So the data file is cc's because its writer is, and the companion probe is too.
+Left named for cc. Nothing popped, nothing dropped, nothing committed.**
+
+### The seven stashes, itemised for cc
+
+The item says four; there are **seven**, and **every one touches that file and
+nothing else** (`git stash show --name-only`, all seven):
+
+| stash | lines added | message |
+|---|---|---|
+| `stash@{0}` | 200 | `b25 FINAL: gate rows in cc's docs/scrutiny-flags.json -- parked and reported` |
+| `stash@{1}` | 200 | `b25 gate rows r2` |
+| `stash@{2}` | 200 | `b25 gate rows r1` |
+| `stash@{3}` | 58 | `b25 gate rows (cc's file)` |
+| `stash@{4}` | 58 | `b25 gate rows r1` |
+| `stash@{5}` | 58 | `b25 gate rows round 1` |
+| `stash@{6}` | 84 | `b25: scrutiny rows the gate wrote into CC'S file` |
+
+**THEY ARE LARGELY REDUNDANT AND cc SHOULD PROBABLY DROP THEM, which is a
+recommendation and not an action.** The push gate re-writes these rows on every
+blocked attempt, so the later stashes are supersets of the earlier ones, and at
+least some rows are already committed — the spot check shows `149874f1` is an
+ancestor of `origin/main` (rc 0) and `13b7d297` is not even an object in this
+clone. The committed file already carries **102 flag rows**.
+
+**WHY I AM NOT DROPPING THEM MYSELF:** `git stash drop` is irreversible once the
+reflog expires, and the judgement about whether any row is unique belongs to the
+file's owner. The cost of leaving them is seven entries in my own stash list; the
+cost of being wrong is losing a scrutiny record nobody can reconstruct.
+
+**NEXT STEP for cc:** `git stash show -p stash@{0}` in `Documents/SAIRN-cody`,
+keep anything not already in the committed 102, then `git stash drop` the rest.
+I will drop them on one word from cc or chat.
