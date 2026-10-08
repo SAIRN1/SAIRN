@@ -53,16 +53,18 @@ MARKER = 'sairn-hover-auditor-clone'
 # check is itself built to report on, named here rather than assumed).
 
 
-def _ext_file_check_path():
-    """Resolves the real platform-repo path from this hook's own location,
-    the same '..'-climb convention the committed tools-hover2/ copies of
-    citation_resolve_check.py and hover2_external_file_check.py already
-    use from their OWN location -- here climbing from the log-repo
-    directory instead, which sits beside the clone rather than under it,
-    so the real repo root has to be read rather than assumed. NOT
-    hardcoded as an absolute string: this hook already carries one
-    location-dependent lesson (own_project_slug's docstring) about exactly
-    that mistake."""
+def _tool_in_clone(filename):
+    """Resolves a named tools-hover2/ script's real platform-repo path from
+    this hook's own location, the same '..'-climb convention the committed
+    tools-hover2/ copies already use from THEIR OWN location -- here
+    climbing from the log-repo directory instead, which sits beside the
+    clone rather than under it, so the real repo root has to be read
+    rather than assumed. NOT hardcoded as an absolute string: this hook
+    already carries one location-dependent lesson (own_project_slug's
+    docstring) about exactly that mistake. Shared by every
+    tools-hover2/<name>.py this hook appends a report from -- added
+    batch Y rather than duplicating the git-rev-parse logic a second time
+    for the session-config check below."""
     try:
         r = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
                            cwd=os.getcwd(), capture_output=True, text=True,
@@ -74,8 +76,16 @@ def _ext_file_check_path():
         return None
     cand = os.path.join(
         top, '.claude', 'skills', 'sairn-hover-auditor', 'tools-hover2',
-        'hover2_external_file_check.py')
+        filename)
     return cand if os.path.isfile(cand) else None
+
+
+def _ext_file_check_path():
+    return _tool_in_clone('hover2_external_file_check.py')
+
+
+def _session_config_check_path():
+    return _tool_in_clone('hover2_session_config_check.py')
 
 
 def is_hover_clone():
@@ -190,16 +200,17 @@ def main():
         return 0
     out = (r.stdout or '').strip()
     ext_suffix = _run_ext_file_check()
+    cfg_suffix = _run_session_config_check()
     if r.returncode != 0:
         record_fire('ran-and-failed')
         emit('HOVER2 SELF-HEALTH: ran and exited %d -- read this, it is not '
-             'a pass.\n%s\nstderr: %s%s'
+             'a pass.\n%s\nstderr: %s%s%s'
              % (r.returncode, out[:3000], (r.stderr or '').strip()[:400],
-                ext_suffix))
+                ext_suffix, cfg_suffix))
         return 0
     record_fire('ran-and-passed')
     emit('HOVER2 SELF-HEALTH (this clone\'s own log, checked by this '
-         'clone\'s own hook):\n%s%s' % (out[:3500], ext_suffix))
+         'clone\'s own hook):\n%s%s%s' % (out[:3500], ext_suffix, cfg_suffix))
     return 0
 
 
@@ -225,6 +236,27 @@ def _run_ext_file_check():
         return '\n\nEXTERNAL-FILE CHECK: %s' % out[:500]
     except Exception as e:
         return '\n\nEXTERNAL-FILE CHECK: COULD NOT RUN (%s)' % e
+
+
+def _run_session_config_check():
+    """Same pattern as _run_ext_file_check(): a FOURTH independent check
+    (skills + MCP server listing, read-only, batch Y item 6) appended to
+    the SAME emit() call. Never raises."""
+    try:
+        path = _session_config_check_path()
+        if not path:
+            return ('\n\nSESSION CONFIG CHECK: COULD NOT RUN -- '
+                    'hover2_session_config_check.py not found under this '
+                    'clone\'s tools-hover2/.')
+        r = subprocess.run([sys.executable, path], capture_output=True,
+                           text=True, encoding='utf-8', errors='replace',
+                           timeout=20)
+        out = (r.stdout or '').strip()
+        if r.returncode == 2:
+            return '\n\nSESSION CONFIG CHECK: COULD NOT RUN -- %s' % out[:800]
+        return '\n\nSESSION CONFIG CHECK:\n%s' % out[:1500]
+    except Exception as e:
+        return '\n\nSESSION CONFIG CHECK: COULD NOT RUN (%s)' % e
 
 
 def _selftest():
@@ -381,6 +413,38 @@ def _selftest():
             'silent', 'COULD NOT RUN' in suffix)
     finally:
         globals()['_ext_file_check_path'] = _orig
+
+    # ADDED batch Y item 6: the SAME two-arm pattern (real wiring + known-
+    # bad control) for the new session-config check, so it does not ship
+    # with less verification than the one it is modeled on.
+    _fires_fd3, _fires_tmp3 = None, None
+    try:
+        import tempfile as _tf5
+        _fires_fd3, _fires_tmp3 = _tf5.mkstemp(suffix='.jsonl', prefix='selftest_fires3_')
+        os.close(_fires_fd3)
+        _env3 = dict(os.environ, HOVER_FIRES_LOG_OVERRIDE=_fires_tmp3)
+        r4 = subprocess.run([sys.executable, os.path.abspath(__file__)],
+                            capture_output=True, text=True,
+                            cwd=r'C:\Users\marsh\Documents\SAIRN-hover2',
+                            timeout=30, env=_env3)
+        chk('WIRING: the real hook also includes a SESSION CONFIG CHECK '
+            'section in the SAME emitted envelope, still exactly one '
+            'JSON line',
+            'SESSION CONFIG CHECK' in r4.stdout
+            and r4.stdout.count('"hookEventName"') == 1)
+    finally:
+        if _fires_tmp3 and os.path.isfile(_fires_tmp3):
+            os.remove(_fires_tmp3)
+
+    _orig2 = globals()['_session_config_check_path']
+    try:
+        globals()['_session_config_check_path'] = lambda: r'C:\does\not\exist2.py'
+        suffix2 = _run_session_config_check()
+        chk('KNOWN-BAD CONTROL: a forced-nonexistent session-config path '
+            'reports COULD NOT RUN rather than raising or going silent',
+            'COULD NOT RUN' in suffix2)
+    finally:
+        globals()['_session_config_check_path'] = _orig2
 
     print()
     if fails:
