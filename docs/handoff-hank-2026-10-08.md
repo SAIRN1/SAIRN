@@ -247,3 +247,68 @@ distinguish probe litter from work — e.g. every dirty path matches a known
 fixture pattern, or the newest file is older than N days with no branch — or
 (b) decide these four by hand. I have not done either; both are judgement calls
 about other sessions' artefacts.
+
+### item 5 — A MISSING SECRET NO LONGER OVERWRITES A GOOD RECORD — root cause fixed, 14/14 arms
+
+**THE ROOT CAUSE WAS A SOUND RULE APPLIED TO THE WRONG STATE.** Both tools held
+*"say so rather than keeping a stale OK"* — which is **right** when the tool
+**asked** and could not get an answer (a 401, a timeout, an unparseable body;
+those are facts about the subject) and **wrong** when it could not ask at all.
+**A missing environment variable is a fact about the clone, not about the cron
+jobs or the audit logs** — and five of the six clones on this box do not carry
+`CRON_SECRET`, so every sweep that drove every tool bare erased the record again.
+
+**THE FIX IS A FOURTH EXIT CODE, not a condition bolted onto the third.**
+`EXIT_NO_SECRET = 3` in both tools; the missing-secret path now **writes nothing**
+and returns 3. **Every other could-not-tell path is unchanged** and still records
+COULD NOT TELL, because those ran — the fix is scoped to the state that justified
+it (RULE E).
+
+**MEASURED on the real documents, md5 before and after:**
+
+```
+docs/CRON-LIVENESS-STATUS.md      14f7f60abf4552fb0a7cdea3f89bf1ab  ->  unchanged
+docs/AUDIT-CHECKPOINT-STATUS.md   dad31b8ebd43b1d51e6ef841902c0e0e  ->  unchanged
+tools/cron_liveness_check.py      EXIT 3
+tools/audit_checkpoint_status.py  EXIT 3
+```
+
+Both now print **`NOTHING WAS WRITTEN. <doc> is UNCHANGED and still holds
+whatever the last run that COULD ask recorded.`**
+
+**`tests/run_status_doc_secret_probe.py` — EXIT 0, 14 passed / 0 failed.**
+Four arms per tool plus three sabotage arms per tool:
+
+| arm | what it pins |
+|---|---|
+| **A** | exits **3, not 2** — exit 2 belongs to the paths that DID ask |
+| **B** | the status document is **byte-identical** afterwards. *The defect was never a wrong exit code; it was a destroyed record* |
+| **C** | the output SAYS nothing was written, so a reader is not left guessing |
+| **D** | the planted sentinel survives — proving B compared a real file, not two absences |
+| **S1** | **SABOTAGE**: the old behaviour restored exits 2, so **arm A would have failed on it** |
+| **S2** | SABOTAGE overwrites the planted record, so **arm B would have failed on it** |
+| **S3** | and the sentinel is **GONE** — the destroyed record stated as a fact, not as a hash difference |
+
+**THE SABOTAGE IS WHAT MAKES THE ARMS EVIDENCE.** It rewrites the
+missing-secret path back to `write_status(...)` + exit 2 **in a copy**, and the
+probe asserts the copy both exits 2 and destroys the sentinel. *An arm that
+cannot be made to fail has not been tested.*
+
+**DRIVEN IN A SYNTHETIC SANDBOX, NOT A WORKTREE.** Each subject is copied into a
+bare directory holding `tools/<subject>.py`, `tools/sairn_http.py` and a `docs/`
+with a planted good record; the subjects derive their root from `__file__`, so
+the sandbox is a complete world and nothing shared is reachable. **Not a linked
+worktree on purpose** — batch 18 found a worktree shares `.git/config` with its
+clone, which is RULE G below. Confirmed: the real documents are unchanged by the
+probe itself.
+
+**WHAT IT DOES NOT COVER, printed by the probe on every run:** the other
+could-not-tell paths still write COULD NOT TELL **deliberately**, and a run WITH
+a real secret is not driven — no credential was manufactured, so the happy path
+is untested by this file.
+
+**ONE CONSEQUENCE FOR ITEM 6, noted here so it is not read as a regression:**
+both tools are in `tools/bare_run_writers.py`, the declared-intended-writers
+allowlist. They are still correctly listed — with a secret set they do write —
+but a **bare** run in a clone without the secret now writes nothing, so the
+widened bare-run sweep will see them as non-writers.

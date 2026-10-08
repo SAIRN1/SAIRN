@@ -119,6 +119,27 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
 
 EXIT_CLEAN, EXIT_FINDING, EXIT_COULD_NOT_RUN = 0, 1, 2
+# ── EXIT 3: THE CREDENTIAL IS ABSENT, AND NOTHING WAS WRITTEN (2026-10-08) ──
+# A FOURTH code, because the third was being used for two different things and
+# only one of them should touch this document.
+#
+# THE DEFECT, measured 2026-10-07: a bare run of this tool in a clone with no
+# CRON_SECRET REPLACED a real OK -- four jobs, all ok, measured 09:18:44Z --
+# with COULD NOT TELL. The record was destroyed by a session that had no way to
+# check it, and nothing anywhere recorded that an OK had ever existed.
+#
+# THE REASONING THAT PRODUCED IT IS SOUND AND IS THE WRONG SHAPE HERE. "Say so
+# rather than keeping a stale OK" is right when the tool ASKED and could not get
+# an answer -- a 401, a timeout, an unparseable body. Those are facts about the
+# subject. A MISSING ENVIRONMENT VARIABLE IS NOT A FACT ABOUT THE SUBJECT. It is
+# a fact about the clone the tool happens to be running in, and five of the six
+# clones on this box do not carry the secret, so any sweep that runs every tool
+# bare erases the record every time.
+#
+# So the missing-secret path now writes NOTHING and exits 3. Every other
+# could-not-tell path is unchanged and still records COULD NOT TELL, because
+# those ran.
+EXIT_NO_SECRET = 3
 DOC = os.path.join(REPO, 'docs', 'CRON-LIVENESS-STATUS.md')
 DEFAULT_URL = 'https://sairn.vercel.app/api/cron-watchdog'
 
@@ -255,12 +276,20 @@ def main(argv):
     url = watchdog_url()
     secret = os.environ.get('CRON_SECRET')
     if not secret:
-        return cannot_tell([
-            '**CRON_SECRET is not set in this environment, so the watchdog was not',
-            'called and no job was checked.**',
-            '',
-            'This is not a finding about the jobs. It is this tool being unable to ask.',
-        ], msg='CRON_SECRET is not set.')
+        # NOTHING IS WRITTEN HERE. See EXIT_NO_SECRET above for why this path
+        # no longer calls cannot_tell(): a credential this clone does not carry
+        # is not information about the cron jobs, and overwriting the last good
+        # verdict with it destroys the only record anybody had.
+        print('COULD NOT RUN: CRON_SECRET is not set, so the watchdog was not '
+              'called and no job was checked.')
+        print('NOTHING WAS WRITTEN. %s is UNCHANGED and still holds whatever '
+              'the last run that COULD ask recorded.'
+              % os.path.relpath(DOC, REPO))
+        print('This is not a finding about the jobs, and it is not a finding '
+              'about the document either -- it is this tool being unable to '
+              'ask, in a clone that does not carry the secret.')
+        print('  CRON_SECRET=... python tools/cron_liveness_check.py')
+        return EXIT_NO_SECRET
 
     try:
         from sairn_http import fetch_json
