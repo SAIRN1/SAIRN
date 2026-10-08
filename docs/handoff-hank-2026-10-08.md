@@ -165,3 +165,85 @@ after it**, so three bad cells cost 62 rows. Escaping the pipe was never the
 fix — the invisible character was. The generator now maps every control
 character to a space and every pipe to a slash, and `md_table_check` is the
 arbiter that has to be satisfied rather than my own reading of the markdown.
+
+### item 4 — STALE LOCKS AND WORKTREES — 2 locks removed, 1 refused on its own rule, 0 worktrees removed
+
+Evidence gathered FIRST by a script that removes nothing
+(`scratchpad/b3_item4_evidence.py`, output `i4ev.json` / `i4ev.log`), against a
+**single process snapshot of 363 processes** so every item is judged against the
+same moment rather than a moving target.
+
+**A MISSING MEASUREMENT IS NOT-REMOVABLE, never removable-by-default.** If the
+lock's pid cannot be read, "gone" is unprovable; if `git status` cannot run in a
+worktree, "clean" is unprovable. Both outcomes are refusals.
+
+#### LOCKS — 16 present. The three named, each with its evidence:
+
+| lock | recorded pid | alive? | age | verdict |
+|---|---|---|---|---|
+| `b11wt2.lock` | 78192 | **gone** | **36.49h** | **REMOVED** |
+| `bare_scratch.lock` | 56660 | **gone** | **189.86h** | **REMOVED** |
+| `b12wt2.lock` | 78192 | gone | **21.57h** | **LEFT — fails the 24h test by 2.4h** |
+
+Contents captured before deletion; both backups are at
+`scratchpad/removed.<lock>.bak`:
+
+```
+b11wt2.lock       {"pid": 81228, "claude_pid": 78192, "started": "2026-10-06T16:23:12", "task": ""}
+bare_scratch.lock {"pid": 38620, "claude_pid": 56660, "started": "2026-09-30T07:01:21", "task": ""}
+```
+
+**`b12wt2.lock` WAS NAMED IN THE DISPATCH AND IS STILL THERE.** Its process is
+gone, so it is certainly dead — but the rule I was given is *"verify the owning
+process is gone **and the age**"*, and at 21.57h it is under 24h. **It fails by
+two and a half hours.** Removing it would mean applying the rule to two items and
+making an exception for the third, which is exactly RULE E's defect. It will
+qualify on its own a few hours from now; it is listed as open rather than quietly
+taken.
+
+**FOUR MORE LOCKS MEET THE SAME CRITERIA AND WERE NOT TOUCHED**, because they are
+outside the three the dispatch named and their owners are not established:
+`repo.lock` (pid 39448 gone, 48.40h), `sairn_idem_o66nnvth.lock` (58388 gone,
+199.93h), `sairn_idem_q5p4bqkx.lock` (58388 gone, 200.14h),
+`sairn_idem_rhbjx2yx.lock` (61668 gone, 207.88h). Listed for chat. Six live
+locks (cc, cody, fourth, hank, hover, hover2 and two of mine) have **alive**
+pids and are correctly untouched.
+
+#### WORKTREES — 13 registered. **ZERO are removable, and that is the finding.**
+
+| worktree | uncommitted | live procs | newest file | verdict |
+|---|---:|---:|---|---|
+| `gate12-48848-8` | **2563** | 0 | 295.5h | LEFT — uncommitted |
+| `defreg-probe-13672` | **2221** | 0 | 511.8h | LEFT — uncommitted |
+| `r5-served-4288` | **1975** | 0 | 563.4h | LEFT — uncommitted |
+| `check4-probe-30700` | **1664** | 0 | 621.5h | LEFT — uncommitted |
+| `sairn-abl-vzdwjmc0` | 5 | 0 | 17.7h | LEFT — uncommitted |
+| `r5-cover-85152` | 2 | 0 | 16.1h | LEFT — uncommitted |
+| `condcov-37872` | 1 | 0 | 12.6h | LEFT — uncommitted |
+| `condcov-83660` | 1 | 0 | 19.3h | LEFT — uncommitted |
+| `defreg-probe-84136` | 1 | 0 | 9.9h | LEFT — uncommitted |
+| `sairn-abl-ffstikqt` | 1 | 0 | 15.1h | LEFT — uncommitted |
+| `condcov-75140` | 0 | 0 | 17.3h | LEFT — quiet only 17.3h |
+| `sairn-sab-b1u8mfer` | 0 | 0 | 9.7h | LEFT — quiet only 9.7h |
+| `gate12-29772-4` | 0 | 0 | 9.4h | LEFT — quiet only 9.4h |
+
+**THE RULE AS WRITTEN CANNOT REACH THE WORST OFFENDERS, AND THAT IS WORTH MORE
+THAN THE CLEANUP WOULD HAVE BEEN.** The four worst — 1,664 to 2,563 uncommitted
+paths each, untouched for **295 to 621 hours (12 to 26 days)** — are the most
+obviously abandoned and the ONLY ones the rule forbids removing, because
+**abandoned probe fixtures are indistinguishable from uncommitted work.** A
+worktree with 2,563 dirty paths and no file touched in twelve days is almost
+certainly a probe that planted a fixture and died; "almost certainly" is not the
+standard the item set, and I did not lower it.
+
+Every one of those 13 is also a live door for the shared-`.git/config` write that
+corrupted this clone in batch 18 (section 6a there, RULE G below). **The leak is
+not fixed by pruning registrations** — it is fixed per probe, by building the
+sandbox as a **clone** rather than a worktree, which `check8_probe.py` already
+does.
+
+**NEXT STEP for chat:** either (a) give removal a second criterion that can
+distinguish probe litter from work — e.g. every dirty path matches a known
+fixture pattern, or the newest file is older than N days with no branch — or
+(b) decide these four by hand. I have not done either; both are judgement calls
+about other sessions' artefacts.
