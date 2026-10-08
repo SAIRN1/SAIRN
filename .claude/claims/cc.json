@@ -3650,6 +3650,22 @@
         "tools/tool_owner_map.py",
         "tools/tooling_inventory.py"
       ]
+    },
+    {
+      "id": "cc-1791447737",
+      "session": "cc",
+      "subject": "cc",
+      "task": "batch17 (b3) RESUMED after a mid-batch compaction, and MY ORIGINAL CLAIM HAD EXPIRED -- noticed at item 13 while re-checking METHODOLOGY.md's holder, not at pickup, so items 6-12 landed under an expired claim and that is declared rather than hidden. Re-derived at HEAD b0a128bc: the ONLY live claims are cody, hover2 and fourth. docs/METHODOLOGY.md IS STILL DECLARED by fourth, so item 13 stays PASTE-READY and I do not edit it. REMAINING: item 13 methodology into my own doc, then handoff, then the report. CONFLICT CHECK AT THIS HEAD on every remaining write target -- docs/2026-10-08-cc-methodology-b17.md, docs/2026-10-08-cc-routed-b17.md, docs/handoff-cc-2026-10-08.md, SAIRN-ACTIVE-WORK-cc.md -- all four are declared by NOBODY. I close only findings I originated and reclassify none. I read and reference no auditor tool. FILES: docs/2026-10-08-cc-methodology-b17.md docs/2026-10-08-cc-routed-b17.md docs/handoff-cc-2026-10-08.md SAIRN-ACTIVE-WORK-cc.md",
+      "claimed_at": "2026-10-08T08:22:17Z",
+      "claimed_at_epoch": 1791447737.242292,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-cc.md",
+        "docs/2026-10-08-cc-methodology-b17.md",
+        "docs/2026-10-08-cc-routed-b17.md",
+        "docs/handoff-cc-2026-10-08.md"
+      ]
     }
   ],
   "refusals": [
