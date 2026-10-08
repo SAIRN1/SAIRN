@@ -1,15 +1,16 @@
 {
   "_what_this_is": "Everything cody keeps OUTSIDE git: scratchpad directories, the shared status registry, the Drive report directory, loose home-directory files, and every script authored only outside the repo. Written so a figure quoted from one of them can be traced after the directory is gone.",
-  "_derived_not_hand_written": "Regenerate: python tools/scratch-archive/inventory2.py, then scratchpad/b26/build_index.py. A hand-maintained index of files that move is the drift this platform keeps paying for, so this one is derived and the command is recorded here rather than in a handoff.",
+  "_derived_not_hand_written": "Regenerate, all three links committed: python tools/scratch-archive/inventory.py --out <scratch>, then tools/scratch-archive/inventory2.py --out <scratch>, then tools/scratch-archive/build_index.py --raw-dir <scratch> --repo <repo>. A hand-maintained index of files that move is the drift this platform keeps paying for, so this one is derived and the command is recorded here rather than in a handoff.",
+  "_audit_with": "Audit this index with python tools/external_file_index_audit.py -- it checks the counts against the lists, that every script named in the regeneration command is locatable, and that every row claiming COMMITTED resolves to a tracked path. Exit 1 on a finding, exit 2 COULD NOT RUN, never 0 for either.",
   "_the_admission_rule": "A script is COMMITTED to tools/scratch-archive/ only if it is named in a committed document AND that mention is an open NEXT STEP. Everything else is REGISTERED here and left where it is.",
   "_measured": {
-    "scripts_authored_outside_git": 64,
-    "of_those_cited_in_a_committed_doc": 26,
-    "of_those_committed_to_the_repo": 6,
-    "first_count_was_wrong": "A first pass reported 2,521 code files across all scratchpads. 2,140 of them were in one session and reading three paths showed what they are: copies of the repo own api/ and tests/ trees inside the fa12 and fa14 firebase sandboxes. A second pass pruning sandbox directories by name, then subtracting the 311 whose basename is already a tracked repo file, gives 64. A count that includes a copy of the thing it is meant to be distinguished from is not a measurement."
+    "scripts_authored_outside_git": 67,
+    "of_those_cited_in_a_committed_doc": 30,
+    "of_those_committed_to_the_repo": 8,
+    "first_count_was_wrong": "A first pass reported 2,521 code files across all scratchpads. 2,140 of them were in one session and reading three paths showed what they are: copies of the repo own api/ and tests/ trees inside the fa12 and fa14 firebase sandboxes. A second pass pruning sandbox directories by name, then subtracting the 311 whose basename is already a tracked repo file, gives 67. A count that includes a copy of the thing it is meant to be distinguished from is not a measurement."
   },
-  "generated_at": "2026-10-08T14:11:01Z",
-  "generated_at_commit": "22202012",
+  "generated_at": "2026-10-08T15:04:15Z",
+  "generated_at_commit": "177f29bf",
   "session": "cody",
   "directories": [
     {
@@ -31,9 +32,9 @@
     {
       "path": "C:\\Users\\marsh\\AppData\\Local\\Temp\\claude\\C--Users-marsh-Documents-SAIRN-cody\\20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e",
       "role": "session transcript + scratchpad",
-      "files": 623,
-      "bytes": 10036448,
-      "newest_mtime": "2026-10-08T14:03:33Z",
+      "files": 643,
+      "bytes": 10240023,
+      "newest_mtime": "2026-10-08T14:36:03Z",
       "volatility": "HIGH -- %TEMP%, cleared without warning"
     },
     {
@@ -45,19 +46,27 @@
       "volatility": "HIGH -- %TEMP%, cleared without warning"
     },
     {
+      "path": "C:\\Users\\marsh\\AppData\\Local\\Temp\\claude\\C--Users-marsh-Documents-SAIRN-cody\\e4d388a3-66ce-49dd-a476-6bf2d5fd4dde",
+      "role": "session transcript + scratchpad",
+      "files": 10,
+      "bytes": 46675,
+      "newest_mtime": "2026-10-08T15:02:15Z",
+      "volatility": "HIGH -- %TEMP%, cleared without warning"
+    },
+    {
       "path": "C:\\Users\\marsh\\SAIRN-SESSION-LOCKS",
       "role": "shared status registry (outside every clone)",
       "files": 21,
-      "bytes": 65095,
-      "newest_mtime": "2026-10-08T14:03:29Z",
+      "bytes": 67795,
+      "newest_mtime": "2026-10-08T14:55:48Z",
       "volatility": "MEDIUM -- outside every clone, survives a clone wipe"
     },
     {
       "path": "G:\\My Drive\\SAIRN-status",
       "role": "Drive report directory Michael reads",
-      "files": 40,
-      "bytes": 5770668,
-      "newest_mtime": "2026-10-08T13:58:54Z",
+      "files": 44,
+      "bytes": 5810217,
+      "newest_mtime": "2026-10-08T14:32:53Z",
       "volatility": "LOW -- Google Drive, synced off-machine"
     }
   ],
@@ -66,16 +75,16 @@
       "path": "C:\\Users\\marsh\\OLD-uncommitted-sairnlaw-trust-disbursement-2026-08-18.md",
       "bytes": 12404,
       "sha256_16": "1363d3c182644bf6",
-      "in_repo_byte_identical": false,
-      "first_line_seen_in_docs_history": false,
+      "in_repo_byte_identical": true,
+      "first_line_seen_in_docs_history": true,
       "verdict": "RESCUED into docs/archive-from-home/ by this batch"
     },
     {
       "path": "C:\\Users\\marsh\\SAIRN-SESSION66-HANDOFF.md",
       "bytes": 10881,
       "sha256_16": "48caa52d86256fac",
-      "in_repo_byte_identical": false,
-      "first_line_seen_in_docs_history": false,
+      "in_repo_byte_identical": true,
+      "first_line_seen_in_docs_history": true,
       "verdict": "RESCUED into docs/archive-from-home/ by this batch"
     },
     {
@@ -148,7 +157,9 @@
       "mtime": "2026-10-08T07:38:17Z",
       "copies_in_n_sessions": 1,
       "cited_in_committed_docs": [
-        "docs/handoff-cody-2026-10-07c.md"
+        "docs/handoff-cody-2026-10-07c.md",
+        "docs/handoff-cody-2026-10-08.md",
+        "tools/scratch-archive/README.md"
       ],
       "status": "COMMITTED to tools/scratch-archive/"
     },
@@ -177,6 +188,28 @@
       "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
     },
     {
+      "name": "build_index.py",
+      "newest_copy": "20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e/scratchpad/b26/build_index.py",
+      "bytes": 6271,
+      "sha256_16": "01b0e5cd4aeefabf",
+      "mtime": "2026-10-08T14:09:53Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [
+        "docs/handoff-cody-2026-10-08.md"
+      ],
+      "status": "COMMITTED to tools/scratch-archive/"
+    },
+    {
+      "name": "build_triage_doc.py",
+      "newest_copy": "20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e/scratchpad/b26/build_triage_doc.py",
+      "bytes": 5586,
+      "sha256_16": "5ba0761effca38f8",
+      "mtime": "2026-10-08T14:33:35Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
       "name": "cc_basis_probe.py",
       "newest_copy": "20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e/scratchpad/b24/cc_basis_probe.py",
       "bytes": 11174,
@@ -184,7 +217,8 @@
       "mtime": "2026-10-07T23:15:17Z",
       "copies_in_n_sessions": 1,
       "cited_in_committed_docs": [
-        "docs/handoff-cody-2026-10-07b.md"
+        "docs/handoff-cody-2026-10-07b.md",
+        "docs/handoff-cody-2026-10-08.md"
       ],
       "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
     },
@@ -196,8 +230,11 @@
       "mtime": "2026-10-08T07:39:08Z",
       "copies_in_n_sessions": 2,
       "cited_in_committed_docs": [
+        "docs/2026-10-08-cody-suite-86-triage.md",
         "docs/handoff-cody-2026-10-07b.md",
-        "docs/handoff-cody-2026-10-07c.md"
+        "docs/handoff-cody-2026-10-07c.md",
+        "docs/handoff-cody-2026-10-08.md",
+        "tools/scratch-archive/README.md"
       ],
       "status": "COMMITTED to tools/scratch-archive/"
     },
@@ -358,6 +395,7 @@
         "docs/2026-10-07-cc-batch-14-inventory.md",
         "docs/SAIRN-OPEN-WORK-INDEX.md",
         "docs/TOOLING-INVENTORY.md",
+        "docs/handoff-cody-2026-10-08.md",
         "docs/handoff-hank-2026-10-07d.md",
         "docs/traceability-matrix.md"
       ],
@@ -469,6 +507,7 @@
         ".claude/agents/register-cell-reader.md",
         ".claude/agents/suite-driver.md",
         ".claude/agents/sweep-runner.md",
+        "CLAUDE.md",
         "SAIRN-ACTIVE-WORK-cc.md",
         "SAIRN-ACTIVE-WORK-cody.md",
         "SAIRN-ACTIVE-WORK-fourth.md",
@@ -506,6 +545,7 @@
         "docs/2026-10-06-inventory-hank-batch9.md",
         "docs/2026-10-07-cc-batch-14-inventory.md",
         "docs/2026-10-07-cody-batch23.md",
+        "docs/2026-10-08-cc-routed-b17.md",
         "docs/FACT-SHEET-2026-09-29.md",
         "docs/METHODOLOGY.md",
         "docs/SAIRN-OPEN-WORK-INDEX.md",
@@ -517,16 +557,19 @@
         "docs/handoff-cc-2026-10-06b.md",
         "docs/handoff-cc-2026-10-06c.md",
         "docs/handoff-cc-2026-10-07.md",
+        "docs/handoff-cc-2026-10-08.md",
         "docs/handoff-cody-2026-10-06.md",
         "docs/handoff-cody-2026-10-06b.md",
         "docs/handoff-cody-2026-10-07.md",
+        "docs/handoff-cody-2026-10-08.md",
+        "docs/handoff-fourth-2026-10-08.md",
         "docs/handoff-hank-2026-10-06.md",
         "docs/handoff-hank-2026-10-06b.md",
         "docs/handoff-hank-2026-10-07d.md",
         "docs/postmortem-cody-2026-10-06b.md",
         "docs/traceability-matrix.md"
       ],
-      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+      "status": "COMMITTED to tools/scratch-archive/"
     },
     {
       "name": "inventory2.py",
@@ -535,7 +578,10 @@
       "sha256_16": "7c1cc9a2a4be0a40",
       "mtime": "2026-10-08T14:05:14Z",
       "copies_in_n_sessions": 1,
-      "cited_in_committed_docs": [],
+      "cited_in_committed_docs": [
+        "docs/handoff-cody-2026-10-08.md",
+        "tools/scratch-archive/README.md"
+      ],
       "status": "COMMITTED to tools/scratch-archive/"
     },
     {
@@ -556,7 +602,9 @@
       "mtime": "2026-10-08T00:07:53Z",
       "copies_in_n_sessions": 1,
       "cited_in_committed_docs": [
-        "docs/handoff-cody-2026-10-07c.md"
+        "docs/handoff-cody-2026-10-07c.md",
+        "docs/handoff-cody-2026-10-08.md",
+        "tools/scratch-archive/README.md"
       ],
       "status": "COMMITTED to tools/scratch-archive/"
     },
@@ -601,7 +649,8 @@
         "SAIRN-ACTIVE-WORK-cody.md",
         "docs/2026-09-13-cross-domain-disciplines.md",
         "docs/2026-10-07-cody-batch23.md",
-        "docs/handoff-cody-2026-10-07.md"
+        "docs/handoff-cody-2026-10-07.md",
+        "docs/handoff-fourth-2026-10-08.md"
       ],
       "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
     },
@@ -709,7 +758,9 @@
       "mtime": "2026-10-08T07:39:41Z",
       "copies_in_n_sessions": 1,
       "cited_in_committed_docs": [
-        "docs/handoff-cody-2026-10-07c.md"
+        "docs/handoff-cody-2026-10-07c.md",
+        "docs/handoff-cody-2026-10-08.md",
+        "tools/scratch-archive/README.md"
       ],
       "status": "COMMITTED to tools/scratch-archive/"
     },
@@ -769,8 +820,10 @@
         "docs/2026-09-26-ablation-gated-resource-header.md",
         "docs/2026-09-29-message-assertion-sweep-hank.md",
         "docs/2026-10-06-whole-tree-run-and-the-runner-that-corrupts-its-clone.md",
+        "docs/2026-10-08-cc-methodology-b17.md",
         "docs/SAIRN-OPEN-WORK-INDEX.md",
         "docs/TOOLING-INVENTORY.md",
+        "docs/handoff-cody-2026-10-08.md",
         "docs/sairnlaw-delaware-deadline-seed-gate.md",
         "docs/sairnlaw-newhampshire-deadline-seed-gate.md",
         "docs/sairnlaw-oregon-deadline-seed-gate.md",
@@ -856,6 +909,7 @@
         "docs/2026-10-05-dead-rule-universe-delta.md",
         "docs/2026-10-07-cc-batch-14-inventory.md",
         "docs/TOOLING-INVENTORY.md",
+        "docs/handoff-cody-2026-10-08.md",
         "docs/traceability-matrix.md"
       ],
       "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
@@ -867,7 +921,10 @@
       "sha256_16": "e6227145b234c556",
       "mtime": "2026-10-08T13:24:44Z",
       "copies_in_n_sessions": 1,
-      "cited_in_committed_docs": [],
+      "cited_in_committed_docs": [
+        "docs/handoff-cody-2026-10-08.md",
+        "tools/scratch-archive/README.md"
+      ],
       "status": "COMMITTED to tools/scratch-archive/"
     },
     {
@@ -878,6 +935,18 @@
       "mtime": "2026-10-05T12:16:27Z",
       "copies_in_n_sessions": 1,
       "cited_in_committed_docs": [],
+      "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
+    },
+    {
+      "name": "usage_evidence.py",
+      "newest_copy": "20e0ab2b-79b3-44cb-b3dc-fe1a01d0c89e/scratchpad/b26/usage_evidence.py",
+      "bytes": 3233,
+      "sha256_16": "f4ec5477907f0d5a",
+      "mtime": "2026-10-08T14:16:30Z",
+      "copies_in_n_sessions": 1,
+      "cited_in_committed_docs": [
+        "docs/handoff-cody-2026-10-08.md"
+      ],
       "status": "REGISTERED ONLY -- lives in %TEMP% and will not survive a clear"
     },
     {

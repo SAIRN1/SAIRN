@@ -12,7 +12,16 @@ is not a measurement.
 
 PRUNED, each because it is a repo/dependency copy rather than my own work:
   node_modules, __pycache__, .git, fa12, fa14, fa145, wt-*, *-clone, dist
+
+── THE OUTPUT PATH IS A REQUIRED ARGUMENT, WITH NO DEFAULT ──────────────────
+It used to write i6_raw2.json beside itself. That was harmless in a scratchpad
+and became a convention-26 violation the moment this file was committed, because
+"beside itself" is now a TRACKED directory: a write path whose fallback is a live
+location. `--out` is required.
+
+    python tools/scratch-archive/inventory2.py --out <scratch-dir>
 """
+import argparse
 import fnmatch
 import hashlib
 import io
@@ -34,6 +43,15 @@ MINE = ('.py', '.ps1', '.sh')
 def pruned(name):
     return name in PRUNE_EXACT or any(fnmatch.fnmatch(name, g) for g in PRUNE_GLOB)
 
+
+_ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
+_ap.add_argument('--out', required=True,
+                 help='directory to write i6_raw2.json into. REQUIRED, no '
+                      'default -- convention 26.')
+_a = _ap.parse_args()
+if not os.path.isdir(_a.out):
+    raise SystemExit('COULD NOT RUN: --out %s is not a directory. Nothing '
+                     'written.' % _a.out)
 
 rows = []
 for sess in sorted(os.listdir(TEMPROOT)) if os.path.isdir(TEMPROOT) else []:
@@ -112,6 +130,7 @@ for l in loose:
              bool(l['same_name_tracked']), l['byte_identical_copy_in_repo'],
              l['first_line_found_in_docs_history']))
 
-io.open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                     'i6_raw2.json'), 'w', encoding='utf-8',
+_dest = os.path.join(_a.out, 'i6_raw2.json')
+io.open(_dest, 'w', encoding='utf-8',
         newline='\n').write(json.dumps({'scripts': rows, 'loose': loose}, indent=2))
+print('wrote %s' % _dest)

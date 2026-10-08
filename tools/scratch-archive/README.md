@@ -30,7 +30,28 @@ directory is gone.
 | `triage86.py` | re-run a named set of failing probes alone on a clean clone and classify each REAL / ARTIFACT / COULD-NOT-RUN. |
 | `analyse_times.py` | read `childwatch`'s live log into per-file durations. |
 | `prove_childwatch.py` | prove the watcher sees a named child before trusting a run of it. |
-| `inventory2.py` | re-derive `docs/external-files-index.json` when the scratchpads move. |
+| `inventory.py` | **chain link 1 of 3** — walk the four external places into `i6_raw.json`. |
+| `inventory2.py` | **chain link 2 of 3** — re-derive the script list with the repo-copy sandboxes pruned, into `i6_raw2.json`. |
+| `build_index.py` | **chain link 3 of 3** — write `docs/external-files-index.json` from the two raws. |
+
+**THE REGENERATION CHAIN, AND TWO OF ITS THREE LINKS WERE MISSING FROM THE FIRST
+VERSION OF THIS DIRECTORY.** The index declares itself derived and names its own
+command. On 2026-10-08 that command named `scratchpad/b26/build_index.py` and did
+not name `inventory.py` at all — so **the generator had excluded itself from its
+own population**, and the "derived, not hand-written" claim in the header would
+have gone false, silently, on the day that `%TEMP%` directory cleared. Caught by
+`tools/external_file_index_audit.py`, which was written for that arm and found it
+on its first live run. All three links are committed now and the audit is clean:
+
+    python tools/scratch-archive/inventory.py   --out <scratch>
+    python tools/scratch-archive/inventory2.py  --out <scratch>
+    python tools/scratch-archive/build_index.py --raw-dir <scratch> --repo <repo>
+    python tools/external_file_index_audit.py            # exit 0 CLEAN / 1 finding / 2 could-not-run
+
+**`--out`, `--raw-dir` and `--repo` are REQUIRED with no defaults** (convention
+26). `build_index.py` writes into a repo and `inventory2.py` used to drop its raw
+beside itself, which was harmless in a scratchpad and became a live-path fallback
+the moment it was committed here.
 
 **THEY ARE NOT WIRED INTO ANY SUITE OR GATE, deliberately.** `run_all_tests.py`
 discovers `tests/`, not this directory, so nothing here can fail a suite or be
