@@ -34,7 +34,15 @@ import sys
 import tempfile
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-GATE = os.path.join(REPO, 'tools', 'sairn_push_gate_hook.py')
+# ── THE ABLATION LEVER (convention 12), AND IT IS NOT A CONVENIENCE ─────────
+# A green arm is worth nothing until the version WITHOUT the fix is shown to go
+# red through the same arm. `SCRUT_PROBE_GATE` points the probe at a different
+# gate source so the pre-fix file can be driven:
+#   git show <pre-fix sha>:tools/sairn_push_gate_hook.py > /tmp/old_gate.py
+#   SCRUT_PROBE_GATE=/tmp/old_gate.py python tests/run_scrutiny_flag_probe.py
+# Arm G is the one that must flip. Used on 2026-10-08 to prove it does.
+GATE = (os.environ.get('SCRUT_PROBE_GATE')
+        or os.path.join(REPO, 'tools', 'sairn_push_gate_hook.py'))
 ESA = os.path.join(REPO, 'tools', 'exit_status_attributable.py')
 
 _fail = []
@@ -237,6 +245,86 @@ try:
        'not a pass' in r.stderr, r.stderr[-400:])
     ok('...and still ALLOWS, because a missing classifier must not block '
        "somebody else's push", r.returncode == 0, 'exit=%d' % r.returncode)
+finally:
+    shutil.rmtree(root, ignore_errors=True)
+
+print('\nG. a MULTI-COMMIT push keys the row to the commit that CHANGED the '
+      'checker,\n   not to the push tip')
+# ── THE ARM THAT WOULD HAVE CAUGHT IT, AND WHY NOTHING DID ──────────────────
+# Every arm above pushes ONE commit, so `tip` and "the commit that changed the
+# checker" were the same object and the distinction was untestable. The real
+# defect needed two: hank's push had the refusal-probe diff in 320ddabe and a
+# docs-only tip in bf174f30, and the ledger credited the tip with three files
+# it does not contain while 320ddabe got no row. Found by reading five parked
+# stashes, so this arm exists to make the next one fail here instead.
+root = tempfile.mkdtemp(prefix='scrut_multi_')
+try:
+    wd = os.path.join(root, 'work')
+    bare = os.path.join(root, 'origin.git')
+    os.makedirs(wd)
+    run('git', 'init', '--bare', '-q', bare)
+    git(wd, 'init', '-q', wd)
+    git(wd, 'config', 'user.email', 'probe@example.invalid')
+    git(wd, 'config', 'user.name', 'probe')
+    git(wd, 'config', 'core.hooksPath', os.path.join(root, 'nohooks'))
+    for d in ('tools', 'sql', 'tests', 'docs'):
+        os.makedirs(os.path.join(wd, d))
+    io.open(os.path.join(wd, 'sql', 'placeholder.json'), 'w',
+            encoding='utf-8', newline='').write('{}\n')
+    shutil.copy(GATE, os.path.join(wd, 'tools', 'sairn_push_gate_hook.py'))
+    shutil.copy(ESA, os.path.join(wd, 'tools', 'exit_status_attributable.py'))
+    PP = os.path.join(wd, 'tests', 'run_planted_probe.py')
+    io.open(PP, 'w', encoding='utf-8', newline='').write(WEAK_A)
+    git(wd, 'add', '-A')
+    git(wd, 'commit', '-q', '-m', 'base')
+    git(wd, 'remote', 'add', 'origin', bare)
+    git(wd, 'push', '-q', 'origin', 'HEAD:refs/heads/main')
+    git(wd, 'fetch', '-q', 'origin')
+    # COMMIT 1 -- the weakening. This is the commit the row must name.
+    io.open(PP, 'w', encoding='utf-8', newline='').write(WEAK_B)
+    git(wd, 'add', '-A')
+    git(wd, 'commit', '-q', '-m', 'the commit that weakened the checker')
+    culprit = (git(wd, 'rev-parse', 'HEAD').stdout or '').strip()
+    # COMMIT 2 -- the tip, a docs-only change touching no checker at all.
+    # This is the shape of hank's bf174f30.
+    io.open(os.path.join(wd, 'docs', 'note.md'), 'w',
+            encoding='utf-8', newline='').write('# unrelated\n')
+    git(wd, 'add', '-A')
+    git(wd, 'commit', '-q', '-m', 'docs only -- changes no checker')
+    tipsha = (git(wd, 'rev-parse', 'HEAD').stdout or '').strip()
+    ok('the two commits really are distinct', culprit != tipsha,
+       '%s vs %s' % (culprit[:12], tipsha[:12]))
+    ok('and the TIP really touches no checker file -- otherwise this arm '
+       'proves nothing',
+       'tests/run_planted_probe.py' not in
+       (git(wd, 'show', '--name-only', '--format=', tipsha).stdout or ''),
+       git(wd, 'show', '--name-only', '--format=', tipsha).stdout)
+    r = drive(wd)
+    ok('the gate still ALLOWS', r.returncode == 0,
+       'exit=%d %s' % (r.returncode, r.stderr[-240:]))
+    led = os.path.join(wd, 'docs', 'scrutiny-flags.json')
+    ok('the ledger was written', os.path.isfile(led), r.stderr[-500:])
+    if os.path.isfile(led):
+        d = json.load(io.open(led, encoding='utf-8'))
+        rows = [f for f in d['flags']
+                if f['path'] == 'tests/run_planted_probe.py']
+        ok('exactly one row for the planted path', len(rows) == 1, rows)
+        got = rows[0]['sha'] if rows else ''
+        ok('the row names the COMMIT THAT CHANGED IT (%s), which is the whole '
+           'fix' % culprit[:12], got == culprit,
+           'row sha=%s culprit=%s tip=%s'
+           % (got[:12], culprit[:12], tipsha[:12]))
+        ok('the row does NOT name the push tip (%s) -- the tip changes no '
+           'checker and a row against it is an accusation that is false on '
+           'its face' % tipsha[:12], got != tipsha, got[:12])
+        # AND THE ROW IS SELF-VERIFIABLE, which is the property the old key
+        # did not have: `git show <sha> -- <path>` must produce text.
+        shown = (git(wd, 'show', '--format=', '--unified=0', got, '--',
+                     'tests/run_planted_probe.py').stdout or '')
+        ok('and the row is SELF-VERIFIABLE -- git show <row sha> -- <row path> '
+           'produces a real diff', bool(shown.strip()), repr(shown[:120]))
+        ok('the gate says out loud that it keyed per COMMIT rather than to the '
+           'tip', 'keyed per COMMIT' in r.stderr, r.stderr[-500:])
 finally:
     shutil.rmtree(root, ignore_errors=True)
 

@@ -1367,16 +1367,97 @@ def main():
                 _scr_sha = (git(repo, 'rev-parse', tip) or '').strip()
                 sys.stderr.write('\n' + _ESA.scrutiny_render(
                     _flags, _scr_sha or str(tip)) + '\n\n')
+                # ── AND THE TIP IS THE WRONG COMMIT TO KEY IT TO ────────────
+                # FOUND 2026-10-08 BY READING FIVE PARKED STASHES, not by
+                # reading this code -- the same way the `"sha": "main"` bug
+                # above was found. That fix corrected the SHAPE of the key
+                # (it must be a sha) and left the REFERENT wrong, which is
+                # the harder half and looked finished.
+                #
+                # `_flags` comes from a diff over the WHOLE RANGE
+                # `_scr_base..tip`, which can be many commits. Recording it
+                # under `tip` asserts that the tip commit changed those files.
+                # MEASURED on a real push: hank's tip `bf174f30` was credited
+                # with flags on tests/run_audit_event_type_probe.py,
+                # tests/run_tool_usage_refusal_probe.py and
+                # tests/sd_data_write_attribution_three_apps.js. It changes
+                # FIVE docs files and NONE of those three. The commit that
+                # really added the refusal probe was `320ddabe`, earlier in
+                # the same push, and it carries no row at all. So the ledger
+                # was simultaneously accusing the wrong commit and missing the
+                # right one -- and "KEYED BY COMMIT, NOT BY PUSH ATTEMPT" in
+                # scrutiny_record's own docstring was not true.
+                #
+                # Keyed per COMMIT now, from that commit's OWN diff. Every row
+                # is then self-verifiable: `git show <sha> -- <path>` either
+                # has text or the row is wrong.
+                _rl = (git(repo, 'rev-list', '--reverse',
+                           '%s..%s' % (_scr_base, tip)) or '').split()
+                _wrote, _note = False, ''
                 if not _scr_sha:
                     sys.stderr.write(
                         '  LEDGER NOT WRITTEN: %r does not resolve to a '
                         'commit, and an entry keyed by\n  something that is '
                         'not a sha is worse than no entry -- it looks like a '
                         'record.\n\n' % (tip,))
-                    _wrote, _note = False, 'tip did not resolve'
+                    _note = 'tip did not resolve'
+                elif not _rl:
+                    sys.stderr.write(
+                        '  LEDGER NOT WRITTEN: the range %s..%s enumerates no '
+                        'commit, so there is\n  no commit to key a row to. '
+                        'Third state, not a pass -- the flags above stand.\n\n'
+                        % (_scr_base[:12], str(tip)[:12]))
+                    _note = 'range enumerated no commit'
                 else:
-                    _wrote, _note = _ESA.scrutiny_record(repo, _scr_sha,
-                                                         _flags)
+                    _hit = []
+                    for _c in _rl:
+                        _cd = {}
+                        for _q in _in_class:
+                            # `show`, not `diff _c^ _c`: a ROOT commit has no
+                            # parent and `_c^` fails, which would silently
+                            # drop the first commit of a new repository.
+                            _cd[_q] = git(repo, 'show', '--format=',
+                                          '--unified=0', _c, '--', _q) or ''
+                        if not any(_cd.values()):
+                            continue
+                        _cf = _ESA.scrutiny_flags(_cd)
+                        if not _cf:
+                            continue
+                        _w, _n = _ESA.scrutiny_record(repo, _c, _cf)
+                        _hit.append((_c, len(_cf), _w, _n))
+                        _wrote = _wrote or _w
+                    if _hit:
+                        sys.stderr.write(
+                            '  LEDGER: keyed per COMMIT, not to the push tip '
+                            '-- %d commit(s) in\n  %s..%s carry a row:\n'
+                            % (len(_hit), _scr_base[:12], str(tip)[:12]))
+                        for _c, _n_, _w, _nt in _hit:
+                            sys.stderr.write(
+                                '    %s  %d flag(s)  %s\n'
+                                % (_c[:12], _n_,
+                                   'written' if _w else (_nt or 'not written')))
+                        sys.stderr.write('\n')
+                        if not _wrote:
+                            _note = '; '.join(n for _, _, w, n in _hit
+                                              if not w and n) or 'nothing new'
+                    else:
+                        # ── THE GAP, SAID OUT LOUD RATHER THAN PAPERED OVER ─
+                        # A weakening SPREAD ACROSS two commits can show in the
+                        # range diff and in no single commit's diff. The old
+                        # code would have recorded it against the tip, which
+                        # is the bug. Reporting could-not-attribute is the
+                        # honest answer; inventing a key is not.
+                        sys.stderr.write(
+                            '  LEDGER NOT WRITTEN -- COULD NOT ATTRIBUTE: the '
+                            'range %s..%s flags %d\n  path(s), but no SINGLE '
+                            'commit in it produces those flags from its own\n  '
+                            'diff, so there is no commit the row would be true '
+                            'of. The flags above\n  stand and are NOT '
+                            'discarded; what is missing is a key. Keying them '
+                            'to\n  the tip is what this check was fixed for.'
+                            '\n\n'
+                            % (_scr_base[:12], str(tip)[:12], len(_flags)))
+                        _note = 'could not attribute to a single commit'
                 # ── "ALREADY RECORDED" IS A SUCCESS, NOT A FAILURE ──────────
                 # The first version printed "LEDGER NOT WRITTEN ... nothing
                 # downstream can pick them up until that is fixed" for EVERY

@@ -1010,7 +1010,54 @@
    ],
    "sha": "fe361c749cafdb165696986ac119d9d33236d61d",
    "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_tool_usage_refusal_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "stderr=subprocess.STDOUT, timeout=60)"
+    }
+   ],
+   "sha": "320ddabedae4d88bf9238e07e4791d88c20cdfb1",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_write_attribution_three_apps.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "4ec0d5d51f56c14d072bda2d8c0e6f875c617672",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_write_attribution_three_apps.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "56bbce5e83d519e21e621382084d6b18eb02a989",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_audit_event_type_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "stderr=subprocess.STDOUT, timeout=120)"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(base, ignore_errors=True)"
+    }
+   ],
+   "sha": "72d757efae5ab9df8c43faac4383e28f2b3c73ab",
+   "criteria_version": "2026-10-06.1"
   }
  ],
+ "_corrected_2026_10_08": "THE SAME BUG ONE LEVEL DEEPER, AND THE 2026-10-06 FIX IS WHY IT SURVIVED. That fix made the key a real SHA and left the REFERENT wrong: the gate recorded flags computed over the WHOLE PUSH RANGE under the push TIP. So a row asserted that the tip commit changed files it does not contain, while the commit that really changed them got no row. DISCARDED, NOT APPLIED: 20 rows parked across five stashes in Documents/SAIRN-hank (\"cc scrutiny rows\", rounds 2-6). They are 3 distinct paths re-keyed against 7 shas -- the same push refused and rewritten six times. 6 of the 7 shas are ORPHANED in hank's OWN clone (verified there, not inferred from absence here). The 7th, bf174f30, resolves and is an ancestor of origin/main, and its 3 rows are still WRONG: it changes five docs files and NONE of the three paths they name. Subject-matching the orphans to their landed replacements is provably ambiguous -- two orphans share the subject \"the three records this batch's fixes owe\" and no landed commit carries it -- so no re-seat was attempted and none was guessed. BACKFILLED FROM THE REAL COMMITS INSTEAD, which is stronger than copying a stashed row: the classifier was run against each landed commit's OWN diff. The 20 rows reduce to FOUR facts -- 320ddabe tests/run_tool_usage_refusal_probe.py WEAKENING, 72d757ef tests/run_audit_event_type_probe.py WEAKENING, 4ec0d5d5 and 56bbce5e tests/sd_data_write_attribution_three_apps.js CHANGE. Every one is self-verifiable: git show <sha> -- <path> produces a diff. NOT RETROACTIVELY COMPLETE, SAID PLAINLY: only the commits those stashes were about were backfilled. Earlier origin/main commits that touched a self-checking file while the tip-keyed bug was live are still unflagged, and this file does not know which. FIXED IN THE GENERATOR: tools/sairn_push_gate_hook.py now keys per COMMIT from that commit's own diff, and prints COULD NOT ATTRIBUTE rather than keying to the tip when no single commit produces the flags. Locked by tests/run_scrutiny_flag_probe.py arm G -- a two-commit push with the weakening in the first and a docs-only tip -- which every arm before it could not express, because they all pushed exactly one commit so `tip` and `the commit that changed it` were the same object. Ablated against the pre-fix gate via SCRUT_PROBE_GATE: 4 of arm G's 9 checks go red and the row sha comes back equal to the tip.",
  "_corrected_2026_10_06": "NINE ROWS KEYED \"main\" WERE REMOVED. The push gate handed its prepush `tip`, which is a REF NAME, not a sha -- so the (sha, path) identity could never dedup them and no rewrite map could ever re-seat them. Found by reading this file, not by reading the code that wrote it. Guarded in two places since: the gate resolves tip to a sha, and scrutiny_record refuses a non-sha key outright."
 }
