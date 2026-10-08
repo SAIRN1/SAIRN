@@ -176,6 +176,27 @@ its own `--recheck-log` mode found 67 citations across 57 pre-existing
 entries that do not resolve today, left as a disclosed backlog rather
 than edited (the log is append-only) or implied clean.
 
+## A repeated number is not exempt just because it arrived in an instruction
+
+Added H1 batch T item 9. This batch's own task text stated "14 handoffs" --
+recounted directly rather than trusted: 17. The same discipline this role
+already applies to a number carried forward from its own prior log entries
+applies equally to a number arriving inside a direct instruction; the
+source of a count does not exempt it from re-derivation before it is used
+to scope anything.
+
+## EXTERNAL-TOOLS-INDEX.md and hover_citation_guard.py together close the
+## gap seq1125 fell through
+
+Two mechanisms now exist that did not exist when seq1125 wrongly declared
+a tool missing: `EXTERNAL-TOOLS-INDEX.md` is a single, git-tracked,
+fast-to-read enumeration of every tool this role has ever had and where it
+lives, checkable before (or instead of) a slow filesystem search; and
+`hover_citation_guard.py` refuses a new log entry's citation at WRITE TIME
+if it cannot resolve, so the same mistake cannot be newly written down
+even if a future search is still incomplete. Neither existed three batches
+ago -- both exist because the mistake was made, found, and built against.
+
 ## The log convention this item also adds: a reversal gets its own entry
 
 A later read that **CONTRADICTS** an earlier clean verdict from this role
