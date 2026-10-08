@@ -269,3 +269,63 @@ handed to something else still reports RUNNING. Closing that needs the process
 start time compared against the status timestamp, which this does not do. So
 **DEAD is sound and RUNNING means "alive or recycled"** — the asymmetry is
 deliberate, because a false DEAD would be worse than a late RUNNING.
+
+## item 7 — DONE. `--pinned` now KEEPS the clone when the post-run tree read fails. Fixture-locked.
+
+```
+command : python tools/run_all_tests.py --selftest
+commit  : 77366afe + this change        date: 2026-10-08
+FIRST RUN EXIT 0 after the arm below was fixed; two further runs 0. 0 FAIL.
+criteria lock: 18 arms, 5 of them negative (2026-10-07.1 -> 2026-10-08.1)
+```
+
+**THE COST THIS PAYS BACK, measured 2026-10-07.** A run ended
+`EXIT 2 -- COULD NOT RUN: the clone was broken during this run`, on
+`git status exited 3221225794` = `0xC0000142` — a process that failed to
+*initialise*, i.e. git could not be **launched**. Whether the clone was really
+broken or git merely could not start was answerable **in that directory and
+nowhere else**, and the cleanup had already deleted it. Item 4 of batch 24 had to
+report the cause as **UNKNOWN** for want of evidence this tool destroyed on its
+way out.
+
+**HOW IT SIGNALS: a marker file, not a phrase in stdout.** The inner run writes
+`.sairn-tree-unreadable` when `unreadable_tree` is true; the wrapper's cleanup
+reads it. The two halves are one tool but **separate processes**, and a text
+contract between them is one rewording away from silently keeping nothing.
+
+**KEPT FOR THAT ONE CAUSE ONLY.** A clean run, a red run and every other
+COULD-NOT-RUN still clean up. Keeping 215 MB per run would get the behaviour
+switched off, and 29 abandoned directories is the failure in the other direction.
+
+**THE WRITE IS GUARDED BY `SAIRN_PINNED_RUN`**, because on an ordinary run `REPO`
+*is* the developer's clone and dropping an untracked file into it would be
+residue of exactly the kind the guard exists to report.
+
+**`_drop_pinned_clone()` RETURNS `'KEPT'` OR `'REMOVED'`** so the fixture can
+assert *which branch ran* rather than inferring it from whether a directory
+exists — an existing directory is also what a failed delete looks like.
+
+**EIGHT ARMS, and one of them failed twice before it was right:**
+
+```
+ok  THE PINNED CLONE IS **KEPT** WHEN THE TREE READ FAILED
+ok  ...and it PRINTS THE PATH, so the evidence is findable rather than merely undeleted
+ok  NEGATIVE: with NO marker the clone is still REMOVED
+ok  ...and the two branches really differ, so one is not satisfying both arms
+ok  the keep-marker is a named constant, not a literal spelled twice
+ok  the marker is only WRITTEN under SAIRN_PINNED_RUN -- bounded 400-char window
+ok  ...and the window has a DIRECTION: not in the 400 chars BEFORE the guard
+ok  AND THE LIVE CLONE CARRIES NO MARKER RIGHT NOW -- the behavioural half
+```
+
+**THE TWO FAILURES ARE THE USEFUL PART.** The guard-position arm first compared
+`_src.index(guard)` with `_src.index(write)` — and **the fixture a few lines
+above writes the marker too**, so `index` found the fixture's write and the
+comparison was between two unrelated positions. Rewritten as a bounded window, it
+failed *again*: the arm spelled the guard out as a literal, so **that line became
+a second occurrence of its own subject** and `find` landed on the arm instead of
+the guard, 100 lines early. The needle is now assembled at run time from
+`chr(39)`, the guard is asserted to occur **exactly once**, and the window is
+asserted to have a **direction**. A source-reading arm that contains its own
+subject measures the wrong file position — which is a defect shape already in my
+own notes, committed again anyway.
