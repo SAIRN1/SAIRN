@@ -28,19 +28,32 @@ A claim commit's subject carries `FILES: a.py b.py ...`, so the session that
 last claimed a file is recoverable. **THAT IS NOT THE SAME AS THE AUTHOR** and
 the output says so per row:
 
-  OWNER_LINE   the file carries `# OWNER: x`. AUTHORITATIVE -- nothing else is.
+  OWNER_LINE   the file carries `# OWNER: x` (or `// OWNER: x` in a .js file).
+               AUTHORITATIVE -- nothing else is.
   LAST_CLAIM   derived. The most recent session to name it in a FILES list.
   CONTESTED    derived, and more than one session has claimed it. The last
                claimer wins the `owner` field and the others are listed, because
                `push_retry.py` resolves to fourth while hank has edited it too
                and a single name would hide that.
-  NONE         no OWNER line and no claim has ever named it. **UNKNOWN, NOT
-               UNOWNED** -- the two are opposite findings and must not print the
-               same.
+  CLAIM_SUBJECT_ONLY
+               derived, and WEAKER than LAST_CLAIM: a claim commit's SUBJECT
+               names the path and no FILES list does. A subject is prose, not a
+               declaration of scope, and the row cites the commit.
+  UNRECORDED   no OWNER line, no claim -- but the file HAS git history, so
+               ownership is unrecorded rather than absent and the first/last
+               commits say where to start. ROUTABLE.
+  UNKNOWN      no OWNER line, no claim, and NO resolvable history here. A
+               genuine could-not-tell.
+
+  **UNRECORDED AND UNKNOWN WERE ONE BUCKET CALLED `NONE` UNTIL 2026-10-07**,
+  whose own vocabulary entry read "UNKNOWN, not unowned" -- so the prose drew a
+  distinction the data did not, and every consumer had to re-interpret the
+  field to use it. They are now separate states with separate counts, plus an
+  OWNERLESS TOTAL, because two numbers are harder to ignore than one.
 
 ── WHAT IT CANNOT DO, NAMED RATHER THAN DISCOVERED ─────────────────────────
-  * It cannot see a tool somebody built WITHOUT claiming it. That is the NONE
-    bucket and it is the largest one.
+  * It cannot see a tool somebody built WITHOUT claiming it. That is the
+    UNRECORDED bucket and it is the largest one.
   * It attributes to the last CLAIMER, not the author. A session that claimed a
     file to read it outranks the session that wrote it.
   * A claim subject that lists a file it never touched is indistinguishable from
@@ -65,13 +78,18 @@ sys.path.insert(0, os.path.join(REPO, 'tools'))
 
 from checker_kit import EXIT_COULD_NOT_RUN, finish                # noqa: E402
 
-CRITERIA_VERSION = '2026-10-06.1'
+CRITERIA_VERSION = '2026-10-07.1'
 OUT = os.path.join('docs', 'tool-owner-map.json')
 MAX_CLAIM_COMMITS = 6000
 
 # `# OWNER: name` in the first few lines. Anchored at line start so a mention
 # inside a docstring does not read as a declaration.
-OWNER_LINE = re.compile(r'^#\s*OWNER:\s*([A-Za-z0-9_]+)\s*$', re.M)
+# `#` OR `//`, because TRACKED_EXT includes .js and a JavaScript file cannot
+# carry a `#` comment. Until 2026-10-07 the ONLY authoritative basis was
+# inexpressible in one of the three languages this tool tracks, so every .js
+# file was permanently stuck on a derived basis however much its author wanted
+# to state ownership. Found while routing tests/sairnfreedom_server_backup.js.
+OWNER_LINE = re.compile(r'^(?:#|//)\s*OWNER:\s*([A-Za-z0-9_]+)\s*$', re.M)
 CLAIM_SUBJ = re.compile(r'^chore\(claims\):\s+([A-Za-z0-9_]+)\s+claims\b')
 FILES_IN_SUBJ = re.compile(r'FILES:\s*(.*)$')
 TRACKED_EXT = ('.py', '.js', '.sh')
@@ -160,10 +178,42 @@ def claim_history():
     return hist, len(rows), with_files
 
 
+# ── THE TWO NEW PREDICATES, AS FUNCTIONS SO THE LOCK TESTS THE REAL ONES ───
+# Written as named functions rather than inline `if`s for one reason: a fixture
+# that re-implements the condition locks a COPY, and a copy drifts. These are
+# called by build() and by run_fixtures(), so there is one of each.
+def subject_only_hit(subj, basename):
+    """Does this claim subject name `basename` and carry NO FILES list?
+
+    The FILES-list case is already handled by claim_history(); a subject that
+    has one must NOT reach the weaker CLAIM_SUBJECT_ONLY basis.
+    """
+    m = CLAIM_SUBJ.search(subj)
+    if not m:
+        return None
+    if 'FILES:' in subj:
+        return None
+    if basename not in subj:
+        return None
+    return m.group(1)
+
+
+def ownerless_basis(file_history_for_path):
+    """UNRECORDED when the file has git history, UNKNOWN when it does not.
+
+    The whole point of the split: the first is routable (the commits are named),
+    the second is a could-not-tell. Folding them into one `NONE` reported an
+    unanswerable question and an actionable one as the same number.
+    """
+    return 'UNRECORDED' if file_history_for_path else 'UNKNOWN'
+
+
 def build():
     paths = tracked_tools()
     lines = owner_lines(paths)
     hist, claim_commits, with_files = claim_history()
+    subject_only = claim_subject_mentions(paths)
+    history = file_history(paths)
     rows = {}
     for rel in paths:
         base = os.path.basename(rel)
@@ -184,12 +234,121 @@ def build():
         elif sessions:
             rows[rel] = {'owner': sessions[0], 'basis': 'LAST_CLAIM',
                          'last_claim': claims[-1][1], 'also_claimed_by': []}
+        elif rel in subject_only:
+            # ── CLAIM_SUBJECT_ONLY (2026-10-07, cc) ────────────────────────
+            # A claim commit that NAMES a file in its subject but carries no
+            # `FILES:` list was invisible here, because the derivation reads
+            # FILES lists and nothing else. Real instance:
+            #   c1e06f33  "chore(claims): cody claims cody -- negative control
+            #              for tests/sairnfreedom_server_backup.js -- ..."
+            # no FILES section at all, so the map said NONE for a file with a
+            # real claim commit naming it, and fourth routed the discrepancy as
+            # "owner cody, claim c1e06f33, owner map says None". It was not a
+            # bad owner, it was an UNREAD SOURCE.
+            # WEAKER THAN LAST_CLAIM AND SAID SO: a subject is prose. It names a
+            # session and a path and it is not a declaration of scope.
+            who, subj_sha = subject_only[rel]
+            rows[rel] = {'owner': who, 'basis': 'CLAIM_SUBJECT_ONLY',
+                         'claim_subject_commit': subj_sha,
+                         'also_claimed_by': []}
         else:
-            rows[rel] = {'owner': None, 'basis': 'NONE', 'also_claimed_by': []}
+            # ── UNRECORDED vs UNKNOWN (2026-10-07, cc) ─────────────────────
+            # `NONE` carried TWO different facts behind one number while its own
+            # vocabulary entry said "UNKNOWN, not unowned" -- so the prose drew a
+            # distinction the data did not, and a reader could not act on either.
+            #
+            #   UNRECORDED  nothing has recorded an owner, AND the file has git
+            #               history, so there IS something to route: the commits
+            #               are named. This is the actionable bucket.
+            #   UNKNOWN     nothing has recorded an owner and the file has NO
+            #               resolvable history in this clone. A genuine
+            #               could-not-tell, and it must not be counted with the
+            #               routable ones.
+            #
+            # tools/va_rule_currency.py's own comment is the evidence the split
+            # was needed: it reads `"basis": "NONE"` and glosses it "not UNKNOWN,
+            # but NO OWNER AT ALL", i.e. a consumer had to RE-INTERPRET the field
+            # in prose to use it, which is the field failing to carry its meaning.
+            # NOT `hist`: that name holds the claim-history dict this loop reads
+            # on EVERY iteration (`hist.get(base)` above). Rebinding it here
+            # turned it into a list and the next file raised
+            # AttributeError: 'list' object has no attribute 'get'.
+            fhist = history.get(rel) or []
+            if ownerless_basis(fhist) == 'UNRECORDED':
+                rows[rel] = {'owner': None, 'basis': 'UNRECORDED',
+                             'first_commit': fhist[-1], 'last_commit': fhist[0],
+                             'also_claimed_by': []}
+            else:
+                rows[rel] = {'owner': None, 'basis': 'UNKNOWN',
+                             'also_claimed_by': []}
     return rows, {'tools': len(paths), 'owner_line': len(lines),
                   'claim_commits_read': claim_commits,
                   'claim_commits_with_files': with_files,
                   'criteria': CRITERIA_VERSION}
+
+
+def claim_subject_mentions(paths):
+    """{relpath: (session, sha)} for a claim commit whose SUBJECT names the path.
+
+    Read because a FILES-only derivation misses them, which is a real instance
+    rather than a hypothetical -- see CLAIM_SUBJECT_ONLY above. Only paths with no
+    FILES-list claim reach this bucket, so this never overrides a declaration.
+    """
+    out = {}
+    r = subprocess.run(['git', '-C', REPO, 'log', '--format=%H%x09%s',
+                        '--grep', '^chore(claims):'],
+                       capture_output=True, text=True, encoding='utf-8',
+                       errors='replace')
+    if r.returncode != 0:
+        return out
+    log = r.stdout.strip()
+    if not log:
+        return out
+    byname = {}
+    for rel in paths:
+        byname.setdefault(os.path.basename(rel), []).append(rel)
+    for line in log.split('\n'):
+        if '\t' not in line:
+            continue
+        sha, subj = line.split('\t', 1)
+        for base, rels in byname.items():
+            who = subject_only_hit(subj, base)
+            if not who:
+                continue
+            for rel in rels:
+                # The log is newest-first, so the FIRST hit is the most recent
+                # claim -- the same rule LAST_CLAIM uses.
+                out.setdefault(rel, (who, sha[:12]))
+    return out
+
+
+def file_history(paths):
+    """{relpath: [sha, ...]} newest first, for the UNRECORDED/UNKNOWN split.
+
+    ONE git call, not one per file: a per-file log over 980 paths is slow enough
+    that somebody would turn the split off.
+    """
+    out = {}
+    r = subprocess.run(['git', '-C', REPO, 'log', '--format=%H', '--name-only'],
+                       capture_output=True, text=True, encoding='utf-8',
+                       errors='replace')
+    if r.returncode != 0:
+        return out
+    log = r.stdout.strip()
+    if not log:
+        return out
+    cur = None
+    want = set(paths)
+    for line in log.split('\n'):
+        line = line.strip()
+        if not line:
+            continue
+        if len(line) == 40 and all(c in '0123456789abcdef' for c in line):
+            cur = line[:12]
+            continue
+        if cur and line in want:
+            out.setdefault(line, []).append(cur)
+    return out
 
 
 # ── THE CRITERIA LOCK (discipline 1), on hand-built subjects only ───────────
@@ -221,8 +380,17 @@ FIXTURES = [
 
 
 def run_fixtures(verbose=False):
+    """-> (failures, arms_run). The ARM COUNT IS COUNTED, NOT WRITTEN.
+
+    It used to be `len(FIXTURES) + 3`, a literal for the arms that are not in
+    FIXTURES -- and adding nine arms on 2026-10-07 would have left the tool
+    reporting "7/7 classify correctly" while running sixteen. The denominator
+    is now incremented where an arm actually runs.
+    """
     bad = []
+    arms = 0
     for subj, want, why in FIXTURES:
+        arms += 1
         m = CLAIM_SUBJ.match(subj)
         got = None
         if m:
@@ -242,14 +410,59 @@ def run_fixtures(verbose=False):
             ('"""see # OWNER: cody in the other file"""\n', None,
              'a MENTION inside a docstring is NOT a declaration'),
             ('  # OWNER: cody\n', None,
-             'an INDENTED owner line is a comment in code, not a header')):
+             'an INDENTED owner line is a comment in code, not a header'),
+            # ── THE // ARM (2026-10-07) ────────────────────────────────────
+            # TRACKED_EXT carries .js and a .js file cannot write a `#`
+            # comment, so before this the authoritative basis was unreachable
+            # for a third of the universe.
+            ('// OWNER: fourth\nconst x = 1;\n', 'fourth',
+             'a JavaScript OWNER line -- `//`, because a .js file cannot '
+             'carry a `#` comment and .js IS tracked'),
+            ('  // OWNER: fourth\n', None,
+             'an INDENTED // owner line is a comment in code, not a header'),
+            ('const s = "// OWNER: fourth";\n', None,
+             'a // OWNER line inside a JS STRING is not a declaration')):
+        arms += 1
         m = OWNER_LINE.search(src)
         got = m.group(1) if m else None
         if got != want:
             bad.append('%s -- wanted %r got %r' % (why, want, got))
         elif verbose:
             print('  ok   %s' % why)
-    return bad
+    # CLAIM_SUBJECT_ONLY, both directions, on the predicate build() calls.
+    for subj, base, want, why in (
+            ('chore(claims): cody claims cody -- negative control for '
+             'tests/sairnfreedom_server_backup.js', 'sairnfreedom_server_backup.js',
+             'cody', 'a claim SUBJECT naming a path with NO FILES list -- the '
+                     'real c1e06f33 shape that read as NONE'),
+            ('chore(claims): cody claims cody -- x FILES: tools/a.py',
+             'a.py', None,
+             'a claim WITH a FILES list must NOT reach the weaker basis -- '
+             'claim_history() already owns it'),
+            ('chore(claims): cody claims cody -- nothing about it', 'a.py',
+             None, 'a claim that does not name the file at all'),
+            ('docs(thing): mentions tools/a.py', 'a.py', None,
+             'a NON-claim commit mentioning the path is not a claim')):
+        arms += 1
+        got = subject_only_hit(subj, base)
+        if got != want:
+            bad.append('%s -- wanted %r got %r' % (why, want, got))
+        elif verbose:
+            print('  ok   %s' % why)
+    # UNRECORDED vs UNKNOWN, both directions.
+    for fhist, want, why in (
+            (['abc123def456'], 'UNRECORDED',
+             'no owner recorded but the file HAS history -- ROUTABLE'),
+            ([], 'UNKNOWN',
+             'no owner AND no resolvable history -- a COULD-NOT-TELL, and it '
+             'must not be counted with the routable ones')):
+        arms += 1
+        got = ownerless_basis(fhist)
+        if got != want:
+            bad.append('%s -- wanted %r got %r' % (why, want, got))
+        elif verbose:
+            print('  ok   %s' % why)
+    return bad, arms
 
 
 def main(argv=None):
@@ -263,9 +476,9 @@ def main(argv=None):
     a = ap.parse_args(argv)
 
     print('TOOL OWNER MAP -- criteria %s' % CRITERIA_VERSION)
-    bad = run_fixtures(verbose=a.fixtures)
+    bad, arms = run_fixtures(verbose=a.fixtures)
     if bad:
-        print('\nCRITERIA LOCK FAILED -- %d of %d:' % (len(bad), len(FIXTURES) + 3))
+        print('\nCRITERIA LOCK FAILED -- %d of %d:' % (len(bad), arms))
         for b in bad:
             print('  ! %s' % b)
         print('\nNOTHING REAL WAS DERIVED. A misclassifying parser would assign '
@@ -273,7 +486,7 @@ def main(argv=None):
               'map at all.')
         return EXIT_COULD_NOT_RUN
     print('criteria lock: %d/%d fixtures classify correctly, on hand-built '
-          'subjects only' % (len(FIXTURES) + 3, len(FIXTURES) + 3))
+          'subjects only' % (arms, arms))
     if a.fixtures:
         return 0
 
@@ -291,15 +504,37 @@ def main(argv=None):
     print('  derived LAST_CLAIM            %4d' % by.get('LAST_CLAIM', 0))
     print('  derived CONTESTED             %4d   (>1 session has claimed it)'
           % by.get('CONTESTED', 0))
-    print('  NONE -- UNKNOWN, not unowned  %4d' % by.get('NONE', 0))
+    print('  derived CLAIM_SUBJECT_ONLY    %4d   (a claim SUBJECT names it and '
+          'no FILES list does -- weaker than LAST_CLAIM)'
+          % by.get('CLAIM_SUBJECT_ONLY', 0))
+    # ── TWO NUMBERS WHERE THERE WAS ONE, AND A TOTAL (2026-10-07, cc) ───────
+    # The single `NONE` line said "UNKNOWN, not unowned" and counted both. A
+    # reader could not tell how many were routable from how many were
+    # unanswerable, and those need different actions.
+    _unrec = by.get('UNRECORDED', 0)
+    _unk = by.get('UNKNOWN', 0)
+    print('  UNRECORDED                   %4d   <- no owner recorded, but the '
+          'file HAS history: ROUTABLE' % _unrec)
+    print('  UNKNOWN                      %4d   <- no owner AND no resolvable '
+          'history: a COULD-NOT-TELL' % _unk)
+    print('  OWNERLESS TOTAL              %4d   = UNRECORDED + UNKNOWN. Printed '
+          'because two numbers are easier to ignore than one.' % (_unrec + _unk))
     print('  claim commits read            %4d, of which %d carry a FILES list'
           % (meta['claim_commits_read'], meta['claim_commits_with_files']))
 
     if a.ownerless:
-        print('\nTOOLS WITH NO OWNER AT ALL -- no `# OWNER:` line and no claim '
-              'has ever named them:')
-        for rel in sorted(k for k, v in rows.items() if v['basis'] == 'NONE'):
-            print('  %s' % rel)
+        print('\nTOOLS WITH NO OWNER AT ALL -- no OWNER line and no claim has '
+              'ever named them. The two buckets need DIFFERENT actions:')
+        _u = sorted(k for k, v in rows.items() if v['basis'] == 'UNRECORDED')
+        _k = sorted(k for k, v in rows.items() if v['basis'] == 'UNKNOWN')
+        print('\n  UNRECORDED (%d) -- routable: the commits are named in the map'
+              % len(_u))
+        for rel in _u:
+            print('    %-62s last %s' % (rel, (rows[rel].get('last_commit') or '?')))
+        print('\n  UNKNOWN (%d) -- a COULD-NOT-TELL: no resolvable history here'
+              % len(_k))
+        for rel in _k:
+            print('    %s' % rel)
 
     payload = {'_what_this_is': __doc__.split('\n')[0],
                '_basis_vocabulary': {
@@ -307,7 +542,22 @@ def main(argv=None):
                    'LAST_CLAIM': 'derived from the most recent claim commit.',
                    'CONTESTED': 'derived, and more than one session has claimed '
                                 'it; `also_claimed_by` lists the others.',
-                   'NONE': 'UNKNOWN, not unowned.'},
+                   'CLAIM_SUBJECT_ONLY':
+                       'a claim commit SUBJECT names this path and no FILES '
+                       'list does. Derived and WEAKER than LAST_CLAIM: a '
+                       'subject is prose, not a declaration of scope. '
+                       '`claim_subject_commit` cites it.',
+                   'UNRECORDED':
+                       'no OWNER line and no claim, but the file HAS git '
+                       'history -- so ownership is UNRECORDED rather than '
+                       'absent, and `first_commit`/`last_commit` say where to '
+                       'start. ROUTABLE.',
+                   'UNKNOWN':
+                       'no OWNER line, no claim, and NO resolvable history in '
+                       'this clone. A genuine could-not-tell, kept separate '
+                       'from UNRECORDED because the two need different '
+                       'actions. Replaces the old single NONE, which carried '
+                       'both and said so only in prose.'},
                '_regenerate': 'python tools/tool_owner_map.py',
                '_meta': meta, 'tools': rows}
     body = json.dumps(payload, indent=1, sort_keys=True) + '\n'
@@ -331,8 +581,9 @@ def main(argv=None):
     print('\nwrote %s' % OUT)
 
     return finish(
-        ['%s -- no `# OWNER:` line and no claim has ever named it' % rel
-         for rel in sorted(k for k, v in rows.items() if v['basis'] == 'NONE')],
+        ['%s -- no OWNER line and no claim has ever named it (%s)' % (rel, v['basis'])
+         for rel, v in sorted(rows.items())
+         if v['basis'] in ('UNRECORDED', 'UNKNOWN')],
         quiet=False,
         clean_line='\nCLEAN -- every tracked tool resolves to a session.')
 

@@ -35,14 +35,21 @@ def main():
     # 47d69604 and this is the seventh.
     #
     # OWNERSHIP: docs/tool-owner-map.json records this file as
-    # `"basis": "NONE", "owner": null` -- not UNKNOWN, but NO OWNER AT ALL: no
-    # `# OWNER:` line and no claim has ever named it. It was left out of the
-    # earlier six because routing was the safe default; a file with no owner
-    # cannot be ROUTED to anyone, so leaving it was not deferring the decision,
-    # it was declining to make one. Taken here under this session's claim and
-    # said out loud rather than fixed quietly. The eighth, tools/gh_push.py:182,
-    # IS owned -- the map says `cc`, basis LAST_CLAIM 812857c0 -- and is routed,
-    # not touched.
+    # `"basis": "UNRECORDED", "owner": null` -- no `# OWNER:` line and no claim
+    # has ever named it, but the file HAS git history, so the commits are named
+    # and it is routable. It was left out of the earlier six because routing was
+    # the safe default; nobody to route TO is not deferring the decision, it is
+    # declining to make one. Taken here under this session's claim and said out
+    # loud rather than fixed quietly.
+    #
+    # BASIS RENAMED 2026-10-07: this comment read `"basis": "NONE", ... -- not
+    # UNKNOWN, but NO OWNER AT ALL`, i.e. a consumer re-interpreting the field
+    # in prose because one `NONE` carried two opposite facts. The map now
+    # carries UNRECORDED and UNKNOWN as separate states and the gloss is gone.
+    #
+    # The eighth, tools/gh_push.py:182, IS owned -- the map says `cc` -- and was
+    # fixed under that ownership at cd8b815b, locked by
+    # tests/run_gh_push_argv_probe.py. It is no longer an open routing target.
     #
     # TWO ARGUMENTS ARE REQUIRED, NOT ONE. `wanted` is sys.argv[2:], and an
     # empty `wanted` is not an error that raises: the `name not in wanted` test

@@ -26,15 +26,23 @@ probe against the parent commit turns every arm red. The before-state is in
 `scratchpad/before.<tool>`.
 
 ── WHAT THIS DOES NOT COVER ────────────────────────────────────────────────
-**ONE of the eight is still not fixed: `tools/gh_push.py:182`.** It is OWNED --
-`docs/tool-owner-map.json` says `cc`, basis `LAST_CLAIM` `812857c0` -- so it has
-a real routing target and is routed rather than edited.
+**ALL EIGHT ARE NOW FIXED.** `tools/gh_push.py:182` was the last one and is not
+an arm here, deliberately: it is OWNED (`docs/tool-owner-map.json` says `cc`),
+it was fixed under that ownership at `cd8b815b`, and it is locked by
+`tests/run_gh_push_argv_probe.py`. A second lock on the same line in this file
+would be a second copy of the same check, which is the duplication rule this
+platform already pays for -- so the citation points there instead.
 
-`tools/va_rule_currency.py` WAS on that list and is now a subject. Its map entry
-is `"basis": "NONE", "owner": null` -- **no owner at all**, not UNKNOWN. A file
-nobody owns cannot be routed to anyone, so leaving it on a routing list was not
-deferring the decision, it was declining to make one. Taken under this session's
+`tools/va_rule_currency.py` WAS on that routing list and is now a subject. Its
+map entry is `"basis": "UNRECORDED", "owner": null` -- no OWNER line and no
+claim has ever named it, though the file HAS history. Nobody to route TO is not
+deferring the decision, it is declining to make one. Taken under this session's
 claim, stated rather than done quietly.
+
+BASIS RENAMED 2026-10-07: the two paragraphs above read `"basis": "NONE" --
+**no owner at all**, not UNKNOWN`, a consumer re-interpreting the field in
+prose because one `NONE` carried two opposite facts. UNRECORDED and UNKNOWN are
+now separate states in the map and the gloss is gone.
 
 **Its refusal is the only one of the seven that needs TWO arguments**, and the
 second is not cosmetic: `wanted = sys.argv[2:]`, so an empty `wanted` does not
@@ -74,22 +82,28 @@ SUBJECTS = [
     # Previously in NOT_MINE below as "no OWNER line, no claim has ever named
     # it". That is still true, and it is the REASON it moved here rather than
     # an objection to it: docs/tool-owner-map.json records
-    # `"basis": "NONE", "owner": null` -- NO OWNER AT ALL, not UNKNOWN. A file
-    # with no owner cannot be routed to anyone, so leaving it on the routing
-    # list was not deferring the decision, it was declining to make one.
+    # `"basis": "UNRECORDED", "owner": null` -- no owner recorded, so there is
+    # nobody to route TO, and leaving it on the routing list was not deferring
+    # the decision, it was declining to make one.
     'va_rule_currency.py',
 ]
 # Named so the probe reports them every run rather than leaving them to a
-# document nobody opens. ONE LEFT, not two: gh_push.py IS owned --
-# docs/tool-owner-map.json says `cc`, basis LAST_CLAIM 812857c0 -- so it has a
-# real routing target and tools/gh_push.py:182 is the line.
-NOT_MINE = ['gh_push.py:182 (owner cc, basis LAST_CLAIM 812857c0)']
+# document nobody opens. NONE LEFT as of 2026-10-07: gh_push.py:182 was the
+# last, it IS owned (docs/tool-owner-map.json says `cc`), it was fixed under
+# that ownership at cd8b815b, and tests/run_gh_push_argv_probe.py locks it. An
+# EMPTY list is the honest state and is printed as such rather than deleted --
+# a routing list that disappears reads as "there was never one".
+NOT_MINE = []
 
 
 def main(argv):
     print('TOOL USAGE REFUSAL -- criteria %s' % CRITERIA_VERSION)
     print('  subjects (this session\'s claim) : %d' % len(SUBJECTS))
-    print('  same defect, NOT mine, routed   : %s' % '; '.join(NOT_MINE))
+    print('  same defect, NOT mine, routed   : %s'
+          % ('; '.join(NOT_MINE) if NOT_MINE
+             else 'NONE OUTSTANDING -- the last, gh_push.py:182, was fixed at '
+                  'cd8b815b under its own ownership and is locked by '
+                  'tests/run_gh_push_argv_probe.py'))
     print('')
     missing = [s for s in SUBJECTS
                if not os.path.isfile(os.path.join(REPO, 'tools', s))]
