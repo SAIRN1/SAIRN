@@ -155,3 +155,49 @@ orphan-not-missing distinction, the independently verified survivor
 **NEXT STEP, two parts:** cc re-seats the record, and the reseat path grows a
 mode that can reach `reviewed` records — or refuses out loud that it cannot,
 rather than omitting them silently.
+
+## item 4 — DONE. Duplicate LEDGER arms removed; the unit arms stay. FIRST RUN EXIT 0.
+
+```
+command : python tests/run_tier_a_review_gate_probe.py
+commit  : c2fcada9 + this change        date: 2026-10-08
+FIRST RUN EXIT CODE : 0      (and a second run, also 0)
+result  : ALL ARMS PASS, 230 ok
+file    : 2,566 -> 2,412 lines
+```
+
+**REMOVED** — the ledger half, because `tests/run_tier_a_open_basis_probe.py` is
+cc's and is the surviving probe for it: `BASIS_VOCAB`, `_basis_cutoff()`,
+`_basis_violations()`, the cutoff arm, the every-record-since-the-fix arm, the
+coverage NOTE, the exemption-counted-twice arm, the ledger-arm-bites arm, the
+5-shape planted negative and the pre-cutoff arm. The now-unused `import calendar`
+went with them.
+
+**KEPT** — the six unit arms that belong beside this tool, three on `subject_sha()`
+and three on what `_open_record()` writes:
+
+```
+ok  THE NEXT --open BY ANYBODY writes opened_at_sha_basis -- driven as a session that is not me
+ok  ...and that record really was attributed to the other session
+ok  ...and its fixture tree was removed, read-only objects and all
+ok  NEGATIVE HALF: a record naming NO files gets basis 'head', so the field is derived
+ok  ...and the two fixtures really did differ, so one code path is not satisfying both arms
+ok  ...and that fixture tree was removed too
+```
+
+**ONE MISTAKE MADE AND CAUGHT IN THE SAME ITEM:** the first cut re-inserted the
+`(B)` branch that was already inside the kept region, so the probe ran with those
+three arms **twice** — 233 ok with visible duplicates at two line ranges. Caught
+by reading the arm list rather than the total, which would have looked like more
+coverage. Removed; 230 ok, no duplicates.
+
+**A NOTE LEFT IN THE FILE WHERE THE ARMS WERE**, so the next reader finds the
+reason rather than a gap: it names cc's probe as the survivor, says two copies of
+one check is itself a finding on this platform, and records the one difference
+that was routed rather than dropped — cc **pins** the cutoff by sha and guards the
+pin; the removed version **derived** it with `git log --reverse -S 'def
+subject_sha('`, which cannot go stale.
+
+**This closes my half of the `--open` HEAD-stamping finding.** The fix landed at
+`18078d38`, the unit arms live beside the tool, and the ledger rule lives in cc's
+probe where it is exercised by real records.
