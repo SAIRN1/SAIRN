@@ -111,3 +111,57 @@ five ordered steps are in the document, ending with: re-run
 `tests/run_audit_event_type_probe.py` and **watch arm H1** — it asserts every
 allowlisted table has the four columns `writeAuditLog` posts, so if it goes red
 the DDL did not run the way step 1 assumes.
+
+### item 3 — THE 101 SUITE FAILURES SPLIT BY OWNER — committed
+
+`docs/2026-10-08-hank-suite-failure-owners.md`.
+`md_table_check` **EXIT 0, 120/120 rows, 0 malformed, 0 uncheckable.**
+
+| verdict | count |
+|---|---:|
+| **REAL** | **89** |
+| CASCADE (listed separately, NOT counted as failures) | 8 |
+| TIMEOUT at 240 s alone (a third state, neither) | 4 |
+
+**THE 89 REAL, BY OWNER:**
+
+| owner | count |
+|---|---:|
+| **UNOWNED** | **62** |
+| cody | 11 |
+| fourth | 8 |
+| cc | 5 |
+| hank | 2 |
+| cc+fourth+hank | 1 |
+
+**OWNER IS DERIVED FROM TWO SOURCES AND EVERY ROW SAYS WHICH.** `map` = a
+non-null entry in `docs/tool-owner-map.json`. `claim` = a session **declared the
+file in a claim's `FILES:` list**, read out of every record in
+`.claude/claims/*.json` — the only durable record of who has worked on a file.
+**`UNOWNED` means neither source names anybody**, not that nobody wrote it. 502
+of the owner map's 680 ownerless entries are under `tests/`, so 62 of 89 is the
+expected shape, not a surprise — and **a file with no owner cannot be routed to
+anybody**, which is the same problem `tools/va_rule_currency.py` had in b1.
+
+**ONLY 2 OF THE 89 ARE MINE.**
+
+**CASCADE AND TIMEOUT ARE IN THEIR OWN SECTIONS WITH THEIR OWN HEADINGS**, each
+carrying what the suite said beside what the file says alone. The one to read
+twice is still `tests/phi_cache_scoped_to_user.js`: **72 passed / 0 failed
+alone**, while fourth's batch-16 item 4 took it on as *"basis NONE, no owner,
+blocks three register rows"*.
+
+**THE DOCUMENT SAYS WHAT IT DOES NOT CLAIM**, in its own closing section: it
+does not claim the 89 are NEW — `known_red_check.py --from-run` on the same log
+reports 101 red against a registry of 75, i.e. **30 red and not recorded**, and
+that register is **fourth's** and is not touched — and it does not diagnose any
+of them. The "first failing assertion" column is quoted, not interpreted.
+
+**A GENERATOR DEFECT WORTH ONE LINE, because the damage was wildly out of
+proportion to the cause.** The first build produced *"3 malformed, 62
+unreadable"*. The cause was a bare **carriage return** inside three traceback
+cells, captured from a Windows subprocess. **One broken row unparses every row
+after it**, so three bad cells cost 62 rows. Escaping the pipe was never the
+fix — the invisible character was. The generator now maps every control
+character to a space and every pipe to a slash, and `md_table_check` is the
+arbiter that has to be satisfied rather than my own reading of the markdown.
