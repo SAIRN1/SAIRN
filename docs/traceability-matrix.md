@@ -44,6 +44,8 @@ Source: the numbered `CHECK n:` blocks in `tools/sairn_push_gate_hook.py`. Deriv
 | 13 | THE INDEPENDENT-REVIEW RULE ON TIER A CODE (2026-09-15) |
 | 14 | AN UNRESOLVED CONFLICT MARKER IN WHAT THIS PUSH SHIPS |
 | 15 | THIS PUSH CHANGES THINGS THAT CHECK THE WORK (2026-10-06) |
+| 16 | IS THIS PUSH HAPPENING UNDER A HELD CLAIM? (2026-10-08) |
+| 17 | AN EXTERNAL TOOL, SCRIPT OR HANDOFF MUST BE DECLARED |
 
 ## 3. Enforced report-only
 
@@ -700,11 +702,11 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 195 test files are traced to no stated requirement
+### 197 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 722 of 917 traced, 78.7%.
+For context and not as the headline: 722 of 919 traced, 78.6%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -727,7 +729,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | kind | count | what it means | the fix |
 |---|---|---|---|
 | **bound to a subject, tied to no requirement** | 36 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 159 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **no subject binding either** | 161 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
 **These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 36 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
@@ -751,6 +753,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/approval_persistence_probe.py`
 - `tests/audit_checkpoint_probe.py`
 - `tests/claims/run_fileset_matcher_probe.py`
+- `tests/claims/run_own_claim_state_probe.py`
 - `tests/claims/run_registry_claim_probe.py`
 - `tests/conflict_marker_preflight_probe.py`
 - `tests/criticality_rollup_list_review_probe.py`
@@ -824,6 +827,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_doc_sha_reseat_probe.py`
 - `tests/run_entry_point_scope_probe.py`
 - `tests/run_exec_msgs_gate_sabotage_probe.py`
+- `tests/run_external_file_index_probe.py`
 - `tests/run_fact_sheet_regenerates_probe.py`
 - `tests/run_fail_open_probe.py`
 - `tests/run_gap_ledger_probe.py`
@@ -945,12 +949,12 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 917   tests/**, api/** (both walked)
+  test files on disk                 919   tests/**, api/** (both walked)
   open-work rows citing a test       392   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 10   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                76   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     81   report_only_checks.NOT_PROMOTED
-  numbered gate checks                15   sairn_push_gate_hook.py
+  numbered gate checks                17   sairn_push_gate_hook.py
 ```
 
 A closed traverse is **not** a correct survey: it means no source is MISSING, not that any source is RIGHT.

@@ -1154,6 +1154,20 @@ PURPOSES = {
     # can only ever drift away from it. Removed rather than corrected -- a
     # corrected count goes stale again on the next check.
     'sairn_push_gate_hook.py': ('CHECKER', 'the numbered push checks; the only tool that calls deny()'),
+    'scrutiny_ledger_check.py': ('CHECKER',
+                                 'a row in docs/scrutiny-flags.json that is '
+                                 'NOT true of the commit it names -- an empty '
+                                 'diff, a merge-keyed row, a ref name where a '
+                                 'sha belongs. Named as that file\'s '
+                                 'merge_policy validator, so the rebase '
+                                 'resolver runs it rather than anyone '
+                                 'remembering to'),
+    'external_file_index_check.py': ('CHECKER',
+                                     'a tool, script or handoff sitting in a '
+                                     'DECLARED external directory that is '
+                                     'neither git-tracked nor named in '
+                                     'docs/external-files-index.json -- i.e. '
+                                     'work no other session can find'),
     'git_push_master_guard.py': ('CHECKER', 'a push aimed at `master`, which is stale'),
     'idempotence_double_run.py': ('CHECKER', 'a mutating tool that changes the '
                                   'tree again on its SECOND run, driven in a '

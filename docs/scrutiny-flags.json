@@ -71,6 +71,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/claims/run_matcher_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "17afcce6e8900015d03355d08cc0c653b857abcc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_tier_a_review_gate_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -425,6 +433,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/claims/run_own_claim_state_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "`now() - claimed_at < 4h` timeout, and reported its own live 5.3-hour claim as"
+    }
+   ],
+   "sha": "9e4621900a4eb0bad92f1974e12c0ddf1b158dec",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9e4621900a4eb0bad92f1974e12c0ddf1b158dec",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_tier_a_review_gate_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -504,6 +533,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "c6a841cb9f235ac763992738ff019a47c3913718",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_gh_push_argv_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "cca943f14c893b139e9891d6ba5966e41bcf4165",
    "criteria_version": "2026-10-06.1"
   },
   {

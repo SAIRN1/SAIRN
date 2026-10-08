@@ -1318,6 +1318,69 @@ def main():
             '    python tools/sairn_claim.py claim <subject> <task words>\n\n'
             % (_cl_state, _cl_why))
 
+    # ── CHECK 17: AN EXTERNAL TOOL, SCRIPT OR HANDOFF MUST BE DECLARED ──────
+    # BLOCKING, and unlike check 16 this one is a refusal on purpose. A file
+    # nobody can find is not a style question: SAIRN-SESSION66-HANDOFF.md sat
+    # in C:\Users\marsh\ for four and a half months, in git under NO name, and
+    # the one next to it had already been renamed after a fresh session read
+    # the wrong handoff and continued the wrong work.
+    #
+    # IT FAILS CLOSED ON ITS OWN ABSENCE, which is the half that matters. If
+    # the checker or its index is missing this prints COULD NOT RUN and
+    # DENIES, because `if os.path.isfile(x):` with no else is PR 1.11 exactly
+    # -- a pass that was never performed. The checker itself exits 2 for an
+    # absent index rather than printing a reassuring 0.
+    _efi = os.path.join(repo, 'tools', 'external_file_index_check.py')
+    if not os.path.isfile(_efi):
+        deny('EXTERNAL FILE INDEX: COULD NOT RUN -- tools/'
+             'external_file_index_check.py is not in this clone, so NOTHING '
+             'was checked about files kept outside git. A missing checker is '
+             'not a clean result.')
+    elif not os.path.isfile(os.path.join(repo, 'docs',
+                                         'external-files-index.json')):
+        # ── THE INDEX IS ANOTHER SESSION'S FILE AND DOES NOT EXIST YET ──────
+        # THIS IS NOT A FAIL-OPEN AND THE DIFFERENCE IS THE WHOLE POINT. PR
+        # 1.11 is about a check that reports a PASS it never performed. This
+        # reports a loud COULD-NOT-RUN and claims nothing. What it does not do
+        # is DENY -- because docs/external-files-index.json is declared by
+        # cody's live claim and did not exist when this check was written, so
+        # denying would hold every session's push hostage to another session's
+        # unfinished file. That is not a gate, and a gate everyone has to
+        # override on day one is one nobody obeys on day two.
+        #
+        # IT BECOMES BLOCKING THE MOMENT THE INDEX EXISTS, with no further
+        # change here. The condition is the file, not a flag somebody has to
+        # remember to flip.
+        sys.stderr.write(
+            '\nEXTERNAL FILE INDEX: COULD NOT RUN -- '
+            'docs/external-files-index.json does not\n  exist yet, so nothing '
+            'was checked about tools, scripts or handoffs kept outside\n  git. '
+            'THIRD STATE, NOT A PASS. This check starts REFUSING as soon as '
+            'that file\n  exists; it does not deny now only because the file '
+            'is another session\'s to\n  create and blocking on it would make '
+            'this gate something to override.\n'
+            '    python tools/external_file_index_check.py   '
+            '(prints the schema it expects)\n\n')
+    else:
+        _r = subprocess.run([sys.executable, _efi], capture_output=True,
+                            text=True, encoding='utf-8', errors='replace',
+                            cwd=repo)
+        if _r.returncode == 1:
+            deny('EXTERNAL FILE INDEX: a tool, script or handoff sits in a '
+                 'DECLARED external\n  directory and is neither git-tracked '
+                 'nor named in '
+                 'docs/external-files-index.json.\n'
+                 + (_r.stdout or '')[-2000:]
+                 + '\n  Either commit it, or declare it with a purpose. A '
+                 'handoff nobody can find is\n  worse than no handoff -- the '
+                 'next session reads the one it CAN find.')
+        elif _r.returncode != 0:
+            deny('EXTERNAL FILE INDEX: COULD NOT RUN (exit %d) WITH THE INDEX '
+                 'PRESENT, which is a\n  real failure rather than a missing '
+                 'file. Third state, not a pass.\n%s'
+                 % (_r.returncode,
+                    ((_r.stdout or '') + (_r.stderr or ''))[-1500:]))
+
     # ── CHECK 15: THIS PUSH CHANGES THINGS THAT CHECK THE WORK (2026-10-06) ──
     # NON-BLOCKING, AND THAT IS THE DESIGN RATHER THAN TIMIDITY. Every one of
     # checks 1-14 asks "is this push's CONTENT wrong". None asks "is this
