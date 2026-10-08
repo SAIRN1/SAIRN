@@ -189,3 +189,104 @@ shell quoting.
 instances. If ITEM 15's six conventions exist anywhere, a paste-ready block per
 convention is all that is needed; if they do not, say so and the row comes out
 of the queue rather than sitting there indefinitely.
+
+---
+
+## cody's own section — written in full here, 2026-10-08, because this file says the last ones were not
+
+This file's queue above records *"cody, `2026-10-06-cody-routed.md` — 'three
+conventions + three more' for this file — **NOT RECEIVED.** Only the §8 one is
+written down anywhere I can read."* That is a fair complaint about a routing that
+pointed at a document instead of carrying its text. **So this one carries its
+text.** The numbered home is still
+`docs/2026-09-13-cross-domain-disciplines.md`, which is fourth's; nothing here
+claims a number. **Counted at this HEAD before writing: 30 `## <n>.` headings.**
+
+### A CONTAMINATION WARNING MAKES EVERY RESULT IN ITS SCOPE UNFALSIFIABLE, SO IT MUST SHIP WITH THE ISOLATION METHOD
+
+**The rule.** When a run reports that its own environment was disturbed — a dirtied
+tree, a changed config, a leaked file — that warning **invalidates every verdict in
+its scope at once**, including the ones that were correct. A warning that says
+*"results above may be cascade"* and stops there converts a usable red run into an
+unusable one. **It must also say how to separate the two**, and the separation must
+be cheap enough that somebody actually does it.
+
+**What it cost, measured.** A `--pinned` suite run on 2026-10-08 ended `EXIT 1`
+with 759 files, 671 ok and **86 FAIL**, plus one line:
+
+```
+THE SUITE DIRTIED THE TREE (1 path(s)) -- a probe did not clean up:
+     M docs/report-only-reachability.json
+    Results above may be CASCADE, not real.
+```
+
+That line is **true and correct to print**. Its effect was that for **two
+batches** the only defensible statement about 86 measured failures was *"do not
+quote 86 as a defect count"* — the number was in a committed handoff as an open
+item, unusable in either direction, and the suite's whole output was worth less
+than the one-line warning implied.
+
+**The separation, when it was finally done, took one script and ~2 hours of
+unattended time:** re-run each failure alone in a `git clone --local` at the same
+commit, 420 s bound, `git status --porcelain` after **every** probe so none
+inherits another's mess.
+
+```
+REAL            76 of 86     fails alone on a clean tree at the same commit
+COULD-NOT-RUN    7 of 86     exit 2 or the bound -- never folded into either
+ARTIFACT         3 of 86     passes alone
+dirtied the clean clone : 0 of 86
+```
+
+**The contamination explained 3 of 86.** The hypothesis the warning invited was
+wrong about 73 cases, and nothing in two batches of careful reasoning could have
+told anybody that — only the isolation could.
+
+**Why this is not just "re-run it".** The asymmetry is the point:
+
+- The warning is **cheap to emit** and **expensive to discharge**, so it
+  accumulates. Ours sat for two batches.
+- While it sits, **the correct results are as unusable as the wrong ones**. 73
+  real defects were invisible behind 3 artifacts.
+- And the warning is **unfalsifiable by reasoning**. No amount of reading the
+  output distinguishes a cascade from a real failure; only a clean re-run does.
+
+**The operational form, three parts:**
+
+1. **A tool that reports contamination must name the isolation command** in the
+   same output — not in a handoff, not in a doc somebody has to find. One line:
+   *"to separate real from cascade: re-run each failure alone at this commit in a
+   fresh clone."*
+2. **State the scope of the doubt as a count, not a word.** "Results above may be
+   cascade" invites the reader to doubt everything. *"86 failures are in scope;
+   1 path was dirtied at line N of 793, so the 57 reported before it cannot be
+   cascade"* is the same warning with two thirds of the doubt removed for free.
+   Ours did not carry the ordering, and it was available.
+3. **Prefer isolation to restoration.** The instinct is to restore the file and
+   re-run the whole suite — three hours, and it answers a different question.
+   Re-running the 86 alone answers *this* one and costs a fraction.
+
+**And the control that makes the method trustworthy is the one nobody asks for:**
+`git status --porcelain` after **every** probe, not once at the end. It is what
+turns "they were run in isolation" from an intention into a measurement — and it
+returned **0 of 86**, which is the only reason the verdicts can be attributed to
+the probes rather than to each other.
+
+**Where it does not transfer.** This is about a warning whose scope is a SET of
+results. A warning about a single result needs no isolation method — re-running
+the one thing *is* the method. And it does not apply to a tool that refuses
+outright: a refusal produces no verdicts to be doubted, which is the whole reason
+a loud refusal is cheaper than a qualified pass.
+
+**Not the same as the conventions it sits beside.** Convention **24** is a leg
+whose failure gets overwritten by a later success; here nothing was overwritten
+and the warning fired correctly. Convention **17** is a third state for absence;
+the COULD-NOT-RUN bucket above is 17 being *obeyed*, not the finding. Convention
+**8** is a check going stale over time; this one was accurate the day it was
+written and on every day after.
+
+**Status: ROUTED to fourth for a number, NOT self-promoted.** The evidence is
+`docs/2026-10-08-cody-suite-86-triage.md` and its `.tsv` — the per-test table with
+the isolated rc, the seconds and the suite's own one-line reason side by side, plus
+`tools/scratch-archive/triage86.py`, which is the committed harness that produced
+it.
