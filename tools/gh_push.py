@@ -216,6 +216,71 @@ def usage_and_refuse():
     return 2
 
 
+def looks_like_a_branch_not_a_message(msg):
+    """Why this argument is a REF NAME somebody meant as a branch, or ''.
+
+    ── THE INCIDENT, 2026-10-08, AND IT PRINTED "PUSHED" ───────────────────────
+    `python tools/gh_push.py main` was run intending to push the branch `main`.
+    argv[1] is the COMMIT MESSAGE, so "main" became the subject, and this tool
+    pushes only FILE_PATH plus named extras -- so it created a commit titled
+    "main" on origin/main containing stonedesk.html's working-tree bytes and
+    NONE of the 16 commits the caller believed it was sending. It printed
+    PUSH EXIT=0 and PUSHED: 3903fb3c.
+    HARMLESS ONLY BY LUCK, and measured rather than assumed: the blob sent was
+    byte-identical to the one already there, `git diff 98694d69 origin/main` was
+    EMPTY, so the residue is one empty commit titled "main". Had stonedesk.html
+    been dirty it would have published unreviewed working-tree bytes under a
+    one-word subject.
+    THE BARE-RUN GUARD ABOVE DOES NOT CATCH IT and I said so in that batch's
+    report: zero arguments refuses, and a branch name is a perfectly valid
+    commit message as far as `len()` and `.strip()` can tell.
+
+    THE RULE IS NARROW ON PURPOSE. A real commit message on this platform is a
+    sentence; the mistake is a bare ref-shaped token. So: ONE word, no spaces,
+    and either a known branch name or a name this repo really has a ref for.
+    `git rev-parse --verify` is the discriminator -- a one-word subject that
+    names nothing in the repo is unusual but not this mistake, and refusing it
+    would be refusing on shape alone.
+    """
+    m = str(msg or '').strip()
+    if not m or len(m.split()) != 1:
+        return ''
+    if m in ('main', 'master', 'HEAD', 'origin/main', 'origin/master'):
+        return ('%r is a BRANCH NAME, not a commit message.' % m)
+    code, out, _err = git(os.getcwd(), 'rev-parse', '--verify', '--quiet', m)
+    if code == 0 and (out or '').strip():
+        return ('%r resolves to a real ref or commit in this repository (%s), '
+                'so it is far more likely\n  a branch you meant to push than a '
+                'commit message you meant to write.'
+                % (m, (out or '').strip()[:12]))
+    return ''
+
+
+def refuse_branch_as_message(why):
+    """Refuse, and name the command the caller actually wanted. Exit 2."""
+    sys.stderr.write('COULD NOT RUN: %s' % why + chr(10))
+    sys.stderr.write(chr(10))
+    sys.stderr.write(
+        'THIS TOOL IS NOT A BRANCH PUSHER. argv[1] is the COMMIT MESSAGE, and '
+        'it pushes' + chr(10))
+    sys.stderr.write(
+        '  %s plus any extra paths you name -- NOT your commits.' % FILE_PATH
+        + chr(10))
+    sys.stderr.write(chr(10))
+    sys.stderr.write('  To push a BRANCH (this is almost certainly what you '
+                     'want):' + chr(10))
+    sys.stderr.write('      git push origin main' + chr(10))
+    sys.stderr.write('    -- which fires .githooks/pre-push and the full gate.'
+                     + chr(10))
+    sys.stderr.write('  To use THIS tool, give it a real message:' + chr(10))
+    sys.stderr.write('      python tools/gh_push.py "fix(x): what changed and '
+                     'why"' + chr(10))
+    sys.stderr.write(chr(10))
+    sys.stderr.write('Nothing was sent. The remote was not contacted.'
+                     + chr(10))
+    return 2
+
+
 def main():
     if len(sys.argv) <= 1:
         return usage_and_refuse()
@@ -225,6 +290,12 @@ def main():
         # len() guard and would have committed with no subject at all, which is
         # worse than a crash because it succeeds.
         return usage_and_refuse()
+    # A BRANCH NAME IS A VALID MESSAGE TO len() AND .strip() AND IS NEVER WHAT
+    # ANYBODY MEANT. Checked BEFORE get_token(), so a refusal contacts nothing
+    # at all -- the same ordering the gate-before-blobs comment below argues for.
+    _why = looks_like_a_branch_not_a_message(commit_message)
+    if _why:
+        return refuse_branch_as_message(_why)
     extra = sys.argv[2:] if len(sys.argv) > 2 else EXTRA_FILES
     token = get_token()
 
