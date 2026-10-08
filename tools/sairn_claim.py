@@ -526,6 +526,42 @@ def declared_files(task):
     return found or None
 
 
+def one_sided_files(mine_task, their_task):
+    """THEIR declared paths when exactly ONE side declared a FILES list.
+
+    ── THE CLEAR THAT COULD NOT BE PROVEN (2026-10-08) ────────────────────────
+    `overlaps()` adds `FILE:` tokens only `if a and b` -- when BOTH sides
+    declared. So a one-sided declaration contributes NOTHING, cmd_check's
+    `if not shared: continue` drops the claim before anything looks at it, and
+    the run prints a bare CLEAR.
+
+    MEASURED, with the prose vocabulary made deliberately disjoint:
+      both declare tools/shared_thing.py  -> block_reason 'same file or
+                                             resource: tools/shared_thing.py'
+      only THEY declare it                -> file_verdict ('unknown', set()),
+                                             overlaps() set(), block_reason None
+    The second row is the defect. If another session declares `FILES:
+    tools/x.py` and my task string carries no FILES list, this tool says CLEAR
+    while I am about to write a file they declared.
+
+    IT IS A THIRD STATE AND IT IS NOT FOLDED INTO EITHER OTHER ONE. I cannot
+    prove an overlap and I cannot prove its absence, so the honest output is
+    their file list and an instruction to check it -- the same rule this
+    platform applies to every other could-not-tell. It does NOT block: a
+    session that claims without a FILES list would otherwise be refused by
+    every other session on the machine, and a gate that fires on almost
+    everything is one people learn to talk past.
+
+    Symmetric by construction -- it returns their paths when only they
+    declared, and also when only I did, because "they may touch mine" is the
+    same unprovable as "I may touch theirs".
+    """
+    a, b = declared_files(mine_task), declared_files(their_task)
+    if (a is None) == (b is None):
+        return set()                  # both declared, or neither -- answerable
+    return set(b or a or ())
+
+
 def file_verdict(mine_task, their_task):
     """('refuse'|'clear'|'unknown', shared_paths).
 
@@ -1985,6 +2021,9 @@ def cmd_check(args, quiet=False):
     me = session_name()
     blocking = []
     weak = []
+    # CLAIMS WHOSE FILE OVERLAP CANNOT BE PROVEN EITHER WAY -- exactly one side
+    # declared a FILES list. Not blocking, not dropped. See one_sided_files().
+    unprovable = []
     # MY OWN overlapping claims, which every check in this file has skipped
     # since it was written. Reported here and REFUSED in cmd_claim: `check` is
     # the advisory read and must not start returning 1 for a claim the caller
@@ -2010,6 +2049,14 @@ def cmd_check(args, quiet=False):
             continue
         shared = overlaps(c, subj, task)
         if not shared:
+            # ── BEFORE DROPPING IT: COULD THIS CLEAR BE PROVEN? ───────────
+            # See one_sided_files(). A claim whose FILES list I cannot compare
+            # against mine is not a claim with no overlap, it is a claim with
+            # an UNKNOWN overlap, and dropping it here is what made CLEAR
+            # untrustworthy.
+            _os = one_sided_files(task, c.get('task'))
+            if _os:
+                unprovable.append((c, _os))
             continue
         # Shared vocabulary is REPORTED, never blocked on its own -- dropping
         # it silently would be the other failure, and the whole point of this
@@ -2030,6 +2077,23 @@ def cmd_check(args, quiet=False):
             weak.append((c, shared, 'LEXICAL ONLY -- ' + reason
                          + '; the declared file sets are DISJOINT'))
             continue
+        if not reason:
+            # ── THE WEAK NOTE WAS ASSERTING SOMETHING IT NEVER CHECKED ─────
+            # (2026-10-08.) With no blocking reason this fell into `weak`,
+            # whose note reads "share WORDS with this task but NO APP, FILE,
+            # subject or phrase". When exactly one side declared a FILES list
+            # that sentence is false about the word FILE: nothing compared the
+            # lists. `file_verdict` said 'unknown' and the message said no.
+            #
+            # THIS IS THE WORSE HALF OF THE DEFECT, because the other half is
+            # merely silent and this one states the opposite of the truth.
+            # Measured at this batch's own pickup: cody's live claim declares
+            # five of my targets and the check printed a bare CLEAR plus this
+            # note. I only knew because I read his claim text by hand.
+            _os = one_sided_files(task, c.get('task'))
+            if _os:
+                unprovable.append((c, _os))
+                continue
         (blocking if reason else weak).append((c, shared, reason))
     if blocking:
         if not quiet:
@@ -2084,11 +2148,40 @@ def cmd_check(args, quiet=False):
         # displaced by the staleness one. The staleness is in the text.
         return 1
     if not quiet:
-        print('CLEAR -- no active overlapping claim from another session.')
+        # ── THE HEADLINE MUST NOT CLAIM MORE THAN WAS CHECKED (2026-10-08) ──
+        # A bare "CLEAR" asserts an absence of overlap. Where exactly one side
+        # declared a FILES list that absence was never established -- the claim
+        # was dropped before anything compared the lists -- so the word is
+        # qualified rather than printed and then footnoted. A reader stops at
+        # the headline; that is what a headline is for.
+        if unprovable:
+            print('CLEAR ON WORDS -- AND THE FILE OVERLAP COULD NOT BE PROVEN '
+                  'EITHER WAY.')
+        else:
+            print('CLEAR -- no active overlapping claim from another session.')
         # PRINTED FIRST, BEFORE THE CLEAR SINKS IN. "CLEAR" answers a question
         # about the OTHER sessions and always has; a reader who already holds a
         # claim on this work needs to know that before anything else on the
         # screen, because the duplicate they are about to create is their own.
+        if unprovable:
+            print('')
+            print('%d active claim(s) DECLARE FILES THAT THIS CHECK COULD NOT '
+                  'COMPARE, because\nexactly one side gave a FILES list. The '
+                  'word matcher found nothing, and that\nis not evidence of no '
+                  'overlap -- it is evidence that nothing looked. READ THESE\n'
+                  'PATHS AGAINST WHAT YOU ARE ABOUT TO WRITE:' % len(unprovable))
+            for c, paths in unprovable:
+                print('  %s: %s' % (c.get('session'), c.get('subject')))
+                for p in sorted(paths):
+                    print('      %s' % p)
+                print('      (claimed %s%s)'
+                      % (age_str(c),
+                         ', REGISTRY ONLY -- not pushed yet'
+                         if c.get('_registry') else ''))
+            print('  Declare a FILES list in your own task string and re-run, '
+                  'and this becomes\n  answerable instead of unknown. It does '
+                  'NOT block: a session claiming without\n  a FILES list would '
+                  'otherwise be refused by every other session on the machine.')
         if self_hits:
             hard = [x for x in self_hits if x[2] == 'refuse']
             print('')

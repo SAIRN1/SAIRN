@@ -389,5 +389,92 @@ arm('REGRESSION: every case in the corpus above still gets its expected '
     'verdict after the tokenisation change (%d cases)' % len(CASES),
     not _regress, [c[0] for c in _regress][:5])
 
+# ── A ONE-SIDED FILES LIST IS A THIRD STATE, NOT A CLEAR (2026-10-08) ───────
+# `overlaps()` adds its `FILE:` tokens only `if a and b` -- when BOTH sides
+# declared -- so a one-sided declaration contributed nothing and cmd_check's
+# `if not shared: continue` dropped the claim before anything looked at it.
+# Where words DID match it was worse: the claim fell into the `weak` list whose
+# note reads "share WORDS ... but NO APP, FILE, subject or phrase", which is the
+# opposite of the truth about the word FILE.
+#
+# MEASURED AT THIS BATCH'S OWN PICKUP: cody's live claim declares five of my
+# targets and `check` printed a bare CLEAR. I only knew because I read his claim
+# text by hand -- which is exactly the work the tool exists to remove.
+#
+# The prose below is deliberately disjoint so no arm passes on shared vocabulary.
+ZEB = 'zebra quilting vortex'
+MAR = 'marzipan hexagon wobble'
+SH = 'tools/shared_thing.py'
+
+arm('BOTH sides declare the SAME path -> still a hard block, unchanged',
+    'same file or resource' in (_r('alpha', ZEB + ' FILES: ' + SH,
+                                   'omega', MAR + ' FILES: ' + SH) or ''),
+    _r('alpha', ZEB + ' FILES: ' + SH, 'omega', MAR + ' FILES: ' + SH))
+arm('BOTH sides declare DISJOINT paths -> no block, unchanged',
+    _r('alpha', ZEB + ' FILES: tools/mine.py',
+       'omega', MAR + ' FILES: tools/theirs.py') is None,
+    _r('alpha', ZEB + ' FILES: tools/mine.py',
+       'omega', MAR + ' FILES: tools/theirs.py'))
+
+# THE DEFECT ITSELF, both directions of the asymmetry.
+arm('only THEY declare a FILES list -> one_sided_files returns THEIR paths, so '
+    'the check can say it could not compare instead of saying CLEAR',
+    claim.one_sided_files(ZEB + ' no list here', MAR + ' FILES: ' + SH) == {SH},
+    claim.one_sided_files(ZEB + ' no list here', MAR + ' FILES: ' + SH))
+arm('only I declare one -> it returns MINE, because "they may touch mine" is '
+    'the same unprovable as "I may touch theirs"',
+    claim.one_sided_files(ZEB + ' FILES: ' + SH, MAR + ' no list here') == {SH},
+    claim.one_sided_files(ZEB + ' FILES: ' + SH, MAR + ' no list here'))
+
+# AND THE TWO ANSWERABLE CASES MUST STAY ANSWERABLE -- a third state that fires
+# when the question CAN be settled is just a louder false positive.
+arm('BOTH declared -> NOT a third state, the file sets settle it',
+    claim.one_sided_files(ZEB + ' FILES: tools/mine.py',
+                          MAR + ' FILES: ' + SH) == set(),
+    claim.one_sided_files(ZEB + ' FILES: tools/mine.py', MAR + ' FILES: ' + SH))
+arm('NEITHER declared -> NOT a third state either; there is nothing to '
+    'compare and the word matcher is the whole answer',
+    claim.one_sided_files(ZEB + ' no list', MAR + ' no list') == set(),
+    claim.one_sided_files(ZEB + ' no list', MAR + ' no list'))
+# MY EXPECTATION HERE WAS WRONG AND THE LOCK SAID SO BEFORE ANY REAL CLAIM WAS
+# JUDGED. I wrote that a bare `FILES:` is an EMPTY declaration -- a positive
+# statement of "I touch nothing" -- and should therefore settle the question.
+# declared_files() returns None for it, deliberately and in its own docstring:
+# `found or None`, "None means this claim gave no file evidence, empty would
+# mean it gave evidence that it touches nothing. ONLY THE FIRST IS REACHABLE."
+# So a bare `FILES:`, a `FILES: ` and even a `FILES: docs/` all read as NO
+# declaration, and the third state fires. Corrected to what the code does
+# rather than bent to what I assumed -- and the consequence is named rather
+# than hidden: a claim that writes `FILES:` and nothing else gets the
+# could-not-compare notice even though it arguably declared an empty scope.
+# That is the over-flagging direction, which this file's own header says costs
+# a five-second read against four hours the other way.
+arm('a bare `FILES:` reads as NO declaration (declared_files -> None), so the '
+    'third state DOES fire -- the over-flagging direction, named not hidden',
+    claim.declared_files(ZEB + ' FILES:') is None
+    and claim.one_sided_files(ZEB + ' FILES:', MAR + ' FILES: ' + SH) == {SH},
+    (claim.declared_files(ZEB + ' FILES:'),
+     claim.one_sided_files(ZEB + ' FILES:', MAR + ' FILES: ' + SH)))
+arm('...and the same is true of a bare DIRECTORY, which this matcher already '
+    'refuses to reason about elsewhere',
+    claim.declared_files(ZEB + ' FILES: docs/') is None,
+    claim.declared_files(ZEB + ' FILES: docs/'))
+
+# TEETH. Without the new signal the one-sided case is indistinguishable from
+# "nothing to see", which is the state the tool was in before today.
+_saved_osf = claim.one_sided_files
+try:
+    claim.one_sided_files = lambda a, b: set()
+    arm('ABLATION: with one_sided_files reduced to a no-op the one-sided case '
+        'reads EMPTY -- so the arms above measure the new signal and not the '
+        'tokeniser',
+        claim.one_sided_files(ZEB + ' no list here',
+                              MAR + ' FILES: ' + SH) == set(), 'ablated')
+finally:
+    claim.one_sided_files = _saved_osf
+arm('...and the signal is restored afterwards, so no later arm reads a stub',
+    claim.one_sided_files(ZEB + ' no list here',
+                          MAR + ' FILES: ' + SH) == {SH}, 'restored')
+
 print('\n%d failure(s)' % fails)
 sys.exit(1 if fails else 0)
