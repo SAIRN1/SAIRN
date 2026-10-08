@@ -34,9 +34,25 @@ piecemeal before being named: **PR §1.11**.
    **confirm the subject matches the work you were actually sent to do**; if it
    does not, say so immediately rather than proceeding on the wrong document.
    (Why not a counter: PR §6.)
-2. **Read all four `SAIRN-ACTIVE-WORK-*.md` files** for the app or subject you
+2. **`grep` all four `SAIRN-ACTIVE-WORK-*.md` files** for the app or subject you
    were sent at. Not for write conflicts — for *"is somebody already doing
    this."*
+
+   **This step said "Read all four" and that is not executable.** Measured
+   2026-10-08 with `python tools/tooling_inventory.py --standing-doc-sizes`:
+   cc 1,091,609 bytes, fourth 1,002,355, hank 945,301, cody 775,962 — **3.8 MB,
+   roughly 1.03 million tokens, for one step of a startup checklist.** Anyone
+   who followed it literally got a truncated read of the first file and no
+   warning, which is worse than skipping the step, because it looks done.
+   Grep by subject and read only the matching window:
+
+       grep -n "<app or subject>" SAIRN-ACTIVE-WORK-*.md
+       sed -n '<hit-20>,<hit+20>p' SAIRN-ACTIVE-WORK-<session>.md
+
+   Note that **7 tracked documents are over the ceiling, not one** — these four,
+   `docs/SAIRN-OPEN-WORK-INDEX.md`, `docs/CRITICALITY-TIERS.md` and the
+   unsuffixed `SAIRN-ACTIVE-WORK.md`. Run the tool rather than trusting this
+   list; it is the thing that moves.
 3. **Read the shared status registry.** It is handed to you automatically at
    session start by a `SessionStart` hook, so you should already have it --
    but if you did not, or you want it again mid-session:
@@ -106,8 +122,33 @@ piecemeal before being named: **PR §1.11**.
   Handoffs live only in a real clone — never write one to `C:\Users\marsh\`
   directly.
 
-- **Open work:** `docs/SAIRN-OPEN-WORK-INDEX.md`. **Never edit a row by
-  splitting on `|`** — rebuild the row whole (PR §2.1).
+- **Open work:** `docs/SAIRN-OPEN-WORK-INDEX.md`. **DO NOT OPEN THIS FILE.**
+  It is **2.38 MB** (`wc -c`, 2026-10-08) — roughly **640,000 tokens**, which
+  does not fit any session window and would consume most of one if it did. A
+  read that gets truncated is indistinguishable from a complete one (PR §1.7),
+  so the failure mode is not "I ran out of room", it is **a confident answer
+  about rows you never saw**. Measured, not estimated: that is why the size is
+  quoted with the command that produced it.
+
+  **Read it by `grep` or by line range, every time, with no exceptions:**
+
+      grep -n "<the thing you are looking for>" docs/SAIRN-OPEN-WORK-INDEX.md
+      awk 'NR==232' docs/SAIRN-OPEN-WORK-INDEX.md     # one row, by number
+      sed -n '228,236p' docs/SAIRN-OPEN-WORK-INDEX.md  # a window around it
+
+  **A line range that stops inside a structure gives a wrong answer with no
+  warning.** On 2026-10-07 a `sed -n '459,500p'` over a Python tuple read four
+  entries of eight and concluded a required entry was *missing*. Either widen
+  the window until you can see the structure close, or stop reading text and
+  measure the thing directly — `ast.literal_eval`, `len()`, a parser.
+
+  **Never edit a row by splitting on `|`** — rebuild the row whole (PR §2.1),
+  or replace a unique substring inside one cell and check the pipe count on
+  that line is the same before and after.
+
+  **`python tools/tooling_inventory.py --standing-doc-sizes` prints every
+  standing document over 400,000 bytes** and exits 1 while any exists, so this
+  stops being a sentence somebody has to remember.
 - **Claims:** `.claude/claims/<session>.json`, one file per clone. Expire after
   4 hours.
 - **Tool inventory:** `docs/TOOLING-INVENTORY.md` — generated, not hand-written

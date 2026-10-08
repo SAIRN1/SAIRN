@@ -9,6 +9,9 @@ r"""tooling_inventory.py -- GENERATE docs/TOOLING-INVENTORY.md from the wiring.
 
     python tools/tooling_inventory.py            # write the document
     python tools/tooling_inventory.py --check    # is the document still true?
+    python tools/tooling_inventory.py --standing-doc-sizes
+                                     # which tracked .md are too big to READ?
+                                     # exit 1 while any exceeds 400,000 bytes
 
 WHY THIS IS A GENERATOR AND NOT A DOCUMENT.
 
@@ -3130,9 +3133,81 @@ def malformed_rows(doc):
     return bad
 
 
+# ── STANDING DOCUMENTS TOO LARGE TO READ (added 2026-10-08) ────────────────
+# WHY IT LIVES IN THIS TOOL AND NOT A NEW ONE. This file already exists to stop
+# a claim about the repo from going stale by DERIVING it, and "how big is the
+# document you are about to read" is the same kind of claim. A new checker would
+# have been a 29th thing nothing invokes -- which is the defect this repo
+# recorded against tools/sairn_app_map_check.py, written for exactly one failure
+# and then never pointed at the codebase again.
+#
+# THE DEFECT IT IS FOR. docs/SAIRN-OPEN-WORK-INDEX.md is 2,380,170 bytes, about
+# 640,000 tokens. Nothing anywhere announced that, so the only way to find out
+# was to read it and have the read silently truncate -- and PR 1.7's whole point
+# is that a truncated read is indistinguishable from a complete one. The number
+# was in CLAUDE.md as a sentence; a sentence does not grow with the file.
+STANDING_DOC_MAX_BYTES = 400000
+
+
+def standing_docs():
+    """Every tracked .md, with its WORKING-TREE byte size, biggest first.
+
+    DERIVED from `git ls-files`, not a list. A hand-kept list of "the standing
+    documents" is the thing this tool exists to replace, and the next oversized
+    document will be one nobody thought to add.
+
+    WORKING-TREE bytes, deliberately, and said out loud: that is what a reader
+    actually pays. On a CRLF checkout it is larger than the stored blob by one
+    byte per line, which is NOT drift -- compare blobs if that is the question.
+    """
+    out = []
+    for rel in (git('ls-files', '*.md') or '').split('\n'):
+        rel = rel.strip()
+        if not rel:
+            continue
+        try:
+            out.append((os.path.getsize(os.path.join(REPO,
+                                                     rel.replace('/', os.sep))),
+                        rel))
+        except OSError:
+            continue                        # tracked and not checked out here
+    return sorted(out, reverse=True)
+
+
+def standing_doc_sizes():
+    docs = standing_docs()
+    if not docs:
+        print('COULD NOT RUN: `git ls-files *.md` listed no tracked markdown, '
+              'so NOTHING was measured.\n  That is a third state, not "every '
+              'document is small enough".')
+        return 2
+    over = [(n, p) for n, p in docs if n > STANDING_DOC_MAX_BYTES]
+    print('STANDING DOCUMENT SIZES -- %d tracked .md file(s), working-tree '
+          'bytes' % len(docs))
+    print('  ceiling %d bytes. Over it, a read is not safe to do whole: a '
+          'truncated read\n  is indistinguishable from a complete one (PR '
+          '1.7), so the answer comes back\n  confident and wrong rather than '
+          'short.' % STANDING_DOC_MAX_BYTES)
+    if not over:
+        print('\nCLEAN -- the largest is %s at %d bytes, under the ceiling.'
+              % (docs[0][1], docs[0][0]))
+        return 0
+    print('\n%d DOCUMENT(S) OVER THE CEILING -- grep or a line range only, '
+          'never a whole read:' % len(over))
+    for n, p in over:
+        print('  %9d bytes  ~%7d tokens  %s' % (n, n // 3.7, p))
+    print('\n  The token figure is bytes/3.7 and is an ESTIMATE; the byte count '
+          'is measured.\n  Read these with grep -n, awk NR==, or sed -n '
+          "'a,bp'. A window that stops\n  inside a table row or a tuple gives a "
+          'wrong answer with no warning.')
+    return 1
+
+
 def main(argv):
     if '--drift' in argv:
         return drift()
+    if '--standing-doc-sizes' in argv:
+        return standing_doc_sizes()
     doc, err = build()
     if err:
         print(err)
