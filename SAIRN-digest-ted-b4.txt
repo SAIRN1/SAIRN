@@ -1,0 +1,125 @@
+DIGEST ted b4 -- 2026-10-08
+
+HEAD / PUSH STATUS
+  HEAD              f25e2f82a6695260307f9a5caabe22d54372a567
+  origin/main       f25e2f82a6695260307f9a5caabe22d54372a567  (git ls-remote, not the cached ref)
+  ahead / behind    0 / 0
+  ON-REF            yes, by merge-base --is-ancestor as well as by equality
+  commits this run  5b2d36f4 (items 4-7), f25e2f82 (item 8, the handoff)
+                    2a8ab911 (item 3) was pushed before the compaction
+  uncommitted        sql/restore_demo_pins_2026-09-29.sql -- untracked, NOT MINE,
+                    present for seven batches, carried not adopted
+  gate at close     tools/tooling_inventory.py --standing-doc-sizes EXITS 1,
+                    7 documents over the 400,000-byte ceiling. PRE-EXISTING and
+                    unchanged by this batch. One of the seven is mine:
+                    SAIRN-ACTIVE-WORK-fourth.md at 1,008,974 bytes
+
+ONE LINE PER ITEM
+  1  claim + resume check                        DONE   (pre-compaction)
+  2  the remaining 43 SEQ 17-A, subject-verified  DONE   36 REAL / 7 WITHDRAWN; the 36 stay
+                                                        OPEN BY DESIGN, now with real subjects
+  3  jscomments.py strip_js + language refusal    DONE   pushed 2a8ab911; on PYTHON the module
+                                                        was not a no-op, it was DESTRUCTIVE
+  4  cody's two "queue16" conventions recounted   DONE   THEY EXIST -- landed as conventions 31
+                                                        and 32, both CREDITED TO CODY
+  5  external claims stated and released          DONE   24 held, 23 released, 1 held with a
+                                                        reason, 10 orphan locks REFUSED
+  6  skill resolution path per candidate          DONE   every path printed; NOTHING DISABLED --
+                                                        the premise failed four ways
+  7  external-files inventory, commit what belongs DONE  369 classified, 2 documents of record
+                                                        committed; index + checker FLAGGED BACK
+  -  compaction / session hygiene                 REFUSED-AND-MOOT  claim check BLOCKED exit 1 by
+                                                        cc AND cody, and the values were ALREADY
+                                                        SET so no write was needed either way
+  8  handoff before the reports                   DONE   f25e2f82, pushed before this file existed
+
+  NOT DONE: nothing. PARTIAL: nothing.
+  The compaction item is the only refusal, and it is a refusal that costs nothing
+  because the measurement showed there was no change to make.
+
+EXACT file:line FOR EVERYTHING ROUTED TO ANOTHER AGENT
+  tools/session_lock_check.py:128      lock_path() -- the only place a lock FILENAME is
+                                       formed; nothing in it carries a session name
+  tools/session_lock_check.py:349      lock_payload() -- the only lock WRITE site
+  tools/session_lock_check.py:357      'task': task -- empty in 14 of 14 live lock files,
+                                       which is why 8 of 10 dead locks are unattributable
+                                       -> OWNER OF session_lock_check.py. Add a session field
+                                          and make task non-empty; any --prune-dead must
+                                          REFUSE on an unattributable record, not clear it.
+  tools/idempotence_double_run.py:205  prefix='sairn_idem_' -- the source of the
+                                       sairn_idem_*.lock orphans
+  docs/METHODOLOGY.md:40               "## Routed here and not yet promoted" -- where the
+                                       promotion rows for conventions 31 and 32 belong
+                                       -> CODY. File is in his live batch26 FILES. The
+                                          conventions themselves are landed at
+                                          docs/2026-09-13-cross-domain-disciplines.md:1751
+                                          (31) and :1806 (32); only the rows are blocked.
+  docs/external-files-index.json       does not exist yet
+                                       -> CODY. Paste-ready block, 51 indexed entries, at
+                                          docs/2026-10-07-fourth-routed.md:1949 (SEQ b4-C)
+  tools/external_file_index_check.py   does not exist yet
+  tests/run_external_file_index_probe.py
+                                       -> CC, live batch W FILES. I built no second checker.
+                                          NOTE: ab1b3cc2 landed a hover-side version of the
+                                          same check DURING this batch -- cc and hover now
+                                          have two efforts at one gate.
+  tests/grd_write_faults.js:385        the EIGHTH private comment-stripper; its own
+                                       /\/\/[^\n]*/g eats the rest of any line containing
+                                       // inside a URL
+                                       -> the jscomments.py consolidation, open
+  tests/seed_never_syncs_platform.js:250  the ONLY one of 23 sites whose subject is a whole
+                                       app file, so the only site where batch 17's
+                                       whole-file magnitude was measured against the right
+                                       thing
+  SAIRN-ACTIVE-WORK-fourth.md          1,008,974 bytes, over the ceiling
+                                       -> inbound to me from CC's batch W item 13, which
+                                          routes the six non-index oversize docs to owners
+
+MY OWN SECTIONS WRITTEN THIS BATCH
+  docs/2026-10-07-fourth-routed.md:1723  SEQ b4-A  the external claims
+  docs/2026-10-07-fourth-routed.md:1816  SEQ b4-B  the skill paths
+  docs/2026-10-07-fourth-routed.md:1949  SEQ b4-C  the external-file inventory
+  docs/2026-10-07-fourth-routed.md:2082  SEQ b4-D  the compaction item
+
+CLAIMS TAKEN AND RELEASED
+  taken this run      none. The batch's claim (.claude/claims/fourth.json) was still
+                      ACTIVE at pickup, 0.7h into a 4h window, and was NOT re-taken --
+                      re-claiming would have reset the clock and hidden the real age.
+  status row          RESTATED. At pickup the shared registry said
+                      "fourth idle DEAD batch17 at 4fa9843a" -- TWO BATCHES STALE. Set to
+                      working with this batch's real HEAD. Had the resume been taken from
+                      the registry alone it would have restarted batch 17.
+  session lock        ~/SAIRN-SESSION-LOCKS/fourth.lock HELD throughout.
+                      session_lock_check.py status -> exit 0, "state : SELF", CLAUDE_PID 48784.
+  worktrees           23 RELEASED (22 removed + 1 dangling registration pruned).
+                      1 HELD: cc-review-0a_4251m, git-LOCKED, 2,373 dirty, another agent's.
+  stash               stash@{0} autostash RELEASED, patch preserved at
+                      <scratchpad>/b4_i5_stash.patch before the drop.
+  orphan locks        10 found with dead holders. ZERO RELEASED. 2 are hank's by his own
+                      claude_pid 82012; 8 are unattributable because the format has no
+                      holder field.
+  repo claim          to be released at batch close.
+
+QUESTIONS ONLY MICHAEL CAN ANSWER
+  1. C:\Users\marsh\ still holds ~350 files I classified as throwaway -- 315
+     generated-family extracts, 12 whole-app/whole-script copies (three ~2MB
+     stonedesk_*.html, six ~257KB script26_*, a 1.2MB temp_check.js) and 25
+     command-output captures. I committed only the 2 documents of record and
+     DELETED NOTHING. Do you want the throwaway population deleted? It is ~20MB
+     and none of it is referenced by any tracked file, but deleting several
+     hundred files from your home directory is not a call I will make.
+  2. The claim I wrote at pickup lists items 2-8 and DOES NOT contain the
+     compaction item that your brief lists. I did the item anyway and said so.
+     When the two disagree, which is authoritative -- the brief or the claim?
+  3. cc-review-0a_4251m is a git-LOCKED worktree in this clone with 2,373 dirty
+     entries and a dead holder process. It is from a /code-review run. I will not
+     remove another agent's locked tree. Do you want it cleared?
+  4. There are now two efforts at the unindexed-external-file gate: cc's
+     tools/external_file_index_check.py (live claim, not yet on disk) and the
+     hover-side check landed as ab1b3cc2 during this batch. Which is canonical?
+  5. sql/restore_demo_pins_2026-09-29.sql has sat untracked in this clone for
+     seven batches and is not mine. Commit it, delete it, or keep carrying it?
+  6. These two report files are written at the repo root and I COMMITTED them,
+     because leaving documents of record outside git is the exact defect item 7
+     just spent a batch fixing. If you would rather reports stay uncommitted, say
+     so and I will remove them from the index.

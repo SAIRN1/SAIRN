@@ -1,0 +1,409 @@
+REPORT ted b4
+SHA256 8158421679bf160e5baeb60ec952805c77f78a2cf3a8797be46948061419e7d7
+
+BATCH 18 (b4) -- fourth / Ted -- 2026-10-08
+Closed at HEAD f25e2f82a6695260307f9a5caabe22d54372a567, pushed, remote tip.
+
+HASH RULE, so this is checkable rather than decorative: line 1 is the title
+line, line 2 is the SHA line, and the BODY is every byte from line 3 to the end
+of file. The SHA line carries the SHA-256 of that body, LF line endings, UTF-8.
+Re-verify with:
+
+  python -c "import hashlib,io;b=io.open('SAIRN-report-ted-b4.txt',encoding='utf-8',newline='').read().split(chr(10),2)[2];print(hashlib.sha256(b.encode()).hexdigest())"
+
+================================================================================
+0.  RESUMED AFTER COMPACTION, AND THE RESUME POINT WAS DERIVED, NOT ASSUMED
+================================================================================
+
+Compaction interrupted this batch between item 4 and item 5. The resume point
+came from three independent sources agreeing, not from the brief and not from
+memory:
+
+  git log -1                 -> 2a8ab911, the item 3 jscomments fix, already pushed
+  git status                 -> item 4's conventions edit UNCOMMITTED, +104 lines,
+                                with "## 31." and "## 32." present in the diff
+  memory/batch-b4-progress.md-> rows for items 1, 2, 3, 4 and nothing after
+
+So items 1 through 4 were finished and item 4's landing was the only loose end.
+Nothing finished was restarted. Nothing unfinished was skipped. The claim was
+still active at pickup (0.7h into a 4h window) and was not re-taken.
+
+A fourth source was checked and was WRONG, which is worth recording: the shared
+status registry said "fourth idle DEAD batch17 at 4fa9843a" -- two batches
+stale. Had the resume been taken from the registry alone it would have restarted
+batch 17.
+
+================================================================================
+1.  ITEM 5 -- MY EXTERNAL CLAIMS: 24 HELD, 23 RELEASED, 10 REPORTED AND REFUSED
+================================================================================
+
+This item had gone two batches unaddressed and the reason is structural, not
+inattention: THE CLAIM RECORD CANNOT SEE THE THING THE ITEM IS ABOUT.
+.claude/claims/fourth.json records what I said I would work on. It records
+nothing about locks, worktrees or stashes, so "do I hold any external claims"
+is a question no gate on this platform asks and no sairn_claim.py check can
+answer. Every figure below was measured.
+
+THE POPULATION, BY MECHANISM
+
+  session lock   ~/SAIRN-SESSION-LOCKS/fourth.lock           1   MINE, LIVE, KEPT
+  status row     ~/SAIRN-SESSION-LOCKS/status/fourth.json    1   MINE, was two batches stale
+  repo claim     .claude/claims/fourth.json                  1   MINE, active
+  git worktree   .git/worktrees/* in THIS clone             24   23 RELEASED, 1 held
+  git stash      stash@{0}                                   1   RELEASED
+  orphan lock    ~/SAIRN-SESSION-LOCKS/*.lock, not mine     10   REPORTED, NOT RELEASED
+
+THE 24 WORKTREES -- the real finding, because nothing on this platform counts them
+
+git worktree list from this clone showed 24 registrations in this clone's own
+.git/worktrees/, which is what makes them mine: a worktree registered here was
+created by a session of THIS clone whatever its directory is named. They were
+holding 23 detached HEADs and their disk across at least six batches.
+
+Every one was checked before anything was removed, and the check mattered:
+
+  1 directory already gone (sairn-suite-pinned-vnw7na2m) -- git worktree prune
+    removed a dangling registration. Pure bookkeeping, nothing to lose.
+  9 present, clean, unlocked -- no uncommitted content at all.
+ 14 present and dirty -- and this is where a blind sweep destroys work. Each was
+    READ. 13 are deliberate sabotage/probe mutations: M api/_lib/ledger.js four
+    times across the condcov-* family, M stonedesk.html plus _parse_check_block.js
+    in sairn-sab-074jbhba, ?? zz_check8_fixture.txt, M docs/defect-density-
+    register.json, and two check8-probe-* trees showing 112 entries each only
+    because their HEAD predates .gitattributes.
+    THE 14TH IS THE ONE THAT MATTERED. ted-c8-dev showed
+    "M tests/push_gate/check8_probe.py" and looked exactly like unlanded work of
+    mine. It was DIFFED against HEAD rather than assumed:
+      diff <(git show HEAD:tests/push_gate/check8_probe.py) <wt>/tests/push_gate/check8_probe.py
+    -> 0 LINES. Byte-identical to HEAD. It reads as modified only because that
+    worktree's HEAD is the older 9e12aeca; the change landed as b23dbc2e.
+    Nothing was lost, and that is MEASURED rather than hoped.
+  A liveness check ran before any removal: the 14 PIDs embedded in the worktree
+    names were put to Get-Process one by one. ALL 14 DEAD. The only live claude
+    process on the machine is this session's 48784. No running probe was pulled
+    out from under.
+  1 HELD: cc-review-0a_4251m, because it is git-LOCKED
+    (.git/worktrees/cc-review-0a_4251m/locked present) with 2,373 dirty entries.
+    A git lock is a deliberate do-not-prune marker written by whoever made it.
+    Removing another agent's locked worktree is the same boundary violation as
+    reaching into its clone. It stays, and it stays NAMED here rather than
+    silently skipped.
+
+git worktree list now prints 2 lines: this clone, and the one locked tree.
+
+THE STASH, AND WHY IT WAS SAFE TO DROP
+
+stash@{0} "autostash" touched exactly two files, docs/report-only-shard-state.txt
+and docs/report-only-sweep-marker.txt, moving them from shard 1 to shard 2 of a
+5-shard sweep, stamped 2026-10-07T12:02Z. Both are GITIGNORED generated run
+markers -- .gitignore:60 and :61, confirmed with git check-ignore -v -- and the
+on-disk copies are newer (2026-10-08T14:20:53Z). It was a superseded progress
+marker, not work. The patch was written to <scratchpad>/b4_i5_stash.patch BEFORE
+the drop, so the release is reversible from recorded bytes even though the ref
+is gone.
+
+THE 10 ORPHAN LOCKS -- REPORTED, NOT RELEASED, AND THE ATTRIBUTION IS THE POINT
+
+~/SAIRN-SESSION-LOCKS/ holds 14 .lock files. Exactly one is mine. Of the other
+13, the five named for live sessions (cc, cody, hank, hover, hover2) are theirs.
+The remaining 10 are orphans whose holder process is dead: every claude_pid in
+the directory was put to Get-Process and only 48784, mine, is alive.
+
+Two are attributable. tree.lock and sairn_idem_uw3ebld2.lock both carry
+claude_pid 82012, which is hank.lock's own claude_pid -- so they are hank's, and
+they are HIS to release, not mine. The other eight (b12wt2.lock, repo.lock,
+wt-tools.lock, sairn_idem_o66nnvth.lock, sairn_idem_q5p4bqkx.lock,
+sairn_idem_rhbjx2yx.lock, plus the two named) carry claude_pids matching no live
+session, and THE LOCK FORMAT CARRIES NO HOLDER NAME -- only pid, claude_pid,
+claude_start, started, and an empty task. They cannot be attributed to anybody,
+including me.
+
+I RELEASED NONE OF THEM. An unattributable lock is not an orphan I may clear; it
+is a claim whose owner I cannot identify, and clearing it is indistinguishable
+from overriding a live one. The defect is in the FORMAT, not in the files. That
+directory is shared by all five clones, so it is ROUTED rather than fixed here.
+
+================================================================================
+2.  ITEM 6 -- THE SKILL PATHS: EVERY CANDIDATE PRINTED, AND NOTHING DISABLED
+================================================================================
+
+The item permitted disabling the project-level .claude/skills/ ON ZERO-USE
+EVIDENCE. Every path was printed and usage was measured two independent ways.
+The premise fails four separate ways and I disabled nothing.
+
+THE PATHS, PRINTED
+
+  project-level        C:\Users\marsh\Documents\SAIRN-fourth\.claude\skills   34 skills
+  user-level (SHARED)  C:\Users\marsh\.claude\skills                          62 skills
+  repo mirror skills/  ABSENT
+  .claude/plugins/     ABSENT
+
+WHY IT IS NOT DISABLABLE
+
+(1) IT IS GIT-TRACKED. git ls-files .claude/skills -> 192 files. "Disabling it in
+    this clone" is not clone-local hygiene; it is a repo change that reaches all
+    five clones.
+
+(2) 159 OF THOSE 192 FILES ARE .claude/skills/sairn-hover-auditor/ -- which
+    CLAUDE.md declares the hover auditor's exclusive scope, enforced by
+    tools/hover_auditor_scope_gate.py. A build agent must not touch it, and a
+    directory-level action cannot avoid hitting it.
+
+(3) THAT ONE SKILL DIVERGES FROM ITS USER-LEVEL COPY. Project 159 files /
+    0b33003dd994e4b9; user 79 files / 3a05e8dd346de425, after CRLF normalisation
+    (compared normalised, because the user store is CRLF and the repo is LF and a
+    bare diff reports identical files as changed). So flipping resolution to
+    user-level would SILENTLY SUBSTITUTE A STALE 79-FILE RECORD STORE FOR THE
+    LIVE 159-FILE ONE -- the exact silent-substitution shape the standing
+    conventions exist to prevent. The other 33 of 34 are BYTE-IDENTICAL after
+    CRLF-norm, so disabling them would change nothing observable: zero benefit
+    against three real risks.
+
+(4) ZERO-USE DOES NOT HOLD, and the two methods disagree, which is why both
+    numbers are published rather than one:
+
+    METHOD A  this clone's transcripts -- 36 files, 234,368,315 bytes, two
+              signals per skill (a Skill invocation naming it, and its SKILL.md
+              path appearing in a tool payload), with a CONTROL of 32 lines
+              matching any skill invocation at all, so its zeros are measured
+              zeros and not a regex that matches nothing.
+              -> 9 of 34 zero
+    METHOD B  machine-wide CLI telemetry, ~/.claude.json key skillUsage, 63
+              records, a structurally different source.
+              -> 11 of 34 zero
+
+    ZERO UNDER BOTH: 4 of 34 -- sairn-forward-scan, sairn-minimalism,
+    sairn-perf-profiler, sairn-skill-author.
+    A is blind on 5 that B records (context-budget, mobile-sync,
+    parallel-app-scaling, precommit-gate, visual-review).
+    B is blind on 7 that A records (app-builder, build-lifecycle,
+    contract-drafter, infra-debugger, rbac, resilience-patterns,
+    training-needs-assessment).
+
+    A single-number answer would have been "9 of 34" or "11 of 34" depending on
+    which tool I happened to open first, AND BOTH WOULD HAVE BEEN WRONG.
+
+THE SHARED STORE WAS READ ONLY. Everything above came from hashing
+C:\Users\marsh\.claude\skills. Nothing was written to it. It is shared by all
+five clones.
+
+================================================================================
+3.  ITEM 7 -- EVERY FILE I KEEP OUTSIDE GIT, AND THE TWO THAT BELONG IN IT
+================================================================================
+
+369 candidate files at the home root C:\Users\marsh with a tool / script /
+handoff / output extension, classified ONE AT A TIME rather than counted:
+
+  generated families          315  final_check_N.js 106, temp_check_N.js 106,
+                                   chk_N.js 97, scriptN.js 4,
+                                   stonedesk_rawN.html 2 -- per-script-block
+                                   syntax extracts and whole-app snapshots,
+                                   throwaway by construction. NOTHING TO COMMIT.
+  command output               25  dom_triage.txt, errors.json, vet_kpi.txt, ...
+  whole-app / whole-script     12  stonedesk_backup/check/fresh.html at ~2MB
+                                   each, six script26_* at ~257KB, a 1.2MB
+                                   temp_check.js, two *_live_check.html.
+  one-off repair scripts       15  fix_html.py, fix_quotes.py, fix_renders.py,
+                                   extract.js, check_syntax.ps1, apibridge.js...
+                                   0 OF 15 IS REFERENCED BY ANY TRACKED FILE
+                                   (git grep -l -F per name; the two names that
+                                   hit -- extract.js 20, extract_scripts.js 2 --
+                                   hit on strings inside unrelated tests and a
+                                   skill backup, not on a dependency).
+  DOCUMENTS OF RECORD           2  COMMITTED THIS BATCH.
+
+THE TWO THAT BELONG IN GIT, AND WHY THAT IS NOT A JUDGMENT CALL
+
+  SAIRN-SESSION66-HANDOFF.md, 10,881 bytes. Legacy handoffs live at the repo root
+  under exactly this name shape, and SESSION63, 64, 65, 67, 68 and 69 are ALL
+  TRACKED. 66 IS THE ONLY GAP IN THE SERIES, and it was sitting untracked in the
+  home root. git grep -l "Session 66 Handoff" -> no hits, so it is not in the
+  repo under another name.
+
+  OLD-uncommitted-sairnlaw-trust-disbursement-2026-08-18.md, 12,404 bytes.
+  Carries its own 2026-08-23 header recording that it was renamed after colliding
+  with the real committed SAIRNLAW-SESSION6-HANDOFF.md and that "its work was
+  never committed as a handoff document". git grep -l "trust-disbursement Step
+  3a" -> no hits, so that is still true. Committed under the disambiguated name
+  so nothing collides.
+
+Both are the exact violation CLAUDE.md names -- "Handoffs live only in a real
+clone -- never write one to C:\Users\marsh\ directly" -- and that rule had a
+two-document backlog sitting behind it for six and eleven weeks. The home-root
+originals were left in place; they are now provably redundant copies of tracked
+content, which is a different and much weaker problem than an uncommitted
+document of record.
+
+FLAGGED BACK, NOT OVERRIDDEN
+
+The item asked for an index entry and my own mechanical check. Both targets sit
+in a live claim:
+
+  docs/external-files-index.json          CODY's, batch26 FILES, does not exist yet
+  tools/external_file_index_check.py      CC's, batch W FILES, being built now
+  tests/run_external_file_index_probe.py  CC's, batch W FILES
+
+A SECOND CHECKER FOR THE SAME THING IS WORSE THAN NONE, so I built none. My half
+is paste-ready content instead, in docs/2026-10-07-fourth-routed.md SEQ b4-C, and
+the schema is NOT invented: it matches the one precedent on this platform,
+.claude/skills/sairn-hover-auditor/tools-hover2/hover2-external-files-index.json
+(top keys built / built_by / directories; per-entry key, path_template, indexed,
+with blanket_exempt + blanket_reason for a directory indexed as a whole). That
+file was READ, not written -- it is in the hover auditor's scope. The block holds
+51 indexed entries, with the 315 generated-family members summarised rather than
+enumerated and the 2 newly-committed documents deliberately absent.
+
+A note that belongs here rather than buried: ab1b3cc2 landed a hover-side
+mechanical unindexed-external-file check DURING this batch, so there may now be
+two efforts at the same gate. That is cc's and hover's to reconcile; I am naming
+it, not touching it.
+
+================================================================================
+4.  THE COMPACTION ITEM -- IN THE BRIEF, NOT IN MY CLAIM, AND IT NEEDED NO WRITE
+================================================================================
+
+First, a discrepancy stated rather than smoothed over: the brief lists a
+compaction-settings item, and my own claim's item list (2,3,4,5,6,7,8) does not
+contain it. The claim written at pickup dropped it. I did the item anyway and am
+naming the gap rather than quietly inheriting the claim's shorter list.
+
+The item was CONDITIONAL -- "autoCompactWindow 150000 in ~/.claude/settings.json
+IF THE CLAIM FILE SHOWS IT FREE". It does not, and the write was not needed
+regardless. Both halves are reported because either alone is a weaker answer.
+
+THE CLAIM HALF
+
+  python tools/sairn_claim.py check Tooling compaction settings autoCompactWindow
+  -> BLOCKED, exit 1, naming BOTH cc AND cody
+  python tools/sairn_claim.py check Tooling settings.json
+  -> BLOCKED, exit 1, same two
+
+Both exit codes were measured ALONE, written to a file and read on their own
+line, not taken through a pipe -- a status read through head or cat is the status
+of the text filter, and that misreading has put a false accusation into a
+standing document on this platform before.
+
+cc's batch W FILES declare .claude/settings.json and its item 15 is "compaction
+settings, each path printed". cody's batch26 item 7 says "MERGE autoCompactWindow
+150000 into the global settings without overwriting". Two live sessions on one key.
+
+THE STATE HALF, WHICH MAKES THE CONFLICT MOOT
+
+  USER / GLOBAL        C:\Users\marsh\.claude\settings.json          EXISTS 9,063 b
+      autoCompactWindow = 150000                                     ALREADY SET
+      env.BASH_MAX_OUTPUT_LENGTH = "10000"                           ALREADY SET
+      env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE = "75"                     pre-existing
+  PROJECT (this clone) C:\Users\marsh\Documents\SAIRN-fourth\.claude\settings.json
+      autoCompactWindow ABSENT
+  PROJECT-LOCAL        ...\.claude\settings.local.json               161,664 b
+      autoCompactWindow ABSENT
+  MANAGED / POLICY     C:\ProgramData\ClaudeCode\managed-settings.json
+      ABSENT -- so nothing overrides from above
+  CLI STATE            C:\Users\marsh\.claude.json                   88,085 b
+      autoCompactWindow ABSENT at top level
+
+  AS THIS SESSION ACTUALLY SEES IT:
+      BASH_MAX_OUTPUT_LENGTH = 10000     <- read out of the live environment,
+                                            not just out of the file
+      CLAUDE_CODE_MAX_OUTPUT_TOKENS = unset
+      MAX_THINKING_TOKENS = unset
+
+  claude --version -> 2.1.222 (Claude Code), exit 0
+
+THERE WAS NOTHING TO WRITE. An agent that skipped the measurement and went
+straight to the merge would have written a value that was already there, over a
+key two other sessions had declared.
+
+MCP SERVERS: NOTHING TO DISABLE, AND A DISAGREEMENT WORTH NAMING
+
+  claude mcp list -> exit 0, "No MCP servers configured", plus its own warning
+  that claude.ai connectors are disabled because ANTHROPIC_API_KEY or another
+  auth source takes precedence over the claude.ai login.
+  .claude.json projects["C:/Users/marsh/Documents/SAIRN-fourth"]:
+      mcpServers {} , enabledMcpjsonServers [] , disabledMcpjsonServers []
+  Both .mcp.json paths (repo and home) ABSENT.
+
+Yet this session's own tool roster surfaces mcp__claude-in-chrome__* and a set of
+mcp__claude_ai_* connectors. THE CLI'S VIEW AND THE SESSION'S TOOL ROSTER
+DISAGREE. There is no config file on disk to edit, so "disable unused MCP
+servers" has no target here, and I state the disagreement rather than declaring
+the roster empty from one side of it.
+
+"Compact at task boundaries only" is a habit, not a setting: no key in any of the
+five paths expresses it. autoCompactEnabled is present at the user path and
+CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=75 is set in its env -- both pre-existing, and
+both cc's and cody's to change, not mine.
+
+================================================================================
+5.  WHAT LANDED, AND HOW IT WAS VERIFIED
+================================================================================
+
+  2a8ab911  item 3 -- strip_js, the language refusal, and the python
+            DESTRUCTION correction. Pushed before compaction. ON-REF.
+  5b2d36f4  items 4-7 -- conventions 31/32, the 24 external claims, the
+            skill-directory refusal, the two committed documents. Pushed.
+  f25e2f82  item 8 -- the handoff, written and pushed BEFORE this report.
+            Remote tip.
+
+  git ls-remote origin refs/heads/main
+  -> f25e2f82a6695260307f9a5caabe22d54372a567, identical to local HEAD.
+  ahead 0 / behind 0. merge-base --is-ancestor confirms ON-REF.
+
+THE FIRST PUSH REFUSAL WAS CORRECT AND IS WORTH RECORDING AS A PASS, NOT A FAULT.
+The gate said "the outgoing range cc0ee901..2b52d09f could not be read" and
+exited non-zero. cc0ee901 was a tip another session had pushed in the minute
+since my fetch; git cat-file -t on it returned "could not get object info"
+because the object was not local. THE GATE FAILED CLOSED rather than pushing
+against a base it could not read. Re-fetch, rebase (clean, autostash applied),
+push -> cc0ee901..5b2d36f4. That is the third-state rule working in production:
+"could not read" was not folded into "fine".
+
+GATE RUN AT CLOSE: python tools/tooling_inventory.py --standing-doc-sizes exits
+1 with 7 documents over the 400,000-byte ceiling. This is PRE-EXISTING and
+unchanged by this batch, and one of the seven is mine:
+SAIRN-ACTIVE-WORK-fourth.md at 1,008,974 bytes. I am naming it rather than
+letting it pass. The split arrives routed from cc's batch W item 13; I appended
+my batch row to it anyway, because the standing convention says to.
+
+================================================================================
+6.  WHAT IS OPEN, AND WHY
+================================================================================
+
+36 real SEQ 17-A findings across 17 sites -- OPEN BY DESIGN. Item 2 was a
+re-verification, not a repair. 43 findings across 23 sites were re-checked with
+the subject-verification method: 36 REAL / 7 WITHDRAWN, each now carrying its
+real subject so the next session does not re-measure against the wrong file. One
+of the seven withdrawals is a RECLASSIFICATION rather than a clearance:
+grd_write_faults.js:385 strips comments with its own regex, making it the eighth
+private comment-stripper -- the class tools/jscomments.py exists to end. And the
+number that matters most: of 23 sites, exactly ONE applies its pattern to a whole
+app file, so for 22 of 23 the published phantom count was an artefact of batch
+17's harness. Shape real where marked real; the magnitude is not.
+
+Blocked on another session, not forgotten:
+  docs/METHODOLOGY.md rows for conventions 31 and 32   -> CODY (his file, live claim)
+  docs/external-files-index.json registration          -> CODY (his file, live claim)
+  the mechanical unindexed-external-file gate          -> CC (his tool, live claim)
+  SAIRN-ACTIVE-WORK-fourth.md over the size ceiling    -> inbound from CC item 13
+  the lock format's missing holder field               -> owner of sairn_self_state.py
+                                                          / session_lock_check.py
+
+Not mine, carried not adopted: sql/restore_demo_pins_2026-09-29.sql has been
+present and untracked for seven batches.
+
+================================================================================
+7.  WHAT I DID NOT DO, STATED PLAINLY
+================================================================================
+
+  - Released no lock that was not mine, including 8 that are unattributable and
+    2 that are provably hank's.
+  - Removed no locked worktree, including the one with 2,373 dirty entries.
+  - Wrote nothing into C:\Users\marsh\.claude\skills, which all five clones share.
+  - Wrote nothing into .claude/skills/sairn-hover-auditor/, which I read for its
+    index schema and nothing else.
+  - Disabled no skill and no MCP server.
+  - Wrote nothing into any settings.json at any of the five paths.
+  - Built no second external-file checker and wrote no line into
+    docs/external-files-index.json or docs/METHODOLOGY.md.
+  - Closed no finding I did not originate, and reclassified none.
+  - Fixed none of the 36 real findings; they are routed, with subjects.
