@@ -57,6 +57,7 @@ import io
 import json
 import os
 import re
+import subprocess
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -585,6 +586,104 @@ SELF_EXCLUDED = (
     # hand-maintained one, which is why it keeps being one short.
     'tests/run_cross_tenant_isolation_scope_probe.py',
 )
+
+# ── DERIVED, NOT HAND-COUNTED (2026-10-08) ──────────────────────────────────
+# The note at the fifth entry predicted this list would grow by one every time
+# somebody reviewed the tool, and it did: five, six, seven, eight, each arriving
+# with its own paragraph explaining that the predicate was already computable.
+# This is that computation.
+#
+# THE PREDICATE IS NOT A HEURISTIC AND IS NOT NEW. It is copied from the
+# importer arm in tests/run_cross_tenant_scope_probe.py, which has been
+# computing the correct answer all along while the tool read a literal:
+#
+#     a test file that IMPORTS this grader has the grader as its subject,
+#     full stop.
+#
+# Every one of the eight hand-written entries imports this module. The arm
+# found entries three, six, seven and eight by going red, each time AFTER the
+# file had landed -- so the literal was always one review behind the predicate
+# sitting next to it.
+#
+# THE TUPLE ABOVE IS KEPT, AND NOT AS DECORATION. It is the FLOOR:
+#   * it holds the paragraph of evidence behind each entry -- what was measured
+#     before adding it, and whether the exclusion removed a FALSE CREDIT rather
+#     than an inconvenient finding. A derivation cannot carry that reasoning.
+#   * the derivation can only see .py files that import the module. A future
+#     entry that is NOT an importer -- a .js review, or a file whose subject is
+#     the grader by argument rather than by import -- still has to be written
+#     down, and the union means adding it still works.
+#   * if the git read fails, the floor is the answer rather than an empty set.
+#     An exclusion list that silently empties re-opens every false GENUINE the
+#     eight entries were added to close, which is the direction that actually
+#     costs something.
+# So this is a UNION, and the count is printed rather than written.
+def _derive_self_excluded():
+    """Every tracked tests/*.py that imports this module, unioned with the floor.
+
+    Returns (paths, how) -- `how` says which sources answered, because
+    "derived" and "fell back to the literal" are different facts and a reader
+    must not have to guess which one produced the number.
+    """
+    try:
+        r = subprocess.run(['git', '-C', REPO, 'ls-files', 'tests'],
+                           capture_output=True, text=True, encoding='utf-8',
+                           errors='replace')
+        if r.returncode != 0:
+            return tuple(SELF_EXCLUDED), 'LITERAL ONLY -- git ls-files failed'
+        found, scanned = [], 0
+        # ── TWO WAYS TO LOAD THIS MODULE, AND THE FIRST DRAFT SAW ONE ───────
+        # An `import` statement is the obvious one. The other is
+        # `importlib.util.spec_from_file_location(..., 'tools/<this file>')`,
+        # which is how a probe loads it WITHOUT putting tools/ on sys.path --
+        # and the first version of this derivation missed it.
+        #
+        # MEASURED, and this is why the literal floor is kept rather than
+        # replaced: the derivation found 7 of the 8 hand-written entries, and
+        # the one it missed was
+        # tests/run_cross_tenant_untabled_declaration_probe.py, which reaches
+        # the grader through spec_from_file_location at its line 50. So the
+        # predicate sitting next to the literal was ALSO one short -- in
+        # exactly the way the literal kept being one short. Widened to both
+        # shapes, and the floor still stands underneath.
+        pat = re.compile(
+            r'^\s*(?:import|from)\s+cross_tenant_isolation_scope\b'
+            r'|cross_tenant_isolation_scope\.py', re.M)
+        for rel in (r.stdout or '').split('\n'):
+            rel = rel.strip().replace('\\', '/')
+            if not rel.endswith('.py'):
+                continue
+            try:
+                body = io.open(os.path.join(REPO, rel.replace('/', os.sep)),
+                               encoding='utf-8', errors='replace').read()
+            except OSError:
+                continue
+            scanned += 1
+            # ── CODE, NOT PROSE ABOUT CODE (PR 1.2) ────────────────────────
+            # The widened path alternative matched a COMMENT on first run:
+            # tests/run_dead_rule_sweep_probe.py:758 reads "Measured
+            # 2026-10-06: tools/cross_tenant_isolation_scope.py needs 131s" --
+            # a timing note, not a file whose subject is the grader. Excluding
+            # it would have SHRUNK the measured corpus on the strength of a
+            # sentence, which is the direction that hides real coverage.
+            # Comment-only lines are dropped before matching; a line-level
+            # strip is enough here because the path appears in an assignment
+            # or a call in every real case.
+            code = '\n'.join(ln for ln in body.split('\n')
+                             if not ln.lstrip().startswith('#'))
+            if pat.search(code):
+                found.append(rel)
+        merged = tuple(sorted(set(found) | set(SELF_EXCLUDED)))
+        return merged, ('DERIVED from %d tracked tests/*.py: %d import this '
+                        'module; unioned with the %d-entry literal floor'
+                        % (scanned, len(found), len(SELF_EXCLUDED)))
+    except Exception as e:                                       # noqa: BLE001
+        return tuple(SELF_EXCLUDED), 'LITERAL ONLY -- %s: %s' % (
+            type(e).__name__, e)
+
+
+SELF_EXCLUDED_LITERAL = tuple(SELF_EXCLUDED)
+SELF_EXCLUDED, SELF_EXCLUDED_HOW = _derive_self_excluded()
 
 # ── WHICH RESOURCES A GENUINE FILE COVERS IS DECLARED, NOT GUESSED ──────────
 # A file-level grade is not a per-resource grade, and this tool REPORTS and
@@ -1156,6 +1255,10 @@ def main(argv):
         print('  ' + ref)
     print('%d file(s) EXCLUDED as the grader\'s own subject, not platform coverage: %s'
           % (len(SELF_EXCLUDED), ', '.join(SELF_EXCLUDED)))
+    # HOW IT WAS OBTAINED, not just how many. "derived" and "fell back to the
+    # literal because git failed" are different facts and the reader must not
+    # have to guess which one produced the number above.
+    print('  basis: %s' % SELF_EXCLUDED_HOW)
     print('')
     print('  Tier A resources        %3d' % len(rows))
     print('  GENUINE isolation test  %3d' % len(genuine))

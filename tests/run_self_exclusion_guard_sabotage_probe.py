@@ -70,9 +70,9 @@ MUTATIONS = [
      "        if rel in SELF_EXCLUDED:\n            continue",
      "        if True:\n            continue"),
 
-    ("5. A FILE WHOSE SUBJECT IS THE GRADER IS DROPPED FROM THE LIST -- the "
-     "completeness question, which the two string literals cannot answer "
-     "about themselves",
+    ("5. THE WHOLE EXCLUSION SET IS EMPTIED AT ITS SINGLE POINT OF TRUTH -- "
+     "the completeness question, re-aimed 2026-10-08 at the DERIVATION "
+     "because deleting one literal entry is no longer a defect",
      TOOL,
      # ── RE-AIMED 2026-09-22, AND IT WAS STALE BEFORE TODAY ───
      # This anchored on the entry PLUS the tuple's closing paren, which only
@@ -84,11 +84,30 @@ MUTATIONS = [
      # control: it hides the state of the controls behind it, not just the
      # mutations it was going to run.
      #
-     # Anchored on the entry LINE alone now, so appending to the tuple does not
-     # move it. A comment naming the same file cannot collide: comment lines
+     # Anchored on the entry LINE alone then, so appending to the tuple did not
+     # move it. A comment naming the same file could not collide: comment lines
      # start with '#', not four spaces and a quote.
-     "    'tests/cross_tenant_dispatchers_review_probe.py',\n",
-     ""),
+     #
+     # ── RE-AIMED AGAIN 2026-10-08, AND THE OLD AIM WENT SILENT FOR A GOOD
+     # ── REASON RATHER THAN A BAD ONE.
+     # SELF_EXCLUDED is now DERIVED -- every tracked tests/*.py that imports
+     # the grader (or loads it by path), UNIONED with the hand-written tuple as
+     # a floor. So deleting one literal entry no longer removes anything: the
+     # derivation re-finds it, and the planted "defect" is not a defect. This
+     # probe reported exactly that -- "SILENT -- the suite passed with this
+     # defect planted" -- which is the control being right about a change in
+     # what is true, not a control going stale.
+     #
+     # MEASURED: the derivation finds 9 files and re-finds all 8 literal
+     # entries, so NO single-point deletion on either side can open a hole.
+     # That is the robustness the union was for, and it means the old mutation
+     # has nothing left to plant.
+     #
+     # So the aim moves to the SINGLE POINT OF TRUTH the union creates. Emptying
+     # it must make the suite red; if it does not, the exclusion set is not
+     # load-bearing and every entry's paragraph of evidence is decoration.
+     "        merged = tuple(sorted(set(found) | set(SELF_EXCLUDED)))\n",
+     "        merged = tuple()\n"),
 ]
 
 sys.exit(run_probe(
