@@ -15,6 +15,11 @@
     python tools/tier_a_review_gate.py --reseat-shas [--write]  # a DANGLING sha
     python tools/tier_a_review_gate.py --reseat-shas --write --write-weak-basis
     python tools/tier_a_review_gate.py --reseat-shas --json  # machine-readable reason CODES
+    python tools/tier_a_review_gate.py --reseat-shas --include-reviewed  # REVIEWED records too
+        A reviewed record whose sha is orphaned was outside the population
+        entirely until 2026-10-08 -- not refused, not listed, absent. The
+        default population is unchanged; the count of reviewed records with a
+        sha, and how many of them dangle, is now printed either way.
 
 Exit 0 clean, 1 a finding, 2 COULD NOT TELL -- never folded into either of the
 other two (PR 1.11).
@@ -2851,7 +2856,18 @@ def main(argv):
     if '--backfill-shas' in argv:
         return backfill_shas('--write' in argv)
     if '--reseat-shas' in argv:
-        return reseat_shas('--write' in argv, '--write-weak-basis' in argv, '--json' in argv)
+        _only = None
+        if '--only' in argv:
+            _i = argv.index('--only')
+            if _i + 1 >= len(argv) or argv[_i + 1].startswith('--'):
+                sys.stderr.write('--only needs an opened_at timestamp, e.g. '
+                                 '--only 2026-10-06T22:18:54Z. Nothing was '
+                                 'examined.\n')
+                return 2
+            _only = argv[_i + 1]
+        return reseat_shas('--write' in argv, '--write-weak-basis' in argv,
+                           '--json' in argv,
+                           '--include-reviewed' in argv, _only)
     if '--rules' in argv:
         return cmd_rules()
     if '--validate' in argv:
@@ -3239,8 +3255,14 @@ def _candidates_by_files(idx, files, want_subject=None):
     return hits, None
 
 
-def reseat_shas(write=False, weak_ok=False, as_json=False):
-    """Repoint a review record whose recorded sha is dangling. DRY RUN default."""
+def reseat_shas(write=False, weak_ok=False, as_json=False,
+                include_reviewed=False, only=None):
+    """Repoint a review record whose recorded sha is dangling. DRY RUN default.
+
+    include_reviewed widens the population from open records to open AND
+    reviewed. Reviewed records carrying a sha are counted and disclosed either
+    way -- see the block below the status filter.
+    """
     try:
         data = load_reviews()
     except CouldNotTell as e:
@@ -3251,10 +3273,59 @@ def reseat_shas(write=False, weak_ok=False, as_json=False):
         print('COULD NOT RESEAT: %s.' % why)
         return 2
 
-    rows = [r for r in (data.get('records') or []) if r.get('status') == 'open']
-    # The oldest open record's date, minus a margin, bounds the walk. Computed
-    # rather than hardcoded: a fixed "--since=30 days" would silently stop
-    # covering the ledger as it ages, which is exactly the shape PR 1.1 names.
+    # ── REVIEWED RECORDS WERE SILENTLY OUTSIDE THE POPULATION (2026-10-08) ──
+    # This line read `status == 'open'` and nothing said so. A REVIEWED record
+    # whose sha is orphaned was therefore unreachable by the only reseat path on
+    # the platform: not refused, not listed, not counted -- absent. Found
+    # 2026-10-07 on cody/2026-10-06T22:18:54Z, whose sha 4aa33b4565dd resolves,
+    # is reachable from no ref, and appears ZERO times in this tool's own report
+    # while the report names 22 open records and gives a reason for all 8 it
+    # refuses.
+    #
+    # THE DEFAULT POPULATION IS UNCHANGED ON PURPOSE. Widening it silently would
+    # move every count this tool has ever printed, and a figure that changes
+    # meaning without changing name is the drift PR 2.3 is about. So:
+    #   * default: open records only, exactly as before, AND
+    #   * the reviewed records carrying a sha are COUNTED AND DISCLOSED, with how
+    #     many of them are dangling, so the omission is visible without the flag
+    #   * --include-reviewed widens the population and says it did
+    # The third state is reported either way; only ACTING on it is opt-in.
+    wanted = ('open', 'reviewed') if include_reviewed else ('open',)
+    rows = [r for r in (data.get('records') or [])
+            if r.get('status') in wanted]
+    # ── --only, SO A WRITE NEED NOT RECLASSIFY EVERY SESSION'S RECORDS ──────
+    # Without it `--write` repoints EVERY fixable record in one keystroke -- 11
+    # of them across four sessions at the time this was added. Reseating another
+    # session's record is editing their finding, and the rule on this platform is
+    # that you close only what you originated. A per-record selector is the
+    # difference between fixing your own and rewriting the ledger.
+    #
+    # A SELECTOR THAT MATCHES NOTHING IS A REFUSAL, NEVER A QUIET NO-OP: the most
+    # likely typo here is a wrong timestamp, and "reseated 0 records" printed as
+    # success is how that typo would be mistaken for "already fine".
+    if only:
+        picked = [r for r in rows if (r.get('opened_at') or '') == only]
+        if not picked:
+            present = sorted((r.get('opened_at') or '') for r in rows)
+            print('COULD NOT RESEAT: --only %r matches no record in the %s '
+                  'population. Nothing was examined and nothing was written.'
+                  % (only, 'open+reviewed' if include_reviewed else 'open'))
+            print('  %d record(s) are in that population; the nearest by date '
+                  'are:' % len(present))
+            for d in present[:6]:
+                print('    %s' % d)
+            if not include_reviewed:
+                print('  IF THE RECORD IS REVIEWED, add --include-reviewed -- the '
+                      'default population is open-only.')
+            return 2
+        rows = picked
+    reviewed_with_sha = [r for r in (data.get('records') or [])
+                         if r.get('status') == 'reviewed' and r.get('opened_at_sha')]
+    # The oldest record in the SELECTED population bounds the walk. If reviewed
+    # records are included and one of them is older than every open record, a
+    # window computed from the open set alone would not contain its survivor --
+    # the index would come back empty and the record would be refused for
+    # "nothing matched" rather than reseated. Same computed-not-hardcoded rule.
     dates = sorted(r.get('opened_at') or '' for r in rows if r.get('opened_at'))
     since = (dates[0][:10] if dates else None)
     idx, err = _file_set_index(since)
@@ -3268,7 +3339,34 @@ def reseat_shas(write=False, weak_ok=False, as_json=False):
     print('  log walked from              : %s (the oldest open record, computed)'
           % (since or 'the beginning'))
     print('  distinct file sets indexed   : %d' % len(idx))
-    print('  open records: %d' % len(rows))
+    print('  population                   : %s'
+          % ('open + reviewed (--include-reviewed)' if include_reviewed
+             else 'open only (default)'))
+    print('  records examined: %d' % len(rows))
+    # ── THE DISCLOSURE, PRINTED WHETHER OR NOT THE FLAG IS USED ─────────────
+    # Without this the default run is indistinguishable from one where no
+    # reviewed record has a problem. Counting them costs one reachability check
+    # each and turns a silent omission into a number somebody can act on.
+    if not include_reviewed:
+        dangling_reviewed = [r for r in reviewed_with_sha
+                             if _is_reachable(r.get('opened_at_sha'), base) is not True]
+        print('  REVIEWED records carrying a sha: %d -- NOT examined in this '
+              'mode' % len(reviewed_with_sha))
+        if dangling_reviewed:
+            print('    of those, %d are NOT reachable from %s and so are '
+                  'dangling:' % (len(dangling_reviewed), base))
+            for r in dangling_reviewed[:12]:
+                print('      %-8s %s  %s'
+                      % (r.get('author_session'), r.get('opened_at'),
+                         (r.get('opened_at_sha') or '')[:12]))
+            if len(dangling_reviewed) > 12:
+                print('      ... and %d more' % (len(dangling_reviewed) - 12))
+            print('    RE-RUN WITH --include-reviewed TO EXAMINE THEM. Until '
+                  'then this run says nothing about them, which is not the '
+                  'same as saying they are fine.')
+        else:
+            print('    and none of them is dangling, so nothing is hidden by '
+                  'the default population this run.')
 
     # ── THREE BASES, IN STRENGTH ORDER, AND EVERY OUTCOME CARRIES WHICH ──
     # 1. SUBJECT TWIN -- the dangling sha resolves here and exactly one commit on

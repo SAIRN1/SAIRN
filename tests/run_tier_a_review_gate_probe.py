@@ -2403,6 +2403,121 @@ check('...and the two fixtures really did differ, so one code path is not '
       'both runs returned %r' % (_REC_OTHER.get('opened_at_sha_basis'),))
 check('...and that fixture tree was removed too', not _LEFT_B)
 
+# ── A REVIEWED RECORD WAS OUTSIDE THE RESEAT POPULATION (2026-10-08) ─────────
+# `reseat_shas()` opened with `[r for r in records if r.get('status') == 'open']`
+# and nothing anywhere said so. A REVIEWED record whose sha is orphaned was
+# therefore unreachable by the only reseat path on the platform: not refused, not
+# listed, not counted -- absent. Found on cody/2026-10-06T22:18:54Z, whose sha
+# 4aa33b4565dd resolves, is reachable from no ref, and appeared ZERO times in the
+# tool's own report while that report named 22 open records and gave a reason for
+# every one of the 8 it refused.
+#
+# AND THE REAL SIZE OF IT WAS INVISIBLE UNTIL THE DISCLOSURE EXISTED: 72 reviewed
+# records carry a sha and 32 OF THEM ARE DANGLING, measured 2026-10-08 at HEAD.
+# One record was the symptom.
+#
+# THE FIRST ARM BELOW FAILS AGAINST PRE-FIX CODE and does so for a real reason
+# rather than a crash: it asserts the DEFAULT run prints the reviewed count, and
+# pre-fix there is no such line. The --include-reviewed arms cannot fail that way
+# -- that keyword does not exist there and would raise TypeError -- so the
+# disclosure arm is the fail-first one and this comment says which.
+_rs_base = tempfile.mkdtemp(prefix='tierA_reseat_pop_')
+try:
+    _rs_ledger = os.path.join(_rs_base, 'reviews.json')
+    # A reviewed record with a sha that cannot be reachable: all-zeros resolves
+    # nowhere, so it is dangling by construction rather than by luck.
+    io.open(_rs_ledger, 'w', encoding='utf-8').write(json.dumps({'records': [
+        {'author_session': 'somebody-else', 'opened_at': '2026-10-06T22:18:54Z',
+         'opened_at_sha': '0' * 40, 'status': 'reviewed',
+         'resources': ['sc_claims'], 'files': ['tools/ledger_append.py'],
+         'reviewer_session': 'cody', 'reviewed_at': '2026-10-07T00:00:00Z',
+         'verdict': 'x' * 80},
+        {'author_session': 'somebody-else', 'opened_at': '2026-10-06T23:00:00Z',
+         'opened_at_sha': '1' * 40, 'status': 'open',
+         'resources': ['sc_claims'], 'files': ['tools/ledger_append.py'],
+         'reviewer_session': None, 'reviewed_at': None, 'verdict': None},
+    ]}))
+
+    def _run_reseat(**kw):
+        _old_rev, _old_out = g.REVIEWS, sys.stdout
+        buf = _io.StringIO()
+        try:
+            g.REVIEWS = _rs_ledger
+            sys.stdout = buf
+            rc = g.reseat_shas(**kw)
+        finally:
+            g.REVIEWS, sys.stdout = _old_rev, _old_out
+        return rc, buf.getvalue()
+
+    _rc_def, _out_def = _run_reseat()
+    check('THE DEFAULT RESEAT RUN DISCLOSES THE REVIEWED RECORDS IT IS NOT '
+          'EXAMINING -- the arm that goes red against pre-fix code, where the '
+          'omission was silent',
+          'REVIEWED records carrying a sha' in _out_def,
+          'the default run never mentions reviewed records: %r'
+          % (_out_def[:300],))
+    check('...and it names the dangling ones individually, so the count is '
+          'actionable rather than a number to worry about',
+          '2026-10-06T22:18:54Z' in _out_def and 'dangling' in _out_def,
+          _out_def[:400])
+    check('...and it says explicitly that the run says NOTHING about them, '
+          'rather than letting silence read as "they are fine"',
+          'not the same as saying they are fine' in _out_def, _out_def[:400])
+    check('NEGATIVE HALF: the DEFAULT population is still open-only, so the fix '
+          'did not silently widen every count this tool has ever printed',
+          'open only (default)' in _out_def and 'records examined: 1' in _out_def,
+          _out_def[:400])
+
+    _rc_inc, _out_inc = _run_reseat(include_reviewed=True)
+    check('--include-reviewed EXAMINES the reviewed record -- 2 of 2 rather '
+          'than 1 of 2',
+          'open + reviewed' in _out_inc and 'records examined: 2' in _out_inc,
+          _out_inc[:400])
+    check('...and the two populations really differ, so one code path is not '
+          'satisfying both arms',
+          ('records examined: 1' in _out_def) and ('records examined: 2' in _out_inc),
+          'default %r / included %r' % (_out_def[:80], _out_inc[:80]))
+    check('...and with the wider population the WALK WINDOW moves back to the '
+          'older record, because an index built from the open set alone cannot '
+          'contain a reviewed record\'s survivor',
+          'log walked from              : 2026-10-06' in _out_inc,
+          [l for l in _out_inc.splitlines() if 'log walked' in l])
+
+    # ── --only, SO A WRITE NEED NOT RECLASSIFY EVERY SESSION'S RECORDS ──────
+    # Without it `--write` repoints every fixable record at once -- 11 of them
+    # across four sessions when this was added. The arms below are about the
+    # REFUSAL as much as the selection: a selector that matches nothing and
+    # reports success is how a mistyped timestamp becomes "already fine".
+    _rc_only, _out_only = _run_reseat(include_reviewed=True,
+                                      only='2026-10-06T22:18:54Z')
+    check('--only NARROWS the population to the one record named',
+          'records examined: 1' in _out_only and _rc_only == 0, _out_only[:300])
+    _rc_miss, _out_miss = _run_reseat(include_reviewed=True,
+                                      only='1999-01-01T00:00:00Z')
+    check('NEGATIVE HALF: --only matching NOTHING is a REFUSAL exiting 2, not a '
+          'quiet "0 reseated" -- the mistyped-timestamp case',
+          _rc_miss == 2 and 'matches no record' in _out_miss,
+          'rc=%r out=%r' % (_rc_miss, _out_miss[:200]))
+    check('...and that refusal says nothing was written, so it cannot be read '
+          'as a clean run',
+          'nothing was written' in _out_miss.lower(), _out_miss[:300])
+    check('...and a REVIEWED record selected WITHOUT --include-reviewed refuses '
+          'and names the flag that would find it, rather than reporting no match',
+          _run_reseat(only='2026-10-06T22:18:54Z')[0] == 2
+          and '--include-reviewed' in _run_reseat(only='2026-10-06T22:18:54Z')[1],
+          _run_reseat(only='2026-10-06T22:18:54Z')[1][:300])
+finally:
+    def _rs_rm(fn, path, _exc):
+        try:
+            os.chmod(path, 0o700)
+            fn(path)
+        except Exception:                                   # noqa: BLE001
+            pass
+    shutil.rmtree(_rs_base, onerror=_rs_rm)
+    check('...and the reseat-population fixture cleaned up after itself',
+          not os.path.isdir(_rs_base), _rs_base)
+
+
 if fails:
     print('%d ARM(S) FAILED:' % len(fails))
     for f in fails:
