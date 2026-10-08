@@ -271,6 +271,41 @@ if __name__ == '__main__':
     with open(path, encoding='utf-8', errors='replace') as f:
         html = f.read()
 
+    # ── HTML COMMENTS ARE STRIPPED BEFORE ANYTHING IS COUNTED (2026-10-07) ──
+    # FOUND BY tools/comment_sensitivity_check.py, which exists for exactly
+    # this: it drove all six html checkers over all 22 apps with and without
+    # comments and reported ONE answer that changed --
+    #
+    #   nav_panel_check.py on sairncode.html
+    #     exit 1 raw vs 0 stripped. It is matching text that DESCRIBES code
+    #     rather than code.
+    #
+    # Confirmed by reading the file rather than trusting the report:
+    # sairncode.html has THREE occurrences of `mr-kx-ytd` and only ONE is a
+    # live element (:2388). The second (:2367) sits inside a `<!-- -->` block
+    # documenting an input that was REMOVED on purpose -- "the year-to-date
+    # figure is no longer typed" -- and the third is the getElementById that
+    # reads the live one. So `FAIL:DUPLICATE_IDS:['mr-kx-ytd']` was a FALSE
+    # POSITIVE produced by a comment that explains a past fix.
+    #
+    # THE SAME DEFECT WAS FOUND AND CLOSED IN tools/div_balance_check.py ON
+    # 2026-08-07 AND THIS FILE NEVER GOT THE FIX. Its note is worth quoting
+    # because the shape is identical: "a bug-fix comment that DESCRIBES a past
+    # widget-bleed bug in prose got counted as a real closing tag ... produced
+    # a phantom DIFF:-4 with zero real defect behind it." A fix proven on one
+    # checker is not a fix on the others, which is cross-domain convention 7
+    # arriving from the direction nobody watches.
+    #
+    # STRIPPED ONCE, HERE, so every check below is comment-blind -- an id, a
+    # panel or a nav button written inside a comment is not in the DOM, so no
+    # check in this file should see one.
+    #
+    # REPLACED WITH AN EQUAL NUMBER OF NEWLINES rather than deleted, same as
+    # div_balance_check, so any line number this file reports still matches the
+    # real file.
+    html = re.sub(r'<!--.*?-->',
+                  lambda m: '\n' * m.group(0).count('\n'), html, flags=re.S)
+
     fails = []
 
     panel_ids, panel_prefix = detect_panels(html)

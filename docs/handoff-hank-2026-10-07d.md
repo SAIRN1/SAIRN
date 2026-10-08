@@ -330,3 +330,235 @@ the SQL lands — including that **arm D3 of
 commit.** It currently pins the read-then-merge, which is right until the column
 exists and wrong afterwards, and a stale arm that passes is how the next reader
 concludes the merge is still needed.
+
+### item 11 — METHODOLOGY — BLOCKED, named, stopped. One re-check, no retry.
+
+```
+python tools/sairn_claim.py check methodology "land Rule E into docs/METHODOLOGY.md single write"
+exit 1   BLOCKED
+  cc      2026-10-07T23:20:05Z   (0.6h)   same file or resource: docs/methodology.md
+  fourth  2026-10-07T20:30:06Z   (3.4h)   same file or resource: docs/methodology.md
+```
+
+**`docs/METHODOLOGY.md` NOT TOUCHED. Rule E stays unlanded** in
+`docs/2026-10-07-hank-routed.md` §3. No second retry. cc's own live claim says
+its methodology item is *"paste-ready because the target is held"* — the same
+answer reached independently.
+
+**SECOND HALF — is the ordering rule already covered? CHECKED, AND IT IS NOT.**
+`docs/SAIRN-PROCESS-RULES.md` covers the **adjacent** case well: a *generated*
+document must be *regenerated* after a rebase, never hand-merged, because a
+resolved hunk is the generating function evaluated *at no state at all*. It even
+carries the `docs/tier-a-reviews.json` incident where a hand-resolved conflict
+took the wrong side of one record's status fields.
+
+**Both of those are CONFLICT cases. The ordering rule has no conflict.** A rebase
+replays my commits onto new upstream work and hands back new shas with a clean
+tree and nothing to resolve. A register record written before that replay is
+still valid JSON, passes every shape check, and its `commit` field now resolves
+to nothing. There is no hunk, no marker, and no moment where anybody is asked a
+question — so §2.1's "rebuild the row whole" cannot fire, because the row was
+never touched.
+
+Recorded as **ONE routed entry: RULE F**, `docs/2026-10-07-hank-routed.md` §4,
+with the 2026-10-07 incident (three rewrites in one push), the mechanical form
+(rebase → derive → commit → push, re-derived every cycle), the
+`git restore --source=HEAD` footnote, and where it belongs — **beside the
+generated-document rule as its no-conflict sibling**, not as a 26th cross-domain
+convention. Those are about how a CHECK can be wrong; this is about the order of
+operations in a push.
+
+### item 7 — TIER A — STILL HELD. Holder and timestamp, then stopped.
+
+```
+python tools/sairn_claim.py list
+  cc   0.6h ago   claimed 2026-10-07T23:20:05Z
+       FILES: docs/tier-a-reviews.json  <- FIRST in its list
+       its item 1 is "my own most-overdue eligible first" and item 7 is
+       "Tier A takeover of the two oldest past-48h obligations"
+```
+
+**HOLDER: cc. TIMESTAMP: 2026-10-07T23:20:05Z. NOTHING DISCHARGED. No second
+retry this batch.**
+
+`sairn_claim.py check platform "tier a review discharge oldest eligible"`
+returned **CLEAR on the task words** — and that is exactly the trap PR §4.3
+exists for: the word matcher does not see a FILES declaration. The ledger is
+declared first in cc's FILES and cc is actively discharging from it. **Taking
+the word-matcher's CLEAR as permission would have put two sessions into the same
+ledger.**
+
+READ-ONLY NUMBERS at HEAD, for the next session rather than for action:
+**239 records · 216 reviewed · 23 OPEN · 15 ELIGIBLE for hank · oldest 10.92
+days (262 h)**, opened `2026-09-27T02:06:03Z`, author cody. Eligible by author:
+cody 5, fourth 5, cc 3, hover2 2.
+
+### item 5 — THE SIX exit-1 PROGRAMS — triaged, 1 fixed, 5 routed or classified
+
+Each one's FIRST finding, then real-or-artefact, then fix or route.
+
+**1. `comment_sensitivity_check.py` → REAL TOOL DEFECT, FIXED.**
+First finding: *"nav_panel_check.py on sairncode.html — its answer depends on
+the target COMMENTS: exit 1 raw vs 0 stripped. It is matching text that
+describes code rather than code."*
+
+Read the file rather than trusting the report: `sairncode.html` has **three**
+occurrences of `mr-kx-ytd` and **one live element** (`:2388`). The second
+(`:2367`) is inside a `<!-- -->` block documenting an input removed on purpose —
+*"the year-to-date figure is no longer typed … a coder typing 2400 got a clean
+KX not required with nothing behind it."* So `FAIL:DUPLICATE_IDS:['mr-kx-ytd']`
+was a **FALSE POSITIVE produced by a comment that explains a past fix.**
+
+**THE SAME DEFECT WAS FOUND AND CLOSED IN `tools/div_balance_check.py` ON
+2026-08-07 AND THIS FILE NEVER GOT THE FIX** — its note describes the identical
+shape: *"a bug-fix comment that DESCRIBES a past widget-bleed bug in prose got
+counted as a real closing tag … a phantom DIFF:-4 with zero real defect behind
+it."* A fix proven on one checker is not a fix on the others.
+
+FIXED with div_balance_check's own line-preserving strip, applied once at read
+time so every check in the file is comment-blind.
+
+**MEASURED ACROSS ALL 22 APPS, BEFORE AND AFTER — EXACTLY ONE LINE CHANGED:**
+
+```
+sairncode.html   STATIC_IDS 609 -> 608   FAIL:DUPLICATE_IDS -> RESULT:PASS
+every other app  byte-identical
+```
+
+**AND THE TWO REAL DUPLICATES SURVIVE**, which is what makes this a fix and not
+a suppression: `sairncare.html` `fc-name` and `sairnfreedom.html`
+`ac-name`/`ac-tbody` still FAIL.
+
+**THE DETECTOR CONFIRMS IT:** `comment_sensitivity_check.py` now **EXIT 0**,
+*"answers that CHANGE when comments are removed: 0"* (was 1).
+
+Regression arms **5a/5b/5c** in `tests/run_comment_sensitivity_probe.py`, on a
+**synthetic fixture, not sairncode.html** — pointing the arm at the real app
+would make it pass or fail on whatever somebody edits there next. 5c is the
+PAIRED POSITIVE: two *live* ids with the same name must still fail, so the strip
+cannot turn the check off. Mutation against the pre-fix tool: **5a and 5b go
+red**; restored byte-identical by sha256
+(`80288f73b9fdc0115a94789cb56068deddeaa521a520038baf42ad20d2385784`).
+
+**2. `cross_tenant_isolation_scope.py` → REAL, ROUTED (test-coverage, product).**
+First finding: *"3 file(s) whose declaration and grade disagree —
+`api/sd-data-exec-context-isolation.test.js` DECLARES coverage but grades NONE
+[exec_context]"*. A test declaring cross-tenant coverage it does not provide.
+Also `275 Tier A · 240 GENUINE · 10 WEAK · 25 NONE · 1 serving code UNLOCATED`.
+The tool DISCLOSES all three rather than absorbing them, and exit 1 is its
+report-only convention. Routed: these are other sessions' test files.
+
+**3. `assurance_case.py` → the first NOT-SUPPORTED leaf is a THIRD STATE
+rendered as a negative, which is correct and worth reading twice.**
+`G3 NOT SUPPORTED — a change touching a Tier A resource RAISES A REVIEW
+OBLIGATION`, evidence `E2 DOES NOT SUPPORT: no undischarged Tier A obligation
+(exit 2) — the gate fails closed: a register it cannot parse is COULD NOT TELL,
+never an empty set`. **NOT SUPPORTED is not refuted**, and the argument is right
+to refuse to count a could-not-tell as support. Report-only; no defect in SAIRN
+code. Not routed and not fixed.
+
+**4. `first_article_inspection.py` → REAL COVERAGE OWED, not a defect.**
+First finding: `NO SUITE AT ALL — tools/accepted_risk_trigger_check.py, 9
+claim(s) in its own header`, and 13 more. Zero arms verify zero claims. A
+standing coverage debt across 14+ tools; routed as owed rather than fixed.
+
+**5. `landing_verification.py` → ENTIRELY INSIDE THE HOVER AUDITOR NAMESPACE.
+NOT TOUCHED.** First finding: 18 files under
+`.claude/skills/sairn-hover-auditor/tools-hover2/` absent from the user skill
+store. `CLAUDE.md` forbids a build agent reaching into that namespace. **And the
+tool's criteria are asymmetric**, which is worth one line to whoever owns it: it
+counts *"28 in the store only"* as explicitly NOT a finding (third-party skills
+the repo does not mirror) while counting repo-only auditor tools AS a finding —
+and the auditor deliberately keeps its tools in the repo. Routed to chat.
+
+**6. `report_only_checks.py` → TOOL ARTEFACT at the level of this question.**
+It is an aggregator over 70+ report-only checkers; exit 1 means at least one
+child had a finding, which is its documented convention and not a defect. Its
+first child finding (`hover_routing_gap_check.py`) is in the auditor namespace
+and is not mine. The real content belongs to each child's owner.
+
+### item 10 — OWNERLESS TOOLS — 175 driven bare AND with one argument, 15 flagged, 2 fixed
+
+**POPULATION, from `docs/tool-owner-map.json` (READ ONLY — it is in cc's live
+FILES):** 980 entries, **680** with `"owner": null, "basis": "NONE"` — and
+`owner is null` and `basis == NONE` are the *same* 680, with no entry in one set
+and not the other. By prefix: **tests/ 502 · tools/ 175 · scripts/ 3**. The
+**175 under `tools/`** are the population driven here; the rest are counted and
+named as out of scope rather than silently dropped.
+
+**350 runs — bare and one-argument (`CLAUDE.md`, a real file) — 25 s bound, in a
+CLONE not a linked worktree** (item 6a is why). **15 flagged:**
+
+| flag | count | verdict |
+|---|---|---|
+| TRACEBACK | 2 | `hover_separation_ci.py` (known, chat holds it) and **`vercel_config_check.py` — NEW, FIXED** |
+| SILENT exit 0 | 13 | **12 are correct**; **1 was hiding an action — FIXED** |
+
+**MY OWN CRITERION OVER-FLAGS, AND THAT IS REPORTED RATHER THAN QUIETLY
+DROPPED.** "exit 0 with no output" cannot tell a measurement tool from a module
+or a hook. Of the 13: **6 have no `__main__` at all** (`audit_licence.py`,
+`checker_kit.py`, `closing_error.py`, `sairn_http.py`,
+`testability_criteria.py`, `invariant_registry.js`) — importable libraries, so a
+direct run correctly does nothing; **6 are hooks or no-argument programs**
+(`conflict_marker_preflight_hook.py`, `staged_conflict_marker_check.py`,
+`git_push_master_guard.py`, `hover_self_health_shim.py`, `redaction_check.py`,
+`deploy_verify_notify.py`) where silence on a clean tree is the desired
+behaviour. **Those 12 are not defects.**
+
+**THE ONE THAT WAS: `tools/session_lock_check.py`.**
+
+```
+action = sys.argv[1] if len(sys.argv) > 1 else 'start'
+```
+
+**A bare run ACQUIRED A SESSION LOCK, printed nothing, and exited 0.** Measured,
+not inferred: running it bare in a throwaway clone created
+`~/SAIRN-SESSION-LOCKS/b2-i6-clone.lock`. It was the only one of the fifteen
+where the silence hid an **action** rather than an absence of findings.
+
+**AND THE REPO'S OWN DETECTOR FOR THIS CANNOT SEE IT.**
+`tools/bare_run_write_check.py` exists to catch a bare run that mutates — and it
+checks **the repo**. This writes to `~/SAIRN-SESSION-LOCKS/`, deliberately
+**outside every clone**, which is why that registry is current without a fetch.
+So the write is real, it matters to every session that reads the registry, and
+it is invisible to the one tool built to find it. **A named blind spot, not a
+guess.**
+
+**THE LITTER IS THE EVIDENCE.** `~/SAIRN-SESSION-LOCKS/` holds locks named after
+throwaway clones that no longer exist — **`bare_scratch.lock` (2026-09-30),
+`b11wt2.lock` (2026-10-06), `b12wt2.lock` (2026-10-07 07:18)** — each one a bare
+run of this file inside a scratch copy, sitting in a registry other sessions
+consult to decide whether somebody is working. I removed **only the one my own
+sweep created**; the other three are named for chat and left, because clearing
+another session's registry entry is not mine to do.
+
+FIXED: a bare run now exits **2** with a usage block that says which verb takes
+a lock. `start` is unchanged and still available — it just has to be asked for.
+Verified: bare exit 2, **no lock created**, and `status` still exits 0 and reads
+the real lock.
+
+**`tools/vercel_config_check.py` — the other traceback, and the direction
+matters.** `json.load` was bare, so a path that is missing or not JSON raised,
+and an uncaught exception exits **1 = FINDINGS**. **Its bare run is CLEAN**
+because the default path is the real `vercel.json`, which parses — so every
+bare-run-only check in this repo was blind to it, and only the one-argument run
+found it. It also matters more than the other twelve: the message a traceback
+replaces is *"Vercel will reject this at deploy time and silently keep serving
+the last successful build."*
+
+FIXED: exit **2** with a named reason for a missing file, for invalid JSON, and
+for JSON that is not an object. Verified: `CLAUDE.md` → exit 2 "is not valid
+JSON", `no-such-file.json` → exit 2 "does not exist", bare → exit 0 and still
+`PASS: vercel.json config within known limits`.
+
+**TWO REAL PRODUCT FINDINGS FALL OUT OF ITEM 5 AND ARE ROUTED, NOT FIXED** —
+duplicate DOM ids, where `getElementById` returns the first match so the second
+element is unreachable:
+
+| file | id | lines |
+|---|---|---|
+| `sairncare.html` | `fc-name` | 320 and 1082 |
+| `sairnfreedom.html` | `ac-name` | 371 and 1444 |
+| `sairnfreedom.html` | `ac-tbody` | 380 and 1461 |
+
+Both are app HTML in no claim of mine. Routed with file and line.
