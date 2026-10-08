@@ -25726,6 +25726,86 @@
       "recurrence_open": "OPEN as a CLASS. This is the mirror of PR 1.11 -- a could-not-run laundered into a FINDING rather than into a pass -- and no standing rule names that direction, so nothing stops the next tool spelling a timeout as 124. A sweep for integer timeout sentinels across tools/ is not done and is not claimed."
     },
     {
+      "commit": "15109a110294",
+      "date": "2026-10-08",
+      "subject": "fix(leak class): the 36 not-mine sites, 36 of 36 patched -- and the stale artifacts cleaned with .git/config proved unchanged",
+      "files": [
+        "docs/handoff-cody-2026-10-07c.md",
+        "tests/claims/run_push_verify_probe.py",
+        "tests/conflict_marker_preflight_probe.py",
+        "tests/hover_separation_ci_probe.py",
+        "tests/rebase_resolve_merge_control.py",
+        "tests/run_criticality_tier_probe.py",
+        "tests/run_fail_open_probe.py",
+        "tests/run_harness_stage_diagnosis_probe.py",
+        "tests/run_hover_scope_own_claim_probe.py",
+        "tests/run_required_write_permission_probe.py",
+        "tests/run_semgrep_encoding_probe.py",
+        "tests/run_staged_credential_probe.py",
+        "tests/run_stored_data_criticality_probe.py",
+        "tests/run_verification_owed_probe.py",
+        "tests/run_worktree_root_home_repo_probe.py",
+        "tests/sairnbiz_fault_probe.py",
+        "tests/sairnbuild_fault_probe.py",
+        "tests/sairncare_fault_probe.py",
+        "tests/sairncash_entitlement_fault_probe.py",
+        "tests/sairncash_fault_probe.py",
+        "tests/sairndesign_sairngrounds_fault_probe.py",
+        "tests/sairnfreedom_fault_probe.py",
+        "tests/sairnmechanical_fault_probe.py",
+        "tests/sairnscape_fault_probe.py",
+        "tests/sairnsenior_fault_probe.py",
+        "tests/sairnvet_fault_probe.py"
+      ],
+      "lines_added": 552,
+      "lines_removed": 36,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "36 rmtree(..., ignore_errors=True) calls across 25 test files not mine removed directories holding a real .git, where git marks loose objects READ-ONLY and Windows refuses to unlink a read-only file -- so the removal fails, ignore_errors swallows the refusal, and the tree is left behind in silence. Same class as the seven of mine fixed earlier, and the same one-line patch. Population: 322 such calls under tests/ and tools/, 53 in the real leak class once pre-create deletes are excluded and linked-worktree directories are measured out (an init'ed repo dir carries 3 of 33 read-only files, a linked worktree 0 of 2 and its .git is a FILE), of which 17 were attributable to me and 36 were not. All 25 files were claim-checked FREE against the live registry at 2026-10-08 and added to my FILES before any edit. X OF 36: patched 36, refused 0, held 0, routed 0; 25 of 25 compile clean; 6 of 25 run as a stated SAMPLE with every exit code from a capture_exit .status file. The one EXIT 1 in the sample is pre-existing and proved so against the completed suite run at aa2f014d, which predates the patch. The one or two remaining ignore_errors calls per file are the OUT-OF-CLASS sites and stay, which is the point of the ordered predicate.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "each call shipped with its file and no earlier commit introduced it"
+      },
+      "citation_note": "ignore_errors=True cannot report failure by construction, so could-not-remove and removed are the same observable outcome. The retry handler makes the third state reachable at every one of the 36 sites.",
+      "phase_note": "Every one of the 36 was written with ignore_errors from the start, across many commits and several sessions; there is no single injection commit and claiming one would be a guess.",
+      "contributing_factors": [
+        {
+          "factor": "The 36 sites sat in 25 files belonging to other sessions, so the class was known and open for a whole batch while only my own 7 were fixed. A defect class split by OWNERSHIP rather than by shape stays open at whatever rate owners happen to look at it.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "All 25 files were claim-checked against the live registry (FREE 25 of 25, HELD 0), added to my FILES in a re-stated claim BEFORE any edit, and patched in one pass. 36 of 36, 0 refused, 0 routed."
+        },
+        {
+          "factor": "A STRING ANCHOR WOULD HAVE BEEN WRONG HERE and the first instinct was to use one. tests/run_fail_open_probe.py holds 12 of the 36 and several of them share the identical call text, so a replace-all on that text would have hit sites the ordered predicate deliberately excluded -- pre-create deletes, which are correct as written.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Each site addressed as (file, line) from the earlier sweep, with the line RE-READ and required to contain both the rmtree call and ignore_errors=True before any write, and sites patched bottom-up per file so inserting the helper could not shift them. A site that no longer matched would have been REFUSED and printed; none was."
+        },
+        {
+          "factor": "A blanket patch across 25 unfamiliar files is normally the wrong move, and the reason it is defensible here is a property of the patch rather than of my confidence: ignore_errors=True and a swallowing onerror retry have IDENTICAL observable behaviour except that the retry clears the read-only bit first.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The argument was written into the claim text BEFORE the edits, so it could be disagreed with first. No input exists on which the patch makes a correct call worse, so no per-site behaviour judgement was needed -- only the ordered predicate to decide where it is worth applying."
+        },
+        {
+          "factor": "25 files cannot all be re-run in one batch, so most of the verification is a sample and could have been reported as if it were complete.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "25 of 25 compile-checked, and 6 of 25 RUN with every code read from its own capture_exit .status file -- labelled a SAMPLE in the handoff and the report. The one EXIT 1 among them, run_harness_stage_diagnosis_probe, was proved PRE-EXISTING rather than assumed: it appears as a FAIL in the completed suite run at aa2f014d, which predates this patch."
+        }
+      ],
+      "recurrence_open": "THE CLASS IS NOW CLOSED FOR tests/ AND tools/ BY THIS PREDICATE, AND THE PREDICATE IS THE REMAINING RISK. It is ordered and measured, but it is a one-off scanner in a session scratchpad rather than a landed check, so nothing stops the 54th call arriving tomorrow. What is owed is a standing check -- not another sweep."
+    },
+    {
       "commit": "35ec89c5dd8d",
       "date": "2026-10-08",
       "subject": "fix(capture-exit): a RUNNING status for a DEAD pid now reads DEAD, never RUNNING -- fixture-locked with a pid that is dead by construction",
