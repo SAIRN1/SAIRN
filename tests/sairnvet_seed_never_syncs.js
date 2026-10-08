@@ -34,6 +34,7 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
+const { stripComments } = require('./lib/strip_comments.js');
 const vm = require('vm');
 
 const ROOT = path.join(__dirname, '..');
@@ -55,15 +56,34 @@ function test(name, fn) {
 }
 function section(t) { console.log('\n' + t); }
 
-function bodyAt(at) {
-  const open = html.indexOf('{', at);
+function bodyAtIn(src, at) {
+  const open = src.indexOf('{', at);
   let d = 0;
-  for (let i = open; i < html.length; i++) {
-    if (html[i] === '{') d++;
-    else if (html[i] === '}') { d--; if (d === 0) return html.slice(at, i + 1); }
+  for (let i = open; i < src.length; i++) {
+    if (src[i] === '{') d++;
+    else if (src[i] === '}') { d--; if (d === 0) return src.slice(at, i + 1); }
   }
   throw new Error('unbalanced braces');
 }
+function bodyAt(at) { return bodyAtIn(html, at); }
+
+// CODE-ONLY VIEW OF THE APP, for the derivations that ask a question about CODE.
+// SEQ 17-A, 2026-10-08. seededGetters() derives the getter/saver wiring with
+// regexes over the raw file, so a commented-out `saveX(seedRows);` inside a
+// getter body is read as the real saver call. Comments are stripped for THAT
+// derivation only -- `html` stays raw, because other assertions here read UI
+// strings ('Saved to Consult Queue') and one deliberately reads a comment.
+//
+// MEASURED BEFORE AND AFTER, against the REAL subject rather than the file:
+// 39 getter/saver pairs raw, 39 stripped, 0 that exist only because of a
+// comment. So this is LATENT, not an active wrong answer -- the shape is here
+// and today's answer is unaffected. That is said plainly rather than dressed up:
+// batch 17 reported this site as "set 1 -> 0, 100% phantom", and that number
+// came from running the pattern over the WHOLE FILE instead of over the bodies
+// the suite actually feeds it. `saveX` does appear in a comment somewhere in
+// sairnvet.html, but never inside a getter body that passes the `var seed...`
+// filter.
+const code = stripComments(html);
 function fn(sig) {
   const at = html.indexOf(sig);
   assert.ok(at > 0, 'not found in sairnvet.html: ' + sig);
@@ -88,12 +108,12 @@ function seededGetters() {
   const savers = {};
   const saveRe = /function (\w+)\(([\w, ]*)\)\{\s*return st\(\s*'(sv_\w+)'/g;
   let m;
-  while ((m = saveRe.exec(html))) savers[m[1]] = m[3];
+  while ((m = saveRe.exec(code))) savers[m[1]] = m[3];
   const out = [];
   const getRe = /function (get\w+)\(/g;
-  while ((m = getRe.exec(html))) {
+  while ((m = getRe.exec(code))) {
     const name = m[1];
-    const body = bodyAt(m.index);
+    const body = bodyAtIn(code, m.index);
     if (!/var (seed|demo)\w*\s*=/.test(body)) continue;
     const call = /\b(\w+)\(\s*(seed\w*|demo\w*)\s*\)\s*;/.exec(body);
     const wrapped = /svSeedStore\(\s*(\w+)\s*,\s*(seed\w*|demo\w*)\s*\)/.exec(body);
@@ -379,6 +399,82 @@ test('the peer-consult toast names the photo as staying, and only when there IS 
   assert.ok(/next time they sign in/.test(src),
     'the toast does not say WHEN it reaches them; "sent" would rebuild the '
     + 'delivery promise the 2026-08-09 audit removed');
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+section('4. THE DERIVATION READS CODE, NOT PROSE -- the control for SEQ 17-A');
+// REQUIRED BY THE FIX, NOT DECORATION. seededGetters() decides which getters are
+// seeded and which saver each writes through, and it decides it with regexes. A
+// commented-out `saveX(seedRows);` inside a getter body is, to a regex over the
+// raw file, indistinguishable from the real call -- and the consequence is not
+// cosmetic: a getter whose only apparent saver came from a comment would be
+// asserted against the WRONG key, or a real unwrapped seeder would be skipped
+// because a commented line satisfied the test instead.
+//
+// Both directions, over the same two regexes and the same brace walk the real
+// derivation uses, so this exercises the fixed path rather than a copy of it.
+function deriveFrom(src) {
+  const savers = {};
+  const saveRe = /function (\w+)\(([\w, ]*)\)\{\s*return st\(\s*'(sv_\w+)'/g;
+  let m;
+  while ((m = saveRe.exec(src))) savers[m[1]] = m[3];
+  const out = [];
+  const getRe = /function (get\w+)\(/g;
+  while ((m = getRe.exec(src))) {
+    const body = bodyAtIn(src, m.index);
+    if (!/var (seed|demo)\w*\s*=/.test(body)) continue;
+    const call = /\b(\w+)\(\s*(seed\w*|demo\w*)\s*\)\s*;/.exec(body);
+    const wrapped = /svSeedStore\(\s*(\w+)\s*,\s*(seed\w*|demo\w*)\s*\)/.exec(body);
+    const saver = wrapped ? wrapped[1] : (call ? call[1] : null);
+    if (saver && savers[saver]) out.push({ getter: m[1], saver: saver });
+  }
+  return out;
+}
+
+// THE FIXTURES ARE WRAPPED IN <script>, AND THAT IS NOT COSMETIC. 4b and 4c
+// FAILED on their first run when they were bare JS, and the reason is in
+// strip_comments.js's own header: OUTSIDE a <script> element only `<!-- -->` is
+// a comment, and `//` is not. The real app's code lives inside <script> blocks
+// so the fix works there -- but a derivation pointed at a bare `.js` file would
+// have its comments stripped NOT AT ALL, silently, and the library exports
+// stripJs() for exactly that case. These arms found that in their first run,
+// which is the whole reason they are here.
+const SAVER_SRC = "function saveGhost(r){ return st('sv_ghost', r); }\n";
+function inScript(body) { return '<script>\n' + body + '</' + 'script>\n'; }
+const REAL_SRC = inScript(SAVER_SRC
+  + 'function getGhost(){ var seedRows = [1]; saveGhost(seedRows); return 1; }\n');
+const COMMENTED_SRC = inScript(SAVER_SRC
+  + 'function getGhost(){ var seedRows = [1];\n'
+  + '  // saveGhost(seedRows);   <- removed 2026-01-01, kept for history\n'
+  + '  return 1; }\n');
+
+test('4a a REAL saver call inside a seeded getter IS derived', () => {
+  const got = deriveFrom(stripComments(REAL_SRC));
+  assert.strictEqual(got.length, 1, 'the real wiring was not derived');
+  assert.strictEqual(got[0].saver, 'saveGhost');
+});
+test('4b the SAME call in a `//` comment is NOT derived', () => {
+  assert.deepStrictEqual(deriveFrom(stripComments(COMMENTED_SRC)), [],
+    'a commented-out saver call was read as the real one');
+});
+test('4c ...nor in a /* */ comment', () => {
+  const blockSrc = inScript(SAVER_SRC
+    + 'function getGhost(){ var seedRows = [1];\n'
+    + '  /* saveGhost(seedRows); */\n  return 1; }\n');
+  assert.deepStrictEqual(deriveFrom(stripComments(blockSrc)), [],
+    'a block-commented saver call was read as the real one');
+});
+test('4d AND THE CONTROL ON THE CONTROL: without stripping, the comment IS read '
+   + '-- so 4b and 4c are not vacuous', () => {
+  const got = deriveFrom(COMMENTED_SRC);
+  assert.strictEqual(got.length, 1,
+    'the unstripped derivation did NOT read the comment, so this arm proves '
+    + 'nothing about stripping');
+});
+test('4e the real derivation is unchanged by the fix -- 39 pairs either way', () => {
+  assert.strictEqual(SEEDED.length, deriveFrom(code).length);
+  assert.ok(SEEDED.length >= 30,
+    'the derivation collapsed: ' + SEEDED.length + ' pairs');
 });
 
 // ═══════════════════════════════════════════════════════════════════════════

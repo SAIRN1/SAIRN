@@ -567,20 +567,50 @@ the source matches any of:
 | bucket | predicate | at `4fa9843a` | after batch 17 |
 |---|---|---|---|
 | **none** | the marker does not appear in the source at all | 172 | 172 |
-| **derives_no_anchor** | marker present **AND** DERIVES **AND NOT** ANCHORED | **974** | **978** |
+| **derives_no_anchor** | marker present **AND** DERIVES **AND NOT** ANCHORED | **974** | **978** raw / **979** code-only |
 | **uses_not_derive** | marker present **AND NOT** DERIVES | 3 | 3 |
-| **derives_with_anchor** | marker present **AND** DERIVES **AND** ANCHORED | 78 | 79 |
+| **derives_with_anchor** | marker present **AND** DERIVES **AND** ANCHORED | 78 | 79 raw / **78** code-only |
 | | **sum, asserted every run** | **1227** | **1232** |
 
 The sum is asserted rather than assumed: a script that fell into no bucket would be
 invisible, which is the shape §10's own missing predicate had.
 
-### What the predicate CANNOT tell, stated rather than discovered later
+### THE LEXICAL DEFECT IS FIXED, 2026-10-08, AND IT COST EXACTLY ONE SCRIPT
 
-* It is **lexical, not semantic**. A script that matches ANCHORED inside a comment
-  or a string is counted as anchored. That is the same PR 1.2 defect this batch
-  routed 47 instances of in SEQ 17-A, and **this predicate has it too** -- named
-  here rather than left for somebody else to find.
+As first written this predicate was **lexical, not semantic**: a script matching
+ANCHORED or DERIVES inside a *comment* was counted as matching. That is the same
+PR 1.2 defect SEQ 17-A routed 47 instances of, written into the document that
+routes them -- the 48th instance, and mine. It was named here rather than left to
+be found, and it is now fixed and **measured in both directions**:
+
+| bucket | RAW (as §11 first published it) | CODE-ONLY (the fixed predicate) |
+|---|---|---|
+| **none** | 172 | 172 |
+| **derives_no_anchor** | 978 | **979** |
+| **uses_not_derive** | 3 | 3 |
+| **derives_with_anchor** | 79 | **78** |
+| sum, asserted both ways | 1232 | 1232 |
+
+**EXACTLY ONE SCRIPT CHANGES BUCKET**, and it is named:
+`tests/run_defect_register_vocab_sabotage_probe.py` was counted
+`derives_with_anchor` on a match inside a comment and is really
+`derives_no_anchor`. So the headline figure is **979 of 1232**, not 978, and the
+size of the error was one — stated rather than rounded away.
+
+**AND THE FIX NEEDED TWO DIFFERENT STRIPPERS, which is the part worth carrying
+forward.** `tools/jscomments.py` is written for a single-file APP: it treats `//`
+as a comment only INSIDE a `<script>` element, by design and by its own header.
+Handed a bare `.js` file it strips **nothing, silently**. So a bare `.js` is
+wrapped in `<script>` before stripping and unwrapped after, and `.py` goes through
+`tools/pycomments.py` instead. The same silent no-op caught the control arm in
+`tests/sairnvet_seed_never_syncs.js` on its first run, where arms 4b and 4c failed
+until their fixtures were wrapped — twice in one batch, from one wrong default.
+
+### What the predicate STILL cannot tell, stated rather than discovered later
+
+* It is still lexical **inside strings**. A script with the word `rev-parse` in a
+  string literal counts as anchored. Only comments are removed; the measured
+  effect of strings has not been taken.
 * **DERIVES is a floor, not an equality.** A script that reaches a fixture by some
   other route is not detected, so `none` over-counts and `derives_no_anchor`
   under-counts.

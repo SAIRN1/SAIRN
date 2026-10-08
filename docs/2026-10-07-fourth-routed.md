@@ -1492,3 +1492,76 @@ defect in the register -- it is a resource family with no local write site to an
 to, which is the same honest state `sen_settings` is in. Reported so nobody reads the
 low DRIFTED count as health.
 
+---
+
+## SEQ 17-A: CORRECTED 2026-10-08 AT THE FOUR NAMED SITES, AND ONE OF THE FOUR IS NOT A DEFECT
+
+**Read this before acting on any other row of SEQ 17-A.** Four of its 47 findings
+were taken this batch, and the first thing taking them did was expose a fault in
+**how the 47 were measured**.
+
+### The fault in the sweep, not in the subjects
+
+Batch 17's sweep measured every candidate pattern **against the app file its
+containing file reads**. That was a DEFAULT, never a measurement. For several of
+these patterns the real subject is something else entirely -- a markdown register
+cell, a SQL file, a short slice of one declaration -- and where the default was
+wrong the headline number was wrong with it.
+
+Each of the four was re-measured against the subject **read out of the source**:
+
+| site | what batch 17 said | the REAL subject | measured against it | verdict |
+|---|---|---|---|---|
+| `tools/stale_row_sweep.py:240` | set **29 → 0**, 100% phantom | `cells` — a row of the open-work index, i.e. **markdown prose**. `row_symbols(cells)` at `:383` is the only caller and no app file ever reaches it | n/a | **NOT A PR 1.2 SITE. The finding is WITHDRAWN** |
+| `tests/sairnvet_seed_never_syncs.js:98` | set **1 → 0**, 100% phantom | `bodyAt(m.index)` — a brace-matched slice of `sairnvet.html`, so real app source | **39 pairs raw, 39 stripped, 0 phantom** | **REAL SHAPE, LATENT.** Fixed; today's answer was unaffected |
+| `tools/orphan_register_check.py:163` | loses **21** `sd_*` keys | every `.sql` file under `sql/` — **not an app file at all**, so the hazard is a SQL `--` comment | **91 raw → 70 stripped: 21 names exist only inside a SQL comment** | **ACTIVE, and in a different syntax than routed** |
+| `tests/demo_seed_licence_scope.js:216` | loses **25** `sd_*` keys | `html.slice(i, html.indexOf('];', i))` — the `SAFE_DEMO_KEYS` literal only | **33 raw, 33 stripped, 0 phantom** | **REAL SHAPE, LATENT.** Fixed |
+
+**So of the four: one is not a defect, two were latent, and one was active in a
+syntax the routing named wrongly.** The 43 untaken findings carry the same
+measurement fault and **each needs its real subject read before it is actioned** --
+that is now the first step of taking any of them, not an optional check.
+
+### And `orphan_register_check.py` had a SECOND active case the sweep never saw
+
+Because the sweep only looked at the pattern on line 163, it missed that
+`writers()` and `key_present()` in the same file read the raw app directly. On
+`stonedesk.html`: **`sd_comms` has 2 "writers" raw and 1 once comments go.** One of
+its two write sites is a comment.
+
+**Two of that file's three predicates SUPPRESS a finding** when a comment answers
+them -- `key_present` deciding a dead orphan key is "still referenced", and
+`sql_names` excusing a canonical key the app never touches. That is the direction
+nobody notices.
+
+### What was changed, and what was deliberately not
+
+* `tools/orphan_register_check.py` — `parse_register` **still reads the raw file**,
+  because the `@REGISTER` entries it parses **live in comments**. Only the three
+  code predicates read a stripped view. Stripping everything would have made the
+  tool find no register at all.
+* `tools/citation_line_drift_check.py` — predicates read a comment-blanked view;
+  `cited line reads:` still prints the **raw** line, deliberately, because a reader
+  has to be able to see that the cited line is a comment.
+* **`string bodies are KEPT`** in `orphan_register_check.py`, and that is a
+  correction made by measurement: the first version of the fix used
+  `blank_string_bodies(strip_comments(...))`, copied from the shape
+  `truthy_sum_check.py` needs, and it took the tool from **CLEAN to eight false
+  findings** -- because there the pattern is CODE that also appears in prose, and
+  here the pattern **is a string literal**. One library, two tools, opposite
+  requirements.
+
+### Control arms added, all in both directions
+
+`orphan_register_check.py --selftest` (11 arms), `tests/sairnvet_seed_never_syncs.js`
+section 4 (5 arms), `tests/demo_seed_licence_scope.js` (4 arms),
+`tests/run_citation_line_drift_probe.py` section H (2 arms). Every set includes an
+**anti-vacuity arm** proving the unstripped version really would read the comment,
+because an arm that only ever sees the fixed behaviour proves nothing.
+
+**And one of those arms earned its place on its first run:** `4b`/`4c` in
+`sairnvet_seed_never_syncs.js` FAILED, because `strip_comments` treats `//` as a
+comment only inside a `<script>` element and the fixtures were bare JS. A bare
+`.js` file handed to that library is stripped **silently, not at all**. The same
+default bit the `__file__` bucket re-derivation an hour later.
+

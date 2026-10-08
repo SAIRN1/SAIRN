@@ -104,6 +104,9 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from jscomments import strip_comments  # noqa: E402
+
 # Findings quote real index rows, which carry em dashes and warning triangles. A
 # cp1252 stdout turns that into a crash INSIDE the reporting path -- a checker
 # that dies while telling you what it found. Seen on this machine, 2026-09-04.
@@ -160,7 +163,9 @@ def sql_names():
         if os.path.isdir(d):
             for fn in os.listdir(d):
                 if fn.endswith('.sql'):
-                    names |= set(re.findall(r'\b(sd_[a-z_]{3,})\b', read(os.path.join(d, fn))))
+                    names |= set(re.findall(
+                        r'\b(sd_[a-z_]{3,})\b',
+                        sql_code_only(read(os.path.join(d, fn)))))
         _SQL = names
     return _SQL
 
@@ -172,6 +177,74 @@ def writers(src, key):
 
 def key_present(src, key):
     return ("'%s'" % key) in src or ('"%s"' % key) in src
+
+
+# ── PR 1.2, 2026-10-08: CODE AND PROSE ARE READ SEPARATELY, BY NAME ───────
+# Three of this file's predicates ask a question about CODE -- is this function
+# defined, does the file reference this key, does anything write it -- and all
+# three were reading the raw file, so a mention inside a comment answered them.
+# TWO OF THE THREE SUPPRESS A FINDING when that happens, which is the dangerous
+# direction: `key_present` deciding a dead orphan key is "still referenced", and
+# `sql_names` excusing a canonical key the app never touches. The third,
+# `writers`, raises a false one.
+#
+# MEASURED BEFORE CHANGING ANYTHING, against the real subjects:
+#   stonedesk.html  writer counts: sd_comms raw 2 -> stripped 1. One of its two
+#                   "writers" is a comment.
+#   sql/*.sql       sd_ names: 91 raw -> 70 with SQL line comments removed.
+#                   TWENTY-ONE names exist only inside a `--` comment, among them
+#                   sd_jobs, sd_intake, sd_slab_tracker and sd_employee.
+#
+# `parse_register` IS DELIBERATELY STILL GIVEN THE RAW SOURCE, and that is the
+# whole point of splitting them: the `@REGISTER` entries this tool reads LIVE IN
+# COMMENTS. An arm that reads prose must read prose; an arm that reads code must
+# read code. Stripping for everything would have made the tool find no register
+# at all -- which is how a one-line "fix comments" change turns a checker off.
+#
+# jscomments.py is used rather than a private stripper: it is the one this
+# platform already settled on after seven implementations, three of which were
+# destroying 90% of the input.
+def code_only(src):
+    """`src` with COMMENTS blanked. String bodies are deliberately KEPT.
+
+    AND THAT SECOND SENTENCE IS A CORRECTION MADE BY MEASUREMENT, not a design
+    note written after the fact. The first version of this function was
+    `blank_string_bodies(strip_comments(src))`, copied from the shape
+    tools/truthy_sum_check.py needs -- and it took this checker from CLEAN to
+    EIGHT FINDINGS, every one of them false:
+
+        REGISTER: timesheets names sd_timesheets as its canonical key, and the
+                  file never references it                          ... x7
+        REGISTER: template-dxf-manager names sd_template_records as a retired
+                  key still read by a migration, and nothing references it
+
+    The reason is the opposite of the truthy-sum one. There, the pattern being
+    searched for is CODE and it also appears in prose inside strings, so string
+    bodies must go. HERE the pattern being searched for IS A STRING LITERAL --
+    key_present looks for `'sd_timesheets'` and writers looks for
+    `st('sd_timesheets'` -- so blanking string bodies deletes the only thing
+    either predicate can match.
+
+    Two tools, one library, opposite requirements. The stage that is right for
+    one is a silent false-finding generator in the other, and the only reason it
+    was caught is that the verdict was DIFFED before and after instead of being
+    read as a clean exit.
+
+    The residual limit, stated rather than discovered: a key named inside a
+    STRING -- a refusal message quoting 'sd_x' -- still counts as a reference
+    here. The comment case is the one that was measured and the one this fixes.
+    """
+    return strip_comments(src)
+
+
+def sql_code_only(text):
+    """SQL with `--` line comments removed.
+
+    Line comments only, and that is stated rather than hidden: SQL also has
+    `/* */`, and if one ever appears in sql/ this will not see it. Reported as a
+    limit instead of being assumed away.
+    """
+    return '\n'.join(l.split('--')[0] for l in text.split('\n'))
 
 
 def open_rows(index_path):
@@ -200,7 +273,10 @@ def main(argv=None):
             return 2
 
     src = read(APP)
+    # RAW for the register, STRIPPED for every question about code. See the
+    # note above code_only(): the @REGISTER entries live in comments.
     entries = parse_register(src)
+    code = code_only(src)
     if not entries:
         sys.stderr.write('ERROR: no @REGISTER lines in stonedesk.html. Either the '
                          'register lost them or this tool is pointed at the wrong '
@@ -219,20 +295,20 @@ def main(argv=None):
         mod = (e.get('module') or ['?'])[0]
         for n in e.get('deleted', []):
             dead_names.add(n)
-            if is_defined(src, n):
+            if is_defined(code, n):
                 findings.append('REGISTER: %s says %s() was deleted, but it is '
                                 'defined again' % (mod, n))
         for n in e.get('canonical', []):
-            if not is_defined(src, n):
+            if not is_defined(code, n):
                 findings.append('REGISTER: %s names %s() as the surviving canonical '
                                 'function, and it no longer exists' % (mod, n))
         for k in e.get('orphan_keys', []):
             dead_keys.add(k)
-            if key_present(src, k):
+            if key_present(code, k):
                 findings.append('REGISTER: %s says %s is a dead orphan key, but the '
                                 'file references it' % (mod, k))
         for k in e.get('canonical_key', []):
-            if not key_present(src, k) and k not in sql_names():
+            if not key_present(code, k) and k not in sql_names():
                 findings.append('REGISTER: %s names %s as its canonical key, and the '
                                 'file never references it' % (mod, k))
         # retired_keys are NOT orphan_keys. A retired key is read-only legacy:
@@ -241,10 +317,10 @@ def main(argv=None):
         # false alarm on the template manager or hide a real one elsewhere.
         for k in e.get('retired_keys', []):
             dead_keys.add(k)
-            if writers(src, k):
+            if writers(code, k):
                 findings.append('REGISTER: %s calls %s a retired read-only key, but '
                                 'something writes it' % (mod, k))
-            elif not key_present(src, k):
+            elif not key_present(code, k):
                 findings.append('REGISTER: %s names %s as a retired key still read by '
                                 'a migration, and nothing references it -- either the '
                                 'migration went or the entry is stale' % (mod, k))
@@ -278,5 +354,75 @@ def main(argv=None):
     return 0
 
 
+def selftest():
+    """The control for the 2026-10-08 code/prose split. Both directions.
+
+    REQUIRED BY THE FIX. Three predicates here answer questions about CODE and
+    were reading the raw file; two of them SUPPRESS a finding when a comment
+    answers them, which is the direction nobody notices. An arm that only ever
+    sees the fixed behaviour would not have caught the first attempt at this fix
+    either -- `blank_string_bodies` was in `code_only` and took the live run from
+    CLEAN to eight false findings, because here the thing being searched for IS a
+    string literal.
+    """
+    fails = []
+
+    def ck(label, got, want):
+        if got == want:
+            print('  ok   %s' % label)
+        else:
+            fails.append(label)
+            print('FAIL   %s\n         expected %r\n         actual   %r'
+                  % (label, want, got))
+
+    LIVE = "<script>\nfunction f(){ st('sd_ghost', x); }\n</script>\n"
+    COMM = "<script>\nfunction f(){ /* st('sd_ghost', x); */ }\n</script>\n"
+    LINE = "<script>\n// st('sd_ghost', x);\n</script>\n"
+
+    ck('1a a REAL write is a writer',
+       len(writers(code_only(LIVE), 'sd_ghost')), 1)
+    ck('1b a BLOCK-COMMENTED write is not',
+       len(writers(code_only(COMM), 'sd_ghost')), 0)
+    ck('1c a LINE-COMMENTED write is not',
+       len(writers(code_only(LINE), 'sd_ghost')), 0)
+    ck('1d control on the control: unstripped, the comment IS read, so 1b is '
+       'not vacuous', len(writers(COMM, 'sd_ghost')), 1)
+
+    # THE DIRECTION THAT SUPPRESSES. key_present deciding a dead orphan key is
+    # "still referenced" hides a real finding rather than inventing one.
+    ck('2a a key in real code is present', key_present(code_only(LIVE), 'sd_ghost'),
+       True)
+    ck('2b a key only in a comment is NOT present',
+       key_present(code_only(COMM), 'sd_ghost'), False)
+    ck('2c control on the control: unstripped it would be present',
+       key_present(COMM, 'sd_ghost'), True)
+
+    # AND THE REGRESSION ARM FOR THE FIRST ATTEMPT AT THIS FIX. If `code_only`
+    # ever blanks string bodies again, every key literal disappears and this
+    # file reports eight findings that are not there.
+    ck('3a string bodies are KEPT -- the key literal survives code_only()',
+       "'sd_ghost'" in code_only(LIVE), True)
+
+    # SQL comments are a different syntax and get their own arm.
+    ck('4a a SQL name in code is found',
+       bool(re.search(r'\bsd_ghost\b', sql_code_only('create table sd_ghost (x int);'))),
+       True)
+    ck('4b a SQL name only after `--` is not',
+       bool(re.search(r'\bsd_ghost\b', sql_code_only('-- create table sd_ghost (x int);'))),
+       False)
+    ck('4c control on the control: unstripped it would be found',
+       bool(re.search(r'\bsd_ghost\b', '-- create table sd_ghost (x int);')), True)
+
+    print()
+    if fails:
+        print('%d FAILED: %s' % (len(fails), '; '.join(fails)))
+        return 1
+    print('SELFTEST ALL PASS -- code questions read code, the @REGISTER prose is '
+          'still read as prose, and string literals survive.')
+    return 0
+
+
 if __name__ == '__main__':
+    if '--selftest' in sys.argv:
+        sys.exit(selftest())
     sys.exit(main())

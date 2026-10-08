@@ -37,6 +37,7 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
+const { stripComments } = require('./lib/strip_comments.js');
 const vm = require('vm');
 
 const ROOT = path.join(__dirname, '..');
@@ -211,12 +212,26 @@ test('SAFE_DEMO_KEYS covers every key that has a seed fallback', () => {
   // whose fallback variables are named TICKETS and LICENSES, so every scan
   // looking for ||SEED walked past them. Same omission and same cause as
   // sd_fieldmap in 2026-08-04. This asserts the list by DERIVING it.
-  const i = html.indexOf('var SAFE_DEMO_KEYS=[');
+  // BOTH DERIVATIONS READ A CODE-ONLY VIEW -- SEQ 17-A, 2026-10-08.
+  // The `seeded` scan is the one that matters: a commented-out seeding line
+  // containing localStorage.getItem('sd_x') would add a phantom key, and this
+  // test would then FAIL with "seeded but not cleared by Clear Demo Data" over a
+  // key nothing seeds. `safe` is read from a short slice of a declaration where
+  // a comment is less likely but not impossible.
+  //
+  // MEASURED BEFORE AND AFTER, against the real subjects: SAFE_DEMO_KEYS 33 raw
+  // and 33 stripped, 0 phantom, and the declaration is found at the same offset
+  // either way. So this is LATENT -- the shape is here and today's answer is
+  // unaffected. Batch 17 reported "25 phantom sd_* keys" for this site; that
+  // number came from running the pattern over the WHOLE 2MB file rather than
+  // over the array literal the test actually slices, and it is withdrawn.
+  const code = stripComments(html);
+  const i = code.indexOf('var SAFE_DEMO_KEYS=[');
   assert.ok(i > 0, 'SAFE_DEMO_KEYS is gone');
-  const safe = new Set((html.slice(i, html.indexOf('];', i)).match(/'(sd_[a-z_]+)'/g) || [])
+  const safe = new Set((code.slice(i, code.indexOf('];', i)).match(/'(sd_[a-z_]+)'/g) || [])
     .map(s => s.slice(1, -1)));
   const seeded = new Set();
-  html.split('\n').forEach(l => {
+  code.split('\n').forEach(l => {
     if ((l.indexOf('sdDemoCleared()') !== -1 && l.indexOf('?[]:') !== -1) ||
         l.indexOf('crmSeed()') !== -1 ||
         l.indexOf('(d.length||sdDemoCleared())?d:SEED') !== -1) {
@@ -228,6 +243,55 @@ test('SAFE_DEMO_KEYS covers every key that has a seed fallback', () => {
   const missing = [...seeded].filter(k => !safe.has(k));
   assert.deepStrictEqual(missing, [],
     'seeded but not cleared by Clear Demo Data: ' + missing.join(', '));
+});
+
+// ── THE CONTROL FOR SEQ 17-A, required by the fix and not decoration ──────
+// The `seeded` derivation decides which keys Clear Demo Data must cover. A
+// commented-out seeding line is, to a line scan over the raw file, the same as a
+// live one -- and the failure it produces is a FALSE ACCUSATION: "seeded but not
+// cleared" naming a key nothing seeds. Both directions, over the same scan the
+// real derivation uses.
+function seededFrom(src) {
+  const out = new Set();
+  src.split('\n').forEach(l => {
+    if ((l.indexOf('sdDemoCleared()') !== -1 && l.indexOf('?[]:') !== -1) ||
+        l.indexOf('crmSeed()') !== -1 ||
+        l.indexOf('(d.length||sdDemoCleared())?d:SEED') !== -1) {
+      const m = l.match(/localStorage\.getItem\('(sd_[a-z_]+)'\)/);
+      if (m) out.add(m[1]);
+    }
+  });
+  return out;
+}
+// WRAPPED IN <script> ON PURPOSE: strip_comments.js treats `//` as a comment
+// only INSIDE a script element, by design and by its own header. A bare-JS
+// fixture here would silently strip nothing and the arms below would be vacuous
+// -- which is exactly what happened to the sibling control in
+// tests/sairnvet_seed_never_syncs.js on its first run, and it is the reason that
+// run is kept in the transcript.
+function inScript(body) { return '<script>\n' + body + '</' + 'script>\n'; }
+const LIVE_LINE = "var d=JSON.parse(localStorage.getItem('sd_ghost')||'[]');"
+  + 'return (d.length||sdDemoCleared())?d:SEED;\n';
+
+test('the seeded-key derivation reads code: a LIVE seeding line IS found', () => {
+  assert.deepStrictEqual([...seededFrom(stripComments(inScript(LIVE_LINE)))],
+    ['sd_ghost']);
+});
+test('...and the SAME line commented out is NOT', () => {
+  assert.deepStrictEqual(
+    [...seededFrom(stripComments(inScript('// ' + LIVE_LINE)))], [],
+    'a commented-out seeding line was read as live, which accuses a key nothing '
+    + 'seeds');
+});
+test('...nor inside a /* */ block', () => {
+  assert.deepStrictEqual(
+    [...seededFrom(stripComments(inScript('/*\n' + LIVE_LINE + '*/\n')))], [],
+    'a block-commented seeding line was read as live');
+});
+test('AND THE CONTROL ON THE CONTROL: unstripped, the comment IS read, so the '
+   + 'two arms above are not vacuous', () => {
+  assert.deepStrictEqual([...seededFrom(inScript('// ' + LIVE_LINE))],
+    ['sd_ghost']);
 });
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed');

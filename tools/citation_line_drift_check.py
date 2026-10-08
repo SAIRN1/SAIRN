@@ -116,6 +116,38 @@ if hasattr(sys.stderr, 'reconfigure'):
     sys.stderr.reconfigure(encoding='utf-8')
 
 
+# ── PR 1.2, 2026-10-08: WRITE SITES ARE RESOLVED FROM CODE, NOT PROSE ─────
+# SEQ 17-C, found by running this tool and reading what it offered. For
+# sen_settings it proposed repointing two citations to sairnsenior.html:5774 --
+# a line that reads
+#
+#     // There is no `st('sen_settings')` because there must not be one: this
+#
+# It offered, as the write site, the line that says there is no write site. That
+# comment block exists to stop somebody re-creating a localStorage copy of a
+# federally-mandated EVV configuration, and to say so it has to quote the
+# accessor it is forbidding.
+#
+# So every predicate here that asks a question about CODE -- write_sites,
+# const_map, declaration_spans, anchor_verdict and the helpers under it -- now
+# reads a comment-blanked view. jscomments.strip_comments blanks to spaces and
+# keeps newlines, so LINE NUMBERS AND OFFSETS ARE UNCHANGED and every citation
+# number still means the same line.
+#
+# THE RAW LINES ARE STILL USED FOR `cited line reads:`, deliberately. A reader
+# needs to see what is actually on that line, comment or not: that output exists
+# so a cell citing a render site ON PURPOSE can be told apart from a stale
+# citation, and blanking it would remove the information at the moment it is
+# needed.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from jscomments import strip_comments  # noqa: E402
+
+
+def code_lines(text):
+    """`text` split into lines with comments blanked. Offsets preserved."""
+    return strip_comments(text).split('\n')
+
+
 def out(s):
     sys.stdout.write(s + '\n')
 
@@ -368,7 +400,9 @@ def main(argv):
         if not os.path.isfile(p):
             sys.stderr.write('COULD NOT RUN -- no such file: %s\n' % p)
             return 2
-    lines = io.open(ap, encoding='utf-8', errors='replace').read().split('\n')
+    _app_text = io.open(ap, encoding='utf-8', errors='replace').read()
+    lines = code_lines(_app_text)
+    raw_lines = _app_text.split('\n')
     doc_lines = io.open(dp, encoding='utf-8',
                         errors='replace').read().split('\n')
 
@@ -384,13 +418,15 @@ def main(argv):
     # A citation naming api/sd-data.js on a row swept with --app sairnbiz.html
     # must be resolved against api/sd-data.js. Comparing it to --app would
     # measure the wrong file and report drift with total confidence.
-    files = {}
+    files = {}        # COMMENT-BLANKED, for every question about code
+    raw_files = {}    # raw, for `cited line reads:` only
     unresolvable = []
     for _f in sorted(set(r[2] for r in rows if r[2])):
         _p = _f if os.path.isabs(_f) else os.path.join(REPO, _f)
         try:
-            files[_f] = io.open(_p, encoding='utf-8',
-                                errors='replace').read().split('\n')
+            _t = io.open(_p, encoding='utf-8', errors='replace').read()
+            files[_f] = code_lines(_t)
+            raw_files[_f] = _t.split('\n')
         except OSError as exc:
             unresolvable.append('%s (%s)' % (_f, exc.strerror or 'unreadable'))
 
@@ -485,7 +521,11 @@ def main(argv):
         nearest = min(sites, key=lambda s: abs(s - n))
         # THE CITED LINE ITSELF, because it is what decides stale-vs-deliberate
         # and the reader should not have to open the file to see it. 1-indexed.
-        cited = flines[n - 1].strip() if 0 < n <= len(flines) else ''
+        # RAW on purpose -- see the note above code_lines(). A reader has to see
+        # whether the cited line is a comment; that is how a deliberate
+        # render-site citation is told apart from a stale one.
+        _rl = raw_files.get(cfile) or raw_lines
+        cited = _rl[n - 1].strip() if 0 < n <= len(_rl) else ''
         drift.append((name, n, nearest, nearest - n,
                       in_spans(n, spans) if same_app else False, cited, cfile))
 

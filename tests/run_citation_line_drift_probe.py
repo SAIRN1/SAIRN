@@ -428,6 +428,65 @@ def main():
             bad('G5. an unreadable cited file must not become a drift verdict',
                 'exit=%s\n%s' % (code2, o2[-400:]))
 
+        # ── H. A COMMENTED-OUT WRITE IS NOT A WRITE SITE ──────────────────
+        # SEQ 17-C, 2026-10-08. The tool resolved write sites over the RAW app
+        # and offered sairnsenior.html:5774 as the write site for sen_settings --
+        # a line reading `// There is no st('sen_settings') because there must
+        # not be one`. It proposed, as the write site, the line saying there is
+        # no write site.
+        #
+        # BOTH DIRECTIONS, because an arm that only sees the fixed behaviour
+        # proves nothing: H1 is the fixed answer, H2 is the anti-vacuity half
+        # that shows the comment really would have been read.
+        section('H. a write site must be CODE, not a comment about code')
+
+        cl = [
+            '<script>',
+            "var ZZ_SYNCED=['zz_alpha'];",
+            "K_ALPHA='zz_alpha';",
+        ]
+        for _i in range(4, 40):
+            cl.append('  // filler %d' % _i)
+        # The ONLY occurrence of a write for zz_alpha, and it is commented out
+        # in the same shape the real one was: the accessor quoted inside a
+        # sentence explaining that it must not exist.
+        cl.append("  // There is no st('zz_alpha') here because there must not be one")
+        for _i in range(42, 60):
+            cl.append('  // tail %d' % _i)
+
+        _hd = os.path.join(d, 'h')
+        os.makedirs(_hd, exist_ok=True)
+        dh = fixture(_hd, cl, doc([('zz_alpha', 20)]))
+        code3, o3 = run(dh[0], dh[1])
+        c3 = counts(o3)
+        if c3.get('INCONCLUSIVE') == 1 and not c3.get('DRIFTED') \
+                and not c3.get('ANCHORED') and not c3.get('SOUND'):
+            ok('H1. a resource whose ONLY apparent write is inside a comment is '
+               'INCONCLUSIVE -- there is no write site, and the honest answer is '
+               'that there is nothing to anchor to')
+        else:
+            bad('H1. a commented-out write must not become a write site',
+                'counts=%r exit=%s\n%s' % (c3, code3, o3[-600:]))
+
+        # ANTI-VACUITY: the same fixture with the comment markers removed MUST
+        # resolve. If this fails, H1 passed because the fixture never contained
+        # a recognisable write at all and the arm measured nothing.
+        cl_live = [l.replace("  // There is no st('zz_alpha') here because there "
+                             "must not be one", "  st(K_ALPHA, list);")
+                   for l in cl]
+        _hd2 = os.path.join(d, 'h2')
+        os.makedirs(_hd2, exist_ok=True)
+        dh2 = fixture(_hd2, cl_live, doc([('zz_alpha', 20)]))
+        code4, o4 = run(dh2[0], dh2[1])
+        c4 = counts(o4)
+        if (c4.get('ANCHORED', 0) + c4.get('SOUND', 0)
+                + c4.get('DRIFTED', 0)) == 1 and not c4.get('INCONCLUSIVE'):
+            ok('H2. ANTI-VACUITY: uncommenting that one line makes it resolve, so '
+               'H1 is about the comment and not about an empty fixture')
+        else:
+            bad('H2. the uncommented fixture must resolve',
+                'counts=%r exit=%s\n%s' % (c4, code4, o4[-600:]))
+
     finally:
         shutil.rmtree(d, ignore_errors=True)
 
