@@ -312,3 +312,150 @@ both tools are in `tools/bare_run_writers.py`, the declared-intended-writers
 allowlist. They are still correctly listed — with a secret set they do write —
 but a **bare** run in a clone without the secret now writes nothing, so the
 widened bare-run sweep will see them as non-writers.
+
+### item 6 — THE BARE-RUN SWEEP AT THE WIDENED SCOPE — and it immediately found a leak `git status` could never see
+
+**`tools/bare_run_write_check.py` now watches THREE things outside the working
+tree**, because the thing it missed was never a comparison bug — it was the scope:
+
+| watched | why |
+|---|---|
+| `~/SAIRN-SESSION-LOCKS/` | the cross-clone registry. **Outside every clone on purpose**, which is why it is current without a fetch — and why a write there was invisible |
+| `<repo>/.git/config` | a **linked worktree shares this** with its clone, so a `git config` write from inside one lands here. This is how `core.bare = true` reached a live clone in batch 18. `git status` never sees it |
+| `git worktree list` | registering one is a change to shared state **with no file in the tree** |
+
+**A SHARED-STATE WRITE IS NEVER EXEMPTED BY THE ALLOWLIST.**
+`tools/bare_run_writers.py` declares **repo** paths; nothing in it says a tool may
+write outside the clone, and **reading that silence as permission is how the gap
+stayed open.**
+
+**`--selftest`: EXIT 0, 8 passed / 0 failed.** A1 two snapshots of an untouched
+world are identical (without it every arm below passes on noise); A2 a new lock
+is CREATED — *the exact shape `session_lock_check.py` produced, which this tool
+reported CLEAN*; A3 an edited lock is CHANGED; A4 a deleted lock is DELETED
+(*removing somebody else's lock is as much a change as taking one*); **A5 a
+`git config` write is GITCONFIG CHANGED — the one `git status` cannot see**; A6 a
+worktree registration is WORKTREES CHANGED; A7 the paired negative — nothing
+planted, nothing reported; **B1 end-to-end, a planted tool that writes a lock on
+a bare run is caught through `run_tool`, with exit 0 and a clean `git status`
+notwithstanding — that combination is exactly what was being missed.**
+
+**THE DETECTOR MUST NOT CAUSE WHAT IT DETECTS (RULE G).** `SAIRN_LOCKS_DIR`
+redirects the watched registry for the selftest, and `run_tool` now **exports
+`SAIRN_SESSION_LOCK_DIR` to the same value for every child** — aligned in the tool
+rather than left to the caller, because a detector whose correctness depends on
+remembering two environment variables is one somebody will run with only the
+first. Confirmed afterwards: **the real lock registry is untouched by both the
+selftest and the sweep.**
+
+**THE SWEEP, over the 175-tool ownerless population — 164 of them `.py`, the
+other 11 are `.sh`/`.js` and are named rather than silently dropped:**
+
+```
+tools swept                : 164      in a throwaway CLONE, 25s per run, bare and --help
+WROTE on a bare run        : 0
+WROTE on --help            : 0
+INTENDED writers           : 1        master_plan.py -> docs/MASTER-PLAN.md, declared
+CHANGED SHARED STATE       : 2        <- THE NEW COLUMN, and it is not empty
+COULD NOT RUN (no verdict) : 19       NOT reported as clean
+EXIT 1
+```
+
+**THE FINDING: `tools/condition_coverage.py` REGISTERS A WORKTREE AND LEAVES IT
+REGISTERED — on a bare run AND on `--help`.** Both runs also exceeded the 25 s
+bound, so it leaks a registration *and* has no exit code.
+
+**THE CORROBORATION WAS ALREADY ON DISK.** Item 4's worktree census found three
+leaked registrations named **`condcov-37872`, `condcov-75140`, `condcov-83660`** —
+this tool, three times. The sweep names the cause; item 4 counted the effect. And
+every one of those registrations is another door for the shared-`.git/config`
+write that corrupted this clone in batch 18.
+
+**19 OF 164 HAVE NO VERDICT at a 25 s bound** — `assurance_case.py`,
+`stale_row_sweep.py`, `landing_verification.py`, `condition_coverage.py` and
+fifteen more. Reported as COULD NOT RUN and **explicitly not counted clean**; the
+tool exits non-zero partly for that reason.
+
+**NOT EDITED: `tests/run_bare_run_write_probe.py` is CODY'S** (declared in two
+live claims). The arms went into the tool's own `--selftest` instead, which is the
+established pattern here and needs nothing of cody's.
+
+### item 7 — TIER A — 5 DISCHARGED, AND MY OWN PREMISE WAS WRONG
+
+**I CARRIED A WRONG COUNT INTO THIS BATCH AND REPORTED IT TWICE.** Batches 18 and
+b1 both said *"15 / 16 eligible for hank"*, derived as **open AND
+`author_session != hank`**. That is the set I could in principle review. **It is
+not the set I may discharge.**
+
+**The gate ASSIGNS each obligation to ONE reviewer at open time, and it refuses
+anybody else:**
+
+```
+REFUSED: this obligation is assigned to cloud, not hank. It was stamped at open
+time (...) precisely so two sessions cannot both review it.
+```
+
+**AND THE ASSIGNMENT IS NOT IN THE RECORD.** Every open record carries
+`reviewer_session: null`; the assignee is **computed by the gate**, so
+`tier_a_review_gate.py --list` is the only way to see it. Reading the JSON tells
+you nothing about who owes a review — which is exactly how I got the count wrong.
+
+**WHAT I ACTUALLY DID: attempted 12, DISCHARGED 5, refused on 7.** All five that
+were assigned to me are now `status: reviewed`, `reviewer_session: hank`,
+`reviewed_at: 2026-10-08T13:52:4x`:
+
+| author | opened | what I verified with a command |
+|---|---|---|
+| fourth | 2026-09-30T11:08:08Z | `DELIBERATELY_EXCLUDED` really has **exactly 11** entries and is exported, not a comment |
+| cc | 2026-09-30T11:14:21Z | `enc(licHash)` still appears **6×**, and line 160 asserts `matter_id=eq.` is **FOUND before** any index comparison |
+| cody | 2026-09-30T15:15:56Z | all three resources have **exactly one** register row — the transcription did not duplicate or drop one |
+| cc | 2026-09-30T16:19:33Z | `sbRestoreSession` and all three branch conditions (401, 403, 503) are in the body |
+| cody | 2026-10-05T15:12:34Z | **all three non-identity TARGETS entries check out against the real dispatcher**, including `sd_approvals`, which cody flagged as an unverified assumption |
+
+**EVERY VERDICT NAMES WHAT I DID NOT CHECK.** None is a restatement of the
+author's summary; each took the thing the record asked a reviewer to *attack*.
+
+**THE SEVEN REFUSED, with their assignee and age — not blocked by a claim, blocked
+by the gate's own assignment:**
+
+| author | opened | assigned to | held |
+|---|---|---|---|
+| cody | 2026-09-27T02:06:03Z | cloud | 276h |
+| fourth | 2026-09-28T00:16:59Z | cloud | 254h |
+| cody | 2026-09-28T03:34:57Z | fourth | 250h |
+| fourth | 2026-10-05T09:50:00Z | cloud | 76h |
+| fourth | 2026-10-05T15:02:28Z | cody | 71h |
+| fourth | 2026-10-05T21:25:19Z | cody | 64h |
+| cc | 2026-10-06T06:18:11Z | cody | 56h |
+
+**ALL SEVEN ARE PAST 48h, SO `--takeover` IS PERMITTED AND I DID NOT USE IT.**
+Taking over seven obligations I am not assigned is precisely the
+two-sessions-reviewing-one-change that the open-time stamp exists to prevent. Not
+authorised by this batch and not done.
+
+**THE WORK IS NOT WASTED: I had already reviewed four of the seven before the gate
+refused**, and those verdicts are in `scratchpad/verdict_*.txt` for whoever is
+assigned. **One is a real finding, not a confirmation:**
+
+> **`tools/deploy_verify_notify.py` — a FIFTH pushing entrypoint exists today.**
+> fourth asked a reviewer to confirm none does. `PUSHING_TOOLS` carries the four
+> named; I imported the module and called `classify_command` directly:
+> `python tools/gh_push.py "msg"` → **`unsure`**, while `push_retry.py` → `push`,
+> `git push origin HEAD:main` → `push` and `echo git push origin main` →
+> `not-a-push`. **`gh_push.py` publishes commits** — through the GitHub REST API
+> rather than `git push`, running `.githooks/pre-push` itself (lines 70, 114,
+> 166). The mechanism is right and **the list is incomplete**. Routed, not fixed:
+> `gh_push.py` is in cc's live FILES.
+
+**TWO MORE ARE REFUSED ON THE BUILD/AUDIT BOUNDARY, not on assignment** — both
+hover2 records name only files under `.claude/skills/sairn-hover-auditor/`.
+`CLAUDE.md` forbids a build agent reaching there, so I did not read them.
+
+**A SEPARATE FINDING FROM THE GATE'S OWN OUTPUT: 10 of the 17 open obligations
+carry `** COULD-NOT-TELL **` on freshness** — *"the recorded sha does not resolve
+in this clone"* or *"RESOLVES but is ORPHANED"*. **None of my five did** (all five
+have `commit: null`, so there was no sha to resolve and I reviewed the named files
+at HEAD, which is stated in each verdict). For the other ten, a reviewer cannot
+see the change the obligation is about.
+
+**State now: 239 records, 222 reviewed, 17 open, 0 assigned to hank.**
