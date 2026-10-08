@@ -1305,6 +1305,132 @@ def registry_claims(me):
     return out
 
 
+# ── THE SESSION'S OWN VIEW OF ITS OWN CLAIM WAS THE ONLY BLIND ONE ──────────
+# MEASURED 2026-10-08, and the measurement corrects a claim I made about it.
+#
+# `registry_claims(me)` builds liveness-stamped pseudo-claims for every session
+# EXCEPT `me`. So every other clone reads my claim with `_alive` taken from the
+# pid lock and is_active() returns True whatever its age -- verified from all
+# three of cody's, fourth's and hank's viewpoints:
+#     (_alive=True, 'this session owns the lock (CLAUDE_PID 87540)', True)
+# My OWN claim is read from git only, carries no `_alive` and no `_heartbeat`,
+# and therefore falls through to the fixed `now() - claimed_at < 4h` timeout --
+# the rule is_active()'s own docstring says "answers the wrong question".
+#
+# SO THE 2026-10-08 (b3) REPORT OVERSTATED IT. I wrote that items 6-12 landed
+# under a claim "invisible to every other clone as live work". That is FALSE:
+# every other clone saw it alive. What was really wrong is narrower and still
+# real -- I am the one party who cannot see my own liveness, so a 5.3-hour
+# batch read as unclaimed TO ME, which is what made me re-claim and then report
+# a conclusion that was not true. Corrected here, where the code is, as well as
+# in this batch's report.
+#
+# The evidence existed the whole time. Only this path never read it.
+def own_liveness():
+    """(state, why, heartbeat) for THIS session, or ('UNKNOWN', why, None).
+
+    Same source and same guard as registry_claims(): a probe driving this tool
+    inside a throwaway clone must not inherit the machine's live registry, so
+    an out-of-clone run returns UNKNOWN rather than a borrowed ALIVE.
+    """
+    if not _in_own_clone():
+        return ('UNKNOWN', 'not running in this session\'s own clone, so the '
+                           'machine registry is not mine to read', None)
+    try:
+        sys.path.insert(0, os.path.join(REPO, 'tools'))
+        import sairn_status
+        return sairn_status.claim_liveness(session_name())
+    except Exception as e:                                       # noqa: BLE001
+        return ('UNKNOWN', '%s: %s' % (type(e).__name__, e), None)
+
+
+def stamp_own_liveness(claims):
+    """Stamp `_alive`/`_heartbeat` on MY claims so my view matches everyone's.
+
+    Mutates in place and returns the list. Only rows whose session is mine are
+    touched; a registry-sourced row already carries its own stamp and is left
+    alone (`_registry`).
+    """
+    me = session_name()
+    state, why, beat = own_liveness()
+    alive = True if state == 'ALIVE' else False if state == 'DEAD' else None
+    for c in claims:
+        if c.get('session') != me or c.get('_registry'):
+            continue
+        # UNKNOWN leaves the fields absent so is_active() keeps the timeout.
+        # Writing `_alive: None` would be the same thing and reads as a value.
+        if alive is not None:
+            c['_alive'] = alive
+            c['_alive_why'] = why
+        if beat:
+            c['_heartbeat'] = beat
+    return claims
+
+
+def own_claim_state():
+    """('HELD'|'DEAD'|'EXPIRED'|'NONE'|'UNKNOWN', claim_or_None, why).
+
+    The question a session should be able to ask before a long run and cannot
+    today: am I still holding my own claim?
+
+      HELD     an active claim and this process is alive, or within the timeout
+      DEAD     an active claim and the owning process is GONE -- expired NOW
+      EXPIRED  an active claim, liveness unknown, past the timeout
+      NONE     no active claim row at all
+      UNKNOWN  liveness could not be read AND there is no row to judge
+    """
+    try:
+        doc = load_mine()
+    except Exception as e:                                       # noqa: BLE001
+        return ('UNKNOWN', None, 'could not read my claims file: %s' % e)
+    rows = [c for c in doc.get('claims', []) if c.get('status') == 'active']
+    if not rows:
+        return ('NONE', None, 'no active claim row in %s' % my_file())
+    rows.sort(key=lambda c: c.get('claimed_at_epoch', 0), reverse=True)
+    stamp_own_liveness(rows)
+    c = rows[0]
+    state, why, _beat = own_liveness()
+    if c.get('_alive') is True:
+        return ('HELD', c, why)
+    if c.get('_alive') is False:
+        return ('DEAD', c, why)
+    if is_active(c):
+        return ('HELD', c, 'within the %.0fh timeout; liveness unknown (%s)'
+                % (STALE_HOURS, why))
+    return ('EXPIRED', c, 'past the %.0fh timeout and liveness is unknown (%s)'
+            % (STALE_HOURS, why))
+
+
+def cmd_own(args):
+    state, c, why = own_claim_state()
+    print('MY OWN CLAIM -- session %s' % session_name())
+    print('  state     : %s' % state)
+    print('  because   : %s' % why)
+    if c is not None:
+        print('  subject   : %s' % c.get('subject'))
+        print('  claimed   : %s  (%s)' % (c.get('claimed_at'), age_str(c)))
+        print('  task      : %s' % (c.get('task') or '')[:160])
+    print('\n  Every OTHER clone judges this claim through registry_claims(),')
+    print('  which stamps liveness from the pid lock. Before 2026-10-08 this')
+    print('  path did not, so a long batch read as unclaimed TO ITS OWN')
+    print('  SESSION while every other clone saw it held.')
+    if state == 'HELD':
+        return 0
+    if state == 'UNKNOWN':
+        print('\nCOULD NOT TELL -- not a pass and not a finding.')
+        return 2
+    if args.require_held:
+        print('\nREFUSING: --require-held was given and the claim is %s. Work '
+              'under\nan expired or absent claim is invisible to the clones '
+              'that rely on it.\n  python tools/sairn_claim.py claim <subject> '
+              '<task words>' % state)
+    else:
+        print('\nWARNING: this session is working WITHOUT a held claim (%s). '
+              'Re-claim\nbefore any long run; the heartbeat is only re-stamped '
+              'when you touch\nthis tool.' % state)
+    return 1
+
+
 def _registry_block_rows(args):
     """The registry-sourced blocks for this attempt, as audit rows. [] if none.
 
@@ -2446,6 +2572,12 @@ def cmd_list(args):
         # with `git show` and cannot write anything. See its docstring.
         fetched, ferr = fetch_origin()
     rows = load_all(from_origin=not args.no_fetch)
+    # MY OWN ROWS GET THE SAME LIVENESS EVERY OTHER CLONE ALREADY APPLIES TO
+    # THEM. Without this, `list` dropped this session's own live claim from the
+    # active set after four hours while cody, fourth and hank all still saw it
+    # held -- one record, two answers, and the session's own answer was the
+    # wrong one. See own_liveness().
+    stamp_own_liveness(rows)
     if not args.all:
         rows = [c for c in rows if is_active(c)]
     if not rows:
@@ -2681,7 +2813,15 @@ def main():
     c = sub.add_parser('audit', help='duplicates and unreleased claims, binned '
                                      'by whether they predate the guard')
 
+    c = sub.add_parser('own', help='am I still holding my own claim? '
+                                   'exit 0 held, 1 not, 2 could not tell')
+    c.add_argument('--require-held', action='store_true',
+                   help='phrase the exit-1 as a REFUSAL rather than a warning, '
+                        'for a caller that wants to block on it')
+
     args = p.parse_args()
+    if args.cmd == 'own':
+        return cmd_own(args)
     if args.cmd == 'check':
         return cmd_check(args)
     if args.cmd == 'claim':

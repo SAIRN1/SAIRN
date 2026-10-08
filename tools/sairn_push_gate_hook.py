@@ -1269,6 +1269,55 @@ def main():
 
     changed = outgoing_files(repo, base, tip)
 
+    # ── CHECK 16: IS THIS PUSH HAPPENING UNDER A HELD CLAIM? (2026-10-08) ────
+    # NON-BLOCKING, deliberately, and the reason is not timidity: claiming is a
+    # convention four sessions follow by hand, a REFUSAL here would stop a
+    # legitimate one-line fix nobody claimed, and "a gate that must be talked
+    # past routinely is a gate people learn to talk past" is already written
+    # down on this platform six overrides deep. So it REPORTS, loudly, with the
+    # state measured rather than assumed.
+    #
+    # THE INCIDENT IT IS FOR, and it is mine. On 2026-10-08 seven commits of my
+    # own landed while I believed my claim had expired -- because the session's
+    # own view of its own claim was the only one that applied a fixed 4-hour
+    # timeout (see sairn_claim.own_liveness()). Nothing in the push path ever
+    # asked the question, so the answer arrived from a document rather than a
+    # measurement, and the b3 report then overstated the consequence.
+    #
+    # THE IMPORT IS GUARDED AND ITS FAILURE IS SAID OUT LOUD, same rule as
+    # check 15: a silent skip here is PR 1.11 -- a pass that was never
+    # performed. Third state, not a pass.
+    try:
+        sys.path.insert(0, os.path.join(repo, 'tools'))
+        import sairn_claim as _SC
+        _cl_state, _cl_row, _cl_why = _SC.own_claim_state()
+        _cl_err = None
+    except Exception as _e:                                      # noqa: BLE001
+        _cl_state, _cl_row, _cl_why = None, None, None
+        _cl_err = '%s: %s' % (type(_e).__name__, _e)
+    if _cl_err:
+        sys.stderr.write(
+            '\nCLAIM STATE: COULD NOT RUN -- tools/sairn_claim.py could not be '
+            'asked whether\n  this push is happening under a held claim. This '
+            'is a third state, not a pass.\n  cause: %s\n\n' % _cl_err)
+    elif _cl_state == 'HELD':
+        pass                        # the quiet case, and it stays quiet
+    elif _cl_state == 'UNKNOWN':
+        sys.stderr.write(
+            '\nCLAIM STATE: COULD NOT TELL -- %s\n  Not a pass and not a '
+            'finding.\n\n' % _cl_why)
+    else:
+        sys.stderr.write(
+            '\nCLAIM STATE: %s -- THIS PUSH IS NOT UNDER A HELD CLAIM.\n'
+            '  %s\n'
+            '  NOT A REFUSAL. Claiming is a convention, not a mechanism, and '
+            'blocking an\n  unclaimed one-line fix would teach everyone to '
+            'override this. But work no\n  other clone can see coming is how '
+            'two sessions end up in one file.\n'
+            '    python tools/sairn_claim.py own\n'
+            '    python tools/sairn_claim.py claim <subject> <task words>\n\n'
+            % (_cl_state, _cl_why))
+
     # ── CHECK 15: THIS PUSH CHANGES THINGS THAT CHECK THE WORK (2026-10-06) ──
     # NON-BLOCKING, AND THAT IS THE DESIGN RATHER THAN TIMIDITY. Every one of
     # checks 1-14 asks "is this push's CONTENT wrong". None asks "is this
