@@ -800,3 +800,40 @@ C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\167
 **Printed SQL:** `docs/2026-10-07-hank-migration-sql-for-michael.md` — STEP 0
 (three ALTERs), STEP 1-12 (twelve tables), **STEP 13** (sv_audit_log, with
 13-ALT), **STEP 14** (rf_schedule).
+
+---
+
+## PUSHED STATE — VERIFIED, replacing the write-time list above
+
+`origin/main` is at **`c0f70165`**. `git fetch` then
+`git log origin/main..HEAD` → **ahead 0, behind 0**, tree clean,
+`core.bare` = `false`.
+
+**My six batch-18 commits are `21908bbf..c0f70165`, and EACH was confirmed an
+ancestor of `origin/main` with `git merge-base --is-ancestor` AFTER the push:**
+
+| sha | ancestor | what |
+|---|---|---|
+| `c369887f` | ✓ | handoff rows for items 1, 3, 6, 6a, 6b |
+| `ce90138b` | ✓ | the `sv_audit_log` refusal, H0/H1/H2, STEP 13 + STEP 14 SQL |
+| `83e59bd0` | ✓ | **the three tool fixes** + RULE F routed |
+| `150f9525` | ✓ | handoff rows for items 4, 12, 13 and the open-work table |
+| `8932f56e` | ✓ | the stash-count correction |
+| `c0f70165` | ✓ | the derived artefacts: register record, Tier A obligation, 3 generated docs |
+
+The register record cites **`83e59bd0`**, derived AFTER the final rebase, and the
+rebase that produced it replayed over **75 incoming commits**. `land2.sh` landed
+on **cycle 1**.
+
+**The write-time list earlier in this file named `7829e3f0`, `db7558e8`,
+`293152da` and `6c66f0e9`. Those shas no longer exist** — they were rewritten by
+exactly the rebase RULE F describes. **Read this table, not that one.** The
+earlier list is left in place rather than edited, because a handoff that quietly
+rewrites its own history is worse than one that shows the correction.
+
+**NO GATE OVERRIDDEN. `SAIRN_SEED_GATE=off` was never used.** The push gate
+asked for a register record and a Tier A obligation on cycle 1 and got both.
+
+**STILL DIRTY AND STILL NOT MINE:** `docs/scrutiny-flags.json`, re-written by
+cc's tool during this push and parked as a sixth stash entry
+(`"cc scrutiny rows (round 7)"`). Match on the message, not the index.
