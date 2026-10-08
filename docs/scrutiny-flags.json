@@ -225,6 +225,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_tool_usage_refusal_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "stderr=subprocess.STDOUT, timeout=60)"
+    }
+   ],
+   "sha": "320ddabedae4d88bf9238e07e4791d88c20cdfb1",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/provisioning_attribution.js",
    "class": "test file",
    "level": "CHANGE",
@@ -254,6 +267,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "338cf94c83dd01f5a5720e86d159c8a7b514c1ba",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_tool_usage_refusal_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "392426154bd584266f315b17d26843221534fc2c",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -299,6 +320,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "4c574225845dacf6d3c5cfb8dc33d613400dc632",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sd_data_write_attribution_three_apps.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "4ec0d5d51f56c14d072bda2d8c0e6f875c617672",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -409,6 +438,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sd_data_write_attribution_three_apps.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "56bbce5e83d519e21e621382084d6b18eb02a989",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/push_gate/graduated_exempt_consume_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -488,6 +525,36 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_gh_push_argv_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "that is a deliberate limit, not an oversight -- see below."
+    }
+   ],
+   "sha": "5ffe2b90616c16be8743bf1feceee3e8284f6338",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_audit_event_type_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "stderr=subprocess.STDOUT, timeout=120)"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(base, ignore_errors=True)"
+    }
+   ],
+   "sha": "72d757efae5ab9df8c43faac4383e28f2b3c73ab",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/push_gate/graduated_exempt_consume_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -527,6 +594,27 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "780004db9bf5126a89a2231fb6beaa400bca5759",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_scrutiny_flag_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(root, ignore_errors=True)"
+    }
+   ],
+   "sha": "85c5a7fb5490d56f69978f8cc759d80eadb2716d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "85c5a7fb5490d56f69978f8cc759d80eadb2716d",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -653,6 +741,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_defect_register_superseded_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "\"\"\"Is `superseded_by` an EARNED skip, or a self-certifying exemption?"
+    }
+   ],
+   "sha": "9ca731695d251d87002bda604c8bd7c0d89ed928",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_tier_a_review_gate_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -732,6 +833,30 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "ba50a29d55bb788b25d44798246b74d76f9a948b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_scrutiny_flag_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c24f67d8fcf79939a5a282f2fb0457e9b3e6852f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/exit_status_attributable.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c24f67d8fcf79939a5a282f2fb0457e9b3e6852f",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c24f67d8fcf79939a5a282f2fb0457e9b3e6852f",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -1009,52 +1134,6 @@
     }
    ],
    "sha": "fe361c749cafdb165696986ac119d9d33236d61d",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/run_tool_usage_refusal_probe.py",
-   "class": "test file",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a bound or threshold ADDED",
-     "detail": "stderr=subprocess.STDOUT, timeout=60)"
-    }
-   ],
-   "sha": "320ddabedae4d88bf9238e07e4791d88c20cdfb1",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/sd_data_write_attribution_three_apps.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "4ec0d5d51f56c14d072bda2d8c0e6f875c617672",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/sd_data_write_attribution_three_apps.js",
-   "class": "test file",
-   "level": "CHANGE",
-   "shapes": [],
-   "sha": "56bbce5e83d519e21e621382084d6b18eb02a989",
-   "criteria_version": "2026-10-06.1"
-  },
-  {
-   "path": "tests/run_audit_event_type_probe.py",
-   "class": "test file",
-   "level": "WEAKENING",
-   "shapes": [
-    {
-     "shape": "a bound or threshold ADDED",
-     "detail": "stderr=subprocess.STDOUT, timeout=120)"
-    },
-    {
-     "shape": "a skip / exemption / allowlist entry ADDED",
-     "detail": "shutil.rmtree(base, ignore_errors=True)"
-    }
-   ],
-   "sha": "72d757efae5ab9df8c43faac4383e28f2b3c73ab",
    "criteria_version": "2026-10-06.1"
   }
  ],
