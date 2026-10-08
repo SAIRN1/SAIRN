@@ -1,3 +1,4 @@
+# OWNER: cody
 """Item 6, FIRST pass -- inventory everything of cody's that lives OUTSIDE git.
 
 Scoped and bounded on purpose. `du -sh` over a scratchpad containing several

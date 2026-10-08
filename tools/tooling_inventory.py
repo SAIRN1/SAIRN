@@ -2167,6 +2167,117 @@ PURPOSES = {
         'read the hover auditors\' logs -- another role\'s record is not a build '
         'agent\'s corpus. Not a blame tool and it weighs no severity. Lock: '
         '`--fixtures`, one positive and one near-miss negative per tag'),
+
+    # ── cody, 2026-10-08, batch 26 ──────────────────────────────────────────
+    # Nine entries the push gate refused this batch for, correctly. Six of them
+    # are the tools/scratch-archive/ one-shots committed earlier in the same
+    # batch: committing them without describing them is the blank-cell failure
+    # the refusal exists to prevent, and the gate caught it one commit later
+    # rather than never.
+    'external_file_index_audit.py': ('CHECKER',
+        'an index of out-of-git files that has stopped being derivable from the '
+        'thing it describes. Its SUBJECT IS THE INDEX, not the tree -- it is NOT '
+        'external_file_index_check.py (cc\'s), which asks the opposite question: '
+        'is there a file in a declared external directory that is neither tracked '
+        'nor indexed, and refuses a push. This one writes nothing and gates '
+        'nothing, and neither covers the other\'s case. Three arms: COUNTS, a '
+        'headline figure disagreeing with the list beside it OR absent entirely; '
+        'GENERATOR, a script named in the regeneration command that is neither '
+        'git-tracked nor registered; COMMITTED, a row claiming COMMITTED with no '
+        'tracked path. Built 2026-10-08 and found a real defect on its first live '
+        'run: docs/external-files-index.json declared itself derived and named '
+        'scratchpad/b26/build_index.py as the regeneration path -- untracked, and '
+        'absent from its own 64-script register, living only in a %TEMP% '
+        'directory the index itself marks HIGH, cleared without warning. THE '
+        'GENERATOR HAD EXCLUDED ITSELF FROM ITS OWN POPULATION and the "derived, '
+        'not hand-written" header would have gone false in silence. CANNOT tell a '
+        'correct 64 from a wrong 64, only a 64 that disagrees with its own list, '
+        'and says so in its docstring. Lock: --selftest, 13 arms, 5 negative, '
+        'including GENERATOR going quiet once the generator is registered so it '
+        'is not a permanent red. Missing or unparseable index is exit 2 COULD NOT '
+        'RUN, never 0'),
+    'session_surface_check.py': ('REPORTER',
+        'a session capability surface nobody recorded -- which skills are on disk, '
+        'which carry disable-model-invocation, which MCP servers are reachable, '
+        'and which of either has ever actually been used. Built 2026-10-08 on two '
+        'measurements: 62 skills on disk with 16 ever invoked across 30 '
+        'transcripts, and 10 reachable MCP servers with TWO ever called. It is '
+        'NOT /context and NOT /mcp -- those are client-side commands a model turn '
+        'cannot invoke -- and it says so rather than implying it replaces them: '
+        'it reads disk and transcripts, a smaller claim, and cannot see the live '
+        'prompt, its token cost, or whether a reachable server is authenticated. '
+        'It NAMES THE SOURCE of its server list instead of claiming completeness, '
+        'which is why it reports 6 where the prompt lists 10 '
+        '(claudeAiMcpEverConnected records only servers that have ever '
+        'connected). --no-usage skips the 4-second transcript walk for the hook '
+        'path AND PRINTS THAT IT DID, so every "never invoked" reads as '
+        'COULD-NOT-TELL rather than zero. Writes nothing. Lock: --selftest, 7 '
+        'arms, 2 negative'),
+    'inventory.py': ('GENERATOR',
+        'chain link 1 of 3 behind docs/external-files-index.json: walks the four '
+        'named external places -- the %TEMP% session scratchpads, '
+        '~/SAIRN-SESSION-LOCKS, the Drive report directory, and loose SAIRN-ish '
+        'files directly under ~ -- into i6_raw.json. Bounded with explicit prunes '
+        'because du -sh over a scratchpad holding node_modules trees outran the '
+        'shell ceiling. ITS OWN NUMBER IS INFLATED AND IT SAYS SO: the 2,521 code '
+        'files it reports include copies of the repo\'s own api/ and tests/ trees '
+        'inside the firebase sandboxes, which is why inventory2.py exists. --out '
+        'is REQUIRED with no default (convention 26) so the raw cannot land in a '
+        'tracked directory. An archived one-shot, deliberately not wired into any '
+        'suite or gate'),
+    'inventory2.py': ('GENERATOR',
+        'chain link 2 of 3: re-derives the out-of-git script list with the '
+        'repo-copy sandbox directories pruned by name, into i6_raw2.json, and '
+        'subtracts every script whose basename is already tracked. A COUNT THAT '
+        'INCLUDES A COPY OF THE THING IT IS MEANT TO BE DISTINGUISHED FROM IS NOT '
+        'A MEASUREMENT -- pass 1\'s 2,521 became 64. --out is REQUIRED with no '
+        'default: it used to drop its raw beside itself, which was harmless in a '
+        'scratchpad and became a live-path fallback the moment the file was '
+        'committed to a tracked directory. An archived one-shot, not wired'),
+    'build_index.py': ('GENERATOR',
+        'chain link 3 of 3: writes docs/external-files-index.json from the two '
+        'raws, with a sha256 prefix per script so a figure quoted from a '
+        'scratchpad can still be traced after the directory is gone. --raw-dir '
+        'and --repo are both REQUIRED with no defaults: this script WRITES INTO A '
+        'REPO and the first version hardcoded one absolute path (convention 26). '
+        'It is committed at all because the index names it as the regeneration '
+        'command and the first version did not commit it -- the generator was '
+        'absent from its own register and the derived claim would have gone false '
+        'in silence. An archived one-shot, not wired'),
+    'triage86.py': ('TOOL',
+        'a contaminated suite run whose verdicts cannot be separated into real '
+        'and cascade by reading them. Re-runs each named failing probe ALONE in a '
+        'git clone --local at the same commit, with a per-probe time bound, and '
+        'takes git status --porcelain AFTER EVERY PROBE so none can inherit '
+        'another\'s mess -- which is what turns "run in isolation" from an '
+        'intention into a measurement. Classifies REAL / ARTIFACT / '
+        'COULD-NOT-RUN, and COULD-NOT-RUN is never folded into either: a probe '
+        'that hit the bound has an isolated runtime that is AT LEAST the bound '
+        'and unknown above it. First run, 2026-10-08: 76 REAL, 3 ARTIFACT, 7 '
+        'COULD-NOT-RUN of 86, 0 of 86 dirtied the clean clone -- overturning the '
+        'hypothesis that the tree contamination explained the failures. Reads an '
+        'input TSV it expects beside itself. An archived one-shot, not wired'),
+    'childwatch.py': ('TOOL',
+        'a long test suite whose stall cannot be attributed to a file, because '
+        'timing a second run measures a different run. Watches the live suite '
+        'process and records which test file each child is executing, so the '
+        'duration is attributed as the suite runs rather than re-derived after. '
+        'CARRIES THE FIX FOR ITS OWN WORST BUG IN A COMMENT: powershell -Command '
+        'does not bind trailing arguments to param(), which made an earlier copy '
+        'watch pid 0 for 3h13m and report "6 distinct children" as though that '
+        'were a finding. HAS NEVER RUN AGAINST A FULL SUITE, so nothing it '
+        'produces is established. An archived one-shot, not wired'),
+    'analyse_times.py': ('TOOL',
+        'childwatch\'s live log read into per-file durations, so the stall '
+        'candidate is a named file with a number beside it rather than an '
+        'impression. Useless without a completed childwatch run, which does not '
+        'exist yet. An archived one-shot, not wired'),
+    'prove_childwatch.py': ('TOOL',
+        'a watcher trusted before it was shown to see anything. Drives '
+        'childwatch against a deliberately NAMED child process and asserts it '
+        'reports that name, where the old pid-binding form reported none -- the '
+        'control that would have caught the 3h13m watch of pid 0 on the day it '
+        'was written instead of after. An archived one-shot, not wired'),
 }
 for _p in ('gen_ma_calendar.py', 'gen_ma_seed.py', 'gen_mn_calendar.py', 'gen_mn_seed.py',
            'gen_mo_calendar.py', 'gen_mo_seed.py', 'gen_nj_calendar.py', 'gen_nv_calendar.py',
