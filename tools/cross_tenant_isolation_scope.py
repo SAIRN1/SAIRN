@@ -464,8 +464,13 @@ SELF_EXCLUDED = (
     # subject is the measurer is not a measurement.
     'tests/cross_tenant_scope_grader_review_probe.py',
     # THE THIRD, AND IT WAS FOUND BY A GUARD RATHER THAN BY A READER
-    # (2026-09-21). This tuple is two string literals naming other files, which
-    # is the shape this platform keeps recording as "nothing announces the day
+    # (2026-09-21). This tuple WAS two string literals naming other files at
+    # that point -- present tense corrected 2026-10-08, because it has not been
+    # two since the day it was written and the sentence kept asserting it was.
+    # DO NOT WRITE THE CURRENT NUMBER HERE EITHER. The tool prints
+    # `len(SELF_EXCLUDED)` on every run and that line is the only figure that
+    # moves when the tuple does. Two string literals was
+    # the shape this platform keeps recording as "nothing announces the day
     # a check stops testing anything" -- and nothing was guarding it. The arms
     # added to tests/run_cross_tenant_scope_probe.py assert that every test
     # file IMPORTING this module is listed here, and the first run of that arm
@@ -501,8 +506,17 @@ SELF_EXCLUDED = (
     # direction from flattering, and the importer arm in
     # tests/run_cross_tenant_scope_probe.py refuses the push without it.
     #
-    # BUT FIVE HAND-WRITTEN ENTRIES, ONE PER REVIEW, IS A LIST THAT GROWS BY ONE
-    # EVERY TIME SOMEBODY REVIEWS THIS TOOL -- which is the shape this file's own
+    # BUT HAND-WRITTEN ENTRIES, ONE PER REVIEW, IS A LIST THAT GROWS BY ONE
+    # EVERY TIME SOMEBODY REVIEWS THIS TOOL -- and the prediction in this very
+    # sentence came true. It read "BUT FIVE HAND-WRITTEN ENTRIES" when written
+    # on 2026-09-21; the tuple reached EIGHT by 2026-10-07, so the warning
+    # against a growing list was itself stated as a number that then grew. The
+    # word is removed rather than bumped to eight: the tool prints
+    # `len(SELF_EXCLUDED)` on every run, which is the one figure that cannot go
+    # stale, and fourth raised the same count independently as SEQ 13-C
+    # (docs/2026-10-07-fourth-routed.md) with the same conclusion -- derive it.
+    #
+    # A GROWING HAND-WRITTEN EXCLUSION LIST is the shape this file's own
     # neighbours warn about ("a growing exclusion list is how a gate stops
     # covering anything"). The predicate is already computable: the importer arm
     # knows how to find every test file that imports this module, so the
