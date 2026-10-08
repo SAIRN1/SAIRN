@@ -201,3 +201,71 @@ subject_sha('`, which cannot go stale.
 **This closes my half of the `--open` HEAD-stamping finding.** The fix landed at
 `18078d38`, the unit arms live beside the tool, and the ledger rule lives in cc's
 probe where it is exercised by real records.
+
+## item 6 — DONE. A `RUNNING` status for a dead pid now reads **DEAD**. Fixture-locked.
+
+```
+command : python tools/capture_exit.py --fixtures
+commit  : 15b611c1 + this change        date: 2026-10-08
+FIRST RUN EXIT 0, and a second run 0.  0 FAIL.
+criteria lock: 33 arms, 12 of them negative, 6 through the CLI
+               (criteria 2026-10-07.3 -> 2026-10-08.1, bumped because the
+                criteria really changed)
+```
+
+**PROVED AGAINST THE REAL CASE, not only a fixture.** Batch 24's killed run left
+this on disk and `--read` reported it as RUNNING for hours:
+
+```
+RUNNING 74488 2026-10-07T19:27:29Z python tools/run_all_tests.py --pinned --out ...
+```
+
+Now:
+
+```
+python tools/capture_exit.py --read <SCRATCH>/b24/i3/suite.status   -> EXIT 2
+DEAD  74488 2026-10-07T19:27:29Z python tools/run_all_tests.py --pinned --out ...
+  the writer is GONE: this run ENDED WITHOUT RECORDING AN OUTCOME, so there is
+  no verdict and there never will be.
+  Do not wait on it. Re-run, and treat the partial output as a partial.
+```
+
+And the **live** batch-25 run, read in the same minute, still prints
+`RUNNING  87256 …` — so the change distinguishes the two rather than relabelling
+everything.
+
+**THREE STATES, NOT TWO.** `pid_alive()` returns True / False / **None**, and
+`read_status()` maps them to `RUNNING` / `DEAD` / `COULD-NOT-TELL-PID`. None of
+the three is `EXIT` and none exits 0. A `RUNNING` line whose pid will not parse is
+`UNREADABLE`, not RUNNING.
+
+**`os.kill(pid, 0)` IS NOT USED ON WINDOWS AND THE COMMENT SAYS WHY.** There,
+`os.kill` calls `TerminateProcess` — a liveness check that kills what it asks
+about; `run_all_tests.py` already records that trap for its own lock staleness.
+This uses `OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION)` plus
+`GetExitCodeProcess`, which can only read, and falls back to the correct POSIX
+`os.kill(pid, 0)` off Windows.
+
+**THE ARM THAT WAS THERE BEFORE WAS PASSING FOR THE WRONG REASON, and it was
+replaced rather than kept.** It planted **pid 999** and asserted `RUNNING` — 999
+is almost certainly not a live process, so that arm was asserting that a status
+for a *dead* writer reads as RUNNING. The two statements cannot both be true.
+
+**THE PLANTED DEAD PID IS DEAD BY CONSTRUCTION**, not by being an unlikely
+number: the fixture spawns `python -c pass`, waits for it, and reuses its pid — a
+number that provably existed and provably does not now, which is the real shape
+of a killed run. Beside it, a pid that is alive by construction (the interpreter's
+own), so the DEAD arm cannot be satisfied by a checker that answers False to
+everything.
+
+**AND THE CLI, SEPARATELY**, because this file's own comment says a strong lock
+over one half of a tool says nothing about the other half — the previous `--read`
+bug was exactly that. Two more arms: `--read` on a DEAD status exits 2 and prints
+`DEAD`, and the word `RUNNING` appears **nowhere** in that output.
+
+**STATED LIMIT, in the code as well as here:** a **recycled** pid reads as alive.
+Windows reuses pid numbers, so a status whose writer died and whose number was
+handed to something else still reports RUNNING. Closing that needs the process
+start time compared against the status timestamp, which this does not do. So
+**DEAD is sound and RUNNING means "alive or recycled"** — the asymmetry is
+deliberate, because a false DEAD would be worse than a late RUNNING.
