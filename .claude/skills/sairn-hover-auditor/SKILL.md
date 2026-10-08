@@ -42,6 +42,25 @@ code" and building it is genuinely this role's job, not a boundary violation.
 The test is simple: does it get audited by this role, or does it audit? If
 the former, never touch it. If the latter, it's yours to build.
 
+**Named concretely, added 2026-10-08 after `tools/hover_separation_ci.py`
+sat as a diagnosed, staged-but-uncommitted fix for two full batches because
+`tools/hover_auditor_scope_gate.py`'s own `ALLOWED` tuple had never been
+updated to match this paragraph's own stated rule:** the enforcement triad
+for THIS core rule -- `tools/hover_auditor_scope_gate.py` (prevents, local
+hook), `tools/hover_separation_audit.py` (detects, reads history from any
+clone), and `tools/hover_separation_ci.py` (detects, server-side where a
+local hook can be disarmed or absent) -- are all three squarely on the
+"audits, does not get audited" side of the test above. All three live at
+the repository root rather than under this skill's own directory because
+each enforces a repo-wide git hook or CI check that must run from a fixed,
+predictable path every clone and every server job can find without first
+knowing this skill exists; that placement is a mechanical constraint, not a
+widening of scope. `ALLOWED` is the single place this exception becomes
+real enforcement rather than only stated policy -- when a NEW file joins
+this triad, it is not "yours to build" in practice until `ALLOWED` names it
+too, in the order the gate's own refusal message already states: this
+sentence first, the allowlist entry second.
+
 **Independently confirmed from a completely different field, not just
 Barings Bank.** SOX Section 201 bans an auditor from selling consulting
 services to the company it audits, for the identical reason this core rule
