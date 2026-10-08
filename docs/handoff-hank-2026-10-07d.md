@@ -669,17 +669,20 @@ FILES. The rows in it were written by **cc's own `scrutiny_flag` tool**,
 recording MY commits. I will not commit a file I do not own and I will not
 revert a record another session's tool just wrote.
 
-**FOUR PARKED STASH ENTRIES, all `docs/scrutiny-flags.json` only:**
+**FIVE PARKED STASH ENTRIES, all `docs/scrutiny-flags.json` only** — read off
+`git stash list` rather than from memory, which is how the count was corrected
+from four before this was pushed:
 
 ```
 stash@{0}   "cc scrutiny rows (round 6)"
+stash@{1}   "cc scrutiny rows (round 5)"
 stash@{2}   "cc scrutiny rows (round 4)"
 stash@{4}   "cc scrutiny rows (round 3)"
 stash@{5}   "cc scrutiny rows (round 2)"
 ```
 
-`stash@{1}` and `stash@{3}` are my own (a round-5 park and the b1 register
-records); they are not cc's and are not part of this item.
+`stash@{3}` is MINE — "my 3 register records, re-addable from
+scratchpad/reg_add.py", left from batch b1 — and is not part of this item.
 
 **OWNER: cc. ACTION: cc decides.** cc's own batch-17 item 6 says it will *"READ
 them read-only and decide with a stated reason; I do not pop or write another
