@@ -1718,3 +1718,455 @@ individually verified **59 of 83**.
 **Two of the REAL ones are worth taking before the others, because their own comments say they have already lost a round to this class.** `sairnlegacy_session_gate_review_probe.js:202` records that its first spelling *"could never have matched and the arm was vacuous in the reassuring direction"*, and `seed_never_syncs_platform.js:274` records switching to `indexOf` because a constructed regex *"silently matches nothing"* -- *"a checker that has gone blind while still printing ok"*.
 
 **Nothing in this section was fixed.** 36 real findings across 17 sites remain open, now with their real subject recorded so the next session does not re-measure against the wrong file.
+
+
+## SEQ b4-A -- ITEM 5: MY EXTERNAL CLAIMS, STATED AND RELEASED -- 24 OF THEM, AND 23 WERE INVISIBLE TO EVERY CLAIM CHECK
+
+**This item had gone two batches unaddressed, and the reason it kept slipping is
+that the claim record cannot see the thing it is about.** `.claude/claims/fourth.json`
+records what I said I would work on. It records nothing about the locks, worktrees
+and stashes my clone is actually holding, so "do I hold any external claims" is a
+question no gate on this platform asks and no `sairn_claim.py check` can answer.
+Measured, then released.
+
+### The population, by mechanism
+
+| mechanism | path | held | verdict |
+|---|---|---|---|
+| session lock | `~/SAIRN-SESSION-LOCKS/fourth.lock` | 1 | **MINE, LIVE, DELIBERATELY KEPT.** `python tools/session_lock_check.py status` -> exit 0, `state : SELF -- this session owns the lock (CLAUDE_PID 48784)`. Releasing it would be releasing myself mid-batch |
+| status row | `~/SAIRN-SESSION-LOCKS/status/fourth.json` | 1 | **MINE, and it was LYING.** At pickup the registry showed `fourth idle DEAD batch17 at 4fa9843a` -- a row from the batch before last. Restated to `working` with this batch's real HEAD |
+| repo claim | `.claude/claims/fourth.json` | 1 | **MINE, ACTIVE**, 0.7h at pickup of a 4h window. Kept; it is the claim this batch runs under |
+| **git worktree** | `.git/worktrees/*` in **this clone** | **24** | **23 RELEASED, 1 held with a reason.** See below |
+| git stash | `stash@{0}` in this clone | 1 | **RELEASED.** `autostash`, 2026-10-07 08:03:29 |
+| orphan lock | `~/SAIRN-SESSION-LOCKS/*.lock`, not mine | 10 | **REPORTED, NOT TOUCHED.** See below |
+
+### The 24 worktrees -- the real finding, because nothing on this platform counts them
+
+`git worktree list` run from this clone shows **24 registrations in this clone's
+own `.git/worktrees/`**, which is what makes them mine: a worktree registered here
+was created by a session of *this* clone, whatever its directory is named. They
+were holding 23 detached HEADs and their disk, across at least six batches.
+
+Every one was checked before anything was removed, and the check mattered:
+
+- **1 directory already gone** (`sairn-suite-pinned-vnw7na2m`) -- `git worktree prune -v` removed the dangling registration. Pure bookkeeping, nothing on disk to lose.
+- **9 present, clean, unlocked** -- no uncommitted content at all.
+- **14 present and dirty** -- and this is where a blind sweep would have destroyed work. Each was read before removal: 13 are deliberate sabotage/probe mutations (`M api/_lib/ledger.js` x4 in the `condcov-*` family, `M stonedesk.html` + `_parse_check_block.js` in `sairn-sab-074jbhba`, `?? zz_check8_fixture.txt`, `M docs/defect-density-register.json`, and two `check8-probe-*` trees showing 112 entries each because their HEAD predates `.gitattributes`). The 14th, **`ted-c8-dev`, showed `M tests/push_gate/check8_probe.py` and looked exactly like unlanded work of mine** -- so it was diffed against my HEAD rather than assumed: `diff <(git show HEAD:tests/push_gate/check8_probe.py) <wt>/tests/push_gate/check8_probe.py` -> **0 lines**. It is byte-identical to HEAD and reads as modified only because that worktree's HEAD is the older `9e12aeca`. The change landed as `b23dbc2e`. **Nothing was lost, and that is measured rather than hoped.**
+- **A liveness check before any removal**: the 14 PIDs embedded in the worktree names were put to `Get-Process` one by one -- **all 14 dead**, and the only live `claude` process on the machine is this session's 48784. So no running probe was pulled out from under.
+- **1 held: `cc-review-0a_4251m`, and it is held because it is LOCKED** (`.git/worktrees/<name>/locked` present) with 2,373 dirty entries. A git lock is a deliberate do-not-prune marker written by whoever made it. **Removing another agent's locked worktree is the same boundary violation as reaching into its clone**, so it stays, and it stays *named here* rather than silently skipped.
+
+Result: `git worktree list` now prints **2 lines** -- this clone and the one locked tree.
+
+### The stash, and why it was safe to drop
+
+`stash@{0} autostash` touched exactly two files:
+`docs/report-only-shard-state.txt` and `docs/report-only-sweep-marker.txt`, moving
+them from shard 1 to shard 2 of a 5-shard sweep, timestamped 2026-10-07T12:02Z.
+Both are **gitignored** (`.gitignore:60` and `:61`, confirmed with
+`git check-ignore -v`) generated run markers, and the on-disk copies are newer
+(`2026-10-08T14:20:53Z`). The stash was a superseded progress marker, not work.
+The patch is preserved at `<scratchpad>/b4_i5_stash.patch` before the drop, so the
+release is reversible from the recorded bytes even though the ref is gone.
+
+### The 10 orphan locks -- reported, NOT released, and the attribution is the point
+
+`~/SAIRN-SESSION-LOCKS/` holds 14 `.lock` files. Only **one** is mine. Of the other
+13, the five named for live sessions (`cc`, `cody`, `hank`, `hover`, `hover2`) are
+theirs; the remaining **10 are orphans whose holder process is dead** -- every
+`claude_pid` in the directory was put to `Get-Process` and **only 48784, mine, is
+alive.**
+
+Two are attributable: `tree.lock` and `sairn_idem_uw3ebld2.lock` both carry
+`claude_pid 82012`, which is **`hank.lock`'s own `claude_pid`** -- so they are
+hank's, and they are **his to release, not mine**. The other eight
+(`b12wt2.lock`, `repo.lock`, `wt-tools.lock`, `sairn_idem_o66nnvth.lock`,
+`sairn_idem_q5p4bqkx.lock`, `sairn_idem_rhbjx2yx.lock`, and the two already named)
+carry `claude_pid`s matching no live session, and **the lock format carries no
+holder name** -- only `pid`, `claude_pid`, `claude_start`, `started` and an empty
+`task`. So they cannot be attributed to anybody, including me.
+
+**I released none of them.** An unattributable lock is not an orphan I may clear;
+it is a claim whose owner I cannot identify, and clearing it is indistinguishable
+from overriding a live one. **The defect is in the format, not in the files:** a
+lock with an empty `task` and no session field cannot be reconciled by anyone.
+`~/SAIRN-SESSION-LOCKS/` is shared by all five clones, so this is **ROUTED, not
+fixed here** -- see the routing line below.
+
+### ROUTED
+
+**`tools/sairn_self_state.py` and `tools/session_lock_check.py` -- the lock record
+has no holder field, so a dead lock can never be attributed or safely cleared.**
+Both write `~/SAIRN-SESSION-LOCKS/*.lock` with the keys
+`pid, claude_pid, claude_start, started, task`, and `task` is empty in **14 of 14**
+files on disk right now. Measured 2026-10-08: 10 of those 14 locks have a dead
+holder and 8 of the 10 are unattributable to any session. Whoever owns these two
+tools should add a `session` field and make `task` non-empty, plus a `--prune-dead`
+that refuses on an unattributable record rather than clearing it. **I did not touch
+either tool: `tools/session_lock_check.py` is not in my FILES and the fix is
+platform-shared.** Routed with the exact write sites to find:
+`grep -n "claude_pid" tools/sairn_self_state.py tools/session_lock_check.py`.
+
+**Nobody counts worktrees.** 24 registrations had accumulated in one clone with no
+check, no inventory row and no gate. `tools/tooling_inventory.py` prints standing-doc
+sizes and refuses over 400,000 bytes; nothing prints a worktree count. That is a
+suggestion for whoever owns `tooling_inventory.py`, not a change I made.
+
+---
+
+## SEQ b4-B -- ITEM 6: THE SKILL RESOLUTION PATHS, AND WHY THE PROJECT-LEVEL DIRECTORY IS NOT MINE TO DISABLE
+
+The item allowed disabling the project-level `.claude/skills/` **on zero-use
+evidence**. Every path was printed and the usage was measured two independent ways.
+**The premise does not hold, for four separate reasons, and I disabled nothing.**
+
+### The paths, printed
+
+| candidate | real path | contents |
+|---|---|---|
+| project-level | `C:\Users\marsh\Documents\SAIRN-fourth\.claude\skills` | **34** skills |
+| user-level (SHARED) | `C:\Users\marsh\.claude\skills` | **62** skills |
+| repo mirror `skills/` | -- | **ABSENT** |
+| `.claude/plugins/` | -- | **ABSENT** |
+
+### Why it is not disablable
+
+1. **It is GIT-TRACKED.** `git ls-files .claude/skills` -> **192 files**. "Disabling it in this clone" is not clone-local hygiene; it is a repo change that reaches all five clones.
+2. **159 of those 192 files are `.claude/skills/sairn-hover-auditor/`** -- which `CLAUDE.md` declares the hover auditor's exclusive scope, enforced by `tools/hover_auditor_scope_gate.py`. A build agent must not touch it. A directory-level action cannot avoid hitting it.
+3. **That one skill DIVERGES from its user-level copy** -- project 159 files / `0b33003dd994e4b9`, user 79 files / `3a05e8dd346de425`, after CRLF normalisation. So flipping resolution to user-level would **silently substitute a stale 79-file record store for the live 159-file one** -- the exact silent-substitution shape the standing conventions exist to prevent. The other **33 of 34 are byte-identical after CRLF-norm**, so disabling them would change nothing observable: **zero benefit against three real risks.**
+4. **Zero-use does not hold.** Two independent methods, both numbers reported:
+
+```
+METHOD A  this clone transcripts (36 files, 234,368,315 bytes), control hits 32
+METHOD B  machine-wide CLI telemetry, ~/.claude.json key "skillUsage", 63 records
+
+skill                                       A        B  agreement
+sairn-adversarial-reviewer                  6       11  used in both
+sairn-api-tester                            2        5  used in both
+sairn-app-builder                           1        0  B says zero, A says used -- B IS BLIND HERE
+sairn-app-scaffold                          2        2  used in both
+sairn-build-lifecycle                       1        0  B says zero, A says used -- B IS BLIND HERE
+sairn-client-facing-design                  1        2  used in both
+sairn-code-scrubber                        34       10  used in both
+sairn-context-budget                        0        1  A says zero, B says used -- A IS BLIND HERE
+sairn-contract-drafter                      3        0  B says zero, A says used -- B IS BLIND HERE
+sairn-decision-gate                         3       14  used in both
+sairn-differential-review                   1        4  used in both
+sairn-employee-auth-scaffold               18        4  used in both
+sairn-forward-scan                          0        0  ZERO IN BOTH
+sairn-grant-sweep                           3        6  used in both
+sairn-guardian-v2                          42       65  used in both
+sairn-hover-auditor                        23       16  used in both
+sairn-infra-debugger                        1        0  B says zero, A says used -- B IS BLIND HERE
+sairn-master-orientation                    3       15  used in both
+sairn-memory-curator                        3        5  used in both
+sairn-minimalism                            0        0  ZERO IN BOTH
+sairn-mobile-sync                           0        1  A says zero, B says used -- A IS BLIND HERE
+sairn-parallel-app-scaling                  0        1  A says zero, B says used -- A IS BLIND HERE
+sairn-perf-profiler                         0        0  ZERO IN BOTH
+sairn-portfolio-triage                      1        2  used in both
+sairn-precommit-gate                        0        2  A says zero, B says used -- A IS BLIND HERE
+sairn-rbac                                  1        0  B says zero, A says used -- B IS BLIND HERE
+sairn-resilience-patterns                   4        0  B says zero, A says used -- B IS BLIND HERE
+sairn-session-handoff                       2       15  used in both
+sairn-silent-failure-sweep                  2       18  used in both
+sairn-skill-author                          0        0  ZERO IN BOTH
+sairn-skill-vetter                          1        1  used in both
+sairn-software-architect                    3        8  used in both
+sairn-training-needs-assessment             2        0  B says zero, A says used -- B IS BLIND HERE
+sairn-visual-review                         0        9  A says zero, B says used -- A IS BLIND HERE
+
+TWO NUMBERS, NOT ONE -- as convention 2 requires:
+  method A alone says ZERO-USE for 9 of 34
+  method B alone says ZERO-USE for 11 of 34
+  ZERO UNDER BOTH                 4 of 34  -> sairn-forward-scan, sairn-minimalism, sairn-perf-profiler, sairn-skill-author
+  A blind (B found use)           5  -> sairn-context-budget, sairn-mobile-sync, sairn-parallel-app-scaling, sairn-precommit-gate, sairn-visual-review
+  B blind (A found use)           7  -> sairn-app-builder, sairn-build-lifecycle, sairn-contract-drafter, sairn-infra-debugger, sairn-rbac, sairn-resilience-patterns, sairn-training-needs-assessment
+  used under both                 18
+```
+
+**Only 4 of 34 are zero under BOTH methods**, and each method is blind where the
+other sees: method A (this clone's 36 transcripts, 234,368,315 bytes) misses 5 that
+the telemetry records, and method B (machine-wide `~/.claude.json` key `skillUsage`,
+63 records) misses 7 that the transcripts record. A single-number answer here would
+have been **9 of 34** or **11 of 34** depending on which tool was reached for first,
+and **both would have been wrong**. Method A carries a control -- `32` lines matching
+any skill invocation at all -- so its zeros are measured zeros and not a regex that
+matches nothing.
+
+**The user-level store was READ ONLY and NOT EDITED.** Everything above came from
+hashing it; nothing was written to `C:\Users\marsh\.claude\skills`, which is shared
+by all five clones.
+
+### Per-candidate resolution, printed in full
+
+```
+PROJECT-LEVEL PATH : C:\Users\marsh\Documents\SAIRN-fourth\.claude\skills   (34 skills)
+USER-LEVEL    PATH : C:\Users\marsh\.claude\skills   (62 skills)
+
+sairn-adversarial-reviewer           RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, f5d1fe67dfcda7da)
+sairn-api-tester                     RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, 00967d06f51d46a4)
+sairn-app-builder                    RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, 22d06a6442e82136)
+sairn-app-scaffold                   RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, 3382b10f81304de4)
+sairn-build-lifecycle                RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, 15210d6b47229d03)
+sairn-client-facing-design           RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, f0cb1271ac5208c8)
+sairn-code-scrubber                  RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, a2324b3ee6576823)
+sairn-context-budget                 RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, d4b30c1e185f8d09)
+sairn-contract-drafter               RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, a82a371621005431)
+sairn-decision-gate                  RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, 612f88b74a44a206)
+sairn-differential-review            RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, e4bcd1c3034a4e14)
+sairn-employee-auth-scaffold         RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, 8dd586ce34f7e6c2)
+sairn-forward-scan                   RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, 99d7a9225743df43)
+sairn-grant-sweep                    RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, ae5a380e716bb3e8)
+sairn-guardian-v2                    RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, 110fd82f3a550519)
+sairn-hover-auditor                  RESOLVES-TO project   DIVERGED  proj=0b33003dd994e4b9/159f  user=3a05e8dd346de425/79f
+sairn-infra-debugger                 RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, 87075fcf202911c7)
+sairn-master-orientation             RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, 7984b801e40d3937)
+sairn-memory-curator                 RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, 1f2c31fa27f884ba)
+sairn-minimalism                     RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, a5435400b9e9b2e3)
+sairn-mobile-sync                    RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, 78875e157311dfe5)
+sairn-parallel-app-scaling           RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, a8e85eba97b0d2a1)
+sairn-perf-profiler                  RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, 4507552fda79d369)
+sairn-portfolio-triage               RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, e0c31ab675edbe68)
+sairn-precommit-gate                 RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, 28150e1d8d251fc8)
+sairn-rbac                           RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, d471c763c10c1655)
+sairn-resilience-patterns            RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, a59dbb8c251c77d9)
+sairn-session-handoff                RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, 435b502b608f4f24)
+sairn-silent-failure-sweep           RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, 3a50b2a7624fc01c)
+sairn-skill-author                   RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, 47289063f848d1c6)
+sairn-skill-vetter                   RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, f8d710defae0e952)
+sairn-software-architect             RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, defc2d550891560f)
+sairn-training-needs-assessment      RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, 5be60f62997109a9)
+sairn-visual-review                  RESOLVES-TO project   IDENTICAL to user-level after CRLF-norm (1 files, d7dab1ab82a55774)
+
+IDENTICAL_AFTER_NORM 33
+DIVERGED             1
+PROJECT_ONLY         0
+USER_ONLY            28
+```
+
+---
+
+## SEQ b4-C -- ITEM 7: EVERY FILE I KEEP OUTSIDE GIT, AND THE TWO THAT BELONG IN IT
+
+**369 candidate files** at the home root (`C:\Users\marsh`) with a
+tool/script/handoff/output extension, classified one at a time rather than counted:
+
+| class | count | call |
+|---|---|---|
+| generated families | **315** | `final_check_N.js` 106, `temp_check_N.js` 106, `chk_N.js` 97, `scriptN.js` 4, `stonedesk_rawN.html` 2 -- per-script-block syntax extracts and whole-app snapshots, throwaway by construction. **Nothing to commit** |
+| command output | **25** | `.txt`/`.json` captures (`dom_triage.txt`, `errors.json`, `vet_kpi.txt`, ...). Scratch |
+| whole-app / whole-script copies | **12** | `stonedesk_backup/check/fresh.html` (~2MB each), `script26_*.js` (6 x ~257KB), `temp_check.js` (1.2MB), two `*_live_check.html`. Scratch |
+| one-off repair scripts | **15** | `fix_html.py`, `fix_quotes.py`, `fix_renders.py`, `extract.js`, `check_syntax.ps1`, `apibridge.js`, ... **0 of 15 is referenced by any tracked file** (`git grep -l -F <name>` per name; the two names that did hit -- `extract.js` 20, `extract_scripts.js` 2 -- hit on strings inside unrelated tests and skill backups, not on a dependency). Scratch |
+| **documents of record** | **2** | **COMMITTED THIS BATCH** |
+
+### The two that belong in git, and why that is not a judgment call
+
+- **`SAIRN-SESSION66-HANDOFF.md`** (10,881 bytes). Legacy handoffs live at the repo root under exactly this name shape, and **`SESSION63, 64, 65, 67, 68, 69` are all tracked. 66 is the only gap in the series**, and it was sitting untracked in the home root. `git grep -l "Session 66 Handoff"` -> no hits, so it is not in the repo under another name.
+- **`OLD-uncommitted-sairnlaw-trust-disbursement-2026-08-18.md`** (12,404 bytes). Carries its own 2026-08-23 header recording that it was renamed after colliding with the real, committed `SAIRNLAW-SESSION6-HANDOFF.md` and that **"its work was never committed as a handoff document"**. `git grep -l "trust-disbursement Step 3a"` -> no hits. Committed under the disambiguated name so nothing collides.
+
+Both are the exact violation `CLAUDE.md` names -- *"Handoffs live only in a real
+clone -- never write one to `C:\Users\marsh\` directly"* -- and that rule had a
+two-document backlog sitting behind it for six and eleven weeks respectively. The
+home-root originals were left in place; they are now provably redundant copies of
+tracked content, which is a different and much weaker problem than an uncommitted
+document of record.
+
+### FLAGGED BACK: the index and the mechanical check are both another session's
+
+The item asked for an index entry and my own mechanical check. **Both targets are in
+a live claim and neither is overridden:**
+
+- `docs/external-files-index.json` is in **cody's** batch26 FILES and **does not exist yet** -- it is his to create.
+- `tools/external_file_index_check.py` and `tests/run_external_file_index_probe.py` are in **cc's** batch W FILES -- cc is building that gate this batch. **A second checker for the same thing is worse than none**, so I built none.
+
+So my half is paste-ready content instead. **The schema is not invented**: it matches
+the one precedent on this platform, `.claude/skills/sairn-hover-auditor/tools-hover2/hover2-external-files-index.json`
+(top keys `built`, `built_by`, `directories`; per-entry `key`, `path_template`,
+`indexed`, with `blanket_exempt` + `blanket_reason` for a directory indexed as a
+whole). That file was **read, not written** -- it is in the hover auditor's scope.
+
+```json
+{
+ "built": "2026-10-08",
+ "built_by": "fourth batch b4 (18) item 7 -- paste-ready, authored by fourth, NOT written by fourth",
+ "directories": [
+  {
+   "key": "fourth_home_root",
+   "path_template": "~",
+   "note": "loose files at the home root with a tool/script/handoff/output extension. 369 candidates measured 2026-10-08; 315 of them belong to four GENERATED FAMILIES (final_check_N.js 106, temp_check_N.js 106, chk_N.js 97, scriptN.js 4, stonedesk_rawN.html 2) and are throwaway by construction, so they are summarised as families rather than enumerated. The 2 documents of record found here were COMMITTED to the repo in batch b4 and are therefore absent from this list on purpose.",
+   "generated_families_not_indexed": {
+    "final_check_N.js": 106,
+    "temp_check_N.js": 106,
+    "chk_N.js": 97,
+    "scriptN.js": 4,
+    "stonedesk_rawN.html": 2
+   },
+   "indexed": [
+    "apibridge.js",
+    "check_syntax.ps1",
+    "current_error_script.txt",
+    "dead_after.txt",
+    "debug_script7.txt",
+    "deploy_output.txt",
+    "dom_class.txt",
+    "dom_final.txt",
+    "dom_live.txt",
+    "dom_triage.txt",
+    "errors.json",
+    "extract.js",
+    "extract_and_check.py",
+    "extract_scripts.js",
+    "first_err.txt",
+    "fix_eschtml.js",
+    "fix_html.py",
+    "fix_problems.py",
+    "fix_quotes.py",
+    "fix_renders.py",
+    "keysweep.txt",
+    "preview-sizing.html",
+    "reg_full.txt",
+    "register.txt",
+    "remove_functions.py",
+    "response.txt",
+    "sairnbiz_live_check.html",
+    "sairnbuild_live_check.html",
+    "scan_depth.txt",
+    "script26_check.js",
+    "script26_correct.js",
+    "script26_debug.js",
+    "script26_fixed.js",
+    "script26_fresh.js",
+    "script26_latest.js",
+    "scripts.json",
+    "seed_audit.txt",
+    "seed_triage.txt",
+    "skills-lock.json",
+    "stonedesk_backup.html",
+    "stonedesk_check.html",
+    "stonedesk_fresh.html",
+    "strip_probe.txt",
+    "strip_probe2.txt",
+    "temp_check.js",
+    "temp_script_7_fixed.js",
+    "test_extract.js",
+    "test_function.js",
+    "vet_caps.txt",
+    "vet_fab.txt",
+    "vet_kpi.txt"
+   ]
+  },
+  {
+   "key": "fourth_memory",
+   "path_template": "~/.claude/projects/C--Users-marsh-Documents-SAIRN-fourth/memory",
+   "blanket_exempt": true,
+   "blanket_reason": "per-session auto-memory written by the harness, not a tool, script or handoff; contents turn over every batch"
+  },
+  {
+   "key": "fourth_scratchpad",
+   "path_template": "~/AppData/Local/Temp/claude/C--Users-marsh-Documents-SAIRN-fourth/<session-uuid>/scratchpad",
+   "blanket_exempt": true,
+   "blanket_reason": "one directory per session, 38 of them on disk 2026-10-08; every file is a measurement artefact cited BY path from a committed doc, and is deliberately not itself committed"
+  }
+ ]
+}
+```
+
+`indexed` holds **51** entries -- the home-root singles that are genuinely
+tool/script/handoff files, with the 315 generated-family members summarised rather
+than enumerated and the 2 newly-committed documents deliberately absent. If cc's
+gate ends up reading a different schema, **the shape is cc's to settle and this
+block is mine to re-emit** -- say so and I will.
+
+---
+
+## SEQ b4-D -- THE COMPACTION ITEM: ALREADY SATISFIED, MEASURED AT EVERY PATH, AND CLAIMED BY TWO SESSIONS ANYWAY
+
+The item was conditional -- *"`autoCompactWindow 150000` in `~/.claude/settings.json`
+**if the claim file shows it free**"*. **It does not, and the write was not needed
+regardless.** Both halves are reported because either one alone would be a weaker
+answer.
+
+**The claim half.** `python tools/sairn_claim.py check Tooling compaction settings autoCompactWindow`
+-> **BLOCKED**, exit **1** (measured alone, not through a pipe), naming **both `cc`
+and `cody`**. Same verdict and exit for `check Tooling settings.json`. cc's batch W
+FILES declare `.claude/settings.json` and its item 15 is *"compaction settings, each
+path printed"*; cody's batch26 item 7 says *"MERGE autoCompactWindow 150000 into the
+global settings without overwriting"*. Two live sessions on one key.
+
+**The state half, which makes the conflict moot.** Every settings path printed:
+
+```
+USER / GLOBAL       : C:\Users\marsh\.claude\settings.json
+    EXISTS  9063 bytes
+    autoCompactWindow          = 150000
+    autoCompact                ABSENT
+    env                        = {"DISABLE_AUTOUPDATER": "1", "CLAUDE_CODE_FORK_SUBAGENT": "0", "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "75", "BASH_MAX_OUTPUT_LENGTH": "10000"}
+    enabledMcpjsonServers      ABSENT
+    disabledMcpjsonServers     ABSENT
+    enableAllProjectMcpServers ABSENT
+    other top-level keys: agentPushNotifEnabled, autoCompactEnabled, awaySummaryEnabled, cleanupPeriodDays, effortLevel, enabledPlugins, extraKnownMarketplaces, hooks, outputStyle, permissions
+
+PROJECT (this clone) : C:\Users\marsh\Documents\SAIRN-fourth\.claude\settings.json
+    EXISTS  6993 bytes
+    autoCompactWindow          ABSENT
+    autoCompact                ABSENT
+    env                        = {"DISABLE_AUTOUPDATER": "1"}
+    enabledMcpjsonServers      ABSENT
+    disabledMcpjsonServers     ABSENT
+    enableAllProjectMcpServers ABSENT
+    other top-level keys: enabledPlugins, hooks, outputStyle, permissions
+
+PROJECT-LOCAL        : C:\Users\marsh\Documents\SAIRN-fourth\.claude\settings.local.json
+    EXISTS  161664 bytes
+    autoCompactWindow          ABSENT
+    autoCompact                ABSENT
+    env                        ABSENT
+    enabledMcpjsonServers      ABSENT
+    disabledMcpjsonServers     ABSENT
+    enableAllProjectMcpServers ABSENT
+    other top-level keys: permissions
+
+MANAGED / POLICY     : C:\ProgramData\ClaudeCode\managed-settings.json
+    ABSENT -- this path does not exist, so it sets nothing
+
+CLI STATE (.claude.json) : C:\Users\marsh\.claude.json
+    EXISTS  88085 bytes
+    autoCompactWindow          ABSENT
+    autoCompact                ABSENT
+    env                        ABSENT
+    enabledMcpjsonServers      ABSENT
+    disabledMcpjsonServers     ABSENT
+    enableAllProjectMcpServers ABSENT
+    other top-level keys: additionalModelCostsCache, additionalModelOptionsCache, agentLastUsed, announcementImpressions, autoCompactWindowsCache, btwUseCount, cachedChromeExtensionInstalled, cachedExperimentData, cachedExperimentFeatures, cachedExtraUsageDisabledReason, cachedGrowthBookFeatures, cachedGrowthBookFeaturesAt, changelogLastFetched, chromeExtension, claudeAiMcpEverConnected, claudeCodeFirstTokenDate, claudeCodeHints, claudeInChromeDefaultEnabled, clientDataCacheSlots, closedIssuesLastChecked, customApiKeyResponses, feedbackSurveyState, firstStartTime, githubRepoPaths, groveConfigCache, hasCompletedClaudeInChromeOnboarding, hasCompletedOnboarding, hasOpenedAgentsView, hasSeenAutoModeEntryWarning, hasSeenTasksHint, hasVisitedPasses, installMethod, lastOnboardingVersion, lastPlanModeUse, lastReleaseNotesSeen, lastShownEmergencyTip, leftArrowOpensAgents, machineID, metricsStatusCache, migrationVersion, modelAccessCache, numStartups, oauthAccount, officialMarketplaceAutoInstallAttempted, officialMarketplaceAutoInstalled, opusProMigrationComplete, orgModelDefaultCache, passesEligibilityCache, passesLastSeenRemaining, passesUpsellSeenCount, penguinModeOrgEnabled, pluginUsage, pluginUsageLspGraceAppliedIds, projects, promptQueueUseCount, pushNotifUpsellSeenCount, rcLongTurnNudgeSeenCount, rcLongTurnNudgeSeenKey, rcPermissionNudgeSeenCount, remoteControlSurfacesSeen, remoteControlUpsellSeenCount, replBridgePlaceholders, resumeReturnDismissed, routineFiredWatermark, seenNotifications, skillUsage, sonnet1m45MigrationComplete, tipLifetimeShownCounts, tipsHistory, transcriptShareDismissed, unpinFable5LaunchEffort, unpinOpus47LaunchEffort, unpinOpus48LaunchEffort, userID, workflowSizeGuideline
+
+ENV AS THIS SESSION SEES IT
+    BASH_MAX_OUTPUT_LENGTH         = 10000
+    CLAUDE_CODE_MAX_OUTPUT_TOKENS  = <unset>
+    MAX_THINKING_TOKENS            = <unset>
+```
+
+`autoCompactWindow = 150000` is **already set** at the user/global path, and
+`BASH_MAX_OUTPUT_LENGTH = 10000` is **already set and already in effect** -- read
+back out of this session's own environment, not just out of the file. The managed/
+policy path is **ABSENT**, so nothing overrides from above. `claude --version` ->
+**2.1.222 (Claude Code)**, exit 0. **There was nothing to write.** An agent that had
+skipped the measurement and gone straight to the merge would have written a value
+that was already there, over a key two other sessions had declared.
+
+**MCP servers: nothing to disable, and a disagreement worth naming.**
+`claude mcp list` -> exit 0, **"No MCP servers configured"**, plus its own warning
+that *claude.ai connectors are disabled because `ANTHROPIC_API_KEY` or another auth
+source is set and takes precedence*. `mcpServers` is `{}` in
+`.claude.json projects["C:/Users/marsh/Documents/SAIRN-fourth"]`,
+`enabledMcpjsonServers` and `disabledMcpjsonServers` are both `[]`, and **both
+`.mcp.json` paths are ABSENT**. Yet this session's own tool roster surfaces
+`mcp__claude-in-chrome__*` and a set of `mcp__claude_ai_*` connectors. **The CLI's
+view and the session's tool roster disagree, and I am not resolving that from one
+side** -- there is no config file on disk to edit, so "disable unused MCP servers"
+has no target here, and I state the disagreement rather than declaring the roster
+empty.
+
+**Compact at task boundaries only** is a habit, not a setting: no key in any of the
+five paths expresses it. `autoCompactEnabled` is present at the user path and
+`CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=75` is set in its `env`, both pre-existing and
+both **cc's and cody's to change, not mine.**
