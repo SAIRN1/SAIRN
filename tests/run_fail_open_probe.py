@@ -34,6 +34,22 @@ import subprocess
 import sys
 import tempfile
 
+
+def _rm_ro(fn, path, _exc):
+    """rmtree onerror: clear the read-only bit and retry once.
+
+    git marks loose object files READ-ONLY and Windows will not unlink a
+    read-only file, so `ignore_errors=True` leaves the object store behind and
+    says nothing. Measured 2026-10-07: a cleanup that swallowed those refusals
+    left 4,047 files, 38 of them read-only, in one abandoned clone.
+    """
+    import os as _os
+    try:
+        _os.chmod(path, 0o700)
+        fn(path)
+    except Exception:                                   # noqa: BLE001
+        pass
+
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HOOKS = os.path.join(REPO, '.githooks')
 
@@ -111,7 +127,7 @@ def main():
             expect('  without %-34s -> refuses' % missing, rc != 0, True)
             expect('    ... and NAMES the missing file', missing in out, True)
         finally:
-            shutil.rmtree(root, ignore_errors=True)
+            shutil.rmtree(root, onerror=_rm_ro)
 
     root = sandbox('prepare-commit-msg',
                    with_tools=['staged_conflict_marker_check.py',
@@ -120,7 +136,7 @@ def main():
         rc, _ = run_hook(root, 'prepare-commit-msg')
         expect('  THE CONTROL: with both present it allows the commit', rc, 0)
     finally:
-        shutil.rmtree(root, ignore_errors=True)
+        shutil.rmtree(root, onerror=_rm_ro)
 
     # ── pre-commit, both directions ──────────────────────────────────────
     print('')
@@ -131,7 +147,7 @@ def main():
         expect('  no auditor marker (a build clone) -> exit 0, gate not applicable',
                rc, 0)
     finally:
-        shutil.rmtree(root, ignore_errors=True)
+        shutil.rmtree(root, onerror=_rm_ro)
 
     root = sandbox('pre-commit', with_tools=[], marker=True)
     try:
@@ -140,7 +156,7 @@ def main():
         expect('    ... and names hover_auditor_scope_gate.py',
                'hover_auditor_scope_gate.py' in out, True)
     finally:
-        shutil.rmtree(root, ignore_errors=True)
+        shutil.rmtree(root, onerror=_rm_ro)
 
     root = sandbox('pre-commit', with_tools=['hover_auditor_scope_gate.py'],
                    marker=True)
@@ -148,7 +164,7 @@ def main():
         rc, _ = run_hook(root, 'pre-commit')
         expect('  THE CONTROL: marker AND tool present -> runs and allows', rc, 0)
     finally:
-        shutil.rmtree(root, ignore_errors=True)
+        shutil.rmtree(root, onerror=_rm_ro)
 
     # ── pre-commit, the LIVE-PROBE OBLIGATION block (2026-09-29) ─────────
     # Four directions, and the first two are the ones that keep it usable: a
@@ -170,7 +186,7 @@ def main():
         rc, out = run_hook(root, 'pre-commit')
         expect('  NOTHING staged -> exit 0, the block never runs', rc, 0)
     finally:
-        shutil.rmtree(root, ignore_errors=True)
+        shutil.rmtree(root, onerror=_rm_ro)
 
     root = sandbox('pre-commit', with_tools=[], marker=False)
     try:
@@ -179,7 +195,7 @@ def main():
         expect('  a staged tools/ file that does NOT address the platform -> '
                'exit 0', rc, 0)
     finally:
-        shutil.rmtree(root, ignore_errors=True)
+        shutil.rmtree(root, onerror=_rm_ro)
 
     root = sandbox('pre-commit', with_tools=[], marker=False)
     try:
@@ -190,7 +206,7 @@ def main():
         expect('    ... and names live_probe_residue_audit.py',
                'live_probe_residue_audit.py' in out, True)
     finally:
-        shutil.rmtree(root, ignore_errors=True)
+        shutil.rmtree(root, onerror=_rm_ro)
 
     root = sandbox('pre-commit', with_tools=['live_probe_residue_audit.py'],
                    marker=False)
@@ -200,7 +216,7 @@ def main():
         expect('  THE CONTROL: audit tool present and CLEAN -> runs and allows',
                rc, 0)
     finally:
-        shutil.rmtree(root, ignore_errors=True)
+        shutil.rmtree(root, onerror=_rm_ro)
 
     root = sandbox('pre-commit', with_tools=[], marker=False)
     try:
@@ -213,7 +229,7 @@ def main():
         expect('  audit present and REPORTING A FINDING -> the hook refuses',
                rc != 0, True)
     finally:
-        shutil.rmtree(root, ignore_errors=True)
+        shutil.rmtree(root, onerror=_rm_ro)
 
     root = sandbox('pre-commit', with_tools=[], marker=False)
     try:
@@ -226,7 +242,7 @@ def main():
         expect('  audit exiting 2 COULD NOT RUN -> the hook also refuses',
                rc != 0, True)
     finally:
-        shutil.rmtree(root, ignore_errors=True)
+        shutil.rmtree(root, onerror=_rm_ro)
 
     # ── post-rewrite: the one where exit 0 is correct ────────────────────
     print('')
@@ -241,7 +257,7 @@ def main():
         expect('    ... and names the recovery command',
                '--reseat' in out or 'defect_register.py' in out, True)
     finally:
-        shutil.rmtree(root, ignore_errors=True)
+        shutil.rmtree(root, onerror=_rm_ro)
 
     # ── 4. THE SCANNER ITSELF, AGAINST A DECOY ──────────────────────────
     # Sections 1-3 drive the HOOKS. Nothing drove the SCANNER's counting, and

@@ -34,6 +34,22 @@ import subprocess
 import sys
 import tempfile
 
+
+def _rm_ro(fn, path, _exc):
+    """rmtree onerror: clear the read-only bit and retry once.
+
+    git marks loose object files READ-ONLY and Windows will not unlink a
+    read-only file, so `ignore_errors=True` leaves the object store behind and
+    says nothing. Measured 2026-10-07: a cleanup that swallowed those refusals
+    left 4,047 files, 38 of them read-only, in one abandoned clone.
+    """
+    import os as _os
+    try:
+        _os.chmod(path, 0o700)
+        fn(path)
+    except Exception:                                   # noqa: BLE001
+        pass
+
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 DSN_SUITE = os.path.join('tests', 'sairndesign_server_backup.js')
@@ -171,7 +187,7 @@ try:
 finally:
     subprocess.run(['git', '-C', REPO, 'worktree', 'remove', '--force', wt],
                    capture_output=True, text=True, encoding='utf-8', errors='replace')
-    shutil.rmtree(wt, ignore_errors=True)
+    shutil.rmtree(wt, onerror=_rm_ro)
 
 dirty = subprocess.run(['git', '-C', REPO, 'status', '--porcelain', '--'] + TOUCHED,
                        capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()

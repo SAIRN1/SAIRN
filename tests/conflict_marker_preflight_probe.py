@@ -53,6 +53,22 @@ sys.path.insert(0, os.path.join(REPO, 'tools'))
 
 import conflict_marker_preflight as cp  # noqa: E402
 
+
+def _rm_ro(fn, path, _exc):
+    """rmtree onerror: clear the read-only bit and retry once.
+
+    git marks loose object files READ-ONLY and Windows will not unlink a
+    read-only file, so `ignore_errors=True` leaves the object store behind and
+    says nothing. Measured 2026-10-07: a cleanup that swallowed those refusals
+    left 4,047 files, 38 of them read-only, in one abandoned clone.
+    """
+    import os as _os
+    try:
+        _os.chmod(path, 0o700)
+        fn(path)
+    except Exception:                                   # noqa: BLE001
+        pass
+
 # Built from chr() for the same reason the tools avoid literals: a committed file
 # containing the real triad would be a finding in every sweep of this repo.
 _LT, _EQ, _GT = chr(60), chr(61), chr(62)
@@ -256,7 +272,7 @@ def c_checks():
     finally:
         cp.REPO, cp.MARKER_TOOL = saved_repo, saved_tool
         run(root, 'git', 'rebase', '--abort')
-        shutil.rmtree(root, ignore_errors=True)
+        shutil.rmtree(root, onerror=_rm_ro)
 
 
 def d_checks():

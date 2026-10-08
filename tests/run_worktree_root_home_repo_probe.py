@@ -57,6 +57,22 @@ import subprocess
 import sys
 import tempfile
 
+
+def _rm_ro(fn, path, _exc):
+    """rmtree onerror: clear the read-only bit and retry once.
+
+    git marks loose object files READ-ONLY and Windows will not unlink a
+    read-only file, so `ignore_errors=True` leaves the object store behind and
+    says nothing. Measured 2026-10-07: a cleanup that swallowed those refusals
+    left 4,047 files, 38 of them read-only, in one abandoned clone.
+    """
+    import os as _os
+    try:
+        _os.chmod(path, 0o700)
+        fn(path)
+    except Exception:                                   # noqa: BLE001
+        pass
+
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
 
@@ -234,7 +250,7 @@ def main(argv):
                not err2.strip(), 'stderr was %r' % err2[:200])
             print('')
     finally:
-        shutil.rmtree(sandbox, ignore_errors=True)
+        shutil.rmtree(sandbox, onerror=_rm_ro)
 
     left = os.path.isdir(sandbox)
     ck('Z. the scratch directory under HOME is REMOVED. A probe that leaves '

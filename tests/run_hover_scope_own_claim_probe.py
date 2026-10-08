@@ -42,6 +42,22 @@ import subprocess
 import sys
 import tempfile
 
+
+def _rm_ro(fn, path, _exc):
+    """rmtree onerror: clear the read-only bit and retry once.
+
+    git marks loose object files READ-ONLY and Windows will not unlink a
+    read-only file, so `ignore_errors=True` leaves the object store behind and
+    says nothing. Measured 2026-10-07: a cleanup that swallowed those refusals
+    left 4,047 files, 38 of them read-only, in one abandoned clone.
+    """
+    import os as _os
+    try:
+        _os.chmod(path, 0o700)
+        fn(path)
+    except Exception:                                   # noqa: BLE001
+        pass
+
 REPO = subprocess.check_output(['git', 'rev-parse', '--show-toplevel'],
                                text=True).strip()
 GATE = os.path.join(REPO, 'tools', 'hover_auditor_scope_gate.py')
@@ -97,7 +113,7 @@ def run_arm(rel_path, provision):
                            encoding='utf-8', errors='replace')
         return p.returncode, (p.stdout or '') + (p.stderr or '')
     finally:
-        shutil.rmtree(d, ignore_errors=True)
+        shutil.rmtree(d, onerror=_rm_ro)
 
 
 print('hover scope gate -- a clone may commit ITS OWN claim file, and only '

@@ -411,3 +411,119 @@ turned out to be what made the instrument auditable.
 **So the 35-minute-file question is STILL open**, and for a new reason: the run
 completed, but the instrument measuring it was pointed at the wrong process tree.
 The 900 s / 14,400 s bound stays **UNSET**.
+
+## item 8 — DONE. 6 of 6 mine, and **36 of 36** not-mine. 0 refused, 0 held.
+
+```
+command : scratchpad/b25/apply_onerror.py, then apply_onerror_36.py
+commit  : fd41b8cc (the six) and this change (the 36)        date: 2026-10-08
+```
+
+### The six genuine sites of mine
+
+```
+tests/claims/run_freshness_probe.py:536            rmtree(tmp,     onerror=_rm_ro)
+tests/push_gate/redaction_base_probe.py:200        rmtree(tmp,     onerror=_rm_ro)
+tests/push_gate/refspec_and_override_probe.py:219  rmtree(_sand,   onerror=_rm_ro)
+tests/push_gate/refspec_and_override_probe.py:453  rmtree(sandbox, onerror=_rm_ro)
+tests/run_bare_run_write_probe.py:267              rmtree(d,       onerror=_rm_ro)
+tools/clone_health_check.py:399                    rmtree(base,    onerror=_rm_ro)
+```
+
+**Each verified after patching, every code from its own `.status` file or
+measured alone:** `run_freshness_probe` **0**, `redaction_base_probe` **0**,
+`refspec_and_override_probe` **0**, `run_bare_run_write_probe` **0**,
+`clone_health_check --fixtures` **0** with 11 arms and 0 FAIL.
+
+**AND ONE OF MY OWN INVOCATIONS WAS WRONG, recorded rather than quietly
+corrected:** I first ran `clone_health_check.py --selftest` and got **EXIT 2**.
+That file takes `--fixtures`. The pre-patch version from `git show` returns the
+identical **EXIT 2**, so it is an argument error of mine and not a regression —
+and it is the unknown-flag-exits-2 behaviour working as designed.
+
+**DELIBERATELY NOT TOUCHED:** `tools/clone_health_check.py:328` removes a
+**linked worktree** directory, measured to carry 0 read-only files, and the very
+next line is an arm asserting it is gone. Not in the class, guarded either way,
+and changing it would be an edit to working code to satisfy a pattern.
+
+### The 36 not mine — all 25 files were FREE
+
+```
+command : python tools/sairn_claim.py list (the registry, not a claim-file read)
+          plus the FILES segment of every live claim
+date    : 2026-10-08T07:5xZ
+FREE : 25 of 25     HELD : 0 of 25
+```
+
+**X OF 36: patched 36, refused 0, held 0, routed 0.** 25 of 25 compile clean.
+
+**ANCHORED BY LINE NUMBER, NOT BY A STRING, and that mattered:**
+`tests/run_fail_open_probe.py` holds **12** of the 36 and several share the
+identical call text, so a string anchor there is not unique and a replace-all
+would have hit sites the ordered predicate deliberately excluded. Each site was
+addressed as `(file, line)` from the b24 sweep, the line **re-read** and required
+to contain both `rmtree(` and `ignore_errors=True`, and sites patched
+**bottom-up** per file so the helper insertion could not shift them. A site that
+no longer matched would have been **REFUSED and printed**; none was.
+
+The 1–2 remaining `ignore_errors=True` per file are the **out-of-class** sites —
+pre-create deletes and worktree removals — and they stay, which is the point of
+the ordered predicate.
+
+**SAMPLE RUN, 6 of the 25, stated as a sample:**
+
+| probe | exit |
+|---|---|
+| `run_fail_open_probe.py` (the 12-site file) | **0** |
+| `conflict_marker_preflight_probe.py` | **0** |
+| `run_semgrep_encoding_probe.py` | **0** |
+| `run_worktree_root_home_repo_probe.py` | **0** |
+| `sairnvet_fault_probe.py` | **0** |
+| `run_harness_stage_diagnosis_probe.py` | **1** |
+
+**THAT EXIT 1 IS PRE-EXISTING AND PROVED SO, NOT ASSUMED.** It appears in the
+completed suite run at `suite.out:757` — `FAIL py
+tests/run_harness_stage_diagnosis_probe.py  1 failure(s)` — and that run was at
+`aa2f014d`, which **predates this patch**. It is one of the 86.
+
+**WHY A BLANKET APPLICATION IS DEFENSIBLE HERE, and it was argued in the claim
+before it was done:** `ignore_errors=True` and `onerror=<swallowing retry>` have
+**identical observable behaviour** except that the retry clears the read-only bit
+first. No input exists on which the patch makes a correct call worse, so it needs
+no per-site behaviour judgement — only the ordered predicate to decide where it
+is worth applying.
+
+## item 9 — DONE. Four stale artifacts gone, `.git/config` byte-identical.
+
+```
+command : scratchpad/b25/clean_artifacts.py
+commit  : this change        date: 2026-10-08
+```
+
+**Liveness checked first**, excluding my own query shells:
+`non-shell processes referencing a pinned dir: 0`.
+
+```
+sairn-suite-pinned-6j2r6zlt        0 files -> gone, 0 left
+sairn-suite-pinned-ez_wtgtg        0 files -> gone, 0 left
+sairn-suite-pinned-vnw7na2m    3,275 files -> gone, 0 left   (109 MB)
+newchk-27740   worktree unlock rc 0, worktree remove --force rc 0, prune rc 0
+```
+
+**FORCE TWICE, as the item says, and the two steps do different things:**
+`unlock` clears the `initializing` lock the interrupted `worktree add` left
+behind; `remove --force` then drops the registration and the directory. Either
+alone would have failed.
+
+**THE PROOF THAT MATTERS:**
+
+```
+BEFORE  .git/config sha256 93070fe59db24a5bdcf7aca3bc619fd5bd14247986522ad8f624aeceb108ad98   core.bare false
+AFTER   .git/config sha256 93070fe59db24a5bdcf7aca3bc619fd5bd14247986522ad8f624aeceb108ad98   core.bare false
+CONFIG UNCHANGED  True
+worktree registrations now: just this clone
+```
+
+That file is the one a worktree operation can reach, and a `core.bare` flip in it
+is what broke this clone on 2026-10-07 — which is why the hash is the evidence
+rather than the absence of a complaint.
