@@ -107,8 +107,8 @@
       "task": "batch R: sfRecordResults repro, sv_role_granularity full table, undirected sweep remaining 2, wire hover2_external_file_check into own hover self-health hook, citation spot-check, timestamp token republish. Own-session config item NOT taken this batch -- routed to hank's live work instead.",
       "claimed_at": "2026-10-08T08:44:14Z",
       "claimed_at_epoch": 1791449054.3296342,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-08T13:39:56Z",
       "files": null
     }
   ],
