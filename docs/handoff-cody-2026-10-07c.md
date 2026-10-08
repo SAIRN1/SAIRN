@@ -594,3 +594,41 @@ and reproduce **7** and **24**.
 
 The header also states that if a count ever disagrees with the numbered table,
 **the table is the authority** — the rows are what gets acted on.
+
+## item 12 — DONE. `docs/SAIRN-PROCESS-RULES.md` §3.5, "A push is an ATOMIC LOOP, not a `git push`".
+
+Claim-checked **FREE** at pickup; insertion anchor asserted to occur **exactly
+once** before the write. `### 3.1` … `### 3.5` now; 948 → 1,011 lines.
+
+**The rule:** stage whatever the hooks wrote, fetch, rebase, push **in one shell
+invocation**, bounded to **four** rounds, every rc captured. **Why one
+invocation:** the race window is *the conversation turn between fetch and push* —
+four clones, one branch, tens of seconds per turn. Measured: `git cat-file -t
+<remote tip>` **rc 128 before a fetch, rc 0 after**, so the gate was asked about
+a commit this clone did not have. Collapsed into one invocation it succeeded on
+the **first** round, twice.
+
+**Both refusal shapes are recorded, including that one message points at the
+wrong thing** — when the branch is behind, git refuses before feeding ref lines
+to the hook, so the hook sees empty stdin and reports *that*. And the
+self-inflicted loop underneath: each blocked attempt makes the gate **write**
+`docs/scrutiny-flags.json`, which dirties the tree, which makes the next rebase
+refuse, which keeps you behind. **Stash another session's file; never commit it.**
+
+**And what the loop does not excuse:** four rounds printing the same substantive
+reason is **that reason**, not a race.
+
+## item 13 — DONE. Paste-ready, routed, and adopted by me now.
+
+`docs/2026-10-08-cody-b25-routed.md` §4, for the owner of Guardian **Check 0e**.
+It extends the pre-build name check to **test files, probes and fixtures**, with
+the routing case called out as the one nobody checks: when a fixture is *handed
+to you* in another session's report, the name check is still yours — the person
+routing it may be building it too, and **a routed note is not a claim.**
+
+**The asymmetry that makes it worth a rule:** a duplicate **table** fails loudly
+at `CREATE`; a duplicate **probe passes**, so nothing ever forces the question.
+
+**ADOPTED IMMEDIATELY rather than waiting for the rule to land.** This batch
+wrote **no new test file** — item 4 removed arms from an existing one — so the
+adoption has not been exercised yet, and that is stated rather than implied.

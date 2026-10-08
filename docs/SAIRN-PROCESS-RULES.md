@@ -811,6 +811,69 @@ checking nothing. Nineteen pre-2026-08-29 writers are grandfathered in an
 explicit list in that tool; they are **visible, not fixed**, and the list is
 meant to be burned down rather than added to.
 
+### 3.5 A push is an ATOMIC LOOP, not a `git push`
+
+**Added 2026-10-08 after six consecutive refusals on one batch, every one of them
+a correct fail-closed refusal, none of them a gate defect.**
+
+**THE RULE.** Stage whatever the hooks wrote, fetch, rebase and push **in one
+shell invocation**, bounded, with every return code captured:
+
+```sh
+for i in 1 2 3 4; do
+  git stash push -q -m "gate rows r$i" <files another session declares> || true
+  git add -A
+  git diff --cached --quiet || git commit -q -m "chore(gate-bookkeeping): hook rows round $((i-1))"
+  git fetch origin                    || { echo "fetch rc=$?"; break; }
+  git rebase origin/main              || { echo "REBASE FAILED rc=$?"; break; }
+  git push origin main && { echo "PUSHED round $i"; break; }
+done
+```
+
+**Four rounds, not unbounded.** A loop that retries forever turns a real refusal
+— a missing register record, a seed-gate denial — into a hang, and the whole
+point of a fail-closed gate is that somebody reads the reason.
+
+**WHY ONE INVOCATION, AND THIS IS THE PART THAT IS NOT OBVIOUS.** The race window
+is **the conversation turn between fetch and push.** Four clones push to one
+branch; a turn takes tens of seconds; in that gap another clone lands a commit
+and the remote tip is no longer the one you fetched. Measured on 2026-10-07:
+
+```
+git cat-file -t 105826905c95...   -> rc 128   BEFORE a fetch (the remote tip was
+                                              not in this clone's object store)
+git cat-file -t 105826905c95...   -> rc 0     AFTER
+```
+
+The gate then refuses with **"the outgoing range X..Y could not be read"**, which
+is accurate — it was asked about a commit this clone did not have. Collapsing the
+four steps into one invocation closed it on the **first** round, twice.
+
+**THE SECOND REFUSAL SHAPE, AND ITS MESSAGE POINTS AT THE WRONG THING.** When the
+local branch is **behind**, git refuses before feeding ref lines to the pre-push
+hook, so the hook receives **empty stdin** and fail-closes with
+*"no ref lines on stdin — cannot tell what is being pushed."* The refusal is
+right; the message describes the hook's symptom and not the cause. **If you see
+it, check `git rev-list --left-right --count HEAD...origin/main` before anything
+else.**
+
+**AND THE SELF-INFLICTED LOOP UNDERNEATH BOTH, which is why the `stash`/`add`
+line comes first.** Every blocked attempt makes the gate **write**
+`docs/scrutiny-flags.json`. That leaves the tree dirty, which makes the next
+`git rebase` refuse with *"cannot rebase: You have unstaged changes"*, which keeps
+you behind, which produces the stdin shape again. Three rounds of one batch were
+spent inside that loop before the cause was named.
+
+**IF THE HOOK-WRITTEN FILE BELONGS TO ANOTHER SESSION, STASH IT — DO NOT COMMIT
+IT.** `docs/scrutiny-flags.json` is frequently declared by somebody else.
+Committing another session's file to clear your own push is a claim violation
+dressed as bookkeeping; park it and say so in the handoff.
+
+**WHAT THIS DOES NOT EXCUSE.** The loop clears *races and hook residue*. It does
+not clear a real refusal: a push blocked for a missing defect record, a seed
+mismatch, or a scrutiny finding still has to be answered. Four rounds that all
+print the same substantive reason is **that reason**, not a race — read it.
+
 ---
 
 ## Part 4 — Coordination, in full
