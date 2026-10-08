@@ -45,6 +45,7 @@ Usage:
     python tools/jscomments.py --probe   # run the differential probe
     python tools/jscomments.py FILE      # report how much of FILE survives
 """
+import os
 import re
 import sys
 
@@ -53,13 +54,24 @@ import sys
 _REGEX_OK = set('(,=:[!&|?{};+-*%~^') | {''}
 
 
-def strip_comments(src):
+def strip_comments(src, path=None):
     r"""Blank //, /* */ and <!-- --> comments, preserving length and newlines.
 
     Never strips inside a string, a template literal or a regex literal. That
     is the whole point: `accept="image/*"`, a URL containing `//`, and a regex
     like /a\/\/b/ must all survive untouched.
+
+    WORKS ON A BARE `.js` FILE TOO -- it has never required a `<script>` element,
+    and that is the opposite of `tests/lib/strip_comments.js`, which does. Pass
+    `path=` and this REFUSES python rather than damaging it; without a path it
+    refuses only when the source is unambiguously python. `strip_auto(src, path)`
+    is the entry point that cannot pick the wrong language.
     """
+    _refuse_python(src, path, 'strip_comments')
+    return _strip(src, html_comments=True)
+
+
+def _strip(src, html_comments=True):
     out = list(src)
     i, n = 0, len(src)
     prev = ''
@@ -72,7 +84,7 @@ def strip_comments(src):
     while i < n:
         c = src[i]
         nxt = src[i + 1] if i + 1 < n else ''
-        if src.startswith('<!--', i):
+        if html_comments and src.startswith('<!--', i):
             j = src.find('-->', i)
             j = n if j == -1 else j + 3
             kill(i, j); i = j; continue
@@ -112,6 +124,104 @@ def strip_comments(src):
             prev = c
         i += 1
     return ''.join(out)
+
+
+# ── WHICH LANGUAGE IS THIS? ADDED 2026-10-08, AND THE MEASUREMENT IS WHY ──
+# `strip_comments` above is a JS/HTML comment scanner. Handed a PYTHON file it
+# does not no-op -- it is DESTRUCTIVE, and quietly:
+#
+#     in :  "x = 10\ny = x // 3   # floor division\n"
+#     out:  "x = 10\ny = x                        \n"
+#
+# `//` is FLOOR DIVISION in Python. The scanner reads it as a line comment and
+# blanks to end of line, so every floor division and everything after it on that
+# line disappears, while the `#` comments it was supposed to remove survive
+# wherever no `//` precedes them. A caller gets a shorter file, no error, and a
+# wrong answer -- which is the silent-fallback shape cody's convention 26 names.
+#
+# `tools/pycomments.py` is the python-side sibling and gets it right on the same
+# input. Measured, both ways, 2026-10-08.
+#
+# AND A CORRECTION TO MY OWN RECORD, because it was wrong in the opposite
+# direction: batch b3's handoff says *"jscomments has no strip_js; its
+# strip_comments on a bare .py or .js is a no-op."* The `.js` half of that is
+# FALSE -- `strip_comments` has never tracked `<script>` context and handles a
+# bare `.js` file correctly; the sentence generalised from
+# `tests/lib/strip_comments.js`, the JS library, which DOES require a `<script>`
+# element. Two libraries with similar names and opposite input contracts, which
+# is the whole reason `strip_auto` exists now.
+_PY_HINT = re.compile(r'^\s*(?:def |class |import |from \w+ import |'
+                      r'if __name__ ==)', re.M)
+_JS_HINT = re.compile(r'\bfunction\b|\bvar\b|\bconst \b|\blet \b|=>|'
+                      r'\brequire\(|\bmodule\.exports\b|<script')
+
+
+def looks_like_python(src):
+    """True when `src` is clearly python and clearly not JS/HTML.
+
+    Deliberately requires a POSITIVE python signal and the ABSENCE of a JS one,
+    so it can only ever fail to fire -- never fire on real JS. A false negative
+    here costs the old silent behaviour; a false positive would refuse a
+    legitimate call, which is worse in a library eleven tools import.
+    """
+    return bool(_PY_HINT.search(src)) and not bool(_JS_HINT.search(src))
+
+
+class WrongLanguage(ValueError):
+    """Raised when this module is handed source it would damage."""
+
+
+def strip_js(src, path=None):
+    """Comments blanked in a BARE `.js` / `.mjs` / `.cjs` file.
+
+    The explicit entry point for bare JS, added because callers were guessing.
+    It is `strip_comments` without the HTML-comment arm: in a `.js` file `<!--`
+    is a legacy browser line comment nobody writes, and treating it as one would
+    eat a line containing a `<!--` inside a string.
+
+    REFUSES python rather than damaging it. See the note above.
+    """
+    _refuse_python(src, path, 'strip_js')
+    return _strip(src, html_comments=False)
+
+
+def strip_auto(src, path):
+    """Dispatch on the file extension. `path` is REQUIRED and has no default.
+
+    Convention 26 applied to a library: the thing that decides what happens is
+    an argument with no default, so a caller that does not know what it is
+    holding gets a refusal instead of whichever behaviour happened to be first.
+    """
+    if path is None:
+        raise WrongLanguage(
+            'strip_auto needs the path: it is what selects the stripper, and a '
+            'default here would pick a language for the caller.')
+    ext = os.path.splitext(str(path))[1].lower()
+    if ext in ('.js', '.mjs', '.cjs'):
+        return strip_js(src, path)
+    if ext in ('.html', '.htm'):
+        return strip_comments(src, path)
+    if ext == '.py':
+        raise WrongLanguage(
+            '%s is PYTHON. jscomments would blank every `//` floor division and '
+            'the rest of its line, silently. Use tools/pycomments.py.' % path)
+    raise WrongLanguage(
+        '%s: no stripper is registered for %r. COULD NOT RUN rather than '
+        'guessing -- a wrong stripper returns a shorter file and no error.'
+        % (path, ext or '(no extension)'))
+
+
+def _refuse_python(src, path, who):
+    if path is not None and os.path.splitext(str(path))[1].lower() == '.py':
+        raise WrongLanguage(
+            '%s was given %s, which is PYTHON. `//` is floor division there and '
+            'this scanner blanks it to end of line. Use tools/pycomments.py.'
+            % (who, path))
+    if path is None and looks_like_python(src):
+        raise WrongLanguage(
+            '%s was given source that looks like PYTHON (a def/class/import at '
+            'line start and no JS token anywhere). `//` is floor division there. '
+            'Use tools/pycomments.py, or pass path= to say otherwise.' % who)
 
 
 def blank_string_bodies(src):
@@ -306,6 +416,93 @@ _STRING_CASES = [
 ]
 
 
+def _language_probe():
+    """The 2026-10-08 arms: this module must refuse what it would damage.
+
+    BOTH DIRECTIONS in every pair. An arm that only sees the refusal would pass
+    if the function refused everything, and an arm that only sees the success
+    would pass if it refused nothing.
+    """
+    bad = 0
+
+    def ck(name, cond):
+        nonlocal bad
+        print('  %s %s' % ('ok  ' if cond else 'FAIL', name))
+        if not cond:
+            bad += 1
+
+    BARE_JS = ("function f(){ return 1; }\n// saveGhost(seedRows);\n"
+               "var u='https://x/a';\n")
+    PY = "x = 10\ny = x // 3   # floor division\nz = 'a # not a comment'\n"
+
+    o = strip_js(BARE_JS, 'a.js')
+    ck('L1 strip_js removes a // comment from a BARE .js file',
+       'saveGhost' not in o)
+    ck('L2 ...and a URL containing // survives it', 'https://x/a' in o)
+    ck('L3 strip_comments does the same on a bare .js -- it has never needed a '
+       '<script> element, which is the opposite of tests/lib/strip_comments.js',
+       'saveGhost' not in strip_comments(BARE_JS, 'a.js'))
+    h = strip_comments('<p><!-- gone --></p>\n', 'a.html')
+    ck('L4 the HTML arm is still live for .html', 'gone' not in h)
+    ck('L5 ...and strip_js does NOT strip <!-- -->, because in a .js file that '
+       'is not a comment anybody writes',
+       'keep' in strip_js('var s = "<!-- keep -->";\n', 'a.js'))
+
+    PY_DEF = ('def f(n):\n    return n // 3   # floor division\n'
+              'import os\n')
+    ck('L6 looks_like_python says yes to python carrying a def/import',
+       looks_like_python(PY_DEF))
+    ck('L7 ...and no to JS', not looks_like_python(BARE_JS))
+    # THE DETECTOR'S OWN LIMIT, MEASURED AND ASSERTED RATHER THAN DISCOVERED.
+    # It requires a positive python signal at line start, so a python fragment
+    # that is pure expressions -- exactly the PY fixture above -- is NOT
+    # detected. That is deliberate: this predicate can only ever FAIL TO FIRE,
+    # never fire on real JS, because a false positive in a library eleven tools
+    # import is worse than the old silent behaviour. The arm exists so the
+    # limit is a recorded decision and not a surprise.
+    ck('L7b LIMIT: a python fragment with no def/class/import at line start is '
+       'NOT detected, and that is the conservative direction on purpose',
+       not looks_like_python(PY))
+    try:
+        strip_js(PY, 'a.py')
+        ck('L8 strip_js REFUSES a .py path', False)
+    except WrongLanguage as e:
+        ck('L8 strip_js REFUSES a .py path, naming pycomments',
+           'pycomments' in str(e))
+    try:
+        strip_comments(PY_DEF)
+        ck('L9 strip_comments with NO path refuses source that is clearly python',
+           False)
+    except WrongLanguage:
+        ck('L9 strip_comments with NO path refuses source that is clearly python',
+           True)
+    # AND THE DAMAGE ARM: what the refusal is protecting against, measured.
+    ck('L10 THE DAMAGE IS REAL -- the raw scanner eats `//` floor division and '
+       'the rest of its line', '// 3' not in _strip(PY))
+
+    try:
+        strip_auto(PY, 'a.py')
+        ck('L11 strip_auto refuses .py', False)
+    except WrongLanguage as e:
+        ck('L11 strip_auto refuses .py, naming pycomments', 'pycomments' in str(e))
+    try:
+        strip_auto(BARE_JS, None)
+        ck('L12 strip_auto refuses a MISSING path -- no default language', False)
+    except WrongLanguage:
+        ck('L12 strip_auto refuses a MISSING path -- no default language', True)
+    try:
+        strip_auto('x', 'a.sql')
+        ck('L13 strip_auto refuses an unregistered extension', False)
+    except WrongLanguage:
+        ck('L13 strip_auto refuses an unregistered extension', True)
+    ck('L14 strip_auto on .js agrees with strip_js',
+       strip_auto(BARE_JS, 'a.js') == strip_js(BARE_JS, 'a.js'))
+    ck('L15 strip_auto on .html agrees with strip_comments',
+       strip_auto('<p><!--x--></p>', 'a.html')
+       == strip_comments('<p><!--x--></p>', 'a.html'))
+    return bad
+
+
 def probe():
     bad = 0
     for name, src, ok in _CASES:
@@ -323,6 +520,8 @@ def probe():
         if not good:
             print('       got: %r' % out[:90])
             bad += 1
+    print('')
+    bad += _language_probe()
     print('\n%d case(s) failed' % bad)
     return 1 if bad else 0
 

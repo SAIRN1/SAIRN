@@ -1664,3 +1664,57 @@ read-only and never edited.
 Census after: **VERIFIED GREEN 8 · VERIFIED RED 51 · UNMEASURED 24 = 83**,
 individually verified **59 of 83**.
 
+---
+
+## SEQ 17-A -- THE REMAINING 43, SUBJECT-VERIFIED 2026-10-08
+
+**Method: the one that withdrew one of the four taken in b3.** For every flagged site, read the source and answer two questions in order -- WHAT is the pattern applied to, and WHERE does that subject come from. Only APP or other SOURCE CODE makes a PR 1.2 finding real; a local literal, a lexer-anchored position, an already-stripped string or a comment read on purpose does not.
+
+| | |
+|---|---|
+| findings carried forward from batch 17 | **47** |
+| taken in b3 | **4** |
+| **remaining, re-checked here** | **43** across **23** sites |
+| **REAL** | **36** findings across **17** sites |
+| **WITHDRAWN** | **7** findings across **6** sites |
+
+**AND EVERY SURVIVING MAGNITUDE IS STILL WITHDRAWN, which is the part that matters for anybody taking one.** Of the 23 sites, exactly **ONE** -- `tests/seed_never_syncs_platform.js:250` -- applies its pattern to a WHOLE APP FILE. The other 22 apply it to a slice, a body, an array literal, another source file or a local string. Batch 17 measured all 47 against a whole app file, so **for 22 of 23 sites the published phantom count is an artefact of the harness.** The SHAPE is real where marked REAL; the NUMBER is not, anywhere except that one site.
+
+### Withdrawn, with the reason read out of the source
+
+| site | subject | why it is not a PR 1.2 finding |
+|---|---|---|
+| `tests/faults/grd_write_faults.js:385` (1) | **APP, ALREADY STRIPPED** | subject is `code = SRC.replace(/\/\/[^\n]*/g, '')` at :381 -- the comments are ALREADY removed before the pattern runs. Not a PR 1.2 site. RECLASSIFIED: it is a PRIVATE naive stripper, the class jscomments.py exists to end -- that regex eats the rest of any line containing a `//` inside a URL or a string. |
+| `tests/faults/grd_write_faults.js:396` (1) | **LOCAL LITERAL** | subject is `fake = 'function f(){ cmSavePoints(z); }'` at :395, a literal in a CONTROL arm. No app source is involved at all. |
+| `tests/local_only_shape_probe.py:102` (2) | **LOCAL LITERAL** | OLD_WRITE_RE is applied only to `CALL` at :105, a literal fixture in ARM 4 -- the arm whose whole point is that the OLD regex MISSED it. The app scan in this file goes through L.collection_keys, not through this pattern. |
+| `tools/duplicate_global_check.py:68` (1) | **LEXER-ANCHORED** | FUNC_DECL_RE is a module-level DEFINITION. It is used at :174 as `FUNC_DECL_RE.match(content, i)` -- anchored at a position a character-by-character lexer has already decided is code, with strings, regex literals and comments tracked. The pattern never scans freely. |
+| `tools/duplicate_global_check.py:69` (1) | **LEXER-ANCHORED** | WINDOW_ASSIGN_RE, same mechanism, used at :181. |
+| `tools/orphan_register_check.py:134` (1) | **A COMMENT, ON PURPOSE** | inside parse_register(), which iterates lines and SKIPS every line that is not `// @REGISTER `. The pattern is MEANT to read a comment -- that is where this register lives. The clearest possible non-defect, and b3 preserved exactly this by leaving parse_register on the raw source. |
+
+**One of the six is a RECLASSIFICATION rather than a clearance.** `tests/faults/grd_write_faults.js:385` strips comments before the pattern runs -- with its own `/\/\/[^\n]*/g`, which eats the rest of any line containing a `//` inside a URL or a string. That is not comment blindness, it is the eighth private stripper, and it is the class `tools/jscomments.py` was written to end after three of seven implementations were destroying up to 90% of their input. **Routed as that, not closed.**
+
+### Real, with the subject named
+
+| site | subject | why the hazard reaches it |
+|---|---|---|
+| `tests/licence_rekey_isolation.js:400` (14) | **APP-SLICE** | subject is `expr`, accumulated at :388-393 from `src.slice(at).split('\n')` where `src` is an app file. A commented-out key inside that statement window would enter `keys` and then `foreign`, which is an ASSERTION about cross-app key leakage. |
+| `tests/sairnbiz_incidents_kpi.js:264` (1) | **APP-SLICE** | subject is `m[1]` from `/var SB_SYNCED\s*=\s*\[([^\]]*)\]/.exec(html)` at :262 -- the body of the SB_SYNCED array in the app. |
+| `tests/sairnbiz_server_backup.js:191` (1) | **APP-SLICE** | subject is `clientList = slice(html, "var SB_SYNCED=['sb_invs'", '];')` at :190. |
+| `tests/sairncode_gates.js:301` (1) | **api/sd-data.js SLICE** | subject is `m[1]` from SC_TIER_A_WRITE_ROLES_BY_RESOURCE in api/sd-data.js at :297-299. SOURCE CODE, so the hazard is real -- but NOT an app file, so batch 17's app-based magnitude was measured against a file this site never reads. |
+| `tests/sairnlegacy_processions_isolation.js:72` (1) | **APP-SLICE** | subject is `mapBlock = API.slice(mapStart, API.indexOf('};', mapStart))` at :71. |
+| `tests/sairnlegacy_session_gate_review_probe.js:202` (1) | **APP-SLICE** | subject is `m`, an element of `html.match(/var (DATA_API|AUTH_API|PROXY)\s*=\s*'([^']+)'/g)` at :201. A commented-out endpoint constant would become a live endpoint in `consts` -- and this arm exists because its FIRST spelling was vacuous in the reassuring direction, which its own comment records. |
+| `tests/sairnlegacy_write_failure_voice.js:197` (1) | **APP-SLICE** | subject is `m[1]` from `sites`, derived from SRC (the app). |
+| `tests/seed_never_syncs_platform.js:105` (2) | **APP-SLICE** | subject is `b.body` from `bodyOf(src, m.index)` at :103, where `src` is `fs.readFileSync(ROOT/file)` over every root .html at :99. |
+| `tests/seed_never_syncs_platform.js:147` (5) | **APP-SLICE** | subject is `m[2]` from the *_SYNCED array body in `app.src` at :145. |
+| `tests/seed_never_syncs_platform.js:250` (1) | **APP-WHOLE** | subject is `app.src` itself -- the whole app file, unstripped. The ONLY whole-app subject among the 23, so it is the one site where batch 17's whole-file magnitude was measured against the right thing. |
+| `tests/seed_never_syncs_platform.js:274` (2) | **APP-SLICE** | subject is `b.body` again. Note the comment at :263-269: this site already lost a round to a regex that "silently matches nothing" and switched to indexOf for that reason, so it is a site with a history of exactly this class. |
+| `tests/sen_hydrate_comparator_review_probe.js:209` (1) | **TEST-FILE SOURCE** | subject is `names[0]` from `SUBJECT.match(...)`, and SUBJECT is `tests/sairnsenior_hydrate_delegation_review_probe.js` read at :20-21. JS source with comments, so the hazard is real; NOT an app, so the magnitude was wrong. |
+| `tests/sen_hydrate_comparator_review_probe.js:210` (1) | **TEST-FILE SOURCE** | same subject, second block. |
+| `tests/stonedesk_server_backup.js:47` (1) | **api SLICE** | subject is `body = api.slice(at, api.indexOf('};', at))` at :45. |
+| `tests/stonedesk_server_backup.js:55` (1) | **api SLICE** | same `body`. |
+| `tools/citation_drift_hook.py:411` (1) | **ITS OWN .py SOURCE** | subject is `lines = io_read_lines(REPO/me)` at :406 -- the hook reads ITSELF to derive a self-test fixture (an identifier occurring on exactly one line). A comment-borne identifier can be chosen as the fixture anchor, which makes the fixture weaker rather than wrong. REAL but low-consequence, and said so. |
+| `tools/citation_drift_hook.py:416` (1) | **ITS OWN .py SOURCE** | same `lines`, second pass. |
+
+**Two of the REAL ones are worth taking before the others, because their own comments say they have already lost a round to this class.** `sairnlegacy_session_gate_review_probe.js:202` records that its first spelling *"could never have matched and the arm was vacuous in the reassuring direction"*, and `seed_never_syncs_platform.js:274` records switching to `indexOf` because a constructed regex *"silently matches nothing"* -- *"a checker that has gone blind while still printing ok"*.
+
+**Nothing in this section was fixed.** 36 real findings across 17 sites remain open, now with their real subject recorded so the next session does not re-measure against the wrong file.
