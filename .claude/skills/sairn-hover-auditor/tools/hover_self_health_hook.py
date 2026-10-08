@@ -271,10 +271,37 @@ def main():
     except Exception as e:
         unindexed_note = ' UNINDEXED EXTERNAL FILES: COULD NOT RUN (%s).' % e
 
+    # SKILL/MCP REPORT, wired in H1 batch X item 7. Read-only, project-scoped
+    # (hover_skill_mcp_report.py's own docstring states the scope precisely:
+    # a project MCP server is one declared in .mcp.json or settings.json's
+    # mcpServers key, never an account-level connector visible in-session).
+    # One line, not the full multi-line report, to keep this head line
+    # readable -- the full report is available by running the tool directly.
+    skillmcp_note = ''
+    try:
+        repo = r'C:\Users\marsh\Documents\SAIRN-hover'
+        tool = os.path.join(repo, '.claude', 'skills', 'sairn-hover-auditor',
+                             'tools', 'hover_skill_mcp_report.py')
+        r_sm = subprocess.run([sys.executable, tool], capture_output=True,
+                               text=True, encoding='utf-8', errors='replace',
+                               timeout=30, cwd=repo)
+        lines = (r_sm.stdout or '').splitlines()
+        mcp_line = next((l for l in lines if l.startswith('PROJECT MCP SERVERS:')), None)
+        skills_line = next((l for l in lines if l.startswith('PROJECT SKILLS:')), None)
+        if mcp_line is None or skills_line is None:
+            skillmcp_note = ' SKILL/MCP REPORT: COULD NOT RUN.'
+        else:
+            skillmcp_note = (' %s %s'
+                             % (mcp_line.split('--')[0].strip() + '.',
+                                skills_line.split('(')[0].strip() + '.'))
+    except Exception as e:
+        skillmcp_note = ' SKILL/MCP REPORT: COULD NOT RUN (%s).' % e
+
     head = ('HOVER SELF-HEALTH ran automatically at session start (%d entries, '
-            'classifier control %d/%d).%s ' % (len(entries), control['fixtures_run']
+            'classifier control %d/%d).%s%s ' % (len(entries), control['fixtures_run']
                                              - len(control['fixtures_failed']),
-                                             control['fixtures_run'], unindexed_note))
+                                             control['fixtures_run'], unindexed_note,
+                                             skillmcp_note))
     if fired:
         emit(head + 'FAILING CONDITIONS -- each is a real finding to address, not '
                     'a notice to dismiss:\n  - ' + '\n  - '.join(fired) +
