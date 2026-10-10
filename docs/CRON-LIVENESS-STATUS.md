@@ -6,16 +6,15 @@ this file assert a check that did not happen.
 
 | | |
 |---|---|
-| **State** | **OK** |
-| Last run | 2026-10-10 07:45:28Z |
+| **State** | **COULD NOT TELL** |
+| Last run | 2026-10-10 14:45:54Z |
 | Endpoint | `https://sairn.vercel.app/api/cron-watchdog` |
 
-| Job | Status | Last run | Age (s) | Headroom (s) |
-|---|---|---|---|---|
-| `/api/alf-alerts` | **ok** | 2026-10-10T07:37:36.781+00:00 | 471 | 7029 |
-| `/api/audit-checkpoint` | **ok** | 2026-10-10T03:30:11.974+00:00 | 15316 | 157784 |
-| `/api/cron-watchdog` | **ok** | 2026-10-10T07:15:28.937+00:00 | 1799 | 5701 |
-| `/api/sairndental/send-reminder` | **ok** | 2026-10-10T07:07:50.841+00:00 | 2257 | 5243 |
+**The watchdog rejected or could not serve this request: HTTP 402.**
+
+`401` means the `CRON_SECRET` this tool sent does not match the one
+the deployment holds -- the secret is SET and WRONG, which looks
+identical to a healthy monitor from the outside. No job was checked.
 
 ---
 
@@ -49,100 +48,9 @@ implied by the word "automated".
 
 ```json
 {
-  "ok": true,
-  "checked": 4,
-  "jobs": [
-    {
-      "job": "/api/alf-alerts",
-      "last_run_at": "2026-10-10T07:37:36.781+00:00",
-      "age_seconds": 471,
-      "expected_interval_seconds": 3600,
-      "last_outcome": "ok",
-      "seconds_until_late": 7029,
-      "detail": {
-        "emailed": 0,
-        "skipped": 0,
-        "send_failures": 0,
-        "facilities_checked": 1
-      },
-      "status": "ok"
-    },
-    {
-      "job": "/api/audit-checkpoint",
-      "last_run_at": "2026-10-10T03:30:11.974+00:00",
-      "age_seconds": 15316,
-      "expected_interval_seconds": 86400,
-      "last_outcome": "ok",
-      "seconds_until_late": 157784,
-      "detail": {
-        "action": "checkpoint",
-        "written": 3,
-        "failures": 0
-      },
-      "status": "ok"
-    },
-    {
-      "job": "/api/cron-watchdog",
-      "last_run_at": "2026-10-10T07:15:28.937+00:00",
-      "age_seconds": 1799,
-      "expected_interval_seconds": 3600,
-      "last_outcome": "ok",
-      "seconds_until_late": 5701,
-      "detail": {
-        "not_ok": [],
-        "checked": 4,
-        "undelivered": [],
-        "channel_proof": {
-          "id": "01a11cba-39e9-7e68-938e-731c9f336de9",
-          "to": "mikied68@gmail.com",
-          "sent_at": "2026-10-08T18:15:28.956Z",
-          "accepted": true,
-          "checked_at": "2026-10-08T19:15:29.081Z",
-          "last_event": "delivered",
-          "send_error": null,
-          "check_error": null
-        },
-        "response_memo": {},
-        "notify_channel": {
-          "missing": [],
-          "configured": true,
-          "escalation_has_own_address": false
-        }
-      },
-      "status": "ok"
-    },
-    {
-      "job": "/api/sairndental/send-reminder",
-      "last_run_at": "2026-10-10T07:07:50.841+00:00",
-      "age_seconds": 2257,
-      "expected_interval_seconds": 3600,
-      "last_outcome": "ok",
-      "seconds_until_late": 5243,
-      "detail": {
-        "sent": 0,
-        "failed": 0,
-        "skippedNotDue": 0,
-        "skippedNoEmail": 0
-      },
-      "status": "ok"
-    }
-  ],
-  "notify_channel": {
-    "configured": true,
-    "missing": [],
-    "escalation_has_own_address": false
-  },
-  "channel_proof": {
-    "id": "01a11cba-39e9-7e68-938e-731c9f336de9",
-    "to": "mikied68@gmail.com",
-    "sent_at": "2026-10-08T18:15:28.956Z",
-    "accepted": true,
-    "checked_at": "2026-10-08T19:15:29.081Z",
-    "last_event": "delivered",
-    "send_error": null,
-    "check_error": null
-  },
-  "actions": []
+  "error": {
+    "message": "<!doctype html><html lang=en><meta charset=utf-8><meta name=viewport content=\"width=device-width,initial-scale=1\"><meta name=theme-color content=#000><title>Deployment Paused</title><style>:root{--background: #fff;--secondary: #666;--foreground: #000}@media(prefers-color-scheme:dark){:root{--background: #000;--secondary: #A1A1A1;--foreground: #fff}}html,body{overflow:hidden;background:var(--backgr"
+  }
 }
 ```
 
