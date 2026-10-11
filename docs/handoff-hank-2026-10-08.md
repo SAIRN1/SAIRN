@@ -1,0 +1,906 @@
+# Hank handoff — 2026-10-08, batch 19 (b3)
+
+**Per-item checkpoint.** A row is appended after EACH item, before the next
+begins. Every row is state at the moment it was written, not a plan.
+
+Previous handoff: `docs/handoff-hank-2026-10-07d.md` (batch 18, pushed
+`5c9dc265`).
+
+---
+
+## PER-ITEM LOG
+
+### item 1 — CLAIM AND RESUME CHECK — DONE
+
+**`5c9dc265` IS AN ANCESTOR OF `origin/main`** — verified with
+`git merge-base --is-ancestor`, not read off the previous handoff. Batch 18 is
+fully landed; nothing from it is redone.
+
+At pickup: HEAD was 7 behind. Rebased to **`0faec47e`, ahead 0 / behind 0**,
+tree clean, `core.bare` = `false`.
+
+**MY BATCH-18 CLAIM WAS ALREADY RELEASED** (I released it at the close of b2);
+re-claimed `platform` for batch 19 and the claim is pushed and verified on
+`origin/main`.
+
+**LIVE FILES READ, NOT INFERRED — and it changes two items before they start.**
+Three live claims (cody ×2 at 0.6h/0.8h, fourth at 0.9h). Each of my targets
+checked against their declared FILES:
+
+| target | holder |
+|---|---|
+| `docs/tier-a-reviews.json` | **DECLARED BY NOBODY** |
+| `tools/bare_run_write_check.py` | DECLARED BY NOBODY |
+| `tests/run_bare_run_write_probe.py` | **cody** (0.6h, 0.8h) |
+| `docs/defect-density-register.json` | **cody** (0.6h, 0.8h) |
+| `docs/METHODOLOGY.md` | **fourth** (0.9h) |
+| `docs/known-red-suites.json` | **fourth** (0.9h) |
+| `tools/cron_liveness_check.py`, `tools/audit_checkpoint_status.py` | DECLARED BY NOBODY |
+| `docs/CRON-LIVENESS-STATUS.md`, `docs/AUDIT-CHECKPOINT-STATUS.md` | DECLARED BY NOBODY |
+| `tools/dead_rule_sweep.py`, `tools/bare_run_writers.py` | DECLARED BY NOBODY |
+| `tests/push_gate/check4_probe.py` | DECLARED BY NOBODY |
+
+**TWO CONSEQUENCES, decided here rather than discovered mid-item:**
+
+- **ITEM 7 IS UNBLOCKED.** `docs/tier-a-reviews.json` was cc's through batch 18
+  and is now held by nobody. The 15 obligations are dischargeable, subject to
+  the per-obligation rule in the item.
+- **ITEM 6 IS NARROWED, NOT REWORDED.** `tools/bare_run_write_check.py` is free
+  so the widened scope goes in; **`tests/run_bare_run_write_probe.py` is CODY'S
+  and is NOT edited** — its arms go in a file of mine.
+
+`docs/defect-density-register.json` is cody's: appended **only** through
+`defect_register.py --add`, never edited. `docs/METHODOLOGY.md` is fourth's, so
+Rule G (item 9) goes in my own routed file, which is where the item puts it
+anyway.
+
+### item 2 — STEP 13 REWRITTEN AS 13-ALT — DONE. Document only; no code touched.
+
+`docs/2026-10-07-hank-migration-sql-for-michael.md` STEP 13 is replaced — not
+amended — with a new **`sairnvet_audit_log`** in exactly the form of STEP 1-12.
+**`sv_audit_log` is left alone and no statement in STEP 13 touches it.**
+
+**THREE PRE-FLIGHT QUERIES, each with the failure it would catch:**
+
+- **13-PRE (a)** — does the new name already exist? `create table if not
+  exists` is **silent** on a name that is already there, which would leave you
+  believing you made a table you did not. Expect exactly one row,
+  `sv_audit_log`.
+- **13-PRE (b)** — **record the dosing trail's size, columns and grants BEFORE
+  touching anything**, so 13-V (d) can prove nothing changed. Expect
+  `service_role` with SELECT, INSERT **and UPDATE** — UPDATE is *correct* on
+  that table and must still be there afterwards.
+- **13-PRE (c)** — `pgcrypto`, because the DDL defaults a uuid primary key.
+  Almost certainly present; asked rather than assumed, because the failure mode
+  is the DDL erroring half way through.
+
+**FOUR VERIFY QUERIES**: the table reads (0 rows, no error); **the grants are
+exactly SELECT + INSERT** for `service_role` — the immutability control and the
+thing most likely to be wrong, since `service_role` bypasses RLS; the CHECK
+constraint really exists and lists five values (a table created before the
+constraint would accept any event name and nothing downstream would notice); and
+**13-V (d), the one that matters most — the dosing trail is byte-for-byte the
+same, grants included.**
+
+**THE EVENT VOCABULARY USES THE STRICT `in (...)` FORM**, which is only possible
+because the table is new and empty. The rejected option could not: `sv_audit_log`
+has existing rows with no `event_type`, so it needed
+`event_type is null or event_type in (...)` — a weaker constraint arrived at by
+accident of history, not by choice.
+
+**TWO STALE STATEMENTS CORRECTED IN THE SAME FILE, because a document that says
+two things is the defect this sequence keeps finding.** STEP 0d and the top
+"WHAT CHANGED" table both still read *"DECIDED: reuse `sv_audit_log` … one line
+of JavaScript"*. Both are now marked **SUPERSEDED** and STEP 0d opens with **DO
+NOT RUN THE JAVASCRIPT BELOW**, pointing at STEP 13. The original text is kept,
+struck through rather than deleted: *a superseded step that is deleted is one
+somebody re-derives from scratch; a superseded step that is silently corrected
+is one nobody knows was ever wrong.*
+
+```
+python tools/md_table_check.py docs/2026-10-07-hank-migration-sql-for-michael.md
+  EXIT 0   OK (13/13 rows checked), 0 malformed, 0 uncheckable
+```
+
+**THE CODE HALF IS WRITTEN DOWN AND NOT DONE.** `api/_lib/audit.js` and
+`api/sv-auth.js` are untouched and stay that way until Michael confirms STEP 13
+has run — writing them first makes every SAIRNvet audit write hit a table that
+does not exist, PostgREST answers 404, `writeAuditLog` returns false
+non-fatally, and **the row is absent with nothing on screen to say so.** The
+five ordered steps are in the document, ending with: re-run
+`tests/run_audit_event_type_probe.py` and **watch arm H1** — it asserts every
+allowlisted table has the four columns `writeAuditLog` posts, so if it goes red
+the DDL did not run the way step 1 assumes.
+
+### item 3 — THE 101 SUITE FAILURES SPLIT BY OWNER — committed
+
+`docs/2026-10-08-hank-suite-failure-owners.md`.
+`md_table_check` **EXIT 0, 120/120 rows, 0 malformed, 0 uncheckable.**
+
+| verdict | count |
+|---|---:|
+| **REAL** | **89** |
+| CASCADE (listed separately, NOT counted as failures) | 8 |
+| TIMEOUT at 240 s alone (a third state, neither) | 4 |
+
+**THE 89 REAL, BY OWNER:**
+
+| owner | count |
+|---|---:|
+| **UNOWNED** | **62** |
+| cody | 11 |
+| fourth | 8 |
+| cc | 5 |
+| hank | 2 |
+| cc+fourth+hank | 1 |
+
+**OWNER IS DERIVED FROM TWO SOURCES AND EVERY ROW SAYS WHICH.** `map` = a
+non-null entry in `docs/tool-owner-map.json`. `claim` = a session **declared the
+file in a claim's `FILES:` list**, read out of every record in
+`.claude/claims/*.json` — the only durable record of who has worked on a file.
+**`UNOWNED` means neither source names anybody**, not that nobody wrote it. 502
+of the owner map's 680 ownerless entries are under `tests/`, so 62 of 89 is the
+expected shape, not a surprise — and **a file with no owner cannot be routed to
+anybody**, which is the same problem `tools/va_rule_currency.py` had in b1.
+
+**ONLY 2 OF THE 89 ARE MINE.**
+
+**CASCADE AND TIMEOUT ARE IN THEIR OWN SECTIONS WITH THEIR OWN HEADINGS**, each
+carrying what the suite said beside what the file says alone. The one to read
+twice is still `tests/phi_cache_scoped_to_user.js`: **72 passed / 0 failed
+alone**, while fourth's batch-16 item 4 took it on as *"basis NONE, no owner,
+blocks three register rows"*.
+
+**THE DOCUMENT SAYS WHAT IT DOES NOT CLAIM**, in its own closing section: it
+does not claim the 89 are NEW — `known_red_check.py --from-run` on the same log
+reports 101 red against a registry of 75, i.e. **30 red and not recorded**, and
+that register is **fourth's** and is not touched — and it does not diagnose any
+of them. The "first failing assertion" column is quoted, not interpreted.
+
+**A GENERATOR DEFECT WORTH ONE LINE, because the damage was wildly out of
+proportion to the cause.** The first build produced *"3 malformed, 62
+unreadable"*. The cause was a bare **carriage return** inside three traceback
+cells, captured from a Windows subprocess. **One broken row unparses every row
+after it**, so three bad cells cost 62 rows. Escaping the pipe was never the
+fix — the invisible character was. The generator now maps every control
+character to a space and every pipe to a slash, and `md_table_check` is the
+arbiter that has to be satisfied rather than my own reading of the markdown.
+
+### item 4 — STALE LOCKS AND WORKTREES — 2 locks removed, 1 refused on its own rule, 0 worktrees removed
+
+Evidence gathered FIRST by a script that removes nothing
+(`scratchpad/b3_item4_evidence.py`, output `i4ev.json` / `i4ev.log`), against a
+**single process snapshot of 363 processes** so every item is judged against the
+same moment rather than a moving target.
+
+**A MISSING MEASUREMENT IS NOT-REMOVABLE, never removable-by-default.** If the
+lock's pid cannot be read, "gone" is unprovable; if `git status` cannot run in a
+worktree, "clean" is unprovable. Both outcomes are refusals.
+
+#### LOCKS — 16 present. The three named, each with its evidence:
+
+| lock | recorded pid | alive? | age | verdict |
+|---|---|---|---|---|
+| `b11wt2.lock` | 78192 | **gone** | **36.49h** | **REMOVED** |
+| `bare_scratch.lock` | 56660 | **gone** | **189.86h** | **REMOVED** |
+| `b12wt2.lock` | 78192 | gone | **21.57h** | **LEFT — fails the 24h test by 2.4h** |
+
+Contents captured before deletion; both backups are at
+`scratchpad/removed.<lock>.bak`:
+
+```
+b11wt2.lock       {"pid": 81228, "claude_pid": 78192, "started": "2026-10-06T16:23:12", "task": ""}
+bare_scratch.lock {"pid": 38620, "claude_pid": 56660, "started": "2026-09-30T07:01:21", "task": ""}
+```
+
+**`b12wt2.lock` WAS NAMED IN THE DISPATCH AND IS STILL THERE.** Its process is
+gone, so it is certainly dead — but the rule I was given is *"verify the owning
+process is gone **and the age**"*, and at 21.57h it is under 24h. **It fails by
+two and a half hours.** Removing it would mean applying the rule to two items and
+making an exception for the third, which is exactly RULE E's defect. It will
+qualify on its own a few hours from now; it is listed as open rather than quietly
+taken.
+
+**FOUR MORE LOCKS MEET THE SAME CRITERIA AND WERE NOT TOUCHED**, because they are
+outside the three the dispatch named and their owners are not established:
+`repo.lock` (pid 39448 gone, 48.40h), `sairn_idem_o66nnvth.lock` (58388 gone,
+199.93h), `sairn_idem_q5p4bqkx.lock` (58388 gone, 200.14h),
+`sairn_idem_rhbjx2yx.lock` (61668 gone, 207.88h). Listed for chat. Six live
+locks (cc, cody, fourth, hank, hover, hover2 and two of mine) have **alive**
+pids and are correctly untouched.
+
+#### WORKTREES — 13 registered. **ZERO are removable, and that is the finding.**
+
+| worktree | uncommitted | live procs | newest file | verdict |
+|---|---:|---:|---|---|
+| `gate12-48848-8` | **2563** | 0 | 295.5h | LEFT — uncommitted |
+| `defreg-probe-13672` | **2221** | 0 | 511.8h | LEFT — uncommitted |
+| `r5-served-4288` | **1975** | 0 | 563.4h | LEFT — uncommitted |
+| `check4-probe-30700` | **1664** | 0 | 621.5h | LEFT — uncommitted |
+| `sairn-abl-vzdwjmc0` | 5 | 0 | 17.7h | LEFT — uncommitted |
+| `r5-cover-85152` | 2 | 0 | 16.1h | LEFT — uncommitted |
+| `condcov-37872` | 1 | 0 | 12.6h | LEFT — uncommitted |
+| `condcov-83660` | 1 | 0 | 19.3h | LEFT — uncommitted |
+| `defreg-probe-84136` | 1 | 0 | 9.9h | LEFT — uncommitted |
+| `sairn-abl-ffstikqt` | 1 | 0 | 15.1h | LEFT — uncommitted |
+| `condcov-75140` | 0 | 0 | 17.3h | LEFT — quiet only 17.3h |
+| `sairn-sab-b1u8mfer` | 0 | 0 | 9.7h | LEFT — quiet only 9.7h |
+| `gate12-29772-4` | 0 | 0 | 9.4h | LEFT — quiet only 9.4h |
+
+**THE RULE AS WRITTEN CANNOT REACH THE WORST OFFENDERS, AND THAT IS WORTH MORE
+THAN THE CLEANUP WOULD HAVE BEEN.** The four worst — 1,664 to 2,563 uncommitted
+paths each, untouched for **295 to 621 hours (12 to 26 days)** — are the most
+obviously abandoned and the ONLY ones the rule forbids removing, because
+**abandoned probe fixtures are indistinguishable from uncommitted work.** A
+worktree with 2,563 dirty paths and no file touched in twelve days is almost
+certainly a probe that planted a fixture and died; "almost certainly" is not the
+standard the item set, and I did not lower it.
+
+Every one of those 13 is also a live door for the shared-`.git/config` write that
+corrupted this clone in batch 18 (section 6a there, RULE G below). **The leak is
+not fixed by pruning registrations** — it is fixed per probe, by building the
+sandbox as a **clone** rather than a worktree, which `check8_probe.py` already
+does.
+
+**NEXT STEP for chat:** either (a) give removal a second criterion that can
+distinguish probe litter from work — e.g. every dirty path matches a known
+fixture pattern, or the newest file is older than N days with no branch — or
+(b) decide these four by hand. I have not done either; both are judgement calls
+about other sessions' artefacts.
+
+### item 5 — A MISSING SECRET NO LONGER OVERWRITES A GOOD RECORD — root cause fixed, 14/14 arms
+
+**THE ROOT CAUSE WAS A SOUND RULE APPLIED TO THE WRONG STATE.** Both tools held
+*"say so rather than keeping a stale OK"* — which is **right** when the tool
+**asked** and could not get an answer (a 401, a timeout, an unparseable body;
+those are facts about the subject) and **wrong** when it could not ask at all.
+**A missing environment variable is a fact about the clone, not about the cron
+jobs or the audit logs** — and five of the six clones on this box do not carry
+`CRON_SECRET`, so every sweep that drove every tool bare erased the record again.
+
+**THE FIX IS A FOURTH EXIT CODE, not a condition bolted onto the third.**
+`EXIT_NO_SECRET = 3` in both tools; the missing-secret path now **writes nothing**
+and returns 3. **Every other could-not-tell path is unchanged** and still records
+COULD NOT TELL, because those ran — the fix is scoped to the state that justified
+it (RULE E).
+
+**MEASURED on the real documents, md5 before and after:**
+
+```
+docs/CRON-LIVENESS-STATUS.md      14f7f60abf4552fb0a7cdea3f89bf1ab  ->  unchanged
+docs/AUDIT-CHECKPOINT-STATUS.md   dad31b8ebd43b1d51e6ef841902c0e0e  ->  unchanged
+tools/cron_liveness_check.py      EXIT 3
+tools/audit_checkpoint_status.py  EXIT 3
+```
+
+Both now print **`NOTHING WAS WRITTEN. <doc> is UNCHANGED and still holds
+whatever the last run that COULD ask recorded.`**
+
+**`tests/run_status_doc_secret_probe.py` — EXIT 0, 14 passed / 0 failed.**
+Four arms per tool plus three sabotage arms per tool:
+
+| arm | what it pins |
+|---|---|
+| **A** | exits **3, not 2** — exit 2 belongs to the paths that DID ask |
+| **B** | the status document is **byte-identical** afterwards. *The defect was never a wrong exit code; it was a destroyed record* |
+| **C** | the output SAYS nothing was written, so a reader is not left guessing |
+| **D** | the planted sentinel survives — proving B compared a real file, not two absences |
+| **S1** | **SABOTAGE**: the old behaviour restored exits 2, so **arm A would have failed on it** |
+| **S2** | SABOTAGE overwrites the planted record, so **arm B would have failed on it** |
+| **S3** | and the sentinel is **GONE** — the destroyed record stated as a fact, not as a hash difference |
+
+**THE SABOTAGE IS WHAT MAKES THE ARMS EVIDENCE.** It rewrites the
+missing-secret path back to `write_status(...)` + exit 2 **in a copy**, and the
+probe asserts the copy both exits 2 and destroys the sentinel. *An arm that
+cannot be made to fail has not been tested.*
+
+**DRIVEN IN A SYNTHETIC SANDBOX, NOT A WORKTREE.** Each subject is copied into a
+bare directory holding `tools/<subject>.py`, `tools/sairn_http.py` and a `docs/`
+with a planted good record; the subjects derive their root from `__file__`, so
+the sandbox is a complete world and nothing shared is reachable. **Not a linked
+worktree on purpose** — batch 18 found a worktree shares `.git/config` with its
+clone, which is RULE G below. Confirmed: the real documents are unchanged by the
+probe itself.
+
+**WHAT IT DOES NOT COVER, printed by the probe on every run:** the other
+could-not-tell paths still write COULD NOT TELL **deliberately**, and a run WITH
+a real secret is not driven — no credential was manufactured, so the happy path
+is untested by this file.
+
+**ONE CONSEQUENCE FOR ITEM 6, noted here so it is not read as a regression:**
+both tools are in `tools/bare_run_writers.py`, the declared-intended-writers
+allowlist. They are still correctly listed — with a secret set they do write —
+but a **bare** run in a clone without the secret now writes nothing, so the
+widened bare-run sweep will see them as non-writers.
+
+### item 6 — THE BARE-RUN SWEEP AT THE WIDENED SCOPE — and it immediately found a leak `git status` could never see
+
+**`tools/bare_run_write_check.py` now watches THREE things outside the working
+tree**, because the thing it missed was never a comparison bug — it was the scope:
+
+| watched | why |
+|---|---|
+| `~/SAIRN-SESSION-LOCKS/` | the cross-clone registry. **Outside every clone on purpose**, which is why it is current without a fetch — and why a write there was invisible |
+| `<repo>/.git/config` | a **linked worktree shares this** with its clone, so a `git config` write from inside one lands here. This is how `core.bare = true` reached a live clone in batch 18. `git status` never sees it |
+| `git worktree list` | registering one is a change to shared state **with no file in the tree** |
+
+**A SHARED-STATE WRITE IS NEVER EXEMPTED BY THE ALLOWLIST.**
+`tools/bare_run_writers.py` declares **repo** paths; nothing in it says a tool may
+write outside the clone, and **reading that silence as permission is how the gap
+stayed open.**
+
+**`--selftest`: EXIT 0, 8 passed / 0 failed.** A1 two snapshots of an untouched
+world are identical (without it every arm below passes on noise); A2 a new lock
+is CREATED — *the exact shape `session_lock_check.py` produced, which this tool
+reported CLEAN*; A3 an edited lock is CHANGED; A4 a deleted lock is DELETED
+(*removing somebody else's lock is as much a change as taking one*); **A5 a
+`git config` write is GITCONFIG CHANGED — the one `git status` cannot see**; A6 a
+worktree registration is WORKTREES CHANGED; A7 the paired negative — nothing
+planted, nothing reported; **B1 end-to-end, a planted tool that writes a lock on
+a bare run is caught through `run_tool`, with exit 0 and a clean `git status`
+notwithstanding — that combination is exactly what was being missed.**
+
+**THE DETECTOR MUST NOT CAUSE WHAT IT DETECTS (RULE G).** `SAIRN_LOCKS_DIR`
+redirects the watched registry for the selftest, and `run_tool` now **exports
+`SAIRN_SESSION_LOCK_DIR` to the same value for every child** — aligned in the tool
+rather than left to the caller, because a detector whose correctness depends on
+remembering two environment variables is one somebody will run with only the
+first. Confirmed afterwards: **the real lock registry is untouched by both the
+selftest and the sweep.**
+
+**THE SWEEP, over the 175-tool ownerless population — 164 of them `.py`, the
+other 11 are `.sh`/`.js` and are named rather than silently dropped:**
+
+```
+tools swept                : 164      in a throwaway CLONE, 25s per run, bare and --help
+WROTE on a bare run        : 0
+WROTE on --help            : 0
+INTENDED writers           : 1        master_plan.py -> docs/MASTER-PLAN.md, declared
+CHANGED SHARED STATE       : 2        <- THE NEW COLUMN, and it is not empty
+COULD NOT RUN (no verdict) : 19       NOT reported as clean
+EXIT 1
+```
+
+**THE FINDING: `tools/condition_coverage.py` REGISTERS A WORKTREE AND LEAVES IT
+REGISTERED — on a bare run AND on `--help`.** Both runs also exceeded the 25 s
+bound, so it leaks a registration *and* has no exit code.
+
+**THE CORROBORATION WAS ALREADY ON DISK.** Item 4's worktree census found three
+leaked registrations named **`condcov-37872`, `condcov-75140`, `condcov-83660`** —
+this tool, three times. The sweep names the cause; item 4 counted the effect. And
+every one of those registrations is another door for the shared-`.git/config`
+write that corrupted this clone in batch 18.
+
+**19 OF 164 HAVE NO VERDICT at a 25 s bound** — `assurance_case.py`,
+`stale_row_sweep.py`, `landing_verification.py`, `condition_coverage.py` and
+fifteen more. Reported as COULD NOT RUN and **explicitly not counted clean**; the
+tool exits non-zero partly for that reason.
+
+**NOT EDITED: `tests/run_bare_run_write_probe.py` is CODY'S** (declared in two
+live claims). The arms went into the tool's own `--selftest` instead, which is the
+established pattern here and needs nothing of cody's.
+
+### item 7 — TIER A — 5 DISCHARGED, AND MY OWN PREMISE WAS WRONG
+
+**I CARRIED A WRONG COUNT INTO THIS BATCH AND REPORTED IT TWICE.** Batches 18 and
+b1 both said *"15 / 16 eligible for hank"*, derived as **open AND
+`author_session != hank`**. That is the set I could in principle review. **It is
+not the set I may discharge.**
+
+**The gate ASSIGNS each obligation to ONE reviewer at open time, and it refuses
+anybody else:**
+
+```
+REFUSED: this obligation is assigned to cloud, not hank. It was stamped at open
+time (...) precisely so two sessions cannot both review it.
+```
+
+**AND THE ASSIGNMENT IS NOT IN THE RECORD.** Every open record carries
+`reviewer_session: null`; the assignee is **computed by the gate**, so
+`tier_a_review_gate.py --list` is the only way to see it. Reading the JSON tells
+you nothing about who owes a review — which is exactly how I got the count wrong.
+
+**WHAT I ACTUALLY DID: attempted 12, DISCHARGED 5, refused on 7.** All five that
+were assigned to me are now `status: reviewed`, `reviewer_session: hank`,
+`reviewed_at: 2026-10-08T13:52:4x`:
+
+| author | opened | what I verified with a command |
+|---|---|---|
+| fourth | 2026-09-30T11:08:08Z | `DELIBERATELY_EXCLUDED` really has **exactly 11** entries and is exported, not a comment |
+| cc | 2026-09-30T11:14:21Z | `enc(licHash)` still appears **6×**, and line 160 asserts `matter_id=eq.` is **FOUND before** any index comparison |
+| cody | 2026-09-30T15:15:56Z | all three resources have **exactly one** register row — the transcription did not duplicate or drop one |
+| cc | 2026-09-30T16:19:33Z | `sbRestoreSession` and all three branch conditions (401, 403, 503) are in the body |
+| cody | 2026-10-05T15:12:34Z | **all three non-identity TARGETS entries check out against the real dispatcher**, including `sd_approvals`, which cody flagged as an unverified assumption |
+
+**EVERY VERDICT NAMES WHAT I DID NOT CHECK.** None is a restatement of the
+author's summary; each took the thing the record asked a reviewer to *attack*.
+
+**THE SEVEN REFUSED, with their assignee and age — not blocked by a claim, blocked
+by the gate's own assignment:**
+
+| author | opened | assigned to | held |
+|---|---|---|---|
+| cody | 2026-09-27T02:06:03Z | cloud | 276h |
+| fourth | 2026-09-28T00:16:59Z | cloud | 254h |
+| cody | 2026-09-28T03:34:57Z | fourth | 250h |
+| fourth | 2026-10-05T09:50:00Z | cloud | 76h |
+| fourth | 2026-10-05T15:02:28Z | cody | 71h |
+| fourth | 2026-10-05T21:25:19Z | cody | 64h |
+| cc | 2026-10-06T06:18:11Z | cody | 56h |
+
+**ALL SEVEN ARE PAST 48h, SO `--takeover` IS PERMITTED AND I DID NOT USE IT.**
+Taking over seven obligations I am not assigned is precisely the
+two-sessions-reviewing-one-change that the open-time stamp exists to prevent. Not
+authorised by this batch and not done.
+
+**THE WORK IS NOT WASTED: I had already reviewed four of the seven before the gate
+refused**, and those verdicts are in `scratchpad/verdict_*.txt` for whoever is
+assigned. **One is a real finding, not a confirmation:**
+
+> **`tools/deploy_verify_notify.py` — a FIFTH pushing entrypoint exists today.**
+> fourth asked a reviewer to confirm none does. `PUSHING_TOOLS` carries the four
+> named; I imported the module and called `classify_command` directly:
+> `python tools/gh_push.py "msg"` → **`unsure`**, while `push_retry.py` → `push`,
+> `git push origin HEAD:main` → `push` and `echo git push origin main` →
+> `not-a-push`. **`gh_push.py` publishes commits** — through the GitHub REST API
+> rather than `git push`, running `.githooks/pre-push` itself (lines 70, 114,
+> 166). The mechanism is right and **the list is incomplete**. Routed, not fixed:
+> `gh_push.py` is in cc's live FILES.
+
+**TWO MORE ARE REFUSED ON THE BUILD/AUDIT BOUNDARY, not on assignment** — both
+hover2 records name only files under `.claude/skills/sairn-hover-auditor/`.
+`CLAUDE.md` forbids a build agent reaching there, so I did not read them.
+
+**A SEPARATE FINDING FROM THE GATE'S OWN OUTPUT: 10 of the 17 open obligations
+carry `** COULD-NOT-TELL **` on freshness** — *"the recorded sha does not resolve
+in this clone"* or *"RESOLVES but is ORPHANED"*. **None of my five did** (all five
+have `commit: null`, so there was no sha to resolve and I reviewed the named files
+at HEAD, which is stated in each verdict). For the other ten, a reviewer cannot
+see the change the obligation is about.
+
+**State now: 239 records, 222 reviewed, 17 open, 0 assigned to hank.**
+
+### item 9 — RULE G ROUTED, beside RULE F
+
+`docs/2026-10-07-hank-routed.md` §4 now carries **RULE E, RULE F and RULE G**.
+`docs/METHODOLOGY.md` is **fourth's** under a live claim and is not touched.
+`md_table_check`: **EXIT 0, 0 malformed, 0 uncheckable.**
+
+> **RULE G — test and probe infrastructure must not mutate the clone or the
+> shared state it runs in.** A probe, gate, sweep or fixture may read anything
+> and may write only inside a throwaway it created. It must not touch the clone
+> it runs in, and must not touch state SHARED with other clones — `.git/config`,
+> the worktree registration list, the cross-clone lock registry, or a generated
+> document recording somebody else's measurement. **If it needs a dirty tree, it
+> builds one.**
+
+**THREE INSTANCES, cited, and they are the same defect wearing three faces — in
+every one the damage landed on somebody who was not running the tool:**
+
+1. **`.git/config`** — `tests/push_gate/check4_probe.py` and `check7_probe.py`
+   plant a fixture in a **linked worktree** (`check4_probe.py:93`) then
+   `git push --dry-run` from it (`:171-172`). A worktree **shares `.git/config`**,
+   so that put **`core.bare = true`** into a live clone and every git command
+   afterwards answered *"fatal: this operation must be run in a work tree"*.
+   `check8_probe.py` had the identical defect and was moved to a throwaway clone
+   on 2026-10-06 — **the fix is proven in-repo and was never propagated to its two
+   siblings.**
+2. **The lock registry** — a bare run of `tools/session_lock_check.py` acquired a
+   session lock, printed nothing and exited 0, in a registry that lives **outside
+   every clone on purpose**. Litter proves the history: `bare_scratch.lock`,
+   `b11wt2.lock`, `b12wt2.lock`. **And this batch found the same shape again** —
+   `tools/condition_coverage.py` registers a worktree and leaves it registered,
+   corroborated by three abandoned `condcov-*` registrations found independently.
+3. **Generated documents** — `cron_liveness_check.py` and
+   `audit_checkpoint_status.py` destroyed a real **OK** whenever `CRON_SECRET` was
+   absent. **And the suite does it at scale**: the clean-worktree run dirtied five
+   generated documents and **8 of its 101 failures were cascade**.
+
+**THE MECHANICAL FORM** is four lines: build a throwaway **clone**, not a
+worktree; give anything written outside the repo an env override **and propagate
+it to every child**; a tool that cannot measure **writes nothing** and uses a
+distinct exit code; and prove it with a before/after snapshot **plus a paired
+negative**, because an alarm that always fires is not a detector.
+
+**WHY IT IS NOT ALREADY COVERED:** PR §1.11 is a check that could not run
+reporting a pass — here the checks ran and reported *correctly* while damaging
+something else. Convention 8 is a check that stops testing — these never stopped.
+**Nothing governs a tool's SIDE EFFECTS on the world it is measuring**, and the
+proof is that `bare_run_write_check.py` existed for exactly this and missed all
+three, because its scope was the working tree.
+
+### item 10 — EVERYTHING I KEEP OUTSIDE GIT — audited, 12 files committed, the rest registered
+
+**THE LINE I USED, stated before the list:** *anything a COMMITTED artefact CITES
+BY NAME belongs in the repo.* A committed document, test header or
+defect-register record pointing at `%TEMP%` is **a dangling citation the moment
+that directory is cleared** — and this platform already keeps
+`docs/citation-absent-register.json` because that has happened before.
+
+**MEASURED, not recalled** — `docs/hank-evidence/b3_item10_index.py` walks every
+directory, sizes and dates every file, and records anything unreadable as
+UNREADABLE rather than skipping it.
+
+**COMMITTED: `docs/hank-evidence/`, 12 files.** A grep over committed docs, tests
+and tools found **six of my scratchpad files cited by name**: `attr_scan.py`
+(3 citations — the suite header, two register records), `audit_gap.py`,
+`tools_sweep.tsv`, `land.sh`, `reg_add.py`, `b3_item4_evidence.py`. Those plus
+the **generators of committed documents** are now in the repo —
+`b3_item3.py` generates `docs/2026-10-08-hank-suite-failure-owners.md`, and
+**a committed document whose generator is not committed cannot be regenerated.**
+
+**DELIBERATELY NOT IN `tools/`.** These are one-off evidence scripts. `tools/`
+enrols a file in four governance populations — the tool inventory,
+`report_only_checks.REGISTRY`, `first_article_inspection`'s header-claim
+population and the bare-run sweep — all of which exist to govern tools somebody
+depends on. `docs/purge-evidence/` is the in-repo precedent for evidence that is
+not a tool.
+
+**REGISTERED: `docs/external-files-index.json`, 11 directories.** Created with the
+`{"agents": {"hank": {...}}}` shape and written by a **merge**, so an agent
+registering later cannot lose me and I cannot lose them.
+
+| kind | path | files |
+|---|---|---|
+| scratchpad | this session (batches 18-19) | 226 |
+| scratchpad | previous session (b1) | 455 |
+| home | `~/SAIRN-SESSION-LOCKS` — **SHARED, not mine alone** | 21 |
+| drive | `G:\My Drive\SAIRN-status` — the report files, outside git on purpose | 40 |
+| temp | 6 throwaway clones + 1 linked worktree | ~3,200 each |
+
+**THE CLONE LISTINGS ARE OMITTED ON PURPOSE AND THE OMISSION IS RECORDED.** Naming
+19,000 files that are just copies of this repo made the index 147KB and buried the
+226 scratchpad files that are the point. Count and size are kept;
+`listing_omitted_reason` says why, per directory. 24.7KB instead.
+
+**THE INDEX CARRIES ITS OWN LIMITS:** everything under `%TEMP%` is ephemeral and
+this records what existed at audit time, not a promise it still does; listings are
+capped with `listing_truncated` per directory; `G:\My Drive` is a Drive mount
+where a file can be a placeholder until it hydrates; and
+`~/SAIRN-SESSION-LOCKS` is **shared** — listed because I write to it, not because
+it is mine to clear.
+
+**THE SAME DEFECT EXISTS IN OTHER SESSIONS' FILES AND IS NOT MINE TO FIX.** The
+same grep found `gapverify.py`, `verify_specs.py`, `prefix_demo.py`,
+`grd_enum.py`, `cite_measure.py` and `sfdrift.py` cited from scratchpad by cc's,
+cody's and fourth's committed documents — including one inside
+`docs/defect-density-register.json`. **Named for their owners, not relocated by
+me**, and recorded in the index under
+`other_sessions_have_the_same_defect_and_it_is_not_mine_to_fix`.
+
+### item 11 — COMPACTION AND CONTEXT — two settings were ALREADY SET, one MCP server found that I had missed, and three sub-items a model turn cannot do
+
+**`claude --version` → `2.1.222 (Claude Code)`.**
+
+**BOTH SETTINGS WERE ALREADY IN PLACE. I VERIFIED THEM; I DID NOT SET THEM.**
+
+```
+autoCompactWindow            150000  ->  150000      (already)
+env.BASH_MAX_OUTPUT_LENGTH   "10000" ->  "10000"     (already)
+keys before 31   keys after 31   gained []   lost none
+permissions.allow 42 kept   permissions.deny 25 kept
+hooks kept: PostToolUse, PreCompact, PreToolUse, SessionStart, UserPromptSubmit
+```
+
+**THE MERGE WAS WRITTEN AS A MERGE ANYWAY, and the guard is not decoration.**
+`~/.claude/settings.json` is 9KB of permissions, deny rules and hooks that five
+sessions depend on, and **cody's batch 23 spent a whole item on *"find what
+removed the model key from the global settings file between 12:44 and 14:30"*.**
+A whole-file write is how that happens. So: timestamped backup, set exactly two
+keys, re-read from disk, and **diff the recursive key sets — any key present
+before and absent after restores the backup and fails.** Zero lost.
+
+**MCP — AND THE CHECK FOUND ONE I HAD MISSED.** My first read of `~/.claude.json`
+said *"global mcpServers: 0, project mcpServers: 0"* and I was about to report
+"none configured". The session-start tool, walking every project entry rather
+than just this one, found:
+
+```
+C:/Users/marsh   {'servers': ['playwright'], 'enabled': [], 'disabled': []}
+```
+
+A **local, editable** `playwright` server declared at the **home-directory**
+project scope. **NOT DISABLED, and the reason is the measurement:** no
+`mcp__playwright__*` tool appears in this session, so it is **not loaded for this
+project** and costs me nothing. Removing it would change the environment of any
+session started in `~`, which is not mine to do for a saving of zero. Reported.
+
+**TEN ACCOUNT-LEVEL CONNECTOR FAMILIES ARE LOADED AND NONE OF THEM IS IN ANY
+LOCAL FILE** — `claude-in-chrome`, Vercel, Gmail, Google Drive, Claude Docs,
+Canva, Notion, Stripe, Netlify, Ironclad. **These are the expensive ones**, and
+`mcpServers: 0` read from the config alone is *true and misleading*. **I used
+exactly zero of them this batch.** They are disabled in the claude.ai account or
+the Chrome extension — **not by any file a model turn can write**, so this is a
+recommendation with evidence, not a task I skipped.
+
+**SKILLS: `disable-model-invocation: true` added to FOUR, deliberately narrow.**
+62 skills carry a `SKILL.md`; **57 are model-invocable and cost context on every
+turn.** `/skill-doctor`, which gives the real per-skill cost, is client-side. So
+the set was limited to skills whose irrelevance is **documented or checkable**:
+
+| skill | why |
+|---|---|
+| `design-taste-frontend` | **CLAUDE.md's own words**: *"scoped to marketing sites and rarely applies"* |
+| `ui-ux-pro-max` | **CLAUDE.md's own words**: *"a lookup table, not a competitor"* |
+| `domain-check` | domain availability / WHOIS / RDAP. No SAIRN app does this; nothing in the repo calls it |
+| `playwright-devops` | Playwright **CI workflow** debugging. This platform drives Playwright directly and `sairn-visual-review` owns that use |
+
+Each merged into existing frontmatter with a timestamped backup, and the body
+verified **byte-identical** afterwards. A skill with no frontmatter would have
+been **refused**, not given one.
+
+**THE OTHER 39 "not named in a CLAUDE.md" SKILLS WERE LEFT ALONE, and that is a
+decision rather than an omission.** That list includes `sairn-session-handoff`,
+`sairn-master-orientation` and `sairn-silent-failure-sweep` — **"not named in
+CLAUDE.md" is not a usage measurement** and treating it as one would disable
+things that matter. The real measurement needs `/skill-doctor`.
+
+**`tools/hank_session_start_check.py` — the session-start check, EXIT 0.** It
+derives from files what `/context`, `/mcp` and `/skill-doctor` would show, and
+**it splits MCP into LOCAL (declared, countable, editable) and ACCOUNT-LEVEL (in
+no file, not editable from here)** because conflating them is the trap I nearly
+fell into. It **fails closed**: an unreadable skills directory is COULD NOT RUN
+exit 2, never "no skills", and it prints its own limits every run — the connector
+list is hand-kept, it counts what is on disk rather than what loaded, and **it
+measures no cost at all**.
+
+**IT IS ALREADY MORE PRECISE THAN MY OWN GREP.** `grep -l
+disable-model-invocation` reported **6** skills; the tool reports **5**.
+`sairn-skill-vetter` matches at **line 58 — in its BODY**, explaining what the
+flag means. The tool parses frontmatter only, which is the correct population.
+
+**COMPACT ONLY AT TASK BOUNDARIES; NEVER SWITCH MODEL OR TOGGLE MCP MID-TASK** —
+observed for the whole batch. No model switch, no connector change, and every
+compaction point fell between items, which is what the per-item checkpoint
+structure produces for free.
+
+### item 8 — `dead_rule_sweep.py` TIMED TO COMPLETION — **4923.3 s**, and a bound is proposed from that number
+
+Batch 18 got a **lower bound and refused to name a bound**: TIMEOUT at 1800 s
+after printing three lines in thirty minutes. This run removed the ceiling far
+enough to get an actual figure.
+
+```
+SUBJECT    tools/dead_rule_sweep.py
+CLONE      a throwaway CLONE -- this tool REGISTERS A WORKTREE and leaves it
+           registered (item 6), so running it anywhere that matters leaks one
+CEILING    7200 s, unbuffered
+
+EXIT       2
+WALL TIME  4923.3 s   (82.05 min)
+```
+
+**IT RAN TO ITS OWN END.** Exit 2 is the tool's verdict, not a timeout: its last
+line is *"The findings above are a FLOOR, not a total — part of this run did not
+happen."* **157 findings** over **158 tools / 562 compiled rules**, and four
+`sairn_reachability_check.py` rules came back
+*"COULD NOT RUN: bound 90 s exceeded … the evidence exists; re-ask with
+--corpus-timeout at 2x"* — the tool keeping its own could-not-tell separate from
+"no lock, no control", which is PR §1.11 applied internally.
+
+**LOAD, SAMPLED EVERY 15 s FOR THE WHOLE RUN — 286 samples, 0 unreadable.**
+Windows has no load average, so the honest equivalent was recorded:
+
+| | other python/node processes | system CPU % |
+|---|---|---|
+| min | 3 | 9 |
+| **mean** | **7.1** | **61.9** |
+| max | 20 | 99 |
+| first 10 min | 9.5 | 68 |
+| last 10 min | 11.9 | 77 |
+
+**"NOTHING ELSE OF MINE" HELD; "AN IDLE BOX" DID NOT, and the difference matters
+for the bound.** No other hank process ran. But four other sessions were working
+throughout — the box never dropped below 3 competing processes and averaged
+**62 % CPU**, rising over the run rather than falling. **So 4923 s is a loaded-box
+figure, which is the realistic one to bound against**, not an optimistic floor.
+
+#### THE PROPOSED BOUND: 7200 s (2 hours)
+
+**Derived from the measurement and nothing else:** 7200 / 4923 = **1.46×
+headroom**.
+
+**WHY 1.46× AND NOT TIGHTER.** This platform has already been bitten at **1.04×**:
+`assurance_case.py` was failing a 90 s bound at a measured **86.8 s** — timing out
+on variance alone, with no defect behind it. A bound set just above a single
+measurement is a bound that reports a timeout on a busy afternoon.
+
+**WHY NOT LOOSER.** A bound exists to distinguish "slow" from "hung". At 2 h it
+still fires inside a working session, and the tool's own per-rule bound (45 s
+default, 90 s where measured) already fails fast on the individual rule.
+
+**WHAT WOULD MAKE THIS MORE THAN PROVISIONAL, stated rather than implied: THIS IS
+ONE SAMPLE.** A bound from one run has no variance behind it. Three runs on
+comparable load would give a spread; until then 7200 s is a **provisional** bound
+whose only justification is 1.46× over a single loaded-box measurement. I did not
+run it three times — at 82 minutes each that is four hours, and the batch had
+eleven other items.
+
+**AND THE TOOL SHOULD BE FIXED BEFORE THE BOUND IS TIGHTENED.** It emitted its
+first substantive line and then went quiet for most of 82 minutes under
+`python -u`, so the silence is the subject's, not buffering. That is cross-domain
+convention 10 inside the tool being measured — a long run whose first check is at
+the end. A progress line per tool would turn the next measurement into both a
+number *and* a profile of where the time goes, which is what a tighter bound
+actually needs.
+
+---
+
+## item 12 — COMMITTED AND PUSHED STATE
+
+**Eight commits written for batch 19, in item order.** The authoritative sha
+list, each verified with `git merge-base --is-ancestor` **after** the push, is in
+the final report — **RULE F is why**: the landing rebase (63 incoming commits at
+the time this section was written) rewrites every sha below, and a handoff that
+names pre-rebase shas names commits that no longer exist. **This batch proved that
+on itself in batch 18 and the correction is not repeated here.**
+
+| sha at write time | item | what |
+|---|---|---|
+| `52c874fc` | 2 | STEP 13 → 13-ALT, a new `sairnvet_audit_log`; STEP 0d marked SUPERSEDED |
+| `71cc4c83` | 3 | the 101 suite failures split by owner |
+| `cd838b9f` | 4 | locks and worktrees: 2 removed, 1 refused on its own rule, 0 of 13 |
+| `ab561a68` | 5 | a missing secret can no longer destroy a good record — exit 3 |
+| `659fb5cd` | 6, 7 | the bare-run sweep at the widened scope; 5 Tier A obligations discharged |
+| `66e09bdb` | 9, 10 | RULE G; `docs/hank-evidence/`; `docs/external-files-index.json` |
+| `49d82b30` | 11 | the session-start check |
+| `b9323a83` | 8 | `dead_rule_sweep` = 4923.3 s and the proposed bound |
+
+`core.bare` = `false`. **14 worktree registrations** (down from 19 in batch 18
+after I pruned my own five; the remaining 13 are other sessions' and item 4
+explains why none qualified for removal).
+
+**NO GATE OVERRIDDEN. `SAIRN_SEED_GATE=off` was never used, in any form.**
+
+## CLAIMS HELD, AND WHAT WAS NOT TOUCHED
+
+**HELD:** `hank` / `platform`, batch 19 — pushed and verified on `origin/main` at
+claim time.
+
+**READ-ONLY, NEVER WRITTEN** — each declared in a live claim by somebody else and
+each checked against the FILES lists rather than inferred:
+
+| file | holder | what I did instead |
+|---|---|---|
+| `tests/run_bare_run_write_probe.py` | **cody** (×2 claims) | item 6's arms went into the tool's own `--selftest` |
+| `docs/defect-density-register.json` | **cody** (×2) | appended **only** through `defect_register.py --add` |
+| `docs/METHODOLOGY.md` | **fourth** | RULE G routed into my own file |
+| `docs/known-red-suites.json` | **fourth** | the 30-unrecorded-red finding is reported, not written |
+| `docs/tool-owner-map.json` | — | read for item 3's owner column and item 10's population; nothing written back |
+
+**WRITTEN, AND FREE AT THIS HEAD** — `docs/tier-a-reviews.json` was cc's through
+batch 18 and is **declared by nobody** now, which is the only reason item 7 could
+discharge anything.
+
+**ANYTHING UNDER `.claude/skills/sairn-hover-auditor/` WAS NOT READ, NOT ROUTED
+AND NOT REVIEWED.** Two Tier A obligations were refused for exactly that reason.
+
+## OPEN WORK — EXACT NEXT STEP PER ITEM
+
+| # | open | exact next step | owner |
+|---|---|---|---|
+| 1 | **`check4_probe.py` / `check7_probe.py` corrupt a live clone's `.git/config`** | replace `git worktree add` with `git clone --local --no-hardlinks`, exactly as `check8_probe.py` did on 2026-10-06. Owner map: `basis NONE, owner null` | **chat to assign** |
+| 2 | **`tools/condition_coverage.py` leaks a worktree registration** — bare run *and* `--help` | same fix. Three abandoned `condcov-*` dirs are the evidence | **chat to assign** |
+| 3 | **13 leaked worktree registrations**, 0 removable under the rule | the four worst have 1,664–2,563 uncommitted paths and 295–621 h untouched. **Give removal a second criterion that can tell probe litter from work, or decide those four by hand** | **chat** |
+| 4 | **`b12wt2.lock`** | its process is gone; at 21.57 h it failed the 24 h test **by 2.4 hours**. It qualifies on its own now — re-run `docs/hank-evidence/b3_item4_evidence.py` and remove if it reports removable | next hank |
+| 5 | **4 more locks meet the criteria** — `repo.lock` (48 h), 3× `sairn_idem_*` (199–208 h) | outside the three the dispatch named and their owners are not established | **chat** |
+| 6 | **89 REAL suite failures**, now split by owner | `docs/2026-10-08-hank-suite-failure-owners.md`. **62 are UNOWNED and cannot be routed to anybody** | **chat to split** |
+| 7 | **4 suite files TIMEOUT alone at 240 s** | re-run each with no ceiling on a quiet box, as item 8 did | next hank |
+| 8 | **The suite dirties its own tree** (5 generated docs), so 8 of 101 failures were cascade | make the generators write to a copy, or have the harness restore between files | **chat → harness owner** |
+| 9 | **30 suites RED AND NOT RECORDED** (registry 75, this run 101) | `known_red_check.py --from-run <log>` reproduces it. Register is **fourth's** | **fourth** |
+| 10 | **7 Tier A obligations assigned to cloud/fourth/cody**, held 56–276 h | all past 48 h so `--takeover` is permitted. **Four already have written verdicts** in `scratchpad/verdict_*.txt`, including the gh_push finding | **chat to decide takeover** |
+| 11 | **2 Tier A obligations in the hover namespace** | a build agent may not review them. Needs somebody outside the build role | **chat** |
+| 12 | **10 of 17 open obligations are NOT FRESH** — the recorded sha does not resolve, or resolves ORPHANED | a reviewer cannot see the change. Re-seat or re-open them | **chat** |
+| 13 | **`tools/deploy_verify_notify.py` misses a fifth pushing entrypoint** | add `gh_push.py` to `PUSHING_TOOLS`; it publishes through the REST API so `classify_command` scores it `unsure` and performs no deploy check. **`gh_push.py` is in cc's FILES** | **cc / fourth** |
+| 14 | **STEP 0's three ALTERs** | still repair code that is pushed and inert. Run the PRE-FLIGHT `pg_constraint` query, then 0a / 0b / 0c | **Michael** |
+| 15 | **STEP 13 (13-ALT)** | run 13-PRE (a)(b)(c), the DDL, then 13-V (a)–(d). **Then** the five code steps — `api/_lib/audit.js` and `api/sv-auth.js` are untouched until you confirm | **Michael, then a build session** |
+| 16 | **STEP 14** `rf_schedule.status_changed_by` | run the SQL, then the four code steps **including rewriting arm D3** of `sd_data_write_attribution_three_apps.js` in the same commit | **Michael, then a build session** |
+| 17 | **`guard_ablation.py`, `red_suite_register_check.py`** | still only `> 600 s`. Not measured this batch and not guessed at | next hank |
+| 18 | **`dead_rule_sweep.py` bound is PROVISIONAL** | one sample. Add a progress line per tool first, then three runs | next hank |
+| 19 | **RULE E, F and G are routed, not landed** | into `docs/METHODOLOGY.md` when it is unclaimed. **F and G belong in the process rules**, not as cross-domain conventions | chat / fourth |
+| 20 | **39 skills left model-invocable on a guess-free decision** | `/skill-doctor` is the only real cost measurement and is client-side. A human run of it would let the set be widened honestly | **Michael / chat** |
+| 21 | **10 account-level MCP connector families loaded, 0 used this batch** | disabled in the claude.ai account or the Chrome extension — **no file a model turn can write** | **Michael** |
+| 22 | **a local `playwright` MCP server** at the `~` project scope | not loaded for this project and costs nothing here; removing it changes any session started in `~` | **chat** |
+| 23 | **other sessions cite scratchpad files from committed docs** — `gapverify.py`, `verify_specs.py`, `prefix_demo.py`, `grd_enum.py`, `cite_measure.py`, `sfdrift.py` (one from inside the defect register) | same dangling-citation defect as mine; `docs/hank-evidence/` is the pattern | **cc / cody / fourth** |
+| 24 | **`docs/scrutiny-flags.json` stashes** | still cc's file, still parked. Match on the stash **message**, not the index | **cc** |
+
+## TRANSCRIPT AND ARTEFACTS
+
+**Session scratchpad** — every captured exit code, every sweep, every backup:
+
+```
+C:\Users\marsh\AppData\Local\Temp\claude\C--Users-marsh-Documents-SAIRN-hank\a517bec7-3fd2-4475-835c-6432b2acaa34\scratchpad
+```
+
+**EVERYTHING A COMMITTED DOCUMENT CITES IS NOW IN THE REPO** at
+`docs/hank-evidence/` (16 files + README), and **every directory I keep outside
+git is registered** in `docs/external-files-index.json` — 11 directories, each
+measured by walking it. That index is the map; the scratchpad path above is
+ephemeral.
+
+| artefact | what |
+|---|---|
+| `i8.log`, `i8.samples.json`, `i8.dead_rule_sweep.py.out` | the 4923.3 s measurement, its 286 load samples and the tool's 157 findings |
+| `i6.sweep.out`, `i6.self.out` | the widened bare-run sweep and its 8-arm selftest |
+| `i4ev.json`, `i4ev.log`, `removed.*.bak` | lock/worktree evidence and the two removed locks' contents |
+| `i7.list.out`, `i7.full.txt`, `verdict_*.txt` | the Tier A assignments, the full obligation texts and all 12 written verdicts |
+| `i7.v1.out`–`i7.v3.out` | the command output behind every Tier A verdict |
+| `i11.settings.out`, `settings.json.bak.*`, `SKILL.*.bak.*` | the settings merge with its key-set diff, and every skill backup |
+| `i3.rerun.json`, `i3.table.txt` | the 101 per-file re-runs behind the owner table |
+
+**Previous handoffs:** `docs/handoff-hank-2026-10-07d.md` (batch 18, `5c9dc265`),
+`docs/handoff-hank-2026-10-07c.md` (batch b1, `afe526b2`).
+**Routed:** `docs/2026-10-07-hank-routed.md` — §1 gh_push (taken by cc), §2 the
+auditor-namespace retraction, §3 RULE E, §4 RULE F **and RULE G**.
+**Printed SQL:** `docs/2026-10-07-hank-migration-sql-for-michael.md` — STEP 0
+(three ALTERs), STEP 1–12 (twelve tables), **STEP 13 (13-ALT)**, STEP 14.
+
+---
+
+## PUSHED STATE — VERIFIED, replacing the write-time list above
+
+`origin/main` is at **`6aa60dae`**. `git fetch` then
+`git log origin/main..HEAD` → **ahead 0, behind 0**. `core.bare` = `false`.
+
+**Eleven commits, `42bb56ad..6aa60dae`, and EACH was confirmed an ancestor of
+`origin/main` with `git merge-base --is-ancestor` AFTER the push:**
+
+| sha | item | what |
+|---|---|---|
+| `657badb1` | 2 | STEP 13 → 13-ALT; STEP 0d marked SUPERSEDED |
+| `1300c1e9` | 3 | the 101 suite failures split by owner |
+| `fe6aa8d4` | 4 | locks and worktrees, with per-item evidence |
+| `09e54de5` | 5 | **a missing secret can no longer destroy a good record** |
+| `4f3267a7` | 6, 7 | **the bare-run sweep at the widened scope**; 5 Tier A discharged |
+| `d8a7e38d` | 9, 10 | RULE G; `docs/hank-evidence/`; `docs/external-files-index.json` |
+| `146d43a2` | 11 | the session-start check |
+| `05a2c8a7` | 8 | `dead_rule_sweep` = 4923.3 s, bound proposed |
+| `886c9823` | 12 | the handoff |
+| `92273f6c` | — | the PURPOSES entry the generator refused without |
+| `6aa60dae` | — | the derived artefacts: 2 register records + 3 generated docs |
+
+**The write-time list earlier in this file named `52c874fc`, `71cc4c83`,
+`cd838b9f`, `ab561a68`, `659fb5cd`, `66e09bdb`, `49d82b30` and `b9323a83`. Those
+shas no longer exist** — rewritten by a rebase over **75 incoming commits**.
+That is RULE F, which this batch routed, happening to the document that routes
+it. **Read this table, not that one**; the earlier list is left in place because a
+handoff that quietly rewrites its own history is worse than one that shows the
+correction.
+
+### THE LANDING TOOK THREE REFUSALS AND A DEFECT OF MY OWN
+
+1. **`tooling_inventory.py` exited 2** — *"REFUSING to generate — the hand-written
+   half has drifted. 1 tool(s) with no PURPOSES entry: hank_session_start_check.py"*.
+   Correct, and it is why a new tool cannot be added quietly. Entry written
+   (`92273f6c`).
+2. **TWO REBASE CONFLICTS, both add/add, both resolved by KEEPING BOTH SIDES.**
+   - `docs/external-files-index.json`: **cody created the same file concurrently,
+     with a different schema** — `_what_this_is`, `_measured`, `directories`,
+     `scripts`, plus `tools/external_file_index_audit.py` that reads it. My
+     dispatch specified `{"agents": {"hank": …}}`. **Taking either side would have
+     destroyed the other session's work**, so I took cody's upstream version and
+     re-ran my generator on it, which MERGES — that is what the merge-not-overwrite
+     design was for. **Verified: cody's auditor still exits 0**, *"all 8 COMMITTED
+     rows resolve to a tracked path"*, with `agents.hank` added.
+   - `tools/tooling_inventory.py`: cody added nine `PURPOSES` entries in the same
+     place I added one. **Taking either side deletes the other's entries, and the
+     generator REFUSES while any tool lacks one** — so a one-sided resolution
+     would have made the generator reject a tool that is on disk. Both kept: 240
+     entries, generator exit 0.
+3. **MY OWN REGISTER SCRIPT HAD A SYNTAX ERROR AND THE LANDING LOOP CAUGHT IT.**
+   `reg_add_b3.py` was missing **one closing paren on each of its two records** —
+   `RECS.append(dict(…))` closed `dict(` and `recurrence_open(` but not
+   `append(`. The loop reported `reg_add exit=1` while
+   `defect_register --check exit=0`, **and that combination is the tell**: the
+   check passed because the register was *unchanged*, not because the records were
+   good. The push gate then named the one commit with no record. Fixed, re-landed,
+   **both records registered on cycle 1**.
+
+   **The loop is what made this cheap.** A script that silently added nothing
+   would have pushed a defect-closing commit with no record and satisfied every
+   local check.
+
+**NO GATE OVERRIDDEN. `SAIRN_SEED_GATE=off` was never used.**
+
+**STILL DIRTY AND STILL NOT MINE:** `docs/scrutiny-flags.json`, rewritten by cc's
+tool during this push and parked. Match on the stash **message**, not the index.

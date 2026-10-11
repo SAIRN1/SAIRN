@@ -255,3 +255,101 @@ file **staged** — the next rebase then refuses on an unclean index.
 rules, as its no-conflict sibling — not as a 26th cross-domain convention. The
 cross-domain conventions are about how a CHECK can be wrong; this is about the
 order of operations in a push.
+
+### RULE G — test and probe infrastructure must not mutate the clone or the shared state it runs in
+
+*(Routed 2026-10-08, batch 19, alongside RULE F. `docs/METHODOLOGY.md` is held by
+**fourth** and is not touched.)*
+
+**STATE IT AS:** *a probe, a gate, a sweep or a fixture may read anything and may
+write only inside a throwaway it created. It must not touch the clone it runs in,
+and it must not touch state SHARED with other clones — `.git/config`, the worktree
+registration list, the cross-clone lock registry, or a generated document that
+records somebody else's measurement. If it needs a dirty tree, it builds one.*
+
+**THIS IS NOT "BE TIDY".** Three of this batch's findings are the same defect
+wearing three faces, and in every one the damage landed on somebody who was not
+running the tool.
+
+#### Instance 1 — `.git/config`: the shared file a worktree hands you
+
+`tests/push_gate/check4_probe.py` and `check7_probe.py` plant a fixture in a
+**linked worktree** (`check4_probe.py:93`) and then `git push --dry-run origin
+HEAD:main` from it (`:171-172`). A linked worktree **shares `.git/config`** with
+the clone that owns it, so a `git config` write from inside one lands in the real
+clone. On 2026-10-07 that put **`core.bare = true`** into a live working clone;
+every subsequent git command answered *"fatal: this operation must be run in a
+work tree"*.
+
+`check8_probe.py` had the identical defect and was moved to a **throwaway clone**
+on 2026-10-06 — the fix is proven, in-repo, and was simply never propagated to its
+two siblings. Its own header names the class: cody's
+`SHARED_CONFIG_WRITE_FROM_WORKTREE`.
+
+**`git status` cannot see this.** That is why `tools/bare_run_write_check.py`,
+built to catch a mutating bare run, reported it clean for weeks.
+
+#### Instance 2 — the lock registry, and a leak nobody could see
+
+A **bare run** of `tools/session_lock_check.py` ACQUIRED A SESSION LOCK in
+`~/SAIRN-SESSION-LOCKS/`, printed nothing and exited 0. That registry lives
+**outside every clone on purpose** — it is why the shared status is current
+without a fetch — so the repo-scoped detector could not see the write at all.
+
+The evidence was already on disk: `bare_scratch.lock` (2026-09-30),
+`b11wt2.lock` (2026-10-06), `b12wt2.lock` (2026-10-07), each named after a
+throwaway clone that no longer exists, sitting in a registry **other sessions read
+to decide whether somebody is working.**
+
+**And the same batch found the same shape again, in a different place:**
+`tools/condition_coverage.py` registers a worktree and leaves it registered, on a
+bare run **and** on `--help` — corroborated by three abandoned registrations
+(`condcov-37872`, `condcov-75140`, `condcov-83660`) found by an independent
+census. Every one of those is another door to Instance 1.
+
+#### Instance 3 — generated documents: destroying somebody else's measurement
+
+`tools/cron_liveness_check.py` and `tools/audit_checkpoint_status.py` **overwrote**
+their status documents with `COULD NOT TELL` whenever `CRON_SECRET` was absent. A
+bare run in a clone without the secret replaced a real **OK** — four jobs, all ok,
+measured 09:18:44Z — and nothing anywhere recorded that an OK had ever existed.
+
+**The reasoning behind it was sound and the scope was wrong**: *"say so rather than
+keep a stale OK"* is right when the tool **asked** and got no answer, and wrong
+when it could not ask. Five of the six clones on this box do not carry the secret,
+so every sweep that drove every tool bare erased the record again.
+
+**The suite does it too**, at a scale nobody attributes to a probe: the
+clean-worktree run of `tools/run_all_tests.py` dirtied **five** generated
+documents, and its own footer says *"Results above may be CASCADE, not real."*
+**Of 101 failures, 8 were cascade** — files failing for a reason that was not
+their own.
+
+#### THE MECHANICAL FORM
+
+1. **Build a throwaway CLONE, not a linked worktree.** A worktree isolates the
+   *files* and isolates nothing else. `git clone --local --no-hardlinks` costs no
+   measurable time or disk.
+2. **Anything written outside the repo gets an environment override** so a test
+   can point it somewhere safe — and the tool must **propagate that override to
+   every child it spawns**, because a detector whose correctness depends on the
+   caller remembering two variables is one somebody will run with only the first.
+3. **A tool that cannot measure writes NOTHING.** Use a distinct exit code for
+   "could not ask" and leave the record alone. Overwriting a good verdict with
+   your own inability destroys the only copy.
+4. **Prove it the way a defect is proved**: snapshot shared state before and
+   after, and carry a **paired negative** — with nothing planted, the detector
+   must report nothing. An alarm that always fires is not a detector.
+
+#### WHY IT IS NOT ALREADY COVERED
+
+PR §1.11 is about a check that could not run reporting a pass; here the checks
+ran and reported correctly **while damaging something else**. Cross-domain
+convention 8 is about a check that stops testing over time; these never stopped
+testing. **Nothing anywhere governs a tool's SIDE EFFECTS on the world it is
+measuring** — and the proof is that `bare_run_write_check.py` existed specifically
+to catch a mutating bare run and still missed all three, because its scope was the
+working tree and every one of these landed outside it.
+
+**WHERE IT BELONGS:** the process rules, beside RULE F, as the other half of
+"what a tool may do to the repository it is pointed at".

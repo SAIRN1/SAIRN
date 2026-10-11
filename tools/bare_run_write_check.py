@@ -35,6 +35,7 @@ Usage:
   python tools/bare_run_write_check.py --repo <path> --only foo.py,bar.py
   python tools/bare_run_write_check.py --repo <path> --timeout 20
 """
+import hashlib
 import io
 import os
 import re
@@ -79,11 +80,118 @@ def reset(repo):
     return porcelain(repo)
 
 
+# ── SHARED STATE: THE HALF `git status` CANNOT SEE (widened 2026-10-08) ─────
+# THE DEFECT THAT FORCED THIS, measured in batch 18: a bare run of
+# `tools/session_lock_check.py` ACQUIRED A SESSION LOCK -- it created
+# `~/SAIRN-SESSION-LOCKS/<clone>.lock`, printed nothing and exited 0. This tool,
+# built to catch exactly a mutating bare run, reported it CLEAN.
+#
+# It was not a bug in the comparison. It was the SCOPE. `git status` sees the
+# working tree, and the lock registry lives OUTSIDE EVERY CLONE on purpose --
+# that is why it is current without a fetch. So the write was real, it mattered
+# to every other session that reads the registry, and it was invisible to the
+# one tool whose job it was.
+#
+# THE EVIDENCE WAS SITTING THERE: ~/SAIRN-SESSION-LOCKS/ held locks named after
+# throwaway clones that no longer exist -- bare_scratch (2026-09-30), b11wt2
+# (2026-10-06), b12wt2 (2026-10-07) -- each one a bare run of that file inside a
+# scratch copy, recorded in a registry other sessions consult to decide whether
+# somebody is working.
+#
+# THREE THINGS ARE WATCHED, and each is a place a tool has really written:
+#   1. ~/SAIRN-SESSION-LOCKS/   the cross-clone registry
+#   2. <repo>/.git/config       a LINKED WORKTREE shares this with its clone, so
+#                               a `git config` write from inside one lands here
+#                               -- this is how core.bare=true reached a live
+#                               clone in batch 18. `git status` never sees it.
+#   3. git worktree list        registering or pruning a worktree is a change to
+#                               shared state with no file in the tree.
+#
+# A SHARED-STATE WRITE IS NEVER EXEMPTED BY THE ALLOWLIST.
+# tools/bare_run_writers.py declares REPO paths; nothing in it says a tool may
+# write outside the clone. Treating silence there as permission is how this gap
+# stayed open, so these are reported unconditionally.
+# OVERRIDABLE FOR THE SELFTEST ONLY, and that is the whole reason it exists: a
+# detector of writes outside the repo cannot be tested without a safe place to
+# watch, and watching the REAL registry while planting fixtures in it would make
+# the test the defect. Production never sets this.
+LOCKS_DIR = os.environ.get(
+    'SAIRN_LOCKS_DIR',
+    os.path.join(os.path.expanduser('~'), 'SAIRN-SESSION-LOCKS'))
+
+
+def shared_snapshot(repo):
+    """A fingerprint of everything outside the working tree a tool could write.
+
+    Returns a dict; a value of the string 'UNREADABLE' is kept rather than
+    dropped, because a path that cannot be read is a third state and comparing
+    two absences would report CLEAN.
+    """
+    snap = {}
+    if os.path.isdir(LOCKS_DIR):
+        for dirpath, _dirs, files in os.walk(LOCKS_DIR):
+            for fn in sorted(files):
+                p = os.path.join(dirpath, fn)
+                k = 'LOCKS:' + os.path.relpath(p, LOCKS_DIR).replace('\\', '/')
+                try:
+                    snap[k] = hashlib.sha256(
+                        io.open(p, 'rb').read()).hexdigest()[:16]
+                except OSError:
+                    snap[k] = 'UNREADABLE'
+    else:
+        snap['LOCKS:<dir>'] = 'ABSENT'
+    cfg = os.path.join(repo, '.git', 'config')
+    try:
+        snap['GITCONFIG'] = hashlib.sha256(
+            io.open(cfg, 'rb').read()).hexdigest()[:16]
+    except OSError:
+        snap['GITCONFIG'] = 'UNREADABLE'
+    code, so, _se = git(repo, 'worktree', 'list', '--porcelain')
+    snap['WORKTREES'] = (hashlib.sha256(so.encode('utf-8')).hexdigest()[:16]
+                         if code == 0 else 'UNREADABLE')
+    return snap
+
+
+def shared_diff(before, after):
+    """Human-readable changes between two snapshots, newest key order stable."""
+    keys = sorted(set(before) | set(after))
+    diffs = []
+    for k in keys:
+        b, a = before.get(k), after.get(k)
+        if b == a:
+            continue
+        if b is None:
+            diffs.append('%s CREATED' % k)
+        elif a is None:
+            diffs.append('%s DELETED' % k)
+        else:
+            diffs.append('%s CHANGED' % k)
+    return diffs
+
+
 def run_tool(repo, rel, args, timeout):
-    """(exit_code_or_None, wrote) -- None means it did not finish."""
+    """(exit_code_or_None, wrote, shared) -- None means it did not finish.
+
+    `shared` is the list of out-of-tree changes, which is why this returns three
+    values now instead of two.
+    """
+    s_before = shared_snapshot(repo)
+    # ── THE DETECTOR MUST NOT CAUSE WHAT IT DETECTS (RULE G, 2026-10-08) ────
+    # This sweep RUNS every tool. Several of them write to the lock registry,
+    # and `tools/session_lock_check.py` honours `SAIRN_SESSION_LOCK_DIR`. If
+    # LOCKS_DIR has been redirected to a sandbox, the children are pointed at
+    # THE SAME sandbox -- so a lock-writing tool is still caught, and the real
+    # cross-clone registry other sessions read is never written to.
+    #
+    # ALIGNED HERE RATHER THAN LEFT TO THE CALLER, because a detector whose
+    # correctness depends on remembering two environment variables is one
+    # somebody will eventually run with only the first.
+    env = dict(os.environ)
+    if os.environ.get('SAIRN_LOCKS_DIR'):
+        env['SAIRN_SESSION_LOCK_DIR'] = os.environ['SAIRN_LOCKS_DIR']
     try:
         r = subprocess.run([sys.executable, rel] + list(args), cwd=repo,
-                           capture_output=True, timeout=timeout)
+                           capture_output=True, timeout=timeout, env=env)
         code = r.returncode
     except subprocess.TimeoutExpired:
         code = None
@@ -91,7 +199,8 @@ def run_tool(repo, rel, args, timeout):
         out('    COULD NOT LAUNCH %s: %s' % (rel, e))
         code = None
     wrote = porcelain(repo)
-    return code, wrote
+    shared = shared_diff(s_before, shared_snapshot(repo))
+    return code, wrote, shared
 
 
 def opt(argv, name, default=None):
@@ -102,7 +211,133 @@ def opt(argv, name, default=None):
     return default
 
 
+def selftest():
+    """Can the SHARED-STATE half be made to fail? If not, it is decoration.
+
+    Every arm plants a real change in a real place and asserts the detector
+    reports it. The fixtures live in a temp directory with SAIRN_LOCKS_DIR
+    pointed at it, so the real registry is never written to -- watching the live
+    registry while planting fixtures in it would make the test the defect.
+    """
+    import shutil
+    import tempfile
+    global LOCKS_DIR
+    npass = nfail = 0
+
+    def ck(label, cond, extra=''):
+        nonlocal npass, nfail
+        if cond:
+            npass += 1
+            out('  ok   ' + label)
+        else:
+            nfail += 1
+            out('  FAIL ' + label)
+            if extra:
+                out('       ' + str(extra)[:300])
+
+    out('BARE-RUN WRITE SWEEP -- SELFTEST of the shared-state half')
+    out('  SAIRN_LOCKS_DIR is redirected to a temp dir; the real registry is '
+        'never touched.')
+    out('')
+    base = tempfile.mkdtemp(prefix='brwc_self_')
+    real_locks = LOCKS_DIR
+    try:
+        LOCKS_DIR = os.path.join(base, 'locks')
+        os.makedirs(LOCKS_DIR)
+        repo = os.path.join(base, 'repo')
+        os.makedirs(repo)
+        for a in (['init', '-q'], ['config', 'user.email', 'f@x.invalid'],
+                  ['config', 'user.name', 'f']):
+            git(repo, *a)
+        io.open(os.path.join(repo, 'a.txt'), 'w', encoding='utf-8').write('x\n')
+        git(repo, 'add', '-A')
+        git(repo, 'commit', '-q', '-m', 'f')
+
+        s0 = shared_snapshot(repo)
+        ck('A1. two snapshots of an untouched world are IDENTICAL -- without '
+           'this every arm below would pass on noise',
+           shared_diff(s0, shared_snapshot(repo)) == [],
+           shared_diff(s0, shared_snapshot(repo)))
+
+        io.open(os.path.join(LOCKS_DIR, 'planted.lock'), 'w',
+                encoding='utf-8').write('{"pid": 1}\n')
+        d = shared_diff(s0, shared_snapshot(repo))
+        ck('A2. a NEW lock file is reported CREATED. This is the exact shape '
+           'session_lock_check.py produced on a bare run, which this tool used '
+           'to report CLEAN',
+           d == ['LOCKS:planted.lock CREATED'], d)
+
+        s1 = shared_snapshot(repo)
+        io.open(os.path.join(LOCKS_DIR, 'planted.lock'), 'w',
+                encoding='utf-8').write('{"pid": 2}\n')
+        d = shared_diff(s1, shared_snapshot(repo))
+        ck('A3. an EDITED lock is reported CHANGED, not missed -- a refreshed '
+           'lock is still a write to a registry other sessions read',
+           d == ['LOCKS:planted.lock CHANGED'], d)
+
+        s2 = shared_snapshot(repo)
+        os.remove(os.path.join(LOCKS_DIR, 'planted.lock'))
+        d = shared_diff(s2, shared_snapshot(repo))
+        ck('A4. a DELETED lock is reported DELETED. Removing somebody else\'s '
+           'lock is as much a change as taking one',
+           d == ['LOCKS:planted.lock DELETED'], d)
+
+        s3 = shared_snapshot(repo)
+        git(repo, 'config', 'core.bare', 'false')
+        git(repo, 'config', 'sairn.selftest', 'planted')
+        d = shared_diff(s3, shared_snapshot(repo))
+        ck('A5. a `git config` write is reported GITCONFIG CHANGED. THIS IS THE '
+           'ONE git status CANNOT SEE, and it is how core.bare=true reached a '
+           'live clone from inside a linked worktree',
+           d == ['GITCONFIG CHANGED'], d)
+
+        s4 = shared_snapshot(repo)
+        wt = os.path.join(base, 'wt')
+        git(repo, 'worktree', 'add', '--detach', wt, 'HEAD')
+        d = shared_diff(s4, shared_snapshot(repo))
+        ck('A6. registering a WORKTREE is reported WORKTREES CHANGED -- a '
+           'change to shared state with no file in the tree, and every '
+           'registration is another door to the shared config',
+           'WORKTREES CHANGED' in d, d)
+
+        s5 = shared_snapshot(repo)
+        ck('A7. THE PAIRED NEGATIVE: with nothing planted, the detector reports '
+           'NOTHING. An alarm that always fires is not a detector',
+           shared_diff(s5, shared_snapshot(repo)) == [],
+           shared_diff(s5, shared_snapshot(repo)))
+
+        # ── END TO END: a planted tool that takes a lock must make the sweep
+        # fail, through run_tool, not through shared_diff called by hand.
+        os.makedirs(os.path.join(repo, 'tools'), exist_ok=True)
+        io.open(os.path.join(repo, 'tools', 'zz_planted_locker.py'), 'w',
+                encoding='utf-8').write(
+            'import io, os, sys\n'
+            'p = os.path.join(os.environ["SAIRN_LOCKS_DIR"], "e2e.lock")\n'
+            'io.open(p, "w", encoding="utf-8").write("{}\\n")\n'
+            'sys.exit(0)\n')
+        git(repo, 'add', '-A')
+        git(repo, 'commit', '-q', '-m', 'planted')
+        os.environ['SAIRN_LOCKS_DIR'] = LOCKS_DIR
+        code, wrote, shared = run_tool(repo, os.path.join(
+            'tools', 'zz_planted_locker.py'), [], 25)
+        ck('B1. END TO END -- a planted tool that writes a lock on a bare run is '
+           'caught by run_tool, exit 0 and a clean `git status` '
+           'notwithstanding. THAT COMBINATION IS EXACTLY WHAT WAS BEING MISSED',
+           shared == ['LOCKS:e2e.lock CREATED'] and not wrote and code == 0,
+           'code=%s wrote=%s shared=%s' % (code, wrote, shared))
+    finally:
+        LOCKS_DIR = real_locks
+        os.environ.pop('SAIRN_LOCKS_DIR', None)
+        shutil.rmtree(base, ignore_errors=True)
+
+    out('')
+    out('%d passed, %d failed' % (npass, nfail))
+    return 1 if nfail else 0
+
+
 def main(argv):
+    if '--selftest' in argv:
+        return selftest()
     repo = opt(argv, '--repo')
     if not repo:
         sys.stderr.write(
@@ -186,10 +421,35 @@ def main(argv):
             'stopped running.')
     out('')
 
+    out('  SHARED STATE      : WATCHED TOO, and never exempted by the '
+        'allowlist.')
+    out('                      %s' % LOCKS_DIR)
+    out('                      <repo>/.git/config  (a LINKED WORKTREE shares '
+        'this, which is')
+    out('                      how core.bare=true reached a live clone -- '
+        '`git status`')
+    out('                      never sees it)')
+    out('                      `git worktree list`  (registering one is a '
+        'change with no')
+    out('                      file in the tree)')
+    out('                      bare_run_writers.py declares REPO paths only. '
+        'Nothing in it')
+    out('                      says a tool may write OUTSIDE the clone, and '
+        'reading that')
+    out('                      silence as permission is how this gap stayed '
+        'open.')
+    out('')
+
     writes_bare, writes_help, could_not, intended = [], [], [], []
+    writes_shared = []
     for n in names:
         rel = os.path.join('tools', n)
-        code, wrote = run_tool(repo, rel, [], timeout)
+        code, wrote, shared = run_tool(repo, rel, [], timeout)
+        if shared:
+            writes_shared.append((n, shared))
+            out('  WRITES(SHARED) %-45s exit=%s  %s' % (
+                n, code, '; '.join(shared[:4])
+                + (' ...+%d' % (len(shared) - 4) if len(shared) > 4 else '')))
         if wrote and _allow is not None and _allow.is_intended(n):
             # DECLARED. Reported, and the paths are CHECKED against what it said
             # it would write: a declared writer that starts writing something
@@ -220,7 +480,11 @@ def main(argv):
             out('')
             return 2
 
-        code, wrote = run_tool(repo, rel, ['--help'], timeout)
+        code, wrote, shared = run_tool(repo, rel, ['--help'], timeout)
+        if shared:
+            writes_shared.append((n + ' --help', shared))
+            out('  WRITES(SHARED) %-45s exit=%s  %s'
+                % (n + ' --help', code, '; '.join(shared[:4])))
         if wrote and _allow is not None and _allow.is_intended(n):
             pass                      # a declared writer writing on --help too
         elif wrote:
@@ -247,6 +511,11 @@ def main(argv):
             out('      %-46s undeclared: %s' % (n, ', '.join(x)))
     out('  WROTE on a bare run       : %d' % len(writes_bare))
     out('  WROTE on --help           : %d' % len(writes_help))
+    out('  CHANGED SHARED STATE      : %d -- outside the working tree, so '
+        '`git status`' % len(writes_shared))
+    out('                              could not have seen any of them')
+    for n, sh in writes_shared:
+        out('      %-46s %s' % (n, '; '.join(sh[:5])))
     out('  COULD NOT RUN (no verdict): %d -- these are NOT reported as clean'
         % len(could_not))
     for n, why in could_not:
@@ -256,6 +525,19 @@ def main(argv):
         out('A DECLARED WRITER THAT WRITES AN UNDECLARED PATH IS NOT COVERED BY')
         out('THE ALLOWLIST. Update tools/bare_run_writers.py, or find out why the')
         out('path changed.')
+        return 1
+    if writes_shared:
+        out('A BARE RUN MUST NOT TOUCH SHARED STATE, AND NO ALLOWLIST COVERS '
+            'THIS.')
+        out('tools/bare_run_writers.py declares paths INSIDE the repo. A write')
+        out('to the lock registry, to .git/config or to the worktree list')
+        out('reaches every other clone on this box, and the session that reads')
+        out('it next has no way to tell it came from a sweep.')
+        out('')
+        out('THIS IS THE CASE THIS TOOL USED TO MISS ENTIRELY. Before '
+            '2026-10-08 it')
+        out('compared only `git status`, so tools/session_lock_check.py taking a')
+        out('lock on a bare run was reported CLEAN.')
         return 1
     if writes_bare or writes_help:
         out('A BARE RUN MUST BE REPORT-ONLY. Each tool above needs an explicit')

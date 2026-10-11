@@ -2278,6 +2278,32 @@ PURPOSES = {
         'reports that name, where the old pid-binding form reported none -- the '
         'control that would have caught the 3h13m watch of pid 0 on the day it '
         'was written instead of after. An archived one-shot, not wired'),
+    'hank_session_start_check.py': ('ADVISORY',
+        'WHAT IS ACTUALLY LOADED INTO A SESSION, derived from files because the '
+        'commands that would answer it -- /context, /mcp and /skill-doctor -- are '
+        'CLIENT-SIDE and a model turn cannot invoke them. Built 2026-10-08 after '
+        'an item asked for exactly those three and all three turned out to be '
+        'unreachable from a turn. Counts skills on disk and separates the '
+        'MODEL-INVOCABLE ones (57 of 62 at build time, each costing context on '
+        'every turn) from those carrying `disable-model-invocation`, which a human '
+        'can still type. IT PARSES FRONTMATTER ONLY and that is a correctness '
+        'point, not a shortcut: a plain grep for the flag reported 6 skills where '
+        'this reports 5, because sairn-skill-vetter mentions it in its BODY while '
+        'explaining what it means. THE MCP HALF IS SPLIT IN TWO BECAUSE '
+        'CONFLATING THEM IS THE TRAP: LOCAL servers are declared in '
+        '~/.claude.json and can be counted and edited, while ACCOUNT-LEVEL '
+        'connectors (claude.ai and the Chrome extension) appear in the tool list '
+        'as mcp__claude_ai_* and mcp__claude-in-chrome__* and are in NO local '
+        'file -- so reporting "0 MCP servers" from the config alone is true and '
+        'misleading while ten connector families are loaded. Walking EVERY project '
+        'entry rather than just the current one is what found a local `playwright` '
+        'server declared at the home-directory scope that a read of the global and '
+        'current-project entries had missed. Writes nothing. An unreadable skills '
+        'directory is COULD NOT RUN exit 2, never "no skills" -- an empty count '
+        'and an unreadable source are different answers and only one is good news. '
+        'Prints its own limits every run: the connector list is HAND-KEPT, it '
+        'counts what is ON DISK rather than what the harness loaded, and it '
+        'measures no token cost at all -- /skill-doctor does that'),
 }
 for _p in ('gen_ma_calendar.py', 'gen_ma_seed.py', 'gen_mn_calendar.py', 'gen_mn_seed.py',
            'gen_mo_calendar.py', 'gen_mo_seed.py', 'gen_nj_calendar.py', 'gen_nv_calendar.py',

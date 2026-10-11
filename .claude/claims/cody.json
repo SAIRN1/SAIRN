@@ -3616,6 +3616,26 @@
         "tools/exit_status_attributable.py",
         "tools/tier_a_review_gate.py"
       ]
+    },
+    {
+      "id": "cody-1791762668",
+      "session": "cody",
+      "subject": "cody",
+      "task": "batch 27 (b4) -- (1) route the 76 REAL suite failures by owning app/agent per H1 App-column method, routing TABLE ONLY, no fixes; (2) reseat the ~21 single-session dangling Tier-A records in docs/tier-a-reviews.json, and REPORT (not reseat) the 11 cross-session ones with the sessions that touched each; (3) FIX law_role_granularity seq757 (SAIRNlaw role granularity, api/sd-data.js:1037,:1067-1069,:13798-13806) per hover2's 19-row table; (4) compaction discipline, no mid-task model/MCP switch; (5) SAIRN-digest-cody-b4.txt; (6) handoff BEFORE report. FILES: docs/2026-10-11-cody-b4-suite-failure-routing.md docs/2026-10-11-cody-b4-suite-failure-routing.tsv docs/tier-a-reviews.json docs/2026-10-11-cody-b4-tier-a-reseat.md api/sd-data.js SAIRN-digest-cody-b4.txt docs/handoff-cody-2026-10-11.md SAIRN-ACTIVE-WORK-cody.md",
+      "claimed_at": "2026-10-11T23:51:08Z",
+      "claimed_at_epoch": 1791762668.7269206,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "SAIRN-digest-cody-b4.txt",
+        "api/sd-data.js",
+        "docs/2026-10-11-cody-b4-suite-failure-routing.md",
+        "docs/2026-10-11-cody-b4-suite-failure-routing.tsv",
+        "docs/2026-10-11-cody-b4-tier-a-reseat.md",
+        "docs/handoff-cody-2026-10-11.md",
+        "docs/tier-a-reviews.json"
+      ]
     }
   ],
   "refusals": [

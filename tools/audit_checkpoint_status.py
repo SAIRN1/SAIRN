@@ -95,6 +95,17 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
 
 EXIT_CLEAN, EXIT_FINDING, EXIT_COULD_NOT_RUN = 0, 1, 2
+# ── EXIT 3: THE CREDENTIAL IS ABSENT, AND NOTHING WAS WRITTEN (2026-10-08) ──
+# Same defect and same fix as tools/cron_liveness_check.py; the full reasoning
+# is in that file's note. In short: "say so rather than keep a stale OK" is
+# right when the tool ASKED and could not get an answer, and wrong when it could
+# not ask at all. A missing environment variable is a fact about the clone, not
+# about the audit logs -- and five of the six clones on this box do not carry
+# CRON_SECRET, so any sweep that runs every tool bare erased the record.
+#
+# The missing-secret path now writes NOTHING and exits 3. Every other
+# could-not-tell path is unchanged and still records COULD NOT TELL.
+EXIT_NO_SECRET = 3
 DOC = os.path.join(REPO, 'docs', 'AUDIT-CHECKPOINT-STATUS.md')
 DEFAULT_URL = 'https://sairn.vercel.app/api/audit-checkpoint'
 
@@ -147,16 +158,16 @@ def main(argv):
     url = os.environ.get('SAIRN_CHECKPOINT_URL', DEFAULT_URL)
     secret = os.environ.get('CRON_SECRET')
     if not secret:
-        write_status('COULD NOT TELL', [
-            '**CRON_SECRET is not set in this environment, so the endpoint was not',
-            'called and nothing was verified.**',
-            '',
-            'This is not a finding about the audit logs. It is this tool being unable',
-            'to ask. Set CRON_SECRET and run it again.',
-        ])
-        print('COULD NOT RUN: CRON_SECRET is not set. %s says so rather than '
-              'keeping a stale OK.' % os.path.relpath(DOC, REPO))
-        return EXIT_COULD_NOT_RUN
+        # NOTHING IS WRITTEN HERE. See EXIT_NO_SECRET above.
+        print('COULD NOT RUN: CRON_SECRET is not set, so the endpoint was not '
+              'called and nothing was verified.')
+        print('NOTHING WAS WRITTEN. %s is UNCHANGED and still holds whatever '
+              'the last run that COULD ask recorded.'
+              % os.path.relpath(DOC, REPO))
+        print('This is not a finding about the audit logs. It is this tool '
+              'being unable to ask, in a clone that does not carry the secret.')
+        print('  CRON_SECRET=... python tools/audit_checkpoint_status.py')
+        return EXIT_NO_SECRET
 
     try:
         from sairn_http import fetch_json
