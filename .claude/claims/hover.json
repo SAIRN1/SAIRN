@@ -567,6 +567,17 @@
       "files": [
         "EXTERNAL-TOOLS-INDEX.md"
       ]
+    },
+    {
+      "id": "hover-1791762489",
+      "session": "hover",
+      "subject": "hover",
+      "task": "H1 batch b7",
+      "claimed_at": "2026-10-11T23:48:09Z",
+      "claimed_at_epoch": 1791762489.5072265,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
