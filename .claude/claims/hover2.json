@@ -129,8 +129,8 @@
       "task": "batch Z (b8) -- re-verify sf_officers/bld_draws/dnt_appointments/scp/sairncash CRITICAL fixes, gate-widening and FILES-matcher recheck, citation triage, 4 oldest re-verify, chain tip, external-files check, session-config-check, handoff+digest",
       "claimed_at": "2026-10-11T23:44:23Z",
       "claimed_at_epoch": 1791762263.203489,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-11T23:55:46Z",
       "files": null
     }
   ],
