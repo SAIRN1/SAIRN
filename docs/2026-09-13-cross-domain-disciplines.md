@@ -1848,9 +1848,120 @@ and inventing the field is noise.
 
 ---
 
+## 33. A CONTAMINATION WARNING MAKES EVERY RESULT IN ITS SCOPE UNFALSIFIABLE, SO IT MUST SHIP WITH THE ISOLATION METHOD
+
+**Adopted 2026-10-11 BY DIRECT INSTRUCTION. DERIVED BY CODY** --
+`docs/METHODOLOGY.md`, the section *"cody's own section — written in full here,
+2026-10-08"*, whose full text landed in `7ae272cc` and `ffe43d70` and whose own
+status line read *"ROUTED to fourth for a number, NOT self-promoted."* **The
+number is the only thing this promotion adds**; the rule, the figures and the
+"where it does not transfer" paragraph are cody's and are carried as written.
+
+**Counted before assigning it: 32 `## <n>.` headings at `263f736f`, numbers 1-32
+with no gap and no duplicate** (`re.match(r'^## (\d+)\.')` over the file, plus a
+`collections.Counter` for duplicates and a gap scan), and `grep -rn` over
+`docs/ tools/ tests/` found no existing use of a convention 33. That check is
+written down because **two elevenths happened on 2026-09-25** when two sessions
+each picked a number from outside the file within the hour, and because cc's 30
+was deliberately routed with its number left as `N` for this file's holder for
+the same reason.
+
+**THE CONVENTION, in one line: when a run reports that its own environment was
+disturbed, that warning invalidates every verdict in its scope at once --
+INCLUDING THE CORRECT ONES -- so the warning must also carry the method that
+separates real from cascade, and the method must be cheap enough that somebody
+actually runs it.**
+
+**CODY'S INSTANCE, measured.** A `--pinned` suite run on 2026-10-08 ended
+`EXIT 1` with 759 files, 671 ok and **86 FAIL**, plus one line:
+
+```
+THE SUITE DIRTIED THE TREE (1 path(s)) -- a probe did not clean up:
+     M docs/report-only-reachability.json
+    Results above may be CASCADE, not real.
+```
+
+**That line is true and correct to print.** Its effect was that for **two
+batches** the only defensible statement about 86 measured failures was *"do not
+quote 86 as a defect count"* -- the number sat in a committed handoff as an open
+item, unusable in either direction.
+
+The separation, once done, took one script and ~2 hours of unattended time:
+re-run each failure alone in a `git clone --local` at the same commit, 420 s
+bound, `git status --porcelain` after **every** probe so none inherits another's
+mess.
+
+```
+REAL            76 of 86     fails alone on a clean tree at the same commit
+COULD-NOT-RUN    7 of 86     exit 2 or the bound -- never folded into either
+ARTIFACT         3 of 86     passes alone
+dirtied the clean clone : 0 of 86
+```
+
+**The contamination explained 3 of 86.** The hypothesis the warning invited was
+wrong about 73 cases, and nothing in two batches of careful reasoning could have
+told anybody that -- only the isolation could.
+
+**WHY THIS IS NOT JUST "RE-RUN IT". The asymmetry is the whole point:**
+
+- The warning is **cheap to emit** and **expensive to discharge**, so it
+  accumulates. This one sat for two batches.
+- While it sits, **the correct results are as unusable as the wrong ones.** 73
+  real defects were invisible behind 3 artifacts.
+- And the warning is **unfalsifiable by reasoning.** No amount of reading the
+  output distinguishes a cascade from a real failure; only a clean re-run does.
+
+**HOW TO IMPLEMENT IT, three parts.**
+
+1. **A tool that reports contamination names the isolation command in the same
+   output** -- not in a handoff, not in a doc somebody has to find. One line:
+   *"to separate real from cascade: re-run each failure alone at this commit in a
+   fresh clone."*
+2. **State the scope of the doubt as a COUNT, not a word.** *"Results above may
+   be cascade"* invites the reader to doubt everything. *"86 failures are in
+   scope; 1 path was dirtied at line N of 793, so the 57 reported before it
+   cannot be cascade"* is the same warning with two thirds of the doubt removed
+   for free. Cody's did not carry the ordering, **and the ordering was
+   available.**
+3. **Prefer isolation to restoration.** The instinct is to restore the file and
+   re-run the whole suite -- three hours, and it answers a different question.
+   Re-running the 86 alone answers *this* one and costs a fraction.
+
+**AND THE CONTROL THAT MAKES THE METHOD TRUSTWORTHY IS THE ONE NOBODY ASKS FOR:**
+`git status --porcelain` after **every** probe, not once at the end. It is what
+turns *"they were run in isolation"* from an intention into a measurement -- and
+it returned **0 of 86**, which is the only reason the verdicts can be attributed
+to the probes rather than to each other. That is this file's unnumbered closing
+rule applied to an isolation harness: build the control that makes it fail
+before you trust the run that says it passed.
+
+**WHERE IT DOES NOT TRANSFER.** This is about a warning whose scope is a SET of
+results. A warning about a single result needs no isolation method -- re-running
+the one thing *is* the method. And it does not apply to a tool that refuses
+outright: a refusal produces no verdicts to be doubted, which is the whole
+reason a loud refusal is cheaper than a qualified pass.
+
+**NOT THE SAME AS THE CONVENTIONS IT SITS BESIDE, and cody asked the question of
+each rather than leaving it to a reader.** Convention **24** is a leg whose
+failure is overwritten by a later success; here nothing was overwritten and the
+warning fired correctly. Convention **17** is a third state for absence -- the
+COULD-NOT-RUN bucket above is 17 being *obeyed*, not the finding. Convention
+**8** is a check going stale over time; this one was accurate the day it was
+written and on every day after. **One more, added at promotion rather than by
+cody:** convention **29** distrusts a tier that clears a whole category, and 33
+is the mirror image one layer out -- a warning that condemns a whole category.
+29 says a blanket PASS is the outcome to distrust; 33 says a blanket DOUBT is
+too, and for the same reason: neither can distinguish its cases.
+
+**Cause tag:** `verification/contamination-warning/scope-stated-without-a-separation-method`.
+
 ---
 
-## The failure mode TEN of the thirty-two share
+---
+
+## The failure mode TEN of the thirty-three share
+
+*(Denominator moved 2026-10-11 when cody's 33 was landed, and the membership question was asked rather than assumed. **33 IS NOT A MEMBER; the group stays at TEN.** The group is a CHECK THAT READS AS COVERAGE AND STRUCTURALLY CANNOT FIRE. 33's warning **fired, correctly, and loudly** -- the suite said its own tree was dirtied and that statement was true. The defect is on the other side of the output: the warning is unfalsifiable by reasoning, so it condemns 73 correct verdicts along with 3 wrong ones, and it carries no way to tell them apart. That is a mechanism which cannot DISTINGUISH its cases, which is where **29** was put for the same reason and by the same argument -- and 33 is 29's mirror: 29 distrusts a blanket PASS, 33 distrusts a blanket DOUBT. Both stay outside the group. **The heading's denominator was changed from "thirty-two" to "thirty-three" rather than left to drift, and the TEN is untouched.**)*
 
 *(Denominator moved 2026-10-07 when cc's 23, 24 and 25 were landed, and the membership question was asked of all three rather than assumed. **24 IS A TENTH MEMBER.** A leg that returns success on a failed leg is a check that reads as coverage and structurally cannot fail in the direction that matters -- it never turns a passing subject red, only a failing one green, which is item 8's shape one layer out from the checker and into its composition. **23 IS NOT A MEMBER:** it is not a check at all, it is a discipline about the INPUT to work. **25 IS NOT A MEMBER:** its subject is a checker that fires loudly and too often, which is the opposite failure. So the NINE is now a TEN and the heading has been changed rather than left to drift -- and the nine-member list itself is otherwise unchanged.)*
 
