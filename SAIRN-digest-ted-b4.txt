@@ -1,5 +1,5 @@
 DIGEST ted b4 -- CLOSE 2026-10-08, RESUME 2026-10-11, RESUME 2 2026-10-11/12
-SHA256 956fca6ef33e861ad37e0fa7705c1d99ec56c40e0ce8636fb9be04ed00a06847
+SHA256 1ae5e784ae19e984ae78ceb9d98d844a824e04c6491051ea7c9a8676c9efc9d1
 
 HASH RULE, added by resume 2 because the line below it did not exist and item 6
 claimed it did: line 1 is the title, line 2 is the SHA line, the BODY is every
@@ -48,7 +48,9 @@ and are corrected here rather than edited in place.
                declared a FILES list, which is the remedy the tool itself prints,
                and the answer was that I ALREADY HOLD THE CLAIM FOR THIS WORK
                ("[SAME WORK] fourth ... ATTEMPT 4", claimed 1.6h before pickup).
-               NO NEW CLAIM TAKEN, NONE RELEASED, NO TASK STRING REWORDED.
+               NO TASK STRING REWORDED. "No new claim taken, none released"
+               was true when attempt 6 ran and is OVERTURNED by the CLAIMS
+               block below: `check` was answering from the stale liveness path.
   RE-VERIFIED  items 2, 3, 4a-4d re-derived AT 850cfb9c against the repo, not
                against this file. All hold. Two figures moved AGAIN:
                git ls-files .claude/skills 198 -> 199 and the hover-auditor
@@ -60,6 +62,25 @@ and are corrected here rather than edited in place.
                probe EXIT 0 and tools/jscomments.py:2 "# OWNER: fourth".
   UNCHANGED    2 worktrees (one cc's, LOCKED, not mine), 0 stash, 8 orphan
                session locks STILL NOT RELEASED -- third batch running.
+  CLAIMS       RELEASED the attempt-4 claim and TOOK A NEW ONE, in that order,
+               because the push gate said on the landed push "CLAIM STATE: DEAD
+               -- THIS PUSH IS NOT UNDER A HELD CLAIM. CLAUDE_PID 64304 no
+               longer exists" -- the PREVIOUS session's pid. `check` said I
+               already held it; `own` said DEAD. ROOT CAUSE IS THE STRIPPED
+               HOOKS: liveness is read from the STATUS REGISTRY row
+               (sairn_claim.py:1281 registry_claims -> claim_liveness), the row
+               is written by sairn_status.py --hook at SessionStart, and that
+               was one of the 23 removed -- so the row still carried a dead pid
+               while session_lock_check.py correctly said SELF/61696. Writing
+               the row fixed it: `own` now EXIT 0, "state: HELD ... CLAUDE_PID
+               61696". NEVER TWO CLAIMS AT ONCE -- the tool refused the second
+               and named release-then-reclaim as the remedy.
+               Release and claim both pushed: e4b17594..769023c4.
+  THIRD DIRECTION for CLAUDE.md's registry warning: an EMPTY registry is not
+               evidence nobody is working, resume 1 found a POPULATED one is not
+               evidence they are dead, and resume 2 found A POPULATED ONE CAN
+               MAKE A LIVE SESSION LOOK DEAD TO EVERY OTHER CLONE AND TO THE
+               PUSH GATE.
   NEW QUESTION report question 8: were the hooks and the compaction keys turned
                off ON PURPOSE? Nothing records it. If deliberate, say so and I
                will leave them off.

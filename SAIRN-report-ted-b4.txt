@@ -1,5 +1,5 @@
 REPORT ted b4
-SHA256 1c9acff90dbd8964fefbf839f38989a2aaba4888db413ec203382deafc75f850
+SHA256 4b90a63af2fd89beb7a6b8c27baed8ea5e313accab3102bacdbe7226a688a2bd
 
 BATCH 18 (b4) -- fourth / Ted -- CLOSE 2026-10-08, RESUME 2026-10-11,
                                  RESUME 2 2026-10-11/12 (section 0A)
@@ -51,7 +51,9 @@ Re-verify with:
                        .claude/settings.json.hooks.bak     12,224 B  20:45
                        sql/restore_demo_pins_2026-09-29.sql 10,307 B  Oct 5
   vs remote            behind 4 at pickup, behind 6 after the fetch below
-  my claim             ALREADY HELD, claimed 1.6h before pickup. See 0A.3.
+  my claim             read as ALREADY HELD, claimed 1.6h before pickup (0A.3)
+                       -- AND THAT READING WAS WRONG. It was DEAD to every other
+                       clone the whole time. See 0A.6, which overturns 0A.3.
 
 NOTHING WAS DISCARDED. The brief said commit or stash, never discard, and all
 three modified paths are accounted for below by name.
@@ -208,6 +210,13 @@ second would have made the record say two things. NOTHING WAS RELEASED EITHER:
 the batch is not finished at the time this section is written, and a claim
 released before the push is a claim that was never on the work that landed.
 
+**THE PARAGRAPH ABOVE IS WRONG AND IS LEFT STANDING BECAUSE IT IS WHAT I
+BELIEVED WHEN I ACTED ON IT.** The word "live" in it came from `check`, and
+`check` was answering from the stale half of a tool that has two liveness paths.
+The claim was DEAD to every other clone and to the push gate for the whole
+run. 0A.6 has the measurement, the trace to the cause, and what was done about
+it -- a release and a re-claim, in that order, both pushed.
+
 NO TASK STRING WAS REWORDED TO CLEAR A BLOCK (PR 4.3). Declaring FILES is not a
 rewording -- it is the field the matcher is built to prefer, and cc's batch W
 item (2) is the work of making it primary.
@@ -327,6 +336,79 @@ not have to search.
     FRONTMATTER WAS EDITED, in this pass either.
 
   ITEM 4(e) -- the external-files inventory. STILL NOT MINE, still not done.
+
+--------------------------------------------------------------------------------
+0A.6  THE DOWNSTREAM CONSEQUENCE, FOUND BY THE PUSH GATE AFTER THE PUSH LANDED:
+      THIS SESSION'S CLAIM READ AS **DEAD** TO EVERY OTHER CLONE, AND THE
+      STRIPPED HOOKS ARE WHY
+--------------------------------------------------------------------------------
+
+The resume-2 push landed `bfd2fcb0..e4b17594`, verified by `git ls-remote origin
+refs/heads/main` equalling `git rev-parse HEAD`. The gate printed this with it:
+
+  "CLAIM STATE: DEAD -- THIS PUSH IS NOT UNDER A HELD CLAIM.
+     CLAUDE_PID 64304 no longer exists"
+
+64304 IS THE PREVIOUS SESSION'S PID. The claim was taken at 23:52Z by the
+session that then ended. So the honest statement is the one the gate made: the
+resume-2 commits landed WITHOUT a claim any other clone could see as live, and I
+did not know it until the gate said so.
+
+TWO PATHS IN ONE TOOL DISAGREED, which is why it was invisible:
+
+  `sairn_claim.py check`  "BUT YOU ALREADY HOLD 1 ACTIVE CLAIM(S) ... [SAME WORK]"
+  `sairn_claim.py own`    "state: DEAD -- CLAUDE_PID 64304 no longer exists"
+
+`check` judged by the 4-hour window; `own` judged by liveness. The file's own
+comment at :1341 says the session's own view of its own claim was the blind one
+and was corrected on 2026-10-08 -- what is left is that `check` still answers
+from the other side of that correction.
+
+THE ROOT CAUSE IS THE STRIPPED HOOKS, TRACED RATHER THAN GUESSED:
+
+  liveness is read by `registry_claims()` at tools/sairn_claim.py:1281, which
+  calls `sairn_status.claim_liveness(sess)` -- the pid in THE STATUS REGISTRY
+  ROW, not the one in the claim file (the claim entry carries no pid at all;
+  dumped and checked)
+    -> the registry row is written by `tools/sairn_status.py --hook` wired as a
+       SessionStart hook, which WAS ONE OF THE 23 REMOVED
+    -> so this session never wrote its row, the row still carried 64304, and
+       every clone and the push gate judged my claim through a dead pid
+    -> `tools/session_lock_check.py status` meanwhile reported SELF, CLAUDE_PID
+       61696, because its guard runs as a PreToolUse hook and I had RESTORED the
+       hooks before the first Bash call -- so the LOCK was correct the whole time
+       and only the REGISTRY was stale. Two liveness sources, one re-stamped and
+       one not.
+
+FIXED, AND VERIFIED BY THE SAME COMMAND THAT REPORTED IT DEAD:
+
+  python tools/sairn_claim.py release --no-push fourth   -> the attempt-4 claim
+  python tools/sairn_claim.py claim   --no-push fourth   -> resume 2, FILES
+                                                            declared
+  git push origin main                                   -> e4b17594..769023c4
+  python tools/sairn_status.py set --state working ...   -> row rewritten
+  python tools/sairn_claim.py own                        -> EXIT 0,
+       "state: HELD -- this session owns the lock (CLAUDE_PID 61696)"
+
+TWO CLAIMS WERE NEVER HELD AT ONCE. The tool refused the re-claim outright --
+*"TWO CLAIMS FOR ONE PIECE OF WORK IS THE DEFECT"* -- and named the remedy it
+wanted: release, then re-claim so the record says one thing. That is what was
+done, in that order, and the release is on origin/main rather than local-only.
+
+ROUTED to the owner of `tools/sairn_claim.py`, and it is the third item on the
+same tool this batch produced:
+  3. `check` AND `own` MUST ANSWER FROM ONE LIVENESS SOURCE. A session told
+     "you already hold this" by one subcommand and "DEAD" by another will
+     believe the one it ran first. tools/sairn_claim.py:1281 `registry_claims()`
+     is the live path; `check`'s window test is the stale one.
+ROUTED to the owner of `tools/sairn_status.py`: a registry row whose pid belongs
+to an ended process is not stale data, it is a WRONG ANSWER about a live
+session, and nothing re-derives it except a hook that can be removed.
+
+AND THE WARNING IN CLAUDE.md NOW HAS ITS THIRD DIRECTION. An EMPTY registry is
+not evidence nobody is working; the first resume found that a POPULATED one is
+not evidence they are dead; this one found that A POPULATED ONE CAN MAKE A LIVE
+SESSION LOOK DEAD TO EVERY OTHER CLONE AND TO THE PUSH GATE.
 
 ================================================================================
 0.  THE RESUME CHECK, REPORTED BEFORE ANYTHING WAS TOUCHED

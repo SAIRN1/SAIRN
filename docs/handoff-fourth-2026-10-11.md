@@ -80,6 +80,25 @@ Two figures moved again and they are the same `+1`:
 165 -> **166**. 2 worktrees (one cc's, LOCKED, not mine), 0 stash, **8 orphan
 session locks still not released -- third batch running**.
 
+**AND THE STRIPPED HOOKS HAD A CONSEQUENCE NOBODY WOULD HAVE LOOKED FOR.** The
+resume-2 push landed `bfd2fcb0..e4b17594` and the gate printed with it
+*"CLAIM STATE: DEAD -- THIS PUSH IS NOT UNDER A HELD CLAIM. CLAUDE_PID 64304 no
+longer exists"* -- the **previous** session's pid. `sairn_claim.py check` had
+said *"you already hold this, SAME WORK"*; `sairn_claim.py own` said **DEAD**.
+Traced, not guessed: liveness is read from the **status registry row**
+(`tools/sairn_claim.py:1281` `registry_claims()` -> `claim_liveness()`), that row
+is written by `tools/sairn_status.py --hook` **at SessionStart**, and that hook
+was one of the 23 removed -- so the row still carried a dead pid while
+`session_lock_check.py` correctly reported `SELF`/61696, because **its** guard is
+a PreToolUse hook and the restore had already happened. **A live session read as
+DEAD to every other clone and to the push gate.** Fixed by releasing the
+attempt-4 claim and taking a new one in that order (never two at once -- the tool
+refuses and names release-then-reclaim as the remedy) and by writing the registry
+row: `own` now EXIT 0, `state: HELD ... CLAUDE_PID 61696`. Both pushed,
+`e4b17594..769023c4`. **`CLAUDE.md`'s registry warning now has a third
+direction:** empty is not evidence nobody is working, populated is not evidence
+they are dead, and **populated can make a live session look dead.**
+
 **NEW FOR WHOEVER PICKS THIS UP: report question 8.** Were the hooks and the
 compaction keys turned off **on purpose**? Nothing records it. If they were,
 say so and leave them off -- a session that silently re-arms what Michael
