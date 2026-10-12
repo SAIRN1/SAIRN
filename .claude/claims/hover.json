@@ -597,8 +597,8 @@
       "task": "H1 b9 narrow scope: untrack and gitignore the dirty hook-config file blocking pushes in this clone; confirm standdown on two already-routed findings FILES: .claude/settings.json .gitignore",
       "claimed_at": "2026-10-12T01:35:28Z",
       "claimed_at_epoch": 1791768928.9758554,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-12T01:50:11Z",
       "files": [
         ".claude/settings.json"
       ]
