@@ -10,15 +10,15 @@ probe arms returned the right code for the wrong reason.
 #   code alone, because three probe arms once returned the right code for the
 #   wrong reason
 #
-import atexit, subprocess, os, sys, re, tempfile
+import atexit, subprocess, os, sys, re, shutil, tempfile
 import os
 
 # ── RUN THIS, DO NOT IMPORT IT (2026-09-11) ────────────────────────────────
-# This probe commits fixtures and mutates a source file. Since the worktree
-# change below, it does both in a THROWAWAY WORKTREE rather than in the clone
-# -- so an interrupted import no longer leaves a tracked file modified. What it
-# does leave is a stray worktree and a half-finished push attempt, which is
-# still worth refusing loudly.
+# This probe commits fixtures and mutates a source file. Since the throwaway-
+# repo change below, it does both outside the clone -- so an interrupted import
+# no longer leaves a tracked file modified. What it does leave is a stray
+# directory in %TEMP% and a half-finished push attempt, which is still worth
+# refusing loudly.
 #
 # THE HISTORY IS KEPT BECAUSE IT IS WHY THE GUARD EXISTS. On 2026-09-11 a
 # read-only checker walked tests/**/*_probe.py and imported each one to read its
@@ -36,7 +36,41 @@ if __name__ != '__main__':
 MAIN = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 EP = 'api/legal-deadlines.js'
 
-# ── THE FIXTURES ARE PLANTED IN A THROWAWAY WORKTREE (2026-09-11) ──────────
+# ── THE FIXTURES ARE PLANTED IN A THROWAWAY CLONE (2026-10-12) ─────────────
+# IT WAS A LINKED WORKTREE FROM 2026-09-11 UNTIL TODAY, AND THAT IS THE DEFECT
+# BEING FIXED HERE. A linked worktree SHARES `.git/config` with the clone that
+# owns it, so a `git config` write made by ANYTHING running with cwd inside the
+# worktree -- a gate, a gate's fixture, a tool invoked from a base commit --
+# lands in the REAL clone's config.
+#
+# REPRODUCED IN TWO COMMANDS, not inferred, and recorded in
+# docs/2026-10-07-fourth-routed-pinned-worktree-shared-config.md:
+#
+#     git worktree add -q --detach /tmp/repro HEAD
+#     git -C /tmp/repro config core.bare true
+#
+# left `bare = true` in Documents/SAIRN-fourth/.git/config, after which EVERY
+# git command in that clone failed with "fatal: this operation must be run in a
+# work tree". The class is cody's SHARED_CONFIG_WRITE_FROM_WORKTREE.
+#
+# A CLONE HAS ITS OWN `.git/config`, so the write cannot reach this clone at
+# all -- regardless of who makes it, and regardless of whether this process
+# lives long enough to put anything back. check8_probe.py made exactly this
+# move on 2026-10-06 (b23dbc2e) and is the pattern followed here rather than a
+# second invention.
+#
+# ── HARDLINKED, NOT `--no-hardlinks`, AND THE NUMBER IS MEASURED ───────────
+# The batch brief asked for `git clone --local --no-hardlinks`. Measured in
+# this clone on 2026-10-12: `--no-hardlinks` takes 7.7s and leaves 207MB on
+# disk per run (.git alone is 100MB); the hardlinked form costs no measurable
+# time and no disk, which is why check8_probe.py uses it. These probes run in
+# the whole-tree suite, in four clones, after every push. `--no-hardlinks` buys
+# object-store isolation nothing here needs: git never rewrites a pack in
+# place, new objects land in new files, and no probe runs `gc`. The config was
+# the whole defect and a clone fixes it either way. Said out loud because it is
+# a deliberate deviation from the brief, not an oversight.
+#
+# ── THE ORIGINAL NOTE, KEPT, BECAUSE ITS FIRST REASON STILL HOLDS ──────────
 # This probe used to `git commit` its fixtures ONTO THE WORKING BRANCH and
 # `git reset --mixed` back. That is safe for one runner on a quiet branch and
 # was not safe here: when `run_all_tests.py --hook` fired on every Bash tool
@@ -87,12 +121,77 @@ BASE = subprocess.run(['git', '-C', MAIN, 'rev-parse', 'FETCH_HEAD'],
                       capture_output=True, text=True, encoding='utf-8',
                       errors='replace').stdout.strip()
 WT = os.path.join(tempfile.gettempdir(), 'check4-probe-%d' % os.getpid())
-_add = subprocess.run(['git', '-C', MAIN, 'worktree', 'add', '-q', '--detach',
-                       WT, BASE], capture_output=True, text=True, encoding='utf-8', errors='replace')
-if _add.returncode != 0:
-    print('SKIPPED: could not create the throwaway worktree this probe needs, so')
-    print('nothing about check 4 was verified: %s' % (_add.stderr or '').strip()[:200])
+
+
+# ── WHAT A CLONE DOES NOT INHERIT, AND WHY EACH ONE MATTERS ────────────────
+# `core.hooksPath` is CONFIG, not a tracked file, so the clone does not get it
+# -- and without it the pre-push hook NEVER FIRES and this probe would report
+# "not blocked" about a gate it never asked. Asserted below rather than
+# assumed. `origin` in a clone of a local path points at THAT PATH, so pushing
+# there would exercise a different thing entirely; the real URL is read off
+# MAIN and set. Both are the silent-pass direction, which is why this returns a
+# REASON string and the caller exits 3 rather than limping on.
+def _setup_clone():
+    """-> None on success, or a reason string. Never half-builds silently."""
+    r = subprocess.run(['git', 'clone', '--quiet', '--local', '--no-checkout',
+                        MAIN, WT], capture_output=True, text=True,
+                       encoding='utf-8', errors='replace')
+    if r.returncode != 0:
+        return 'clone failed: %s' % (r.stderr or '').strip()[:200]
+    url = subprocess.run(['git', '-C', MAIN, 'remote', 'get-url', 'origin'],
+                         capture_output=True, text=True, encoding='utf-8',
+                         errors='replace').stdout.strip()
+    if not url:
+        return 'could not read origin url from %s' % MAIN
+    for args in (['remote', 'set-url', 'origin', url],
+                 ['config', 'core.hooksPath', '.githooks'],
+                 ['config', 'user.email', 'check4-probe@example.invalid'],
+                 ['config', 'user.name', 'check4-probe'],
+                 ['checkout', '--detach', '--quiet', BASE]):
+        rr = subprocess.run(['git', '-C', WT] + args, capture_output=True,
+                            text=True, encoding='utf-8', errors='replace')
+        if rr.returncode != 0:
+            return '%s failed: %s' % (' '.join(args[:2]),
+                                      (rr.stderr or '').strip()[:160])
+    # origin/main inside the clone must be the tip the gate compares against.
+    subprocess.run(['git', '-C', WT, 'fetch', '--quiet', 'origin', 'main'],
+                   capture_output=True)
+    hp = os.path.join(WT, '.githooks', 'pre-push')
+    if not os.path.isfile(hp):
+        return 'the clone has no .githooks/pre-push, so the gate could not fire'
+    return None
+
+
+_why = _setup_clone()
+if _why:
+    shutil.rmtree(WT, ignore_errors=True)
+    print('SKIPPED: could not create the throwaway clone this probe needs, so')
+    print('nothing about check 4 was verified: %s' % _why)
     sys.exit(3)
+
+
+def _rmtree_loud(p):
+    """Remove it, and SAY SO if it survives.
+
+    `ignore_errors=True` was check8_probe.py's first version here and it leaked
+    a hardlinked clone per run, silently: on Windows a cloned object store
+    carries READ-ONLY pack files and rmtree cannot unlink them. A cleanup that
+    cannot fail loudly is the same defect class this probe exists for, one
+    layer out.
+    """
+    def _chmod_retry(func, q, _exc):
+        try:
+            os.chmod(q, 0o700)
+            func(q)
+        except OSError:
+            pass
+    shutil.rmtree(p, onerror=_chmod_retry)
+    if os.path.isdir(p):
+        print('WARNING: could not remove the throwaway clone at %s -- it is '
+              "hardlinked to this repo's object store and will sit in TEMP "
+              'until somebody deletes it.' % p)
+        return False
+    return True
 
 
 # ATEXIT RATHER THAN try/finally, because wrapping 120 lines of heavily
@@ -100,14 +199,12 @@ if _add.returncode != 0:
 # unreadable. atexit runs on a normal exit, on sys.exit(), and after an
 # unhandled exception; a hard kill skips it, exactly as the old reset did.
 @atexit.register
-def _remove_worktree():
-    subprocess.run(['git', '-C', MAIN, 'worktree', 'remove', '--force', WT],
-                   capture_output=True)
-    subprocess.run(['git', '-C', MAIN, 'worktree', 'prune'], capture_output=True)
+def _remove_clone():
+    _rmtree_loud(WT)
 
 
-# Every git and filesystem operation below now happens in the worktree. The
-# name is kept so the arms read unchanged.
+# Every git and filesystem operation below now happens in the clone. The name
+# is kept so the arms read unchanged.
 REPO = WT
 
 
@@ -155,6 +252,46 @@ MAIN_HEAD_BEFORE = subprocess.run(
     ['git', '-C', MAIN, 'rev-parse', 'HEAD'],
     capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 
+
+# ── AND THE CLONE'S `.git/config`, WHICH IS THE THING THAT WAS BEING
+#    CORRUPTED (2026-10-12) ──────────────────────────────────────────────────
+# The two snapshots above are about the TREE and the BRANCH TIP. Neither could
+# see the defect this file was carrying: `bare = true` appearing in MAIN's
+# config leaves the tree clean and HEAD unmoved right up to the moment every
+# git command starts failing. `--git-common-dir` is used rather than a
+# hardcoded `.git/config` join because `MAIN/.git` is a DIRECTORY in a clone
+# and a FILE in a linked worktree, and this probe has to be developable from
+# either.
+def _common_git_dir():
+    r = subprocess.run(['git', '-C', MAIN, 'rev-parse', '--git-common-dir'],
+                       capture_output=True, text=True, encoding='utf-8',
+                       errors='replace')
+    if r.returncode != 0:
+        return None
+    d = r.stdout.strip()
+    return d if os.path.isabs(d) else os.path.normpath(os.path.join(MAIN, d))
+
+
+_GITDIR = _common_git_dir()
+MAIN_CONFIG_PATH = (os.path.join(_GITDIR, 'config') if _GITDIR
+                    else os.path.join(MAIN, '.git', 'config'))
+
+
+def _read_main_config():
+    try:
+        with open(MAIN_CONFIG_PATH, 'rb') as fh:
+            return fh.read()
+    except OSError:
+        return None
+
+
+MAIN_CONFIG_BEFORE = _read_main_config()
+if MAIN_CONFIG_BEFORE is None:
+    print('SKIPPED: could not read %s, so this probe cannot prove it left the '
+          'clone alone -- which is the one claim it was violating. Nothing '
+          'about check 4 was verified.' % MAIN_CONFIG_PATH)
+    sys.exit(3)
+
 start = run('git', 'rev-parse', 'HEAD').stdout.strip()
 # The untracked files that were here BEFORE this probe ran. The restore check at
 # the bottom compares against this rather than against an empty tree.
@@ -176,11 +313,20 @@ def dry_push():
     # advances between one arm and the next, the sha git hands the hook is an
     # object this clone does not have yet, and the gate refuses -- correctly --
     # before check 4 is reached. The fetch puts the new tip in the object store
-    # the worktree shares and the range becomes the fixture commit again, since
-    # BASE is an ancestor of the new tip. If it persists, `could_not_run` says
-    # so rather than letting the arms report it as a check-4 failure.
+    # the push is judged against and the range becomes the fixture commit
+    # again, since BASE is an ancestor of the new tip. If it persists,
+    # `could_not_run` says so rather than letting the arms report it as a
+    # check-4 failure.
+    #
+    # ── IT FETCHES INTO THE CLONE, NOT INTO MAIN (2026-10-12) ─────────────
+    # This said `git -C MAIN fetch` and worked ONLY because a linked worktree
+    # shares MAIN's object store. A clone does not. Left unchanged by the
+    # worktree-to-clone move it would have fetched into the wrong repository,
+    # so the retry would have failed exactly as the first attempt did -- which
+    # reads as "check 4 did not fire" and is the silent-pass direction the
+    # 2026-09-16 note at the top of this file is already about.
     if r.returncode != 0 and RANGE_UNREADABLE in err:
-        subprocess.run(['git', '-C', MAIN, 'fetch', '--quiet', 'origin', 'main'],
+        subprocess.run(['git', '-C', REPO, 'fetch', '--quiet', 'origin', 'main'],
                        capture_output=True)
         r = run('git', 'push', '--dry-run', 'origin', 'HEAD:main')
         err = r.stderr or ''
@@ -287,6 +433,24 @@ R['clone_untouched'] = (
                        capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
     == MAIN_HEAD_BEFORE)
 
+# ── AND ITS `.git/config` IS BYTE-IDENTICAL, WHICH clone_untouched CANNOT SEE
+#    (2026-10-12) ────────────────────────────────────────────────────────────
+# This is the result the worktree-to-clone move exists for. Against the OLD
+# code it could go red for real: a `git config` write from inside a linked
+# worktree reaches the owning clone, and that is the delta
+# docs/2026-10-07-fourth-routed-pinned-worktree-shared-config.md reproduced in
+# two commands. A clone has its own config, so the write cannot arrive here at
+# all. Reported as its own row rather than folded into `clone_untouched`,
+# because a reader needs to see WHICH of the three claims held.
+_cfg_after = _read_main_config()
+R['clone_config_unchanged'] = (_cfg_after == MAIN_CONFIG_BEFORE)
+# And no worktree registration was left in `.git/worktrees/` to prune. "Nothing
+# to clean up" is the kind of statement that stays in a comment after it stops
+# being true, so it is measured.
+R['no_worktree_registered'] = ('check4-probe' not in subprocess.run(
+    ['git', '-C', MAIN, 'worktree', 'list', '--porcelain'], capture_output=True,
+    text=True, encoding='utf-8', errors='replace').stdout)
+
 for k, v in R.items():
     print('%-20s %s' % (k, v))
 print()
@@ -306,6 +470,10 @@ if _unattributable:
     sys.exit(3)
 ok = (R['planted_violation']['blocked_by_seam'] and R['planted_violation']['names_field']
       and not R['clean_api_change']['blocked_by_seam']
-      and R['restored'] and R['head_restored'] and R['clone_untouched'])
+      and R['restored'] and R['head_restored'] and R['clone_untouched']
+      # ADDED TO THE VERDICT, NOT ONLY TO THE PRINTOUT (2026-10-12). A row
+      # printed and left out of `ok` is a measurement nobody acts on, and the
+      # config was the one thing this probe was actually damaging.
+      and R['clone_config_unchanged'] and R['no_worktree_registered'])
 print('CHECK 4 VERIFIED (planted blocks by seam + names the field, clean not blocked by seam):', ok)
 sys.exit(0 if ok else 1)
