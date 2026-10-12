@@ -81,6 +81,15 @@ const senPayroll = require('./_lib/sen-payroll');
 // BECAUSE THE CLIENT COPY IS A CONVENIENCE: sairnmechanical.html calls the same
 // function so the local row is redacted too, but this call is the boundary.
 const mechRedact = require('./_lib/mech-redact');
+// ── SAIRNLAW ROLE GRANULARITY (2026-10-12, hover2 seq 757) ────────────────
+// ONE table and ONE function for all 19 law_ resources, in api/_lib/law-roles.js
+// with the whole policy and its provenance. Called from exactly TWO places in
+// this file, and those two are the gates that were ALREADY here -- the
+// SD_SESSION_GATED block (four law resources) and the LAW_RESOURCES prelude
+// (fifteen). Not nineteen ifs: the defect being fixed is a role check written
+// at one call site and not the others, which is indistinguishable from no
+// policy at all when read one branch at a time.
+const lawRoles = require('./_lib/law-roles');
 // ── ONE DECLARED MAP FOR EVERY RESOURCE THAT PERSISTS RAW MODEL OUTPUT ────
 // MECH_SCANNED_TEXT below was the same idea scoped to one app and inlined in
 // one branch. The shape it fixed -- a gate keyed on a resource NAME rather
@@ -1758,6 +1767,23 @@ module.exports = async (req, res) => {
             message: 'A valid employee session is required — sign in first'
           }
         });
+        return;
+      }
+      // ── THE ROLE GATE FOR THE OTHER FOUR OF THE NINETEEN (2026-10-12) ───
+      // law_trusttx, law_clients, law_matters and law_deadlines are gated here
+      // rather than in the LAW_RESOURCES prelude, because they are the four
+      // named individually inside SD_SESSION_GATED and never enter that dict.
+      // Same table, same function, same three arguments.
+      //
+      // NOT_LAW IS WHY THIS IS SAFE TO PUT IN A BLOCK EVERY APP PASSES THROUGH.
+      // This gate covers 70 action-pairs across the platform. `decide` returns
+      // a THIRD verdict for anything that is not one of the nineteen, so a
+      // StoneDesk or SAIRNscape resource is neither allowed nor denied by a
+      // law table -- it is simply not this table's business, and only an
+      // explicit DENY stops a request. Folding NOT_LAW into ALLOW would have
+      // made every non-law resource read as "the law policy approved it".
+      if (lawRoles.decide(resource, gateSession.role, action) === lawRoles.DENY) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: lawRoles.denyMessage(resource, gateSession.role) } });
         return;
       }
       // ── THE CREDENTIAL RE-CHECK USED TO SIT HERE AND HAS MOVED UP ────────
@@ -14194,6 +14220,22 @@ module.exports = async (req, res) => {
       const lawSess = verifySessionToken(tokenFromRequest(req), licHash, 'sairnlaw');
       if (!lawSess) {
         res.status(401).json({ error: { code: 'NO_SESSION', message: 'Your sign-in could not be verified, so nothing was saved. Sign out and sign in again, then try once more.' } });
+        return;
+      }
+      // ── THE ROLE GATE FOR FIFTEEN OF THE NINETEEN (2026-10-12) ──────────
+      // One call, one table, api/_lib/law-roles.js. This prelude already
+      // covered all fifteen LAW_RESOURCES with the SESSION check, which is
+      // exactly why the ROLE check belongs here too and not in the read and
+      // write branches below it: two call sites for one policy is how the next
+      // resource gets one and not the other.
+      //
+      // 403 AND NOT 404. A paralegal refused law_trusttx learns the resource
+      // exists, which is correct here: the app's own navigation shows them the
+      // tab, so pretending the record is absent would be a lie they can
+      // disprove by clicking. The message names the role rather than the
+      // policy.
+      if (lawRoles.decide(resource, lawSess.role, action) === lawRoles.DENY) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: lawRoles.denyMessage(resource, lawSess.role) } });
         return;
       }
     }
