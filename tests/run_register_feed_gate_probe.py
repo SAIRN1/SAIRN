@@ -302,6 +302,81 @@ finally:
     G._merge_base = _saved_mb
 ok('the probe restored the real merge-base resolver', G._merge_base is _saved_mb)
 
+# ── D9 ON THE THIRD GATE: FOUR CAUSES, FOUR MESSAGES (2026-10-12) ──────────
+# hover_auditor_scope_gate.py and copy_exactly_gate.py were given this on
+# 2026-10-08 and this gate kept the original sentence. The arms below are
+# written against the CAUSE each message must name, not against its wording
+# beyond the one phrase that carries the cause -- a message assertion that
+# pins a whole paragraph is a fixture that goes red on a reflow.
+#
+# THE SCRIPT CASE IS WHY THIS WAS DONE AT ALL and it is measured rather than
+# supposed: on 2026-10-12 this gate refused a push issued from inside a shell
+# script, where stdin is not a tty and carries no refs. Neither of the other
+# two gates names that case, and it is the one a session hits -- wrapping the
+# push in a script is the obvious way to shrink the window in a push race.
+print('')
+print('D9. the four things that look like "no ref lines on stdin"')
+
+# THE TTY SIGNAL IS DRIVEN, NOT INHERITED. The first draft of these arms
+# called outgoing_range('') and read whatever sys.stdin happened to be, which
+# made the verdict depend on how the probe was LAUNCHED -- run from a terminal
+# it took the by-hand branch and the script arm went red for a reason that had
+# nothing to do with the gate. A fixture whose answer changes with the harness
+# is the environment-dependence this platform keeps paying for.
+class _Tty(object):
+    def __init__(self, is_tty):
+        self._t = is_tty
+
+    def isatty(self):
+        return self._t
+
+
+def _with_tty(is_tty, text=''):
+    saved = G.sys.stdin
+    try:
+        G.sys.stdin = _Tty(is_tty)
+        return G.outgoing_range(text)
+    finally:
+        G.sys.stdin = saved
+
+
+_r, _p = _with_tty(False)
+ok('EMPTY stdin that is NOT a tty names the SCRIPT case as the likely one',
+   _r is None and 'SHELL SCRIPT' in _p and 'ISSUE THE PUSH DIRECTLY' in _p,
+   _p)
+ok('...and still DENIES rather than passing -- it cannot tell the two apart',
+   _r is None and 'DENIES' in _p, _p)
+ok('...and the gate NAMES ITSELF, so a reader knows which of the three spoke',
+   _p.startswith('register_feed_gate'), _p[:80])
+
+_r, _p = _with_tty(True)
+ok('EMPTY stdin AT A TTY is the by-hand case and says so instead',
+   _r is None and 'BY HAND' in _p and 'COULD-NOT-RUN' in _p, _p)
+ok('...and the two empty-stdin messages are DIFFERENT, which is the whole '
+   'point of D9',
+   _with_tty(True)[1] != _with_tty(False)[1])
+ok('CONTROL: the probe put the real sys.stdin back',
+   not isinstance(G.sys.stdin, _Tty))
+
+_r, _p = G.outgoing_range('garbage\nalso garbage\n')
+ok('MALFORMED lines are reported as malformed, not as absent',
+   _r is None and 'MALFORMED' in _p and '2 line(s)' in _p, _p)
+ok('...and the first bad line is QUOTED so it can be recognised',
+   'garbage' in _p, _p)
+
+# CONTROL: the malformed path must not swallow a mix. A good line first still
+# yields its range, and a bad line first is still the unparseable refusal --
+# both pre-existing behaviours, pinned here because the shape filter added for
+# the message above sits one line from the loop that produces them.
+_r, _p = G.outgoing_range('refs/heads/x %s refs/heads/x %s\ngarbage\n'
+                          % ('a' * 40, 'b' * 40))
+ok('CONTROL: a good ref line first still yields its range',
+   _r == '%s..%s' % ('b' * 40, 'a' * 40) and not _p, (_r, _p))
+_r, _p = G.outgoing_range('garbage\nrefs/heads/x %s refs/heads/x %s\n'
+                          % ('a' * 40, 'b' * 40))
+ok('CONTROL: a malformed line FIRST is still the unparseable refusal',
+   _r is None and 'unparseable' in _p, (_r, _p))
+
 print('\n' + '=' * 66)
 print('%d passed, %d failed' % (PASSES[0], len(FAILS)))
 for f in FAILS:

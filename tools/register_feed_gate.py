@@ -369,8 +369,65 @@ def outgoing_range(stdin_text):
     """
     ZERO = '0' * 40
     lines = [l for l in (stdin_text or '').split('\n') if l.strip()]
-    if not lines:
-        return None, 'no ref lines on stdin -- cannot tell what is being pushed'
+    # THE SHAPE FILTER IS FOR THE MESSAGE ONLY AND THE LOOP STILL SEES EVERY
+    # LINE. copy_exactly_gate.py filters its ref list to the four-field lines
+    # and that is where its own D9 defect came from -- a malformed line was
+    # dropped before anything could refuse it. Here `all_lines` stays the thing
+    # iterated, so a MIX of good and malformed lines still hits the
+    # `unparseable pre-push ref line` refusal below; `well_formed` exists only
+    # to tell "nothing arrived" apart from "nothing usable arrived".
+    all_lines = lines
+    well_formed = [l for l in all_lines if len(l.split()) >= 4]
+    if not well_formed:
+        # ── D9, THE THIRD GATE: ONE SENTENCE FOR FOUR DIFFERENT CAUSES ──────
+        # (2026-10-12.) hover_auditor_scope_gate.py and copy_exactly_gate.py
+        # were given this treatment on 2026-10-08 and this file was the one
+        # left carrying the original sentence -- "no ref lines on stdin --
+        # cannot tell what is being pushed" -- printed under the heading
+        # "Blocked: this gate could not tell what is being pushed." Both
+        # sentences are true, together they describe a BAD PUSH, and that is
+        # the least likely of the things that actually produce them. The
+        # identical sentence lived in three gates, so a reader could not even
+        # tell which one spoke.
+        #
+        # THE FOURTH CAUSE IS NEW HERE AND WAS MEASURED, NOT IMAGINED. On
+        # 2026-10-12 this gate refused a push issued from INSIDE A SHELL
+        # SCRIPT. `main()` reads stdin whenever it is not a tty, a script's
+        # stdin is not a tty and carried no refs, so the gate denied a push
+        # that was perfectly ordinary. Neither of the other two gates names
+        # that case, and it is the one a session will actually hit: wrapping
+        # the push in a script is the obvious way to shrink the window in a
+        # four-session push race.
+        if all_lines:
+            return None, (
+                'register_feed_gate: %d line(s) arrived on stdin and NONE had '
+                'the four fields\n  git writes (<local ref> <local sha> '
+                '<remote ref> <remote sha>). That is MALFORMED\n  input, not '
+                'absent input -- the old message reported it as absent because '
+                'the\n  shape filter dropped it one line earlier. First line: '
+                '%r' % (len(all_lines), all_lines[0][:120]))
+        if sys.stdin.isatty():
+            return None, (
+                'register_feed_gate --pre-push was run BY HAND with no ref '
+                'lines on stdin.\n  Nothing is being pushed, so there is '
+                'nothing to judge -- this is a COULD-NOT-RUN,\n  not a finding '
+                'about a push. To see what the register is owed right now:\n'
+                '      python tools/register_feed_gate.py --report')
+        return None, (
+            'register_feed_gate: stdin is not a terminal and carried NO ref '
+            'lines.\n  TWO THINGS LOOK LIKE THIS AND ONLY ONE IS A PROBLEM:\n'
+            '    1. the push was issued from inside a SHELL SCRIPT, a pipe or '
+            'any other\n       wrapper. git hands the ref list to the hook it '
+            'runs; a nested `git push`\n       inside a script does not '
+            'reproduce it, so this gate sees nothing and\n       refuses an '
+            'ordinary push. ISSUE THE PUSH DIRECTLY -- that is the fix, and\n'
+            '       there is nothing wrong with the change.\n'
+            '    2. git really did invoke this as a pre-push hook and supplied '
+            'no refs.\n       git always writes one line per ref, so that is a '
+            'real anomaly and the\n       refusal is earned.\n'
+            '  This gate cannot tell the two apart from here, so it DENIES -- '
+            'not knowing\n  what is in a change is not the same as knowing it '
+            'is clean.')
     for line in lines:
         parts = line.split()
         if len(parts) < 4:
