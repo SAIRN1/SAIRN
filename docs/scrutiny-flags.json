@@ -665,6 +665,22 @@
   {
    "path": "tests/run_tier_a_review_gate_probe.py",
    "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "93b96c4ee2da04aea6ea7a6db4f080d2a40d8b31",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/tier_a_review_gate.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "93b96c4ee2da04aea6ea7a6db4f080d2a40d8b31",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_tier_a_review_gate_probe.py",
+   "class": "test file",
    "level": "WEAKENING",
    "shapes": [
     {
