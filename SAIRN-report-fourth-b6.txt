@@ -1,0 +1,378 @@
+REPORT fourth b6
+BATCH b6 -- fourth / Ted -- 2026-10-13
+
+HASH RULE: line 1 is the title, the LAST line is END-OF-REPORT, the
+SECOND-TO-LAST line is `SHA256 <hex>`, and the BODY is line 2 through the line
+before the SHA. A hash cannot cover the line that carries it. Checked by tool,
+not by hand (brief item 13):
+
+  python tools/report_sha_check.py --check SAIRN-report-fourth-b6.txt
+
+================================================================================
+0.  RESUME CHECK, BEFORE ANYTHING WAS TOUCHED
+================================================================================
+
+  HEAD at pickup    e1c6aef6  "chore(scrutiny ledger): the row the last push
+                    attempt wrote"
+  working tree      1 modified tracked path -- .claude/settings.json, hooks off
+                    by instruction -- plus 4 untracked, all of them named in b5
+  handoff read      docs/handoff-fourth-2026-10-12.md, by heading and item table
+                    rather than whole
+  SKIPPED AS LANDED brief items 6 and 7. Both were done in b4 and the proof is
+                    three greps, not a memory: section 5 below.
+  pushes attempted  ZERO, all batch. The brief said do not push.
+
+================================================================================
+1.  ITEM 1 + 12 -- TEN MORE SITES ON THE ONE STRIPPER, AND THE RUN THAT CAUGHT
+    MY OWN MISTAKE
+================================================================================
+
+The next ten of the 39 routed sites, taken in table order from
+docs/2026-10-12-fourth-b5-routing.md section 3 -- five files, all under
+api/_lib:
+
+  api/_lib/courtlistener-rate-limit.test.js      :224 :266          2
+  api/_lib/deadline-endpoint-inputs.test.js      :38                1
+  api/_lib/deadline-jurisdiction-labels.test.js  :61                1
+  api/_lib/dental-gfe.test.js                    :159 :174 :183
+                                                 :223 :233          5
+  api/_lib/mech-assets.test.js                   :99                1
+
+ALL TEN NOW CALL stripJs FROM tests/lib/strip_comments.js. Every subject at
+these sites is a bare .js file -- api/courtlistener.js, api/legal-citator.js,
+api/_lib/deadline-engine.js, api/legal-deadlines.js, api/sd-data.js,
+api/_lib/mech-assets.js -- which is why it is stripJs and not stripComments.
+Using one for the other is the defect that library's own header records three
+times, and the `app` HTML read in dental-gfe is deliberately NOT stripped by
+these arms.
+
+TWO OF THE TEN WERE NOT A PLAIN SWAP AND ARE WORTH NAMING. :38 and :61 were the
+block-comment shape -- `/\/\*[\s\S]*?\*\//g` followed by a start-of-line `//`
+filter -- and both halves have a recorded failure here: the block regex runs
+forward to the first `*/`, which can live inside a regex literal thousands of
+lines away, and the line filter leaves every mid-line `//` in. The first of
+those derives THE ENGINE'S READ SET from source, so an over-strip silently
+shrinks the set the endpoint is then compared against.
+
+THE SWAP REFUSED ON ANY COUNT BUT THE EXPECTED ONE. The replacement script takes
+the site count as an argument and writes nothing on a mismatch -- 5 expected and
+5 found in dental-gfe, 1 and 1 in mech-assets. A `replace()` that matched a
+different number than the author believed is the defect
+tests/seam_check/run_delegation_probe.py:240 already names.
+
+EVERY SUITE RUN BEFORE AND AFTER, exit code read from the process:
+
+                                                  BEFORE          AFTER
+  api/_lib/courtlistener-rate-limit.test.js       exit 0          exit 0
+  api/_lib/deadline-endpoint-inputs.test.js       exit 0  7/0     exit 0  7/0
+  api/_lib/deadline-jurisdiction-labels.test.js   exit 0  18/0    exit 0  18/0
+  api/_lib/dental-gfe.test.js                     exit 0  14 ok   exit 0  14 ok
+  api/_lib/mech-assets.test.js                    exit 0  62/0    exit 0  62/0
+  node --check on all five                        exit 0          exit 0
+
+AND THE FIRST ATTEMPT BROKE ONE OF THEM, WHICH IS THE PART WORTH KEEPING.
+mech-assets went 62 passed -> 61 passed, 1 FAILED, and the message was
+`stripJs is not defined`: I had added the require to four files and not to the
+fifth, because that one site was swapped by script while the other four were
+edited by hand. THE BEFORE/AFTER DISCIPLINE CAUGHT IT INSIDE ONE RUN. Without
+it I would have reported ten sites consolidated and left a suite red, which is
+exactly the failure mode the discipline exists for -- so it is reported here
+rather than quietly fixed. After the require landed: 62/62, exit 0.
+
+COUNTS, re-derived by the same whole-tree inventory b5 used:
+
+  found by the b5 inventory                 44 sites   23 files
+  replaced in b5                             5 sites    1 file
+  replaced in b6                            10 sites    5 files
+  REMAINING at this HEAD                    29 sites   17 files
+
+ITEM 12 IS THEREFORE ANSWERED YES, WITH COUNTS: all ten route through the shared
+implementation. The two probes that guard it are green on both halves --
+`python tools/jscomments.py --probe` exit 0 "0 case(s) failed" (the Python half)
+and `node tests/lib/strip_comments.test.js` exit 0 "27 passed, 0 failed" (the JS
+half the call sites actually use).
+
+================================================================================
+2.  ITEM 2 -- EIGHT CANDIDATES ELIMINATED ONE AT A TIME, AND THE MUTATOR IS
+    STILL NOT FOUND
+================================================================================
+
+THE CANDIDATE SET WAS DERIVED, NOT GUESSED, and each narrowing is auditable:
+
+  suites naming one of phi_cache's seven subjects AND containing a
+  write primitive                                                     95
+  of those, a write within 3 lines of a subject                         7
+  of those, the window names a temp dir or a worktree -> DESCOPED        2
+  LIVE-TREE CANDIDATES DRIVEN                                           5
+  plus the 2 descoped and 1 adjacent, driven anyway                     3
+  TOTAL DRIVEN ONE AT A TIME                                            8
+
+The 2 descoped are listed by name in the log rather than dropped silently, and
+they were driven anyway precisely because the descoping was a heuristic.
+
+PROTOCOL PER CANDIDATE: hash the seven subjects, drive the candidate alone,
+re-hash, read core.bare, drive phi_cache, restore any moved subject FROM BYTES
+HELD IN MEMORY -- not by `git checkout`, because b5 measured that failing
+silently under core.bare=true and a restore that cannot verify itself would
+contaminate the next candidate's measurement.
+
+RESULT, ALL EIGHT IDENTICAL: no subject moved, core.bare never left false,
+phi_cache exit 0 / 72 passed after every one. The seven digests at the end of
+each round equal the digests at the start.
+
+CANDIDATE 6 IS THE INFORMATIVE ONE AND IT CONFIRMS b5 RATHER THAN CONTRADICTING
+IT. tests/seam_check/run_delegation_probe.py is the suite b5 caught leaving
+api/sd-data.js and api/_lib/subcontractor-compliance.js sabotaged. Driven here
+with core.bare=false throughout, it restored both perfectly. So the probe is not
+broken: its restore works when git works and fails silently when core.bare is
+true, which is the chain b5 traced and routed. It also means the residue it can
+leave is the `, warn_days: gateWarn` plant -- the one b5 ABLATED with no effect
+on phi_cache.
+
+WHAT IS NOT CLAIMED: not that no mutator exists. hank's "63 passed, 1 failed"
+was produced under a tree state none of these eight can create, and the
+subject-mutation hypothesis is weaker than when b5 routed it, not disproved.
+
+THE NEXT STEP IS NOT A THIRD BISECT. b5's precondition makes phi_cache print
+SKIPPED and NAME the dirty subject instead of failing, so the next whole-tree
+run identifies the mutator itself. Two bisects have now returned nothing; a
+self-reporting signal costs nothing to wait for.
+
+================================================================================
+3.  ITEM 3 -- THE FIVE NON-RED SUITES, AND FOUR OF THEM COLLAPSE INTO TWO
+    UPSTREAM DEFECTS
+================================================================================
+
+docs/known-red-suites.json had two lists: `entries` is RED, `recovered` is
+GREEN. The five suites b5 drove produced NEITHER -- two exit 2, two exit 3, one
+timeout -- and b5 correctly kept them out of `entries`, because an entry there
+is an exemption over a red suite and would absorb the next real failure of a
+suite that is not failing. But leaving them out of the FILE as well meant the
+next session would re-derive the same gap and drive the same five. They now have
+a third list, `not_red`, each with its root cause read out of the tail the suite
+itself printed.
+
+  tests/app_session_isolation_probe.py            exit 2
+    "The baseline is red, so no mutation below would mean anything. Stopping."
+    Its baseline is tests/app_session_isolation.js, WHICH IS IN `entries` with
+    the same reason. Not a second defect -- the first one making its own control
+    unusable. Recovers by itself when the baseline does.
+
+  tests/run_cross_tenant_dispatchers_sabotage_probe.py   exit 2
+    "the baseline is not green (14 failing). A sabotage control on a red
+    baseline cannot distinguish its own mutation from the pre-existing failure."
+    Baseline api/sd-data-cross-tenant-dispatchers.test.js, also in `entries` at
+    405 passed / 14 failed.
+
+  tests/push_gate/check4_probe.py                 exit 3
+  tests/push_gate/check7_probe.py                 exit 3
+    Both SKIPPED, both quoting THE SAME upstream refusal: "COULD NOT RUN: the
+    blind lock failed (a proven guard copied into a SECOND file ...)". Exit 3 is
+    the state tools/run_all_tests.py already reports apart from pass and fail.
+    Two suites blocked by ONE defect in a different check's criteria lock.
+
+  tests/run_defect_register_probe.py              TIMEOUT
+    180s driven alone here; hank's 2026-10-08 run put it over 240s too. A BOUND
+    EXCEEDED IS A LOWER BOUND, NOT A NUMBER -- no evidence in either direction,
+    so neither red nor green. Its residue was also visible elsewhere: the
+    defreg-probe-59076 worktree cleared under item 5 was left by this suite.
+
+FOUR SUITES, TWO UPSTREAM DEFECTS. Filing them as red would have hidden the
+multiplier, which is the finding rather than the five rows.
+
+  python tests/run_known_red_probe.py  ->  EXIT 0, "0 failure(s)"
+  entries 87, recovered 8, not_red 5, duplicate files 0, JSON valid
+
+================================================================================
+4.  ITEMS 4, 5, 9, 11 -- OWNERS, WORKTREES, LOCKS, SKILL PATHS
+================================================================================
+
+ITEM 4, OWNERS. Every row that said UNOWNED now names a session: api/ to hank,
+tests/ to cody, tools/ to cc, docs/ to fourth, plus the six named overrides. 40
+rows rewritten, 0 left unowned, and THE PIPE COUNT PER LINE WAS COMPARED BEFORE
+AND AFTER -- rows rebuilt whole, never split on `|` (PR 2.1). The `owner basis`
+column says "directory rule", not "record", because a directory rule is weaker
+than a file's own OWNER line and the two must not be confused.
+  AND ONE ROW NAMED TWO FILES WITH TWO DIFFERENT OWNERS -- check8_probe.py:209
+  (cody) and clone_health_check.py:209-211 (cc) were one row. Split into two. A
+  routing line neither owner can act on is not routing.
+  The `route to` column was also rewritten: it still said "next claim on <app>"
+  while the owner column named a session, and two answers to one question is how
+  a routing table stops being actionable.
+
+ITEM 5, WORKTREES. Both probe worktrees REMOVED; 0 remain.
+  BEFORE REMOVING, BOTH UNREACHABLE HEADS WERE PINNED TO REFS, because removing
+  a worktree whose head is not on origin/main orphans its commits:
+    refs/salvage/b6-defreg-probe -> fdce1b4b  "PROBE ambiguous-subject fixture"
+    refs/salvage/b6-gate12       -> 549a372a  "drop a generator"
+  Both still resolve (`git cat-file -t` -> commit). The defreg worktree carried
+  one dirty path, docs/defect-density-register.json, which is that probe's own
+  subject and exists at the pinned commit.
+  .git/config AFTER: core.bare=false, core.hookspath=.githooks, 0 worktrees.
+  python tools/clone_health_check.py -> EXIT 0, "HEALTHY".
+
+ITEM 9, LOCKS. Full PID-and-age table in routing doc section 7. 14 locks: 6
+holders LIVE, 8 DEAD, 0 ATTRIBUTABLE, 0 RELEASED -- third batch running.
+  WHY NONE CAN BE ATTRIBUTED, measured rather than repeated: the registry's
+  pid->session map holds exactly the six LIVE pids and nobody else, so a dead
+  pid is by definition absent from it, and the lock files carry no session
+  field. The information needed to release them was never written at lock time.
+  Routed to cc: tools/session_lock_check.py:128, :349, :357.
+  fourth.lock is mine and LIVE; it is released at report close.
+
+ITEM 11, SKILL PATHS -- PRINTED, NOTHING EDITED. 19 skills are referenced by a
+check in tools/ or tests/. Project store 34 dirs, user store 62. 14 of the 19
+are in BOTH, and for those the project copy is what a check in this repo reads.
+  13 of the 14 are byte-identical after `tr -d '\r'`.
+  ONE IS NOT: sairn-hover-auditor DIFFERS IN CONTENT between the project copy
+  and the shared user copy. That is the auditor's own skill and the one subtree
+  a build agent must not touch, so it is reported and nothing else. NO
+  FRONTMATTER WAS EDITED IN EITHER STORE.
+
+================================================================================
+5.  ITEMS 6 AND 7 -- ALREADY LANDED IN b4, AND THE PROOF IS THREE GREPS
+================================================================================
+
+The brief asked for the next free number for cody's contamination-warning
+convention AND said to keep convention 33 where it is. THOSE ARE THE SAME
+CONVENTION: 33 IS cody's contamination-warning convention, assigned in b4.
+
+  docs/2026-09-13-cross-domain-disciplines.md:1851
+    ## 33. A CONTAMINATION WARNING MAKES EVERY RESULT IN ITS SCOPE
+    UNFALSIFIABLE, SO IT MUST SHIP WITH THE ISOLATION METHOD
+  docs/METHODOLOGY.md:90
+    the promotion row, dated 2026-10-11, crediting cody and naming the two
+    commits the brief names -- 7ae272cc and ffe43d70
+  grep -c "^## [0-9]\+\." over the conventions file  ->  33, contiguous 1-33
+
+SO THERE IS NO FREE NUMBER BELOW 34, AND ASSIGNING 34 WOULD HAVE CREATED A
+SECOND HOME FOR ONE CONVENTION -- the drift problem the file exists to prevent.
+Nothing was written.
+
+ITEM 7, THE TWO "UNLOCATABLE" CONVENTIONS: BOTH FOUND.
+  :1751  ## 31. A STATUS ARTEFACT MUST DISTINGUISH ABSENT FROM RUNNING FROM
+         EXIT 0
+  :1806  ## 32. THE EXIT CODE OF A PAST RUN IS NOT RECOVERABLE, AND MUST NOT BE
+         INVENTED
+THE SEARCH METHOD IS THE ANSWER, not the two line numbers. They were reported
+unlocatable in b3 because that search keyed on the `## <n>.` unit while both
+were still `###` SUBSECTIONS of another convention; they were promoted to `##`
+on 2026-10-08. What finds them now is `grep -n "^## [0-9]\+\."` plus a
+contiguity check over the numbers -- a method that counts what the file contains
+rather than what the searcher expected to be there. A search keyed to the
+expected unit reports an absence it created, which is the same shape as a
+comment-stripper eating the line it was asked to look at.
+
+================================================================================
+6.  ITEM 8 -- B5 SAID ITS CLAIM WAS INVISIBLE. HALF OF THAT IS WRONG.
+================================================================================
+
+b5 quoted the tool: "committed locally and is therefore INVISIBLE to every other
+clone -- treat this as NOT CLAIMED", and recorded itself as unclaimed in its
+report and handoff. MEASURED THIS BATCH:
+
+  PATH 1  THE GIT RECORD, authoritative
+          .claude/claims/<session>.json, TRACKED
+          read by every clone AFTER `git fetch`
+          an unpushed claim is INVISIBLE here -- b5 was right
+
+  PATH 2  THE STATUS REGISTRY, advisory, machine-global
+          ~/SAIRN-SESSION-LOCKS/status/<session>.json, OUTSIDE EVERY CLONE
+          read by every session on this machine WITH NO FETCH
+          MY UNPUSHED CLAIM WAS THERE: 1 claim, 11 files
+          verified by calling sairn_status.read_claims() and finding it
+
+sairn_claim.py already publishes to the registry (publish_claims, ~:1547) and
+already reads other sessions' from it (registry_claims, :1281). So an unpushed
+claim is invisible to a clone on ANOTHER MACHINE and perfectly visible to the
+five other sessions on this one.
+
+THE DEFECT IS THE MESSAGE, AND THE MESSAGE IS WHAT A SESSION ACTS ON. ROUTED TO
+cc, three exact lines:
+
+  tools/sairn_claim.py:1966  "therefore INVISIBLE to every other clone -- treat
+                             this as NOT CLAIMED."
+  tools/sairn_claim.py:1921  "--no-push: committed locally only. Other clones
+                             cannot see this until you push it."
+  tools/sairn_claim.py:2414  "--no-push: nothing published. Other clones still
+                             cannot see it."   <- "nothing published" is flatly
+                             wrong; publish_claims had just run
+
+Suggested replacement wording is in routing doc section 8, so the fix is not
+left as "be clearer".
+
+================================================================================
+7.  CLAIMS AND EXTERNAL HOLDS -- ITEM 10
+================================================================================
+
+  worktrees besides the main one     0      both removed this batch
+  git stash                          0
+  session locks held by me           1      fourth.lock, pid 61696, LIVE
+  session locks released by me       0      none of the 8 dead ones is mine
+  repo claims held                   1      the b6 claim, bb6e7020, local only
+  repo claims released               1      the b5 claim, f9afd689
+  refs created                       2      refs/salvage/b6-*, a NEW hold
+
+SAID OUT LOUD: B6'S FIRST HOUR RAN UNDER B5'S CLAIM, WHICH HAD NEVER BEEN
+RELEASED. I found it still active at pickup, released it, and took a b6 claim
+covering the files this batch actually touches. The b5 claim's FILES list did
+not cover the five api/_lib/*.test.js files item 1 edited, so those edits were
+made OUTSIDE ANY CLAIM OF MINE. No other session declared them and the directory
+rule makes api/ hank's, so nothing was taken from anyone -- but "not covered" is
+the accurate word and it is not "fine".
+
+THE TWO SALVAGE REFS ARE A NEW EXTERNAL HOLD I CREATED, and a ref keeps objects
+alive. Delete with `git update-ref -d refs/salvage/b6-defreg-probe` and
+`-b6-gate12` once somebody confirms the probe commits are not wanted.
+
+================================================================================
+8.  WHAT IS NOT DONE, PLAINLY
+================================================================================
+
+  - 29 STRIPPER SITES IN 17 FILES. Partial BY INSTRUCTION -- the brief asked for
+    ten of thirty-nine. Routed with exact lines.
+  - THE phi_cache MUTATOR. Eight candidates eliminated; not found. Next step is
+    the self-reporting signal, not a third bisect.
+  - THE TWO UPSTREAM DEFECTS behind the not_red five. Neither is mine.
+  - run_delegation_probe.py:76, :80, :113, :119 -- the fail-open restore. cody's.
+  - session_lock_check.py:128, :349, :357 -- why 8 dead locks are
+    unattributable. cc's.
+  - clone_health_check.py:209-211 -- detects core.bare=true, nothing refuses on
+    it. cc's.
+  - sairn-hover-auditor SKILL DIVERGENCE between the project and user stores.
+  - 11 UNPUSHED COMMITS, 18 BEHIND. No push was attempted, by instruction.
+  - 8 ORPHAN LOCKS, third batch, 0 released, now with the structural reason.
+
+================================================================================
+9.  QUESTIONS ONLY MICHAEL CAN ANSWER
+================================================================================
+
+  1. THIS CLONE HAS NOT PUSHED SINCE b4. Eleven commits and three batches of
+     work exist only here, and b5 established why: with hooks off the
+     tooling-inventory generator exits 2 and the push gate refuses. b6 did not
+     attempt a push at all. HOW DOES THIS WORK REACH origin/main?
+  2. THE TWO SALVAGE REFS -- delete, or keep the probe commits?
+  3. sairn-hover-auditor DIFFERS between the project store and the shared user
+     store. That is the auditor's subtree; who reconciles it?
+  4. THREE UNTRACKED settings.json BACKUPS in .claude/. Delete, or keep?
+  5. sql/restore_demo_pins_2026-09-29.sql -- TENTH batch carried, not mine,
+     writes credential rows. Commit, delete, or carry?
+  6. ~350 FILES IN C:\Users\marsh\ classified as throwaway in b4. Nothing
+     deleted and nothing will be without your word.
+
+================================================================================
+10. COMMITS THIS BATCH
+================================================================================
+
+  f9afd689  release of the still-active b5 claim
+  bb6e7020  the b6 claim, committed locally only
+  c89ee9ce  the work -- items 1, 2, 3, 4, 12
+            7 files changed, 343 insertions(+), 53 deletions(-)
+  dffba725  the handoff, written BEFORE this report
+  (later)   this report and the digest
+
+  Re-derive rather than trusting this list, which a later commit carries:
+    git log --oneline -6
+    git rev-list --left-right --count origin/main...HEAD
+SHA256 c681117cb1a70dfa71967f8c4f11c9f8fe4af2a16016d11683d8a9f256a62cc3
+END-OF-REPORT

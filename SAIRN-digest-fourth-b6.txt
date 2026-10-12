@@ -1,0 +1,15 @@
+DIGEST fourth b6
+SHA256 7191ea0a190f1a9a277daca42c4ca049097cc01f68f36b759ad80d8b13b68e71
+
+STATUS: b6 closed locally. HEAD dffba725; work commit c89ee9ce; 7 files changed, 343 insertions(+), 53 deletions(-). 12 commits unpushed, 18 behind -- ZERO pushes attempted, by instruction. Hooks stay off.
+
+DECISION-NEEDED: how does three batches of unpushed work reach origin/main; delete refs/salvage/b6-* or keep; who reconciles the sairn-hover-auditor skill divergence; the three settings.json backups; the demo-pins SQL, tenth batch.
+
+CHANGED: 1 P (10 of 39 sites, by instruction) 2 N 3 D 4 D 5 D 6 D 7 D 8 D 9 D 10 D 11 D 12 D 13 D 14 D 15 D.
+
+EVIDENCE-path: scratchpad/ -- phi_bisect.log, phi_bisect2.log, item1_before.log, item1_after2.log, item9.md, item8.txt, item11.txt; docs/2026-10-12-fourth-b5-routing.md sections 7-10.
+
+UNVERIFIED: the phi_cache mutator -- 8 candidates eliminated one at a time, none moved a subject, cause NOT established.
+
+NEXT: wait for phi_cache's own SKIPPED line to name the dirty subject; consolidate the remaining 29 sites in 17 files.
+END-OF-DIGEST
