@@ -3398,8 +3398,8 @@
       "task": "fourth -- batch b4 (18) RESUME at HEAD 263f736f. ATTEMPT 4; the three earlier attempts and why each was refused are recorded in my report, and one carryover item was REMOVED from scope rather than reworded (PR 4.3). The work: (a) assign the NEXT convention number in docs/METHODOLOGY.md for cody's contamination-warning-ships-with-its-isolation-method convention, whose full text already landed in 7ae272cc and ffe43d70 -- numbering only, I do not rewrite his text. (b) recount cody's two unlocatable queue16 conventions, locating them in docs/2026-09-13-cross-domain-disciplines.md or confirming them genuinely absent, re-derived from that file rather than restated from my own earlier write-up. (c) re-derive from the repo whether the 43 SEQ 17-A findings, tools/jscomments.py strip_js, and skill-path scoping are genuinely closed; where one is closed I state the evidence and redo nothing. I close only findings I originated and reclassify none. No auditor clone is entered. FILES: docs/METHODOLOGY.md docs/2026-09-13-cross-domain-disciplines.md docs/2026-10-07-fourth-routed.md SAIRN-ACTIVE-WORK-fourth.md SAIRN-report-ted-b4.txt SAIRN-digest-ted-b4.txt",
       "claimed_at": "2026-10-11T23:52:09Z",
       "claimed_at_epoch": 1791762729.877473,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-12T01:44:02Z",
       "files": [
         "SAIRN-ACTIVE-WORK-fourth.md",
         "SAIRN-digest-ted-b4.txt",
