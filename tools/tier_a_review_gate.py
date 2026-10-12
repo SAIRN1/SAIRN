@@ -3321,12 +3321,29 @@ def reseat_shas(write=False, weak_ok=False, as_json=False,
         rows = picked
     reviewed_with_sha = [r for r in (data.get('records') or [])
                          if r.get('status') == 'reviewed' and r.get('opened_at_sha')]
-    # The oldest record in the SELECTED population bounds the walk. If reviewed
-    # records are included and one of them is older than every open record, a
-    # window computed from the open set alone would not contain its survivor --
-    # the index would come back empty and the record would be refused for
-    # "nothing matched" rather than reseated. Same computed-not-hardcoded rule.
-    dates = sorted(r.get('opened_at') or '' for r in rows if r.get('opened_at'))
+    # ── THE WALK WINDOW IS COMPUTED FROM THE WHOLE POPULATION, NOT FROM `rows`.
+    #
+    # FIXED 2026-10-11 (cody, batch 27 item 2) AFTER A MEASURED FLIP. This line
+    # read `for r in rows`, and `rows` has already been narrowed by --only, so
+    # the selector set the window. The same record then got two different
+    # verdicts:
+    #
+    #   full population : window from 2026-09-15, 1311 file sets indexed
+    #                     -> cody 2026-10-05T09:25:27Z RESEATABLE [EXACT FILE SET]
+    #   --only that one : window from 2026-10-05,  310 file sets indexed
+    #                     -> REFUSED [TWIN_SUBJECT_AMBIGUOUS]
+    #
+    # THAT IS THE WRONG WAY ROUND FOR A SAFETY FLAG. --only exists so a session
+    # repairs its OWN records without rewriting anybody else's, so it is the
+    # path a careful person takes -- and it was the path that saw less. A
+    # selector must change WHICH records are acted on and never change the
+    # VERDICT for one of them.
+    #
+    # The window is therefore taken from every record in the selected STATUS
+    # population, before --only. The index costs one git log pass either way.
+    _window_rows = [r for r in (data.get('records') or [])
+                    if r.get('status') in wanted]
+    dates = sorted(r.get('opened_at') or '' for r in _window_rows if r.get('opened_at'))
     since = (dates[0][:10] if dates else None)
     idx, err = _file_set_index(since)
     if idx is None:
@@ -3421,7 +3438,61 @@ def reseat_shas(write=False, weak_ok=False, as_json=False,
 
         hits, err = _candidates_by_files(idx, r.get('files'), r.get('what'))
         if hits and len(hits) == 1:
-            fixable.append((r, hits[0][0], 'EXACT FILE SET', hits[0][1]))
+            # ── AN EXACT FILE SET IS NOT A STRONG BASIS ON ITS OWN. IT NEEDS
+            # THE SAME WINDOW THE SUBSET BASIS ALREADY CARRIES.
+            #
+            # ADDED 2026-10-11 (cody, batch 27 item 2) BECAUSE IT PRODUCED A
+            # WRONG ANSWER, not because it looked thin. Record
+            # 2026-10-05T09:25:27Z names exactly ['tools/sairn_claim.py'] and
+            # describes the claim matcher's disclosure rule. Exactly one commit
+            # in the window changes that set alone -- 6b9dc2635433,
+            # "chore(claims): stamp the own-claim guard with the sha it actually
+            # landed in", dated 2026-09-17, EIGHTEEN DAYS EARLIER and about a
+            # different change. The tool offered it as a STRONG basis, which
+            # --write alone would have applied.
+            #
+            # A ONE-FILE RECORD IS WHERE THIS BITES, and single-file records are
+            # common: "the only commit in the window whose file set equals this
+            # one" says nothing about WHEN, and a frequently-edited tool has many
+            # such commits spread over weeks. Uniqueness within an arbitrary
+            # window is not identity -- the same lesson the UNIQUENESS-is-not-
+            # POSITION finding carries for text anchors.
+            #
+            # The bound is WEAK_BASIS_WINDOW_HOURS, reused rather than a second
+            # invented number: a record is opened in the same working session as
+            # the commit it describes, which is the premise both bases rest on.
+            # Outside it this REFUSES rather than demoting to WEAK -- an 18-day
+            # gap is not weaker containment, it is a different commit, and this
+            # tool's own SHA_WRONG_WHEN_WRITTEN refusal already says a wrong sha
+            # is worse than a dangling one because a dangling one is visibly
+            # broken.
+            _gap = _iso_hours_apart(_PER_SHA.get(hits[0][0], ('', '', ''))[2],
+                                    r.get('opened_at'))
+            if _gap is None:
+                refused.append((r, 'EXACT_SET_DATE_UNREADABLE',
+                                'exactly one commit changed that file set (%s) '
+                                'but its date or the record\'s opened_at could '
+                                'not be read, so the %dh window could not be '
+                                'applied. An unbounded exact-set match is what '
+                                'put an 18-day-older commit forward as a strong '
+                                'basis once already'
+                                % (hits[0][0][:12], WEAK_BASIS_WINDOW_HOURS)))
+                continue
+            if _gap > WEAK_BASIS_WINDOW_HOURS:
+                refused.append((r, 'EXACT_SET_OUT_OF_WINDOW',
+                                'exactly one commit changed that file set -- %s '
+                                '(%r) -- but it is %.1fh from this record\'s '
+                                'opened_at, outside the %dh window. A record is '
+                                'opened in the same working session as the '
+                                'commit it describes; a unique file-set match '
+                                'from another day is a DIFFERENT commit that '
+                                'happens to touch the same files. FIX THE '
+                                'RECORD, not the sha'
+                                % (hits[0][0][:12], (hits[0][1] or '')[:70],
+                                   _gap, WEAK_BASIS_WINDOW_HOURS)))
+                continue
+            fixable.append((r, hits[0][0], 'EXACT FILE SET',
+                            '%s, %.1fh apart' % (hits[0][1], _gap)))
             continue
         if len(hits) > 1:
             # SAY WHETHER ANY CANDIDATE PRE-DATES THE RECORD. When every one

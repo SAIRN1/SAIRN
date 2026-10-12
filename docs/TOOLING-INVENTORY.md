@@ -21,7 +21,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**332 files in `tools/`.** By what actually invokes them:
+**333 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -30,7 +30,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 5 | session-start or prompt hooks, informational |
 | **DECIDED** | 79 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 73 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 75 | nothing runs these at all |
+| **UNWIRED** | 76 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
@@ -479,7 +479,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (75)
+## UNWIRED (76)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -596,7 +596,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      332   git ls-files tools/
+  tools on disk                      333   git ls-files tools/
   hook entries                        19   .claude\settings.json
   push-gate invocations               13   tools\sairn_push_gate_hook.py
   report-only registry                76   report_only_checks.REGISTRY

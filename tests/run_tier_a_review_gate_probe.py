@@ -2491,7 +2491,40 @@ try:
     _rc_only, _out_only = _run_reseat(include_reviewed=True,
                                       only='2026-10-06T22:18:54Z')
     check('--only NARROWS the population to the one record named',
-          'records examined: 1' in _out_only and _rc_only == 0, _out_only[:300])
+          'records examined: 1' in _out_only,
+          'rc=%r out=%r' % (_rc_only, _out_only))
+    # ── THIS ARM ASSERTED `_rc_only == 0` AND COULD NEVER PASS (fixed 2026-10-11,
+    # cody, batch 27 item 2). The fixture's sha is forty zeros ON PURPOSE -- the
+    # comment above says "dangling by construction rather than by luck" -- so the
+    # record is unresolvable by design and `reseat_shas` returns 1 whenever
+    # nothing is reseatable. The arm therefore demanded a clean exit from a
+    # fixture built to have no clean exit, and it was red at HEAD before this
+    # batch touched the gate at all: measured by running HEAD's own
+    # `tier_a_review_gate.py` against this same ledger with `REPO` patched to
+    # this clone -- rc=1, REFUSED [NO_OBJECT_IN_CLONE], byte-identical to the
+    # current code's answer. NOT a regression from the window change below it.
+    #
+    # (First measurement of that was WRONG and is kept here because the mistake
+    # is reusable: the HEAD copy was loaded from a path outside the repo, and
+    # `REPO` is derived from `__file__`, so git ran in the scratchpad -- 1 file
+    # set indexed instead of 221 and NO_OBJECT_IN_CLONE for a reason that had
+    # nothing to do with the record. A module that locates the repo from its own
+    # path cannot be A/B'd by copying it somewhere else.)
+    #
+    # WHAT THE ARM SHOULD HAVE SAID is below: an exit code is not what "narrows"
+    # means. The invariant that matters for a SELECTOR is that it changes WHICH
+    # records are acted on and never the VERDICT for one of them -- the same
+    # property the walk-window fix in reseat_shas() exists to protect, which was
+    # found by a real flip (RESEATABLE in the full run, REFUSED under --only).
+    _only_line = [l for l in _out_only.splitlines()
+                  if '2026-10-06T22:18:54Z' in l]
+    _inc_line = [l for l in _out_inc.splitlines()
+                 if '2026-10-06T22:18:54Z' in l]
+    check('...and it does NOT change that record\'s verdict -- the selector '
+          'picks WHICH records are acted on, never WHAT is decided about one, '
+          'which is the flip the walk-window fix was found by',
+          _only_line and _inc_line and _only_line[0] == _inc_line[0],
+          'under --only %r / in the full run %r' % (_only_line, _inc_line))
     _rc_miss, _out_miss = _run_reseat(include_reviewed=True,
                                       only='1999-01-01T00:00:00Z')
     check('NEGATIVE HALF: --only matching NOTHING is a REFUSAL exiting 2, not a '
