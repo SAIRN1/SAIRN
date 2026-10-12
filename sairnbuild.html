@@ -2348,6 +2348,25 @@ BLD_SYNCED.forEach(function(k){_bldSyncOn[k]=true;});
 // alongside the thirty.
 var BLD_PENDING_TRACKED = Object.assign({}, _bldSyncOn);
 BLD_PENDING_TRACKED['bld_bids'] = true;
+// ── WHICH RESOURCES MUST CARRY THE EMPLOYEE SESSION (2026-10-12) ─────────
+// ONE LIST, THREE CALL SITES. bld_bids' session requirement used to be
+// spelled `key==='bld_bids'` inline in bldRetryPending() and nowhere else,
+// which was correct and unextendable: adding a second such resource meant
+// finding every site that pushes or pulls, and the one that gets missed is a
+// 401 reported as a console.warn.
+//
+// bld_draws joined it because its server branch now requires a session --
+// `read` and `write` on the draw schedule took the licence key alone, while
+// `wip` and `release_retainage` on the SAME table were session- and
+// role-gated, so the retainage figures and the release fields were reachable
+// unauthenticated (hover seq664, AUTH_BYPASS). api/sd-data.js carries the
+// full account next to the gate.
+//
+// NOTHING IS LOST IF THE SESSION IS ABSENT: the push returns null, the record
+// is marked pending, and bldRetryPending() sends it after the next sign-in.
+// Both hydrate and push already run from inside bldEnterApp(), after
+// bldSession is set, so the ordinary path has a token.
+var BLD_SESSION_REQUIRED = { bld_bids: true, bld_draws: true };
 // Set while seed() runs. Seeding writes ~30 arrays of demo rows in one pass;
 // pushing several hundred records to the server on first paint would be a
 // self-inflicted burst, and demo data is not the customer's business record.
@@ -2403,7 +2422,7 @@ function bldSyncCollection(key, next, prev) {
     try { now = JSON.stringify(r); } catch (e) { skipped++; return; }
     if (before[String(r.id)] === now) return;   // unchanged -- nothing to push
     var rid = String(r.id);
-    bldData('write', key, r).then(function (saved) {
+    bldData('write', key, r, !!BLD_SESSION_REQUIRED[key]).then(function (saved) {
       if (saved === null) bldPendingMark(key, rid); else bldPendingClear(key, rid);
     });
   });
@@ -2509,9 +2528,11 @@ function bldRetryPending(){
       // Deleted locally since it failed. There is nothing left to push and
       // nothing to recover, so drop it rather than retrying it forever.
       if(!rec){bldPendingClear(key,id);return;}
-      // bld_bids needs the employee session its branch demands; the other
-      // thirty are licence-authorised. One expression rather than a second loop.
-      jobs.push(bldData('write',key,rec,key==='bld_bids').then(function(saved){
+      // bld_bids and bld_draws need the employee session their branches demand;
+      // the other twenty-nine are licence-authorised. One list (declared at
+      // BLD_SESSION_REQUIRED) rather than a condition per call site -- this
+      // used to read `key==='bld_bids'`, which was right until there were two.
+      jobs.push(bldData('write',key,rec,!!BLD_SESSION_REQUIRED[key]).then(function(saved){
         if(saved===null)return 0;
         bldPendingClear(key,id);return 1;
       }));
@@ -2631,7 +2652,7 @@ function bldHydrateAll() {
   if (!bldLicenseKey()) return Promise.resolve(0);
   var merged = 0;
   return Promise.all(BLD_SYNCED.map(function (key) {
-    return bldData('read', key, null).then(function (rows) {
+    return bldData('read', key, null, !!BLD_SESSION_REQUIRED[key]).then(function (rows) {
       // The empty-read shortcut is gone: `!rows.length` used to return before
       // anything happened, which is harmless for an additive merge and wrong
       // for a rule that has to look at what is held on both sides.

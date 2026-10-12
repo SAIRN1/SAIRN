@@ -13224,6 +13224,89 @@ module.exports = async (req, res) => {
       bld_reviews: 'review_id', bld_price_points: 'price_point_id',
       bld_photo_analyses: 'photo_analysis_id'
     };
+    // ── bld_draws IS NOT PART OF "THE SHARED JOB RECORD" (2026-10-12) ───────
+    // AUTH_BYPASS, hover seq664, still confirmed at this HEAD. The comment
+    // above says this loop carries no session gate and gives its reason --
+    // every role in a building company reads the schedule, the punch list and
+    // the daily log. That reasoning holds for twenty-nine of these thirty. It
+    // does not hold for `bld_draws`, which is PROGRESS BILLING: the same
+    // resource SAIRNroofing keeps behind a session AND a role gate at its
+    // rf_draws branch (api/sd-data.js:8496), and the row this platform
+    // re-tiered B -> A on the money limb in docs/CRITICALITY-TIERS.md.
+    //
+    // WHAT THE HOLE ACTUALLY WAS, read rather than inferred: `wip` and
+    // `release_retainage` on this table ARE gated, up at :5430, behind a real
+    // sairnbuild session and owner/office. `read` and `write` ON THE SAME
+    // TABLE fell through to this loop and required NOTHING but the licence
+    // key. So a caller holding only the key, with no session at all, could
+    // read every draw's retainage figures, and -- the half that matters more
+    // -- POST action:'write' with a `data` blob of its own choosing. That
+    // write is a merge-duplicates upsert that replaces `data` ENTIRELY, so the
+    // same request could author a release that never happened, inflate one, or
+    // set `retainage_released` back to zero. One ungated request defeated
+    // bld_release_retainage_atomic's CAS, the no-reduce rule in
+    // api/_lib/wip-accounting.js and the append-only audit trail at once, with
+    // no employee recorded against any of it.
+    //
+    // TWO THINGS, because a session alone closes only the first half:
+    //   1. a valid sairnbuild session is required, exactly as rf_draws
+    //      requires one for its own read and write;
+    //   2. the three fields THE RELEASE OWNS -- retainage_released,
+    //      retainage_released_at, retainage_release_log -- are carried over
+    //      from the STORED row and are never taken from the caller. They
+    //      cannot simply be stripped: sairnbuild.html:5726 echoes them back
+    //      into the local list after a release, and st() then pushes that row
+    //      through this generic write, so stripping them would BLANK a real
+    //      release on the next ordinary draw save. Carried, not trusted.
+    //
+    // FAIL CLOSED ON THE PRE-READ. If the stored row cannot be read, the
+    // write is refused rather than allowed through unprotected -- "could not
+    // tell" is not "nothing to protect" (PR §1.11).
+    //
+    // NOT RESTRICTED TO owner/office, and that is a decision stated out loud
+    // rather than quietly made. The Draw Requests panel is NOT role-gated in
+    // sairnbuild.html -- bldIsManagement() guards the bid and roster panels,
+    // not this one -- so management-only here would 403 every field role's
+    // save of a draw it can still open, and the failure would be a silent
+    // console.warn. Narrowing the panel is a product restriction; it is
+    // reported for a decision rather than shipped inside a security fix.
+    if (resource === 'bld_draws' && (action === 'read' || action === 'write')) {
+      const dSession = verifySessionToken(tokenFromRequest(req), licHash, 'sairnbuild');
+      if (!dSession) {
+        res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first — a draw request is progress billing, and it is recorded against the person who changed it' } });
+        return;
+      }
+      if (action === 'write') {
+        const RELEASE_OWNED = ['retainage_released', 'retainage_released_at', 'retainage_release_log'];
+        const dId = (payload && payload.id !== undefined && payload.id !== null) ? String(payload.id) : '';
+        if (dId) {
+          const pr = await fetch(rest('bld_draws?license_hash=eq.' + enc(licHash) +
+            '&draw_id=eq.' + enc(dId) + '&select=data&limit=1'), { headers });
+          if (pr.status === 404 || pr.status === 400) {
+            // Table absent. There is no stored release to protect, and the
+            // generic write below answers NOT_PROVISIONED for the same cause.
+            RELEASE_OWNED.forEach((k) => { delete payload[k]; });
+          } else if (!pr.ok) {
+            const prErr = await pr.json().catch(() => null);
+            console.error('bld_draws release-field pre-read failed:', pr.status, prErr);
+            res.status(502).json({ error: { code: 'RELEASE_FIELDS_UNREADABLE', message: 'The stored draw could not be read, so this save was REFUSED rather than written without its release history. Nothing was changed — try again.' } });
+            return;
+          } else {
+            const prRows = await pr.json();
+            const prData = (Array.isArray(prRows) && prRows[0] && prRows[0].data) || null;
+            RELEASE_OWNED.forEach((k) => {
+              if (prData && prData[k] !== undefined) payload[k] = prData[k];
+              else delete payload[k];
+            });
+          }
+        } else {
+          // No id. The generic write refuses it below; strip anyway so the
+          // refusal cannot be the only thing standing between a caller and
+          // an authored release.
+          RELEASE_OWNED.forEach((k) => { delete payload[k]; });
+        }
+      }
+    }
     if (BLD_RESOURCES[resource] && action === 'read') {
       const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
       // 404/400 means the table does not exist yet. Reported as an honest

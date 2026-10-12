@@ -187,6 +187,21 @@ const FETCH = function (url, opts) {
     match.forEach((r) => { Object.assign(r, patch); });
     return jsonRes(200, match);
   }
+  // ── THE GENERIC UPSERT, 2026-10-12 ────────────────────────────────────
+  // Added for section 5. The generic BLD_RESOURCES write is a
+  // merge-duplicates POST with `?on_conflict=license_hash,draw_id`, and it
+  // REPLACES `data` wholesale -- which is the property section 5 is about.
+  // Modelled here rather than answered with the read shape, because an arm
+  // that asserts "the forged release did not land" against a stub that never
+  // writes asserts nothing at all.
+  if (method === 'POST' && u.indexOf('on_conflict=') !== -1) {
+    const b = JSON.parse(opts.body);
+    const existing = rows.filter((r) => r.license_hash === b.license_hash && r.draw_id === b.draw_id)[0];
+    if (existing) { existing.data = b.data; existing.updated_at = b.updated_at; }
+    else { rows.push({ license_hash: b.license_hash, draw_id: b.draw_id, data: b.data, updated_at: b.updated_at }); }
+    const saved = rows.filter((r) => r.license_hash === b.license_hash && r.draw_id === b.draw_id)[0];
+    return jsonRes(200, [{ draw_id: saved.draw_id, data: saved.data }]);
+  }
   return jsonRes(200, match.map((r) => ({ draw_id: r.draw_id, data: r.data })));
 };
 
@@ -507,6 +522,99 @@ async function main() {
     assert.strictEqual(rpcCalls.length, 1, 'got ' + rpcCalls.length + ' retainage-release RPC calls for one release');
     assert.strictEqual(rpcCalls[0].body.p_draw_id, 'DR-01', 'the RPC call is not scoped to one draw');
     assert.ok(rpcCalls[0].body.p_license_hash, 'the RPC call is not scoped to one tenant');
+  });
+
+  // ── 5. THE OTHER TWO ACTIONS ON THE SAME TABLE ─────────────────────────
+  // AUTH_BYPASS, hover seq664, closed 2026-10-12. Sections 1-4 pin `wip` and
+  // `release_retainage`, which were gated from the day they were written.
+  // NOTHING IN THIS FILE EVER DROVE `read` OR `write` ON bld_draws, and those
+  // two fell through to the generic BLD_RESOURCES loop in api/sd-data.js,
+  // which took the licence key alone -- so every rule sections 3 and 4 assert
+  // was reachable around, by a caller with no session, through a different
+  // action on the same table. A suite that tests the guarded door and never
+  // tries the next one along reports a gate it did not check.
+  //
+  // THE NEGATIVE CONTROL IS MEASURED, NOT ASSUMED: run against the pre-fix
+  // tree (git stash of api/sd-data.js), the two 401 arms get 200 and the two
+  // release-field arms see the caller's forged value land. Recorded in
+  // SAIRN-report-cc-b4.txt with both figures.
+  section('5. read and write on the SAME table are not a way around the gate');
+
+  await test('generic read with NO session is refused -- retainage is not licence-readable', async () => {
+    seed();
+    const res = await call('read', {}, null);
+    assert.strictEqual(res.statusCode, 401, 'got ' + res.statusCode);
+    assert.strictEqual(res.body.error.code, 'NO_SESSION');
+    assert.strictEqual(requests.length, 0, 'the rows were pulled before the refusal');
+  });
+
+  await test('generic write with NO session is refused -- nothing is stored', async () => {
+    seed();
+    const res = await call('write', { id: 'DR-01', job_id: 'J-2601', amount: 45000 }, null);
+    assert.strictEqual(res.statusCode, 401, 'got ' + res.statusCode);
+    assert.strictEqual(res.body.error.code, 'NO_SESSION');
+    assert.strictEqual(row('DR-01').data.amount, 45000, 'the ungated write landed');
+    assert.strictEqual(requests.length, 0, 'the store was touched before the refusal');
+  });
+
+  await test('a FORGED release on the generic write does not land', async () => {
+    seed();
+    const res = await call('write', {
+      id: 'DR-02', job_id: 'J-2602', amount: 78000, retainage_pct: 10,
+      retainage_released: 7800, retainage_released_at: '2026-09-14',
+      retainage_release_log: [{ at: 'forged', amount: 7800 }]
+    }, tokenFor('owner'));
+    assert.strictEqual(res.statusCode, 200, 'got ' + res.statusCode);
+    const d = row('DR-02').data;
+    assert.strictEqual(d.retainage_released, undefined, 'the caller authored a release through the generic write');
+    assert.strictEqual(d.retainage_released_at, undefined);
+    assert.strictEqual(d.retainage_release_log, undefined);
+    // The rest of the caller's row still saved -- the gate carries the three
+    // release fields, it does not refuse the whole draw.
+    assert.strictEqual(d.amount, 78000);
+    assert.strictEqual(d.job_id, 'J-2602');
+  });
+
+  await test('a REAL release survives the next ordinary draw save', async () => {
+    seed();
+    await release({ draw_id: 'DR-01', amount: 4500, released_at: '2026-09-10' });
+    const before = row('DR-01').data;
+    assert.strictEqual(before.retainage_released, 4500, 'the release did not land, so this arm proves nothing');
+    // The client echoes the released figures back into its local row and st()
+    // pushes that row through the generic write (sairnbuild.html). This is the
+    // arm that stops the gate from being implemented as "strip and forget",
+    // which would blank a real release on the next save.
+    const res = await call('write', {
+      id: 'DR-01', job_id: 'J-2601', amount: 45000, retainage_pct: 10,
+      status: 'received', notes: 'edited the note'
+    }, tokenFor('owner'));
+    assert.strictEqual(res.statusCode, 200, 'got ' + res.statusCode);
+    const d = row('DR-01').data;
+    assert.strictEqual(d.retainage_released, 4500, 'an ordinary save BLANKED a real release');
+    assert.strictEqual(d.retainage_released_at, '2026-09-10');
+    assert.strictEqual(d.retainage_release_log.length, 1, 'the audit trail was dropped');
+    assert.strictEqual(d.notes, 'edited the note', 'the caller edit did not save');
+  });
+
+  await test('a REDUCED release cannot be smuggled in as an ordinary save', async () => {
+    seed();
+    await release({ draw_id: 'DR-01', amount: 4500, released_at: '2026-09-10' });
+    const res = await call('write', {
+      id: 'DR-01', job_id: 'J-2601', amount: 45000, retainage_pct: 10,
+      retainage_released: 0, retainage_released_at: '', retainage_release_log: []
+    }, tokenFor('owner'));
+    assert.strictEqual(res.statusCode, 200, 'got ' + res.statusCode);
+    const d = row('DR-01').data;
+    assert.strictEqual(d.retainage_released, 4500, 'un-paying somebody went through the generic write');
+    assert.strictEqual(d.retainage_release_log.length, 1, 'the trail was emptied');
+  });
+
+  await test('another tenant cannot reach this tenant\'s draw through the generic write', async () => {
+    seed();
+    const res = await call('write', { id: 'DR-99', job_id: 'J-9901', amount: 1 }, tokenFor('owner'));
+    assert.strictEqual(res.statusCode, 200, 'got ' + res.statusCode);
+    assert.strictEqual(row('DR-99', OTHER_TENANT_HASH).data.amount, 10000,
+      'the other tenant\'s draw was overwritten');
   });
 
   console.log('\n' + pass + ' passed, ' + fail + ' failed');
