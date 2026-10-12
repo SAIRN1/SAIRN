@@ -3469,6 +3469,42 @@
         "docs/known-red-suites.json",
         "tests/phi_cache_scoped_to_user.js"
       ]
+    },
+    {
+      "id": "fourth-1791807128",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "batch b7 -- rebase 13 local commits onto origin/main and attempt ONE push only if the external-files gate is clear, no override; binary-bisect the phi_cache polluting suite in about log2(N) runs with one log per run and add a diagnostic that names the dirty subject on failure; consolidate the remaining 29 stripper sites in 17 files in two groups with each suite run before and after; build a REPORT-ONLY temporary-state leak check over .git/config with a control pair; resolve the 4 unresolvable defect-register hashes; print the hover-auditor skill divergence and route it to cc without editing either store; list and keep refs/salvage/b6-*; rerun the lock table and release only my own fourth.lock at close. HOOKS AND COMPACTION KEYS STAY OFF. No SAIRN_SEED_GATE=off. Nothing deleted in the home directory. FILES: api/alf-append-only-read-order.test.js api/greeting.test.js api/sairndental/public-book-guardian.test.js api/sairnvet-transcribe.test.js tests/faults/alf_rule_read_faults.js tests/faults/sd_write_faults.js tests/intake_form_public_surface.js tests/intake_link_no_credential.js tests/intake_no_false_success.js tests/ld_reports_unreadable.js tests/roofing_claim_gate_single_source.js tests/sairndesign_po_procurement.js tests/sb_sync_badge_honesty.js tests/sd_timesheet_pay_est.js tests/st_reports_failure.js tests/stonedesk_admin_storage_kpi.js tests/sv_storage_guard.js tests/phi_cache_scoped_to_user.js tools/temp_state_leak_check.py docs/defect-density-register.json docs/2026-10-12-fourth-b5-routing.md SAIRN-report-fourth-b7.txt SAIRN-digest-fourth-b7.txt docs/handoff-fourth-2026-10-14.md",
+      "claimed_at": "2026-10-12T12:12:08Z",
+      "claimed_at_epoch": 1791807128.573511,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-digest-fourth-b7.txt",
+        "SAIRN-report-fourth-b7.txt",
+        "api/alf-append-only-read-order.test.js",
+        "api/greeting.test.js",
+        "api/sairndental/public-book-guardian.test.js",
+        "api/sairnvet-transcribe.test.js",
+        "docs/2026-10-12-fourth-b5-routing.md",
+        "docs/defect-density-register.json",
+        "docs/handoff-fourth-2026-10-14.md",
+        "tests/faults/alf_rule_read_faults.js",
+        "tests/faults/sd_write_faults.js",
+        "tests/intake_form_public_surface.js",
+        "tests/intake_link_no_credential.js",
+        "tests/intake_no_false_success.js",
+        "tests/ld_reports_unreadable.js",
+        "tests/phi_cache_scoped_to_user.js",
+        "tests/roofing_claim_gate_single_source.js",
+        "tests/sairndesign_po_procurement.js",
+        "tests/sb_sync_badge_honesty.js",
+        "tests/sd_timesheet_pay_est.js",
+        "tests/st_reports_failure.js",
+        "tests/stonedesk_admin_storage_kpi.js",
+        "tests/sv_storage_guard.js",
+        "tools/temp_state_leak_check.py"
+      ]
     }
   ],
   "refusals": [
