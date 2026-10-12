@@ -67,6 +67,7 @@
 // ---------------------------------------------------------------------------
 
 const { validateLicenseKey } = require('./_lib/license');
+const { auditPinSetup } = require('./_lib/audit');
 const lifecycle = require('./_lib/employee-lifecycle');
 const {
   hashPin, verifyPin, signSessionToken, verifySessionToken, tokenFromRequest,
@@ -415,7 +416,33 @@ module.exports = Object.assign(async (req, res) => {
       });
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
-      res.status(200).json({ ok: true, employee_id, role });
+      // ── WHO GRANTED THE ACCESS IS NOW RECORDED (2026-10-11) ──────────────
+      // This branch writes a PIN credential for ANOTHER employee -- it is the
+      // moment access is granted -- and it recorded nothing, while `set_active`
+      // in this same file audits every outcome including its refusals. So
+      // REVOKING access here was reconstructible and GRANTING it was not.
+      // Reported by hover2 as seq958 across the api/*-auth.js family.
+      //
+      // IT MATTERS MORE HERE THAN IN MOST OF THE FAMILY: this file's
+      // PROVISIONING_ROLES is what the server actually reads to decide who may
+      // mint a credential (:328), and the sf_officers roster the client renders
+      // the trapdoor banner from is a SEPARATE record that was itself writable
+      // on a licence key alone until 2026-10-11. The grant and the roster can
+      // disagree, and until now only one of the two left a trace.
+      //
+      // The event type, the detail keys and the table name all live in
+      // api/_lib/audit.js's auditPinSetup() rather than here, because those are
+      // the three things that drift when fourteen files each carry their own
+      // copy -- its header has the full reasoning and the state of the SQL.
+      //
+      // `attributed` is surfaced because the write is best-effort and returns
+      // false on failure: an unrecorded attribution must not look like a
+      // recorded one to whoever just granted the access.
+      const setupAudited = await auditPinSetup(SUPABASE_URL, SERVICE_KEY, {
+        app: APP, license_hash: licHash, caller: caller,
+        target: employee_id, granted_role: role
+      });
+      res.status(200).json({ ok: true, employee_id, role, attributed: setupAudited });
       return;
     }
 

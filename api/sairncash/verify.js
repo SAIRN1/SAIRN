@@ -114,6 +114,65 @@ module.exports = async (req, res) => {
     }
     const customer = sub.customer && typeof sub.customer === 'object' ? sub.customer : {};
     const customerId = customer.id || (typeof sub.customer === 'string' ? sub.customer : undefined);
+    // ══ THE MINT ON THIS BRANCH NOW REQUIRES A SECOND IDENTIFIER, 2026-10-11 ══
+    // WHAT WAS WRONG. api/_lib/firebase-admin.js:66-69 states the precondition
+    // for minting in its own words: the uid "can be trusted by RTDB rules as
+    // exactly the customer this request already proved ownership of via a real
+    // trial/license check higher up the call stack". This branch did no such
+    // check. An unauthenticated POST carrying nothing but a `subscriptionId`
+    // came back with a Firebase custom token for that subscription's customer
+    // -- a real auth credential for somebody else's SAIRNcash data, minted off
+    // one bearer string. Reported by hover2 (seq681); reproducing artifact
+    // .claude/skills/sairn-hover-auditor/tools-hover2/
+    // sairncash_verify_token_mint_repro.py, exit 1 before this change.
+    //
+    // WHAT THIS IS AND IS NOT, because overstating it would be worse than the
+    // gap. SAIRNcash HAS NO LOGIN. There is no password, no session and no
+    // identity to check against -- a guest Stripe checkout is the whole
+    // enrolment. So this cannot become real authentication, and it is not
+    // claimed to be. What it does is make the implicit assumption EXPLICIT and
+    // ENFORCED: a caller must now present BOTH the subscription id AND the
+    // Stripe customer id, and the customer id is checked against what Stripe
+    // returns for that subscription rather than taken as given. A leaked
+    // subscriptionId alone no longer mints anything.
+    //
+    // IT BREAKS NO WORKING CLIENT, and that was READ rather than assumed.
+    // initFirebase() at sairncash.html:484 already refuses to sync unless the
+    // stored record holds BOTH customerId and firebaseToken. So every user who
+    // has working sync today necessarily has customerId stored and will send
+    // it; a record without customerId was already getting
+    // "Sync unavailable -- no verified customer yet" and loses nothing.
+    //
+    // THE REFUSAL IS NAMED, NOT SILENT. Verification itself still succeeds --
+    // that is this endpoint's stated purpose and a withheld token must not cost
+    // a paying customer the app -- but the response says WHY the token is
+    // absent instead of returning a bare null that is indistinguishable from a
+    // Firebase outage. The outage case keeps returning null with no reason,
+    // which is how the two stay distinguishable.
+    //
+    // THE sessionId BRANCH ABOVE IS DELIBERATELY NOT CHANGED, and the reason is
+    // structural rather than an oversight: that branch IS the checkout return,
+    // and it is where the client FIRST LEARNS its customerId. Requiring the
+    // value as a precondition for issuing it is impossible. Its bearer string
+    // is also a Checkout Session id that Stripe has just handed to the
+    // purchaser in a redirect, rather than one sitting in localStorage across
+    // every later page load. That asymmetry is recorded here because the next
+    // reader will otherwise see one branch checked and one not and assume the
+    // sweep was incomplete.
+    const claimedCustomerId = req.body && req.body.customerId;
+    let firebaseToken = null;
+    let firebaseTokenWithheld = null;
+    if (typeof claimedCustomerId !== 'string' || !claimedCustomerId) {
+      firebaseTokenWithheld = 'CUSTOMER_ID_NOT_SUPPLIED';
+    } else if (!customerId || String(claimedCustomerId) !== String(customerId)) {
+      // MISMATCH AND ABSENCE ARE DIFFERENT FACTS and get different codes. An
+      // absent id is an old or stale client; a mismatched one is a caller
+      // asking for a token that is not theirs, and conflating the two would
+      // hide the second inside the first.
+      firebaseTokenWithheld = 'CUSTOMER_ID_MISMATCH';
+    } else {
+      firebaseToken = await mintFirebaseToken(customerId);
+    }
     res.status(200).json({
       valid: true,
       email: customer.email || '',
@@ -122,8 +181,10 @@ module.exports = async (req, res) => {
       price: '$9.99/month',
       subscriptionId: sub.id,
       customerId: customerId,
-      // firebaseToken (2026-08-19) -- see mintFirebaseToken() above.
-      firebaseToken: await mintFirebaseToken(customerId),
+      // firebaseToken (2026-08-19) -- see mintFirebaseToken() above, and the
+      // ownership precondition block directly above this response.
+      firebaseToken: firebaseToken,
+      firebaseTokenWithheld: firebaseTokenWithheld,
       expiresAt: sub.current_period_end
         ? new Date(sub.current_period_end * 1000).toISOString()
         : null

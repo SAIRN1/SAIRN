@@ -704,9 +704,36 @@ async function reverifySubscription() {
     return false;
   }
   try {
-    const res = await fetch('/api/sairncash/verify', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({subscriptionId: s.subscriptionId})});
+    // ── customerId IS SENT TOO AS OF 2026-10-11, AND IT IS NOT DECORATION ──
+    // api/sairncash/verify.js now REFUSES TO MINT a Firebase custom token on
+    // the subscriptionId branch unless the caller also presents the Stripe
+    // customer id, and checks it against what Stripe returns for that
+    // subscription. Before that, an unauthenticated POST carrying nothing but a
+    // subscriptionId came back with a real auth credential for that
+    // subscription's customer -- api/_lib/firebase-admin.js:66-69 states the
+    // ownership precondition for minting in its own words and this path met
+    // none of it.
+    //
+    // NOTHING IS LOST BY A RECORD THAT HAS NO customerId: initFirebase() above
+    // already refuses to sync without one, so such a record has had no sync all
+    // along. The response now says WHY the token is absent
+    // (firebaseTokenWithheld) rather than returning a bare null, which is the
+    // difference between this refusal and a Firebase outage.
+    const res = await fetch('/api/sairncash/verify', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({subscriptionId: s.subscriptionId, customerId: s.customerId})});
     const data = await res.json();
-    if (data.valid) { saveSub(data); return true; }
+    if (data.valid) {
+      saveSub(data);
+      // SAID OUT LOUD RATHER THAN LEFT AS A MISSING FEATURE. A withheld token
+      // means sync will not come up on this load, and the user would otherwise
+      // see only initFirebase()'s generic "no verified customer yet".
+      if (data.firebaseTokenWithheld) {
+        try { console.warn('SAIRNcash: the server verified the subscription but '
+          + 'withheld the sync credential (' + data.firebaseTokenWithheld + '). '
+          + 'Cloud sync will not start on this load; the subscription itself is '
+          + 'unaffected. Re-open the app, or use Manage Billing to re-verify.'); } catch (_e) {}
+      }
+      return true;
+    }
     localStorage.removeItem('sairncash_sub');
     return false;
   } catch(e) {

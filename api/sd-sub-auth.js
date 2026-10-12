@@ -33,6 +33,7 @@
 // ---------------------------------------------------------------------------
 
 const { validateLicenseKey } = require('./_lib/license');
+const { auditPinSetup } = require('./_lib/audit');
 const { hashPin, verifyPin, signSessionToken, verifySessionToken, tokenFromRequest } = require('./_lib/auth');
 
 // This module's OWN app namespace -- the one it MINTS tokens for. Declared
@@ -167,7 +168,35 @@ module.exports = async (req, res) => {
       });
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
-      res.status(200).json({ ok: true, sub_id });
+      // ── WHO GRANTED THE ACCESS IS NOW RECORDED (2026-10-11) ──────────────
+      // This branch mints a PIN credential for a SUBCONTRACTOR -- somebody
+      // outside the company who will then be able to sign in to a StoneDesk
+      // licence -- and it recorded nothing at all. Reported by hover2 as
+      // seq958 across the api/*-auth.js family.
+      //
+      // THIS ONE WORKS THE MOMENT IT DEPLOYS, unlike most of the family.
+      // `stonedesk_audit_log` already exists in Supabase, and
+      // api/_lib/audit.js maps BOTH `stonedesk` and `stonedesk_sub` to it on
+      // purpose: a subcontractor credential is a credential on a StoneDesk
+      // licence, and splitting its provisioning history into a second table
+      // would mean "who was granted access to this licence" could not be
+      // answered by one query.
+      //
+      // THE TARGET IS A sub_id, NOT AN employee_id, and that is the whole
+      // reason this call is written out here rather than sharing the sibling
+      // files' wording: everything else in this family grants to an employee on
+      // the roster. The helper's `target` field carries whichever it is, and the
+      // event type stays `pin_setup` so one query over this table returns every
+      // grant on the licence rather than two queries that must be remembered.
+      //
+      // `attributed` is surfaced because the write is best-effort and returns
+      // false on failure: an unrecorded attribution must not look like a
+      // recorded one to whoever just granted the access.
+      const setupAudited = await auditPinSetup(SUPABASE_URL, SERVICE_KEY, {
+        app: APP, license_hash: licHash, caller: caller,
+        target: sub_id, granted_role: 'subcontractor'
+      });
+      res.status(200).json({ ok: true, sub_id, attributed: setupAudited });
       return;
     }
 

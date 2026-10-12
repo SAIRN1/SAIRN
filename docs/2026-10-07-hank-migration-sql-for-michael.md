@@ -710,26 +710,90 @@ grant select, insert on public.sairnfreedom_audit_log to service_role;
 
 ---
 
-## AFTER THE SQL: THE CODE HALF, WHICH IS NOT IN THIS FILE
+## AFTER THE SQL: THE CODE HALF — **LANDED 2026-10-11 (hank, batch 20).**
 
-Each new table needs three things in its `api/*-auth.js` before anything is
-recorded, and **none of it is done**:
+**THE PARAGRAPH BELOW SAID "none of it is done" AND THAT IS NO LONGER TRUE.
+It is struck through rather than deleted, because this file is the one place the
+migration's order is stated and a silently-updated prerequisite is how somebody
+runs the wrong step.**
 
-1. `const { writeAuditLog } = require('./_lib/audit');`
-2. `const AUDIT_TABLE = '<app>_audit_log';`
-3. the table name added to `AUDIT_TABLES` in `api/_lib/audit.js` — that
-   allowlist refuses an unknown table and logs `audit log write refused:
-   unknown table`, so a migration without this step records nothing and says
-   so only in a server log.
+> ~~Each new table needs three things in its `api/*-auth.js` before anything is
+> recorded, and **none of it is done**: (1)
+> `const { writeAuditLog } = require('./_lib/audit');` (2)
+> `const AUDIT_TABLE = '<app>_audit_log';` (3) the table name added to
+> `AUDIT_TABLES` in `api/_lib/audit.js`. Then the `setup` branch gets the same
+> six lines `api/sc-auth.js` and `api/sd-auth.js` now carry.~~
 
-Then the `setup` branch gets the same six lines `api/sc-auth.js` and
-`api/sd-auth.js` now carry, including `attributed` on the response so a failed
-write cannot look like a successful one.
+**WHAT IS ACTUALLY THERE NOW, and it is not three things per file — it is one
+shared helper and one call per file.** Copying six lines into fourteen files is
+fourteen chances to mistype a table name, and a mistyped name does not fail
+loudly: it lands in the `AUDIT_TABLES` refusal and becomes a server-log line
+nobody reads. So:
 
-**AND RUN `python tools/audit_event_type_check.py` AFTER EACH ONE.** It exits
-1 and names the table and the value when a `setup` branch emits an event the
-new CHECK does not list — which is the defect STEP 0 exists to repair,
-arriving twelve more times if nobody looks.
+1. `api/_lib/audit.js` gained **`AUDIT_TABLE_BY_APP`** — a single app→table map
+   covering all seventeen app ids, with `AUDIT_TABLES` now **derived from it**
+   rather than maintained beside it. Two lists that must agree is the defect
+   shape `SD_SESSION_GATED` / `SD_GATE_APP` already pays for in
+   `api/sd-data.js`.
+2. `api/_lib/audit.js` gained **`auditPinSetup()`**, which owns the event type
+   (`pin_setup`) and the detail keys (`{ target, granted_role }`, chosen to
+   match what `api/sc-auth.js` and `api/sd-auth.js` already write so no
+   divergence is created). It **fails CLOSED** on an unmapped app rather than
+   falling back to `DEFAULT_AUDIT_TABLE`.
+3. Fourteen files call it and surface `attributed` on the response:
+   `alf bld dnt grd leg mech rf sb scp sd-sub sdn sen sf sv`. `sd-sub-auth.js`
+   passes `target: sub_id, granted_role: 'subcontractor'` — its grant is to a
+   subcontractor, not a roster employee.
+4. **`api/law-auth.js` IS DELIBERATELY UNCHANGED.** It already audited its
+   setup through a local `audit()` wrapper. Its stored shape differs —
+   `{ employee_id, role, detail: { by } }`, a `detail` key nested inside
+   `detail` — and normalising that would rewrite the recorded shape of rows
+   **already in a live legal-sector audit table**. That is a data decision, not
+   a side effect of closing an unrelated gap. **Reported, not changed.**
+5. **The 13 DDLs in this file are now also `sql/*_audit_log_schema.sql`,
+   extracted byte-for-byte.** Not tidying: `tools/audit_event_type_check.py`
+   reads CHECK constraints out of `sql/*.sql`, so while the DDL existed only in
+   this markdown the thirteen new callers were **clean by absence** — the
+   "silent universe" that tool's own header warns about. With the files present
+   the comparison is real, and the tool now reads **17 tables instead of 4**.
+6. `tools/audit_event_type_check.py` itself was extended in the same push,
+   because the refactor in (2) would otherwise have **removed fourteen files
+   from its field of view** while its printed total went on looking the same.
+   It now resolves `auditPinSetup` call sites through `AUDIT_TABLE_BY_APP`,
+   fails closed when it cannot, stops miscounting `api/_lib/audit.js` as an
+   emitter, and carries five new selftest arms (D1–D5) for that path.
+7. `api/auth-setup-attribution.test.js` is new and is the regression guard:
+   brace-matched branches, comments blanked before any match, and two negative
+   controls — one proving prose about the attribution does **not** satisfy the
+   detector, one proving a neighbouring branch's audit call is not credited to
+   `setup`.
+
+**THE FIGURE IN THE FINDING WAS 15 OF 17; THE REAL ONE WAS 14.** `api/law-auth.js`
+audits through a local wrapper, so a scan keyed on the string `writeAuditLog`
+cannot see it. The off-by-one travelled through three hover handoffs. The new
+suite prints the per-file classification rather than a count, for that reason.
+
+### WHAT IS STILL OWED, AND IT IS ALL SQL
+
+**NOTHING IN THIS FILE HAS BEEN RUN.** The code half being present does **not**
+mean a row lands anywhere. Measured with `python tools/audit_event_type_check.py`
+on 2026-10-11, exit 1:
+
+| app | table | state |
+|---|---|---|
+| SAIRNlaw | `sairnlaw_audit_log` | **WORKS TODAY** — table exists, CHECK already permits `pin_setup` |
+| StoneDesk + sub | `stonedesk_audit_log` | table exists, **CHECK REJECTS `pin_setup`** → **STEP 0b** |
+| SAIRNcode | `sairncode_audit_log` | table exists, **CHECK REJECTS `pin_setup`** → **STEP 0a** |
+| the other 13 | `sairn*_audit_log` | **table does not exist** → **STEPS 1–13** |
+
+So `api/sd-auth.js`'s and `api/sc-auth.js`'s attribution — written 2026-10-07
+and described above as the pattern to copy — **has been failing at the database
+since the day it landed**, and `attributed: false` is what their callers have
+been getting. That is STEP 0, which this file already said comes first.
+
+**RUN `python tools/audit_event_type_check.py` AFTER EACH STEP.** It exits 1 and
+names the table and the value when a `setup` branch emits an event the CHECK
+does not list.
 
 ---
 

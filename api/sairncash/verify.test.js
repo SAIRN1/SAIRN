@@ -258,6 +258,114 @@ async function main() {
     assert.strictEqual(res.body.valid, false);
   });
 
+  // ── THE FIREBASE MINT NEEDS A SECOND IDENTIFIER (2026-10-11) ─────────────
+  // THE DEFECT: an unauthenticated POST carrying nothing but a subscriptionId
+  // came back with a Firebase CUSTOM AUTH TOKEN for that subscription's
+  // customer. api/_lib/firebase-admin.js:66-69 states the precondition for
+  // minting in its own words -- the uid must be "the customer this request
+  // already proved ownership of via a real trial/license check higher up the
+  // call stack" -- and this branch did no such check. Reported by hover2
+  // (seq681); reproducing artifact
+  // .claude/skills/sairn-hover-auditor/tools-hover2/
+  // sairncash_verify_token_mint_repro.py.
+  //
+  // WHAT THESE ARMS DO AND DO NOT PROVE. They prove the MINT DECISION, which is
+  // the whole of the change: who gets a token, who does not, and whether the
+  // reason is stated. They do NOT prove the token is cryptographically sound --
+  // api/_lib/firebase-mint.test.js drives the real mintCustomToken for that.
+  // The three outcomes are asserted separately rather than as one
+  // "token is present" check, because a single arm would pass while absence and
+  // mismatch were silently collapsed into one code.
+  //
+  // THE MINT IS STUBBED BY ABSENCE, NOT BY A FAKE. There is no
+  // SAIRNCASH_FIREBASE_SERVICE_ACCOUNT in this process, so mintCustomToken
+  // throws, verify.js's own try/catch returns null, and firebaseToken is null
+  // on the HAPPY path too. That means a "token is null" assertion CANNOT
+  // distinguish withheld from failed-to-mint -- which is exactly why
+  // firebaseTokenWithheld exists and is what these arms assert instead. Stated
+  // because an arm that looked at the token alone would be vacuous here and
+  // would still have printed PASS.
+
+  await test('subscriptionId with NO customerId -> verified, but the mint is '
+    + 'withheld with CUSTOMER_ID_NOT_SUPPLIED named', async () => {
+    nextSubscription = subscription();
+    const res = mockRes();
+    await freshVerify()(post({ subscriptionId: 'sub_XYZ789' }), res);
+    assert.strictEqual(res.statusCode, 200);
+    assert.strictEqual(res.body.valid, true,
+      'verification itself must still succeed -- a withheld sync credential '
+      + 'must not cost a paying customer the app');
+    assert.strictEqual(res.body.firebaseToken, null);
+    assert.strictEqual(res.body.firebaseTokenWithheld, 'CUSTOMER_ID_NOT_SUPPLIED',
+      'a bare null is indistinguishable from a Firebase outage; the reason is '
+      + 'the thing that makes the refusal readable');
+  });
+
+  await test('subscriptionId with the WRONG customerId -> withheld, and the '
+    + 'code says MISMATCH rather than NOT_SUPPLIED', async () => {
+    nextSubscription = subscription();
+    const res = mockRes();
+    await freshVerify()(post({
+      subscriptionId: 'sub_XYZ789', customerId: 'cus_SOMEBODY_ELSE'
+    }), res);
+    assert.strictEqual(res.body.valid, true);
+    assert.strictEqual(res.body.firebaseToken, null);
+    assert.strictEqual(res.body.firebaseTokenWithheld, 'CUSTOMER_ID_MISMATCH',
+      'absence and mismatch are different facts -- an absent id is a stale '
+      + 'client, a mismatched one is a caller asking for a token that is not '
+      + 'theirs, and collapsing them hides the second inside the first');
+  });
+
+  await test('subscriptionId with the RIGHT customerId -> the mint is ATTEMPTED '
+    + '(nothing withheld), and the real customerId is still returned', async () => {
+    nextSubscription = subscription();
+    const res = mockRes();
+    await freshVerify()(post({
+      subscriptionId: 'sub_XYZ789', customerId: 'cus_ABC123'
+    }), res);
+    assert.strictEqual(res.body.valid, true);
+    assert.strictEqual(res.body.firebaseTokenWithheld, null,
+      'the matching case must not be withheld -- if this is non-null the gate '
+      + 'is refusing the legitimate client and sync is dead for everyone');
+    assert.strictEqual(res.body.customerId, 'cus_ABC123');
+  });
+
+  await test('the claimed customerId is NEVER echoed in place of the real one '
+    + '-- a mismatch must not teach the caller anything', async () => {
+    nextSubscription = subscription();
+    const res = mockRes();
+    await freshVerify()(post({
+      subscriptionId: 'sub_XYZ789', customerId: 'cus_SOMEBODY_ELSE'
+    }), res);
+    assert.strictEqual(res.body.customerId, 'cus_ABC123',
+      'the response must carry what STRIPE says, not what the caller claimed');
+    assert.notStrictEqual(res.body.customerId, 'cus_SOMEBODY_ELSE');
+  });
+
+  await test('a non-string customerId is refused as ABSENT, not coerced -- '
+    + 'true, 1 and {} must not satisfy the check', async () => {
+    for (const bad of [true, 1, {}, [], null]) {
+      nextSubscription = subscription();
+      const res = mockRes();
+      await freshVerify()(post({ subscriptionId: 'sub_XYZ789', customerId: bad }), res);
+      assert.strictEqual(res.body.firebaseTokenWithheld, 'CUSTOMER_ID_NOT_SUPPLIED',
+        'customerId ' + JSON.stringify(bad) + ' was not treated as absent');
+    }
+  });
+
+  await test('an INACTIVE subscription never reaches the mint decision at all '
+    + '-- valid:false carries no firebase fields to read', async () => {
+    nextSubscription = subscription({ status: 'canceled' });
+    const res = mockRes();
+    await freshVerify()(post({
+      subscriptionId: 'sub_XYZ789', customerId: 'cus_ABC123'
+    }), res);
+    assert.strictEqual(res.body.valid, false);
+    assert.strictEqual(res.body.firebaseToken, undefined,
+      'the valid:false response grew a firebase field -- the early return is '
+      + 'the thing that keeps a cancelled subscription away from the mint');
+  });
+
   console.log('\n' + passed + ' passed, ' + failed + ' failed');
   if (failed) process.exit(1);
 }
