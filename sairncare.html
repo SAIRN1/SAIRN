@@ -1079,7 +1079,17 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
 <div class="modal" id="facilitymodal">
   <div class="mbox">
     <div class="mtitle">Edit Facility Profile</div>
-    <div class="fg"><label>Facility Name</label><input id="fc-name" placeholder="Lakeshore Assisted Living"></div>
+    <!-- `fc-facname`, NOT `fc-name` (2026-10-12). This input was `id="fc-name"` and
+         so is the FAMILY-CONTACT name box at :320. getElementById returns the FIRST
+         element with a duplicated id, so the facility profile was using the family
+         contact's input for both halves: opening the profile (:5021) overwrote
+         whatever the user had typed into the family-contact form, and saving it
+         (:5034) stored THAT box's value as the facility's name -- normally empty.
+         Both panels legitimately use `fc-`; the facility one is renamed because its
+         siblings (`fc-company`, `fc-state`, `fc-licnum`) do not collide and the
+         family-contact set (`fc-id`, `fc-rel`, `fc-email`, `fc-phone`) is referenced
+         as a group at :2448. -->
+    <div class="fg"><label>Facility Name</label><input id="fc-facname" placeholder="Lakeshore Assisted Living"></div>
     <div class="fg"><label>Demo Company (shown on Dashboard)</label><input id="fc-company" placeholder="Lakeshore Assisted Living"></div>
     <div class="fr"><div class="fg"><label>Licensing State</label><input id="fc-state" placeholder="OH" maxlength="2" style="text-transform:uppercase"></div>
       <div class="fg"><label>State License Number</label><input id="fc-licnum" placeholder="ALF-OH-11923"></div></div>
@@ -5018,7 +5028,10 @@ function careRateFor(level,subTier){
 function openFacilityModal(){
   if(!alfIsManagement()){toast('Only management can change the facility profile');return;}
   var f=facility();
-  $('fc-name').value=f.name||'';$('fc-company').value=f.company||'';
+  // `fc-facname` -- see the comment on that input. This read `fc-name` and
+  // resolved to the FAMILY-CONTACT name box, so opening the facility profile
+  // overwrote whatever was typed there and the facility's own field stayed blank.
+  $('fc-facname').value=f.name||'';$('fc-company').value=f.company||'';
   $('fc-state').value=f.licensing_state||'';$('fc-licnum').value=f.license_number||'';
   $('facilitymodal').classList.add('on');
 }
@@ -5031,7 +5044,9 @@ async function saveFacility(){
   var stateVal=($('fc-state').value||'').trim().toUpperCase();
   if(!alfStateLooksValid(stateVal)){toast('Licensing state must be a two-letter code (e.g. OH) or left blank');return;}
   var f=Object.assign({},facility(),{
-    name:$('fc-name').value.trim(),company:$('fc-company').value.trim(),
+    // `fc-facname` -- this read `fc-name` and therefore STORED the
+    // family-contact box's value as the facility's name, normally empty.
+    name:$('fc-facname').value.trim(),company:$('fc-company').value.trim(),
     licensing_state:stateVal,license_number:$('fc-licnum').value.trim()
   });
   var syncResult=await alfSaveFacility(f);

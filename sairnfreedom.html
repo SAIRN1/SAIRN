@@ -1441,7 +1441,14 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
 
         <div class="card"><h3>Open an account</h3>
           <div class="grid">
-            <div><label>Account name</label><input id="ac-name" placeholder="e.g. Post 214 Bingo Session Account"></div>
+            <!-- `acct-`, NOT `ac-` (2026-10-12). This input was `id="ac-name"` and so
+                 is the OFFICER name box at :371, in the access-control panel. There is
+                 only one `ac-name` as far as getElementById is concerned and it is the
+                 first one, so sfOpenAccount() was reading the OFFICER form: a post
+                 could not open the ORC 2915.10(C) exclusive bingo account under the
+                 name typed here, and :3580's reset cleared the officer field instead.
+                 `acct-` is the prefix this panel already uses for `acct-kpis` at :1440. -->
+            <div><label>Account name</label><input id="acct-name" placeholder="e.g. Post 214 Bingo Session Account"></div>
             <div><label>Kind</label><select id="ac-kind"></select></div>
             <div><label>Bank reference</label><input id="ac-bank" placeholder="last 4 or internal ref"></div>
             <div><label>Opened</label><input type="date" id="ac-opened"></div>
@@ -1458,7 +1465,13 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         <div class="card"><h3>Accounts</h3>
           <div class="tw"><table>
             <thead><tr><th>Account</th><th>Kind</th><th>Bank ref</th><th>Deposits</th><th>Payments</th><th>Balance</th><th></th></tr></thead>
-            <tbody id="ac-tbody"></tbody></table></div>
+            <!-- `acct-tbody`, NOT `ac-tbody` (2026-10-12). Same collision as
+                 `acct-name` above and worse in effect: the OFFICER roster tbody at
+                 :380 carries the same id, so sfRenderAccess() (:2600) and the accounts
+                 renderer (:4054) were both writing into it. Whichever ran last won --
+                 the accounts table never rendered at all and the officer roster was
+                 being replaced by account rows, or the reverse, depending on order. -->
+            <tbody id="acct-tbody"></tbody></table></div>
         </div>
 
         <div class="card"><h3>Record a payment</h3>
@@ -3620,7 +3633,10 @@ function accountPayments(id){
 }
 
 function sfOpenAccount(){
-  var name=($('ac-name').value||'').trim();
+  // `acct-name` -- see the comment on that input. This read `ac-name` and
+  // resolved to the OFFICER name box in the access-control panel, because
+  // getElementById returns the FIRST element with a duplicated id.
+  var name=($('acct-name').value||'').trim();
   if(!name){ toast('Account name is required','err'); return; }
   var kind=$('ac-kind').value;
   if(!kind){ toast('Account kind is required','err'); return; }
@@ -3632,7 +3648,7 @@ function sfOpenAccount(){
   list.push({ id:'ac'+Date.now(), name:name, kind:kind, bank:($('ac-bank').value||'').trim(),
               opened:$('ac-opened').value||localToday() });
   st(K_ACCOUNTS,list);
-  $('ac-name').value=''; $('ac-bank').value='';
+  $('acct-name').value=''; $('ac-bank').value='';
   toast('Account opened');
   sfRenderAll();
 }
@@ -4106,7 +4122,10 @@ function sfRenderAccounts(){
   sfFillOfficerSelect('ex-approved');
   sfRenderTransferField();
 
-  var tb=$('ac-tbody');
+  // `acct-tbody` -- see the comment on that tbody. This read `ac-tbody` and
+  // resolved to the OFFICER roster tbody, so these account rows were landing in
+  // the access-control table and the accounts table stayed empty.
+  var tb=$('acct-tbody');
   if(tb){
     if(!accs.length){ tb.innerHTML='<tr><td colspan="7" class="empty">No accounts. ORC 2915.10(C) requires one before any session may be held.</td></tr>'; }
     else {
