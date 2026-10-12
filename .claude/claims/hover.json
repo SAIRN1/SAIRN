@@ -586,8 +586,8 @@
       "task": "H1 batch b8",
       "claimed_at": "2026-10-12T00:11:16Z",
       "claimed_at_epoch": 1791763876.874482,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-12T01:27:46Z",
       "files": null
     }
   ],
