@@ -258,3 +258,31 @@ mistaken for "nothing left to do":
 
 **This is the largest single group in the ledger and nothing in this batch
 touched it.** Reported, not claimed.
+
+---
+
+## POSTSCRIPT, same day: the HEAD this document names was rewritten, and the figures moved
+
+Written after the batch landed, because a stamp that does not resolve is worse
+than no stamp.
+
+**The `60b7a9c9` above no longer exists.** Rebasing this branch onto
+`origin/main` rewrote every commit in it, twice, through two real conflicts --
+one in `docs/defect-density-register.json` (merged with
+`tools/sairn_rebase_resolve.py`, 502 ancestor + 3 upstream-only + 4 local-only)
+and one in this ledger, where hank opened a nine-resource record at
+`2026-10-12T01:51:33Z` while this branch was stamping reseats onto existing
+rows. Both sides were kept; the ledger merge was verified field-by-field
+afterwards at 241 records with exactly 12 differences, all of them the three
+reseats' own four fields. **The batch landed at `f12e6042`.**
+
+**Re-measured after the push:** 242 records, **60 reachable**, **0 strong-basis
+reseatable** -- so the three reseats held through both rebases -- **11 WEAK**
+unchanged, and **37 dangling records still carry a sha**, down from the 39 in
+the table above.
+
+**THE NUMBER MOVES EVERY TIME ANY CLONE REBASES, WHICH IS THE POINT RATHER THAN
+A CAVEAT.** Three pushes by this session inside one hour changed it twice. Do
+not quote 39, or 37, out of this document: run the command at the top. The
+figures here are a record of one measurement at one tip, and the tip they were
+taken at is already gone.
