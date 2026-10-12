@@ -34,7 +34,8 @@
         "scope_narrowing_check.py", "stale_basis_check.py",
         "tool_provenance_status.py", "undirected_sweep_freshness.py"
       ],
-      "handoff_glob_prefix": "handoff-h2-"
+      "handoff_glob_prefix": "handoff-h2-",
+      "glob_prefixes": ["SAIRN-digest-h2-", "SAIRN-report-h2-"]
     },
     {
       "key": "memory",
