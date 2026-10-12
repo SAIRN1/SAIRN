@@ -3646,6 +3646,30 @@
       "claimed_at_epoch": 1791769673.8761399,
       "status": "released",
       "released_at": "2026-10-12T11:56:55Z"
+    },
+    {
+      "id": "cody-1791806693",
+      "session": "cody",
+      "subject": "cody",
+      "task": "cody -- batch 27 (b5). (1) implement a law role matrix for the 19 sairnlaw resources, owner/attorney/paralegal, ONE data table read by ONE function; trust resources hard-locked. (2) a 19x3 role-matrix test failing on any law resource with no rule. (3) a monotonicity metamorphic relation, control-pair tested. (4) docs spec ONLY for owner-adjustable per-firm permissions, no build. (5) a local regression test for sen_caregivers field redaction across every read path. (6) make check4/check7 probe verdicts runnable against a throwaway bare remote. (7) build tools/dup_dom_ids_check.py report-only, control-pair tested, run on all apps. (8) run the tier-a sabotage probe 20x and find the nondeterminism. (9) locate the FMEA drafts in history or confirm never committed. (10) classify the 145 no-sha tier-a records as derivable vs absent, counts only. (11) write the claim-matcher collision finding with file:line and a files-based fix proposal, ROUTED to cc, no edits to cc files. (12) prepare but DO NOT RUN the citator schema verification script. (13) handoff BEFORE the report. (14) report plus digest. FILES: api/sd-data.js api/sd-data-law-role-matrix.test.js docs/2026-10-12-cody-b5-law-permissions-spec.md docs/2026-10-12-cody-b5-routed-to-cc.md api/sd-data-sen-caregiver-pii-scope.test.js tests/push_gate/check4_probe.py tests/push_gate/check7_probe.py tools/dup_dom_ids_check.py tests/run_dup_dom_ids_probe.py tools/verify_citator_feedback.py docs/handoff-cody-2026-10-12b.md SAIRN-ACTIVE-WORK-cody.md",
+      "claimed_at": "2026-10-12T12:04:53Z",
+      "claimed_at_epoch": 1791806693.6558218,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "api/sd-data-law-role-matrix.test.js",
+        "api/sd-data-sen-caregiver-pii-scope.test.js",
+        "api/sd-data.js",
+        "docs/2026-10-12-cody-b5-law-permissions-spec.md",
+        "docs/2026-10-12-cody-b5-routed-to-cc.md",
+        "docs/handoff-cody-2026-10-12b.md",
+        "tests/push_gate/check4_probe.py",
+        "tests/push_gate/check7_probe.py",
+        "tests/run_dup_dom_ids_probe.py",
+        "tools/dup_dom_ids_check.py",
+        "tools/verify_citator_feedback.py"
+      ]
     }
   ],
   "refusals": [
