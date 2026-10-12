@@ -60,10 +60,10 @@ DEFAULT_REPO = 'C:/Users/marsh/Documents/SAIRN-hover2'
 # made, only the ones a future drift pass should watch.
 ANCHOR_TABLE = [
     {
-        'label': 'bld_draws generic write branch (fix point)',
+        'label': 'bld_draws dedicated read/write branch (FIXED b13)',
         'file': 'api/sd-data.js',
-        'anchor': "if (BLD_RESOURCES[resource] && action === 'write') {",
-        'claimed_line': 13239,
+        'anchor': "if (resource === 'bld_draws' && (action === 'read' || action === 'write')) {",
+        'claimed_line': 13273,
     },
     {
         'label': 'bld_draws BLD_BID_MANAGEMENT_ROLES definition',
@@ -105,7 +105,42 @@ ANCHOR_TABLE = [
         'label': 'SV_RESOURCES dict declaration',
         'file': 'api/sd-data.js',
         'anchor': 'const SV_RESOURCES = {',
-        'claimed_line': 13399,
+        'claimed_line': 13482,
+    },
+    # ── EXTENDED, batch b13: coverage across every hover2 routing doc, not
+    # just the 4 this table started with. No H1-authored routing docs are
+    # committed to this shared repo (checked via grep across docs/*.md for
+    # any "Filed by: hover (" byline or a hover-audit-log seq reference
+    # outside hover2's own docs -- none found); H1's own routing material
+    # appears to live only in H1's private, uncommitted space. Coverage
+    # below is therefore every H2 routing doc with a stable source
+    # citation, which also covers every H1-ORIGINATED finding this role has
+    # independently re-verified and cited with its own anchor (e.g.
+    # alf_mar_billing_disclosure, grd_session_gate -- both found by H1,
+    # both re-verified and anchored here by H2).
+    {
+        'label': 'dnt_appointments DNT_PATIENT_BROAD_READ_ROLES (FIXED)',
+        'file': 'api/sd-data.js',
+        'anchor': "const DNT_PATIENT_BROAD_READ_ROLES = roleSet({ owner: true, frontdesk: true });",
+        'claimed_line': 14503,
+    },
+    {
+        'label': 'grd_session_gate GRD_SESSION_RESOURCES dict (FIXED, H1-originated)',
+        'file': 'api/sd-data.js',
+        'anchor': 'const GRD_SESSION_RESOURCES = {',
+        'claimed_line': 4343,
+    },
+    {
+        'label': 'alf_mar_billing_disclosure marNameOk redaction (FIXED, H1-originated)',
+        'file': 'api/sd-data.js',
+        'anchor': 'const marNameOk = !!ALF_MAR_ROLES[session.role];',
+        'claimed_line': 11157,
+    },
+    {
+        'label': 'sen_caregivers SEN_CAREGIVER_HR_FIELD_ROLES (FIXED)',
+        'file': 'api/sd-data.js',
+        'anchor': 'const SEN_CAREGIVER_HR_FIELD_ROLES = roleSet({ owner: true, billing: true });',
+        'claimed_line': 6323,
     },
 ]
 
