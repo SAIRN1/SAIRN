@@ -4,6 +4,40 @@ Written before the final report/digest, at a point where nothing is
 half-finished. Own scope only (`.claude/skills/sairn-hover-auditor/`), not
 `docs/`.
 
+## ADDENDUM, written minutes later while pushing -- READ THIS FIRST
+
+Everything below this section was written and committed (`dead1c4b`) before
+the push attempt surfaced two things the body does not yet reflect. Left
+verbatim; corrected here rather than edited in place.
+
+1. **CRITICAL, found mid-push, now remediated**: this clone's own
+   `.claude/settings.json` -- the "pre-existing, unrelated, dirty file"
+   this and the b8 handoff both describe below -- is not a benign local
+   edit. `fourth`/`ted`'s clone independently documented the identical
+   symptom minutes earlier (commit `e4b17594`, pushed 21:38:44):
+   `"hooks": {}`, PowerShell-JSON reformatted, two backups
+   (`.bak`, `.hooks.bak`) in the same two-stage naming convention this
+   clone also has. Two clones found with byte-identical artifact shapes
+   is not an isolated one-off edit. **Remediated**: `git checkout --
+   .claude/settings.json` (working-tree restore only, no commit, so the
+   scope gate was never touched), `tools/hook_integrity_check.py`
+   confirms 0 wiring lines removed. Logged as a CRITICAL finding,
+   seq1221. The two `.bak` files preserved untracked as evidence, not
+   deleted. **This changes item 1's own recommendation below**: do
+   **not** untrack/gitignore `.claude/settings.json` as the b9 dispatch
+   instructed -- if something is repeatedly stripping hooks across
+   clones, untracking the file would remove the only mechanism
+   (`git diff` / `git checkout`) that currently makes the tampering
+   visible and reversible at all.
+2. **Platform-wide push stall, not this role's to fix**: pushing even
+   this handoff hit a second, unrelated gate -- `hover2`'s own handoff
+   (`G:/My Drive/SAIRN-status/handoff-h2-2026-10-11b.md`) sits unindexed
+   in a declared external directory, and `docs/external-files-index.json`
+   is not in this role's `ALLOWED` list to register it in. Not deleted
+   or touched (it is `hover2`'s live deliverable, not a superseded
+   duplicate of mine, unlike the b8 Drive copy below). Every clone's push
+   is blocked by this, not just this one. Logged seq1222.
+
 ## Scope actually run this batch -- narrower than dispatched, and why
 
 The dispatch's items 3-5 (rotate to the next 5 oldest unrouted findings,
