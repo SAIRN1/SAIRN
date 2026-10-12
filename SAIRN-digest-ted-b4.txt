@@ -1,4 +1,68 @@
-DIGEST ted b4 -- CLOSE 2026-10-08, RESUME 2026-10-11
+DIGEST ted b4 -- CLOSE 2026-10-08, RESUME 2026-10-11, RESUME 2 2026-10-11/12
+SHA256 956fca6ef33e861ad37e0fa7705c1d99ec56c40e0ce8636fb9be04ed00a06847
+
+HASH RULE, added by resume 2 because the line below it did not exist and item 6
+claimed it did: line 1 is the title, line 2 is the SHA line, the BODY is every
+byte from line 3 to end of file, LF, UTF-8.
+  python -c "import hashlib,io;b=io.open('SAIRN-digest-ted-b4.txt',encoding='utf-8',newline='').read().split(chr(10),2)[2];print(hashlib.sha256(b.encode()).hexdigest())"
+
+RESUME 2, 2026-10-11/12 -- READ THIS FIRST. The lines below it were written at
+20:18 against HEAD 71fdeb34 and are LEFT VERBATIM; three of them are now wrong
+and are corrected here rather than edited in place.
+
+  HEAD/PUSH    850cfb9c recovered this file and the report VERBATIM -- both were
+               written at 20:17/20:18 and NEVER COMMITTED. The resume-2 commit
+               that carries these edits is a later one this file cannot name.
+  THE FINDING  THIS CLONE WAS RUNNING WITH ALL 23 HOOK COMMANDS REMOVED from
+               .claude/settings.json -- "hooks": {} in the working tree,
+               uncommitted, reformatted with PowerShell JSON so the content
+               change hid inside a formatting change. Removed in two stages:
+               .claude/settings.json.bak (20:10) is HEAD exactly,
+               .claude/settings.json.hooks.bak (20:45) has SessionStart alone
+               emptied, the live file had everything gone.
+               NINE of the 23 are controls over this clone, INCLUDING
+               hook_integrity_check.py, which exists to detect exactly this and
+               is itself wired as a SessionStart hook. Emptying the table
+               silences the detector in the same stroke. The only signal the
+               session got was an ABSENCE: the status registry was never handed
+               over at session start.
+               RESTORED by git checkout; the stripped file preserved UNTRACKED
+               at .claude/settings.json.stripped-2026-10-11T2045.bak; 23 commands
+               re-parsed; hook_integrity_check.py reports 0 wiring lines REMOVED
+               (its exit 1 is 11 PRE-EXISTING manifest-drift rows, not mine).
+  CORRECTION 1 ITEM 5 IS NO LONGER TRUE OF THIS MACHINE. The user-level
+               settings.json shrank 9,084 -> 2,793 bytes after 20:17:
+               autoCompactWindow 150000 -> ABSENT, autoCompactEnabled false ->
+               ABSENT, CLAUDE_AUTOCOMPACT_PCT_OVERRIDE 75 -> 97. NOT WRITTEN BY
+               ME, not reverted -- cc declares that path. No commit attributes
+               it; the file is outside every clone.
+  CORRECTION 2 ITEM 6's "both carry a verifiable body hash" WAS FALSE IN BOTH
+               HALVES. The report's SHA line said d2ee6a2d... while its body
+               hashed to 2eb5a1ad... -- no CRLF involved, the SHA was written
+               and then the body kept being edited. THIS DIGEST HAD NO SHA LINE
+               AT ALL. Both are seated now, by hand, which is the same mechanism
+               that failed; a --check for it is named as not-done.
+  CORRECTION 3 ITEM 1's claim log needed two more attempts. Attempt 5 BLOCKED on
+               'shared phrase: "convention numbering"' -- a phrase that occurs
+               only inside cc's own sentence DECLINING that work. Attempt 6
+               declared a FILES list, which is the remedy the tool itself prints,
+               and the answer was that I ALREADY HOLD THE CLAIM FOR THIS WORK
+               ("[SAME WORK] fourth ... ATTEMPT 4", claimed 1.6h before pickup).
+               NO NEW CLAIM TAKEN, NONE RELEASED, NO TASK STRING REWORDED.
+  RE-VERIFIED  items 2, 3, 4a-4d re-derived AT 850cfb9c against the repo, not
+               against this file. All hold. Two figures moved AGAIN:
+               git ls-files .claude/skills 198 -> 199 and the hover-auditor
+               subtree 165 -> 166, the same +1, the auditor's subtree again.
+               Exact lines: 2026-09-13-cross-domain-disciplines.md:1851 (33),
+               :1751 (31), :1806 (32); METHODOLOGY.md:88, :89, :90, 5 pipes each;
+               2026-10-07-fourth-routed.md:1685 (6 rows, sum 7) and :1698
+               (17 rows, sum 36) parsed by script -> 43 across 23; jscomments.py
+               probe EXIT 0 and tools/jscomments.py:2 "# OWNER: fourth".
+  UNCHANGED    2 worktrees (one cc's, LOCKED, not mine), 0 stash, 8 orphan
+               session locks STILL NOT RELEASED -- third batch running.
+  NEW QUESTION report question 8: were the hooks and the compaction keys turned
+               off ON PURPOSE? Nothing records it. If deliberate, say so and I
+               will leave them off.
 
 REPLACES THE b4-CLOSE DIGEST IN PLACE, because the resume brief named this exact
 filename. The 2026-10-08 version stands verbatim at commit 09eabbec --

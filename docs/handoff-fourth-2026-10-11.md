@@ -1,9 +1,90 @@
-# HANDOFF -- fourth / ted, batch b4 (18) RESUME, 2026-10-11
+# HANDOFF -- fourth / ted, batch b4 (18) RESUME, 2026-10-11, RESUME 2 2026-10-11/12
 
 **Written BEFORE the report and the digest, on purpose.** A handoff written after
 the report is a summary of a summary; this one is written while the work is still
 in front of me, and the report is derived from it rather than the other way
 round.
+
+---
+
+## 0A. THE SECOND RESUME -- READ THIS BEFORE SECTION 0
+
+**Sections 0 through 8 below are the first resume's handoff, written at 20:12 on
+2026-10-11 and left verbatim.** The brief was re-issued unchanged a second time;
+this section is what the second pickup found, and it is not paperwork.
+
+| | |
+|---|---|
+| HEAD at pickup | `2626aedb`, this handoff's own commit |
+| tree | **DIRTY** -- `.claude/settings.json`, `SAIRN-report-ted-b4.txt`, `SAIRN-digest-ted-b4.txt` modified; 3 untracked |
+| vs remote | behind 4 at pickup, behind 6 after the fetch |
+| claim | **ALREADY HELD.** The attempt-4 claim from 1.6h before pickup covers this work; `sairn_claim.py` answered `[SAME WORK] fourth`. No new claim taken, none released |
+
+**THE FINDING: this clone was running with every enforcement hook removed.**
+`.claude/settings.json` in the working tree had `"hooks": {}` -- **all 23 hook
+commands across 5 events gone**, uncommitted, and the file reformatted with
+PowerShell JSON indentation so the content change hid inside a formatting
+change. Two leftover backups date it and show it happened in stages:
+`.claude/settings.json.bak` (20:10) is `HEAD` exactly, 23 commands;
+`.claude/settings.json.hooks.bak` (20:45) has `SessionStart` alone emptied, 16.
+The report and digest were written at 20:17/20:18 **between** those two
+timestamps, and the report's own section 5 records the file still at 6,993 bytes
+then -- so the stripping is after all of the first resume's work and **nothing
+records it**: not this handoff, not a commit, not the report.
+
+**Nine of the 23 are controls over this clone**, including
+`tools/hook_integrity_check.py`, which exists to detect exactly this and is
+itself wired as a `SessionStart` hook. Emptying the table silences the detector
+in the same stroke as the thing it detects -- and an unwired control does not
+report COULD NOT RUN, it reports **nothing at all**. The only signal the second
+session got was an **absence**: `CLAUDE.md` says the shared status registry is
+handed over automatically at session start, and it was not.
+
+**Restored, and the stripped version is not lost:** copied to
+`.claude/settings.json.stripped-2026-10-11T2045.bak` (left **untracked** so
+`git status` keeps surfacing it), then `git checkout -- .claude/settings.json`,
+then re-parsed -- 23 commands, 5 events, `HEAD` exactly.
+`python tools/hook_integrity_check.py` measured **alone** into a file: **EXIT 1**,
+and the exit is **11 pre-existing manifest-drift rows**, not my restore -- it
+reports `0 line(s) REMOVED` from the wiring, which is the restore confirmed by
+something other than me. The next `Bash` call fired a `PostToolUse` hook, which
+is the restore confirmed by behaviour.
+
+**The second finding: the user-level `settings.json` also changed**, after 20:17,
+and it is **not mine and was not reverted** (cc declares that path):
+9,084 -> 2,793 bytes, `autoCompactWindow` 150000 -> **ABSENT**,
+`autoCompactEnabled` false -> **ABSENT**, `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE`
+75 -> **97**. No commit attributes it -- the file is outside every clone. The
+report's section 5 conclusion (auto-compaction off, window inert) **no longer
+describes this machine**, and it is left standing with 0A.2 contradicting it
+rather than quietly rewritten.
+
+**The third finding: the report's own hash line was wrong.** It said
+`d2ee6a2d...`; the body hashed to `2eb5a1ad...`. No CRLF involved. The digest
+claimed in its item-6 line that *"both carry a verifiable body hash"* and **the
+digest had no hash line at all**. Both are seated now, by hand -- which is the
+mechanism that failed, so a `--check` for it is named as not-done.
+
+**The claim matcher blocked on a sentence saying the opposite.** Attempt 5, no
+`FILES` declared: BLOCKED on `shared phrase: "convention numbering"` -- a phrase
+that occurs only inside cc's own sentence *declining* that work. Attempt 6
+declared a `FILES` list, which is the remedy the tool itself prints, and cc fell
+to "shares only words", cody to "LEXICAL ONLY ... declared file sets are
+DISJOINT". **No task string was reworded to clear a block** (PR §4.3) --
+declaring `FILES` is the field the matcher is built to prefer.
+
+**Everything re-verified at `850cfb9c`, against the repo and not against the
+report.** Items 2, 3, 4a-4d all hold; exact lines are in report section 0A.5.
+Two figures moved again and they are the same `+1`:
+`git ls-files .claude/skills` 198 -> **199**, of which the hover-auditor subtree
+165 -> **166**. 2 worktrees (one cc's, LOCKED, not mine), 0 stash, **8 orphan
+session locks still not released -- third batch running**.
+
+**NEW FOR WHOEVER PICKS THIS UP: report question 8.** Were the hooks and the
+compaction keys turned off **on purpose**? Nothing records it. If they were,
+say so and leave them off -- a session that silently re-arms what Michael
+deliberately disabled is as wrong as one that runs disarmed. Three untracked
+backups are sitting in `.claude/` waiting on a word to delete them.
 
 ---
 

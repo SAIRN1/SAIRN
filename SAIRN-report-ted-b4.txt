@@ -1,10 +1,17 @@
 REPORT ted b4
-SHA256 d2ee6a2dbdc9e2aa11b47a83bf87f170a4cd8e88ee23ea9eac6b99d2be1cc298
+SHA256 1c9acff90dbd8964fefbf839f38989a2aaba4888db413ec203382deafc75f850
 
-BATCH 18 (b4) -- fourth / Ted -- CLOSE 2026-10-08, RESUME 2026-10-11
-Last work commit of the resume: 2626aedb, the handoff, pushed and verified
+BATCH 18 (b4) -- fourth / Ted -- CLOSE 2026-10-08, RESUME 2026-10-11,
+                                 RESUME 2 2026-10-11/12 (section 0A)
+Last work commit of the FIRST resume: 2626aedb, the handoff, pushed and verified
 against the remote with `git ls-remote origin refs/heads/main` compared to
 `git rev-parse HEAD` at the moment it landed -- equal, ahead 0 / behind 0.
+
+SECTIONS 0 THROUGH 7 ARE THE FIRST RESUME'S RECORD AND ARE LEFT VERBATIM. They
+were written at 20:17 against HEAD 71fdeb34 and were never committed; they are
+recovered unedited at 850cfb9c. Everything the SECOND resume found is in
+section 0A, including TWO things that contradict section 5 and one that
+contradicts this file's own hash line.
 
 That is NOT claimed to be the current remote tip. This file is carried by a
 LATER commit and a file cannot name the hash of the commit that contains it.
@@ -31,7 +38,299 @@ Re-verify with:
   python -c "import hashlib,io;b=io.open('SAIRN-report-ted-b4.txt',encoding='utf-8',newline='').read().split(chr(10),2)[2];print(hashlib.sha256(b.encode()).hexdigest())"
 
 ================================================================================
+0A. THE SECOND RESUME -- THE RESUME CHECK WAS NOT PAPERWORK. THIS CLONE WAS
+    RUNNING WITH EVERY ENFORCEMENT HOOK REMOVED.
+================================================================================
+
+  HEAD at pickup       2626aedb  the first resume's handoff
+  working tree         DIRTY -- 3 modified, 3 untracked
+  modified             .claude/settings.json
+                       SAIRN-report-ted-b4.txt
+                       SAIRN-digest-ted-b4.txt
+  untracked            .claude/settings.json.bak            7,300 B  20:10
+                       .claude/settings.json.hooks.bak     12,224 B  20:45
+                       sql/restore_demo_pins_2026-09-29.sql 10,307 B  Oct 5
+  vs remote            behind 4 at pickup, behind 6 after the fetch below
+  my claim             ALREADY HELD, claimed 1.6h before pickup. See 0A.3.
+
+NOTHING WAS DISCARDED. The brief said commit or stash, never discard, and all
+three modified paths are accounted for below by name.
+
+--------------------------------------------------------------------------------
+0A.1  THE FINDING: `.claude/settings.json` HAD ALL 23 HOOK COMMANDS STRIPPED TO
+      `"hooks": {}`, UNCOMMITTED, AND THE CONTROL THAT WOULD HAVE SAID SO IS
+      ITSELF A HOOK
+--------------------------------------------------------------------------------
+
+MEASURED, not inferred, by parsing all four versions of the file rather than
+reading the diff -- the diff is whole-file because the file was also reformatted
+with PowerShell's `ConvertTo-Json` indentation, which hides a content change
+inside a formatting change:
+
+                                  hook events                  total hook cmds
+  HEAD (committed)                PostToolUse 2, PreToolUse 3,            23
+                                  PreCompact 1, SessionStart 1,
+                                  UserPromptSubmit 1
+  WORKING TREE at pickup          {} -- EMPTY                              0
+  .claude/settings.json.bak       identical to HEAD                       23
+  .claude/settings.json.hooks.bak SessionStart EMPTIED, rest intact       16
+
+The two backups date the removal and show it happened in STAGES: `.bak` at 20:10
+is HEAD exactly, `.hooks.bak` at 20:45 has SessionStart alone emptied, and the
+live file has everything gone. The report and digest were written at 20:17 and
+20:18, BETWEEN those two timestamps, and section 5 of this file records the
+project settings.json at 6,993 bytes -- so at 20:17 it was still intact. The
+stripping is therefore AFTER all of the first resume's work and is recorded by
+nothing: not the handoff at 2626aedb, not section 5, not a commit.
+
+WHAT MADE IT VISIBLE WAS THE ABSENCE OF SOMETHING, WHICH IS THE WORST CASE.
+CLAUDE.md says the shared status registry is handed over automatically by a
+SessionStart hook. It was not handed over this session. That absence is the only
+signal the session got, and an absent hook output is indistinguishable from a
+hook that ran and had nothing to say.
+
+THIS IS THE FAIL-CLOSED RULE (PR 1.11) AND CONVENTION 8 AT THE SAME TIME, one
+level up from where either was written. Nine of the 23 commands are themselves
+controls over this clone -- `session_lock_check.py` guard, `redaction_check.py`,
+`sairn_push_gate_hook.py`, `git_push_master_guard.py`, `rebase_state_guard.py`,
+`conflict_marker_preflight_hook.py`, `html_script_check.py`,
+`citation_drift_hook.py`, `hook_integrity_check.py`. The last of those EXISTS
+TO DETECT exactly this, and it is wired as a SessionStart hook, so emptying the
+hook table silences the detector in the same stroke as the thing it detects.
+There is no third state here: an unwired control does not report COULD NOT RUN,
+it reports nothing at all.
+
+WHAT I DID, and the stripped version is NOT lost:
+
+  1. copied the stripped file to
+     `.claude/settings.json.stripped-2026-10-11T2045.bak` -- left UNTRACKED on
+     purpose, so `git status` keeps surfacing it, the same reasoning section 0
+     gives for not stashing the untracked SQL file
+  2. `git checkout -- .claude/settings.json`
+  3. re-parsed: 23 hook commands, 5 events, back to HEAD exactly
+  4. `python tools/hook_integrity_check.py` measured ALONE into a file:
+     EXIT 1, and the exit is PRE-EXISTING DRIFT, not my restore --
+       wiring: PreToolUse=7, PostToolUse=7, SessionStart=7, UserPromptSubmit=1
+       "WIRING SessionStart CHANGED. 0 line(s) REMOVED, 1 added" -- the one
+       added line is cc's `external_file_index_check.py --count` from 8acd7896,
+       a legitimate landing the manifest has not caught up with
+     ZERO REMOVED LINES is the restore confirmed by something other than me.
+  5. the PostToolUse hook fired on the very next Bash call and printed the
+     observed-state line -- running again, proven by behaviour, not by config
+
+  ROUTED, pre-existing, NOT MINE AND NOT TOUCHED -- the other 10 drift rows
+  from that same run, all of the form "TOOL changed in a commit and the manifest
+  was not regenerated": copy_exactly_gate.py, defect_register.py,
+  doc_sha_reseat.py, exit_status_attributable.py, hover_auditor_scope_gate.py,
+  report_only_checks.py, sairn_claim.py, sairn_push_gate_hook.py,
+  session_lock_check.py -- plus `external_file_index_check.py` which is NOT IN
+  THE MANIFEST AT ALL. Somebody has to run `--regenerate` after those landings;
+  until then the control is exit-1 on every session start, which is how an
+  exit-1 control becomes background noise.
+
+--------------------------------------------------------------------------------
+0A.2  THE SECOND FINDING: THE USER-LEVEL settings.json ALSO SHRANK, AND SECTION
+      5 OF THIS FILE IS NOW WRONG IN THREE VALUES
+--------------------------------------------------------------------------------
+
+Re-measured at the same four paths section 5 used, at HEAD 850cfb9c:
+
+                                     section 5, 20:17    now        moved
+  USER / GLOBAL  C:\Users\marsh\.claude\settings.json
+    size                             9,084 bytes         2,793 B    -6,291
+    autoCompactWindow                150000              ABSENT     YES
+    autoCompactEnabled               false               ABSENT     YES
+    CLAUDE_AUTOCOMPACT_PCT_OVERRIDE  75                  97         YES
+    DISABLE_AUTOUPDATER=1, CLAUDE_CODE_FORK_SUBAGENT=0, BASH_MAX_OUTPUT_LENGTH
+                                     present             present    no
+  PROJECT        ...\SAIRN-fourth\.claude\settings.json
+    size                             6,993 bytes         7,300 B    CRLF only
+    all three compaction keys        ABSENT              ABSENT     no
+  PROJECT-LOCAL  ...\.claude\settings.local.json
+    size                             162,541 bytes       163,219 B  grew
+    all three keys                   ABSENT              ABSENT     no
+  MANAGED        C:\ProgramData\ClaudeCode\managed-settings.json
+                                     ABSENT              ABSENT     no
+
+The project figure moved by 307 bytes and that is the CRLF working-tree copy of
+the same blob, not drift -- compare after `tr -d '\r'` before calling it one.
+
+THE USER-LEVEL MOVE IS NOT MINE AND I DID NOT WRITE IT. It is in cc's batch W,
+item (3), *"set autoCompactEnabled true in the user-level settings.json"*. What
+is there now is not `true`, it is ABSENT, and `autoCompactWindow` went with it.
+I report the measurement and nothing more; the file is outside every clone, so
+no commit attributes it and `git log --grep` over origin/main returns nothing
+for it. That is the same invisibility that makes an external hold unauditable.
+
+WHAT IT MEANS FOR COMPACTION, stated because the keys alone do not say it:
+section 5 concluded auto-compaction was OFF and the 150000 window INERT. With
+`autoCompactEnabled` now ABSENT rather than `false`, the window gone, and the
+percentage override raised from 75 to 97, THE CONCLUSION IN SECTION 5 NO LONGER
+DESCRIBES THIS MACHINE. I have not re-derived what the defaults are, so I am not
+replacing it with a new conclusion -- the honest statement is that the setting
+that made it true was removed by somebody else after it was written.
+
+THE BEHAVIOURAL HALF, which no key expresses: this second resume took no
+compaction, no mid-task model switch and no MCP change. One window throughout.
+
+--------------------------------------------------------------------------------
+0A.3  THE CLAIM -- A FIFTH ATTEMPT, BLOCKED ON A SENTENCE SAYING THE OPPOSITE,
+      AND THE WORK WAS ALREADY MINE
+--------------------------------------------------------------------------------
+
+  ATTEMPT 5  the full brief, no FILES list declared
+             -> BLOCKED. 'shared phrase: "convention numbering"', cc's live
+                batch W
+
+THE PHRASE IT BLOCKED ON IS INSIDE CC'S OWN DISCLAIMER. cc's claim text reads
+*"docs/2026-09-13-cross-domain-disciplines.md and docs/METHODOLOGY.md are
+fourth's in FILES and are NOT taken here, and the convention-numbering item that
+needed them is REMOVED from scope rather than reworded."* The matcher read the
+sentence in which cc declines the work as a claim ON the work. THAT IS THE EXACT
+DEFECT SECTION 1 OF THIS FILE ROUTED three days ago, reproduced from the other
+side of the same pair: the honest disclosure is punished, the silent omission
+would have cleared.
+
+  ATTEMPT 6  the same work with a FILES list declared -- the remedy the TOOL
+             ITSELF PRINTS: "Declare a FILES list in your own task string and
+             re-run, and this becomes answerable instead of unknown"
+             -> cc drops to "shares only WORDS -- no app, file, subject or
+                phrase", cody drops to "LEXICAL ONLY ... the declared file sets
+                are DISJOINT", AND the tool answered the real question:
+
+                "BUT YOU ALREADY HOLD 1 ACTIVE CLAIM(S) THAT OVERLAP THIS WORK.
+                 [SAME WORK] fourth -- ... ATTEMPT 4 ..."
+
+NO NEW CLAIM WAS TAKEN AND NONE WAS NEEDED. The claim covering this work is the
+one attempt 4 took 1.6h before pickup, it is live, and its FILES list already
+declares `SAIRN-report-ted-b4.txt` and `SAIRN-digest-ted-b4.txt`. Taking a
+second would have made the record say two things. NOTHING WAS RELEASED EITHER:
+the batch is not finished at the time this section is written, and a claim
+released before the push is a claim that was never on the work that landed.
+
+NO TASK STRING WAS REWORDED TO CLEAR A BLOCK (PR 4.3). Declaring FILES is not a
+rewording -- it is the field the matcher is built to prefer, and cc's batch W
+item (2) is the work of making it primary.
+
+ONE PATH IN MY DECLARED SET IS OUTSIDE MY HELD CLAIM'S FILES LIST:
+`.claude/settings.json`. It is declared in cc's EXPIRED batch-W claim from 83h
+ago and in no live one. What I did to it is a `git checkout` back to the
+committed blob -- a restore of this clone's working tree to what the repo
+already says, not a content change, and it is not committed by me.
+
+--------------------------------------------------------------------------------
+0A.4  THE THIRD FINDING: THIS FILE'S OWN HASH LINE DID NOT MATCH ITS OWN BODY
+--------------------------------------------------------------------------------
+
+The hash rule four paragraphs above was run against the file as recovered,
+before anything was edited:
+
+  SHA line said   d2ee6a2dbdc9e2aa11b47a83bf87f170a4cd8e88ee23ea9eac6b99d2be1cc298
+  body hashed to  2eb5a1adb166fbc9b97059a782b2896548f3f7a50fef3d434bb08df6015b4724
+
+NOT A LINE-ENDING ARTEFACT -- checked: the file contains no CRLF, and
+normalising changed nothing. The first resume wrote the SHA and then kept
+editing the body, so the tamper-evidence line was stale from the moment the
+file was saved. A reader who ran the command would have concluded the file had
+been altered by somebody else.
+
+`tools/doc_sha_reseat.py` does NOT cover this. It re-seats COMMIT-sha citations
+in prose documents; the line here is a CONTENT hash of this file's own body, and
+it is maintained by hand. Hand-maintained is why it was wrong.
+
+RESEATED at the end of this second resume, after the last edit, and the figure
+above is kept so the failure is on the record rather than erased by its own fix.
+ROUTED, and it is mine to carry: a per-batch report whose hash line is written
+by hand will be wrong again the next time a section is appended. The fix is a
+`--reseat`/`--check` pass over the two per-batch output files, which does not
+exist. Not built in this run.
+
+AND THE SAME GAP BIT ONCE MORE, IN THE SAME RUN, FROM A DIFFERENT DIRECTION.
+The resume-2 commit was rebased onto `origin/main` to land, which rewrote it.
+`tools/doc_sha_reseat.py` ran as part of that and said *"The map named 2
+rewritten commit(s) and NONE of them is cited in the tracking documents. Nothing
+to do"* -- and that was **true of the documents it covers and false of this
+one**, which cited the pre-rebase hash in FIVE places, the digest in TWO and the
+handoff in ONE. The per-batch output files are not in its tracked set. All eight
+citations were reseated by hand and both body hashes recomputed afterwards, in
+that order. A correct tool reporting "nothing to do" about a document it does not
+read is the clearest instance of convention 8 this batch produced.
+
+--------------------------------------------------------------------------------
+0A.5  EVERY RE-VERIFICATION, AT HEAD 850cfb9c, EACH AGAINST THE REPO AND NOT
+      AGAINST THIS FILE
+--------------------------------------------------------------------------------
+
+The brief listed the same items a third time. Convention 23 and PR 5 say a
+report is a claim, so sections 3 and 4 were not accepted as evidence for
+themselves. Each was re-derived; the exact line is given so the next reader does
+not have to search.
+
+  ITEM 2 -- the convention number for cody's contamination-warning convention
+    docs/2026-09-13-cross-domain-disciplines.md:1851   `## 33. A CONTAMINATION
+      WARNING MAKES EVERY RESULT IN ITS SCOPE UNFALSIFIABLE, SO IT MUST SHIP
+      WITH THE ISOLATION METHOD`
+    docs/METHODOLOGY.md:90                             the promotion row, dated
+      2026-10-11, crediting cody and naming 7ae272cc + ffe43d70
+    `## <n>.` headings in that file  33, contiguous 1-33, no gap, no duplicate
+    STILL CLOSED. Nothing re-numbered, nothing rewritten.
+
+  ITEM 3 -- cody's two "queue16" conventions, recounted a second time
+    docs/2026-09-13-cross-domain-disciplines.md:1751   `## 31. A STATUS ARTEFACT
+      MUST DISTINGUISH ABSENT FROM RUNNING FROM EXIT 0`
+    docs/2026-09-13-cross-domain-disciplines.md:1806   `## 32. THE EXIT CODE OF
+      A PAST RUN IS NOT RECOVERABLE, AND MUST NOT BE INVENTED`
+    NEITHER IS MISSING, at the same two lines section 3 reported. They are the
+    two that were `###` subsections when my b3 pass searched by the `##` unit
+    and reported an absence; they are `##` headings now.
+    Promotion rows: docs/METHODOLOGY.md:88 (31), :89 (32), :90 (33), and the
+    pipe count on all three is 5, the same as every other row in that table --
+    checked because PR 2.1 forbids splitting a row on `|`.
+
+  ITEM 4(a) -- the 43 SEQ 17-A findings, arithmetic re-derived BY A PARSER
+    docs/2026-10-07-fourth-routed.md:1685  WITHDRAWN table,  6 rows, sum 7
+    docs/2026-10-07-fourth-routed.md:1698  REAL table,      17 rows, sum 36
+    36 + 7 = 43 and 17 + 6 = 23, matching the summary block at :1673-1679.
+    The magnitudes were read out of the parenthesised figure in each site cell
+    by a script, not added by eye. NOTHING FIXED, NOTHING CLOSED: the 36 real
+    findings across 17 sites stay open by design.
+
+  ITEM 4(b) -- tools/jscomments.py
+    `python tools/jscomments.py --probe` measured ALONE into a file -> EXIT 0,
+      "0 case(s) failed", L1 through L15
+    `python tools/tool_owner_header_check.py tools/jscomments.py` -> EXIT 0,
+      "declared an owner: 1", GRANDFATHERED 264
+    tools/jscomments.py:2  `# OWNER: fourth`
+    BOTH HALVES CLOSED and re-measured rather than quoted.
+
+  ITEM 4(c) -- my external holds, re-measured a third time
+    worktrees                2  -- this clone, plus cc-review-0a_4251m
+                             LOCKED, detached f65e734d, NOT MINE, NOT REMOVED
+    git stash                0
+    ~/SAIRN-SESSION-LOCKS    14 files: 6 named session locks, 8 orphans
+                             (b12wt2, repo, tree, wt-tools, 4x sairn_idem_*)
+    I RELEASED NONE OF THE EIGHT, for the third batch running. Unchanged from
+    section 4(c), which is the release holding rather than a measurement reused.
+
+  ITEM 4(d) -- the skill resolution paths, and BOTH DRIFTED FIGURES MOVED AGAIN
+                                   at 71fdeb34   at 850cfb9c   moved
+    project-level skills           34            34            no
+    user-level skills (SHARED)     62            62            no
+    repo mirror skills/            ABSENT        ABSENT        no
+    .claude/plugins/               ABSENT        ABSENT        no
+    git ls-files .claude/skills    198           199           +1
+    of which sairn-hover-auditor/  165           166           +1
+    THE SAME +1 IN BOTH, AND IT IS THE AUDITOR'S SUBTREE AGAIN -- 166 of 199
+    tracked files, 83.4%, up from 83.3%. Conclusion unchanged and stronger: a
+    directory-level action on `.claude/skills` cannot avoid the one subtree a
+    build agent must not touch. NOTHING WAS DISABLED AND NO SHARED USER-LEVEL
+    FRONTMATTER WAS EDITED, in this pass either.
+
+  ITEM 4(e) -- the external-files inventory. STILL NOT MINE, still not done.
+
+================================================================================
 0.  THE RESUME CHECK, REPORTED BEFORE ANYTHING WAS TOUCHED
+    (FIRST RESUME, 2026-10-11, AT HEAD 03bad219 -- LEFT VERBATIM)
 ================================================================================
 
   HEAD at pickup    03bad219  "chore(claims): fourth releases fourth"
@@ -440,6 +739,16 @@ switch, no MCP change and no compaction. The whole batch ran in one window.
   2626aedb   item 7 -- the handoff, docs/handoff-fourth-2026-10-11.md
   (later)    item 6 -- this report and the digest
 
+  SECOND RESUME, 2026-10-11/12:
+  850cfb9c   the report and digest RECOVERED VERBATIM. Written at 20:17/20:18
+             and never committed; committed unedited before anything touched
+             them, so the first resume's record exists independently of this
+             one's edits.
+  (this one) section 0A, the digest's resume-2 block, the handoff update.
+             The hook restore is NOT in a commit: it is a `git checkout` of the
+             working tree back to the committed blob, so the repo was always
+             right and only this clone was wrong.
+
 EVERY PUSH WAS VERIFIED WITH `git ls-remote origin refs/heads/main` COMPARED TO
 `git rev-parse HEAD`, NOT WITH THE PUSH MESSAGE. That mattered twice:
 
@@ -492,7 +801,26 @@ is inbound to me from cc's batch W item 13, untouched this run.
   - THE session_lock_check.py FIX. Routed with three exact lines, unchanged from
     b4, not mine to apply.
   - THE sairn_claim.py MATCHER FIX. Routed with the two items above, not mine to
-    apply.
+    apply. THE SECOND RESUME HIT IT AGAIN, from the other side of the same pair
+    -- see 0A.3. Still routed, still not mine.
+
+  ADDED BY THE SECOND RESUME:
+
+  - THE 11 hook_integrity_check.py DRIFT ROWS. 10 are "tool changed, manifest
+    not regenerated" and one is external_file_index_check.py NOT IN THE MANIFEST
+    AT ALL. Pre-existing, owned by whoever landed each change; the control is
+    exit-1 on every session start until somebody runs --regenerate. NOT MINE.
+  - WHY THE HOOKS WERE STRIPPED. I restored them and preserved the stripped
+    file; I do not know who removed them or why, and nothing records it. If it
+    was deliberate, the restore undoes an intent nobody wrote down. Question 8.
+  - THE USER-LEVEL settings.json CHANGE. Measured, reported, NOT WRITTEN BY ME
+    and not reverted -- cc declared that path. Section 5's compaction conclusion
+    is left standing as what was true at 20:17, with 0A.2 contradicting it,
+    rather than being quietly rewritten.
+  - A --check FOR THE PER-BATCH REPORT'S OWN HASH LINE. The line was wrong
+    (0A.4). Reseated by hand again, which is the same thing that failed. MINE,
+    not built in this run.
+  - THE EIGHT ORPHAN SESSION LOCKS. Third batch running, none released.
 
   NOTHING IS PARTIAL. Every item either closed with evidence or is named here as
   not done, with who holds it.
@@ -540,3 +868,21 @@ decision nobody made.
   7. THIS FILE AND THE DIGEST REPLACE THEIR b4-CLOSE VERSIONS IN PLACE, because
      the brief named these exact filenames. The b4-close versions stand verbatim
      at 09eabbec. IF YOU WOULD RATHER EACH RESUME GOT ITS OWN FILE, SAY SO.
+
+  ADDED BY THE SECOND RESUME:
+
+  8. WERE THE HOOKS TURNED OFF ON PURPOSE? Every enforcement hook in this
+     clone's .claude/settings.json was removed between 20:10 and 20:45 on
+     2026-10-11, in two stages, and the user-level settings.json lost
+     autoCompactWindow and autoCompactEnabled in the same window while
+     CLAUDE_AUTOCOMPACT_PCT_OVERRIDE went 75 -> 97. Neither is recorded in any
+     commit, handoff or report. I RESTORED THE PROJECT ONE AND LEFT THE USER ONE
+     ALONE, and I kept the stripped copy at
+     .claude/settings.json.stripped-2026-10-11T2045.bak.
+     IF THAT WAS YOU AND YOU WANT THEM OFF, SAY SO AND I WILL LEAVE THEM OFF --
+     a session that silently re-arms what you deliberately disabled is as wrong
+     as one that runs disarmed. IF IT WAS NOT YOU, THEN SOMETHING OR SOMEBODY
+     EDITED BOTH FILES WITH POWERSHELL JSON FORMATTING AND LEFT NO RECORD, AND
+     THAT IS THE MORE IMPORTANT ANSWER.
+     Three leftover backups are sitting in .claude/ untracked -- settings.json.bak,
+     settings.json.hooks.bak and the stripped one. SAY WHEN I CAN DELETE THEM.
