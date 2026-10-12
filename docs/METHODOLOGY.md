@@ -85,6 +85,9 @@ than an empty row — it would look exactly like the handover having worked.
 | **2026-10-08** | **28.** every figure carries its denominator, command, commit and date | **CHAT-ADOPTED by direct instruction**, **derived by cody** | same document, ITEM 15(b). *"49 dead rules"* means nothing without *of 540, by `dead_rule_sweep.py`, at `8f204050`, on 2026-10-06*. **Three of cody's own documents reported that sweep with no exit code at all**, and re-running instead of quoting changed two answers in one batch. The denominator is the load-bearing half: *"162 of 169"* and *"169 of 521"* are the same numerator. **This platform's own `424 of 1214` is the same failure with the COMMAND left out** -- it published four bucket names and never the predicate, which is why convention 23 needed a NOT-REPRODUCIBLE verdict |
 | **2026-10-08** | **29.** a tier that clears a whole category and finds nothing in it is the outcome to distrust | **CHAT-ADOPTED by direct instruction**, **derived by cody** | same document, ITEM 15(c). A writer tier cleared all 22 write-when-run rules and reported **22 of 22 exercised, 0 dead**; cody did not believe it, built a hand-made writer carrying one rule it provably never reads, **the arm failed**, and the cause was a comparison digest that included the swept tool's own mutated source. After the fix: **17 exercised, 5 DEAD** -- the blanket pass had been hiding five real findings. **Asked and NOT folded into the cannot-fire group:** cody's tier CAN fire, so the fault is a mechanism that cannot DISTINGUISH its cases, not one that cannot fail |
 | **2026-10-08** | **30.** a declared conflict is a snapshot -- re-check it at pickup, not only at the write | **CHAT-ADOPTED by direct instruction**, **derived by cc** | `docs/2026-10-07-cc-methodology-for-fourth.md`, **paste-ready with the number left as `N` for this file's holder to assign** -- cc's reason being that *"picking a number from outside the file is how two 11ths happened on 2026-09-25"*. Measured at `15e56976`: **three sessions simultaneously blocked on holds that had already ended, and five of six contested files were prose-only**. cody and hank each narrowed their most-overdue Tier A item to LISTING on a claim that **had been released 35 minutes earlier**. **APPLIED IN THE BATCH THAT LANDED IT, in both directions:** `.claude/settings.json` was declared by nobody so the merge was TAKEN, and `docs/tier-a-reviews.json` WAS in cc's live FILES so the Tier A discharge was FLAGGED BACK |
+| **2026-10-08** | **31.** a status artefact must distinguish ABSENT from RUNNING from EXIT 0 | **CHAT-ADOPTED by direct instruction**, **derived by cody** | `docs/2026-10-06-cody-queue16-inventory.md:243`, the `### The third state is the hard part, one level down` SUBSECTION of `## METHODOLOGY (ITEM 8)`. **This row is backfilled 2026-10-11 and the row's absence is itself the finding:** the convention landed on 2026-10-08 at `docs/2026-09-13-cross-domain-disciplines.md:1751` and the promotion row never followed it, because `docs/METHODOLOGY.md` was in cody's live batch-26 `FILES` that hour and the row was routed to him rather than written. It is written now that the file is free -- a promotion recorded in only one of the two files is this file's own drift problem committed by its own bookkeeping |
+| **2026-10-08** | **32.** the exit code of a past run is not recoverable and must not be invented | **CHAT-ADOPTED by direct instruction**, **derived by cody** | same document, `:251`, the `### And the corollary this batch paid for twice` SUBSECTION. Landed at `:1806`; same backfill and same reason as 31 above. **These two are the pair I reported as NOT LOCATABLE in batch b3 and they were never missing** -- my search keyed on `## METHODOLOGY` HEADINGS, found one, and counted one convention, while these two live as `###` subsections underneath it. **Recounted independently 2026-10-11 at `263f736f` rather than restated from my own earlier write-up:** `grep -n "^#"` over that document returns one `## METHODOLOGY (ITEM 8)` at `:198` and the two `###` children at `:243` and `:251`, so cody's *"three conventions + three more"* resolves as **3 new + 3 from queue 16, one of which was already convention 15, leaving exactly the two owed** |
+| **2026-10-11** | **33.** a contamination warning makes every result in its scope unfalsifiable, so it must ship with the isolation method | **CHAT-ADOPTED by direct instruction**, **derived by cody** | cody's own full-text section in this file, landed in `7ae272cc` and corrected by `ffe43d70`, carrying its own status line *"ROUTED to fourth for a number, NOT self-promoted."* **The number was the only thing missing and the only thing this promotion added** -- the rule, the 76/7/3-of-86 isolation figures, the three-part operational form and the *where it does not transfer* paragraph are cody's and were carried as written. **Counted before assigning:** 32 `## <n>.` headings at `263f736f`, 1-32 with no gap and no duplicate, and no existing use of a convention 33 anywhere under `docs/ tools/ tests/`. One cross-reference was added at promotion and is marked as mine rather than cody's: 33 is **29's mirror** -- 29 distrusts a blanket PASS, 33 distrusts a blanket DOUBT, and neither mechanism can distinguish its cases. **Asked and NOT folded into the cannot-fire group:** 33's warning fired correctly and loudly, so the group stays at TEN and the heading's denominator moved to thirty-three |
 
 **18 AND 19 WERE ADOPTED IN CHAT, NOT SELF-PROMOTED, and that distinction is
 the reason the column says so.** Promoting a convention out of one's own
@@ -212,89 +215,52 @@ claims a number. **Counted before writing: 30 `## <n>.` headings at `7ae272cc`.*
 
 ### A CONTAMINATION WARNING MAKES EVERY RESULT IN ITS SCOPE UNFALSIFIABLE, SO IT MUST SHIP WITH THE ISOLATION METHOD
 
-**The rule.** When a run reports that its own environment was disturbed — a dirtied
-tree, a changed config, a leaked file — that warning **invalidates every verdict in
-its scope at once**, including the ones that were correct. A warning that says
-*"results above may be cascade"* and stops there converts a usable red run into an
-unusable one. **It must also say how to separate the two**, and the separation must
-be cheap enough that somebody actually does it.
+**PROMOTED 2026-10-11 BY DIRECT INSTRUCTION as convention 33 ->
+`docs/2026-09-13-cross-domain-disciplines.md`.** The promotion row is in the
+table above. The number was the only thing this section was waiting for; its
+status line read *"ROUTED to fourth for a number, NOT self-promoted"* and that
+is exactly what happened -- the number came from the file's holder, not from
+cody, so the two-elevenths failure of 2026-09-25 could not repeat.
 
-**What it cost, measured.** A `--pinned` suite run on 2026-10-08 ended `EXIT 1`
-with 759 files, 671 ok and **86 FAIL**, plus one line:
+**THE FULL TEXT WAS MOVED, NOT COPIED, AND THAT IS THIS FILE'S OWN RULE BEING
+OBEYED RATHER THAN A DELETION.** This file states in its own third paragraph
+that *"a second home for a convention is a second thing to drift"* and that a
+convention's text goes in the disciplines file **and nowhere else**. Leaving
+cody's ~90 lines here after promoting them would have made this page the second
+home the rule exists to prevent -- and the reader who finds one copy and acts on
+it while the correction lands in the other is the failure this platform keeps
+paying for. **Nothing is lost:** the text is carried essentially verbatim as
+convention 33, and cody's original stands unaltered in `7ae272cc` (written) and
+`ffe43d70` (the 30-vs-32 correction), which is where a byte-exact comparison
+should be taken from.
 
-```
-THE SUITE DIRTIED THE TREE (1 path(s)) -- a probe did not clean up:
-     M docs/report-only-reachability.json
-    Results above may be CASCADE, not real.
-```
+**What the promotion added, stated so cody's credit is not overstated or
+understated.** The rule, the `EXIT 1 / 759 files / 671 ok / 86 FAIL` run, the
+verbatim dirtied-tree warning, the `REAL 76 / COULD-NOT-RUN 7 / ARTIFACT 3 of
+86` isolation table, the *"0 of 86 dirtied the clean clone"* control, the
+three-part operational form and the *where it does not transfer* paragraph are
+**all cody's and all carried as written**. Added at promotion and marked as
+fourth's inside the section: one cross-reference naming 33 as **convention 29's
+mirror** -- 29 distrusts a blanket PASS, 33 distrusts a blanket DOUBT, and
+neither mechanism can distinguish its cases. **Asked and answered rather than
+assumed:** 33 is NOT a member of the cannot-fire group, because its warning
+fired correctly and loudly; the group stays at TEN and the group heading's
+denominator moved from thirty-two to thirty-three with the old wording carried
+inside the note.
 
-That line is **true and correct to print**. Its effect was that for **two
-batches** the only defensible statement about 86 measured failures was *"do not
-quote 86 as a defect count"* — the number was in a committed handoff as an open
-item, unusable in either direction, and the suite's whole output was worth less
-than the one-line warning implied.
+**The evidence cody cited is unchanged and is still the place to check it:**
+`docs/2026-10-08-cody-suite-86-triage.md` and its `.tsv` -- the per-test table
+with the isolated rc, the seconds and the suite's own one-line reason side by
+side -- plus `tools/scratch-archive/triage86.py`, the committed harness that
+produced them.
 
-**The separation, when it was finally done, took one script and ~2 hours of
-unattended time:** re-run each failure alone in a `git clone --local` at the same
-commit, 420 s bound, `git status --porcelain` after **every** probe so none
-inherits another's mess.
+---
 
-```
-REAL            76 of 86     fails alone on a clean tree at the same commit
-COULD-NOT-RUN    7 of 86     exit 2 or the bound -- never folded into either
-ARTIFACT         3 of 86     passes alone
-dirtied the clean clone : 0 of 86
-```
+## Count at the close of this edit, 2026-10-11
 
-**The contamination explained 3 of 86.** The hypothesis the warning invited was
-wrong about 73 cases, and nothing in two batches of careful reasoning could have
-told anybody that — only the isolation could.
-
-**Why this is not just "re-run it".** The asymmetry is the point:
-
-- The warning is **cheap to emit** and **expensive to discharge**, so it
-  accumulates. Ours sat for two batches.
-- While it sits, **the correct results are as unusable as the wrong ones**. 73
-  real defects were invisible behind 3 artifacts.
-- And the warning is **unfalsifiable by reasoning**. No amount of reading the
-  output distinguishes a cascade from a real failure; only a clean re-run does.
-
-**The operational form, three parts:**
-
-1. **A tool that reports contamination must name the isolation command** in the
-   same output — not in a handoff, not in a doc somebody has to find. One line:
-   *"to separate real from cascade: re-run each failure alone at this commit in a
-   fresh clone."*
-2. **State the scope of the doubt as a count, not a word.** "Results above may be
-   cascade" invites the reader to doubt everything. *"86 failures are in scope;
-   1 path was dirtied at line N of 793, so the 57 reported before it cannot be
-   cascade"* is the same warning with two thirds of the doubt removed for free.
-   Ours did not carry the ordering, and it was available.
-3. **Prefer isolation to restoration.** The instinct is to restore the file and
-   re-run the whole suite — three hours, and it answers a different question.
-   Re-running the 86 alone answers *this* one and costs a fraction.
-
-**And the control that makes the method trustworthy is the one nobody asks for:**
-`git status --porcelain` after **every** probe, not once at the end. It is what
-turns "they were run in isolation" from an intention into a measurement — and it
-returned **0 of 86**, which is the only reason the verdicts can be attributed to
-the probes rather than to each other.
-
-**Where it does not transfer.** This is about a warning whose scope is a SET of
-results. A warning about a single result needs no isolation method — re-running
-the one thing *is* the method. And it does not apply to a tool that refuses
-outright: a refusal produces no verdicts to be doubted, which is the whole reason
-a loud refusal is cheaper than a qualified pass.
-
-**Not the same as the conventions it sits beside.** Convention **24** is a leg
-whose failure gets overwritten by a later success; here nothing was overwritten
-and the warning fired correctly. Convention **17** is a third state for absence;
-the COULD-NOT-RUN bucket above is 17 being *obeyed*, not the finding. Convention
-**8** is a check going stale over time; this one was accurate the day it was
-written and on every day after.
-
-**Status: ROUTED to fourth for a number, NOT self-promoted.** The evidence is
-`docs/2026-10-08-cody-suite-86-triage.md` and its `.tsv` — the per-test table with
-the isolated rc, the seconds and the suite's own one-line reason side by side, plus
-`tools/scratch-archive/triage86.py`, which is the committed harness that produced
-it.
+**33 `## <n>.` headings in `docs/2026-09-13-cross-domain-disciplines.md` at the
+commit this edit lands on, numbers 1-33 with no gap and no duplicate**, measured
+with `re.match(r'^## (\d+)\.')` over the file plus a duplicate count and a gap
+scan -- not by eye and not by `grep -c`. **Do not take 33 from this page
+either.** It was 30 at `7ae272cc`, 32 within the hour at `2290bd45`, and 32 at
+`263f736f` when this edit began. Count the headings.
