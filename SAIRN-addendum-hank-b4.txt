@@ -1,0 +1,80 @@
+ADDENDUM hank b4
+================================================================================
+
+WHY THIS FILE EXISTS
+
+SAIRN-report-hank-b4.txt carries a SHA256 of its own body. Editing it to record
+the shas of the commits that landed AFTER it would invalidate that hash, and
+re-stamping a hash to accommodate a later edit makes the hash mean nothing. So
+the three bookkeeping commits that followed the report are recorded here
+instead.
+
+It is also the honest answer to a thing this batch spent its length on: a
+document that asserts a state it can no longer observe. The report's GIT STATE
+block was true when it was written and could not name its own commit. This
+addendum names it.
+
+THE TERMINAL SHA IS STILL NOT IN HERE, and that is not an oversight -- the
+commit that adds this file cannot know its own sha either. The chain below ends
+at the last sha that existed when this was written; `git log origin/main` is the
+authority past that point, as it always was.
+
+--------------------------------------------------------------------------------
+THE FULL CHAIN FOR BATCH 20 (b4), ALL ON origin/main
+--------------------------------------------------------------------------------
+
+  56e040c3  fix(sf_officers)       batch 19's commit, never pushed until now
+  0442646c  fix(scp)               batch 19's commit, never pushed until now
+  b7f6fb54  fix(sf,dnt)            four Tier A money records gated, the
+                                   dnt_appointments write-ownership gate, and
+                                   the hydrate-before-sign-in silent failure
+  fdb80dbe  feat(hooks)            hook_integrity_check.py --wiring-only
+  ec0146fe  chore(register)        three defect records
+  ea976892  chore(tier-a)          nine-resource obligation, assigned to cc
+  16245537  fix(auth,sairncash)    seq958 across 14 api/*-auth.js, seq681
+  3a31d8df  chore(register)        one defect record
+  71b8f7c8  chore(derived)         MASTER-PLAN + traceability matrix
+  7a3b24c9  fix(ghost-field-scan)  the probe was silencing its own detection
+  a53f7747  chore(register)        one defect record, the first citing a REAL
+                                   standing rule (PR 1.1) rather than
+                                   not-citable
+  5613c4a0  docs(handoff)          docs/handoff-hank-2026-10-12.md
+  a042895d  report+digest          SAIRN-report-hank-b4.txt (hash verified by
+                                   re-reading the written file) and
+                                   SAIRN-digest-hank-b4.txt
+  d34f49f3  chore(external-files)  the three Drive uploads declared in
+                                   agents.hank.files BY THEIR AUTHOR, in the
+                                   same action as the upload
+
+--------------------------------------------------------------------------------
+CORRECTIONS TO THE REPORT
+--------------------------------------------------------------------------------
+
+1. SAIRN-report-hank-b4.txt's GIT STATE says `HEAD at close 5613c4a0`. That was
+   true at the moment of writing. Two commits followed it -- a042895d and
+   d34f49f3 -- both bookkeeping, neither changing any finding, any exit code or
+   any routed line in the report or the digest.
+
+2. The report's ITEM 5 says the external-files check was CLEAN at the close and
+   that I had not contributed to it. Both remain true of the state it
+   described. AFTER the report was written, uploading the three artefacts to
+   G:/My Drive/SAIRN-status made one of them (the handoff) UNINDEXED, and it was
+   declared in `agents.hank.files` in the same action -- d34f49f3 -- so the
+   check is CLEAN again (13 INDEXED, 0 UNINDEXED, exit 0) and that push needed
+   NO override. The three overrides counted in the report and digest stand at
+   three; this fourth push was clean.
+
+3. Nothing else in either document is superseded. No exit code was re-measured
+   after the report was written, so no verification line has changed.
+
+--------------------------------------------------------------------------------
+STILL THE HIGHEST-VALUE OUTSTANDING ITEM
+--------------------------------------------------------------------------------
+
+docs/2026-10-07-hank-migration-sql-for-michael.md has NOT been run. STEP 0a and
+STEP 0b are two ALTER statements, and until they run, the credential-grant
+attribution that api/sd-auth.js and api/sc-auth.js have carried since
+2026-10-07 keeps failing at the database -- as does everything this batch wired
+into the other twelve apps. ONE of seventeen apps records a row today.
+
+END-OF-ADDENDUM

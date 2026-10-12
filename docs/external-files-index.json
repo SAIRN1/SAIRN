@@ -1960,6 +1960,14 @@
      "authoritative_copy": "SAIRN-digest-hank-b4.txt",
      "declared_by": "hank",
      "declared_on": "2026-10-12"
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/SAIRN-addendum-hank-b4.txt",
+     "purpose": "hank's batch 20 (b4) addendum: the commits that landed AFTER the report, which could not be written into it because the report carries a SHA256 of its own body and re-stamping a hash to accommodate a later edit makes the hash mean nothing. Authoritative copy is git-tracked.",
+     "belongs_in_git": false,
+     "authoritative_copy": "SAIRN-addendum-hank-b4.txt",
+     "declared_by": "hank",
+     "declared_on": "2026-10-12"
     }
    ],
    "limits": [
