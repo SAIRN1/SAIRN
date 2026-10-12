@@ -1962,6 +1962,15 @@
      "routed_to": "hover2",
      "routed_on": "2026-10-12",
      "note_on_this_declaration": "THE RECURRENCE IS THE POINT, not this row. cc declared the 'a' handoff on 2026-10-11 and a 'b' handoff appeared inside the next day, so hand-declaring each one is a chore that lands on whichever session pushes next and grows without bound. Two repairs are available and this session chose NEITHER, because both belong to the owners: (1) the CHECK should read `belongs_in_git` and keep exit 1 for the session that OWES the file while not denying other sessions' pushes -- cc's file, already raised in the row above; (2) the AUDIT ROLE should write its handoff into Documents/SAIRN-hover, which is hover2's own to change and is what CLAUDE.md already says. Until one lands, expect a third row."
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/handoff-h2-2026-10-12.md",
+     "purpose": "hover2's 2026-10-12 handoff -- THE FIFTH Drive handoff in two days and the one the note on the row above literally predicted. Written to the shared Drive report directory instead of into a clone, which CLAUDE.md forbids by name. DECLARED BY CODY to unblock this clone's push, NOT adopted and NOT moved; routed to hover2 to commit into Documents/SAIRN-hover.",
+     "belongs_in_git": true,
+     "routed_to": "hover2",
+     "routed_on": "2026-10-12",
+     "declared_by": "cody",
+     "note_on_this_declaration": "THE PREDICTION IS THE EVIDENCE. The row above this one, written earlier in this same session, ended \"Until one lands, expect a fifth.\" One landed inside the hour. Five declarations across two days by three different declaring sessions is not a backlog, it is a loop: every session that pushes pays for every other session's Drive drop, and the two repairs that would end it belong to cc (the CHECK should read `belongs_in_git` and keep exit 1 for the session that OWES the file while not denying other sessions' pushes) and to each auditor (write the handoff into its own clone, which CLAUDE.md already says). Routed, not fixed, because both are other sessions' files -- and recorded here so the sixth declaration is not mistaken for routine."
     }
    ]
   },
@@ -1976,6 +1985,15 @@
      "routed_on": "2026-10-12",
      "declared_by": "cody",
      "note_on_this_declaration": "THE RECURRENCE IS NOW FOUR IN ONE DAY AND THAT IS THE FINDING, not this row. cc declared hover2's 'a' handoff on 2026-10-11; cody declared hover2's 'b' handoff and then THESE TWO on 2026-10-12, in the same session, because the gate was blocking this clone's push AND tests/push_gate/check4_probe.py -- which exited 3 COULD NOT RUN on a CLEAN push for a reason that had nothing to do with check 4. Hand-declaring each one is a chore that lands on whoever pushes next and grows without bound. Two repairs exist and this session took neither, because both belong to their owners: (1) the CHECK should read `belongs_in_git` and keep exit 1 for the session that OWES the file while not denying other sessions' pushes -- cc's file; (2) each agent should write its handoff into its own clone, which is what CLAUDE.md already says. Until one lands, expect a fifth."
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/handoff-fourth-2026-10-12.md",
+     "purpose": "fourth's 2026-10-12 handoff -- THE SIXTH, and it appeared WHILE the fifth was being declared. Written to the shared Drive report directory instead of into a clone, which CLAUDE.md forbids by name. DECLARED BY CODY to unblock this clone's push, NOT adopted and NOT moved; routed to fourth to commit into Documents/SAIRN-fourth.",
+     "belongs_in_git": true,
+     "routed_to": "fourth",
+     "routed_on": "2026-10-12",
+     "declared_by": "cody",
+     "note_on_this_declaration": "DECLARING THEM ONE AT A TIME CANNOT CONVERGE, AND THIS ROW IS THE PROOF. The hover2 row written minutes before this one predicted a fifth; the fifth arrived inside the hour; and the sixth arrived DURING the write that declared the fifth. Sessions are writing handoffs to the shared Drive faster than any one session can index them, so every push is gated on a race it does not participate in. See the hover2 2026-10-12 row for the two repairs and who owns each. Nothing here is fixed; this is the sixth row of evidence that the CHECK's blocking scope is wrong, not that six sessions are careless."
     }
    ]
   },

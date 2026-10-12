@@ -5974,6 +5974,27 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-12T11:21:02Z",
+      "opened_at_sha": "b384a513f99ed6e811ffd03186ea94af1403a648",
+      "opened_at_sha_basis": "file-set",
+      "resources": [
+        "sen_caregivers"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/sd-data-sen-caregiver-pii-scope.test.js"
+      ],
+      "what": "sen_caregivers PII field scope, hover2 seq 965 (api/sd-data.js sen_caregivers/read + api/sd-data-sen-caregiver-pii-scope.test.js + sairnsenior.html). The read returned the whole data blob to any authenticated sairnsenior role; bgcheck_date, state_caregiver_id and notes are now redacted for anyone outside owner/billing, declared on the response as hr_fields_visible, with the roster table rendering an explicit Restricted badge so a redacted compliance column cannot read as 'no check on file'. WHAT NEEDS AN OUTSIDE READER MOST: (1) the CUT -- three fields were judged non-scheduling and nine were judged needed; is bgcheck_date really management-only when the app showed it to every role until today, and should phone or cpr_expiry have gone with it; (2) the TIER chosen is owner/billing, matching the write gate by coincidence of membership and not by construction -- the write branch still spells its gate SEN_CLIENT_MANAGEMENT_ROLES while the read uses a new SEN_CAREGIVER_HR_FIELD_ROLES, and the round-trip-wipe safety depends on those two staying equal; (3) NOT LIVE-VERIFIED -- the suite drives the handler against a mocked PostgREST and no request was made to the deployed endpoint; (4) the client half is reasoned from the call sites, not clicked through.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-10-12T11:21:02Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

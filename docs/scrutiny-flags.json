@@ -259,6 +259,32 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/push_gate/check4_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(WT, ignore_errors=True)"
+    }
+   ],
+   "sha": "403b9d2b5d349071f75ff3857adcf96c38b685bd",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/push_gate/check7_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(WT, ignore_errors=True)"
+    }
+   ],
+   "sha": "403b9d2b5d349071f75ff3857adcf96c38b685bd",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/claims/run_own_claim_state_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -753,6 +779,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/legal-citator-feedback-attribution.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "9bc99c05731b78b51e66b471eca05fe037ce3a16",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_defect_register_superseded_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -850,6 +884,19 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "b1df1aa4f7c2ff5cfe2df0307f42ab7a4459e63b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-sen-caregiver-pii-scope.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "'the mock ignored select= and returned '"
+    }
+   ],
+   "sha": "b384a513f99ed6e811ffd03186ea94af1403a648",
    "criteria_version": "2026-10-06.1"
   },
   {
