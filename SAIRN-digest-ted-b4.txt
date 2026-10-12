@@ -1,5 +1,5 @@
 DIGEST ted b4 -- CLOSE 2026-10-08, RESUME 2026-10-11, RESUME 2 2026-10-11/12
-SHA256 4b080f0f143a7f2a42b126df6453645ce9415e1bab1684e5c7cebe5de1bdd698
+SHA256 579f597a96fff13d86dda011c477385559cea2d4bb8f08430060d4ef7fb2fe8e
 
 HASH RULE, added by resume 2 because the line below it did not exist and item 6
 claimed it did: line 1 is the title, line 2 is the SHA line, the BODY is every
@@ -81,10 +81,16 @@ and are corrected here rather than edited in place.
                evidence they are dead, and resume 2 found A POPULATED ONE CAN
                MAKE A LIVE SESSION LOOK DEAD TO EVERY OTHER CLONE AND TO THE
                PUSH GATE.
-  SEED GATE    ** SAIRN_SEED_GATE=off WAS USED TWICE IN RESUME 2, SAID OUT LOUD
-               PER PR 3.3 -- and NOT on the first two pushes, which landed clean:
+  SEED GATE    ** SAIRN_SEED_GATE=off WAS USED IN RESUME 2, SAID OUT LOUD PER
+               PR 3.3 -- and NOT on the first two pushes, which landed clean:
                bfd2fcb0..e4b17594 and e4b17594..769023c4. It was needed from
-               769023c4..c575cb54 onward. ** The first resume's "never used at any point"
+               769023c4..c575cb54 onward, and on every push after it. ** THE
+               COUNT IS NOT WRITTEN HERE ON PURPOSE: every remaining push needs
+               the flag, so a number here goes stale the moment the next one
+               lands and correcting it costs another overridden push. Read it
+               from docs/BYPASS-LOG.jsonl, which the gate writes itself -- and
+               note ONE push writes TWO rows, so rows are not pushes.
+               The first resume's "never used at any point"
                is about the first resume and stays true. The external-file index
                check refused on hover2's handoff in g:\my drive\sairn-status\ --
                not my file -- and the index it wants edited, docs/external-files-

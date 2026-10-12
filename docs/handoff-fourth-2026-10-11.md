@@ -99,10 +99,15 @@ row: `own` now EXIT 0, `state: HELD ... CLAUDE_PID 61696`. Both pushed,
 direction:** empty is not evidence nobody is working, populated is not evidence
 they are dead, and **populated can make a live session look dead.**
 
-**SAID OUT LOUD, PER PR §3.3: `SAIRN_SEED_GATE=off` WAS USED TWICE IN RESUME 2
-AND NOT AT ALL IN RESUME 1.** Not on every resume-2 push: `bfd2fcb0..e4b17594`
-and `e4b17594..769023c4` both landed clean through every check, and it was needed
-only from `769023c4..c575cb54` onward. The first resume's *"never used at any point"* is about the first
+**SAID OUT LOUD, PER PR §3.3: `SAIRN_SEED_GATE=off` WAS USED IN RESUME 2 AND NOT
+AT ALL IN RESUME 1.** Not on every resume-2 push: `bfd2fcb0..e4b17594` and
+`e4b17594..769023c4` both landed clean through every check, and it was needed
+only from `769023c4..c575cb54` onward -- and on every push after it. **The count
+is not written here on purpose:** every remaining push needs the flag, so a
+number goes stale the moment the next one lands and correcting it costs another
+overridden push. Read it from `docs/BYPASS-LOG.jsonl`, which the gate writes
+itself, and note that **one push writes two rows** (the Bash-hook path and the
+prepush path both record), so rows are not pushes. The first resume's *"never used at any point"* is about the first
 resume and stays true. The external-file index check refused on
 `g:\my drive\sairn-status\handoff-h2-2026-10-11b.md` -- **hover2's handoff, not
 mine** -- and the index it wants a row in, `docs/external-files-index.json`, is

@@ -1,5 +1,5 @@
 REPORT ted b4
-SHA256 d0945fdc1d1e947a58dff6f1f0b839efab1551ec00897702063e846d07886f6e
+SHA256 230357ac694bbe45d27d217ad09332013b7da4aad3ac6e204af1da4b16beb2e6
 
 BATCH 18 (b4) -- fourth / Ted -- CLOSE 2026-10-08, RESUME 2026-10-11,
                                  RESUME 2 2026-10-11/12 (section 0A)
@@ -58,12 +58,24 @@ Re-verify with:
 NOTHING WAS DISCARDED. The brief said commit or stash, never discard, and all
 three modified paths are accounted for below by name.
 
-** SAID OUT LOUD, AS PR 3.3 REQUIRES: `SAIRN_SEED_GATE=off` WAS USED TWICE IN
-THE SECOND RESUME AND NOT ONCE IN THE FIRST. ** Exactly which pushes, because
-"the resume-2 pushes" would be wrong: the first two landed WITHOUT it --
-`bfd2fcb0..e4b17594` and `e4b17594..769023c4`, both clean through every check --
-and it was needed only from `769023c4..c575cb54` onward, once the gate began
-seeing hover2's Drive handoff. The first resume's
+** SAID OUT LOUD, AS PR 3.3 REQUIRES: `SAIRN_SEED_GATE=off` WAS USED IN THE
+SECOND RESUME AND NOT ONCE IN THE FIRST. ** Not on every resume-2 push: the
+first two landed WITHOUT it -- `bfd2fcb0..e4b17594` and `e4b17594..769023c4`,
+both clean through every check -- and it was needed only from
+`769023c4..c575cb54` onward, once the gate began seeing hover2's Drive handoff.
+
+THE COUNT IS DELIBERATELY NOT WRITTEN HERE, and that is not evasion. Every
+remaining push of this batch needs the flag for the same reason, so any number
+in this file goes stale the moment the next one lands -- and the file would need
+another overridden push to correct it, which increments the figure again. The
+gate writes its own log; read the count from the thing that cannot drift:
+
+  grep -c '"session": "fourth"' docs/BYPASS-LOG.jsonl
+  python -c "import json,io;[print(json.loads(l)['at'],json.loads(l)['check'])
+              for l in io.open('docs/BYPASS-LOG.jsonl') if '\"fourth\"' in l]"
+
+Note when reading it that ONE push writes TWO rows -- the Bash-hook path and the
+prepush path both record -- so rows are not pushes. The first resume's
 section 6 says it was never used; that sentence is about the first resume and
 stays true. Why, in full, so the next reader can judge it rather than take it:
 
