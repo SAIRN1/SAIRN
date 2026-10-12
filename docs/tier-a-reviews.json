@@ -5931,6 +5931,40 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-10-12T01:51:33Z",
+      "opened_at_sha": "64a1e5e899c0178fb8db16fffd74c8cff0e82e84",
+      "opened_at_sha_basis": "file-set",
+      "resources": [
+        "dnt_appointments",
+        "invoices",
+        "scp_designs",
+        "scp_quotes",
+        "sf_officers",
+        "sf_rentals",
+        "sf_sessions",
+        "sf_shifts",
+        "sf_tickets"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/sd-data-dental-ledger-validation.test.js",
+        "api/sd-data-dental-provider-scope.test.js",
+        "api/sd-data-scp-session-gate.test.js",
+        "api/sd-data-session-gate.test.js",
+        "api/sd-data-sf-session-gate.test.js",
+        "api/sd-data.js"
+      ],
+      "what": "Nine Tier A resources gated behind an employee session across two apps, plus one client-side silent failure. SAIRNfreedom: sf_officers (the post's governance record, api/sd-data.js SD_SESSION_GATED + SD_GATE_APP) and then sf_sessions / sf_shifts / sf_tickets / sf_rentals -- the gaming floor's money records, DERIVED as the Tier A resources carrying a money or statutory figure on the row rather than picked from a finding. SAIRNscape: scp_designs / scp_vendors / scp_progress_photos, where progress-photo WRITE had been gated only inside the qc_status branch so an upload needed no session, and the reproducing artifact scored it FIXED on a substring test. SAIRNdental: dnt_appointments WRITE gained provider ownership, checked against the row ALREADY ON THE SERVER as well as the incoming payload, because this is an upsert and a payload-only check lets a provider TAKE another provider's appointment. sairnfreedom.html: sfHydrateAfterSignIn() added -- sfHydrateAll had ONE call site, DOMContentLoaded, which ran BEFORE interactive sign-in, so every gated resource's hydrate 403'd into an empty catch and signing in never refetched; already live for the 18 resources gated before this batch. WHAT NEEDS AN OUTSIDE READER MOST: (1) the derivation that picked four of the nine Tier A ungated SAIRNfreedom resources and left five NAMED (sf_district_imports, sf_events, sf_permit_flags, sf_products, sf_vehicles) -- is the money/statutory cut the right line, or should all nine be gated; (2) none of the SAIRNfreedom or SAIRNscape gates was PROVEN LIVE with a bare-key call, unlike the 2026-10-05 customers entry which has one with a control -- source-level only; (3) the gates add no ROLE check, so any signed-in session of any role can still write every one of these rows, and the three client-side trapdoor guards over sf_officers remain client-side.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-12T01:51:33Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

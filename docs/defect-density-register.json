@@ -26338,7 +26338,7 @@
       "factors_unknown_reason": "single-arm defect in a probe; no multi-factor model attempted this pass"
     },
     {
-      "commit": "64a1e5e899c0",
+      "commit": "b7f6fb54116e",
       "date": "2026-10-11",
       "subject": "fix(sf,dnt): the gaming post's session, shift, ticket and rental money records were writable on a browser-shipped licence key -- and a dental provider could rewrite any appointment in the practice",
       "files": [
@@ -26395,7 +26395,7 @@
       "recurrence_open": "Five Tier A SAIRNfreedom resources remain ungated by decision, not oversight: sf_district_imports (register:353), sf_events (:358), sf_permit_flags (:367), sf_products (:368), sf_vehicles (:380). The gate adds no ROLE check for any of the four gated here, so any signed-in session of any role can still write them. NOT PROVEN LIVE -- no bare-key call was driven against a real SAIRNfreedom licence; the evidence is the register letters, the two-list derivation and the client write sites read at this HEAD."
     },
     {
-      "commit": "7e7c3d27cf01",
+      "commit": "56e040c3c6ac",
       "date": "2026-10-11",
       "subject": "fix(sf_officers): the governance record was writable on a browser-shipped licence key, and every guard over it is client-side",
       "files": [
@@ -26449,7 +26449,7 @@
       "recurrence_open": "The gate stops a BARE LICENCE KEY. It adds no role or capability check, so any signed-in SAIRNfreedom session of any role can still rewrite the roster past all three client-side guards -- the repro's own third condition still reads role/capability check present: False. Five more Tier A sf_ resources remain ungated and are named in both gate suites."
     },
     {
-      "commit": "8943d787bb4c",
+      "commit": "0442646cb781",
       "date": "2026-10-11",
       "subject": "fix(scp): three of SAIRNscape's eight ungated resources gated -- and the repro that found them scored one of its own targets FIXED when it was not",
       "files": [
