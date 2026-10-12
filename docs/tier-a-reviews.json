@@ -6018,6 +6018,50 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-12T11:52:48Z",
+      "opened_at_sha": "6a999068150a7a4bf319506358f013a70bd8ec33",
+      "opened_at_sha_basis": "file-set",
+      "resources": [
+        "alf_facility",
+        "law_bankstatements",
+        "law_barcerts",
+        "law_clecredits",
+        "law_clerequirements",
+        "law_clients",
+        "law_deadlines",
+        "law_invoices",
+        "law_matterdocs",
+        "law_mattermilestones",
+        "law_matters",
+        "law_mattertasks",
+        "law_opaccounts",
+        "law_optx",
+        "law_picases",
+        "law_pimedical",
+        "law_portalesign",
+        "law_portalmessages",
+        "law_timeentries",
+        "law_trust_reconcile",
+        "law_trusttx",
+        "sen_caregivers",
+        "sen_clients"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "SAIRN-digest-cody-b4.txt",
+        "SAIRN-report-cody-b4.txt"
+      ],
+      "what": "Batch 27 b4's REPORT, DIGEST and HANDOFF, plus docs/external-files-index.json. NO CODE CHANGE TO ANY OF THESE RESOURCES IS IN THIS RANGE and that is the whole claim to check. The 22 names appear because SAIRN-report-cody-b4.txt section 4 and SAIRN-digest-cody-b4.txt both ENUMERATE the 19 session-gated sairnlaw resources while explaining why law_role_granularity was NOT fixed -- it needs a bar-rules decision the code declines to invent twice in writing -- and because alf_facility and sen_clients are named as the PATTERNS the sen_caregivers field redaction was copied from and compared against. law_trust_reconcile is named as the one sairnlaw resource that DOES have a role check. The gate reads names rather than call sites, which is the correct direction for a gate to fail, so this is recorded rather than argued away. WHAT A REVIEWER SHOULD ACTUALLY CHECK, since the obligation exists either way: (1) confirm by diff that the outgoing range touches no api/ or sql/ file serving any of the 22 -- the only code in this batch is api/sd-data.js's sen_caregivers read, which is covered by its own separate obligation assigned to hank, api/legal-citator.js, sql/sairnlaw_citator_schema.sql, sairnsenior.html, sairncare.html, sairnfreedom.html and two tests/push_gate probes; (2) read section 4 of the report and say whether the argument for NOT fixing law_role_granularity holds, because that is the one item this batch did not complete and a future session acting on the finding without reading that section would invent a role split the code twice refuses to invent; (3) say whether the 19-resource list is right -- it was re-derived from api/_resources/sairnlaw.js and SD_SESSION_GATED rather than copied from the auditor's doc, which is not in this clone.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-12T11:52:48Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
