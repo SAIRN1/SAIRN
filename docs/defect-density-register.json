@@ -26243,6 +26243,99 @@
         }
       ],
       "recurrence_open": "36 CALLS IN 25 FILES NOT MINE REMAIN, enumerated with file and line in the batch artefacts, and all 25 files were claim-checked free at 2026-10-08. They are the same shape and the same one-line patch."
+    },
+    {
+      "commit": "93b96c4ee2da",
+      "date": "2026-10-12",
+      "subject": "fix(tier-a reseat): a SELECTOR changed a VERDICT, and an exact file-set match had no window at all",
+      "files": [
+        "docs/TOOLING-INVENTORY.md",
+        "docs/tier-a-reviews.json",
+        "tests/run_tier_a_review_gate_probe.py",
+        "tools/tier_a_review_gate.py"
+      ],
+      "lines_added": 141,
+      "lines_removed": 22,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/tier_a_review_gate.py reseat_shas(): the git-log WALK WINDOW was computed from rows, which --only has already narrowed, so the SELECTOR decided which commits the bases were matched against. The same record got two different verdicts -- RESEATABLE [EXACT FILE SET] in the full population (window from 2026-09-15, 1311 file sets) and REFUSED [TWIN_SUBJECT_AMBIGUOUS] under --only on that one record (window from 2026-10-05, 310 file sets). Wrong way round for a safety flag: --only exists so a session repairs its OWN records without rewriting anybody else's, so it is the careful path, and it was the path that saw less. Window now taken from every record in the selected STATUS population, before --only.",
+      "rules": [
+        "1.9"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the --only selector and the window computation were in reseat_shas() from the day --only was added; which of the two commits introduced the asymmetry is not separable without a bisect over a tool whose answers depend on the whole git log, and an invented injection sha is worse than an absent one"
+      },
+      "citation_note": "1.9 is cited for the property violated -- same input, two answers -- rather than because the rule was written about this tool. The window is also a sampling window in 1.7's sense; one citation is recorded rather than two so the matrix is not double-counted.",
+      "factors_unknown_reason": "named in the commit body rather than as structured factors this pass; the two code defects and the dead probe arm are recorded as three records and the shared cause -- a window derived from a narrowed population -- is stated in each summary"
+    },
+    {
+      "commit": "93b96c4ee2da",
+      "date": "2026-10-12",
+      "subject": "fix(tier-a reseat): a SELECTOR changed a VERDICT, and an exact file-set match had no window at all",
+      "files": [
+        "docs/TOOLING-INVENTORY.md",
+        "docs/tier-a-reviews.json",
+        "tests/run_tier_a_review_gate_probe.py",
+        "tools/tier_a_review_gate.py"
+      ],
+      "lines_added": 141,
+      "lines_removed": 22,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/tier_a_review_gate.py reseat_shas(): an EXACT FILE SET match was offered as a STRONG basis with NO TIME BOUND, and it produced a wrong answer rather than a thin one. Record 2026-10-05T09:25:27Z names exactly ['tools/sairn_claim.py']; exactly one commit in the window changes that set alone -- 6b9dc2635433, dated 2026-09-17, EIGHTEEN DAYS EARLIER and about a different change -- and --write alone would have applied it. A one-file record is where this bites and single-file records are common: uniqueness within an arbitrary window is not identity. Now bounded by the existing WEAK_BASIS_WINDOW_HOURS, and OUTSIDE it it REFUSES rather than demoting to WEAK, because an 18-day gap is a different commit and the tool's own SHA_WRONG_WHEN_WRITTEN refusal already holds that a wrong sha is worse than a dangling one.",
+      "rules": [
+        "1.7"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the EXACT FILE SET basis has had no time bound since it was written; the commit that added it is in the gate's history but the record population it was correct against is gone, so naming an injection sha would be asserting a date I did not measure"
+      },
+      "citation_note": "1.7 cited for the shape -- a window that silently exempts what it does not reach, here by admitting a match from outside the period the basis was reasoned about -- not because the rule was written about reseat bases.",
+      "factors_unknown_reason": "the shared cause with the sibling record on this commit -- a basis decided by a window nobody bounded -- is stated in both summaries rather than modelled as structured factors this pass"
+    },
+    {
+      "commit": "93b96c4ee2da",
+      "date": "2026-10-12",
+      "subject": "fix(tier-a reseat): a SELECTOR changed a VERDICT, and an exact file-set match had no window at all",
+      "files": [
+        "docs/TOOLING-INVENTORY.md",
+        "docs/tier-a-reviews.json",
+        "tests/run_tier_a_review_gate_probe.py",
+        "tools/tier_a_review_gate.py"
+      ],
+      "lines_added": 141,
+      "lines_removed": 22,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tests/run_tier_a_review_gate_probe.py: the arm '--only NARROWS the population to the one record named' asserted rc == 0 against a fixture whose sha is forty zeros ON PURPOSE -- the fixture's own comment says 'dangling by construction rather than by luck' -- so the record is unresolvable and reseat_shas returns 1 whenever nothing is reseatable. The arm demanded a clean exit from a fixture built not to have one and was RED AT HEAD before this batch touched the gate, confirmed by running HEAD's own gate against the same ledger with REPO patched to this clone: rc=1, REFUSED [NO_OBJECT_IN_CLONE], byte-identical. An exit code is not what 'narrows' means; the arm now asserts the narrowing alone and a NEW arm asserts the invariant the gate fix exists to protect -- the record's verdict line is identical with and without --only.",
+      "rules": [
+        "1.9"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the arm and the fixture were written in the same commit as each other; the arm has never passed, so there is no transition from green to red to point an injection sha at"
+      },
+      "citation_note": "1.9 cited because the replacement arm is the one that holds the same-input-same-answer property for the selector; the defect itself is a never-passing assertion, which the rule list does not have its own section for.",
+      "factors_unknown_reason": "single-arm defect in a probe; no multi-factor model attempted this pass"
     }
   ],
   "started": "2026-09-09",
