@@ -526,6 +526,42 @@ def declared_files(task):
     return found or None
 
 
+def one_sided_files(mine_task, their_task):
+    """THEIR declared paths when exactly ONE side declared a FILES list.
+
+    ── THE CLEAR THAT COULD NOT BE PROVEN (2026-10-08) ────────────────────────
+    `overlaps()` adds `FILE:` tokens only `if a and b` -- when BOTH sides
+    declared. So a one-sided declaration contributes NOTHING, cmd_check's
+    `if not shared: continue` drops the claim before anything looks at it, and
+    the run prints a bare CLEAR.
+
+    MEASURED, with the prose vocabulary made deliberately disjoint:
+      both declare tools/shared_thing.py  -> block_reason 'same file or
+                                             resource: tools/shared_thing.py'
+      only THEY declare it                -> file_verdict ('unknown', set()),
+                                             overlaps() set(), block_reason None
+    The second row is the defect. If another session declares `FILES:
+    tools/x.py` and my task string carries no FILES list, this tool says CLEAR
+    while I am about to write a file they declared.
+
+    IT IS A THIRD STATE AND IT IS NOT FOLDED INTO EITHER OTHER ONE. I cannot
+    prove an overlap and I cannot prove its absence, so the honest output is
+    their file list and an instruction to check it -- the same rule this
+    platform applies to every other could-not-tell. It does NOT block: a
+    session that claims without a FILES list would otherwise be refused by
+    every other session on the machine, and a gate that fires on almost
+    everything is one people learn to talk past.
+
+    Symmetric by construction -- it returns their paths when only they
+    declared, and also when only I did, because "they may touch mine" is the
+    same unprovable as "I may touch theirs".
+    """
+    a, b = declared_files(mine_task), declared_files(their_task)
+    if (a is None) == (b is None):
+        return set()                  # both declared, or neither -- answerable
+    return set(b or a or ())
+
+
 def file_verdict(mine_task, their_task):
     """('refuse'|'clear'|'unknown', shared_paths).
 
@@ -1305,6 +1341,132 @@ def registry_claims(me):
     return out
 
 
+# ── THE SESSION'S OWN VIEW OF ITS OWN CLAIM WAS THE ONLY BLIND ONE ──────────
+# MEASURED 2026-10-08, and the measurement corrects a claim I made about it.
+#
+# `registry_claims(me)` builds liveness-stamped pseudo-claims for every session
+# EXCEPT `me`. So every other clone reads my claim with `_alive` taken from the
+# pid lock and is_active() returns True whatever its age -- verified from all
+# three of cody's, fourth's and hank's viewpoints:
+#     (_alive=True, 'this session owns the lock (CLAUDE_PID 87540)', True)
+# My OWN claim is read from git only, carries no `_alive` and no `_heartbeat`,
+# and therefore falls through to the fixed `now() - claimed_at < 4h` timeout --
+# the rule is_active()'s own docstring says "answers the wrong question".
+#
+# SO THE 2026-10-08 (b3) REPORT OVERSTATED IT. I wrote that items 6-12 landed
+# under a claim "invisible to every other clone as live work". That is FALSE:
+# every other clone saw it alive. What was really wrong is narrower and still
+# real -- I am the one party who cannot see my own liveness, so a 5.3-hour
+# batch read as unclaimed TO ME, which is what made me re-claim and then report
+# a conclusion that was not true. Corrected here, where the code is, as well as
+# in this batch's report.
+#
+# The evidence existed the whole time. Only this path never read it.
+def own_liveness():
+    """(state, why, heartbeat) for THIS session, or ('UNKNOWN', why, None).
+
+    Same source and same guard as registry_claims(): a probe driving this tool
+    inside a throwaway clone must not inherit the machine's live registry, so
+    an out-of-clone run returns UNKNOWN rather than a borrowed ALIVE.
+    """
+    if not _in_own_clone():
+        return ('UNKNOWN', 'not running in this session\'s own clone, so the '
+                           'machine registry is not mine to read', None)
+    try:
+        sys.path.insert(0, os.path.join(REPO, 'tools'))
+        import sairn_status
+        return sairn_status.claim_liveness(session_name())
+    except Exception as e:                                       # noqa: BLE001
+        return ('UNKNOWN', '%s: %s' % (type(e).__name__, e), None)
+
+
+def stamp_own_liveness(claims):
+    """Stamp `_alive`/`_heartbeat` on MY claims so my view matches everyone's.
+
+    Mutates in place and returns the list. Only rows whose session is mine are
+    touched; a registry-sourced row already carries its own stamp and is left
+    alone (`_registry`).
+    """
+    me = session_name()
+    state, why, beat = own_liveness()
+    alive = True if state == 'ALIVE' else False if state == 'DEAD' else None
+    for c in claims:
+        if c.get('session') != me or c.get('_registry'):
+            continue
+        # UNKNOWN leaves the fields absent so is_active() keeps the timeout.
+        # Writing `_alive: None` would be the same thing and reads as a value.
+        if alive is not None:
+            c['_alive'] = alive
+            c['_alive_why'] = why
+        if beat:
+            c['_heartbeat'] = beat
+    return claims
+
+
+def own_claim_state():
+    """('HELD'|'DEAD'|'EXPIRED'|'NONE'|'UNKNOWN', claim_or_None, why).
+
+    The question a session should be able to ask before a long run and cannot
+    today: am I still holding my own claim?
+
+      HELD     an active claim and this process is alive, or within the timeout
+      DEAD     an active claim and the owning process is GONE -- expired NOW
+      EXPIRED  an active claim, liveness unknown, past the timeout
+      NONE     no active claim row at all
+      UNKNOWN  liveness could not be read AND there is no row to judge
+    """
+    try:
+        doc = load_mine()
+    except Exception as e:                                       # noqa: BLE001
+        return ('UNKNOWN', None, 'could not read my claims file: %s' % e)
+    rows = [c for c in doc.get('claims', []) if c.get('status') == 'active']
+    if not rows:
+        return ('NONE', None, 'no active claim row in %s' % my_file())
+    rows.sort(key=lambda c: c.get('claimed_at_epoch', 0), reverse=True)
+    stamp_own_liveness(rows)
+    c = rows[0]
+    state, why, _beat = own_liveness()
+    if c.get('_alive') is True:
+        return ('HELD', c, why)
+    if c.get('_alive') is False:
+        return ('DEAD', c, why)
+    if is_active(c):
+        return ('HELD', c, 'within the %.0fh timeout; liveness unknown (%s)'
+                % (STALE_HOURS, why))
+    return ('EXPIRED', c, 'past the %.0fh timeout and liveness is unknown (%s)'
+            % (STALE_HOURS, why))
+
+
+def cmd_own(args):
+    state, c, why = own_claim_state()
+    print('MY OWN CLAIM -- session %s' % session_name())
+    print('  state     : %s' % state)
+    print('  because   : %s' % why)
+    if c is not None:
+        print('  subject   : %s' % c.get('subject'))
+        print('  claimed   : %s  (%s)' % (c.get('claimed_at'), age_str(c)))
+        print('  task      : %s' % (c.get('task') or '')[:160])
+    print('\n  Every OTHER clone judges this claim through registry_claims(),')
+    print('  which stamps liveness from the pid lock. Before 2026-10-08 this')
+    print('  path did not, so a long batch read as unclaimed TO ITS OWN')
+    print('  SESSION while every other clone saw it held.')
+    if state == 'HELD':
+        return 0
+    if state == 'UNKNOWN':
+        print('\nCOULD NOT TELL -- not a pass and not a finding.')
+        return 2
+    if args.require_held:
+        print('\nREFUSING: --require-held was given and the claim is %s. Work '
+              'under\nan expired or absent claim is invisible to the clones '
+              'that rely on it.\n  python tools/sairn_claim.py claim <subject> '
+              '<task words>' % state)
+    else:
+        print('\nWARNING: this session is working WITHOUT a held claim (%s). '
+              'Re-claim\nbefore any long run; the heartbeat is only re-stamped '
+              'when you touch\nthis tool.' % state)
+    return 1
+
+
 def _registry_block_rows(args):
     """The registry-sourced blocks for this attempt, as audit rows. [] if none.
 
@@ -1859,6 +2021,9 @@ def cmd_check(args, quiet=False):
     me = session_name()
     blocking = []
     weak = []
+    # CLAIMS WHOSE FILE OVERLAP CANNOT BE PROVEN EITHER WAY -- exactly one side
+    # declared a FILES list. Not blocking, not dropped. See one_sided_files().
+    unprovable = []
     # MY OWN overlapping claims, which every check in this file has skipped
     # since it was written. Reported here and REFUSED in cmd_claim: `check` is
     # the advisory read and must not start returning 1 for a claim the caller
@@ -1884,6 +2049,14 @@ def cmd_check(args, quiet=False):
             continue
         shared = overlaps(c, subj, task)
         if not shared:
+            # ── BEFORE DROPPING IT: COULD THIS CLEAR BE PROVEN? ───────────
+            # See one_sided_files(). A claim whose FILES list I cannot compare
+            # against mine is not a claim with no overlap, it is a claim with
+            # an UNKNOWN overlap, and dropping it here is what made CLEAR
+            # untrustworthy.
+            _os = one_sided_files(task, c.get('task'))
+            if _os:
+                unprovable.append((c, _os))
             continue
         # Shared vocabulary is REPORTED, never blocked on its own -- dropping
         # it silently would be the other failure, and the whole point of this
@@ -1904,6 +2077,23 @@ def cmd_check(args, quiet=False):
             weak.append((c, shared, 'LEXICAL ONLY -- ' + reason
                          + '; the declared file sets are DISJOINT'))
             continue
+        if not reason:
+            # ── THE WEAK NOTE WAS ASSERTING SOMETHING IT NEVER CHECKED ─────
+            # (2026-10-08.) With no blocking reason this fell into `weak`,
+            # whose note reads "share WORDS with this task but NO APP, FILE,
+            # subject or phrase". When exactly one side declared a FILES list
+            # that sentence is false about the word FILE: nothing compared the
+            # lists. `file_verdict` said 'unknown' and the message said no.
+            #
+            # THIS IS THE WORSE HALF OF THE DEFECT, because the other half is
+            # merely silent and this one states the opposite of the truth.
+            # Measured at this batch's own pickup: cody's live claim declares
+            # five of my targets and the check printed a bare CLEAR plus this
+            # note. I only knew because I read his claim text by hand.
+            _os = one_sided_files(task, c.get('task'))
+            if _os:
+                unprovable.append((c, _os))
+                continue
         (blocking if reason else weak).append((c, shared, reason))
     if blocking:
         if not quiet:
@@ -1958,11 +2148,40 @@ def cmd_check(args, quiet=False):
         # displaced by the staleness one. The staleness is in the text.
         return 1
     if not quiet:
-        print('CLEAR -- no active overlapping claim from another session.')
+        # ── THE HEADLINE MUST NOT CLAIM MORE THAN WAS CHECKED (2026-10-08) ──
+        # A bare "CLEAR" asserts an absence of overlap. Where exactly one side
+        # declared a FILES list that absence was never established -- the claim
+        # was dropped before anything compared the lists -- so the word is
+        # qualified rather than printed and then footnoted. A reader stops at
+        # the headline; that is what a headline is for.
+        if unprovable:
+            print('CLEAR ON WORDS -- AND THE FILE OVERLAP COULD NOT BE PROVEN '
+                  'EITHER WAY.')
+        else:
+            print('CLEAR -- no active overlapping claim from another session.')
         # PRINTED FIRST, BEFORE THE CLEAR SINKS IN. "CLEAR" answers a question
         # about the OTHER sessions and always has; a reader who already holds a
         # claim on this work needs to know that before anything else on the
         # screen, because the duplicate they are about to create is their own.
+        if unprovable:
+            print('')
+            print('%d active claim(s) DECLARE FILES THAT THIS CHECK COULD NOT '
+                  'COMPARE, because\nexactly one side gave a FILES list. The '
+                  'word matcher found nothing, and that\nis not evidence of no '
+                  'overlap -- it is evidence that nothing looked. READ THESE\n'
+                  'PATHS AGAINST WHAT YOU ARE ABOUT TO WRITE:' % len(unprovable))
+            for c, paths in unprovable:
+                print('  %s: %s' % (c.get('session'), c.get('subject')))
+                for p in sorted(paths):
+                    print('      %s' % p)
+                print('      (claimed %s%s)'
+                      % (age_str(c),
+                         ', REGISTRY ONLY -- not pushed yet'
+                         if c.get('_registry') else ''))
+            print('  Declare a FILES list in your own task string and re-run, '
+                  'and this becomes\n  answerable instead of unknown. It does '
+                  'NOT block: a session claiming without\n  a FILES list would '
+                  'otherwise be refused by every other session on the machine.')
         if self_hits:
             hard = [x for x in self_hits if x[2] == 'refuse']
             print('')
@@ -2446,6 +2665,12 @@ def cmd_list(args):
         # with `git show` and cannot write anything. See its docstring.
         fetched, ferr = fetch_origin()
     rows = load_all(from_origin=not args.no_fetch)
+    # MY OWN ROWS GET THE SAME LIVENESS EVERY OTHER CLONE ALREADY APPLIES TO
+    # THEM. Without this, `list` dropped this session's own live claim from the
+    # active set after four hours while cody, fourth and hank all still saw it
+    # held -- one record, two answers, and the session's own answer was the
+    # wrong one. See own_liveness().
+    stamp_own_liveness(rows)
     if not args.all:
         rows = [c for c in rows if is_active(c)]
     if not rows:
@@ -2681,7 +2906,15 @@ def main():
     c = sub.add_parser('audit', help='duplicates and unreleased claims, binned '
                                      'by whether they predate the guard')
 
+    c = sub.add_parser('own', help='am I still holding my own claim? '
+                                   'exit 0 held, 1 not, 2 could not tell')
+    c.add_argument('--require-held', action='store_true',
+                   help='phrase the exit-1 as a REFUSAL rather than a warning, '
+                        'for a caller that wants to block on it')
+
     args = p.parse_args()
+    if args.cmd == 'own':
+        return cmd_own(args)
     if args.cmd == 'check':
         return cmd_check(args)
     if args.cmd == 'claim':

@@ -66,6 +66,18 @@ import sys
 
 SKILL_DIR = '.claude/skills/sairn-hover-auditor/'
 REGISTER = 'docs/defect-density-register.json'
+# ── THE SERVER-SIDE THIRD OF THIS GATE'S OWN ENFORCEMENT TRIAD (2026-10-08) ──
+# tools/hover_separation_ci.py AUDITS the separation rule; it is not audited BY
+# it. That is the "it's yours to build" side of the skill's own test, and the
+# skill now says so by name -- see the ALLOWED entry below for the quotation and
+# `1efcca48` for the commit that landed it.
+#
+# ADDED BY cc BECAUSE THIS GATE IS cc's, NOT BECAUSE THE JUDGEMENT IS. The
+# auditor diagnosed it, wrote the skill paragraph, drafted this exact entry, and
+# could not land it: the file it needed to change is the one that refuses him.
+# Two full batches of a diagnosed, staged, correct fix sat unlanded for that
+# reason alone.
+SEPARATION_CI = 'tools/hover_separation_ci.py'
 
 # ── ONE AUDITOR INSTANCE'S SCOPE, KEYED BY ITS SESSION NAME ─────────────────
 # This was `OWN_CLAIM = '.claude/claims/hover.json'`, a single hardcoded string,
@@ -111,8 +123,16 @@ class AuditorScope(object):
     """
 
     # Every auditor instance may write these, and they are not per-clone: the
-    # skill file and the defect register are the role's, not an instance's.
-    SHARED = (SKILL_DIR, REGISTER)
+    # skill file, the defect register and the server-side separation check are
+    # the role's, not an instance's.
+    #
+    # SEPARATION_CI BELONGS IN *SHARED* AND NOT ONLY IN ALLOWED, and getting
+    # that wrong would have been a silent half-fix. `classify()` reads
+    # `scope.paths` whenever a scope is passed and `ALLOWED` only when one is
+    # not, so an entry added to just one of the two makes the hook and the
+    # history audit disagree -- and tests/run_hover_separation_probe.py asserts
+    # across five session names that they do not.
+    SHARED = (SKILL_DIR, REGISTER, SEPARATION_CI)
 
     def __init__(self, session):
         self.session = session or ''
@@ -182,6 +202,23 @@ ALLOWED = (
      'SKILL.md, core rule exception: "this role\'s own operational tooling -- '
      'the self-log ... anything that records or verifies the hover auditor\'s '
      '*own* actions rather than the platform\'s -- is not \'platform code\'"'),
+    # Added 2026-10-08. The justifying sentence was written FIRST and is on
+    # origin/main at 1efcca48 -- checked before this entry was added, because
+    # the bar this allowlist sets for itself is "a quotable sentence in the
+    # role's own skill file, not a judgement made at the gate", and an entry
+    # justified by a quotation that does not exist would be the fabrication
+    # this gate exists to prevent. The skill states the ORDER too: "this
+    # sentence first, the allowlist entry second."
+    #
+    # WORDING IS THE AUDITOR'S OWN DRAFT, kept rather than rewritten, because
+    # he did the diagnosis and the authorship is his even though the commit
+    # could not be.
+    (SEPARATION_CI,
+     'SKILL.md, core rule section, 2026-10-08 addition: "the enforcement '
+     'triad for THIS core rule -- hover_auditor_scope_gate.py (prevents), '
+     'hover_separation_audit.py (detects)... and hover_separation_ci.py '
+     '(detects, server-side)... are all three squarely on the '
+     '\'audits, does not get audited\' side of the test above"'),
 )
 
 # Named explicitly so the reader does not have to infer it from the absence of
@@ -323,7 +360,38 @@ def changed_outgoing(stdin_text):
     paths, notes = [], []
     lines = [l for l in (stdin_text or '').split('\n') if l.strip()]
     if not lines:
-        return None, 'no ref lines on stdin -- cannot tell what is being pushed'
+        # ── D9: THIS MESSAGE NAMED A SYMPTOM AND NOT ONE OF ITS TWO CAUSES ──
+        # (2026-10-08.) It read "no ref lines on stdin -- cannot tell what is
+        # being pushed", above a REFUSAL that says "not knowing what is in a
+        # change is not the same as knowing it is clean". Both sentences are
+        # true and together they describe a BAD PUSH, which is the less likely
+        # of the two things that actually produce them:
+        #
+        #   1. somebody ran this file BY HAND to see what it does. `main()`
+        #      passes '' deliberately when stdin is a tty, so the empty input
+        #      is this tool's own doing and the refusal is about nothing.
+        #   2. git invoked it as a pre-push hook and supplied no ref lines,
+        #      which is a real anomaly worth the refusal.
+        #
+        # The old text could not tell them apart, and the identical sentence
+        # appears in THREE gates, so a reader could not even tell which one
+        # spoke. Both are fixed: the cause is distinguished and the gate names
+        # itself.
+        if sys.stdin.isatty():
+            return None, ('hover_auditor_scope_gate --pre-push was run BY HAND '
+                          'with no ref lines on stdin.\n  Nothing is being '
+                          'pushed, so there is nothing to judge -- this is a '
+                          'COULD-NOT-RUN,\n  not a finding about a push. For '
+                          'what this clone may change:\n'
+                          '      python tools/hover_auditor_scope_gate.py '
+                          '--explain\n  To check the working tree instead:\n'
+                          '      python tools/hover_auditor_scope_gate.py '
+                          '--worktree')
+        return None, ('hover_auditor_scope_gate: git invoked this as a pre-push '
+                      'hook and supplied NO\n  ref lines on stdin. That is not '
+                      'an empty push -- git always writes one line per\n  ref '
+                      '-- so the range cannot be built and nothing was '
+                      'examined.')
     for line in lines:
         parts = line.split()
         if len(parts) < 4:

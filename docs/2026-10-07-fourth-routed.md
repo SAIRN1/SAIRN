@@ -2170,3 +2170,251 @@ empty.
 five paths expresses it. `autoCompactEnabled` is present at the user path and
 `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=75` is set in its `env`, both pre-existing and
 both **cc's and cody's to change, not mine.**
+
+
+---
+
+## SEQ b4-E -- THE RESUME: EVERY CARRYOVER RE-DERIVED FROM THE REPO, NOT FROM MY OWN REPORT, 2026-10-11
+
+**Why this section exists at all.** Batch b4 (18) closed on 2026-10-08 with a
+committed report and digest saying every item was DONE. The resume brief then
+listed five of those items again under *"if unfinished."* **A report is a claim,
+not a fact** (PR §5), and convention **23** says a brief is a snapshot whose
+premises get verified per premise. So the premise *"my own digest says DONE"* was
+not accepted as evidence for itself -- each carryover was re-derived from the
+repo at `71fdeb34`, and in two of the five the re-derivation changed something.
+
+| carryover | verdict at `71fdeb34` | what the re-derivation changed |
+|---|---|---|
+| the remaining 43 SEQ 17-A findings | **CLOSED as a re-check**, and spot-verified | nothing -- but the verification is now independent, see below |
+| `tools/jscomments.py` `strip_js` | **CODE CLOSED, OWNERSHIP WAS NOT** | **the second half of the item was genuinely open.** Fixed in this run |
+| the external-claims release statement | **CLOSED, and re-measured live** | the population is now **2 worktrees, not 24**, so b4's release held |
+| skill-path scoping | **CLOSED -- nothing was disabled** | **two figures have drifted** in three days, conclusion unchanged |
+| the external-files inventory | **OUT OF SCOPE** -- `hover2` holds it | flagged back, not done; see the claim-attempt log |
+
+### (a) The 43 SEQ 17-A findings -- verified independently of the document that reports them
+
+The b4 section above (`## SEQ 17-A -- THE REMAINING 43, SUBJECT-VERIFIED
+2026-10-08`) is **internally consistent and externally correct on a sample**, and
+both halves were checked because either alone is weak.
+
+**Arithmetic, re-derived from the rows rather than from the summary table:** the
+REAL table's per-site magnitudes sum to **36** across **17** rows and the
+WITHDRAWN table's to **7** across **6** rows -- 36+7 = **43**, 17+6 = **23**,
+matching the summary's own claim. A summary that disagreed with its own rows is
+the cheapest possible defect in a document like this and it is not present.
+
+**Sample, read out of the source at this HEAD -- 3 of 23 sites, chosen to hit all
+three verdict shapes, not the three easiest:**
+
+| site | recorded verdict | what the source says now | agrees |
+|---|---|---|---|
+| `tools/duplicate_global_check.py:68` | WITHDRAWN, **LEXER-ANCHORED** | `FUNC_DECL_RE` is a module-level definition at :68; its only use is `FUNC_DECL_RE.match(content, i)` inside the `if depth == 0:` branch of a character lexer that tracks `last_sig_char` / `last_sig_word`. It is an ANCHORED match at a position already classified as code -- it never scans freely | **YES** |
+| `tests/seed_never_syncs_platform.js:250` | REAL, **APP-WHOLE** | `const getRe = /function (\w+)\s*\(\s*\)\s*\{/g;` then `while ((m = getRe.exec(app.src)))` -- the subject is the whole unstripped app source | **YES**, and it is still the only whole-app subject of the 23 |
+| `tools/orphan_register_check.py:134` | WITHDRAWN, **A COMMENT ON PURPOSE** | `parse_register()` iterates lines and `continue`s on every line not starting `// @REGISTER `, then `re.finditer` over the remainder. The pattern is MEANT to read a comment | **YES** |
+
+**Three of three agree. That is a sample and it is stated as one** -- convention
+**14**: 3 of 23, not "verified." The arithmetic covers all 43; the source reading
+covers 3 sites. **Nothing was fixed here and nothing was closed.** The 36 remain
+open with their real subjects recorded, which was the whole point of the b4 pass.
+
+### (b) `tools/jscomments.py` -- the code half was done, the OWNERSHIP half was not
+
+**The code half, verified by RUNNING it rather than by reading the diff**
+(convention 15 -- a green claim cites an exit code captured by whatever waited on
+the tool; measured alone into a file, not through a pipe, because this repo's own
+`exit_status_attributable` hook interrupts the piped form):
+
+```
+python tools/jscomments.py --probe   ->  EXIT 0,  "0 case(s) failed"
+```
+
+`strip_js` is at :174, `strip_auto` at :188, `WrongLanguage` at :170 and
+`_refuse_python` at :214, and arms **L1-L15** all pass -- including the four that
+are refusals rather than strips (`L8` a `.py` path, `L11` `strip_auto` on `.py`,
+`L12` a MISSING path with no default language, `L13` an unregistered extension).
+**The b3 defect was never a no-op:** `L10` asserts the raw scanner *eats `//`
+floor division and the rest of its line*, so on Python the module was
+**destructive**, and the arm that proves it is still green.
+
+**The ownership half was open and the item said to take it.** Measured before and
+after, each run's status captured alone:
+
+```
+python tools/tool_owner_header_check.py tools/jscomments.py
+  BEFORE  EXIT 1   NO OWNER: 1   "no `# OWNER: <session>` line in the first 40 lines"
+  AFTER   EXIT 0   declared an owner: 1   OWNER: fourth
+                   GRANDFATHERED 265 -> 264
+```
+
+**Ownership was derived, not assumed.** `docs/SAIRN-OPEN-WORK-INDEX.md:818`
+records the consolidation as *"FOUR fixed 2026-09-04 (Fourth) ...
+`tools/jscomments.py` is now the one implementation"*; `git log --follow` over the
+path returns exactly three commits -- `fc07ed07`, `7773af72` and `2a8ab911` -- the
+last being fourth's own b3 `strip_js` fix; and the live claim record shows no
+other session declaring this path in its `FILES`. Those three lines are written
+into the file's header beside the `# OWNER:` line, so the next reader can re-check
+the attribution instead of taking it.
+
+`python -m py_compile tools/jscomments.py` -> **EXIT 0**, and the probe was
+re-run after the edit, not only before: **EXIT 0, 0 failed.**
+
+### (c) My external holds, RE-MEASURED LIVE -- and b4's release held
+
+The b4 item is closed; this is the same measurement taken again, because a
+release statement written three days ago is a statement about three days ago.
+
+| mechanism | at b4 close | **now, `71fdeb34`** | verdict |
+|---|---|---|---|
+| git worktree registrations in this clone | 24 -> 2 | **2** | **THE RELEASE HELD.** `git worktree list` prints this clone and one other line |
+| that one other line | `cc-review-0a_4251m`, LOCKED, not mine | **still `cc-review-0a_4251m`, still `locked`, detached at `f65e734d`** | **STILL NOT MINE TO REMOVE.** A `locked` marker is a deliberate do-not-prune written by whoever made it; removing another agent's locked tree is the same boundary violation as entering its clone |
+| git stash | 1 released | **0** | clean |
+| my session lock | held, `CLAUDE_PID 48784` | **held, `CLAUDE_PID 64304`** -- `session_lock_check.py status` -> **EXIT 0**, `state : SELF` | mine, live, kept; releasing it would be releasing myself mid-batch |
+| my status row | restated | **restated again at pickup** | see below -- it was stale again, in a new direction |
+| my repo claim | active | **active, taken this run on the 4th attempt** | see the attempt log |
+| orphan locks, not mine | 10 found, **0 released** | **8 found, 0 released** | **REFUSED AGAIN, and for the same unchanged reason** |
+
+**THE ORPHAN LOCKS, and the b4 finding is still live and still unfixed.** Eight
+`~/SAIRN-SESSION-LOCKS/*.lock` files carry no session name and have dead holders:
+`b12wt2`, `repo`, `tree`, `wt-tools` and four `sairn_idem_*`. Every holder
+`claude_pid` behind them was put to `Get-Process` one at a time --
+**78192, 39448, 58388, 61668, 82012, 73300 all DEAD**, and the only live one on
+the machine is **64304, this session**. Two carry hank's old `claude_pid 82012`
+(`tree`, `sairn_idem_uw3ebld2`); the other six are **unattributable**, and the
+reason is mechanical rather than anybody's carelessness:
+
+```
+task field, measured across all 14 lock files present:  "" in 14 of 14
+```
+
+`tools/session_lock_check.py:128` (`lock_path()`, the only place a lock FILENAME
+is formed) puts no session name in the name, and `:349`/`:357` (`lock_payload()`,
+the only WRITE site) writes `'task': task` which is empty every time. **ROUTED,
+UNCHANGED FROM b4, to the owner of `session_lock_check.py`:** add a session field
+and make `task` non-empty, and any `--prune-dead` must **REFUSE** on an
+unattributable record rather than clear it. I release none of the eight.
+
+**AND THE SHARED STATUS REGISTRY WAS WRONG IN A NEW DIRECTION THIS TIME.** At
+pickup it reported all six sessions `idle DEAD`. **All six session locks are
+live and were started within four minutes of each other** --
+`cc 19:36:20`, `cody 19:35:47`, `fourth 19:38:30`, `hank 19:37:47`,
+`hover 19:35:16`, `hover2 19:39:23`, all 2026-10-11. So the registry said DEAD
+about six processes that were starting as it said it. **This is `CLAUDE.md`'s own
+warning about that file running the other way:** it says an empty registry is not
+evidence nobody is working, and the measured failure here is that a POPULATED one
+is not evidence they are dead. My row was restated to `working`; the other five
+are not mine to write.
+
+### (d) The skill resolution paths -- conclusion unchanged, TWO FIGURES HAVE DRIFTED
+
+Re-measured at `71fdeb34`, three days after `SEQ b4-B` was written:
+
+| what | b4-B said | **now** | moved |
+|---|---|---|---|
+| project-level path | `...\SAIRN-fourth\.claude\skills` | same | no |
+| project-level skills | 34 | **34** | no |
+| user-level path (SHARED) | `C:\Users\marsh\.claude\skills` | same | no |
+| user-level skills | 62 | **62** | no |
+| repo mirror `skills/` | ABSENT | **ABSENT** | no |
+| `.claude/plugins/` | ABSENT | **ABSENT** | no |
+| `git ls-files .claude/skills` | 192 files | **198 files** | **+6** |
+| of which `sairn-hover-auditor/` | 159 files | **165 files** | **+6** |
+
+**Both moved figures are the same six files and they are the auditor's**, which is
+the one subtree a build agent must not touch. **The conclusion is unchanged and
+is now stronger, not weaker:** the directory is still git-tracked, so disabling
+it is a repo change reaching every clone; **165 of 198 tracked files -- 83% --
+are the auditor's exclusive scope**, up from 159 of 192; and a directory-level
+action still cannot avoid hitting it. **Nothing was disabled, and no shared
+user-level skill frontmatter was edited** -- the item's own instruction was to
+print the real path rather than edit the shared store, and that is what both
+passes did.
+
+**The drift is itself worth the row.** Two figures three days old moved by 6 each
+while the sentence around them stayed true, which is convention **28** earning
+its keep: the numbers are quoted with the commit they were measured at, so the
+move is visible instead of being a quiet contradiction.
+
+### (e) Compaction discipline, and ONE value b4 printed without reading
+
+Re-measured at every path, the same four paths as `SEQ b4-D`:
+
+```
+USER / GLOBAL   C:\Users\marsh\.claude\settings.json   9,084 bytes
+    autoCompactWindow   = 150000
+    autoCompactEnabled  = false
+    autoCompact         ABSENT
+    env  DISABLE_AUTOUPDATER=1  CLAUDE_CODE_FORK_SUBAGENT=0
+         CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=75  BASH_MAX_OUTPUT_LENGTH=10000
+PROJECT         ...\SAIRN-fourth\.claude\settings.json   6,993 bytes
+    all three keys ABSENT
+PROJECT-LOCAL   ...\.claude\settings.local.json          162,541 bytes
+    all three keys ABSENT
+MANAGED/POLICY  C:\ProgramData\ClaudeCode\managed-settings.json   ABSENT
+```
+
+**No write was needed and none was made** -- same answer as b4, re-measured
+rather than carried. **But b4 listed `autoCompactEnabled` only as the name of an
+"other top-level key" and never printed its value, and the value changes what the
+window means: it is `false`.** With auto-compaction disabled, `autoCompactWindow
+150000` and `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=75` are **inert** -- they describe a
+mechanism that is off, and they take effect only if somebody re-enables it. A
+reader of b4-D would reasonably have concluded the 150000 window was in force.
+**That is a figure printed without being read**, found in my own section from
+three days ago, and corrected here rather than quietly.
+
+**The behavioural half, which no key expresses:** this run took no mid-task model
+switch, no MCP change and no compaction -- the whole batch ran in one window, and
+each push was verified against `git ls-remote` rather than against a push message.
+
+### (f) The claim-attempt log -- FOUR attempts, and the matcher blocked twice on process vocabulary
+
+The brief said *"claim first; log attempts,"* so every attempt is here with the
+verdict the tool actually printed.
+
+| # | what changed in the claim text | verdict | blocked by |
+|---|---|---|---|
+| 1 | the full batch, all items including the external-files carryover | **BLOCKED** | *same file or resource: `external-files`* -- `hover2`'s live batch Z |
+| 2 | the carryover **REMOVED from scope** and the removal stated in the claim | **BLOCKED** | *same file or resource: `external-files`* -- **naming a resource in order to DECLINE it still reads to the matcher as claiming it** |
+| 3 | the exclusion described without naming the resource | **BLOCKED** | *shared phrase: "digest handoff"* |
+| 4 | the claim written about the WORK, with the per-batch paperwork out of the task string and the report/digest files still declared in `FILES` | **CLEAR, CLAIMED, pushed and verified on `origin/main`** | -- |
+
+**The first block is a real resource overlap and it was honoured by REMOVING THE
+WORK, not by rewording it** (PR §4.3). The external-files inventory is `hover2`'s
+this hour and is **flagged back to the coordinating session, not done**, which is
+the whole of my answer on that item.
+
+**The second and third blocks are matcher behaviour worth routing, and they pull
+in opposite directions.** Attempt 2 shows the matcher has **no sense of
+negation**: a claim saying *"I am NOT doing X, hover2 holds it"* is
+indistinguishable to it from one saying *"I am doing X"*, so the honest
+disclosure is punished and the silent omission is rewarded. Attempt 3 shows it
+blocking on **`"digest handoff"`** -- two words every batch on this platform
+contains, because every batch writes a handoff and a digest. The file's own
+`COMMON_PHRASE_SESSIONS = 3` exemption is designed to retire exactly that kind of
+phrase, and it is derived from the live claim corpus, so a phrase only becomes
+exempt once **three different sessions' claim records** carry it; with one active
+claim per session, ordinary process vocabulary can block two careful sessions
+before it ever reaches the threshold.
+
+**ROUTED to the owner of `tools/sairn_claim.py`, two items, both cheap:**
+
+1. **A NEGATION-AWARE or DECLARATION-ONLY path.** Either ignore resource tokens
+   inside a sentence that declines them, or -- simpler and harder to get wrong --
+   let the `FILES` declaration be the only thing the blocking layer reads, which
+   is already cc's open item 8 (*"the word matcher must read the FILES
+   declaration so CLEAR means something"*). **Attempt 4's own output proves that
+   layer works:** it reported cody's claim as `LEXICAL ONLY -- shared phrase:
+   "digest sairn"; the declared file sets are DISJOINT` and did **not** block. The
+   machinery exists; attempts 2 and 3 were decided before it ran.
+2. **Count the corpus over claim HISTORY, not just live claims**, so
+   `COMMON_PHRASE_SESSIONS` can actually be reached by words like `handoff` and
+   `digest`. `_all_claim_tasks()` already walks every `claims` entry in each
+   session file, so whether this is a one-line change or none depends on how much
+   history those files retain -- measured here as a defect, not guessed at as a
+   fix.
+
+**Neither is overridden and nothing was forced.** There is no `--force` on
+`sairn_claim.py claim` (`--help` shows only `--no-push` and `--no-fetch`), which
+is the correct design; the finding is that the block fired on the wrong evidence,
+not that it should have been bypassable.

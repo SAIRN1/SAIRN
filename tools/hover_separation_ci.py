@@ -85,16 +85,33 @@ import hover_auditor_scope_gate as G                             # noqa: E402
 EXIT_CLEAN, EXIT_FINDING, EXIT_COULD_NOT_RUN = 0, 1, 2
 
 
-def scope_definitions_agree():
-    """The two modules' scope sets, and whether they still say the same thing.
+# FIXED H1 batch S item 10 (reapplied after an unrelated upstream fix to
+# this same file, repo-root discovery, landed in between): `A.AUDITOR_SCOPE`
+# was removed on 2026-09-30 when hover_separation_audit.py replaced a flat
+# tuple with a session-parameterized `AuditorScope` class (a flat tuple
+# cannot express "any auditor's claim file" without listing every session)
+# -- this file's own `scope_definitions_agree()` and `run_fixtures()` were
+# never updated to match, so EVERY call crashed with AttributeError and the
+# server-side CI check (the half that runs when a local hook is absent,
+# disarmed, or bypassed) never ran at all. Rebuilt against the SAME
+# per-session comparison tests/run_hover_separation_probe.py already drives
+# and already passes (148/148, confirmed live) -- not re-invented, the
+# correct shape already existed one file over.
+SCOPE_CHECK_SESSIONS = ('hover', 'hover2', 'hover3', 'hover42')
 
-    They are separate constants on purpose -- the gate must run inside a hook
-    with no imports, and a shared module one of them silently stopped importing
-    would be a failure neither reports. That reasoning is sound and it makes
-    this comparison necessary rather than optional.
+
+def scope_definitions_agree():
+    """The two modules' scope sets, and whether they still say the same thing,
+    compared PER SESSION across several session names (a pair of copies can
+    agree on one name by coincidence and cannot agree on five).
+
+    They are separate implementations on purpose -- the gate must run inside
+    a hook with no imports, and a shared module one of them silently stopped
+    importing would be a failure neither reports. That reasoning is sound and
+    it makes this comparison necessary rather than optional.
     """
-    gate = set(p for p, _why in G.ALLOWED)
-    audit = set(A.AUDITOR_SCOPE)
+    gate = {s: set(G.AuditorScope(s).paths) for s in SCOPE_CHECK_SESSIONS}
+    audit = {s: set(A.AuditorScope(s).paths) for s in SCOPE_CHECK_SESSIONS}
     return gate, audit, gate == audit
 
 
@@ -287,16 +304,18 @@ def run_fixtures():
     gate, audit, agree = scope_definitions_agree()
     if not agree:
         wrong.append('the two scope definitions have DRIFTED: gate=%s audit=%s'
-                     % (sorted(gate), sorted(audit)))
+                     % (gate, audit))
     # AND THE AGREEMENT CHECK ITSELF MUST BE ABLE TO FAIL, or it is decoration.
-    real = A.AUDITOR_SCOPE
+    # Mutates A.AuditorScope.SHARED (the new class's equivalent of the old
+    # flat AUDITOR_SCOPE tuple) rather than a now-nonexistent attribute.
+    real_shared = A.AuditorScope.SHARED
     try:
-        A.AUDITOR_SCOPE = ('.claude/skills/somewhere-else/',)
+        A.AuditorScope.SHARED = ('.claude/skills/somewhere-else/',)
         if scope_definitions_agree()[2]:
             wrong.append('the drift check passed against a DIFFERENT scope set '
                          '-- it is not comparing anything')
     finally:
-        A.AUDITOR_SCOPE = real
+        A.AuditorScope.SHARED = real_shared
     if wrong:
         print('REFUSING: the criteria do not classify their own fixtures.')
         for w in wrong:
@@ -318,8 +337,9 @@ def main(argv):
     if not agree:
         print('COULD NOT RUN: the auditor scope is defined in two places and '
               'they no longer agree.')
-        print('  hover_auditor_scope_gate.ALLOWED   : %s' % sorted(gate))
-        print('  hover_separation_audit.AUDITOR_SCOPE: %s' % sorted(audit))
+        for s in SCOPE_CHECK_SESSIONS:
+            if gate[s] != audit[s]:
+                print('  session %r -- gate: %s  audit: %s' % (s, sorted(gate[s]), sorted(audit[s])))
         print('  Nothing was checked. Reconcile them before trusting either.')
         return EXIT_COULD_NOT_RUN
 

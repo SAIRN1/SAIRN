@@ -104,6 +104,48 @@ rc, out = run(['   '])
 arms.append(('a WHITESPACE-ONLY message is refused',
              (rc, 'COULD NOT RUN' in out), (2, True)))
 
+# ── ARM 3b: A BRANCH NAME IS A VALID MESSAGE AND IS NEVER WHAT ANYBODY MEANT ─
+# THE INCIDENT, 2026-10-08, and it printed PUSHED. `gh_push.py main` was run
+# intending to push the branch. argv[1] is the COMMIT MESSAGE, so "main" became
+# the subject, and this tool pushes only FILE_PATH plus named extras -- so it
+# created a commit titled "main" on origin/main containing stonedesk.html's
+# working-tree bytes and NONE of the 16 commits the caller believed it was
+# sending. Exit 0. PUSHED: 3903fb3c.
+# HARMLESS ONLY BY LUCK, and measured rather than assumed: the blob sent was
+# byte-identical to the one already there and `git diff 98694d69 origin/main`
+# was EMPTY, so the residue is one empty commit titled "main". With a dirty
+# stonedesk.html it would have published unreviewed working-tree bytes under a
+# one-word subject.
+# ARMS 1-3 CANNOT CATCH IT and the b3 report said so: zero arguments refuses,
+# and a branch name passes len() and .strip() like any other string.
+for _branchy in ('main', 'master', 'HEAD', 'origin/main'):
+    rc, out = run([_branchy])
+    arms.append(('%r is refused with 2 -- a BRANCH NAME is not a commit '
+                 'message' % _branchy,
+                 (rc, 'COULD NOT RUN' in out), (2, True)))
+rc, out = run(['main'])
+arms.append(('...and the refusal NAMES the command the caller actually wanted',
+             'git push origin main' in out, True))
+arms.append(('...and says this tool is not a branch pusher, so the reader '
+             'learns the shape of the mistake',
+             'NOT A BRANCH PUSHER' in out.upper(), True))
+arms.append(('...and states that nothing was sent',
+             'Nothing was sent' in out, True))
+
+# AND THE REFUSAL MUST NOT SWALLOW A REAL MESSAGE. A guard that fires on
+# anything one word long would block a legitimate subject; this one requires the
+# token to resolve to a real ref. Paired in both directions deliberately.
+rc, out = run(['fix(x): a real sentence describing what changed'])
+arms.append(('a REAL multi-word commit message is NOT refused as a branch '
+             '(it proceeds past the guard)',
+             'BRANCH NAME' not in out and 'not a branch pusher' not in out.lower(),
+             True))
+rc, out = run(['zzqqx-not-a-ref-in-this-repo'])
+arms.append(('a ONE-WORD message that resolves to NO ref is NOT refused -- '
+             'unusual is not the same as the mistake',
+             'BRANCH NAME' not in out
+             and 'resolves to a real ref' not in out, True))
+
 # ── ARM 4: THE REMOTE IS UNTOUCHED BY ALL OF THE ABOVE ────────────────────
 after = ls_remote()
 arms.append(('the remote is readable after the refusals (so the comparison '

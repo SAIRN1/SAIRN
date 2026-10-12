@@ -1269,6 +1269,118 @@ def main():
 
     changed = outgoing_files(repo, base, tip)
 
+    # ── CHECK 16: IS THIS PUSH HAPPENING UNDER A HELD CLAIM? (2026-10-08) ────
+    # NON-BLOCKING, deliberately, and the reason is not timidity: claiming is a
+    # convention four sessions follow by hand, a REFUSAL here would stop a
+    # legitimate one-line fix nobody claimed, and "a gate that must be talked
+    # past routinely is a gate people learn to talk past" is already written
+    # down on this platform six overrides deep. So it REPORTS, loudly, with the
+    # state measured rather than assumed.
+    #
+    # THE INCIDENT IT IS FOR, and it is mine. On 2026-10-08 seven commits of my
+    # own landed while I believed my claim had expired -- because the session's
+    # own view of its own claim was the only one that applied a fixed 4-hour
+    # timeout (see sairn_claim.own_liveness()). Nothing in the push path ever
+    # asked the question, so the answer arrived from a document rather than a
+    # measurement, and the b3 report then overstated the consequence.
+    #
+    # THE IMPORT IS GUARDED AND ITS FAILURE IS SAID OUT LOUD, same rule as
+    # check 15: a silent skip here is PR 1.11 -- a pass that was never
+    # performed. Third state, not a pass.
+    try:
+        sys.path.insert(0, os.path.join(repo, 'tools'))
+        import sairn_claim as _SC
+        _cl_state, _cl_row, _cl_why = _SC.own_claim_state()
+        _cl_err = None
+    except Exception as _e:                                      # noqa: BLE001
+        _cl_state, _cl_row, _cl_why = None, None, None
+        _cl_err = '%s: %s' % (type(_e).__name__, _e)
+    if _cl_err:
+        sys.stderr.write(
+            '\nCLAIM STATE: COULD NOT RUN -- tools/sairn_claim.py could not be '
+            'asked whether\n  this push is happening under a held claim. This '
+            'is a third state, not a pass.\n  cause: %s\n\n' % _cl_err)
+    elif _cl_state == 'HELD':
+        pass                        # the quiet case, and it stays quiet
+    elif _cl_state == 'UNKNOWN':
+        sys.stderr.write(
+            '\nCLAIM STATE: COULD NOT TELL -- %s\n  Not a pass and not a '
+            'finding.\n\n' % _cl_why)
+    else:
+        sys.stderr.write(
+            '\nCLAIM STATE: %s -- THIS PUSH IS NOT UNDER A HELD CLAIM.\n'
+            '  %s\n'
+            '  NOT A REFUSAL. Claiming is a convention, not a mechanism, and '
+            'blocking an\n  unclaimed one-line fix would teach everyone to '
+            'override this. But work no\n  other clone can see coming is how '
+            'two sessions end up in one file.\n'
+            '    python tools/sairn_claim.py own\n'
+            '    python tools/sairn_claim.py claim <subject> <task words>\n\n'
+            % (_cl_state, _cl_why))
+
+    # ── CHECK 17: AN EXTERNAL TOOL, SCRIPT OR HANDOFF MUST BE DECLARED ──────
+    # BLOCKING, and unlike check 16 this one is a refusal on purpose. A file
+    # nobody can find is not a style question: SAIRN-SESSION66-HANDOFF.md sat
+    # in C:\Users\marsh\ for four and a half months, in git under NO name, and
+    # the one next to it had already been renamed after a fresh session read
+    # the wrong handoff and continued the wrong work.
+    #
+    # IT FAILS CLOSED ON ITS OWN ABSENCE, which is the half that matters. If
+    # the checker or its index is missing this prints COULD NOT RUN and
+    # DENIES, because `if os.path.isfile(x):` with no else is PR 1.11 exactly
+    # -- a pass that was never performed. The checker itself exits 2 for an
+    # absent index rather than printing a reassuring 0.
+    _efi = os.path.join(repo, 'tools', 'external_file_index_check.py')
+    if not os.path.isfile(_efi):
+        deny('EXTERNAL FILE INDEX: COULD NOT RUN -- tools/'
+             'external_file_index_check.py is not in this clone, so NOTHING '
+             'was checked about files kept outside git. A missing checker is '
+             'not a clean result.')
+    elif not os.path.isfile(os.path.join(repo, 'docs',
+                                         'external-files-index.json')):
+        # ── THE INDEX IS ANOTHER SESSION'S FILE AND DOES NOT EXIST YET ──────
+        # THIS IS NOT A FAIL-OPEN AND THE DIFFERENCE IS THE WHOLE POINT. PR
+        # 1.11 is about a check that reports a PASS it never performed. This
+        # reports a loud COULD-NOT-RUN and claims nothing. What it does not do
+        # is DENY -- because docs/external-files-index.json is declared by
+        # cody's live claim and did not exist when this check was written, so
+        # denying would hold every session's push hostage to another session's
+        # unfinished file. That is not a gate, and a gate everyone has to
+        # override on day one is one nobody obeys on day two.
+        #
+        # IT BECOMES BLOCKING THE MOMENT THE INDEX EXISTS, with no further
+        # change here. The condition is the file, not a flag somebody has to
+        # remember to flip.
+        sys.stderr.write(
+            '\nEXTERNAL FILE INDEX: COULD NOT RUN -- '
+            'docs/external-files-index.json does not\n  exist yet, so nothing '
+            'was checked about tools, scripts or handoffs kept outside\n  git. '
+            'THIRD STATE, NOT A PASS. This check starts REFUSING as soon as '
+            'that file\n  exists; it does not deny now only because the file '
+            'is another session\'s to\n  create and blocking on it would make '
+            'this gate something to override.\n'
+            '    python tools/external_file_index_check.py   '
+            '(prints the schema it expects)\n\n')
+    else:
+        _r = subprocess.run([sys.executable, _efi], capture_output=True,
+                            text=True, encoding='utf-8', errors='replace',
+                            cwd=repo)
+        if _r.returncode == 1:
+            deny('EXTERNAL FILE INDEX: a tool, script or handoff sits in a '
+                 'DECLARED external\n  directory and is neither git-tracked '
+                 'nor named in '
+                 'docs/external-files-index.json.\n'
+                 + (_r.stdout or '')[-2000:]
+                 + '\n  Either commit it, or declare it with a purpose. A '
+                 'handoff nobody can find is\n  worse than no handoff -- the '
+                 'next session reads the one it CAN find.')
+        elif _r.returncode != 0:
+            deny('EXTERNAL FILE INDEX: COULD NOT RUN (exit %d) WITH THE INDEX '
+                 'PRESENT, which is a\n  real failure rather than a missing '
+                 'file. Third state, not a pass.\n%s'
+                 % (_r.returncode,
+                    ((_r.stdout or '') + (_r.stderr or ''))[-1500:]))
+
     # ── CHECK 15: THIS PUSH CHANGES THINGS THAT CHECK THE WORK (2026-10-06) ──
     # NON-BLOCKING, AND THAT IS THE DESIGN RATHER THAN TIMIDITY. Every one of
     # checks 1-14 asks "is this push's CONTENT wrong". None asks "is this

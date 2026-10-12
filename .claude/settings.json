@@ -185,6 +185,12 @@
             "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/hook_integrity_check.py\"",
             "timeout": 60,
             "statusMessage": "Checking that this clone's enforcement hooks are armed and unaltered..."
+          },
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/external_file_index_check.py\" --count",
+            "timeout": 30,
+            "statusMessage": "unindexed external tools/scripts/handoffs (UNKNOWN means the index is absent, not zero)"
           }
         ]
       }

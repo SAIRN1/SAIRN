@@ -65,6 +65,12 @@ from collections import Counter, OrderedDict
 SESSIONS = ('hank', 'cc', 'cody', 'fourth')
 SKILL_DIR = '.claude/skills/sairn-hover-auditor/'
 REGISTER = 'docs/defect-density-register.json'
+# THE SERVER-SIDE THIRD OF THE TRIAD (2026-10-08). See the matching block in
+# tools/hover_auditor_scope_gate.py for the quoted justification and the commit
+# that landed it. Added HERE IN THE SAME CHANGE, deliberately: this copy is
+# duplicated on purpose and the probe asserts the two agree across five session
+# names, so updating one alone would trade a landed fix for a red suite.
+SEPARATION_CI = 'tools/hover_separation_ci.py'
 # ── ONE AUDITOR INSTANCE'S SCOPE, KEYED BY ITS SESSION NAME ─────────────────
 # Kept identical in meaning to tools/hover_auditor_scope_gate.py's, and the
 # probe asserts the two agree for SEVERAL session names rather than for one.
@@ -90,7 +96,7 @@ UNPROVISIONED = '.claude/claims/__unprovisioned__.json'
 class AuditorScope(object):
     """The paths ONE auditor instance may write, derived from its session name."""
 
-    SHARED = (SKILL_DIR, REGISTER)
+    SHARED = (SKILL_DIR, REGISTER, SEPARATION_CI)
 
     def __init__(self, session):
         self.session = session or ''

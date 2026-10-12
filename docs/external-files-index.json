@@ -1315,7 +1315,10 @@
       "wt9.log",
       "__pycache__/reg_add_b3.cpython-314.pyc"
      ],
-     "listing_omitted_reason": null
+     "listing_omitted_reason": null,
+     "purpose": "hank's per-session scratchpad, assigned by the harness. Scratch by construction: probe output, captured stdout and working copies, all regenerable by re-running the tool that wrote them. 30 work files at the 2026-10-11 measurement, 14 of them copies of a tracked repo file.",
+     "transient": true,
+     "recursive": false
     },
     {
      "path": "C:/Users/marsh/AppData/Local/Temp/claude/C--Users-marsh-Documents-SAIRN-hank/16753c01-e018-4c71-af08-342c1baa72e6/scratchpad",
@@ -1727,7 +1730,10 @@
       "tiera.status",
       "tiera.txt"
      ],
-     "listing_omitted_reason": null
+     "listing_omitted_reason": null,
+     "purpose": "hank's per-session scratchpad from an earlier session, same role as the one above. 53 work files at the 2026-10-11 measurement, 4 of them copies of a tracked repo file.",
+     "transient": true,
+     "recursive": false
     },
     {
      "path": "C:/Users/marsh/SAIRN-SESSION-LOCKS",
@@ -1760,7 +1766,10 @@
       "status/hover.json",
       "status/hover2.json"
      ],
-     "listing_omitted_reason": null
+     "listing_omitted_reason": null,
+     "purpose": "The shared status registry and the per-session pid locks, deliberately outside every clone so it is current without a fetch. NOT transient: tools/sairn_status.py reads and writes it live and every clone depends on it. Already carried in this index's generated `directories` block.",
+     "transient": false,
+     "recursive": false
     },
     {
      "path": "G:/My Drive/SAIRN-status",
@@ -1822,7 +1831,10 @@
       "hover-chain-h2/chain-tip-timestamp.tsr",
       "hover-chain-h2/hover-audit-log.jsonl"
      ],
-     "listing_omitted_reason": null
+     "listing_omitted_reason": null,
+     "purpose": "The Drive report directory Michael reads. NOT transient: these are delivered artefacts. Already carried in the generated `directories` block.",
+     "transient": false,
+     "recursive": false
     },
     {
      "path": "C:/Users/marsh/AppData/Local/Temp/b2-i6-clone",
@@ -1833,7 +1845,10 @@
      "listing_truncated": false,
      "note": "throwaway CLONE, batch 18 item 6 and batch 19 item 4 -- write-when-run tools driven here so the live clone is untouched",
      "files": [],
-     "listing_omitted_reason": "a throwaway clone of this repo -- count and size recorded, per-file listing omitted as noise"
+     "listing_omitted_reason": "a throwaway clone of this repo -- count and size recorded, per-file listing omitted as noise",
+     "purpose": "Throwaway clone made by the bare-run sweep. Scratch by construction and re-created on demand; all 54 work files in it share a basename with a tracked repo file, because it IS a copy of the repo.",
+     "transient": true,
+     "recursive": false
     },
     {
      "path": "C:/Users/marsh/AppData/Local/Temp/b3-brwc-scratch",
@@ -1844,7 +1859,10 @@
      "listing_truncated": false,
      "note": "throwaway CLONE, batch 19 item 6 -- the widened bare-run sweep",
      "files": [],
-     "listing_omitted_reason": "a throwaway clone of this repo -- count and size recorded, per-file listing omitted as noise"
+     "listing_omitted_reason": "a throwaway clone of this repo -- count and size recorded, per-file listing omitted as noise",
+     "purpose": "Throwaway clone made by the bare-run sweep. Same shape as b2-i6-clone: 54 work files, all 54 copies of a tracked repo file.",
+     "transient": true,
+     "recursive": false
     },
     {
      "path": "C:/Users/marsh/AppData/Local/Temp/b3-drs-clone",
@@ -1855,7 +1873,10 @@
      "listing_truncated": false,
      "note": "throwaway CLONE, batch 19 item 8 -- dead_rule_sweep timed to completion",
      "files": [],
-     "listing_omitted_reason": "a throwaway clone of this repo -- count and size recorded, per-file listing omitted as noise"
+     "listing_omitted_reason": "a throwaway clone of this repo -- count and size recorded, per-file listing omitted as noise",
+     "purpose": "Throwaway clone made by the doc-SHA-reseat sweep. 54 work files, all 54 copies of a tracked repo file.",
+     "transient": true,
+     "recursive": false
     },
     {
      "path": "C:/Users/marsh/AppData/Local/Temp/b3-locks-sandbox",
@@ -1866,7 +1887,10 @@
      "listing_truncated": false,
      "note": "sandbox lock registry for the widened sweep, so a lock-writing tool is still caught and the REAL registry is never written to (RULE G)",
      "files": [],
-     "listing_omitted_reason": "a throwaway clone of this repo -- count and size recorded, per-file listing omitted as noise"
+     "listing_omitted_reason": "a throwaway clone of this repo -- count and size recorded, per-file listing omitted as noise",
+     "purpose": "Sandbox clone used to exercise the session-lock path without touching the real registry. Scratch by construction; held 0 work files at the 2026-10-11 measurement.",
+     "transient": true,
+     "recursive": false
     },
     {
      "path": "C:/Users/marsh/AppData/Local/Temp/b2-barerun-scratch",
@@ -1877,7 +1901,10 @@
      "listing_truncated": false,
      "note": "throwaway CLONE, batch 18 -- bare_run_write_check subject",
      "files": [],
-     "listing_omitted_reason": "a throwaway clone of this repo -- count and size recorded, per-file listing omitted as noise"
+     "listing_omitted_reason": "a throwaway clone of this repo -- count and size recorded, per-file listing omitted as noise",
+     "purpose": "Throwaway clone made by the bare-run sweep. 54 work files, all 54 copies of a tracked repo file -- including the *-HANDOFF.md names that made this directory look like a cache of lost handoffs. It is not: each one is a copy of a handoff already committed under docs/.",
+     "transient": true,
+     "recursive": false
     },
     {
      "path": "C:/Users/marsh/AppData/Local/Temp/barehunt-b2",
@@ -1888,7 +1915,10 @@
      "listing_truncated": false,
      "note": "throwaway CLONE, batch 18 item 6a -- the core.bare negative control",
      "files": [],
-     "listing_omitted_reason": "a throwaway clone of this repo -- count and size recorded, per-file listing omitted as noise"
+     "listing_omitted_reason": "a throwaway clone of this repo -- count and size recorded, per-file listing omitted as noise",
+     "purpose": "Throwaway clone made by the bare-run sweep. 54 work files, all 54 copies of a tracked repo file.",
+     "transient": true,
+     "recursive": false
     },
     {
      "path": "C:/Users/marsh/AppData/Local/Temp/barehunt-b2-wt",
@@ -1899,7 +1929,10 @@
      "listing_truncated": false,
      "note": "LINKED WORKTREE of barehunt-b2, the second negative control (the one that added a worktree to see if that was the differentiating condition)",
      "files": [],
-     "listing_omitted_reason": "a throwaway clone of this repo -- count and size recorded, per-file listing omitted as noise"
+     "listing_omitted_reason": "a throwaway clone of this repo -- count and size recorded, per-file listing omitted as noise",
+     "purpose": "Throwaway git WORKTREE of the clone above, same sweep. 54 work files, all 54 copies of a tracked repo file.",
+     "transient": true,
+     "recursive": false
     }
    ],
    "files": [],
@@ -1908,6 +1941,20 @@
     "A directory listing is capped at 4000 files and 400 names per entry; \"listing_truncated\" says so per directory rather than silently cutting.",
     "G:\\My Drive is a Google Drive mount. A file can exist in the index and be a placeholder on disk until Drive hydrates it.",
     "~/SAIRN-SESSION-LOCKS is SHARED. It is listed because it is state I write to, not because it is mine to clear."
+   ]
+  },
+  "_why_this_block_is_hand_maintained": "The `directories`, `loose_home_files` and `scripts` blocks above are GENERATED by tools/scratch-archive/*. This `agents` block is NOT -- it was hand-added after that generation and tools/external_file_index_check.py reads ONLY this block. So the two halves of this file describe the same machine in two schemas, and a regeneration would drop this one. Routed as a finding rather than papered over; until it is reconciled, an edit here must be re-applied after any regeneration.",
+  "hover2": {
+   "dirs": [],
+   "files": [
+    {
+     "path": "G:/My Drive/SAIRN-status/handoff-h2-2026-10-11.md",
+     "purpose": "hover2's batch Z (b8) handoff, written to the Drive report directory instead of into a clone. CLAUDE.md: \"Handoffs live only in a real clone\" -- so this is a REAL finding, not a false positive, and it is the only one of the 407 this check reported on 2026-10-11 that survived the transient declarations. ROUTED to hover2 by cc on 2026-10-11 to commit into Documents/SAIRN-hover; a build agent must not write into the auditor clone, so cc registers it here and does not move it. Declared so the gate stops denying every clone's push on one session's artefact -- NOT because the file is where it belongs.",
+     "belongs_in_git": true,
+     "routed_to": "hover2",
+     "routed_on": "2026-10-11",
+     "note_on_this_declaration": "tools/external_file_index_check.py classifies any indexed path as INDEXED and reads `belongs_in_git` nowhere, so this row silences the finding it records. That is a defect in the CHECK, raised as a finding rather than left implicit: a row saying \"this should be in git\" must reach its own state and keep exit 1 for the session that OWES it, while not denying other sessions' pushes."
+    }
    ]
   }
  }

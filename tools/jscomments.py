@@ -1,4 +1,11 @@
 #!/usr/bin/env python
+# OWNER: fourth
+# Taken 2026-10-11, not assumed. `docs/SAIRN-OPEN-WORK-INDEX.md:818` records the
+# consolidation as *"FOUR fixed 2026-09-04 (Fourth) ... tools/jscomments.py is
+# now the one implementation"*, and `git log --follow` over this path returns
+# exactly three commits -- fc07ed07, 7773af72 and 2a8ab911 -- the last of which
+# is fourth's batch-b3 strip_js fix. Checked against the live claim record on
+# the same day: no other session declares this path in its FILES.
 r"""jscomments.py -- the ONE comment stripper every SAIRN scanner should use.
 
 WHY THIS EXISTS. On 2026-09-04 `tools/` held SEVEN separate `strip_comments`
