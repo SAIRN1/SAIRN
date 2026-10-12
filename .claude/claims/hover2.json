@@ -157,6 +157,26 @@
         "docs/2026-10-07-hover2-sv-role-granularity-routing.md",
         "docs/2026-10-08-hover2-law-role-granularity-routing.md"
       ]
+    },
+    {
+      "id": "hover2-1791803351",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "batch b11 -- resume, read-only re-verification rotation. Chain tip+token check, republish only if >15 behind. Re-verify bld_draws fix (api/sd-data.js:12939), sairncash fix (api/sairncash/verify.js:126), scp_ remainder fixes (api/sd-data.js multiple ranges + SD_SESSION_GATED/SD_GATE_APP), sf_officers/dnt_appointments/3-fixed-scp still hold, law_role_granularity, sv_role_granularity count. Check gate-widening/docs commit status, unindexed external files inventory. Independently re-verify 2 of H1's b10 routed findings (api/sb-auth.js:297-304, api/sd-data.js:6030-6039) plus spot-check seq1018/seq1036. Rotate next 5 older findings by FILES weighted random. Re-run session-config hooks check across 6 clones. Handoff before report. FILES: api/sd-data.js api/sairncash/verify.js api/sb-auth.js tools/hover_auditor_scope_gate.py tools/sairn_push_gate_hook.py tools/external_file_index_check.py docs/2026-10-07-hover2-sv-role-granularity-routing.md docs/2026-10-08-hover2-law-role-granularity-routing.md",
+      "claimed_at": "2026-10-12T11:09:11Z",
+      "claimed_at_epoch": 1791803351.0733755,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/sairncash/verify.js",
+        "api/sb-auth.js",
+        "api/sd-data.js",
+        "docs/2026-10-07-hover2-sv-role-granularity-routing.md",
+        "docs/2026-10-08-hover2-law-role-granularity-routing.md",
+        "tools/external_file_index_check.py",
+        "tools/hover_auditor_scope_gate.py",
+        "tools/sairn_push_gate_hook.py"
+      ]
     }
   ],
   "refusals": [
