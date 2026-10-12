@@ -1260,6 +1260,71 @@ module.exports = async (req, res) => {
       //    lock out. The one write is scpData('write','customers') at :2846,
       //    post-login.
       'customers': ['read', 'write'],
+      // ══ SAIRNSCAPE, THREE MORE, 2026-10-11 ══════════════════════════════
+      // From the reproducing artifact
+      // .claude/skills/sairn-hover-auditor/tools-hover2/scp_session_gate_repro.py
+      // --all, which reported 15 of 22 resource/action pairs gated by NEITHER
+      // mechanism at 263f736f. THREE of the eight ungated resources are taken
+      // here and FIVE are deliberately left; each side has a basis, and the
+      // five are listed in api/sd-data-scp-session-gate.test.js rather than
+      // left as an absence.
+      //
+      // THE STOPPING RULE IS TIER A, in that suite's own words, and the five
+      // left behind are B/B with their columns READ TODAY out of
+      // sql/sairnscape_data_schema*.sql -- not taken from the register's
+      // letter. `customers` above is the one standing exception and it says so.
+      //
+      // ── scp_designs: THE THIRD TIER A ROW, AND IT WAS OWED ──────────────
+      // docs/CRITICALITY-TIERS.md:538 carries it **A** on integrity ("a design
+      // is wrong on its approval, and a quote is raised on a plan the client
+      // never approved -- carrying that claim in its own line items"), promoted
+      // B -> A on 2026-10-05. The suite's list says: "if a third SAIRNscape row
+      // is promoted, it belongs here and in both tables on the same day." It
+      // was promoted and it did not land. Register line 136 names SAIRNscape's
+      // three Tier A rows as `invoices`, `scp_quotes`, `scp_designs`; the first
+      // two were already here. This closes the set.
+      //
+      // ── scp_vendors: B BY THE LETTER, CONTACT PII BY THE COLUMNS ────────
+      // THE SAME SHAPE AS `customers` ABOVE, found the same way -- by reading
+      // the row instead of the tier cell. sql/sairnscape_data_schema_phase2.sql
+      // gives its `data` jsonb as: name, category, CONTACT, PHONE, EMAIL,
+      // terms, notes. A named vendor contact's phone and e-mail, readable on a
+      // browser-shipped licence key.
+      //
+      // ITS REGISTER CELL SAYS IT WAS NEVER READ: "no PII ... classified by the
+      // stated B rule rather than individually read". That sentence is on six
+      // of SAIRNscape's eight ungated rows, and it is the same defect
+      // `customers` had -- a tier assigned by class default, which a Tier-A
+      // scoped sweep then reads as a decision. THE GATE IS AHEAD OF THE
+      // REGISTER AGAIN and the B -> A retier is owed, not a precondition.
+      //
+      // IT WAS THE SUITE'S `UNGATED_WITNESS`, which is why this is not a
+      // one-line change: that negative control was sitting on the one ungated
+      // resource that carries contact details. Moved to scp_irr_zones in the
+      // same edit, and the move is explained there rather than done quietly.
+      //
+      // ── scp_progress_photos: AND THE REPRO CALLED ITS WRITE FIXED ───────
+      // `photo_b64` -- a photograph of a customer's property -- plus
+      // `captured_by` and `qc_by`, two named employees, per that schema file.
+      //
+      // THE WRITE'S EXISTING GATE IS CONDITIONAL AND THE REPRO COULD NOT SEE
+      // THAT. scp_session_gate_repro.py:78 is
+      // `branch_gate = 'verifySessionToken' in body` -- substring presence. The
+      // write branch at :5231 does call verifySessionToken, but INSIDE
+      // `if (payload.qc_status === 'approved' || payload.qc_status ===
+      // 'rejected')`, so it fires on a QC DECISION and not on a photo upload.
+      // A plain upload needed no session and the tool reported `write FIXED`.
+      // So the real figure is 16 of 22 ungated by content, not 15 -- reported
+      // to the artifact's owner rather than edited, since that file is hover2's.
+      //
+      // THE QC CHECK IS LEFT EXACTLY AS IT IS. It is not a session gate wearing
+      // another name: it additionally requires SCP_QC_AUTHORITY_ROLES and
+      // refuses self-QC against the SERVER's record of `captured_by`. The table
+      // entry below makes a session UNCONDITIONAL; that block still decides who
+      // may approve. Two different questions, both still asked.
+      'scp_designs': ['read', 'write'],
+      'scp_vendors': ['read', 'write'],
+      'scp_progress_photos': ['read', 'write'],
       // ── SAIRNmechanical: mech_docs WRITE ONLY, 2026-09-29 ────────────────
       //    MECH_RECORDS at :14308 gates all four of mech_quotes, mech_checks,
       //    mech_docs and mech_takeoffs on the LICENCE KEY ALONE, and the
@@ -1407,6 +1472,18 @@ module.exports = async (req, res) => {
       // resource name the dispatch uses; the storage table is `scp_customers`
       // and an entry under that name would gate nothing at all, silently.
       'customers': 'sairnscape',
+      // Added 2026-10-11 in the SAME EDIT as their SD_SESSION_GATED entries --
+      // this pair of lists is never grown one half at a time. Without these
+      // three lines all three resolve expectedApp to 'stonedesk' and refuse
+      // every correctly signed-in SAIRNscape crew lead with FORBIDDEN "sign in
+      // first", which fails closed and confusingly. Unlike `customers` above,
+      // all three of these names ARE the names the dispatch uses -- the
+      // storage tables are `scp_designs`, `scp_vendors` and
+      // `scp_progress_photos`, same spelling -- so there is no bare-vs-table
+      // trap here. Checked against the dispatch branches, not assumed.
+      'scp_designs': 'sairnscape',
+      'scp_vendors': 'sairnscape',
+      'scp_progress_photos': 'sairnscape',
       // Added 2026-09-29 in the SAME edit as its gate entry above, which is the
       // rule this pair of lists has carried since 2026-09-24 and which
       // sf_trustee_audits broke on main earlier the same day: a resource gated

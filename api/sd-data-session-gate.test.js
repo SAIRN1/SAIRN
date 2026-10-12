@@ -393,7 +393,40 @@ function mapNames(blob) {
     // corrected here: 78 was the measured count at 263f736f and re-deriving
     // somebody else's arithmetic from a guess is how a tripwire's number stops
     // meaning anything. Flagged for whoever owns that entry.
-    assert.strictEqual(pairs, 80,
+    // 80 -> 86 on 2026-10-11, same batch, SECOND edit: THREE SAIRNscape
+    // resources, SIX pairs -- scp_designs, scp_vendors, scp_progress_photos,
+    // read and write each.
+    //
+    // WHY EACH, which is what this tripwire asks for. From
+    // .claude/skills/sairn-hover-auditor/tools-hover2/scp_session_gate_repro.py
+    // --all: 15 of 22 SAIRNscape resource/action pairs were gated by NEITHER
+    // mechanism at 263f736f. Three of the eight ungated resources are gated
+    // here; FIVE are deliberately left and are NAMED in
+    // api/sd-data-scp-session-gate.test.js's UNGATED_REST, each with the
+    // columns that justify leaving it.
+    //   scp_designs           Tier A since 2026-10-05
+    //                         (docs/CRITICALITY-TIERS.md:538). That suite's own
+    //                         stopping rule made it OWED, not new.
+    //   scp_vendors           B by letter; its `data` jsonb is name, category,
+    //                         CONTACT, PHONE, EMAIL, terms, notes. The same
+    //                         shape as `customers` above, found the same way --
+    //                         by reading the row, not the tier cell. Its
+    //                         register cell says in its own words that it was
+    //                         "classified by the stated B rule rather than
+    //                         individually read".
+    //   scp_progress_photos   photo_b64 of a customer's property, plus
+    //                         captured_by and qc_by. Its write was gated only
+    //                         INSIDE `if (payload.qc_status === ...)`
+    //                         (api/sd-data.js:5231), so an upload needed no
+    //                         session and the repro -- a substring test for
+    //                         verifySessionToken -- called it FIXED. The real
+    //                         figure was 16 of 22, not 15.
+    //
+    // NOT PROVEN LIVE. No bare-key call was driven against SCP-DEMO-2026 for
+    // any of the three, unlike the 2026-10-05 entry above which has one with a
+    // control. Source-level plus the reproducing artifact's exit codes, and
+    // that limit is stated rather than left to be assumed.
+    assert.strictEqual(pairs, 86,
       'the gate table changed size to ' + pairs + ' pairs -- add the new resource to this test and say why it is gated');
   });
 
@@ -543,6 +576,34 @@ function mapNames(blob) {
         // resource, so adding the name there added four arms without anybody
         // writing one -- 18 passed became 24.
         customers: 'api/sd-data-scp-session-gate.test.js',
+        // SAIRNscape's three more, 2026-10-11. Same suite, same reason -- it
+        // mints SAIRNscape sessions. Adding the three names to its GATED list
+        // added SIX arms each without one being written: refusal on read and on
+        // write, allow-with-a-real-session on read and on write, a wrong-app
+        // token, and a deactivated credential. 24 passed became 46.
+        //
+        // scp_designs IS NOT A NEW DECISION. That suite's own note says "if a
+        // third SAIRNscape row is promoted, it belongs here and in both tables
+        // on the same day" -- docs/CRITICALITY-TIERS.md:538 promoted it B -> A
+        // on 2026-10-05 and it did not land for six days.
+        //
+        // scp_vendors AND scp_progress_photos ARE AHEAD OF THE REGISTER, the
+        // same way `customers` above is, and for the same reason: their columns
+        // were read out of sql/sairnscape_data_schema_phase2.sql instead of
+        // their tier letter. scp_vendors carries a named contact's PHONE and
+        // EMAIL; scp_progress_photos carries photo_b64 of a customer's property
+        // plus captured_by and qc_by. Both retiers are owed.
+        //
+        // AND scp_progress_photos' WRITE WAS ALREADY HALF-GATED IN A WAY A
+        // SUBSTRING CHECK CANNOT SEE: api/sd-data.js:5231 calls
+        // verifySessionToken inside `if (payload.qc_status === ...)`, so it
+        // fired on a QC decision and never on an upload. The reproducing
+        // artifact that found this family scored it FIXED for exactly that
+        // reason. That is cross-domain convention 8 -- a check that stops
+        // testing -- in a tool that was six days old.
+        scp_designs: 'api/sd-data-scp-session-gate.test.js',
+        scp_vendors: 'api/sd-data-scp-session-gate.test.js',
+        scp_progress_photos: 'api/sd-data-scp-session-gate.test.js',
         // SAIRNmechanical's one, 2026-09-29. Driven in its own suite for the
         // same reason as every entry above: that one mints sairnmechanical
         // sessions and this file mints StoneDesk ones.

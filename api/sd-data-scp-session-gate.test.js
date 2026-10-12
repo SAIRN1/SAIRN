@@ -107,11 +107,90 @@ const PAGE = fs.readFileSync(path.join(__dirname, '..', 'sairnscape.html'), 'utf
 // (2026-10-05T12:57:55Z). Waiting for a register cell while a customer's
 // address is readable on a browser-shipped licence key is the wrong trade; the
 // retier is the root-cause follow-up, not a precondition.
-const GATED = ['customers', 'invoices', 'scp_quotes'];
+// ── THREE MORE, 2026-10-11, FROM A REPRODUCING ARTIFACT RATHER THAN A SWEEP ─
+// .claude/skills/sairn-hover-auditor/tools-hover2/scp_session_gate_repro.py
+// --all reported 15 of 22 resource/action pairs gated by NEITHER mechanism at
+// 263f736f. Eight resources were ungated; THREE are taken and FIVE are left,
+// and the five are named in UNGATED_REST below so the scope is a disclosure
+// rather than an absence.
+//
+//   scp_designs            THE THIRD TIER A ROW, AND IT WAS OWED. The note
+//                          above says "if a third SAIRNscape row is promoted,
+//                          it belongs here and in both tables on the same day."
+//                          docs/CRITICALITY-TIERS.md:538 promoted it B -> A on
+//                          2026-10-05 -- "a design is wrong on its approval,
+//                          and a quote is raised on a plan the client never
+//                          approved" -- and it did not land. Register line 136
+//                          names SAIRNscape's three A rows as invoices,
+//                          scp_quotes, scp_designs. This closes that set.
+//
+//   scp_vendors            B BY THE LETTER, CONTACT PII BY THE COLUMNS -- the
+//                          same shape as `customers`, found the same way.
+//                          sql/sairnscape_data_schema_phase2.sql gives its
+//                          `data` jsonb as name, category, CONTACT, PHONE,
+//                          EMAIL, terms, notes. Its register cell says outright
+//                          that it was "classified by the stated B rule rather
+//                          than individually read" -- and that sentence sits on
+//                          six of the eight ungated rows. The B -> A retier is
+//                          owed; it is not a precondition, for the reason the
+//                          `customers` note above gives.
+//
+//   scp_progress_photos    `photo_b64` -- a photograph of a customer's property
+//                          -- plus `captured_by` and `qc_by`, two named
+//                          employees. AND THE REPRO CALLED ITS WRITE FIXED:
+//                          scp_session_gate_repro.py:78 is
+//                          `branch_gate = 'verifySessionToken' in body`, a
+//                          substring test, and the write branch
+//                          (api/sd-data.js:5231) does call it -- inside
+//                          `if (payload.qc_status === ...)`. So the gate fired
+//                          on a QC DECISION and never on a photo upload, and
+//                          the true figure is 16 of 22 ungated by content, not
+//                          15. Reported to that file's owner, not edited: it is
+//                          hover2's.
+//                          The QC block is LEFT ALONE. It is not a session gate
+//                          under another name -- it additionally requires
+//                          SCP_QC_AUTHORITY_ROLES and refuses self-QC against
+//                          the SERVER's `captured_by`. The table entry makes a
+//                          session unconditional; that block still decides who
+//                          may approve.
+const GATED = ['customers', 'invoices', 'scp_quotes',
+  'scp_designs', 'scp_vendors', 'scp_progress_photos'];
 
-// One of the ten that stay licence-only, driven below. NOT an endorsement -- a
-// disclosure, so the day somebody widens the scope it is visible here.
-const UNGATED_WITNESS = 'scp_vendors';
+// ── THE FIVE THAT STAY LICENCE-ONLY, NAMED, 2026-10-11 ──────────────────────
+// Was a single `UNGATED_WITNESS = 'scp_vendors'`, described as "one of the ten
+// that stay licence-only ... a disclosure, so the day somebody widens the scope
+// it is visible here." IT HAD TO MOVE, and that is the finding rather than the
+// bookkeeping: the negative control was sitting on the ONE remaining ungated
+// resource that carries a named contact's phone and e-mail. A control chosen
+// for being ungated is not evidence that being ungated is right.
+//
+// ALL FIVE ARE LISTED, NOT ONE. A single witness proves a gate did not widen to
+// that one name; it says nothing about the other four, and the previous shape
+// could not distinguish "nine still ungated" from "one".
+//
+// EACH ONE'S COLUMNS WERE READ OUT OF sql/sairnscape_data_schema*.sql ON
+// 2026-10-11, not taken from its register letter -- which is the step that
+// turned scp_vendors from a witness into a gate:
+//   scp_jobs              job_id, customer_id FK, data{scope, target_date,
+//                         status, recurring_schedule_id}
+//   scp_irr_controllers   controller_id, customer_id FK, data{name, brand,
+//                         model, zones_supported, install_date, notes} -- the
+//                         `name` is the CONTROLLER's
+//   scp_irr_zones         zone_id, customer_id FK, data{name, zone_type,
+//                         station, head_count, sqft, status, backflow, ...}
+//   scp_irr_schedules     irrsched_id, zone_id, data{days, start, duration,
+//                         status}
+//   scp_water_features    feature_id, customer_id FK, data{name, type, scale,
+//                         size, pump, filter, condition, ...} -- the one row of
+//                         the eight whose register cell says it WAS read
+//                         individually
+// No person's name, no contact detail, no money and no regulated determination
+// on any of the five. A customer_id FOREIGN KEY, with the identity on the
+// customer row, which IS gated. Gating them anyway is a defensible product
+// decision about whether an unsigned-in crew may see an irrigation schedule --
+// it is NOT a finding, and it is not made here.
+const UNGATED_REST = ['scp_jobs', 'scp_irr_controllers', 'scp_irr_zones',
+  'scp_irr_schedules', 'scp_water_features'];
 
 let pass = 0, fail = 0;
 function test(name, fn) {
@@ -326,11 +405,26 @@ function withToken(app, role) {
         // The write half of the same point. A gate is a SPLIT, not a lockout,
         // and a read-only positive would not have noticed a write that refused
         // everybody.
+        // `schedule_id` ADDED 2026-10-11, and it is worth the line. This arm
+        // asserts a STATUS CODE, so a payload the handler rejects at validation
+        // reads as "the gate refused a signed-in write" when it did nothing of
+        // the kind -- scp_progress_photos requires payload.schedule_id
+        // (api/sd-data.js:5231) and this arm answered 400 for exactly that
+        // reason the moment the resource was gated.
+        //
+        // IT IS A SUPERSET, DELIBERATELY, AND THAT HAS A COST: a field one
+        // resource requires is sent to all of them, so a resource added later
+        // whose required field happens to already be here passes this arm
+        // without anybody noticing the requirement. The alternative is a
+        // per-resource payload map. Not worth it while the superset is three
+        // fields -- but the day a FOURTH is needed, write the map.
         const res = await callWith(withToken(APP),
-          { action: 'write', resource: resource, payload: { id: 'X-1', customer_id: 'C-1' } });
+          { action: 'write', resource: resource,
+            payload: { id: 'X-1', customer_id: 'C-1', schedule_id: 'S-1' } });
         assert.strictEqual(res.statusCode, 200,
           'a correctly signed-in write was refused: ' + res.statusCode + ' '
-          + JSON.stringify(res.body));
+          + JSON.stringify(res.body) + ' -- a 400 here is a PAYLOAD problem in '
+          + 'this arm, not a gate refusal');
       });
 
     await atest(resource + ' refuses a token minted for ANOTHER SAIRN app',
@@ -371,19 +465,29 @@ function withToken(app, role) {
       });
   }
 
-  section('AND THE TEN THAT ARE NOT GATED ARE STILL NOT GATED');
+  section('AND THE FIVE THAT ARE NOT GATED ARE STILL NOT GATED -- ALL FIVE, '
+    + 'DRIVEN, NOT ONE WITNESS');
 
-  await atest(UNGATED_WITNESS + ' still answers without a session', async function () {
-    // NOT AN ENDORSEMENT -- a disclosure. Stopping at Tier A is the scope
-    // SAIRNfreedom's entry set and SAIRNdesign followed, and widening it to the
-    // other ten is a product decision about who on a crew may see a vendor list
-    // that nobody has made. This arm exists so the day somebody makes it, the
-    // change is visible here rather than silent.
-    const res = await callWith(BEARER, { action: 'read', resource: UNGATED_WITNESS });
-    assert.strictEqual(res.statusCode, 200,
-      UNGATED_WITNESS + ' is now gated too. That may well be right -- but it is '
-      + 'a scope change and this arm is where it gets noticed.');
-  });
+  // ONE ARM PER RESOURCE, 2026-10-11. This was a single witness on scp_vendors
+  // and it had to move because scp_vendors got gated -- a control chosen for
+  // being ungated is not evidence that being ungated is right, and when the
+  // reason it was ungated turned out to be an unread register cell, the control
+  // moved rather than the finding. Driving all five means the loop cannot
+  // silently shrink to the one name that still happens to be open: the day the
+  // scope widens again, the arm for THAT resource is the one that goes red.
+  //
+  // NOT AN ENDORSEMENT -- a disclosure, same as before. Widening to these five
+  // is a product decision about whether an unsigned-in crew may see an
+  // irrigation schedule, and nobody has made it. Their columns are listed at
+  // UNGATED_REST above, read out of the schema rather than off a tier letter.
+  for (const r of UNGATED_REST) {
+    await atest(r + ' still answers without a session', async function () {
+      const res = await callWith(BEARER, { action: 'read', resource: r });
+      assert.strictEqual(res.statusCode, 200,
+        r + ' is now gated too. That may well be right -- but it is a scope '
+        + 'change and this arm is where it gets noticed.');
+    });
+  }
 
   console.log('\n' + pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);
