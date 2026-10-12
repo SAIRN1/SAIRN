@@ -51,22 +51,76 @@ import os
 import re
 import sys
 
-CRITERIA_VERSION = '2026-10-12.1'
+CRITERIA_VERSION = '2026-10-12.2'
 SHA_RE = re.compile(r'^SHA256\s+([0-9a-f]{64})\s*$')
+SHA_ANY = re.compile(r'^SHA256\s+(\S*)\s*$')
 OK, MISMATCH, CANT = 'OK', 'MISMATCH', 'COULD NOT CHECK'
+END_MARK = 'END-OF-REPORT'
+
+# ── TWO LAYOUTS, BECAUSE THE PLATFORM USES TWO AND A TOOL THAT KNEW ONE WOULD
+#    HAVE REPORTED THE OTHER AS "NO SHA LINE" -- a COULD NOT CHECK on a file
+#    that is correctly sealed, which is the fail-shut twin of the fail-open this
+#    tool exists to catch. Added the same day the second layout was specified.
+#
+#   HEAD   line 1 title, line 2 `SHA256 <hex>`, body = lines 3..EOF
+#          (b4's report and digest, and b5's digest)
+#   TAIL   line 1 title, LAST line `END-OF-REPORT`, SECOND-TO-LAST
+#          `SHA256 <hex>`, body = line 2 .. the line before the SHA
+#          (b5's report)
+#
+# The body definition is forced in both: a hash cannot cover the line that
+# carries it, so in TAIL the trailing two lines are outside the body and in HEAD
+# the leading two are. Said out loud because "the whole file" is the obvious
+# wrong answer and would make the rule uncheckable.
+HEAD, TAIL = 'head', 'tail'
 
 
-def split(text):
-    """(title, sha_line, body) with the body EXACTLY as the rule defines it.
+def strip_final_nl(text):
+    """(text_without_one_trailing_newline, had_one).
 
-    `split('\n', 2)` and not `splitlines()`: the body must be every byte from
-    line 3 to the end of file, and `splitlines()` then `join` would normalise a
-    trailing newline and change the hash of a file nobody edited.
+    FOUND BY USING IT, on the first real TAIL file the tool was pointed at. The
+    file ended with a newline -- as every editor and every `write` of a
+    line-joined list does -- so `split('\n')` put an EMPTY STRING last and the
+    END marker second-to-last. The detector saw neither layout and reported
+    COULD NOT CHECK on a correctly written report: the fail-shut direction, on
+    the most ordinary input there is. A trailing newline is not a structural
+    difference and must not be read as one.
     """
-    parts = text.split('\n', 2)
-    while len(parts) < 3:
-        parts.append('')
-    return parts[0], parts[1], parts[2]
+    if text.endswith('\n'):
+        return text[:-1], True
+    return text, False
+
+
+def layout(lines):
+    """Which layout a file is in, or None. Reads structure, not a filename."""
+    if len(lines) >= 3 and lines[-1].strip() == END_MARK \
+            and SHA_ANY.match(lines[-2].strip()):
+        return TAIL
+    if len(lines) >= 2 and SHA_ANY.match(lines[1].strip()):
+        return HEAD
+    # An END-OF-REPORT with no SHA above it, or a title with nothing under it:
+    # structurally a TAIL file that was never sealed. Reported as TAIL so the
+    # verdict says "the SHA line is missing" rather than "unknown layout".
+    if lines and lines[-1].strip() == END_MARK:
+        return TAIL
+    return None
+
+
+def parts(text):
+    """(layout, sha_line, body) or (None, None, None)."""
+    core, _ = strip_final_nl(text)
+    lines = core.split('\n')
+    lay = layout(lines)
+    if lay == HEAD:
+        p = text.split('\n', 2)
+        while len(p) < 3:
+            p.append('')
+        return HEAD, p[1], p[2]
+    if lay == TAIL:
+        if len(lines) >= 3 and SHA_ANY.match(lines[-2].strip()):
+            return TAIL, lines[-2], '\n'.join(lines[1:-2])
+        return TAIL, '', '\n'.join(lines[1:-1])
+    return None, None, None
 
 
 def verdict(path):
@@ -79,37 +133,62 @@ def verdict(path):
         return (CANT, 'the file contains CR bytes; the rule is LF and UTF-8, so '
                       'a hash taken here would not be the hash the rule names',
                 None, None)
-    title, sha_line, body = split(text)
-    m = SHA_RE.match(sha_line.strip())
+    lay, sha_line, body = parts(text)
+    if lay is None:
+        return (CANT, 'neither layout: line 2 is not `SHA256 <hex>` and the last '
+                      'line is not %r. Nothing to compare against, which is NOT '
+                      'a pass' % END_MARK, None, None)
+    m = SHA_RE.match((sha_line or '').strip())
     if not m:
-        return (CANT, 'line 2 is not `SHA256 <64 hex>` -- it is %r. Nothing to '
-                      'compare against, which is NOT a pass'
-                % (sha_line[:60]), None, None)
+        where = 'line 2' if lay == HEAD else 'the second-to-last line'
+        return (CANT, '%s layout, but %s is not `SHA256 <64 hex>` -- it is %r'
+                % (lay.upper(), where, (sha_line or '')[:60]), None, None)
     declared = m.group(1)
     computed = hashlib.sha256(body.encode('utf-8')).hexdigest()
     if computed == declared:
-        return OK, 'body matches its own SHA line', computed, declared
-    return (MISMATCH, 'the SHA line is stale -- the body was edited after it was '
-                      'written', computed, declared)
+        return OK, '%s layout; body matches its own SHA line' % lay.upper(), computed, declared
+    return (MISMATCH, '%s layout; the SHA line is stale -- the body was edited '
+                      'after it was written' % lay.upper(), computed, declared)
 
 
 def reseat(path):
-    """Write the true hash into line 2. Returns (state, detail)."""
-    st, detail, computed, declared = verdict(path)
-    if st == CANT and computed is None and 'line 2 is not' not in detail:
-        return CANT, detail
+    """Write the true hash into whichever line the file's layout puts it on."""
     try:
         text = io.open(path, encoding='utf-8', newline='').read()
     except OSError as e:
         return CANT, 'unreadable: %s' % e
-    title, sha_line, body = split(text)
-    new = hashlib.sha256(body.encode('utf-8')).hexdigest()
-    io.open(path, 'w', encoding='utf-8', newline='').write(
-        '\n'.join([title, 'SHA256 ' + new, body]))
-    st2, d2, c2, _ = verdict(path)
+    if '\r' in text:
+        return CANT, 'the file contains CR bytes; refusing to seal a hash the rule cannot reproduce'
+    core, had_nl = strip_final_nl(text)
+    lines = core.split('\n')
+    lay = layout(lines)
+    if lay is None:
+        return CANT, 'neither layout -- nothing to reseat'
+    if lay == HEAD:
+        p = text.split('\n', 2)
+        while len(p) < 3:
+            p.append('')
+        new = hashlib.sha256(p[2].encode('utf-8')).hexdigest()
+        out = '\n'.join([p[0], 'SHA256 ' + new, p[2]])
+    else:
+        if len(lines) >= 3 and SHA_ANY.match(lines[-2].strip()):
+            body = '\n'.join(lines[1:-2])
+            new = hashlib.sha256(body.encode('utf-8')).hexdigest()
+            out = '\n'.join([lines[0]] + lines[1:-2] + ['SHA256 ' + new, END_MARK])
+        else:
+            body = '\n'.join(lines[1:-1])
+            new = hashlib.sha256(body.encode('utf-8')).hexdigest()
+            out = '\n'.join([lines[0]] + lines[1:-1] + ['SHA256 ' + new, END_MARK])
+        # The trailing newline is PUT BACK rather than normalised away: a tool
+        # that silently changes the last byte of a file it was asked to hash is
+        # editing the thing it measures.
+        if had_nl:
+            out += '\n'
+    io.open(path, 'w', encoding='utf-8', newline='').write(out)
+    st2, d2, _, _ = verdict(path)
     if st2 != OK:
         return CANT, 'reseated and it STILL does not verify: %s' % d2
-    return OK, 'reseated to %s' % new
+    return OK, '%s layout; reseated to %s' % (lay.upper(), new)
 
 
 def fixtures():
@@ -162,12 +241,66 @@ def fixtures():
     st, _ = reseat(bad)
     arm('--reseat fixes a MISMATCH', st, OK)
     arm('...and the file then verifies', verdict(bad)[0], OK)
+    # DELIBERATE CHANGE WHEN THE TAIL LAYOUT WAS ADDED, and the arm is kept
+    # rather than deleted so the change is visible. Before, `--reseat` would
+    # write a SHA into line 2 of ANY file. Once a second layout exists, a file
+    # whose line 2 is blank and whose last line is not the END marker is in
+    # NEITHER layout -- and writing a hash into line 2 of an unknown document
+    # would be a tool editing something it cannot identify. It refuses, and a
+    # TAIL file with no SHA line is still sealed (arm below), because there the
+    # END marker identifies it.
     st, _ = reseat(none)
-    arm('--reseat also seats a file that had no SHA line', verdict(none)[0], OK)
+    arm('--reseat REFUSES a file in neither layout rather than guessing',
+        verdict(none)[0], CANT)
 
     # NEGATIVE HALF: reseating must not be able to "fix" an unreadable file.
     arm('--reseat on a missing path is COULD NOT CHECK, not OK',
         reseat(os.path.join(d, 'nope.txt'))[0], CANT)
+
+    # ── THE TAIL LAYOUT, both directions ──────────────────────────────────
+    tbody = 'first body line\nsecond body line'
+    thash = hashlib.sha256(tbody.encode()).hexdigest()
+    tgood = write('tail_good.txt',
+                  'REPORT ted b5\n%s\nSHA256 %s\n%s' % (tbody, thash, END_MARK))
+    arm('a correctly sealed TAIL file is OK', verdict(tgood)[0], OK)
+    arm('...and it is recognised AS tail, not as head',
+        'TAIL' in verdict(tgood)[1], True)
+
+    tbad = write('tail_bad.txt',
+                 'REPORT ted b5\n%s\nSHA256 %s\n%s' % (tbody, '0' * 64, END_MARK))
+    arm('a stale TAIL SHA is MISMATCH', verdict(tbad)[0], MISMATCH)
+    arm('--reseat fixes a TAIL MISMATCH', reseat(tbad)[0], OK)
+    arm('...and the END marker is still the last line',
+        io.open(tbad, encoding='utf-8', newline='').read().split('\n')[-1], END_MARK)
+
+    tnone = write('tail_none.txt', 'REPORT ted b5\n%s\n%s' % (tbody, END_MARK))
+    arm('a TAIL file with no SHA line is COULD NOT CHECK', verdict(tnone)[0], CANT)
+    arm('--reseat seals an unsealed TAIL file', reseat(tnone)[0], OK)
+    arm('...and it then verifies', verdict(tnone)[0], OK)
+
+    # THE ONE THAT MATTERS: the body must NOT include the lines carrying the
+    # hash, or the rule is uncheckable. Measured rather than asserted in prose.
+    sealed = io.open(tnone, encoding='utf-8', newline='').read().split('\n')
+    arm('the TAIL body excludes the SHA line and the END marker',
+        hashlib.sha256('\n'.join(sealed[1:-2]).encode()).hexdigest(),
+        SHA_RE.match(sealed[-2]).group(1))
+
+    # ── A TRAILING NEWLINE IS NOT A LAYOUT. Found by using the tool on the
+    # first real TAIL report, which ended with one -- as everything written by
+    # a text editor or a line-joined `write` does -- and was reported COULD NOT
+    # CHECK. Both directions, and the newline must SURVIVE a reseat.
+    tnl = write('tail_nl.txt',
+                'REPORT ted b5\n%s\nSHA256 %s\n%s\n' % (tbody, thash, END_MARK))
+    arm('a sealed TAIL file WITH a trailing newline is OK', verdict(tnl)[0], OK)
+    tnl2 = write('tail_nl2.txt',
+                 'REPORT ted b5\n%s\nSHA256 %s\n%s\n' % (tbody, '0' * 64, END_MARK))
+    arm('--reseat fixes it', reseat(tnl2)[0], OK)
+    arm('...and the trailing newline survives the reseat',
+        io.open(tnl2, encoding='utf-8', newline='').read().endswith('\n'), True)
+    hnl = write('head_nl.txt', 'TITLE\nSHA256 %s\n%s'
+                % (hashlib.sha256(body.encode()).hexdigest(), body))
+    arm('the HEAD layout was already newline-safe and still is',
+        verdict(hnl)[0], OK)
 
     print('report_sha_check --fixtures  criteria %s' % CRITERIA_VERSION)
     bad_arms = [a for a in arms if not a[1]]

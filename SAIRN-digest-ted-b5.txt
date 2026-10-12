@@ -1,0 +1,236 @@
+DIGEST ted b5
+SHA256 7c5a7b325ae809455b0e7c9f525b92cf5fa20655f82567ec05a78fc1b23ae7ec
+
+HASH RULE: line 1 is the title, line 2 is the SHA line, the BODY is every byte
+from line 3 to end of file, LF, UTF-8. It is no longer maintained by hand --
+that is what failed in b4, twice:
+
+  python tools/report_sha_check.py --check SAIRN-digest-ted-b5.txt
+  python tools/report_sha_check.py --check --glob
+
+EVERY COUNT BELOW WAS RE-DERIVED BY SCRIPT, not from memory (brief item 14).
+The script is scratchpad/counts.py and its output is scratchpad/counts.txt.
+Where a figure disagrees with the brief, the brief's figure is named and the
+derivation is shown rather than the difference being quietly absorbed.
+
+================================================================================
+HEAD / PUSH
+================================================================================
+  HEAD                 5b018d9a  (the handoff commit; this digest lands later)
+  origin/main          ea976892
+  position             5 commits AHEAD, 0 behind
+  NOTHING FROM b5 IS ON origin/main.  Every push was REFUSED and
+                       SAIRN_SEED_GATE=off WAS NOT USED, per brief item 11.
+  the five             0e42cfef  the claim
+                       124e0742  b4's bypass-log residue
+                       6942098b  the b5 work
+                       364df45b  the scrutiny-flags row the gate wrote
+                       5b018d9a  the handoff
+  working tree         2 dirty tracked paths, 4 untracked
+                       .claude/settings.json is dirty BY DESIGN -- hooks off
+  re-derive            git log --oneline -6
+                       git ls-remote origin refs/heads/main
+                       git rev-list --left-right --count origin/main...HEAD
+
+THREE PUSH REFUSALS, verbatim in docs/handoff-fourth-2026-10-12.md section 1:
+  1  "error: Please commit or stash them."      git rebase refuses on a dirty
+     tree, and the dirt is the hooks-off settings.json that must stay. Later
+     attempts used `git -c rebase.autoStash=true rebase`, which preserves it.
+  2  "Blocked: the outgoing range ea976892...3f5bfd01 could not be read."
+     The remote had moved. NOT a verdict about content. fetch + rebase fixed it.
+  3  TWO checks refused at once, both true:
+     - EXTERNAL FILE INDEX: 3 UNINDEXED handoffs in g:\my drive\sairn-status\
+       (mine, h1's, h2's). docs/external-files-index.json is cc's file.
+     - GENERATED DOCUMENT: docs/TOOLING-INVENTORY.md -- "the generator REFUSES
+       to run (exit 2) ... hook entries -- read from .claude\settings.json".
+       THIS IS CAUSED BY ITEM 1. Hooks off means an empty hook table means the
+       generator cannot tell a zero from a broken reader, so it refuses, so the
+       push gate blocks. HOOKS-OFF AND PUSHING ARE MUTUALLY EXCLUSIVE IN THIS
+       CLONE. Question 1.
+
+================================================================================
+ONE LINE PER ITEM
+================================================================================
+  0  resume check first                     DONE      HEAD 261de236 clean except
+                                                      the known untracked set;
+                                                      b4 closed, nothing skipped
+  1  hooks + compaction keys STAY OFF       DONE      b4 had restored them; that
+                                                      restore was REVERSED. 0 hook
+                                                      commands in the working tree
+                                                      vs 23 at HEAD, uncommitted
+                                                      on purpose. Nothing re-added.
+  2  add the missing red suites             DONE      11 added, 76 -> 87 entries.
+                                                      THE BRIEF SAID 30 -- see
+                                                      below; 23 was the real gap
+                                                      and only 11 are red.
+  3  phi_cache green-alone red-in-suite     PARTIAL   the SIGNAL is fixed in my own
+                                                      file (exit 3 SKIPPED on a
+                                                      dirty subject); the MUTATOR
+                                                      is NOT ESTABLISHED and one
+                                                      candidate was REFUTED
+  4  consolidate onto the one stripper      PARTIAL   5 of 44 sites replaced, in
+                                                      tests/faults/grd_write_faults.js;
+                                                      0 private strips left there,
+                                                      5 calls into the shared lib.
+                                                      39 sites in 22 files ROUTED
+  5  split the over-ceiling log             DONE      1,011,453 -> 369,849 bytes
+                                                      + 365,984 + 306,980. All three
+                                                      UNDER. 189 / 93 / 130 entries
+  6  route the 36 SEQ 17-A findings         DONE      36 rows, routing table only,
+                                                      nothing fixed
+  7  route the 6 over-ceiling docs          DONE      6 rows, none of them mine,
+                                                      none touched
+  8  cc-review-0a_4251m worktree            DONE      every commit reachable ->
+                                                      unlocked and REMOVED. Two NEW
+                                                      probe worktrees LEFT with
+                                                      unreachable heads, reported
+  9  orphan session locks                   DONE      0 RELEASED. 14 locks, 6 live,
+                                                      8 dead, 0 attributable.
+                                                      CORRECTS b4's claim of 2
+ 10  the demo-pins SQL                      DONE      carried, uncommitted,
+                                                      undeleted. NINTH batch
+ 11  no SAIRN_SEED_GATE=off                 HONOURED  3 refusals recorded verbatim,
+                                                      pushes skipped, work continued
+ 12  convention 33 stays moved              HONOURED  METHODOLOGY.md not touched
+ 13  delete nothing in C:\Users\marsh\      HONOURED  nothing deleted anywhere
+ 14  build the SHA --check                  DONE      tools/report_sha_check.py,
+                                                      20 fixture arms, 0 failed,
+                                                      run on the b4 and b5 files
+ 15  claim by FILES, log attempts           DONE      ONE attempt, CLEAR. Committed
+                                                      locally, NEVER PUSHED -- so
+                                                      treat it as NOT CLAIMED
+ 16  handoff BEFORE the report              DONE      docs/handoff-fourth-2026-10-12.md
+                                                      5b018d9a, written and uploaded
+                                                      before this file existed
+
+  NOT DONE: nothing is silently not done. Items 3 and 4 are PARTIAL and both
+  remainders are listed by exact line in the routing document.
+  REFUSED: every push. Not by me -- by the gate, and not overridden.
+
+================================================================================
+ITEM 2 -- WHY 11 AND NOT 30, DERIVED
+================================================================================
+  the brief's figure        30
+  where it comes from       docs/2026-10-08-hank-suite-failure-owners.md:183 --
+                            "101 red, registry records 75, 30 RED AND NOT
+                            RECORDED -- that register is fourth's"
+  re-derived at this HEAD   hank's 89 REAL rows, parsed PER SECTION so his 8
+                            CASCADE and 4 TIMEOUT rows are NOT read as failures,
+                            unioned with the 76 rc!=0 rows of cody's
+                            2026-10-11 TSV = 93 red suites, of which 23 are
+                            absent from the register. 23, not 30.
+  then DRIVEN ALONE         because the register's own _how_it_was_measured says
+                            "the individual drive is the authority here and the
+                            whole-tree run is not". 180s ceiling, one process
+                            each, git status captured before and after each:
+                              RED   exit 1   11   <- the only ones added
+                              GREEN exit 0    7
+                              COULD NOT RUN exit 2   2
+                              SKIPPED       exit 3   2
+                              TIMEOUT at 180s        1
+  THE 7 GREEN ARE THE FINDING. A run log called them red and they are not. An
+  entry over a green suite does not clutter the register, it SWALLOWS the next
+  real failure of that file -- which is the register's own stated reason for
+  reporting RECOVERED as loudly as NEW.
+  A FIRST PASS GOT THIS WRONG and it is on the record: it called every non-zero
+  exit red, which would have entered 2 exit-2 COULD NOT RUN and 2 exit-3
+  SKIPPED suites as failures. Caught before anything was written.
+
+================================================================================
+EXACT file:line FOR EVERYTHING ROUTED
+================================================================================
+  Full tables: docs/2026-10-12-fourth-b5-routing.md (20,312 bytes, 6 tables,
+  pipe count verified identical on every row of every one).
+
+  tests/seam_check/run_delegation_probe.py:76   the atexit restore net calls
+                                                `git checkout --` and NEVER
+                                                reads the return code
+  tests/seam_check/run_delegation_probe.py:113  the same in the context
+                                                manager's `finally`
+  tests/seam_check/run_delegation_probe.py:80   the SENTINEL is removed whether
+  tests/seam_check/run_delegation_probe.py:119  or not the checkout landed, so
+                                                the evidence layer clears itself
+     -> UNOWNED (no OWNER header). With core.bare true every git checkout fails
+        and the restore SILENTLY DOES NOTHING. MEASURED this batch: two live API
+        files left sabotaged, one failing node --check.
+  tests/push_gate/check8_probe.py:209           records that a dry-run push
+                                                leaves core.bare = true behind
+  tools/clone_health_check.py:209-211           the detector for it. It REPORTS
+                                                and nothing REFUSES on it -- and
+                                                with this clone's hooks off it
+                                                does not run at session start
+  tools/session_lock_check.py:128               lock_path(), the only place a
+                                                lock FILENAME is formed; nothing
+                                                in it carries a session name
+  tools/session_lock_check.py:349               lock_payload(), the only WRITE
+  tools/session_lock_check.py:357               'task': task -- "" in 14 of 14
+     -> UNOWNED. This is why 8 dead locks are unattributable and 0 were released.
+  the 36 SEQ 17-A findings                      17 distinct lines, all 17 files
+                                                UNOWNED, routing doc section 1
+  the 39 private stripper sites                 22 files, routing doc section 3
+  the 6 over-ceiling documents                  routing doc section 2
+
+================================================================================
+CLAIMS TAKEN AND RELEASED
+================================================================================
+  taken          fourth, batch b5, FIRST attempt, `check` CLEAR with a FILES
+                 list declared. No wording was changed to dodge the matcher.
+  state          committed locally at 0e42cfef and NEVER PUSHED. The tool said
+                 so itself: "PUSH FAILED after 3 attempts. The claim is
+                 committed locally and is therefore INVISIBLE to every other
+                 clone -- treat this as NOT CLAIMED."
+  released       NO. The batch is not finished as this is written, and a claim
+                 released before the work lands was never on the work that
+                 landed. It will expire 4h after it was taken.
+  session lock   ~/SAIRN-SESSION-LOCKS/fourth.lock, CLAUDE_PID 61696, SELF
+  status row     written BY HAND, twice -- the hook that writes it is off
+  worktrees      2, both probe residue from item 2: fdce1b4b, 549a372a. Both
+                 unreachable from origin/main, so both LEFT.
+  stash          0
+  orphan locks   8 dead, 0 attributable, 0 RELEASED
+
+================================================================================
+QUESTIONS ONLY MICHAEL CAN ANSWER
+================================================================================
+  1. HOOKS OFF AND PUSHING ARE MUTUALLY EXCLUSIVE IN THIS CLONE. With
+     "hooks": {} the tooling-inventory generator exits 2 and the push gate
+     blocks every push, so all five b5 commits are stranded locally. Three ways
+     out, all yours: (a) teach the generator that an empty hook table is a
+     legitimate state in a clone that has them off; (b) exempt the
+     generated-document check for this clone; (c) hooks back on. I did none.
+  2. THE DRIVE-UPLOAD GATE HAS GROWN FROM 1 UNINDEXED HANDOFF TO 3. Every
+     session is ordered to upload its handoff to Drive; that directory is
+     declared and non-transient; so every compliant session arms a gate that
+     blocks the next session's unrelated push. Stop uploading, declare the
+     directory transient, or index each upload automatically?
+  3. THREE UNTRACKED settings.json BACKUPS in .claude/ -- the full 23, an
+     intermediate 16, and the stripped one. Delete, or keep?
+  4. sql/restore_demo_pins_2026-09-29.sql, NINTH batch carried, not mine, writes
+     credential rows. Commit, delete, or keep carrying?
+  5. TWO PROBE WORKTREES with unreachable heads fdce1b4b and 549a372a, created
+     by driving item 2's suites. Leave, or clear?
+  6. ~350 FILES IN C:\Users\marsh\ classified as throwaway in b4. Nothing
+     deleted and nothing will be without your word.
+
+================================================================================
+EVIDENCE -- every status captured ALONE into a file, never through a pipe
+================================================================================
+  node tests/phi_cache_scoped_to_user.js                    EXIT 0  72 passed, 0 failed
+  node tests/faults/grd_write_faults.js   (before)          EXIT 0  ALL 27 ARMS PASS
+  node tests/faults/grd_write_faults.js   (after)           EXIT 0  ALL 27 ARMS PASS
+  python tools/jscomments.py --probe      (before)          EXIT 0  0 case(s) failed
+  python tools/jscomments.py --probe      (after)           EXIT 0  0 case(s) failed
+  node tests/lib/strip_comments.test.js   (before/after)    EXIT 0  27 passed, 0 failed
+  node --check tests/phi_cache_scoped_to_user.js            EXIT 0
+  node --check tests/faults/grd_write_faults.js             EXIT 0
+  node --check api/_lib/subcontractor-compliance.js  BEFORE EXIT 1  SyntaxError
+                                                     AFTER  EXIT 0
+  node --check api/sd-data.js                               EXIT 0
+  python tools/report_sha_check.py --fixtures                EXIT 0  20 arms, 0 failed
+  python tools/report_sha_check.py --check --glob            EXIT 0  b4 report+digest OK
+  python tests/run_known_red_probe.py                        EXIT 0  0 failure(s)
+  python tools/clone_health_check.py                         EXIT 0  HEALTHY
+  python tools/tooling_inventory.py --standing-doc-sizes     EXIT 1  6 over, none mine
+  python tools/hook_integrity_check.py  (b4, pre-revert)     EXIT 1  11 pre-existing rows
+  23 candidate suites driven ALONE                           11 RED, 7 GREEN,
+                                                             2 exit-2, 2 exit-3, 1 timeout

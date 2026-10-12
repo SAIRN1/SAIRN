@@ -1,0 +1,557 @@
+REPORT ted b5
+BATCH b5 -- fourth / Ted -- 2026-10-12
+
+HASH RULE FOR THIS FILE, which is not the one b4 used and the difference is
+deliberate: line 1 is the title, the LAST line is END-OF-REPORT, the
+SECOND-TO-LAST line is `SHA256 <hex>`, and the BODY is line 2 through the line
+before the SHA. A hash cannot cover the line that carries it, so the trailing
+two lines are outside the body. Checkable, and not by hand:
+
+  python tools/report_sha_check.py --check SAIRN-report-ted-b5.txt
+  python tools/report_sha_check.py --check --glob
+
+The digest uses the OTHER layout -- line 2 carries the SHA -- because brief item
+14 defined that contract. `tools/report_sha_check.py` reads BOTH and decides
+from structure rather than from a filename. A tool that knew only one would have
+reported the other as "no SHA line", which is COULD NOT CHECK on a correctly
+sealed file: the fail-shut twin of the fail-open it exists to catch.
+
+================================================================================
+0.  THE RESUME CHECK, REPORTED BEFORE ANYTHING WAS TOUCHED
+================================================================================
+
+  HEAD at pickup    261de236  "chore(bypass-log): the rows the gate wrote for
+                    the pushes that landed resume 2"
+  vs remote         EQUAL. 0 ahead, 0 behind.
+  working tree      docs/BYPASS-LOG.jsonl modified -- the self-referential
+                    residue b4's own final commit named, committed first thing
+                    here at 124e0742 so the record is complete
+  untracked         .claude/settings.json.bak, .hooks.bak,
+                    .stripped-2026-10-11T2045.bak,
+                    sql/restore_demo_pins_2026-09-29.sql
+  most recent handoff  docs/handoff-fourth-2026-10-11.md, b4's, subject matches
+  nothing was skipped as already-landed, because nothing from b5 had landed
+
+================================================================================
+1.  ITEM 1 -- THE HOOKS STAY OFF, AND b4'S RESTORE WAS REVERSED
+================================================================================
+
+Batch b4 found every hook stripped from this clone's `.claude/settings.json`,
+could find nothing that recorded it, restored all 23 commands, and asked whether
+the removal had been deliberate. THE ANSWER WAS YES. So the first action of b5
+was to undo b4's restore:
+
+  cp .claude/settings.json.stripped-2026-10-11T2045.bak .claude/settings.json
+
+  hook commands in the working tree   0
+  hook commands at HEAD              23
+  committed?                         NO, AND THAT IS THE POINT
+
+IT IS LEFT UNCOMMITTED ON PURPOSE AND THE REASONING IS NOT CAUTION. The
+instruction was for THIS clone. `.claude/settings.json` is tracked, so
+committing the hooks-off version would reach hank, cc, cody and the auditor --
+four clones nobody said anything about. A deliberate local state belongs in the
+working tree, and the cost is that `git status` shows a modified tracked file at
+every pickup. The handoff therefore opens with the sentence the next session
+needs: DO NOT COMMIT IT, DO NOT RESTORE IT, DO NOT RE-ARM ANYTHING.
+
+NOTHING WAS RE-ADDED ANYWHERE. The compaction keys in the user-level
+`settings.json` were not touched either.
+
+WHAT IT COSTS, MEASURED RATHER THAN PREDICTED -- three consequences, and the
+first one stopped this batch from landing:
+
+  1. EVERY PUSH IS REFUSED. `tools/tooling_inventory.py` derives
+     `docs/TOOLING-INVENTORY.md` partly FROM the hook entries in
+     `.claude/settings.json`. With the table empty it exits 2 and REFUSES to
+     generate, and the push gate blocks on a generated document that no longer
+     matches its source. Section 6 carries the refusal verbatim. The generator
+     is RIGHT -- it cannot distinguish an empty table from a broken reader, and
+     writing a thinner document would pass its own --check every time. But
+     hooks-off and pushing are now mutually exclusive in this clone, and that is
+     question 1 rather than something I decided.
+  2. THE STATUS-REGISTRY ROW IS NOT WRITTEN AT SESSION START, so this session's
+     claim reads DEAD to every other clone and to the push gate -- the exact
+     chain b4 traced: `tools/sairn_claim.py:1281` `registry_claims()` ->
+     `claim_liveness()`, fed by `tools/sairn_status.py --hook` at SessionStart.
+     Worked around by running `sairn_status.py set` by hand, twice.
+  3. `tools/clone_health_check.py` DOES NOT RUN AT SESSION START, and it is the
+     check that catches `core.bare = true`. Section 4 is what that cost.
+
+================================================================================
+2.  ITEM 2 -- THE BRIEF SAID 30, THE GAP WAS 23, AND ONLY 11 ARE RED
+================================================================================
+
+THE PREMISE WAS VERIFIED PER PREMISE (convention 23) RATHER THAN EXECUTED. The
+brief's "30 red suites missing" is a real figure with a real source --
+`docs/2026-10-08-hank-suite-failure-owners.md:183`, *"known_red_check.py
+--from-run against this same log reports 101 red, registry records 75, 30 RED
+AND NOT RECORDED -- that register is fourth's"*. It is four days old and the
+register has moved.
+
+RE-DERIVED, BY SCRIPT, FROM THE TWO RUNS ON RECORD:
+
+  hank 2026-10-08, REAL failures, parsed PER SECTION          89
+    his CASCADE table (8) and TIMEOUT table (4) EXCLUDED -- the document itself
+    says CASCADE is "NOT counted as failures" and TIMEOUT is "a third state,
+    classified as neither". A FIRST PARSE READ EVERY PIPE ROW and folded those
+    12 in, reading their `basis` cell as an exit code: that is where 'claim',
+    'map' and '-' appeared where an integer belongs. Convention 32 -- the exit
+    code of a past run is not recoverable and must not be invented.
+  cody 2026-10-11 TSV, rows with rc != 0                      76
+  UNION of the two red populations                            93
+  register entries before this batch                          76
+  ABSENT FROM THE REGISTER                                    23   <- not 30
+
+THEN ALL 23 WERE DRIVEN ALONE, because the register's own
+`_how_it_was_measured` field says it in terms: *"The individual drive is the
+authority here and the whole-tree run is not."* An entry derived from somebody
+else's run log would not meet the file's own standard.
+
+  one process each, 180s ceiling, `git status --porcelain` before and after each
+
+  RED            exit 1        11   <- the only ones added
+  GREEN          exit 0         7
+  COULD NOT RUN  exit 2         2
+  SKIPPED        exit 3         2
+  COULD NOT RUN  timeout        1
+
+  register 76 -> 87 entries, 0 duplicate files, JSON valid,
+  python tests/run_known_red_probe.py -> EXIT 0, "0 failure(s)"
+
+THE 7 GREEN ARE THE FINDING, NOT THE 11 RED. A run log called them red and they
+are not. The register's own `_what_this_is_NOT` says an entry *"makes a failure
+ATTRIBUTABLE, never acceptable"* and that a recovered entry *"swallows the next
+real failure of that file"* -- so adding 7 entries over green suites would have
+been worse than the gap they were meant to close. They are named with their
+measured state in the routing document and are NOT in the register.
+
+AND A FIRST PASS OF THIS ITEM WAS WRONG IN THE SAME DIRECTION. It classified
+every non-zero exit as RED, which would have entered the two exit-3 SKIPPED and
+two exit-2 COULD NOT RUN suites as failures -- exit 3 is the state
+`tools/run_all_tests.py` already reports apart from pass and fail. Caught before
+anything was written, and recorded here rather than silently corrected.
+
+The eleven, with the exit code measured here and not quoted:
+
+  api/sd-data-cross-tenant-dispatchers.test.js        405 passed, 14 failed
+  tests/app_session_isolation.js                      sairngrounds: measured
+                                                      SOME, recorded NONE
+  tests/run_all_tests_pinned_probe.py                 core.bare guidance
+  tests/run_blob_coverage_scope_sabotage.py           3 passed, 2 failed
+  tests/run_citation_anchor_hop_sabotage.py           2 passed, 4 failed
+  tests/run_committer_identity_probe.py               no local override left
+  tests/run_graduated_exemption_probe.py              third push refused again
+  tests/run_selftest_independence_probe.py            git status still readable
+  tests/sd_tax_money_coercion.js                      12 passed, 1 failed
+  tests/seam_check/run_delegation_probe.py            restored_baseline False
+  tests/seam_check/run_delegation_residue_control.py  the plant really did
+                                                      modify the file
+
+Every one carries an EMPTY `why`, which this register defines as NOT DIAGNOSED
+YET rather than nothing to say. Eleven undiagnosed entries is a backlog and is
+stated as one.
+
+================================================================================
+3.  ITEM 3 -- phi_cache: THE SIGNAL IS FIXED, THE CAUSE IS NOT, AND ONE
+    HYPOTHESIS WAS REFUTED BY MEASUREMENT
+================================================================================
+
+WHAT WAS CONFIRMED FIRST. `node tests/phi_cache_scoped_to_user.js` -> EXIT 0,
+72 passed / 0 failed, run three separate times. hank's table records
+63 passed / 1 failed in the whole-tree run and files it under CASCADE: *"These
+exit 0 alone. Their suite verdict is an artefact of the tree being dirty by the
+time they ran."*
+
+WHICH ARM, DERIVED RATHER THAN OBSERVED. 63 passed then one failure stops the
+file, so the failing arm is the 64th in execution order. Taking the ordered PASS
+list from the alone run, #64 is `5d SAIRNbuild: the exclusion list is non-empty
+and reasoned`. **That is a derivation from hank's counts, not something I saw
+fail**, and it is labelled that way.
+
+THE HYPOTHESIS THAT LOOKED BEST, AND ITS REFUTATION. This file reads
+`api/sd-data.js` at :207, and `tests/seam_check/run_delegation_probe.py:241`
+plants into exactly that file. So the plant was reproduced byte-for-byte --
+`src.replace(', warn_days: gateWarn }', ' }', 1)` -- the suite driven, and the
+file restored from the bytes held in memory with the sha256 compared before and
+after:
+
+  token count at the plant site                1   (unique, so no ambiguity)
+  GREEN BASELINE                               exit 0, 72 passed, 0 failed
+  WITH THE PLANT IN PLACE                      exit 0, 72 passed, 0 failed
+  RESTORED, sha identical                      True
+  RE-RUN AFTER RESTORE                         exit 0, 72 passed, 0 failed
+
+SO THAT PLANT IS NOT THE CAUSE. The three live mutators of `sairnbuild.html`
+were then each read and each is isolated: `sairnbuild_server_backup_mutation_
+control.js` writes mutated COPIES to TMP and passes `BLD_HTML`, asserting at
+:231 that the shipped file is byte-identical to how it found it;
+`sairnbuild_fault_probe.py` and `run_sairnbuild_server_wins_sabotage_probe.py`
+stage into a worktree. THE PARTICULAR MUTATOR IS NOT ESTABLISHED AND IS NOT
+NAMED. An invented cause ends the investigation.
+
+WHAT WAS FIXED IS THE SIGNAL, AND THAT IS THIS FILE'S OWN PROBLEM. It reads
+SEVEN files it does not own -- `sairncare.html`, `sairnsenior.html`,
+`sairndental.html`, `sairnbuild.html`, `stonedesk.html`, `sairnroofing.html`,
+`api/sd-data.js`. A FAIL here prints as "the PHI cache leaked", which is the
+most expensive sentence the file can say, and it must not say it about somebody
+else's in-flight change. So it now checks whether git reports any subject
+differing from HEAD and, if so, prints SKIPPED naming them and exits 3 -- the
+state `tools/run_all_tests.py` already reports apart from pass and fail. Idiom
+copied deliberately from `tests/seam_check/run_delegation_probe.py`, which
+learned it on 2026-09-09.
+
+AND THE CONTROL THAT PROVES THE GATE CAN FIRE FOUND A REAL DEFECT IN THE FIRST
+VERSION. Convention 20: an arm counts only after an ablation shows it can fail.
+Making one subject dirty by a single trailing newline and driving the suite gave
+exit 0, not 3 -- because the gate's `git status` call FAILED, and the fallback
+correctly ran the suite anyway and said so:
+
+  "NOTE: git could not be consulted (Command failed: git status --porcelain
+   -- ...), so a dirty subject cannot be ruled out. RUNNING ANYWAY and saying
+   so, rather than skipping on an unknown."
+
+The reason git failed is section 4. The fallback behaviour is deliberate and
+stays: an unreadable git is not evidence the tree is dirty, and refusing to run
+on it would be a worse silence than the one being fixed. ON A CLEAN TREE WITH
+GIT WORKING the suite is 72/0 and the gate does not fire, which is the other
+half of the ablation.
+
+THE PUSH GATE FLAGGED THIS CHANGE AND IT WAS RIGHT TO. "EXTRA SCRUTINY ... 1
+match a WEAKENING shape ... a skip / exemption / allowlist entry ADDED". A
+session must not quietly weaken what checks its own work. The answer is in this
+section and in the commit message rather than in a dismissal: the skip is a
+precondition on a DIRTY SUBJECT, it names the files, it cannot fire on a clean
+tree, and the ablation that shows it can fire is recorded with the defect it
+found. Recorded in `docs/scrutiny-flags.json` under `6942098b0fed`, committed at
+364df45b so the review obligation exists rather than being asserted as
+discharged.
+
+================================================================================
+4.  THE THING NOBODY ASKED FOR, AND IT IS THE MOST IMPORTANT SECTION HERE
+================================================================================
+
+DRIVING 23 SUITES ONE AT A TIME LEFT TWO LIVE API FILES SABOTAGED AND THIS
+CLONE WITH `core.bare = true`.
+
+  git config --get core.bare                    true
+  git status --porcelain                        fatal: this operation must be
+                                                run in a work tree  (exit 128)
+  api/sd-data.js                                MODIFIED -- missing
+                                                `, warn_days: gateWarn`
+  api/_lib/subcontractor-compliance.js          MODIFIED and NOT PARSING:
+                                                node --check -> EXIT 1,
+                                                "SyntaxError: Identifier 'today'
+                                                has already been declared"
+  .git/seam-delegation-probe.planting           ABSENT -- the sentinel that
+                                                exists to leave evidence of
+                                                exactly this
+
+THE CHAIN, EVERY LINK MEASURED:
+
+  a push-gate probe leaves core.bare true
+      (tests/push_gate/check8_probe.py:209 records the behaviour: "first dry-run
+       push was reliably leaving core.bare = true behind")
+  -> with core.bare true EVERY `git checkout --` fails
+  -> run_delegation_probe.py's restore calls it with capture_output=True and
+     NEVER READS THE RETURN CODE -- :76 in the atexit net, :113 in the context
+     manager's `finally` -- so the restore SILENTLY DOES NOTHING
+  -> the SENTINEL is removed anyway at :80 and :119, so the one layer meant to
+     leave evidence of a failed restore CLEARS ITSELF
+  -> the next suites in the same run measure a tree this one broke
+
+THAT PROBE'S OWN HEADER PREDICTED THIS IN WRITING, on 2026-10-06, naming both
+files and saying the restore "was `write(...) ... tool() ... git checkout --`,
+in a straight line with no `finally`" and that three layers were added. All
+three layers are present and ALL THREE FAILED TOGETHER, because all three are
+built on a `git` command that cannot work in a clone whose `core.bare` is true.
+A layer is not independent of another layer if they share a dependency.
+
+AND MY OWN DRIVER HAD THE SAME FAIL-OPEN, WHICH IS CORRECTED HERE RATHER THAN
+LEFT STANDING. It captured `git status --porcelain` before and after every suite
+and reported the whole-run delta as `[]`. THAT WAS NOT EVIDENCE THE TREE WAS
+CLEAN. It was evidence git could not answer -- the same command that returns
+exit 128 under `core.bare = true`, captured and discarded. Any earlier statement
+in this batch that the tree was undisturbed by the drive is withdrawn: it was
+disturbed, in two files, and one of them did not compile.
+
+PUT RIGHT, AND VERIFIED:
+
+  git config core.bare false                    -> git status readable again
+  git checkout -- api/sd-data.js api/_lib/subcontractor-compliance.js
+  node --check api/_lib/subcontractor-compliance.js   EXIT 0
+  node --check api/sd-data.js                         EXIT 0
+  grep -c ", warn_days: gateWarn }" api/sd-data.js    1
+  python tools/clone_health_check.py                  EXIT 0, "HEALTHY"
+
+A LONG-RUNNING BACKGROUND DRIVER WAS ALSO STOPPED. `red_suite_register_check.py`
+had been started early and was still driving registered suites in the live clone
+40 minutes later; `sairnsenior.html` appeared modified between two consecutive
+`git status` calls while nothing in the foreground had touched it. It was killed
+by pid and the file restored itself when its own `finally` ran. That is the
+second reason a write-when-run sweep does not belong in a live clone, and it was
+my choice to start it there.
+
+ROUTED, with the exact lines, to the owner of each -- and every one comes back
+UNOWNED, which is the standing `# OWNER:` gap one directory over from the 264
+`tools/*.py` that have no header.
+
+================================================================================
+5.  ITEMS 4, 5, 6, 7, 8, 9 -- WHAT EACH DID, IN ONE BLOCK
+================================================================================
+
+ITEM 4, THE STRIPPER CONSOLIDATION -- PARTIAL, 5 OF 44, AND THE 44 IS THE
+FINDING. A whole-tree inventory found 44 private comment-strip sites across 23
+files. b4 called `tests/faults/grd_write_faults.js:385` "the EIGHTH private
+comment-stripper"; eight was a count of distinct IMPLEMENTATIONS in a smaller
+scanned set, not of sites. The five in that file are replaced:
+
+  the replacement REFUSED unless the site count matched what I expected -- 3
+  whole-file strips and 2 body strips -- rather than letting `replace()` match a
+  different number silently
+  private `//` strips left in that file        0
+  calls into the shared library                5
+  python tools/jscomments.py --probe   before  EXIT 0, "0 case(s) failed"
+                                        after  EXIT 0, "0 case(s) failed"
+  node tests/lib/strip_comments.test.js before EXIT 0, 27 passed, 0 failed
+                                        after  EXIT 0, 27 passed, 0 failed
+  node tests/faults/grd_write_faults.js before EXIT 0, ALL 27 ARMS PASS
+                                        after  EXIT 0, ALL 27 ARMS PASS
+  node --check                                 EXIT 0
+
+WHICH FUNCTION, BECAUSE USING ONE FOR THE OTHER IS THE DEFECT THE LIBRARY'S OWN
+HEADER RECORDS THREE TIMES. The subject is `sairngrounds.html`, so a whole-file
+strip must track the HTML/script context -- outside `<script>` only `<!-- -->`
+is a comment and `/*` is not, which is the `accept="image/*"` bug that blanked
+80% of a file. That is `stripComments`. A function body pulled out by `K.grab`
+is bare JS, so it gets `stripJs`.
+
+AND THE BRIEF'S WORDING NEEDS ONE CORRECTION, STATED RATHER THAN WORKED AROUND:
+`tools/jscomments.py` is PYTHON and cannot be required from node. The JS half of
+the same consolidation is `tests/lib/strip_comments.js`, which exports the same
+two entry points. That is what the JS call sites were pointed at.
+
+THE OTHER 39 SITES IN 22 FILES ARE ROUTED AND NOT EDITED, and the reason is
+correctness rather than caution: swapping a `//`-only strip for the shared
+library changes what text remains, so it can flip an absence assertion in EITHER
+direction, and each file therefore needs its own before/after run. They are
+other sessions' files and none is in my claim's FILES list. 22 unverified edits
+across other sessions' suites to close a tidiness item is how a consolidation
+breaks a platform.
+
+ITEM 5, THE SPLIT -- DONE, AND TWO EARLIER RULES FAILED FIRST.
+  before                SAIRN-ACTIVE-WORK-fourth.md  1,011,453 bytes
+  after                 SAIRN-ACTIVE-WORK-fourth.md    369,849  189 entries
+                        ...-closed-1.md                365,984   93 entries
+                        ...-closed-2.md                306,980  130 entries
+  ALL THREE UNDER 400,000.
+  RULE 1, FAILED: keep every entry whose own text carries an open marker. It
+    selected 256 of 399 entries, 673KB, STILL OVER. OPEN / ROUTED / COULD NOT
+    appear in the prose of finished work as often as in live work, so that rule
+    fits a task list and not a narrative log. The authoritative list of open
+    work is `docs/SAIRN-OPEN-WORK-INDEX.md`, not this file.
+  RULE 2, FAILED: split by age into ONE archive. The active half fitted at
+    379,477 and the archive came out at 662,322 -- OVER THE SAME CEILING.
+    Moving a breach into a new filename is not fixing it.
+  RULE 3, APPLIED: by age, archive CHUNKED so every file is under the ceiling,
+    and "keep every open item" honoured by a different mechanism -- all 159
+    archived entries carrying an open marker are INDEXED BY NAME in the active
+    file as `p<part>#<ordinal>`, so the active log still names every one and the
+    citation can be followed. The index is stated as 100% recall and unknown
+    precision rather than implied to be a worklist.
+  THE GUARANTEE IS MEASURED, NOT ASSERTED: the write happened only after the
+    sha256 of the sorted multiset of entry texts matched the one taken before
+    the split. Identical. No entry lost, none duplicated.
+  python tools/tooling_inventory.py --standing-doc-sizes: EXIT 1, 7 documents
+    over -> 6, and NONE OF THE SIX IS MINE.
+
+ITEMS 6 AND 7, ROUTING TABLES ONLY -- docs/2026-10-12-fourth-b5-routing.md,
+20,312 bytes, six tables, pipe count verified identical on every row of every
+one (PR 2.1). 36 SEQ 17-A rows; the arithmetic re-derived by a parser (REAL 36
+across 17, WITHDRAWN 7 across 6, 36+7=43, 17+6=23). ALL 17 FILES COME BACK
+UNOWNED on a mechanical test -- no `OWNER:` header in the first 4KB, no live
+claim declaring the path, absent from both run tables because they are GREEN
+suites. 6 over-ceiling documents with owner, size and bytes-over. NOTHING IN
+THAT DOCUMENT WAS FIXED.
+
+ITEM 8, THE WORKTREE -- REMOVED, AND HERE IS WHY THAT DISCARDED NOTHING.
+  `git merge-base --is-ancestor f65e734d origin/main` succeeds, so every commit
+  on `cc-review-0a_4251m` is reachable. It had 2,373 dirty paths and ALL 2,373
+  ARE `D` -- staged deletions, 0 added, 0 modified, 0 stashes -- of files that
+  exist at that reachable commit. So `--force` was required and discarded
+  nothing recoverable. Held 493.6 hours with AMBIGUOUS claim attribution.
+  TWO NEW WORKTREES ARE LEFT: `defreg-probe-59076` (fdce1b4b) and
+  `gate12-19124-5` (549a372a), created minutes earlier by driving item 2's
+  suites. Their heads are NOT reachable from origin/main, so removing them would
+  orphan commits, and the brief's own rule for the unreachable case is to leave
+  them and report the hashes. Reported.
+
+ITEM 9, THE LOCKS -- 0 RELEASED, AND IT CORRECTS b4.
+  Release required BOTH tests: holder pid verified DEAD *and* the lock
+  ATTRIBUTABLE. 14 locks: 6 are the live session locks (all six sessions are
+  running), 8 are orphans with dead holders. Each dead pid was put to
+  Get-Process ONE AT A TIME -- 78192, 39448, 58388, 58388, 61668, 82012, 82012,
+  73300, all DEAD. ATTRIBUTION FAILED FOR ALL EIGHT: the `task` field is `""` in
+  14 of 14 locks, and the status registry's pid->session map holds none of those
+  pids (it currently reads cc 26312, cody 2204, fourth 61696, hank 48956,
+  hover 30428, hover2 71364).
+  b4 REPORTED THAT TWO OF THE EIGHT WERE "hank's by his old claude_pid 82012".
+  No current record ties 82012 to hank -- hank is 48956 now -- so that was an
+  inference carried from a previous session's memory, not a record. Under the
+  brief's AND condition it does not qualify. THE HONEST COUNT IS 0 ATTRIBUTABLE,
+  NOT 2, and the correction is mine to make because the claim was mine.
+
+================================================================================
+6.  ITEM 11 -- EVERY PUSH REFUSAL, VERBATIM, AND NO OVERRIDE
+================================================================================
+
+SAIRN_SEED_GATE=off WAS NOT USED AT ANY POINT IN THIS BATCH. b4 used it three
+times and said so; b5 was told not to, and did not. `docs/BYPASS-LOG.jsonl`
+gained no row from this batch, which is the mechanical check on that sentence.
+
+  REFUSAL 1, on the claim tool's own push:
+    "PUSH FAILED after 3 attempts. The claim is committed locally and is
+     therefore INVISIBLE to every other clone -- treat this as NOT CLAIMED.
+     last error: error: Please commit or stash them."
+    CAUSE: `git rebase` refuses outright with unstaged changes, and the unstaged
+    change is the hooks-off settings.json that must stay. Later attempts used
+    `git -c rebase.autoStash=true rebase`, which stashes and restores rather
+    than discarding -- the brief's "never discard" honoured by mechanism.
+
+  REFUSAL 2:
+    "Blocked: the outgoing range ea976892...3f5bfd01 could not be read."
+    NOT a verdict about content: the remote had moved and the range named a
+    commit this clone had not fetched. Fixed by fetch + rebase. Reading this as
+    a gate finding is two of the four wrong-subject reads this platform logged
+    on 2026-10-04/05, which is why it is quoted rather than summarised.
+
+  REFUSAL 3, two checks at once, "and all 2 are true right now":
+    "EXTERNAL FILE INDEX: a tool, script or handoff sits in a DECLARED external
+     directory and is neither git-tracked nor named in
+     docs/external-files-index.json
+       ! g:\my drive\sairn-status\handoff-fourth-2026-10-11.md
+       ! g:\my drive\sairn-status\SAIRN-handoff-h1-b10.md
+       ! g:\my drive\sairn-status\handoff-h2-2026-10-12.md"
+    THIS IS THE STRUCTURAL PROBLEM b4 ROUTED, AND IT HAS GROWN FROM ONE FILE TO
+    THREE. Every session is ordered to upload its handoff to Drive; that
+    directory is declared and non-transient; a handoff uploaded there is by
+    construction neither git-tracked (different path) nor indexed. So every
+    session that follows its instructions arms a gate that blocks the next
+    session's unrelated push. `docs/external-files-index.json` is cc's file and
+    cc's `tools/external_file_index_check.py` is canonical per the brief, so I
+    added no row. Question 2.
+
+    "Blocked: this push makes a GENERATED document stop matching what it is
+     derived from.
+       docs/TOOLING-INVENTORY.md -- the generator REFUSES to run (exit 2)
+             hook entries -- read from .claude\settings.json
+           A zero here is a BROKEN READER or a MOVED SOURCE, not an empty
+           repo -- and the two are indistinguishable downstream, which is
+           why this refuses instead of writing a thinner document that
+           would pass its own --check every time."
+    CAUSED BY ITEM 1. Not clearable without re-arming hooks, which the brief
+    forbids. Question 1.
+
+PER THE BRIEF the refusals are written down, the pushes were skipped, and the
+batch continued to the next item. FIVE COMMITS ARE STRANDED LOCALLY.
+
+================================================================================
+7.  ITEM 14 -- THE --check b4 NAMED AS NOT-DONE
+================================================================================
+
+`tools/report_sha_check.py`. It exists because b4 found its own report's SHA
+line stale (`d2ee6a2d...` declared, `2eb5a1ad...` computed) and its digest
+claiming *"both carry a verifiable body hash"* while having NO SHA LINE AT ALL,
+reseated both BY HAND, and routed a `--check` to itself.
+
+  python tools/report_sha_check.py --fixtures      EXIT 0, 20 arms, 0 failed
+  python tools/report_sha_check.py --check --glob   EXIT 0, b4's report and
+                                                    digest both OK
+  --reseat on this batch's two files                both OK
+
+THE THIRD STATE IS MOST OF THE WORK. A file with no SHA line is COULD NOT CHECK,
+exit 2, NOT a pass -- that is the b4 digest's exact shape, and a tool returning
+0 on it would have confirmed the false claim it was built to find.
+
+TWO LAYOUTS, because the platform uses two: HEAD (line 2 carries the SHA) and
+TAIL (second-to-last line carries it, END-OF-REPORT last). It decides from
+STRUCTURE, not from a filename. A tool that knew only one would have called a
+correctly sealed file "no SHA line" -- COULD NOT CHECK on a good file, which is
+the fail-shut twin of the fail-open it exists to catch.
+
+ONE FIXTURE ARM CHANGED MEANING WHEN THE SECOND LAYOUT LANDED AND THE ARM WAS
+KEPT RATHER THAN DELETED. `--reseat` used to write a SHA into line 2 of any
+file; with two layouts, a file whose line 2 is blank and whose last line is not
+the END marker is in NEITHER layout, and writing a hash into it would be a tool
+editing a document it cannot identify. It now REFUSES, the arm asserts the
+refusal, and the comment says why. WHAT IT IS NOT, said out loud because
+somebody will cite it: NOT tamper-evidence. A hash a file carries about itself
+proves only that the line and the body were written at the same moment. It
+catches the ACCIDENT, and the accident is what happened twice.
+
+================================================================================
+8.  WHAT IS NOT DONE, STATED PLAINLY
+================================================================================
+
+  - 39 OF 44 PRIVATE STRIPPER SITES, in 22 files. Routed with exact lines. Each
+    needs its own before/after suite run and they are other sessions' files.
+  - THE CAUSE of phi_cache going red in a whole-tree run. The signal is fixed in
+    my file; the mutator is unidentified and one candidate was refuted.
+  - THE 36 SEQ 17-A FINDINGS. Routed, not fixed -- the brief said routing only.
+  - THE 6 OVER-CEILING DOCUMENTS. Routed, not touched -- the brief said so.
+  - run_delegation_probe.py's FAIL-OPEN RESTORE, four exact lines. Not mine.
+  - THE 11 NEW REGISTER ENTRIES carry an empty `why`. Undiagnosed, by design,
+    and stated as a backlog.
+  - THE `# OWNER:` BACKLOG: 264 tools/*.py with no header, and all 17 SEQ 17-A
+    files have none either.
+  - EVERYTHING b5 DID IS UNPUSHED. Five commits.
+  - TWO PROBE WORKTREES left with unreachable heads, by the brief's own rule.
+  - 8 ORPHAN LOCKS, third batch running, 0 released -- now with the reason
+    measured rather than inferred.
+
+  NOTHING IS PARTIAL EXCEPT ITEMS 3 AND 4, and both remainders are listed row by
+  row with exact lines in docs/2026-10-12-fourth-b5-routing.md.
+
+================================================================================
+9.  QUESTIONS ONLY MICHAEL CAN ANSWER
+================================================================================
+
+  1. HOOKS OFF AND PUSHING ARE MUTUALLY EXCLUSIVE IN THIS CLONE, and that is
+     new information rather than a complaint. Three ways out, all yours:
+     (a) teach tools/tooling_inventory.py that an empty hook table is a
+     legitimate state in a clone that has them off; (b) exempt the
+     generated-document check for this clone; (c) hooks back on. I DID NONE OF
+     THEM, and five commits are stranded until one is chosen.
+  2. THE DRIVE-UPLOAD GATE HAS GROWN FROM 1 UNINDEXED HANDOFF TO 3, and it will
+     keep growing because the brief orders the uploads. Stop uploading, declare
+     that directory transient, or index each upload automatically?
+  3. THREE UNTRACKED settings.json BACKUPS in .claude/ -- the full 23, an
+     intermediate 16, and the stripped one. Delete, or keep?
+  4. sql/restore_demo_pins_2026-09-29.sql. NINTH batch carried, not mine, it
+     writes credential rows so committing it pulls it under the recoverability
+     guard with nobody having reviewed it for that. Commit, delete, or carry?
+  5. TWO PROBE WORKTREES with unreachable heads fdce1b4b and 549a372a, created
+     by driving item 2's suites in the live clone. Leave, or clear?
+  6. ~350 FILES IN C:\Users\marsh\ classified as throwaway in b4, ~20MB, none
+     referenced by any tracked file. Nothing deleted and nothing will be without
+     your word. Carried from b4 and b5.
+
+================================================================================
+10. EVERY COMMIT THIS BATCH
+================================================================================
+
+  0e42cfef  the claim -- ONE attempt, CLEAR, FILES declared, never pushed
+  124e0742  b4's bypass-log residue, named in b4's own commit message
+  6942098b  the b5 work: items 2, 3, 4, 5, 6, 7, 14
+  364df45b  the scrutiny-flags row the gate wrote for 6942098b
+  5b018d9a  the handoff, written BEFORE this report
+  (later)   this report and the digest
+
+  HEAD at the time of writing   5b018d9a
+  origin/main                   ea976892
+  position                      5 AHEAD, 0 behind
+  Re-derive the tip rather than trusting this file, which a later commit carries:
+    git ls-remote origin refs/heads/main
+    git log --oneline -- SAIRN-report-ted-b5.txt
+SHA256 b445cff0a32ff8bfcd8977076fb91446ad30776d101ef63d68464559ee8cbd6e
+END-OF-REPORT
