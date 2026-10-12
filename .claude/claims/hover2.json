@@ -151,8 +151,8 @@
       "task": "batch b10 -- RFC3161 tip+token check. Direct-assign 5 CRITICAL open findings outside routing cycle (sf officers dnt appointments scp sairncash to hank, bld draws to cc) with exact fix specs file:line, stop re-running repros every batch. Commit sv/law role-granularity routing docs. Re-check law fix. Rotate next 4+1 findings by FILES not wording. Re-check gate-widening and FILES matcher. Extend session-config check to read per-clone settings.json hooks table report-only. External-files unindexed list both files by owner, route to cc, no edit to the index. Compaction discipline. Handoff before report. FILES: docs/2026-10-07-hover2-sv-role-granularity-routing.md docs/2026-10-08-hover2-law-role-granularity-routing.md",
       "claimed_at": "2026-10-12T10:32:09Z",
       "claimed_at_epoch": 1791801129.1459053,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-12T11:05:26Z",
       "files": [
         "docs/2026-10-07-hover2-sv-role-granularity-routing.md",
         "docs/2026-10-08-hover2-law-role-granularity-routing.md"
