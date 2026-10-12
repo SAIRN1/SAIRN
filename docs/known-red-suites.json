@@ -1709,5 +1709,93 @@
    }
   }
  ],
- "_b5_addition_2026_10_12": "ELEVEN entries added by fourth, batch b5 item 2, and the brief asked for THIRTY. The 30 is hank's 2026-10-08 figure (\"101 red, registry records 75, 30 RED AND NOT RECORDED\") and it was re-derived rather than carried: the gap against this register at HEAD 327e9e80 is 23, not 30, because the register has absorbed some of them since and cody's later run moved others. Of those 23, driving each ALONE returned 11 RED, 7 GREEN, 2 exit-2 COULD NOT RUN, 2 exit-3 SKIPPED and 1 TIMEOUT at 180s. ONLY THE 11 ARE RED. The 7 GREEN are the finding that matters: a run log named them red and they are not, so the stale half of a census is a wrong answer in both directions. The 12 non-red are listed by name with their measured state in docs/2026-10-12-fourth-b5-routing.md -- they are NOT in this file, because an entry here is an exemption and an exemption over a suite that is green or that never ran would swallow its next real failure."
+ "_b5_addition_2026_10_12": "ELEVEN entries added by fourth, batch b5 item 2, and the brief asked for THIRTY. The 30 is hank's 2026-10-08 figure (\"101 red, registry records 75, 30 RED AND NOT RECORDED\") and it was re-derived rather than carried: the gap against this register at HEAD 327e9e80 is 23, not 30, because the register has absorbed some of them since and cody's later run moved others. Of those 23, driving each ALONE returned 11 RED, 7 GREEN, 2 exit-2 COULD NOT RUN, 2 exit-3 SKIPPED and 1 TIMEOUT at 180s. ONLY THE 11 ARE RED. The 7 GREEN are the finding that matters: a run log named them red and they are not, so the stale half of a census is a wrong answer in both directions. The 12 non-red are listed by name with their measured state in docs/2026-10-12-fourth-b5-routing.md -- they are NOT in this file, because an entry here is an exemption and an exemption over a suite that is green or that never ran would swallow its next real failure.",
+ "_what_not_red_is": "A THIRD LIST, ADDED 2026-10-13 (fourth, batch b6 item 3). `entries` is RED and `recovered` is GREEN; these five produced NEITHER. b5 drove them alone, got exit 2, exit 3 and a timeout, and correctly kept them out of `entries` -- an entry there is an exemption over a red suite and would absorb the next real failure of a suite that is not failing. But leaving them out of the FILE as well means the next session re-derives the same gap, drives the same five and reaches the same three states. So they are recorded WITH THE ROOT CAUSE. THREE OF THE FIVE ARE BLOCKED BY SOMETHING ALREADY IN THIS FILE OR ONE LEVEL UP, and that is the finding: two sabotage controls are unusable because their baselines are registered red, and two push-gate probes are unusable because ONE blind lock elsewhere fails. Four suites, two upstream defects. Filing them as red would have hidden the multiplier.",
+ "not_red": [
+  {
+   "file": "tests/app_session_isolation_probe.py",
+   "exit_code": 2,
+   "state": "COULD NOT RUN",
+   "blocked_by": "tests/app_session_isolation.js",
+   "root_cause": "A SABOTAGE CONTROL ON A RED BASELINE. Its own output: \"The baseline is red, so no mutation below would mean anything. Stopping.\" The baseline it drives is tests/app_session_isolation.js, which IS red and IS registered in `entries` with the same reason -- \"sairngrounds: measured SOME, recorded NONE\". So this is not a second defect: it is the first one making its own control unusable. IT WILL RECOVER BY ITSELF when the baseline does, and it must NOT be entered as red, because an entry here would absorb a genuinely new failure of the control itself.",
+   "measured": "2026-10-12",
+   "root_caused": "2026-10-13",
+   "by": "fourth",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "e1c6aef6",
+    "basis": "MEASURED 2026-10-12 by fourth driving each suite ALONE with a 180s ceiling (batch b5 item 2), ROOT-CAUSED 2026-10-13 (batch b6 item 3) by reading the tail each one printed rather than by re-running it. The exit code is the one that process returned; the cause is quoted from the suite's own output."
+   }
+  },
+  {
+   "file": "tests/run_cross_tenant_dispatchers_sabotage_probe.py",
+   "exit_code": 2,
+   "state": "COULD NOT RUN",
+   "blocked_by": "api/sd-data-cross-tenant-dispatchers.test.js",
+   "root_cause": "THE SAME CLASS AND A DIFFERENT BASELINE. Its own output: \"COULD NOT RUN: the baseline is not green (14 failing). A sabotage control on a red baseline cannot distinguish its own mutation from the pre-existing failure.\" The baseline is api/sd-data-cross-tenant-dispatchers.test.js, registered in `entries` at 405 passed / 14 failed. Recovers when that does.",
+   "measured": "2026-10-12",
+   "root_caused": "2026-10-13",
+   "by": "fourth",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "e1c6aef6",
+    "basis": "MEASURED 2026-10-12 by fourth driving each suite ALONE with a 180s ceiling (batch b5 item 2), ROOT-CAUSED 2026-10-13 (batch b6 item 3) by reading the tail each one printed rather than by re-running it. The exit code is the one that process returned; the cause is quoted from the suite's own output."
+   }
+  },
+  {
+   "file": "tests/push_gate/check4_probe.py",
+   "exit_code": 3,
+   "state": "SKIPPED -- precondition not met",
+   "blocked_by": "the push gate itself: a clean push is refused for an unrelated reason",
+   "root_cause": "NOT A FAILURE AND NOT RED. Exit 3 is the state tools/run_all_tests.py already reports apart from pass and fail. Its own output: \"SKIPPED: a CLEAN push is already being refused, so nothing below could be attributed to check 4. Nothing about check 4 was verified.\" The refusal it quotes is \"COULD NOT RUN: the blind lock failed (a proven guard copied into a SECOND file ...)\", which is a DIFFERENT push-gate check's criteria lock -- so the probe is honestly declining to attribute somebody else's refusal to its own subject. THE UPSTREAM FIX IS THE BLIND LOCK, not this probe.",
+   "measured": "2026-10-12",
+   "root_caused": "2026-10-13",
+   "by": "fourth",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "e1c6aef6",
+    "basis": "MEASURED 2026-10-12 by fourth driving each suite ALONE with a 180s ceiling (batch b5 item 2), ROOT-CAUSED 2026-10-13 (batch b6 item 3) by reading the tail each one printed rather than by re-running it. The exit code is the one that process returned; the cause is quoted from the suite's own output."
+   }
+  },
+  {
+   "file": "tests/push_gate/check7_probe.py",
+   "exit_code": 3,
+   "state": "SKIPPED -- precondition not met",
+   "blocked_by": "the same failing blind lock as check4_probe",
+   "root_cause": "IDENTICAL CAUSE TO check4_probe AND THE SAME QUOTED REFUSAL, which is why they are listed as one root cause in two rows rather than two causes: \"SKIPPED: a push was refused before check 7 could answer, so nothing here is attributable to it.\" TWO SUITES BLOCKED BY ONE UPSTREAM DEFECT is a multiplier worth seeing, and it is invisible if both are filed as red.",
+   "measured": "2026-10-12",
+   "root_caused": "2026-10-13",
+   "by": "fourth",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "e1c6aef6",
+    "basis": "MEASURED 2026-10-12 by fourth driving each suite ALONE with a 180s ceiling (batch b5 item 2), ROOT-CAUSED 2026-10-13 (batch b6 item 3) by reading the tail each one printed rather than by re-running it. The exit code is the one that process returned; the cause is quoted from the suite's own output."
+   }
+  },
+  {
+   "file": "tests/run_defect_register_probe.py",
+   "exit_code": null,
+   "state": "COULD NOT RUN -- timed out",
+   "blocked_by": "a time bound, which is not a verdict",
+   "root_cause": "EXCEEDED THE CEILING AND NOTHING ELSE IS KNOWN. 180s driven alone (b5); hank's 2026-10-08 run put it in his TIMEOUT table at 240s, so it is over both bounds and both bounds were somebody's choice. A BOUND EXCEEDED IS A LOWER BOUND, NOT A NUMBER -- there is no evidence here in either direction, so it is neither red nor green. NEXT STEP: one run with NO ceiling on a quiet box. Its residue is also visible elsewhere: the `defreg-probe-59076` worktree at fdce1b4b was left behind by this suite.",
+   "measured": "2026-10-12",
+   "root_caused": "2026-10-13",
+   "by": "fourth",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "e1c6aef6",
+    "basis": "MEASURED 2026-10-12 by fourth driving each suite ALONE with a 180s ceiling (batch b5 item 2), ROOT-CAUSED 2026-10-13 (batch b6 item 3) by reading the tail each one printed rather than by re-running it. The exit code is the one that process returned; the cause is quoted from the suite's own output."
+   }
+  }
+ ]
 }

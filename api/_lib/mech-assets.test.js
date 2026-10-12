@@ -24,6 +24,12 @@
 'use strict';
 const assert = require('assert');
 const m = require('./mech-assets');
+// ── ONE STRIPPER, 2026-10-13 (b6 item 1) ──────────────────────────────────
+// The arm below asserts a leak-rate percentage is ABSENT from the engine
+// source. A private `/\/\/[^\n]*/g` eats the rest of any line containing `//`,
+// so that absence could be one the strip created. The subject is a bare .js
+// file, so `stripJs`.
+const { stripJs } = require('../../tests/lib/strip_comments.js');
 
 let pass = 0, fail = 0;
 function test(name, fn) {
@@ -96,7 +102,7 @@ test('IT NEVER ISSUES A VERDICT -- no "must", no leak rate, no schedule', () => 
   assert.ok(!/must|required to|quarterly|annually|%/.test(r.reason),
     'the engine stated an obligation it has not earned: ' + r.reason);
   const src = require('fs').readFileSync(require.resolve('./mech-assets.js'), 'utf8');
-  assert.ok(!/\b(10|20|30)\s*%/.test(src.replace(/\/\/[^\n]*/g, '')),
+  assert.ok(!/\b(10|20|30)\s*%/.test(stripJs(src)),
     'a leak-rate percentage is encoded in the engine');
 });
 

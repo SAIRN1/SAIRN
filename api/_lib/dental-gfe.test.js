@@ -29,6 +29,14 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 
+// ── ONE STRIPPER, 2026-10-13 (b6 item 1) ──────────────────────────────────
+// FIVE private `/\/\/[^\n]*/g` strips, all of them over `data` -- the whole of
+// api/sd-data.js, which is 1MB of source containing URLs. That regex eats the
+// rest of any line with `//` in it, so each of these arms could report a
+// required GFE guard ABSENT because the strip removed it. The subject is a bare
+// .js file, so `stripJs`; `app` here is HTML and is NOT stripped by these arms.
+const { stripJs } = require('../../tests/lib/strip_comments.js');
+
 const ROOT = path.join(__dirname, '..', '..');
 const gfe = require('./dental-gfe');
 const app = fs.readFileSync(path.join(ROOT, 'sairndental.html'), 'utf8');
@@ -156,7 +164,7 @@ test('THE ELEMENT LABELS ARE IDENTICAL to sairndental.html gfeMissing()', () => 
 section('the generic write actually calls it');
 
 test('sd-data.js consults the rule on a dnt_gfe write', () => {
-  const code = data.replace(/\/\/[^\n]*/g, '');
+  const code = stripJs(data);
   assert.match(code, /require\('\.\/_lib\/dental-gfe'\)/);
   assert.match(code, /dntGfe\.issuedWithoutRequiredElements\(/);
   assert.match(code, /code: 'GFE_INCOMPLETE'/);
@@ -171,7 +179,7 @@ test('sd-data.js consults the rule on a dnt_gfe write', () => {
 });
 
 test('...ONLY when the status is issued, so a draft costs no extra reads', () => {
-  const code = data.replace(/\/\/[^\n]*/g, '');
+  const code = stripJs(data);
   assert.match(code, /resource === 'dnt_gfe' && String\(\(payload\.status \|\| ''\)\)\.trim\(\)\.toLowerCase\(\) === 'issued'/,
     'the gfe check is not gated on the status, so every draft save pays for two reads');
 });
@@ -180,7 +188,7 @@ test('THE PATIENT AND PRACTICE DETAILS ARE READ SERVER-SIDE, not taken from the 
   // Half the required elements live on records the caller is not sending, and
   // trusting a caller's copy of the practice's own NPI would make the check
   // theatre.
-  const code = data.replace(/\/\/[^\n]*/g, '');
+  const code = stripJs(data);
   const i = code.indexOf("resource === 'dnt_gfe' &&");
   const block = code.slice(i, i + 1600);
   // ── MOVE-PROOF, 2026-09-30 ────────────────────────────────────────────
@@ -220,7 +228,7 @@ test('THE PATIENT AND PRACTICE DETAILS ARE READ SERVER-SIDE, not taken from the 
 test('CANARY: the gfe reads are still written INLINE inside rest() -- if this is '
   + 'the only red arm, the read moved and the matcher above already covers it',
   () => {
-    const code = data.replace(/\/\/[^\n]*/g, '');
+    const code = stripJs(data);
     const i = code.indexOf("resource === 'dnt_gfe' &&");
     const block = code.slice(i, i + 1600);
     assert.match(block, /rest\('dnt_patients\?license_hash=eq\./,
@@ -230,7 +238,7 @@ test('CANARY: the gfe reads are still written INLINE inside rest() -- if this is
   });
 
 test('AN UNREADABLE CHECK REFUSES -- it does not read as "nothing missing"', () => {
-  const code = data.replace(/\/\/[^\n]*/g, '');
+  const code = stripJs(data);
   const i = code.indexOf("resource === 'dnt_gfe' &&");
   const block = code.slice(i, i + 1600);
   assert.match(block, /if \(!ptR\.ok \|\| !stR\.ok\)/,

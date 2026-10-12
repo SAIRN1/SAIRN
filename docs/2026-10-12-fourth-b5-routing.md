@@ -23,42 +23,42 @@ line numbers batch 17 did not measure.
 
 | # | file:line | #k of n | subject | app | owner | route to | why the hazard reaches it |
 |---|---|---|---|---|---|---|---|
-| 1 | `tests/licence_rekey_isolation.js:400` | 1 of 14 | APP-SLICE | PLATFORM (all apps) | UNOWNED | next claim on PLATFORM (all apps) | subject is `expr`, accumulated at :388-393 from `src.slice(at).split("\n")` over an app file; a commented-out key enters `keys` then `foreign`, which is an assertion about cross-app key leakage |
-| 2 | `tests/licence_rekey_isolation.js:400` | 2 of 14 | APP-SLICE | PLATFORM (all apps) | UNOWNED | next claim on PLATFORM (all apps) | same site, same subject as #1 |
-| 3 | `tests/licence_rekey_isolation.js:400` | 3 of 14 | APP-SLICE | PLATFORM (all apps) | UNOWNED | next claim on PLATFORM (all apps) | same site, same subject as #1 |
-| 4 | `tests/licence_rekey_isolation.js:400` | 4 of 14 | APP-SLICE | PLATFORM (all apps) | UNOWNED | next claim on PLATFORM (all apps) | same site, same subject as #1 |
-| 5 | `tests/licence_rekey_isolation.js:400` | 5 of 14 | APP-SLICE | PLATFORM (all apps) | UNOWNED | next claim on PLATFORM (all apps) | same site, same subject as #1 |
-| 6 | `tests/licence_rekey_isolation.js:400` | 6 of 14 | APP-SLICE | PLATFORM (all apps) | UNOWNED | next claim on PLATFORM (all apps) | same site, same subject as #1 |
-| 7 | `tests/licence_rekey_isolation.js:400` | 7 of 14 | APP-SLICE | PLATFORM (all apps) | UNOWNED | next claim on PLATFORM (all apps) | same site, same subject as #1 |
-| 8 | `tests/licence_rekey_isolation.js:400` | 8 of 14 | APP-SLICE | PLATFORM (all apps) | UNOWNED | next claim on PLATFORM (all apps) | same site, same subject as #1 |
-| 9 | `tests/licence_rekey_isolation.js:400` | 9 of 14 | APP-SLICE | PLATFORM (all apps) | UNOWNED | next claim on PLATFORM (all apps) | same site, same subject as #1 |
-| 10 | `tests/licence_rekey_isolation.js:400` | 10 of 14 | APP-SLICE | PLATFORM (all apps) | UNOWNED | next claim on PLATFORM (all apps) | same site, same subject as #1 |
-| 11 | `tests/licence_rekey_isolation.js:400` | 11 of 14 | APP-SLICE | PLATFORM (all apps) | UNOWNED | next claim on PLATFORM (all apps) | same site, same subject as #1 |
-| 12 | `tests/licence_rekey_isolation.js:400` | 12 of 14 | APP-SLICE | PLATFORM (all apps) | UNOWNED | next claim on PLATFORM (all apps) | same site, same subject as #1 |
-| 13 | `tests/licence_rekey_isolation.js:400` | 13 of 14 | APP-SLICE | PLATFORM (all apps) | UNOWNED | next claim on PLATFORM (all apps) | same site, same subject as #1 |
-| 14 | `tests/licence_rekey_isolation.js:400` | 14 of 14 | APP-SLICE | PLATFORM (all apps) | UNOWNED | next claim on PLATFORM (all apps) | same site, same subject as #1 |
-| 15 | `tests/sairnbiz_incidents_kpi.js:264` | 1 of 1 | APP-SLICE | SAIRNbiz | UNOWNED | next claim on SAIRNbiz | subject is `m[1]` from `/var SB_SYNCED\s*=\s*\[([^\]]*)\]/.exec(html)` at :262 -- the SB_SYNCED array body in the app |
-| 16 | `tests/sairnbiz_server_backup.js:191` | 1 of 1 | APP-SLICE | SAIRNbiz | UNOWNED | next claim on SAIRNbiz | subject is `clientList = slice(html, "var SB_SYNCED=['sb_invs'", "];")` at :190 |
-| 17 | `tests/sairncode_gates.js:301` | 1 of 1 | api/sd-data.js SLICE | SAIRNcode | UNOWNED | next claim on SAIRNcode | subject is `m[1]` from SC_TIER_A_WRITE_ROLES_BY_RESOURCE in api/sd-data.js at :297-299 -- source code, so the hazard is real, but NOT an app file, so batch 17 measured its magnitude against a file this site never reads |
-| 18 | `tests/sairnlegacy_processions_isolation.js:72` | 1 of 1 | APP-SLICE | SAIRNlegacy | UNOWNED | next claim on SAIRNlegacy | subject is `mapBlock = API.slice(mapStart, API.indexOf("};", mapStart))` at :71 |
-| 19 | `tests/sairnlegacy_session_gate_review_probe.js:202` | 1 of 1 | APP-SLICE | SAIRNlegacy | UNOWNED | next claim on SAIRNlegacy | subject is `m` from `html.match(/var (DATA_API\|AUTH_API\|PROXY)\s*=\s*'([^']+)'/g)` at :201; a commented-out endpoint constant becomes a live endpoint in `consts`. TAKE THIS ONE FIRST: its own comment records that its first spelling was vacuous in the reassuring direction |
-| 20 | `tests/sairnlegacy_write_failure_voice.js:197` | 1 of 1 | APP-SLICE | SAIRNlegacy | UNOWNED | next claim on SAIRNlegacy | subject is `m[1]` from `sites`, derived from SRC (the app) |
-| 21 | `tests/seed_never_syncs_platform.js:105` | 1 of 2 | APP-SLICE | PLATFORM (all apps) | UNOWNED | next claim on PLATFORM (all apps) | subject is `b.body` from `bodyOf(src, m.index)` at :103, where `src` is every root .html read at :99 |
-| 22 | `tests/seed_never_syncs_platform.js:105` | 2 of 2 | APP-SLICE | PLATFORM (all apps) | UNOWNED | next claim on PLATFORM (all apps) | same site, same subject as #21 |
-| 23 | `tests/seed_never_syncs_platform.js:147` | 1 of 5 | APP-SLICE | PLATFORM (all apps) | UNOWNED | next claim on PLATFORM (all apps) | subject is `m[2]` from the *_SYNCED array body in `app.src` at :145 |
-| 24 | `tests/seed_never_syncs_platform.js:147` | 2 of 5 | APP-SLICE | PLATFORM (all apps) | UNOWNED | next claim on PLATFORM (all apps) | same site, same subject as #23 |
-| 25 | `tests/seed_never_syncs_platform.js:147` | 3 of 5 | APP-SLICE | PLATFORM (all apps) | UNOWNED | next claim on PLATFORM (all apps) | same site, same subject as #23 |
-| 26 | `tests/seed_never_syncs_platform.js:147` | 4 of 5 | APP-SLICE | PLATFORM (all apps) | UNOWNED | next claim on PLATFORM (all apps) | same site, same subject as #23 |
-| 27 | `tests/seed_never_syncs_platform.js:147` | 5 of 5 | APP-SLICE | PLATFORM (all apps) | UNOWNED | next claim on PLATFORM (all apps) | same site, same subject as #23 |
-| 28 | `tests/seed_never_syncs_platform.js:250` | 1 of 1 | APP-WHOLE | PLATFORM (all apps) | UNOWNED | next claim on PLATFORM (all apps) | subject is `app.src` itself -- the whole unstripped app file. The ONLY whole-app subject of the 23, so the one site where batch 17 measured the right thing |
-| 29 | `tests/seed_never_syncs_platform.js:274` | 1 of 2 | APP-SLICE | PLATFORM (all apps) | UNOWNED | next claim on PLATFORM (all apps) | subject is `b.body` again. TAKE THIS ONE EARLY: the comment at :263-269 records that this site already lost a round to a regex that silently matched nothing |
-| 30 | `tests/seed_never_syncs_platform.js:274` | 2 of 2 | APP-SLICE | PLATFORM (all apps) | UNOWNED | next claim on PLATFORM (all apps) | same site, same subject as #29 |
-| 31 | `tests/sen_hydrate_comparator_review_probe.js:209` | 1 of 1 | TEST-FILE SOURCE | SAIRNsenior | UNOWNED | next claim on SAIRNsenior | subject is `names[0]` from `SUBJECT.match(...)`, SUBJECT being tests/sairnsenior_hydrate_delegation_review_probe.js read at :20-21. JS source with comments, so real; not an app, so the magnitude was wrong |
-| 32 | `tests/sen_hydrate_comparator_review_probe.js:210` | 1 of 1 | TEST-FILE SOURCE | SAIRNsenior | UNOWNED | next claim on SAIRNsenior | same subject, second block |
-| 33 | `tests/stonedesk_server_backup.js:47` | 1 of 1 | api SLICE | StoneDesk | UNOWNED | next claim on StoneDesk | subject is `body = api.slice(at, api.indexOf("};", at))` at :45 |
-| 34 | `tests/stonedesk_server_backup.js:55` | 1 of 1 | api SLICE | StoneDesk | UNOWNED | next claim on StoneDesk | same `body` |
-| 35 | `tools/citation_drift_hook.py:411` | 1 of 1 | ITS OWN .py SOURCE | PLATFORM tooling | UNOWNED | next claim on PLATFORM tooling | subject is `lines = io_read_lines(REPO/me)` at :406 -- the hook reads ITSELF to derive a self-test fixture. A comment-borne identifier can be chosen as the anchor, which makes the fixture weaker rather than wrong. REAL but low-consequence, and said so |
-| 36 | `tools/citation_drift_hook.py:416` | 1 of 1 | ITS OWN .py SOURCE | PLATFORM tooling | UNOWNED | next claim on PLATFORM tooling | same `lines`, second pass |
+| 1 | `tests/licence_rekey_isolation.js:400` | 1 of 14 | APP-SLICE | PLATFORM (all apps) | cody | cody -- the PLATFORM (all apps) owner by the b6 directory rule | subject is `expr`, accumulated at :388-393 from `src.slice(at).split("\n")` over an app file; a commented-out key enters `keys` then `foreign`, which is an assertion about cross-app key leakage |
+| 2 | `tests/licence_rekey_isolation.js:400` | 2 of 14 | APP-SLICE | PLATFORM (all apps) | cody | cody -- the PLATFORM (all apps) owner by the b6 directory rule | same site, same subject as #1 |
+| 3 | `tests/licence_rekey_isolation.js:400` | 3 of 14 | APP-SLICE | PLATFORM (all apps) | cody | cody -- the PLATFORM (all apps) owner by the b6 directory rule | same site, same subject as #1 |
+| 4 | `tests/licence_rekey_isolation.js:400` | 4 of 14 | APP-SLICE | PLATFORM (all apps) | cody | cody -- the PLATFORM (all apps) owner by the b6 directory rule | same site, same subject as #1 |
+| 5 | `tests/licence_rekey_isolation.js:400` | 5 of 14 | APP-SLICE | PLATFORM (all apps) | cody | cody -- the PLATFORM (all apps) owner by the b6 directory rule | same site, same subject as #1 |
+| 6 | `tests/licence_rekey_isolation.js:400` | 6 of 14 | APP-SLICE | PLATFORM (all apps) | cody | cody -- the PLATFORM (all apps) owner by the b6 directory rule | same site, same subject as #1 |
+| 7 | `tests/licence_rekey_isolation.js:400` | 7 of 14 | APP-SLICE | PLATFORM (all apps) | cody | cody -- the PLATFORM (all apps) owner by the b6 directory rule | same site, same subject as #1 |
+| 8 | `tests/licence_rekey_isolation.js:400` | 8 of 14 | APP-SLICE | PLATFORM (all apps) | cody | cody -- the PLATFORM (all apps) owner by the b6 directory rule | same site, same subject as #1 |
+| 9 | `tests/licence_rekey_isolation.js:400` | 9 of 14 | APP-SLICE | PLATFORM (all apps) | cody | cody -- the PLATFORM (all apps) owner by the b6 directory rule | same site, same subject as #1 |
+| 10 | `tests/licence_rekey_isolation.js:400` | 10 of 14 | APP-SLICE | PLATFORM (all apps) | cody | cody -- the PLATFORM (all apps) owner by the b6 directory rule | same site, same subject as #1 |
+| 11 | `tests/licence_rekey_isolation.js:400` | 11 of 14 | APP-SLICE | PLATFORM (all apps) | cody | cody -- the PLATFORM (all apps) owner by the b6 directory rule | same site, same subject as #1 |
+| 12 | `tests/licence_rekey_isolation.js:400` | 12 of 14 | APP-SLICE | PLATFORM (all apps) | cody | cody -- the PLATFORM (all apps) owner by the b6 directory rule | same site, same subject as #1 |
+| 13 | `tests/licence_rekey_isolation.js:400` | 13 of 14 | APP-SLICE | PLATFORM (all apps) | cody | cody -- the PLATFORM (all apps) owner by the b6 directory rule | same site, same subject as #1 |
+| 14 | `tests/licence_rekey_isolation.js:400` | 14 of 14 | APP-SLICE | PLATFORM (all apps) | cody | cody -- the PLATFORM (all apps) owner by the b6 directory rule | same site, same subject as #1 |
+| 15 | `tests/sairnbiz_incidents_kpi.js:264` | 1 of 1 | APP-SLICE | SAIRNbiz | cody | cody -- the SAIRNbiz owner by the b6 directory rule | subject is `m[1]` from `/var SB_SYNCED\s*=\s*\[([^\]]*)\]/.exec(html)` at :262 -- the SB_SYNCED array body in the app |
+| 16 | `tests/sairnbiz_server_backup.js:191` | 1 of 1 | APP-SLICE | SAIRNbiz | cody | cody -- the SAIRNbiz owner by the b6 directory rule | subject is `clientList = slice(html, "var SB_SYNCED=['sb_invs'", "];")` at :190 |
+| 17 | `tests/sairncode_gates.js:301` | 1 of 1 | api/sd-data.js SLICE | SAIRNcode | cody | cody -- the SAIRNcode owner by the b6 directory rule | subject is `m[1]` from SC_TIER_A_WRITE_ROLES_BY_RESOURCE in api/sd-data.js at :297-299 -- source code, so the hazard is real, but NOT an app file, so batch 17 measured its magnitude against a file this site never reads |
+| 18 | `tests/sairnlegacy_processions_isolation.js:72` | 1 of 1 | APP-SLICE | SAIRNlegacy | cody | cody -- the SAIRNlegacy owner by the b6 directory rule | subject is `mapBlock = API.slice(mapStart, API.indexOf("};", mapStart))` at :71 |
+| 19 | `tests/sairnlegacy_session_gate_review_probe.js:202` | 1 of 1 | APP-SLICE | SAIRNlegacy | cody | cody -- the SAIRNlegacy owner by the b6 directory rule | subject is `m` from `html.match(/var (DATA_API\|AUTH_API\|PROXY)\s*=\s*'([^']+)'/g)` at :201; a commented-out endpoint constant becomes a live endpoint in `consts`. TAKE THIS ONE FIRST: its own comment records that its first spelling was vacuous in the reassuring direction |
+| 20 | `tests/sairnlegacy_write_failure_voice.js:197` | 1 of 1 | APP-SLICE | SAIRNlegacy | cody | cody -- the SAIRNlegacy owner by the b6 directory rule | subject is `m[1]` from `sites`, derived from SRC (the app) |
+| 21 | `tests/seed_never_syncs_platform.js:105` | 1 of 2 | APP-SLICE | PLATFORM (all apps) | cody | cody -- the PLATFORM (all apps) owner by the b6 directory rule | subject is `b.body` from `bodyOf(src, m.index)` at :103, where `src` is every root .html read at :99 |
+| 22 | `tests/seed_never_syncs_platform.js:105` | 2 of 2 | APP-SLICE | PLATFORM (all apps) | cody | cody -- the PLATFORM (all apps) owner by the b6 directory rule | same site, same subject as #21 |
+| 23 | `tests/seed_never_syncs_platform.js:147` | 1 of 5 | APP-SLICE | PLATFORM (all apps) | cody | cody -- the PLATFORM (all apps) owner by the b6 directory rule | subject is `m[2]` from the *_SYNCED array body in `app.src` at :145 |
+| 24 | `tests/seed_never_syncs_platform.js:147` | 2 of 5 | APP-SLICE | PLATFORM (all apps) | cody | cody -- the PLATFORM (all apps) owner by the b6 directory rule | same site, same subject as #23 |
+| 25 | `tests/seed_never_syncs_platform.js:147` | 3 of 5 | APP-SLICE | PLATFORM (all apps) | cody | cody -- the PLATFORM (all apps) owner by the b6 directory rule | same site, same subject as #23 |
+| 26 | `tests/seed_never_syncs_platform.js:147` | 4 of 5 | APP-SLICE | PLATFORM (all apps) | cody | cody -- the PLATFORM (all apps) owner by the b6 directory rule | same site, same subject as #23 |
+| 27 | `tests/seed_never_syncs_platform.js:147` | 5 of 5 | APP-SLICE | PLATFORM (all apps) | cody | cody -- the PLATFORM (all apps) owner by the b6 directory rule | same site, same subject as #23 |
+| 28 | `tests/seed_never_syncs_platform.js:250` | 1 of 1 | APP-WHOLE | PLATFORM (all apps) | cody | cody -- the PLATFORM (all apps) owner by the b6 directory rule | subject is `app.src` itself -- the whole unstripped app file. The ONLY whole-app subject of the 23, so the one site where batch 17 measured the right thing |
+| 29 | `tests/seed_never_syncs_platform.js:274` | 1 of 2 | APP-SLICE | PLATFORM (all apps) | cody | cody -- the PLATFORM (all apps) owner by the b6 directory rule | subject is `b.body` again. TAKE THIS ONE EARLY: the comment at :263-269 records that this site already lost a round to a regex that silently matched nothing |
+| 30 | `tests/seed_never_syncs_platform.js:274` | 2 of 2 | APP-SLICE | PLATFORM (all apps) | cody | cody -- the PLATFORM (all apps) owner by the b6 directory rule | same site, same subject as #29 |
+| 31 | `tests/sen_hydrate_comparator_review_probe.js:209` | 1 of 1 | TEST-FILE SOURCE | SAIRNsenior | cody | cody -- the SAIRNsenior owner by the b6 directory rule | subject is `names[0]` from `SUBJECT.match(...)`, SUBJECT being tests/sairnsenior_hydrate_delegation_review_probe.js read at :20-21. JS source with comments, so real; not an app, so the magnitude was wrong |
+| 32 | `tests/sen_hydrate_comparator_review_probe.js:210` | 1 of 1 | TEST-FILE SOURCE | SAIRNsenior | cody | cody -- the SAIRNsenior owner by the b6 directory rule | same subject, second block |
+| 33 | `tests/stonedesk_server_backup.js:47` | 1 of 1 | api SLICE | StoneDesk | cody | cody -- the StoneDesk owner by the b6 directory rule | subject is `body = api.slice(at, api.indexOf("};", at))` at :45 |
+| 34 | `tests/stonedesk_server_backup.js:55` | 1 of 1 | api SLICE | StoneDesk | cody | cody -- the StoneDesk owner by the b6 directory rule | same `body` |
+| 35 | `tools/citation_drift_hook.py:411` | 1 of 1 | ITS OWN .py SOURCE | PLATFORM tooling | cc | cc -- the PLATFORM tooling owner by the b6 directory rule | subject is `lines = io_read_lines(REPO/me)` at :406 -- the hook reads ITSELF to derive a self-test fixture. A comment-borne identifier can be chosen as the anchor, which makes the fixture weaker rather than wrong. REAL but low-consequence, and said so |
+| 36 | `tools/citation_drift_hook.py:416` | 1 of 1 | ITS OWN .py SOURCE | PLATFORM tooling | cc | cc -- the PLATFORM tooling owner by the b6 directory rule | same `lines`, second pass |
 
 **ALL 17 FILES COME BACK `UNOWNED`, and the test was mechanical:** no
 `# OWNER:` / `// OWNER:` header in the first 4KB, no live claim declaring the
@@ -146,10 +146,11 @@ What is ROUTED is the mechanism underneath it:
 
 | finding | file:line | owner | what to do |
 |---|---|---|---|
-| the atexit restore net calls `git checkout --` and never reads the return code, so with `core.bare = true` set by an earlier probe the restore SILENTLY DOES NOTHING | `tests/seam_check/run_delegation_probe.py:76` | UNOWNED (no OWNER header) | check the return code and fail loud; a restore that cannot verify itself is the third state, not a pass |
-| the same in the context manager's `finally` | `tests/seam_check/run_delegation_probe.py:113` | UNOWNED | as above |
-| the SENTINEL is removed whether or not the checkout landed, so the one layer that was meant to leave evidence of a failed restore CLEARS ITSELF | `tests/seam_check/run_delegation_probe.py:80` and `:119` | UNOWNED | remove the sentinel only after the restore verifies |
-| a probe leaves `core.bare = true` behind, which is what disarms every `git`-based restore and every `git status` watch-list on the platform | `tests/push_gate/check8_probe.py:209` records the behaviour; the detector is `tools/clone_health_check.py:209-211` | UNOWNED | the detector exists and reports it; nothing REFUSES on it, and with this clone's hooks off by instruction it does not even run at session start |
+| the atexit restore net calls `git checkout --` and never reads the return code, so with `core.bare = true` set by an earlier probe the restore SILENTLY DOES NOTHING | `tests/seam_check/run_delegation_probe.py:76` | cody (NAMED OVERRIDE in the b6 brief) | check the return code and fail loud; a restore that cannot verify itself is the third state, not a pass |
+| the same in the context manager's `finally` | `tests/seam_check/run_delegation_probe.py:113` | cody | as above |
+| the SENTINEL is removed whether or not the checkout landed, so the one layer that was meant to leave evidence of a failed restore CLEARS ITSELF | `tests/seam_check/run_delegation_probe.py:80` and `:119` | cody | remove the sentinel only after the restore verifies |
+| a probe leaves `core.bare = true` behind, which is what disarms every `git`-based restore and every `git status` watch-list on the platform | `tests/push_gate/check8_probe.py:209` | **cody** (NAMED OVERRIDE) | this is where the behaviour is recorded. Stop leaving it set, or set it back in a `finally` that verifies |
+| the DETECTOR for that state reports and nothing REFUSES on it -- and with this clone's hooks off by instruction it does not even run at session start | `tools/clone_health_check.py:209-211` | **cc** (NAMED OVERRIDE) | split out of the row above on 2026-10-13: ONE row naming two files with two different owners is a routing line neither of them can act on |
 
 **MEASURED THIS BATCH, not theorised.** Driving 23 suites one at a time left
 `api/sd-data.js` missing `, warn_days: gateWarn` and
@@ -226,4 +227,167 @@ the 23 candidate suites for item 2 created them minutes earlier. Their heads
 are probe commits that are not on `origin/main`, so removing the worktrees
 would orphan commits, and the brief's own rule for the unreachable case is to
 leave them and report the hashes. Reported: `fdce1b4b`, `549a372a`.
+
+
+---
+
+# ADDED BY BATCH b6, 2026-10-13 -- fourth
+
+The owner column above was rewritten this batch: every row that said `UNOWNED`
+now names a session. **The basis is a DIRECTORY RULE given in the b6 brief, not
+a record** -- `api/` to hank, `tests/` to cody, `tools/` to cc, `docs/` to
+fourth, plus six named overrides. That is a weaker basis than a file's own
+`# OWNER:` line and a stronger one than nothing, and the `owner basis` column
+says which it is so the two are never confused. 40 rows rewritten, 0 left
+unowned, and the pipe count per row was compared before and after.
+
+## 7. The 14 session locks, with PID and age (b6 item 9)
+
+Release required BOTH tests again -- the holder pid verified DEAD *and* the lock
+ATTRIBUTABLE -- and b6 narrows it further: release only what is attributable to
+**me**. **0 locks were released.** Age is the lock FILE's mtime, measured now;
+the `lock says` column is the raw `claude_start` value the lock carries, which
+is a Windows FILETIME tick count and not a date, and is printed as-is rather
+than converted, because converting a field whose units are a guess is how a
+wrong number gets a date next to it.
+
+| lock | holder pid | pid state | file age (h) | lock says | attributable to | verdict |
+|---|---:|---|---:|---|---|---|
+| `b12wt2.lock` | 78192 | DEAD | 120.6 | 134357762159212705 | NONE | LEAVE -- dead but UNATTRIBUTABLE |
+| `cc.lock` | 53560 | LIVE | 1.6 | 134362418688496853 | cc | LEAVE -- holder is LIVE |
+| `cody.lock` | 2204 | LIVE | 1.6 | 134362418402795108 | cody | LEAVE -- holder is LIVE |
+| `fourth.lock` | 61696 | LIVE | 1.5 | 134362418976255147 | fourth | LEAVE -- holder is LIVE |
+| `hank.lock` | 48956 | LIVE | 1.6 | 134362418846177203 | hank | LEAVE -- holder is LIVE |
+| `hover.lock` | 30428 | LIVE | 1.4 | 134362411605322071 | hover | LEAVE -- holder is LIVE |
+| `hover2.lock` | 83452 | LIVE | 1.4 | 134362419152238394 | hover2 | LEAVE -- holder is LIVE |
+| `repo.lock` | 39448 | DEAD | 147.5 | 134357133510386951 | NONE | LEAVE -- dead but UNATTRIBUTABLE |
+| `sairn_idem_o66nnvth.lock` | 58388 | DEAD | 299.0 | 134351763382256557 | NONE | LEAVE -- dead but UNATTRIBUTABLE |
+| `sairn_idem_q5p4bqkx.lock` | 58388 | DEAD | 299.2 | 134351763382256557 | NONE | LEAVE -- dead but UNATTRIBUTABLE |
+| `sairn_idem_rhbjx2yx.lock` | 61668 | DEAD | 306.9 | 134350675984514778 | NONE | LEAVE -- dead but UNATTRIBUTABLE |
+| `sairn_idem_uw3ebld2.lock` | 82012 | DEAD | 114.0 | 134358654468810777 | NONE | LEAVE -- dead but UNATTRIBUTABLE |
+| `tree.lock` | 82012 | DEAD | 114.5 | 134358654468810777 | NONE | LEAVE -- dead but UNATTRIBUTABLE |
+| `wt-tools.lock` | 73300 | DEAD | 116.4 | 134357847177782898 | NONE | LEAVE -- dead but UNATTRIBUTABLE |
+
+**0 RELEASED, 14 LEFT: 6 holders are LIVE (all six sessions are running) and 8
+are DEAD AND UNATTRIBUTABLE.** Not one of the eight is attributable to me, so
+not one qualifies under the brief's rule. Every dead pid was put to
+`Get-Process` one at a time: 78192, 39448, 58388 (twice), 61668, 82012 (twice),
+73300.
+
+**WHY NONE OF THE EIGHT CAN BE ATTRIBUTED, measured rather than asserted.** The
+registry's pid->session map holds `{26312: cc, 2204: cody, 61696: fourth,
+48956: hank, 30428: hover, 71364: hover2}` -- the six LIVE sessions and nobody
+else. A dead pid is by definition absent from it, so the map can never attribute
+a dead lock, and the lock files themselves carry no session field. **That is the
+structural reason, and it is why this is the third batch reporting 0 releases:
+the information needed to release them was never written down at lock time.**
+Routed, unchanged, to cc per the b6 directory rule: `tools/session_lock_check.py:128`
+`lock_path()` forms the only lock FILENAME and nothing in it carries a session
+name; `:349` `lock_payload()` is the only WRITE site; `:357` `'task': task` is
+the field that is empty in 14 of 14.
+
+`fourth.lock` is LIVE and is this session's own. It is released at report close.
+
+## 8. Claim visibility -- b5's own sentence is half wrong (b6 item 8)
+
+b5 reported its claim as invisible, quoting the tool: *"committed locally and is
+therefore INVISIBLE to every other clone -- treat this as NOT CLAIMED."*
+**MEASURED, and it is true of one path and false of the other.**
+
+| path | where it lives | who reads it | needs a push? | carried my unpushed claim? |
+|---|---|---|---|---|
+| GIT RECORD (authoritative) | `.claude/claims/<session>.json`, TRACKED | every clone, after `git fetch` | **YES** | **NO** |
+| STATUS REGISTRY (advisory) | `~/SAIRN-SESSION-LOCKS/status/<session>.json`, OUTSIDE EVERY CLONE | every session ON THIS MACHINE, with no fetch | **no** | **YES -- 1 claim, 11 files** |
+
+`tools/sairn_claim.py` already publishes active claims to the registry
+(`publish_claims`, around `:1547`) and already reads other sessions' from it
+(`registry_claims`, `:1281`). So an unpushed claim is invisible to a clone on
+ANOTHER machine and perfectly visible to the five other sessions on this one.
+Verified by calling `sairn_status.read_claims(exclude='cody')` and finding my own
+active claim in the result.
+
+**THE DEFECT IS THE MESSAGE, NOT THE MECHANISM, and the message is what a
+session acts on.** b5 read it, believed it was unclaimed, and said so in its own
+report and handoff. ROUTED TO **cc** (`tools/` by the b6 directory rule), three
+exact lines:
+
+| line | what it prints | why it is wrong here |
+|---|---|---|
+| `tools/sairn_claim.py:1966` | *"therefore INVISIBLE to every other clone -- treat this as NOT CLAIMED."* | the registry row was already written; it is invisible OFF this machine only |
+| `tools/sairn_claim.py:1921` | *"--no-push: committed locally only. Other clones cannot see this until you push it."* | same, and `--no-push` is the flag a session uses precisely when it cannot push |
+| `tools/sairn_claim.py:2414` | *"--no-push: nothing published. Other clones still cannot see it."* | **"nothing published" is the flatly wrong half** -- `publish_claims` ran |
+
+Suggested wording, so the fix is not left as "be clearer": *"not on
+origin/main, so clones on another machine cannot see it; PUBLISHED to the
+machine-local registry, so the other sessions here can. Re-check with
+`sairn_claim.py list`."*
+
+## 9. The phi_cache mutator -- 8 candidates eliminated one at a time (b6 item 2)
+
+**NOT FOUND, and the hypothesis is now substantially weaker rather than
+unproven.** The candidate set was derived, not guessed: 95 suites name one of
+phi_cache's seven subjects AND contain a write primitive; of those, 7 put a
+write within 3 lines of a subject; 2 of those 7 name a temp or worktree path in
+the same window and were descoped BY NAME. The 5 survivors were driven ALONE,
+then the 3 descoped-or-adjacent ones were driven too -- 8 in all, one at a time,
+each logged as it ran.
+
+| # | candidate | subject moved? | core.bare after | phi_cache after |
+|---|---|---|---|---|
+| 1 | `tests/run_alf_scope_mutation_probe.py` | none | false | exit 0, 72/0 |
+| 2 | `tests/run_cross_tenant_dispatchers_sabotage_probe.py` | none | false | exit 0, 72/0 |
+| 3 | `tests/run_role_gate_negative_coverage_probe.py` | none | false | exit 0, 72/0 |
+| 4 | `tests/write_readback_shape_probe.py` | none | false | exit 0, 72/0 |
+| 5 | `tools/mutation_anchor_check.py` | none | false | exit 0, 72/0 |
+| 6 | `tests/seam_check/run_delegation_probe.py` | none | false | exit 0, 72/0 |
+| 7 | `tests/seam_check/run_delegation_residue_control.py` | none | false | exit 0, 72/0 |
+| 8 | `tests/run_tier_a_review_gate_probe.py` | none | false | exit 0, 72/0 |
+
+The seven subject digests were identical at the start and the end of both
+rounds, so no candidate moved one even transiently that the harness missed.
+
+**AND CANDIDATE 6 IS THE INFORMATIVE ONE.** b5 measured
+`run_delegation_probe.py` leaving `api/sd-data.js` and
+`api/_lib/subcontractor-compliance.js` sabotaged. Driven here with
+`core.bare = false` throughout, it restored both perfectly. **That confirms b5's
+chain rather than contradicting it**: the restore works when `git` works and
+fails silently when `core.bare` is true. It also means the residue it leaves is
+the `, warn_days: gateWarn` plant, which b5 ABLATED with no effect on
+phi_cache -- so even the one suite that can dirty a subject does not explain the
+red.
+
+**WHAT IS LEFT, stated as the open question it is.** hank's `63 passed, 1 failed`
+was produced under a tree state that none of the 8 can create. The next
+occurrence will IDENTIFY ITSELF: b5's precondition makes phi_cache print
+`SKIPPED:` and name the dirty subject instead of failing, so the question is now
+self-reporting and does not need another bisect.
+
+## 10. Stripper consolidation -- counts (b6 items 1 and 12)
+
+| | sites | files |
+|---|---:|---:|
+| found by the b5 whole-tree inventory | 44 | 23 |
+| replaced in b5 (`tests/faults/grd_write_faults.js`) | 5 | 1 |
+| **replaced in b6** | **10** | **5** |
+| remaining, re-counted at this HEAD | **29** | **17** |
+
+The b6 ten are the first ten rows of the table in section 3, taken in order:
+`api/_lib/courtlistener-rate-limit.test.js` (2),
+`api/_lib/deadline-endpoint-inputs.test.js` (1),
+`api/_lib/deadline-jurisdiction-labels.test.js` (1),
+`api/_lib/dental-gfe.test.js` (5), `api/_lib/mech-assets.test.js` (1).
+
+**ALL TEN ROUTE THROUGH `stripJs` FROM `tests/lib/strip_comments.js`**, which is
+the JS half of the same consolidation `tools/jscomments.py` is the Python half
+of. Every subject at these ten sites is a bare `.js` file, which is why it is
+`stripJs` and not `stripComments`; using one for the other is the defect that
+library's own header records three times.
+
+Each suite was driven before and after. `api/_lib/mech-assets.test.js` went
+**62 passed -> 61 passed, 1 FAILED** on the first attempt and the message was
+`stripJs is not defined` -- the require had not been added to that one file.
+**That is a real result and it is kept here rather than quietly fixed**: the
+before/after discipline is what caught it, within one run, and a consolidation
+done without it would have left a suite red and a session believing 10 sites
+were clean. After the require landed: 62/62, exit 0.
 

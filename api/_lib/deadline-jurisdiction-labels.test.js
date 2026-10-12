@@ -23,6 +23,13 @@
 
 const fs = require('fs');
 const path = require('path');
+// ── ONE STRIPPER, 2026-10-13 (b6 item 1) ──────────────────────────────────
+// This file builds the set of LABELLED jurisdictions out of an object literal
+// in JS source. The private strip was a block regex plus a start-of-line `//`
+// filter: an over-strip drops a jurisdiction and the arm then reports it as
+// unlabelled, an under-strip adds one that only exists in a comment. The
+// subject is a bare .js file, so `stripJs`.
+const { stripJs } = require('../../tests/lib/strip_comments.js');
 
 let pass = 0, fail = 0;
 function check(name, actual, expected) {
@@ -58,7 +65,7 @@ while (i < src.length && depth > 0) {
   if (depth > 0) body += ch;
   i++;
 }
-const bodyNoComments = body.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+const bodyNoComments = stripJs(body);
 const labelled = new Set(
   [...bodyNoComments.matchAll(/(?:^|,)\s*'?([a-z][a-z-]*)'?\s*:/g)].map(m => m[1])
 );

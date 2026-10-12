@@ -31,6 +31,14 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 const Module = require('module');
+// ── ONE STRIPPER, 2026-10-13 (b6 item 1) ──────────────────────────────────
+// These arms assert a call or a pattern is ABSENT from JS source. A private
+// `/\/\/[^\n]*/g` eats the rest of any line containing `//` inside a string or
+// a URL, so the absence it reports can be an absence it created -- green on
+// code that is present. `stripJs` is the shared implementation and tracks
+// strings, template literals and regex literals; the subject here is a bare
+// .js file, which is why it is stripJs and not stripComments.
+const { stripJs } = require('../../tests/lib/strip_comments.js');
 
 const ROOT = path.join(__dirname, '..', '..');
 const SRC = path.join(__dirname, 'courtlistener.js');
@@ -221,7 +229,7 @@ await atest('a PERMITTED call still reaches CourtListener', async () => {
 section('source-level guards on the decisions that have no runtime signal');
 
 test('no token-gated function discards the verdict again', () => {
-  const code = src.replace(/\/\/[^\n]*/g, '');
+  const code = stripJs(src);
   const bare = code.match(/^\s*await checkAndLogRateLimit\(\);\s*$/gm) || [];
   assert.deepStrictEqual(bare, [],
     'a call site is back to discarding the rate-limit verdict');
@@ -263,7 +271,7 @@ test('the lock key is ONE constant, not per-tenant', () => {
 
 test('legal-citator no longer treats an unreadable budget as room to spend', () => {
   const cit = fs.readFileSync(path.join(ROOT, 'api', 'legal-citator.js'), 'utf8');
-  const code = cit.replace(/\/\/[^\n]*/g, '');
+  const code = stripJs(cit);
   assert.ok(!/catch \(e\) \{ budget = null; \}/.test(code),
     'the fail-open catch is back');
   assert.match(code, /budgetReadFailed/,

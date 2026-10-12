@@ -35,9 +35,18 @@ function check(name, actual, expected) {
   console.log('FAIL  ' + name + '\n        expected ' + e + '\n        actual   ' + a);
 }
 
-const stripComments = s => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+// ── ONE STRIPPER, 2026-10-13 (b6 item 1) ──────────────────────────────────
+// The private helper here was `/\/\*[\s\S]*?\*\//g` followed by a line filter,
+// and both halves have a recorded failure on this platform: the block regex
+// runs forward to the first `*/` -- which can live inside a regex literal
+// thousands of lines later -- and the line filter only drops a `//` that starts
+// a line, leaving every mid-line one in. This file derives the ENGINE'S READ
+// SET from source, so an over-strip silently shrinks the set and an under-strip
+// adds a key from a comment; either way the endpoint/engine comparison below is
+// made against a set nobody measured. `stripJs` is the shared implementation.
+const { stripJs } = require('../../tests/lib/strip_comments.js');
 
-const engineSrc = stripComments(
+const engineSrc = stripJs(
   fs.readFileSync(path.join(__dirname, 'deadline-engine.js'), 'utf8'));
 const endpointSrc = fs.readFileSync(path.join(__dirname, '..', 'legal-deadlines.js'), 'utf8');
 
@@ -62,7 +71,7 @@ while (i < endpointSrc.length && depth > 0) {
   i++;
 }
 const endpointSends = [...new Set(
-  [...stripComments(payload).matchAll(/^\s*([a-z_]+)\s*:/gm)].map(m => m[1])
+  [...stripJs(payload).matchAll(/^\s*([a-z_]+)\s*:/gm)].map(m => m[1])
 )].sort();
 
 check('the engine reads a plausible number of inputs -- the scan is not empty',
