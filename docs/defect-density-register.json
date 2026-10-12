@@ -26336,6 +26336,171 @@
       },
       "citation_note": "1.9 cited because the replacement arm is the one that holds the same-input-same-answer property for the selector; the defect itself is a never-passing assertion, which the rule list does not have its own section for.",
       "factors_unknown_reason": "single-arm defect in a probe; no multi-factor model attempted this pass"
+    },
+    {
+      "commit": "64a1e5e899c0",
+      "date": "2026-10-11",
+      "subject": "fix(sf,dnt): the gaming post's session, shift, ticket and rental money records were writable on a browser-shipped licence key -- and a dental provider could rewrite any appointment in the practice",
+      "files": [
+        "api/sd-data-dental-ledger-validation.test.js",
+        "api/sd-data-dental-provider-scope.test.js",
+        "api/sd-data-session-gate.test.js",
+        "api/sd-data-sf-session-gate.test.js",
+        "api/sd-data.js",
+        "sairnfreedom.html"
+      ],
+      "lines_added": 619,
+      "lines_removed": 4,
+      "app": "sairnfreedom",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "Four Tier A SAIRNfreedom resources -- sf_sessions (prizeCap, a statutory ORC Chapter 2915 limit, plus receipts and prizes), sf_shifts (a cash variance attributed to a named employee), sf_tickets (unitPrice and total at point of sale) and sf_rentals (charge, proceeds and the alcohol/notified compliance pair) -- were in neither SD_SESSION_GATED nor SD_GATE_APP, so the browser-shipped licence key was the whole authorisation on the gaming floor's money records; and in the same file sfHydrateAll() ran once from DOMContentLoaded BEFORE any interactive sign-in with sfEnterApp() never re-running it, so on a fresh browser every GATED sf_ resource's hydrate answered 403, the per-resource empty catch swallowed it, and signing in never went back for the server's copy -- already live for the 18 resources gated before this change",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Both halves are absences rather than edits. The gate gap is a missing allowlist entry, which no commit adds. The hydration gap was introduced the moment the FIRST sf_ resource was gated on 2026-09-21 while sfHydrateAll stayed a single DOMContentLoaded call -- so the injection is a commit that was correct for its own change and made a pre-existing single call site wrong."
+      },
+      "citation_note": "The authorisation half has no section in SAIRN-PROCESS-RULES.md. The hydration half is the silent-failure shape the primer and PR Part 5 both describe in prose -- additive hydration makes a refused read and an empty read identical on screen -- but no numbered section states it as a rule, so there is nothing to cite without inventing the citation.",
+      "contributing_factors": [
+        {
+          "factor": "The session gate is an allowlist over 36 resources and 18 entries, and nothing fails when a resource has no entry -- the dispatch simply authorises on the licence hash",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Four entries added to SD_SESSION_GATED and SD_GATE_APP in one edit, with the pair count in api/sd-data-session-gate.test.js moved 86 -> 94 MEASURED after the change rather than predicted"
+        },
+        {
+          "factor": "Prior SAIRNfreedom waves were finding-driven, so which resources got gated depended on which ones somebody filed about rather than on what the criticality register says",
+          "kind": "process",
+          "action_status": "done",
+          "action": "These four were DERIVED: 36 resources, 18 already gated, nine of the remaining 18 are Tier A by register letter, and these four are the Tier A ones carrying a money or statutory figure on the row. The other five are NAMED in both suites rather than silently skipped."
+        },
+        {
+          "factor": "sfHydrateAll has exactly ONE call site and the per-resource catch is empty, so a 403 on a gated resource produced no console line, no toast and no retry -- the outer promise never rejected, so the warning written for exactly this case could not fire",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "sfHydrateAfterSignIn() added and called from sfLogin and sfBootstrap, reporting on failure with the same policy as the boot call. The restore-from-sessionStorage path runs before the boot hydrate and was never affected."
+        },
+        {
+          "factor": "The gate and the criticality register are two independent lists that no tool compares, so a Tier A row and an absent gate entry can coexist indefinitely -- sf_vehicle_service did for six days and sf_officers for eighteen",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "A mechanical arm comparing SD_SESSION_GATED against docs/CRITICALITY-TIERS.md letters is the check that would catch the next one and the five still open. Not built here and not claimed as built. Declined rather than planned because naming a planned action with no owner is the CAPA box the factors list exists to replace; routed in the batch digest with the five resource names and their register lines."
+        }
+      ],
+      "recurrence_open": "Five Tier A SAIRNfreedom resources remain ungated by decision, not oversight: sf_district_imports (register:353), sf_events (:358), sf_permit_flags (:367), sf_products (:368), sf_vehicles (:380). The gate adds no ROLE check for any of the four gated here, so any signed-in session of any role can still write them. NOT PROVEN LIVE -- no bare-key call was driven against a real SAIRNfreedom licence; the evidence is the register letters, the two-list derivation and the client write sites read at this HEAD."
+    },
+    {
+      "commit": "7e7c3d27cf01",
+      "date": "2026-10-11",
+      "subject": "fix(sf_officers): the governance record was writable on a browser-shipped licence key, and every guard over it is client-side",
+      "files": [
+        "api/sd-data-session-gate.test.js",
+        "api/sd-data-sf-session-gate.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 171,
+      "lines_removed": 1,
+      "app": "sairnfreedom",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "hover-audit",
+      "summary": "sf_officers, SAIRNfreedom's officer roster and the post's governance record, was in neither SD_SESSION_GATED nor SD_GATE_APP, so the browser-shipped licence key was the whole authorisation on it -- and the generic SF_RESOURCES write branch stores data:payload verbatim with no role or capability check, so a write past the gate is a write past all three client-side trapdoor guards (activeProvisioners, the SPEC 1c last-active-provisioner refusal, the sole-holder refusal) and can leave a post at zero active provisioners, the state SPEC 1c exists to make unreachable",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "unknown_reason": "The gap predates the SD_SESSION_GATED entries for SAIRNfreedom: sf_ resources were gated in waves from 2026-09-21 and this one was never in a wave. There is no commit that introduced it -- it is the ABSENCE of an allowlist entry, which no commit adds."
+      },
+      "citation_note": "No section of SAIRN-PROCESS-RULES.md states an authorisation rule. Parts 1-6 cover checks that stop checking, standing documents, push protocol, coordination, verification and provenance; none says a Tier A resource must not be authorised by a key shipped to the browser. The rule this instantiates is written in api/sd-data.js's own gate comments and in docs/CRITICALITY-TIERS.md, not in the process rules, so citing one would be manufacturing agreement.",
+      "contributing_factors": [
+        {
+          "factor": "The gate is an ALLOWLIST and an allowlist omission is invisible: nothing in the dispatch notices that a resource has no entry, it simply dispatches on the licence hash",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "sf_officers added to both SD_SESSION_GATED and SD_GATE_APP in one edit, and api/sd-data-sf-session-gate.test.js APPROVED set-equality now fails on a resource that loses its gate as well as one gated without approval"
+        },
+        {
+          "factor": "SAIRNfreedom was gated in waves driven by individual findings rather than by a derivation over the resource list, so a resource nobody filed a finding about stayed out",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The follow-on commit gates four more by DERIVING the Tier A complement from docs/CRITICALITY-TIERS.md rather than waiting for a finding, and NAMES the five Tier A resources still ungated so the remaining asymmetry is visible"
+        },
+        {
+          "factor": "docs/CRITICALITY-TIERS.md:365 carried sf_officers as A-on-integrity for eighteen days before the gate landed, and nothing mechanically compares the register to the gate",
+          "kind": "detection",
+          "action_status": "declined",
+          "note": "An arm failing when a Tier A resource has no session-gate entry would have caught this on 2026-09-23 and would catch the five still open. NOT built in this batch and not claimed as built -- declined here rather than recorded as planned, because a planned action with no owner and no date is the CAPA box this field exists to replace. Routed in the batch digest instead."
+        },
+        {
+          "factor": "Every integrity guard over the roster is client-side by original design -- the trapdoor refusals were written in sairnfreedom.html because that is where the roster lived before a server copy existed",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "Moving the three guards server-side is a real change to a live app and is not this fix. The gate closes the licence-key path; a signed-in caller of any role can still write the roster, which is recorded as the remaining gap rather than fixed."
+        }
+      ],
+      "recurrence_open": "The gate stops a BARE LICENCE KEY. It adds no role or capability check, so any signed-in SAIRNfreedom session of any role can still rewrite the roster past all three client-side guards -- the repro's own third condition still reads role/capability check present: False. Five more Tier A sf_ resources remain ungated and are named in both gate suites."
+    },
+    {
+      "commit": "8943d787bb4c",
+      "date": "2026-10-11",
+      "subject": "fix(scp): three of SAIRNscape's eight ungated resources gated -- and the repro that found them scored one of its own targets FIXED when it was not",
+      "files": [
+        "api/sd-data-scp-session-gate.test.js",
+        "api/sd-data-session-gate.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 261,
+      "lines_removed": 19,
+      "app": "sairnscape",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "hover-audit",
+      "summary": "Sixteen of twenty-two SAIRNscape resource/action pairs were gated by neither SD_SESSION_GATED nor an inline session check, so the browser-shipped licence key was the whole authorisation; three resources are gated here (scp_designs, Tier A since 2026-10-05; scp_vendors, whose data jsonb carries contact, phone and email; scp_progress_photos, whose photo_b64 of a customer's property was gated only INSIDE the qc_status branch at api/sd-data.js:5231, so an UPLOAD needed no session at all) -- and the reproducing artifact scored scp_progress_photos FIXED when it was not, because its check was a substring test for verifySessionToken that the qc-only gate satisfied, which is why the real figure was 16 of 22 and not the 15 first reported",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "unknown_reason": "The absence of an allowlist entry is not introduced by a commit. SAIRNscape was never swept with law_trusttx, SF_RESOURCES or SDN_RESOURCES; the gap is the app not having been in any of the three sweeps."
+      },
+      "citation_note": "Two shapes, neither in SAIRN-PROCESS-RULES.md. The authorisation half has no section (Parts 1-6 are checks, documents, push protocol, coordination, verification, provenance). The repro half is the closest thing to 1.2 -- grep cannot tell code from text that describes code -- but it is not that: the substring DID appear in real code, inside a narrower branch, so the defect is a presence test standing in for a reachability test. Citing 1.2 would be the manufactured agreement the not-citable hatch exists to prevent.",
+      "contributing_factors": [
+        {
+          "factor": "A gate written INSIDE a narrower conditional reads as a gate on the whole branch: scp_progress_photos write was session-checked only within if (payload.qc_status === ...), so the QC decision was protected and the upload was not",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "scp_progress_photos moved into SD_SESSION_GATED, which is pre-dispatch and covers both verbs unconditionally rather than one payload shape"
+        },
+        {
+          "factor": "The reproducing artifact asked whether verifySessionToken APPEARS near the resource rather than whether every path through the branch reaches it -- a presence test standing in for a reachability test, and it scored one of its own targets FIXED",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The repro was corrected in the same commit and the figure restated 15 -> 16 of 22. A substring test that can be satisfied by a gate inside a narrower branch is now the recorded reason the number was wrong."
+        },
+        {
+          "factor": "SAIRNscape was gated TIER A ONLY by an explicit stopping rule, which is defensible, but the rule reads the register LETTER and two of these three are B by letter while their own register cells describe A-shaped contents",
+          "kind": "process",
+          "action_status": "done",
+          "action": "scp_vendors is gated on what its row CONTAINS rather than its letter -- its register cell says in its own words that it was classified by the stated B rule rather than individually read. The same reasoning that gated customers on 2026-10-05."
+        },
+        {
+          "factor": "Twelve SAIRNscape resources were authorised by the licence hash alone from the day the app shipped, and the licence key is in the page",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "Five of the eight ungated resources are deliberately left and are NAMED in api/sd-data-scp-session-gate.test.js UNGATED_REST with the columns that justify leaving each. Widening further is a product decision, not a fix."
+        }
+      ],
+      "recurrence_open": "Five SAIRNscape resources stay ungated by decision and are named in UNGATED_REST. Ten of twenty-two pairs still REPRODUCE on the corrected repro (scp_jobs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, read and write each) -- measured at this HEAD, not estimated. Nothing yet compares the gate allowlist to the criticality register mechanically, so the next omission is found the same way this one was."
     }
   ],
   "started": "2026-09-09",

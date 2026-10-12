@@ -47,6 +47,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/hook_integrity_check.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0ed280b9e503b82a36848f740379c21c63c3d609",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_self_exclusion_guard_sabotage_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -421,6 +429,43 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/sd-data-dental-ledger-validation.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "64a1e5e899c0178fb8db16fffd74c8cff0e82e84",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-dental-provider-scope.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'in anyone, which is why the read exempts them)', async () => {"
+    }
+   ],
+   "sha": "64a1e5e899c0178fb8db16fffd74c8cff0e82e84",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "64a1e5e899c0178fb8db16fffd74c8cff0e82e84",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-sf-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "64a1e5e899c0178fb8db16fffd74c8cff0e82e84",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_audit_event_type_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -435,6 +480,59 @@
     }
    ],
    "sha": "72d757efae5ab9df8c43faac4383e28f2b3c73ab",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-dental-ledger-validation.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "770b7d16dfe4aa6b904e57806ac892ae51172614",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-dental-provider-scope.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'in anyone, which is why the read exempts them)', async () => {"
+    }
+   ],
+   "sha": "770b7d16dfe4aa6b904e57806ac892ae51172614",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "770b7d16dfe4aa6b904e57806ac892ae51172614",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-sf-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "770b7d16dfe4aa6b904e57806ac892ae51172614",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "7e7c3d27cf01e0a852c2d9b0d44082a6d4206cb7",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-sf-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "7e7c3d27cf01e0a852c2d9b0d44082a6d4206cb7",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -464,6 +562,22 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "874fe39e3e7aeaa74de357df0461270d6ce82da6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-scp-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "8943d787bb4c279eb86a8bfcd08f7de6ff72010d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "8943d787bb4c279eb86a8bfcd08f7de6ff72010d",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -797,6 +911,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tools/hook_integrity_check.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d95612bc63597e202d39353be57ecf4030a785fc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/exit_status_attributable.py",
    "class": "push-gate logic",
    "level": "WEAKENING",
@@ -831,6 +953,22 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "e787a6d98d8ff4f31471380266df0e363014d353",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "e8ed0c78c282a6aaa31519f50be74cce49e6c7c9",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-sf-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "e8ed0c78c282a6aaa31519f50be74cce49e6c7c9",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -869,6 +1007,22 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "eb430f255b407c969b350bcec39bccd39905aea3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-scp-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "edbaa8583af5214faa415beb87ae21c5762be285",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-session-gate.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "edbaa8583af5214faa415beb87ae21c5762be285",
    "criteria_version": "2026-10-06.1"
   },
   {
