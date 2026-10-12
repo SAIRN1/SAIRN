@@ -26501,6 +26501,121 @@
         }
       ],
       "recurrence_open": "Five SAIRNscape resources stay ungated by decision and are named in UNGATED_REST. Ten of twenty-two pairs still REPRODUCE on the corrected repro (scp_jobs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, read and write each) -- measured at this HEAD, not estimated. Nothing yet compares the gate allowlist to the criticality register mechanically, so the next omission is found the same way this one was."
+    },
+    {
+      "commit": "2b6e0c6c5a34",
+      "date": "2026-10-12",
+      "subject": "fix(push-gate probes): a linked worktree shares .git/config, and these two were the last pair still using one",
+      "files": [
+        "tests/push_gate/check4_probe.py",
+        "tests/push_gate/check7_probe.py"
+      ],
+      "lines_added": 390,
+      "lines_removed": 39,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tests/push_gate/check4_probe.py and check7_probe.py planted fixtures in a linked git worktree, which SHARES .git/config with the owning clone -- so a git config write from inside the worktree lands in the real clone. Reproduced in two commands (docs/2026-10-07-fourth-routed-pinned-worktree-shared-config.md): the delta was bare = true, after which every git command in Documents/SAIRN-fourth failed with 'this operation must be run in a work tree'. Converted to a throwaway hardlinked clone, the move check8_probe.py made on 2026-10-06 and these two never got. Three things a clone does not inherit were each the silent-pass direction and are now set and asserted: core.hooksPath (without it the pre-push hook never fires and the probe reports 'not blocked' about a gate it never asked), origin's real URL, and the retry fetch inside dry_push() which relied on the shared object store. Two new results per probe, in the verdict rather than only the printout: .git/config byte-identical to a pre-run snapshot, and no worktree registered -- neither of which the existing clean-tree and unmoved-HEAD arms could ever have seen, because bare=true leaves both perfectly clean.",
+      "rules": [
+        "1.4"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "78b272431eb1",
+        "date": "2026-09-11",
+        "subject": "fix(tests): the push-gate probes plant their fixtures in a worktree, not on main",
+        "lag_days": 31
+      },
+      "citation_note": "1.4 cited for the property: a read-only-looking operation that writes to shared state. The rule is about check tools reading with git show rather than mutating, and these probes were mutating the clone they were supposed to leave alone. The injection commit is the one that introduced the worktree (78b27243, the fix for a WORSE defect -- five stranded PROBE commits reaching origin/main), so the lag this record contributes is the lag of a fix's own side effect.",
+      "factors_unknown_reason": "one shared mechanism in two files; recorded as one defect naming both rather than as structured factors"
+    },
+    {
+      "commit": "847133f0f5ad",
+      "date": "2026-10-12",
+      "subject": "fix(sairnlaw): \"individual feedback stays attributable\" was in the schema's own comment, and the table had no employee column at all",
+      "files": [
+        "api/legal-citator-feedback-attribution.test.js",
+        "api/legal-citator.js",
+        "sql/sairnlaw_citator_schema.sql"
+      ],
+      "lines_added": 355,
+      "lines_removed": 7,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "api/legal-citator.js feedback recorded no employee against a legal-citation treatment confirm or correction, at the application layer AND in sql/sairnlaw_citator_schema.sql, while that schema's own comment three lines above cl_feedback_log said 'individual feedback stays attributable'. logRec at :380 was built in the same function as auditLookup() at :185 from the same caller resolved at :184 and simply omitted it; the table had no employee column of any kind. Every row was attributable to a FIRM and to nobody, so an attorney confirming a classification other attorneys rely on was unrecoverable -- never captured rather than wrong. Fixed at both layers with NULLABLE columns on purpose, because the session token on this endpoint is optional by design and a row can legitimately have no person on it; inventing the owner or the licence would have read as evidence. The alter-table half is handled with a 503 NOT_PROVISIONED naming the SQL file, because create-table-if-not-exists does nothing to a live table and the old handler would have reported PGRST204 as 'try again'.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "unknown_reason": "the omission is present in the commit that first wrote cl_feedback_log and its handler, so there is no transition from working to broken to point an injection sha at"
+      },
+      "citation_note": "not-citable: the nearest thing is a documentation claim outrunning the implementation, which the rules cover for standing documents and not for a schema comment. Not attached to a section it does not belong to.",
+      "factors_unknown_reason": "two-layer omission, application and schema, recorded as one defect with both layers named in the summary rather than modelled as structured factors"
+    },
+    {
+      "commit": "947681105fab",
+      "date": "2026-10-12",
+      "subject": "fix(sairncare+sairnfreedom): three duplicate DOM ids, and every one of them was a live feature reading another panel's input",
+      "files": [
+        "sairncare.html",
+        "sairnfreedom.html"
+      ],
+      "lines_added": 42,
+      "lines_removed": 8,
+      "app": "sairnfreedom",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "Three duplicate DOM ids, none cosmetic. sairnfreedom.html ac-name (:371 officer provisioning, :1444 account name): sfOpenAccount() read the OFFICER name box, so a post could not open the ORC 2915.10(C) exclusive bingo-session account under the name typed into the account form. sairnfreedom.html ac-tbody (:380 officer roster, :1461 accounts): sfRenderAccess() and the accounts renderer both wrote into the officer tbody, so whichever ran last won -- the accounts table never rendered or the officer roster was replaced by account rows. sairncare.html fc-name (:320 family contact, :1082 facility profile): openFacilityModal() overwrote the family-contact input and saveFacility() stored THAT box's value as alf_facility.name, normally empty. Renames follow each file's own existing prefix (acct- from acct-kpis, fc-facname beside fc-company/fc-state/fc-licnum). Measured before and after with an HTML parser rather than a regex: sairncare 303/1 -> 304/0, sairnfreedom 398/2 -> 400/0, sairnsenior 327/0 unchanged. NOT live-verified: id uniqueness is measured, the behaviour is reasoned from the call sites.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "an HTML-parser id scan written inline for Guardian Check 8; tools/ carries no duplicate-DOM-id checker, which is itself the finding",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "three ids across two apps, each added in a different commit when a second panel reused an existing prefix; naming one injection sha for a three-site defect would be a guess about which of three"
+      },
+      "citation_note": "not-citable: Guardian Check 8 is the rule this violates and it lives in a skill, not in docs/SAIRN-PROCESS-RULES.md. Recorded as not-citable rather than attached to a process section it does not belong to.",
+      "factors_unknown_reason": "three sites recorded as one defect because they share one mechanism -- getElementById returning the first of a duplicated id -- and are fixed in one commit"
+    },
+    {
+      "commit": "d0aee3d8aeae",
+      "date": "2026-10-12",
+      "subject": "fix(sairnsenior): a caregiver's BACKGROUND-CHECK DATE went to every signed-in role, and the branch's own comment compared it to the wrong thing",
+      "files": [
+        "api/sd-data-sen-caregiver-pii-scope.test.js",
+        "api/sd-data.js",
+        "sairnsenior.html"
+      ],
+      "lines_added": 421,
+      "lines_removed": 3,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "hover-audit",
+      "summary": "api/sd-data.js sen_caregivers/read returned the whole data blob, every row on the licence, to ANY authenticated sairnsenior role -- including each caregiver's background-check date, a state-issued caregiver ID and free-text HR notes about a colleague. The branch's stated justification was 'Employment/certification data, not client PHI -- lighter gate than sen_clients': true, and the wrong comparison. It is EMPLOYEE PII and three of its fields serve no scheduling purpose. Fixed at FIELD level rather than by a flat role refusal, which would have broken the roster the lighter gate exists to serve (senIsScheduler reads it agency-wide, certDaysUntil computes from cpr_expiry, visits join on employee_id). bgcheck_date/state_caregiver_id/notes now go to owner/billing only, under a NEW constant rather than a reused one, with the round-trip-wipe safety driven by an arm; sairnsenior.html renders an explicit Restricted badge so a redacted compliance column cannot read as 'no check on file'.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "unknown_reason": "the branch has had no field distinction since it was written on 2026-08-20; the commit that added it is in history but it was written this way from the start, so there is no injection commit to name and a guessed one would be worse than none"
+      },
+      "citation_note": "not-citable: the process rules have no section about comparing a resource to the most sensitive thing beside it, which is the actual reasoning failure here. Recorded as not-citable rather than attached to the nearest-sounding id.",
+      "factors_unknown_reason": "single-branch access-control gap; no multi-factor model attempted this pass"
     }
   ],
   "started": "2026-09-09",
