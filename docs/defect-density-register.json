@@ -26503,7 +26503,7 @@
       "recurrence_open": "Five SAIRNscape resources stay ungated by decision and are named in UNGATED_REST. Ten of twenty-two pairs still REPRODUCE on the corrected repro (scp_jobs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, read and write each) -- measured at this HEAD, not estimated. Nothing yet compares the gate allowlist to the criticality register mechanically, so the next omission is found the same way this one was."
     },
     {
-      "commit": "2b6e0c6c5a34",
+      "commit": "403b9d2b5d34",
       "date": "2026-10-12",
       "subject": "fix(push-gate probes): a linked worktree shares .git/config, and these two were the last pair still using one",
       "files": [
@@ -26535,7 +26535,7 @@
       "factors_unknown_reason": "one shared mechanism in two files; recorded as one defect naming both rather than as structured factors"
     },
     {
-      "commit": "847133f0f5ad",
+      "commit": "9bc99c05731b",
       "date": "2026-10-12",
       "subject": "fix(sairnlaw): \"individual feedback stays attributable\" was in the schema's own comment, and the table had no employee column at all",
       "files": [
@@ -26563,7 +26563,7 @@
       "factors_unknown_reason": "two-layer omission, application and schema, recorded as one defect with both layers named in the summary rather than modelled as structured factors"
     },
     {
-      "commit": "947681105fab",
+      "commit": "b56c667f6cbb",
       "date": "2026-10-12",
       "subject": "fix(sairncare+sairnfreedom): three duplicate DOM ids, and every one of them was a live feature reading another panel's input",
       "files": [
@@ -26590,7 +26590,7 @@
       "factors_unknown_reason": "three sites recorded as one defect because they share one mechanism -- getElementById returning the first of a duplicated id -- and are fixed in one commit"
     },
     {
-      "commit": "d0aee3d8aeae",
+      "commit": "b384a513f99e",
       "date": "2026-10-12",
       "subject": "fix(sairnsenior): a caregiver's BACKGROUND-CHECK DATE went to every signed-in role, and the branch's own comment compared it to the wrong thing",
       "files": [
