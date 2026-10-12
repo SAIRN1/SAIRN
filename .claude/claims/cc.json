@@ -3698,6 +3698,26 @@
         "tools/sairn_push_gate_hook.py",
         "tools/sairn_rebase_resolve.py"
       ]
+    },
+    {
+      "id": "cc-1791763820",
+      "session": "cc",
+      "subject": "cc",
+      "task": "batch W (b4) resume -- (1) widen tools/hover_auditor_scope_gate.py ALLOWED to each auditor's own routing-doc directory; (2) make the declared file set the primary matcher mode in tools/sairn_claim.py; (3) set autoCompactEnabled true in the user-level settings.json; (4) report seq664 bld_draws status and release the expired cc claim behind it; (5) superseded_by remaining support in tools/defect_register.py plus its 4 pending deltas; (6) revive the dead control tests/hover_separation_ci_probe.py, whose 9 git arms COULD NOT RUN and whose last arm raises AttributeError; (7) report-only on the Tier A register and route what I found outside git. docs/tier-a-reviews.json is cody's in FILES and is NOT taken here, reported only. docs/2026-09-13-cross-domain-disciplines.md and docs/METHODOLOGY.md are fourth's in FILES and are NOT taken here, and the convention-numbering item that needed them is REMOVED from scope rather than reworded. FILES: tools/hover_auditor_scope_gate.py tools/sairn_claim.py tools/defect_register.py tests/hover_separation_ci_probe.py tools/hover_separation_ci.py docs/external-files-index.json docs/handoff-cc-2026-10-11.md SAIRN-ACTIVE-WORK-cc.md",
+      "claimed_at": "2026-10-12T00:10:20Z",
+      "claimed_at_epoch": 1791763820.4405484,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-cc.md",
+        "docs/external-files-index.json",
+        "docs/handoff-cc-2026-10-11.md",
+        "tests/hover_separation_ci_probe.py",
+        "tools/defect_register.py",
+        "tools/hover_auditor_scope_gate.py",
+        "tools/hover_separation_ci.py",
+        "tools/sairn_claim.py"
+      ]
     }
   ],
   "refusals": [
