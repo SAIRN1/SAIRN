@@ -231,9 +231,91 @@ Left alone rather than falsely routed as open.
 
 ## Totals
 
+## Rotation, H1 batch b12 item 11 -- the next 5 oldest by seq with no row anywhere in this doc
+
+Checked which of hover's own backlog (seq913-1037) still has no routing
+row at all (searched this file for each seq number first, rather than
+assuming): seq913, 920, 929, 946, 951, 959, 992 have none. The next 5
+oldest by seq are 913/920/929/946/951.
+
+**913, 920, 929, 946 are NOT independently routable findings.** Read in
+full before writing this: all four are this role's own PROCESS/meta
+entries (913: backfilling other entries' routing metadata; 920:
+re-pulling a live unrouted count against a moving target; 929: already
+IS a routing action in its own text, "ROUTED DIRECTLY TO HANK BY NAME
+WITH THE FULL SPEC RESTATED"; 946: a rotation-draw pick log, not a code
+defect). Writing a fix-spec row for a bookkeeping note would fabricate a
+finding that does not exist. Not routed, named here instead so the next
+session does not re-discover the same non-finding.
+
+**951 is a real, still-open finding** and gets a proper row:
+
+| Seq | Finding | File:line | Fix spec | Owner |
+|---|---|---|---|---|
+| 951 | `api/legal-citator.js`'s feedback action (SAIRNlaw) never records which employee confirmed/corrected a legal-citation treatment | `api/legal-citator.js:187` (`employee_id: caller ? caller.employee_id : null`), write site `:380` (`logRec`) | Stamp a real session's `caller.employee_id` the way the sibling attribution fixes (commits `56bbce5e`, `4ec0d5d5`) already did for 15 other write paths across three apps -- this one was not among them | **next claim on sairnlaw / api/legal-citator.js** (no durable per-app assignment exists, same caveat as the original 15-row table above) |
+
+**959 and 992 also checked, neither needs a new row.** seq959
+(stonedesk-track/sd-sub-data attribution) re-confirmed FIXED this batch
+(`employeeCaller.employee_id` present at `api/sd-sub-data.js:298, :427,
+:508`) -- closed, no routing needed. seq992 (bypass-log blanket-form
+ratio) is a standing metric re-measured every batch it comes up (most
+recently this batch, item 6... no, item 13: 17.1%), not a single
+fixable code location -- tracked by re-measurement, not a routing row.
+
+## Totals
+
 15 rows (batch U/X) + 2 rows (batch b10 item 4, confirmed owner) + 1 item
 (batch b10 item 7, claim-liveness defect) + 1 item (batch b10 item 11,
 push-blocker structural gap) + 4 rows (batch b11 item 4, fix specs) + 8
-rows (batch b11 item 9, hover2 cluster re-verify) = 31. All line numbers
-re-verified against current HEAD at the time each section was written,
-not copied forward from an earlier batch unchecked.
+rows (batch b11 item 9, hover2 cluster re-verify) + 1 row (batch b12
+item 11, seq951) + 7 rows (batch b12 item 7, Tier-register completeness)
+= 39. All line numbers re-verified against current HEAD at the time
+each section was written, not copied forward from an earlier batch
+unchecked.
+
+## Tier-register completeness (seq1150), resolved H1 batch b12 item 7
+
+A background Explore pass compared `docs/CRITICALITY-TIERS.md`'s full
+resource population against `api/_resources/*.js` (the canonical
+per-app registries `api/sd-data.js` itself validates against -- more
+authoritative than scanning `resource === '...'` dispatch alone, since
+several resources are dispatched generically through verb-maps). Method
+and files are stated here so the comparison is re-runnable, not just
+asserted: register rows extracted from the per-app `###` sections
+(`docs/CRITICALITY-TIERS.md:142-614`, `grep -oE "^\| \`[a-zA-Z0-9_]+\`"`,
+deduped); code list from the 18 `api/_resources/*.js` files
+(`sairncode.js` uses a differently-shaped `const RESOURCES = [...]`,
+not the same literal-array style as the other 17 -- worth knowing if
+anyone re-runs this).
+
+**Register: 391 unique resource names. Code: 398.**
+
+**Gap 1 (register -> code, stale rows): 0.** Every register row traces
+to a real current resource. **No action needed.**
+
+**Gap 2 (code -> register, unregistered): 7, all from
+`api/_resources/shared.js:52-59`** -- cross-app resources with no single
+owning app, and `docs/CRITICALITY-TIERS.md` has no `shared` section for
+them to land in structurally:
+
+| Resource | File:line | Register row | Note |
+|---|---|---|---|
+| `profile` | `api/_resources/shared.js:53` | none | |
+| `memory` | `api/_resources/shared.js:54` | none | **UPDATES the existing row above** (seq1114/1122/1170, "not present in any `api/_resources/*.js` registry") -- that finding is now STALE in its exact claim: `shared.js` exists and lists `memory` directly. The underlying gap (no Tier row) is unchanged and real; only the described CAUSE has moved from "no registry at all" to "a registry with no register section to land in." |
+| `employees` | `api/_resources/shared.js:55` | none | |
+| `slabs` | `api/_resources/shared.js:56` | none | |
+| `render_usage` | `api/_resources/shared.js:57` | none | |
+| `shared_knowledge` | `api/_resources/shared.js:58` | none | |
+| `employee_profile` | `api/_resources/shared.js:59` | none | |
+
+**Fix spec, one for all seven:** add a `### \`shared\`` section to
+`docs/CRITICALITY-TIERS.md` (matching the existing per-app `###`
+pattern) and give each of these seven its own row -- this is a
+`docs/CRITICALITY-TIERS.md` edit, outside this role's `ALLOWED` scope
+(not `docs/defect-density-register.json`), so routed rather than done
+here.
+
+**Owner: next claim naming `docs/CRITICALITY-TIERS.md` or
+`api/_resources/shared.js`** -- no durable per-app owner exists for
+`shared`-scoped resources by construction (they belong to no one app),
+same caveat the original 15-row table states for its own proposals.
