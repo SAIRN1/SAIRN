@@ -750,23 +750,6 @@
    }
   },
   {
-   "file": "tests/run_ghost_field_read_probe.py",
-   "kind": "py",
-   "tail": "11 passed, 5 failed",
-   "since": "2026-10-06",
-   "why": "THE CONTROLS NO LONGER BITE, WHICH IS THE WORSE HALF OF A PROBE GOING RED. Five arms fail and four of them are PLANTED-KEY controls: the scan must NAME `actual_start` in sairnsenior.html and `ghost_window_anchor` in api/_lib/compliance-rules.js, not merely report a count going up, and it names neither. The fifth is the other direction -- 'the scan DOES still report charge_lines' -- so the positive control has gone silent too. 11 of 16 pass. EITHER the scan's vocabulary narrowed or those planted keys were removed from the fixtures; both are checkable and neither was established here. A control that cannot fail is the thing this platform treats as a finding in its own right.",
-   "owner": "unassigned",
-   "diagnosed": "2026-10-06",
-   "diagnosed_by": "fourth",
-   "environment": {
-    "where": "live-clone",
-    "pinned": false,
-    "tool": "the suite itself, driven individually, one process per suite",
-    "sha": "unknown",
-    "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
-   }
-  },
-  {
    "file": "tests/run_githook_install_probe.py",
    "kind": "py",
    "tail": "  - --check passes once the clone is really installed",
@@ -1495,6 +1478,37 @@
     "basis": "DRIVEN ALONE IN A THROWAWAY CLONE, 2026-10-08 by fourth, at the same content as HEAD e502a628. A CLONE AND NOT A WORKTREE, deliberately: a linked worktree SHARES .git/config, which is how core.bare = true reached the live clone twice on 2026-10-06, and these three were deferred in batch 17 for exactly that family of reasons. 300s ceiling. Evidence that the main clone was untouched rather than restored: its `git status --porcelain` digest and the sha256 of its .git/config were captured before and after and are identical (2eeda7ffde63 / 789cfb6edb72). In the throwaway clone none of the three left the tree dirty and none moved .git/config -- so the mutation confound the register records for this family is HISTORICAL, not current."
    },
    "why": "Same subject pair as the delegation probe and deferred with it. Driven in a throwaway clone: exit 0, 10 passed / 0 failed, including its own ablation arm -- 'the same exception WITHOUT the guard leaves the plant'. No register row before this either."
+  },
+  {
+   "file": "tests/run_ghost_field_read_probe.py",
+   "exit_code": 0,
+   "recovered": "2026-10-11",
+   "recovered_by": "hank",
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process, then the scan it drives invoked alone",
+    "sha": "71b8f7c8",
+    "basis": "19 arms pass, 0 fail. The DELTA arm added in the same change measures 31 -> 32 findings on each planted mutation, which is the arm that can tell detection from an already-dirty baseline; the scan's own standing finding count is UNCHANGED at 31 before and after the exclusions, so the repair added no false positives. Both mutated files restored byte-identical."
+   },
+   "why": "A CIRCULARITY, NOT A BROKEN SCAN, AND THE DIAGNOSIS BELOW NAMED TWO HYPOTHESES AND THE ANSWER WAS A THIRD. fourth wrote on 2026-10-06 that EITHER the scan's vocabulary had narrowed OR the planted keys had been removed from the fixtures. Neither. The scan's spelled universe WIDENED to swallow its own test material: (1) tests/run_ghost_field_read_probe.py holds its planted payloads -- `actual_start`, `ghost_window_anchor` -- as PYTHON STRING LITERALS, and code_only() strips # comments from .py while KEEPING strings, deliberately, because a string key is a real spelling; (2) THIS FILE'S OWN `why` FIELD, the write-up of the failure, quoted both names, and .json is treated as DATA so its raw text enters the universe with no stripping at all. Both names were therefore 'spelled somewhere in the repo', both stopped being ghosts, and the scan went correctly silent about the very defects the probe plants. THE EXPLANATION OF THE FAILURE WAS WHAT SUSTAINED THE FAILURE. Fixed by SPELLING_BLIND in tools/ghost_field_read_scan.py -- two named paths, printed in the scan's own `excluded:` list on every run, refusing to run if either path stops existing so a rename cannot silently re-poison the universe. The probe's stale `charge_lines` positive control was retired in the same change for an unrelated and correct reason: somebody wrote charge_lines in api/sd-data.js, so the scan is right to be silent, and that arm had written down its own retirement condition before anyone needed it.",
+   "superseded_entry": {
+    "file": "tests/run_ghost_field_read_probe.py",
+    "kind": "py",
+    "tail": "11 passed, 5 failed",
+    "since": "2026-10-06",
+    "why": "THE CONTROLS NO LONGER BITE, WHICH IS THE WORSE HALF OF A PROBE GOING RED. Five arms fail and four of them are PLANTED-KEY controls: the scan must NAME `actual_start` in sairnsenior.html and `ghost_window_anchor` in api/_lib/compliance-rules.js, not merely report a count going up, and it names neither. The fifth is the other direction -- 'the scan DOES still report charge_lines' -- so the positive control has gone silent too. 11 of 16 pass. EITHER the scan's vocabulary narrowed or those planted keys were removed from the fixtures; both are checkable and neither was established here. A control that cannot fail is the thing this platform treats as a finding in its own right.",
+    "owner": "unassigned",
+    "diagnosed": "2026-10-06",
+    "diagnosed_by": "fourth",
+    "environment": {
+     "where": "live-clone",
+     "pinned": false,
+     "tool": "the suite itself, driven individually, one process per suite",
+     "sha": "unknown",
+     "basis": "the register's own _how_it_was_measured: the 2026-10-06 entries were \"driven INDIVIDUALLY in its own process against a tree checked for drift after every suite\", and the whole-tree run is explicitly NOT the authority. The SHA is not recorded in that field, so it stays unknown rather than being inferred from the date."
+    }
+   }
   }
  ]
 }

@@ -102,22 +102,42 @@ ok('actual_start' not in base_out,
    'scan was built for is fixed, so the mutation below is re-planting it')
 ok('facility_training_year_start' not in base_out,
    '...nor `facility_training_year_start`, the second one it found itself')
-# `charge_lines` IS STILL REPORTED AND THAT IS CORRECT, so there is deliberately
-# no arm asserting its absence. The third confirmed instance was api/sd-data.js
-# reconciling a derived invoice against `data.charge_lines`, a key NO write path
-# on this platform stores. The fix made the impossible comparison a named third
-# state instead of "every line added"; it did NOT make the key exist. So the
-# capability check still cannot pass, the scan still says so, and an arm
-# demanding silence here would have to be satisfied by hiding a true finding --
-# which is the reword-past-the-matcher move (PR 4.3) pointed at a checker.
-# It clears when somebody writes `charge_lines` on the invoice, which is the
-# real follow-up and is a separate change.
-ok('charge_lines' in base_out,
-   'CONTROL, the other direction: the scan DOES still report `charge_lines` -- '
-   'the key genuinely does not exist yet, so a clean line here would mean the '
-   'scan had been silenced rather than satisfied')
+# ── THE `charge_lines` CONTROL WAS RETIRED 2026-10-11, AND IT WAS RIGHT WHEN
+#    IT WAS WRITTEN ────────────────────────────────────────────────────────
+# It read:
+#     ok('charge_lines' in base_out, 'CONTROL, the other direction: the scan
+#        DOES still report `charge_lines` ...')
+# with a paragraph explaining that the key genuinely did not exist, so a clean
+# line there would mean the scan had been SILENCED rather than satisfied. That
+# paragraph ended with the sentence that retires it: "It clears when somebody
+# writes `charge_lines` on the invoice, which is the real follow-up and is a
+# separate change."
+#
+# SOMEBODY DID. `charge_lines` is now written in api/sd-data.js and read by
+# api/sd-data-derive-charges.test.js and tests/sd_data_alf_mar_derive_charges_gate.js,
+# so the key exists, the scan is correctly silent about it, and this arm had
+# been FAILING ON A FIX. That is convention 8 exactly -- a string anchor that
+# stops matching because the world moved, with nothing to announce the day it
+# happened -- and the arm itself had written down the condition that would
+# retire it.
+#
+# WHAT REPLACES IT IS NOT ANOTHER FIELD NAME. Picking a second still-broken
+# field would buy the same failure on the day THAT one is fixed. The property
+# actually being defended is "the scan is not silenced", which is a fact about
+# the OUTPUT and not about any one field, so it is asserted as one -- and the
+# mutation arms below now assert a DELTA against this baseline, which is the
+# half that cannot be satisfied by a scan that reports everything or nothing.
 baseline_findings = base_out.count('\n  ! ')
 print('       baseline findings: %d' % baseline_findings)
+ok(baseline_findings > 0,
+   'CONTROL, the other direction: the scan is NOT silent on the shipped tree '
+   '(%d finding(s)) -- a zero here would make every "the mutation was detected" '
+   'arm below unfalsifiable, because a scan that reports nothing and a scan '
+   'that has been disabled look identical' % baseline_findings,
+   base_out[-400:])
+ok('GHOST FIELD READ SCAN' in base_out and 'files read for spellings' in base_out,
+   '...and it printed its own universe, so a run that scanned NOTHING cannot '
+   'reach the arms below wearing a clean baseline')
 
 MUTATIONS = [
     # (label, file, old, new, the field the scan must name, real_or_synthetic)
@@ -151,9 +171,23 @@ for label, rel, old, new, field, provenance in MUTATIONS:
     write(rel, original.replace(old, new, 1))
     try:
         rc, out = run_scan()
+        # ── THE EXIT CODE PROVES NOTHING HERE AND NOW SAYS SO ──────────────
+        # The shipped tree ALREADY exits 1 (there are %d standing findings), so
+        # "with the defect planted it exits 1" is true whether the mutation was
+        # detected or not. It is kept because an exit 2 COULD-NOT-RUN or a crash
+        # must still fail loudly -- but the DELTA arm directly below is the one
+        # that can tell the two apart, and it is new on 2026-10-11.
         ok(rc == EXIT_FINDING,
-           'with the defect planted the scan exits 1 FINDING (got %d)' % rc,
+           'with the defect planted the scan still exits 1 and does not crash '
+           'or COULD-NOT-RUN (got %d). NOT evidence of detection -- the '
+           'baseline exits 1 too' % rc,
            out[-400:])
+        ok(out.count('\n  ! ') > baseline_findings,
+           'THE DELTA: planting the defect adds a finding (%d -> %d). This is '
+           'the arm that distinguishes "detected" from "the baseline was '
+           'already dirty", and it is what four stale arms here could not do'
+           % (baseline_findings, out.count('\n  ! ')),
+           out[-600:])
         ok(('`' + field) in out or ('.' + field) in out,
            'and it NAMES `%s` -- not merely a count going up' % field,
            '\n'.join(l for l in out.split('\n') if field in l)[:400] or out[-300:])

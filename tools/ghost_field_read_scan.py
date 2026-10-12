@@ -224,6 +224,65 @@ CODE_PATTERNS = ('*.js', '*.html', '*.py', '*.cjs', '*.mjs')
 KEY_PATTERNS = ('*.js', '*.html', '*.json', '*.sql', '*.py', '*.csv',
                 '*.cjs', '*.mjs')
 
+# ── THE MUTATION PROBE WAS DISABLING THE DETECTION IT TESTS (2026-10-11) ─────
+# THIS IS THE SAME DEFECT AS THE `*.md` ONE DIRECTLY ABOVE, ONE LAYER OUT, and
+# it is worth reading both together because the first fix is what made the
+# second one invisible.
+#
+# `tests/run_ghost_field_read_probe.py` plants two known ghost reads and then
+# asserts that this scan NAMES them. Its MUTATIONS table holds those payloads as
+# PYTHON STRING LITERALS -- `'actual_start'`, `'ghost_window_anchor'` -- and
+# `code_only()` strips `#` comments from a .py file while KEEPING strings,
+# deliberately, because a string key is a real spelling. So the probe's own
+# payloads entered the spelled universe, both fields stopped being ghosts, the
+# scan went correctly silent about them, and FOUR OF THE PROBE'S ARMS FAILED
+# AGAINST A SCAN THAT WAS WORKING. Measured 2026-10-11: with the probe excluded
+# `spelled_names(code_only(...))` reports both names from that file and from no
+# other file in the repo.
+#
+# A PROBE THAT SILENCES THE CHECK IT TESTS IS NOT A TEST FAILURE, IT IS A
+# CIRCULARITY, and it was reported for weeks as "5 failing arms" in a routing
+# table rather than as the thing it is.
+#
+# THE EXCLUSION IS ONE FILE AND IS NARROW ON PURPOSE. It is NOT added to
+# checker_kit.EXCLUDED_PREFIXES, which every checker on the platform reads --
+# this is a fact about THIS scan's relationship with ITS OWN probe and belongs
+# nowhere else. A field spelled ONLY inside a mutation payload is by
+# construction not a field this repo has; if that ever stops being true the
+# right answer is to delete the payload, not to un-exclude the file.
+#
+# PRINTED, NOT SILENT: it joins the same `excluded:` list as archive/ and
+# docs/skill-backups/, so a reader sees the universe this run actually used.
+#
+# AND A SECOND FILE, WHICH IS THE SHARPER HALF. Excluding the probe alone did
+# NOT restore detection, and the measurement said why: `docs/known-red-suites.json`
+# carries a hand-written `why` field explaining that this probe is red --
+# "the scan must NAME `actual_start` in sairnsenior.html and `ghost_window_anchor`
+# in api/_lib/compliance-rules.js" -- and `.json` is treated as DATA, so its RAW
+# text enters the universe with no comment stripping at all. THE WRITTEN
+# EXPLANATION OF THE FAILURE WAS WHAT SUSTAINED THE FAILURE.
+#
+# That is the `*.md` rule above, arriving through a file extension the rule did
+# not cover: a field named in a DOCUMENT is a field being DISCUSSED. The
+# red-suite ledger is prose stored as JSON -- no app reads a field off it, and
+# nothing on this platform spells a real field there first.
+#
+# NARROW AGAIN: these are two named paths, not a `docs/*.json` pattern. A data
+# file under docs/ that a real code path reads would be a genuine spelling
+# source and must keep counting.
+SPELLING_BLIND = (
+    ('tests/run_ghost_field_read_probe.py',
+     "this scan's OWN mutation probe -- its payloads are planted ghost names "
+     "held as string literals, and counting them as spellings makes the planted "
+     "defects undetectable, which is the probe disabling the check it tests"),
+    ('docs/known-red-suites.json',
+     "a PROSE ledger stored as JSON: its `why` fields are English explanations "
+     "of why a suite is red, and the one explaining THIS probe quotes the very "
+     "field names it is red for -- so the write-up of the failure was keeping "
+     "the failure true. Same rule as the *.md exclusion, reached through a "
+     "different extension"),
+)
+
 
 def _strip_hash_comments(text):
     """Blank `#` comments in Python, preserving offsets. Quote-aware, because
@@ -373,6 +432,26 @@ def main(argv):
         print('COULD NOT RUN: `git ls-files` returned no code files. That is a '
               'broken invocation, not a clean repo.')
         return EXIT_COULD_NOT_RUN
+    # ── SPELLING-BLIND FILES, REMOVED FROM THE UNIVERSE AND SAID OUT LOUD ────
+    # See SPELLING_BLIND above. The file stays in `code_files` -- it is still
+    # SCANNED for gates like anything else -- and is only removed from the list
+    # its SPELLINGS are read out of. Those are two different questions and
+    # conflating them would stop the probe being checked at all.
+    #
+    # REFUSES A STALE ENTRY rather than skipping it. An exclusion naming a file
+    # that no longer exists is an exclusion doing no work, which this tool
+    # already reports for its declared contracts; here it is worse, because a
+    # renamed probe would silently go back to poisoning the universe.
+    _blind = set()
+    for _p, _why in SPELLING_BLIND:
+        if _p not in key_files:
+            print('COULD NOT RUN: SPELLING_BLIND names %s, which is not a '
+                  'tracked file this scan reads. An exclusion for a file that '
+                  'is not there does no work and hides the day it moves.' % _p)
+            return EXIT_COULD_NOT_RUN
+        _blind.add(_p)
+        notes.append('%s -- %s' % (_p, _why))
+    key_files = [f for f in key_files if f not in _blind]
 
     # ── THE SPELLED UNIVERSE, over the WHOLE repo ───────────────────────────
     # The stripped text is CACHED because the biggest files appear in both lists

@@ -5944,7 +5944,7 @@
     {
       "author_session": "hank",
       "opened_at": "2026-10-12T01:51:33Z",
-      "opened_at_sha": "64a1e5e899c0178fb8db16fffd74c8cff0e82e84",
+      "opened_at_sha": "b7f6fb54116e42a0af1ea0681d9f195473588929",
       "opened_at_sha_basis": "file-set",
       "resources": [
         "dnt_appointments",
@@ -5973,7 +5973,10 @@
       "owner_assigned_at": "2026-10-12T01:51:33Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "opened_at_sha_was": "64a1e5e899c0178fb8db16fffd74c8cff0e82e84",
+      "opened_at_sha_reseated": true,
+      "opened_at_sha_reseat_basis": "HAND, SAME COMMIT: the recorded sha was this clone pre-rebase object for the identical commit. It was rewritten four times by the push races of 2026-10-11/12 and is now orphaned and gc-eligible, so the obligation pointed at a commit no reviewer could fetch. Repointed by the record author to the live sha of the same change. NOT done by --reseat-shas: that run classified it WEAK (file-set subset), and weak-basis repointing of OTHER sessions records was declined, so only this one record was touched."
     },
     {
       "author_session": "cody",
