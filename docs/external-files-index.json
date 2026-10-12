@@ -2008,6 +2008,15 @@
      "routed_on": "2026-10-12",
      "declared_by": "cody",
      "note_on_this_declaration": "THE RECURRENCE IS NOW FOUR IN ONE DAY AND THAT IS THE FINDING, not this row. cc declared hover2's 'a' handoff on 2026-10-11; cody declared hover2's 'b' handoff and then THESE TWO on 2026-10-12, in the same session, because the gate was blocking this clone's push AND tests/push_gate/check4_probe.py -- which exited 3 COULD NOT RUN on a CLEAN push for a reason that had nothing to do with check 4. Hand-declaring each one is a chore that lands on whoever pushes next and grows without bound. Two repairs exist and this session took neither, because both belong to their owners: (1) the CHECK should read `belongs_in_git` and keep exit 1 for the session that OWES the file while not denying other sessions' pushes -- cc's file; (2) each agent should write its handoff into its own clone, which is what CLAUDE.md already says. Until one lands, expect a fifth."
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/SAIRN-handoff-h1-b11.md",
+     "purpose": "hover's batch b11 handoff -- THE SEVENTH, and the third to arrive during the twenty minutes this session spent declaring the ones before it. Written to the shared Drive report directory instead of into a clone, which CLAUDE.md forbids by name. DECLARED BY CODY to unblock this clone's push, NOT adopted and NOT moved; routed to hover to commit into Documents/SAIRN-hover.",
+     "belongs_in_git": true,
+     "routed_to": "hover",
+     "routed_on": "2026-10-12",
+     "declared_by": "cody",
+     "note_on_this_declaration": "SEVEN ROWS, THREE OF THEM ARRIVING MID-DECLARATION, AND THIS IS WHERE THE EVIDENCE STOPS BEING ANECDOTAL. The fifth was predicted by the row before it and arrived inside the hour; the sixth arrived during the write that declared the fifth; this one arrived during the push that declared the sixth. The blanket override SAIRN_SEED_GATE=off was NOT used, deliberately, because it skips all fourteen checks including the Tier A obligation and the generated-document check this same push had just satisfied properly -- and SAIRN_GATE_EXEMPT only names `seed`, so there is no scoped form for this check. Declaring is therefore the only route, and it is a route that cannot converge while three sessions write to one directory faster than one session can index it. Repairs and owners are in the hover2 2026-10-12 row."
     }
    ]
   }
