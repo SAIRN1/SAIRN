@@ -806,6 +806,80 @@ def corpus_phrase_count():
     return len(seen) or 1
 
 
+def shared_identifiers(mine_subj, mine_task, their_subj, their_task):
+    """The identifiers both claims name, after the two exemptions below.
+
+    EXTRACTED FROM block_reason() 2026-10-12, VERBATIM AND FOR ONE REASON:
+    rests_on_evidence() below has to ask the same question, and a second copy
+    of this filter is the drift this file keeps recording about every other
+    duplicated rule. block_reason()'s behaviour is unchanged -- it calls this.
+    """
+    # A path either side DISCLOSES rather than claims is not evidence that both
+    # want it. Dropped from both sides: a disclosure is disjointness whoever
+    # wrote it.
+    _disc = disclosed_files(mine_task) | disclosed_files(their_task)
+    _common = common_phrases()
+    shared_ids = idents(mine_subj, mine_task) & idents(their_subj, their_task)
+    # AN IDENTIFIER IS NEVER EXEMPTED BY COMMONNESS, and two existing controls
+    # caught this before it shipped. api/sd-data.js is named by four sessions
+    # and sv_controlled by three, so the common-vocabulary rule marked both
+    # common and cleared genuine collisions on the busiest file and a Tier A
+    # resource. AN IDENTIFIER NAMES ONE THING: frequency across sessions says it
+    # is a BUSY thing, not a generic one, which is the opposite of the inference
+    # the exemption makes about wording. Only a DISCLOSURE can excuse an
+    # identifier, and that is a sentence somebody wrote on purpose rather than a
+    # frequency.
+    # AN IDENTIFIER IS EXEMPTED ONLY WHEN ITS SHAPE SAYS IT IS NOT ONE.
+    # idents() treats `known-bad` as an identifier because it is hyphenated, and
+    # it is a hyphenated ENGLISH PHRASE. A real identifier on this platform
+    # carries a path separator, a dot, or an underscore -- api/sd-data.js,
+    # sv_controlled -- and for those, frequency across sessions means BUSY, not
+    # generic, which is the opposite of the inference the exemption makes. Two
+    # existing controls caught that before it shipped: exempting them cleared a
+    # genuine collision on the busiest file on the platform and on a Tier A
+    # resource.
+    return {i for i in shared_ids
+            if i not in _disc
+            and not (i in _common and not re.search(r'[/._]', i))}
+
+
+def rests_on_evidence(mine_subj, mine_task, their_subj, their_task):
+    """Does a block between these two rest on EVIDENCE rather than on prose?
+
+    ── WHY THE DISTINCTION EXISTS, AND WHY IT IS NOT A STRING TEST ───────────
+    The declared file set is this matcher's PRIMARY mode (2026-10-12). When
+    exactly one side declared a FILES list the sets cannot be compared, and
+    cmd_check must then decide whether the lexical matcher's answer is strong
+    enough to HARD BLOCK on its own. Three of block_reason()'s rules name a
+    THING -- an obligation id or commit sha, an app, a file or resource -- and
+    those stay blocking. The rest name WORDS: a shared subject (which on this
+    platform is a bucket name -- three of four sessions use their own session
+    name for a whole day's work), an adjacent phrase, or one task's tokens
+    sitting inside the other's. Those are not evidence against a declared file
+    list, and blocking on them is how `batch W b4 resume` got refused by a
+    claim whose six declared files it did not share -- measured on this clone
+    on 2026-10-12, which is what sent this change.
+    reason.startswith('same subject') WAS THE FIRST DRAFT AND IS REFUSED.
+    Parsing block_reason()'s own prose back out would be an anchor that rots
+    the next time somebody rewords a message -- the eighth cross-domain
+    discipline, and the exact shape that silently disarmed five controls in
+    tools/sabotage_control_check.py. This re-derives the evidence rules by
+    CALLING them, through the same helpers block_reason() calls, so a rule
+    added there and not here cannot be masked by a wording change.
+    IT IS AN OR OVER THE EVIDENCE RULES, NOT A VERDICT. A pair can block on a
+    prose reason AND share an app; this returns True for that pair and the
+    block stands. Only a pair with no evidence rule firing at all is demoted.
+    """
+    if shared_structured(structured_ids(mine_subj, mine_task),
+                         structured_ids(their_subj, their_task)):
+        return True
+    if apps_in(mine_subj, mine_task) & apps_in(their_subj, their_task):
+        return True
+    if shared_identifiers(mine_subj, mine_task, their_subj, their_task):
+        return True
+    return False
+
+
 def block_reason(mine_subj, mine_task, their_subj, their_task):
     """Why these two claims collide, or None if they only share vocabulary.
 
@@ -848,33 +922,11 @@ def block_reason(mine_subj, mine_task, their_subj, their_task):
     shared_apps = apps_in(mine_subj, mine_task) & apps_in(their_subj, their_task)
     if shared_apps:
         return 'same app: ' + ', '.join(sorted(shared_apps))
-    # A path either side DISCLOSES rather than claims is not evidence that both
-    # want it. Dropped from both sides: a disclosure is disjointness whoever
-    # wrote it.
-    _disc = disclosed_files(mine_task) | disclosed_files(their_task)
+    # The disclosure and commonness exemptions live in shared_identifiers(),
+    # extracted 2026-10-12 so rests_on_evidence() asks the same question
+    # through the same code rather than a second copy of it.
     _common = common_phrases()
-    shared_ids = idents(mine_subj, mine_task) & idents(their_subj, their_task)
-    # AN IDENTIFIER IS NEVER EXEMPTED BY COMMONNESS, and two existing controls
-    # caught this before it shipped. api/sd-data.js is named by four sessions
-    # and sv_controlled by three, so the common-vocabulary rule marked both
-    # common and cleared genuine collisions on the busiest file and a Tier A
-    # resource. AN IDENTIFIER NAMES ONE THING: frequency across sessions says it
-    # is a BUSY thing, not a generic one, which is the opposite of the inference
-    # the exemption makes about wording. Only a DISCLOSURE can excuse an
-    # identifier, and that is a sentence somebody wrote on purpose rather than a
-    # frequency.
-    # AN IDENTIFIER IS EXEMPTED ONLY WHEN ITS SHAPE SAYS IT IS NOT ONE.
-    # idents() treats `known-bad` as an identifier because it is hyphenated, and
-    # it is a hyphenated ENGLISH PHRASE. A real identifier on this platform
-    # carries a path separator, a dot, or an underscore -- api/sd-data.js,
-    # sv_controlled -- and for those, frequency across sessions means BUSY, not
-    # generic, which is the opposite of the inference the exemption makes. Two
-    # existing controls caught that before it shipped: exempting them cleared a
-    # genuine collision on the busiest file on the platform and on a Tier A
-    # resource.
-    shared_ids = {i for i in shared_ids
-                  if i not in _disc
-                  and not (i in _common and not re.search(r'[/._]', i))}
+    shared_ids = shared_identifiers(mine_subj, mine_task, their_subj, their_task)
     if shared_ids:
         return 'same file or resource: ' + ', '.join(sorted(shared_ids))
     # THE PHRASE LAYER IS EXEMPTED THE SAME WAY, and one existing control had to
@@ -2056,7 +2108,10 @@ def cmd_check(args, quiet=False):
             # untrustworthy.
             _os = one_sided_files(task, c.get('task'))
             if _os:
-                unprovable.append((c, _os))
+                # No word matched at all here, so there is no demoted reason
+                # to carry -- the third element is the reason or None, and the
+                # printer says which.
+                unprovable.append((c, _os, None))
             continue
         # Shared vocabulary is REPORTED, never blocked on its own -- dropping
         # it silently would be the other failure, and the whole point of this
@@ -2077,6 +2132,51 @@ def cmd_check(args, quiet=False):
             weak.append((c, shared, 'LEXICAL ONLY -- ' + reason
                          + '; the declared file sets are DISJOINT'))
             continue
+        # ── THE DECLARED FILE SET IS THE PRIMARY MODE (2026-10-12) ────────
+        # Both-declared was already decided by the file sets above. This is
+        # the ONE-SIDED case, and it was the last place where PROSE alone
+        # could hard-block a session whose declared files the other claim
+        # does not share.
+        #
+        # THE REFUSAL THAT SENT THIS, reproduced from this clone on
+        # 2026-10-12 before anything was changed. cc checked
+        #
+        #     subject "cc"   task "batch W b4 resume"
+        #
+        # against fourth's live claim, which declares six files, none of them
+        # cc's. The answer was BLOCKED, `one task is entirely inside the
+        # other: "batch resume"` -- on two words that describe WHEN work is
+        # happening rather than WHAT it touches, against a claim that had
+        # already said in paths what it was touching.
+        #
+        # A PROSE BLOCK IS NOT DEMOTED TO CLEAR. It becomes the UNPROVABLE
+        # state that already exists for the symmetrical case, so the other
+        # session's declared paths are printed with an instruction to read
+        # them -- and from 2026-10-12 the word match is printed WITH them, so
+        # the reader sees the evidence that was demoted rather than losing it.
+        #
+        # EVIDENCE STILL BLOCKS, and that is why this is a narrowing and not a
+        # hole: rests_on_evidence() re-derives the obligation/commit, app and
+        # file-or-resource rules by calling them. A pair sharing an app or
+        # naming the same file in prose blocks exactly as before.
+        #
+        # MEASURED over all 637,096 cross-session pairs in the 1,285-claim
+        # record: BLOCK 22,222 -> 20,606, so 1,616 move to UNPROVABLE. Read
+        # by rule: 1,022 `same subject` (a bucket name -- three of four
+        # sessions use their own session name for a whole day's work, which
+        # is the same reason the containment rule below already excludes the
+        # subject), 495 `shared phrase`, 89 `one task is entirely inside the
+        # other`, 10 subject-containment. The naive version of this test --
+        # reason.startswith('same subject') -- demoted 2,105, and the 489
+        # difference is pairs that ALSO share an app or a file and must keep
+        # blocking. That gap is the whole argument for deriving the rule
+        # rather than parsing its message.
+        if reason and fv == 'unknown' and not rests_on_evidence(
+                subj, task, c.get('subject'), c.get('task')):
+            _os = one_sided_files(task, c.get('task'))
+            if _os:
+                unprovable.append((c, _os, reason))
+                continue
         if not reason:
             # ── THE WEAK NOTE WAS ASSERTING SOMETHING IT NEVER CHECKED ─────
             # (2026-10-08.) With no blocking reason this fell into `weak`,
@@ -2092,7 +2192,7 @@ def cmd_check(args, quiet=False):
             # note. I only knew because I read his claim text by hand.
             _os = one_sided_files(task, c.get('task'))
             if _os:
-                unprovable.append((c, _os))
+                unprovable.append((c, _os, None))
                 continue
         (blocking if reason else weak).append((c, shared, reason))
     if blocking:
@@ -2170,10 +2270,20 @@ def cmd_check(args, quiet=False):
                   'word matcher found nothing, and that\nis not evidence of no '
                   'overlap -- it is evidence that nothing looked. READ THESE\n'
                   'PATHS AGAINST WHAT YOU ARE ABOUT TO WRITE:' % len(unprovable))
-            for c, paths in unprovable:
+            for c, paths, demoted_reason in unprovable:
                 print('  %s: %s' % (c.get('session'), c.get('subject')))
                 for p in sorted(paths):
                     print('      %s' % p)
+                # ── THE DEMOTED WORD MATCH IS SHOWN (2026-10-12) ──────────
+                # An entry that arrived here from a PROSE block is a different
+                # thing from one the word matcher never flagged, and a reader
+                # deciding whether to overrule needs to see which. Printing
+                # only the paths would hide the evidence that was downgraded.
+                if demoted_reason:
+                    print('      the word matcher DID match: %s' % demoted_reason)
+                    print('      -- not blocking on its own, because it names '
+                          'WORDS rather than an app,\n         a file or an '
+                          'obligation, and the file sets could not be compared.')
                 print('      (claimed %s%s)'
                       % (age_str(c),
                          ', REGISTRY ONLY -- not pushed yet'

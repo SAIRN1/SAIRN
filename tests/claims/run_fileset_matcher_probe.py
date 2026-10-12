@@ -400,5 +400,142 @@ arm('the file-only refusals are not one session arguing with itself',
     all(s[0] != s[1] for s in _sessions),
     'a same-session pair reached a cross-session list')
 
+# ─────────────────────────────────────────────────────────────────────────
+print('\n5. the FILE SET IS THE PRIMARY MODE -- prose alone no longer '
+      'hard-blocks a one-sided pair')
+# Added 2026-10-12. Sections 1-4 cover the BOTH-DECLARED case, which the file
+# set has decided since 2026-09-22. The ONE-SIDED case was the last place
+# where ordinary English could refuse a session outright, and it did.
+#
+# THE REFUSAL THAT SENT THIS, reproduced below from the real claim record
+# rather than invented: cc's `check cc "batch W b4 resume"` against fourth's
+# live claim, blocked on `one task is entirely inside the other: "batch
+# resume"` -- two words about WHEN work happens, against a claim that had
+# already said in six paths WHAT it touches, none of them cc's.
+
+# ── THE PREDICATE'S ABSENCE IS AN ARM, NOT A TRACEBACK ───────────────────
+# The first version of this section called SC.rests_on_evidence() directly in
+# a CONTROL arm. Run against the pre-change tool -- which is how the negative
+# control for this section is measured -- it raised AttributeError and the
+# whole probe died at the second arm, so the four BEHAVIOURAL arms below never
+# ran and the negative control produced a crash instead of a measurement.
+# A control that cannot run against the code it was written to reject is the
+# COULD-NOT-RUN state wearing a failure's clothes (PR SS1.11).
+#
+# So the predicate's presence is its own arm, the arms that need it are
+# skipped by name when it is missing, and the cmd_check arms -- which drive
+# the REAL behaviour through the REAL entry point and need no new symbol --
+# run either way. Against the pre-change tool those four fail, which is the
+# measurement this section exists to produce.
+HAS_EV = hasattr(SC, 'rests_on_evidence')
+arm('the tool under test HAS the evidence predicate this section is about',
+    HAS_EV,
+    'sairn_claim.rests_on_evidence is absent. The 4 CONTROL arms that call it '
+    'are SKIPPED and say so; the behavioural arms below still run.')
+
+
+def ev(mine_subj, mine_task, their_subj, their_task):
+    """rests_on_evidence, or None when the tool does not have it."""
+    if not HAS_EV:
+        return None
+    return SC.rests_on_evidence(mine_subj, mine_task, their_subj, their_task)
+
+
+def arm_if_ev(name, cond_fn, detail=''):
+    if not HAS_EV:
+        print('  SKIP  ' + name + ' -- rests_on_evidence absent')
+        return
+    arm(name, cond_fn(), detail)
+
+
+# A pair whose ONLY commonality is prose: no app in either, no shared
+# identifier, no obligation id, no commit sha.
+PROSE_MINE = 'batch resume'
+PROSE_THEIRS = ('FILES: docs/zzz-methodology-note.md -- batch b4 resume at '
+                'head, numbering only, no rewrite')
+arm('CONTROL: those two really DO collide lexically, or the next arms are void',
+    SC.block_reason('me', PROSE_MINE, 'other', PROSE_THEIRS) is not None,
+    'block_reason answers None, so nothing below is being exercised')
+arm_if_ev('CONTROL: ...and the collision rests on NO evidence rule',
+          lambda: not ev('me', PROSE_MINE, 'other', PROSE_THEIRS),
+          'an evidence rule fires, so this pair is not the prose-only case '
+          'and the arms below would pass for the wrong reason')
+code, out = check_against('other', PROSE_THEIRS, 'me', PROSE_MINE)
+arm('a PROSE-ONLY one-sided pair does NOT hard-block',
+    'BLOCKED' not in out, 'exit %s\n%s' % (code, out[:600]))
+arm('...and it is NOT reported as a plain CLEAR either -- it is the third state',
+    'COULD NOT BE PROVEN' in out,
+    'a demoted block that prints an unqualified CLEAR is worse than the '
+    'over-block it replaces\n' + out[:600])
+arm('...and their declared paths are printed for the reader to check',
+    'docs/zzz-methodology-note.md' in out, out[:600])
+arm('...and the DEMOTED word match is shown rather than silently dropped',
+    'the word matcher DID match' in out and 'batch resume' in out,
+    'the evidence that was downgraded is invisible, so a reader cannot '
+    'overrule it\n' + out[:600])
+
+# THE OTHER DIRECTION, and it is what makes this a narrowing rather than a
+# hole: a one-sided pair that shares real evidence still blocks. Same prose
+# shape, one app name added to both sides.
+EV_MINE = 'sairnbuild batch resume'
+EV_THEIRS = ('FILES: docs/zzz-methodology-note.md -- sairnbuild batch b4 '
+             'resume at head, numbering only')
+arm_if_ev('CONTROL: that pair DOES rest on evidence',
+          lambda: ev('me', EV_MINE, 'other', EV_THEIRS),
+          'no evidence rule fires, so the arm below is not testing the '
+          'exemption')
+code, out = check_against('other', EV_THEIRS, 'me', EV_MINE)
+arm('a one-sided pair sharing an APP still BLOCKS',
+    'BLOCKED' in out and code != 0, 'exit %s\n%s' % (code, out[:600]))
+
+# A shared IDENTIFIER is evidence too, and this is the arm that stops the
+# shared_identifiers() extraction from quietly losing a rule.
+ID_MINE = 'leg_invoices rotation'
+ID_THEIRS = 'FILES: docs/zzz-other-note.md -- leg_invoices obligation discharge'
+arm_if_ev('CONTROL: a shared identifier counts as evidence',
+          lambda: ev('me', ID_MINE, 'other', ID_THEIRS),
+          'the identifier rule no longer reads as evidence')
+code, out = check_against('other', ID_THEIRS, 'me', ID_MINE)
+arm('a one-sided pair naming the same RESOURCE in prose still BLOCKS',
+    'BLOCKED' in out and code != 0, 'exit %s\n%s' % (code, out[:600]))
+
+# NEITHER side declaring anything is UNCHANGED: prose is the only evidence
+# there is, so it must still block.
+NEITHER_MINE = 'batch resume'
+NEITHER_THEIRS = 'batch b4 resume at head, numbering only, no rewrite'
+arm('CONTROL: neither side declares a FILES list',
+    SC.file_verdict(NEITHER_MINE, NEITHER_THEIRS) == ('unknown', set())
+    and not SC.one_sided_files(NEITHER_MINE, NEITHER_THEIRS),
+    repr(SC.file_verdict(NEITHER_MINE, NEITHER_THEIRS)))
+code, out = check_against('other', NEITHER_THEIRS, 'me', NEITHER_MINE)
+arm('with NO file evidence on either side, prose STILL blocks',
+    'BLOCKED' in out and code != 0,
+    'the narrowing leaked into the case it was not for -- a claim pair with '
+    'no file evidence at all now clears on words\n' + out[:600])
+
+# ── shared_identifiers() WAS EXTRACTED FROM block_reason(); PIN BOTH ──────
+# The extraction is behaviour-preserving by measurement (0 differing reason
+# strings over 204,422 cross-session pairs, recorded in the commit). These two
+# arms are what keeps it that way: the exemptions it carries are the reason
+# the busiest file on the platform is not exempted by commonness, and a
+# regression in either direction is invisible from block_reason()'s message.
+_DISC_A = 'FILES: tools/a.py -- api/sd-data.js is fourth\'s and is NOT taken here'
+_DISC_B = 'FILES: tools/b.py -- wire the gate in api/sd-data.js'
+_HAS_SI = hasattr(SC, 'shared_identifiers')
+arm('the tool under test HAS the extracted identifier helper', _HAS_SI,
+    'sairn_claim.shared_identifiers is absent; its two arms are SKIPPED')
+if _HAS_SI:
+    arm('a DISCLOSED path is not a shared identifier',
+        'api/sd-data.js' not in SC.shared_identifiers('a', _DISC_A, 'b', _DISC_B),
+        repr(SC.shared_identifiers('a', _DISC_A, 'b', _DISC_B)))
+    arm('...and a path-shaped identifier is never exempted by commonness',
+        'api/sd-data.js' in SC.shared_identifiers(
+            'a', 'wire api/sd-data.js', 'b', 'patch api/sd-data.js'),
+        repr(SC.shared_identifiers('a', 'wire api/sd-data.js',
+                                   'b', 'patch api/sd-data.js')))
+else:
+    print('  SKIP  a DISCLOSED path is not a shared identifier -- helper absent')
+    print('  SKIP  ...and a path-shaped identifier is never exempted -- helper absent')
+
 print('\n%d failure(s)' % fails)
 sys.exit(1 if fails else 0)
