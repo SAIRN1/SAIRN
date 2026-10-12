@@ -79,6 +79,40 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": ".claude/settings.json",
+   "class": "CI / hook configuration",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "\"timeout\": 30,"
+    }
+   ],
+   "sha": "1fa4f7a419f9ae3a2ed48cd65d76c7d22278bb27",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_external_file_index_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(root, ignore_errors=True)"
+    }
+   ],
+   "sha": "1fa4f7a419f9ae3a2ed48cd65d76c7d22278bb27",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "1fa4f7a419f9ae3a2ed48cd65d76c7d22278bb27",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_tier_a_review_gate_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -244,6 +278,27 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "56bbce5e83d519e21e621382084d6b18eb02a989",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/claims/run_own_claim_state_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "`now() - claimed_at < 4h` timeout, and reported its own live 5.3-hour claim as"
+    }
+   ],
+   "sha": "5ad263684df8a5c9629793190ca979beee5cbe20",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "5ad263684df8a5c9629793190ca979beee5cbe20",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -504,6 +559,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_self_exclusion_guard_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "b5bcfce46c897c6450e1cf7fc149b7c901dd6db4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/claims/run_matcher_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "bfee680940affd7cd0fad494957d258e38f56eee",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_scrutiny_flag_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -656,6 +727,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "f1d2fd1988785a6e4a3f9ee00f87ab8d9d1a5456",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_gh_push_argv_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f6c0a0f820591c7183fa1dc015fae2fd70240309",
    "criteria_version": "2026-10-06.1"
   },
   {
