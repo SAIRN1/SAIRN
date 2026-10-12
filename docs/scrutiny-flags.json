@@ -111,6 +111,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/auth-setup-attribution.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'unparseable file must be a FAILURE, never a skip', () => {"
+    }
+   ],
+   "sha": "16245537cc5611e3670a8e8d8d8bb8a37da00722",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sairncash/verify.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "16245537cc5611e3670a8e8d8d8bb8a37da00722",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/claims/run_matcher_probe.py",
    "class": "test file",
    "level": "CHANGE",
