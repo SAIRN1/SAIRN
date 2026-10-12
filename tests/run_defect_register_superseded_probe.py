@@ -259,6 +259,102 @@ try:
                  (rc, json.loads(reg_text(d))['records'][0]['commit']),
                  (0, head[:12])))
 
+    # ── --supersede: THE FIELD HAD A VALIDATOR AND NO WRITER (2026-10-12) ──
+    # Every arm above drives a superseded_by that a HUMAN typed into the JSON
+    # by hand. That is how the field worked for five days, on a 26,000-line
+    # file four clones append to -- which is the row-splitting failure PR 2.1
+    # names. The arms below are about the command that writes it, and they
+    # exist in the refusing direction first: a writer for this field is a
+    # writer for an EXEMPTION, and the ways it must refuse matter more than
+    # the way it accepts.
+    if not hasattr(DR, 'cmd_supersede'):
+        arms.append(('the tool under test HAS a writer for superseded_by '
+                     '(--supersede)', False, True))
+    else:
+        def _sup(d, stale, survivor):
+            return in_repo(d, lambda: DR.cmd_supersede(
+                ['--supersede', stale, '--by', survivor]))
+
+        # ACCEPTS: two records identical apart from `commit`, survivor live.
+        d, head, dang, base = build(lambda h, g, b: [
+            record(h[:12], SUBJ, 'one defect'),
+            record(b[:12], SUBJ, 'one defect'),
+        ])
+        made.append(d)
+        rc, out = _sup(d, head[:12], base[:12])
+        _recs = json.loads(reg_text(d))['records']
+        arms.append(('--supersede writes the pointer when the two records are '
+                     'IDENTICAL apart from `commit` and the survivor is live',
+                     (rc, _recs[0].get('superseded_by')), (0, base[:12])))
+        arms.append(('...and NOTHING is deleted -- the stale record stays',
+                     len(_recs), 2))
+        arms.append(('...and --check then exits 0 over what was a duplicate',
+                     in_repo(d, DR.cmd_check)[0], 0))
+        # AND IT IS NOT RE-ADVERTISED AS RE-SEATABLE. --check and --reseat
+        # disagreed in print the moment the first pointer was written: one
+        # listed the record as re-seatable and named a command that refuses it.
+        _chk_rc, _chk_out = in_repo(d, DR.cmd_check)
+        arms.append(('...and --check does NOT list a superseded record as '
+                     'RE-SEATABLE, which would send a reader to a command '
+                     'that refuses it',
+                     ('RE-SEATABLE' in _chk_out
+                      and base[:12] in _chk_out.split('RE-SEATABLE')[1][:400]),
+                     False))
+
+        # REFUSES: the records differ in content.
+        d, head, dang, base = build(lambda h, g, b: [
+            record(h[:12], SUBJ, 'one defect'),
+            record(b[:12], SUBJ, 'a DIFFERENT defect', severity='high'),
+        ])
+        made.append(d)
+        rc, out = _sup(d, head[:12], base[:12])
+        arms.append(('REFUSES two records that differ in content -- that is a '
+                     'content decision and not this command\'s',
+                     (rc, 'NOT the same record' in out), (2, True)))
+        arms.append(('...and names the differing keys rather than just saying no',
+                     'severity' in out and 'summary' in out, True))
+        arms.append(('...and writes NOTHING',
+                     json.loads(reg_text(d))['records'][0].get('superseded_by',
+                                                               '<absent>'),
+                     '<absent>'))
+
+        # REFUSES: the survivor is a DANGLING object -- resolves, not reachable.
+        # This is the state a random hex string cannot produce.
+        d, head, dang, base = build(lambda h, g, b: [
+            record(h[:12], SUBJ, 'one defect'),
+            record(g[:12], SUBJ, 'one defect'),
+        ])
+        made.append(d)
+        rc, out = _sup(d, head[:12], dang[:12])
+        arms.append(('REFUSES an UNREACHABLE survivor -- it resolves, so only a '
+                     'reachability test can catch it',
+                     (rc, 'unreachable' in out), (2, True)))
+        arms.append(('...and writes NOTHING, so the record is not retired in '
+                     'favour of a commit that is not on the branch',
+                     json.loads(reg_text(d))['records'][0].get('superseded_by',
+                                                               '<absent>'),
+                     '<absent>'))
+
+        # REFUSES: a second pointer on a record that already has one.
+        d, head, dang, base = build(lambda h, g, b: [
+            record(h[:12], SUBJ, 'one defect', superseded_by=b[:12]),
+            record(b[:12], SUBJ, 'one defect'),
+        ])
+        made.append(d)
+        rc, out = _sup(d, head[:12], base[:12])
+        arms.append(('REFUSES re-pointing a record that already carries one',
+                     (rc, 'already carries' in out), (2, True)))
+
+        # REFUSES: self-reference. The shape that would drop a defect from
+        # every figure with no survivor to carry it.
+        d, head, dang, base = build(lambda h, g, b: [
+            record(h[:12], SUBJ, 'one defect'),
+        ])
+        made.append(d)
+        rc, out = _sup(d, head[:12], head[:12])
+        arms.append(('REFUSES a record naming ITSELF as its own survivor',
+                     (rc, 'self' in out), (2, True)))
+
 finally:
     for d in made:
         shutil.rmtree(d, ignore_errors=True)

@@ -1456,13 +1456,34 @@ def cmd_check(argv=()):
     # know the register's SHAs have drifted from `main`, and `--reseat` is one
     # command away. Saying nothing here would trade a false alarm for a silent
     # rot, which is the swap this repo keeps recording against itself.
-    if reseat:
+    # ── A SUPERSEDED RECORD IS NOT RE-SEATABLE, AND SAYING IT IS SENDS THE
+    #    READER TO A COMMAND THAT REFUSES (2026-10-12) ──────────────────────
+    # The moment the first four pointers were written, this block and `--reseat`
+    # disagreed in print: --check listed four RE-SEATABLE records and told the
+    # reader to run --reseat, and --reseat answered "4 record(s) are SUPERSEDED
+    # and are never re-seated" and exited 1. Both were right about their own
+    # question and the pair was unusable -- the shape where a check advertises
+    # work the tool it names will not do. The filter is applied HERE, at the
+    # print, rather than at `reseat.append()` above, because `bad` is built in
+    # the same loop and a superseded record must still be checked for every
+    # other defect; only its re-seat ADVICE is wrong.
+    _reseatable = [t for t in reseat
+                   if not _skips_duplicate_test(
+                       next((r for r in reg['records']
+                             if r['commit'] == t[0]), {}))]
+    _sup_reseat = len(reseat) - len(_reseatable)
+    if _reseatable:
         print('RE-SEATABLE (%d): the SHA was rewritten by a rebase and the '
-              'subject still resolves.' % len(reseat))
-        for old, new, subj in reseat:
+              'subject still resolves.' % len(_reseatable))
+        for old, new, subj in _reseatable:
             print('    %s -> %s  %s' % (old, new, subj[:66]))
         print('    Not a failure. Run `python tools/defect_register.py '
               '--reseat` to write them back.')
+    if _sup_reseat:
+        print('    (%d further record(s) have a rewritten SHA and are '
+              'SUPERSEDED, so they are NOT listed above: --reseat never '
+              're-seats one, and naming them here would send a reader to a '
+              'command that refuses.)' % _sup_reseat)
     # ── ONE ENTITY, ONE SPELLING (2026-09-14) ──────────────────────────────
     # `SAIRNBIZ` and `sairnbiz` sat in this file as two apps, splitting one
     # entity in half. Nothing noticed, because every per-app figure simply
@@ -1668,6 +1689,132 @@ def superseded_survivor(rec, base):
     if not reachable(sur, base):
         return (sur, 'unreachable')
     return (sur, 'live')
+
+
+def cmd_supersede(argv):
+    """`--supersede <stale-sha> --by <survivor-sha>` -- write the pointer.
+
+    ── THE FIELD EXISTED AND NOTHING COULD SET IT (2026-10-12) ──────────────
+    `superseded_survivor()` above has validated this field since 2026-10-07 and
+    `--check` has enforced it, but the only way to put one in was to hand-edit
+    26,000 lines of JSON -- which is the row-splitting failure PR 2.1 names, on
+    the file whose own merge policy exists because four clones append to it.
+    So the four pending pairs sat unresolved and `--reseat` reported them as
+    COLLIDES on every run, in every clone, for five days.
+
+    WHAT THIS REFUSES, AND WHY IT IS NOT A CONTENT JUDGEMENT WHEN IT PASSES.
+    `--reseat` says, correctly, that "deciding which survives is a content
+    question and is not this command's to make". That is true in general and
+    FALSE in the one case this command accepts: when the two records are
+    IDENTICAL apart from `commit`, there is no content to decide between, and
+    the survivor is the one git can still see. Every other shape is refused and
+    stays a human's problem:
+
+      * the two records differ in any field other than `commit` and
+        `superseded_by` -- then they are not the same record and retiring one
+        would delete a distinct claim. REFUSED, with the differing keys named.
+      * the survivor is missing, dangling, or the record itself -- the three
+        states superseded_survivor() already distinguishes. A superseded record
+        whose survivor is not really there is WORSE than a duplicate: a
+        duplicate double-counts a real defect, this drops one.
+      * the stale record already carries a pointer -- re-pointing it is a
+        content decision again, and it is not made silently.
+
+    NOTHING IS DELETED, EVER. The stale record stays and gains a pointer, which
+    is what the append-only invariant tools/sairn_rebase_resolve.py enforces
+    requires -- it REFUSES a merge in which a record disappeared.
+    """
+    def opt(name, required=True):
+        if name in argv:
+            return argv[argv.index(name) + 1]
+        if required:
+            print('missing %s' % name)
+            print('usage: python tools/defect_register.py --supersede <stale-sha> '
+                  '--by <survivor-sha>')
+            return None
+        return ''
+
+    stale = opt('--supersede')
+    survivor = opt('--by')
+    if not stale or not survivor:
+        return 2
+    d = load()
+    recs = d.get('records') or []
+
+    def find(sha):
+        hits = [r for r in recs
+                if str(r.get('commit') or '').startswith(sha)
+                or sha.startswith(str(r.get('commit') or ''))]
+        return hits
+
+    sh, sv = find(stale), find(survivor)
+    for label, sha, hits in (('stale', stale, sh), ('survivor', survivor, sv)):
+        if not hits:
+            print('no %s record at %s. Nothing was written.' % (label, sha))
+            return 2
+        if len(hits) > 1:
+            print('%d records match the %s sha %s -- give more characters. '
+                  'Nothing was written.' % (len(hits), label, sha))
+            return 2
+    rec, keep = sh[0], sv[0]
+
+    if SUPERSEDED_FIELD in rec:
+        print('%s already carries %s -> %r. Re-pointing a superseded record is '
+              'a content decision and is not made here. Nothing was written.'
+              % (rec.get('commit'), SUPERSEDED_FIELD, rec[SUPERSEDED_FIELD]))
+        return 2
+
+    a = {k: v for k, v in rec.items() if k not in ('commit', SUPERSEDED_FIELD)}
+    b = {k: v for k, v in keep.items() if k not in ('commit', SUPERSEDED_FIELD)}
+    diffs = sorted(set(a) | set(b))
+    diffs = [k for k in diffs if a.get(k) != b.get(k)]
+    if diffs:
+        print('REFUSED -- these two records are NOT the same record. They '
+              'differ in: %s' % ', '.join(diffs))
+        print('  superseding is only mechanical when there is no content to '
+              'decide between.')
+        print('  Nothing was written.')
+        return 2
+
+    # The survivor is validated by the SAME function --check uses, against the
+    # SAME base, so this command cannot write a pointer --check would reject.
+    #
+    # THE BASE IS reseat_base(), NOT THE LITERAL 'origin/main'. The first draft
+    # hardcoded the branch name and the probe caught it immediately: in a
+    # throwaway fixture repo there is no origin/main, so a perfectly live
+    # survivor measured as not-reachable and the command refused a write it
+    # should have made. reseat_base() is what --check asks, which is the whole
+    # point of validating through the same function -- a second answer to
+    # "reachable from what" would put this command and --check back in
+    # disagreement, which is the defect two blocks below this one.
+    base, base_why = reseat_base()
+    if not base:
+        print('REFUSED -- reachability COULD NOT BE MEASURED (%s), so whether '
+              'the survivor is really on the branch is unknown. An unchecked '
+              'exemption is the one thing this field must never become. '
+              'Nothing was written.' % base_why)
+        return 2
+    rec[SUPERSEDED_FIELD] = str(keep.get('commit'))
+    _sur, state = superseded_survivor(rec, base)
+    if state != 'live':
+        del rec[SUPERSEDED_FIELD]
+        print('REFUSED -- the survivor %s is %r, not live. %s'
+              % (keep.get('commit'), state,
+                 {'missing': 'it does not resolve as a commit in this clone.',
+                  'unreachable': 'it resolves but is NOT an ancestor of '
+                                 'the branch base -- a dangling object.',
+                  'self': 'a record cannot be its own twin.',
+                  'absent': 'the field did not take.'}.get(state, '')))
+        print('  Nothing was written.')
+        return 2
+
+    save(d)
+    print('%s -> superseded_by %s' % (rec.get('commit'), rec[SUPERSEDED_FIELD]))
+    print('  identical apart from `commit`, and the survivor is an ancestor of '
+          'the branch base (%s).' % base)
+    print('  Nothing was deleted: the stale record stays and carries the '
+          'pointer.')
+    return 0
 
 
 def resolves(sha):
@@ -2318,6 +2465,11 @@ def cmd_planned():
 def main(argv):
     if '--add' in argv:
         return cmd_add(argv)
+    # BEFORE --check, same reasoning as --confirm below: this is a WRITE and
+    # --check is a read, and an argv carrying both is a mistake whose
+    # surprising half is the write.
+    if '--supersede' in argv:
+        return cmd_supersede(argv)
     # BEFORE --check, because `--confirm` is a write and `--check` is a read;
     # an argv carrying both is a mistake and the write is the surprising half.
     if '--confirm' in argv:
