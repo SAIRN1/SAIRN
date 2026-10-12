@@ -6270,6 +6270,58 @@ module.exports = async (req, res) => {
     // Read: any authenticated employee (scheduling/coordination needs the whole roster).
     // Write: management only (owner/billing) -- caregivers don't self-edit their own cert
     // records through this resource, matching every other app's roster-write pattern.
+    //
+    // ── "NOT CLIENT PHI" WAS TRUE AND WAS NOT THE WHOLE ANSWER (fixed
+    //    2026-10-12, hover2 seq 965, severity high) ─────────────────────────
+    // The sentence above is the gate's whole stated reasoning and it compares
+    // this row to the WRONG thing. It is not client PHI; it is EMPLOYEE PII,
+    // and three of its fields are not employment facts a scheduler needs.
+    // Field list confirmed against the real write site, not inferred from the
+    // branch: sairnsenior.html saveCaregiver() at :2681 stores id, name,
+    // phone, cpr_expiry, bgcheck_date, status, notes, aide_type, program,
+    // state_caregiver_id, employee_id, branch_id.
+    //
+    // THE READ RETURNED THE WHOLE BLOB, EVERY ROW, TO ANY AUTHENTICATED
+    // SAIRNSENIOR SESSION -- including a caregiver's BACKGROUND-CHECK DATE, a
+    // STATE-ISSUED CAREGIVER ID and free-text HR NOTES about a colleague. The
+    // justification for the lighter gate is scheduling and coordination:
+    // reaching a caregiver, knowing whether their CPR card is current, which
+    // programme and branch they work. None of those three fields serves it.
+    //
+    // A FLAT ROLE REFUSAL WOULD BE THE WRONG FIX AND WOULD BREAK THE APP. The
+    // roster genuinely is needed agency-wide -- senIsScheduler() reads it,
+    // the cert gate computes from cpr_expiry, visits join on employee_id. So
+    // this is FIELD-level, exactly the shape alf_facility's rate card uses at
+    // :11359: everyone keeps the half they need, nobody outside management
+    // gets the half they do not.
+    //
+    // A NEW CONSTANT, NOT SEN_CLIENT_MANAGEMENT_ROLES, AND THE MEMBERSHIP IS
+    // THE SAME TODAY. Who may see a colleague's background-check date is not
+    // the same decision as who may reassign a home-care client, and this
+    // platform has already paid for two decisions sharing one name (see
+    // api/law-auth.js's RULE_AUTHORING_ROLES comment, which refused to reuse
+    // AI_COC_REVIEW_ROLES for the same reason).
+    //
+    // WHY THE REDACTION IS SAFE AGAINST A ROUND-TRIP WIPE, which is the check
+    // alf_facility's comment says has to be done every time: this client reads
+    // the roster and writes whole records back, so a redacted read followed by
+    // a write would erase the three fields. It cannot happen, because the
+    // WRITE branch below is management-only and management's read is never
+    // redacted -- no caller can hold a stripped copy AND be allowed to save
+    // it. IF THE WRITE TIER IS EVER WIDENED PAST THE READ TIER HERE, THIS
+    // STOPS BEING TRUE. The write branch still spells its gate
+    // SEN_CLIENT_MANAGEMENT_ROLES, so the two are equal by coincidence of
+    // membership rather than by construction; that is left alone as an
+    // orthogonal change and is said here so the next reader does not have to
+    // discover it.
+    //
+    // AND THE RESPONSE DECLARES THE REDACTION (`hr_fields_visible`), because a
+    // missing field and an empty one are the same thing to a caller that
+    // cannot ask. A blank background-check date reads as "no check on file" on
+    // a compliance column -- which is why sairnsenior.html's roster table now
+    // reads that flag instead of rendering an empty cell.
+    const SEN_CAREGIVER_HR_FIELD_ROLES = roleSet({ owner: true, billing: true });
+    const SEN_CAREGIVER_HR_FIELDS = ['bgcheck_date', 'state_caregiver_id', 'notes'];
     if (resource === 'sen_caregivers' && action === 'read') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
@@ -6277,8 +6329,13 @@ module.exports = async (req, res) => {
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
-      const data = (rows || []).map((r) => Object.assign({ id: r.caregiver_id }, r.data));
-      res.status(200).json({ ok: true, data, provisioned: true });
+      const canSeeHr = !!SEN_CAREGIVER_HR_FIELD_ROLES[session.role];
+      const data = (rows || []).map((r) => {
+        const out = Object.assign({ id: r.caregiver_id }, r.data);
+        if (!canSeeHr) SEN_CAREGIVER_HR_FIELDS.forEach((f) => { delete out[f]; });
+        return out;
+      });
+      res.status(200).json({ ok: true, data, provisioned: true, hr_fields_visible: canSeeHr });
       return;
     }
     if (resource === 'sen_caregivers' && action === 'write') {

@@ -2703,7 +2703,18 @@ function rCaregivers(){
   cgtb.innerHTML=cg.length?cg.map(function(c){
     var days=certDaysUntil(c.cpr_expiry);
     var cprBadge=days===null?'--':(days<0?'<span class="badge br">Expired</span>':(days<=30?'<span class="badge bw">'+days+'d</span>':fdate(c.cpr_expiry)));
-    return '<tr><td>'+H(c.name)+'</td><td>'+H(c.phone||'--')+'</td><td>'+cprBadge+'</td><td>'+fdate(c.bgcheck_date)+'</td>'+
+    // ── A REDACTED FIELD MUST NOT RENDER AS AN ABSENT ONE (2026-10-12) ────
+    // api/sd-data.js's sen_caregivers READ now strips bgcheck_date,
+    // state_caregiver_id and notes for anyone outside management (hover2 seq
+    // 965). `fdate(undefined)` renders the same as a caregiver with no
+    // background check on file, and this is a COMPLIANCE column -- "not
+    // recorded" and "not yours to see" would have been indistinguishable on
+    // exactly the field a state surveyor asks about. The tier here is the same
+    // one the server redacts on, owner/billing, so the two cannot disagree
+    // without someone changing both.
+    var bgCell=isMgmt?fdate(c.bgcheck_date)
+      :'<span class="badge bx" title="Background-check dates are visible to management only. This is not a statement about whether a check is on file.">Restricted</span>';
+    return '<tr><td>'+H(c.name)+'</td><td>'+H(c.phone||'--')+'</td><td>'+cprBadge+'</td><td>'+bgCell+'</td>'+
       '<td><span class="badge '+(c.status==='active'?'bg':(c.status==='onboarding'?'bb':'bx'))+'">'+H(c.status)+'</span></td>'+
       '<td>'+(isMgmt?'<button class="btn bo bs" onclick="editCaregiver(\''+c.id+'\')">Edit</button>':'--')+'</td></tr>';
   }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No caregivers on file</td></tr>';
