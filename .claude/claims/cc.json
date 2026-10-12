@@ -3718,6 +3718,25 @@
         "tools/hover_separation_ci.py",
         "tools/sairn_claim.py"
       ]
+    },
+    {
+      "id": "cc-1791803387",
+      "session": "cc",
+      "subject": "cc",
+      "task": "batch W (b4) resume, second half. The bld_draws AUTH_BYPASS fix, the claim-matcher primary mode and the Tier A obligation are already committed at 331ed542 and are not redone. Remaining: superseded_by support in tools/defect_register.py plus its 4 pending deltas; the external-files index carryover; the push gate's no-ref-lines-on-stdin message; and the report, digest and handoff. No auditor clone is entered. FILES: tools/defect_register.py tools/sairn_push_gate_hook.py docs/external-files-index.json docs/handoff-cc-2026-10-12.md SAIRN-ACTIVE-WORK-cc.md SAIRN-report-cc-b4.txt SAIRN-digest-cc-b4.txt",
+      "claimed_at": "2026-10-12T11:09:47Z",
+      "claimed_at_epoch": 1791803387.1660497,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "SAIRN-ACTIVE-WORK-cc.md",
+        "SAIRN-digest-cc-b4.txt",
+        "SAIRN-report-cc-b4.txt",
+        "docs/external-files-index.json",
+        "docs/handoff-cc-2026-10-12.md",
+        "tools/defect_register.py",
+        "tools/sairn_push_gate_hook.py"
+      ]
     }
   ],
   "refusals": [
