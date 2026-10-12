@@ -5995,6 +5995,29 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-10-12T11:35:03Z",
+      "opened_at_sha": "518a0a902fd3edec83c4c9a1bbf7d80fa8405cba",
+      "opened_at_sha_basis": "file-set",
+      "resources": [
+        "bld_bids",
+        "bld_draws"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/sd-data.js",
+        "sairnbuild.html"
+      ],
+      "what": "bld_draws AUTH_BYPASS, hover seq664. read and write on bld_draws took the licence key alone while wip and release_retainage on the SAME table were session- and role-gated, so retainage figures were readable with no session and a generic write could author, inflate or zero a retainage release around bld_release_retainage_atomic, the no-reduce rule in api/_lib/wip-accounting.js and the append-only trail. api/sd-data.js now requires a sairnbuild session for read and write, and carries retainage_released, retainage_released_at and retainage_release_log over from the STORED row with a fail-closed pre-read. sairnbuild.html sends the session on bld_draws push, retry and hydrate through one BLD_SESSION_REQUIRED list. NOT restricted to owner or office on purpose: the Draw Requests panel is not role-gated client-side, so management-only would 403 every field role save of a draw it can still open, and that product question is reported rather than shipped inside a security fix. bld_bids is in this obligation only because it shares sairnbuild.html; its own branch was not touched. Control: section 5 of api/_lib/sairnbuild-retainage-endpoint.test.js, 35 passed 0 failed with the fix and 30 passed 5 failed against the stashed pre-fix handler.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-10-12T11:35:03Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

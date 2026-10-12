@@ -26702,6 +26702,198 @@
         }
       ],
       "recurrence_open": "THE CODE BEING PRESENT IS NOT THE FIX, and the SQL half is entirely outstanding. Measured by tools/audit_event_type_check.py at this commit, exit 1: SAIRNlaw works today; stonedesk_audit_log and sairncode_audit_log EXIST but their event_type CHECK REJECTS pin_setup (STEP 0a/0b of docs/2026-10-07-hank-migration-sql-for-michael.md, not run) -- so sd-auth.js and sc-auth.js attribution has been failing at the database since it landed on 2026-10-07; and the other 13 tables do not exist at all (STEPS 1-13, not run). Only ONE of seventeen apps records a row today. api/law-auth.js keeps a divergent detail shape by decision. The SAIRNcash half is bearer-credential strength, not identity, and was not proven live."
+    },
+    {
+      "commit": "518a0a902fd3",
+      "date": "2026-10-12",
+      "subject": "fix(bld_draws): the gate on wip and release_retainage was real, and the SAME TABLE took read and write on the licence key alone",
+      "files": [
+        "api/_lib/sairnbuild-retainage-endpoint.test.js",
+        "api/sd-data.js",
+        "sairnbuild.html"
+      ],
+      "lines_added": 217,
+      "lines_removed": 5,
+      "app": "sairnbuild",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "code-review",
+      "summary": "api/sd-data.js: bld_draws was gated on TWO of its four actions. `wip` and `release_retainage` required a sairnbuild session and owner/office; `read` and `write` ON THE SAME TABLE fell through to the generic BLD_RESOURCES loop and took the licence key alone. A caller with the key and no session could read every draw's retainage figures, and could POST action:'write' with a `data` blob of its own choosing -- a merge-duplicates upsert that REPLACES `data` entirely, so one request could author a release that never happened, inflate one, or set `retainage_released` back to zero. That defeated bld_release_retainage_atomic's CAS, the no-reduce rule in api/_lib/wip-accounting.js and the append-only audit trail at once, with no employee recorded against any of it. Routed to this session as hover finding seq664; the originating hover INSTANCE is not recorded in any source a build agent may read, so the method here is this session's own read of both branches at HEAD rather than an attribution it could not verify.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "1f1705e0c6b6",
+        "date": "2026-09-02",
+        "subject": "feat(sairnbuild): server backup for the business record -- 30 collections that existed in one browser and nowhere else",
+        "lag_days": 40
+      },
+      "citation_note": "No process rule produced this. The defect is a resource whose ACTIONS were gated unevenly, and nothing in SAIRN-PROCESS-RULES.md covers action-level gate parity on one table. Recorded as a gap rather than cited loosely.",
+      "contributing_factors": [
+        {
+          "factor": "The generic BLD_RESOURCES loop carries an explicit no-session decision with a written reason -- every role in a building company reads the schedule, the punch list and the daily log. That reasoning is true of 29 of its 30 members and false of bld_draws, which is progress billing.",
+          "kind": "technical",
+          "action": "bld_draws is gated ahead of the loop: a valid sairnbuild session is required for read and write, and the three release-owned fields are carried over from the stored row rather than taken from the caller, with a fail-closed pre-read.",
+          "action_status": "done"
+        },
+        {
+          "factor": "The money semantics arrived AFTER the loop. bld_draws joined the ungated thirty on 2026-09-02 as an ordinary jsonb row; release_retainage, the atomic RPC and the append-only trail landed two weeks later. The loop's comment was correct when it was written and became wrong without being touched.",
+          "kind": "latent-condition",
+          "action": "Not acted on here beyond the gate itself. The general shape -- adding a money action to a resource that sits in an ungated generic loop -- has no check behind it.",
+          "action_status": "planned",
+          "note": "A gate-parity check across the generic resource loops is the real corrective and is larger than this fix; routed rather than improvised inside a security change."
+        },
+        {
+          "factor": "The correct shape was next door the whole time: the rf_draws branch gates read, write AND wip identically, for the same resource in another app. Nothing had to be designed, only noticed -- which is why no amount of designing would have caught it.",
+          "kind": "detection",
+          "action": "Section 5 of api/_lib/sairnbuild-retainage-endpoint.test.js now drives the two actions nothing in that file had ever driven, measured against the pre-fix handler (30 passed, 5 failed) as well as the fixed one (35 passed, 0 failed).",
+          "action_status": "done"
+        },
+        {
+          "factor": "The suite tested the guarded door and never tried the next one along. Twenty-nine arms covered wip and release_retainage; zero covered read or write on the same table, so every rule those arms assert was reachable around via a different action and the suite stayed green.",
+          "kind": "detection",
+          "action": "The six new arms include the two 401 cases, a forged release, a reduced release, and a real release surviving an ordinary save.",
+          "action_status": "done"
+        },
+        {
+          "factor": "The client echoes the server-authored release fields back into its local row after a release, and st() pushes that row through the generic write. A naive fix -- strip the release fields from the caller's payload -- therefore BLANKS a real release on the next ordinary draw save, which is a data-loss bug introduced by the security fix.",
+          "kind": "technical",
+          "action": "The fields are carried over from the stored row instead of stripped, and an arm asserts a real release survives an ordinary save.",
+          "action_status": "done"
+        }
+      ],
+      "recurrence_open": "OPEN. Nothing checks gate parity ACROSS the actions of one resource, and nothing re-asks the question when a money action is added to a resource already sitting in an ungated generic loop. The other 29 BLD_RESOURCES members, and the SDN_/LEG_/GRD_ loops with the same shape, have not been re-read against this."
+    },
+    {
+      "commit": "9605c4afd0de",
+      "date": "2026-10-12",
+      "subject": "fix(claim matcher): the declared FILES set is the PRIMARY mode -- two words about WHEN work happens stopped refusing a claim that had already said in paths WHAT it touches",
+      "files": [
+        "tests/claims/run_fileset_matcher_probe.py",
+        "tools/sairn_claim.py"
+      ],
+      "lines_added": 276,
+      "lines_removed": 29,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "live-verification",
+      "summary": "tools/sairn_claim.py: a one-sided FILES declaration left PROSE able to hard-block. The real refusal, from this clone at batch pickup: `python tools/sairn_claim.py check cc \"batch W b4 resume\"` was REFUSED against a live claim declaring six files, none of them this session's, with the reason `one task is entirely inside the other: \"batch resume\"` -- two words describing WHEN work happens, against a claim that had already said in paths WHAT it touches. Both-sides-declared had been decided by the file sets since 2026-09-22; the one-sided case was still falling straight through to the lexical matcher, and a gate that refuses on batch vocabulary is one sessions learn to talk past. Observed, not reasoned about: the refusal is reproduced verbatim in section 5 of tests/claims/run_fileset_matcher_probe.py.",
+      "rules": [
+        "4.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The lexical matcher predates the FILES convention entirely, so no commit introduced this -- it is the half of the matcher that was never revisited when declared file sets arrived. git log -S on any one rule would name the commit that wrote that rule, which is not the same fact (PR 2.6)."
+      },
+      "citation_note": "4.3 is about what a session does WITH a block -- verify it, never reword the task to slip past the matcher. This is the matcher side of the same rule: it is the defect that makes honest sessions want to reword, so the citation is adjacent rather than exact.",
+      "contributing_factors": [
+        {
+          "factor": "block_reason() is an OR over positive signals and its own header says so. Three of those signals name a THING (an obligation id, an app, a file or resource) and four name WORDS (same subject, subject containment, shared phrase, task containment). The call site treated all seven as equally blocking, so a bucket-name match refused a claim that had already declared its paths.",
+          "kind": "technical",
+          "action": "rests_on_evidence() splits the two classes by CALLING the evidence rules, and cmd_check demotes a one-sided prose-only block to the UNPROVABLE state instead of refusing.",
+          "action_status": "done"
+        },
+        {
+          "factor": "same-subject was blocking across sessions even though three of the four sessions use their own session name as the subject for a whole day's work. The containment rule below it already excludes the subject for exactly that reason, so the file contained the argument against its own earlier rule.",
+          "kind": "technical",
+          "action": "1,022 of the 1,616 demoted pairs are this rule. Measured, read, and reported in the commit rather than asserted.",
+          "action_status": "done"
+        },
+        {
+          "factor": "The FILES convention made the matcher's answer asymmetric and nobody re-asked what prose should mean once paths existed. Both-declared was fixed on 2026-09-22 and one-sided was left on the lexical path, which is where the over-block then concentrated.",
+          "kind": "process",
+          "action": "The one-sided case now has its own rule, and the neither-declared case is explicitly left on prose with an arm asserting it.",
+          "action_status": "done"
+        },
+        {
+          "factor": "The first draft of the evidence test parsed block_reason()'s own message with a startswith on same-subject. That is a stale anchor of the shape that silently disarmed five controls in tools/sabotage_control_check.py, and it ALSO measured differently -- 2,105 demotions against the derived rule's 1,616, the 489 difference being pairs that share an app or a file and must keep blocking.",
+          "kind": "detection",
+          "action": "Rejected before shipping and the derived predicate used instead; both numbers are in the commit so the next reader does not re-propose the prefix test.",
+          "action_status": "done"
+        },
+        {
+          "factor": "The negative control for the new probe section CRASHED rather than failing: its CONTROL arms called the new predicate directly, so against the pre-change tool the probe died on AttributeError at arm two and the four behavioural arms never ran. A control that cannot run against the code it rejects is COULD-NOT-RUN wearing a failure's clothes.",
+          "kind": "detection",
+          "action": "The predicate's presence is its own arm, the arms needing it SKIP by name, and the cmd_check arms run either way -- 5 measured failures against the pre-change tool.",
+          "action_status": "done"
+        }
+      ],
+      "recurrence_open": "OPEN. block_reason() remains an OR over positive signals, so every future rule added to it is blocking by default and nothing asks whether it names a thing or a word. The evidence/prose split is enforced only where rests_on_evidence() is called, and a new evidence rule added to block_reason and not to it would be silently demoted."
+    },
+    {
+      "commit": "c4ad2f5a663f",
+      "date": "2026-10-12",
+      "subject": "fix(hover separation): the control that exists because fixtures cannot see the range-reader had nine arms COULD NOT RUN, and the guard that disarmed them was added to fix a hole it never closed",
+      "files": [
+        "tests/hover_separation_ci_probe.py",
+        "tools/hover_separation_ci.py"
+      ],
+      "lines_added": 37,
+      "lines_removed": 4,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "probe-control",
+      "summary": "tests/hover_separation_ci_probe.py, the ONE control that drives tools/hover_separation_ci.py against a real git repository, had nine arms reporting COULD NOT RUN and a traceback on the tenth -- measured at HEAD before anything was changed. Two independent causes. target_repo()'s guard accepted git's root only if it contained hover_separation_ci.py, which rejected the fixture repo the probe creates, so every fixture SHA resolved against the wrong clone and came back as an invalid revision range. And the scope-drift arm patched `hover_separation_audit.AUDITOR_SCOPE`, a tuple 7bc3a5a2 had DELETED when the scope became a per-session class, so it raised AttributeError and took the probe down after its last real assertion. The arms that stopped running are exactly the ones proving the gate refuses a build agent reaching into the auditor's clone -- the enforcement the triad exists for -- and they were dark from 2026-09-30 to 2026-10-12.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tests/hover_separation_ci_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "7bc3a5a25bb5",
+        "date": "2026-09-30",
+        "subject": "fix(hover-scope): AuditorScope is a class keyed by session identity, so any number of auditor clones each get their own scope",
+        "lag_days": 12
+      },
+      "citation_note": "1.1 is the class -- a check that stopped checking -- and it is cited for the AttributeError half, where a correct rename left the control pointing at a symbol that no longer exists. The target_repo() half is closer to 1.11: the probe reported COULD NOT RUN rather than a pass, which is the only reason any of this was visible, so that rule describes what went RIGHT here rather than what went wrong.",
+      "contributing_factors": [
+        {
+          "factor": "target_repo()'s 2026-09-27 guard accepted git's answer ONLY IF the resolved root contains hover_separation_ci.py. The probe runs the checker with cwd set to a throwaway fixture repo, so the CORRECT answer was refused and the fallback pointed at this clone -- every fixture SHA then came back as an invalid revision range.",
+          "kind": "technical",
+          "action": "A root that IS the current directory is accepted, which is unambiguous because git did not walk up to find it, and is the fixture case and nothing else.",
+          "action_status": "done"
+        },
+        {
+          "factor": "The guard was added to close a walk-up hole and does not close it. From C:/Users/marsh/Documents, which is not a repo, git answers C:/Users/marsh, and this file's path DOES start with that -- so the first clause accepts it, before and after the fix. Driven rather than argued: the checker run from there exits 2 COULD NOT RUN on an unresolvable range, which is the honest third state and is not the guard working.",
+          "kind": "technical",
+          "action": "Named in the code rather than left implied. The walk-up case needs a different test and is NOT fixed.",
+          "action_status": "planned",
+          "note": "Fixing it inside the same change would have conflated a dead-control repair with a guard redesign, and the guard's real behaviour is now written down where the next reader will hit it."
+        },
+        {
+          "factor": "The scope-drift arm patched hover_separation_audit.AUDITOR_SCOPE. 7bc3a5a2 deleted that tuple when the scope became a per-session class and said so in a comment, while scope_definitions_agree() was rewritten to read AuditorScope(s).paths. The arm raised AttributeError and took the whole probe down after its last real assertion.",
+          "kind": "detection",
+          "action": "The arm patches AuditorScope.SHARED on the audit side only, which is what the comparison actually reads, and both directions pass.",
+          "action_status": "done"
+        },
+        {
+          "factor": "Nothing announced the day the control stopped testing anything -- the eighth cross-domain discipline, arriving for real. The rename was correct; the control was never re-referenced against it, and the gap ran from 2026-09-30 to 2026-10-12.",
+          "kind": "latent-condition",
+          "action": "No general mechanism was added. This control is now green and each verification was measured alone.",
+          "action_status": "planned",
+          "note": "A sweep that re-references every control's patch targets against the module it patches is the general corrective; it is tool work beyond this fix and is reported rather than improvised."
+        },
+        {
+          "factor": "Nine arms reporting COULD NOT RUN is what made this visible. Had the probe folded the unresolvable range into a pass, a correct classifier wired to a range-reader returning nothing would have reported exactly the same green -- which is the sentence the probe's own docstring already carried.",
+          "kind": "detection",
+          "action": "No change needed: the third state is why this was found at all, and it is recorded here as the thing that worked.",
+          "action_status": "declined",
+          "note": "Nothing to fix. Recorded so a future reader does not read the nine COULD NOT RUN lines as the defect rather than as the detection."
+        }
+      ],
+      "recurrence_open": "OPEN. Nothing re-references a control's patch targets against the module it patches, so the next correct rename can dark another arm the same way. And the walk-up hole target_repo()'s own comment claims to close is still open at this HEAD, verified by running the checker from C:/Users/marsh."
     }
   ],
   "started": "2026-09-09",
