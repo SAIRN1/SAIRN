@@ -1,0 +1,320 @@
+DIGEST cody b4 -- batch 27, 2026-10-11/12, landed f12e6042
+SHA256 ec3f0bd97bc38e1ffa59b683810cd555ba9a9de8e2449c2e8861b2d070cc983c
+
+HASH RULE: line 1 is the title, line 2 is the SHA line, the BODY is every byte
+from line 3 to end of file, LF, UTF-8. Recompute with:
+  python -c "import hashlib,io;b=io.open('SAIRN-digest-cody-b4.txt',encoding='utf-8',newline='').read().split(chr(10),2)[2];print(hashlib.sha256(b.encode()).hexdigest())"
+Adopted from SAIRN-digest-ted-b4.txt including its own correction: a SHA line
+that does not verify is worse than no SHA line. The word PENDING is replaced
+only after the body stops changing, and the commit that replaces it says the
+value was recomputed and checked.
+
+COMPANION REPORT  SAIRN-report-cody-b4.txt, 869 lines, body SHA256
+                  9e4842d364b67eced1d67e8d6a1ac1f8341dc71e7e50adc038c85928178e2a22
+                  (verified before its commit 82c914e1)
+HANDOFF           docs/handoff-cody-2026-10-12.md
+
+DRIVE COPIES ARE NOT BYTE-IDENTICAL AND SAY SO ON THEIR OWN FIRST LINE. The
+handoff was uploaded in full. The report's Drive copy is a labelled POINTER --
+title, the repo copy's verified hash, the short version, and the open list --
+because a retyped 48KB duplicate would be a second thing to drift and one more
+row in the loop its own section 9.6 is about. The hash is what makes the repo
+copy checkable; a Drive duplicate that cannot be byte-compared adds nothing it
+does not already give.
+
+================================================================================
+THE HEADLINE
+================================================================================
+
+EIGHT of the nine items are resolved. ITEM 3 IS NOT, and not for want of effort:
+law_role_granularity needs a bar-rules decision about a law firm's role
+vocabulary, the code declines to invent one TWICE IN WRITING, and the auditor
+who found it declined to prescribe one. The question is Michael's or the firm's
+and it is stated in full below.
+
+Three of the brief's own premises were wrong and are corrected with measurements
+rather than argued: the severity, the location of a routing doc, and a sequence
+number that collides across the two auditors' logs. A fourth -- the reseat
+item's "~21 of 32 and 11 cross-session" -- had its two halves the wrong way
+round.
+
+================================================================================
+PER ITEM
+================================================================================
+
+1   ROUTE THE 76 SUITE FAILURES BY APP          ALREADY LANDED, verified, skipped
+    ca81d59d. Not redone. Its own Tier A review obligation was recorded this
+    batch and assigned to cc.
+
+2   TIER-A DANGLING-SHA RESEAT                  DONE
+    3 reseated (strong basis only), 11 WEAK routed with every session named per
+    record, 25 refused routed by reason, 145 with no sha at all left to
+    --backfill-shas. Each reseat stamped with WHICH basis and keeping
+    opened_at_sha_was, so all three are reversible from the ledger alone.
+    TWO OF THE THREE ARE NOT CODY'S RECORDS -- a judgment call, said out loud,
+    on the grounds that opened_at_sha is a pointer and repairing a dangling one
+    on a strong basis changes no verdict, reviewer, finding or owner.
+    THE BRIEF'S NUMBERS WERE INVERTED: the 11 is exactly the WEAK set; the 21 is
+    the REFUSED set, which this clone cannot reseat at all.
+    AND THREE DEFECTS IN THE TOOL, all found by running it:
+      - a SELECTOR decided a VERDICT. --only narrowed the git-log window, so the
+        same record was RESEATABLE in the full population and REFUSED under
+        --only. The careful path saw less.
+      - an EXACT FILE SET was a STRONG basis with no time bound and put an
+        EIGHTEEN-DAY-OLDER commit forward as one. --write alone would have
+        applied it.
+      - a probe arm asserted rc == 0 against a fixture whose sha is forty zeros
+        on purpose. It had NEVER passed; confirmed by running HEAD's own gate
+        against the same ledger.
+
+3   law_role_granularity (hover2 seq 757)       NOT DONE -- see THE DECISION
+                                                OWED, below
+
+4a  cl_feedback_log attribution (seq 951)       DONE, schema half UNVERIFIED
+    No employee was recorded against a legal-citation treatment confirm, at the
+    application layer AND the schema layer, under a schema comment claiming
+    "individual feedback stays attributable". The caller was in scope at :184
+    the whole time. Columns NULLABLE on purpose -- the session token on that
+    endpoint is optional by design, so a row can legitimately have no person on
+    it and NULL beats a guess.
+    The migration arrives via `alter table`, so the handler now answers 503
+    NOT_PROVISIONED naming the SQL file rather than "Data store error -- try
+    again", which is advice that can never work.
+    8 arms, 0 failed. Fail-first 4 passed / 4 failed at HEAD.
+    GUARDIAN CHECK 29 IS NOT SATISFIED and is open item 2.
+
+4b  sen_caregivers PII scope (seq 965, HIGH)    DONE, not live-verified
+    The read returned every caregiver's background-check date, state-issued
+    caregiver ID and free-text HR notes to ANY authenticated sairnsenior role.
+    The branch's justification -- "not client PHI" -- was true and was the wrong
+    comparison: it is employee PII.
+    Fixed at FIELD level, following alf_facility's rate-card shape, because a
+    flat role refusal would have broken the roster the lighter gate exists to
+    serve. A NEW constant rather than the clients one, because who may see a
+    colleague's background check is not who may reassign a client.
+    THE CLIENT HALF SHIPS WITH IT: a redacted compliance column rendered
+    identically to "no background check on file". Closing an access-control
+    defect by opening a silent-misread one is not a fix.
+    18 arms, 0 failed, every arm asserting BOTH halves. Fail-first 15/3.
+    Tier A review obligation opened and assigned to hank.
+
+5   check4_probe / check7_probe worktree        MECHANISM DONE, VERDICTS COULD
+                                                NOT RUN
+    Moved from a linked worktree -- which SHARES .git/config with its clone, a
+    defect reproduced in two commands and already documented -- to a throwaway
+    clone, the move check8_probe.py made on 2026-10-06 and these two never got.
+    HARDLINKED, NOT --no-hardlinks, a DELIBERATE DEVIATION from the brief:
+    measured here, --no-hardlinks costs 7.7s and 207MB per run against no
+    measurable cost hardlinked, and these run in four clones after every push.
+    Three things a clone does not inherit were each the silent-pass direction
+    and are now set AND asserted: core.hooksPath, origin's real URL, and the
+    retry fetch that relied on a shared object store.
+    VERIFIED: clone builds, hook FIRES from it, .git/config byte-identical,
+    no worktree registered, no new %TEMP% residue.
+    NOT VERIFIED: check 4's and check 7's own verdicts -- both exit 3 COULD NOT
+    RUN because a CLEAN push is refused over an eighth Drive handoff.
+
+6   DUPLICATE DOM IDS                           DONE, not click-through verified
+    Three, every one a live defect. sairnfreedom ac-tbody: the accounts table
+    never rendered or the officer roster was replaced by account rows.
+    sairnfreedom ac-name: a post could not open its ORC 2915.10(C) exclusive
+    bingo-session account under the name typed in. sairncare fc-name:
+    saveFacility() stored the family-contact box's value as the facility's name.
+    Measured by HTML parser: 303/1 -> 304/0, 398/2 -> 400/0, sairnsenior 327/0
+    unchanged. Renames follow each file's own existing prefix.
+    tools/ CARRIES NO DUPLICATE-DOM-ID CHECKER -- all three were found by an
+    inline scan, which is open item 13.
+
+7   THE TWO queue16 CONVENTIONS                 REMOVED FROM SCOPE
+    Blocked on fourth's live claim over "conventions queue16", and that is a
+    REAL overlap -- fourth's own task (b) is literally to recount them. Per
+    PR 4.3 the item was dropped rather than rephrased. Ask fourth.
+
+8   COMPACTION DISCIPLINE                       HELD
+    No file over 400,000 bytes opened whole. docs/SAIRN-OPEN-WORK-INDEX.md never
+    opened. api/sd-data.js (1.09MB), sairnfreedom.html (455KB) and sairncare.html
+    (322KB) read by grep and offset windows only. No mid-task model switch, no
+    mid-task MCP switch -- the Drive MCP was loaded once, at the end, for the
+    uploads the batch asked for.
+
+9   HANDOFF / REPORT / DIGEST                   DONE, handoff written FIRST
+    Each uploaded as it was written.
+
+================================================================================
+THE DECISION OWED -- ITEM 3, AND NOBODY IN A SESSION SHOULD MAKE IT
+================================================================================
+
+THREE CORRECTIONS TO THE BRIEF, EACH MEASURED:
+  - MODERATE, not HIGH. hover2's log says "moderate" and its routing doc's
+    header says MODERATE.
+  - docs/2026-10-08-hover2-law-role-granularity-routing.md DOES NOT EXIST IN
+    THIS CLONE. It is in Documents/SAIRN-hover2/docs/. The :1037 / :1067-1069
+    citations come from that doc's 19-row table, not from the log entry, which
+    cites :13798-13805, :13807-13814 and :15742-15743.
+  - seq 757 COLLIDES ACROSS THE TWO AUDITORS. H1's seq 757 is an unrelated
+    batch-close entry. The one meant is hover2's.
+
+THE FINDING IS REAL, RE-DERIVED FROM THE CODE: 19 sairnlaw resources are
+session-gated with no role distinction. Exactly one role check exists across
+sairnlaw's whole data surface -- LAW_RECONCILE_ROLES, owner-only, on
+law_trust_reconcile alone.
+
+WHY NO CODE CHANGED:
+  api/sd-data.js:13789 -- "A SESSION GATE, NOT A ROLE GATE ... Which role may
+  see which record is a product decision with no obvious answer, and inventing
+  one here would break the app for the people it is for."
+  api/sd-data.js:15719 -- "WHO SHOULD BE IN THE SET IS NOT DECIDED HERE, AND
+  THAT IS DELIBERATE ... widening it is a bar-rules judgement for the firm ...
+  Tracked as an open decision; NOT closed by this fix."
+  hover2 -- "routed, not a prescribed fix".
+
+I CHECKED FOR THE ONE CASE THAT WOULD NOT BE A PRODUCT DECISION. If a boundary
+were already decided elsewhere and sd-data.js merely failed to enforce it, that
+would be a gap and I would have fixed it. SAIRNlaw has two decided boundaries,
+AI_COC_REVIEW_ROLES and RULE_AUTHORING_ROLES (owner+attorney each), both LIVE
+and both USED -- verified, not assumed. NEITHER covers any of the 19 resources.
+
+THE QUESTION: for a three-role firm (owner / attorney / paralegal), which of the
+19 should a paralegal read and write? The three sharpest -- law_picases
+(settlement figures, attorney work product, Tier A/A), law_pimedical (the app's
+own comment calls it as sensitive as law_trusttx), law_bankstatements (Tier A on
+integrity). law_trusttx is IOLTA client trust money and is the figure a bar
+association audits.
+
+DO NOT LET A FUTURE SESSION INVENT A SPLIT. A wrong one 403s paralegals out of
+matters they legitimately work, which the code says in two places.
+
+================================================================================
+TWO THINGS THAT WILL COST THE NEXT SESSION TIME
+================================================================================
+
+A. THIS CLONE WAS RUNNING WITH EVERY HOOK STRIPPED, UNCOMMITTED.
+   .claude/settings.json had "hooks": {} against HEAD's 5 events / 8 commands,
+   1,700 bytes against 7,300, with two .bak copies beside it -- one BYTE-
+   IDENTICAL to HEAD, the other a strict subset. HEAD was intact; restored with
+   git checkout and both backups removed.
+   IT IS THE SECOND CLONE THE SAME EVENING. ted's b4 digest records the
+   identical shape in SAIRN-fourth, where NINE of the 23 stripped hooks were
+   controls over that clone INCLUDING hook_integrity_check.py -- which is wired
+   as a hook, so emptying the table silenced the detector built to catch exactly
+   this. Its only signal was an absence.
+   CHECK IT FIRST, before anything else:
+     python -c "import json;d=json.load(open('.claude/settings.json'));print({k:len(v) for k,v in d['hooks'].items()})"
+     git status --short .claude/
+   Who or what did it is open item 17: no commit attributes either, both were
+   uncommitted, and the two files are in two different clones.
+
+B. EIGHT OTHER-SESSION HANDOFFS ON THE SHARED DRIVE, AND THE RACE IS THE FINDING
+   G:\My Drive\SAIRN-status is a DECLARED external directory shared by every
+   session, and tools/external_file_index_check.py denies any push while a tool,
+   script or handoff sits there unindexed. Over this batch:
+     1 handoff-h2-2026-10-11.md       hover2  declared by cc on 2026-10-11
+     2 handoff-h2-2026-10-11b.md      hover2  at the start of this batch
+     3 handoff-fourth-2026-10-11.md   fourth  first push attempt
+     4 SAIRN-handoff-h1-b10.md        hover   first push attempt
+     5 handoff-h2-2026-10-12.md       hover2  PREDICTED by row 2's own note;
+                                              arrived inside the hour
+     6 handoff-fourth-2026-10-12.md   fourth  arrived DURING the write that
+                                              declared 5
+     7 SAIRN-handoff-h1-b11.md        hover   arrived DURING the push that
+                                              declared 6
+     8 handoff-h2-2026-10-12b.md      hover2  after the push; still unindexed
+   DECLARING THEM ONE AT A TIME CANNOT CONVERGE. It blocked this clone's push
+   FIVE times and it stopped check4_probe.py from reaching its own subject --
+   a probe for a BLOCKING gate, exiting 3 on a CLEAN push for a reason that has
+   nothing to do with check 4.
+   SAIRN_SEED_GATE=off WAS NOT USED. It skips all fourteen checks, including the
+   Tier A obligation and the two regenerated documents the same push had just
+   satisfied properly, and SAIRN_GATE_EXEMPT names only `seed`.
+   THE TWO REPAIRS, NEITHER TAKEN, BOTH OWNED ELSEWHERE:
+     (1) the CHECK should read belongs_in_git -- which it already parses and
+         ignores -- and keep exit 1 for the session that OWES a file while not
+         denying everyone else's push. cc's file; cc's own index row raised it
+         before I did.
+     (2) each auditor should write its handoff into its own clone, which
+         CLAUDE.md already says by name.
+
+================================================================================
+GATES, CLAIMS AND CONFLICTS
+================================================================================
+
+SEVEN GATE REFUSALS, NONE OVERRIDDEN. A ref-lines-on-stdin refusal caused by
+piping `git push` into tail (cc's item 5, reported not fixed); an unreadable
+outgoing range from a moved remote tip; five external-file-index refusals; a
+defect-register refusal (SEVEN records added -- three for the reseat tool, one
+each for the four fixes, three of them deliberately `not-citable` with a note
+saying the rules have no section for that failure shape); two Tier A obligation
+refusals, both recorded; and two generated documents regenerated.
+
+ONE REGISTER ATTEMPT WAS REFUSED AND THE REFUSAL WAS RIGHT: an invented
+injection sha, met with "a sha that does not resolve is not a lag, it is a guess
+with a hash on it." The real one is 78b27243, found with git log -S -- and it is
+the fix for a WORSE defect, so that record's lag is a fix's own side effect,
+which the record says.
+
+THE CLAIM WAS WRITTEN DIRECTLY, NOT THROUGH `claim`, AND SAID SO. `claim` was
+blocked on hover2's b9 claim over the shared PHRASE "digest plus" -- an English
+fragment, no shared file, app, subject or resource, against a role whose own
+claim says it writes nowhere ever. That is the lexical case PR 4.3 covers:
+record the collision and write the claim, never reword the task string. The
+matcher said so itself -- its own comment records that disjoint declared FILES
+sets do not block, and hover2's claim declares no FILES.
+CONTRAST, so the difference is on the record: item 7's block was REAL, so the
+item was removed rather than rephrased.
+AND THE CLAIM READ DEAD TO ITSELF: `own` reported DEAD on a stale cody row in
+~/SAIRN-SESSION-LOCKS/status naming a dead CLAUDE_PID. sairn_status.py set
+restamped it; the pid lock had been current all along.
+
+TWO REAL REBASE CONFLICTS, BOTH MERGED RATHER THAN PICKED. The defect register
+with tools/sairn_rebase_resolve.py (502 ancestor + 3 upstream-only + 4
+local-only = 509, validator run before staging). The Tier A ledger in Python by
+record identity, because hank opened a nine-resource record while this branch
+was stamping reseats -- VERIFIED FIELD-BY-FIELD after: 241 records both sides,
+exactly 12 differences, all of them the three reseats' own four fields, no
+verdict text altered. PR 2.1 forbids splitting a row on `|`; rebuilding the
+whole document from parsed JSON is the stronger form of that rule.
+
+================================================================================
+PROCESS NOTES
+================================================================================
+
+- A suite-driver subagent reported COULD NOT RUN for all eleven programs it was
+  asked to run: its session had no execution tool despite the agent type's
+  description naming Bash. It confirmed the files exist and refused to let
+  file-presence stand in for a run. Correct behaviour; I ran them myself.
+- The hover-finding-reader subagent corrected three of the brief's premises in
+  one call. Worth the dispatch.
+- One sloppy commit message is corrected rather than rewritten: the probe-pair
+  commit's `no-defect-record:` line promises a register entry rather than
+  declaring no defect. The entry exists; the register commit says so.
+- A harness mistake of mine is recorded because its failures were informative:
+  the citator suite's first run was 5/3 because the body override and the opts
+  object went into the SESSION parameter. Each failure printed the exact row it
+  had built, which is why a test that prints the artefact beats one that prints
+  a boolean.
+
+================================================================================
+OPEN, WITH OWNERS
+================================================================================
+
+ 1  law_role_granularity, the 19-resource role split   MICHAEL / THE FIRM
+ 2  Run sql/sairnlaw_citator_schema.sql and verify a real feedback write both
+    ways (Guardian Check 29)                           whoever can reach Supabase
+ 3  Live-verify sen_caregivers/read against the deployed endpoint
+                                                       next session with network
+ 4  Discharge the sen_caregivers Tier A obligation      hank (assigned)
+ 5  Discharge the route_suite_failures.py obligation    cc (assigned)
+ 6  Re-run check4_probe / check7_probe for real verdicts   after open 7
+ 7  external_file_index_check.py blocking scope         cc
+ 8  Auditors writing handoffs to Drive, not their clone hover, hover2, fourth
+ 9  11 WEAK-basis dangling Tier-A records, 9 cross-session
+                                                       per-record in reseat doc
+10  12 NO_OBJECT_IN_CLONE records                      the clone that orphaned each
+11  5 SHA_WRONG_WHEN_WRITTEN -- fix the RECORD         the record's author
+12  145 Tier-A records with no sha at all              unassigned
+13  A duplicate-DOM-id checker -- tools/ has none      unassigned
+14  sd-data-cross-tenant-dispatchers 14 grd_* failures cc+fourth+hank (routed)
+15  sabotage-probe flake: Windows os.replace PermissionError inside
+    save_reviews' own temp fixture, passed on re-run   unassigned
+16  FMEA drafts absent for tier_a_review_gate.py + probe   unassigned
+17  Who stripped .claude/settings.json's hooks in TWO clones   unassigned
