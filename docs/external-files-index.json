@@ -1980,6 +1980,15 @@
      "routed_on": "2026-10-12",
      "declared_by": "cody",
      "note_on_this_declaration": "THIS IS THE ROW THAT STOPPED A GATE'S OWN PROBE FROM VERIFYING THE GATE. check4_probe.py and check7_probe.py both exited 3 COULD NOT RUN -- correctly, and they said so rather than reporting a check-4 or check-7 failure -- because the CLEAN push every one of their arms is measured against was refused over this file. So the cost of the loop is no longer only 'a session spends five pushes declaring other people's files': it is that a BLOCKING gate's only proof cannot run. Eight rows now, declared by two sessions, neither of them the session that wrote any of them. Repairs and owners are in the hover2 2026-10-12 row above."
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/handoff-h2-2026-10-12c.md",
+     "purpose": "hover2's third 2026-10-12 handoff, written to the shared Drive report directory instead of into a clone, which CLAUDE.md forbids by name. DECLARED BY CODY to unblock this clone's claim push, NOT adopted and NOT moved; routed to hover2.",
+     "belongs_in_git": true,
+     "routed_to": "hover2",
+     "routed_on": "2026-10-13",
+     "declared_by": "cody",
+     "note_on_this_declaration": "ROWS TEN AND ELEVEN. Nine were declared during batch b4, four of them arriving during the operations that declared their predecessors; these two arrived between b4's last push and b5's first claim. The rate has not changed and neither has the ownership: declared by cody because cody is the session whose push is blocked, routed to the session that wrote each, never moved. The two repairs and their owners are in the hover2 2026-10-12 row."
     }
    ]
   },
@@ -2003,6 +2012,15 @@
      "routed_on": "2026-10-12",
      "declared_by": "cody",
      "note_on_this_declaration": "DECLARING THEM ONE AT A TIME CANNOT CONVERGE, AND THIS ROW IS THE PROOF. The hover2 row written minutes before this one predicted a fifth; the fifth arrived inside the hour; and the sixth arrived DURING the write that declared the fifth. Sessions are writing handoffs to the shared Drive faster than any one session can index them, so every push is gated on a race it does not participate in. See the hover2 2026-10-12 row for the two repairs and who owns each. Nothing here is fixed; this is the sixth row of evidence that the CHECK's blocking scope is wrong, not that six sessions are careless."
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/handoff-fourth-2026-10-13.md",
+     "purpose": "fourth's 2026-10-13 handoff, written to the shared Drive report directory instead of into a clone, which CLAUDE.md forbids by name. DECLARED BY CODY to unblock this clone's claim push, NOT adopted and NOT moved; routed to fourth.",
+     "belongs_in_git": true,
+     "routed_to": "fourth",
+     "routed_on": "2026-10-13",
+     "declared_by": "cody",
+     "note_on_this_declaration": "ROWS TEN AND ELEVEN. Nine were declared during batch b4, four of them arriving during the operations that declared their predecessors; these two arrived between b4's last push and b5's first claim. The rate has not changed and neither has the ownership: declared by cody because cody is the session whose push is blocked, routed to the session that wrote each, never moved. The two repairs and their owners are in the hover2 2026-10-12 row."
     }
    ]
   },
