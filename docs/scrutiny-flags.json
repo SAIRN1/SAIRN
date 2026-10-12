@@ -39,6 +39,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_self_exclusion_guard_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "12cc52c96dd71b889a837a10e7f5aec90082b1c6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/provisioning_attribution.js",
    "class": "test file",
    "level": "CHANGE",
@@ -252,6 +260,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/claims/run_matcher_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "51b8f707acacf6e343325f4a5718470bfdf8f8f3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_tier_a_review_gate_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -443,6 +459,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/claims/run_own_claim_state_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "`now() - claimed_at < 4h` timeout, and reported its own live 5.3-hour claim as"
+    }
+   ],
+   "sha": "99b6cfb5a80a77b09a3d6c79ce8b92aaf65db778",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "99b6cfb5a80a77b09a3d6c79ce8b92aaf65db778",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/provisioning_attribution.js",
    "class": "test file",
    "level": "CHANGE",
@@ -599,6 +636,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_gh_push_argv_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c5ab0b838ebf07f75b6e37bb959e5bbbf6837376",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_primitive_obsession_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -620,6 +665,40 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "d0eb2d33fc3fd864306baf0ee1cb262da08c43f5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": ".claude/settings.json",
+   "class": "CI / hook configuration",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "\"timeout\": 30,"
+    }
+   ],
+   "sha": "d5abcf579cbc79515db8f09ea893de984443e3a3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_external_file_index_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(root, ignore_errors=True)"
+    }
+   ],
+   "sha": "d5abcf579cbc79515db8f09ea893de984443e3a3",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d5abcf579cbc79515db8f09ea893de984443e3a3",
    "criteria_version": "2026-10-06.1"
   },
   {
