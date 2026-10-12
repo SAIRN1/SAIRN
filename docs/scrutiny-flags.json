@@ -23,6 +23,14 @@
  "criteria_version": "2026-10-06.1",
  "flags": [
   {
+   "path": "tests/claims/run_matcher_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0112a8be4b003c8fd925be79d65e07f6ab650dd4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sd_data_write_attribution_three_apps.js",
    "class": "test file",
    "level": "CHANGE",
@@ -227,6 +235,35 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/claims/run_own_claim_state_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "`now() - claimed_at < 4h` timeout, and reported its own live 5.3-hour claim as"
+    }
+   ],
+   "sha": "41130c84682e72a6ab25266be7c7ff203b8b6dad",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "41130c84682e72a6ab25266be7c7ff203b8b6dad",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_self_exclusion_guard_sabotage_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "485fdb44d78b3846b29b4eac957b770cdf4d8525",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_write_path_scan_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -294,6 +331,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "56bbce5e83d519e21e621382084d6b18eb02a989",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_gh_push_argv_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "58fbb240da2451240df8a926d51882d9c7749885",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -419,6 +464,40 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "874fe39e3e7aeaa74de357df0461270d6ce82da6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": ".claude/settings.json",
+   "class": "CI / hook configuration",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "\"timeout\": 30,"
+    }
+   ],
+   "sha": "8acd789616e763672cc51348553d546d38c11bd8",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_external_file_index_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(root, ignore_errors=True)"
+    }
+   ],
+   "sha": "8acd789616e763672cc51348553d546d38c11bd8",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "8acd789616e763672cc51348553d546d38c11bd8",
    "criteria_version": "2026-10-06.1"
   },
   {

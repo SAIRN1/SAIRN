@@ -132,6 +132,17 @@
       "status": "released",
       "released_at": "2026-10-11T23:55:46Z",
       "files": null
+    },
+    {
+      "id": "hover2-1791763904",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "batch b9 -- read-only audit rotation. Re-verify 5 stale open access-control findings (sf officers write gate, dnt appointments write gate, scp session gate, a payment-token mint, a draws bypass), unchanged expected. Re-verify fix status of the two remaining items from the standing open list, no write anywhere by this role ever. Chain tip and token check. External-files mechanical check. Rotate to next-oldest findings not yet re-verified. Session-config and compaction check. Write report plus digest plus handoff, upload to Drive.",
+      "claimed_at": "2026-10-12T00:11:44Z",
+      "claimed_at_epoch": 1791763904.4368036,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
