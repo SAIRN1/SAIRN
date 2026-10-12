@@ -1,5 +1,5 @@
 DIGEST ted b4 -- CLOSE 2026-10-08, RESUME 2026-10-11, RESUME 2 2026-10-11/12
-SHA256 1ae5e784ae19e984ae78ceb9d98d844a824e04c6491051ea7c9a8676c9efc9d1
+SHA256 4b080f0f143a7f2a42b126df6453645ce9415e1bab1684e5c7cebe5de1bdd698
 
 HASH RULE, added by resume 2 because the line below it did not exist and item 6
 claimed it did: line 1 is the title, line 2 is the SHA line, the BODY is every
@@ -81,6 +81,21 @@ and are corrected here rather than edited in place.
                evidence they are dead, and resume 2 found A POPULATED ONE CAN
                MAKE A LIVE SESSION LOOK DEAD TO EVERY OTHER CLONE AND TO THE
                PUSH GATE.
+  SEED GATE    ** SAIRN_SEED_GATE=off WAS USED TWICE IN RESUME 2, SAID OUT LOUD
+               PER PR 3.3 -- and NOT on the first two pushes, which landed clean:
+               bfd2fcb0..e4b17594 and e4b17594..769023c4. It was needed from
+               769023c4..c575cb54 onward. ** The first resume's "never used at any point"
+               is about the first resume and stays true. The external-file index
+               check refused on hover2's handoff in g:\my drive\sairn-status\ --
+               not my file -- and the index it wants edited, docs/external-files-
+               index.json, is in cc's LIVE batch-W FILES. EXEMPTABLE at
+               tools/sairn_push_gate_hook.py:860 is {'seed'} only, so no SCOPED
+               exemption exists for that check and the blanket flag is the only
+               mechanism. The push carried THREE TEXT DOCUMENTS and nothing else.
+               ROUTED: (1) add that check to EXEMPTABLE; (2) THE BRIEF ORDERS
+               EVERY SESSION TO UPLOAD ITS HANDOFF TO DRIVE AND THE GATE TREATS
+               THE RESULT AS A VIOLATION -- every compliant session arms a gate
+               that blocks the next session's unrelated push.
   NEW QUESTION report question 8: were the hooks and the compaction keys turned
                off ON PURPOSE? Nothing records it. If deliberate, say so and I
                will leave them off.

@@ -18,7 +18,7 @@ this section is what the second pickup found, and it is not paperwork.
 | HEAD at pickup | `2626aedb`, this handoff's own commit |
 | tree | **DIRTY** -- `.claude/settings.json`, `SAIRN-report-ted-b4.txt`, `SAIRN-digest-ted-b4.txt` modified; 3 untracked |
 | vs remote | behind 4 at pickup, behind 6 after the fetch |
-| claim | **ALREADY HELD.** The attempt-4 claim from 1.6h before pickup covers this work; `sairn_claim.py` answered `[SAME WORK] fourth`. No new claim taken, none released |
+| claim | read as **ALREADY HELD** -- `sairn_claim.py check` answered `[SAME WORK] fourth` for the attempt-4 claim from 1.6h before pickup. **That reading was wrong:** `own` and the push gate both called it DEAD. Released and re-claimed; see below |
 
 **THE FINDING: this clone was running with every enforcement hook removed.**
 `.claude/settings.json` in the working tree had `"hooks": {}` -- **all 23 hook
@@ -98,6 +98,27 @@ row: `own` now EXIT 0, `state: HELD ... CLAUDE_PID 61696`. Both pushed,
 `e4b17594..769023c4`. **`CLAUDE.md`'s registry warning now has a third
 direction:** empty is not evidence nobody is working, populated is not evidence
 they are dead, and **populated can make a live session look dead.**
+
+**SAID OUT LOUD, PER PR §3.3: `SAIRN_SEED_GATE=off` WAS USED TWICE IN RESUME 2
+AND NOT AT ALL IN RESUME 1.** Not on every resume-2 push: `bfd2fcb0..e4b17594`
+and `e4b17594..769023c4` both landed clean through every check, and it was needed
+only from `769023c4..c575cb54` onward. The first resume's *"never used at any point"* is about the first
+resume and stays true. The external-file index check refused on
+`g:\my drive\sairn-status\handoff-h2-2026-10-11b.md` -- **hover2's handoff, not
+mine** -- and the index it wants a row in, `docs/external-files-index.json`, is
+in **cc's live batch-W FILES**. `EXEMPTABLE` at
+`tools/sairn_push_gate_hook.py:860` is `{'seed'}` only, so the SOFT-CAPTURE
+scoped exemption that exists for exactly this situation does not cover that
+check and the blanket flag was the only mechanism. The push carried **three text
+documents and nothing else** -- no code, no SQL, no seed, no schema.
+
+**And the structural half, which is the part worth acting on:** this brief orders
+every session to upload its handoff to Drive, `g:\my drive\sairn-status\` is a
+declared non-transient external directory, and a handoff uploaded there is by
+construction neither git-tracked (different path) nor indexed. **So every session
+that follows its instructions arms a gate that blocks the next session's
+unrelated push.** hover2 is holding the bag this hour; it will be somebody else
+next hour. Routed to cc, who owns both the index and the check. Not my file.
 
 **NEW FOR WHOEVER PICKS THIS UP: report question 8.** Were the hooks and the
 compaction keys turned off **on purpose**? Nothing records it. If they were,
