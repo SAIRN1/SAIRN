@@ -602,6 +602,17 @@
       "files": [
         ".claude/settings.json"
       ]
+    },
+    {
+      "id": "hover-1791807931",
+      "session": "hover",
+      "subject": "hover",
+      "task": "reproduction test for item 10, released within the same minute",
+      "claimed_at": "2026-10-12T12:25:31Z",
+      "claimed_at_epoch": 1791807931.597273,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
