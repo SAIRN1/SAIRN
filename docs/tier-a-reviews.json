@@ -5904,6 +5904,33 @@
       "reviewer_session": "cc",
       "reviewed_at": "2026-10-07T23:44:17Z",
       "verdict": "SOUND. Reviewed by cc 2026-10-07 at origin/main 703b8ee8, arms DRIVEN rather than read.\n\nFRESHNESS: FRESH, AND THIS IS THE FIRST OBLIGATION I HAVE REVIEWED THAT PROVES THE --open FIX. opened_at_sha 4ec0d5d51f56 RESOLVES, is an ANCESTOR of origin/main, and carries opened_at_sha_basis 'file-set' -- the field 18078d38 introduced and the first record in 239 to carry it. Independently re-derived: `git log -1 --format=%H -- tests/sd_data_write_attribution_three_apps.js tools/audit_event_type_check.py` returns exactly 4ec0d5d51f56, so the stamp IS the last commit touching its own file set rather than HEAD. The subject commit is \"fix(attribution): the last SEVEN write paths record WHO wrote the row\", 2026-10-07 13:10:23 -0400.\n\nCLAIM 1 -- Object.assign ARGUMENT ORDER in all six. VERIFIED, and checked across every site in the file rather than the six named. A scan for `updatedByRole = session.role` finds FIFTEEN sites in api/sd-data.js; fourteen are the storedBlob-then-stamp shape with the stamp provably after the storedBlob call, and the fifteenth is rf_schedule/set_status at :10106, which is the read-then-merge this obligation itself discloses --\n\n    const schedBlob = Object.assign({}, entry.data || {},\n      { updatedBy: session.employee_id, updatedByRole: session.role });\n\n-- with `entry.data` spread FIRST so the stamp wins on its own two keys and nothing else is touched. Position, not presence, in both shapes. A caller-supplied updatedBy is overwritten rather than stored.\n\nCLAIM 2 -- can the rf_schedule read-then-merge lose a concurrent blob write in practice? YES, AND IT IS STATED IN THE CODE WITH THE WINDOW BOUNDED: \"the window is the two awaits in between, the only other writer of this blob is rf_schedule/write (management only), and wroteRow() below still detects a PATCH that matched nothing.\" A `status_changed_by` column is named as the removal. I agree with taking the trade: a bare `data: { updatedBy }` would have REPLACED the window/notes blob -- a certain loss -- and the status quo was attribution absent entirely. A disclosed narrow race with a named exit is the better of the three.\n\nCLAIM 3 -- tools/audit_event_type_check.py's handling of sv_audit_log. VERIFIED, AND IT IS THE PART OF THAT TOOL I WOULD HAVE ATTACKED TOO. sv_audit_log carries NO event_type CHECK at all, so it cannot be violated -- and the tool does not count it clean. It reports it in a separate \"tables WITHOUT one: 1 sv_audit_log\" line, and its own source at :252 says why: \"treating absence as a violation would make sv_audit_log...\" The alternative -- folding a table with no constraint into the clean count -- is the third-state fold this platform keeps paying for, and it is avoided here deliberately.\n  The tool also states, unprompted, the three things that bound its own answer: the error direction is a MISS rather than a false accusation; A CLEAN ROW IS WEAKER EVIDENCE THAN A DIRTY ONE, \"said out loud because a green bar invites the opposite assumption\"; and it does NOT replace a live round trip. That is the disclosure standard, not an apology for it.\n\nDRIVEN, each measured alone and each three times against this SHA:\n  node tests/sd_data_write_attribution_three_apps.js -> exit 0, 20 passed, 0 failed.\n      FIRST run 0; three runs byte-identical (cmp).\n  python tools/audit_event_type_check.py -> exit 1, \"3 of 3 table(s) with a CHECK\n      reject at least one emitted value. 11 distinct value(s) in total.\"\n      FIRST run 1; three runs byte-identical (cmp).\n  EXIT 1 IS THIS TOOL'S FINDINGS CODE, NOT A FAILURE. It is REPORT-ONLY and the\n  findings are the emitted-value/CHECK mismatches it exists to surface. I read the\n  exit code from its own run rather than from a pipeline, and I am not reporting a\n  report-only tool's findings exit as a broken tool.\n\nLIMITS:\n  1. The CHECK-versus-emitted comparison is static, over two files in the repo. The tool says so itself -- it does not replace a live round trip, and I did not perform one. Whether the live tables carry the constraints the SQL files declare is not established here.\n  2. The suite proves the stamp lands on the seven branches it covers. It does not prove seven was the right denominator; \"the last 7 of 15\" is the author's count of branches needing attribution and I did not re-derive it.\n  3. api/sd-data.js is HANK'S under a live claim at pickup and was READ ONLY."
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-10-12T01:49:28Z",
+      "opened_at_sha": "30bb20220d26c682644cafa4184ec3f04a7bdd22",
+      "opened_at_sha_basis": "file-set",
+      "resources": [
+        "alf_incidents",
+        "alf_mar",
+        "alf_op_audits",
+        "invoices",
+        "quotes",
+        "sf_ledger",
+        "subcontractors"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tools/route_suite_failures.py"
+      ],
+      "what": "tools/route_suite_failures.py, batch 27 item 1. A ROUTING-TABLE GENERATOR, not a change to any Tier A write path: it loads api/_resources/index.js through node to derive an app column for 76 triaged suite failures and prints a table. It NAMES alf_incidents, alf_mar, alf_op_audits, invoices, quotes, sf_ledger and subcontractors because those strings appear in the failure rows it routes, and the gate reads names rather than call sites -- which is the correct direction for a gate to fail. Recorded rather than argued away: a reviewer should confirm the tool reads the resource map and writes nothing through it.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-10-12T01:49:28Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
