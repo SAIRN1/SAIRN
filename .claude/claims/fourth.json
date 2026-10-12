@@ -3454,8 +3454,8 @@
       "task": "batch b6 -- the b5 claim was RELEASED first: it was still active, so b6's first hour ran under it and five api/_lib files were edited outside any FILES list of mine, which is said out loud rather than absorbed. The work: consolidate the next 10 of the 39 routed private comment-stripper sites onto tests/lib/strip_comments.js with each touched suite run before and after; bisect the phi_cache mutator one candidate at a time over a derived live-tree candidate set; root-cause and status the 5 non-red suites in a new not_red list; assign routing owners by directory with the named overrides; clear the two probe worktrees after preserving their unreachable commits as refs; confirm items 6 and 7 landed in b4; measure claim visibility on both paths and route the gap to cc; dead-lock PID and age table; external-claims release statement; print resolved skill paths without editing any store; run report_sha_check on my own b6 report; handoff before the report. HOOKS AND COMPACTION KEYS STAY OFF and nothing is re-added. NO PUSH AT ALL and no SAIRN_SEED_GATE=off. FILES: api/_lib/courtlistener-rate-limit.test.js api/_lib/deadline-endpoint-inputs.test.js api/_lib/deadline-jurisdiction-labels.test.js api/_lib/dental-gfe.test.js api/_lib/mech-assets.test.js docs/2026-10-12-fourth-b5-routing.md docs/known-red-suites.json tests/phi_cache_scoped_to_user.js SAIRN-report-fourth-b6.txt SAIRN-digest-fourth-b6.txt docs/handoff-fourth-2026-10-13.md",
       "claimed_at": "2026-10-12T11:56:22Z",
       "claimed_at_epoch": 1791806182.2991245,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-12T12:12:02Z",
       "files": [
         "SAIRN-digest-fourth-b6.txt",
         "SAIRN-report-fourth-b6.txt",
