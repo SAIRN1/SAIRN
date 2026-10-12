@@ -141,13 +141,37 @@ def target_repo():
     #
     # The git answer is accepted ONLY IF IT CONTAINS THIS FILE -- preserving the
     # worktree case while refusing an unrelated repo found by walking up.
+    #
+    # ── AND THAT TEST DISARMED NINE ARMS OF ITS OWN CONTROL (2026-10-11) ────
+    # tests/hover_separation_ci_probe.py exists because the synthetic fixtures
+    # cannot see the range-reading half, so it builds a REAL repository in a
+    # temp directory and runs this checker with `cwd=` that directory. There,
+    # `--show-toplevel` returns the fixture root, which does NOT contain this
+    # file -- so the clause above rejected the right answer, fell back to REPO,
+    # and every fixture SHA came back "Invalid revision range". MEASURED at
+    # HEAD before this change: 9 arms COULD NOT RUN, exit 1, nothing verified.
+    #
+    # THE PROBE WAS NOT WRONG AND NEITHER WAS THE GUARD'S INTENT. What was
+    # wrong is that "does the root contain this file" is not the question. A
+    # root that IS the current directory is an unambiguous repository root --
+    # git did not walk up to find it -- and accepting it is the fixture case
+    # and nothing else.
+    #
+    # THE HOLE THE GUARD'S COMMENT CLAIMS TO CLOSE IS STILL OPEN, and saying so
+    # is the point of writing this down. From C:/Users/marsh/Documents (not a
+    # repo) git returns C:/Users/marsh, and this file's path DOES start with
+    # that -- so the first clause accepts it today, before and after this
+    # change. This widening therefore costs nothing there: it changes a REFUSE
+    # to an ACCEPT only for a root equal to the cwd. The walk-up case needs a
+    # different test and is not fixed here.
     r = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
                        capture_output=True, text=True, encoding='utf-8',
                        errors='replace')
     got = (r.stdout or '').strip()
     if r.returncode == 0 and got:
         root = os.path.normcase(os.path.abspath(got))
-        if os.path.normcase(os.path.abspath(__file__)).startswith(root):
+        if (os.path.normcase(os.path.abspath(os.getcwd())) == root
+                or os.path.normcase(os.path.abspath(__file__)).startswith(root)):
             return got
     return REPO
 

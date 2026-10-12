@@ -226,13 +226,22 @@ def main():
         #     nothing comparing them, is how they stop matching.
         gate, audit, agree = R.scope_definitions_agree()
         arm('the two scope definitions agree today', agree, (gate, audit))
-        _real = R.A.AUDITOR_SCOPE
+        # ── THE SABOTAGE TARGET MOVED AND THIS ARM DID NOT (2026-10-11) ────
+        # This patched `R.A.AUDITOR_SCOPE`, a flat tuple that 7bc3a5a2 DELETED
+        # when the scope became a per-session class -- hover_separation_audit.py
+        # says so in a comment: "there is deliberately no `AUDITOR_SCOPE` tuple
+        # any more". So the line raised AttributeError and took the whole probe
+        # down with it, after `scope_definitions_agree()` had already been
+        # rewritten to read `AuditorScope(s).paths`. The sabotage now targets
+        # what the comparison actually reads, on the AUDIT side only, so the two
+        # module copies genuinely disagree.
+        _real = R.A.AuditorScope.SHARED
         try:
-            R.A.AUDITOR_SCOPE = ('.claude/skills/somewhere-else/',)
+            R.A.AuditorScope.SHARED = ('.claude/skills/somewhere-else/',)
             arm('...and the comparison can REPORT drift, so it is not comparing '
                 'nothing', not R.scope_definitions_agree()[2])
         finally:
-            R.A.AUDITOR_SCOPE = _real
+            R.A.AuditorScope.SHARED = _real
         arm('...and it agrees again once restored', R.scope_definitions_agree()[2])
 
         # 4d. THE ABLATION. v1 keyed on hover_separation_audit.attribute(), and
