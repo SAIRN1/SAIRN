@@ -1964,6 +1964,34 @@
      "note_on_this_declaration": "THE RECURRENCE IS THE POINT, not this row. cc declared the 'a' handoff on 2026-10-11 and a 'b' handoff appeared inside the next day, so hand-declaring each one is a chore that lands on whichever session pushes next and grows without bound. Two repairs are available and this session chose NEITHER, because both belong to the owners: (1) the CHECK should read `belongs_in_git` and keep exit 1 for the session that OWES the file while not denying other sessions' pushes -- cc's file, already raised in the row above; (2) the AUDIT ROLE should write its handoff into Documents/SAIRN-hover, which is hover2's own to change and is what CLAUDE.md already says. Until one lands, expect a third row."
     }
    ]
+  },
+  "fourth": {
+   "dirs": [],
+   "files": [
+    {
+     "path": "G:/My Drive/SAIRN-status/handoff-fourth-2026-10-11.md",
+     "purpose": "fourth's 2026-10-11 handoff, written to the shared Drive report directory instead of into a clone. CLAUDE.md: \"Handoffs live only in a real clone\", so this is a real finding and not a false positive. DECLARED BY CODY on 2026-10-12 to unblock this clone's push and its push-gate probes, NOT adopted: the file stays where it is and is routed to fourth to commit into its own clone. A build agent does not move another session's artefact, and for the hover row it must not write into that clone at all.",
+     "belongs_in_git": true,
+     "routed_to": "fourth",
+     "routed_on": "2026-10-12",
+     "declared_by": "cody",
+     "note_on_this_declaration": "THE RECURRENCE IS NOW FOUR IN ONE DAY AND THAT IS THE FINDING, not this row. cc declared hover2's 'a' handoff on 2026-10-11; cody declared hover2's 'b' handoff and then THESE TWO on 2026-10-12, in the same session, because the gate was blocking this clone's push AND tests/push_gate/check4_probe.py -- which exited 3 COULD NOT RUN on a CLEAN push for a reason that had nothing to do with check 4. Hand-declaring each one is a chore that lands on whoever pushes next and grows without bound. Two repairs exist and this session took neither, because both belong to their owners: (1) the CHECK should read `belongs_in_git` and keep exit 1 for the session that OWES the file while not denying other sessions' pushes -- cc's file; (2) each agent should write its handoff into its own clone, which is what CLAUDE.md already says. Until one lands, expect a fifth."
+    }
+   ]
+  },
+  "hover": {
+   "dirs": [],
+   "files": [
+    {
+     "path": "G:/My Drive/SAIRN-status/SAIRN-handoff-h1-b10.md",
+     "purpose": "hover's batch b10 handoff, written to the shared Drive report directory instead of into a clone. CLAUDE.md: \"Handoffs live only in a real clone\", so this is a real finding and not a false positive. DECLARED BY CODY on 2026-10-12 to unblock this clone's push and its push-gate probes, NOT adopted: the file stays where it is and is routed to hover to commit into its own clone. A build agent does not move another session's artefact, and for the hover row it must not write into that clone at all.",
+     "belongs_in_git": true,
+     "routed_to": "hover",
+     "routed_on": "2026-10-12",
+     "declared_by": "cody",
+     "note_on_this_declaration": "THE RECURRENCE IS NOW FOUR IN ONE DAY AND THAT IS THE FINDING, not this row. cc declared hover2's 'a' handoff on 2026-10-11; cody declared hover2's 'b' handoff and then THESE TWO on 2026-10-12, in the same session, because the gate was blocking this clone's push AND tests/push_gate/check4_probe.py -- which exited 3 COULD NOT RUN on a CLEAN push for a reason that had nothing to do with check 4. Hand-declaring each one is a chore that lands on whoever pushes next and grows without bound. Two repairs exist and this session took neither, because both belong to their owners: (1) the CHECK should read `belongs_in_git` and keep exit 1 for the session that OWES the file while not denying other sessions' pushes -- cc's file; (2) each agent should write its handoff into its own clone, which is what CLAUDE.md already says. Until one lands, expect a fifth."
+    }
+   ]
   }
  }
 }
