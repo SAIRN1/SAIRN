@@ -188,10 +188,52 @@ step is a wide blast radius for a small omission.
 |---|---|---|
 | `tools/sairn_push_gate_hook.py:1369` (denies), `tools/external_file_index_check.py:350-354` (detects) | unindexed external handoffs/tools/scripts under a declared directory block every clone's push; the specific unindexed file rotates as sessions catch up, the structural gap does not | **cc** (owns `docs/external-files-index.json`, batch W) |
 
+## seq1018/1022/1036 -> hank, seq1037 -> ted, added H1 batch b11 item 4
+
+Lines re-verified fresh at current HEAD `f7e03133`, not copied from b10
+-- all three api/sd-data.js citations had SHIFTED since b10 (other
+sessions' commits landing on a shared file), confirmed via `git diff
+HEAD -- api/sd-data.js` showing no local drift, so the shift is real
+upstream movement, not a local error.
+
+| Seq | Finding | File:line (current) | Fix spec | Owner |
+|---|---|---|---|---|
+| 1018 | `msb_sales`/`write` stores a sale/void record with no actor attribution | `api/sd-data.js:4929-4953` (was `:4686-4710` at b10, was `:4623-4649` originally -- shifted +243 then +203 lines across two batches of unrelated upstream commits) | Add a server-stamped `actor_employee_id` (or equivalent) field to the write body at `:4948`, sourced from a verified session token the way the void sub-path already derives `msbCaller` at `:4939`, not from client payload | **hank** |
+| 1022 | Every resource gated through `SD_SESSION_GATED` (`api/sd-data.js:817-1437`, recount: 93 action-strings now, not 70 or 77 -- the comment's own count has drifted further) is session-verified but never attributed; `gateSession` (`api/sd-data.js:1753`, was `:1510`) resolves an identity and discards it -- `grep -c gateSession.employee_id` is still 0 | `api/sd-data.js:817`, `:1753` | Stamp `gateSession.employee_id` onto the write body wherever the generic `SD_SESSION_GATED` dispatch performs a write, mirroring the one-off pattern already used for `msbCaller`/`employeeCaller` elsewhere in this file -- a single shared fix point since the gate itself is one function | **hank** |
+| 1036 | Stale comment: code says "70 action-pairs" twice (`:1629`, `:1765`, was `:1386`/`:1522`); real count is now 93, not 77 -- the drift has grown, not shrunk | `api/sd-data.js:1629`, `:1765` | Update both comment occurrences to the real, re-derived count (93 as of this batch) or better, replace the hardcoded number with a computed one (`Object.keys(SD_SESSION_GATED).length`-equivalent) so the comment cannot drift again | **hank** |
+| 1037 | `docs/scrutiny-flags.json`'s commit `5080cf60`'s own WEAKENING-flag count no longer matches its landing-commit claim of "3 of 3 WEAKENING flags were PROSE" | `docs/scrutiny-flags.json`, the single entry with `sha` `5080cf60737544eb5f95cff4aa390a50ef9673e4` (1 entry now, `level: WEAKENING` -- unchanged from b10's re-verify, b10 noted this had already dropped from 9/2 to 1/1, likely corrected/deduplicated by cc) | Re-confirm against commit `5080cf60`'s actual diff whether 1 WEAKENING flag is the CORRECT count (it may already be fixed) or whether the ledger still owes a correction; if correct, update/retire the landing-commit's own prose claim ("3 of 3") rather than the ledger | **ted** (reassigned this batch; original target was `cc`) |
+
+## hover2 cluster (seq630-660), rotated in H1 batch b11 item 9
+
+Skipped in b10 because hover2's own claim was active over this exact
+scope; hover2's claim has since released (confirmed via `sairn_claim.py
+list`, no hover2 row). Each verified against CURRENT code at HEAD
+`f7e03133`, not against hover2's own log text, via a read-only Explore
+pass over `api/sd-data.js` / `api/sairncash/verify.js`.
+
+| Seq | Topic | Current file:line | Status | Owner |
+|---|---|---|---|---|
+| 630/634 | `grd_invasive_sightings`, `grd_cart_orders`, `grd_training_courses`, `grd_training_completions` -- originally "no session gate at all" | `api/sd-data.js:4343-4366` (shared `GRD_SESSION_RESOURCES` prelude) | **FIXED** -- a single shared gate now calls `verifySessionToken(..., 'sairngrounds')` ahead of all 20 `grd_*`/bare-name branches. Comment at `:4325-4329` ("ONE SHARED PRELUDE, NOT TWENTY-ONE COPIES") and `:4331-4338` log the remaining gap honestly: session-only, no role differentiation, as a stated open product decision, not an oversight | closed, no routing needed |
+| 648/660 | `grd_session_gate` (the generic grd_ dispatch-region gate) | `api/sd-data.js:4343-4366` | **FIXED**, same mechanism as above | closed |
+| 648/660 | `alf_mar_billing_disclosure` -- medication names leaking to `billing` role via `derive_charges` | `api/sd-data.js:11041-11047` (gate), `:11100`, `:11104` (fix) | **FIXED** -- `ALF_MAR_ROLES` (owner/nursing/med_aide) now gates `description`; a `billing`-role caller gets an empty string instead of the drug name | closed |
+| 648 | `dnt_appointments_write_gate` -- write had no ownership restriction while read did | `api/sd-data.js:15560-15563` (session), `:15614-15660` (provider-ownership check) | **FIXED**, dated 2026-10-11 per in-code comment -- a non-broad-read-role caller is now checked against `provider_id` on both payload and existing row, 403 `NOT_YOUR_APPOINTMENT` on mismatch | closed |
+| 652 | `scp_irr_zones` | `api/sd-data.js:5293-5313` | **STILL UNGATED, but DELIBERATE** -- comment at `:1372-1375` names it the test suite's `UNGATED_WITNESS` negative control | not routed -- intentional fixture, not a live finding |
+| 652 | `scp_irr_schedules` | `api/sd-data.js:5314-5333` | **STILL UNGATED, genuinely open** -- no session/role check, not in `SD_SESSION_GATED` | **cody** (owns `tests/sairncode_gates.js` / sairnscape per prior batches) |
+| 652 | `scp_water_features` | `api/sd-data.js:5335-5354` | **STILL UNGATED, genuinely open** -- same shape as above | **cody** |
+| 681 | `sairncash_verify_token_mint` -- a bare, valid `subscriptionId` mints a Firebase auth token with no ownership check | `api/sairncash/verify.js:107-126` | **STILL OPEN**, confirmed live by running `.claude/skills/sairn-hover-auditor/tools-hover2/sairncash_verify_token_mint_repro.py` against current HEAD -- exits 1, "a bare, valid subscriptionId mints a Firebase auth token with no ownership check", violating `api/_lib/firebase-admin.js`'s own stated minting precondition | **hank** (payment/identity surface, highest-severity item in this rotation) |
+
+**seq701 explicitly NOT routed as open**: hover2's own log entry for it
+reads "NOW RESOLVED, not undetermined" -- it is a closed audit-trail
+review of a bypass-log cluster, not a live finding; it only appears in
+`hover_routing_gap_check.py`'s UNROUTED list because it was never
+written to the shared index, which is a reporting gap, not a defect.
+Left alone rather than falsely routed as open.
+
 ## Totals
 
 15 rows (batch U/X) + 2 rows (batch b10 item 4, confirmed owner) + 1 item
 (batch b10 item 7, claim-liveness defect) + 1 item (batch b10 item 11,
-push-blocker structural gap) = 19. All line numbers re-verified against
-current HEAD at the time each section was written, not copied forward
-from an earlier batch unchecked.
+push-blocker structural gap) + 4 rows (batch b11 item 4, fix specs) + 8
+rows (batch b11 item 9, hover2 cluster re-verify) = 31. All line numbers
+re-verified against current HEAD at the time each section was written,
+not copied forward from an earlier batch unchecked.
