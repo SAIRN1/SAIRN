@@ -56,6 +56,28 @@ const fs = require('fs');
 const path = require('path');
 const K = require('./faultkit');
 const assert = K.assert;
+// ── CONSOLIDATED ONTO THE ONE STRIPPER, 2026-10-12 (batch b5 item 4) ────────
+// This file carried FIVE private `/\/\/[^\n]*/g` strips -- :385 was recorded in
+// batch b4 as "the EIGHTH private comment-stripper", and the other four were
+// found by inventorying the whole tree rather than by reading this file.
+//
+// WHAT THE PRIVATE ONE GETS WRONG. `//` inside a string or a URL is not a
+// comment, and that regex eats the rest of the line anyway -- so an arm that
+// asserts a call is ABSENT passes on code that is PRESENT whenever the line
+// above it happens to contain `https://`. That is the direction that makes a
+// write-fault arm green while the fault is in the file.
+//
+// WHICH FUNCTION, AND WHY NOT THE SAME ONE TWICE. The subject here is
+// `sairngrounds.html`, so a whole-file strip must track the HTML/script context
+// -- outside `<script>` only `<!-- -->` is a comment and `/*` is not, which is
+// the `accept="image/*"` bug. That is `stripComments`. A function BODY pulled
+// out by `K.grab` is bare JS, so it gets `stripJs`. Using either for the other
+// is how the three wrong versions in this library's own header were wrong.
+//
+// `tools/jscomments.py` is the PYTHON half of the same consolidation and cannot
+// be required from node; `tests/lib/strip_comments.js` is its JS counterpart and
+// exports the same two entry points.
+const { stripComments, stripJs } = require('../lib/strip_comments.js');
 
 const FILE = 'sairngrounds.html';
 const SRC = fs.readFileSync(path.join(K.ROOT, FILE), 'utf8');
@@ -378,7 +400,7 @@ test('no caller of cmSavePoints drops its promise', () => {
   // Structural, and it is the arm that survives a refactor: the original defect
   // was not inside cmSavePoints at all, it was three call sites ignoring what
   // it returned.
-  const code = SRC.replace(/\/\/[^\n]*/g, '');
+  const code = stripComments(SRC);
   // `function ` is excluded or the DECLARATION counts as a dropped call -- and
   // it would, every time, making the arm fail whatever the call sites do. An
   // arm that cannot pass is as useless as one that cannot fail.
@@ -404,7 +426,7 @@ section('the two deliberate no-toast sites, asserted as decisions not oversights
 
 test('gcdSaveRound still raises NO toast, and says why at the site', () => {
   const body = K.grab(SRC, 'function gcdSaveRound(', '');
-  assert.ok(!/toast\(/.test(body.replace(/\/\/[^\n]*/g, '')),
+  assert.ok(!/toast\(/.test(stripJs(body)),
     'a per-shot failure toast was added; it fires on every shot and hole arrival '
     + 'and will drown the cart-order messages -- see the accepted note above '
     + 'rCaddie() before changing this');
@@ -416,7 +438,7 @@ test('gcdSaveRound still raises NO toast, and says why at the site', () => {
 test('recordGrdSharedTopics stays fire-and-forget and says why', () => {
   const body = K.grab(SRC, 'function recordGrdSharedTopics(', '');
   assert.ok(/grdData\(\s*'write'/.test(body));
-  assert.ok(!/toast\(/.test(body.replace(/\/\/[^\n]*/g, '')));
+  assert.ok(!/toast\(/.test(stripJs(body)));
 });
 
 test('BOTH of them are covered by grdData\'s own reporting', () => {
@@ -435,7 +457,7 @@ section('the structural half -- a 44th write site added later');
 test('every grdData write call site is inside a function, not top-level', () => {
   // Cheap, and it catches a write added to module scope where no handler and no
   // toast could exist at all.
-  const code = SRC.replace(/\/\/[^\n]*/g, '');
+  const code = stripComments(SRC);
   const re = /grdData\(\s*'write'/g;
   let m, bad = 0;
   while ((m = re.exec(code)) !== null) {
@@ -448,7 +470,7 @@ test('every grdData write call site is inside a function, not top-level', () => 
 test('the count of write sites is what this file was measured against', () => {
   // Not a freeze -- a tripwire. If it moves, somebody added or removed a write
   // and should say which, and whether the new one reads its result.
-  const code = SRC.replace(/\/\/[^\n]*/g, '');
+  const code = stripComments(SRC);
   const n = (code.match(/grdData\(\s*'write'/g) || []).length;
   assert.strictEqual(n, 43,
     'SAIRNgrounds now has ' + n + ' write call sites, measured at 43 on '

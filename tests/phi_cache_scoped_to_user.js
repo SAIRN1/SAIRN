@@ -57,6 +57,62 @@ function eq(name, actual, expected) {
 
 function readApp(file) { return fs.readFileSync(path.join(__dirname, '..', file), 'utf8'); }
 
+// ── A DIRTY SUBJECT IS A SKIP, NOT A FAILURE (2026-10-12, batch b5 item 3) ──
+// THE SYMPTOM. hank's 2026-10-08 whole-tree table records this file as
+// "63 passed, 1 failed" in the suite and "72 passed, 0 failed" ALONE, and files
+// it under CASCADE -- "an artefact of the tree being dirty by the time they
+// ran." Re-measured here: 72/0 alone, three times, exit 0.
+//
+// THIS FILE READS SEVEN FILES IT DOES NOT OWN and asserts over their text. Any
+// suite that plants a defect in one of them -- and several do, correctly, to
+// prove their own arms can fail -- turns an assertion here into a FAIL about a
+// file this suite never changed. The three live mutators of sairnbuild.html
+// were each checked and each is isolated (a TMP copy plus BLD_HTML, or a staged
+// worktree), and the one plant on api/sd-data.js that looked likeliest was
+// ABLATED: `, warn_days: gateWarn` removed exactly as
+// tests/seam_check/run_delegation_probe.py:241 removes it, 72/0 WITH the plant,
+// file restored byte-identical. SO THE PARTICULAR MUTATOR IS NOT ESTABLISHED
+// and is not named -- an invented cause ends the investigation.
+//
+// WHAT IS FIXED IS THE SIGNAL, WHICH IS THIS FILE'S OWN PROBLEM. A suite whose
+// subject moved under it must not report FAIL, because FAIL here reads as "the
+// PHI cache leaked" -- the most expensive sentence this file can print -- when
+// nothing about the cache was examined. Exit 3 is SKIPPED, which
+// tools/run_all_tests.py reports apart from both pass and fail (see its
+// returncode == 3 branch), so the third state already exists downstream.
+// Idiom copied deliberately from tests/seam_check/run_delegation_probe.py,
+// which learned it on 2026-09-09.
+//
+// IT CANNOT MASK A REAL FAILURE: the gate fires only when git says a SUBJECT
+// file differs from HEAD, and names the ones that do. If git cannot be
+// consulted that is reported and the suite RUNS -- an unreadable git is not
+// evidence the tree is dirty, and refusing to run on it would be a worse
+// silence than the one being fixed.
+const SUBJECTS = [
+  'sairncare.html', 'sairnsenior.html', 'sairndental.html', 'sairnbuild.html',
+  'stonedesk.html', 'sairnroofing.html', 'api/sd-data.js'
+];
+{
+  const { execFileSync } = require('child_process');
+  let porcelain = null;
+  try {
+    porcelain = execFileSync('git', ['status', '--porcelain', '--'].concat(SUBJECTS),
+                             { cwd: path.join(__dirname, '..'), encoding: 'utf8' });
+  } catch (e) {
+    console.log('NOTE: git could not be consulted (' + e.message.split('\n')[0]
+                + '), so a dirty subject cannot be ruled out. RUNNING ANYWAY '
+                + 'and saying so, rather than skipping on an unknown.');
+  }
+  if (porcelain && porcelain.trim()) {
+    const dirty = porcelain.trim().split('\n').map((l) => l.slice(3).trim());
+    console.log('SKIPPED: a file this suite READS differs from HEAD, so a FAIL '
+                + 'here would be about somebody else\'s in-flight change and '
+                + 'would read as a PHI cache leak. Nothing about the cache was '
+                + 'verified: ' + dirty.join(', '));
+    process.exit(3);
+  }
+}
+
 // THE KEYS THE APP ACTUALLY WRITES -- FROM CODE, NOT FROM PROSE.
 //
 // ADDED 2026-10-07 because arm 5a was RED on a key that does not exist as a

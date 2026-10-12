@@ -3,7 +3,7 @@
  "_how_it_was_measured": "RE-MEASURED 2026-10-06 (fourth). Two passes. (1) tools/run_all_tests.py over the whole tree: 739 files ran, 3 SKIPPED (a precondition, NOT a pass), 84 FAILING. (2) Every failing file not already registered -- 74 of the 84 -- plus the 3 registered files the run showed GREEN, driven INDIVIDUALLY in its own process against a tree checked for drift after every suite. RESULT OF THE INDIVIDUAL DRIVE: 66 RED, 7 GREEN, 4 COULD NOT RUN (300s ceiling). The individual drive is the authority here and the whole-tree run is not, for the reasons in the next field.",
  "_what_an_empty_why_means": "NOT DIAGNOSED YET, recorded as empty rather than guessed. An invented cause is worse than a blank one because it ends the investigation. tools/known_red_check.py reports how many entries are undiagnosed, so a blank is a backlog rather than a shrug.",
  "_what_this_is_NOT": "Not an allow-list and not a gate. An entry does not make a failure acceptable -- it makes it ATTRIBUTABLE. An entry whose suite has gone GREEN is reported as RECOVERED and must be deleted: while it stands it swallows the next real failure of that file.",
- "measured": "2026-10-06",
+ "measured": "2026-10-12",
  "measured_against": "EVERY suite in the tree, then every failing one re-driven ALONE. tools/run_all_tests.py drove 739 files (344 JS + 395 PY, 3 skipped) and reported 84 FAILING. All 74 of those not already registered were then driven INDIVIDUALLY, one process each, because that whole-tree run is NOT a trustworthy census -- see _why_the_whole_tree_run_was_not_trusted.",
  "total_files": 411,
  "entries": [
@@ -1358,6 +1358,204 @@
    },
    "exit_code": 1,
    "cause_tag": "test-design/oracle-selection/hardcoded-cardinality"
+  },
+  {
+   "file": "api/sd-data-cross-tenant-dispatchers.test.js",
+   "kind": "node",
+   "tail": "405 passed, 14 failed",
+   "since": "2026-10-12",
+   "why": "",
+   "owner": "unassigned",
+   "exit_code": 1,
+   "diagnosed": null,
+   "diagnosed_by": null,
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "327e9e80",
+    "basis": "MEASURED 2026-10-12 (fourth) at HEAD 327e9e80, batch b5 item 2. Candidates were DERIVED, not typed: every suite named red by hank's 2026-10-08 whole-tree table (89 REAL, parsed per SECTION so its 8 CASCADE and 4 TIMEOUT rows were NOT read as failures) unioned with every rc!=0 row of cody's 2026-10-11 routing TSV (76), giving 93 red suites, of which 23 were absent from this register. ALL 23 WERE THEN DRIVEN ALONE, one process each, 180s ceiling, because this file's own _how_it_was_measured says the individual drive is the authority and a run log is not. RESULT: 11 RED (exit 1), 7 GREEN, 2 COULD NOT RUN (exit 2), 2 SKIPPED (exit 3), 1 TIMEOUT. Only the 11 are added. `git status --porcelain` was captured before and after every suite and for the run as a whole: the whole-run delta was EMPTY, so no suite left the tree dirty for the next one. EXIT CODE ONLY -- no `why` is written, because an exit code is not a diagnosis."
+   }
+  },
+  {
+   "file": "tests/app_session_isolation.js",
+   "kind": "node",
+   "tail": "FAILED: sairngrounds: measured SOME, recorded NONE -- NOT DOCUMENTED -- api/grd-auth.js exists; grd_invoices and msb_licenses are Tier A",
+   "since": "2026-10-12",
+   "why": "",
+   "owner": "unassigned",
+   "exit_code": 1,
+   "diagnosed": null,
+   "diagnosed_by": null,
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "327e9e80",
+    "basis": "MEASURED 2026-10-12 (fourth) at HEAD 327e9e80, batch b5 item 2. Candidates were DERIVED, not typed: every suite named red by hank's 2026-10-08 whole-tree table (89 REAL, parsed per SECTION so its 8 CASCADE and 4 TIMEOUT rows were NOT read as failures) unioned with every rc!=0 row of cody's 2026-10-11 routing TSV (76), giving 93 red suites, of which 23 were absent from this register. ALL 23 WERE THEN DRIVEN ALONE, one process each, 180s ceiling, because this file's own _how_it_was_measured says the individual drive is the authority and a run log is not. RESULT: 11 RED (exit 1), 7 GREEN, 2 COULD NOT RUN (exit 2), 2 SKIPPED (exit 3), 1 TIMEOUT. Only the 11 are added. `git status --porcelain` was captured before and after every suite and for the run as a whole: the whole-run delta was EMPTY, so no suite left the tree dirty for the next one. EXIT CODE ONLY -- no `why` is written, because an exit code is not a diagnosis."
+   }
+  },
+  {
+   "file": "tests/run_all_tests_pinned_probe.py",
+   "kind": "py",
+   "tail": "If core.bare is true, `git config core.bare false` and re-run. Could-not-tell is not a clean tree.",
+   "since": "2026-10-12",
+   "why": "",
+   "owner": "unassigned",
+   "exit_code": 1,
+   "diagnosed": null,
+   "diagnosed_by": null,
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "327e9e80",
+    "basis": "MEASURED 2026-10-12 (fourth) at HEAD 327e9e80, batch b5 item 2. Candidates were DERIVED, not typed: every suite named red by hank's 2026-10-08 whole-tree table (89 REAL, parsed per SECTION so its 8 CASCADE and 4 TIMEOUT rows were NOT read as failures) unioned with every rc!=0 row of cody's 2026-10-11 routing TSV (76), giving 93 red suites, of which 23 were absent from this register. ALL 23 WERE THEN DRIVEN ALONE, one process each, 180s ceiling, because this file's own _how_it_was_measured says the individual drive is the authority and a run log is not. RESULT: 11 RED (exit 1), 7 GREEN, 2 COULD NOT RUN (exit 2), 2 SKIPPED (exit 3), 1 TIMEOUT. Only the 11 are added. `git status --porcelain` was captured before and after every suite and for the run as a whole: the whole-run delta was EMPTY, so no suite left the tree dirty for the next one. EXIT CODE ONLY -- no `why` is written, because an exit code is not a diagnosis."
+   }
+  },
+  {
+   "file": "tests/run_blob_coverage_scope_sabotage.py",
+   "kind": "py",
+   "tail": "FAIL -- 3 passed, 2 failed",
+   "since": "2026-10-12",
+   "why": "",
+   "owner": "unassigned",
+   "exit_code": 1,
+   "diagnosed": null,
+   "diagnosed_by": null,
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "327e9e80",
+    "basis": "MEASURED 2026-10-12 (fourth) at HEAD 327e9e80, batch b5 item 2. Candidates were DERIVED, not typed: every suite named red by hank's 2026-10-08 whole-tree table (89 REAL, parsed per SECTION so its 8 CASCADE and 4 TIMEOUT rows were NOT read as failures) unioned with every rc!=0 row of cody's 2026-10-11 routing TSV (76), giving 93 red suites, of which 23 were absent from this register. ALL 23 WERE THEN DRIVEN ALONE, one process each, 180s ceiling, because this file's own _how_it_was_measured says the individual drive is the authority and a run log is not. RESULT: 11 RED (exit 1), 7 GREEN, 2 COULD NOT RUN (exit 2), 2 SKIPPED (exit 3), 1 TIMEOUT. Only the 11 are added. `git status --porcelain` was captured before and after every suite and for the run as a whole: the whole-run delta was EMPTY, so no suite left the tree dirty for the next one. EXIT CODE ONLY -- no `why` is written, because an exit code is not a diagnosis."
+   }
+  },
+  {
+   "file": "tests/run_citation_anchor_hop_sabotage.py",
+   "kind": "py",
+   "tail": "FAIL -- 2 passed, 4 failed",
+   "since": "2026-10-12",
+   "why": "",
+   "owner": "unassigned",
+   "exit_code": 1,
+   "diagnosed": null,
+   "diagnosed_by": null,
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "327e9e80",
+    "basis": "MEASURED 2026-10-12 (fourth) at HEAD 327e9e80, batch b5 item 2. Candidates were DERIVED, not typed: every suite named red by hank's 2026-10-08 whole-tree table (89 REAL, parsed per SECTION so its 8 CASCADE and 4 TIMEOUT rows were NOT read as failures) unioned with every rc!=0 row of cody's 2026-10-11 routing TSV (76), giving 93 red suites, of which 23 were absent from this register. ALL 23 WERE THEN DRIVEN ALONE, one process each, 180s ceiling, because this file's own _how_it_was_measured says the individual drive is the authority and a run log is not. RESULT: 11 RED (exit 1), 7 GREEN, 2 COULD NOT RUN (exit 2), 2 SKIPPED (exit 3), 1 TIMEOUT. Only the 11 are added. `git status --porcelain` was captured before and after every suite and for the run as a whole: the whole-run delta was EMPTY, so no suite left the tree dirty for the next one. EXIT CODE ONLY -- no `why` is written, because an exit code is not a diagnosis."
+   }
+  },
+  {
+   "file": "tests/run_committer_identity_probe.py",
+   "kind": "py",
+   "tail": "  - and no local override was left behind",
+   "since": "2026-10-12",
+   "why": "",
+   "owner": "unassigned",
+   "exit_code": 1,
+   "diagnosed": null,
+   "diagnosed_by": null,
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "327e9e80",
+    "basis": "MEASURED 2026-10-12 (fourth) at HEAD 327e9e80, batch b5 item 2. Candidates were DERIVED, not typed: every suite named red by hank's 2026-10-08 whole-tree table (89 REAL, parsed per SECTION so its 8 CASCADE and 4 TIMEOUT rows were NOT read as failures) unioned with every rc!=0 row of cody's 2026-10-11 routing TSV (76), giving 93 red suites, of which 23 were absent from this register. ALL 23 WERE THEN DRIVEN ALONE, one process each, 180s ceiling, because this file's own _how_it_was_measured says the individual drive is the authority and a run log is not. RESULT: 11 RED (exit 1), 7 GREEN, 2 COULD NOT RUN (exit 2), 2 SKIPPED (exit 3), 1 TIMEOUT. Only the 11 are added. `git status --porcelain` was captured before and after every suite and for the run as a whole: the whole-run delta was EMPTY, so no suite left the tree dirty for the next one. EXIT CODE ONLY -- no `why` is written, because an exit code is not a diagnosis."
+   }
+  },
+  {
+   "file": "tests/run_graduated_exemption_probe.py",
+   "kind": "py",
+   "tail": "  - ...proven: the third push is refused again",
+   "since": "2026-10-12",
+   "why": "",
+   "owner": "unassigned",
+   "exit_code": 1,
+   "diagnosed": null,
+   "diagnosed_by": null,
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "327e9e80",
+    "basis": "MEASURED 2026-10-12 (fourth) at HEAD 327e9e80, batch b5 item 2. Candidates were DERIVED, not typed: every suite named red by hank's 2026-10-08 whole-tree table (89 REAL, parsed per SECTION so its 8 CASCADE and 4 TIMEOUT rows were NOT read as failures) unioned with every rc!=0 row of cody's 2026-10-11 routing TSV (76), giving 93 red suites, of which 23 were absent from this register. ALL 23 WERE THEN DRIVEN ALONE, one process each, 180s ceiling, because this file's own _how_it_was_measured says the individual drive is the authority and a run log is not. RESULT: 11 RED (exit 1), 7 GREEN, 2 COULD NOT RUN (exit 2), 2 SKIPPED (exit 3), 1 TIMEOUT. Only the 11 are added. `git status --porcelain` was captured before and after every suite and for the run as a whole: the whole-run delta was EMPTY, so no suite left the tree dirty for the next one. EXIT CODE ONLY -- no `why` is written, because an exit code is not a diagnosis."
+   }
+  },
+  {
+   "file": "tests/run_selftest_independence_probe.py",
+   "kind": "py",
+   "tail": "  - git status is still readable",
+   "since": "2026-10-12",
+   "why": "",
+   "owner": "unassigned",
+   "exit_code": 1,
+   "diagnosed": null,
+   "diagnosed_by": null,
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "327e9e80",
+    "basis": "MEASURED 2026-10-12 (fourth) at HEAD 327e9e80, batch b5 item 2. Candidates were DERIVED, not typed: every suite named red by hank's 2026-10-08 whole-tree table (89 REAL, parsed per SECTION so its 8 CASCADE and 4 TIMEOUT rows were NOT read as failures) unioned with every rc!=0 row of cody's 2026-10-11 routing TSV (76), giving 93 red suites, of which 23 were absent from this register. ALL 23 WERE THEN DRIVEN ALONE, one process each, 180s ceiling, because this file's own _how_it_was_measured says the individual drive is the authority and a run log is not. RESULT: 11 RED (exit 1), 7 GREEN, 2 COULD NOT RUN (exit 2), 2 SKIPPED (exit 3), 1 TIMEOUT. Only the 11 are added. `git status --porcelain` was captured before and after every suite and for the run as a whole: the whole-run delta was EMPTY, so no suite left the tree dirty for the next one. EXIT CODE ONLY -- no `why` is written, because an exit code is not a diagnosis."
+   }
+  },
+  {
+   "file": "tests/sd_tax_money_coercion.js",
+   "kind": "node",
+   "tail": "12 passed, 1 failed",
+   "since": "2026-10-12",
+   "why": "",
+   "owner": "unassigned",
+   "exit_code": 1,
+   "diagnosed": null,
+   "diagnosed_by": null,
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "327e9e80",
+    "basis": "MEASURED 2026-10-12 (fourth) at HEAD 327e9e80, batch b5 item 2. Candidates were DERIVED, not typed: every suite named red by hank's 2026-10-08 whole-tree table (89 REAL, parsed per SECTION so its 8 CASCADE and 4 TIMEOUT rows were NOT read as failures) unioned with every rc!=0 row of cody's 2026-10-11 routing TSV (76), giving 93 red suites, of which 23 were absent from this register. ALL 23 WERE THEN DRIVEN ALONE, one process each, 180s ceiling, because this file's own _how_it_was_measured says the individual drive is the authority and a run log is not. RESULT: 11 RED (exit 1), 7 GREEN, 2 COULD NOT RUN (exit 2), 2 SKIPPED (exit 3), 1 TIMEOUT. Only the 11 are added. `git status --porcelain` was captured before and after every suite and for the run as a whole: the whole-run delta was EMPTY, so no suite left the tree dirty for the next one. EXIT CODE ONLY -- no `why` is written, because an exit code is not a diagnosis."
+   }
+  },
+  {
+   "file": "tests/seam_check/run_delegation_probe.py",
+   "kind": "py",
+   "tail": "  restored_baseline  False (94 clean, 0 not-forwarded, 21 could-not-tell)",
+   "since": "2026-10-12",
+   "why": "",
+   "owner": "unassigned",
+   "exit_code": 1,
+   "diagnosed": null,
+   "diagnosed_by": null,
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "327e9e80",
+    "basis": "MEASURED 2026-10-12 (fourth) at HEAD 327e9e80, batch b5 item 2. Candidates were DERIVED, not typed: every suite named red by hank's 2026-10-08 whole-tree table (89 REAL, parsed per SECTION so its 8 CASCADE and 4 TIMEOUT rows were NOT read as failures) unioned with every rc!=0 row of cody's 2026-10-11 routing TSV (76), giving 93 red suites, of which 23 were absent from this register. ALL 23 WERE THEN DRIVEN ALONE, one process each, 180s ceiling, because this file's own _how_it_was_measured says the individual drive is the authority and a run log is not. RESULT: 11 RED (exit 1), 7 GREEN, 2 COULD NOT RUN (exit 2), 2 SKIPPED (exit 3), 1 TIMEOUT. Only the 11 are added. `git status --porcelain` was captured before and after every suite and for the run as a whole: the whole-run delta was EMPTY, so no suite left the tree dirty for the next one. EXIT CODE ONLY -- no `why` is written, because an exit code is not a diagnosis."
+   }
+  },
+  {
+   "file": "tests/seam_check/run_delegation_residue_control.py",
+   "kind": "py",
+   "tail": "FAILED: 1a. the plant really did modify the file (the arm is not vacuous), 5. ABLATION: the same exception WITHOUT the guard leaves the plant",
+   "since": "2026-10-12",
+   "why": "",
+   "owner": "unassigned",
+   "exit_code": 1,
+   "diagnosed": null,
+   "diagnosed_by": null,
+   "environment": {
+    "where": "live-clone",
+    "pinned": false,
+    "tool": "the suite itself, invoked directly, one process per suite",
+    "sha": "327e9e80",
+    "basis": "MEASURED 2026-10-12 (fourth) at HEAD 327e9e80, batch b5 item 2. Candidates were DERIVED, not typed: every suite named red by hank's 2026-10-08 whole-tree table (89 REAL, parsed per SECTION so its 8 CASCADE and 4 TIMEOUT rows were NOT read as failures) unioned with every rc!=0 row of cody's 2026-10-11 routing TSV (76), giving 93 red suites, of which 23 were absent from this register. ALL 23 WERE THEN DRIVEN ALONE, one process each, 180s ceiling, because this file's own _how_it_was_measured says the individual drive is the authority and a run log is not. RESULT: 11 RED (exit 1), 7 GREEN, 2 COULD NOT RUN (exit 2), 2 SKIPPED (exit 3), 1 TIMEOUT. Only the 11 are added. `git status --porcelain` was captured before and after every suite and for the run as a whole: the whole-run delta was EMPTY, so no suite left the tree dirty for the next one. EXIT CODE ONLY -- no `why` is written, because an exit code is not a diagnosis."
+   }
   }
  ],
  "_why_the_whole_tree_run_was_not_trusted": "THREE CONFOUNDS, each evidenced rather than suspected. (1) THE TREE MOVED UNDER IT: the log shows tests/sairnbiz_vendor_ytd_derivation.js PASSING, and at the time it was driven it failed at module scope -- cc pushed the anchor rename mid-run. tools/run_all_tests.py --pinned exists for exactly this and was not used. (2) THE RUN MUTATED THE TREE IT WAS MEASURING: tests/seam_check/run_delegation_probe.py left api/sd-data.js and api/_lib/subcontractor-compliance.js carrying planted sabotage, one of which is a redeclaration that does not parse. Four suites driven after it were re-driven on a restored tree and ONE of them -- tests/seam_check/run_probe.py -- went GREEN, so that confound changed at least one verdict. (3) THE RUN CORRUPTED THE CLONE: tests/push_gate/check8_probe.py left .git/config with core.bare = true and a fixture user identity, after which every git command in the clone fails with \"this operation must be run in a work tree\". Observed three times on 2026-10-06 and attributed by digesting .git/config after every suite.",
@@ -1510,5 +1708,6 @@
     }
    }
   }
- ]
+ ],
+ "_b5_addition_2026_10_12": "ELEVEN entries added by fourth, batch b5 item 2, and the brief asked for THIRTY. The 30 is hank's 2026-10-08 figure (\"101 red, registry records 75, 30 RED AND NOT RECORDED\") and it was re-derived rather than carried: the gap against this register at HEAD 327e9e80 is 23, not 30, because the register has absorbed some of them since and cody's later run moved others. Of those 23, driving each ALONE returned 11 RED, 7 GREEN, 2 exit-2 COULD NOT RUN, 2 exit-3 SKIPPED and 1 TIMEOUT at 180s. ONLY THE 11 ARE RED. The 7 GREEN are the finding that matters: a run log named them red and they are not, so the stale half of a census is a wrong answer in both directions. The 12 non-red are listed by name with their measured state in docs/2026-10-12-fourth-b5-routing.md -- they are NOT in this file, because an entry here is an exemption and an exemption over a suite that is green or that never ran would swallow its next real failure."
 }
