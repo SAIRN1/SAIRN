@@ -243,6 +243,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/hover_separation_ci_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "3b99c19c38a449985821d0041f44c44de93c8314",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_tier_a_review_gate_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -636,6 +644,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/_lib/sairnbuild-retainage-endpoint.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "86189e37d55209d1b111e49c42c2f36cdb57ed26",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/sd_data_write_attribution_three_apps.js",
    "class": "test file",
    "level": "CHANGE",
@@ -765,6 +781,19 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "99b6cfb5a80a77b09a3d6c79ce8b92aaf65db778",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/claims/run_fileset_matcher_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "'exemption')"
+    }
+   ],
+   "sha": "9b0bfd5122507528ebb6685939f2e6fafa0127b8",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -1069,6 +1098,14 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "d95612bc63597e202d39353be57ecf4030a785fc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/claims/run_fileset_matcher_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "dd1bcbe2d6dfea730168d4c86f90b4e5daf41087",
    "criteria_version": "2026-10-06.1"
   },
   {

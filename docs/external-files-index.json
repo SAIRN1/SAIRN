@@ -2019,6 +2019,30 @@
      "note_on_this_declaration": "SEVEN ROWS, THREE OF THEM ARRIVING MID-DECLARATION, AND THIS IS WHERE THE EVIDENCE STOPS BEING ANECDOTAL. The fifth was predicted by the row before it and arrived inside the hour; the sixth arrived during the write that declared the fifth; this one arrived during the push that declared the sixth. The blanket override SAIRN_SEED_GATE=off was NOT used, deliberately, because it skips all fourteen checks including the Tier A obligation and the generated-document check this same push had just satisfied properly -- and SAIRN_GATE_EXEMPT only names `seed`, so there is no scoped form for this check. Declaring is therefore the only route, and it is a route that cannot converge while three sessions write to one directory faster than one session can index it. Repairs and owners are in the hover2 2026-10-12 row."
     }
    ]
+  },
+  "cc": {
+   "audited_at": "2026-10-12T00:00:00Z",
+   "audited_by": "cc, batch W (b4) resume",
+   "how": "Not an audit of this session's own external files -- those are unchanged and hank's block covers the shared directories. These two entries exist because the push gate found them UNINDEXED under hank's already-declared G:/My Drive/SAIRN-status and refused this push. Each was confirmed to exist on disk before being declared.",
+   "dirs": [],
+   "files": [
+    {
+     "path": "G:/My Drive/SAIRN-status/handoff-h2-2026-10-12b.md",
+     "purpose": "hover2's own batch-b9 handoff, written to the Drive report directory Michael reads. NOT cc's file and NOT cc's to move or commit -- the hover auditor keeps its record outside this repo by design. Declared here only so the next session can find it, which is what this index is for.",
+     "belongs_in_git": false,
+     "declared_by": "cc, on behalf of nobody -- a pointer, not a claim"
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/handoff-cody-2026-10-12.md",
+     "purpose": "cody's batch-27 (b4) handoff on the Drive. cody holds no active claim at the time of writing and the file is his; this is a discovery pointer so it is readable rather than lost, not a transfer of ownership.",
+     "belongs_in_git": false,
+     "declared_by": "cc, on behalf of nobody -- a pointer, not a claim"
+    }
+   ],
+   "limits": [
+    "THIS IS A POINTER BLOCK, NOT AN AUDIT. hank's block was produced by WALKING every declared directory; these two entries were produced by the push gate naming two files and this session confirming they exist. Do not read the block as coverage of anything else on the Drive.",
+    "THE TREADMILL IS THE REAL FINDING AND IT IS NOT FIXED HERE. G:/My Drive/SAIRN-status is declared non-transient, so EVERY handoff written there must be named individually or it blocks the next push from every clone. Handoffs arrive there continuously, from five sessions, which means the index is stale the hour after any push that updates it -- f12e6042's own subject says so: \"the SEVENTH Drive handoff, arriving during the push that declared the sixth\". A pattern or date-scoped allowance for that one directory is the structural fix; it is a change to the gate's semantics and was NOT improvised inside a push, it is reported."
+   ]
   }
  }
 }
