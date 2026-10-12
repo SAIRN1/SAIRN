@@ -490,8 +490,21 @@ arm('a one-sided pair sharing an APP still BLOCKS',
 
 # A shared IDENTIFIER is evidence too, and this is the arm that stops the
 # shared_identifiers() extraction from quietly losing a rule.
-ID_MINE = 'leg_invoices rotation'
-ID_THEIRS = 'FILES: docs/zzz-other-note.md -- leg_invoices obligation discharge'
+#
+# THE FIXTURE TOKEN IS DELIBERATELY NOT A REAL RESOURCE NAME. Section 3 above
+# uses `leg_invoices`, and editing this file therefore opens a phantom
+# `leg_invoices` review obligation in tools/tier_a_review_gate.py -- measured
+# on this batch, which recorded one against hank for a change that touches no
+# SAIRNlegacy code. The gate is behaving as documented: strip_diff_noise()
+# blanks prose strings but keeps SHORT ones, because `resource ===
+# 'leg_invoices'` is real code and indistinguishable from a two-word fixture.
+# So the fix belongs in the fixture, not the gate. `zzz_fixture_resource`
+# carries an underscore, so idents() still treats it as an identifier and the
+# arm still means exactly what it says. Section 3's older fixture is left
+# alone -- it is not this change's to rewrite -- and is reported instead.
+ID_MINE = 'zzz_fixture_resource rotation'
+ID_THEIRS = ('FILES: docs/zzz-other-note.md -- zzz_fixture_resource '
+             'obligation discharge')
 arm_if_ev('CONTROL: a shared identifier counts as evidence',
           lambda: ev('me', ID_MINE, 'other', ID_THEIRS),
           'the identifier rule no longer reads as evidence')
