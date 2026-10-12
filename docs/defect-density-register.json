@@ -26704,7 +26704,7 @@
       "recurrence_open": "THE CODE BEING PRESENT IS NOT THE FIX, and the SQL half is entirely outstanding. Measured by tools/audit_event_type_check.py at this commit, exit 1: SAIRNlaw works today; stonedesk_audit_log and sairncode_audit_log EXIST but their event_type CHECK REJECTS pin_setup (STEP 0a/0b of docs/2026-10-07-hank-migration-sql-for-michael.md, not run) -- so sd-auth.js and sc-auth.js attribution has been failing at the database since it landed on 2026-10-07; and the other 13 tables do not exist at all (STEPS 1-13, not run). Only ONE of seventeen apps records a row today. api/law-auth.js keeps a divergent detail shape by decision. The SAIRNcash half is bearer-credential strength, not identity, and was not proven live."
     },
     {
-      "commit": "518a0a902fd3",
+      "commit": "86189e37d552",
       "date": "2026-10-12",
       "subject": "fix(bld_draws): the gate on wip and release_retainage was real, and the SAME TABLE took read and write on the licence key alone",
       "files": [
@@ -26768,7 +26768,7 @@
       "recurrence_open": "OPEN. Nothing checks gate parity ACROSS the actions of one resource, and nothing re-asks the question when a money action is added to a resource already sitting in an ungated generic loop. The other 29 BLD_RESOURCES members, and the SDN_/LEG_/GRD_ loops with the same shape, have not been re-read against this."
     },
     {
-      "commit": "9605c4afd0de",
+      "commit": "9b0bfd512250",
       "date": "2026-10-12",
       "subject": "fix(claim matcher): the declared FILES set is the PRIMARY mode -- two words about WHEN work happens stopped refusing a claim that had already said in paths WHAT it touches",
       "files": [
@@ -26829,7 +26829,7 @@
       "recurrence_open": "OPEN. block_reason() remains an OR over positive signals, so every future rule added to it is blocking by default and nothing asks whether it names a thing or a word. The evidence/prose split is enforced only where rests_on_evidence() is called, and a new evidence rule added to block_reason and not to it would be silently demoted."
     },
     {
-      "commit": "c4ad2f5a663f",
+      "commit": "3b99c19c38a4",
       "date": "2026-10-12",
       "subject": "fix(hover separation): the control that exists because fixtures cannot see the range-reader had nine arms COULD NOT RUN, and the guard that disarmed them was added to fix a hole it never closed",
       "files": [
