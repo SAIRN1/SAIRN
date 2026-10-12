@@ -195,6 +195,23 @@
         "docs/2026-10-07-hover2-sv-role-granularity-routing.md",
         "docs/2026-10-08-hover2-law-role-granularity-routing.md"
       ]
+    },
+    {
+      "id": "hover2-1791806938",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "batch b13 -- resume, read-only re-verification. This role never writes platform code; api/sd-data.js and api/sairncash/verify.js are READ ONLY this batch, not declared as files touched since cody's live claim b5 genuinely covers api/sd-data.js writes and this is not a write conflict. Chain tip+token check, republish only if >15 behind. Sync (fetch, report ahead/behind, rebase). Push only if external-files gate clear after rebase. Run anchor_drift_check.py on all routed findings. Re-verify bld_draws/scp_ remainder only if drifted or changed per anchor check. Grep api/ for other firebaseToken mint sites, report only. Independently re-verify sen_caregivers PII fix seq965/b384a513 by reading, no write. Check cody claim/commit status for law_role_granularity, report only. Group sv_role_granularity 42 resources by sensitivity class in the routing doc, facts only. Extend anchor_drift_check.py coverage across H1+H2 routing docs, control-pair test new rules. Rotate 5 older findings by FILES weighted random, read only. Re-check 6 clones hooks/compaction read-only. Rerun all repro scripts read-only. Handoff before report. FILES: .claude/skills/sairn-hover-auditor/tools-hover2/anchor_drift_check.py docs/2026-10-07-hover2-bld-draws-bypass-routing.md docs/2026-10-07-hover2-scp-session-gate-routing.md docs/2026-10-07-hover2-sv-role-granularity-routing.md docs/2026-10-08-hover2-law-role-granularity-routing.md",
+      "claimed_at": "2026-10-12T12:08:58Z",
+      "claimed_at_epoch": 1791806938.86119,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        ".claude/skills/sairn-hover-auditor/tools-hover2/anchor_drift_check.py",
+        "docs/2026-10-07-hover2-bld-draws-bypass-routing.md",
+        "docs/2026-10-07-hover2-scp-session-gate-routing.md",
+        "docs/2026-10-07-hover2-sv-role-granularity-routing.md",
+        "docs/2026-10-08-hover2-law-role-granularity-routing.md"
+      ]
     }
   ],
   "refusals": [
@@ -248,6 +265,21 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "shared phrase: \"check drift\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-10-12T12:08:29Z",
+      "my_subject": "hover2",
+      "my_task": "batch b13 -- resume, read-only re-verification. Chain tip+token check, republish only if >15 behind. Sync (fetch, report ahead/behind, rebase). Push only if external-files gate clear after rebase. Run anchor_drift_check.py on all routed findings. Re-verify bld_draws/scp_ remainder only if drifted or changed. Grep api/ for other firebaseToken mint sites. Independently re-verify sen_caregivers PII fix seq965/b384a513. Check cody claim/commit status for law_role_granularity. Group sv_role_granularity 42 resources by sensitivity class, facts only. Extend anchor_drift_check.py coverage across H1+H2 routing docs, control-pair test new rules. Rotate 5 older findings by FILES weighted random. Re-check 6 clones hooks/compaction read-only. Rerun all repro scripts. Handoff before report. FILES: api/sd-data.js api/sairncash/verify.js .claude/skills/sairn-hover-auditor/tools-hover2/anchor_drift_check.py docs/2026-10-07-hover2-bld-draws-bypass-routing.md docs/2026-10-07-hover2-scp-session-gate-routing.md docs/2026-10-07-hover2-sv-role-granularity-routing.md docs/2026-10-08-hover2-law-role-granularity-routing.md",
+      "other_session": "cody",
+      "other_subject": "cody",
+      "other_task": "cody -- batch 27 (b5). (1) implement a law role matrix for the 19 sairnlaw resources, owner/attorney/paralegal, ONE data table read by ONE function; trust resources hard-locked. (2) a 19x3 role-matrix test failing on any law resource with no rule. (3) a monotonicity metamorphic relation, control-pair tested. (4) docs spec ONLY for owner-adjustable per-firm permissions, no build. (5) a local regression test for sen_caregivers field redaction across every read path. (6) make check4/check7 probe verdicts runnable against a throwaway bare remote. (7) build tools/dup_dom_ids_check.py report-only, control-pair tested, run on all apps. (8) run the tier-a sabotage probe 20x and find the nondeterminism. (9) locate the FMEA drafts in history or confirm never committed. (10) classify the 145 no-sha tier-a records as derivable vs absent, counts only. (11) write the claim-matcher collision finding with file:line and a files-based fix proposal, ROUTED to cc, no edits to cc files. (12) prepare but DO NOT RUN the citator schema verification script. (13) handoff BEFORE the report. (14) report plus digest. FILES: api/sd-data.js api/sd-data-law-role-matrix.test.js docs/2026-10-12-cody-b5-law-permissions-spec.md docs/2026-10-12-cody-b5-routed-to-cc.md api/sd-data-sen-caregiver-pii-scope.test.js tests/push_gate/check4_probe.py tests/push_gate/check7_probe.py tools/dup_dom_ids_check.py tests/run_dup_dom_ids_probe.py tools/verify_citator_feedback.py docs/handoff-cody-2026-10-12b.md SAIRN-ACTIVE-WORK-cody.md",
+      "other_claimed_at": "2026-10-12T12:04:53Z",
+      "shared_files": [
+        "api/sd-data.js"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
