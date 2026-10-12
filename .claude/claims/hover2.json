@@ -203,8 +203,8 @@
       "task": "batch b13 -- resume, read-only re-verification. This role never writes platform code; api/sd-data.js and api/sairncash/verify.js are READ ONLY this batch, not declared as files touched since cody's live claim b5 genuinely covers api/sd-data.js writes and this is not a write conflict. Chain tip+token check, republish only if >15 behind. Sync (fetch, report ahead/behind, rebase). Push only if external-files gate clear after rebase. Run anchor_drift_check.py on all routed findings. Re-verify bld_draws/scp_ remainder only if drifted or changed per anchor check. Grep api/ for other firebaseToken mint sites, report only. Independently re-verify sen_caregivers PII fix seq965/b384a513 by reading, no write. Check cody claim/commit status for law_role_granularity, report only. Group sv_role_granularity 42 resources by sensitivity class in the routing doc, facts only. Extend anchor_drift_check.py coverage across H1+H2 routing docs, control-pair test new rules. Rotate 5 older findings by FILES weighted random, read only. Re-check 6 clones hooks/compaction read-only. Rerun all repro scripts read-only. Handoff before report. FILES: .claude/skills/sairn-hover-auditor/tools-hover2/anchor_drift_check.py docs/2026-10-07-hover2-bld-draws-bypass-routing.md docs/2026-10-07-hover2-scp-session-gate-routing.md docs/2026-10-07-hover2-sv-role-granularity-routing.md docs/2026-10-08-hover2-law-role-granularity-routing.md",
       "claimed_at": "2026-10-12T12:08:58Z",
       "claimed_at_epoch": 1791806938.86119,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-12T12:35:30Z",
       "files": [
         ".claude/skills/sairn-hover-auditor/tools-hover2/anchor_drift_check.py",
         "docs/2026-10-07-hover2-bld-draws-bypass-routing.md",
