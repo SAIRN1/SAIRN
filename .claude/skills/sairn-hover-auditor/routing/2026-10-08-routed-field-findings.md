@@ -146,6 +146,43 @@ routed.)
 | `tools/sairn_status.py` | `:224` (`claim_liveness`), `:167-197` (`publish_claims`) | liveness depends on a registry row only the SessionStart hook or a manual `set` call refreshes; the claim tool's own touch does not, contrary to the header comment | **cc** (declared `tools/sairn_claim.py` and this liveness path in FILES, batch W) |
 | `tools/sairn_claim.py` | `:1281` (`registry_claims`), `:1321`, `:1378` | calls the above without ever re-stamping its own session's pid/start first | **cc** |
 
+### Reproduction, H1 batch b13 item 10 -- a live claim read as DEAD, on demand
+
+**Note on attribution: this batch's own dispatch said "cody reported" the
+DEAD-from-stale-row symptom. The actual report found is `ted`/`fourth`'s**
+(`docs/handoff-fourth-2026-10-11.md:81-91`), not cody's -- named here so
+the record is accurate rather than silently going along with the wrong
+name. Ted's own account: a push landed, the gate printed `CLAIM STATE:
+DEAD -- CLAUDE_PID 64304 no longer exists` for the PREVIOUS session's
+pid, while `sairn_claim.py check` had said `SAME WORK` and
+`session_lock_check.py` correctly reported `SELF` -- because the
+SessionStart hook (which writes the registry row) was one of the 23
+disabled, so the row kept a dead pid from before.
+
+**Reproduced directly on this clone, with a genuinely live, currently
+held claim, not a hypothetical:**
+
+1. Took a real local claim (`hover`, `--no-push`) -- confirmed `own`
+   reports `HELD`, `CLAUDE_PID 30428` (this session's real, live pid).
+2. Backed up `~/SAIRN-SESSION-LOCKS/status/hover.json`, then overwrote
+   only `claude_pid` to `999999` (a pid that does not exist) and
+   `claude_start` to `1` -- simulating exactly the stale-SessionStart-row
+   state ted described, without touching anything else.
+3. `python tools/sairn_claim.py own` immediately answered: *"WARNING:
+   this session is working WITHOUT a held claim (DEAD)"* -- for a claim
+   that had not changed, was not released, and was still genuinely held.
+4. **At the same moment**, `python tools/session_lock_check.py status`
+   correctly answered `state: SELF -- this session owns the lock
+   (CLAUDE_PID 30428)` -- the two tools disagreed on the identical live
+   session, in real time, confirming the exact split ted described.
+5. Restored the backup verbatim, confirmed `own` returns to `HELD`, then
+   released the test claim (`--no-push`) to leave no trace in the real
+   claim record beyond the two reversible local commits.
+
+This closes the loop from "confirmed by reading code" (batch b10 item 7,
+b11 item 10, b12 item 10) to "confirmed by forcing the exact failure on
+demand." The fix needed is unchanged from the rows above.
+
 ## Push blocker: unindexed Drive handoff, added H1 batch b10 item 11
 
 `docs/external-files-index.json` belongs to cc's batch W (declared in his
@@ -248,11 +285,20 @@ defect). Writing a fix-spec row for a bookkeeping note would fabricate a
 finding that does not exist. Not routed, named here instead so the next
 session does not re-discover the same non-finding.
 
-**951 is a real, still-open finding** and gets a proper row:
+**951 is a real finding** and got a proper row (text left below as
+originally written). **CORRECTED, H1 batch b13 item 6: this role's own
+"still-open" call was WRONG.** The citation `:187` was a different,
+unrelated, always-attributed write; the real write site (`logRec`) was
+never re-read past that grep hit in either the b11 or the b12 check.
+**ACTUALLY FIXED, commit `9bc99c05`, dated 2026-10-12** -- `logRec` at
+`api/legal-citator.js:394` now carries `employee_id` and `employee_role`.
+`sql/sairnlaw_citator_schema.sql:145-156` already declares both columns
+(plus a defensive `alter table add column if not exists` at `:165-167`).
+No further action needed on this row.
 
 | Seq | Finding | File:line | Fix spec | Owner |
 |---|---|---|---|---|
-| 951 | `api/legal-citator.js`'s feedback action (SAIRNlaw) never records which employee confirmed/corrected a legal-citation treatment | `api/legal-citator.js:187` (`employee_id: caller ? caller.employee_id : null`), write site `:380` (`logRec`) | Stamp a real session's `caller.employee_id` the way the sibling attribution fixes (commits `56bbce5e`, `4ec0d5d5`) already did for 15 other write paths across three apps -- this one was not among them | **next claim on sairnlaw / api/legal-citator.js** (no durable per-app assignment exists, same caveat as the original 15-row table above) |
+| 951 | ~~`api/legal-citator.js`'s feedback action (SAIRNlaw) never records which employee confirmed/corrected a legal-citation treatment~~ **FIXED, see correction above** | `api/legal-citator.js:187` (`employee_id: caller ? caller.employee_id : null`), write site `:380` (`logRec`) | Stamp a real session's `caller.employee_id` the way the sibling attribution fixes (commits `56bbce5e`, `4ec0d5d5`) already did for 15 other write paths across three apps -- this one was not among them | **CLOSED** (was: next claim on sairnlaw / api/legal-citator.js) |
 
 **959 and 992 also checked, neither needs a new row.** seq959
 (stonedesk-track/sd-sub-data attribution) re-confirmed FIXED this batch
@@ -319,3 +365,37 @@ here.
 `api/_resources/shared.js`** -- no durable per-app owner exists for
 `shared`-scoped resources by construction (they belong to no one app),
 same caveat the original 15-row table states for its own proposals.
+
+## seq1150, the 7 unregistered resources named individually with suggested tiers -- H1 batch b13 item 3
+
+CONFIRMED owner **hank** this batch (supersedes the proposed-owner line
+above with a direct assignment). Anchors re-verified unchanged at HEAD
+`90e1e21a` (`git diff HEAD origin/main -- api/_resources/shared.js
+docs/CRITICALITY-TIERS.md` is empty -- neither file moved since the b12
+check).
+
+| Resource | File:line | Anchor | Dispatch branch | Suggested tier | Why |
+|---|---|---|---|---|---|
+| `profile` | `api/_resources/shared.js:53` | `'profile',` in the `resources:` array | `api/sd-data.js:1780` (read), `:1790` (write) | **B** | App/license-level profile data -- business-identifying, not individual PII |
+| `memory` | `api/_resources/shared.js:54` | `'memory',` | `api/sd-data.js:1620` (`MEMORY_APPS` gate), `:1705`, `:1751` | **A** | AI memory storage can carry arbitrary stored content from any app, including PII fed to it elsewhere -- same concern already raised for the `shared`-app gap at `api/_lib/ai-scan-redaction.js:84` |
+| `employees` | `api/_resources/shared.js:55` | `'employees',` | `api/sd-data.js:1843` (read), `:1969` (write) | **A** | StoneDesk's own employee roster -- names, roles, employment PII, already role-gated via `EMPLOYEES_READ_DENIED_ROLES` |
+| `slabs` | `api/_resources/shared.js:56` | `'slabs',` | `api/sd-data.js:3114` (read), `:3121` (write), `:3302` (reserve/release) | **B** | StoneDesk material inventory -- business/money-adjacent, not PII |
+| `render_usage` | `api/_resources/shared.js:57` | `'render_usage',` | `api/sd-data.js:5429` (read) | **C** | A monthly AI-render usage COUNT only (`sd_render_usage?...&select=count`) -- no PII, no direct dollar figure, though it may feed a billing limit elsewhere |
+| `shared_knowledge` | `api/_resources/shared.js:58` | `'shared_knowledge',` | `api/sd-data.js:5478-5494` (read/write, SAIRNlegacy-scoped branch plus a generic one) | **B** | Cross-app knowledge-base content -- business-sensitive, content varies by app, not individual PII by construction |
+| `employee_profile` | `api/_resources/shared.js:59` | `'employee_profile',` (comment above it: "StoneDesk Employee Profiles (2026-08-06)") | `api/sd-data.js:3053` (read), `:3079` (write) | **A** | Individual employee profile data -- PII, same class as `employees` |
+
+These suggested tiers are this role's own read of the dispatch code, not
+a verified register classification -- hank should confirm/adjust when
+adding the `### \`shared\`` section, same as any other Tier assignment
+on this platform.
+
+## seq965 follow-on, a second read path -- H1 batch b13 item 5
+
+Found while independently re-verifying every `sen_caregivers` read path
+after commit `b384a513`'s fix. Not itself a PII value leak (traced all
+the way through, see the self-log entry) -- a narrower presence-only
+signal, named for tightening rather than as an open vulnerability.
+
+| Finding | File:line | Anchor | Fix spec | Owner |
+|---|---|---|---|---|
+| `sen_visits`/`readiness` (`api/sd-data.js:6725`) reads `sen_caregivers` RAW at `:6746`, bypassing `SEN_CAREGIVER_HR_FIELD_ROLES`; reachable by the broader `SEN_READINESS_ROLES` (owner/billing/coordinator/scheduler) | `api/sd-data.js:6746`, `api/_lib/sen-evv-readiness.js:291` (`caregiver.state_caregiver_id` presence check) | `const gr = await fetch(rest('sen_caregivers?...` | Apply the same `SEN_CAREGIVER_HR_FIELD_ROLES`-style strip to the `caregiversById` map before passing it to `summarize()`, or have `checkVisit` only ever receive a pre-redacted caregiver object | **cody** (owns the seq965 area this batch) |
