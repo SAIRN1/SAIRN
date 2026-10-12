@@ -177,6 +177,24 @@
         "tools/hover_auditor_scope_gate.py",
         "tools/sairn_push_gate_hook.py"
       ]
+    },
+    {
+      "id": "hover2-1791805126",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "batch b12 -- resume, read-only re-verification. Chain tip+token check, republish only if >15 behind. Re-locate bld_draws/BLD_BID_MANAGEMENT_ROLES/refusal shape, update routing doc. Re-check sairncash verify.js:126. Re-locate scp_ remainder ranges, update routing doc, rerun scp_session_gate_repro.py --all. Re-check law_role_granularity and cody claim. Write sv_role_granularity facts table (42 resources) into routing doc. List 3 register duplicate/phantom-hash entries, write finding into routing doc routed to ted, no register edit. Report external-files unindexed count+names, check cc fix landed. Build a report-only anchor-based drift check for routed findings, control-pair tested. Independently verify one of H1's b11 fixes. Rotate 5 older findings by FILES weighted random. Rerun all repro scripts, report exit codes. Re-check 6 clones for hooks/compaction reappearing, read-only. Handoff before report. FILES: api/sd-data.js api/sairncash/verify.js docs/2026-10-07-hover2-bld-draws-bypass-routing.md docs/2026-10-07-hover2-scp-session-gate-routing.md docs/2026-10-07-hover2-sv-role-granularity-routing.md docs/2026-10-08-hover2-law-role-granularity-routing.md",
+      "claimed_at": "2026-10-12T11:38:46Z",
+      "claimed_at_epoch": 1791805126.6790693,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/sairncash/verify.js",
+        "api/sd-data.js",
+        "docs/2026-10-07-hover2-bld-draws-bypass-routing.md",
+        "docs/2026-10-07-hover2-scp-session-gate-routing.md",
+        "docs/2026-10-07-hover2-sv-role-granularity-routing.md",
+        "docs/2026-10-08-hover2-law-role-granularity-routing.md"
+      ]
     }
   ],
   "refusals": [
