@@ -1237,6 +1237,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/faults/grd_write_faults.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "b7dd1c1d062596ff7544246d66b73b580b10bc52",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/phi_cache_scoped_to_user.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "+ 'and saying so, rather than skipping on an unknown.');"
+    }
+   ],
+   "sha": "b7dd1c1d062596ff7544246d66b73b580b10bc52",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "api/sd-data-dental-ledger-validation.test.js",
    "class": "test file",
    "level": "CHANGE",
