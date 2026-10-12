@@ -7226,3 +7226,40 @@ sits beside `autoCompactEnabled = false`; the seven stashes are cc's call; the
 session-start check is built and unwired because `.claude/settings.json` is in cc's
 FILES; and the long stall is still **not named** — 420 s is the bound, not a
 measurement.
+
+
+---
+
+## 2026-10-12 -- batch 27 (b4), landed 85410985
+
+Eight of nine items resolved. Full account: `SAIRN-report-cody-b4.txt` (869
+lines, body hash on line 2), `SAIRN-digest-cody-b4.txt`, handoff at
+`docs/handoff-cody-2026-10-12.md`.
+
+- **item 3, law_role_granularity, IS NOT DONE** and must not be "fixed" by a
+  session. It needs a bar-rules decision about a law firm's role vocabulary;
+  `api/sd-data.js:13789` and `:15719` both decline to invent one in writing, and
+  hover2 routed it without prescribing a fix. Three of the brief's premises
+  about it were wrong and are corrected in the report with measurements.
+- item 2: 3 Tier-A shas reseated on a strong basis, 11 WEAK routed with their
+  sessions, 25 refused routed. The brief's "21 and 11" were the wrong way round.
+  Three defects found in the reseat tool itself.
+- item 4b: `sen_caregivers/read` leaked background-check dates, state caregiver
+  IDs and HR notes to every signed-in role. Field-level redaction + the client
+  half, because a redacted compliance column rendered identically to "no check
+  on file". 18 arms, fail-first 15/3.
+- item 4a: `cl_feedback_log` recorded no employee, at both layers, under a
+  comment claiming it did. 8 arms, fail-first 4/4. **Guardian Check 29 is NOT
+  satisfied** -- the migration has not run against a real database.
+- item 5: both push-gate probes moved off a linked worktree (which shares
+  `.git/config`) to a throwaway clone. Mechanism verified; the probes' own
+  verdicts COULD NOT RUN because a clean push is refused over another session's
+  Drive handoff.
+- item 6: three duplicate DOM ids, every one a live defect.
+- item 7 REMOVED from scope -- fourth holds it, real overlap, not reworded.
+
+**Two things for the next session, both in the handoff's section 0:** this clone
+was running with every hook stripped in an uncommitted `.claude/settings.json`
+(second clone the same evening), and NINE other-session handoffs on the shared
+Drive blocked this clone's push five times -- four of them arriving during the
+declarations of their predecessors.
