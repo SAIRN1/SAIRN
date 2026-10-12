@@ -377,9 +377,41 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: { message: 'corrected_to must be one of: ' + TREATMENT_LABELS.join(', ') } });
         return;
       }
-      const logRec = { license_hash: lic.license_hash, app_id: 'sairnlaw', treatment_id: treatmentId, action: fbAction, corrected_to: fbAction === 'corrected' ? correctedTo : null, note: (note || '').slice(0, 2000) };
+      // ── WHO SAID IT (hover2 seq 951, fixed 2026-10-12) ─────────────────
+      // This record carried no employee of any kind, at the application layer
+      // and in sql/sairnlaw_citator_schema.sql both, while that schema's own
+      // comment three lines above the table said "individual feedback stays
+      // attributable". `caller` is resolved at :184 and auditLookup() uses it
+      // for every OTHER action on this endpoint -- the value was in scope the
+      // whole time and simply was not written. An attorney confirming or
+      // correcting a legal-treatment classification other attorneys then rely
+      // on was unrecoverable: not wrong, never captured.
+      //
+      // NULL IS A LEGITIMATE VALUE HERE AND IS NOT A FAILURE. The session
+      // token on this endpoint is optional by design (see :178-183), so a
+      // request with no signed-in employee is normal and gets NULL rather
+      // than a guess or an attribution to the firm's owner.
+      const logRec = { license_hash: lic.license_hash, app_id: 'sairnlaw', treatment_id: treatmentId, action: fbAction, corrected_to: fbAction === 'corrected' ? correctedTo : null, note: (note || '').slice(0, 2000), employee_id: caller ? caller.employee_id : null, employee_role: caller ? caller.role : null };
       const r = await fetch(sb.rest('cl_feedback_log'), { method: 'POST', headers: Object.assign({}, sb.headers, { Prefer: 'return=minimal' }), body: JSON.stringify(logRec) });
-      if (!r.ok) { const errBody = await r.text(); console.error('feedback insert failed:', errBody); res.status(502).json({ error: { message: 'Data store error — try again' } }); return; }
+      if (!r.ok) {
+        const errBody = await r.text();
+        console.error('feedback insert failed:', errBody);
+        // ── AN UNKNOWN COLUMN IS A MIGRATION THAT HAS NOT RUN, NOT A
+        //    "DATA STORE ERROR -- TRY AGAIN" ──────────────────────────────
+        // The two attribution columns above arrive only via the `alter table`
+        // in sql/sairnlaw_citator_schema.sql, and `create table if not
+        // exists` does nothing to a table that already exists. On any install
+        // that ran an earlier version of that file, PostgREST answers 400
+        // PGRST204 for the unknown column -- and "try again" is advice that
+        // can never work, which is the shape this platform keeps paying for.
+        // Named here so the operator is told WHICH file to run.
+        if (r.status === 400 && /PGRST204|employee_id|employee_role/.test(errBody)) {
+          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Citator feedback is not set up for attribution yet — run sql/sairnlaw_citator_schema.sql in Supabase first. Nothing was recorded.' } });
+          return;
+        }
+        res.status(502).json({ error: { message: 'Data store error — try again' } });
+        return;
+      }
       const counterField = fbAction === 'confirmed' ? 'feedback_confirm_count' : 'feedback_correct_count';
       const curR = await fetch(sb.rest('cl_citing_treatments?id=eq.' + encodeURIComponent(treatmentId) + '&select=' + counterField), { headers: sb.headers });
       const curRows = await curR.json();

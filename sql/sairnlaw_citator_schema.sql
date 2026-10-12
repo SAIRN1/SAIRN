@@ -121,11 +121,27 @@ create table if not exists public.cl_coverage (
 );
 
 -- Feedback loop (brief item 6): one row per attorney confirm/correct action.
--- license_hash-scoped for real attribution (who said what), but the
--- SIGNAL this produces (confirm vs. correct rates) is meant to inform the
--- GLOBAL cl_citing_treatments row via feedback_confirm_count/
--- feedback_correct_count above -- individual feedback stays attributable,
--- its effect on confidence is shared.
+-- license_hash-scoped, but the SIGNAL this produces (confirm vs. correct
+-- rates) is meant to inform the GLOBAL cl_citing_treatments row via
+-- feedback_confirm_count/feedback_correct_count above -- the firm's feedback
+-- is identified, its effect on confidence is shared.
+--
+-- ── "INDIVIDUAL FEEDBACK STAYS ATTRIBUTABLE" WAS A PROMISE THIS TABLE COULD
+--    NOT KEEP (hover2 seq 951, fixed 2026-10-12) ───────────────────────────
+-- Those were this comment's own words until today, and the table as built had
+-- no employee column of any kind: id / license_hash / app_id / treatment_id /
+-- action / corrected_to / note / created_at. Every row was attributable to a
+-- FIRM and to nobody. api/legal-citator.js:184 resolves a session and uses it
+-- for the audit log on every OTHER action, so the caller was in scope and the
+-- feedback insert simply did not carry it -- an omission at the application
+-- layer AND at this one, which is why both are changed together.
+--
+-- THE COLUMNS ARE NULLABLE AND THAT IS THE DESIGN, NOT A SHORTCUT. This
+-- endpoint's access control is the bearer licence key and the session token is
+-- OPTIONAL by design (api/legal-citator.js:178-183 says so and why: requiring
+-- one would break every existing caller). So a row CAN legitimately have no
+-- person on it, and the handler writes NULL rather than guessing. A NULL here
+-- means "no signed-in employee on the request", never "we lost it".
 create table if not exists public.cl_feedback_log (
   id                  uuid primary key default gen_random_uuid(),
   license_hash        text not null,
@@ -134,9 +150,25 @@ create table if not exists public.cl_feedback_log (
   action               text not null,                -- 'confirmed' or 'corrected'
   corrected_to         text,                          -- new treatment label, only set when action='corrected'
   note                 text,
+  employee_id          text,                          -- the signed-in employee, or NULL when the request carried no session
+  employee_role        text,                          -- their sairnlaw role at the time, or NULL with employee_id
   created_at           timestamptz not null default now(),
   constraint clfeed_note_size check (octet_length(coalesce(note,'')) <= 2000)
 );
+
+-- ── REQUIRED FOR ANY INSTALL THAT ALREADY RAN THIS FILE ───────────────────
+-- `create table if not exists` above does NOTHING to an existing table, so on
+-- every live install these two columns arrive here or not at all. Until this
+-- runs, api/legal-citator.js's feedback action answers 503 NOT_PROVISIONED
+-- naming this file -- a loud refusal rather than a feedback row silently
+-- missing the person again.
+alter table public.cl_feedback_log
+  add column if not exists employee_id   text,
+  add column if not exists employee_role text;
+-- "who has been confirming classifications in this firm" is the question the
+-- attribution exists to answer, so it gets the index.
+create index if not exists idx_clfeed_employee
+  on public.cl_feedback_log (license_hash, employee_id, created_at desc);
 create index if not exists idx_clfeed_treatment on public.cl_feedback_log(treatment_id);
 create index if not exists idx_clfeed_license on public.cl_feedback_log(license_hash);
 
