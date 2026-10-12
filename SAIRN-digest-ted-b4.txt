@@ -1,132 +1,211 @@
-DIGEST ted b4 -- 2026-10-08
+DIGEST ted b4 -- CLOSE 2026-10-08, RESUME 2026-10-11
+
+REPLACES THE b4-CLOSE DIGEST IN PLACE, because the resume brief named this exact
+filename. The 2026-10-08 version stands verbatim at commit 09eabbec --
+`git show 09eabbec:SAIRN-digest-ted-b4.txt`. Nothing is lost; see report
+question 7 if you would rather each resume got its own file.
 
 HEAD / PUSH STATUS
-  last work commit  f25e2f82a6695260307f9a5caabe22d54372a567 (item 8, the handoff).
-                    At the moment it landed: git ls-remote origin refs/heads/main
-                    returned the same hash, ahead 0 / behind 0, ON-REF by
-                    merge-base --is-ancestor as well as by equality.
-  current tip       NOT STATED HERE ON PURPOSE. This digest is itself committed, so
-                    the tip is a later commit this file cannot name. Other sessions
-                    pushed throughout the batch -- three of my four pushes needed a
-                    re-fetch and rebase first -- so re-derive it:
+  last work commit  2626aedb, the handoff (item 7). At the moment it landed,
+                    git ls-remote origin refs/heads/main returned the same hash,
+                    ahead 0 / behind 0.
+  current tip       NOT STATED HERE ON PURPOSE. This digest is itself committed,
+                    so the tip is a later commit this file cannot name. FOUR
+                    commits were pushed this run, EVERY ONE needed a re-fetch and
+                    rebase first, and TWO push attempts were refused outright --
+                    six attempts for four landings. Re-derive it:
                       git ls-remote origin refs/heads/main
                       git log --oneline -- SAIRN-digest-ted-b4.txt
-  commits this run  5b2d36f4 (items 4-7), f25e2f82 (item 8, the handoff)
-                    2a8ab911 (item 3) was pushed before the compaction
-                    all three re-checked after the last rebase: hashes UNCHANGED
-  uncommitted        sql/restore_demo_pins_2026-09-29.sql -- untracked, NOT MINE,
-                    present for seven batches, carried not adopted
+  commits this run  71fdeb34 (items 2 and 3)
+                    f2082d03 (items 4 and 5)
+                    2626aedb (item 6's handoff -- written BEFORE the reports)
+  uncommitted       sql/restore_demo_pins_2026-09-29.sql -- untracked, NOT MINE,
+                    present for EIGHT batches now, carried not adopted
   gate at close     tools/tooling_inventory.py --standing-doc-sizes EXITS 1,
                     7 documents over the 400,000-byte ceiling. PRE-EXISTING and
                     unchanged by this batch. One of the seven is mine:
-                    SAIRN-ACTIVE-WORK-fourth.md at 1,008,974 bytes
+                    SAIRN-ACTIVE-WORK-fourth.md
+  seed gate         SAIRN_SEED_GATE WAS NOT USED AT ANY POINT
+
+RESUME CHECK, the brief's item 0
+  HEAD at pickup    03bad219  "chore(claims): fourth releases fourth"
+  tree              CLEAN except the one untracked SQL file above
+  vs remote         BEHIND 45
+  b18 handoff       EXISTS -- f25e2f82, report b35ce277, correction 09eabbec
+  conclusion        BATCH 18 WAS CLOSED, NOT INTERRUPTED. Nothing was dirty that
+                    needed committing or stashing and nothing was discarded.
 
 ONE LINE PER ITEM
-  1  claim + resume check                        DONE   (pre-compaction)
-  2  the remaining 43 SEQ 17-A, subject-verified  DONE   36 REAL / 7 WITHDRAWN; the 36 stay
-                                                        OPEN BY DESIGN, now with real subjects
-  3  jscomments.py strip_js + language refusal    DONE   pushed 2a8ab911; on PYTHON the module
-                                                        was not a no-op, it was DESTRUCTIVE
-  4  cody's two "queue16" conventions recounted   DONE   THEY EXIST -- landed as conventions 31
-                                                        and 32, both CREDITED TO CODY
-  5  external claims stated and released          DONE   24 held, 23 released, 1 held with a
-                                                        reason, 10 orphan locks REFUSED
-  6  skill resolution path per candidate          DONE   every path printed; NOTHING DISABLED --
-                                                        the premise failed four ways
-  7  external-files inventory, commit what belongs DONE  369 classified, 2 documents of record
-                                                        committed; index + checker FLAGGED BACK
-  -  compaction / session hygiene                 REFUSED-AND-MOOT  claim check BLOCKED exit 1 by
-                                                        cc AND cody, and the values were ALREADY
-                                                        SET so no write was needed either way
-  8  handoff before the reports                   DONE   f25e2f82, pushed before this file existed
+  0  resume check reported before anything touched  DONE   HEAD/clean/handoff all stated
+  1  claim first, attempts logged                   DONE   FOUR attempts, 3 BLOCKED, 4th CLEAR.
+                                                           The real overlap was honoured by
+                                                           REMOVING THE WORK, not rewording it
+  2  convention 33 assigned to cody's convention     DONE   counted 32 at 263f736f, no gap, no
+                                                           duplicate; 33 landed at :1851; the
+                                                           TEXT was MOVED, not copied
+  3  the 2 "queue16" conventions recounted           DONE   THEY WERE NEVER MISSING -- 31 and 32,
+                                                           both cody's. AND both promotion ROWS
+                                                           were absent from METHODOLOGY.md;
+                                                           backfilled
+  4a the remaining 43 SEQ 17-A findings              DONE   re-verified independently: arithmetic
+                                                           over all 43, source read at 3 of 23
+                                                           sites, 3 of 3 agree. 36 stay OPEN
+  4b jscomments.py strip_js + take ownership         DONE   CODE was already closed; OWNERSHIP
+                                                           WAS NOT. owner check 1 -> 0,
+                                                           grandfathered 265 -> 264
+  4c external-claims release statement               DONE   re-measured live: 24 worktrees -> 2.
+                                                           THE b4 RELEASE HELD
+  4d skill-path scoping, print the real path         DONE   nothing disabled, no shared skill
+                                                           frontmatter edited. TWO figures
+                                                           DRIFTED +6 each in three days
+  4e external-files inventory                        NOT DONE -- OUT OF SCOPE. hover2 holds it.
+                                                           Removed from scope, FLAGGED BACK
+  5  compaction discipline                           DONE   no write needed. AND b4's own
+                                                           autoCompactEnabled was never read:
+                                                           it is FALSE, so the 150000 window
+                                                           is INERT
+  6  this digest alongside the full report           DONE   both carry a verifiable body hash
+  7  handoff BEFORE the final report                 DONE   2626aedb, pushed before this file
 
-  NOT DONE: nothing. PARTIAL: nothing.
-  The compaction item is the only refusal, and it is a refusal that costs nothing
-  because the measurement showed there was no change to make.
+  NOT DONE: item 4e, and it is not mine to do this hour.
+  PARTIAL: nothing.
+
+THE TWO CARRYOVERS THAT ACTUALLY MOVED, because "all five were DONE" was wrong
+  4b  the item said "strip_js fix ... take ownership". The fix was in; the
+      OWNERSHIP was not. tool_owner_header_check.py exited 1 "NO OWNER: 1"
+      before and 0 "OWNER: fourth" after. Half an item, open for three days,
+      and only a re-derivation found it.
+  4d  git ls-files .claude/skills is 198, not the 192 SEQ b4-B recorded, and the
+      hover-auditor subtree is 165, not 159. Same six files, and they are the
+      auditor's. Conclusion UNCHANGED and now STRONGER: 165 of 198 tracked
+      files -- 83% -- are the subtree a build agent must not touch.
 
 EXACT file:line FOR EVERYTHING ROUTED TO ANOTHER AGENT
   tools/session_lock_check.py:128      lock_path() -- the only place a lock FILENAME is
                                        formed; nothing in it carries a session name
   tools/session_lock_check.py:349      lock_payload() -- the only lock WRITE site
-  tools/session_lock_check.py:357      'task': task -- empty in 14 of 14 live lock files,
-                                       which is why 8 of 10 dead locks are unattributable
-                                       -> OWNER OF session_lock_check.py. Add a session field
-                                          and make task non-empty; any --prune-dead must
-                                          REFUSE on an unattributable record, not clear it.
-  tools/idempotence_double_run.py:205  prefix='sairn_idem_' -- the source of the
-                                       sairn_idem_*.lock orphans
-  docs/METHODOLOGY.md:40               "## Routed here and not yet promoted" -- where the
-                                       promotion rows for conventions 31 and 32 belong
-                                       -> CODY. File is in his live batch26 FILES. The
-                                          conventions themselves are landed at
-                                          docs/2026-09-13-cross-domain-disciplines.md:1751
-                                          (31) and :1806 (32); only the rows are blocked.
-  docs/external-files-index.json       does not exist yet
-                                       -> CODY. Paste-ready block, 51 indexed entries, at
-                                          docs/2026-10-07-fourth-routed.md:1949 (SEQ b4-C)
-  tools/external_file_index_check.py   does not exist yet
-  tests/run_external_file_index_probe.py
-                                       -> CC, live batch W FILES. I built no second checker.
-                                          NOTE: ab1b3cc2 landed a hover-side version of the
-                                          same check DURING this batch -- cc and hover now
-                                          have two efforts at one gate.
-  tests/grd_write_faults.js:385        the EIGHTH private comment-stripper; its own
+  tools/session_lock_check.py:357      'task': task -- "" in 14 of 14 live lock files,
+                                       which is why 6 of 8 dead locks are unattributable
+                                       -> OWNER OF session_lock_check.py. UNCHANGED FROM b4
+                                          and still open. Add a session field, make task
+                                          non-empty, and any --prune-dead must REFUSE on an
+                                          unattributable record rather than clear it.
+  tools/sairn_claim.py                 the blocking layer decides BEFORE the FILES layer
+                                       runs, so a claim DECLINING a resource is blocked by
+                                       naming it, and "digest handoff" blocks two careful
+                                       sessions
+                                       -> OWNER OF sairn_claim.py. Two items: (1) a
+                                          negation-aware or FILES-only blocking path -- cc's
+                                          open item 8, and attempt 4's own "LEXICAL ONLY ...
+                                          the declared file sets are DISJOINT" proves the
+                                          layer works; (2) count COMMON_PHRASE_SESSIONS over
+                                          claim HISTORY via _all_claim_tasks(), not just the
+                                          six live claims.
+  tests/faults/grd_write_faults.js:385 the EIGHTH private comment-stripper; its own
                                        /\/\/[^\n]*/g eats the rest of any line containing
                                        // inside a URL
-                                       -> the jscomments.py consolidation, open
-  tests/seed_never_syncs_platform.js:250  the ONLY one of 23 sites whose subject is a whole
-                                       app file, so the only site where batch 17's
-                                       whole-file magnitude was measured against the right
-                                       thing
-  SAIRN-ACTIVE-WORK-fourth.md          1,008,974 bytes, over the ceiling
-                                       -> inbound to me from CC's batch W item 13, which
-                                          routes the six non-index oversize docs to owners
+                                       -> the jscomments.py consolidation, WHICH I NOW OWN.
+                                          Open.
+  SAIRN-ACTIVE-WORK-fourth.md          over the 400,000-byte ceiling
+                                       -> inbound to ME from cc's batch W item 13. Untouched
+                                          this run.
+  docs/external-files-index.json       does not exist yet; TWO efforts at the gate
+  tools/external_file_index_check.py   -> hover2 holds the item this hour; cc's checker and
+                                          the hover-side check in ab1b3cc2 are both live.
+                                          WHICH IS CANONICAL is question 3.
 
-MY OWN SECTIONS WRITTEN THIS BATCH
-  docs/2026-10-07-fourth-routed.md:1723  SEQ b4-A  the external claims
-  docs/2026-10-07-fourth-routed.md:1816  SEQ b4-B  the skill paths
-  docs/2026-10-07-fourth-routed.md:1949  SEQ b4-C  the external-file inventory
-  docs/2026-10-07-fourth-routed.md:2082  SEQ b4-D  the compaction item
+WHAT I OWN THAT I DID NOT BEFORE
+  tools/jscomments.py                  # OWNER: fourth, taken 2026-10-11. DERIVED, not
+                                       assumed, and the derivation is in the file header:
+                                       SAIRN-OPEN-WORK-INDEX.md:818 records the 2026-09-04
+                                       consolidation as Fourth's; git log --follow returns
+                                       exactly fc07ed07, 7773af72, 2a8ab911; no live claim
+                                       declares the path.
+
+MY OWN SECTIONS WRITTEN THIS RUN
+  docs/2026-09-13-cross-domain-disciplines.md:1851  convention 33 (CODY'S, number mine)
+  docs/2026-09-13-cross-domain-disciplines.md:1964  the denominator-moved note, TEN unchanged
+  docs/METHODOLOGY.md                               promotion rows 31, 32, 33 + the pointer
+                                                    that replaced cody's moved text
+  docs/2026-10-07-fourth-routed.md:2177             SEQ b4-E, the whole resume
+  docs/handoff-fourth-2026-10-11.md                 the handoff
+
+EVIDENCE, every status captured ALONE into a file, never through a pipe
+  python tools/jscomments.py --probe                          EXIT 0  "0 case(s) failed"
+  python tools/jscomments.py --probe   (re-run AFTER the edit) EXIT 0  "0 case(s) failed"
+  python -m py_compile tools/jscomments.py                    EXIT 0
+  python tools/tool_owner_header_check.py tools/jscomments.py EXIT 1 BEFORE -> EXIT 0 AFTER
+  python tools/orphan_register_check.py  (1 of 19 importers)  EXIT 0  "RESULT:CLEAN"
+  python tools/session_lock_check.py status                   EXIT 0  "state : SELF"
+  re.match(r'^## (\d+)\.') + Counter + gap scan over the conventions file
+                                        32 at 263f736f -> 33 after, 1-33, no gap, no duplicate
+  The pipe form is avoided because this repo's own exit_status_attributable hook
+  interrupted it three times in this run, each time correctly.
 
 CLAIMS TAKEN AND RELEASED
-  taken this run      none. The batch's claim (.claude/claims/fourth.json) was still
-                      ACTIVE at pickup, 0.7h into a 4h window, and was NOT re-taken --
-                      re-claiming would have reset the clock and hidden the real age.
-  status row          RESTATED. At pickup the shared registry said
-                      "fourth idle DEAD batch17 at 4fa9843a" -- TWO BATCHES STALE. Set to
-                      working with this batch's real HEAD. Had the resume been taken from
-                      the registry alone it would have restarted batch 17.
-  session lock        ~/SAIRN-SESSION-LOCKS/fourth.lock HELD throughout.
-                      session_lock_check.py status -> exit 0, "state : SELF", CLAUDE_PID 48784.
-  worktrees           23 RELEASED (22 removed + 1 dangling registration pruned).
-                      1 HELD: cc-review-0a_4251m, git-LOCKED, 2,373 dirty, another agent's.
-  stash               stash@{0} autostash RELEASED, patch preserved at
-                      <scratchpad>/b4_i5_stash.patch before the drop.
-  orphan locks        10 found with dead holders. ZERO RELEASED. 2 are hank's by his own
-                      claude_pid 82012; 8 are unattributable because the format has no
-                      holder field.
-  repo claim          to be released at batch close.
+  repo claim          TAKEN this run on the FOURTH attempt, committed and verified on
+                      origin/main. To be RELEASED at batch close.
+  claim attempts      1 BLOCKED (resource external-files, hover2's live batch Z)
+                      2 BLOCKED (same resource -- while EXPLICITLY DECLINING it)
+                      3 BLOCKED (shared phrase "digest handoff")
+                      4 CLEAR
+                      Nothing was forced; there is no --force on `claim`.
+  status row          RESTATED at pickup. It said "fourth idle DEAD batch b4 (18) CLOSED";
+                      set to working with this run's real HEAD.
+  session lock        ~/SAIRN-SESSION-LOCKS/fourth.lock HELD throughout. EXIT 0,
+                      "state : SELF", CLAUDE_PID 64304.
+  worktrees           2 registrations, which is b4's 24 -> 2 HOLDING. 1 HELD and NOT MINE:
+                      cc-review-0a_4251m, git-LOCKED, detached f65e734d. Not removed.
+  stash               none.
+  orphan locks        8 with dead holders. ZERO RELEASED, for the second batch running.
+                      Holder claude_pids put to Get-Process one at a time: 78192, 39448,
+                      58388, 61668, 82012, 73300 ALL DEAD; 64304 (this session) the only
+                      live one on the machine. 2 are hank's by his old 82012; 6 are
+                      unattributable because the format has no holder field.
+
+THE STATUS REGISTRY WAS WRONG IN A NEW DIRECTION AND SHOULD NOT BE TRUSTED
+EITHER WAY. At pickup it reported ALL SIX sessions "idle DEAD". All six session
+locks are LIVE and were started within FOUR MINUTES of each other on 2026-10-11
+-- hover 19:35:16, cody 19:35:47, cc 19:36:20, hank 19:37:47, fourth 19:38:30,
+hover2 19:39:23. CLAUDE.md warns that an EMPTY registry is not evidence nobody
+is working. The measured failure here is the MIRROR: a POPULATED one is not
+evidence they are dead. I wrote my own row and none of the other five.
+
+CORRECTIONS TO MY OWN EARLIER WORK, found by re-deriving rather than re-reading
+  1. b4's SEQ b4-D printed autoCompactEnabled as the NAME of an "other top-level
+     key" and never its VALUE. It is FALSE. So autoCompactWindow 150000 and
+     CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=75 are INERT -- they describe a mechanism
+     that is off. A reader of b4-D would have concluded the window was in force.
+  2. b4's digest ROUTED the promotion rows for conventions 31 and 32 to cody
+     because he held METHODOLOGY.md that hour. The rows then simply never
+     existed. Backfilled this run, with the absence recorded as the finding.
+  3. SEQ b4-B's 192 and 159 file counts are both 3 days stale (198 and 165).
+     Quoted with their commit, so the move is visible rather than contradictory.
 
 QUESTIONS ONLY MICHAEL CAN ANSWER
-  1. C:\Users\marsh\ still holds ~350 files I classified as throwaway -- 315
-     generated-family extracts, 12 whole-app/whole-script copies (three ~2MB
-     stonedesk_*.html, six ~257KB script26_*, a 1.2MB temp_check.js) and 25
-     command-output captures. I committed only the 2 documents of record and
-     DELETED NOTHING. Do you want the throwaway population deleted? It is ~20MB
-     and none of it is referenced by any tracked file, but deleting several
-     hundred files from your home directory is not a call I will make.
-  2. The claim I wrote at pickup lists items 2-8 and DOES NOT contain the
-     compaction item that your brief lists. I did the item anyway and said so.
-     When the two disagree, which is authoritative -- the brief or the claim?
-  3. cc-review-0a_4251m is a git-LOCKED worktree in this clone with 2,373 dirty
-     entries and a dead holder process. It is from a /code-review run. I will not
-     remove another agent's locked tree. Do you want it cleared?
-  4. There are now two efforts at the unindexed-external-file gate: cc's
-     tools/external_file_index_check.py (live claim, not yet on disk) and the
-     hover-side check landed as ab1b3cc2 during this batch. Which is canonical?
-  5. sql/restore_demo_pins_2026-09-29.sql has sat untracked in this clone for
-     seven batches and is not mine. Commit it, delete it, or keep carrying it?
-  6. These two report files are written at the repo root and I COMMITTED them,
-     because leaving documents of record outside git is the exact defect item 7
-     just spent a batch fixing. If you would rather reports stay uncommitted, say
-     so and I will remove them from the index.
+  1. sql/restore_demo_pins_2026-09-29.sql, untracked here for EIGHT batches, not
+     mine, and it writes credential rows -- so committing it pulls it under the
+     push gate's recoverability guard with nobody having reviewed it for that.
+     Commit, delete, or keep carrying?
+  2. cc-review-0a_4251m is a git-LOCKED worktree in this clone with a dead
+     holder, from a /code-review run. I will not remove another agent's locked
+     tree. Clear it?
+  3. Two efforts at the unindexed-external-file gate -- cc's
+     tools/external_file_index_check.py and the hover-side check in ab1b3cc2.
+     Which is canonical?
+  4. CONVENTION 33'S TEXT WAS MOVED OUT OF METHODOLOGY.md, NOT COPIED. That is
+     the file's own rule, but it removes ~90 lines of cody's prose from a file he
+     wrote them into on purpose after complaining his routings came back NOT
+     RECEIVED. Say so and I will restore it -- with the caveat that the file then
+     holds the second home its own third paragraph warns about.
+  5. The claim matcher blocked me twice on evidence that was wrong -- once on a
+     resource I was explicitly DECLINING, once on "digest handoff". I worked
+     around it by writing a claim about the work rather than the paperwork, and
+     I did not reword to keep any work. Is that what you want, or should a
+     session in that position stop and wait for you? I would rather be told.
+  6. ~350 files still sit in C:\Users\marsh\ that b4 classified as throwaway --
+     ~20MB, none referenced by any tracked file. Nothing deleted, nothing will be
+     without your word. Carried from b4.
+  7. This digest and the report REPLACE their b4-close versions in place, because
+     the brief named these exact filenames. The b4-close versions stand verbatim
+     at 09eabbec. If you would rather each resume got its own file, say so.
