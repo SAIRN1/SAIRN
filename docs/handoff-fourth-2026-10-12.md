@@ -270,3 +270,49 @@ it is not named.**
 
 **NOTHING IS PARTIAL EXCEPT ITEM 4, and it is named as partial with its
 remainder listed row by row.**
+
+---
+
+## 7. FINAL STATE, appended after the report and digest were written and uploaded
+
+| | |
+|---|---|
+| HEAD | `0c799630` |
+| origin/main | `f12e6042` |
+| position | **6 commits AHEAD, 0 behind. STILL NOTHING ON origin/main.** |
+| push attempts | 5, all refused. `SAIRN_SEED_GATE=off` **never used** — `docs/BYPASS-LOG.jsonl` gained no row from this batch, which is the mechanical check on that sentence |
+| uploaded to Drive | all three, byte-identical: `SAIRN-report-ted-b5.txt` 32,969 · `SAIRN-digest-ted-b5.txt` 16,192 · `handoff-fourth-2026-10-12.md` 14,951. **The b4 files were not overwritten** — all three are still present at 60,204 / 22,732 / 23,463 |
+| `report_sha_check --check --glob` | **EXIT 0** over all four b4 and b5 files |
+
+**THE LAST REFUSAL MOVED WHILE I WATCHED, AND THAT IS THE ROUTED FINDING
+HAPPENING LIVE.** The external-file check refused attempt 3 on **three**
+unindexed Drive handoffs including my own; by attempt 5 another session had
+indexed mine and the refusal was down to **one — `handoff-h2-2026-10-12b.md`,
+hover2's, uploaded during my push.** The commit immediately below mine on the
+remote is literally titled *"the SEVENTH Drive handoff, arriving during the push
+that declared the sixth"*. Every session is ordered to upload a handoff to a
+declared non-transient directory, so the queue of unindexed files is refilled by
+compliance faster than it is drained. **That is question 2 and it is not a
+tidiness question.**
+
+The `TOOLING-INVENTORY.md` refusal is unchanged and unchangeable from here: it
+is caused by the hooks being off, which is question 1.
+
+**THE SIX COMMITS, in order:**
+
+```
+9dddaea6  the claim
+6a5f849c  b4's bypass-log residue
+b7dd1c1d  the b5 work -- items 2, 3, 4, 5, 6, 7, 14
+2268dcbd  the scrutiny-flags row the gate wrote
+bcd60480  this handoff
+0c799630  the report and digest
+```
+
+Hashes move on every rebase — **five of these were rewritten twice by the two
+rebases this batch needed.** Re-derive rather than quoting them:
+
+```
+git log --oneline -7
+git rev-list --left-right --count origin/main...HEAD
+```
