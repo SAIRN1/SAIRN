@@ -1,5 +1,5 @@
 DIGEST cody b4 -- batch 27, 2026-10-11/12, landed f12e6042
-SHA256 ec3f0bd97bc38e1ffa59b683810cd555ba9a9de8e2449c2e8861b2d070cc983c
+SHA256 3a1a85853c712b2cb57cc3b5438238722bfe90374326420f8678757859aae456
 
 HASH RULE: line 1 is the title, line 2 is the SHA line, the BODY is every byte
 from line 3 to end of file, LF, UTF-8. Recompute with:
@@ -11,7 +11,10 @@ value was recomputed and checked.
 
 COMPANION REPORT  SAIRN-report-cody-b4.txt, 869 lines, body SHA256
                   9e4842d364b67eced1d67e8d6a1ac1f8341dc71e7e50adc038c85928178e2a22
-                  (verified before its commit 82c914e1)
+                  (verified before its commit; that commit's sha was rewritten by the final
+                  rebase of this batch and is bda1c3ad on origin/main. THE HASH IS
+                  THE STABLE IDENTIFIER HERE AND THE SHA IS NOT -- which is the
+                  whole reason line 2 of each file carries one.)
 HANDOFF           docs/handoff-cody-2026-10-12.md
 
 DRIVE COPIES ARE NOT BYTE-IDENTICAL AND SAY SO ON THEIR OWN FIRST LINE. The
