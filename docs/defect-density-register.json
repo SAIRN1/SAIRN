@@ -26894,6 +26894,62 @@
         }
       ],
       "recurrence_open": "OPEN. Nothing re-references a control's patch targets against the module it patches, so the next correct rename can dark another arm the same way. And the walk-up hole target_repo()'s own comment claims to close is still open at this HEAD, verified by running the checker from C:/Users/marsh."
+    },
+    {
+      "commit": "7a3b24c9046d",
+      "date": "2026-10-12",
+      "subject": "fix(ghost-field-scan): the probe was disabling the detection it tests, and this file's own write-up of the failure was keeping the failure true",
+      "files": [
+        "docs/known-red-suites.json",
+        "docs/tier-a-reviews.json",
+        "tests/run_ghost_field_read_probe.py",
+        "tools/ghost_field_read_scan.py"
+      ],
+      "lines_added": 164,
+      "lines_removed": 34,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "tools/ghost_field_read_scan.py went silent on exactly the two defects its own mutation probe plants, because the probe payloads are string literals in a .py file (strings are kept by design) and because docs/known-red-suites.json own write-up of the failure quoted both field names in a .json file read as raw data -- so both names counted as spelled somewhere in the repo, both stopped being ghosts, and five probe arms had been failing since 2026-10-06 against a scan that was working; the explanation of the failure was what sustained the failure",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": "tests/run_ghost_field_read_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The probe and the ledger entry were both written as correct artefacts; the defect is the interaction between them and the scan universe, which no single commit introduced. The ledger entry dates from 2026-10-06 and the probe predates it."
+      },
+      "contributing_factors": [
+        {
+          "factor": "A mutation probe holds its planted defect payloads as string literals in its own source, and the scan it drives reads string literals as real field spellings -- deliberately, because a string key IS a spelling. So the probe entered the universe it was testing",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "SPELLING_BLIND in tools/ghost_field_read_scan.py removes two named paths from the SPELLED universe only; both are still scanned for gates. It refuses to run (exit 2) if either path stops existing, and both appear in the scan printed exclusion list on every run."
+        },
+        {
+          "factor": "The red-suite ledger entry explaining WHY the probe was red quoted the two planted field names, and .json is treated as data so its raw text enters the universe with no comment stripping -- the write-up of the failure was keeping the failure true",
+          "kind": "process",
+          "action_status": "done",
+          "action": "docs/known-red-suites.json is the second SPELLING_BLIND path, with the reason recorded as the *.md prose rule arriving through an extension that rule did not cover. The entry was moved from entries to recovered with the real diagnosis."
+        },
+        {
+          "factor": "The probe exit-code arm was vacuous: the shipped tree already exits 1 with 31 standing findings, so with the defect planted the scan exits 1 FINDING was true whether or not anything was detected, and only the four name/file arms could fail",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "A DELTA arm now measures the finding count against the baseline, 31 to 32 on each mutation. The exit-code arm is kept and relabelled as what it really proves: no crash and no COULD-NOT-RUN."
+        },
+        {
+          "factor": "The scan universe is built over the whole repo with no notion of which files are test material or prose about findings, so any new file that merely NAMES a field can silence a true detection and nothing announces it",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "A general rule -- test fixtures and finding ledgers are not spelling sources -- would need a reliable way to classify them, and a wrong classification SILENCES a real detector, which is the direction that costs. Two named paths with a refusal on absence is the narrow version. Declined rather than planned because no owner and no date would make it the CAPA box this list replaces; routed in the batch digest."
+        }
+      ],
+      "recurrence_open": "The exclusion is TWO NAMED PATHS. Any future test fixture or finding ledger that quotes a ghost field name will silence the scan for that name the same way, and nothing detects it except the probe going red again -- which took five days to be read as anything but a broken scan. The scan standing finding count is unchanged at 31 before and after, so the repair added no false positives, but 31 standing findings also mean the exit code alone can never be evidence of anything."
     }
   ],
   "started": "2026-09-09",
