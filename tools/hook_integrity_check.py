@@ -269,6 +269,81 @@ def load_manifest(repo):
         raise CouldNotRun('could not parse %s (%s)' % (MANIFEST_REL, exc))
 
 
+# ── THE WIRING COMPARISON, LIFTED OUT OF compare() ON 2026-10-11 ───────────
+# Lifted rather than copied, and that is the whole point of doing it this way.
+# `--wiring-only` below needs exactly this comparison and nothing else; a second
+# implementation of it would be free to drift from this one, and the drift would
+# show up as the cheap check reporting clean while the full check reports a
+# removal -- which is the shape of defect this file exists to catch.
+def wiring_findings(obs, man):
+    """Settings-wiring drift only. Same text the full run prints."""
+    findings = []
+    for ev, sha in sorted(obs['wiring'].items()):
+        expected = (man.get('wiring') or {}).get(ev)
+        if expected is None:
+            findings.append('WIRING %s is not in the manifest.' % ev)
+            continue
+        if sha != expected:
+            exp_rows = (man.get('wiring_rows') or {}).get(ev) or []
+            now_rows = obs['wiring_rows'].get(ev) or []
+            gone = [r for r in exp_rows if r not in now_rows]
+            added = [r for r in now_rows if r not in exp_rows]
+            findings.append(
+                'WIRING %s CHANGED. %d line(s) REMOVED, %d added. A removed line '
+                'is an unwired control: the tool is still on disk, still correct, '
+                'and never runs.%s%s'
+                % (ev, len(gone), len(added),
+                   ''.join('\n        REMOVED: ' + r for r in gone),
+                   ''.join('\n        ADDED:   ' + r for r in added)))
+    return findings
+
+
+# ── WHY A CHEAP MODE EXISTS AT ALL, 2026-10-11 ──────────────────────────────
+# MEASURED, not hypothesised. At 20:45 on 2026-10-11 this clone's working-tree
+# `.claude/settings.json` held `"hooks": {"SessionStart": []}` against a HEAD
+# (a8956a6f) carrying six SessionStart commands. The six that stopped running:
+# session_lock_check.py start, sairn_claim_hook.py, sairn_status.py --hook,
+# dispatch_state.py --hook, hover_self_health_shim.py -- and THIS FILE.
+# `SAIRN-fourth` was in the same state at the same minute; cc and cody were too
+# and were restored at 20:55 and 20:57. A harness-side rewrite of settings.json
+# is the only cause consistent with four clones at one minute, and it kept
+# PreToolUse, PostToolUse, PreCompact and UserPromptSubmit intact.
+#
+# THE FULL RUN ALREADY DETECTS THIS EXACTLY -- verified against the still-
+# disarmed SAIRN-fourth, which printed `WIRING SessionStart CHANGED. 6 line(s)
+# REMOVED` and named all six. Nothing about the detection was missing.
+#
+# WHAT WAS MISSING IS THAT ITS ONLY TRIGGER WAS THE EVENT THAT GOT EMPTIED. A
+# detector wired solely to SessionStart cannot report the removal of SessionStart;
+# it is removed by the same edit, and a session that never runs it is
+# indistinguishable from a session where it found nothing. Self-concealing, and
+# it concealed itself for at least one session in four clones.
+#
+# So this mode runs from UserPromptSubmit, which survived. TWO JSON READS, no
+# hashing of 60 files and no git subprocess, because a per-prompt check that
+# costs seconds is one somebody turns off -- taking the coverage with it.
+#
+# IT DOES NOT CLOSE THE HOLE, IT NARROWS IT, and overstating that would be worse
+# than leaving it open. Removal of SessionStart alone is now reported on the first
+# prompt. Removal of BOTH SessionStart and UserPromptSubmit is still invisible to
+# this file, because nothing it can be wired to is guaranteed to survive. The
+# remaining residue is named in the report rather than left for somebody to
+# discover the same way.
+def wiring_only(repo):
+    """(findings, could_not) for the settings wiring alone. May raise."""
+    wmap = wiring(repo)
+    man = load_manifest(repo)
+    obs = {'wiring': dict((ev, sha256_text('\n'.join(rows)))
+                          for ev, rows in wmap.items()),
+           'wiring_rows': wmap}
+    could_not = []
+    if not (man.get('wiring') or {}):
+        could_not.append(
+            'the manifest records no wiring at all, so NOTHING was compared. '
+            'Regenerate it with --regenerate.')
+    return wiring_findings(obs, man), could_not
+
+
 def compare(repo, obs, man):
     """(findings, could_not) -- the three-way comparison, states kept apart."""
     findings, could_not = [], []
@@ -317,23 +392,7 @@ def compare(repo, obs, man):
                         'either the file is gone or no hook invokes it any more. '
                         'Both change what is enforced.' % t)
 
-    for ev, sha in sorted(obs['wiring'].items()):
-        expected = (man.get('wiring') or {}).get(ev)
-        if expected is None:
-            findings.append('WIRING %s is not in the manifest.' % ev)
-            continue
-        if sha != expected:
-            exp_rows = (man.get('wiring_rows') or {}).get(ev) or []
-            now_rows = obs['wiring_rows'].get(ev) or []
-            gone = [r for r in exp_rows if r not in now_rows]
-            added = [r for r in now_rows if r not in exp_rows]
-            findings.append(
-                'WIRING %s CHANGED. %d line(s) REMOVED, %d added. A removed line '
-                'is an unwired control: the tool is still on disk, still correct, '
-                'and never runs.%s%s'
-                % (ev, len(gone), len(added),
-                   ''.join('\n        REMOVED: ' + r for r in gone),
-                   ''.join('\n        ADDED:   ' + r for r in added)))
+    findings.extend(wiring_findings(obs, man))
 
     expected_path = man.get('hooks_path')
     if expected_path is None:
@@ -452,9 +511,75 @@ def main(argv=None):
                          'only against the tree that generated it.')
     ap.add_argument('--regenerate', action='store_true')
     ap.add_argument('--json', action='store_true')
+    ap.add_argument('--wiring-only', action='store_true',
+                    help='compare ONLY the .claude/settings.json wiring against '
+                         'the manifest. Two JSON reads, no hashing, no git -- '
+                         'cheap enough to run on every prompt, which is the '
+                         'point: see the note above wiring_only().')
+    ap.add_argument('--hook', action='store_true',
+                    help='--wiring-only, emitted as UserPromptSubmit '
+                         'additionalContext. ALWAYS exits 0 -- a non-zero exit '
+                         'here blocks the prompt, and a check that blocks every '
+                         'prompt gets switched off. Its mechanism is the message, '
+                         'not the status.')
     args = ap.parse_args(argv)
 
     repo = os.path.abspath(args.repo)
+
+    # ── THE HOOK PATH, BEFORE ANY BANNER ───────────────────────────────────
+    # Prints nothing on a clean wiring. The SessionStart banner is useful to a
+    # human running this by hand and is noise on every prompt; a hook that
+    # chatters is one somebody unwires.
+    if args.hook:
+        try:
+            findings, could_not = wiring_only(repo)
+        except CouldNotRun as exc:
+            # Said out loud, never folded into silence. "Could not check the
+            # wiring" is the third state and it is the one that looks like a
+            # pass if nothing prints.
+            emit_hook_context(
+                'HOOK WIRING CHECK -- COULD NOT RUN (this is NOT a pass): %s\n'
+                'Run `python tools/hook_integrity_check.py` and say so in the '
+                'session report.' % exc)
+            return EXIT_CLEAN
+        if not findings and not could_not:
+            return EXIT_CLEAN
+        lines = ['HOOK WIRING DRIFT in .claude/settings.json -- an unwired '
+                 'control is on disk, correct, and never runs.']
+        lines.extend('  ! %s' % f for f in findings)
+        lines.extend('  ? %s' % c for c in could_not)
+        lines.append('Restore it (`git restore .claude/settings.json` if the '
+                     'removal is uncommitted), re-run `python '
+                     'tools/hook_integrity_check.py`, and REPORT this -- the '
+                     'session that ran without those hooks did so unguarded.')
+        emit_hook_context('\n'.join(lines))
+        return EXIT_CLEAN
+
+    if args.wiring_only:
+        print('HOOK WIRING ONLY -- settings.json against the manifest')
+        print('  criteria : %s' % CRITERIA_VERSION)
+        print('  repo     : %s' % repo)
+        try:
+            findings, could_not = wiring_only(repo)
+        except CouldNotRun as exc:
+            print()
+            print('COULD NOT RUN: %s' % exc)
+            return EXIT_COULD_NOT_RUN
+        print()
+        for c in could_not:
+            print('  ? %s' % c)
+        for f in findings:
+            print('  ! %s' % f)
+        if not findings and not could_not:
+            print('  The wiring for %s matches the manifest.'
+                  % ', '.join(WIRED_EVENTS))
+        print()
+        print('  THIS MODE CHECKS THE WIRING ONLY. It says nothing about the '
+              'hook FILES, the tools they invoke, or core.hooksPath -- run '
+              'without --wiring-only for those.')
+        if could_not:
+            return EXIT_COULD_NOT_RUN
+        return EXIT_FINDING if findings else EXIT_CLEAN
     print('HOOK INTEGRITY -- an edited hook is trusted like a correct one')
     print('  criteria : %s' % CRITERIA_VERSION)
     print('  repo     : %s' % repo)
