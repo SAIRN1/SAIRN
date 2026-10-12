@@ -3416,8 +3416,8 @@
       "task": "batch b4 (18) RESUME 2 at HEAD e4b17594. The attempt-4 claim was RELEASED first rather than held in parallel: it was DEAD by 'own' (CLAUDE_PID 64304 gone) while 'check' still called it ACTIVE SAME WORK, so this session had been working unclaimed and the push gate said so on a landed push. The work: restore this clone's .claude/settings.json hooks, stripped to zero in the working tree and uncommitted, preserving the stripped copy untracked; re-verify read-only at HEAD the items that landed at 71fdeb34 and f2082d03; reseat the two output files' own body hashes and their rebase-rewritten commit citations; write and upload the report, digest and handoff. REPORT-ONLY on the user-level settings.json change and on hook_integrity_check.py's 11 pre-existing manifest-drift rows -- neither is mine and neither was written. HOVER'S LIVE b9 DECLARES .claude/settings.json to untrack and gitignore it; my only action on that path is a git checkout of the working tree back to the committed blob, no commit, and the untrack is NOT attempted here. FILES: SAIRN-report-ted-b4.txt SAIRN-digest-ted-b4.txt docs/handoff-fourth-2026-10-11.md",
       "claimed_at": "2026-10-12T01:44:18Z",
       "claimed_at_epoch": 1791769458.4872248,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-12T10:20:22Z",
       "files": [
         "SAIRN-digest-ted-b4.txt",
         "SAIRN-report-ted-b4.txt",
