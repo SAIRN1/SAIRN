@@ -130,6 +130,38 @@ const APPROVED = [
   // The licence key is shipped to the browser.
   'sf_trustee_audits',
   'sf_vehicle_service',
+  // 2026-10-11, ONE, and it is the first on this list whose gate closes an
+  // INTEGRITY hole rather than a disclosure one.
+  //
+  // `sf_officers` is the post's governance record -- who holds which office --
+  // and docs/CRITICALITY-TIERS.md:365 has tiered it **A on integrity, B on
+  // confidentiality** since 2026-09-23, eighteen days before this gate. Read
+  // is the weaker half by that register's own words ("published by design in
+  // an organisation of this kind"); it is gated anyway for the reason
+  // sf_vehicle_service records above, and because gatedSet() below parses the
+  // `['read', 'write']` shape, so a write-only entry would be invisible to
+  // this suite rather than checked by it.
+  //
+  // WHY THE WRITE MATTERS, which is the half this closes: THREE guards over
+  // that roster are client-side only --
+  //   sairnfreedom.html:2849       activeProvisioners()
+  //   sairnfreedom.html:2860-2869  SPEC 1c, refuses deactivating the LAST
+  //                                active provisioner
+  //   sairnfreedom.html:2878-2885  refuses a second sole-holder
+  // -- and the generic SF_RESOURCES write branch stores `data: payload`
+  // verbatim with no role check, so a licence key alone (shipped to the
+  // browser) could rewrite the roster past all three and leave the post in the
+  // zero-active-provisioners state SPEC 1c exists to make unreachable.
+  // RF-PINNACLE-2026 is the live instance of that state.
+  //
+  // NOT A CREDENTIAL BYPASS, said here so the next reader does not overread
+  // it: api/sf-auth.js:328 takes the provisioning role from the SIGNED SESSION
+  // TOKEN, not from this table. A forged officer row mints nothing.
+  //
+  // Reproducing artifact, exit 1 REPRODUCES before this change and exit 0
+  // after: .claude/skills/sairn-hover-auditor/tools-hover2/
+  // sf_officers_provisioning_bypass_repro.py
+  'sf_officers',
 ];
 
 function gatedSet() {

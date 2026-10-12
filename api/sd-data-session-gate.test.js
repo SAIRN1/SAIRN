@@ -339,7 +339,61 @@ function mapNames(blob) {
     // THE RESOURCE IS SPELLED BARE, same trap as `invoices` above: the storage
     // table is scp_customers and an entry under that name would gate nothing.
     assert.match(m[0], /'customers':\s*\['read', 'write'\]/);
-    assert.strictEqual(pairs, 78,
+    // 78 -> 80 on 2026-10-11: ONE resource, TWO pairs. SAIRNfreedom
+    // `sf_officers`, read and write. Two, not three -- see the note at the end
+    // of this block about what this counter actually counts.
+    //
+    // WHY IT IS GATED, which is what this tripwire exists to make somebody
+    // justify. `sf_officers` is the post's GOVERNANCE RECORD -- who holds which
+    // office -- and docs/CRITICALITY-TIERS.md:365 has carried it **A on
+    // integrity, B on confidentiality** since the 2026-09-23 full sf_ re-audit,
+    // eighteen days before this gate. It was in NEITHER list, so the licence
+    // key alone -- shipped to the browser, readable by anyone who can open the
+    // app -- could rewrite the roster wholesale through the generic
+    // SF_RESOURCES write branch, which stores `data: payload` verbatim with no
+    // role or capability check.
+    //
+    // THE SHARP PART IS THAT EVERY GUARD OVER THAT ROSTER IS CLIENT-SIDE:
+    //   sairnfreedom.html:2849       activeProvisioners()
+    //   sairnfreedom.html:2860-2869  SPEC 1c -- refuses deactivating the LAST
+    //                                active provisioner
+    //   sairnfreedom.html:2878-2885  refuses a second sole-holder
+    // A server write past this table is a write past all three, and can leave
+    // the post at zero active provisioners -- the unrecoverable-through-the-API
+    // state SPEC 1c exists to make unreachable, and the state RF-PINNACLE-2026
+    // is the live instance of.
+    //
+    // NOT PROVEN LIVE, and that is stated rather than implied. The 2026-10-05
+    // entry above carries a bare-key 200 with a control; this one does not. The
+    // evidence here is a reproducing artifact run against this file at the
+    // commit before the fix, exit 1 REPRODUCES -> exit 0 FIXED after:
+    //   .claude/skills/sairn-hover-auditor/tools-hover2/
+    //     sf_officers_provisioning_bypass_repro.py
+    // A live bare-key call was not driven. Source-level only.
+    //
+    // NOT A CREDENTIAL BYPASS. api/sf-auth.js:328 takes the provisioning role
+    // from the SIGNED SESSION TOKEN, not from this table, so a forged officer
+    // row mints nothing. The finding is integrity of the governance record and
+    // of the three client-side guards above.
+    //
+    // ── WHAT THIS COUNTER COUNTS, because the 2026-10-05 entry above explains
+    //    its own +3 as "two verbs plus the SD_GATE_APP entry" and that is NOT
+    //    what line 206 does ─────────────────────────────────────────────────
+    // `m[0]` is the SD_SESSION_GATED literal ALONE. SD_GATE_APP is a different
+    // object and contributes nothing here. What it DOES count, and the reason
+    // this entry is +2 while that one claimed +3, is that the regex runs over
+    // this block's RAW TEXT -- comments are NOT blanked, unlike
+    // api/sd-data-sf-session-gate.test.js:83 which blanks them before scanning.
+    // So a COMMENT inside sd-data.js's gate table that quotes a two-verb array
+    // literal adds two phantom pairs. MEASURED on this change: the first draft
+    // of the sf_officers comment quoted one and this arm reported 82 for an
+    // edit that added 2. The comment was reworded, not the count.
+    //
+    // That makes the +3 above suspect by the same mechanism. It is NOT
+    // corrected here: 78 was the measured count at 263f736f and re-deriving
+    // somebody else's arithmetic from a guess is how a tripwire's number stops
+    // meaning anything. Flagged for whoever owns that entry.
+    assert.strictEqual(pairs, 80,
       'the gate table changed size to ' + pairs + ' pairs -- add the new resource to this test and say why it is gated');
   });
 

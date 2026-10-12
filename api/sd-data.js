@@ -1011,6 +1011,82 @@ module.exports = async (req, res) => {
       'sf_vendor_prices':       ['read', 'write'],
       'sf_waivers':             ['read', 'write'],
       'sf_youth_participants':  ['read', 'write'],
+      // ── sf_officers, 2026-10-11. THE PROVISIONING TRAPDOOR'S OWN RECORD,
+      //    AND EVERY GUARD OVER IT IS CLIENT-SIDE ──────────────────────────
+      // Reproducing artifact, run at this HEAD before the edit and exiting 1
+      // REPRODUCES:
+      //   .claude/skills/sairn-hover-auditor/tools-hover2/
+      //     sf_officers_provisioning_bypass_repro.py
+      // Two conditions, both true: `sf_officers` was in neither this map nor
+      // SD_GATE_APP, and the generic SF_RESOURCES write branch stores
+      // `data: payload` verbatim with no role or capability check between the
+      // resource guard and the store. So the licence key -- which is SHIPPED
+      // TO THE BROWSER and readable by anyone who can open the app -- was
+      // sufficient to rewrite the post's officer roster wholesale.
+      //
+      // WHAT THAT ROSTER IS, read rather than inferred from the name. Three
+      // guards in sairnfreedom.html run ENTIRELY against it and ENTIRELY in
+      // the client:
+      //   :2849  activeProvisioners() -- officers whose capability is in
+      //          PROVISIONING_CAPS. The count the dashboard reports as
+      //          "N can provision" (:7614)
+      //   :2860-2869  sfToggleOfficer() refuses deactivating the LAST active
+      //          provisioner -- SPEC 1c, the trapdoor guard, written because
+      //          RF-PINNACLE-2026 reached zero-active-provisioners and became
+      //          unrecoverable through the API
+      //   :2878-2885  sfAddOfficer() refuses a second holder of a sole-holder
+      //          capability
+      // A server write past this map is a write past all three. It does not
+      // merely record a wrong row: it can leave the roster in the exact state
+      // SPEC 1c exists to make unreachable, and the client then renders the
+      // trapdoor banner as a finding about the post rather than about the
+      // write.
+      //
+      // WHAT IT IS **NOT**, stated so the severity is not overread. The
+      // SERVER's provisioning gate does not read this table:
+      // api/sf-auth.js:328 takes `caller.role` from the SIGNED SESSION TOKEN
+      // and checks it against PROVISIONING_ROLES (:89). So a forged officer
+      // row does NOT mint a credential. The finding is INTEGRITY of the
+      // governance record and of the client-side trapdoor guard, which is
+      // exactly how docs/CRITICALITY-TIERS.md:365 already tiers it --
+      // **A on integrity, B on confidentiality** -- and that register row
+      // predates this gate by eighteen days.
+      //
+      // READ AND WRITE BOTH, and the register says read is the WEAKER half:
+      // "who holds which office at the post. Published by design in an
+      // organisation of this kind." It is gated anyway for the reason
+      // `sf_vehicle_service` above records in its own words -- leaving read
+      // open on a Tier A resource while seventeen siblings are closed is the
+      // asymmetry that let that one sit ungated for six days -- and because
+      // gatedSet() in api/sd-data-sf-session-gate.test.js parses the
+      // both-verbs shape every other sf_ entry here uses, so a write-only
+      // entry would be invisible to that suite and would fail its
+      // two-lists-agree arm instead of being checked by it.
+      //
+      // NO VERB LIST IS WRITTEN IN PROSE INSIDE THIS BLOCK, and that is not
+      // style. The pair-count tripwire in api/sd-data-session-gate.test.js:206
+      // counts `'<word>'` followed by a comma or a bracket across this block's
+      // RAW TEXT -- it does not blank comments the way that file's sibling
+      // suite does. A comment here quoting a two-verb array literal therefore
+      // adds two phantom pairs to the count. Measured, not guessed: the first
+      // draft of this comment did exactly that and the arm reported 82 pairs
+      // for a change that added 2.
+      //
+      // THE CLIENT HALF NEEDS NO CHANGE, and that was READ, not assumed:
+      // sfData() at sairnfreedom.html:1986-1991 attaches X-SD-Auth whenever a
+      // session token is held, for every resource. The two client write sites
+      // (:2869, :2885) both go through it.
+      //
+      // THE TRADE, in this app's own terms rather than generically: the server
+      // is a BACKUP, not two-way sync (sairnfreedom.html:1906) -- per-record
+      // last-write-wins, additive-only hydration. So a post that has not
+      // provisioned credentials loses roster BACKUP and roster HYDRATION, not
+      // the roster: localStorage still holds it and all three guards above
+      // still run. sql/sairnfreedom_employee_auth_schema.sql is provisioned
+      // (/api/sf-auth login answered 401 INVALID_CREDENTIALS, not 503
+      // NOT_PROVISIONED, when that was last driven on 2026-09-29 -- re-drive
+      // it, do not trust this line), so a session is obtainable.
+      'sf_officers':            ['read', 'write'],
       'slabs':   ['read', 'write', 'reserve', 'release'],
       'profile': ['read', 'write'],
       'memory':  ['read', 'write'],
@@ -1309,6 +1385,14 @@ module.exports = async (req, res) => {
       'sf_vendor_prices': 'sairnfreedom',
       'sf_waivers': 'sairnfreedom',
       'sf_youth_participants': 'sairnfreedom',
+      // Added 2026-10-11 in the SAME EDIT as its SD_SESSION_GATED entry, which
+      // is the rule this pair of lists has carried since 2026-09-24 and which
+      // sf_trustee_audits broke on main on 2026-09-29: a resource gated above
+      // with no entry here resolves expectedApp to 'stonedesk' and refuses
+      // every correctly signed-in SAIRNfreedom officer with FORBIDDEN "sign in
+      // first" -- it fails CLOSED and CONFUSINGLY, which is the failure that
+      // gets a security change reverted as broken rather than fixed.
+      'sf_officers': 'sairnfreedom',
       // SAIRNscape's two, 2026-09-25, added in the SAME edit as their gate
       // entries -- this pair of lists is never grown one half at a time, and
       // the reason is at the top of this table: a resource gated above with no
