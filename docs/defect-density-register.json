@@ -26249,6 +26249,600 @@
       "recurrence_open": "36 CALLS IN 25 FILES NOT MINE REMAIN, enumerated with file and line in the batch artefacts, and all 25 files were claim-checked free at 2026-10-08. They are the same shape and the same one-line patch."
     },
     {
+      "commit": "0442646cb781",
+      "date": "2026-10-11",
+      "subject": "fix(scp): three of SAIRNscape's eight ungated resources gated -- and the repro that found them scored one of its own targets FIXED when it was not",
+      "files": [
+        "api/sd-data-scp-session-gate.test.js",
+        "api/sd-data-session-gate.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 261,
+      "lines_removed": 19,
+      "app": "sairnscape",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "hover-audit",
+      "summary": "Sixteen of twenty-two SAIRNscape resource/action pairs were gated by neither SD_SESSION_GATED nor an inline session check, so the browser-shipped licence key was the whole authorisation; three resources are gated here (scp_designs, Tier A since 2026-10-05; scp_vendors, whose data jsonb carries contact, phone and email; scp_progress_photos, whose photo_b64 of a customer's property was gated only INSIDE the qc_status branch at api/sd-data.js:5231, so an UPLOAD needed no session at all) -- and the reproducing artifact scored scp_progress_photos FIXED when it was not, because its check was a substring test for verifySessionToken that the qc-only gate satisfied, which is why the real figure was 16 of 22 and not the 15 first reported",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "unknown_reason": "The absence of an allowlist entry is not introduced by a commit. SAIRNscape was never swept with law_trusttx, SF_RESOURCES or SDN_RESOURCES; the gap is the app not having been in any of the three sweeps."
+      },
+      "citation_note": "Two shapes, neither in SAIRN-PROCESS-RULES.md. The authorisation half has no section (Parts 1-6 are checks, documents, push protocol, coordination, verification, provenance). The repro half is the closest thing to 1.2 -- grep cannot tell code from text that describes code -- but it is not that: the substring DID appear in real code, inside a narrower branch, so the defect is a presence test standing in for a reachability test. Citing 1.2 would be the manufactured agreement the not-citable hatch exists to prevent.",
+      "contributing_factors": [
+        {
+          "factor": "A gate written INSIDE a narrower conditional reads as a gate on the whole branch: scp_progress_photos write was session-checked only within if (payload.qc_status === ...), so the QC decision was protected and the upload was not",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "scp_progress_photos moved into SD_SESSION_GATED, which is pre-dispatch and covers both verbs unconditionally rather than one payload shape"
+        },
+        {
+          "factor": "The reproducing artifact asked whether verifySessionToken APPEARS near the resource rather than whether every path through the branch reaches it -- a presence test standing in for a reachability test, and it scored one of its own targets FIXED",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The repro was corrected in the same commit and the figure restated 15 -> 16 of 22. A substring test that can be satisfied by a gate inside a narrower branch is now the recorded reason the number was wrong."
+        },
+        {
+          "factor": "SAIRNscape was gated TIER A ONLY by an explicit stopping rule, which is defensible, but the rule reads the register LETTER and two of these three are B by letter while their own register cells describe A-shaped contents",
+          "kind": "process",
+          "action_status": "done",
+          "action": "scp_vendors is gated on what its row CONTAINS rather than its letter -- its register cell says in its own words that it was classified by the stated B rule rather than individually read. The same reasoning that gated customers on 2026-10-05."
+        },
+        {
+          "factor": "Twelve SAIRNscape resources were authorised by the licence hash alone from the day the app shipped, and the licence key is in the page",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "Five of the eight ungated resources are deliberately left and are NAMED in api/sd-data-scp-session-gate.test.js UNGATED_REST with the columns that justify leaving each. Widening further is a product decision, not a fix."
+        }
+      ],
+      "recurrence_open": "Five SAIRNscape resources stay ungated by decision and are named in UNGATED_REST. Ten of twenty-two pairs still REPRODUCE on the corrected repro (scp_jobs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, read and write each) -- measured at this HEAD, not estimated. Nothing yet compares the gate allowlist to the criticality register mechanically, so the next omission is found the same way this one was."
+    },
+    {
+      "commit": "56e040c3c6ac",
+      "date": "2026-10-11",
+      "subject": "fix(sf_officers): the governance record was writable on a browser-shipped licence key, and every guard over it is client-side",
+      "files": [
+        "api/sd-data-session-gate.test.js",
+        "api/sd-data-sf-session-gate.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 171,
+      "lines_removed": 1,
+      "app": "sairnfreedom",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "hover-audit",
+      "summary": "sf_officers, SAIRNfreedom's officer roster and the post's governance record, was in neither SD_SESSION_GATED nor SD_GATE_APP, so the browser-shipped licence key was the whole authorisation on it -- and the generic SF_RESOURCES write branch stores data:payload verbatim with no role or capability check, so a write past the gate is a write past all three client-side trapdoor guards (activeProvisioners, the SPEC 1c last-active-provisioner refusal, the sole-holder refusal) and can leave a post at zero active provisioners, the state SPEC 1c exists to make unreachable",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "unknown_reason": "The gap predates the SD_SESSION_GATED entries for SAIRNfreedom: sf_ resources were gated in waves from 2026-09-21 and this one was never in a wave. There is no commit that introduced it -- it is the ABSENCE of an allowlist entry, which no commit adds."
+      },
+      "citation_note": "No section of SAIRN-PROCESS-RULES.md states an authorisation rule. Parts 1-6 cover checks that stop checking, standing documents, push protocol, coordination, verification and provenance; none says a Tier A resource must not be authorised by a key shipped to the browser. The rule this instantiates is written in api/sd-data.js's own gate comments and in docs/CRITICALITY-TIERS.md, not in the process rules, so citing one would be manufacturing agreement.",
+      "contributing_factors": [
+        {
+          "factor": "The gate is an ALLOWLIST and an allowlist omission is invisible: nothing in the dispatch notices that a resource has no entry, it simply dispatches on the licence hash",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "sf_officers added to both SD_SESSION_GATED and SD_GATE_APP in one edit, and api/sd-data-sf-session-gate.test.js APPROVED set-equality now fails on a resource that loses its gate as well as one gated without approval"
+        },
+        {
+          "factor": "SAIRNfreedom was gated in waves driven by individual findings rather than by a derivation over the resource list, so a resource nobody filed a finding about stayed out",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The follow-on commit gates four more by DERIVING the Tier A complement from docs/CRITICALITY-TIERS.md rather than waiting for a finding, and NAMES the five Tier A resources still ungated so the remaining asymmetry is visible"
+        },
+        {
+          "factor": "docs/CRITICALITY-TIERS.md:365 carried sf_officers as A-on-integrity for eighteen days before the gate landed, and nothing mechanically compares the register to the gate",
+          "kind": "detection",
+          "action_status": "declined",
+          "note": "An arm failing when a Tier A resource has no session-gate entry would have caught this on 2026-09-23 and would catch the five still open. NOT built in this batch and not claimed as built -- declined here rather than recorded as planned, because a planned action with no owner and no date is the CAPA box this field exists to replace. Routed in the batch digest instead."
+        },
+        {
+          "factor": "Every integrity guard over the roster is client-side by original design -- the trapdoor refusals were written in sairnfreedom.html because that is where the roster lived before a server copy existed",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "Moving the three guards server-side is a real change to a live app and is not this fix. The gate closes the licence-key path; a signed-in caller of any role can still write the roster, which is recorded as the remaining gap rather than fixed."
+        }
+      ],
+      "recurrence_open": "The gate stops a BARE LICENCE KEY. It adds no role or capability check, so any signed-in SAIRNfreedom session of any role can still rewrite the roster past all three client-side guards -- the repro's own third condition still reads role/capability check present: False. Five more Tier A sf_ resources remain ungated and are named in both gate suites."
+    },
+    {
+      "commit": "b7f6fb54116e",
+      "date": "2026-10-11",
+      "subject": "fix(sf,dnt): the gaming post's session, shift, ticket and rental money records were writable on a browser-shipped licence key -- and a dental provider could rewrite any appointment in the practice",
+      "files": [
+        "api/sd-data-dental-ledger-validation.test.js",
+        "api/sd-data-dental-provider-scope.test.js",
+        "api/sd-data-session-gate.test.js",
+        "api/sd-data-sf-session-gate.test.js",
+        "api/sd-data.js",
+        "sairnfreedom.html"
+      ],
+      "lines_added": 619,
+      "lines_removed": 4,
+      "app": "sairnfreedom",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "Four Tier A SAIRNfreedom resources -- sf_sessions (prizeCap, a statutory ORC Chapter 2915 limit, plus receipts and prizes), sf_shifts (a cash variance attributed to a named employee), sf_tickets (unitPrice and total at point of sale) and sf_rentals (charge, proceeds and the alcohol/notified compliance pair) -- were in neither SD_SESSION_GATED nor SD_GATE_APP, so the browser-shipped licence key was the whole authorisation on the gaming floor's money records; and in the same file sfHydrateAll() ran once from DOMContentLoaded BEFORE any interactive sign-in with sfEnterApp() never re-running it, so on a fresh browser every GATED sf_ resource's hydrate answered 403, the per-resource empty catch swallowed it, and signing in never went back for the server's copy -- already live for the 18 resources gated before this change",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Both halves are absences rather than edits. The gate gap is a missing allowlist entry, which no commit adds. The hydration gap was introduced the moment the FIRST sf_ resource was gated on 2026-09-21 while sfHydrateAll stayed a single DOMContentLoaded call -- so the injection is a commit that was correct for its own change and made a pre-existing single call site wrong."
+      },
+      "citation_note": "The authorisation half has no section in SAIRN-PROCESS-RULES.md. The hydration half is the silent-failure shape the primer and PR Part 5 both describe in prose -- additive hydration makes a refused read and an empty read identical on screen -- but no numbered section states it as a rule, so there is nothing to cite without inventing the citation.",
+      "contributing_factors": [
+        {
+          "factor": "The session gate is an allowlist over 36 resources and 18 entries, and nothing fails when a resource has no entry -- the dispatch simply authorises on the licence hash",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Four entries added to SD_SESSION_GATED and SD_GATE_APP in one edit, with the pair count in api/sd-data-session-gate.test.js moved 86 -> 94 MEASURED after the change rather than predicted"
+        },
+        {
+          "factor": "Prior SAIRNfreedom waves were finding-driven, so which resources got gated depended on which ones somebody filed about rather than on what the criticality register says",
+          "kind": "process",
+          "action_status": "done",
+          "action": "These four were DERIVED: 36 resources, 18 already gated, nine of the remaining 18 are Tier A by register letter, and these four are the Tier A ones carrying a money or statutory figure on the row. The other five are NAMED in both suites rather than silently skipped."
+        },
+        {
+          "factor": "sfHydrateAll has exactly ONE call site and the per-resource catch is empty, so a 403 on a gated resource produced no console line, no toast and no retry -- the outer promise never rejected, so the warning written for exactly this case could not fire",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "sfHydrateAfterSignIn() added and called from sfLogin and sfBootstrap, reporting on failure with the same policy as the boot call. The restore-from-sessionStorage path runs before the boot hydrate and was never affected."
+        },
+        {
+          "factor": "The gate and the criticality register are two independent lists that no tool compares, so a Tier A row and an absent gate entry can coexist indefinitely -- sf_vehicle_service did for six days and sf_officers for eighteen",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "A mechanical arm comparing SD_SESSION_GATED against docs/CRITICALITY-TIERS.md letters is the check that would catch the next one and the five still open. Not built here and not claimed as built. Declined rather than planned because naming a planned action with no owner is the CAPA box the factors list exists to replace; routed in the batch digest with the five resource names and their register lines."
+        }
+      ],
+      "recurrence_open": "Five Tier A SAIRNfreedom resources remain ungated by decision, not oversight: sf_district_imports (register:353), sf_events (:358), sf_permit_flags (:367), sf_products (:368), sf_vehicles (:380). The gate adds no ROLE check for any of the four gated here, so any signed-in session of any role can still write them. NOT PROVEN LIVE -- no bare-key call was driven against a real SAIRNfreedom licence; the evidence is the register letters, the two-list derivation and the client write sites read at this HEAD."
+    },
+    {
+      "commit": "0af370a85a34",
+      "date": "2026-10-12",
+      "subject": "fix(register feed gate): the THIRD gate carrying D9's one-sentence-for-every-cause -- and the cause it names is the one that actually happens",
+      "files": [
+        "tests/run_register_feed_gate_probe.py",
+        "tools/register_feed_gate.py"
+      ],
+      "lines_added": 134,
+      "lines_removed": 2,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "live-verification",
+      "summary": "tools/register_feed_gate.py printed one sentence -- `no ref lines on stdin -- cannot tell what is being pushed` -- for FOUR different situations, under the heading `Blocked: this gate could not tell what is being pushed`, which reads as an accusation about the change. The identical sentence lived in three gates, so a reader could not tell which one spoke; two were given the D9 treatment on 2026-10-08 and this was the third. OBSERVED, not supposed: it refused an ordinary push issued from inside a shell script today -- main() reads stdin whenever it is not a tty, a script's stdin is not a tty and carries no refs. Neither earlier fix names that case, and it is the one a session hits, because wrapping the push in a script is the obvious way to shrink the window in a four-session push race.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The sentence predates all three gates' current form and was copied between them; git log -S would name the commit that carried each copy, which is not the same fact as where the defect came in (PR 2.6)."
+      },
+      "citation_note": "1.5 is 'the confident line printed after the error' -- the class of a message that states something true and unhelpful where the reader needs the cause. Adjacent rather than exact: nothing here was printed AFTER an error, it was printed INSTEAD of a cause.",
+      "contributing_factors": [
+        {
+          "factor": "One sentence -- 'no ref lines on stdin -- cannot tell what is being pushed' -- was emitted for four different situations, under a heading that reads as an accusation about the change being pushed. Three of the four are not problems with the change at all.",
+          "kind": "technical",
+          "action": "Four messages, each naming its cause and naming the gate: script/pipe, by-hand at a tty, malformed lines, and the genuine hook anomaly.",
+          "action_status": "done"
+        },
+        {
+          "factor": "The identical sentence lived in THREE gates, so a reader could not tell which one spoke. Two were fixed on 2026-10-08 and this one was missed, which is the ordinary shape of a three-copy fix.",
+          "kind": "process",
+          "action": "This gate now names itself in every one of its four messages, as the other two already do.",
+          "action_status": "done"
+        },
+        {
+          "factor": "The script case is not in either earlier fix and is the one a session actually hits. Wrapping the push in a shell script is the obvious way to shrink the window in a four-session push race, and a nested git push does not reproduce the ref list git hands its own hook.",
+          "kind": "detection",
+          "action": "Named FIRST in the not-a-tty message, with the fix stated ('issue the push directly') and an explicit note that the gate denies because it cannot tell that case from a real hook anomaly.",
+          "action_status": "done"
+        },
+        {
+          "factor": "copy_exactly_gate.py's own D9 defect came from filtering the ref list to four-field lines before anything could refuse a malformed one. Repeating that filter here would have reproduced it.",
+          "kind": "technical",
+          "action": "The shape filter is used only to choose the MESSAGE; the loop still iterates every line, and two CONTROL arms pin both directions of a mixed good/malformed input.",
+          "action_status": "done"
+        },
+        {
+          "factor": "The first draft of the probe arms read the real sys.stdin, so the verdict depended on how the probe was LAUNCHED -- from a terminal the script arm went red for a reason unrelated to the gate.",
+          "kind": "detection",
+          "action": "The tty signal is driven through a fake, with an arm asserting the real stdin was restored.",
+          "action_status": "done"
+        }
+      ],
+      "recurrence_open": "OPEN. Three gates carried one sentence and two were fixed eleven days before the third; nothing cross-references a shared refusal message across the gates that print it, so the next shared message can drift the same way. The script case is now named in ONE of the three."
+    },
+    {
+      "commit": "16245537cc56",
+      "date": "2026-10-12",
+      "subject": "fix(auth,sairncash): fourteen apps could hand somebody a working sign-in with no record of who did it -- and an unauthenticated POST minted a Firebase auth token off one bearer string",
+      "files": [
+        "api/_lib/audit.js",
+        "api/alf-auth.js",
+        "api/auth-setup-attribution.test.js",
+        "api/bld-auth.js",
+        "api/dnt-auth.js",
+        "api/grd-auth.js",
+        "api/leg-auth.js",
+        "api/mech-auth.js",
+        "api/rf-auth.js",
+        "api/sairncash/verify.js",
+        "api/sairncash/verify.test.js",
+        "api/sb-auth.js",
+        "api/scp-auth.js",
+        "api/sd-sub-auth.js",
+        "api/sdn-auth.js",
+        "api/sen-auth.js",
+        "api/sf-auth.js",
+        "api/sv-auth.js",
+        "docs/2026-10-07-hank-migration-sql-for-michael.md",
+        "docs/BYPASS-LOG.jsonl",
+        "sairncash.html",
+        "sql/sairnbiz_audit_log_schema.sql",
+        "sql/sairnbuild_audit_log_schema.sql",
+        "sql/sairncare_audit_log_schema.sql",
+        "sql/sairndental_audit_log_schema.sql",
+        "sql/sairndesign_audit_log_schema.sql",
+        "sql/sairnfreedom_audit_log_schema.sql",
+        "sql/sairngrounds_audit_log_schema.sql",
+        "sql/sairnlegacy_audit_log_schema.sql",
+        "sql/sairnmechanical_audit_log_schema.sql",
+        "sql/sairnroofing_audit_log_schema.sql",
+        "sql/sairnscape_audit_log_schema.sql",
+        "sql/sairnsenior_audit_log_schema.sql",
+        "sql/sairnvet_audit_log_schema.sql",
+        "tools/audit_event_type_check.py"
+      ],
+      "lines_added": 1886,
+      "lines_removed": 44,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "hover-audit",
+      "summary": "FOURTEEN of seventeen api/*-auth.js setup branches minted a PIN credential for another employee -- the moment access is GRANTED -- and recorded nothing: no audit event and no created_by on the row, while set_active in those same files audited every outcome including its refusals, so revoking access was reconstructible and granting it was not; and in the same push api/sairncash/verify.js subscriptionId branch minted a Firebase CUSTOM AUTH TOKEN for a subscription customer on an unauthenticated POST carrying nothing but that subscriptionId, violating the ownership precondition api/_lib/firebase-admin.js:66-69 states in its own words",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "unknown_reason": "Both are absences across a whole file family rather than a single edit. The attribution gap is as old as each api/*-auth.js; the Firebase mint was added to verify.js on 2026-08-19 with the ownership precondition already written in firebase-admin.js, so the injection is a commit that added a caller which did not meet a precondition stated in the file it called."
+      },
+      "citation_note": "Neither half has a section in SAIRN-PROCESS-RULES.md. Parts 1-6 are checks that stop checking, standing documents, push protocol, coordination, verification and provenance -- none states an attribution-on-grant rule or a token-minting precondition. The nearest is 1.11 (fail closed when a dependency is absent), which the FIX obeys but which is not what the DEFECT was.",
+      "contributing_factors": [
+        {
+          "factor": "The same six-line audit block was written by hand in sc-auth.js and sd-auth.js and never propagated, and copying it fourteen more times would have put the event-type string and the detail keys -- the two things that actually drift -- in fourteen places",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "api/_lib/audit.js gains AUDIT_TABLE_BY_APP (one app-to-table map, with AUDIT_TABLES now DERIVED from it rather than maintained beside it) and auditPinSetup(), which owns the event type and the detail keys and fails CLOSED on an unmapped app. Fourteen files call it and surface attributed on the response."
+        },
+        {
+          "factor": "The finding that reported this put the figure at 15 of 17 and the real figure is 14, because api/law-auth.js audits through a local audit() wrapper and a scan keyed on the string writeAuditLog cannot see it -- the wrong number then travelled through three hover handoffs",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/auth-setup-attribution.test.js is new and prints the per-file classification rather than a count. It brace-matches the real setup branch, blanks comments before any match, accepts all three audit spellings, and carries two negative controls: prose about the attribution must NOT satisfy the detector, and a neighbouring setup-adjacent branch audit call must not be credited to setup."
+        },
+        {
+          "factor": "Moving fourteen files onto a helper would have removed all fourteen from tools/audit_event_type_check.py field of view while its printed total went on looking the same -- that checker resolves tables lexically and its own header says a table reached through a helper is invisible",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The checker now resolves auditPinSetup call sites through AUDIT_TABLE_BY_APP and returns the third state when it cannot, stops miscounting api/_lib/audit.js as an emitter, and carries five new selftest arms D1-D5. The 13 DDLs were extracted from a markdown doc into sql/*.sql so the comparison is real: tables read 4 to 17, files read 10 to 23."
+        },
+        {
+          "factor": "SAIRNcash has no login at all -- a guest Stripe checkout is the whole enrolment -- so the only credential available on a re-verification call is a bearer identifier the client holds in localStorage",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "Real authentication for SAIRNcash is a product change, not this fix. The change raises the bar from one bearer string to two independent ones and states that limit in the code rather than implying more. The sessionId branch is unchanged because it IS the checkout return and is where the client first learns its customerId."
+        }
+      ],
+      "recurrence_open": "THE CODE BEING PRESENT IS NOT THE FIX, and the SQL half is entirely outstanding. Measured by tools/audit_event_type_check.py at this commit, exit 1: SAIRNlaw works today; stonedesk_audit_log and sairncode_audit_log EXIST but their event_type CHECK REJECTS pin_setup (STEP 0a/0b of docs/2026-10-07-hank-migration-sql-for-michael.md, not run) -- so sd-auth.js and sc-auth.js attribution has been failing at the database since it landed on 2026-10-07; and the other 13 tables do not exist at all (STEPS 1-13, not run). Only ONE of seventeen apps records a row today. api/law-auth.js keeps a divergent detail shape by decision. The SAIRNcash half is bearer-credential strength, not identity, and was not proven live."
+    },
+    {
+      "commit": "3b99c19c38a4",
+      "date": "2026-10-12",
+      "subject": "fix(hover separation): the control that exists because fixtures cannot see the range-reader had nine arms COULD NOT RUN, and the guard that disarmed them was added to fix a hole it never closed",
+      "files": [
+        "tests/hover_separation_ci_probe.py",
+        "tools/hover_separation_ci.py"
+      ],
+      "lines_added": 37,
+      "lines_removed": 4,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "probe-control",
+      "summary": "tests/hover_separation_ci_probe.py, the ONE control that drives tools/hover_separation_ci.py against a real git repository, had nine arms reporting COULD NOT RUN and a traceback on the tenth -- measured at HEAD before anything was changed. Two independent causes. target_repo()'s guard accepted git's root only if it contained hover_separation_ci.py, which rejected the fixture repo the probe creates, so every fixture SHA resolved against the wrong clone and came back as an invalid revision range. And the scope-drift arm patched `hover_separation_audit.AUDITOR_SCOPE`, a tuple 7bc3a5a2 had DELETED when the scope became a per-session class, so it raised AttributeError and took the probe down after its last real assertion. The arms that stopped running are exactly the ones proving the gate refuses a build agent reaching into the auditor's clone -- the enforcement the triad exists for -- and they were dark from 2026-09-30 to 2026-10-12.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tests/hover_separation_ci_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "7bc3a5a25bb5",
+        "date": "2026-09-30",
+        "subject": "fix(hover-scope): AuditorScope is a class keyed by session identity, so any number of auditor clones each get their own scope",
+        "lag_days": 12
+      },
+      "citation_note": "1.1 is the class -- a check that stopped checking -- and it is cited for the AttributeError half, where a correct rename left the control pointing at a symbol that no longer exists. The target_repo() half is closer to 1.11: the probe reported COULD NOT RUN rather than a pass, which is the only reason any of this was visible, so that rule describes what went RIGHT here rather than what went wrong.",
+      "contributing_factors": [
+        {
+          "factor": "target_repo()'s 2026-09-27 guard accepted git's answer ONLY IF the resolved root contains hover_separation_ci.py. The probe runs the checker with cwd set to a throwaway fixture repo, so the CORRECT answer was refused and the fallback pointed at this clone -- every fixture SHA then came back as an invalid revision range.",
+          "kind": "technical",
+          "action": "A root that IS the current directory is accepted, which is unambiguous because git did not walk up to find it, and is the fixture case and nothing else.",
+          "action_status": "done"
+        },
+        {
+          "factor": "The guard was added to close a walk-up hole and does not close it. From C:/Users/marsh/Documents, which is not a repo, git answers C:/Users/marsh, and this file's path DOES start with that -- so the first clause accepts it, before and after the fix. Driven rather than argued: the checker run from there exits 2 COULD NOT RUN on an unresolvable range, which is the honest third state and is not the guard working.",
+          "kind": "technical",
+          "action": "Named in the code rather than left implied. The walk-up case needs a different test and is NOT fixed.",
+          "action_status": "planned",
+          "note": "Fixing it inside the same change would have conflated a dead-control repair with a guard redesign, and the guard's real behaviour is now written down where the next reader will hit it."
+        },
+        {
+          "factor": "The scope-drift arm patched hover_separation_audit.AUDITOR_SCOPE. 7bc3a5a2 deleted that tuple when the scope became a per-session class and said so in a comment, while scope_definitions_agree() was rewritten to read AuditorScope(s).paths. The arm raised AttributeError and took the whole probe down after its last real assertion.",
+          "kind": "detection",
+          "action": "The arm patches AuditorScope.SHARED on the audit side only, which is what the comparison actually reads, and both directions pass.",
+          "action_status": "done"
+        },
+        {
+          "factor": "Nothing announced the day the control stopped testing anything -- the eighth cross-domain discipline, arriving for real. The rename was correct; the control was never re-referenced against it, and the gap ran from 2026-09-30 to 2026-10-12.",
+          "kind": "latent-condition",
+          "action": "No general mechanism was added. This control is now green and each verification was measured alone.",
+          "action_status": "planned",
+          "note": "A sweep that re-references every control's patch targets against the module it patches is the general corrective; it is tool work beyond this fix and is reported rather than improvised."
+        },
+        {
+          "factor": "Nine arms reporting COULD NOT RUN is what made this visible. Had the probe folded the unresolvable range into a pass, a correct classifier wired to a range-reader returning nothing would have reported exactly the same green -- which is the sentence the probe's own docstring already carried.",
+          "kind": "detection",
+          "action": "No change needed: the third state is why this was found at all, and it is recorded here as the thing that worked.",
+          "action_status": "declined",
+          "note": "Nothing to fix. Recorded so a future reader does not read the nine COULD NOT RUN lines as the defect rather than as the detection."
+        }
+      ],
+      "recurrence_open": "OPEN. Nothing re-references a control's patch targets against the module it patches, so the next correct rename can dark another arm the same way. And the walk-up hole target_repo()'s own comment claims to close is still open at this HEAD, verified by running the checker from C:/Users/marsh."
+    },
+    {
+      "commit": "403b9d2b5d34",
+      "date": "2026-10-12",
+      "subject": "fix(push-gate probes): a linked worktree shares .git/config, and these two were the last pair still using one",
+      "files": [
+        "tests/push_gate/check4_probe.py",
+        "tests/push_gate/check7_probe.py"
+      ],
+      "lines_added": 390,
+      "lines_removed": 39,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tests/push_gate/check4_probe.py and check7_probe.py planted fixtures in a linked git worktree, which SHARES .git/config with the owning clone -- so a git config write from inside the worktree lands in the real clone. Reproduced in two commands (docs/2026-10-07-fourth-routed-pinned-worktree-shared-config.md): the delta was bare = true, after which every git command in Documents/SAIRN-fourth failed with 'this operation must be run in a work tree'. Converted to a throwaway hardlinked clone, the move check8_probe.py made on 2026-10-06 and these two never got. Three things a clone does not inherit were each the silent-pass direction and are now set and asserted: core.hooksPath (without it the pre-push hook never fires and the probe reports 'not blocked' about a gate it never asked), origin's real URL, and the retry fetch inside dry_push() which relied on the shared object store. Two new results per probe, in the verdict rather than only the printout: .git/config byte-identical to a pre-run snapshot, and no worktree registered -- neither of which the existing clean-tree and unmoved-HEAD arms could ever have seen, because bare=true leaves both perfectly clean.",
+      "rules": [
+        "1.4"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "78b272431eb1",
+        "date": "2026-09-11",
+        "subject": "fix(tests): the push-gate probes plant their fixtures in a worktree, not on main",
+        "lag_days": 31
+      },
+      "citation_note": "1.4 cited for the property: a read-only-looking operation that writes to shared state. The rule is about check tools reading with git show rather than mutating, and these probes were mutating the clone they were supposed to leave alone. The injection commit is the one that introduced the worktree (78b27243, the fix for a WORSE defect -- five stranded PROBE commits reaching origin/main), so the lag this record contributes is the lag of a fix's own side effect.",
+      "factors_unknown_reason": "one shared mechanism in two files; recorded as one defect naming both rather than as structured factors"
+    },
+    {
+      "commit": "5b0fc3adf6ee",
+      "date": "2026-10-12",
+      "subject": "feat(defect register): superseded_by had a validator and no writer, so four pairs sat unresolved for five days -- and --check was advertising work --reseat refuses",
+      "files": [
+        "docs/defect-density-register.json",
+        "tests/run_defect_register_superseded_probe.py",
+        "tools/defect_register.py"
+      ],
+      "lines_added": 259,
+      "lines_removed": 7,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/defect_register.py: `superseded_by` had a VALIDATOR and no WRITER. superseded_survivor() has validated the field since 2026-10-07 and `--check` has enforced it, but the only way to set one was to hand-edit 26,000 lines of JSON -- the row-splitting failure PR 2.1 names, on the file whose own merge_policy exists because four clones append to it. So the four pending duplicate pairs stayed duplicates and `--reseat` reported them as COLLIDES on every run, in every clone, for five days. A second defect surfaced the moment the first pointer was written: `--check` listed the superseded records as RE-SEATABLE and told the reader to run `--reseat`, which answers that superseded records are never re-seated and exits 1 -- a check advertising work the tool it names refuses. Both are fixed here, and the second one turned a pre-existing RED arm (E13 of tests/run_defect_register_probe.py) green.",
+      "rules": [
+        "2.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The field was introduced WITH its validator and WITHOUT a writer in one commit on 2026-10-07; naming that commit as the injection would record the absence of a feature as a defect injected by the feature, which is not what that field measures."
+      },
+      "citation_note": "2.1 forbids editing a row by splitting on a delimiter and requires rebuilding the row whole. The defect here is the same rule one level up: a field whose only writer was a human editing the serialised document by hand. Cited for the class rather than the letter.",
+      "contributing_factors": [
+        {
+          "factor": "superseded_by had a VALIDATOR and no WRITER. --check has enforced the field since 2026-10-07 and the only way to set one was to hand-edit 26,000 lines of JSON -- the row-splitting failure PR 2.1 names, on the file whose own merge_policy exists because four clones append to it.",
+          "kind": "technical",
+          "action": "--supersede <stale> --by <survivor>, which accepts exactly one shape and refuses every other.",
+          "action_status": "done"
+        },
+        {
+          "factor": "Because nothing could write it, the four pending duplicate pairs stayed duplicates and --reseat reported them as COLLIDES on every run, in every clone, for five days. A recurring message nobody can act on is one people stop reading.",
+          "kind": "process",
+          "action": "All four applied, each measured before writing: identical apart from commit, stale side no longer resolving, survivor reachable.",
+          "action_status": "done"
+        },
+        {
+          "factor": "--check and --reseat disagreed IN PRINT the moment the first pointer landed: --check listed four RE-SEATABLE records and told the reader to run --reseat, and --reseat answered that superseded records are never re-seated and exited 1. Both were right about their own question.",
+          "kind": "technical",
+          "action": "--check excludes superseded records from the re-seatable list and states how many it excluded and why. This turned a pre-existing RED arm (E13) green.",
+          "action_status": "done"
+        },
+        {
+          "factor": "The first draft of the live-check hardcoded 'origin/main' as the reachability base, so in a throwaway fixture repo a perfectly live survivor measured as unreachable and the command refused a write it should have made. A second answer to 'reachable from what' would have put the writer and --check back in disagreement.",
+          "kind": "detection",
+          "action": "It asks reseat_base(), the same question --check asks. Caught by the probe's accept arm, not by review.",
+          "action_status": "done"
+        },
+        {
+          "factor": "E9 of run_defect_register_probe.py builds its throwaway worktree from the LIVE register, so an unrelated session's rebase leftovers decide that arm's colour. It was red before this change and is red after, for a different reason each time.",
+          "kind": "latent-condition",
+          "action": "NOT fixed and NOT edited to pass. Reported as a fixture-coupling defect.",
+          "action_status": "planned",
+          "note": "Isolating that fixture from the live register is a probe redesign, not a line; changing the arm's expectation instead would be editing a suite to make it green, which is the thing this platform refuses."
+        }
+      ],
+      "recurrence_open": "OPEN in two directions. Nothing checks that a field --check ENFORCES has a supported way to be SET, so the next validated-and-unwritable field looks exactly like this one. And E9's throwaway worktree still inherits the live register, so an unrelated session's rebase leftovers decide that arm's colour."
+    },
+    {
+      "commit": "7a3b24c9046d",
+      "date": "2026-10-12",
+      "subject": "fix(ghost-field-scan): the probe was disabling the detection it tests, and this file's own write-up of the failure was keeping the failure true",
+      "files": [
+        "docs/known-red-suites.json",
+        "docs/tier-a-reviews.json",
+        "tests/run_ghost_field_read_probe.py",
+        "tools/ghost_field_read_scan.py"
+      ],
+      "lines_added": 164,
+      "lines_removed": 34,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "tools/ghost_field_read_scan.py went silent on exactly the two defects its own mutation probe plants, because the probe payloads are string literals in a .py file (strings are kept by design) and because docs/known-red-suites.json own write-up of the failure quoted both field names in a .json file read as raw data -- so both names counted as spelled somewhere in the repo, both stopped being ghosts, and five probe arms had been failing since 2026-10-06 against a scan that was working; the explanation of the failure was what sustained the failure",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": "tests/run_ghost_field_read_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The probe and the ledger entry were both written as correct artefacts; the defect is the interaction between them and the scan universe, which no single commit introduced. The ledger entry dates from 2026-10-06 and the probe predates it."
+      },
+      "contributing_factors": [
+        {
+          "factor": "A mutation probe holds its planted defect payloads as string literals in its own source, and the scan it drives reads string literals as real field spellings -- deliberately, because a string key IS a spelling. So the probe entered the universe it was testing",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "SPELLING_BLIND in tools/ghost_field_read_scan.py removes two named paths from the SPELLED universe only; both are still scanned for gates. It refuses to run (exit 2) if either path stops existing, and both appear in the scan printed exclusion list on every run."
+        },
+        {
+          "factor": "The red-suite ledger entry explaining WHY the probe was red quoted the two planted field names, and .json is treated as data so its raw text enters the universe with no comment stripping -- the write-up of the failure was keeping the failure true",
+          "kind": "process",
+          "action_status": "done",
+          "action": "docs/known-red-suites.json is the second SPELLING_BLIND path, with the reason recorded as the *.md prose rule arriving through an extension that rule did not cover. The entry was moved from entries to recovered with the real diagnosis."
+        },
+        {
+          "factor": "The probe exit-code arm was vacuous: the shipped tree already exits 1 with 31 standing findings, so with the defect planted the scan exits 1 FINDING was true whether or not anything was detected, and only the four name/file arms could fail",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "A DELTA arm now measures the finding count against the baseline, 31 to 32 on each mutation. The exit-code arm is kept and relabelled as what it really proves: no crash and no COULD-NOT-RUN."
+        },
+        {
+          "factor": "The scan universe is built over the whole repo with no notion of which files are test material or prose about findings, so any new file that merely NAMES a field can silence a true detection and nothing announces it",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "A general rule -- test fixtures and finding ledgers are not spelling sources -- would need a reliable way to classify them, and a wrong classification SILENCES a real detector, which is the direction that costs. Two named paths with a refusal on absence is the narrow version. Declined rather than planned because no owner and no date would make it the CAPA box this list replaces; routed in the batch digest."
+        }
+      ],
+      "recurrence_open": "The exclusion is TWO NAMED PATHS. Any future test fixture or finding ledger that quotes a ghost field name will silence the scan for that name the same way, and nothing detects it except the probe going red again -- which took five days to be read as anything but a broken scan. The scan standing finding count is unchanged at 31 before and after, so the repair added no false positives, but 31 standing findings also mean the exit code alone can never be evidence of anything."
+    },
+    {
+      "commit": "86189e37d552",
+      "date": "2026-10-12",
+      "subject": "fix(bld_draws): the gate on wip and release_retainage was real, and the SAME TABLE took read and write on the licence key alone",
+      "files": [
+        "api/_lib/sairnbuild-retainage-endpoint.test.js",
+        "api/sd-data.js",
+        "sairnbuild.html"
+      ],
+      "lines_added": 217,
+      "lines_removed": 5,
+      "app": "sairnbuild",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "code-review",
+      "summary": "api/sd-data.js: bld_draws was gated on TWO of its four actions. `wip` and `release_retainage` required a sairnbuild session and owner/office; `read` and `write` ON THE SAME TABLE fell through to the generic BLD_RESOURCES loop and took the licence key alone. A caller with the key and no session could read every draw's retainage figures, and could POST action:'write' with a `data` blob of its own choosing -- a merge-duplicates upsert that REPLACES `data` entirely, so one request could author a release that never happened, inflate one, or set `retainage_released` back to zero. That defeated bld_release_retainage_atomic's CAS, the no-reduce rule in api/_lib/wip-accounting.js and the append-only audit trail at once, with no employee recorded against any of it. Routed to this session as hover finding seq664; the originating hover INSTANCE is not recorded in any source a build agent may read, so the method here is this session's own read of both branches at HEAD rather than an attribution it could not verify.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "1f1705e0c6b6",
+        "date": "2026-09-02",
+        "subject": "feat(sairnbuild): server backup for the business record -- 30 collections that existed in one browser and nowhere else",
+        "lag_days": 40
+      },
+      "citation_note": "No process rule produced this. The defect is a resource whose ACTIONS were gated unevenly, and nothing in SAIRN-PROCESS-RULES.md covers action-level gate parity on one table. Recorded as a gap rather than cited loosely.",
+      "contributing_factors": [
+        {
+          "factor": "The generic BLD_RESOURCES loop carries an explicit no-session decision with a written reason -- every role in a building company reads the schedule, the punch list and the daily log. That reasoning is true of 29 of its 30 members and false of bld_draws, which is progress billing.",
+          "kind": "technical",
+          "action": "bld_draws is gated ahead of the loop: a valid sairnbuild session is required for read and write, and the three release-owned fields are carried over from the stored row rather than taken from the caller, with a fail-closed pre-read.",
+          "action_status": "done"
+        },
+        {
+          "factor": "The money semantics arrived AFTER the loop. bld_draws joined the ungated thirty on 2026-09-02 as an ordinary jsonb row; release_retainage, the atomic RPC and the append-only trail landed two weeks later. The loop's comment was correct when it was written and became wrong without being touched.",
+          "kind": "latent-condition",
+          "action": "Not acted on here beyond the gate itself. The general shape -- adding a money action to a resource that sits in an ungated generic loop -- has no check behind it.",
+          "action_status": "planned",
+          "note": "A gate-parity check across the generic resource loops is the real corrective and is larger than this fix; routed rather than improvised inside a security change."
+        },
+        {
+          "factor": "The correct shape was next door the whole time: the rf_draws branch gates read, write AND wip identically, for the same resource in another app. Nothing had to be designed, only noticed -- which is why no amount of designing would have caught it.",
+          "kind": "detection",
+          "action": "Section 5 of api/_lib/sairnbuild-retainage-endpoint.test.js now drives the two actions nothing in that file had ever driven, measured against the pre-fix handler (30 passed, 5 failed) as well as the fixed one (35 passed, 0 failed).",
+          "action_status": "done"
+        },
+        {
+          "factor": "The suite tested the guarded door and never tried the next one along. Twenty-nine arms covered wip and release_retainage; zero covered read or write on the same table, so every rule those arms assert was reachable around via a different action and the suite stayed green.",
+          "kind": "detection",
+          "action": "The six new arms include the two 401 cases, a forged release, a reduced release, and a real release surviving an ordinary save.",
+          "action_status": "done"
+        },
+        {
+          "factor": "The client echoes the server-authored release fields back into its local row after a release, and st() pushes that row through the generic write. A naive fix -- strip the release fields from the caller's payload -- therefore BLANKS a real release on the next ordinary draw save, which is a data-loss bug introduced by the security fix.",
+          "kind": "technical",
+          "action": "The fields are carried over from the stored row instead of stripped, and an arm asserts a real release survives an ordinary save.",
+          "action_status": "done"
+        }
+      ],
+      "recurrence_open": "OPEN. Nothing checks gate parity ACROSS the actions of one resource, and nothing re-asks the question when a money action is added to a resource already sitting in an ungated generic loop. The other 29 BLD_RESOURCES members, and the SDN_/LEG_/GRD_ loops with the same shape, have not been re-read against this."
+    },
+    {
       "commit": "93b96c4ee2da",
       "date": "2026-10-12",
       "subject": "fix(tier-a reseat): a SELECTOR changed a VERDICT, and an exact file-set match had no window at all",
@@ -26342,436 +26936,6 @@
       "factors_unknown_reason": "single-arm defect in a probe; no multi-factor model attempted this pass"
     },
     {
-      "commit": "b7f6fb54116e",
-      "date": "2026-10-11",
-      "subject": "fix(sf,dnt): the gaming post's session, shift, ticket and rental money records were writable on a browser-shipped licence key -- and a dental provider could rewrite any appointment in the practice",
-      "files": [
-        "api/sd-data-dental-ledger-validation.test.js",
-        "api/sd-data-dental-provider-scope.test.js",
-        "api/sd-data-session-gate.test.js",
-        "api/sd-data-sf-session-gate.test.js",
-        "api/sd-data.js",
-        "sairnfreedom.html"
-      ],
-      "lines_added": 619,
-      "lines_removed": 4,
-      "app": "sairnfreedom",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "Four Tier A SAIRNfreedom resources -- sf_sessions (prizeCap, a statutory ORC Chapter 2915 limit, plus receipts and prizes), sf_shifts (a cash variance attributed to a named employee), sf_tickets (unitPrice and total at point of sale) and sf_rentals (charge, proceeds and the alcohol/notified compliance pair) -- were in neither SD_SESSION_GATED nor SD_GATE_APP, so the browser-shipped licence key was the whole authorisation on the gaming floor's money records; and in the same file sfHydrateAll() ran once from DOMContentLoaded BEFORE any interactive sign-in with sfEnterApp() never re-running it, so on a fresh browser every GATED sf_ resource's hydrate answered 403, the per-resource empty catch swallowed it, and signing in never went back for the server's copy -- already live for the 18 resources gated before this change",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "Both halves are absences rather than edits. The gate gap is a missing allowlist entry, which no commit adds. The hydration gap was introduced the moment the FIRST sf_ resource was gated on 2026-09-21 while sfHydrateAll stayed a single DOMContentLoaded call -- so the injection is a commit that was correct for its own change and made a pre-existing single call site wrong."
-      },
-      "citation_note": "The authorisation half has no section in SAIRN-PROCESS-RULES.md. The hydration half is the silent-failure shape the primer and PR Part 5 both describe in prose -- additive hydration makes a refused read and an empty read identical on screen -- but no numbered section states it as a rule, so there is nothing to cite without inventing the citation.",
-      "contributing_factors": [
-        {
-          "factor": "The session gate is an allowlist over 36 resources and 18 entries, and nothing fails when a resource has no entry -- the dispatch simply authorises on the licence hash",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Four entries added to SD_SESSION_GATED and SD_GATE_APP in one edit, with the pair count in api/sd-data-session-gate.test.js moved 86 -> 94 MEASURED after the change rather than predicted"
-        },
-        {
-          "factor": "Prior SAIRNfreedom waves were finding-driven, so which resources got gated depended on which ones somebody filed about rather than on what the criticality register says",
-          "kind": "process",
-          "action_status": "done",
-          "action": "These four were DERIVED: 36 resources, 18 already gated, nine of the remaining 18 are Tier A by register letter, and these four are the Tier A ones carrying a money or statutory figure on the row. The other five are NAMED in both suites rather than silently skipped."
-        },
-        {
-          "factor": "sfHydrateAll has exactly ONE call site and the per-resource catch is empty, so a 403 on a gated resource produced no console line, no toast and no retry -- the outer promise never rejected, so the warning written for exactly this case could not fire",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "sfHydrateAfterSignIn() added and called from sfLogin and sfBootstrap, reporting on failure with the same policy as the boot call. The restore-from-sessionStorage path runs before the boot hydrate and was never affected."
-        },
-        {
-          "factor": "The gate and the criticality register are two independent lists that no tool compares, so a Tier A row and an absent gate entry can coexist indefinitely -- sf_vehicle_service did for six days and sf_officers for eighteen",
-          "kind": "latent-condition",
-          "action_status": "declined",
-          "note": "A mechanical arm comparing SD_SESSION_GATED against docs/CRITICALITY-TIERS.md letters is the check that would catch the next one and the five still open. Not built here and not claimed as built. Declined rather than planned because naming a planned action with no owner is the CAPA box the factors list exists to replace; routed in the batch digest with the five resource names and their register lines."
-        }
-      ],
-      "recurrence_open": "Five Tier A SAIRNfreedom resources remain ungated by decision, not oversight: sf_district_imports (register:353), sf_events (:358), sf_permit_flags (:367), sf_products (:368), sf_vehicles (:380). The gate adds no ROLE check for any of the four gated here, so any signed-in session of any role can still write them. NOT PROVEN LIVE -- no bare-key call was driven against a real SAIRNfreedom licence; the evidence is the register letters, the two-list derivation and the client write sites read at this HEAD."
-    },
-    {
-      "commit": "56e040c3c6ac",
-      "date": "2026-10-11",
-      "subject": "fix(sf_officers): the governance record was writable on a browser-shipped licence key, and every guard over it is client-side",
-      "files": [
-        "api/sd-data-session-gate.test.js",
-        "api/sd-data-sf-session-gate.test.js",
-        "api/sd-data.js"
-      ],
-      "lines_added": 171,
-      "lines_removed": 1,
-      "app": "sairnfreedom",
-      "layer": "product",
-      "severity": "critical",
-      "detection_method": "hover-audit",
-      "summary": "sf_officers, SAIRNfreedom's officer roster and the post's governance record, was in neither SD_SESSION_GATED nor SD_GATE_APP, so the browser-shipped licence key was the whole authorisation on it -- and the generic SF_RESOURCES write branch stores data:payload verbatim with no role or capability check, so a write past the gate is a write past all three client-side trapdoor guards (activeProvisioners, the SPEC 1c last-active-provisioner refusal, the sole-holder refusal) and can leave a post at zero active provisioners, the state SPEC 1c exists to make unreachable",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": "hover2",
-      "injection": {
-        "unknown_reason": "The gap predates the SD_SESSION_GATED entries for SAIRNfreedom: sf_ resources were gated in waves from 2026-09-21 and this one was never in a wave. There is no commit that introduced it -- it is the ABSENCE of an allowlist entry, which no commit adds."
-      },
-      "citation_note": "No section of SAIRN-PROCESS-RULES.md states an authorisation rule. Parts 1-6 cover checks that stop checking, standing documents, push protocol, coordination, verification and provenance; none says a Tier A resource must not be authorised by a key shipped to the browser. The rule this instantiates is written in api/sd-data.js's own gate comments and in docs/CRITICALITY-TIERS.md, not in the process rules, so citing one would be manufacturing agreement.",
-      "contributing_factors": [
-        {
-          "factor": "The gate is an ALLOWLIST and an allowlist omission is invisible: nothing in the dispatch notices that a resource has no entry, it simply dispatches on the licence hash",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "sf_officers added to both SD_SESSION_GATED and SD_GATE_APP in one edit, and api/sd-data-sf-session-gate.test.js APPROVED set-equality now fails on a resource that loses its gate as well as one gated without approval"
-        },
-        {
-          "factor": "SAIRNfreedom was gated in waves driven by individual findings rather than by a derivation over the resource list, so a resource nobody filed a finding about stayed out",
-          "kind": "process",
-          "action_status": "done",
-          "action": "The follow-on commit gates four more by DERIVING the Tier A complement from docs/CRITICALITY-TIERS.md rather than waiting for a finding, and NAMES the five Tier A resources still ungated so the remaining asymmetry is visible"
-        },
-        {
-          "factor": "docs/CRITICALITY-TIERS.md:365 carried sf_officers as A-on-integrity for eighteen days before the gate landed, and nothing mechanically compares the register to the gate",
-          "kind": "detection",
-          "action_status": "declined",
-          "note": "An arm failing when a Tier A resource has no session-gate entry would have caught this on 2026-09-23 and would catch the five still open. NOT built in this batch and not claimed as built -- declined here rather than recorded as planned, because a planned action with no owner and no date is the CAPA box this field exists to replace. Routed in the batch digest instead."
-        },
-        {
-          "factor": "Every integrity guard over the roster is client-side by original design -- the trapdoor refusals were written in sairnfreedom.html because that is where the roster lived before a server copy existed",
-          "kind": "latent-condition",
-          "action_status": "not-actionable",
-          "note": "Moving the three guards server-side is a real change to a live app and is not this fix. The gate closes the licence-key path; a signed-in caller of any role can still write the roster, which is recorded as the remaining gap rather than fixed."
-        }
-      ],
-      "recurrence_open": "The gate stops a BARE LICENCE KEY. It adds no role or capability check, so any signed-in SAIRNfreedom session of any role can still rewrite the roster past all three client-side guards -- the repro's own third condition still reads role/capability check present: False. Five more Tier A sf_ resources remain ungated and are named in both gate suites."
-    },
-    {
-      "commit": "0442646cb781",
-      "date": "2026-10-11",
-      "subject": "fix(scp): three of SAIRNscape's eight ungated resources gated -- and the repro that found them scored one of its own targets FIXED when it was not",
-      "files": [
-        "api/sd-data-scp-session-gate.test.js",
-        "api/sd-data-session-gate.test.js",
-        "api/sd-data.js"
-      ],
-      "lines_added": 261,
-      "lines_removed": 19,
-      "app": "sairnscape",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "hover-audit",
-      "summary": "Sixteen of twenty-two SAIRNscape resource/action pairs were gated by neither SD_SESSION_GATED nor an inline session check, so the browser-shipped licence key was the whole authorisation; three resources are gated here (scp_designs, Tier A since 2026-10-05; scp_vendors, whose data jsonb carries contact, phone and email; scp_progress_photos, whose photo_b64 of a customer's property was gated only INSIDE the qc_status branch at api/sd-data.js:5231, so an UPLOAD needed no session at all) -- and the reproducing artifact scored scp_progress_photos FIXED when it was not, because its check was a substring test for verifySessionToken that the qc-only gate satisfied, which is why the real figure was 16 of 22 and not the 15 first reported",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": "hover2",
-      "injection": {
-        "unknown_reason": "The absence of an allowlist entry is not introduced by a commit. SAIRNscape was never swept with law_trusttx, SF_RESOURCES or SDN_RESOURCES; the gap is the app not having been in any of the three sweeps."
-      },
-      "citation_note": "Two shapes, neither in SAIRN-PROCESS-RULES.md. The authorisation half has no section (Parts 1-6 are checks, documents, push protocol, coordination, verification, provenance). The repro half is the closest thing to 1.2 -- grep cannot tell code from text that describes code -- but it is not that: the substring DID appear in real code, inside a narrower branch, so the defect is a presence test standing in for a reachability test. Citing 1.2 would be the manufactured agreement the not-citable hatch exists to prevent.",
-      "contributing_factors": [
-        {
-          "factor": "A gate written INSIDE a narrower conditional reads as a gate on the whole branch: scp_progress_photos write was session-checked only within if (payload.qc_status === ...), so the QC decision was protected and the upload was not",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "scp_progress_photos moved into SD_SESSION_GATED, which is pre-dispatch and covers both verbs unconditionally rather than one payload shape"
-        },
-        {
-          "factor": "The reproducing artifact asked whether verifySessionToken APPEARS near the resource rather than whether every path through the branch reaches it -- a presence test standing in for a reachability test, and it scored one of its own targets FIXED",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "The repro was corrected in the same commit and the figure restated 15 -> 16 of 22. A substring test that can be satisfied by a gate inside a narrower branch is now the recorded reason the number was wrong."
-        },
-        {
-          "factor": "SAIRNscape was gated TIER A ONLY by an explicit stopping rule, which is defensible, but the rule reads the register LETTER and two of these three are B by letter while their own register cells describe A-shaped contents",
-          "kind": "process",
-          "action_status": "done",
-          "action": "scp_vendors is gated on what its row CONTAINS rather than its letter -- its register cell says in its own words that it was classified by the stated B rule rather than individually read. The same reasoning that gated customers on 2026-10-05."
-        },
-        {
-          "factor": "Twelve SAIRNscape resources were authorised by the licence hash alone from the day the app shipped, and the licence key is in the page",
-          "kind": "latent-condition",
-          "action_status": "not-actionable",
-          "note": "Five of the eight ungated resources are deliberately left and are NAMED in api/sd-data-scp-session-gate.test.js UNGATED_REST with the columns that justify leaving each. Widening further is a product decision, not a fix."
-        }
-      ],
-      "recurrence_open": "Five SAIRNscape resources stay ungated by decision and are named in UNGATED_REST. Ten of twenty-two pairs still REPRODUCE on the corrected repro (scp_jobs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, read and write each) -- measured at this HEAD, not estimated. Nothing yet compares the gate allowlist to the criticality register mechanically, so the next omission is found the same way this one was."
-    },
-    {
-      "commit": "403b9d2b5d34",
-      "date": "2026-10-12",
-      "subject": "fix(push-gate probes): a linked worktree shares .git/config, and these two were the last pair still using one",
-      "files": [
-        "tests/push_gate/check4_probe.py",
-        "tests/push_gate/check7_probe.py"
-      ],
-      "lines_added": 390,
-      "lines_removed": 39,
-      "app": "tooling",
-      "layer": "test",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "tests/push_gate/check4_probe.py and check7_probe.py planted fixtures in a linked git worktree, which SHARES .git/config with the owning clone -- so a git config write from inside the worktree lands in the real clone. Reproduced in two commands (docs/2026-10-07-fourth-routed-pinned-worktree-shared-config.md): the delta was bare = true, after which every git command in Documents/SAIRN-fourth failed with 'this operation must be run in a work tree'. Converted to a throwaway hardlinked clone, the move check8_probe.py made on 2026-10-06 and these two never got. Three things a clone does not inherit were each the silent-pass direction and are now set and asserted: core.hooksPath (without it the pre-push hook never fires and the probe reports 'not blocked' about a gate it never asked), origin's real URL, and the retry fetch inside dry_push() which relied on the shared object store. Two new results per probe, in the verdict rather than only the printout: .git/config byte-identical to a pre-run snapshot, and no worktree registered -- neither of which the existing clean-tree and unmoved-HEAD arms could ever have seen, because bare=true leaves both perfectly clean.",
-      "rules": [
-        "1.4"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "78b272431eb1",
-        "date": "2026-09-11",
-        "subject": "fix(tests): the push-gate probes plant their fixtures in a worktree, not on main",
-        "lag_days": 31
-      },
-      "citation_note": "1.4 cited for the property: a read-only-looking operation that writes to shared state. The rule is about check tools reading with git show rather than mutating, and these probes were mutating the clone they were supposed to leave alone. The injection commit is the one that introduced the worktree (78b27243, the fix for a WORSE defect -- five stranded PROBE commits reaching origin/main), so the lag this record contributes is the lag of a fix's own side effect.",
-      "factors_unknown_reason": "one shared mechanism in two files; recorded as one defect naming both rather than as structured factors"
-    },
-    {
-      "commit": "9bc99c05731b",
-      "date": "2026-10-12",
-      "subject": "fix(sairnlaw): \"individual feedback stays attributable\" was in the schema's own comment, and the table had no employee column at all",
-      "files": [
-        "api/legal-citator-feedback-attribution.test.js",
-        "api/legal-citator.js",
-        "sql/sairnlaw_citator_schema.sql"
-      ],
-      "lines_added": 355,
-      "lines_removed": 7,
-      "app": "sairnlaw",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "hover-audit",
-      "summary": "api/legal-citator.js feedback recorded no employee against a legal-citation treatment confirm or correction, at the application layer AND in sql/sairnlaw_citator_schema.sql, while that schema's own comment three lines above cl_feedback_log said 'individual feedback stays attributable'. logRec at :380 was built in the same function as auditLookup() at :185 from the same caller resolved at :184 and simply omitted it; the table had no employee column of any kind. Every row was attributable to a FIRM and to nobody, so an attorney confirming a classification other attorneys rely on was unrecoverable -- never captured rather than wrong. Fixed at both layers with NULLABLE columns on purpose, because the session token on this endpoint is optional by design and a row can legitimately have no person on it; inventing the owner or the licence would have read as evidence. The alter-table half is handled with a 503 NOT_PROVISIONED naming the SQL file, because create-table-if-not-exists does nothing to a live table and the old handler would have reported PGRST204 as 'try again'.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": "hover2",
-      "injection": {
-        "unknown_reason": "the omission is present in the commit that first wrote cl_feedback_log and its handler, so there is no transition from working to broken to point an injection sha at"
-      },
-      "citation_note": "not-citable: the nearest thing is a documentation claim outrunning the implementation, which the rules cover for standing documents and not for a schema comment. Not attached to a section it does not belong to.",
-      "factors_unknown_reason": "two-layer omission, application and schema, recorded as one defect with both layers named in the summary rather than modelled as structured factors"
-    },
-    {
-      "commit": "b56c667f6cbb",
-      "date": "2026-10-12",
-      "subject": "fix(sairncare+sairnfreedom): three duplicate DOM ids, and every one of them was a live feature reading another panel's input",
-      "files": [
-        "sairncare.html",
-        "sairnfreedom.html"
-      ],
-      "lines_added": 42,
-      "lines_removed": 8,
-      "app": "sairnfreedom",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "static-checker",
-      "summary": "Three duplicate DOM ids, none cosmetic. sairnfreedom.html ac-name (:371 officer provisioning, :1444 account name): sfOpenAccount() read the OFFICER name box, so a post could not open the ORC 2915.10(C) exclusive bingo-session account under the name typed into the account form. sairnfreedom.html ac-tbody (:380 officer roster, :1461 accounts): sfRenderAccess() and the accounts renderer both wrote into the officer tbody, so whichever ran last won -- the accounts table never rendered or the officer roster was replaced by account rows. sairncare.html fc-name (:320 family contact, :1082 facility profile): openFacilityModal() overwrote the family-contact input and saveFacility() stored THAT box's value as alf_facility.name, normally empty. Renames follow each file's own existing prefix (acct- from acct-kpis, fc-facname beside fc-company/fc-state/fc-licnum). Measured before and after with an HTML parser rather than a regex: sairncare 303/1 -> 304/0, sairnfreedom 398/2 -> 400/0, sairnsenior 327/0 unchanged. NOT live-verified: id uniqueness is measured, the behaviour is reasoned from the call sites.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": "an HTML-parser id scan written inline for Guardian Check 8; tools/ carries no duplicate-DOM-id checker, which is itself the finding",
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "three ids across two apps, each added in a different commit when a second panel reused an existing prefix; naming one injection sha for a three-site defect would be a guess about which of three"
-      },
-      "citation_note": "not-citable: Guardian Check 8 is the rule this violates and it lives in a skill, not in docs/SAIRN-PROCESS-RULES.md. Recorded as not-citable rather than attached to a process section it does not belong to.",
-      "factors_unknown_reason": "three sites recorded as one defect because they share one mechanism -- getElementById returning the first of a duplicated id -- and are fixed in one commit"
-    },
-    {
-      "commit": "b384a513f99e",
-      "date": "2026-10-12",
-      "subject": "fix(sairnsenior): a caregiver's BACKGROUND-CHECK DATE went to every signed-in role, and the branch's own comment compared it to the wrong thing",
-      "files": [
-        "api/sd-data-sen-caregiver-pii-scope.test.js",
-        "api/sd-data.js",
-        "sairnsenior.html"
-      ],
-      "lines_added": 421,
-      "lines_removed": 3,
-      "app": "sairnsenior",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "hover-audit",
-      "summary": "api/sd-data.js sen_caregivers/read returned the whole data blob, every row on the licence, to ANY authenticated sairnsenior role -- including each caregiver's background-check date, a state-issued caregiver ID and free-text HR notes about a colleague. The branch's stated justification was 'Employment/certification data, not client PHI -- lighter gate than sen_clients': true, and the wrong comparison. It is EMPLOYEE PII and three of its fields serve no scheduling purpose. Fixed at FIELD level rather than by a flat role refusal, which would have broken the roster the lighter gate exists to serve (senIsScheduler reads it agency-wide, certDaysUntil computes from cpr_expiry, visits join on employee_id). bgcheck_date/state_caregiver_id/notes now go to owner/billing only, under a NEW constant rather than a reused one, with the round-trip-wipe safety driven by an arm; sairnsenior.html renders an explicit Restricted badge so a redacted compliance column cannot read as 'no check on file'.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": "hover2",
-      "injection": {
-        "unknown_reason": "the branch has had no field distinction since it was written on 2026-08-20; the commit that added it is in history but it was written this way from the start, so there is no injection commit to name and a guessed one would be worse than none"
-      },
-      "citation_note": "not-citable: the process rules have no section about comparing a resource to the most sensitive thing beside it, which is the actual reasoning failure here. Recorded as not-citable rather than attached to the nearest-sounding id.",
-      "factors_unknown_reason": "single-branch access-control gap; no multi-factor model attempted this pass"
-    },
-    {
-      "commit": "16245537cc56",
-      "date": "2026-10-12",
-      "subject": "fix(auth,sairncash): fourteen apps could hand somebody a working sign-in with no record of who did it -- and an unauthenticated POST minted a Firebase auth token off one bearer string",
-      "files": [
-        "api/_lib/audit.js",
-        "api/alf-auth.js",
-        "api/auth-setup-attribution.test.js",
-        "api/bld-auth.js",
-        "api/dnt-auth.js",
-        "api/grd-auth.js",
-        "api/leg-auth.js",
-        "api/mech-auth.js",
-        "api/rf-auth.js",
-        "api/sairncash/verify.js",
-        "api/sairncash/verify.test.js",
-        "api/sb-auth.js",
-        "api/scp-auth.js",
-        "api/sd-sub-auth.js",
-        "api/sdn-auth.js",
-        "api/sen-auth.js",
-        "api/sf-auth.js",
-        "api/sv-auth.js",
-        "docs/2026-10-07-hank-migration-sql-for-michael.md",
-        "docs/BYPASS-LOG.jsonl",
-        "sairncash.html",
-        "sql/sairnbiz_audit_log_schema.sql",
-        "sql/sairnbuild_audit_log_schema.sql",
-        "sql/sairncare_audit_log_schema.sql",
-        "sql/sairndental_audit_log_schema.sql",
-        "sql/sairndesign_audit_log_schema.sql",
-        "sql/sairnfreedom_audit_log_schema.sql",
-        "sql/sairngrounds_audit_log_schema.sql",
-        "sql/sairnlegacy_audit_log_schema.sql",
-        "sql/sairnmechanical_audit_log_schema.sql",
-        "sql/sairnroofing_audit_log_schema.sql",
-        "sql/sairnscape_audit_log_schema.sql",
-        "sql/sairnsenior_audit_log_schema.sql",
-        "sql/sairnvet_audit_log_schema.sql",
-        "tools/audit_event_type_check.py"
-      ],
-      "lines_added": 1886,
-      "lines_removed": 44,
-      "app": "PLATFORM",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "hover-audit",
-      "summary": "FOURTEEN of seventeen api/*-auth.js setup branches minted a PIN credential for another employee -- the moment access is GRANTED -- and recorded nothing: no audit event and no created_by on the row, while set_active in those same files audited every outcome including its refusals, so revoking access was reconstructible and granting it was not; and in the same push api/sairncash/verify.js subscriptionId branch minted a Firebase CUSTOM AUTH TOKEN for a subscription customer on an unauthenticated POST carrying nothing but that subscriptionId, violating the ownership precondition api/_lib/firebase-admin.js:66-69 states in its own words",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": "hover2",
-      "injection": {
-        "unknown_reason": "Both are absences across a whole file family rather than a single edit. The attribution gap is as old as each api/*-auth.js; the Firebase mint was added to verify.js on 2026-08-19 with the ownership precondition already written in firebase-admin.js, so the injection is a commit that added a caller which did not meet a precondition stated in the file it called."
-      },
-      "citation_note": "Neither half has a section in SAIRN-PROCESS-RULES.md. Parts 1-6 are checks that stop checking, standing documents, push protocol, coordination, verification and provenance -- none states an attribution-on-grant rule or a token-minting precondition. The nearest is 1.11 (fail closed when a dependency is absent), which the FIX obeys but which is not what the DEFECT was.",
-      "contributing_factors": [
-        {
-          "factor": "The same six-line audit block was written by hand in sc-auth.js and sd-auth.js and never propagated, and copying it fourteen more times would have put the event-type string and the detail keys -- the two things that actually drift -- in fourteen places",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "api/_lib/audit.js gains AUDIT_TABLE_BY_APP (one app-to-table map, with AUDIT_TABLES now DERIVED from it rather than maintained beside it) and auditPinSetup(), which owns the event type and the detail keys and fails CLOSED on an unmapped app. Fourteen files call it and surface attributed on the response."
-        },
-        {
-          "factor": "The finding that reported this put the figure at 15 of 17 and the real figure is 14, because api/law-auth.js audits through a local audit() wrapper and a scan keyed on the string writeAuditLog cannot see it -- the wrong number then travelled through three hover handoffs",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "api/auth-setup-attribution.test.js is new and prints the per-file classification rather than a count. It brace-matches the real setup branch, blanks comments before any match, accepts all three audit spellings, and carries two negative controls: prose about the attribution must NOT satisfy the detector, and a neighbouring setup-adjacent branch audit call must not be credited to setup."
-        },
-        {
-          "factor": "Moving fourteen files onto a helper would have removed all fourteen from tools/audit_event_type_check.py field of view while its printed total went on looking the same -- that checker resolves tables lexically and its own header says a table reached through a helper is invisible",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "The checker now resolves auditPinSetup call sites through AUDIT_TABLE_BY_APP and returns the third state when it cannot, stops miscounting api/_lib/audit.js as an emitter, and carries five new selftest arms D1-D5. The 13 DDLs were extracted from a markdown doc into sql/*.sql so the comparison is real: tables read 4 to 17, files read 10 to 23."
-        },
-        {
-          "factor": "SAIRNcash has no login at all -- a guest Stripe checkout is the whole enrolment -- so the only credential available on a re-verification call is a bearer identifier the client holds in localStorage",
-          "kind": "latent-condition",
-          "action_status": "not-actionable",
-          "note": "Real authentication for SAIRNcash is a product change, not this fix. The change raises the bar from one bearer string to two independent ones and states that limit in the code rather than implying more. The sessionId branch is unchanged because it IS the checkout return and is where the client first learns its customerId."
-        }
-      ],
-      "recurrence_open": "THE CODE BEING PRESENT IS NOT THE FIX, and the SQL half is entirely outstanding. Measured by tools/audit_event_type_check.py at this commit, exit 1: SAIRNlaw works today; stonedesk_audit_log and sairncode_audit_log EXIST but their event_type CHECK REJECTS pin_setup (STEP 0a/0b of docs/2026-10-07-hank-migration-sql-for-michael.md, not run) -- so sd-auth.js and sc-auth.js attribution has been failing at the database since it landed on 2026-10-07; and the other 13 tables do not exist at all (STEPS 1-13, not run). Only ONE of seventeen apps records a row today. api/law-auth.js keeps a divergent detail shape by decision. The SAIRNcash half is bearer-credential strength, not identity, and was not proven live."
-    },
-    {
-      "commit": "86189e37d552",
-      "date": "2026-10-12",
-      "subject": "fix(bld_draws): the gate on wip and release_retainage was real, and the SAME TABLE took read and write on the licence key alone",
-      "files": [
-        "api/_lib/sairnbuild-retainage-endpoint.test.js",
-        "api/sd-data.js",
-        "sairnbuild.html"
-      ],
-      "lines_added": 217,
-      "lines_removed": 5,
-      "app": "sairnbuild",
-      "layer": "product",
-      "severity": "critical",
-      "detection_method": "code-review",
-      "summary": "api/sd-data.js: bld_draws was gated on TWO of its four actions. `wip` and `release_retainage` required a sairnbuild session and owner/office; `read` and `write` ON THE SAME TABLE fell through to the generic BLD_RESOURCES loop and took the licence key alone. A caller with the key and no session could read every draw's retainage figures, and could POST action:'write' with a `data` blob of its own choosing -- a merge-duplicates upsert that REPLACES `data` entirely, so one request could author a release that never happened, inflate one, or set `retainage_released` back to zero. That defeated bld_release_retainage_atomic's CAS, the no-reduce rule in api/_lib/wip-accounting.js and the append-only audit trail at once, with no employee recorded against any of it. Routed to this session as hover finding seq664; the originating hover INSTANCE is not recorded in any source a build agent may read, so the method here is this session's own read of both branches at HEAD rather than an attribution it could not verify.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "1f1705e0c6b6",
-        "date": "2026-09-02",
-        "subject": "feat(sairnbuild): server backup for the business record -- 30 collections that existed in one browser and nowhere else",
-        "lag_days": 40
-      },
-      "citation_note": "No process rule produced this. The defect is a resource whose ACTIONS were gated unevenly, and nothing in SAIRN-PROCESS-RULES.md covers action-level gate parity on one table. Recorded as a gap rather than cited loosely.",
-      "contributing_factors": [
-        {
-          "factor": "The generic BLD_RESOURCES loop carries an explicit no-session decision with a written reason -- every role in a building company reads the schedule, the punch list and the daily log. That reasoning is true of 29 of its 30 members and false of bld_draws, which is progress billing.",
-          "kind": "technical",
-          "action": "bld_draws is gated ahead of the loop: a valid sairnbuild session is required for read and write, and the three release-owned fields are carried over from the stored row rather than taken from the caller, with a fail-closed pre-read.",
-          "action_status": "done"
-        },
-        {
-          "factor": "The money semantics arrived AFTER the loop. bld_draws joined the ungated thirty on 2026-09-02 as an ordinary jsonb row; release_retainage, the atomic RPC and the append-only trail landed two weeks later. The loop's comment was correct when it was written and became wrong without being touched.",
-          "kind": "latent-condition",
-          "action": "Not acted on here beyond the gate itself. The general shape -- adding a money action to a resource that sits in an ungated generic loop -- has no check behind it.",
-          "action_status": "planned",
-          "note": "A gate-parity check across the generic resource loops is the real corrective and is larger than this fix; routed rather than improvised inside a security change."
-        },
-        {
-          "factor": "The correct shape was next door the whole time: the rf_draws branch gates read, write AND wip identically, for the same resource in another app. Nothing had to be designed, only noticed -- which is why no amount of designing would have caught it.",
-          "kind": "detection",
-          "action": "Section 5 of api/_lib/sairnbuild-retainage-endpoint.test.js now drives the two actions nothing in that file had ever driven, measured against the pre-fix handler (30 passed, 5 failed) as well as the fixed one (35 passed, 0 failed).",
-          "action_status": "done"
-        },
-        {
-          "factor": "The suite tested the guarded door and never tried the next one along. Twenty-nine arms covered wip and release_retainage; zero covered read or write on the same table, so every rule those arms assert was reachable around via a different action and the suite stayed green.",
-          "kind": "detection",
-          "action": "The six new arms include the two 401 cases, a forged release, a reduced release, and a real release surviving an ordinary save.",
-          "action_status": "done"
-        },
-        {
-          "factor": "The client echoes the server-authored release fields back into its local row after a release, and st() pushes that row through the generic write. A naive fix -- strip the release fields from the caller's payload -- therefore BLANKS a real release on the next ordinary draw save, which is a data-loss bug introduced by the security fix.",
-          "kind": "technical",
-          "action": "The fields are carried over from the stored row instead of stripped, and an arm asserts a real release survives an ordinary save.",
-          "action_status": "done"
-        }
-      ],
-      "recurrence_open": "OPEN. Nothing checks gate parity ACROSS the actions of one resource, and nothing re-asks the question when a money action is added to a resource already sitting in an ungated generic loop. The other 29 BLD_RESOURCES members, and the SDN_/LEG_/GRD_ loops with the same shape, have not been re-read against this."
-    },
-    {
       "commit": "9b0bfd512250",
       "date": "2026-10-12",
       "subject": "fix(claim matcher): the declared FILES set is the PRIMARY mode -- two words about WHEN work happens stopped refusing a claim that had already said in paths WHAT it touches",
@@ -26833,127 +26997,87 @@
       "recurrence_open": "OPEN. block_reason() remains an OR over positive signals, so every future rule added to it is blocking by default and nothing asks whether it names a thing or a word. The evidence/prose split is enforced only where rests_on_evidence() is called, and a new evidence rule added to block_reason and not to it would be silently demoted."
     },
     {
-      "commit": "3b99c19c38a4",
+      "commit": "9bc99c05731b",
       "date": "2026-10-12",
-      "subject": "fix(hover separation): the control that exists because fixtures cannot see the range-reader had nine arms COULD NOT RUN, and the guard that disarmed them was added to fix a hole it never closed",
+      "subject": "fix(sairnlaw): \"individual feedback stays attributable\" was in the schema's own comment, and the table had no employee column at all",
       "files": [
-        "tests/hover_separation_ci_probe.py",
-        "tools/hover_separation_ci.py"
+        "api/legal-citator-feedback-attribution.test.js",
+        "api/legal-citator.js",
+        "sql/sairnlaw_citator_schema.sql"
       ],
-      "lines_added": 37,
-      "lines_removed": 4,
-      "app": "tooling",
-      "layer": "test",
+      "lines_added": 355,
+      "lines_removed": 7,
+      "app": "sairnlaw",
+      "layer": "product",
       "severity": "moderate",
-      "detection_method": "probe-control",
-      "summary": "tests/hover_separation_ci_probe.py, the ONE control that drives tools/hover_separation_ci.py against a real git repository, had nine arms reporting COULD NOT RUN and a traceback on the tenth -- measured at HEAD before anything was changed. Two independent causes. target_repo()'s guard accepted git's root only if it contained hover_separation_ci.py, which rejected the fixture repo the probe creates, so every fixture SHA resolved against the wrong clone and came back as an invalid revision range. And the scope-drift arm patched `hover_separation_audit.AUDITOR_SCOPE`, a tuple 7bc3a5a2 had DELETED when the scope became a per-session class, so it raised AttributeError and took the probe down after its last real assertion. The arms that stopped running are exactly the ones proving the gate refuses a build agent reaching into the auditor's clone -- the enforcement the triad exists for -- and they were dark from 2026-09-30 to 2026-10-12.",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "arguable",
+      "detection_method": "hover-audit",
+      "summary": "api/legal-citator.js feedback recorded no employee against a legal-citation treatment confirm or correction, at the application layer AND in sql/sairnlaw_citator_schema.sql, while that schema's own comment three lines above cl_feedback_log said 'individual feedback stays attributable'. logRec at :380 was built in the same function as auditLookup() at :185 from the same caller resolved at :184 and simply omitted it; the table had no employee column of any kind. Every row was attributable to a FIRM and to nobody, so an attorney confirming a classification other attorneys rely on was unrecoverable -- never captured rather than wrong. Fixed at both layers with NULLABLE columns on purpose, because the session token on this endpoint is optional by design and a row can legitimately have no person on it; inventing the owner or the licence would have read as evidence. The alter-table half is handled with a 503 NOT_PROVISIONED naming the SQL file, because create-table-if-not-exists does nothing to a live table and the old handler would have reported PGRST204 as 'try again'.",
+      "rules": [],
+      "citation_confidence": "not-citable",
       "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": "tests/hover_separation_ci_probe.py",
-      "found_by_session": null,
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
       "injection": {
-        "commit": "7bc3a5a25bb5",
-        "date": "2026-09-30",
-        "subject": "fix(hover-scope): AuditorScope is a class keyed by session identity, so any number of auditor clones each get their own scope",
-        "lag_days": 12
+        "unknown_reason": "the omission is present in the commit that first wrote cl_feedback_log and its handler, so there is no transition from working to broken to point an injection sha at"
       },
-      "citation_note": "1.1 is the class -- a check that stopped checking -- and it is cited for the AttributeError half, where a correct rename left the control pointing at a symbol that no longer exists. The target_repo() half is closer to 1.11: the probe reported COULD NOT RUN rather than a pass, which is the only reason any of this was visible, so that rule describes what went RIGHT here rather than what went wrong.",
-      "contributing_factors": [
-        {
-          "factor": "target_repo()'s 2026-09-27 guard accepted git's answer ONLY IF the resolved root contains hover_separation_ci.py. The probe runs the checker with cwd set to a throwaway fixture repo, so the CORRECT answer was refused and the fallback pointed at this clone -- every fixture SHA then came back as an invalid revision range.",
-          "kind": "technical",
-          "action": "A root that IS the current directory is accepted, which is unambiguous because git did not walk up to find it, and is the fixture case and nothing else.",
-          "action_status": "done"
-        },
-        {
-          "factor": "The guard was added to close a walk-up hole and does not close it. From C:/Users/marsh/Documents, which is not a repo, git answers C:/Users/marsh, and this file's path DOES start with that -- so the first clause accepts it, before and after the fix. Driven rather than argued: the checker run from there exits 2 COULD NOT RUN on an unresolvable range, which is the honest third state and is not the guard working.",
-          "kind": "technical",
-          "action": "Named in the code rather than left implied. The walk-up case needs a different test and is NOT fixed.",
-          "action_status": "planned",
-          "note": "Fixing it inside the same change would have conflated a dead-control repair with a guard redesign, and the guard's real behaviour is now written down where the next reader will hit it."
-        },
-        {
-          "factor": "The scope-drift arm patched hover_separation_audit.AUDITOR_SCOPE. 7bc3a5a2 deleted that tuple when the scope became a per-session class and said so in a comment, while scope_definitions_agree() was rewritten to read AuditorScope(s).paths. The arm raised AttributeError and took the whole probe down after its last real assertion.",
-          "kind": "detection",
-          "action": "The arm patches AuditorScope.SHARED on the audit side only, which is what the comparison actually reads, and both directions pass.",
-          "action_status": "done"
-        },
-        {
-          "factor": "Nothing announced the day the control stopped testing anything -- the eighth cross-domain discipline, arriving for real. The rename was correct; the control was never re-referenced against it, and the gap ran from 2026-09-30 to 2026-10-12.",
-          "kind": "latent-condition",
-          "action": "No general mechanism was added. This control is now green and each verification was measured alone.",
-          "action_status": "planned",
-          "note": "A sweep that re-references every control's patch targets against the module it patches is the general corrective; it is tool work beyond this fix and is reported rather than improvised."
-        },
-        {
-          "factor": "Nine arms reporting COULD NOT RUN is what made this visible. Had the probe folded the unresolvable range into a pass, a correct classifier wired to a range-reader returning nothing would have reported exactly the same green -- which is the sentence the probe's own docstring already carried.",
-          "kind": "detection",
-          "action": "No change needed: the third state is why this was found at all, and it is recorded here as the thing that worked.",
-          "action_status": "declined",
-          "note": "Nothing to fix. Recorded so a future reader does not read the nine COULD NOT RUN lines as the defect rather than as the detection."
-        }
-      ],
-      "recurrence_open": "OPEN. Nothing re-references a control's patch targets against the module it patches, so the next correct rename can dark another arm the same way. And the walk-up hole target_repo()'s own comment claims to close is still open at this HEAD, verified by running the checker from C:/Users/marsh."
+      "citation_note": "not-citable: the nearest thing is a documentation claim outrunning the implementation, which the rules cover for standing documents and not for a schema comment. Not attached to a section it does not belong to.",
+      "factors_unknown_reason": "two-layer omission, application and schema, recorded as one defect with both layers named in the summary rather than modelled as structured factors"
     },
     {
-      "commit": "7a3b24c9046d",
+      "commit": "b384a513f99e",
       "date": "2026-10-12",
-      "subject": "fix(ghost-field-scan): the probe was disabling the detection it tests, and this file's own write-up of the failure was keeping the failure true",
+      "subject": "fix(sairnsenior): a caregiver's BACKGROUND-CHECK DATE went to every signed-in role, and the branch's own comment compared it to the wrong thing",
       "files": [
-        "docs/known-red-suites.json",
-        "docs/tier-a-reviews.json",
-        "tests/run_ghost_field_read_probe.py",
-        "tools/ghost_field_read_scan.py"
+        "api/sd-data-sen-caregiver-pii-scope.test.js",
+        "api/sd-data.js",
+        "sairnsenior.html"
       ],
-      "lines_added": 164,
-      "lines_removed": 34,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "static-checker",
-      "summary": "tools/ghost_field_read_scan.py went silent on exactly the two defects its own mutation probe plants, because the probe payloads are string literals in a .py file (strings are kept by design) and because docs/known-red-suites.json own write-up of the failure quoted both field names in a .json file read as raw data -- so both names counted as spelled somewhere in the repo, both stopped being ghosts, and five probe arms had been failing since 2026-10-06 against a scan that was working; the explanation of the failure was what sustained the failure",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "clean",
+      "lines_added": 421,
+      "lines_removed": 3,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "hover-audit",
+      "summary": "api/sd-data.js sen_caregivers/read returned the whole data blob, every row on the licence, to ANY authenticated sairnsenior role -- including each caregiver's background-check date, a state-issued caregiver ID and free-text HR notes about a colleague. The branch's stated justification was 'Employment/certification data, not client PHI -- lighter gate than sen_clients': true, and the wrong comparison. It is EMPLOYEE PII and three of its fields serve no scheduling purpose. Fixed at FIELD level rather than by a flat role refusal, which would have broken the roster the lighter gate exists to serve (senIsScheduler reads it agency-wide, certDaysUntil computes from cpr_expiry, visits join on employee_id). bgcheck_date/state_caregiver_id/notes now go to owner/billing only, under a NEW constant rather than a reused one, with the round-trip-wipe safety driven by an arm; sairnsenior.html renders an explicit Restricted badge so a redacted compliance column cannot read as 'no check on file'.",
+      "rules": [],
+      "citation_confidence": "not-citable",
       "injection_phase": "design",
       "phase_confidence": "stated",
-      "found_by_tool": "tests/run_ghost_field_read_probe.py",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "unknown_reason": "the branch has had no field distinction since it was written on 2026-08-20; the commit that added it is in history but it was written this way from the start, so there is no injection commit to name and a guessed one would be worse than none"
+      },
+      "citation_note": "not-citable: the process rules have no section about comparing a resource to the most sensitive thing beside it, which is the actual reasoning failure here. Recorded as not-citable rather than attached to the nearest-sounding id.",
+      "factors_unknown_reason": "single-branch access-control gap; no multi-factor model attempted this pass"
+    },
+    {
+      "commit": "b56c667f6cbb",
+      "date": "2026-10-12",
+      "subject": "fix(sairncare+sairnfreedom): three duplicate DOM ids, and every one of them was a live feature reading another panel's input",
+      "files": [
+        "sairncare.html",
+        "sairnfreedom.html"
+      ],
+      "lines_added": 42,
+      "lines_removed": 8,
+      "app": "sairnfreedom",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "Three duplicate DOM ids, none cosmetic. sairnfreedom.html ac-name (:371 officer provisioning, :1444 account name): sfOpenAccount() read the OFFICER name box, so a post could not open the ORC 2915.10(C) exclusive bingo-session account under the name typed into the account form. sairnfreedom.html ac-tbody (:380 officer roster, :1461 accounts): sfRenderAccess() and the accounts renderer both wrote into the officer tbody, so whichever ran last won -- the accounts table never rendered or the officer roster was replaced by account rows. sairncare.html fc-name (:320 family contact, :1082 facility profile): openFacilityModal() overwrote the family-contact input and saveFacility() stored THAT box's value as alf_facility.name, normally empty. Renames follow each file's own existing prefix (acct- from acct-kpis, fc-facname beside fc-company/fc-state/fc-licnum). Measured before and after with an HTML parser rather than a regex: sairncare 303/1 -> 304/0, sairnfreedom 398/2 -> 400/0, sairnsenior 327/0 unchanged. NOT live-verified: id uniqueness is measured, the behaviour is reasoned from the call sites.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "an HTML-parser id scan written inline for Guardian Check 8; tools/ carries no duplicate-DOM-id checker, which is itself the finding",
       "found_by_session": null,
       "injection": {
-        "unknown_reason": "The probe and the ledger entry were both written as correct artefacts; the defect is the interaction between them and the scan universe, which no single commit introduced. The ledger entry dates from 2026-10-06 and the probe predates it."
+        "unknown_reason": "three ids across two apps, each added in a different commit when a second panel reused an existing prefix; naming one injection sha for a three-site defect would be a guess about which of three"
       },
-      "contributing_factors": [
-        {
-          "factor": "A mutation probe holds its planted defect payloads as string literals in its own source, and the scan it drives reads string literals as real field spellings -- deliberately, because a string key IS a spelling. So the probe entered the universe it was testing",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "SPELLING_BLIND in tools/ghost_field_read_scan.py removes two named paths from the SPELLED universe only; both are still scanned for gates. It refuses to run (exit 2) if either path stops existing, and both appear in the scan printed exclusion list on every run."
-        },
-        {
-          "factor": "The red-suite ledger entry explaining WHY the probe was red quoted the two planted field names, and .json is treated as data so its raw text enters the universe with no comment stripping -- the write-up of the failure was keeping the failure true",
-          "kind": "process",
-          "action_status": "done",
-          "action": "docs/known-red-suites.json is the second SPELLING_BLIND path, with the reason recorded as the *.md prose rule arriving through an extension that rule did not cover. The entry was moved from entries to recovered with the real diagnosis."
-        },
-        {
-          "factor": "The probe exit-code arm was vacuous: the shipped tree already exits 1 with 31 standing findings, so with the defect planted the scan exits 1 FINDING was true whether or not anything was detected, and only the four name/file arms could fail",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "A DELTA arm now measures the finding count against the baseline, 31 to 32 on each mutation. The exit-code arm is kept and relabelled as what it really proves: no crash and no COULD-NOT-RUN."
-        },
-        {
-          "factor": "The scan universe is built over the whole repo with no notion of which files are test material or prose about findings, so any new file that merely NAMES a field can silence a true detection and nothing announces it",
-          "kind": "latent-condition",
-          "action_status": "declined",
-          "note": "A general rule -- test fixtures and finding ledgers are not spelling sources -- would need a reliable way to classify them, and a wrong classification SILENCES a real detector, which is the direction that costs. Two named paths with a refusal on absence is the narrow version. Declined rather than planned because no owner and no date would make it the CAPA box this list replaces; routed in the batch digest."
-        }
-      ],
-      "recurrence_open": "The exclusion is TWO NAMED PATHS. Any future test fixture or finding ledger that quotes a ghost field name will silence the scan for that name the same way, and nothing detects it except the probe going red again -- which took five days to be read as anything but a broken scan. The scan standing finding count is unchanged at 31 before and after, so the repair added no false positives, but 31 standing findings also mean the exit code alone can never be evidence of anything."
+      "citation_note": "not-citable: Guardian Check 8 is the rule this violates and it lives in a skill, not in docs/SAIRN-PROCESS-RULES.md. Recorded as not-citable rather than attached to a process section it does not belong to.",
+      "factors_unknown_reason": "three sites recorded as one defect because they share one mechanism -- getElementById returning the first of a duplicated id -- and are fixed in one commit"
     }
   ],
   "started": "2026-09-09",
