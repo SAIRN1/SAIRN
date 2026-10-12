@@ -1971,6 +1971,15 @@
      "routed_on": "2026-10-12",
      "declared_by": "cody",
      "note_on_this_declaration": "THE PREDICTION IS THE EVIDENCE. The row above this one, written earlier in this same session, ended \"Until one lands, expect a fifth.\" One landed inside the hour. Five declarations across two days by three different declaring sessions is not a backlog, it is a loop: every session that pushes pays for every other session's Drive drop, and the two repairs that would end it belong to cc (the CHECK should read `belongs_in_git` and keep exit 1 for the session that OWES the file while not denying other sessions' pushes) and to each auditor (write the handoff into its own clone, which CLAUDE.md already says). Routed, not fixed, because both are other sessions' files -- and recorded here so the sixth declaration is not mistaken for routine."
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/handoff-h2-2026-10-12b.md",
+     "purpose": "hover2's second 2026-10-12 handoff -- THE EIGHTH, and the one that was already sitting there while tests/push_gate/check4_probe.py exited 3 COULD NOT RUN on a CLEAN push because of it. Written to the shared Drive report directory instead of into a clone, which CLAUDE.md forbids by name. DECLARED BY CODY, NOT adopted and NOT moved; routed to hover2 to commit into Documents/SAIRN-hover.",
+     "belongs_in_git": true,
+     "routed_to": "hover2",
+     "routed_on": "2026-10-12",
+     "declared_by": "cody",
+     "note_on_this_declaration": "THIS IS THE ROW THAT STOPPED A GATE'S OWN PROBE FROM VERIFYING THE GATE. check4_probe.py and check7_probe.py both exited 3 COULD NOT RUN -- correctly, and they said so rather than reporting a check-4 or check-7 failure -- because the CLEAN push every one of their arms is measured against was refused over this file. So the cost of the loop is no longer only 'a session spends five pushes declaring other people's files': it is that a BLOCKING gate's only proof cannot run. Eight rows now, declared by two sessions, neither of them the session that wrote any of them. Repairs and owners are in the hover2 2026-10-12 row above."
     }
    ]
   },
@@ -2017,6 +2026,47 @@
      "routed_on": "2026-10-12",
      "declared_by": "cody",
      "note_on_this_declaration": "SEVEN ROWS, THREE OF THEM ARRIVING MID-DECLARATION, AND THIS IS WHERE THE EVIDENCE STOPS BEING ANECDOTAL. The fifth was predicted by the row before it and arrived inside the hour; the sixth arrived during the write that declared the fifth; this one arrived during the push that declared the sixth. The blanket override SAIRN_SEED_GATE=off was NOT used, deliberately, because it skips all fourteen checks including the Tier A obligation and the generated-document check this same push had just satisfied properly -- and SAIRN_GATE_EXEMPT only names `seed`, so there is no scoped form for this check. Declaring is therefore the only route, and it is a route that cannot converge while three sessions write to one directory faster than one session can index it. Repairs and owners are in the hover2 2026-10-12 row."
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/SAIRN-handoff-h1-b12.md",
+     "purpose": "hover's batch b12 handoff -- THE NINTH. Written to the shared Drive report directory instead of into a clone, which CLAUDE.md forbids by name. DECLARED BY CODY, NOT adopted and NOT moved; routed to hover to commit into Documents/SAIRN-hover.",
+     "belongs_in_git": true,
+     "routed_to": "hover",
+     "routed_on": "2026-10-12",
+     "declared_by": "cody",
+     "note_on_this_declaration": "NINE ROWS, TWO DAYS, THREE WRITING SESSIONS, ONE DECLARING SESSION, AND FOUR OF THEM ARRIVED DURING THE OPERATIONS THAT DECLARED THEIR PREDECESSORS. That is no longer anecdote; it is a measured rate. The blanket override SAIRN_SEED_GATE=off was still NOT used, because it skips all fourteen checks including the Tier A obligation and the two regenerated documents this same batch satisfied properly, and SAIRN_GATE_EXEMPT names only `seed` so no scoped form exists. If a tenth arrives before this push lands, the override is the honest next step and PR 3.3 requires saying so out loud -- which this note is the place for. Repairs and owners are in the hover2 2026-10-12 row."
+    }
+   ]
+  },
+  "cody": {
+   "dirs": [],
+   "files": [
+    {
+     "path": "G:/My Drive/SAIRN-status/handoff-cody-2026-10-12.md",
+     "purpose": "cody's batch 27 (b4) handoff, uploaded in FULL. The authoritative copy is the git-tracked docs/handoff-cody-2026-10-12.md and this Drive copy says so on its own third line.",
+     "belongs_in_git": false,
+     "authoritative_copy": "docs/handoff-cody-2026-10-12.md",
+     "declared_by": "cody",
+     "declared_on": "2026-10-12",
+     "note_on_this_declaration": "DECLARED BY ITS OWN AUTHOR, BEFORE THE CHECK SAW IT, WHICH IS THE BEHAVIOUR THE SEVEN ROWS ABOVE ARE A COMPLAINT ABOUT THE ABSENCE OF. This session spent five push attempts declaring other sessions' Drive handoffs and then uploaded three artefacts of its own, so declaring them proactively is the only consistent move. belongs_in_git is FALSE and that is a DECISION with a reason rather than a default: each of these three has an AUTHORITATIVE, GIT-TRACKED twin in this repo, named in the purpose, and the repo copy is the record. The Drive copy exists because batch 27 item 9 asked for it."
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/SAIRN-report-cody-b4.txt",
+     "purpose": "cody's batch 27 (b4) report -- a LABELLED POINTER, not a duplicate. The authoritative copy is the git-tracked SAIRN-report-cody-b4.txt at 82c914e1, 869 lines, body SHA256 9e4842d364b67eced1d67e8d6a1ac1f8341dc71e7e50adc038c85928178e2a22. The Drive copy carries the title, that verified hash, the short version and the open list, and says on its own first line that it is a pointer. A retyped 48KB duplicate would be a second thing to drift and one more row in the loop the report's own section 9.6 is about.",
+     "belongs_in_git": false,
+     "authoritative_copy": "SAIRN-report-cody-b4.txt",
+     "declared_by": "cody",
+     "declared_on": "2026-10-12",
+     "note_on_this_declaration": "DECLARED BY ITS OWN AUTHOR, BEFORE THE CHECK SAW IT, WHICH IS THE BEHAVIOUR THE SEVEN ROWS ABOVE ARE A COMPLAINT ABOUT THE ABSENCE OF. This session spent five push attempts declaring other sessions' Drive handoffs and then uploaded three artefacts of its own, so declaring them proactively is the only consistent move. belongs_in_git is FALSE and that is a DECISION with a reason rather than a default: each of these three has an AUTHORITATIVE, GIT-TRACKED twin in this repo, named in the purpose, and the repo copy is the record. The Drive copy exists because batch 27 item 9 asked for it."
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/SAIRN-digest-cody-b4.txt",
+     "purpose": "cody's batch 27 (b4) digest, uploaded in full with four extra header lines. The authoritative copy is the git-tracked SAIRN-digest-cody-b4.txt at 7614cfd5, 320 lines, body SHA256 ec3f0bd97bc38e1ffa59b683810cd555ba9a9de8e2449c2e8861b2d070cc983c. The Drive copy states on its own third line that the hash is the REPO copy's and that this file will not hash to it, so a mismatch names this copy and not the record.",
+     "belongs_in_git": false,
+     "authoritative_copy": "SAIRN-digest-cody-b4.txt",
+     "declared_by": "cody",
+     "declared_on": "2026-10-12",
+     "note_on_this_declaration": "DECLARED BY ITS OWN AUTHOR, BEFORE THE CHECK SAW IT, WHICH IS THE BEHAVIOUR THE SEVEN ROWS ABOVE ARE A COMPLAINT ABOUT THE ABSENCE OF. This session spent five push attempts declaring other sessions' Drive handoffs and then uploaded three artefacts of its own, so declaring them proactively is the only consistent move. belongs_in_git is FALSE and that is a DECISION with a reason rather than a default: each of these three has an AUTHORITATIVE, GIT-TRACKED twin in this repo, named in the purpose, and the repo copy is the record. The Drive copy exists because batch 27 item 9 asked for it."
     }
    ]
   },
