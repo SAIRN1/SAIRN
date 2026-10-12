@@ -417,8 +417,229 @@ async function main() {
       'the linked provider lost their patient list -- the guard is too wide');
   });
 
+  // ══ PROVIDER OWNERSHIP ON **WRITE**, 2026-10-11 ════════════════════════════
+  // Everything above this line drives the READ. The write beside it had no role
+  // check and no ownership check at all: a `provider` session could rewrite any
+  // appointment in the practice, including one belonging to a provider whose
+  // appointments it is forbidden to even read. That asymmetry is what these arms
+  // pin, and the reason they live in THIS file is that the rule they enforce is
+  // the same rule the read above already had.
+  //
+  // Reproducing artifact: dnt_appointments_write_gate_repro.py, exit 1
+  // REPRODUCES at 263f736f -> exit 0 CLEAN. That tool answers a SOURCE question
+  // ("is there a role check in the block"); these arms answer the behavioural
+  // one, which is the half it cannot.
+  //
+  // ONE ROLE IS AFFECTED: api/_lib/auth.js:155 gives sairndental
+  // ['owner', 'frontdesk', 'provider'] and the broad-read set is
+  // {owner, frontdesk}, so the complement is `provider` alone. Both exempt roles
+  // are driven below anyway -- a gate that locked out the front desk would be a
+  // worse bug than the one being fixed.
+  section_write();
+
+  // Routes the THREE distinct dnt_appointments URLs this path touches, in the
+  // order routedFetch matches them (first substring wins, so the two specific
+  // ones must precede the generic read filter):
+  //   on_conflict=          the upsert itself
+  //   appointment_id=eq.    the NEW existing-row ownership lookup
+  //   dnt_appointments?     the read-branch filter
+  // `seen` is what proves a refusal happened BEFORE the upsert rather than after
+  // it -- a 403 with the row already written would satisfy a status-code
+  // assertion and still be the bug.
+  function writeRoutes(existingRow, opts) {
+    const o = opts || {};
+    return [
+      ['on_conflict=', o.upsert || [{ data: { id: 'AP-9' } }]],
+      ['appointment_id=eq.', o.lookupStatus || (existingRow ? [existingRow] : [])],
+      ['dnt_providers?', o.providerRows || PROVIDER_ROWS],
+      ['dnt_appointments?', APPOINTMENT_ROWS_PV1],
+    ];
+  }
+  function postedUpsert(seen) {
+    return seen.filter((u) => u.indexOf('on_conflict=') !== -1).length;
+  }
+  const APPT = { id: 'AP-9', patient_id: 'PT-1', start_time: '2026-10-12T09:00:00Z' };
+
+  await test('provider writing an appointment for THEIR OWN provider -> allowed '
+    + '(a gate is a split, not a lockout)', async () => {
+    const seen = [];
+    const handler = loadHandler(routedFetch(writeRoutes(null), seen));
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_appointments',
+      payload: Object.assign({}, APPT, { provider_id: 'PV-1' }) }, tokenFor('provider')), res);
+    assert.strictEqual(res.statusCode, 200, 'the linked provider lost their own '
+      + 'write: ' + res.statusCode + ' ' + JSON.stringify(res.body));
+    assert.strictEqual(postedUpsert(seen), 1, 'the upsert did not run');
+  });
+
+  await test('provider writing an appointment labelled with ANOTHER provider -> '
+    + '403 NOT_YOUR_APPOINTMENT, and nothing is written', async () => {
+    const seen = [];
+    const handler = loadHandler(routedFetch(writeRoutes(null), seen));
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_appointments',
+      payload: Object.assign({}, APPT, { provider_id: 'PV-2' }) }, tokenFor('provider')), res);
+    assert.strictEqual(res.statusCode, 403, JSON.stringify(res.body));
+    assert.strictEqual(res.body.error.code, 'NOT_YOUR_APPOINTMENT');
+    assert.strictEqual(postedUpsert(seen), 0,
+      'REFUSED AFTER WRITING. The status code is right and the row is already in '
+      + 'the table, which is the whole bug wearing a 403.');
+  });
+
+  await test('THE TAKEOVER: provider writing their OWN provider_id onto an '
+    + 'appointment the SERVER says belongs to PV-2 -> 403, and nothing is written',
+  async () => {
+    // THE ARM THAT MATTERS, and the reason a payload-only check is not a fix.
+    // This is an upsert on (license_hash, appointment_id). A check that only
+    // compared payload.provider_id to the caller's own id would PASS this
+    // request -- the payload is honestly labelled PV-1 -- and PV-1 would walk
+    // off with PV-2's appointment. The decision has to be made against the row
+    // already on the server, which is the same pattern scp_progress_photos'
+    // self-QC refusal uses.
+    const seen = [];
+    const handler = loadHandler(routedFetch(writeRoutes({ provider_id: 'PV-2' }), seen));
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_appointments',
+      payload: Object.assign({}, APPT, { provider_id: 'PV-1' }) }, tokenFor('provider')), res);
+    assert.strictEqual(res.statusCode, 403, JSON.stringify(res.body));
+    assert.strictEqual(res.body.error.code, 'NOT_YOUR_APPOINTMENT');
+    assert.strictEqual(postedUpsert(seen), 0, 'the takeover was written anyway');
+  });
+
+  await test('CONTROL FOR THE TAKEOVER ARM: the same request, with the existing '
+    + 'row already PV-1, is allowed', async () => {
+    // Without this, the arm above would pass on a guard that refused every write
+    // that had an existing row at all.
+    const seen = [];
+    const handler = loadHandler(routedFetch(writeRoutes({ provider_id: 'PV-1' }), seen));
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_appointments',
+      payload: Object.assign({}, APPT, { provider_id: 'PV-1' }) }, tokenFor('provider')), res);
+    assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
+    assert.strictEqual(postedUpsert(seen), 1);
+  });
+
+  await test('provider writing an appointment with NO provider_id -> 403, not '
+    + 'waved through as unassigned', async () => {
+    // The column is nullable and `payload.provider_id || null` is written, so an
+    // unassigned appointment is a real state. It is not one a provider-scoped
+    // caller may create: the row it produces is one they could not read back.
+    const seen = [];
+    const handler = loadHandler(routedFetch(writeRoutes(null), seen));
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_appointments',
+      payload: Object.assign({}, APPT) }, tokenFor('provider')), res);
+    assert.strictEqual(res.statusCode, 403, JSON.stringify(res.body));
+    assert.strictEqual(res.body.error.code, 'NOT_YOUR_APPOINTMENT');
+    assert.strictEqual(postedUpsert(seen), 0);
+  });
+
+  await test('UNLINKED provider writing -> 403 PROVIDER_NOT_LINKED, and the '
+    + 'message says where the fix happens', async () => {
+    const seen = [];
+    const handler = loadHandler(routedFetch(writeRoutes(null), seen));
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_appointments',
+      payload: Object.assign({}, APPT, { provider_id: 'PV-2' }) },
+      tokenFor('provider', 'emp-nobody')), res);
+    assert.strictEqual(res.statusCode, 403, JSON.stringify(res.body));
+    assert.strictEqual(res.body.error.code, 'PROVIDER_NOT_LINKED');
+    assert.ok(/Providers panel/i.test(res.body.error.message),
+      'the message must point at the fix, not just refuse: ' + res.body.error.message);
+    assert.strictEqual(postedUpsert(seen), 0);
+  });
+
+  await test('an UNPROVISIONED provider registry on WRITE -> 503 NOT_PROVISIONED, '
+    + 'NEVER an empty success', async () => {
+    // The READ above can honestly answer provisioned:false with an empty list.
+    // A WRITE cannot: an empty-success write is the silent failure this platform
+    // refuses -- the caller is told it saved and nothing is in the table.
+    const seen = [];
+    const handler = loadHandler(routedFetch([
+      ['on_conflict=', [{ data: { id: 'AP-9' } }]],
+      ['dnt_providers?', 404],
+      ['dnt_appointments?', APPOINTMENT_ROWS_PV1],
+    ], seen));
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_appointments',
+      payload: Object.assign({}, APPT, { provider_id: 'PV-1' }) }, tokenFor('provider')), res);
+    assert.strictEqual(res.statusCode, 503, JSON.stringify(res.body));
+    assert.strictEqual(res.body.error.code, 'NOT_PROVISIONED');
+    assert.ok(/sairndental_availability_booking_schema\.sql/.test(res.body.error.message),
+      'a 503 with no SQL to run is a dead end: ' + res.body.error.message);
+    assert.strictEqual(postedUpsert(seen), 0);
+  });
+
+  await test('a FAILED existing-row lookup refuses 502 SCOPE_LOOKUP_FAILED -- it '
+    + 'never falls through to the unrestricted write', async () => {
+    // PR 1.11 inside one branch: "could not tell who this belongs to" is a third
+    // state, and folding it into the allow path is how the whole gate becomes
+    // optional under load. A 500 from the lookup must not become a 200 write.
+    const seen = [];
+    const handler = loadHandler(routedFetch([
+      ['on_conflict=', [{ data: { id: 'AP-9' } }]],
+      ['appointment_id=eq.', 500],
+      ['dnt_providers?', PROVIDER_ROWS],
+      ['dnt_appointments?', APPOINTMENT_ROWS_PV1],
+    ], seen));
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_appointments',
+      payload: Object.assign({}, APPT, { provider_id: 'PV-1' }) }, tokenFor('provider')), res);
+    assert.strictEqual(res.statusCode, 502, JSON.stringify(res.body));
+    assert.strictEqual(res.body.error.code, 'SCOPE_LOOKUP_FAILED');
+    assert.strictEqual(postedUpsert(seen), 0,
+      'the write ran anyway after the ownership lookup failed');
+  });
+
+  await test('OWNER writing any appointment -> allowed, with NO provider lookup '
+    + 'at all', async () => {
+    const seen = [];
+    const handler = loadHandler(routedFetch(writeRoutes({ provider_id: 'PV-2' }), seen));
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_appointments',
+      payload: Object.assign({}, APPT, { provider_id: 'PV-2' }) }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
+    assert.deepStrictEqual(seen.filter((u) => u.indexOf('dnt_providers?') !== -1), [],
+      'the owner path did a provider lookup it does not need -- that is a '
+      + 'round-trip per write and a second place the rule can drift');
+    assert.deepStrictEqual(seen.filter((u) => u.indexOf('appointment_id=eq.') !== -1), [],
+      'the owner path did the ownership lookup too');
+  });
+
+  await test('FRONTDESK writing any appointment -> allowed (they book and check '
+    + 'in anyone, which is why the read exempts them)', async () => {
+    const seen = [];
+    const handler = loadHandler(routedFetch(writeRoutes({ provider_id: 'PV-2' }), seen));
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_appointments',
+      payload: Object.assign({}, APPT, { provider_id: 'PV-2' }) }, tokenFor('frontdesk')), res);
+    assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
+    assert.strictEqual(postedUpsert(seen), 1);
+  });
+
+  await test('NO SESSION at all still refuses before any of this -- the dntGate '
+    + 'was not displaced by the ownership check', async () => {
+    const seen = [];
+    const handler = loadHandler(routedFetch(writeRoutes(null), seen));
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_appointments',
+      payload: Object.assign({}, APPT, { provider_id: 'PV-1' }) }), res);
+    // 401 NO_SESSION, not 403. The distinction is dntGate's and is worth
+    // pinning: 401 is "you are not signed in", 403 is "you are signed in and
+    // this is not yours". Collapsing them would make the ownership refusals
+    // above indistinguishable from an expired token at the call site.
+    assert.strictEqual(res.statusCode, 401, JSON.stringify(res.body));
+    assert.strictEqual(res.body.error.code, 'NO_SESSION');
+    assert.strictEqual(postedUpsert(seen), 0);
+  });
+
   console.log('\n' + passed + '/' + total + ' passed');
   if (passed !== total) process.exitCode = 1;
+}
+
+function section_write() {
+  console.log('\napi/sd-data.js -- SAIRNdental dnt_appointments WRITE: provider '
+    + 'ownership, which the read had and the write did not');
 }
 
 main();

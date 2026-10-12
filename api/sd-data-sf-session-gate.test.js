@@ -162,6 +162,60 @@ const APPROVED = [
   // after: .claude/skills/sairn-hover-auditor/tools-hover2/
   // sf_officers_provisioning_bypass_repro.py
   'sf_officers',
+  // 2026-10-11, FOUR, the same day as sf_officers and a separate edit. THE
+  // GAMING-FLOOR MONEY RECORDS, and they are the first entries on this list
+  // chosen by a DERIVATION rather than by a finding naming them one at a time.
+  //
+  // THE DERIVATION, so it can be re-run rather than believed: SF_RESOURCES
+  // carries 36 resources; 18 were gated before this edit; NINE of the other 18
+  // are Tier A by docs/CRITICALITY-TIERS.md's own letters. These four are the
+  // Tier A ones with a money or statutory figure ON THE ROW.
+  //   sf_sessions  register:373 -- prizeCap, receipts, prizes. prizeCap IS A
+  //                STATUTORY LIMIT under ORC Chapter 2915, not a house rule.
+  //                The regulated event record the rest of the gaming family
+  //                reconciles against; it sat at B until the 2026-09-23 re-audit
+  //                while sf_ledger was already A.
+  //   sf_shifts    register:374 -- the only one of the four that is A on
+  //                CONFIDENTIALITY as well. The row attributes a CASH VARIANCE
+  //                to a NAMED employee and the app's own toast states it. A
+  //                recorded shortage is read as an accusation, which is the
+  //                same reasoning bld_tna is Confidentiality-A under.
+  //   sf_tickets   register:377 -- unitPrice and total snapshotted at the
+  //                moment of sale, against a named member, rolling into takings.
+  //   sf_rentals   register:369 -- charge and proceeds, plus the
+  //                alcohol/notified compliance pair a hall rental turns on.
+  //
+  // FIVE MORE ARE TIER A AND ARE DELIBERATELY NOT HERE. Named, because the
+  // set-equality arm below would otherwise be the only record that they are
+  // missing and it cannot say WHY: sf_district_imports (register:353),
+  // sf_events (:358), sf_permit_flags (:367), sf_products (:368), sf_vehicles
+  // (:380). The arm at the bottom of this file says widening the gate is a
+  // PRODUCT DECISION about who may see a duty roster or a bottle count. The
+  // batch that sent this change named four resources and their client write
+  // sites; it did not name those five, and inventing approval for them here is
+  // exactly the decision that arm exists to stop. Routed with the derivation.
+  //
+  // THE CLIENT WRITE HALF NEEDED NO CHANGE and every site was read at this HEAD:
+  // sairnfreedom.html :3424, :3523 (in sfRecordResults at :3509) and :4976 for
+  // sf_sessions; :4628 sf_tickets; :4739 sf_shifts; :5168 sf_rentals. All go
+  // through st() -> sfSyncCollection -> sfData, and sfData at :1986-1991
+  // attaches X-SD-Auth whenever a token is held, for every resource.
+  //
+  // THE CLIENT **READ** HALF DID, and it is in the same push: sfHydrateAll()
+  // is called once, from DOMContentLoaded at sairnfreedom.html:7684, which runs
+  // BEFORE any interactive sign-in -- and sfEnterApp() did not re-run it. On a
+  // fresh browser every GATED resource's hydrate answered 403, the per-resource
+  // .catch swallowed it, and signing in did not go back for the server's copy.
+  // That was already true for the 18 gated before this edit; this change would
+  // have widened it to 22 rather than introduced it.
+  //
+  // NOT PROVEN LIVE. No bare-key call was driven against a real SAIRNfreedom
+  // licence for any of the four, unlike sf_vehicle_service above which carries
+  // one with a control. Source-level, the register letters, and the write sites.
+  'sf_sessions',
+  'sf_shifts',
+  'sf_tickets',
+  'sf_rentals',
 ];
 
 function gatedSet() {

@@ -2049,13 +2049,48 @@ async function main() {
 
   // CONTROL: a NON-financial resource is untouched by the new gate, so this is
   // a tier and not a blanket provider write ban.
+  //
+  // ── THE WITNESS MOVED OFF dnt_appointments, 2026-10-11, AND THE REASON IS
+  //    NOT BOOKKEEPING ────────────────────────────────────────────────────
+  // This arm used `dnt_appointments` and went RED the moment that resource got
+  // a provider-ownership check on write (api/sd-data.js, same date). It was
+  // RIGHT to go red: the arm asserts "a provider write is refused ONLY by the
+  // financial tier", and dnt_appointments now has a SECOND, unrelated gate --
+  // so a 200 there would no longer be evidence about the financial tier, and a
+  // 403 is not evidence against it either. A witness that two different rules
+  // can refuse cannot isolate one of them.
+  //
+  // `dnt_operatories` is the replacement: in DNT_RESOURCES, in NEITHER
+  // DNT_FINANCIAL_RESOURCES nor DNT_PATIENT_SCOPED_RESOURCES, and a room in a
+  // building -- nothing on the row is a patient, a charge or a provider
+  // assignment, so there is no plausible second gate for it to acquire.
   await test('CONTROL: a provider can still write a non-financial resource', async () => {
     let wrote = false;
     const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
     const res = mockRes();
-    await handler(mockReq({ action: 'write', resource: 'dnt_appointments', payload: { id: 'AP-1', patient_id: 'PT-1' } }, tokenFor('provider')), res);
-    assert.strictEqual(res.statusCode, 200, 'dnt_appointments is not in DNT_FINANCIAL_RESOURCES');
+    await handler(mockReq({ action: 'write', resource: 'dnt_operatories', payload: { id: 'OP-9', name: 'Operatory 9' } }, tokenFor('provider')), res);
+    assert.strictEqual(res.statusCode, 200, 'dnt_operatories is in neither '
+      + 'DNT_FINANCIAL_RESOURCES nor DNT_PATIENT_SCOPED_RESOURCES, so the '
+      + 'financial tier must not touch it: ' + JSON.stringify(res.body));
     assert.ok(wrote);
+  });
+
+  // AND THE RESOURCE THAT MOVED OUT IS STILL DRIVEN, under its real reason.
+  // Deleting the dnt_appointments case would have hidden the one thing worth
+  // knowing: it IS refused for a provider now, and NOT by the financial tier.
+  // The CODE is the assertion -- a future change that routes this through the
+  // financial gate instead would pass a bare status-code check and fail here.
+  await test('dnt_appointments is refused for a provider too, but by the '
+    + 'OWNERSHIP rule and not the financial tier', async () => {
+    const handler = loadHandler(async function () { return OK_WRITE(); });
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_appointments', payload: { id: 'AP-1', patient_id: 'PT-1' } }, tokenFor('provider')), res);
+    assert.strictEqual(res.statusCode, 403, JSON.stringify(res.body));
+    assert.ok(['PROVIDER_NOT_LINKED', 'NOT_YOUR_APPOINTMENT'].indexOf(res.body.error.code) !== -1,
+      'expected the provider-ownership refusal, got ' + res.body.error.code
+      + ' -- if this is the financial-tier code then dnt_appointments has been '
+      + 'added to DNT_FINANCIAL_RESOURCES, which is a different decision. The '
+      + 'ownership arms live in api/sd-data-dental-provider-scope.test.js.');
   });
 
   console.log('\n' + passed + ' / ' + total + ' passed');

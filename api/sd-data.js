@@ -1087,6 +1087,77 @@ module.exports = async (req, res) => {
       // NOT_PROVISIONED, when that was last driven on 2026-09-29 -- re-drive
       // it, do not trust this line), so a session is obtainable.
       'sf_officers':            ['read', 'write'],
+      // ── THE GAMING-FLOOR MONEY RECORDS, 2026-10-11, SECOND SF EDIT TODAY ──
+      // Four resources, all Tier A on INTEGRITY in docs/CRITICALITY-TIERS.md
+      // since the 2026-09-23 full sf_ re-audit, all authorised by the licence
+      // key alone -- and the key is SHIPPED TO THE BROWSER and readable by
+      // anyone who can open sairnfreedom.html. Same shape as sf_officers
+      // directly above and sf_vehicle_service before it; the difference is
+      // that these four are where the MONEY is recorded.
+      //
+      // DERIVED MECHANICALLY, NOT PICKED. SF_RESOURCES carries 36 resources;
+      // 18 were in this map before this edit; of the 18 that were not, NINE
+      // are Tier A by the register's own letters. These four are the ones with
+      // a money or statutory figure on the row:
+      //   sf_sessions  register:373. A bingo session record carrying prizeCap,
+      //                receipts and prizes. prizeCap IS A STATUTORY LIMIT, not
+      //                a house rule -- ORC Chapter 2915. The regulated event
+      //                record the whole gaming family reconciles against.
+      //   sf_shifts    register:374, and the only one of the four that is A on
+      //                CONFIDENTIALITY too: the row attributes a CASH VARIANCE
+      //                to a NAMED employee and the app states it outright. A
+      //                till shortage read as an accusation.
+      //   sf_tickets   register:377. A sale at a snapshotted unitPrice and
+      //                total, against a named member, rolling into the takings.
+      //   sf_rentals   register:369. A hall rental charge and proceeds, plus
+      //                the alcohol/notified compliance pair the rental turns on.
+      //
+      // FIVE MORE ARE TIER A AND STAY UNGATED, AND THAT IS A DECISION I DID
+      // NOT MAKE RATHER THAN AN OVERSIGHT: sf_district_imports (register:353),
+      // sf_events (:358), sf_permit_flags (:367), sf_products (:368) and
+      // sf_vehicles (:380). api/sd-data-sf-session-gate.test.js's own words are
+      // that widening this gate is a product decision about who may see a duty
+      // roster; the batch that sent me here named these four and their client
+      // write sites and not those five. Routed, with the derivation, rather
+      // than swept in -- and NAMED here so the asymmetry is visible, which is
+      // the thing that let sf_vehicle_service sit ungated for six days.
+      //
+      // THE CLIENT WRITE HALF NEEDS NO CHANGE, and every site was READ at this
+      // HEAD rather than trusted from the batch note. All four write through
+      // st(), which calls sfSyncCollection -> sfData, and sfData at
+      // sairnfreedom.html:1986-1991 attaches X-SD-Auth whenever a session token
+      // is held, for every resource, with no per-call flag to forget:
+      //   :3424, :3523 (inside sfRecordResults at :3509), :4976  sf_sessions
+      //   :4628  sf_tickets      :4739  sf_shifts      :5168  sf_rentals
+      //
+      // THE CLIENT **READ** HALF DID NEED A CHANGE AND IT IS IN THE SAME PUSH,
+      // because it is a defect this gate would otherwise have widened. Every
+      // sf_ resource hydrates through ONE loop, sfHydrateAll(), called from
+      // DOMContentLoaded at sairnfreedom.html:7684 -- which runs BEFORE any
+      // interactive sign-in, and sfEnterApp() did not re-run it. So on a fresh
+      // browser the hydrate for every GATED resource answered 403, the
+      // per-resource .catch swallowed it, the user then signed in, and the
+      // server's copy was never fetched for the rest of that page's life. That
+      // was already true for the 18 gated before this edit and would have
+      // become true for 22. Fixed at the two interactive entry points rather
+      // than here; the restore-from-sessionStorage path was always fine,
+      // because sfRestoreSession() runs ahead of the hydrate.
+      //
+      // NOT PROVEN LIVE, said plainly. No bare-key call was driven against a
+      // real SAIRNfreedom licence for any of the four. The evidence is the
+      // register letters, the two-list derivation above, and the write sites
+      // read at this HEAD. Source-level only.
+      //
+      // NO TWO-VERB ARRAY LITERAL IS QUOTED ANYWHERE IN THIS COMMENT, and that
+      // is not style: the pair-count tripwire in
+      // api/sd-data-session-gate.test.js:206 counts quoted words over this
+      // block's RAW TEXT without blanking comments, so a quoted verb list here
+      // adds phantom pairs. The sf_officers comment above cost a measured 82
+      // for an edit that added 2 before it was reworded.
+      'sf_sessions':            ['read', 'write'],
+      'sf_shifts':              ['read', 'write'],
+      'sf_tickets':             ['read', 'write'],
+      'sf_rentals':             ['read', 'write'],
       'slabs':   ['read', 'write', 'reserve', 'release'],
       'profile': ['read', 'write'],
       'memory':  ['read', 'write'],
@@ -1458,6 +1529,17 @@ module.exports = async (req, res) => {
       // first" -- it fails CLOSED and CONFUSINGLY, which is the failure that
       // gets a security change reverted as broken rather than fixed.
       'sf_officers': 'sairnfreedom',
+      // The four gaming-floor money records, 2026-10-11, added in the SAME EDIT
+      // as their SD_SESSION_GATED entries. This pair of lists is never grown
+      // one half at a time and sf_trustee_audits is why: gated above with no
+      // entry here, expectedApp falls back to 'stonedesk' and every correctly
+      // signed-in SAIRNfreedom officer is refused FORBIDDEN "sign in first".
+      // It fails CLOSED and CONFUSINGLY, which is the failure that gets a
+      // security change reverted as broken rather than fixed.
+      'sf_sessions': 'sairnfreedom',
+      'sf_shifts': 'sairnfreedom',
+      'sf_tickets': 'sairnfreedom',
+      'sf_rentals': 'sairnfreedom',
       // SAIRNscape's two, 2026-09-25, added in the SAME edit as their gate
       // entries -- this pair of lists is never grown one half at a time, and
       // the reason is at the top of this table: a resource gated above with no
@@ -15422,6 +15504,28 @@ module.exports = async (req, res) => {
     // self-scheduled via the separate public-book.js endpoint -- goes
     // through this same handler, so the double-booking protection covers
     // both paths, not just the public one.
+    //
+    // ── THE SENTENCE DIRECTLY ABOVE IS WRONG ABOUT THE MECHANISM, CORRECTED
+    //    2026-10-11. Its CONCLUSION still holds; its REASON does not ───────
+    // api/sairndental/public-book.js:182 POSTs to
+    // `dnt_appointments?on_conflict=license_hash,appointment_id` ITSELF and
+    // never reaches this file. Self-scheduled writes do NOT go through this
+    // handler.
+    //
+    // Double-booking protection does still cover both paths -- because it lives
+    // in the TABLE (the EXCLUDE constraints dntap_no_provider_overlap /
+    // dntap_no_operatory_overlap in
+    // sql/sairndental_availability_booking_schema.sql), not in this handler. Two
+    // writers, one constraint. The conclusion was right for a reason nobody
+    // wrote down, which is why it survived being wrong.
+    //
+    // IT MATTERS BECAUSE IT IS LOAD-BEARING FOR THE OPPOSITE QUESTION: anything
+    // added to THIS handler -- the provider-ownership check below, the
+    // validatePhotosPayload call, the location stamping -- covers the staff path
+    // ONLY. Reading the sentence above would tell you it covers self-scheduling
+    // too. The original is struck through rather than deleted, because a
+    // superseded claim that is silently corrected is one nobody knows was ever
+    // relied on.
     if (resource === 'dnt_appointments' && action === 'read') {
       const dntASess = dntGate(res);
       if (!dntASess) return;
@@ -15454,8 +15558,111 @@ module.exports = async (req, res) => {
       return;
     }
     if (resource === 'dnt_appointments' && action === 'write') {
-      if (!dntGate(res)) return;
+      const dntAWSess = dntGate(res);
+      if (!dntAWSess) return;
       if (!payload || !payload.id) { res.status(400).json({ error: { message: 'dnt_appointments payload.id is required' } }); return; }
+      // ══ PROVIDER OWNERSHIP ON **WRITE**, 2026-10-11 ══════════════════════
+      // THE READ DIRECTLY ABOVE HAS HAD THIS RULE SINCE 2026-09-11 AND THE
+      // WRITE HAD NOTHING. A `provider` session could rewrite ANY appointment
+      // in the practice -- including one belonging to a provider whose
+      // appointments it is forbidden to even READ. The asymmetry is the finding,
+      // not the absence: the read's own comment says "a provider sees only their
+      // own appointments", and the write beside it was unrestricted.
+      //
+      // Reproducing artifact, exit 1 REPRODUCES at 263f736f and exit 0 after:
+      //   .claude/skills/sairn-hover-auditor/tools-hover2/
+      //     dnt_appointments_write_gate_repro.py
+      // Its two conditions were `role_check=False provider_ownership_check=False`.
+      //
+      // ONLY ONE ROLE IS AFFECTED, and that was derived rather than assumed:
+      // api/_lib/auth.js:155 gives sairndental exactly ['owner', 'frontdesk',
+      // 'provider'], and DNT_PATIENT_BROAD_READ_ROLES is {owner, frontdesk}. So
+      // the complement is `provider` alone. owner and frontdesk are untouched --
+      // they book and check in anyone, which is the reason the read exempts them.
+      //
+      // TWO CHECKS, AND THE SECOND IS THE ONE THAT MATTERS. Checking only the
+      // incoming payload.provider_id would stop a provider writing a row
+      // labelled with somebody else's id -- and would happily let them TAKE
+      // somebody else's appointment by upserting it with their OWN id, because
+      // this is an upsert on (license_hash, appointment_id). So the row ALREADY
+      // ON THE SERVER is read and checked too. That is the same pattern
+      // scp_progress_photos' self-QC refusal already uses: the decision is made
+      // against the server's record, never the client-supplied field.
+      //
+      // AN ABSENT provider_id IS REFUSED, not waved through. The column is
+      // nullable and `payload.provider_id || null` is written below, so an
+      // unassigned appointment is a real state -- but it is not one a
+      // provider-scoped caller may create, because the row it produces is one
+      // they could not then read back.
+      //
+      // FAILS CLOSED AT EVERY STEP. An unprovisioned registry is 503 with the
+      // SQL to run, not an empty success: the read above can honestly answer
+      // `provisioned:false` with an empty list, and a WRITE cannot -- an
+      // empty-success write is the silent failure this platform refuses. An
+      // existing-row lookup that errors is SCOPE_LOOKUP_FAILED, never a
+      // fall-through to the unrestricted write.
+      //
+      // NOT A PUBLIC-BOOKING CHANGE, and that was READ rather than assumed. This
+      // branch's own comment above claims "every write -- staff-created or
+      // self-scheduled via the separate public-book.js endpoint -- goes through
+      // this same handler". THAT SENTENCE IS STALE:
+      // api/sairndental/public-book.js:182 POSTs to
+      // `dnt_appointments?on_conflict=...` ITSELF and never reaches this file.
+      // Self-scheduling is therefore unaffected by this gate -- and the stale
+      // claim is reported rather than edited into silence, because it is load-
+      // bearing for anyone reasoning about double-booking coverage.
+      if (!DNT_PATIENT_BROAD_READ_ROLES[dntAWSess.role]) {
+        const wlink = await dntLinkedProvider(dntAWSess);
+        if (!wlink.provisioned) {
+          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdental data tables are not set up yet — run sql/sairndental_data_schema.sql and sql/sairndental_availability_booking_schema.sql in Supabase first.' } });
+          return;
+        }
+        if (!wlink.providerId) {
+          res.status(403).json({
+            error: {
+              code: 'PROVIDER_NOT_LINKED',
+              message: 'Your sign-in is not linked to a provider yet, so you cannot save appointments. Ask the practice owner to open the Providers panel and link your login to your provider record.'
+            }
+          });
+          return;
+        }
+        if (String(payload.provider_id || '') !== String(wlink.providerId)) {
+          res.status(403).json({
+            error: {
+              code: 'NOT_YOUR_APPOINTMENT',
+              message: 'You can only save appointments for your own provider record.'
+            }
+          });
+          return;
+        }
+        const exAppt = await fetch(rest('dnt_appointments?license_hash=eq.' + enc(licHash) +
+          '&appointment_id=eq.' + enc(String(payload.id)) + '&select=provider_id&limit=1'), { headers });
+        if (exAppt.status === 404 || exAppt.status === 400) {
+          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdental data tables are not set up yet — run sql/sairndental_data_schema.sql and sql/sairndental_availability_booking_schema.sql in Supabase first.' } });
+          return;
+        }
+        let exRows = null;
+        try { exRows = await exAppt.json(); } catch (e) { exRows = null; }
+        if (!exAppt.ok || !Array.isArray(exRows)) {
+          res.status(502).json({
+            error: {
+              code: 'SCOPE_LOOKUP_FAILED',
+              message: 'Could not confirm who this appointment belongs to, so it was not saved. Try again.'
+            }
+          });
+          return;
+        }
+        const exRow = exRows[0];
+        if (exRow && String(exRow.provider_id || '') !== String(wlink.providerId)) {
+          res.status(403).json({
+            error: {
+              code: 'NOT_YOUR_APPOINTMENT',
+              message: 'This appointment belongs to another provider and cannot be reassigned from here.'
+            }
+          });
+          return;
+        }
+      }
       // Security fix (2026-08-12): public-book.js already validates payload.photos
       // via validatePhotosPayload() before it ever reaches this table -- but this
       // generic write path is the SAME endpoint the authenticated staff app uses

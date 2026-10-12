@@ -426,7 +426,50 @@ function mapNames(blob) {
     // any of the three, unlike the 2026-10-05 entry above which has one with a
     // control. Source-level plus the reproducing artifact's exit codes, and
     // that limit is stated rather than left to be assumed.
-    assert.strictEqual(pairs, 86,
+    // 86 -> 94 on 2026-10-11, same day, THIRD edit: FOUR SAIRNfreedom
+    // resources, EIGHT pairs -- sf_sessions, sf_shifts, sf_tickets, sf_rentals,
+    // read and write each. The count is +8 and not +12: SD_GATE_APP is a
+    // different object and contributes nothing to `m[0]`, and the comment that
+    // landed beside these four quotes no two-verb array literal, which the
+    // note above this line explains is the only way a comment moves this
+    // number. MEASURED at 94 after the edit, not predicted.
+    //
+    // WHY EACH, which is what this tripwire exists to make somebody justify.
+    // DERIVED rather than picked: SF_RESOURCES carries 36 resources, 18 were
+    // gated before this edit, and NINE of the remaining 18 are Tier A by
+    // docs/CRITICALITY-TIERS.md's own letters. These four are the Tier A ones
+    // with a money or statutory figure ON THE ROW:
+    //   sf_sessions  register:373. prizeCap, receipts, prizes. prizeCap IS A
+    //                STATUTORY LIMIT (ORC Chapter 2915), not a house rule, and
+    //                this is the regulated event record the rest of the gaming
+    //                family reconciles against. It sat at B until 2026-09-23
+    //                while sf_ledger above it was already A.
+    //   sf_shifts    register:374, and the only one of the four that is A on
+    //                CONFIDENTIALITY too -- the row attributes a CASH VARIANCE
+    //                to a NAMED employee and the app's own toast states it.
+    //   sf_tickets   register:377. unitPrice and total snapshotted at the
+    //                moment of sale, against a named member.
+    //   sf_rentals   register:369. charge and proceeds, plus the
+    //                alcohol/notified compliance pair the rental turns on.
+    //
+    // FIVE MORE ARE TIER A AND DELIBERATELY STAY UNGATED, named here so the
+    // asymmetry is visible rather than silent -- which is the thing that let
+    // sf_vehicle_service sit ungated for six days: sf_district_imports
+    // (register:353), sf_events (:358), sf_permit_flags (:367), sf_products
+    // (:368), sf_vehicles (:380). This file's sibling
+    // api/sd-data-sf-session-gate.test.js says in its own words that widening
+    // the gate is a PRODUCT DECISION about who may see a duty roster; the batch
+    // that sent this change named four and their client write sites, not nine.
+    // Routed with the derivation, not swept in.
+    //
+    // NOT PROVEN LIVE, stated rather than implied: no bare-key call was driven
+    // against a real SAIRNfreedom licence for any of the four. Source-level,
+    // plus the register letters and the client write sites read at this HEAD.
+    assert.match(m[0], /'sf_sessions':\s*\['read', 'write'\]/);
+    assert.match(m[0], /'sf_shifts':\s*\['read', 'write'\]/);
+    assert.match(m[0], /'sf_tickets':\s*\['read', 'write'\]/);
+    assert.match(m[0], /'sf_rentals':\s*\['read', 'write'\]/);
+    assert.strictEqual(pairs, 94,
       'the gate table changed size to ' + pairs + ' pairs -- add the new resource to this test and say why it is gated');
   });
 

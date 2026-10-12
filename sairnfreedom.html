@@ -2515,6 +2515,7 @@ function sfLogin(){
   sfAuth('login', {employee_id:eid, pin:pin}).then(function(r){
     if (!r.ok) { sfLoginErr(r.msg || 'Sign-in failed.'); return; }
     sfEnterApp(r.data);
+    sfHydrateAfterSignIn();
   });
 }
 
@@ -2525,7 +2526,61 @@ function sfBootstrap(){
   sfAuth('bootstrap', {employee_id:eid, display_name:nm||eid, pin:pin}).then(function(r){
     if (!r.ok) { sfLoginErr(r.msg || 'Setup failed.'); return; }
     sfEnterApp(r.data);
+    sfHydrateAfterSignIn();
   });
+}
+
+/* ── HYDRATE AGAIN AFTER AN INTERACTIVE SIGN-IN, 2026-10-11 ────────────────
+   THE DEFECT THIS CLOSES WAS ALREADY LIVE FOR 18 RESOURCES before the four
+   gaming-floor resources were gated in the same push, so this is a fix, not
+   the cost of that gate.
+
+   sfHydrateAll() is called from ONE place -- the DOMContentLoaded handler at
+   the bottom of this file -- and that handler runs it unconditionally, on the
+   sign-in pane as readily as inside the app. On a browser with nothing in
+   sessionStorage the sequence was:
+
+     boot -> sign-in pane shown -> sfHydrateAll() runs with NO session
+          -> every SD_SESSION_GATED sf_ resource answers 403
+          -> the per-resource .catch(function(){}) in sfHydrateAll swallows it
+          -> user signs in -> sfEnterApp() renders -> NOTHING fetches again
+
+   so the server's copy of the ledger, the chart of accounts, the officer
+   roster and now the session, shift, ticket and rental records was never read
+   for the rest of that page's life. It is the silent-failure shape this
+   platform refuses: additive hydration means an empty result and a refused
+   result look identical on screen, and the console warning that distinguishes
+   them is on the OUTER promise, which never rejected because the inner catch
+   ate the refusal.
+
+   ONLY THE INTERACTIVE PATHS NEED IT. sfRestoreSession() is called from the
+   same DOMContentLoaded handler BEFORE sfHydrateAll(), so a restored session
+   is already in sessionStorage when the boot hydrate runs and that path was
+   never broken.
+
+   FIRE-AND-FORGET AND RE-RENDER ONLY IF SOMETHING ARRIVED, matching the boot
+   call exactly rather than inventing a second policy. Reported on failure for
+   the same reason the boot call reports: silence would make "the server had
+   nothing" and "the server could not be reached" look the same. */
+function sfHydrateAfterSignIn(){
+  try{
+    sfHydrateAll().then(function(n){
+      if(n){
+        try{ console.info('SAIRNfreedom: hydrated '+n+' record(s) from the server backup after sign-in.'); }catch(e){}
+        sfRenderAll();
+      }
+    }).catch(function(e){
+      try{ console.warn('SAIRNfreedom: the server backup could not be read after '+
+        'sign-in, so nothing was hydrated. Local records are unaffected. '+
+        ((e&&e.message)||e)); }catch(_e){}
+    });
+  }catch(e){
+    /* NOT A BARE CATCH, and not fatal: the sign-in SUCCEEDED and the app is
+       open. A throw here must not leave the user staring at a sign-in pane
+       that already accepted their PIN. */
+    try{ console.warn('SAIRNfreedom: post-sign-in hydration could not start. '+
+      'Local records are unaffected. '+((e&&e.message)||e)); }catch(_e){}
+  }
 }
 
 function sfEnterApp(d){
