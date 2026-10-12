@@ -1935,7 +1935,33 @@
      "recursive": false
     }
    ],
-   "files": [],
+   "files": [
+    {
+     "path": "G:/My Drive/SAIRN-status/handoff-hank-2026-10-12.md",
+     "purpose": "hank's batch 20 (b4) handoff, uploaded in FULL. The AUTHORITATIVE copy is the git-tracked docs/handoff-hank-2026-10-12.md; this is a Drive copy of it, byte-identical at upload.",
+     "belongs_in_git": false,
+     "authoritative_copy": "docs/handoff-hank-2026-10-12.md",
+     "declared_by": "hank",
+     "declared_on": "2026-10-12",
+     "note_on_this_declaration": "DECLARED BY ITS OWN AUTHOR, IN THE SAME ACTION AS THE UPLOAD, BEFORE THE CHECK SAW IT. That ordering is the point: this batch was blocked THREE TIMES by other sessions' undeclared Drive handoffs and used the documented SAIRN_SEED_GATE=off override each time rather than write into another role's record. Declaring my own at upload time is the behaviour that makes those overrides unnecessary for the next session, and it is the only half of the problem I can fix without reaching into somebody else's block."
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/SAIRN-report-hank-b4.txt",
+     "purpose": "hank's batch 20 (b4) report. First line REPORT hank b4, SHA256 of the body second-to-last, END-OF-REPORT last; the hash was verified by re-reading the written file rather than only computed. Authoritative copy is git-tracked.",
+     "belongs_in_git": false,
+     "authoritative_copy": "SAIRN-report-hank-b4.txt",
+     "declared_by": "hank",
+     "declared_on": "2026-10-12"
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/SAIRN-digest-hank-b4.txt",
+     "purpose": "hank's batch 20 (b4) digest: HEAD/push state, one line per item, exact file:line for everything routed, the three documented overrides, and seven questions only Michael can answer. Authoritative copy is git-tracked.",
+     "belongs_in_git": false,
+     "authoritative_copy": "SAIRN-digest-hank-b4.txt",
+     "declared_by": "hank",
+     "declared_on": "2026-10-12"
+    }
+   ],
    "limits": [
     "EPHEMERAL BY DEFINITION: everything under %TEMP% can vanish between sessions. This index records what existed at the audit time and is not a promise that it still does.",
     "A directory listing is capped at 4000 files and 400 names per entry; \"listing_truncated\" says so per directory rather than silently cutting.",
