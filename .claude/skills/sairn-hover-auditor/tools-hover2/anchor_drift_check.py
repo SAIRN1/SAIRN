@@ -142,6 +142,27 @@ ANCHOR_TABLE = [
         'anchor': 'const SEN_CAREGIVER_HR_FIELD_ROLES = roleSet({ owner: true, billing: true });',
         'claimed_line': 6323,
     },
+    # ── EXTENDED, batch b14: one new routing doc landed since b13
+    # (2026-10-12-hover2-register-phantom-hash-duplicates-routing.md) but
+    # its citations are commit hashes inside docs/defect-density-register.json,
+    # a frequently-appended data file where a LINE number is not a
+    # meaningful anchor (records are inserted/removed; the hash itself is
+    # the stable identifier). A line-based anchor there would drift every
+    # batch by construction and add no signal, so it is intentionally not
+    # added to this line-anchor table -- the register's own commit-hash
+    # resolvability is checked by a different mechanism (see
+    # docs/2026-10-12-hover2-register-phantom-hash-duplicates-routing.md's
+    # own acceptance-check snippet). What IS added below is a real drift
+    # this batch's law_role_granularity re-verify (item 8) found live: the
+    # routing doc's LAW_RESOURCES citation (13798-13805) no longer matches
+    # -- api/sd-data.js grew above it since b8, and this entry exists so
+    # the next batch does not have to re-discover the same drift by hand.
+    {
+        'label': 'LAW_RESOURCES dict declaration (law_role_granularity, corrected b14)',
+        'file': 'api/sd-data.js',
+        'anchor': 'const LAW_RESOURCES = {',
+        'claimed_line': 14181,
+    },
 ]
 
 

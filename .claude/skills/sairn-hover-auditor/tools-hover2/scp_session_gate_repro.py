@@ -198,13 +198,34 @@ def selftest():
         # conditional sub-branch must NOT count as the action's own
         # unconditional gate -- this must report False, not True.
         g5, _ = check_one('fx_nested_gate', d, gated_set)
+        # PARTIAL-FAILURE CASE, batch b14: --all's real exit code comes from
+        # `any_reproduces`, which main() sets True on EITHER a REPRODUCES
+        # finding OR a COULD_NOT_RUN error (no dispatch branch at all for a
+        # listed resource) -- two different failure shapes folded into one
+        # exit code. The risk this guards against: a --all run where every
+        # OTHER resource is FIXED must still exit non-zero and must still
+        # print the COULD_NOT_RUN line distinctly, not silently drop the
+        # missing resource and report a clean pass because nothing
+        # REPRODUCED among the ones it could check. Mirrors main()'s own
+        # --all loop logic directly (check_one per resource, OR the
+        # booleans) rather than invoking main(), since main() only prints
+        # and exits -- it returns nothing a selftest can assert on.
+        g6, err6 = check_one('fx_missing_entirely', d, gated_set)
+        any_reproduces_mixed = False
+        for res, err in ((g1, None), (g6, err6)):
+            if err is not None:
+                any_reproduces_mixed = True
+            elif res is not None and not all(res.values()):
+                any_reproduces_mixed = True
+        partial_ok = (g6 is None and err6 is not None and
+                      'COULD NOT RUN' in err6 and any_reproduces_mixed)
         ok = (gated_set == {'fx_global_gated'} and
               g1 == {'read': True} and g2 == {'read': True} and
               g3 == {'read': False} and g4 is None and err4 is not None and
-              g5 == {'write': False})
+              g5 == {'write': False} and partial_ok)
         print('SELFTEST %s: global=%r branch=%r ungated=%r missing_err=%r '
-              'nested_gate=%r' %
-              ('PASS' if ok else 'FAIL', g1, g2, g3, err4, g5))
+              'nested_gate=%r partial_failure_ok=%r' %
+              ('PASS' if ok else 'FAIL', g1, g2, g3, err4, g5, partial_ok))
         return 0 if ok else 1
     finally:
         RESOURCES, BLOCK_RE = old_r, old_re
