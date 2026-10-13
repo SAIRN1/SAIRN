@@ -547,3 +547,33 @@ script, not applied here**: add a third pattern matching
 `resource`/`action` pair that appears textually BEFORE the generic
 block in the file, not just the two hardcoded shapes) before concluding
 `bypass = True`.
+
+## Hooks-off exposure audit, 4 citation-drift findings -- H1 batch b15 item 4
+
+Audited the 5 commits since 2026-10-11 touching `api/*-auth.js`,
+`api/_lib/*`, or the `SD_SESSION_GATED` gate region, via a background
+subagent. **Zero regressions traced to the hooks being off** --
+`redaction_check.py` (clean, all 5), `html_script_check.py` (clean, the
+3 that touch `.html`), `node --check` (clean), zero conflict markers.
+`citation_drift_hook.py` was never in scope for any of the 5 (it only
+ever covers `docs/CRITICALITY-TIERS.md` / `docs/tier-a-reviews.json`),
+so its disablement is not the cause of what follows.
+
+**What the audit DID surface, independently of the hooks question: 4
+code-comment citations that were wrong at the moment they were
+written**, not drift from later unrelated commits:
+
+| Commit | Cited | Real location | Off by |
+|---|---|---|---|
+| `0442646c` | `api/sd-data.js:5231` (the `qc_status`/`verifySessionToken` branch) | `api/sd-data.js:5314` | 83 |
+| `86189e37` | `api/sd-data.js:8496` (the `rf_draws` branch) | `api/sd-data.js:8796` | 300 |
+| `86189e37` | `sairnbuild.html:5726` ("echoes them back into the local list") | `sairnbuild.html:5743-5745` | ~18 |
+| `b7f6fb54` | `sairnfreedom.html:7684` (a `DOMContentLoaded` handler) | `sairnfreedom.html:7721` | 37 |
+| `b7f6fb54` | 6 write-site citations in one block (`:3424,:3523,:3509,:4976,:4628,:4739,:5168`) | `:3479,:3578,:3564,:5031,:4683,:4794,:5223` | **55, uniformly** |
+
+The `b7f6fb54` 6-citation block being off by the exact same 55 lines
+each suggests the whole block was written against one stale snapshot of
+the file, not six independent slips. **Routed to hank** (owns
+`api/sd-data.js`, `sairnbuild.html`, `sairnfreedom.html`) -- fix spec:
+re-point each citation to its real current line; no code-behavior
+change needed, comment-only.
