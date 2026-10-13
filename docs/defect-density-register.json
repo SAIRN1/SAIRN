@@ -27260,6 +27260,72 @@
       "factors_unknown_reason": "one reasoning gap shared by two probes plus one cleanup leak in the new helper, recorded as one record naming all three"
     },
     {
+      "commit": "3ed683657725",
+      "date": "2026-10-13",
+      "subject": "fix(tooling inventory): the hook leg is OPTIONAL in a clone whose hooks are off on purpose -- and the two new tools get their PURPOSES entries",
+      "files": [
+        "docs/TOOLING-INVENTORY.md",
+        "docs/scrutiny-flags.json",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 188,
+      "lines_removed": 40,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "live-verification",
+      "summary": "tools/tooling_inventory.py REFUSED TO GENERATE AT ALL once this clone's hooks were committed empty: the `hook entries` derivation leg was a hard leg whose rule is \"a zero here is a BROKEN READER or a MOVED SOURCE, not an empty repo\". In a clone disarmed on purpose it is neither. The refusal then froze everything behind it -- exactly the cost closing_error.py's own text warns about: the derived-document push gate blocked the push because docs/TOOLING-INVENTORY.md no longer matched its sources, and the generator would not regenerate it, so neither path was open. Now an optional_leg() with a REQUIRED reason, gated on hook_integrity_check.intentionally_disarmed() by import rather than a second copy -- a half-wired or absent `hooks` key is still a HARD leg, which is the 2026-10-11 shape.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "requirement",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "93aea7375154",
+        "date": "2026-10-13",
+        "subject": "chore(hooks): COMMIT the empty hooks object, so no clone, reset or rebase puts them back",
+        "lag_days": 0
+      },
+      "citation_note": "1.11 is the fail-closed-when-a-dependency-is-absent rule, cited for its mirror image: this tool failed closed correctly and the thing it was closing on had become a legitimate state. The rule is right; the third state it did not have a name for is 'absent on purpose'.",
+      "contributing_factors": [
+        {
+          "factor": "The hook-entries derivation leg was a HARD leg, and its rule -- a zero is a broken reader or a moved source, never an empty repo -- stopped being true the moment a clone's hooks were empty ON PURPOSE. The rule was right when written; the world gained a third case.",
+          "kind": "technical",
+          "action": "optional_leg() with a required reason naming the decision, the date and the record holding the 23 removed commands.",
+          "action_status": "done"
+        },
+        {
+          "factor": "THE REFUSAL FROZE EVERYTHING BEHIND IT. closing_error.py's own text says a refusal blocks unrelated corrections, and that is what happened: the derived-document push gate refused the push because TOOLING-INVENTORY.md no longer matched its sources, and the generator refused to regenerate it, so there was no way forward through either.",
+          "kind": "detection",
+          "action": "Fixed at the generator rather than overridden at the gate. SAIRN_SEED_GATE=off was never used in this batch.",
+          "action_status": "done"
+        },
+        {
+          "factor": "A second predicate for the same question would have been the real defect. The condition is hook_integrity_check.intentionally_disarmed() by import, not a copy -- so a half-wired or absent hooks key cannot be read as disarmed by one tool and as drift by the other.",
+          "kind": "technical",
+          "action": "Imported, with the narrowness restated at the call site: the key must EXIST and be EMPTY and the record must be PRESENT.",
+          "action_status": "done"
+        },
+        {
+          "factor": "The same generator then refused for a DIFFERENT and correct reason -- two new tools with no PURPOSES entry -- and that refusal was right: a blank cell is how the document went stale before. Worth recording because the first refusal was a defect and the second was the tool working.",
+          "kind": "detection",
+          "action": "Both entries written, each saying what the tool refuses and what it does NOT claim.",
+          "action_status": "done"
+        },
+        {
+          "factor": "This is the SECOND tool in one batch that had to learn the hook decision, after hook_integrity_check itself. Nothing enumerates what depends on the hook wiring, so the next one surfaces the same way -- by refusing.",
+          "kind": "latent-condition",
+          "action": "Not generalised.",
+          "action_status": "planned",
+          "note": "The dependents are discoverable (anything reading .claude/settings.json hooks) but a list of them is a new standing document, and this batch already added one tool and one index. Reported in the handoff instead."
+        }
+      ],
+      "recurrence_open": "OPEN. This is the SECOND tool in one batch to need teaching about the hook decision, after hook_integrity_check itself, and nothing enumerates what depends on the hook wiring -- so the next dependent surfaces the same way, by refusing at the moment somebody needs it."
+    },
+    {
       "commit": "501bcd150db8",
       "date": "2026-10-13",
       "subject": "fix(tests,tier-a): a deliberate tripwire had been firing for as long as the gate it watches existed, and it found a FIFTH gate mechanism nobody had catalogued",
