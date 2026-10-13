@@ -132,6 +132,65 @@ if [ -n "$STAGED_PROBES" ]; then
   fi
 fi
 
+# ── AN UNDESCRIBED tools/ FILE, AT THE COMMIT THAT ADDS ONE (2026-10-13) ───
+# Michael's 2026-09-13 decision -- no tools/ file is mergeable without a
+# matching inventory entry -- was already enforced in three places, and all
+# three ask AT PUSH TIME: push-gate checks 12 and 14, and the generator's own
+# refusal. The rule held; the feedback was five batches late.
+#
+# MEASURED, NOT SUPPOSED. tools/report_sha_check.py landed in 28179dba (b5) and
+# tools/temp_state_leak_check.py in 78f0aff6 (b7), each with no entry in
+# PURPOSES or REGISTRY. Nothing said so at either commit. By 2026-10-13 a push
+# gate refused over the pair with 29 unpushed commits -- five batches of
+# unrelated finished work -- stacked behind a cause that was two missing dict
+# keys. Driven over both ranges the checker exits 1 and names the right file,
+# and over ca81d59d and 8acd7896 (tools added WITH entries) it exits 0.
+#
+# SCOPED TO ADDS, not to touches: `--diff-filter=A` over `tools/*.py`. An edit
+# to an existing tool pays one `git diff --cached` and nothing else, which is
+# the same bargain the live-probe block above makes and for the same stated
+# reason -- a pre-commit hook that costs real time on every commit is one
+# somebody eventually turns off.
+#
+# THIS BLOCK IS BEFORE THE HOVER SCOPE TEST DELIBERATELY, like the one above:
+# that test exits 0 in all four build clones, and the build clones are the ones
+# that add tools.
+#
+# git's status is read on its own before the list is filtered, for the reason
+# recorded at line 70: an empty list and an unreadable one are different
+# answers and only one of them means "no tools were added".
+if ! STAGED_ADDS=$(git diff --cached --name-only --diff-filter=A); then
+  echo "pre-commit: could not read the staged ADDED file list (git diff" >&2
+  echo "  --cached --diff-filter=A failed). REFUSING rather than skipping." >&2
+  exit 1
+fi
+# grep's own status is discarded HERE and only here: exit 1 means "no match",
+# a correct empty result for this question.
+STAGED_NEW_TOOLS=$(printf '%s\n' "$STAGED_ADDS" \
+  | grep -E '^tools/[^/]+\.py$' || true)
+if [ -n "$STAGED_NEW_TOOLS" ]; then
+  command -v python >/dev/null 2>&1 && TPY=python || TPY=python3
+  if ! command -v "$TPY" >/dev/null 2>&1; then
+    echo "pre-commit: REFUSED -- this commit ADDS a tools/*.py file and no" >&2
+    echo "  python is on PATH, so nothing checked whether it is described." >&2
+    echo "  Could-not-run is not a pass." >&2
+    exit 1
+  fi
+  if [ ! -f "$ROOT/tools/commit_tool_entry_check.py" ]; then
+    echo "pre-commit: REFUSED -- this commit ADDS a tools/*.py file and" >&2
+    echo "  tools/commit_tool_entry_check.py is MISSING, so nothing checked" >&2
+    echo "  whether PURPOSES or REGISTRY describes it." >&2
+    exit 1
+  fi
+  "$TPY" "$ROOT/tools/commit_tool_entry_check.py" --pre-commit || {
+    echo "" >&2
+    echo "pre-commit: REFUSED -- this commit adds a tools/ file nothing" >&2
+    echo "  describes. Exit 1 is a finding, exit 2 is COULD NOT CHECK; both" >&2
+    echo "  stop the commit and the output above says which." >&2
+    exit 1
+  }
+fi
+
 # SCOPE, NOT DEPENDENCY. Absent marker = this is not the auditor's clone.
 [ -f "$GITDIR/sairn-hover-auditor-clone" ] || exit 0
 

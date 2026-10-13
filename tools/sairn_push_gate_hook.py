@@ -3069,6 +3069,98 @@ def main():
             continue
         _gen_dirty.append((_tool_rel, _doc_rel, _rc, _out))
 
+    # ── THE TWO SIDES WERE NOT MEASURED THE SAME WAY (fixed 2026-10-13) ─────
+    # The base side has always been a CLEAN CHECKOUT in a throwaway worktree.
+    # The tip side was the LIVE WORKING TREE. So "clean there, dirty here"
+    # answered a question nobody asked: it compared the base commit against the
+    # base commit PLUS this clone's uncommitted files -- and a push carries
+    # commits, not a working tree.
+    #
+    # MEASURED, AND IT COST FIVE BATCHES. `.claude/settings.json` is tracked and
+    # is modified-not-committed in this clone by Michael's decision -- hooks
+    # cleared on purpose, stated in CLAUDE.md, never to be restored.
+    # tooling_inventory.py derives one of its seven sources from that file, so
+    # in the live tree `hook entries` reads 0 and the generator REFUSES (exit 2,
+    # correctly: an empty source is a broken reader or a moved source and it
+    # must not write a thinner document). In a worktree of the same tip it reads
+    # 19. Check 12 therefore attributed a deliberate, uncommitted, local
+    # condition to every push from this clone, and 29 commits across five
+    # batches sat behind it. Nothing was wrong with the commits.
+    #
+    # IT ALSO MASKED A REAL FINDING, which is the worse half: the live-tree
+    # refusal fires on the empty source BEFORE the generator gets as far as
+    # listing undescribed tools, so the genuine defect in this push -- two
+    # tools/*.py files with no PURPOSES entry -- never appeared in the output
+    # check 12b greps. A wrong subject did not just produce a false refusal; it
+    # replaced the true one.
+    #
+    # THE CHEAP PATH IS UNCHANGED. The live-tree run above stays as the SCREEN,
+    # so a push whose documents are all clean still builds no worktree at all.
+    # Only a dirty screen pays for the checkout, and from here down `_gen_dirty`
+    # holds the exit codes of THE PUSHED TREE.
+    #
+    # STATED LIMIT, not discovered later: a screen measured in the live tree
+    # cannot see a document that the COMMITS break while an uncommitted edit
+    # compensates. That direction is unchanged from before this fix -- the old
+    # code passed it too -- and it is the fail-open direction, which is the one
+    # this check's own scoping decision already accepts in writing above.
+    if _gen_dirty:
+        _tip_wt, _tip_why = None, None
+        try:
+            _tip_wt = os.path.join(tempfile.gettempdir(),
+                                   'sairn-gate-tip-%s' % str(tip)[:12])
+            if os.path.isdir(_tip_wt):
+                git(repo, 'worktree', 'remove', '--force', _tip_wt)
+            git(repo, 'worktree', 'add', '--detach', '--quiet', _tip_wt, tip)
+            if not os.path.isdir(_tip_wt):
+                _tip_wt, _tip_why = None, 'the tip worktree was not created'
+        except Exception as _e:                                # noqa: BLE001
+            _tip_wt, _tip_why = None, '%s: %s' % (type(_e).__name__, _e)
+
+        if not _tip_wt:
+            # COULD NOT TELL, and it is said rather than folded into either
+            # answer. Keeping the live-tree verdicts here is the conservative
+            # read: it preserves exactly the behaviour that existed before this
+            # fix instead of inventing a new allow.
+            print("NOTICE (check 12): could not check out the pushed tip to measure "
+                  "the generated documents the same way the base is measured -- %s. "
+                  "Falling back to the LIVE WORKING TREE, which is what this clone "
+                  "has, not what the push carries." % _tip_why)
+        else:
+            _repushed = []
+            try:
+                for _tool_rel, _doc_rel, _rc, _out in _gen_dirty:
+                    if not os.path.isfile(os.path.join(_tip_wt, _tool_rel)):
+                        # The generator is in the live tree and not in the push.
+                        # Unstaged or uncommitted -- the live verdict is the only
+                        # one there is, and it is kept rather than discarded.
+                        _repushed.append((_tool_rel, _doc_rel, _rc, _out))
+                        continue
+                    _trc, _tout = _gen_check(_tip_wt, _tool_rel)
+                    if _trc is None:
+                        _repushed.append((_tool_rel, _doc_rel, _rc, _out))
+                    elif _trc == 0:
+                        print("NOTICE (check 12): %s is not clean in this working tree "
+                              "(exit %d) and IS clean at the pushed tip, so the cause "
+                              "is an uncommitted local file and not this push. Not "
+                              "blocked, and not a pass either -- somebody's working "
+                              "tree disagrees with what they are pushing."
+                              % (_doc_rel, _rc))
+                    else:
+                        _repushed.append((_tool_rel, _doc_rel, _trc, _tout))
+            finally:
+                try:
+                    git(repo, 'worktree', 'remove', '--force', _tip_wt)
+                except Exception as _we:                       # noqa: BLE001
+                    sys.stderr.write(
+                        '\nNOTE: the gate could not remove its own temporary '
+                        'tip worktree\n  %s\n  (%s: %s). The push is NOT '
+                        'affected. It is still registered and on disk -- run '
+                        '`git worktree remove --force` on it, or `git worktree '
+                        'prune` once the holding process exits.\n\n'
+                        % (_tip_wt, type(_we).__name__, _we))
+            _gen_dirty = _repushed
+
     # ── CHECK 12b: A TOOL THIS PUSH ADDS, NAMED BY THE REFUSAL (2026-09-14) ─
     # CONFIRMED LIVE FIRST, WHICH IS WHY THIS EXISTS. Michael's 2026-09-13
     # decision is that no tools/ file is mergeable without a matching inventory

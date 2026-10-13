@@ -1487,6 +1487,72 @@ PURPOSES = {
     'checker_kit.py': ('LIBRARY', 'the exit-code contract, comment-stripped parsing and the '
                                   'control-pair declaration, extracted so the next checker '
                                   'is built through them rather than re-deriving them'),
+    # THESE TWO ENTRIES ARE FIVE BATCHES LATE AND THAT IS THE POINT (2026-10-13).
+    # report_sha_check.py landed in b5 and temp_state_leak_check.py in b7, each
+    # with no PURPOSES entry, and nothing said so until a push gate refused over
+    # the pair at b9 -- by which time 29 commits were stacked behind a refusal
+    # whose cause was two missing dict keys. The decision was already written
+    # (Michael, 2026-09-13: no tools/ file is mergeable without an entry); what
+    # was missing was anything that asked at the COMMIT that adds the file,
+    # which is now tools/commit_tool_entry_check.py.
+    'commit_tool_entry_check.py': ('CHECKER',
+        'a tools/*.py file arriving in a commit that nothing describes -- the '
+        'same rule push-gate checks 12 and 14 and this generator already '
+        'enforce, asked at the COMMIT that adds the file instead of at the '
+        'push. The rule was never the gap; the TIMING was. report_sha_check.py '
+        'landed in 28179dba and temp_state_leak_check.py in 78f0aff6, each '
+        'undescribed, nothing said so at either commit, and by 2026-10-13 a '
+        'push gate refused over the pair with 29 commits and five batches of '
+        'unrelated finished work stacked behind a cause that was two missing '
+        'dict keys. READS THE STAGED BLOBS, not the working tree, because the '
+        'case worth catching is a tool staged with its entry written but not '
+        'staged -- a working-tree read passes exactly that commit. ACCEPTS '
+        'EITHER SOURCE, PURPOSES or report_only_checks.REGISTRY, because '
+        'missing_purposes does; a PURPOSES-only reader looks correct, passes '
+        'the obvious fixtures and refuses every report-only tool on the '
+        'platform, and that is the third arm of the lock. VALIDATED AGAINST '
+        'THE REAL DEFECT IN BOTH DIRECTIONS rather than fixtures alone: exit 1 '
+        'naming the right file over both historical ranges, exit 0 over '
+        'ca81d59d and 8acd7896 which added tools WITH entries -- and the '
+        'historical read is taken at the range tip, never today\'s inventory, '
+        'or adding an entry now would retroactively clean a 2026-10-02 commit. '
+        'NOT a replacement for checks 12 and 14: a pre-commit hook is '
+        'per-clone state and a clone that never ran install_git_hooks.py has '
+        'none, so the boundary check stays the backstop and this moves the '
+        'FIRST notice. Says nothing about an entry\'s CONTENT -- a one-word '
+        'line satisfies it, and what catches a useless entry is a reader'),
+    'report_sha_check.py': ('CHECKER',
+        'a per-batch report or digest whose own `SHA256 <hex>` line does not '
+        'match the body it claims to cover -- the SHA written, then the body '
+        'edited after it. Both halves of the pair happened in one batch on '
+        '2026-10-11: SAIRN-report-ted-b4.txt carried d2ee6a2d over a body that '
+        'hashed to 2eb5a1ad, and SAIRN-digest-ted-b4.txt asserted in its own '
+        'prose that "both carry a verifiable body hash" while carrying NO SHA '
+        'LINE AT ALL. Both were reseated by hand, which is the mechanism that '
+        'failed. NOT tamper-evidence and the entry says so rather than leaving '
+        'somebody to overstate it: a hash a file carries about itself proves '
+        'only that the line and the body were written at the same moment, and '
+        'anybody editing the body can reseat the line. It catches the ACCIDENT '
+        '-- an appended section, a late correction -- and the accident is what '
+        'happened. Distinct from doc_sha_reseat.py, which reseats COMMIT-sha '
+        'citations inside prose after a rebase and correctly reported "nothing '
+        'to do" over this same defect because the per-batch report is not in '
+        'its tracked set'),
+    'temp_state_leak_check.py': ('CHECKER',
+        'a probe that leaves its own scaffolding behind in .git/config, where '
+        'nothing else on this platform is looking -- `git status` cannot see '
+        'that file, so a dirty-tree check passes while the clone is wrong. '
+        'core.bare = true is the measured case, not a hypothetical: with it '
+        'set, `git status` exits 128 and every `git checkout --` restore fails '
+        'SILENTLY, and b5 ended with two live api/ files still sabotaged, one '
+        'of them not parsing. Also catches a repo-level user.email a probe set '
+        'and never unset, which re-attributes every later commit in the clone '
+        'and attribution is the only thing tying a defect record to a session, '
+        'and worktree registrations left by a probe that died. REPORT ONLY by '
+        'decision rather than by omission: it is wired to no hook and no gate, '
+        'because blocking a session mid-run over leftovers it can clear in one '
+        'command buys less than the NAME of the probe that leaks, and a '
+        'checker nobody has read output from arrives already distrusted'),
     # UNWIRED ON PURPOSE, and the reason belongs here rather than in a commit
     # message: a digit-distribution result is a POINTER, never a verdict, so
     # there is nothing for a gate to do with it. Registration also waits on
