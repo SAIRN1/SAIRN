@@ -705,6 +705,40 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_gate_skip_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "('seed-gate', GOOD, GS.MAX_MINUTES + 1, 'an expiry over the ceiling'),"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "\"\"\"Control for tools/gate_skip.py and the push gate's blanket refusal."
+    }
+   ],
+   "sha": "3722913645e4b66126b054998a00776096fc711b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "gate would go on naming a flag, a minimum and a ceiling that the tool had"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "\"\"\"Refuse the push -- unless a SCOPED skip for `gate` is live."
+    }
+   ],
+   "sha": "3722913645e4b66126b054998a00776096fc711b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": ".claude/settings.json",
    "class": "CI / hook configuration",
    "level": "CHANGE",
@@ -1137,6 +1171,40 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "535c261c04ac198ad825b34d57cfb8fb62374892",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": ".claude/settings.json",
+   "class": "CI / hook configuration",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "\"timeout\": 30,"
+    }
+   ],
+   "sha": "539a0c00bb4d329c62ba77c7f95c0a25e1696908",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_hook_integrity_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(d, ignore_errors=True)"
+    }
+   ],
+   "sha": "539a0c00bb4d329c62ba77c7f95c0a25e1696908",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/hook_integrity_check.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "539a0c00bb4d329c62ba77c7f95c0a25e1696908",
    "criteria_version": "2026-10-06.1"
   },
   {
@@ -1955,6 +2023,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_batch_manifest_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "ok(not with_ev('done', 'tools/gate_skip.py, 14/14 fixtures'),"
+    }
+   ],
+   "sha": "8e1e6763f8c5ac08da497bcfc22f6eb19f70d6a0",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "8e1e6763f8c5ac08da497bcfc22f6eb19f70d6a0",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/push_gate/preauth_exemption_anchor_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -2154,6 +2243,19 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "94debed9d4f3d0ae1d093c560a51a337966ee3c4",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_batch_cleanup_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "'...and each is reported with the reason, not silently skipped')"
+    }
+   ],
+   "sha": "956de43ce6afb1293d38e253c2eff0ca6568db50",
    "criteria_version": "2026-10-06.1"
   },
   {
