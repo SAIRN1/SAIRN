@@ -136,10 +136,17 @@ PURPOSES = {
         'measures the LIVE clone\'s .git/config sha either side of every run; '
         'its arm 7 pins the corrected premise so the next reader does not '
         're-derive it, and its arm 8 derives the ADOPTION QUEUE from tools/ '
-        'rather than hardcoding it. ADOPTION IS NOT DONE: condition_coverage.py, '
-        'dead_rule_sweep.py and guard_ablation.py still call `git worktree add` '
-        'against the live clone unguarded, and those three are routed to cc '
-        'with hank\'s bare-run findings rather than edited here.'),
+        'rather than hardcoding it. ADOPTION IS DONE FOR THREE OF HANK\'S '
+        'THIRTEEN BARE-RUN WRITE FINDINGS AND IS MEASURED, NOT CLAIMED: '
+        'condition_coverage.py, dead_rule_sweep.py and guard_ablation.py now '
+        'call require_isolation() before `git worktree add`, and a bare live '
+        'run of condition_coverage.py exits 2 COULD NOT RUN with .git/config '
+        'byte-identical (93070fe59db2) and zero .git/worktrees entries created '
+        '-- probe arm 9. Arm 10 covers the other half of that finding: `--help` '
+        'must still WORK, because four of hank\'s thirteen fired on --help and '
+        'a guard that refuses usage output has replaced one silent write with a '
+        'loud uselessness. The remaining ten of the thirteen are NOT adopted '
+        'and stay routed to cc.'),
     'dup_dom_ids_check.py': ('CHECKER',
         'a DOM id declared twice in the markup of an app file. '
         'getElementById returns the FIRST match, so a duplicate is never '

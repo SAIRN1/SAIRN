@@ -1,23 +1,5 @@
 #!/usr/bin/env python
 
-# -- THE LIVE-CLONE GUARD (cody, b7) -----------------------------------------
-# Imported by path rather than by package, because tools/ is not a package and
-# this file is run as a script from several directories. A LOAD FAILURE STOPS
-# THIS TOOL rather than silently un-guarding it: PR 1.11, a check that depends
-# on another tool fails CLOSED when that tool is absent.
-import importlib.util as _ilu
-import os as _os  # local alias: this block must not depend on WHERE it
-                  # was inserted relative to the file's own imports.
-_guard_path = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)),
-                            'git_config_isolation.py')
-_spec = _ilu.spec_from_file_location('_sairn_git_iso', _guard_path)
-if _spec is None or _spec.loader is None:
-    print('COULD NOT RUN: tools/git_config_isolation.py is not loadable, so')
-    print('this tool cannot prove it is isolated from the live clone.')
-    raise SystemExit(2)
-_iso_mod = _ilu.module_from_spec(_spec)
-_spec.loader.exec_module(_iso_mod)
-_require_isolation = _iso_mod.require_isolation
 
 """Which criteria rules can be DELETED with nothing going red?
 
@@ -142,6 +124,25 @@ fallback to the clone: "could not isolate" is a third state and folding it into
     thing under test, deliberately: a rule defended only by the corpus is
     defended by something that changes without anybody deciding.
 """
+
+# -- THE LIVE-CLONE GUARD (cody, b7) -----------------------------------------
+# Imported by path rather than by package, because tools/ is not a package and
+# this file is run as a script from several directories. A LOAD FAILURE STOPS
+# THIS TOOL rather than silently un-guarding it: PR 1.11, a check that depends
+# on another tool fails CLOSED when that tool is absent.
+import importlib.util as _ilu
+import os as _os  # local alias: this block must not depend on WHERE it
+                  # was inserted relative to the file's own imports.
+_guard_path = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)),
+                            'git_config_isolation.py')
+_spec = _ilu.spec_from_file_location('_sairn_git_iso', _guard_path)
+if _spec is None or _spec.loader is None:
+    print('COULD NOT RUN: tools/git_config_isolation.py is not loadable, so')
+    print('this tool cannot prove it is isolated from the live clone.')
+    raise SystemExit(2)
+_iso_mod = _ilu.module_from_spec(_spec)
+_spec.loader.exec_module(_iso_mod)
+_require_isolation = _iso_mod.require_isolation
 import argparse
 import ast
 import hashlib

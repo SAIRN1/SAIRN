@@ -283,6 +283,52 @@ def main():
     arm('8. the adoption queue is DERIVED from tools/ and still contains the '
         'three named', the_adoption_queue_is_still_the_same_files)
 
+    def the_three_tools_refuse_a_bare_live_run():
+        # THE ADOPTION, DRIVEN. Each of the three now calls
+        # require_isolation() before its `worktree add`, so a bare run against
+        # the live clone must exit 2 and must create nothing. MEASURED BEFORE
+        # THE GUARD EXISTED: `python tools/guard_ablation.py --help` created
+        # .git/worktrees/sairn-abl-8c6o2uub in this clone and LEFT IT THERE
+        # when the run was killed -- git status never showed it, and prune
+        # would not take it while its temp directory survived.
+        before = live_snapshot()
+        bad = []
+        for tool in ('condition_coverage.py', 'guard_ablation.py'):
+            proc = subprocess.run(
+                [sys.executable, os.path.join(REPO, 'tools', tool)],
+                cwd=REPO, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                timeout=180)
+            out = proc.stdout.decode('utf-8', 'replace')
+            if proc.returncode != 2:
+                bad.append('%s exited %d, not 2' % (tool, proc.returncode))
+            elif 'COULD NOT RUN -- ' not in out:
+                bad.append('%s exited 2 without naming the guard' % tool)
+        after = live_snapshot()
+        assert not bad, '; '.join(bad)
+        assert before == after, (
+            'a REFUSED bare run still changed the live clone: %r -> %r'
+            % (before, after))
+        print('        both refused with exit 2; live .git unchanged')
+    arm('9. ADOPTION -- a bare live run of the guarded tools is exit 2 and creates nothing',
+        the_three_tools_refuse_a_bare_live_run)
+
+    def dead_rule_sweep_help_still_works():
+        # THE GUARD MUST NOT BREAK WHAT ALREADY WORKED. dead_rule_sweep.py
+        # handles --help in argparse before it reaches the worktree, so it
+        # must still print usage and exit 0. If this ever flips to 2 the guard
+        # has been moved above the argument parser and is refusing a read-only
+        # invocation, which is how a guard gets removed instead of fixed.
+        proc = subprocess.run(
+            [sys.executable, os.path.join(REPO, 'tools', 'dead_rule_sweep.py'),
+             '--help'], cwd=REPO, stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT, timeout=180)
+        out = proc.stdout.decode('utf-8', 'replace')
+        assert proc.returncode == 0, ('dead_rule_sweep.py --help exited %d: %s'
+                                      % (proc.returncode, out[-400:]))
+        assert 'usage:' in out, 'no usage line in --help output'
+    arm('10. the guard does NOT refuse dead_rule_sweep.py --help (exit 0, usage printed)',
+        dead_rule_sweep_help_still_works)
+
     print('')
     if FAILED:
         print('%d ARM(S) FAILED:' % len(FAILED))
