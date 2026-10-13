@@ -27322,6 +27322,77 @@
       "factors_unknown_reason": "one policy gap across 19 resources, recorded as one defect with the full table in api/_lib/law-roles.js rather than modelled as structured factors"
     },
     {
+      "commit": "5bb0950a51b6",
+      "date": "2026-10-13",
+      "subject": "fix(audit-checkpoint,sql): sixteen-log coverage in one idempotent block, and three sql files that no longer described the database",
+      "files": [
+        "api/audit-checkpoint.js",
+        "api/audit-checkpoint.test.js",
+        "api/sf-auth.test.js",
+        "docs/known-red-suites.json",
+        "sql/audit_checkpoint_schema.sql",
+        "sql/sairncode_audit_log_schema.sql",
+        "sql/sairnlaw_audit_log_schema.sql",
+        "sql/stonedesk_audit_log_schema.sql"
+      ],
+      "lines_added": 453,
+      "lines_removed": 55,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "sql/audit_checkpoint_schema.sql CHECK-constrained audit_table to three names while api/_lib/audit.js carried sixteen audit logs, so 13 of 16 logs could never be checkpointed and the daily job reported ok over 19% of the population -- a pass it never performed on the other thirteen. And the file could not fix itself: `create table if not exists` skips an existing table constraint and all, so re-running it to widen coverage would have reported success and changed nothing. Fixed by making the file one idempotent block (create-with-sixteen PLUS a drop-constraint-if-exists/add-constraint pair that acts on an already-created table), deriving SCHEMA_PERMITTED from AUDIT_TABLE_BY_APP instead of a second hand-kept list, and adding a 503 CHECK_NOT_WIDENED refusal so an unrun migration is named rather than falling through to a generic 502 advising a retry that can never work.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "106d403717a4",
+        "date": "2026-09-14",
+        "subject": "feat(audit): item 35 -- daily checkpoints over closed windows, and the verifier that makes them mean something",
+        "lag_days": 29
+      },
+      "citation_note": "The PARTIAL-COVERAGE variant of 1.11 rather than the absent-tool variant it is written about. The rule's subject is a check that reports a pass it never performed when a dependency is missing; here the dependency present was the database CHECK, and the job filtered the thirteen tables that constraint would reject and then answered ok. Same shape, different missing thing: could-not-checkpoint-this-log was folded into a clean run, and a checkpoint is what makes an audit log tamper-evident, so thirteen logs -- including credential grants for a dental practice, an assisted-living facility and an ORC 2915 gaming post -- had no tamper-evidence at all.",
+      "phase_note": "Design. The defect is not a mistyped list; it is two lists that must agree with nothing comparing them, plus a schema file whose create-if-not-exists shape cannot amend the constraint it declares. Both are decisions about structure made before any of this code was written.",
+      "contributing_factors": [
+        {
+          "factor": "Two lists that must agree -- the audit_table CHECK in sql/audit_checkpoint_schema.sql and AUDIT_TABLE_BY_APP in api/_lib/audit.js -- with nothing comparing them. One is SQL and one is a JavaScript constant, so no single tool read both.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "SCHEMA_PERMITTED is now DERIVED from AUDIT_TABLE_BY_APP rather than hand-kept, and api/audit-checkpoint.test.js reads the SQL FILE and compares it to the derived list in both directions, so a drift fails a test rather than failing at 03:30 in production."
+        },
+        {
+          "factor": "The schema file could not widen an existing table. `create table if not exists` skips it, constraint and all, so re-running the file to fix the coverage would have reported success and changed nothing -- a silent no-op that reads exactly like a successful migration.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The file now carries a drop-constraint-if-exists / add-constraint pair after the create, and a test arm asserts that half is present AND that every table in the create-table CHECK is also in the ALTER. Ablated: removing the ALTER half fails that arm."
+        },
+        {
+          "factor": "The daily job answered ok while covering 3 of 16 logs. A coverage figure that exists only in a code comment is the same silence in a different place, and the one reader of this job -- the cron watchdog -- saw only an outcome.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tables_covered, tables_total and uncovered are reported in every response AND in every heartbeat detail; an unwidened database now answers 503 CHECK_NOT_WIDENED by name with retry_helps false, instead of a generic 502 advising a retry that cannot work."
+        },
+        {
+          "factor": "The migration that created thirteen of the sixteen audit logs ran without anything re-asking what else named a list of audit tables. The checkpoint table's constraint predated twelve of the tables it was supposed to cover.",
+          "kind": "process",
+          "action_status": "not-actionable",
+          "note": "No action is claimed here. A rule saying 'when you add a table, grep for every list that names tables' is the kind of standing instruction this platform has repeatedly found does not survive contact with a hurried migration. The derivation in factor 1 is the mechanical substitute, and it is what makes the process step unnecessary rather than merely advised."
+        },
+        {
+          "factor": "Whether sql/audit_checkpoint_schema.sql had EVER been run could not be told from any clone, and docs/AUDIT-CHECKPOINT-STATUS.md has read COULD NOT TELL since 2026-09-14. So the coverage gap sat underneath a bigger unknown that made it easy to defer.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Open item 1c of docs/SAIRN-handoff-hank-b7.md: Michael confirms the table's existence by running the file (it is idempotent) and reading verify queries 1b and 1c, which answer 16 and name the sixteen. CRON_SECRET is not set in any clone, so the status generator cannot ask."
+        }
+      ],
+      "recurrence_open": "The actions close the SPECIFIC pair and the specific file. They do NOT close the shape: this is at least the third two-lists-that-must-agree defect in this family, and the platform carries other pairs whose halves live in different languages -- SD_SESSION_GATED and SD_GATE_APP are one, and they are kept in agreement only by a test somebody remembered to write. Nothing systematically enumerates such pairs. They also do not prove the database was migrated: every action here is in the repo, and until the SQL is run the only thing that improved is that the failure is now named 503 CHECK_NOT_WIDENED instead of silently covering 19% of the population."
+    },
+    {
       "commit": "15a8ff9a94a3",
       "date": "2026-10-13",
       "subject": "fix(sairnvet): the server backup was READ-DEAD for every page load that began at the sign-in pane, for every SAIRNvet resource",
@@ -27472,58 +27543,6 @@
       },
       "citation_note": "1.11 cited for the shape: could-not-run folded into a verdict about something else. The rule is about a check that depends on an absent tool reporting a pass it never performed; here a probe reported COULD NOT RUN about check 4 on evidence that said nothing about check 4, which is the same conflation in the other direction.",
       "factors_unknown_reason": "one reasoning gap shared by two probes plus one cleanup leak in the new helper, recorded as one record naming all three"
-    },
-    {
-      "commit": "3b8f23d3c062",
-      "date": "2026-10-13",
-      "subject": "fix(b7 item 3c): CORRECTION -- the guard adoption IS committed, is measured working, and my last commit message said the opposite",
-      "files": [
-        "docs/TOOLING-INVENTORY.md",
-        "tests/run_worktree_isolation_probe.py",
-        "tools/dead_rule_sweep.py",
-        "tools/tooling_inventory.py"
-      ],
-      "lines_added": 78,
-      "lines_removed": 24,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "low",
-      "detection_method": "code-review",
-      "summary": "tools/dead_rule_sweep.py lost its module __doc__ at import: an isolation-guard block was inserted above the docstring, so the docstring stopped being the first statement and a 700-line explanation of the tool's purpose was silently emptied. Import still succeeded and every arm still passed, so the only symptom was missing documentation. Introduced and fixed inside the same unpushed range; never on origin/main.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "a339112de510",
-        "date": "2026-10-13",
-        "subject": "chore(b7): the OWNER line push-gate check 14 requires on both new tools",
-        "lag_days": 0
-      },
-      "citation_note": "No standing rule in docs/SAIRN-PROCESS-RULES.md covers Python statement ORDER around a module docstring. The nearest rules are about silent failure and about checks that stop testing anything, and neither instantiates this: the import did not fail and no check was disabled. Forcing a citation would feed tools/fmea_prediction_check.py manufactured agreement, which is what not-citable exists to prevent.",
-      "contributing_factors": [
-        {
-          "kind": "technical",
-          "factor": "The guard block was inserted above the module docstring, so the docstring was no longer the first statement and __doc__ became None at import -- a 700-line explanation of the tool's purpose deleted by an edit meant to make it safer.",
-          "action": "Block moved below the docstring in all three adopting tools; __doc__ measured PRESENT in all three afterwards and NONE before.",
-          "action_status": "done"
-        },
-        {
-          "kind": "process",
-          "factor": "`git add -A` re-staged a concurrent re-add of three files between a revert that had been verified and the commit that followed it, so a commit message asserting the revert became false with no further edit by its author.",
-          "action": "Stage by named path and re-read `git diff --cached` immediately before committing, rather than staging by wildcard. Recorded as a standing condition in SAIRN-handoff-cody-b7.md.",
-          "action_status": "done"
-        },
-        {
-          "kind": "detection",
-          "factor": "Nothing checks that a Python module still has a __doc__ after an edit. The import succeeded, every arm passed, and the only visible symptom was absent documentation -- which no check reads.",
-          "action": "tests/run_worktree_isolation_probe.py arms 9 and 10 now drive the adopted tools end to end, and arm 10 specifically requires --help to still WORK, which is the observable that a destroyed docstring would break.",
-          "action_status": "done"
-        }
-      ],
-      "recurrence_open": "The other ten of hank's thirteen bare-run write findings are not adopted yet, so the same insertion-point mistake can recur on each of them; the remedy is in the probe rather than in care."
     },
     {
       "commit": "3ed683657725",
@@ -28239,78 +28258,113 @@
       "recurrence_open": "The live-tree SCREEN still cannot see a document that the COMMITS break while an uncommitted edit compensates -- that direction is unchanged by this fix and is stated in the code rather than left to be discovered. docs/TOOLING-INVENTORY.md also lists commit_tool_entry_check.py as UNWIRED while it is wired into .githooks/pre-commit: the generator derives wiring from .claude/settings.json hook entries and from the push gate and reads .githooks/ for neither, so every pre-commit-wired tool is under-reported the same way. Not fixed here -- it is a change to the inventory's source list in a file two sessions contest."
     },
     {
-      "commit": "f9a4e5a0032b",
-      "date": "2026-10-13",
-      "subject": "fix(audit-checkpoint,sql): sixteen-log coverage in one idempotent block, and three sql files that no longer described the database",
+      "commit": "7bc26782e533",
+      "date": "2026-09-26",
+      "subject": "fix(sairnvet): the butorphanol HORSE row was 2-4x the FDA-approved equine dose -- the dog/cat figure copied across all five species rows",
       "files": [
-        "api/audit-checkpoint.js",
-        "api/audit-checkpoint.test.js",
-        "api/sf-auth.test.js",
-        "docs/known-red-suites.json",
-        "sql/audit_checkpoint_schema.sql",
-        "sql/sairncode_audit_log_schema.sql",
-        "sql/sairnlaw_audit_log_schema.sql",
-        "sql/stonedesk_audit_log_schema.sql"
+        "sairnvet.html",
+        "tests/sairnvet_formulary_source_honesty.js"
       ],
-      "lines_added": 453,
-      "lines_removed": 55,
-      "app": "PLATFORM",
+      "lines_added": 78,
+      "lines_removed": 1,
+      "app": "sairnvet",
       "layer": "product",
-      "severity": "high",
+      "severity": "critical",
       "detection_method": "code-review",
-      "summary": "sql/audit_checkpoint_schema.sql CHECK-constrained audit_table to three names while api/_lib/audit.js carried sixteen audit logs, so 13 of 16 logs could never be checkpointed and the daily job reported ok over 19% of the population -- a pass it never performed on the other thirteen. And the file could not fix itself: `create table if not exists` skips an existing table constraint and all, so re-running it to widen coverage would have reported success and changed nothing. Fixed by making the file one idempotent block (create-with-sixteen PLUS a drop-constraint-if-exists/add-constraint pair that acts on an already-created table), deriving SCHEMA_PERMITTED from AUDIT_TABLE_BY_APP instead of a second hand-kept list, and adding a 503 CHECK_NOT_WIDENED refusal so an unrun migration is named rather than falling through to a generic 502 advising a retry that can never work.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
+      "summary": "sairnvet.html searchDrugs() rendered a green \"Verified\" badge from `d.needsReview ? 'Needs Review' : 'âœ“ Verified'` -- the ABSENCE of a review flag read as the PRESENCE of a verification, on 284 of 485 VET_DRUGS rows, with no `reference` field on any row and no source recorded anywhere in the file for the badge to have checked. The same claim reached the clinician through nine further sites including the AI dosing system prompt (\"you may ONLY use the verified database record\") and the grounding context (\"Verified database record:\"). And one of the doses so badged was wrong: the Butorphanol HORSE row carried 0.2-0.4 mg/kg, the dog/cat figure propagated across all five species rows, against the FDA-approved equine 0.1 mg/kg IV (Torbugesic, NADA 135-780) -- 2-4x the label dose, shown to a vet under a tick.",
+      "rules": [],
+      "citation_confidence": "not-citable",
       "injection_phase": "design",
       "phase_confidence": "stated",
       "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "commit": "106d403717a4",
-        "date": "2026-09-14",
-        "subject": "feat(audit): item 35 -- daily checkpoints over closed windows, and the verifier that makes them mean something",
-        "lag_days": 29
+        "unknown_reason": "The VET_DRUGS table and the searchDrugs() badge both predate every commit in this register's window, and git log on sairnvet.html does not isolate a commit that introduced either the two-state ternary or the butorphanol/horse row -- the file arrived with the table already populated. Naming a plausible sha here would put a fabricated discovery lag into the IBNR fit, which is the one number this field feeds."
       },
-      "citation_note": "The PARTIAL-COVERAGE variant of 1.11 rather than the absent-tool variant it is written about. The rule's subject is a check that reports a pass it never performed when a dependency is missing; here the dependency present was the database CHECK, and the job filtered the thirteen tables that constraint would reject and then answered ok. Same shape, different missing thing: could-not-checkpoint-this-log was folded into a clean run, and a checkpoint is what makes an audit log tamper-evident, so thirteen logs -- including credential grants for a dental practice, an assisted-living facility and an ORC 2915 gaming post -- had no tamper-evidence at all.",
-      "phase_note": "Design. The defect is not a mistyped list; it is two lists that must agree with nothing comparing them, plus a schema file whose create-if-not-exists shape cannot amend the constraint it declares. Both are decisions about structure made before any of this code was written.",
+      "citation_note": "not-citable: no section of docs/SAIRN-PROCESS-RULES.md names either half of this shape. The badge half is \"the absence of a flag read as the presence of a verification\", and the dose half is a faithful copy into a context that invalidates it -- which IS named, but in docs/2026-09-13-cross-domain-disciplines.md (item 7, Ariane 5: byte-identical is not safe-in-context; and item 8, nothing announces the day a check stops testing anything). That document is not the vocabulary --rule validates against, so citing a section number from it would be a citation that resolves to nothing. Recorded as not-citable with the real pointer rather than forced into the nearest 1.x section.",
       "contributing_factors": [
         {
-          "factor": "Two lists that must agree -- the audit_table CHECK in sql/audit_checkpoint_schema.sql and AUDIT_TABLE_BY_APP in api/_lib/audit.js -- with nothing comparing them. One is SQL and one is a JavaScript constant, so no single tool read both.",
+          "factor": "searchDrugs() chose the badge from needsReview alone, a two-state model over a three-state fact: flagged-for-review, cites-a-source, and neither. `needsReview:false` is the default for a row nobody has touched, so the green state was the state of NOT HAVING BEEN LOOKED AT.",
           "kind": "technical",
           "action_status": "done",
-          "action": "SCHEMA_PERMITTED is now DERIVED from AUDIT_TABLE_BY_APP rather than hand-kept, and api/audit-checkpoint.test.js reads the SQL FILE and compares it to the derived list in both directions, so a drift fails a test rather than failing at 03:30 in production."
+          "action": "Badge now branches on d.reference and renders three states -- Needs Review / 'âœ“ Referenced' / 'No source recorded' -- with the no-source chip deliberately not the green #D1FAE5."
         },
         {
-          "factor": "The schema file could not widen an existing table. `create table if not exists` skips it, constraint and all, so re-running the file to fix the coverage would have reported success and changed nothing -- a silent no-op that reads exactly like a successful migration.",
+          "factor": "The formulary was largely built by propagating ONE numeric dose across a drug's species rows. The copy is faithful and the species is not; butorphanol/horse is the instance that was measured wrong at 2-4x the FDA-approved equine dose.",
           "kind": "technical",
           "action_status": "done",
-          "action": "The file now carries a drop-constraint-if-exists / add-constraint pair after the create, and a test arm asserts that half is present AND that every table in the create-table CHECK is also in the ALTER. Ablated: removing the ALTER half fails that arm."
+          "action": "The horse row now carries 0.1 mg/kg IV with its Torbugesic NADA 135-780 citation, and an arm pins it against the dog/cat figure returning."
         },
         {
-          "factor": "The daily job answered ok while covering 3 of 16 logs. A coverage figure that exists only in a code comment is the same silence in a different place, and the one reader of this job -- the cron watchdog -- saw only an outcome.",
+          "factor": "Nothing compared a displayed verification claim against the existence of evidence for it, so the badge, the dashboard prose, the Ask-AI card, the calculator box and the model's own system prompt all made the same unearned claim independently and none of them could be caught by checking another.",
           "kind": "detection",
           "action_status": "done",
-          "action": "tables_covered, tables_total and uncovered are reported in every response AND in every heartbeat detail; an unwidened database now answers 503 CHECK_NOT_WIDENED by name with retry_helps false, instead of a generic 502 advising a retry that cannot work."
+          "action": "tests/sairnvet_formulary_source_honesty.js, 16 arms, pins the badge region, both AI prompt paths, the grounding context's BRANCH on m.reference (not merely the identifier's presence -- ablation caught that first draft), the calculator box and both prose sites."
         },
         {
-          "factor": "The migration that created thirteen of the sixteen audit logs ran without anything re-asking what else named a list of audit tables. The checkpoint table's constraint predated twelve of the tables it was supposed to cover.",
-          "kind": "process",
-          "action_status": "not-actionable",
-          "note": "No action is claimed here. A rule saying 'when you add a table, grep for every list that names tables' is the kind of standing instruction this platform has repeatedly found does not survive contact with a hurried migration. The derivation in factor 1 is the mechanical substitute, and it is what makes the process step unnecessary rather than merely advised."
-        },
-        {
-          "factor": "Whether sql/audit_checkpoint_schema.sql had EVER been run could not be told from any clone, and docs/AUDIT-CHECKPOINT-STATUS.md has read COULD NOT TELL since 2026-09-14. So the coverage gap sat underneath a bigger unknown that made it easy to defer.",
+          "factor": "Species is data in a row, not schema, so a wrong-species dose is structurally indistinguishable from a right one and there is no per-species bound for it to violate. The app's bounds-checking validates the PATIENT against the row, never the row against the species it claims.",
           "kind": "latent-condition",
           "action_status": "planned",
-          "action": "Open item 1c of docs/SAIRN-handoff-hank-b7.md: Michael confirms the table's existence by running the file (it is idempotent) and reading verify queries 1b and 1c, which answer 16 and name the sixteen. CRON_SECRET is not set in any clone, so the status generator cannot ask."
+          "action": "Mechanically flag all 295 species-copied rows using the root-cause pattern itself, as a stopgap ahead of the row-by-row sourcing pass."
         }
       ],
-      "recurrence_open": "The actions close the SPECIFIC pair and the specific file. They do NOT close the shape: this is at least the third two-lists-that-must-agree defect in this family, and the platform carries other pairs whose halves live in different languages -- SD_SESSION_GATED and SD_GATE_APP are one, and they are kept in agreement only by a test somebody remembered to write. Nothing systematically enumerates such pairs. They also do not prove the database was migrated: every action here is in the repo, and until the SQL is run the only thing that improved is that the failure is now named 503 CHECK_NOT_WIDENED instead of silently covering 19% of the population."
+      "recurrence_open": "481 of 485 rows still cite no source. The badge is now honest about them -- \"No source recorded\", not green -- so the app no longer overclaims, but nothing about this change makes those doses verified, and a clinician reading a correctly-badged unsourced row is still reading an unsourced dose. The cross-species copy is REPORTED per run (114 drug names, 295 rows) and deliberately NOT gated, because a shared dose is sometimes correct -- chlorhexidine really is 0.05% in every species -- so a new species-copied row can still land without refusing anything. Only the one measured instance (butorphanol/horse) is pinned by an arm; the other 294 rows are counted, not checked, and no per-species dose bound exists anywhere for a wrong-species figure to violate.",
+      "single_factor_note": "n/a -- four factors"
     },
     {
-      "commit": "5bb0950a51b6",
+      "commit": "3b8f23d3c062",
+      "date": "2026-10-13",
+      "subject": "fix(b7 item 3c): CORRECTION -- the guard adoption IS committed, is measured working, and my last commit message said the opposite",
+      "files": [
+        "docs/TOOLING-INVENTORY.md",
+        "tests/run_worktree_isolation_probe.py",
+        "tools/dead_rule_sweep.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 78,
+      "lines_removed": 24,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "tools/dead_rule_sweep.py lost its module __doc__ at import: an isolation-guard block was inserted above the docstring, so the docstring stopped being the first statement and a 700-line explanation of the tool's purpose was silently emptied. Import still succeeded and every arm still passed, so the only symptom was missing documentation. Introduced and fixed inside the same unpushed range; never on origin/main.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "a339112de510",
+        "date": "2026-10-13",
+        "subject": "chore(b7): the OWNER line push-gate check 14 requires on both new tools",
+        "lag_days": 0
+      },
+      "citation_note": "No standing rule in docs/SAIRN-PROCESS-RULES.md covers Python statement ORDER around a module docstring. The nearest rules are about silent failure and about checks that stop testing anything, and neither instantiates this: the import did not fail and no check was disabled. Forcing a citation would feed tools/fmea_prediction_check.py manufactured agreement, which is what not-citable exists to prevent.",
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "The guard block was inserted above the module docstring, so the docstring was no longer the first statement and __doc__ became None at import -- a 700-line explanation of the tool's purpose deleted by an edit meant to make it safer.",
+          "action": "Block moved below the docstring in all three adopting tools; __doc__ measured PRESENT in all three afterwards and NONE before.",
+          "action_status": "done"
+        },
+        {
+          "kind": "process",
+          "factor": "`git add -A` re-staged a concurrent re-add of three files between a revert that had been verified and the commit that followed it, so a commit message asserting the revert became false with no further edit by its author.",
+          "action": "Stage by named path and re-read `git diff --cached` immediately before committing, rather than staging by wildcard. Recorded as a standing condition in SAIRN-handoff-cody-b7.md.",
+          "action_status": "done"
+        },
+        {
+          "kind": "detection",
+          "factor": "Nothing checks that a Python module still has a __doc__ after an edit. The import succeeded, every arm passed, and the only visible symptom was absent documentation -- which no check reads.",
+          "action": "tests/run_worktree_isolation_probe.py arms 9 and 10 now drive the adopted tools end to end, and arm 10 specifically requires --help to still WORK, which is the observable that a destroyed docstring would break.",
+          "action_status": "done"
+        }
+      ],
+      "recurrence_open": "The other ten of hank's thirteen bare-run write findings are not adopted yet, so the same insertion-point mistake can recur on each of them; the remedy is in the probe rather than in care."
+    },
+    {
+      "commit": "f9a4e5a0032b",
       "date": "2026-10-13",
       "subject": "fix(audit-checkpoint,sql): sixteen-log coverage in one idempotent block, and three sql files that no longer described the database",
       "files": [
