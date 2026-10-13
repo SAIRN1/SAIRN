@@ -2371,6 +2371,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/sf_role_matrix_driven.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a6ea0087d7686c675dbd1e86327ee592f8552069",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/sairn_push_gate_hook.py",
    "class": "push-gate logic",
    "level": "CHANGE",
@@ -3584,6 +3592,14 @@
     }
    ],
    "sha": "f45ea2ba48bbe3a791eff07aa253f7ac0a4ba74b",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/sf_role_matrix_driven.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "f52470d5435be23dd43a9a878009d5a67f3723d2",
    "criteria_version": "2026-10-06.1"
   },
   {
