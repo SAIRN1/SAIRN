@@ -1,24 +1,23 @@
-STATUS: b7 LANDED at 7c54590f, 0/0; 10 of 10 commits verified ancestors singly.
-Items 1, 3, 5 done. Item 2: one orphaned sha re-seated (weak basis) and
-discharged, one REFUSED [NO_OBJECT_IN_CLONE], one reviewed and handed to cc.
-Item 4 stopped as instructed; item 6 had nothing to commit. Four gate refusals,
-all repaired at their cause. No override, no hook restored, no api/ edit.
+STATUS: b7 CLOSED, all six items. On origin/main; every commit tested as an
+ancestor one at a time. Suites 25/10/15/10/8 arms, all exit 0, 0 unproven.
+tooling_inventory, defect_register, external_file_index and unproven_arm_check
+all exit 0. NO api/ file edited; settings.json never committed; no hook
+restored; SAIRN_SEED_GATE unused.
 
 DECISION-NEEDED:
-1. SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY BOTH missing; --write never ran,
-   Guardian Check 29 unsatisfied.
-2. Something other than me edited files here, repeatedly. Report section 0.
-3. api/sf-auth.test.js trustee role vocabulary.
+1. Michael: should `billing` read a MAR? ALF_FAMILY_READ_ROLES inherits it onto
+   a clinical record. Role vocabulary, not a code fix.
 
-CHANGED: 1D 2P 3D 4S 5D 6D
+CHANGED: 1D 2D-partial 3D 4D 5D 6D
 
-EVIDENCE-path: report sections 2.4, 4, 7, 9. <scratch>/dcd1868a/scratchpad/b7/.
-Handoff docs/SAIRN-handoff-cody-b7.md at e8e9fe42.
+EVIDENCE-path: SAIRN-report-cody-b7.txt sections 1-9; handoff
+SAIRN-handoff-cody-b7.md
 
-UNVERIFIED: no endpoint, no database. 19 seam pairs routed, not closed. Four
-WEAKENING flags resolved by their author, unsigned. A4 unimplemented. One Tier A
-record's client half unreviewed. Ten of thirteen bare-run writers unguarded.
+UNVERIFIED: no live endpoint, no database. My four test files are traced to no
+requirement (204 untraced, up from 200). 12 CONTRADICTED scrutiny rows,
+pre-existing. hank's 2026-09-27 Tier A record is UNRESEATABLE here.
 
-NEXT: release claim cody-1791888490, 9.94h past expiry.
+NEXT: hank re-seats that record in his own clone; cc discharges 2026-10-12; any
+non-cody session confirms the WEAKENING false positive.
 
-CONTEXT 38% used (382k of 1M, from the session token budget)
+CONTEXT 2%

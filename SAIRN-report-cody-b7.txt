@@ -83,7 +83,18 @@ SAIRN_SEED_GATE was never used, and no auditor clone was entered.
     driven cells        720
       expected DENY     362  (each also checked for a pre-refusal row fetch)
       expected ALLOW    358
-    NOT-DRIVEN cells    0  (9 licence-key-only resources, named in the file)
+    NOT-DRIVEN cells    0  -- nothing is ungated. THIS LINE READ "0 (9
+                           licence-key-only resources, named in the file)",
+                           which is a zero sitting beside a nine and is the
+                           label going stale the moment the gap closed:
+                           commit 46d74678 gated the last nine from another
+                           session, so all 36 resources are session-gated,
+                           all 720 cells were driven, and hank's original
+                           720 is now the real number rather than a ceiling.
+                           Two identical labels inside the suite itself were
+                           stale the same way and are fixed; a header that
+                           asserts a quantity the data no longer has is the
+                           small version of what arm 4 is about.
 
   ITEM 3a files scanned                400
   ITEM 3a with a pass/fail summary     147
@@ -497,5 +508,5 @@ reuse rather than nineteen separate investigations.
   - One register record (f9a4e5a0032b) is external and unverified in this clone.
   - The 2026-09-27 Tier A record is UNREVIEWED and UNRESEATABLE from here.
   - The sairnbuild Draw Requests panel is still not role-gated client-side.
-SHA256 140f0f2a6f0ab7a2715256820a5eb527670facd329d44ee43f93e11fdab4fe01
+SHA256 4d32d6c58aa77a2dd87e416bcf1cac251fc3d63ee798cdb9cdabd7c72e8ebe46
 END-OF-REPORT
