@@ -1,28 +1,23 @@
-STATUS: b7 LANDED, NOT closed -- item 4 never ran. On origin/main, every commit
-tested as an ancestor one at a time. Suites 25/10/15/10/8 arms, all exit 0, 0
-unproven; tooling_inventory, external_file_index and unproven_arm_check exit 0.
-Four gate refusals, all repaired at their cause. No api/ edit, no hook restored,
-settings.json never committed, SAIRN_SEED_GATE unused.
+STATUS: TWO b7 RUNS SHARE THIS CLONE AND THESE FILENAMES -- first fact, because
+it decides how to read the rest. Both readings are kept, neither overwritten.
+LANDED on origin/main, every commit tested as an ancestor singly. Suites
+25/10/15/10/8 arms, all exit 0, 0 unproven. Four gate refusals, each repaired at
+its cause. No api/ edit, no hook restored, settings.json never committed,
+SAIRN_SEED_GATE unused.
 
 DECISION-NEEDED:
-1. SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are BOTH missing, so item 4's
-   --check-only exited 2 and --write never ran. Guardian Check 29 unsatisfied.
-2. Should `billing` read a MAR? ALF_FAMILY_READ_ROLES inherits it onto a
-   clinical record. Role vocabulary, not a code fix.
-3. Something other than me edited files in this clone, repeatedly, including
-   this digest. Report section 0. Observed, not diagnosed.
+1. Two sessions writing one clone's report, digest and test files. Routing call.
+2. Item 4 differs per brief: git-config isolation IS done; the citator feedback
+   tool NEVER RAN -- SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY both missing.
+3. Should `billing` read a MAR? Role vocabulary, not a code fix.
 
-CHANGED: 1D 2-PARTIAL 3D 4-STOPPED 5D 6D
+CHANGED: 1D 2-PARTIAL 3D 4D(isolation)/4-STOPPED(citator) 5D 6D
 
-EVIDENCE-path: SAIRN-report-cody-b7.txt sections 1-9.
-<scratch>/dcd1868a/scratchpad/b7/. Handoff docs/SAIRN-handoff-cody-b7.md.
+EVIDENCE-path: SAIRN-report-cody-b7.txt 1-9; both handoffs
 
-UNVERIFIED: no live endpoint, no database. 19 seam pairs routed, not closed.
-Four WEAKENING flags resolved by their own author, none signed off. A4
-unimplemented. One Tier A record's client half unreviewed. hank's 2026-09-27
-record is UNRESEATABLE from here. 12 CONTRADICTED scrutiny rows, pre-existing.
+UNVERIFIED: no endpoint, no database. 19 seam pairs routed. WEAKENING flags
+author-resolved, unsigned. hank's 2026-09-27 record unreseatable here.
 
-NEXT: release claim cody-1791888490, 9.94h past expiry. hank re-seats 2026-09-27
-in his own clone; cc discharges 2026-10-12 and takes the 19 seam pairs.
+NEXT: hank re-seats it; cc discharges 2026-10-12 and takes the seam pairs.
 
-CONTEXT 38% used (382k of the 1M window, from the session token budget)
+CONTEXT ~38% (382k of the 1M window)
