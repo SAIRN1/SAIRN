@@ -1,0 +1,41 @@
+{
+ "_what_this_is": "RULINGS, not defects and not open work. One row per decision that has been ROUTED to an owner and is waiting on that owner to either act or decline -- with the decline recorded as a decision rather than left as silence. It exists because a routed finding has no state anywhere: docs/defect-density-register.json records defects that were FIXED, docs/known-red-suites.json records suites that FAIL, and neither can say 'this was handed to somebody and nobody has answered'.",
+ "_why_a_register_and_not_a_document": "A routing document is written once and then re-written the next time somebody notices the item is still open -- which is how tools/hover_auditor_scope_gate.py:409 came to be routed TWICE, in b10 and again in b11, with the second routing's only new content being 'this is the second routing'. A row with an owner and a state is read in one line and cannot be accidentally re-derived.",
+ "_the_states": {
+  "DECIDE_OR_NOT_PROMOTED": "The owner must either DO the thing or record a NOT_PROMOTED entry in tools/report_only_checks.py saying why it should not exist. BOTH ARE ACKNOWLEDGEMENTS. What this state refuses is the third option -- neither done nor declined, for batch after batch.",
+  "DONE": "Acted on. Carries the commit that did it.",
+  "NOT_PROMOTED": "Declined, with the reason recorded in tools/report_only_checks.NOT_PROMOTED. A decline is a result.",
+  "SUPERSEDED": "Overtaken by something else. Carries what replaced it."
+ },
+ "_what_this_register_does_NOT_claim": "That the owner has READ the row. There is no reply channel on this platform, and that absence is the reason a state field is the best available substitute -- it is a place the owner can answer in one token. A row sitting at DECIDE_OR_NOT_PROMOTED means nobody has answered, NOT that nobody looked.",
+ "_how_acknowledgement_is_measured": "scratchpad/ack_check.py, which reads the routing documents as the population and looks for four signals -- a commit on origin/main touching the file after the routing, an ACTIVE claim naming it, the owner's status-registry row naming it, or a NOT_PROMOTED entry naming the FILE AND THE LINE. Its first version matched a bare basename in NOT_PROMOTED prose and reported two FALSE acknowledgements; that is fixed and the state MENTION_ONLY now exists for exactly that case.",
+ "merge_policy": "APPEND-ONLY on `rulings`, keyed by `id`. A conflict is resolved as a UNION of both sides' rows; two rows with the same id are a defect and the older one wins, because a ruling that was recorded first is the one other documents already cite.",
+ "rulings": [
+  {
+   "id": "2026-10-13-unfetched-base-scope-gate",
+   "subject": "tools/hover_auditor_scope_gate.py:409",
+   "title": "the 4th instance of the unfetched-base shape, plus the checker that would stop a 5th",
+   "owner": "cc",
+   "state": "DECIDE_OR_NOT_PROMOTED",
+   "routed_by": "fourth",
+   "routed_on": "2026-10-13",
+   "routed_in": [
+    "docs/2026-10-13-fourth-b10-routed-to-cc.md",
+    "docs/2026-10-13-fourth-b11-routed-to-cc.md"
+   ],
+   "what_decides_it": "EITHER apply the :402-:409 replacement written out in the b10 routing document and build the specified checker, OR record a NOT_PROMOTED entry in tools/report_only_checks.py saying why neither should exist. A NOT_PROMOTED decision is a perfectly good answer and is the preferred one if the view is that a gate exiting early in every build clone is not worth hardening.",
+   "why_it_is_not_urgent": "tools/hover_auditor_scope_gate.py runs FIRST in .githooks/pre-push and exits before the range matters in a build clone, so it has passed every push attempt and blocks nobody. That is also exactly why it will stay unfixed unless somebody decides -- an item that never hurts is an item nothing forces.",
+   "evidence": {
+    "same_shape_fixed_in": {
+     "tools/register_feed_gate.py:747": "ac9d47d8",
+     "tools/copy_exactly_gate.py": "55777a74",
+     "tools/sairn_push_gate_hook.py": "9c36aa7c"
+    },
+    "worst_symptom_of_the_shape": "not a refusal but a FALSE FINDING: NO OWNER: 4 over four pre-existing shared tools, with 'add an # OWNER: line' as the printed remedy, which would have had one session write itself as owner of two contested files to get an unrelated push out.",
+    "acknowledgement_state_when_recorded": "MENTION_ONLY per scratchpad/ack_check.py -- the basename appears in NOT_PROMOTED prose about a different subject, and nothing names line 409.",
+    "planned_action_recorded_on": "defect record 55777a74"
+   },
+   "fourth_touches_nothing_under_tools": true
+  }
+ ]
+}
