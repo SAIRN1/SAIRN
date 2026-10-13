@@ -22,14 +22,20 @@
 // HANDLER, never both from the table — hank's instruction, and the reason this
 // file never asserts a transcribed verdict.
 //
-// THE DENOMINATOR IS DISCLOSED AND IS NOT 720. Ten roles × 36 resources × 2
-// verbs = 720 cells, but only 27 of the 36 resources enter SD_SESSION_GATED, so
-// only 540 cells can be driven through a role gate AT ALL. The other 180 are
-// LICENCE-KEY-ONLY: there is no session, so there is no role to decide against,
-// and an arm asserting a refusal there would be asserting a gate that does not
-// exist. Those nine resources are NAMED and their 180 cells are reported as
-// NOT-DRIVEN rather than folded into a pass count. 540 + 180 = 720, and the
-// arithmetic is printed so neither number can be quoted without the other.
+// THE DENOMINATOR IS PRINTED ON EVERY RUN, NEVER HARDCODED HERE, AND IT HAS
+// ALREADY MOVED ONCE. Ten roles x 36 resources x 2 verbs = 720 cells. When this
+// file was written only 27 of the 36 resources entered SD_SESSION_GATED, so 540
+// cells were drivable and the other 180 were LICENCE-KEY-ONLY -- no session, so
+// no role to decide against, and an arm asserting a refusal there would be
+// asserting a gate that does not exist. Those nine were NAMED and their 180
+// cells reported NOT-DRIVEN rather than folded into a pass count.
+//
+// api/sd-data.js commit 46d74678 ("the last nine resources gated -- 36 of 36")
+// then landed and ARM 4 FAILED -- correctly, with its own message saying the
+// denominator needed rewriting and that this is the app getting better rather
+// than a broken test. ALL 720 CELLS ARE NOW DRIVEN. Arm 4 is written for BOTH
+// states, so a 37th ungated resource puts the disclosure half back by itself
+// instead of needing somebody to remember.
 // ─────────────────────────────────────────────────────────────────────────────
 
 'use strict';
@@ -164,7 +170,13 @@ function refusedByRoleGate(res, resource, role) {
   console.log('  resources in the table   ' + TABLE.length);
   console.log('  of those SESSION-GATED   ' + GATED.length + '   -> ' + (ROLES.length * GATED.length * 2) + ' DRIVEN cells');
   console.log('  LICENCE-KEY-ONLY         ' + UNGATED.length + '   -> ' + (ROLES.length * UNGATED.length * 2) + ' cells that CANNOT be driven');
-  console.log('  the nine, named          ' + UNGATED.join(' '));
+  // NAMED, NOT COUNTED-THEN-LABELLED. This line said "the nine, named" and
+  // printed an EMPTY list the day the last nine were gated by 46d74678 -- a
+  // header asserting a quantity the data no longer had, which is the smaller
+  // version of exactly what arm 4 is about.
+  console.log('  ungated, named           '
+    + (UNGATED.length ? UNGATED.join(' ') : '(none -- all ' + TABLE.length
+       + ' are session-gated)'));
   console.log('  total                    ' + (ROLES.length * TABLE.length * 2) + ' cells');
 
   // ── THE CONTROL PAIR FIRST. A harness that cannot fail proves nothing, and
@@ -278,7 +290,7 @@ function refusedByRoleGate(res, resource, role) {
   });
 
   // ── THE NINE. NOT a pass, and not silence either.
-  section('4. THE NINE LICENCE-KEY-ONLY RESOURCES -- DISCLOSED, NOT DRIVEN');
+  section('4. THE LICENCE-KEY-ONLY SET -- DISCLOSED WHILE IT EXISTED');
   await test('4. the LICENCE-KEY-ONLY set, whichever state it is in -- and it '
              + 'CHANGED under this arm on 2026-10-13', async () => {
     // THIS ARM FAILED ONCE, ON PURPOSE, AND THE FAILURE WAS THE APP GETTING
@@ -329,7 +341,9 @@ function refusedByRoleGate(res, resource, role) {
   console.log('  driven cells        ' + cells);
   console.log('    expected DENY     ' + denyCells + '  (each also checked for a pre-refusal row fetch: ' + leakChecks + ')');
   console.log('    expected ALLOW    ' + allowCells);
-  console.log('  NOT-DRIVEN cells    ' + (UNGATED.length * ROLES.length * 2) + '  (the nine, named above)');
+  console.log('  NOT-DRIVEN cells    ' + (UNGATED.length * ROLES.length * 2)
+    + (UNGATED.length ? '  (' + UNGATED.length + ' ungated resource(s), named above)'
+                      : '  (nothing is ungated -- every cell above was driven)'));
   console.log('  arms                ' + (pass + fail));
 
   if (FAILED.length) {
