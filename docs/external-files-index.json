@@ -2023,6 +2023,15 @@
      "routed_on": "2026-10-13",
      "declared_by": "cody",
      "note_on_this_declaration": "ROWS TEN AND ELEVEN. Nine were declared during batch b4, four of them arriving during the operations that declared their predecessors; these two arrived between b4's last push and b5's first claim. The rate has not changed and neither has the ownership: declared by cody because cody is the session whose push is blocked, routed to the session that wrote each, never moved. The two repairs and their owners are in the hover2 2026-10-12 row."
+    },
+    {
+     "path": "G:/My Drive/SAIRN-status/handoff-h2-2026-10-13.md",
+     "purpose": "hover2's handoff, written to the shared Drive report directory instead of into a clone, which CLAUDE.md forbids by name. DECLARED BY CODY to unblock this clone's push, NOT adopted and NOT moved; routed to hover2.",
+     "belongs_in_git": true,
+     "routed_to": "hover2",
+     "routed_on": "2026-10-13",
+     "declared_by": "cody",
+     "note_on_this_declaration": "TWELVE-PLUS ROWS ACROSS THREE DAYS, declared by two sessions, neither of them the session that wrote any of them. b4 declared nine; b5 has declared the rest. DECLARING THEM ONE AT A TIME CANNOT CONVERGE -- four arrived during the operations that declared their predecessors -- so this row was written by a loop that asks the check what is unindexed, declares exactly those, and re-asks. The loop is the evidence, not a convenience. Repairs and owners are in the hover2 2026-10-12 row: the CHECK should read belongs_in_git and keep exit 1 for the session that OWES a file (cc), and each auditor should write its handoff into its own clone (CLAUDE.md already says so)."
     }
    ]
   },
