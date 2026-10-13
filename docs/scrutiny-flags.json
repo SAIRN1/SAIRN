@@ -180,6 +180,40 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_gate_skip_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "('seed-gate', GOOD, GS.MAX_MINUTES + 1, 'an expiry over the ceiling'),"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "\"\"\"Control for tools/gate_skip.py and the push gate's blanket refusal."
+    }
+   ],
+   "sha": "121c4620e6a11abaf2c55e9a8a2a0ad50745a4ba",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "gate would go on naming a flag, a minimum and a ceiling that the tool had"
+    },
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "\"\"\"Refuse the push -- unless a SCOPED skip for `gate` is live."
+    }
+   ],
+   "sha": "121c4620e6a11abaf2c55e9a8a2a0ad50745a4ba",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_self_exclusion_guard_sabotage_probe.py",
    "class": "test file",
    "level": "CHANGE",
@@ -1478,6 +1512,19 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_batch_cleanup_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "'...and each is reported with the reason, not silently skipped')"
+    }
+   ],
+   "sha": "6e1e96d27008eea4012a50a0f7fb32888c5b5910",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/faults/grd_write_faults.js",
    "class": "test file",
    "level": "CHANGE",
@@ -2489,6 +2536,27 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/run_batch_manifest_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "ok(not with_ev('done', 'tools/gate_skip.py, 14/14 fixtures'),"
+    }
+   ],
+   "sha": "a93a3e8576fb47315eafab5ba8182520f934e295",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/sairn_push_gate_hook.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "a93a3e8576fb47315eafab5ba8182520f934e295",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/faults/grd_write_faults.js",
    "class": "test file",
    "level": "CHANGE",
@@ -3048,6 +3116,40 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "d0eb2d33fc3fd864306baf0ee1cb262da08c43f5",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": ".claude/settings.json",
+   "class": "CI / hook configuration",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a bound or threshold ADDED",
+     "detail": "\"timeout\": 30,"
+    }
+   ],
+   "sha": "d366f332743dd81c18ac7ecbe4a6245649d5999d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_hook_integrity_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "shutil.rmtree(d, ignore_errors=True)"
+    }
+   ],
+   "sha": "d366f332743dd81c18ac7ecbe4a6245649d5999d",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tools/hook_integrity_check.py",
+   "class": "push-gate logic",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "d366f332743dd81c18ac7ecbe4a6245649d5999d",
    "criteria_version": "2026-10-06.1"
   },
   {
