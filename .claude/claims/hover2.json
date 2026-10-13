@@ -288,6 +288,19 @@
       "files": [
         "docs/defect-density-register.json"
       ]
+    },
+    {
+      "id": "hover2-1791924377",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "batch b19 resume -- claim expired mid-batch (long delegated sweeps), re-claiming to close out handoff+report cleanly. Work already done: sairndesign+sairnroofing sweeps, hank-b7 skip confirmed, register re-validated, mirror anchor retired per Michael. FILES: docs/defect-density-register.json",
+      "claimed_at": "2026-10-13T20:46:17Z",
+      "claimed_at_epoch": 1791924377.6339657,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/defect-density-register.json"
+      ]
     }
   ],
   "refusals": [
