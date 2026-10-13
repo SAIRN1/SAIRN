@@ -55,7 +55,24 @@ RESOURCES = (
     'sf_products', 'sf_vehicles',
 )
 
+# batch b18: the ORIGINAL ROLE_MATRIX_DICT pattern below (an inline
+# `SF_FIVE_TABLE_ROLES = {...}` literal inside api/sd-data.js) was this
+# tool's own GUESS at the shape hank's eventual fix would take, written
+# before that fix existed. The REAL fix (commit d7773533) built
+# something stronger and different: a single `SF_ROLE_MATRIX` covering
+# all 36 sf_ resources, in its OWN file (api/_lib/sf-roles.js, an
+# `Object.freeze(Object.assign(Object.create(null), {...}))` literal,
+# not a bare `{...}` and not `roleSet()`), wired into api/sd-data.js via
+# `require('./_lib/sf-roles')` and a real `sfRoles.decide(...)` call
+# that 403s on DENY. Checking only the old guessed shape would have
+# reported FALSE for all 5 resources against a fix that is actually
+# live -- found live this batch, not assumed. Kept both patterns: the
+# old one for the now-false hypothesis (reported honestly if it somehow
+# fires), the new one for what hank actually built.
 ROLE_MATRIX_DICT = re.compile(r'SF_FIVE_TABLE_ROLES\s*=\s*\{(.*?)\n\s*\};?', re.S)
+SF_ROLE_MATRIX_DICT = re.compile(
+    r'const SF_ROLE_MATRIX = Object\.freeze\(Object\.assign\('
+    r'Object\.create\(null\), \{(.*?)\n\}\)\);', re.S)
 
 
 def read_src(repo):
@@ -63,6 +80,13 @@ def read_src(repo):
     if not os.path.isfile(path):
         return None, 'COULD NOT RUN: %s not found' % path
     return open(path, encoding='utf-8').read(), None
+
+
+def read_sf_roles_src(repo):
+    path = os.path.join(repo, 'api', '_lib', 'sf-roles.js')
+    if not os.path.isfile(path):
+        return None
+    return open(path, encoding='utf-8').read()
 
 
 def session_gate_check(resource, src):
@@ -94,8 +118,10 @@ def session_gate_check(resource, src):
 
 
 def role_matrix_check(resource, src):
-    """-> (present: bool, allowed_roles: dict|None). Forward-looking --
-    expected (False, None) on every resource until hank's matrix lands."""
+    """-> (present: bool, allowed_roles: dict|None), the OLD guessed
+    shape only (inline SF_FIVE_TABLE_ROLES in api/sd-data.js). Kept as
+    a named, separate check rather than deleted -- see sf_role_matrix_
+    check() below for what hank actually built."""
     m = ROLE_MATRIX_DICT.search(src)
     if not m:
         return False, None
@@ -109,15 +135,43 @@ def role_matrix_check(resource, src):
     return True, allowed
 
 
-def check_one(resource, src):
+def sf_role_matrix_check(resource, sd_data_src, sf_roles_src):
+    """-> (present: bool, wired: bool|None). `present`: does this
+    resource have its own entry in api/_lib/sf-roles.js's
+    SF_ROLE_MATRIX? `wired`: does api/sd-data.js actually require that
+    module and call sfRoles.decide(...) with a real 403 on DENY, or
+    does the table exist but nothing calls it (declared-not-enforced
+    would be a different, weaker finding than either present-and-wired
+    or absent entirely)."""
+    if sf_roles_src is None:
+        return False, None
+    m = SF_ROLE_MATRIX_DICT.search(sf_roles_src)
+    if not m:
+        return False, None
+    present = bool(re.search(
+        r"\b%s\s*:\s*\{" % re.escape(resource), m.group(1)))
+    if not present:
+        return False, None
+    required = bool(re.search(
+        r"require\(['\"]\./_lib/sf-roles['\"]\)", sd_data_src))
+    decide_enforced = bool(re.search(
+        r"sfRoles\.decide\([^)]*\)\s*===\s*sfRoles\.DENY", sd_data_src))
+    return True, (required and decide_enforced)
+
+
+def check_one(resource, src, sf_roles_src=None):
     reproduces, gate_detail = session_gate_check(resource, src)
     matrix_present, allowed_roles = role_matrix_check(resource, src)
+    sf_matrix_present, sf_matrix_wired = sf_role_matrix_check(
+        resource, src, sf_roles_src)
     return {
         'resource': resource,
         'reproduces': reproduces,
         'gate_detail': gate_detail,
         'role_matrix_present': matrix_present,
         'allowed_roles': allowed_roles,
+        'sf_role_matrix_present': sf_matrix_present,
+        'sf_role_matrix_wired': sf_matrix_wired,
     }
 
 
@@ -187,7 +241,67 @@ def selftest():
     except ValueError:
         pass
 
-    print('ALL SELFTEST CASES PASS (5 arms)')
+    # ── REAL-SHAPE FIXTURES, batch b18 ──────────────────────────────────
+    # hank's actual fix (commit d7773533) did not use SF_FIVE_TABLE_ROLES
+    # at all -- it built ONE matrix, SF_ROLE_MATRIX, covering all 36 sf_
+    # resources, in its own file (api/_lib/sf-roles.js), wired into
+    # api/sd-data.js via require + a real sfRoles.decide(...) === DENY
+    # check. The first run of this tool against the real fix reported
+    # role_matrix_present=False for all 5 target resources -- a FALSE
+    # NEGATIVE, because the tool only ever knew to look for its own
+    # guessed shape. sf_role_matrix_check() now reads the real file.
+    real_sf_roles_src = """
+const SF_ROLE_MATRIX = Object.freeze(Object.assign(Object.create(null), {
+  sf_district_imports: { 'post.govern': 'rw', why: 'x' },
+  sf_events: { 'post.govern': 'rw', why: 'x' },
+}));
+"""
+    sd_data_wired_src = """
+    const sfRoles = require('./_lib/sf-roles');
+    const SD_SESSION_GATED = {
+      'sf_district_imports': ['read', 'write'],
+    };
+    if (sfRoles.decide(resource, gateSession.role, action) === sfRoles.DENY) { return; }
+    if (SF_RESOURCES[resource] && action === 'write') {
+      const idCol = SF_RESOURCES[resource];
+      const r = await fetch(rest(resource), { body: JSON.stringify({ data: payload }) });
+    }
+"""
+    sd_data_unwired_src = """
+    const SD_SESSION_GATED = {
+      'sf_district_imports': ['read', 'write'],
+    };
+    // sfRoles exists but nothing here requires or calls it
+    if (SF_RESOURCES[resource] && action === 'write') {
+      const idCol = SF_RESOURCES[resource];
+      const r = await fetch(rest(resource), { body: JSON.stringify({ data: payload }) });
+    }
+"""
+
+    r6 = check_one('sf_district_imports', sd_data_wired_src, real_sf_roles_src)
+    assert r6['sf_role_matrix_present'] is True, (
+        'real-shape fixture: sf_district_imports has a real SF_ROLE_MATRIX '
+        'entry and must be detected -- this is the exact false negative '
+        'b18 found live')
+    assert r6['sf_role_matrix_wired'] is True, (
+        'real-shape fixture: require + a real sfRoles.decide(...) === '
+        'DENY check are both present -- must report wired=True')
+
+    r7 = check_one('sf_products', sd_data_wired_src, real_sf_roles_src)
+    assert r7['sf_role_matrix_present'] is False, (
+        'real-shape fixture: sf_products has NO entry in this fixture\'s '
+        'matrix -- must report absent, not inherit a sibling\'s presence')
+
+    r8 = check_one('sf_district_imports', sd_data_unwired_src, real_sf_roles_src)
+    assert r8['sf_role_matrix_present'] is True
+    assert r8['sf_role_matrix_wired'] is False, (
+        'real-shape fixture: the matrix table exists but nothing in '
+        'api/sd-data.js requires it or calls decide() -- declared-not-'
+        'enforced must report wired=False, a WEAKER state than either '
+        'present-and-wired or absent, and must not be conflated with '
+        'either')
+
+    print('ALL SELFTEST CASES PASS (8 arms)')
     return 0
 
 
@@ -212,6 +326,12 @@ def main():
     if err:
         print(err)
         return 2
+    sf_roles_src = read_sf_roles_src(args.repo)
+    if sf_roles_src is None:
+        print('NOTE: api/_lib/sf-roles.js not found at this --repo -- the '
+              'real role-matrix check (sf_role_matrix_present/_wired) will '
+              'report False/None for everything below; the session-gate '
+              'verdict is unaffected.')
 
     any_reproduces = False
     for resource in targets:
@@ -220,7 +340,7 @@ def main():
             any_reproduces = True
             continue
         try:
-            r = check_one(resource, src)
+            r = check_one(resource, src, sf_roles_src)
         except ValueError as e:
             print('%-24s COULD_NOT_RUN  %s' % (resource, e))
             any_reproduces = True
@@ -228,7 +348,9 @@ def main():
         verdict = 'REPRODUCES' if r['reproduces'] else 'FIXED'
         print('%-24s %-10s %s' % (resource, verdict, r['gate_detail']))
         print('%-24s %-10s role matrix present: %s, allowed roles: %s'
-              % (resource, 'MATRIX', r['role_matrix_present'], r['allowed_roles']))
+              % (resource, 'MATRIX(old guess)', r['role_matrix_present'], r['allowed_roles']))
+        print('%-24s %-10s SF_ROLE_MATRIX present: %s, wired+enforced: %s'
+              % (resource, 'MATRIX(real)', r['sf_role_matrix_present'], r['sf_role_matrix_wired']))
         if r['reproduces']:
             any_reproduces = True
     return 1 if any_reproduces else 0
