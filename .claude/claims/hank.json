@@ -3809,8 +3809,8 @@
       "task": "hank batch b7 -- (1) ONE idempotent SQL block creating the audit checkpoint table if missing and widening its audit_table CHECK to all 16 audit logs, plus the code coverage list and tests to match; (2) fix every red cause in api/sf-auth.test.js EXCEPT the trustee sign-in product question which Michael is deciding and whose ROLES_BY_APP entry stays untouched, and sync the stale sql CHECK constraints that fail the event-type check; (3) a SAIRNfreedom demo PIN following the existing demo-credential pattern with the SQL written out for Michael; (4) sf_officers server-side design and the remaining unlocked sf_* tables, locked where the role matrix already supports it; (5) a reusable context-budget procedure doc; (6) push and confirm landed. HOOKS STAY CLEARED and .claude/settings.json is NEVER committed by this session -- cc owns that file and holds it in a live claim. CONFLICTS DECLARED PER PR 4.3 AND NOT OVERRIDDEN: all of tools/, .claude/settings.json, docs/SAIRN-OPEN-WORK-INDEX.md and docs/tier-a-reviews.json are in CC's LIVE b6 FILES and are NOT taken here. No auditor clone is entered. FILES: sql/audit_checkpoint_schema.sql sql/2026-10-13-hank-b7-audit-checkpoint-coverage.sql sql/sairncode_audit_log_schema.sql sql/sairnlaw_audit_log_schema.sql sql/stonedesk_audit_log_schema.sql sql/sairnfreedom_employee_auth_schema.sql api/audit-checkpoint.js api/audit-checkpoint.test.js api/sf-auth.js api/sf-auth.test.js api/_lib/sf-roles.js api/sd-data.js tests/audit_checkpoint_probe.py docs/2026-09-03-demo-credentials.md docs/AUDIT-CHECKPOINT-STATUS.md docs/2026-10-13-context-budget-procedure.md docs/SAIRN-handoff-hank-b7.md SAIRN-report-hank-b7.txt SAIRN-digest-hank-b7.txt SAIRN-ACTIVE-WORK-hank.md",
       "claimed_at": "2026-10-13T10:40:05Z",
       "claimed_at_epoch": 1791888005.8571584,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-10-13T11:34:23Z",
       "files": [
         "SAIRN-ACTIVE-WORK-hank.md",
         "SAIRN-digest-hank-b7.txt",
