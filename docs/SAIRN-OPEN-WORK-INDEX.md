@@ -1,5 +1,38 @@
 # SAIRN Open Work Index
 
+> ## DO NOT OPEN THIS FILE. READ `docs/open-work/ACTIVE.md` INSTEAD.
+>
+> This file is **2,380,170 bytes** — roughly 640,000 tokens. It does not fit any
+> session window, and a truncated read is indistinguishable from a complete one,
+> so the failure mode is not "I ran out of room", it is **a confident answer
+> about rows nobody saw**.
+>
+> **`docs/open-work/ACTIVE.md` is 64,771 bytes** and carries one short line per
+> open row — app, item, status, owner, and a pointer to the shard and line where
+> the full text lives. Read that, then grep the one row you need:
+>
+> ```
+> grep -n "<the item>"  docs/open-work/<app>.md
+> sed  -n "<line>p"     docs/open-work/<app>.md
+> ```
+>
+> **Per-app shards are in `docs/open-work/`**, one file per App value, carrying
+> every row **byte for byte**. `python tools/open_work_shard.py --check` proves
+> the shards and this file agree row for row and exits 1 if they ever do not —
+> that check is what makes two copies safe, and it is the thing to run after
+> editing a row here.
+>
+> **THIS FILE IS STILL CANONICAL AND EDITS STILL BELONG HERE.** Fourteen tools
+> parse these rows and `tools/doc_sha_reseat.py` rewrites them on every rebase,
+> so the rows have not been removed. Edit a row **here**, then re-run
+> `python tools/open_work_shard.py --write`. Never edit a row in a shard.
+>
+> *Sharding alone was not enough and the numbers are the reason:
+> `docs/open-work/platform.md` is 838,657 bytes and `tooling.md` is 397,113,
+> against a 400,000-byte ceiling, because these rows average about 2.9KB each.
+> The row is the problem, not the count — which is why `ACTIVE.md` carries
+> pointers and not text.*
+
 **One place to see everything that is open across the whole platform.**
 Last rebuilt: **2026-08-23**. Last updated: **2026-09-23** (SAIRNroofing `rf_*` re-audit opened and CLOSED; SAIRNfreedom's NEEDS-OUTSIDE-COUNSEL tax question filed here for the first time — it had lived only in a research doc's prose). Before that: **2026-09-05** (sd-data's anonymous 268-name disclosure closed and independently reviewed, five residual rows opened; SAIRNscape's `scpLd()` fixed, 7 silent loaders left; StoneDesk's public surface has no tables; SAIRNroofing's published-PIN row closed and re-verified live).
 
