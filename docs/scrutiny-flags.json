@@ -1236,6 +1236,35 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "tests/push_gate/check4_probe.py",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "assertions NET REMOVED",
+     "detail": "3 removed, 2 added; first removed: print('NOTE: the clean push was refused by a DIFFERENT check in the hook, so')"
+    }
+   ],
+   "sha": "c465743b34b08d59d050ff5507e6d58f01d247dc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/push_gate/check7_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c465743b34b08d59d050ff5507e6d58f01d247dc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "tests/run_tier_a_review_gate_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "c465743b34b08d59d050ff5507e6d58f01d247dc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_gh_push_argv_probe.py",
    "class": "test file",
    "level": "CHANGE",
