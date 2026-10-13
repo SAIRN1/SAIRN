@@ -541,3 +541,149 @@ action is recorded on defect record `55777a74` and nothing has been built. And
 it was never measured how many of the push gate's *other* checks were silently
 reading a wrong answer off the same absent base — only the owner check happened
 to fail loudly, which is the whole reason it was found at all.
+
+---
+
+## 2026-10-13 (fourth, b10): THE PROCEDURE for a push refusal that hides several defects — and how NEXT FREE is kept so routed rules never collide
+
+**This is a PROCEDURE and not a lesson.** b9 spent five batches blocked behind
+what looked like one refusal and was **four independent defects**, and the reason
+it took five batches is not that any of the four was hard. It is that **a gate
+prints the first thing that fails and stops**, so the queue behind it was
+serialised by the order the failures happened to be checked in, and each session
+fixed the one it could see and pushed again.
+
+### Why one message is the normal case, not bad luck
+
+A gate is a sequence of refusals with an early exit. That is correct design — a
+gate that kept going after a finding would report noise — but it has a
+consequence nobody writes down: **the number of defects in the way is unknown
+until the last one is cleared.** Three structural multipliers made b9's four:
+
+1. **Several gates in one hook.** `.githooks/pre-push` runs four programs in
+   order and the first non-zero exit ends the push. Fixing gate 2 reveals gate 3,
+   which reads as "the fix did not work".
+2. **Several checks in one gate**, each with its own early `deny()`.
+3. **One shared input read by every check.** b9's `base` was read once from
+   stdin and consumed by a dozen checks, so **one bad value produced a different
+   wrong answer in each** — including one that was not a refusal at all but a
+   false finding.
+
+### THE PROCEDURE — six steps, in this order
+
+**STEP 1. Read the message as a SYMPTOM and name the gate that printed it.**
+Grep the exact sentence across `tools/` and `.githooks/`. b9's *"the outgoing
+range A..B could not be read"* came from `register_feed_gate.py:747`, not from
+the push gate everyone assumed. **Until you can point at the line, you are
+guessing about which program is unhappy.**
+
+**STEP 2. Drive the gate DIRECTLY, before changing anything.** Every pre-push
+gate here reads ref lines on stdin, so none of them needs a push:
+
+    echo "refs/heads/main $(git rev-parse HEAD) refs/heads/main $(git rev-parse origin/main)" \
+      | python tools/<gate>.py --pre-push
+
+A dry run costs minutes; a push costs a race. b9's first dry run is what showed
+check 12 had stopped blocking — **before** spending a push to find out.
+
+**STEP 3. ESTABLISH THE COUNT BEFORE FIXING ANYTHING.** This is the step that was
+missing, and it is the whole point of the procedure. Run **every** gate in the
+hook, in order, and record each exit code — do not stop at the first failure the
+way the hook does. Then, inside the failing gate, ask what the refusal does NOT
+prove. In b9 that question had a measurable answer: the inventory generator
+refuses on its **first** empty derivation source, so the refusal it printed
+*replaced* the undescribed-tool list that was the real defect. **A refusal can
+MASK a finding, not merely precede it.**
+
+**STEP 4. For each cause, ask where the SUBJECT came from.** Three of b9's four
+were one value — the remote sha off stdin — read by three programs. Fixing it
+per-gate moved the refusal to the next gate twice before anybody fixed it where
+it entered. **Prefer the fix at the point of entry; keep the per-consumer fixes
+only where that consumer builds its own copy of the subject.**
+
+**STEP 5. Record each cause SEPARATELY, with its own injection commit.** Four
+causes, four defect records, four `--recurrence-open` sentences. One record
+saying "the push was blocked" would have lost the fact that one of the four was a
+false finding whose printed remedy instructed a land grab — which is the most
+useful thing the batch learned.
+
+**STEP 6. Re-derive every figure at finalisation (RULE E).** Three rebases ran
+during b9 and rewrote every local sha, so every citation drafted mid-batch was
+dead by the time the report was sealed.
+
+### THE TRAP, NAMED: "the fix did not work" when it did
+
+**When fixing gate N reveals gate N+1, the symptom is a SECOND refusal on the
+next push, and the honest reading is progress rather than failure.** b9 hit this
+three times. The mechanism that makes it readable is cheap and is now in all
+three fixed gates: **every substitution or fallback PRINTS the gate's own name
+and what it did.** Without that, three successive refusals look like one unfixed
+defect; with it, they are three attributable steps.
+
+### A COROLLARY THAT COST NOTHING TO LEARN AND WOULD HAVE COST A BATCH
+
+**Not every refusal is a defect.** One b9 attempt was refused with *"stdin is not
+a terminal and carried NO ref lines"* because the push had been issued inside a
+shell wrapper, and the gate's own message said *"ISSUE THE PUSH DIRECTLY -- that
+is the fix, and there is nothing wrong with the change."* It was right. **Step 1
+is "read the message", and that includes believing it when it tells you the
+change is fine.**
+
+### WHAT THIS PROCEDURE DOES NOT DO
+
+It does not find the defects. It stops a session **reporting one cause when there
+were four**, and it stops the next session reading a revealed gate as a failed
+fix. Nothing here is mechanised, and that is a real limit: step 3's "run every
+gate and record each exit code" is a habit, not a tool, and the first time
+somebody skips it the procedure buys nothing.
+
+---
+
+## NEXT FREE numbering, so two sessions cannot route the same number
+
+**THE COLLISION IS NOT HYPOTHETICAL.** On 2026-09-25 two sessions each added an
+*eleventh* convention to `docs/2026-09-13-cross-domain-disciplines.md` within the
+hour. The count has also been wrong in three places at once before. The rule
+below is what this file and CLAUDE.md already practise; it is written out here
+because it was practice and not procedure.
+
+**1. NEVER quote the number. COUNT THE HEADINGS, every time, at the HEAD you are
+on.** One command, and it reports gaps and duplicates as well as the maximum,
+because those are the two ways a count can be confidently wrong:
+
+    import io, re
+    s = io.open('docs/2026-09-13-cross-domain-disciplines.md', encoding='utf-8').read()
+    n = [int(m.group(1)) for m in re.finditer(r'(?m)^## (\d+)\.', s)]
+    print('headings', len(n), 'range', min(n), '->', max(n),
+          'dups', [x for x in set(n) if n.count(x) > 1] or 'none',
+          'gaps', [i for i in range(min(n), max(n) + 1) if i not in set(n)] or 'none',
+          'NEXT FREE', max(n) + 1)
+
+**Measured at this HEAD: 34 headings, 1 → 34, no gap, no duplicate, NEXT FREE
+35.** Do not take 35 from this page either — this page is a page.
+
+**2. A ROUTED RULE CARRIES NO NUMBER.** It carries its text, its evidence, and
+the words *"NEXT FREE is N as of &lt;sha&gt;"*. The number is assigned by whoever
+runs the intake, at the moment the heading is written — which is the only moment
+the count is true. **This is what makes a collision structurally impossible
+rather than unlikely:** two sessions can route five rules each and no number
+exists until a heading does.
+
+**3. DO NOT NUMBER A RULE IN A FILE YOU HOLD UNDER CLAIM.** cody, cc, hank and I
+have each declined this in the last fortnight, and the reason is not modesty: a
+session that holds the conventions document can always find a free number, so
+"it was free" stops being evidence of anything. The claim that would have to be
+believed is that nobody else was mid-write, and **a held file is exactly the
+state in which that cannot be checked.**
+
+**4. WHEN THE INTAKE ASSIGNS A NUMBER, RE-COUNT FIRST AND RECORD THE COUNT IN
+THE COMMIT** — not the number alone. A commit saying "added convention 35" is
+unfalsifiable a week later; one saying "34 headings, 1→34, no gap, no dup, so 35"
+can be re-derived by anybody.
+
+**Open, and stated rather than left implied: nothing MECHANISES rule 1.** No
+check counts those headings and refuses a duplicate or a gap, so it holds only
+while sessions keep running the snippet by hand — which is precisely the shape of
+the eighth discipline, about checks that stop testing anything. A heading-count
+gate would be a few lines; nobody owns the conventions file, which is why this
+paragraph is a routed observation and not a plan.

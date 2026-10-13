@@ -1,14 +1,50 @@
-> **SUPERSEDED, AND THIS FILENAME IS WRONG.** It is dated 2026-10-16 and
-> was written on **2026-10-13**. CLAUDE.md says to find the latest handoff
-> **by the date in the filename**, so a date-sort puts this file above the
-> real latest one and a session following the rule reads the stale document
-> first. **Read `docs/handoff-fourth-2026-10-13b.md` instead** -- the push
-> this file records as blocked has since LANDED (`c5af98dc..d30e9e42`, 48
-> commits), so its section 2 and its items 4 and 5 are overtaken.
+> **SUPERSEDED. RENAMED 2026-10-13 (b10) FROM `handoff-fourth-2026-10-16.md`.**
 >
-> NOT renamed, deliberately: a row in `docs/external-files-index.json` and
-> the Drive delivery copy both carry this name, and a rename would turn two
-> correct pointers into dead ones to fix one misleading sort.
+> The old name was dated **2026-10-16** and the file was written on
+> **2026-10-13**. CLAUDE.md says to find the latest handoff **by the date in
+> the filename**, so a date-sort put this file above the real latest one and a
+> session following the rule read the stale document first -- and this one
+> records the push as BLOCKED, which is exactly the fact that had changed.
+> The b9 banner said it was "NOT renamed, deliberately", on the grounds that a
+> rename would break the `docs/external-files-index.json` row and the Drive
+> delivery copy. **That was the wrong trade and b10 corrected it:** both
+> pointers were updated in the same change and the index row now carries a
+> `renamed_from` field, so nothing was broken and the misleading sort is gone.
+> Keeping a known-wrong filename to protect two references you can edit is
+> paying for ever to avoid paying once.
+>
+> **Read `docs/SAIRN-handoff-fourth-b9-2.md` instead** -- the push this file
+> records as blocked has since LANDED (`c5af98dc..d30e9e42`, 48 commits), so
+> its section 2 and its items 4 and 5 are overtaken.
+>
+> **The naming convention, so the next one does not need a banner:**
+> `SAIRN-handoff-<session>-b<n>.md`, with `-2` appended when one batch writes
+> a second handoff -- which is what happened here. A batch number is a fact
+> about the work; a date is a fact about the keyboard, and the two came apart
+> the moment somebody typed the wrong one.
+>
+> **NINE FILES STILL POINT AT THE OLD NAMES AND WERE DELIBERATELY NOT
+> EDITED.** Listed so a grep for the old string finds this note rather than
+> nothing, and so nobody reads the rename as complete:
+>
+> | file | why it was left |
+> |---|---|
+> | `docs/handoff-cody-2026-10-13b.md` | cody's handoff. Another session's
+> committed artefact; a build agent does not rewrite one. |
+> | `docs/handoff-cody-2026-10-13c.md` | same |
+> | `SAIRN-handoff-cc-b6.md` | cc's handoff, same reason |
+> | `SAIRN-report-cody-b6.txt` | a SEALED report. Editing it breaks the SHA
+> line it carries about itself, and a published record is not revised in
+> place. |
+> | `SAIRN-addendum-hank-b5.txt` | hank's, same |
+> | `SAIRN-report-fourth-b9.txt` | MINE, and still not edited: it is sealed
+> and `report_sha_check.py --check` passes on it today. A correct record of
+> what was true when it was written beats a silently amended one. |
+> | `.claude/claims/{fourth,cody,hover2}.json` | the claim LEDGER. Append-only
+> by design; a claim string is a record of what was declared at the time. |
+>
+> Every one of those is a reference in PROSE or in an append-only record,
+> not a path any tool resolves. Nothing reads them to find a file.
 
 # HANDOFF — fourth / ted, batch b9, 2026-10-13
 
@@ -31,7 +67,7 @@ Derivations are scripts, not prose: `item2_repro.py` (+ `item2_repro.log`,
 **Taken as the FIRST action, before any edit**, which is what b8 did not do.
 
 ```
-python tools/sairn_claim.py claim --no-push fourth "batch b9 -- FIRST ACTION is this claim, because b8 ran unclaimed ... FILES: docs/2026-10-12-fourth-b5-routing.md docs/2026-10-06-hank-routed-to-fourth.md docs/2026-10-13-ted-seq17a-owners.tsv docs/METHODOLOGY.md docs/2026-09-13-cross-domain-disciplines.md docs/known-red-suites.json docs/defect-density-register.json SAIRN-report-fourth-b9.txt SAIRN-digest-fourth-b9.txt docs/handoff-fourth-2026-10-16.md"
+python tools/sairn_claim.py claim --no-push fourth "batch b9 -- FIRST ACTION is this claim, because b8 ran unclaimed ... FILES: docs/2026-10-12-fourth-b5-routing.md docs/2026-10-06-hank-routed-to-fourth.md docs/2026-10-13-ted-seq17a-owners.tsv docs/METHODOLOGY.md docs/2026-09-13-cross-domain-disciplines.md docs/known-red-suites.json docs/defect-density-register.json SAIRN-report-fourth-b9.txt SAIRN-digest-fourth-b9.txt docs/SAIRN-handoff-fourth-b9.md"
 ```
 
 `check` returned **CLEAR**; the claim is **committed locally** and the push half
