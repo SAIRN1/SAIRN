@@ -71,6 +71,14 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/sd-data-sen-caregiver-pii-scope.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "0e2508139d6723f586965b7bdd9fb3f1caae7fdc",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tools/hook_integrity_check.py",
    "class": "push-gate logic",
    "level": "CHANGE",
@@ -771,6 +779,22 @@
    "criteria_version": "2026-10-06.1"
   },
   {
+   "path": "api/hydrate-gate-coupling.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "826852b2c201901464fe8d3a7f8e04b5f6b917a9",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "docs/hank-evidence/b5_live_bare_key_probe.py",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "826852b2c201901464fe8d3a7f8e04b5f6b917a9",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
    "path": "tests/run_scrutiny_flag_probe.py",
    "class": "test file",
    "level": "WEAKENING",
@@ -805,6 +829,27 @@
    "level": "CHANGE",
    "shapes": [],
    "sha": "874fe39e3e7aeaa74de357df0461270d6ce82da6",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/audit-shape-pinning.test.js",
+   "class": "test file",
+   "level": "WEAKENING",
+   "shapes": [
+    {
+     "shape": "a skip / exemption / allowlist entry ADDED",
+     "detail": "'the note beside the helper no longer says WHY law-auth.js is exempt. '"
+    }
+   ],
+   "sha": "876932ae8c44e89c3cfed0eadbfe924f6f2c8be2",
+   "criteria_version": "2026-10-06.1"
+  },
+  {
+   "path": "api/sd-data-cross-tenant-dispatchers.test.js",
+   "class": "test file",
+   "level": "CHANGE",
+   "shapes": [],
+   "sha": "876932ae8c44e89c3cfed0eadbfe924f6f2c8be2",
    "criteria_version": "2026-10-06.1"
   },
   {
