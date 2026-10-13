@@ -6,15 +6,16 @@ this file assert a check that did not happen.
 
 | | |
 |---|---|
-| **State** | **COULD NOT TELL** |
-| Last run | 2026-10-13 03:54:04Z |
+| **State** | **OK** |
+| Last run | 2026-10-13 19:33:11Z |
 | Endpoint | `https://sairn.vercel.app/api/cron-watchdog` |
 
-**The watchdog rejected or could not serve this request: HTTP 402.**
-
-`401` means the `CRON_SECRET` this tool sent does not match the one
-the deployment holds -- the secret is SET and WRONG, which looks
-identical to a healthy monitor from the outside. No job was checked.
+| Job | Status | Last run | Age (s) | Headroom (s) |
+|---|---|---|---|---|
+| `/api/alf-alerts` | **ok** | 2026-10-13T18:37:37.829+00:00 | 3333 | 4167 |
+| `/api/audit-checkpoint` | **ok** | 2026-10-13T07:15:50.24+00:00 | 44241 | 128859 |
+| `/api/cron-watchdog` | **ok** | 2026-10-13T19:15:28.746+00:00 | 1062 | 6438 |
+| `/api/sairndental/send-reminder` | **ok** | 2026-10-13T19:07:47.593+00:00 | 1523 | 5977 |
 
 ---
 
@@ -48,9 +49,100 @@ implied by the word "automated".
 
 ```json
 {
-  "error": {
-    "message": "<!doctype html><html lang=en><meta charset=utf-8><meta name=viewport content=\"width=device-width,initial-scale=1\"><meta name=theme-color content=#000><title>Deployment Paused</title><style>:root{--background: #fff;--secondary: #666;--foreground: #000}@media(prefers-color-scheme:dark){:root{--background: #000;--secondary: #A1A1A1;--foreground: #fff}}html,body{overflow:hidden;background:var(--backgr"
-  }
+  "ok": true,
+  "checked": 4,
+  "jobs": [
+    {
+      "job": "/api/alf-alerts",
+      "last_run_at": "2026-10-13T18:37:37.829+00:00",
+      "age_seconds": 3333,
+      "expected_interval_seconds": 3600,
+      "last_outcome": "ok",
+      "seconds_until_late": 4167,
+      "detail": {
+        "emailed": 0,
+        "skipped": 0,
+        "send_failures": 0,
+        "facilities_checked": 1
+      },
+      "status": "ok"
+    },
+    {
+      "job": "/api/audit-checkpoint",
+      "last_run_at": "2026-10-13T07:15:50.24+00:00",
+      "age_seconds": 44241,
+      "expected_interval_seconds": 86400,
+      "last_outcome": "ok",
+      "seconds_until_late": 128859,
+      "detail": {
+        "action": "checkpoint",
+        "written": 9,
+        "failures": 0
+      },
+      "status": "ok"
+    },
+    {
+      "job": "/api/cron-watchdog",
+      "last_run_at": "2026-10-13T19:15:28.746+00:00",
+      "age_seconds": 1062,
+      "expected_interval_seconds": 3600,
+      "last_outcome": "ok",
+      "seconds_until_late": 6438,
+      "detail": {
+        "not_ok": [],
+        "checked": 4,
+        "undelivered": [],
+        "channel_proof": {
+          "id": "01a11cba-39e9-7e68-938e-731c9f336de9",
+          "to": "mikied68@gmail.com",
+          "sent_at": "2026-10-08T18:15:28.956Z",
+          "accepted": true,
+          "checked_at": "2026-10-08T19:15:29.081Z",
+          "last_event": "delivered",
+          "send_error": null,
+          "check_error": null
+        },
+        "response_memo": {},
+        "notify_channel": {
+          "missing": [],
+          "configured": true,
+          "escalation_has_own_address": false
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "job": "/api/sairndental/send-reminder",
+      "last_run_at": "2026-10-13T19:07:47.593+00:00",
+      "age_seconds": 1523,
+      "expected_interval_seconds": 3600,
+      "last_outcome": "ok",
+      "seconds_until_late": 5977,
+      "detail": {
+        "sent": 0,
+        "failed": 0,
+        "skippedNotDue": 0,
+        "skippedNoEmail": 0
+      },
+      "status": "ok"
+    }
+  ],
+  "notify_channel": {
+    "configured": true,
+    "missing": [],
+    "escalation_has_own_address": false
+  },
+  "channel_proof": {
+    "id": "01a11cba-39e9-7e68-938e-731c9f336de9",
+    "to": "mikied68@gmail.com",
+    "sent_at": "2026-10-08T18:15:28.956Z",
+    "accepted": true,
+    "checked_at": "2026-10-08T19:15:29.081Z",
+    "last_event": "delivered",
+    "send_error": null,
+    "check_error": null
+  },
+  "actions": []
 }
 ```
 
