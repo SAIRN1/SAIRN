@@ -275,6 +275,19 @@
         ".claude/skills/sairn-hover-auditor/tools-hover2/sf_five_tables_lock_repro.py",
         "docs/defect-density-register.json"
       ]
+    },
+    {
+      "id": "hover2-1791892532",
+      "session": "hover2",
+      "subject": "hover2",
+      "task": "batch b19 -- audit role, read-only on platform code except register-add. Rotation: sairndesign sweep then next rota target. Verify hank b7 if landed (scp_* ruling, sairnlaw_audit_log CHECK, 2 sql-sync gaps) else skip and say so. Re-validate register after prior rebases/auto-merges: no dup seq, no lost records, closed findings cite evidence. Mirror anchor: drop email step per Michael's RFC3161-token decision. Tip beacon check. Handoff+report. FILES: docs/defect-density-register.json",
+      "claimed_at": "2026-10-13T11:55:32Z",
+      "claimed_at_epoch": 1791892532.240391,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/defect-density-register.json"
+      ]
     }
   ],
   "refusals": [
