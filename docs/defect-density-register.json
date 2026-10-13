@@ -26414,67 +26414,6 @@
       "recurrence_open": "Five Tier A SAIRNfreedom resources remain ungated by decision, not oversight: sf_district_imports (register:353), sf_events (:358), sf_permit_flags (:367), sf_products (:368), sf_vehicles (:380). The gate adds no ROLE check for any of the four gated here, so any signed-in session of any role can still write them. NOT PROVEN LIVE -- no bare-key call was driven against a real SAIRNfreedom licence; the evidence is the register letters, the two-list derivation and the client write sites read at this HEAD."
     },
     {
-      "commit": "cc6d3c525262",
-      "date": "2026-10-12",
-      "subject": "fix(register feed gate): the THIRD gate carrying D9's one-sentence-for-every-cause -- and the cause it names is the one that actually happens",
-      "files": [
-        "tests/run_register_feed_gate_probe.py",
-        "tools/register_feed_gate.py"
-      ],
-      "lines_added": 134,
-      "lines_removed": 2,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "low",
-      "detection_method": "live-verification",
-      "summary": "tools/register_feed_gate.py printed one sentence -- `no ref lines on stdin -- cannot tell what is being pushed` -- for FOUR different situations, under the heading `Blocked: this gate could not tell what is being pushed`, which reads as an accusation about the change. The identical sentence lived in three gates, so a reader could not tell which one spoke; two were given the D9 treatment on 2026-10-08 and this was the third. OBSERVED, not supposed: it refused an ordinary push issued from inside a shell script today -- main() reads stdin whenever it is not a tty, a script's stdin is not a tty and carries no refs. Neither earlier fix names that case, and it is the one a session hits, because wrapping the push in a script is the obvious way to shrink the window in a four-session push race.",
-      "rules": [
-        "1.5"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The sentence predates all three gates' current form and was copied between them; git log -S would name the commit that carried each copy, which is not the same fact as where the defect came in (PR 2.6)."
-      },
-      "citation_note": "1.5 is 'the confident line printed after the error' -- the class of a message that states something true and unhelpful where the reader needs the cause. Adjacent rather than exact: nothing here was printed AFTER an error, it was printed INSTEAD of a cause.",
-      "contributing_factors": [
-        {
-          "factor": "One sentence -- 'no ref lines on stdin -- cannot tell what is being pushed' -- was emitted for four different situations, under a heading that reads as an accusation about the change being pushed. Three of the four are not problems with the change at all.",
-          "kind": "technical",
-          "action": "Four messages, each naming its cause and naming the gate: script/pipe, by-hand at a tty, malformed lines, and the genuine hook anomaly.",
-          "action_status": "done"
-        },
-        {
-          "factor": "The identical sentence lived in THREE gates, so a reader could not tell which one spoke. Two were fixed on 2026-10-08 and this one was missed, which is the ordinary shape of a three-copy fix.",
-          "kind": "process",
-          "action": "This gate now names itself in every one of its four messages, as the other two already do.",
-          "action_status": "done"
-        },
-        {
-          "factor": "The script case is not in either earlier fix and is the one a session actually hits. Wrapping the push in a shell script is the obvious way to shrink the window in a four-session push race, and a nested git push does not reproduce the ref list git hands its own hook.",
-          "kind": "detection",
-          "action": "Named FIRST in the not-a-tty message, with the fix stated ('issue the push directly') and an explicit note that the gate denies because it cannot tell that case from a real hook anomaly.",
-          "action_status": "done"
-        },
-        {
-          "factor": "copy_exactly_gate.py's own D9 defect came from filtering the ref list to four-field lines before anything could refuse a malformed one. Repeating that filter here would have reproduced it.",
-          "kind": "technical",
-          "action": "The shape filter is used only to choose the MESSAGE; the loop still iterates every line, and two CONTROL arms pin both directions of a mixed good/malformed input.",
-          "action_status": "done"
-        },
-        {
-          "factor": "The first draft of the probe arms read the real sys.stdin, so the verdict depended on how the probe was LAUNCHED -- from a terminal the script arm went red for a reason unrelated to the gate.",
-          "kind": "detection",
-          "action": "The tty signal is driven through a fake, with an arm asserting the real stdin was restored.",
-          "action_status": "done"
-        }
-      ],
-      "recurrence_open": "OPEN. Three gates carried one sentence and two were fixed eleven days before the third; nothing cross-references a shared refusal message across the gates that print it, so the next shared message can drift the same way. The script case is now named in ONE of the three."
-    },
-    {
       "commit": "16245537cc56",
       "date": "2026-10-12",
       "subject": "fix(auth,sairncash): fourteen apps could hand somebody a working sign-in with no record of who did it -- and an unauthenticated POST minted a Firebase auth token off one bearer string",
@@ -26658,69 +26597,6 @@
       },
       "citation_note": "1.4 cited for the property: a read-only-looking operation that writes to shared state. The rule is about check tools reading with git show rather than mutating, and these probes were mutating the clone they were supposed to leave alone. The injection commit is the one that introduced the worktree (78b27243, the fix for a WORSE defect -- five stranded PROBE commits reaching origin/main), so the lag this record contributes is the lag of a fix's own side effect.",
       "factors_unknown_reason": "one shared mechanism in two files; recorded as one defect naming both rather than as structured factors"
-    },
-    {
-      "commit": "9d435023f5c7",
-      "date": "2026-10-12",
-      "subject": "feat(defect register): superseded_by had a validator and no writer, so four pairs sat unresolved for five days -- and --check was advertising work --reseat refuses",
-      "files": [
-        "docs/defect-density-register.json",
-        "tests/run_defect_register_superseded_probe.py",
-        "tools/defect_register.py"
-      ],
-      "lines_added": 259,
-      "lines_removed": 7,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "tools/defect_register.py: `superseded_by` had a VALIDATOR and no WRITER. superseded_survivor() has validated the field since 2026-10-07 and `--check` has enforced it, but the only way to set one was to hand-edit 26,000 lines of JSON -- the row-splitting failure PR 2.1 names, on the file whose own merge_policy exists because four clones append to it. So the four pending duplicate pairs stayed duplicates and `--reseat` reported them as COLLIDES on every run, in every clone, for five days. A second defect surfaced the moment the first pointer was written: `--check` listed the superseded records as RE-SEATABLE and told the reader to run `--reseat`, which answers that superseded records are never re-seated and exits 1 -- a check advertising work the tool it names refuses. Both are fixed here, and the second one turned a pre-existing RED arm (E13 of tests/run_defect_register_probe.py) green.",
-      "rules": [
-        "2.1"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The field was introduced WITH its validator and WITHOUT a writer in one commit on 2026-10-07; naming that commit as the injection would record the absence of a feature as a defect injected by the feature, which is not what that field measures."
-      },
-      "citation_note": "2.1 forbids editing a row by splitting on a delimiter and requires rebuilding the row whole. The defect here is the same rule one level up: a field whose only writer was a human editing the serialised document by hand. Cited for the class rather than the letter.",
-      "contributing_factors": [
-        {
-          "factor": "superseded_by had a VALIDATOR and no WRITER. --check has enforced the field since 2026-10-07 and the only way to set one was to hand-edit 26,000 lines of JSON -- the row-splitting failure PR 2.1 names, on the file whose own merge_policy exists because four clones append to it.",
-          "kind": "technical",
-          "action": "--supersede <stale> --by <survivor>, which accepts exactly one shape and refuses every other.",
-          "action_status": "done"
-        },
-        {
-          "factor": "Because nothing could write it, the four pending duplicate pairs stayed duplicates and --reseat reported them as COLLIDES on every run, in every clone, for five days. A recurring message nobody can act on is one people stop reading.",
-          "kind": "process",
-          "action": "All four applied, each measured before writing: identical apart from commit, stale side no longer resolving, survivor reachable.",
-          "action_status": "done"
-        },
-        {
-          "factor": "--check and --reseat disagreed IN PRINT the moment the first pointer landed: --check listed four RE-SEATABLE records and told the reader to run --reseat, and --reseat answered that superseded records are never re-seated and exited 1. Both were right about their own question.",
-          "kind": "technical",
-          "action": "--check excludes superseded records from the re-seatable list and states how many it excluded and why. This turned a pre-existing RED arm (E13) green.",
-          "action_status": "done"
-        },
-        {
-          "factor": "The first draft of the live-check hardcoded 'origin/main' as the reachability base, so in a throwaway fixture repo a perfectly live survivor measured as unreachable and the command refused a write it should have made. A second answer to 'reachable from what' would have put the writer and --check back in disagreement.",
-          "kind": "detection",
-          "action": "It asks reseat_base(), the same question --check asks. Caught by the probe's accept arm, not by review.",
-          "action_status": "done"
-        },
-        {
-          "factor": "E9 of run_defect_register_probe.py builds its throwaway worktree from the LIVE register, so an unrelated session's rebase leftovers decide that arm's colour. It was red before this change and is red after, for a different reason each time.",
-          "kind": "latent-condition",
-          "action": "NOT fixed and NOT edited to pass. Reported as a fixture-coupling defect.",
-          "action_status": "planned",
-          "note": "Isolating that fixture from the live register is a probe redesign, not a line; changing the arm's expectation instead would be editing a suite to make it green, which is the thing this platform refuses."
-        }
-      ],
-      "recurrence_open": "OPEN in two directions. Nothing checks that a field --check ENFORCES has a supported way to be SET, so the next validated-and-unwritable field looks exactly like this one. And E9's throwaway worktree still inherits the live register, so an unrelated session's rebase leftovers decide that arm's colour."
     },
     {
       "commit": "7a3b24c9046d",
@@ -27025,6 +26901,69 @@
       "factors_unknown_reason": "two-layer omission, application and schema, recorded as one defect with both layers named in the summary rather than modelled as structured factors"
     },
     {
+      "commit": "9d435023f5c7",
+      "date": "2026-10-12",
+      "subject": "feat(defect register): superseded_by had a validator and no writer, so four pairs sat unresolved for five days -- and --check was advertising work --reseat refuses",
+      "files": [
+        "docs/defect-density-register.json",
+        "tests/run_defect_register_superseded_probe.py",
+        "tools/defect_register.py"
+      ],
+      "lines_added": 259,
+      "lines_removed": 7,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/defect_register.py: `superseded_by` had a VALIDATOR and no WRITER. superseded_survivor() has validated the field since 2026-10-07 and `--check` has enforced it, but the only way to set one was to hand-edit 26,000 lines of JSON -- the row-splitting failure PR 2.1 names, on the file whose own merge_policy exists because four clones append to it. So the four pending duplicate pairs stayed duplicates and `--reseat` reported them as COLLIDES on every run, in every clone, for five days. A second defect surfaced the moment the first pointer was written: `--check` listed the superseded records as RE-SEATABLE and told the reader to run `--reseat`, which answers that superseded records are never re-seated and exits 1 -- a check advertising work the tool it names refuses. Both are fixed here, and the second one turned a pre-existing RED arm (E13 of tests/run_defect_register_probe.py) green.",
+      "rules": [
+        "2.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The field was introduced WITH its validator and WITHOUT a writer in one commit on 2026-10-07; naming that commit as the injection would record the absence of a feature as a defect injected by the feature, which is not what that field measures."
+      },
+      "citation_note": "2.1 forbids editing a row by splitting on a delimiter and requires rebuilding the row whole. The defect here is the same rule one level up: a field whose only writer was a human editing the serialised document by hand. Cited for the class rather than the letter.",
+      "contributing_factors": [
+        {
+          "factor": "superseded_by had a VALIDATOR and no WRITER. --check has enforced the field since 2026-10-07 and the only way to set one was to hand-edit 26,000 lines of JSON -- the row-splitting failure PR 2.1 names, on the file whose own merge_policy exists because four clones append to it.",
+          "kind": "technical",
+          "action": "--supersede <stale> --by <survivor>, which accepts exactly one shape and refuses every other.",
+          "action_status": "done"
+        },
+        {
+          "factor": "Because nothing could write it, the four pending duplicate pairs stayed duplicates and --reseat reported them as COLLIDES on every run, in every clone, for five days. A recurring message nobody can act on is one people stop reading.",
+          "kind": "process",
+          "action": "All four applied, each measured before writing: identical apart from commit, stale side no longer resolving, survivor reachable.",
+          "action_status": "done"
+        },
+        {
+          "factor": "--check and --reseat disagreed IN PRINT the moment the first pointer landed: --check listed four RE-SEATABLE records and told the reader to run --reseat, and --reseat answered that superseded records are never re-seated and exited 1. Both were right about their own question.",
+          "kind": "technical",
+          "action": "--check excludes superseded records from the re-seatable list and states how many it excluded and why. This turned a pre-existing RED arm (E13) green.",
+          "action_status": "done"
+        },
+        {
+          "factor": "The first draft of the live-check hardcoded 'origin/main' as the reachability base, so in a throwaway fixture repo a perfectly live survivor measured as unreachable and the command refused a write it should have made. A second answer to 'reachable from what' would have put the writer and --check back in disagreement.",
+          "kind": "detection",
+          "action": "It asks reseat_base(), the same question --check asks. Caught by the probe's accept arm, not by review.",
+          "action_status": "done"
+        },
+        {
+          "factor": "E9 of run_defect_register_probe.py builds its throwaway worktree from the LIVE register, so an unrelated session's rebase leftovers decide that arm's colour. It was red before this change and is red after, for a different reason each time.",
+          "kind": "latent-condition",
+          "action": "NOT fixed and NOT edited to pass. Reported as a fixture-coupling defect.",
+          "action_status": "planned",
+          "note": "Isolating that fixture from the live register is a probe redesign, not a line; changing the arm's expectation instead would be editing a suite to make it green, which is the thing this platform refuses."
+        }
+      ],
+      "recurrence_open": "OPEN in two directions. Nothing checks that a field --check ENFORCES has a supported way to be SET, so the next validated-and-unwritable field looks exactly like this one. And E9's throwaway worktree still inherits the live register, so an unrelated session's rebase leftovers decide that arm's colour."
+    },
+    {
       "commit": "b384a513f99e",
       "date": "2026-10-12",
       "subject": "fix(sairnsenior): a caregiver's BACKGROUND-CHECK DATE went to every signed-in role, and the branch's own comment compared it to the wrong thing",
@@ -27078,6 +27017,128 @@
       },
       "citation_note": "not-citable: Guardian Check 8 is the rule this violates and it lives in a skill, not in docs/SAIRN-PROCESS-RULES.md. Recorded as not-citable rather than attached to a process section it does not belong to.",
       "factors_unknown_reason": "three sites recorded as one defect because they share one mechanism -- getElementById returning the first of a duplicated id -- and are fixed in one commit"
+    },
+    {
+      "commit": "cc6d3c525262",
+      "date": "2026-10-12",
+      "subject": "fix(register feed gate): the THIRD gate carrying D9's one-sentence-for-every-cause -- and the cause it names is the one that actually happens",
+      "files": [
+        "tests/run_register_feed_gate_probe.py",
+        "tools/register_feed_gate.py"
+      ],
+      "lines_added": 134,
+      "lines_removed": 2,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "live-verification",
+      "summary": "tools/register_feed_gate.py printed one sentence -- `no ref lines on stdin -- cannot tell what is being pushed` -- for FOUR different situations, under the heading `Blocked: this gate could not tell what is being pushed`, which reads as an accusation about the change. The identical sentence lived in three gates, so a reader could not tell which one spoke; two were given the D9 treatment on 2026-10-08 and this was the third. OBSERVED, not supposed: it refused an ordinary push issued from inside a shell script today -- main() reads stdin whenever it is not a tty, a script's stdin is not a tty and carries no refs. Neither earlier fix names that case, and it is the one a session hits, because wrapping the push in a script is the obvious way to shrink the window in a four-session push race.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The sentence predates all three gates' current form and was copied between them; git log -S would name the commit that carried each copy, which is not the same fact as where the defect came in (PR 2.6)."
+      },
+      "citation_note": "1.5 is 'the confident line printed after the error' -- the class of a message that states something true and unhelpful where the reader needs the cause. Adjacent rather than exact: nothing here was printed AFTER an error, it was printed INSTEAD of a cause.",
+      "contributing_factors": [
+        {
+          "factor": "One sentence -- 'no ref lines on stdin -- cannot tell what is being pushed' -- was emitted for four different situations, under a heading that reads as an accusation about the change being pushed. Three of the four are not problems with the change at all.",
+          "kind": "technical",
+          "action": "Four messages, each naming its cause and naming the gate: script/pipe, by-hand at a tty, malformed lines, and the genuine hook anomaly.",
+          "action_status": "done"
+        },
+        {
+          "factor": "The identical sentence lived in THREE gates, so a reader could not tell which one spoke. Two were fixed on 2026-10-08 and this one was missed, which is the ordinary shape of a three-copy fix.",
+          "kind": "process",
+          "action": "This gate now names itself in every one of its four messages, as the other two already do.",
+          "action_status": "done"
+        },
+        {
+          "factor": "The script case is not in either earlier fix and is the one a session actually hits. Wrapping the push in a shell script is the obvious way to shrink the window in a four-session push race, and a nested git push does not reproduce the ref list git hands its own hook.",
+          "kind": "detection",
+          "action": "Named FIRST in the not-a-tty message, with the fix stated ('issue the push directly') and an explicit note that the gate denies because it cannot tell that case from a real hook anomaly.",
+          "action_status": "done"
+        },
+        {
+          "factor": "copy_exactly_gate.py's own D9 defect came from filtering the ref list to four-field lines before anything could refuse a malformed one. Repeating that filter here would have reproduced it.",
+          "kind": "technical",
+          "action": "The shape filter is used only to choose the MESSAGE; the loop still iterates every line, and two CONTROL arms pin both directions of a mixed good/malformed input.",
+          "action_status": "done"
+        },
+        {
+          "factor": "The first draft of the probe arms read the real sys.stdin, so the verdict depended on how the probe was LAUNCHED -- from a terminal the script arm went red for a reason unrelated to the gate.",
+          "kind": "detection",
+          "action": "The tty signal is driven through a fake, with an arm asserting the real stdin was restored.",
+          "action_status": "done"
+        }
+      ],
+      "recurrence_open": "OPEN. Three gates carried one sentence and two were fixed eleven days before the third; nothing cross-references a shared refusal message across the gates that print it, so the next shared message can drift the same way. The script case is now named in ONE of the three."
+    },
+    {
+      "commit": "23d0f73ce221",
+      "date": "2026-10-13",
+      "subject": "fix(tier A gate): a batch REPORT that explains a Tier A finding was being read as code serving one -- and the override log shows how everyone else has been getting past it",
+      "files": [
+        "tests/run_tier_a_review_gate_probe.py",
+        "tools/tier_a_review_gate.py"
+      ],
+      "lines_added": 88,
+      "lines_removed": 0,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "live-verification",
+      "summary": "tools/tier_a_review_gate.py refused a push over resource names that appeared ONLY IN PROSE. The blocked paths were SAIRN-report-cc-b4.txt and SAIRN-digest-cc-b4.txt -- a batch report and digest at the repo root -- and the names it demanded obligations for, `leg_invoices` and `rf_draws`, appear nowhere in that push's code. One of them appears in a sentence REPORTING A DIFFERENT FALSE POSITIVE IN THIS SAME GATE. The clause above the gap already stated the rule and keyed on the wrong thing: \"markdown is prose, never a request handler -- and every session worklog lives at the repo root by convention\", keyed on `.md` because worklogs are markdown, while the report and digest are `.txt`. MEASURED CONSEQUENCE RATHER THAN A HYPOTHETICAL: all eight report/digest files across the four sessions are tracked prose, and docs/BYPASS-LOG.jsonl carries 93 rows whose recent entries are the BLANKET SAIRN_SEED_GATE=off form -- so a false positive on one path has been switching off every other check in the push.",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The .md clause and the report/digest convention arrived in different commits weeks apart and neither introduced a defect on its own; the gap is the pair. Naming either commit would record one correct change as the injection of a defect it did not contain."
+      },
+      "citation_note": "1.2 is 'grep cannot tell code from text that describes code', which is the class exactly -- but the gate already knows that and has a strip_diff_noise() and a skip list for it. The defect is a skip list whose clause named the right rule and the wrong key, so the citation is the class rather than an unhandled case.",
+      "contributing_factors": [
+        {
+          "factor": "The clause above the new one already stated the rule and keyed on the wrong thing: 'markdown is prose, never a request handler -- and every session worklog lives at the repo root by convention'. The batch report and digest are the same class of artefact and are .txt, so they were in scope. The convention arrived after the clause.",
+          "kind": "technical",
+          "action": "A clause scoped to the NAME (SAIRN-report-/SAIRN-digest-), the EXTENSION (.txt) and the ROOT (no separator), on the same what-the-file-IS axis every other clause uses.",
+          "action_status": "done"
+        },
+        {
+          "factor": "The gate's heading says TIER A CODE CHANGED and the paths it blocked on were prose. One of the two resource names it demanded an obligation for appeared in a sentence REPORTING A DIFFERENT FALSE POSITIVE IN THIS SAME GATE.",
+          "kind": "technical",
+          "action": "Same clause. The end-to-end probe arm drives a resource name on a changed line of a report and asserts no obligation is produced.",
+          "action_status": "done"
+        },
+        {
+          "factor": "The cost was already being paid as BLANKET OVERRIDES rather than as refusals anybody noticed. docs/BYPASS-LOG.jsonl carries 93 rows and the recent entries are the blanket SAIRN_SEED_GATE=off form, which disables EVERY check in the push -- so a false positive on one path was switching off all the others.",
+          "kind": "detection",
+          "action": "Fixed at the source. Nothing was overridden in this batch.",
+          "action_status": "done"
+        },
+        {
+          "factor": "Two tempting repairs were worse and would have left no trace. Rewording the report to avoid the resource names is rewording to slip a matcher, on the document whose entire value is naming what was found. Opening an obligation for leg_invoices and rf_draws would have put a review of code this session never touched into the register that decides who reviews what.",
+          "kind": "process",
+          "action": "Both recorded in the commit message and in the code comment so they are not retried.",
+          "action_status": "done"
+        },
+        {
+          "factor": "The clause's only real risk is widening into .txt generally -- a fixture or a golden file is not prose. Six of the ten new probe arms are boundary arms for exactly that, and they pass in BOTH directions, which is what makes them controls rather than arms that came along for free.",
+          "kind": "detection",
+          "action": "notes.txt, tools/fixtures/SAIRN-report-fake.txt, SAIRN-report-cc-b4.py, a backslash-separated subdirectory path, api/sd-data.js and sairnbuild.html are all asserted IN SCOPE.",
+          "action_status": "done"
+        }
+      ],
+      "recurrence_open": "OPEN. The skip list is a hand-maintained list of what a path IS, and nothing re-derives it when a new artefact convention appears -- the next root-level prose deliverable in a new extension lands in scope the same way. A coverage control exists for tracked path CLASSES but it cannot know about a convention that has not been invented yet."
     }
   ],
   "started": "2026-09-09",
